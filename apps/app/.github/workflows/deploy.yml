@@ -1,0 +1,60 @@
+name: 🚀 Deploy TomAI Frontend
+
+on:
+  push:
+    branches: [main, production]
+    paths: ['client/**']
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📚 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: 'client/pnpm-lock.yaml'
+          
+      - name: 📋 Install Dependencies
+        working-directory: ./client
+        run: pnpm install --frozen-lockfile
+        
+      - name: 🔍 TypeScript Check
+        working-directory: ./client
+        run: pnpm typecheck
+        
+      - name: 🧹 ESLint Check
+        working-directory: ./client
+        run: pnpm lint
+        
+      - name: 🏗️ Build Application
+        working-directory: ./client
+        run: pnpm build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_ENVIRONMENT: production
+          
+      - name: 🚀 Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./client
+          vercel-args: '--prod'

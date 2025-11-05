@@ -1,0 +1,201 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  /* 🎨 shadcn/ui TailwindCSS v4 configuration - Standard tokens only */
+
+  /* Font families */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Base shadcn/ui colors - Official mapping */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-assistant: var(--assistant);
+  --color-assistant-foreground: var(--assistant-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Extended status colors - Following shadcn/ui conventions */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* TomAI specific semantic colors */
+  --color-learning-mastery: var(--learning-mastery);
+  --color-learning-mastery-foreground: var(--learning-mastery-foreground);
+}
+
+:root {
+  /* 🎨 shadcn/ui base theme - Light mode */
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 8.5%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(0 0% 8.5%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 8.5%);
+  /* 🎨 TomAI Brand Colors - Light mode (WCAG AA Compliant) */
+  --primary: hsl(224 84% 45%);        /* TomAI Blue (darker for contrast) */
+  --primary-foreground: hsl(0 0% 98%);
+  --secondary: hsl(142 85% 35%);       /* TomAI Green (darker for contrast) */
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(210 40% 96%);
+  --muted-foreground: hsl(215 25% 45%);
+  --accent: hsl(210 40% 94%);          /* Neutral hover color */
+  --accent-foreground: hsl(215 25% 20%);
+  --assistant: hsl(271 85% 40%);       /* TomAI Purple for IA Assistant */
+  --assistant-foreground: hsl(0 0% 98%);
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 89.8%);
+  --input: hsl(0 0% 89.8%);
+  --ring: hsl(0 0% 15%);
+
+  /* Extended status colors - Light mode (shadcn/ui style) */
+  --success: hsl(142 76% 36%);
+  --success-foreground: hsl(0 0% 98%);
+  --warning: hsl(38 92% 50%);
+  --warning-foreground: hsl(38 100% 20%);
+  --info: hsl(214 84% 56%);
+  --info-foreground: hsl(0 0% 98%);
+
+  /* TomAI semantic colors - Light mode (WCAG AA Compliant) */
+  --learning-mastery: hsl(45 100% 35%);    /* Darker golden yellow for WCAG AA */
+  --learning-mastery-foreground: hsl(45 100% 95%);
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+.dark {
+  /* 🌙 shadcn/ui base theme - Dark mode */
+  --background: hsl(0 0% 3.9%);
+  --foreground: hsl(0 0% 98%);
+  --card: hsl(0 0% 6%);
+  --card-foreground: hsl(0 0% 98%);
+  --popover: hsl(0 0% 6%);
+  --popover-foreground: hsl(0 0% 98%);
+  /* 🎨 TomAI Brand Colors - Dark mode (WCAG AA Compliant) */
+  --primary: hsl(224 84% 70%);         /* TomAI Blue (lighter for dark) */
+  --primary-foreground: hsl(224 84% 10%);
+  --secondary: hsl(142 85% 55%);        /* TomAI Green (lighter for dark) */
+  --secondary-foreground: hsl(142 84% 10%);
+  --muted: hsl(210 40% 15%);
+  --muted-foreground: hsl(215 25% 64%);
+  --accent: hsl(210 40% 18%);          /* Neutral hover color for dark mode */
+  --accent-foreground: hsl(215 25% 80%);
+  --assistant: hsl(271 85% 68%);       /* TomAI Purple for IA Assistant (lighter for dark) */
+  --assistant-foreground: hsl(271 84% 10%);
+  --destructive: hsl(0 62.8% 50.6%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 15%);
+  --input: hsl(0 0% 15%);
+  --ring: hsl(0 0% 21%);
+
+  /* Extended status colors - Dark mode (shadcn/ui style) */
+  --success: hsl(142 76% 50%);
+  --success-foreground: hsl(142 100% 12%);
+  --warning: hsl(38 95% 65%);
+  --warning-foreground: hsl(38 100% 15%);
+  --info: hsl(214 84% 70%);
+  --info-foreground: hsl(214 100% 12%);
+
+  /* TomAI semantic colors - Dark mode (WCAG AA Compliant) */
+  --learning-mastery: hsl(50 100% 65%);    /* Brighter golden for dark theme (WCAG AA) */
+  --learning-mastery-foreground: hsl(45 100% 10%);
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* 🎨 Custom scrollbars - Cross-browser, design system aligned */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+    background-clip: content-box;
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    background-clip: content-box;
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
+    background-clip: content-box;
+  }
+}
+
