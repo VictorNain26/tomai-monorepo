@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  /* TomAI EdTech Design System - Light Mode (Default) */
+
+  /* Base colors - Clean and professional */
+  --color-background: 0 0% 100%;
+  --color-foreground: 222 47% 11%;
+
+  /* Primary - Education Blue (vibrant and trustworthy) */
+  --color-primary: 217 91% 60%;
+  --color-primary-foreground: 0 0% 100%;
+
+  /* Secondary - Soft gray for subtle elements */
+  --color-secondary: 214 32% 91%;
+  --color-secondary-foreground: 222 47% 11%;
+
+  /* Muted - For less prominent text and elements */
+  --color-muted: 214 32% 91%;
+  --color-muted-foreground: 215 16% 47%;
+
+  /* Accent - Slightly different from secondary for interactive elements */
+  --color-accent: 214 32% 91%;
+  --color-accent-foreground: 222 47% 11%;
+
+  /* Card - Slightly elevated surface */
+  --color-card: 0 0% 100%;
+  --color-card-foreground: 222 47% 11%;
+
+  /* Popover - Same as card for consistency */
+  --color-popover: 0 0% 100%;
+  --color-popover-foreground: 222 47% 11%;
+
+  /* Destructive - Clear error indication */
+  --color-destructive: 0 84% 60%;
+  --color-destructive-foreground: 0 0% 100%;
+
+  /* Border - Subtle but visible */
+  --color-border: 214 32% 91%;
+  --color-input: 214 32% 91%;
+  --color-ring: 217 91% 60%;
+
+  /* Radius - Consistent rounded corners */
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    /* TomAI EdTech Design System - Dark Mode */
+
+    /* Base colors - Dark but not pure black */
+    --color-background: 222 47% 11%;
+    --color-foreground: 210 40% 98%;
+
+    /* Primary - Brighter blue for dark backgrounds */
+    --color-primary: 217 91% 60%;
+    --color-primary-foreground: 222 47% 11%;
+
+    /* Secondary - Darker subtle surface */
+    --color-secondary: 217 33% 17%;
+    --color-secondary-foreground: 210 40% 98%;
+
+    /* Muted - Dark subtle elements */
+    --color-muted: 217 33% 17%;
+    --color-muted-foreground: 215 20% 65%;
+
+    /* Accent - Interactive dark elements */
+    --color-accent: 217 33% 17%;
+    --color-accent-foreground: 210 40% 98%;
+
+    /* Card - Slightly elevated dark surface */
+    --color-card: 222 47% 11%;
+    --color-card-foreground: 210 40% 98%;
+
+    /* Popover - Same as card */
+    --color-popover: 222 47% 11%;
+    --color-popover-foreground: 210 40% 98%;
+
+    /* Destructive - Softer red for dark mode */
+    --color-destructive: 0 63% 31%;
+    --color-destructive-foreground: 210 40% 98%;
+
+    /* Border - Visible but subtle in dark mode */
+    --color-border: 217 33% 17%;
+    --color-input: 217 33% 17%;
+    --color-ring: 217 91% 60%;
+  }
+}
+
+/* Global base styles */
+* {
+  @apply border-border;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Accessibility - Focus styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Container - Consistent max-width */
+.container {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
