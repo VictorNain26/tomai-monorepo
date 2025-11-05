@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AppRoutes } from "@/lib/urls";
 
 export function Hero() {
   return (
@@ -32,7 +33,7 @@ export function Hero() {
 
           {/* CTA Buttons - Action claire */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-12 px-4">
-            <Link href="http://localhost:5173/auth/register" className="w-full sm:w-auto">
+            <Link href={AppRoutes.register} className="w-full sm:w-auto">
               <Button size="xl" className="w-full sm:w-auto min-w-[200px] group shadow-lg">
                 Essai gratuit 14 jours
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />

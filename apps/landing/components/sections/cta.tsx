@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AppRoutes } from "@/lib/urls";
 
 export function CTA() {
   return (
@@ -15,7 +16,7 @@ export function CTA() {
               Aidez votre enfant à mieux comprendre ses cours. Sans engagement, résiliable en 1 clic.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-              <Link href="http://localhost:5173/auth/register" className="w-full sm:w-auto">
+              <Link href={AppRoutes.register} className="w-full sm:w-auto">
                 <Button size="xl" variant="secondary" className="w-full sm:w-auto min-w-[200px] group shadow-lg text-sm sm:text-base">
                   Commencer l&apos;essai gratuit
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />

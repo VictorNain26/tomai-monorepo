@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { AppRoutes } from "@/lib/urls";
 
 const plans = [
   {
@@ -17,7 +18,7 @@ const plans = [
       "Support email sous 48h",
     ],
     cta: "Commencer gratuitement",
-    href: "http://localhost:5173/auth/register",
+    href: AppRoutes.register,
     popular: false,
   },
   {
@@ -35,7 +36,7 @@ const plans = [
       "Résiliation en 1 clic",
     ],
     cta: "Essayer 14 jours gratuits",
-    href: "http://localhost:5173/auth/register",
+    href: AppRoutes.register,
     popular: true,
   },
   {
@@ -52,7 +53,7 @@ const plans = [
       "Accès anticipé nouvelles matières",
     ],
     cta: "Essayer 14 jours gratuits",
-    href: "http://localhost:5173/auth/register",
+    href: AppRoutes.register,
     popular: false,
   },
 ];
