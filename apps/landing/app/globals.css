@@ -1,88 +1,88 @@
 @import "tailwindcss";
 
 @theme {
-  /* TomAI EdTech Design System - Light Mode (Default) */
+  /* TomIA EdTech Design System - Light Mode (Premium) */
 
-  /* Base colors - Clean and professional */
-  --color-background: 0 0% 100%;
-  --color-foreground: 222 47% 11%;
+  /* Base colors - Clean, professional, trustworthy */
+  --color-background: 210 40% 98%; /* #F8FAFC - Very light blue-grey for freshness */
+  --color-foreground: 222 47% 11%; /* #0F172A - Deep slate for readability */
 
-  /* Primary - Education Blue (vibrant and trustworthy) */
-  --color-primary: 217 91% 60%;
+  /* Primary - Education Blue (Vibrant yet serious) */
+  --color-primary: 221 83% 53%; /* #2563EB - Blue 600 */
   --color-primary-foreground: 0 0% 100%;
 
-  /* Secondary - Soft gray for subtle elements */
-  --color-secondary: 214 32% 91%;
+  /* Secondary - Subtle surface for contrast */
+  --color-secondary: 210 40% 96.1%; /* #F1F5F9 - Slate 100 */
   --color-secondary-foreground: 222 47% 11%;
 
-  /* Muted - For less prominent text and elements */
-  --color-muted: 214 32% 91%;
-  --color-muted-foreground: 215 16% 47%;
+  /* Muted - For supporting text */
+  --color-muted: 210 40% 96.1%;
+  --color-muted-foreground: 215 16% 47%; /* #64748B - Slate 500 */
 
-  /* Accent - Slightly different from secondary for interactive elements */
-  --color-accent: 214 32% 91%;
+  /* Accent - Interactive elements */
+  --color-accent: 210 40% 96.1%;
   --color-accent-foreground: 222 47% 11%;
 
-  /* Card - Slightly elevated surface */
+  /* Card - Pure white for elevation */
   --color-card: 0 0% 100%;
   --color-card-foreground: 222 47% 11%;
 
-  /* Popover - Same as card for consistency */
+  /* Popover */
   --color-popover: 0 0% 100%;
   --color-popover-foreground: 222 47% 11%;
 
-  /* Destructive - Clear error indication */
+  /* Destructive */
   --color-destructive: 0 84% 60%;
   --color-destructive-foreground: 0 0% 100%;
 
-  /* Border - Subtle but visible */
-  --color-border: 214 32% 91%;
+  /* Border */
+  --color-border: 214 32% 91%; /* #E2E8F0 - Slate 200 */
   --color-input: 214 32% 91%;
-  --color-ring: 217 91% 60%;
+  --color-ring: 221 83% 53%;
 
-  /* Radius - Consistent rounded corners */
-  --radius: 0.5rem;
+  /* Radius */
+  --radius: 0.75rem; /* 12px for modern, friendly feel */
 }
 
 @media (prefers-color-scheme: dark) {
   @theme {
-    /* TomAI EdTech Design System - Dark Mode */
+    /* TomIA EdTech Design System - Dark Mode (Premium) */
 
-    /* Base colors - Dark but not pure black */
-    --color-background: 222 47% 11%;
-    --color-foreground: 210 40% 98%;
+    /* Base colors - Rich Dark Blue (Not pure black) */
+    --color-background: 224 71% 4%; /* #020617 - Slate 950 (Rich Dark) */
+    --color-foreground: 210 40% 98%; /* #F8FAFC - Slate 50 */
 
-    /* Primary - Brighter blue for dark backgrounds */
-    --color-primary: 217 91% 60%;
+    /* Primary - Brighter for dark mode contrast */
+    --color-primary: 217 91% 60%; /* #3B82F6 - Blue 500 */
     --color-primary-foreground: 222 47% 11%;
 
-    /* Secondary - Darker subtle surface */
-    --color-secondary: 217 33% 17%;
+    /* Secondary - Deep surface */
+    --color-secondary: 215 28% 17%; /* #1E293B - Slate 800 */
     --color-secondary-foreground: 210 40% 98%;
 
-    /* Muted - Dark subtle elements */
-    --color-muted: 217 33% 17%;
-    --color-muted-foreground: 215 20% 65%;
+    /* Muted */
+    --color-muted: 215 28% 17%;
+    --color-muted-foreground: 215 20% 65%; /* #94A3B8 - Slate 400 */
 
-    /* Accent - Interactive dark elements */
-    --color-accent: 217 33% 17%;
+    /* Accent */
+    --color-accent: 215 28% 17%;
     --color-accent-foreground: 210 40% 98%;
 
-    /* Card - Slightly elevated dark surface */
-    --color-card: 222 47% 11%;
+    /* Card - Glass-like dark surface */
+    --color-card: 222 47% 11%; /* #0F172A - Slate 900 */
     --color-card-foreground: 210 40% 98%;
 
-    /* Popover - Same as card */
+    /* Popover */
     --color-popover: 222 47% 11%;
     --color-popover-foreground: 210 40% 98%;
 
-    /* Destructive - Softer red for dark mode */
+    /* Destructive */
     --color-destructive: 0 63% 31%;
     --color-destructive-foreground: 210 40% 98%;
 
-    /* Border - Visible but subtle in dark mode */
-    --color-border: 217 33% 17%;
-    --color-input: 217 33% 17%;
+    /* Border - Subtle in dark mode */
+    --color-border: 215 28% 17%; /* #1E293B */
+    --color-input: 215 28% 17%;
     --color-ring: 217 91% 60%;
   }
 }

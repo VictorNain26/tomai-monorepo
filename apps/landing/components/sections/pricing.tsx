@@ -1,133 +1,116 @@
-import Link from "next/link";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
 import { AppRoutes } from "@/lib/urls";
 
-const plans = [
+const TIERS = [
   {
     name: "Découverte",
     price: "Gratuit",
-    period: "",
-    description: "Pour tester sans engagement",
+    description: "Pour tester la méthode TomIA sans engagement.",
     features: [
-      "5 conversations par mois",
-      "Toutes les matières du programme",
-      "Accès limité au tableau de bord",
-      "Support email sous 48h",
+      "5 questions par jour",
+      "Mathématiques uniquement",
+      "Accès au tableau de bord basique",
+      "Support par email"
     ],
-    cta: "Commencer gratuitement",
-    href: AppRoutes.register,
-    popular: false,
+    cta: "Créer un compte gratuit",
+    href: "http://localhost:5173/auth/register",
+    variant: "outline",
   },
   {
-    name: "Famille",
-    price: "19€",
+    name: "Réussite",
+    price: "19,90€",
     period: "/mois",
-    description: "Le plus choisi par les parents",
+    description: "L'accompagnement complet pour garantir la progression.",
     features: [
-      "Conversations illimitées",
-      "Programme CP à Terminale complet",
-      "Tableau de bord parents détaillé",
-      "Historique des échanges",
-      "Export des rapports PDF",
-      "Support email prioritaire",
-      "Résiliation en 1 clic",
+      "Questions illimitées",
+      "Toutes les matières (CP à Terminale)",
+      "Suivi parental détaillé",
+      "Mode révision brevet & bac",
+      "Support prioritaire 7j/7"
     ],
-    cta: "Essayer 14 jours gratuits",
-    href: AppRoutes.register,
+    cta: "Commencer l'essai gratuit",
+    href: "http://localhost:5173/auth/register",
+    variant: "default",
     popular: true,
   },
   {
-    name: "Famille Plus",
-    price: "34€",
+    name: "Famille",
+    price: "29,90€",
     period: "/mois",
-    description: "Pour familles de 3+ enfants",
+    description: "Idéal pour les fratries. Jusqu'à 3 enfants inclus.",
     features: [
-      "Tout du plan Famille",
-      "Jusqu'à 5 comptes enfants",
-      "Statistiques comparatives entre enfants",
-      "Suggestions de révision personnalisées",
-      "Support email sous 4h",
-      "Accès anticipé nouvelles matières",
+      "Tout du plan Réussite",
+      "Jusqu'à 3 comptes enfants",
+      "Tableau de bord unifié",
+      "Suivi individualisé par enfant",
+      "Facturation unique"
     ],
-    cta: "Essayer 14 jours gratuits",
-    href: AppRoutes.register,
-    popular: false,
+    cta: "Choisir l'offre Famille",
+    href: "http://localhost:5173/auth/register",
+    variant: "outline",
   },
 ];
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-16 sm:py-24 lg:py-32 bg-background">
-      <div className="container">
-        {/* Section Header */}
-        <div className="mx-auto max-w-3xl text-center mb-12 sm:mb-16 px-4">
-          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            Tarifs transparents
+    <section id="pricing" className="py-24">
+      <div className="container px-4 mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
+            Un investissement pour son avenir
           </h2>
-          <p className="text-base sm:text-lg text-muted-foreground">
-            Testez gratuitement 14 jours, puis choisissez votre formule. Résiliez quand vous voulez.
+          <p className="text-lg text-muted-foreground">
+            Des tarifs simples et transparents. Sans engagement, annulable à tout moment.
           </p>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 lg:gap-6 max-w-6xl mx-auto px-4">
-          {plans.map((plan, index) => (
-            <Card
-              key={index}
-              className={cn(
-                "relative flex flex-col transition-all duration-300",
-                plan.popular && "border-primary shadow-xl md:scale-105"
-              )}
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {TIERS.map((tier) => (
+            <div
+              key={tier.name}
+              className={`relative flex flex-col p-8 rounded-3xl border ${
+                tier.popular
+                  ? "border-primary bg-primary/5 shadow-xl scale-105 z-10"
+                  : "border-border bg-card hover:border-primary/30 transition-colors"
+              }`}
             >
-              {plan.popular && (
-                <div className="absolute -top-3 left-0 right-0 mx-auto w-fit rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-                  Le plus populaire
+              {tier.popular && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-sm font-bold px-4 py-1 rounded-full">
+                  LE PLUS POPULAIRE
                 </div>
               )}
 
-              <CardHeader className="pb-6">
-                <CardTitle className="text-xl sm:text-2xl">{plan.name}</CardTitle>
-                <CardDescription className="text-sm sm:text-base">{plan.description}</CardDescription>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl sm:text-5xl font-bold tracking-tight">{plan.price}</span>
-                  <span className="text-sm sm:text-base text-muted-foreground">{plan.period}</span>
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-foreground mb-2">{tier.name}</h3>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-4xl font-bold text-foreground">{tier.price}</span>
+                  {tier.period && <span className="text-muted-foreground">{tier.period}</span>}
                 </div>
-              </CardHeader>
+                <p className="text-muted-foreground">{tier.description}</p>
+              </div>
 
-              <CardContent className="flex-1 space-y-3">
-                <ul className="space-y-2.5">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <Check className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-primary mt-0.5" />
-                      <span className="text-xs sm:text-sm text-muted-foreground leading-snug">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
+              <ul className="space-y-4 mb-8 flex-1">
+                {tier.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3">
+                    <Check className={`h-5 w-5 shrink-0 ${tier.popular ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-sm text-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
 
-              <CardFooter className="pt-4">
-                <Link href={plan.href} className="w-full">
-                  <Button
-                    className="w-full text-sm sm:text-base"
-                    size="lg"
-                    variant={plan.popular ? "default" : "outline"}
-                  >
-                    {plan.cta}
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
+              <Link href={tier.href} className="w-full">
+                <Button
+                  variant={tier.variant as "default" | "outline"}
+                  size="lg"
+                  className="w-full"
+                >
+                  {tier.cta}
+                </Button>
+              </Link>
+            </div>
           ))}
-        </div>
-
-        {/* Guarantee */}
-        <div className="mt-10 sm:mt-12 text-center px-4">
-          <p className="text-sm sm:text-base text-muted-foreground">
-            ✓ 14 jours d&apos;essai gratuit · Sans carte bancaire · Résiliation en 1 clic
-          </p>
         </div>
       </div>
     </section>

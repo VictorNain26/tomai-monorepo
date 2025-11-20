@@ -1,73 +1,76 @@
-import { MessageSquare, Brain, ChartLine } from "lucide-react";
+"use client";
 
-const steps = [
+import { MessageSquare, Lightbulb, GraduationCap } from "lucide-react";
+import { motion } from "framer-motion";
+
+const STEPS = [
   {
     number: "01",
+    title: "Posez votre question",
+    description: "Maths, Français, Histoire... Votre enfant pose sa question à TomIA comme à un professeur.",
     icon: MessageSquare,
-    title: "Votre enfant pose sa question",
-    description: "Il écrit sa question ou commence un exercice. L'IA détecte son niveau en analysant sa formulation et ses premières réponses.",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
   },
   {
     number: "02",
-    icon: Brain,
-    title: "L'IA guide par des questions",
-    description: "Plutôt que donner la réponse, l'IA pose des questions progressives pour aider votre enfant à construire sa propre compréhension.",
+    title: "TomIA guide la réflexion",
+    description: "L'IA analyse la demande et pose des sous-questions pour débloquer la situation, sans donner la réponse.",
+    icon: Lightbulb,
+    color: "text-yellow-500",
+    bg: "bg-yellow-500/10",
   },
   {
     number: "03",
-    icon: ChartLine,
-    title: "Les progrès sont suivis",
-    description: "Chaque échange ajuste le niveau de difficulté. Vous visualisez l'évolution dans votre tableau de bord parent.",
+    title: "La notion est comprise",
+    description: "L'élève trouve la solution par lui-même. Il gagne en confiance et retient mieux la leçon.",
+    icon: GraduationCap,
+    color: "text-green-500",
+    bg: "bg-green-500/10",
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-16 sm:py-24 lg:py-32 bg-secondary/50">
-      <div className="container">
-        {/* Section Header */}
-        <div className="mx-auto max-w-3xl text-center mb-12 sm:mb-16 px-4">
-          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+    <section id="how-it-works" className="py-24 overflow-hidden">
+      <div className="container px-4 mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
             Comment ça marche ?
           </h2>
-          <p className="text-base sm:text-lg text-muted-foreground">
-            Trois étapes pour aider votre enfant à mieux comprendre ses cours
+          <p className="text-lg text-muted-foreground">
+            Une méthode simple et efficace pour redonner confiance à votre enfant.
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="mx-auto max-w-4xl px-4">
-          <div className="grid gap-10 sm:gap-12 md:gap-16">
-            {steps.map((step, index) => (
-              <div
-                key={index}
-                className="relative grid gap-4 sm:gap-6 md:grid-cols-[auto_1fr] md:gap-12"
-              >
-                {/* Connector Line (except last) */}
-                {index < steps.length - 1 && (
-                  <div className="absolute left-[31px] top-16 h-full w-px bg-border sm:left-[31px] md:left-[47px]" />
-                )}
+        <div className="relative grid md:grid-cols-3 gap-12">
+          {/* Connecting Line (Desktop) */}
+          <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-blue-500/0 via-blue-500/20 to-blue-500/0" />
 
-                {/* Icon Circle */}
-                <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-primary bg-background md:h-24 md:w-24">
-                  <step.icon className="h-7 w-7 text-primary sm:h-8 sm:w-8 md:h-12 md:w-12" />
-                  <span className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground md:h-10 md:w-10 md:text-sm">
-                    {step.number}
-                  </span>
-                </div>
-
-                {/* Content */}
-                <div className="space-y-2 pb-6 md:pb-0">
-                  <h3 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl md:text-3xl">
-                    {step.title}
-                  </h3>
-                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                    {step.description}
-                  </p>
+          {STEPS.map((step, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.2, duration: 0.5 }}
+              className="relative flex flex-col items-center text-center"
+            >
+              <div className={`relative flex items-center justify-center w-24 h-24 rounded-3xl ${step.bg} ${step.color} mb-8 z-10 transition-transform hover:scale-110 duration-300`}>
+                <step.icon className="h-10 w-10" />
+                <div className="absolute -bottom-3 bg-background border border-border px-3 py-1 rounded-full text-sm font-bold shadow-sm">
+                  {step.number}
                 </div>
               </div>
-            ))}
-          </div>
+
+              <h3 className="text-xl font-bold text-foreground mb-4">
+                {step.title}
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {step.description}
+              </p>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

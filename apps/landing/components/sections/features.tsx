@@ -1,71 +1,126 @@
-import { Brain, TrendingUp, BookOpen, Users, Shield, Trophy } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
 
-const features = [
+import {
+  BrainCircuit,
+  LineChart,
+  BookOpen,
+  ShieldCheck,
+  Gamepad2,
+  Clock
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+const FEATURES = [
   {
-    icon: Brain,
-    title: "Questions plutôt que réponses",
-    description: "L'IA guide votre enfant par des questions progressives, comme le ferait un tuteur. Il réfléchit, construit sa compréhension et retient mieux.",
+    title: "Pédagogie Active",
+    description: "TomIA questionne l'élève étape par étape pour débloquer sa réflexion, favorisant une compréhension profonde et durable.",
+    icon: BrainCircuit,
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
+    colSpan: "lg:col-span-2",
   },
   {
+    title: "Progression Personnalisée",
+    description: "L'assistant s'adapte au niveau de votre enfant et propose des exercices ciblés pour combler ses lacunes.",
+    icon: LineChart,
+    color: "text-green-500",
+    bg: "bg-green-500/10",
+    colSpan: "lg:col-span-1",
+  },
+  {
+    title: "100% Programme Officiel",
+    description: "Couvre toutes les matières du CP à la Terminale : Maths, Français, Histoire-Géo, SVT, Physique-Chimie...",
     icon: BookOpen,
-    title: "Programme Éducation Nationale",
-    description: "Mathématiques, français, sciences, histoire-géographie. Du CP à la Terminale, aligné sur les programmes officiels 2024-2025.",
+    color: "text-purple-500",
+    bg: "bg-purple-500/10",
+    colSpan: "lg:col-span-1",
   },
   {
-    icon: TrendingUp,
-    title: "S'adapte au niveau réel",
-    description: "L'IA ajuste la difficulté selon les réponses de votre enfant. Ni trop facile (ennui), ni trop difficile (découragement).",
+    title: "Confidentialité Garantie",
+    description: "Vos données sont chiffrées et stockées en France. Zéro publicité, zéro revente de données, zéro tracking.",
+    icon: ShieldCheck,
+    color: "text-red-500",
+    bg: "bg-red-500/10",
+    colSpan: "lg:col-span-2",
   },
   {
-    icon: Users,
-    title: "Tableau de bord parents",
-    description: "Suivez les sujets étudiés, le temps passé et les progrès. Identifiez les forces et les points à travailler.",
+    title: "Apprentissage Ludique",
+    description: "Système de points et de badges pour motiver l'élève à réviser régulièrement.",
+    icon: Gamepad2,
+    color: "text-yellow-500",
+    bg: "bg-yellow-500/10",
+    colSpan: "lg:col-span-1",
   },
   {
-    icon: Shield,
-    title: "Sécurité et confidentialité",
-    description: "Hébergement en France, conforme RGPD. Vos données restent privées et ne sont jamais vendues à des tiers.",
-  },
-  {
-    icon: Trophy,
-    title: "Motivation par le progrès",
-    description: "Badges de progression et objectifs personnalisés. Votre enfant voit ses efforts récompensés et reste motivé.",
+    title: "Disponible 24/7",
+    description: "Une aide aux devoirs accessible à tout moment, pour ne jamais rester bloqué sur un exercice.",
+    icon: Clock,
+    color: "text-cyan-500",
+    bg: "bg-cyan-500/10",
+    colSpan: "lg:col-span-2",
   },
 ];
 
+
+
 export function Features() {
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
-    <section id="features" className="py-16 sm:py-24 lg:py-32 bg-background">
-      <div className="container">
-        {/* Section Header */}
-        <div className="mx-auto max-w-3xl text-center mb-12 sm:mb-16 px-4">
-          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            Comment TomAI aide votre enfant
+    <section id="features" className="py-24 bg-secondary/30">
+      <div className="container px-4 mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
+            Tout ce qu&apos;il faut pour réussir
           </h2>
-          <p className="text-base sm:text-lg text-muted-foreground">
-            Une approche pédagogique centrée sur la compréhension profonde plutôt que la mémorisation.
+          <p className="text-lg text-muted-foreground">
+            Une plateforme complète conçue pour l&apos;autonomie et la réussite scolaire de votre enfant.
           </p>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 px-4">
-          {features.map((feature, index) => (
-            <Card key={index} className="group border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300">
-              <CardHeader className="pb-4">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {FEATURES.map((feature, index) => (
+            <motion.div
+              key={index}
+              variants={item}
+              className={`group relative overflow-hidden rounded-3xl bg-card border border-border/50 p-8 transition-all hover:shadow-lg hover:border-primary/20 ${feature.colSpan}`}
+            >
+              <div className={`absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full ${feature.bg} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+
+              <div className="relative z-10">
+                <div className={`inline-flex items-center justify-center h-12 w-12 rounded-2xl ${feature.bg} ${feature.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
                   <feature.icon className="h-6 w-6" />
                 </div>
-                <CardTitle className="text-lg sm:text-xl text-foreground leading-tight">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <CardDescription className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+
+                <h3 className="text-xl font-bold text-foreground mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
                   {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
+                </p>
+              </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

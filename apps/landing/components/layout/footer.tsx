@@ -12,7 +12,7 @@ export function Footer() {
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
                 <Brain className="h-6 w-6 text-primary" />
               </div>
-              <span className="text-xl font-bold text-foreground">TomAI</span>
+              <span className="text-xl font-bold text-foreground">TomIA</span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs">
               L&apos;assistant pédagogique qui accompagne les étudiants français avec la méthode socratique adaptative.
@@ -93,7 +93,7 @@ export function Footer() {
 
         <div className="mt-12 border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} TomAI. Tous droits réservés.
+            © {new Date().getFullYear()} TomIA. Tous droits réservés.
           </p>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
