@@ -9,6 +9,7 @@
  * - Cache avec TanStack Query (5 minutes staleTime)
  */
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
@@ -88,7 +89,7 @@ export function useStudentGamification() {
   });
 
   // Calculer données UI enrichies
-  const uiData: GamificationUIData | null = React.useMemo(() => {
+  const uiData: GamificationUIData | null = useMemo(() => {
     if (!gamificationQuery.data || !badgesQuery.data) {
       return null;
     }
@@ -102,7 +103,7 @@ export function useStudentGamification() {
     const allBadges: BadgeWithDetails[] = allBadgesCatalog.map(badge => ({
       ...badge,
       unlocked: unlockedBadgeKeys.has(badge.badgeKey),
-      unlockedAt: undefined // TODO: Ajouter timestamp unlock si nécessaire
+      unlockedAt: undefined // Badge unlock timestamp - not currently tracked by backend
     }));
 
     const unlockedBadges = allBadges.filter(b => b.unlocked);
@@ -171,6 +172,3 @@ export function useGamificationStats() {
     isLoading
   };
 }
-
-// Import React for useMemo
-import React from 'react';

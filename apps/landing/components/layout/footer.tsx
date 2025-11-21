@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Brain, Mail, MapPin } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
+import { Logo } from "../atoms/logo";
 
 export function Footer() {
   return (
@@ -8,12 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                <Brain className="h-6 w-6 text-primary" />
-              </div>
-              <span className="text-xl font-bold text-foreground">TomIA</span>
-            </Link>
+            <Logo />
             <p className="text-sm text-muted-foreground max-w-xs">
               L&apos;assistant pédagogique qui accompagne les étudiants français avec la méthode socratique adaptative.
             </p>
@@ -24,23 +20,18 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold text-foreground">Produit</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="#features" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/#features" className="text-muted-foreground hover:text-primary transition-colors">
                   Fonctionnalités
                 </Link>
               </li>
               <li>
-                <Link href="#pricing" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/#pricing" className="text-muted-foreground hover:text-primary transition-colors">
                   Tarifs
                 </Link>
               </li>
               <li>
-                <Link href="#how-it-works" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/#how-it-works" className="text-muted-foreground hover:text-primary transition-colors">
                   Comment ça marche
-                </Link>
-              </li>
-              <li>
-                <Link href="#testimonials" className="text-muted-foreground hover:text-primary transition-colors">
-                  Témoignages
                 </Link>
               </li>
             </ul>
@@ -58,11 +49,6 @@ export function Footer() {
               <li>
                 <Link href="/contact" className="text-muted-foreground hover:text-primary transition-colors">
                   Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="text-muted-foreground hover:text-primary transition-colors">
-                  FAQ
                 </Link>
               </li>
             </ul>
@@ -93,7 +79,7 @@ export function Footer() {
 
         <div className="mt-12 border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} TomIA. Tous droits réservés.
+            © 2025 TomIA. Tous droits réservés.
           </p>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">

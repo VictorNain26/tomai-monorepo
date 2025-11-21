@@ -170,7 +170,7 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
   const allActiveSubjects = subjectsQuery.data ?? [];
 
   // ⚡ OPTIMISATION: Convertir latestSession en array pour compatibilité avec composants existants
-  // TODO: Refactorer composants pour utiliser latestSession directement (session unique vs array)
+  // NOTE: Architecture wraps single session in array for backwards compatibility with existing component structure
   const sessions = latestSessionQuery.data ? [latestSessionQuery.data] : [];
 
   return {

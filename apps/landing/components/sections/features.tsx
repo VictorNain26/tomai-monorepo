@@ -63,6 +63,8 @@ const FEATURES = [
 
 
 
+import { SectionHeader } from "../atoms/section-header";
+
 export function Features() {
   const container = {
     hidden: { opacity: 0 },
@@ -82,14 +84,10 @@ export function Features() {
   return (
     <section id="features" className="py-24 bg-secondary/30">
       <div className="container px-4 mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
-            Tout ce qu&apos;il faut pour réussir
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Une plateforme complète conçue pour l&apos;autonomie et la réussite scolaire de votre enfant.
-          </p>
-        </div>
+        <SectionHeader
+          title="Tout ce qu'il faut pour réussir"
+          description="Une plateforme complète conçue pour l'autonomie et la réussite scolaire de votre enfant."
+        />
 
         <motion.div
           variants={container}

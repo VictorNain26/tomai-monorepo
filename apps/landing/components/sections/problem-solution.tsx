@@ -1,5 +1,4 @@
 import { CheckCircle2, XCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 
 export function ProblemSolution() {
   return (
@@ -25,19 +24,19 @@ export function ProblemSolution() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Conflits et tensions pendant les devoirs</span>
+                  <span>Difficulté à expliquer certaines notions</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Incertitude sur les méthodes actuelles</span>
+                  <span>Manque de temps pour un suivi quotidien</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Risque de donner les réponses sans expliquer</span>
+                  <span>Risque de donner la réponse trop vite</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Outils IA génériques non sécurisés</span>
+                  <span>Outils classiques souvent peu pédagogiques</span>
                 </li>
               </ul>
             </div>
@@ -56,19 +55,19 @@ export function ProblemSolution() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Un tuteur patient qui ne s&apos;énerve jamais</span>
+                  <span>Un tuteur patient et toujours disponible</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>L&apos;enfant devient autonome dans ses devoirs</span>
+                  <span>L&apos;enfant gagne en autonomie</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Vous retrouvez des soirées paisibles</span>
+                  <span>Un suivi parental simplifié</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Environnement 100% sûr et sans distraction</span>
+                  <span>Environnement sécurisé et adapté</span>
                 </li>
               </ul>
             </div>

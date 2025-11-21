@@ -1,7 +1,7 @@
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { parentMutations, invalidationHelpers } from "../../lib/query-factories";
+import { parentMutations, invalidationHelpers } from "@/lib/query-factories";
 import {
   AlertDialog,
   AlertDialogAction,
