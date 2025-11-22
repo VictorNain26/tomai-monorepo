@@ -18,28 +18,28 @@ const EXAMPLES: Example[] = [
   {
     subject: "Français",
     conversation: [
-      { role: "user", text: "C'est quoi un verbe ?" },
-      { role: "ai", text: "Dans « Le chat dort », que fait le chat ?" },
-      { role: "user", text: "Il dort ! Donc le verbe c'est l'action ?" },
-      { role: "ai", text: "Exactement, tu as trouvé tout seul !" },
+      { role: "user", text: "C'est quoi un adjectif ?" },
+      { role: "ai", text: "Dans « un grand chien », qu'est-ce qui décrit le chien ?" },
+      { role: "user", text: "C'est « grand » ! Ça dit comment il est." },
+      { role: "ai", text: "Voilà, un adjectif décrit comment est quelque chose." },
     ],
   },
   {
     subject: "Mathématiques",
     conversation: [
-      { role: "user", text: "Je ne comprends pas les fractions" },
-      { role: "ai", text: "Si tu coupes une pizza en 4 et manges 1 part ?" },
-      { role: "user", text: "J'ai mangé 1 sur 4... donc 1/4 !" },
-      { role: "ai", text: "Bravo ! Une fraction, c'est une partie d'un tout." },
+      { role: "user", text: "Je comprends pas les fractions." },
+      { role: "ai", text: "Tu coupes un gâteau en 4 parts égales. Tu en manges 1. Tu as mangé combien du gâteau ?" },
+      { role: "user", text: "1 part sur 4... donc 1/4 !" },
+      { role: "ai", text: "Exactement ! Une fraction c'est juste ça : une partie sur le total." },
     ],
   },
   {
-    subject: "Anglais",
+    subject: "Sciences",
     conversation: [
-      { role: "user", text: "Comment dit-on « je suis » en anglais ?" },
-      { role: "ai", text: "Tu connais « I » pour « je ». Avec « am », ça donne ?" },
-      { role: "user", text: "I am ! Comme dans « I am happy » !" },
-      { role: "ai", text: "Très bien ! Tu fais déjà des phrases complètes." },
+      { role: "user", text: "Pourquoi le ciel est bleu ?" },
+      { role: "ai", text: "La lumière du soleil contient toutes les couleurs. Laquelle se disperse le plus dans l'air selon toi ?" },
+      { role: "user", text: "Le bleu ? C'est pour ça qu'on voit que le bleu !" },
+      { role: "ai", text: "Bien raisonné ! Le bleu se disperse plus, donc on le voit partout dans le ciel." },
     ],
   },
 ];

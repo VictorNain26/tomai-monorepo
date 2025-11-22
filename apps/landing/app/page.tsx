@@ -6,12 +6,14 @@ import { Pricing } from "@/components/sections/pricing";
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col gap-16 sm:gap-20 lg:gap-24 pb-16">
+    <>
       <Hero />
-      <ProblemSolution />
-      <HowItWorks />
-      <Features />
-      <Pricing />
-    </div>
+      <div className="flex flex-col gap-16 sm:gap-20 lg:gap-24 pb-16">
+        <ProblemSolution />
+        <HowItWorks />
+        <Features />
+        <Pricing />
+      </div>
+    </>
   );
 }
