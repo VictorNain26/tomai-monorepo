@@ -100,12 +100,13 @@ export function Features() {
             <motion.div
               key={index}
               variants={item}
-              className={`group relative overflow-hidden rounded-3xl bg-card border border-border/50 p-8 transition-all hover:shadow-lg hover:border-primary/20 ${feature.colSpan}`}
+              className={`group relative overflow-hidden rounded-2xl bg-card border border-border p-8 transition-all duration-300 hover:shadow-xl hover:border-transparent ${feature.colSpan}`}
             >
-              <div className={`absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full ${feature.bg} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              {/* Gradient Border on Hover */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
               <div className="relative z-10">
-                <div className={`inline-flex items-center justify-center h-12 w-12 rounded-2xl ${feature.bg} ${feature.color} mb-6 transition-transform group-hover:scale-110 duration-300`}>
+                <div className={`inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br ${feature.bg} ${feature.color} mb-6 transition-all group-hover:scale-110 group-hover:rotate-3 duration-300`}>
                   <feature.icon className="h-6 w-6" />
                 </div>
 

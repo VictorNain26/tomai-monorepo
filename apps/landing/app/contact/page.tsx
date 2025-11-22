@@ -25,8 +25,8 @@ export default function ContactPage() {
               <p className="text-muted-foreground mb-8">
                 Nous répondons généralement sous 24h ouvrées.
               </p>
-              <Button asChild size="lg" className="rounded-full px-8">
-                <a href="mailto:contact@tomai.fr">contact@tomai.fr</a>
+              <Button asChild size="lg">
+                <a href="mailto:support@tomai.fr">support@tomai.fr</a>
               </Button>
             </div>
           </div>

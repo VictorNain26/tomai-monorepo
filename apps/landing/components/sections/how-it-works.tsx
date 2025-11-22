@@ -58,9 +58,9 @@ export function HowItWorks() {
             >
               <div className={`relative flex items-center justify-center w-24 h-24 rounded-3xl ${step.bg} ${step.color} mb-8 z-10 transition-transform hover:scale-110 duration-300`}>
                 <step.icon className="h-10 w-10" />
-                <div className="absolute -bottom-3 bg-background border border-border px-3 py-1 rounded-full text-sm font-bold shadow-sm">
+                <span className="absolute -top-2 -right-2 flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold">
                   {step.number}
-                </div>
+                </span>
               </div>
 
               <h3 className="text-xl font-bold text-foreground mb-4">

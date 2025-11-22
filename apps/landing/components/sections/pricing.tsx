@@ -3,70 +3,112 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { APP_URL } from "@/lib/urls";
 
-
+const PLANS = [
+  {
+    name: "Découverte",
+    price: "Gratuit",
+    period: "",
+    subtitle: "",
+    description: "Pour découvrir TomIA avec votre enfant",
+    features: [
+      "Français, Maths et Anglais",
+      "Méthode socratique complète",
+      "Suivi de progression",
+    ],
+    highlighted: false,
+  },
+  {
+    name: "Complet",
+    price: "14,90€",
+    period: "/mois",
+    subtitle: "puis 5€/mois par enfant supplémentaire",
+    description: "Toutes les matières pour réussir toute l'année",
+    features: [
+      "Toutes les matières (CP → Terminale)",
+      "Mode révision examens",
+      "Support prioritaire",
+    ],
+    highlighted: true,
+  },
+];
 
 export function Pricing() {
   return (
     <section id="pricing" className="py-24">
       <div className="container px-4 mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
-            Un tarif unique et transparent
+            Tarifs simples et transparents
           </h2>
           <p className="text-lg text-muted-foreground">
-            Accès complet à toutes les fonctionnalités. Sans engagement.
+            Commencez gratuitement, abonnez vos enfants quand vous le souhaitez.
           </p>
         </div>
 
-        <div className="max-w-lg mx-auto">
-          <div className="relative flex flex-col p-8 rounded-3xl border border-primary bg-primary/5 shadow-xl">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-sm font-bold px-4 py-1 rounded-full">
-              OFFRE DE LANCEMENT
-            </div>
-
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-foreground mb-2">Abonnement TomIA</h3>
-              <div className="flex items-baseline justify-center gap-1 mb-4">
-                <span className="text-5xl font-bold text-foreground">14,90€</span>
-                <span className="text-muted-foreground">/mois</span>
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {PLANS.map((plan) => (
+            <div
+              key={plan.name}
+              className={`relative flex flex-col p-8 rounded-2xl border transition-all duration-200 ${
+                plan.highlighted
+                  ? "border-primary bg-primary/5 shadow-lg"
+                  : "border-border bg-card hover:border-primary/50 hover:shadow-md"
+              }`}
+            >
+              {/* Header */}
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  {plan.name}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {plan.description}
+                </p>
               </div>
-              <p className="text-muted-foreground">Pour un enfant</p>
+
+              {/* Price */}
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-foreground">
+                    {plan.price}
+                  </span>
+                  {plan.period && (
+                    <span className="text-muted-foreground">{plan.period}</span>
+                  )}
+                </div>
+                {plan.subtitle && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {plan.subtitle}
+                  </p>
+                )}
+              </div>
+
+              {/* Features */}
+              <ul className="space-y-3 flex-1">
+                {plan.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <Check
+                      className={`h-5 w-5 shrink-0 ${
+                        plan.highlighted ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    />
+                    <span className="text-sm text-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
+          ))}
+        </div>
 
-            <ul className="space-y-4 mb-8 flex-1">
-              <li className="flex items-start gap-3">
-                <Check className="h-5 w-5 shrink-0 text-primary" />
-                <span className="text-sm text-foreground">Toutes les matières (CP à Terminale)</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="h-5 w-5 shrink-0 text-primary" />
-                <span className="text-sm text-foreground">Aide aux devoirs illimitée 24/7</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="h-5 w-5 shrink-0 text-primary" />
-                <span className="text-sm text-foreground">Suivi parental détaillé</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="h-5 w-5 shrink-0 text-primary" />
-                <span className="text-sm text-foreground">Mode révision examens</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="h-5 w-5 shrink-0 text-primary" />
-                <span className="text-sm text-foreground">
-                  <strong>+5€/mois</strong> par enfant supplémentaire
-                </span>
-              </li>
-            </ul>
-
-            <Link href={APP_URL} className="w-full">
-              <Button size="lg" className="w-full text-lg h-12">
-                Essayer gratuitement 7 jours
-              </Button>
-            </Link>
-            <p className="text-xs text-center text-muted-foreground mt-4">
-              Aucune carte bancaire requise pour l'essai.
-            </p>
-          </div>
+        {/* Single CTA */}
+        <div className="text-center mt-12">
+          <Link href={APP_URL}>
+            <Button size="xl">
+              Commencer gratuitement
+            </Button>
+          </Link>
+          <p className="text-sm text-muted-foreground mt-4">
+            Sans engagement · Annulez à tout moment
+          </p>
         </div>
       </div>
     </section>

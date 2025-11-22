@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Menu, X, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { APP_URL } from "@/lib/urls";
@@ -12,51 +12,82 @@ import { NavLinks } from "../molecules/nav-links";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Avoid hydration mismatch
+  // Effet scroll subtil
+  const handleScroll = useCallback(() => {
+    setScrolled(window.scrollY > 10);
+  }, []);
+
   useEffect(() => {
     setMounted(true);
-  }, []);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      className={cn(
+        "sticky top-0 z-50 w-full border-b transition-all duration-200",
+        scrolled
+          ? "bg-background/95 backdrop-blur-md border-border/60 shadow-sm"
+          : "bg-background/95 backdrop-blur border-border/40"
+      )}
+    >
       <nav className="container relative flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <div className="flex items-center z-20">
           <Logo />
         </div>
 
-        {/* Desktop Navigation - Centered Absolutely */}
+        {/* Desktop Navigation - Centered */}
         <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <NavLinks />
         </div>
 
         {/* Desktop CTA & Theme Toggle */}
-        <div className="hidden md:flex items-center gap-4 z-20">
+        <div className="hidden md:flex items-center gap-3 z-20">
           {mounted && (
-            <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              <span className="sr-only">Changer de thème</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full"
+              aria-label="Changer de thème"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
             </Button>
           )}
           <Link href={APP_URL}>
-            <Button size="sm">
-              Essayer gratuitement
-            </Button>
+            <Button size="sm">Commencer gratuitement</Button>
           </Link>
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="flex items-center gap-4 md:hidden z-20">
+        <div className="flex items-center gap-2 md:hidden z-20">
           {mounted && (
-            <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full"
+              aria-label="Changer de thème"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
             </Button>
           )}
           <Button
@@ -64,7 +95,8 @@ export function Header() {
             size="icon"
             className="rounded-full"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
+            aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? (
               <X className="h-5 w-5" />
@@ -78,20 +110,18 @@ export function Header() {
       {/* Mobile Menu */}
       <div
         className={cn(
-          "md:hidden border-b border-border bg-background",
-          mobileMenuOpen ? "block" : "hidden"
+          "md:hidden overflow-hidden transition-all duration-200 ease-in-out border-t border-border/50",
+          mobileMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0 border-t-0"
         )}
       >
-        <div className="container px-4 py-4 space-y-4">
+        <div className="container px-4 py-4 space-y-4 bg-background">
           <NavLinks
             orientation="vertical"
             onLinkClick={() => setMobileMenuOpen(false)}
           />
-          <div className="pt-4">
+          <div className="pt-2">
             <Link href={APP_URL} className="block">
-              <Button className="w-full">
-                Essayer gratuitement
-              </Button>
+              <Button className="w-full">Commencer gratuitement</Button>
             </Link>
           </div>
         </div>

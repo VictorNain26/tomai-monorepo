@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:unicornplatform.com)",
+      "WebFetch(domain:www.caffeinemarketing.com)",
+      "Bash(git checkout:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:wiki.teluq.ca)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

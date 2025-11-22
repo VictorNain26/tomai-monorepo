@@ -1,49 +1,160 @@
-import { MessageCircle } from "lucide-react";
+"use client";
+
+import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
+import { MessageCircle, User } from "lucide-react";
+
+interface Message {
+  role: "user" | "ai";
+  text: string;
+}
+
+interface Example {
+  subject: string;
+  conversation: Message[];
+}
+
+const EXAMPLES: Example[] = [
+  {
+    subject: "Français",
+    conversation: [
+      { role: "user", text: "C'est quoi un verbe ?" },
+      { role: "ai", text: "Dans « Le chat dort », que fait le chat ?" },
+      { role: "user", text: "Il dort ! Donc le verbe c'est l'action ?" },
+      { role: "ai", text: "Exactement, tu as trouvé tout seul !" },
+    ],
+  },
+  {
+    subject: "Mathématiques",
+    conversation: [
+      { role: "user", text: "Je ne comprends pas les fractions" },
+      { role: "ai", text: "Si tu coupes une pizza en 4 et manges 1 part ?" },
+      { role: "user", text: "J'ai mangé 1 sur 4... donc 1/4 !" },
+      { role: "ai", text: "Bravo ! Une fraction, c'est une partie d'un tout." },
+    ],
+  },
+  {
+    subject: "Anglais",
+    conversation: [
+      { role: "user", text: "Comment dit-on « je suis » en anglais ?" },
+      { role: "ai", text: "Tu connais « I » pour « je ». Avec « am », ça donne ?" },
+      { role: "user", text: "I am ! Comme dans « I am happy » !" },
+      { role: "ai", text: "Très bien ! Tu fais déjà des phrases complètes." },
+    ],
+  },
+];
+
+function Avatar({ variant }: { variant: "user" | "ai" }) {
+  const isAi = variant === "ai";
+  return (
+    <div
+      className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center shrink-0 ${
+        isAi
+          ? "bg-indigo-600"
+          : "bg-slate-500"
+      }`}
+    >
+      {isAi ? (
+        <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+      ) : (
+        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+      )}
+    </div>
+  );
+}
+
+function ChatMessage({ message, index }: { message: Message; index: number }) {
+  const isUser = message.role === "user";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.6 + index * 0.5, duration: 0.4 }}
+      className={`flex items-end gap-2 sm:gap-3 ${isUser ? "flex-row-reverse" : ""}`}
+    >
+      <Avatar variant={message.role} />
+      <div
+        className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs sm:text-sm max-w-[80%] shadow-sm ${
+          isUser
+            ? "bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            : "bg-indigo-100 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-100"
+        }`}
+      >
+        {message.text}
+      </div>
+    </motion.div>
+  );
+}
+
+function ChatMockup({ example }: { example: Example }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+      {/* Window Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500/80" />
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500/80" />
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500/80" />
+        </div>
+        <span className="ml-3 text-xs font-medium text-muted-foreground">
+          TomIA – {example.subject}
+        </span>
+      </div>
+
+      {/* Messages */}
+      <div className="p-4 sm:p-5 space-y-5">
+        {example.conversation.map((message, index) => (
+          <ChatMessage key={index} message={message} index={index} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RandomChatMockup() {
+  const randomIndex = Math.floor(Math.random() * EXAMPLES.length);
+  return <ChatMockup example={EXAMPLES[randomIndex]} />;
+}
+
+function MockupSkeleton() {
+  return (
+    <div className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden animate-pulse">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-muted-foreground/20" />
+          <div className="w-3 h-3 rounded-full bg-muted-foreground/20" />
+          <div className="w-3 h-3 rounded-full bg-muted-foreground/20" />
+        </div>
+      </div>
+      <div className="p-5 space-y-4">
+        <div className="flex gap-3">
+          <div className="w-8 h-8 rounded-full bg-muted" />
+          <div className="h-10 bg-muted rounded-2xl flex-1" />
+        </div>
+        <div className="flex gap-3 flex-row-reverse">
+          <div className="w-8 h-8 rounded-full bg-muted" />
+          <div className="h-10 bg-muted rounded-2xl flex-1" />
+        </div>
+        <div className="flex gap-3">
+          <div className="w-8 h-8 rounded-full bg-muted" />
+          <div className="h-10 bg-muted rounded-2xl flex-1" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DynamicChat = dynamic(() => Promise.resolve(RandomChatMockup), {
+  ssr: false,
+  loading: MockupSkeleton,
+});
 
 export function HeroMockup() {
   return (
-    <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none animate-in fade-in slide-in-from-right-8 duration-1000 delay-500">
-      <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 to-blue-600/30 rounded-2xl blur-lg opacity-50" />
-      <div className="relative bg-card/80 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-2xl shadow-2xl overflow-hidden">
-        {/* Window Controls */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/80" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80" />
-          </div>
-          <div className="ml-4 text-xs font-medium text-muted-foreground/70">TomIA - Assistant Mathématiques</div>
-        </div>
-
-        {/* Chat Content */}
-        <div className="p-6 space-y-6 text-left">
-          {/* User Message */}
-          <div className="flex justify-end">
-            <div className="bg-primary text-primary-foreground px-5 py-3 rounded-2xl rounded-tr-sm max-w-[85%] shadow-md">
-              <p className="text-sm">Je ne comprends pas comment calculer l&apos;hypoténuse...</p>
-            </div>
-          </div>
-
-          {/* AI Message */}
-          <div className="flex justify-start">
-            <div className="flex gap-3 max-w-[90%]">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shrink-0 shadow-lg">
-                <MessageCircle className="h-4 w-4 text-white" />
-              </div>
-              <div className="bg-secondary/80 backdrop-blur-sm px-5 py-3 rounded-2xl rounded-tl-sm shadow-sm border border-border/50">
-                <p className="text-sm text-foreground">Pas de panique ! Commençons par le début. Te souviens-tu de la condition principale pour utiliser le théorème de Pythagore ? 🤔</p>
-              </div>
-            </div>
-          </div>
-
-          {/* User Reply (Typing) */}
-          <div className="flex justify-end">
-            <div className="bg-primary/10 text-primary px-5 py-3 rounded-2xl rounded-tr-sm max-w-[85%] border border-primary/20">
-              <p className="text-sm">C&apos;est quand le triangle est rectangle ?</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="relative mx-auto w-full max-w-md lg:max-w-none animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
+      <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-blue-600/20 rounded-2xl blur-lg opacity-30" />
+      <DynamicChat />
     </div>
   );
 }

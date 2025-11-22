@@ -4,11 +4,11 @@
   /* TomIA EdTech Design System - Light Mode (Premium) */
 
   /* Base colors - Clean, professional, trustworthy */
-  --color-background: 210 40% 98%; /* #F8FAFC - Very light blue-grey for freshness */
-  --color-foreground: 222 47% 11%; /* #0F172A - Deep slate for readability */
+  --color-background: 216 34% 97%; /* #F7F9FB - Cooler, cleaner slate-50 */
+  --color-foreground: 220 40% 10%; /* #0A0F1C - Deep slate for maximum readability */
 
-  /* Primary - Education Blue (Vibrant yet serious) */
-  --color-primary: 221 83% 53%; /* #2563EB - Blue 600 */
+  /* Primary - Vibrant Blurple (Stripe/Modern SaaS) */
+  --color-primary: 242 75% 62%; /* #635BFF - Premium blurple */
   --color-primary-foreground: 0 0% 100%;
 
   /* Secondary - Subtle surface for contrast */
@@ -94,7 +94,13 @@
 
 body {
   @apply bg-background text-foreground antialiased;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-jakarta), system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 html {
@@ -109,4 +115,30 @@ html {
 /* Container - Consistent max-width */
 .container {
   @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+/* Custom Selection */
+::selection {
+  @apply bg-primary/20 text-primary;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-secondary;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 transition-colors;
+}
+
+/* Cursor Pointer for Buttons */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }

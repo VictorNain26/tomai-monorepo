@@ -11,7 +11,16 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dev:landing:*)",
+      "Bash(npx kill-port:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:support.microsoft.com)",
+      "Bash(tasklist:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:npmtrends.com)"
     ],
     "deny": [],
     "ask": []

@@ -44,29 +44,26 @@ export function ProblemSolution() {
 
           {/* Solution Side */}
           <div className="space-y-8">
-            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl">
-                RECOMMANDÉ
-              </div>
-              <h3 className="text-xl font-semibold text-primary mb-6 flex items-center gap-2">
+            <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-6 sm:p-8">
+              <h3 className="text-xl font-semibold text-green-600 dark:text-green-400 mb-6 flex items-center gap-2">
                 <CheckCircle2 className="h-6 w-6" />
                 Avec TomIA
               </h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-foreground">
-                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                   <span>Un tuteur patient et toujours disponible</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
-                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                   <span>L&apos;enfant gagne en autonomie</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
-                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                   <span>Un suivi parental simplifié</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
-                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                   <span>Environnement sécurisé et adapté</span>
                 </li>
               </ul>

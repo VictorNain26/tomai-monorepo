@@ -27,7 +27,7 @@ export default function AidePage() {
                 Notre équipe de support est disponible pour vous accompagner dans votre utilisation de TomIA.
               </p>
               <Link href="/contact">
-                <Button size="lg" className="rounded-full px-8">Contacter le support</Button>
+                <Button size="lg">Contacter le support</Button>
               </Link>
             </div>
           </div>
