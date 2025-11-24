@@ -7,7 +7,7 @@ import { ChevronDown, ShieldCheck, BookOpen, BrainCircuit } from "lucide-react";
 const FAQS = [
   {
     question: "Est-ce que TomIA donne les réponses aux exercices ?",
-    answer: "Non, et c'est tout l'intérêt ! TomIA utilise la méthode socratique. Il pose des questions à votre enfant pour le guider vers la solution. C'est comme avoir un professeur particulier qui explique, plutôt qu'un camarade qui laisse copier.",
+    answer: "Non, et c'est tout l'intérêt ! TomIA guide par des questions. Au lieu de donner la réponse, il aide votre enfant à la trouver par lui-même. C'est comme avoir un professeur particulier qui explique, plutôt qu'un camarade qui laisse copier.",
     icon: BrainCircuit,
   },
   {
@@ -17,7 +17,7 @@ const FAQS = [
   },
   {
     question: "Mes données sont-elles en sécurité ?",
-    answer: "Absolument. TomIA est une solution française. Toutes les données sont hébergées en France sur des serveurs sécurisés certifiés HDS. Nous ne vendons aucune donnée et il n'y a aucune publicité sur la plateforme.",
+    answer: "Absolument. TomIA est une solution française. Toutes les données sont hébergées en Europe sur des serveurs sécurisés et certifiés. Nous ne vendons aucune donnée et il n'y a aucune publicité sur la plateforme.",
     icon: ShieldCheck,
   },
   {

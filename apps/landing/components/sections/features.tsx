@@ -12,16 +12,16 @@ import { motion } from "framer-motion";
 
 const FEATURES = [
   {
-    title: "Pédagogie Active",
-    description: "TomIA questionne l'élève étape par étape pour débloquer sa réflexion, favorisant une compréhension profonde et durable.",
+    title: "Apprendre en réfléchissant",
+    description: "TomIA pose des questions pour guider votre enfant vers la solution. Il comprend vraiment et s'en souvient.",
     icon: BrainCircuit,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
     colSpan: "lg:col-span-2",
   },
   {
-    title: "Progression Personnalisée",
-    description: "L'assistant s'adapte au niveau de votre enfant et propose des exercices ciblés pour combler ses lacunes.",
+    title: "S'adapte à son niveau",
+    description: "L'assistant s'adapte au niveau de votre enfant et propose des exercices adaptés là où il en a besoin.",
     icon: LineChart,
     color: "text-green-500",
     bg: "bg-green-500/10",
@@ -37,7 +37,7 @@ const FEATURES = [
   },
   {
     title: "Confidentialité Garantie",
-    description: "Vos données sont chiffrées et stockées en France. Zéro publicité, zéro revente de données, zéro tracking.",
+    description: "Vos données restent en Europe et ne sont jamais partagées. Aucune publicité, aucune revente.",
     icon: ShieldCheck,
     color: "text-red-500",
     bg: "bg-red-500/10",

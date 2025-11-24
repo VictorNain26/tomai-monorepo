@@ -6,7 +6,15 @@
       "WebFetch(domain:www.caffeinemarketing.com)",
       "Bash(git checkout:*)",
       "Bash(npx tsc:*)",
-      "WebFetch(domain:wiki.teluq.ca)"
+      "WebFetch(domain:wiki.teluq.ca)",
+      "Bash(cat:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(wmic process where \"name=''node.exe''\" get processid,commandline)",
+      "Bash(powershell -Command \"(Get-Content ''components/sections/pricing.tsx'') -replace ''Méthode socratique complète'', ''Aide à réfléchir, pas à copier'' | Set-Content ''components/sections/pricing.tsx''\")",
+      "Bash(wsl --status:*)",
+      "Bash(wsl --list:*)"
     ],
     "deny": [],
     "ask": []

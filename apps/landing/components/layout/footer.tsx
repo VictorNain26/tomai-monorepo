@@ -11,7 +11,7 @@ export function Footer() {
           <div className="space-y-4">
             <Logo />
             <p className="text-sm text-muted-foreground max-w-xs">
-              L&apos;assistant pédagogique qui accompagne les étudiants français avec la méthode socratique adaptative.
+              L&apos;assistant qui aide les élèves français à comprendre leurs leçons, sans donner les réponses.
             </p>
           </div>
 

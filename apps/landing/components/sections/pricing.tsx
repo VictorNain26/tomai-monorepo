@@ -12,7 +12,7 @@ const PLANS = [
     description: "Pour découvrir TomIA avec votre enfant",
     features: [
       "Français, Maths et Anglais",
-      "Méthode socratique complète",
+      "Guidage intelligent sans donner les réponses",
       "Suivi de progression",
     ],
     highlighted: false,

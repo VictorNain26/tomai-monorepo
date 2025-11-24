@@ -15,7 +15,7 @@ const STEPS = [
   {
     number: "02",
     title: "TomIA guide la réflexion",
-    description: "L'IA analyse la demande et pose des sous-questions pour débloquer la situation, sans donner la réponse.",
+    description: "TomIA pose des questions simples pour aider votre enfant à avancer, sans jamais donner la réponse.",
     icon: Lightbulb,
     color: "text-yellow-500",
     bg: "bg-yellow-500/10",
