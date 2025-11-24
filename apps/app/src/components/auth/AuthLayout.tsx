@@ -22,7 +22,7 @@ export function AuthLayout({
   showRegisterLink = false,
 }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] bg-gradient-to-br from-background via-background to-muted/20">
       {/* Toggle thème - Position fixe optimale */}
       <div className="fixed top-6 right-6 z-50">
         <ModeToggle />
@@ -38,7 +38,7 @@ export function AuthLayout({
       </div>
 
       {/* Container principal centré - Standards responsive */}
-      <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+      <div className="relative flex min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <motion.div
           className="w-full max-w-md space-y-4"
           initial={{ opacity: 0, y: 16 }}

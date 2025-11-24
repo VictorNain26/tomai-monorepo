@@ -1,34 +1,34 @@
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { APP_URL } from "@/lib/urls";
 
 const PLANS = [
   {
     name: "Découverte",
+    subtitle: "Pour tester sans engagement",
     price: "Gratuit",
     period: "",
-    subtitle: "",
     description: "Pour découvrir TomIA avec votre enfant",
     features: [
       "Français, Maths et Anglais",
       "Guidage intelligent sans donner les réponses",
       "Suivi de progression",
+      "Sans carte bancaire",
     ],
     highlighted: false,
   },
   {
     name: "Complet",
-    price: "14,90€",
+    subtitle: "Pour la réussite de votre enfant",
+    price: "15€",
     period: "/mois",
-    subtitle: "puis 5€/mois par enfant supplémentaire",
     description: "Toutes les matières pour réussir toute l'année",
     features: [
       "Toutes les matières (CP → Terminale)",
       "Mode révision examens",
       "Support prioritaire",
+      "Tableau de bord détaillé",
     ],
     highlighted: true,
+    priceSubtitle: "puis 5€/mois par enfant supplémentaire",
   },
 ];
 
@@ -55,9 +55,14 @@ export function Pricing() {
                   : "border-border bg-card hover:border-primary/50 hover:shadow-md"
               }`}
             >
+
+
               {/* Header */}
               <div className="mb-6">
-                <h3 className="text-xl font-bold text-foreground mb-2">
+                <div className="text-sm font-medium text-primary mb-2">
+                  {plan.subtitle}
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">
                   {plan.name}
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -66,7 +71,7 @@ export function Pricing() {
               </div>
 
               {/* Price */}
-              <div className="mb-6">
+              <div className="mb-8">
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-foreground">
                     {plan.price}
@@ -75,15 +80,15 @@ export function Pricing() {
                     <span className="text-muted-foreground">{plan.period}</span>
                   )}
                 </div>
-                {plan.subtitle && (
+                {plan.priceSubtitle && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {plan.subtitle}
+                    {plan.priceSubtitle}
                   </p>
                 )}
               </div>
 
               {/* Features */}
-              <ul className="space-y-3 flex-1">
+              <ul className="space-y-4 flex-1">
                 {plan.features.map((feature, index) => (
                   <li key={index} className="flex items-start gap-3">
                     <Check
@@ -97,18 +102,6 @@ export function Pricing() {
               </ul>
             </div>
           ))}
-        </div>
-
-        {/* Single CTA */}
-        <div className="text-center mt-12">
-          <Link href={APP_URL}>
-            <Button size="xl">
-              Commencer gratuitement
-            </Button>
-          </Link>
-          <p className="text-sm text-muted-foreground mt-4">
-            Sans engagement · Annulez à tout moment
-          </p>
         </div>
       </div>
     </section>

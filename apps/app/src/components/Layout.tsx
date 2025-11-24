@@ -222,6 +222,7 @@ function Layout(): ReactElement {
                   size="icon"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="h-8 w-8 hover:rotate-90 hover:scale-110 transition-all duration-200 active:scale-95"
+                  aria-label="Fermer le menu"
                 >
                   <X className="h-4 w-4" />
                 </Button>

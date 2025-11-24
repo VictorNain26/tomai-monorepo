@@ -4,6 +4,8 @@ import { Features } from "@/components/sections/features";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { Pricing } from "@/components/sections/pricing";
 
+import { CTA } from "@/components/sections/cta";
+
 export default function HomePage() {
   return (
     <>
@@ -13,6 +15,7 @@ export default function HomePage() {
         <HowItWorks />
         <Features />
         <Pricing />
+        <CTA />
       </div>
     </>
   );
