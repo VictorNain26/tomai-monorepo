@@ -62,13 +62,13 @@ export interface ValidationResult {
   errors: string[];
 }
 
-// User role types consistent with backend (Better Auth + TomAI)
+// User role types consistent with backend (Better Auth + Tom)
 export type UserRoleType = 'student' | 'parent' | 'admin';
 
 // Account type for registration/login forms
 export type AccountTypeType = 'student' | 'parent';
 
-// TomAI User interface - Single source of truth compatible avec Better Auth
+// Tom User interface - Single source of truth compatible avec Better Auth
 export interface IAppUser {
   id: string;
   name: string;
@@ -77,7 +77,7 @@ export interface IAppUser {
   emailVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
-  // TomAI fields - optionnels pour compatibilité Better Auth
+  // Tom fields - optionnels pour compatibilité Better Auth
   role?: UserRoleType;
   firstName?: string;
   lastName?: string;
@@ -87,15 +87,15 @@ export interface IAppUser {
 }
 
 // Type alias for backward compatibility
-export type ITomAIUser = IAppUser;
+export type ITomUser = IAppUser;
 
 // Type guard simplifié
-export function isITomAIUser(user: IAppUser | null): user is IAppUser {
+export function isITomUser(user: IAppUser | null): user is IAppUser {
   return user !== null && 'role' in user && user.role !== undefined;
 }
 
 // Better Auth session interface
-export interface ITomAISession {
+export interface ITomSession {
   user: IAppUser;
   session: {
     id: string;
@@ -512,4 +512,159 @@ export interface ISubjectsResponse {
   success: boolean;
   data: ISubjectsForStudent;
   message: string;
+}
+
+// ======================================
+// Subscription & Stripe Types
+// ======================================
+
+/**
+ * Plan types: free or premium (per-child pricing)
+ * Old student/family plans are deprecated
+ */
+export type SubscriptionPlanType = 'free' | 'premium';
+
+/**
+ * Billing status matching backend familyBilling.billingStatus
+ */
+export type BillingStatusType = 'active' | 'inactive' | 'past_due' | 'canceled' | 'expired';
+
+/**
+ * Subscription plan display info
+ */
+export interface ISubscriptionPlan {
+  key: SubscriptionPlanType;
+  name: string;
+  description: string;
+  /** Price for first child in cents (e.g., 1500 = 15€) */
+  priceFirstChildCents: number;
+  /** Price for additional children in cents (e.g., 500 = 5€) */
+  priceAdditionalChildCents: number;
+  features: string[];
+  highlighted?: boolean;
+  badge?: string;
+}
+
+/**
+ * Per-child pricing info for display
+ */
+export interface IPricingInfo {
+  firstChildPrice: number; // In euros (15)
+  additionalChildPrice: number; // In euros (5)
+  calculateTotal: (childrenCount: number) => number;
+}
+
+/**
+ * Child subscription status for parent dashboard
+ */
+export interface IChildSubscriptionStatus {
+  childId: string;
+  childName: string;
+  plan: SubscriptionPlanType;
+  status: 'active' | 'paused' | 'pending_removal';
+  /** If pending_removal, when will it be downgraded */
+  removalDate?: string;
+}
+
+/**
+ * Family subscription status - returned by /api/subscriptions/status
+ */
+export interface ISubscriptionStatus {
+  /** Current plan type */
+  plan: SubscriptionPlanType;
+  /** Billing status */
+  status: BillingStatusType;
+  /** Billing details (only for premium) */
+  billing: {
+    premiumChildrenCount: number;
+    monthlyAmountCents: number;
+    monthlyAmount: string; // Formatted (e.g., "15.00€")
+    billingStatus: BillingStatusType;
+  } | null;
+  /** Stripe subscription details (only for premium) */
+  subscription: {
+    id: string;
+    status: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+    cancelAtPeriodEnd: boolean;
+    /** Children IDs pending removal at period end */
+    pendingRemovalChildrenIds?: string[];
+    /** New children count after pending changes */
+    scheduledChildrenCount?: number;
+    /** New monthly amount after pending changes */
+    scheduledMonthlyAmountCents?: number;
+    /** Has scheduled changes (pending removals) */
+    hasScheduledChanges?: boolean;
+  } | null;
+  /** Children with their subscription status */
+  children: Array<{
+    id: string;
+    name: string;
+    username: string;
+    plan: string;
+    status: string;
+  }>;
+}
+
+/**
+ * Checkout session response
+ */
+export interface ICheckoutResponse {
+  sessionId: string;
+  url: string;
+  childrenCount: number;
+}
+
+/**
+ * Portal session response
+ */
+export interface IPortalResponse {
+  url: string;
+}
+
+/**
+ * Cancel subscription response
+ */
+export interface ICancelSubscriptionResponse {
+  success: boolean;
+  message: string;
+  subscription: {
+    id: string;
+    status: string;
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: string;
+  };
+}
+
+/**
+ * Add/remove children response
+ */
+export interface IManageChildrenResponse {
+  plan: SubscriptionPlanType;
+  status: BillingStatusType;
+  subscription: {
+    id: string;
+    status: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+    cancelAtPeriodEnd: boolean;
+    premiumChildrenCount: number;
+    monthlyAmountCents: number;
+    monthlyAmount: string;
+    /** For removal: pending changes info */
+    pendingRemovalChildrenIds?: string[];
+    scheduledChildrenCount?: number;
+    scheduledMonthlyAmountCents?: number;
+    hasScheduledChanges?: boolean;
+  } | null;
+}
+
+/**
+ * Resume subscription response
+ */
+export interface IResumeSubscriptionResponse {
+  success: boolean;
+  message: string;
+  subscription: IManageChildrenResponse;
 }

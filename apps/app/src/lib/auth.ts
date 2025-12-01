@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import type { IAppUser } from '@/types';
 
 // URL resolution améliorée avec fallback robuste
 const resolveBaseURL = (): string => {
@@ -37,10 +38,11 @@ export const authClient = createAuthClient({
 // Export Better Auth hooks
 export const { useSession } = authClient;
 
-// Helper hooks propres
-export const useUser = () => {
+// Helper hooks propres - Typed for TomIA
+export const useUser = (): IAppUser | null => {
   const { data: session } = useSession();
-  return session?.user ?? null;
+  // Cast to IAppUser since backend adds role and other TomIA fields
+  return (session?.user as IAppUser | undefined) ?? null;
 };
 
 export const useIsAuthenticated = (): boolean => {
@@ -52,4 +54,3 @@ export const useIsAuthenticated = (): boolean => {
 
   return !!session?.user;
 };
-
