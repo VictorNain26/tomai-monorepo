@@ -17,6 +17,7 @@ import Chat from './pages/Chat';
 import ParentDashboard from './pages/ParentDashboard';
 import ChildView from './pages/ChildView';
 import Pricing from './pages/Pricing';
+import SubscriptionManage from './pages/SubscriptionManage';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancel from './pages/SubscriptionCancel';
 import StudentProtectedRoute from './components/StudentProtectedRoute';
@@ -134,11 +135,12 @@ function AppContent(): ReactElement {
           </Route>
         </Route>
 
-        {/* Routes abonnement - Accessibles aux utilisateurs connectés */}
-        <Route element={<StudentProtectedRoute />}>
+        {/* Routes abonnement - Accessibles aux parents uniquement */}
+        <Route element={<ParentProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/subscription">
               <Route path="pricing" element={<Pricing />} />
+              <Route path="manage" element={<SubscriptionManage />} />
               <Route path="success" element={<SubscriptionSuccess />} />
               <Route path="cancel" element={<SubscriptionCancel />} />
             </Route>

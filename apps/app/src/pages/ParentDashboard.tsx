@@ -140,7 +140,7 @@ export default function ParentDashboard() {
             </div>
 
             <Button
-              onClick={() => void navigate('/subscription/pricing')}
+              onClick={() => void navigate('/subscription/manage')}
               variant="outline"
               size="lg"
               className="gap-2"
