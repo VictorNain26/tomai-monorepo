@@ -1,7 +1,7 @@
 /**
  * StudentDashboard - Dashboard Élève Simplifié avec Streak
  *
- * MVP: Header avec streak + Matières
+ * MVP: Header avec streak + Matières + Usage IA
  * Pas de liste sessions, juste le streak pour motivation
  */
 
@@ -9,9 +9,11 @@ import { type ReactElement } from 'react';
 import { useUser } from '@/lib/auth';
 import { useNavigate } from 'react-router';
 import { useStudentDashboard } from '@/hooks/useStudentDashboard';
+import { useTokenUsage } from '@/hooks/useTokenUsage';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { DashboardSubjectsSection } from '@/components/dashboard/organisms/DashboardSubjectsSection';
+import { UsageCard } from '@/components/subscription';
 import { Card } from '@/components/ui/card';
 import { isITomUser } from '@/types';
 
@@ -20,6 +22,10 @@ export default function StudentDashboard(): ReactElement {
   const navigate = useNavigate();
   const { subjects, sessions, streak, mode, isLoading, isRAGEmpty } =
     useStudentDashboard();
+  const { usage, plan, isLoading: usageLoading } = useTokenUsage({
+    userId: user?.id,
+    enabled: !!user?.id,
+  });
 
   // Navigation vers chat avec matière
   const handleStartChat = (subjectKey: string) => {
@@ -82,6 +88,15 @@ export default function StudentDashboard(): ReactElement {
           </Card>
         )}
       </div>
+
+      {/* Token Usage Card - Affichage pour l'élève */}
+      {!usageLoading && usage && (
+        <UsageCard
+          usage={usage}
+          plan={plan}
+          className="mb-6"
+        />
+      )}
 
       {/* Matières (avec suggestion de session récente) */}
       <DashboardSubjectsSection

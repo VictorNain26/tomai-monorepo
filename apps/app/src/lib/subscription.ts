@@ -19,6 +19,7 @@ import type {
   IManageChildrenResponse,
   IResumeSubscriptionResponse,
   IPricingInfo,
+  IUsageResponse,
 } from '@/types';
 
 // ============================================
@@ -272,6 +273,27 @@ export async function resumeSubscription(parentId: string): Promise<IResumeSubsc
   }
 
   return response.json() as Promise<IResumeSubscriptionResponse>;
+}
+
+/**
+ * Get token usage for a user (child)
+ * Both children and parents can call this endpoint
+ */
+export async function getTokenUsage(userId: string): Promise<IUsageResponse> {
+  const response = await fetch(
+    `${API_URL}/api/subscriptions/usage?userId=${encodeURIComponent(userId)}`,
+    {
+      method: 'GET',
+      credentials: 'include',
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erreur réseau' }));
+    throw new Error(error.error ?? 'Échec de la récupération de l\'utilisation');
+  }
+
+  return response.json() as Promise<IUsageResponse>;
 }
 
 // ============================================

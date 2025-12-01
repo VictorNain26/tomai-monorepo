@@ -1,13 +1,14 @@
 import { useUser } from "../lib/auth";
 import { useNavigate } from 'react-router';
-import { Plus, Users } from 'lucide-react';
-import React, { useState } from 'react';
+import { Plus, Users, CreditCard, Crown } from 'lucide-react';
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useParentDataQuery } from '@/hooks/useParentDataQuery';
 import { ChildrenTable } from '@/components/tables/ChildrenTable';
 import CreateChildModal from '@/components/modals/CreateChildModal';
 import EditChildModal from '@/components/modals/EditChildModal';
 import DeleteChildModal from '@/components/modals/DeleteChildModal';
+import { ChildUsageCard } from '@/components/subscription';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type IChild, isITomUser } from '@/types';
@@ -117,6 +118,50 @@ export default function ParentDashboard() {
             onDelete={(child) => setModal({ _type: 'delete', child })}
             onView={handleViewChildDetails}
           />
+        </CardContent>
+      </Card>
+
+      {/* Section Abonnement et Usage */}
+      <Card className="shadow-sm mt-6">
+        <CardHeader className="border-b border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center">
+                <Crown className="w-6 h-6 text-amber-500" />
+              </div>
+              <div>
+                <CardTitle className="text-xl md:text-2xl font-bold text-foreground">
+                  Abonnement & Usage
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Suivez l'utilisation de l'IA par vos enfants
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => void navigate('/subscription/pricing')}
+              variant="outline"
+              size="lg"
+              className="gap-2"
+            >
+              <CreditCard className="h-5 w-5" />
+              Gérer l'abonnement
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          {children.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Ajoutez un enfant pour voir son utilisation de l'IA
+            </p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {children.map((child) => (
+                <ChildUsageCard key={child.id} child={child} />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

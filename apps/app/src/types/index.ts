@@ -668,3 +668,24 @@ export interface IResumeSubscriptionResponse {
   message: string;
   subscription: IManageChildrenResponse;
 }
+
+/**
+ * Token usage info for a user
+ */
+export interface ITokenUsage {
+  tokensUsed: number;
+  tokensRemaining: number;
+  dailyLimit: number;
+  usagePercentage: number;
+  lastResetAt: string;
+  resetsIn: string;
+}
+
+/**
+ * Usage response from API
+ */
+export interface IUsageResponse {
+  userId: string;
+  plan: 'free' | 'premium';
+  usage: ITokenUsage;
+}
