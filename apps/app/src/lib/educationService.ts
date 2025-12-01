@@ -1,5 +1,5 @@
 /**
- * EDUCATION SERVICE FRONTEND - TomAI
+ * EDUCATION SERVICE FRONTEND - Tom
  * Service frontend unifié qui communique avec le backend educationService
  * Remplace TOUTES les APIs obsolètes et mappings hardcodés
  */

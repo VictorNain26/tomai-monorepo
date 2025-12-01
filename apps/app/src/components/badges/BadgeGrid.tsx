@@ -98,7 +98,7 @@ export function BadgeGrid({
           <CardDescription className="text-base">
             {showUnlockedOnly
               ? (mode === 'primary'
-                  ? 'Continue à étudier avec TomIA pour débloquer des badges ! 💪'
+                  ? 'Continue à étudier avec Tom pour débloquer des badges ! 💪'
                   : 'Étudiez régulièrement pour débloquer vos premiers badges.')
               : 'Les badges seront bientôt disponibles.'
             }

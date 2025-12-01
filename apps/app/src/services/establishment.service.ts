@@ -2,7 +2,7 @@
  * Service Frontend - Recherche Établissements Scolaires
  * ====================================================
  *
- * Service client pour la recherche d'établissements français via API TomAI
+ * Service client pour la recherche d'établissements français via API Tom
  * Génération d'URLs Pronote officielles avec validation RNE
  *
  * Standards: TypeScript strict, ESLint zero warnings, Clean Architecture

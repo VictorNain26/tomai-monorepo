@@ -10,7 +10,7 @@ import EditChildModal from '@/components/modals/EditChildModal';
 import DeleteChildModal from '@/components/modals/DeleteChildModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { type IChild, isITomAIUser } from '@/types';
+import { type IChild, isITomUser } from '@/types';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { LoadingState } from '@/components/shared/LoadingState';
 
@@ -75,7 +75,7 @@ export default function ParentDashboard() {
       {/* Header simple et aéré */}
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-          Bonjour {(isITomAIUser(user) && user.firstName) ?? user?.name}
+          Bonjour {(isITomUser(user) && user.firstName) ?? user?.name}
         </h1>
         <p className="text-muted-foreground mt-2">
           Gérez les comptes de vos enfants et suivez leur apprentissage

@@ -21,7 +21,7 @@ export const LayoutLogo = ({ collapsed = false, mobile: _mobile = false }: ILayo
         {!collapsed && (
           <div className="min-w-0 animate-fade-in">
             <h1 className="text-lg font-bold truncate transition-colors duration-200 text-foreground">
-              TomIA
+              Tom
             </h1>
             <p className="text-xs truncate transition-colors duration-200 text-muted-foreground">
               Tuteur Socratique IA

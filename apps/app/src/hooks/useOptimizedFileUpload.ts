@@ -1,5 +1,5 @@
 /**
- * Hook File Upload Optimisé - TomAI 2025
+ * Hook File Upload Optimisé - Tom 2025
  * Architecture optimale : TanStack Query direct sans double mutation
  * Evidence-based selon doc TanStack + backend simple
  */

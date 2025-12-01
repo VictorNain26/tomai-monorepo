@@ -132,7 +132,7 @@ export function MessageBubble({
  // Détection contenu mathématique pour trigger KaTeX lazy loading - Patterns Backend 2025
  useEffect(() => {
    if (!isUser && message.content && typeof message.content === 'string') {
-     // Détection formules math selon backend TomAI (cf. ai-orchestrator.service.ts)
+     // Détection formules math selon backend Tom (cf. ai-orchestrator.service.ts)
      const hasMath = (
        // LaTeX standard: $...$ ou $$...$$
        /\$[^$]+\$|\$\$[^$]+\$\$/.test(message.content) ||
@@ -265,7 +265,7 @@ export function MessageBubble({
  <div className="break-words overflow-hidden">
  {message.status === 'typing' ? (
  <div className="flex items-center gap-1">
- <span className="text-muted-foreground text-sm">TomIA réfléchit</span>
+ <span className="text-muted-foreground text-sm">Tom réfléchit</span>
  <div className="flex gap-1">
  <motion.div
  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}

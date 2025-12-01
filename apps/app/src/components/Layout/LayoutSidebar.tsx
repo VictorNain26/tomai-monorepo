@@ -11,6 +11,7 @@ import LayoutLogo from './LayoutLogo';
 import LayoutUserInfo from './LayoutUserInfo';
 import LayoutNavigation, { type INavigationItem } from './LayoutNavigation';
 import LayoutMonthlyCost from './LayoutMonthlyCost';
+import LayoutSubscriptionBadge from './LayoutSubscriptionBadge';
 import LayoutActions from './LayoutActions';
 import { cn } from '@/lib/utils';
 
@@ -89,6 +90,9 @@ export const LayoutSidebar = ({
             'backdrop-blur-sm'
           )}
         >
+          {/* Subscription Badge */}
+          <LayoutSubscriptionBadge collapsed={collapsed} />
+
           {!collapsed && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <LayoutMonthlyCost

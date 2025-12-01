@@ -1,5 +1,5 @@
 /**
- * TanStack Query API Client - TomAI 2025
+ * TanStack Query API Client - Tom 2025
  * Client API centralisé remplaçant Axios avec fetch natif et TanStack Query
  */
 

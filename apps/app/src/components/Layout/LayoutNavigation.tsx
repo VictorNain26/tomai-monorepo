@@ -5,7 +5,7 @@ import { getUIMode, type UIMode, type EducationLevelType } from '@/utils/uiModeS
 import { useAccessibilityPreferences } from '@/hooks/useAccessibilityPreferences';
 import { useNavigationEnhancements } from '@/hooks/useNavigationEnhancements';
 import { logger } from '@/lib/logger';
-import { type IAppUser, isITomAIUser } from '@/types';
+import { type IAppUser, isITomUser } from '@/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export interface INavigationItem {
@@ -35,7 +35,7 @@ const getNavItemClasses = (
 
   // Get age-appropriate navigation styles if available
   let adaptiveStyles = '';
-  if (interfaceMode && accessibilityPrefs && isITomAIUser(user)) {
+  if (interfaceMode && accessibilityPrefs && isITomUser(user)) {
     const navStyles = getCombinedNavigationStyles(interfaceMode as UIMode, user.role ?? 'student', accessibilityPrefs as Partial<AccessibilityMode>);
     adaptiveStyles = navStyles.menuItem;
   }
@@ -55,7 +55,7 @@ const getNavItemClasses = (
 };
 
 const isItemVisible = (item: INavigationItem, user: IAppUser | null): boolean => {
- return !(item.parentOnly === true && (!isITomAIUser(user) || user.role !== 'parent'));
+ return !(item.parentOnly === true && (!isITomUser(user) || user.role !== 'parent'));
 };
 
 const NavButton: React.FC<{
@@ -237,7 +237,7 @@ export const LayoutNavigation = ({ navigation, user, onItemClick, collapsed = fa
         })}
       >
         <ul
-          className={getCombinedNavigationStyles(interfaceMode, (isITomAIUser(user) ? user.role : 'student') ?? 'student', accessibilityPrefs).container}
+          className={getCombinedNavigationStyles(interfaceMode, (isITomUser(user) ? user.role : 'student') ?? 'student', accessibilityPrefs).container}
           role="menubar"
         >
           {navigation.map((item) => {

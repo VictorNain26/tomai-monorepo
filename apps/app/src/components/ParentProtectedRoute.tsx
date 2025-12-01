@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router';
 import { type ReactElement, useEffect, useState } from 'react';
 import { useUser, useSession, authClient } from '@/lib/auth';
-import { isITomAIUser } from '@/types';
+import { isITomUser } from '@/types';
 
 function ParentProtectedRoute(): ReactElement {
   const user = useUser();
@@ -54,7 +54,7 @@ function ParentProtectedRoute(): ReactElement {
   }
 
   // Vérifier si l'utilisateur a un rôle défini
-  if (!isITomAIUser(user)) {
+  if (!isITomUser(user)) {
     return <Navigate to="/auth/login" replace />;
   }
 

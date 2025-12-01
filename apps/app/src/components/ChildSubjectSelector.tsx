@@ -1,6 +1,6 @@
 /**
- * ChildSubjectSelector - Version refactorisée TomAI 2025
- * ✅ Respecte standards shadcn/ui + TomAI CLAUDE.md
+ * ChildSubjectSelector - Version refactorisée Tom 2025
+ * ✅ Respecte standards shadcn/ui + Tom CLAUDE.md
  * ✅ UX optimisée mobile/desktop avec lisibilité améliorée
  * ✅ TypeScript strict + ESLint zero warnings
  * ✅ Better Auth + TanStack Query patterns

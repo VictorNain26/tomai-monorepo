@@ -1,5 +1,5 @@
 /**
- * Messages Constants for TomIA - Système de messages UX-friendly en français
+ * Messages Constants for Tom - Système de messages UX-friendly en français
  * Messages d'erreur, de succès et informatifs cohérents et adaptatifs selon l'âge
  */
 
@@ -82,10 +82,10 @@ export const ERROR_MESSAGES = {
       parent: "Erreur lors de l'envoi du message."
     },
     aiResponseFailed: {
-      primary: "TomIA a besoin d'une petite pause 🤖",
-      college: "TomIA ne peut pas répondre maintenant",
+      primary: "Tom a besoin d'une petite pause 🤖",
+      college: "Tom ne peut pas répondre maintenant",
       lycee: "Erreur de génération de réponse IA",
-      parent: "TomIA rencontre des difficultés techniques."
+      parent: "Tom rencontre des difficultés techniques."
     },
     sessionNotFound: {
       primary: "Cette discussion n'existe plus 🔍",
@@ -214,13 +214,13 @@ export const SUCCESS_MESSAGES = {
       primary: "Bienvenue ! 🎉",
       college: "Connexion réussie !",
       lycee: "Connecté avec succès",
-      parent: "Connexion réussie ! Bienvenue sur TomAI."
+      parent: "Connexion réussie ! Bienvenue sur Tom."
     },
     registrationSuccess: {
       primary: "Ton compte est créé ! Bienvenue ! 🎊",
       college: "Compte créé avec succès !",
       lycee: "Inscription réussie",
-      parent: "Compte créé avec succès ! Bienvenue sur TomAI !"
+      parent: "Compte créé avec succès ! Bienvenue sur Tom !"
     },
     googleAuthSuccess: {
       primary: "Connecté avec Google ! 🎉",

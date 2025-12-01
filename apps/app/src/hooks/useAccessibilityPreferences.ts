@@ -1,5 +1,5 @@
 /**
- * Accessibility Preferences Hook for TomIA Educational Platform
+ * Accessibility Preferences Hook for Tom Educational Platform
  * Manages user accessibility settings and system preferences
  */
 

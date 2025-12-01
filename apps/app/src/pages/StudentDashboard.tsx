@@ -13,7 +13,7 @@ import { PageContainer } from '@/components/shared/PageContainer';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { DashboardSubjectsSection } from '@/components/dashboard/organisms/DashboardSubjectsSection';
 import { Card } from '@/components/ui/card';
-import { isITomAIUser } from '@/types';
+import { isITomUser } from '@/types';
 
 export default function StudentDashboard(): ReactElement {
   const user = useUser();
@@ -53,8 +53,8 @@ export default function StudentDashboard(): ReactElement {
         <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground">
             {mode === 'primary'
-              ? `👋 Salut ${(isITomAIUser(user) && user.firstName) ?? user?.name} !`
-              : `Bonjour ${(isITomAIUser(user) && user.firstName) ?? user?.name}`}
+              ? `👋 Salut ${(isITomUser(user) && user.firstName) ?? user?.name} !`
+              : `Bonjour ${(isITomUser(user) && user.firstName) ?? user?.name}`}
           </h1>
           <p className="text-muted-foreground mt-2">
             {mode === 'primary'

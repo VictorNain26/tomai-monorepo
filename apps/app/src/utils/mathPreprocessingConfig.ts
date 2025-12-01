@@ -2,12 +2,12 @@
  * Configuration pour le preprocessing mathématique français - TTS éducatif
  * Optimisé pour la notation mathématique française (CP à Terminale)
  *
- * @author TomAI Education System
+ * @author Tom Education System
  * @version 2.1.0 - Optimisations post-audit professionnel
  * @description Système extensible et maintenable pour la pronunciation des symboles mathématiques
  *
  * AUDIT 2025: Après recherches approfondies sur MathJax, Speech-Rule-Engine et solutions commerciales,
- * cette solution custom s'avère optimale pour TomAI (performance, coût, contrôle, spécialisation française).
+ * cette solution custom s'avère optimale pour Tom (performance, coût, contrôle, spécialisation française).
  *
  * Couverture: 100+ règles mathématiques organisées en 10 catégories
  * Performance: 0KB overhead vs +200KB pour librairies externes

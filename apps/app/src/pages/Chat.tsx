@@ -96,7 +96,7 @@ const Chat: FC = (): ReactElement => {
       {/* Header fixe en haut - ne rétrécit jamais */}
       <div className="flex-shrink-0">
         <PageHeader
-          title={currentSubjectData?.name ?? "TomIA"}
+          title={currentSubjectData?.name ?? "Tom"}
           subtitle={currentSubjectData?.description ?? "Assistant pédagogique"}
           icon={currentSubjectData?.emoji ? <span className="text-2xl">{currentSubjectData.emoji}</span> : <Brain className="h-6 w-6" />}
           onBack={handleBackToDashboard}

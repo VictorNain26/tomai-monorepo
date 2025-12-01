@@ -33,7 +33,7 @@ export function useAudioManager(): AudioManagerContext {
 }
 
 /**
- * Hook principal pour l'audio dans TomAI (alias de useAudioManager)
+ * Hook principal pour l'audio dans Tom (alias de useAudioManager)
  */
 export function useAudio(): AudioManagerContext {
   return useAudioManager();

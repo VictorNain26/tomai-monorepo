@@ -1,7 +1,7 @@
 import { Outlet, Navigate } from 'react-router';
 import type { ReactElement } from 'react';
 import { useUser, useSession } from '@/lib/auth';
-import { isITomAIUser } from '@/types';
+import { isITomUser } from '@/types';
 
 /**
  * Composant pour routes publiques (login, register)
@@ -25,7 +25,7 @@ function PublicRoute(): ReactElement {
 
   // Si l'utilisateur est connecté, rediriger vers son dashboard
   if (user) {
-    if (isITomAIUser(user)) {
+    if (isITomUser(user)) {
       const redirectPath = user.role === 'parent' ? '/parent' : '/student';
       return <Navigate to={redirectPath} replace />;
     }

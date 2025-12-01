@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { GraduationCap } from 'lucide-react';
-import { type IAppUser, isITomAIUser } from '@/types';
+import { type IAppUser, isITomUser } from '@/types';
 import { getUserDisplayName, getUserRoleLabel, hasSchoolLevel } from '@/utils/userUtils';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 
@@ -27,13 +27,13 @@ export const LayoutUserInfo = ({ user }: ILayoutUserInfoProps): ReactElement | n
  {getUserDisplayName(user)}
  </p>
  <p className="text-xs text-muted-foreground">
- {getUserRoleLabel(isITomAIUser(user) ? user.role : undefined)}
+ {getUserRoleLabel(isITomUser(user) ? user.role : undefined)}
  </p>
  </div>
  </div>
 
  {/* Student Level Badge */}
- {isITomAIUser(user) && user.role === 'student' && (
+ {isITomUser(user) && user.role === 'student' && (
  <div>
  {hasSchoolLevel(user) ? (
  <div className="flex items-center gap-2 rounded-md bg-primary/10 px-3 py-2">

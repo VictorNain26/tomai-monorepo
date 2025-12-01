@@ -1,12 +1,12 @@
 /**
- * TanStack Form Configuration - TomAI 2025
+ * TanStack Form Configuration - Tom 2025
  * Configuration centralisée pour formulaires avec TypeScript strict
  */
 
 import type { FormValidateFn } from '@tanstack/react-form';
 import { getSchoolLevelOptions, type EducationLevelType } from '@/constants/schoolLevels';
 
-// Types de validation français pour TomAI
+// Types de validation français pour Tom
 export interface FrenchEducationValidation {
   age: number;
   schoolLevel: string;
@@ -100,7 +100,7 @@ export const frenchEducationValidators = {
   }
 };
 
-// Types TanStack Form pour TomAI
+// Types TanStack Form pour Tom
 export interface CreateChildFormData {
   firstName: string;
   lastName: string;
@@ -125,7 +125,7 @@ export interface StudentAuthFormData {
   rememberMe?: boolean;
 }
 
-// Configuration par défaut pour les formulaires TomAI
+// Configuration par défaut pour les formulaires Tom
 export const formDefaults = {
   // Délai de validation async
   asyncValidationDebounce: 300,

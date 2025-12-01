@@ -1,7 +1,7 @@
 import { useUser } from "../lib/auth";
 import React from 'react';
 import { Navigate } from 'react-router';
-import { isITomAIUser } from '@/types';
+import { isITomUser } from '@/types';
 
 /**
  * Composant de redirection simple basé sur le rôle utilisateur
@@ -16,7 +16,7 @@ const HomePage: React.FC = () => {
   }
 
   // Redirections claires par rôle
-  if (isITomAIUser(user)) {
+  if (isITomUser(user)) {
     if (user.role === 'student') {
       return <Navigate to="/student" replace />;
     }

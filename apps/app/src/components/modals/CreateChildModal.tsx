@@ -1,6 +1,6 @@
 /**
- * CreateChildModal - Version refactorisée TomAI 2025
- * ✅ Respecte standards shadcn/ui + TomAI CLAUDE.md
+ * CreateChildModal - Version refactorisée Tom 2025
+ * ✅ Respecte standards shadcn/ui + Tom CLAUDE.md
  * ✅ UX simplifiée : 1 écran au lieu de 3 steps complexes
  * ✅ TypeScript strict + ESLint zero warnings
  * ✅ Better Auth + TanStack Query patterns
@@ -81,7 +81,7 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
       invalidationHelpers.invalidateParentData(queryClient);
 
       toast.success('🎉 Compte créé avec succès !', {
-        description: `${formData.firstName} peut maintenant utiliser TomAI.`
+        description: `${formData.firstName} peut maintenant utiliser Tom.`
       });
 
       onSuccess();
@@ -154,7 +154,7 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
             Créer un compte enfant
           </DialogTitle>
           <DialogDescription>
-            Ajoutez un nouvel enfant à votre compte famille TomAI
+            Ajoutez un nouvel enfant à votre compte famille Tom
           </DialogDescription>
         </DialogHeader>
 

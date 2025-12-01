@@ -5,7 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from './lib/queryClient';
 import { useUser, useSession } from './lib/auth';
-import type { ITomAIUser } from './types';
+import type { ITomUser } from './types';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -16,6 +16,9 @@ import StudentBadges from './pages/StudentBadges';
 import Chat from './pages/Chat';
 import ParentDashboard from './pages/ParentDashboard';
 import ChildView from './pages/ChildView';
+import Pricing from './pages/Pricing';
+import SubscriptionSuccess from './pages/SubscriptionSuccess';
+import SubscriptionCancel from './pages/SubscriptionCancel';
 import StudentProtectedRoute from './components/StudentProtectedRoute';
 import ParentProtectedRoute from './components/ParentProtectedRoute';
 import PublicRoute from './components/PublicRoute';
@@ -44,7 +47,7 @@ function DefaultRedirect(): ReactElement {
 
   if (user) {
     // Si connecté, rediriger vers le dashboard approprié
-    const redirectPath = (user as ITomAIUser).role === 'parent' ? '/parent' : '/student';
+    const redirectPath = (user as ITomUser).role === 'parent' ? '/parent' : '/student';
     return <Navigate to={redirectPath} replace />;
   }
 
@@ -127,6 +130,17 @@ function AppContent(): ReactElement {
             <Route path="/parent">
               <Route index element={<ParentDashboard />} />
               <Route path="children/:childId" element={<ChildView />} />
+            </Route>
+          </Route>
+        </Route>
+
+        {/* Routes abonnement - Accessibles aux utilisateurs connectés */}
+        <Route element={<StudentProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/subscription">
+              <Route path="pricing" element={<Pricing />} />
+              <Route path="success" element={<SubscriptionSuccess />} />
+              <Route path="cancel" element={<SubscriptionCancel />} />
             </Route>
           </Route>
         </Route>

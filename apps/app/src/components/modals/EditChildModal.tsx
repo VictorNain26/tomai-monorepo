@@ -1,6 +1,6 @@
 /**
- * EditChildModal - Version refactorisée TomAI 2025
- * ✅ Respecte standards shadcn/ui + TomAI CLAUDE.md
+ * EditChildModal - Version refactorisée Tom 2025
+ * ✅ Respecte standards shadcn/ui + Tom CLAUDE.md
  * ✅ UI simplifiée sans over-engineering
  * ✅ TypeScript strict + ESLint zero warnings
  * ✅ Better Auth + TanStack Query patterns optimisés

@@ -1,5 +1,5 @@
 /**
- * Professional Logger - TomAI Client
+ * Professional Logger - Tom Client
  * Remplace tous les console.log avec un système intelligent
  * Configuration selon l'environnement + contexte métier
  */

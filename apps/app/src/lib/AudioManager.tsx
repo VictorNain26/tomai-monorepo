@@ -3,7 +3,7 @@ import { useUser } from './auth';
 import { getUIMode, type EducationLevelType } from '@/utils/uiModeSystem';
 import { createMathPreprocessor } from '@/utils/mathPreprocessingConfig';
 import { logger } from './logger';
-import { isITomAIUser } from '@/types';
+import { isITomUser } from '@/types';
 import { EDUCATION_CONFIG } from './audioConfig';
 import { AudioContext, type AudioManagerContext } from './audioHooks';
 import type { AudioState } from './audioTypes';
@@ -44,7 +44,7 @@ export function AudioManagerProvider({ children }: { children: ReactNode }) {
 
   // Configuration voix selon niveau utilisateur
   const voiceLevel = useMemo((): 'primary' | 'college' | 'lycee' => {
-    if (!isITomAIUser(user) || !user.schoolLevel) return 'college';
+    if (!isITomUser(user) || !user.schoolLevel) return 'college';
     return getUIMode(user.schoolLevel as EducationLevelType);
   }, [user]);
 

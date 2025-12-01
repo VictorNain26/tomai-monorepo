@@ -1,5 +1,5 @@
 /**
- * HOOK EDUCATION UNIFIÉ - TomAI
+ * HOOK EDUCATION UNIFIÉ - Tom
  * Hook unique qui remplace useChildSubjects, useSubjectsPreview, useSubjectsPreviewLegacy
  * Utilise le service educationService frontend unifié
  */

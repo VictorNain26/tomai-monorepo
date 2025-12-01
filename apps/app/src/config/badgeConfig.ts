@@ -1,5 +1,5 @@
 /**
- * Configuration Badges - TomIA Frontend
+ * Configuration Badges - Tom Frontend
  *
  * Mapping badgeKey (backend) → Visual design (frontend)
  * Architecture: Séparation données (backend) / design (frontend)
@@ -10,7 +10,7 @@
  */
 
 export interface BadgeVisualConfig {
-  icon: string; // Emoji simple pour cohérence design TomIA
+  icon: string; // Emoji simple pour cohérence design Tom
   gradient: string; // Gradient TailwindCSS classes
   bgColor: string; // Couleur fond badge
   borderColor: string; // Couleur bordure
@@ -56,7 +56,7 @@ export const BADGE_CATEGORIES: Record<string, BadgeCategoryVisualConfig> = {
 };
 
 /**
- * Configuration visuelle des 18 badges TomIA
+ * Configuration visuelle des 18 badges Tom
  *
  * Catégories:
  * - Progression (7 badges): Basés sur nombre de sessions (first, 5, 10, 20, 30, 50, 100)

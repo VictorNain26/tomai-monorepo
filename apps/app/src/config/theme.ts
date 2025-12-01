@@ -1,5 +1,5 @@
 /**
- * TomAI Theme Configuration - Système de Couleurs Centralisé
+ * Tom Theme Configuration - Système de Couleurs Centralisé
  *
  * Ce fichier définit TOUTES les couleurs de l'application de manière centralisée.
  * Pour modifier une couleur, changez-la ICI uniquement.
@@ -28,17 +28,17 @@ export type RoleWithColor = 'parent' | 'student' | 'assistant';
 export const ROLE_COLORS: Record<RoleWithColor, { token: string; name: string; description: string }> = {
   parent: {
     token: 'primary',
-    name: 'Bleu TomAI',
+    name: 'Bleu Tom',
     description: 'Couleur principale pour les parents'
   },
   student: {
     token: 'secondary',
-    name: 'Vert TomAI',
+    name: 'Vert Tom',
     description: 'Couleur principale pour les élèves'
   },
   assistant: {
     token: 'assistant',
-    name: 'Purple TomAI',
+    name: 'Purple Tom',
     description: 'Couleur principale pour l\'IA/Assistant'
   }
 } as const;
@@ -249,7 +249,7 @@ export const STAT_CARD_VARIANTS = {
 // ==========================================
 
 /**
- * 🎨 TomAI Color System Documentation
+ * 🎨 Tom Color System Documentation
  *
  * Pour modifier les couleurs de l'application:
  *

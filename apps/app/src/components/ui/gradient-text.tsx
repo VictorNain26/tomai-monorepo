@@ -9,7 +9,7 @@ interface GradientTextProps extends React.HTMLAttributes<HTMLElement> {
 const GradientText = React.forwardRef<HTMLElement, GradientTextProps>(
   ({ className, variant = "tomaia", as: Component = "span", children, ...props }, ref) => {
     const variantClasses = {
-      tomaia: "bg-gradient-to-r from-primary to-secondary",    /* TomAI brand gradient - Blue + Green */
+      tomaia: "bg-gradient-to-r from-primary to-secondary",    /* Tom brand gradient - Blue + Green */
       primary: "bg-gradient-to-r from-primary to-primary/80",
       secondary: "bg-gradient-to-r from-secondary to-secondary/80"
     }

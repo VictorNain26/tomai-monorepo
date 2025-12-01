@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useSession } from '@/lib/auth';
-import type { ITomAIUser } from '@/types';
+import type { ITomUser } from '@/types';
 
 /**
  * Callback simple - attend la session et redirige
@@ -16,7 +16,7 @@ export default function OAuthCallback() {
 
     // Si on a une session, rediriger
     if (session?.user) {
-      const userWithRole = session.user as ITomAIUser;
+      const userWithRole = session.user as ITomUser;
       const redirectPath = userWithRole.role === 'parent' ? '/parent' : '/student';
       void navigate(redirectPath, { replace: true });
       return;

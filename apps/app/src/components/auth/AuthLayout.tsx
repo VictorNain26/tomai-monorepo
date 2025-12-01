@@ -53,13 +53,13 @@ export function AuthLayout({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.1, type: 'spring', stiffness: 100 }}
             >
-              {/* Logo TomAI avec glassmorphism moderne */}
+              {/* Logo Tom avec glassmorphism moderne */}
               <div className="flex items-center space-x-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm ring-2 ring-primary/30 shadow-lg shadow-primary/20 transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-primary/30">
                   <Brain className="h-6 w-6 text-primary" />
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                  TomAI
+                  Tom
                 </h1>
               </div>
             </motion.div>

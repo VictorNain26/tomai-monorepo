@@ -1,5 +1,5 @@
 /**
- * Navigation Adaptive Utilities for TomIA Educational Platform
+ * Navigation Adaptive Utilities for Tom Educational Platform
  * Age-appropriate navigation configurations and accessibility enhancements
  */
 
@@ -153,7 +153,7 @@ export const getEducationalShortcuts = (mode: UIMode, role: UserRoleType) => {
   if (role === 'student') {
     const shortcuts = {
       primary: [
-        { name: 'Parler avec TomIA', href: '/student/chat/new', key: 'c', icon: 'MessageCircle' },
+        { name: 'Parler avec Tom', href: '/student/chat/new', key: 'c', icon: 'MessageCircle' },
         { name: 'Mes Discussions', href: '/student', key: 'h', icon: 'Home' }
       ],
       college: [

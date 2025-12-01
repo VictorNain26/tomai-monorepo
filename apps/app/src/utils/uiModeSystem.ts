@@ -1,5 +1,5 @@
 /**
- * UI Mode System for TomIA - Version 2.0
+ * UI Mode System for Tom - Version 2.0
  * Système adaptatif selon l'âge et le niveau scolaire
  */
 

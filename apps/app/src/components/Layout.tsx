@@ -3,7 +3,7 @@ import { Home, BarChart3, X, Trophy } from 'lucide-react';
 import { type ReactElement, useState, createContext, useContext, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUser, authClient } from '@/lib/auth';
-import { type IAppUser, isITomAIUser } from '@/types';
+import { type IAppUser, isITomUser } from '@/types';
 
 import { useEducationalTheme } from '@/hooks/useEducationalTheme';
 import { Button } from './ui/button';
@@ -33,7 +33,7 @@ export const useMobileMenu = () => {
 
 // Navigation simplifiée selon le rôle
 const getNavigation = (user: IAppUser | null) => {
-  if (!isITomAIUser(user)) {
+  if (!isITomUser(user)) {
     return [];
   }
 
@@ -125,7 +125,7 @@ function Layout(): ReactElement {
                 T
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-sidebar-foreground">TomIA</span>
+                <span className="text-sm font-bold text-sidebar-foreground">Tom</span>
                 <span className="text-xs text-muted-foreground">Assistant IA</span>
               </div>
             </div>
@@ -213,7 +213,7 @@ function Layout(): ReactElement {
                     T
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-sidebar-foreground">TomIA</span>
+                    <span className="text-sm font-bold text-sidebar-foreground">Tom</span>
                     <span className="text-xs text-muted-foreground">Assistant IA</span>
                   </div>
                 </div>

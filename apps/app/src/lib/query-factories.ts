@@ -1,5 +1,5 @@
 /**
- * TanStack Query Factories - TomAI 2025
+ * TanStack Query Factories - Tom 2025
  *
  * ARCHITECTURE BASÉE SUR LA DOCUMENTATION OFFICIELLE TanStack Query v5
  * https://tanstack.com/query/latest/docs/framework/react/guides/query-keys

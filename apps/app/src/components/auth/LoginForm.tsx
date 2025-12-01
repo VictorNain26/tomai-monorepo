@@ -151,7 +151,7 @@ export function LoginForm() {
 
   return (
     <AuthLayout
-      subtitle="Accédez à votre espace TomAI"
+      subtitle="Accédez à votre espace Tom"
       showRegisterLink={true}
     >
       <AuthCard

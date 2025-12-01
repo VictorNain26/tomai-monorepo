@@ -1,5 +1,5 @@
 /**
- * Combined Navigation Enhancements Hook for TomAI Educational Platform
+ * Combined Navigation Enhancements Hook for Tom Educational Platform
  * Combines gesture navigation and performance optimization in a single hook
  */
 
