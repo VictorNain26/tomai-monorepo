@@ -6,7 +6,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getTokenUsage, FREE_DAILY_TOKENS, PREMIUM_DAILY_TOKENS } from '@/lib/subscription';
+import { getTokenUsage, FREE_DAILY_TOKENS } from '@/lib/subscription';
 import type { IUsageResponse, ITokenUsage } from '@/types';
 
 interface UseTokenUsageOptions {
@@ -41,7 +41,7 @@ export function useTokenUsage({
 }: UseTokenUsageOptions): UseTokenUsageResult {
   const query = useQuery<IUsageResponse>({
     queryKey: ['tokenUsage', userId],
-    queryFn: () => getTokenUsage(userId!),
+    queryFn: () => getTokenUsage(userId as string),
     enabled: enabled && !!userId,
     staleTime: 30 * 1000, // 30 seconds
     refetchInterval: 60 * 1000, // Refetch every minute
