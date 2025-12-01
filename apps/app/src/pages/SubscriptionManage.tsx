@@ -727,7 +727,7 @@ export default function SubscriptionManage(): ReactElement {
             <div className="text-sm text-muted-foreground">
               <p className="font-medium mb-2">Ce que vous perdrez :</p>
               <ul className="space-y-1 ml-4">
-                <li>• 50 000 tokens/jour par enfant (vs 5 000 gratuit)</li>
+                <li>• Quota IA 10x plus élevé par enfant</li>
                 <li>• Support prioritaire</li>
                 <li>• Accès aux fonctionnalités Premium futures</li>
               </ul>

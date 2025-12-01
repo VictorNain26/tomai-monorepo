@@ -1,10 +1,9 @@
 /**
- * UsageCard - Token usage display component
+ * UsageCard - AI usage display component
  *
- * Shows daily token usage with progress bar.
- * Displays different info based on user role:
- * - Student: Shows usage only (no subscription link)
- * - Parent: Shows usage + optional subscription link
+ * Shows daily AI usage as percentage with progress bar.
+ * Displays different info based on user plan (free/premium).
+ * Tokens are hidden from users - only percentages shown.
  */
 
 import { type ReactElement } from 'react';
@@ -19,13 +18,6 @@ interface UsageCardProps {
   plan: 'free' | 'premium';
   className?: string;
   compact?: boolean;
-}
-
-/**
- * Format number with French locale (1 000 instead of 1,000)
- */
-function formatNumber(num: number): string {
-  return new Intl.NumberFormat('fr-FR').format(num);
 }
 
 export function UsageCard({
@@ -48,21 +40,25 @@ export function UsageCard({
     ? 'bg-amber-500'
     : 'bg-primary';
 
+  // Calculate remaining percentage
+  const remainingPercent = Math.max(0, 100 - usagePercent);
+
   if (compact) {
     return (
       <div className={cn('flex items-center gap-3', className)}>
         <div className="flex items-center gap-1.5">
           <Zap className={cn('h-4 w-4', isPremium ? 'text-amber-500' : 'text-primary')} />
-          <span className="text-sm font-medium">
-            {formatNumber(usage.tokensRemaining)}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            / {formatNumber(usage.dailyLimit)}
+          <span className={cn(
+            'text-sm font-medium',
+            isExhausted && 'text-destructive',
+            isLow && !isExhausted && 'text-amber-600'
+          )}>
+            {Math.round(remainingPercent)}% restant
           </span>
         </div>
         <Progress
-          value={100 - usagePercent}
-          className="h-2 w-16"
+          value={remainingPercent}
+          className="h-2 w-20"
         />
       </div>
     );
@@ -109,10 +105,10 @@ export function UsageCard({
               isExhausted && 'text-destructive',
               isLow && !isExhausted && 'text-amber-600'
             )}>
-              {formatNumber(usage.tokensUsed)} utilisés
+              {Math.round(usagePercent)}% utilisé
             </span>
             <span className="text-muted-foreground">
-              {formatNumber(usage.tokensRemaining)} restants
+              {Math.round(remainingPercent)}% restant
             </span>
           </div>
 
@@ -122,8 +118,7 @@ export function UsageCard({
           />
 
           <p className="text-xs text-muted-foreground text-center">
-            {formatNumber(usage.dailyLimit)} tokens/jour
-            {isPremium && ' par enfant'}
+            Quota journalier{isPremium && ' par enfant'}
           </p>
         </div>
 
