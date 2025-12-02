@@ -209,15 +209,6 @@ export const chatQueries = {
 };
 
 export const chatMutations = {
-  sendMessage: () => ({
-    mutationKey: ['chat', 'send-message'] as const,
-    mutationFn: ({ message, sessionId, attachments }: {
-      message: string;
-      sessionId?: string;
-      attachments?: Array<{ fileId?: string; geminiFileId?: string }>;
-    }) => apiClient.post('/api/chat/messages', { message, sessionId, attachments }),
-  }),
-
   createSession: () => ({
     mutationKey: ['chat', 'create-session'] as const,
     mutationFn: (data: { subject: string }) =>
