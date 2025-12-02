@@ -6,10 +6,11 @@
 
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Sparkles, Loader2, BookOpen, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, BookOpen, AlertCircle, Lightbulb } from 'lucide-react';
 import { useGenerateDeck } from '@/hooks/useLearning';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,8 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { IGenerateDeckRequest } from '@/types';
+
+interface TopicError {
+  message: string;
+  suggestions?: string[] | undefined;
+}
 
 // Matières disponibles
 const SUBJECTS = [
@@ -42,7 +47,7 @@ export default function LearningDeckNew(): ReactElement {
   // Form state - seulement matière et thème (niveau = profil utilisateur)
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<TopicError | null>(null);
 
   const isFormValid = subject && topic.trim().length >= 3;
 
@@ -65,10 +70,21 @@ export default function LearningDeckNew(): ReactElement {
       void navigate(`/student/learning/${result.deck.id}`);
     } catch (err) {
       // Gérer l'erreur spécifique "thème non trouvé"
-      if (err instanceof Error) {
-        if (err.message.includes('TOPIC_NOT_IN_CURRICULUM') || err.message.includes('pas disponible')) {
-          setError('Ce thème n\'est pas dans le programme de ton niveau. Essaie un autre thème ou vérifie l\'orthographe.');
-        }
+      const apiError = err as { code?: string; message?: string; suggestions?: string[] };
+
+      if (apiError.code === 'TOPIC_NOT_IN_CURRICULUM') {
+        setError({
+          message: apiError.message ?? 'Ce thème n\'est pas dans le programme de ton niveau.',
+          suggestions: apiError.suggestions,
+        });
+        return;
+      }
+
+      // Fallback pour anciens messages d'erreur
+      if (err instanceof Error && err.message.includes('pas disponible')) {
+        setError({
+          message: 'Ce thème n\'est pas dans le programme de ton niveau. Essaie un autre thème ou vérifie l\'orthographe.',
+        });
       }
       // Autres erreurs gérées par le hook (toast)
     }
@@ -109,7 +125,24 @@ export default function LearningDeckNew(): ReactElement {
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p>{error.message}</p>
+                    {error.suggestions && error.suggestions.length > 0 && (
+                      <div className="mt-3 p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Lightbulb className="h-4 w-4" />
+                          <span className="font-medium text-sm">Suggestions</span>
+                        </div>
+                        <ul className="list-disc list-inside text-sm space-y-1">
+                          {error.suggestions.map((suggestion) => (
+                            <li key={suggestion}>{suggestion}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </AlertDescription>
               </Alert>
             )}
 
