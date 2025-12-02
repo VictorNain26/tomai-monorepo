@@ -12,6 +12,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import OAuthCallback from './pages/OAuthCallback';
 import StudentDashboard from './pages/StudentDashboard';
+import SessionHistory from './pages/SessionHistory';
 import Chat from './pages/Chat';
 import ParentDashboard from './pages/ParentDashboard';
 import ChildView from './pages/ChildView';
@@ -118,6 +119,7 @@ function AppContent(): ReactElement {
           <Route element={<Layout />}>
             <Route path="/student">
               <Route index element={<StudentDashboard />} />
+              <Route path="sessions" element={<SessionHistory />} />
               <Route path="chat" element={<Chat />} />
             </Route>
           </Route>

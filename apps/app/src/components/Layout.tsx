@@ -1,5 +1,5 @@
 import { useNavigate, Outlet, useLocation } from 'react-router';
-import { Home, BarChart3, X } from 'lucide-react';
+import { Home, BarChart3, X, History } from 'lucide-react';
 import { type ReactElement, useState, createContext, useContext, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUser, authClient } from '@/lib/auth';
@@ -39,7 +39,8 @@ const getNavigation = (user: IAppUser | null) => {
 
   if (user.role === 'student') {
     return [
-      { name: 'Accueil', href: '/student', icon: Home }
+      { name: 'Accueil', href: '/student', icon: Home },
+      { name: 'Historique', href: '/student/sessions', icon: History }
     ];
   }
 
