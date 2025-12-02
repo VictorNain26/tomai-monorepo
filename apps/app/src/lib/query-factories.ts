@@ -35,7 +35,18 @@ import type {
   ICreateChildData,
   IMessage,
   ISubjectsResponse,
-  ISubjectsForStudent
+  ISubjectsForStudent,
+  IDecksResponse,
+  IDeckWithCardsResponse,
+  IDeckResponse,
+  ICardsResponse,
+  ICardResponse,
+  ICreateDeckRequest,
+  ICreateCardRequest,
+  ILearningDeck,
+  CardContent,
+  IGenerateDeckRequest,
+  IGenerateDeckResponse,
 } from '@/types';
 import type {
   EstablishmentData
@@ -83,6 +94,14 @@ export const queryKeys = {
     all: ['files'] as const,
     userFiles: (userId: string) => [...queryKeys.files.all, 'user', userId] as const,
     chatAttachments: (sessionId: string) => [...queryKeys.files.all, 'chat', sessionId] as const,
+  },
+
+  // Learning tools queries (flashcards, qcm, vrai/faux)
+  learning: {
+    all: ['learning'] as const,
+    decks: () => [...queryKeys.learning.all, 'decks'] as const,
+    deck: (deckId: string) => [...queryKeys.learning.decks(), deckId] as const,
+    deckWithCards: (deckId: string) => [...queryKeys.learning.deck(deckId), 'cards'] as const,
   },
 } as const;
 
@@ -283,6 +302,73 @@ export const fileMutations = {
   }),
 };
 
+// ===== LEARNING QUERIES (Flashcards, QCM, Vrai/Faux) =====
+
+export const learningQueries = {
+  // List all user's decks
+  decks: () => ({
+    queryKey: queryKeys.learning.decks(),
+    queryFn: (): Promise<IDecksResponse> => apiClient.get('/api/learning/decks'),
+  }),
+
+  // Get a single deck with all its cards
+  deckWithCards: (deckId: string) => ({
+    queryKey: queryKeys.learning.deckWithCards(deckId),
+    queryFn: (): Promise<IDeckWithCardsResponse> => apiClient.get(`/api/learning/decks/${deckId}`),
+  }),
+};
+
+export const learningMutations = {
+  // Create a new deck
+  createDeck: () => ({
+    mutationKey: ['learning', 'create-deck'] as const,
+    mutationFn: (data: ICreateDeckRequest): Promise<IDeckResponse> =>
+      apiClient.post('/api/learning/decks', data),
+  }),
+
+  // Update deck metadata
+  updateDeck: () => ({
+    mutationKey: ['learning', 'update-deck'] as const,
+    mutationFn: ({ deckId, data }: { deckId: string; data: Partial<Pick<ILearningDeck, 'title' | 'description' | 'subject'>> }): Promise<IDeckResponse> =>
+      apiClient.patch(`/api/learning/decks/${deckId}`, data),
+  }),
+
+  // Delete a deck (cascades to cards)
+  deleteDeck: () => ({
+    mutationKey: ['learning', 'delete-deck'] as const,
+    mutationFn: (deckId: string): Promise<{ success: boolean }> =>
+      apiClient.delete(`/api/learning/decks/${deckId}`),
+  }),
+
+  // Add cards to a deck
+  addCards: () => ({
+    mutationKey: ['learning', 'add-cards'] as const,
+    mutationFn: ({ deckId, cards }: { deckId: string; cards: ICreateCardRequest[] }): Promise<ICardsResponse> =>
+      apiClient.post(`/api/learning/decks/${deckId}/cards`, { cards }),
+  }),
+
+  // Update a card
+  updateCard: () => ({
+    mutationKey: ['learning', 'update-card'] as const,
+    mutationFn: ({ cardId, data }: { cardId: string; data: { content?: CardContent; position?: number; fsrsData?: Record<string, unknown> } }): Promise<ICardResponse> =>
+      apiClient.patch(`/api/learning/cards/${cardId}`, data),
+  }),
+
+  // Delete a card
+  deleteCard: () => ({
+    mutationKey: ['learning', 'delete-card'] as const,
+    mutationFn: (cardId: string): Promise<{ success: boolean }> =>
+      apiClient.delete(`/api/learning/cards/${cardId}`),
+  }),
+
+  // Generate deck with AI (RAG + Gemini)
+  generateDeck: () => ({
+    mutationKey: ['learning', 'generate-deck'] as const,
+    mutationFn: (data: IGenerateDeckRequest): Promise<IGenerateDeckResponse> =>
+      apiClient.post('/api/learning/generate', data),
+  }),
+};
+
 // ===== INVALIDATION HELPERS =====
 // Centralisation des invalidations pour éviter la duplication
 
@@ -405,6 +491,19 @@ export const invalidationHelpers = {
     void queryClient.invalidateQueries({ queryKey: queryKeys.pronote.connections() });
     if (childId) {
       void queryClient.invalidateQueries({ queryKey: ['pronoteConnections', childId] });
+    }
+  },
+
+  /**
+   * Invalide les données learning (decks et cards)
+   * Utilisé après création, modification, suppression de deck/card
+   */
+  invalidateLearningData: (queryClient: QueryClient, deckId?: string) => {
+    // Toujours invalider la liste des decks
+    void queryClient.invalidateQueries({ queryKey: queryKeys.learning.decks() });
+    // Si deckId fourni, invalider aussi ce deck spécifique
+    if (deckId) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.learning.deckWithCards(deckId) });
     }
   },
 

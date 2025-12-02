@@ -14,6 +14,9 @@ import OAuthCallback from './pages/OAuthCallback';
 import StudentDashboard from './pages/StudentDashboard';
 import SessionHistory from './pages/SessionHistory';
 import Chat from './pages/Chat';
+import LearningDecks from './pages/LearningDecks';
+import LearningDeck from './pages/LearningDeck';
+import LearningDeckNew from './pages/LearningDeckNew';
 import ParentDashboard from './pages/ParentDashboard';
 import ChildView from './pages/ChildView';
 import Pricing from './pages/Pricing';
@@ -121,6 +124,9 @@ function AppContent(): ReactElement {
               <Route index element={<StudentDashboard />} />
               <Route path="sessions" element={<SessionHistory />} />
               <Route path="chat" element={<Chat />} />
+              <Route path="learning" element={<LearningDecks />} />
+              <Route path="learning/new" element={<LearningDeckNew />} />
+              <Route path="learning/:deckId" element={<LearningDeck />} />
             </Route>
           </Route>
         </Route>

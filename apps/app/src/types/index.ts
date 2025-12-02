@@ -689,3 +689,158 @@ export interface IUsageResponse {
   plan: 'free' | 'premium';
   usage: ITokenUsage;
 }
+
+// ======================================
+// Learning Tools Types (Flashcards, QCM, Vrai/Faux)
+// ======================================
+
+/**
+ * Card types for learning tools
+ */
+export type CardType = 'flashcard' | 'qcm' | 'vrai_faux';
+
+/**
+ * Deck source - how the deck was created
+ */
+export type DeckSource = 'prompt' | 'conversation' | 'document' | 'rag_program';
+
+/**
+ * Flashcard content structure
+ */
+export interface IFlashcardContent {
+  front: string;
+  back: string;
+}
+
+/**
+ * QCM (multiple choice) content structure
+ */
+export interface IQCMContent {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation?: string;
+}
+
+/**
+ * Vrai/Faux (true/false) content structure
+ */
+export interface IVraiFauxContent {
+  statement: string;
+  isTrue: boolean;
+  explanation?: string;
+}
+
+/**
+ * Card content union type
+ */
+export type CardContent = IFlashcardContent | IQCMContent | IVraiFauxContent;
+
+/**
+ * Learning card structure
+ */
+export interface ILearningCard {
+  id: string;
+  deckId: string;
+  cardType: CardType;
+  content: CardContent;
+  position: number;
+  fsrsData?: Record<string, unknown>; // Hidden FSRS data for spaced repetition
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Learning deck structure
+ */
+export interface ILearningDeck {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string | null;
+  subject: string;
+  source: DeckSource;
+  sourceId?: string | null;
+  sourcePrompt?: string | null;
+  schoolLevel?: EducationLevelType | null;
+  cardCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Deck with cards (for full deck view)
+ */
+export interface ILearningDeckWithCards extends ILearningDeck {
+  cards: ILearningCard[];
+}
+
+/**
+ * Create deck request
+ */
+export interface ICreateDeckRequest {
+  title: string;
+  description?: string;
+  subject: string;
+  source: DeckSource;
+  sourceId?: string;
+  sourcePrompt?: string;
+  schoolLevel?: EducationLevelType;
+}
+
+/**
+ * Create card request
+ */
+export interface ICreateCardRequest {
+  cardType: CardType;
+  content: CardContent;
+  position?: number;
+}
+
+/**
+ * API responses for learning tools
+ */
+export interface IDecksResponse {
+  decks: ILearningDeck[];
+  count: number;
+}
+
+export interface IDeckResponse {
+  deck: ILearningDeck;
+}
+
+export interface IDeckWithCardsResponse {
+  deck: ILearningDeck;
+  cards: ILearningCard[];
+}
+
+export interface ICardsResponse {
+  cards: ILearningCard[];
+  count: number;
+}
+
+export interface ICardResponse {
+  card: ILearningCard;
+}
+
+/**
+ * Generate deck request (AI generation)
+ */
+export interface IGenerateDeckRequest {
+  subject: string;
+  topic: string;
+  schoolLevel?: EducationLevelType;
+  cardCount?: number;
+}
+
+/**
+ * Generate deck response (AI generation)
+ */
+export interface IGenerateDeckResponse {
+  deck: ILearningDeck;
+  cards: ILearningCard[];
+  metadata: {
+    ragStrategy: string;
+    tokensUsed: number;
+  };
+}
