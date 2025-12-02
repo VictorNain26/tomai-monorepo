@@ -1,27 +1,24 @@
 import { createAuthClient } from "better-auth/react";
 import type { IAppUser } from '@/types';
 
-// URL resolution améliorée avec fallback robuste
+/**
+ * Résolution de l'URL du backend API
+ * Architecture sous-domaines: app.tomia.fr (frontend) + api.tomia.fr (backend)
+ */
 const resolveBaseURL = (): string => {
-  // Priority 1: Environment variable
-  if (import.meta.env['VITE_BETTER_AUTH_URL']) {
-    return import.meta.env['VITE_BETTER_AUTH_URL'];
-  }
-
-  // Priority 2: API URL env variable
+  // Priority 1: Environment variable explicite
   if (import.meta.env['VITE_API_URL']) {
     return import.meta.env['VITE_API_URL'];
   }
 
-  // Priority 3: Development fallback
+  // Priority 2: Development fallback
   if (import.meta.env.DEV) {
     return 'http://localhost:3000';
   }
 
-  // Priority 4: Production fallback - construire l'URL backend
-  const { protocol, hostname } = window.location;
-  // En production, assumer que le backend est sur le même host avec port standard
-  return `${protocol}//${hostname}`;
+  // Priority 3: Production - sous-domaine api.tomia.fr
+  // Frontend sur app.tomia.fr -> Backend sur api.tomia.fr
+  return 'https://api.tomia.fr';
 };
 
 const baseURL = resolveBaseURL();

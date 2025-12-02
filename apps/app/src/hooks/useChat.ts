@@ -14,6 +14,7 @@ import { useUser } from '@/lib/auth';
 import { apiClient } from '@/lib/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers } from '@/lib/query-factories';
+import { getBackendURL } from '@/utils/urls';
 import type { IMessage } from '@/types';
 
 // User type with chat-specific fields
@@ -212,14 +213,14 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
         userId: user.id
       });
 
-      // 🚀 STREAMING SSE avec Fetch API
-      const response = await fetch('/api/chat/stream', {
+      // 🚀 STREAMING SSE avec Fetch API - URL absolue pour architecture sous-domaines
+      const response = await fetch(`${getBackendURL()}/api/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload),
-        credentials: 'include' // Better Auth cookies
+        credentials: 'include' // Better Auth cookies cross-subdomain
       });
 
       if (!response.ok) {

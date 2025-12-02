@@ -7,14 +7,6 @@
   "installCommand": "pnpm install",
   "rewrites": [
     {
-      "source": "/api/chat/stream",
-      "destination": "https://busy-rickie-tomia-7684900f.koyeb.app/api/chat/stream"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "https://busy-rickie-tomia-7684900f.koyeb.app/api/:path*"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
