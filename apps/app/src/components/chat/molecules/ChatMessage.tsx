@@ -26,7 +26,7 @@ export function ChatMessage({
   // Type guard: only user and assistant messages should reach this component
   const role = message.role === 'user' ? 'user' : 'assistant';
   const isUser = role === 'user';
-  const isTyping = message.status === 'typing';
+  const isThinking = message.status === 'thinking';
   const isStreaming = message.status === 'streaming';
 
   return (
@@ -59,14 +59,14 @@ export function ChatMessage({
             content={message.content}
             messageId={message.id}
             isUser={isUser}
-            isTyping={isTyping}
+            isThinking={isThinking}
             isStreaming={isStreaming}
             autoSpeak={isAudioEnabled}
           />
         </MessageBubble>
 
         {/* Audio button pour messages assistant (uniquement si complet) */}
-        {!isUser && !isTyping && !isStreaming && isAudioEnabled && (
+        {!isUser && !isThinking && !isStreaming && isAudioEnabled && (
           <div className="flex justify-end mt-2">
             <MessageAudioButton
               content={message.content}

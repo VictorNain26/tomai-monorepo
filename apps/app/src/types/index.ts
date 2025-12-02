@@ -128,7 +128,7 @@ export interface IMessage {
   sessionId?: string;
   isPartial?: boolean;
   // État du message
-  status?: 'typing' | 'streaming' | 'complete';
+  status?: 'thinking' | 'streaming' | 'complete';
   frustrationLevel?: number;
   concept?: string;
   aiModel?: string;

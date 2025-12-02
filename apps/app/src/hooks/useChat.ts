@@ -10,6 +10,7 @@
 
 import { logger } from '@/lib/logger.js';
 import { useState, useCallback, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useUser } from '@/lib/auth';
 import { apiClient } from '@/lib/api-client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -231,63 +232,68 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
         throw new Error('ReadableStream not supported');
       }
 
-      // Lecture du stream SSE
+      // Lecture du stream SSE avec buffering correct
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
       let accumulatedContent = '';
       let receivedSessionId = sessionId;
       let finalProvider = 'gemini';
+      let sseBuffer = ''; // Buffer pour gérer les événements SSE fragmentés
 
-      // Message streaming initial
+      // Message initial en état "thinking" (en attente du premier chunk)
       const streamingMsgId = `streaming-${Date.now()}`;
       const initialStreamingMsg: IMessage = {
         id: streamingMsgId,
         role: 'assistant',
         content: '',
         timestamp: new Date().toISOString(),
-        status: 'streaming',
+        status: 'thinking', // Tom réfléchit...
         sessionId: receivedSessionId ?? 'temp'
       };
 
       setStreamingMessage(initialStreamingMsg);
       setMessages(prev => [...prev, initialStreamingMsg]);
 
-      // Lire les chunks SSE
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n\n');
-
+      // Helper pour traiter un événement SSE complet
+      // Utilise flushSync pour forcer le rendu immédiat de chaque chunk
+      const processSSEEvent = (eventData: string) => {
+        // Extraire les lignes data: du bloc SSE
+        const lines = eventData.split('\n');
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const jsonStr = line.slice(6).trim();
+              if (!jsonStr) continue;
 
-              if (data.type === 'chunk') {
+              const data = JSON.parse(jsonStr);
+
+              if (data.type === 'chunk' && data.content) {
                 accumulatedContent += data.content;
                 finalProvider = data.provider ?? finalProvider;
 
-                // Mise à jour temps réel
-                setStreamingMessage(prev => prev ? {
-                  ...prev,
+                // Mise à jour immédiate pour affichage progressif
+                const updatedMsg: IMessage = {
+                  id: streamingMsgId,
+                  role: 'assistant',
                   content: accumulatedContent,
+                  timestamp: new Date().toISOString(),
+                  status: 'streaming',
+                  sessionId: receivedSessionId ?? 'temp',
                   metadata: {
                     provider: finalProvider,
-                    aiModelDetails: {
-                      name: finalProvider,
-                      tier: 'standard'
-                    }
+                    aiModelDetails: { name: finalProvider, tier: 'standard' }
                   }
-                } : null);
+                };
 
-                setMessages(prev => prev.map(msg =>
-                  msg.id === streamingMsgId
-                    ? { ...msg, content: accumulatedContent }
-                    : msg
-                ));
+                // flushSync force React à appliquer immédiatement les updates au DOM
+                // Cela permet l'affichage progressif même si plusieurs chunks arrivent ensemble
+                flushSync(() => {
+                  setStreamingMessage(updatedMsg);
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === streamingMsgId ? updatedMsg : msg
+                  ));
+                });
 
               } else if (data.type === 'end') {
                 accumulatedContent = data.content ?? accumulatedContent;
@@ -304,13 +310,40 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
                 throw new Error(data.error ?? 'Erreur streaming');
               }
             } catch (parseError) {
-              logger.error('Erreur parsing SSE', {
-                error: parseError,
-                line
-              });
+              // Ignorer les erreurs de parsing pour les lignes incomplètes
+              if (line.length > 10) {
+                logger.warn('SSE parse warning', { line: line.substring(0, 50) });
+              }
             }
           }
         }
+      };
+
+      // Lire les chunks SSE avec buffering
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        // Décoder et ajouter au buffer
+        sseBuffer += decoder.decode(value, { stream: true });
+
+        // Traiter tous les événements SSE complets (séparés par \n\n)
+        const events = sseBuffer.split('\n\n');
+
+        // Garder le dernier élément dans le buffer s'il est incomplet
+        sseBuffer = events.pop() ?? '';
+
+        // Traiter chaque événement complet
+        for (const event of events) {
+          if (event.trim()) {
+            processSSEEvent(event);
+          }
+        }
+      }
+
+      // Traiter le reste du buffer
+      if (sseBuffer.trim()) {
+        processSSEEvent(sseBuffer);
       }
 
       // Finaliser le message

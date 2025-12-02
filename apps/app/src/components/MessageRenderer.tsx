@@ -6,13 +6,14 @@ import { useEffect, useRef } from 'react';
 import { useAudio } from '@/lib/audioHooks';
 import { cn } from '@/lib/utils';
 import MermaidRenderer from './MermaidRenderer';
-import { TypingIndicator } from './chat/atoms/TypingIndicator';
+import { ThinkingIndicator } from './chat/atoms/ThinkingIndicator';
+import { StreamingCursor } from './chat/atoms/StreamingCursor';
 
 interface MessageRendererProps {
   content: string;
   messageId: string;
   isUser: boolean;
-  isTyping?: boolean;
+  isThinking?: boolean;
   isStreaming?: boolean;
   autoSpeak?: boolean;
 }
@@ -21,16 +22,16 @@ const MessageRenderer = ({
   content,
   messageId,
   isUser,
-  isTyping,
+  isThinking,
   isStreaming,
   autoSpeak = false
 }: MessageRendererProps) => {
   const audio = useAudio();
   const hasBeenSpokenRef = useRef(false);
 
-  // Auto-speak pour les messages IA uniquement quand complet (pas pendant typing/streaming)
+  // Auto-speak pour les messages IA uniquement quand complet (pas pendant thinking/streaming)
   useEffect(() => {
-    if (!isUser && autoSpeak && content && !isTyping && !isStreaming && !hasBeenSpokenRef.current && audio.isSupported) {
+    if (!isUser && autoSpeak && content && !isThinking && !isStreaming && !hasBeenSpokenRef.current && audio.isSupported) {
       const timer = setTimeout(async () => {
         try {
           await audio.speakMessage(messageId, content);
@@ -42,11 +43,11 @@ const MessageRenderer = ({
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [content, messageId, isUser, autoSpeak, isTyping, isStreaming, audio]);
+  }, [content, messageId, isUser, autoSpeak, isThinking, isStreaming, audio]);
 
-  // Indicateur moderne pendant typing ou streaming
-  if (isTyping || isStreaming) {
-    return <TypingIndicator />;
+  // Indicateur "Tom réfléchit..." pendant l'attente de la première réponse
+  if (isThinking) {
+    return <ThinkingIndicator />;
   }
 
   // Composants personnalisés pour préserver le design shadcn/ui
@@ -112,6 +113,8 @@ const MessageRenderer = ({
       >
         {content}
       </ReactMarkdown>
+      {/* Curseur clignotant pendant le streaming */}
+      {isStreaming && <StreamingCursor />}
     </div>
   );
 };
