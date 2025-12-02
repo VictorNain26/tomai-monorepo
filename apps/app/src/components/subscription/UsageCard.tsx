@@ -56,6 +56,7 @@ export function UsageCard({
         <Progress
           value={usagePercent}
           className="h-2 w-20"
+          indicatorClassName={progressColor}
         />
       </div>
     );
@@ -108,7 +109,8 @@ export function UsageCard({
 
           <Progress
             value={usagePercent}
-            className={cn('h-2', progressColor)}
+            className="h-2"
+            indicatorClassName={progressColor}
           />
 
           <p className="text-xs text-muted-foreground text-center">
