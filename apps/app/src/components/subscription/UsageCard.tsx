@@ -40,9 +40,6 @@ export function UsageCard({
     ? 'bg-amber-500'
     : 'bg-primary';
 
-  // Calculate remaining percentage
-  const remainingPercent = Math.max(0, 100 - usagePercent);
-
   if (compact) {
     return (
       <div className={cn('flex items-center gap-3', className)}>
@@ -53,11 +50,11 @@ export function UsageCard({
             isExhausted && 'text-destructive',
             isLow && !isExhausted && 'text-amber-600'
           )}>
-            {Math.round(remainingPercent)}% restant
+            {Math.round(usagePercent)}% utilisé
           </span>
         </div>
         <Progress
-          value={remainingPercent}
+          value={usagePercent}
           className="h-2 w-20"
         />
       </div>
@@ -99,16 +96,13 @@ export function UsageCard({
 
         {/* Progress */}
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-center text-sm">
             <span className={cn(
               'font-medium',
               isExhausted && 'text-destructive',
               isLow && !isExhausted && 'text-amber-600'
             )}>
               {Math.round(usagePercent)}% utilisé
-            </span>
-            <span className="text-muted-foreground">
-              {Math.round(remainingPercent)}% restant
             </span>
           </div>
 
