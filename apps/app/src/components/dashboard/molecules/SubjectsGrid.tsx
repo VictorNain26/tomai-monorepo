@@ -81,7 +81,7 @@ export function SubjectsGrid({
         <SubjectCard
           key={subject.key}
           subject={subject}
-          onClick={() => onSubjectClick(subject.name)}
+          onClick={() => onSubjectClick(subject.key)}
           mode={mode}
         />
       ))}
