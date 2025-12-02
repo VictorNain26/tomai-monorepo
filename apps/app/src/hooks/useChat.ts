@@ -225,7 +225,19 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Gérer les erreurs avec body JSON (notamment 429 quota exceeded)
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+        try {
+          const errorBody = await response.json();
+          if (errorBody.message) {
+            errorMessage = errorBody.message;
+          }
+        } catch {
+          // Body non-JSON, utiliser le message par défaut
+        }
+
+        throw new Error(errorMessage);
       }
 
       if (!response.body) {
