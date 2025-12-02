@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 const FEATURES = [
   {
     title: "Apprendre en réfléchissant",
-    description: "TomIA pose des questions pour guider votre enfant vers la solution. Il comprend vraiment et s'en souvient.",
+    description: "Tom pose des questions pour guider votre enfant vers la solution. Il comprend vraiment et s'en souvient.",
     icon: BrainCircuit,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
@@ -82,7 +82,7 @@ export function Features() {
   };
 
   return (
-    <section id="features" className="py-24 bg-secondary/30">
+    <section id="features" className="py-24 lg:py-32 bg-secondary/30">
       <div className="container px-4 mx-auto">
         <SectionHeader
           title="Tout ce qu'il faut pour réussir"

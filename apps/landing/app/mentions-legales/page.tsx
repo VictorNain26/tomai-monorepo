@@ -16,7 +16,7 @@ export default function MentionsLegalesPage() {
             <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
               <h3>Éditeur du site</h3>
               <p>
-                Le site TomIA est édité par la société TomIA SAS, société par actions simplifiée au capital de 10 000 euros, immatriculée au Registre du Commerce et des Sociétés de Paris sous le numéro 123 456 789.
+                Le site Tom est édité par la société Tom SAS, société par actions simplifiée au capital de 10 000 euros, immatriculée au Registre du Commerce et des Sociétés de Paris sous le numéro 123 456 789.
               </p>
               <p>
                 <strong>Siège social :</strong><br />

@@ -40,7 +40,7 @@ export default function ContactPage() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Adresse</h3>
               <p className="text-muted-foreground leading-relaxed">
-                TomIA SAS<br />
+                Tom SAS<br />
                 123 Avenue de l&apos;Innovation<br />
                 75001 Paris, France
               </p>

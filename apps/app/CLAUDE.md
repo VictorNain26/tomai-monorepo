@@ -1,6 +1,6 @@
-# CLAUDE.md - TomAI Client
+# CLAUDE.md - Tom Client
 
-**Frontend React 19** de la plateforme de tutorat socratique adaptatif TomAI. Interface utilisateur moderne avec shadcn/ui et TailwindCSS 4.
+**Frontend React 19** de la plateforme de tutorat socratique adaptatif Tom. Interface utilisateur moderne avec shadcn/ui et TailwindCSS 4.
 
 ## 🚨 RÈGLE ABSOLUE
 
@@ -329,7 +329,7 @@ pnpm build ✅
 
 **📚 Guide complet:** Voir `/docs/EXTENDED_THINKING.md` pour:
 - Quand utiliser chaque niveau
-- Examples TomIA Frontend spécifiques
+- Examples Tom Frontend spécifiques
 - Best practices et coûts token
 
 ---

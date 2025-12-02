@@ -4,13 +4,13 @@ import { Logo } from "../atoms/logo";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-background">
-      <div className="container py-12 md:py-16">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+    <footer className="border-t border-border bg-secondary/50">
+      <div className="container py-16 md:py-20">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           {/* Brand */}
-          <div className="space-y-4">
+          <div className="space-y-4 md:col-span-1">
             <Logo />
-            <p className="text-sm text-muted-foreground max-w-xs">
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               L&apos;assistant qui aide les élèves français à comprendre leurs leçons, sans donner les réponses.
             </p>
           </div>
@@ -77,9 +77,9 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="mt-12 border-t border-border/60 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2025 TomIA. Tous droits réservés.
+            © 2025 Tom. Tous droits réservés.
           </p>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export function Footer() {
             </div>
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
-              <span>contact@tomai.fr</span>
+              <span>contact@tom.fr</span>
             </div>
           </div>
         </div>

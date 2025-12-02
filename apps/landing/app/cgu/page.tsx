@@ -17,7 +17,7 @@ export default function CguPage() {
             <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
               <h3>1. Objet</h3>
               <p>
-                Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services du site TomIA, ci-après nommé « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.
+                Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services du site Tom, ci-après nommé « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.
               </p>
 
               <h3>2. Accès au service</h3>
@@ -27,7 +27,7 @@ export default function CguPage() {
 
               <h3>3. Propriété intellectuelle</h3>
               <p>
-                La structure générale du site TomIA, ainsi que les textes, graphiques, images, sons et vidéos la composant, sont la propriété de l&apos;éditeur ou de ses partenaires. Toute représentation et/ou reproduction et/ou exploitation partielle ou totale des contenus et services proposés par le site TomIA, par quelque procédé que ce soit, sans l&apos;autorisation préalable et par écrit de TomIA est strictement interdite et serait susceptible de constituer une contrefaçon au sens des articles L 335-2 et suivants du Code de la propriété intellectuelle.
+                La structure générale du site Tom, ainsi que les textes, graphiques, images, sons et vidéos la composant, sont la propriété de l&apos;éditeur ou de ses partenaires. Toute représentation et/ou reproduction et/ou exploitation partielle ou totale des contenus et services proposés par le site Tom, par quelque procédé que ce soit, sans l&apos;autorisation préalable et par écrit de Tom est strictement interdite et serait susceptible de constituer une contrefaçon au sens des articles L 335-2 et suivants du Code de la propriété intellectuelle.
               </p>
 
               <h3>4. Données personnelles</h3>
@@ -38,7 +38,7 @@ export default function CguPage() {
 
               <h3>5. Responsabilité</h3>
               <p>
-                Les informations diffusées sur le site TomIA sont présentées à titre purement informatif et ne sauraient en aucun cas engager la responsabilité de TomIA. Bien que TomIA s&apos;efforce de fournir des informations fiables, elle ne garantit pas l&apos;exactitude, la complétude et l&apos;actualité des informations diffusées.
+                Les informations diffusées sur le site Tom sont présentées à titre purement informatif et ne sauraient en aucun cas engager la responsabilité de Tom. Bien que Tom s&apos;efforce de fournir des informations fiables, elle ne garantit pas l&apos;exactitude, la complétude et l&apos;actualité des informations diffusées.
               </p>
             </div>
           </div>

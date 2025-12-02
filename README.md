@@ -1,4 +1,4 @@
-# TomAI Monorepo
+# Tom Monorepo
 
 **Plateforme de tutorat socratique adaptatif** - Architecture Turborepo unifiée
 
@@ -41,7 +41,7 @@ tomai-monorepo/
 - **Tech** : Next.js 15 + TailwindCSS 4
 - **Features** : Homepage SEO, Static Generation, Design system moderne
 
-### App Métier (TomAI-client)
+### App Métier (Tom-client)
 - **URL** : http://localhost:5173
 - **Tech** : Vite 7 + React 19 + React Router 7
 - **Features** : Chat SSE, Better Auth, Pronote, Gamification

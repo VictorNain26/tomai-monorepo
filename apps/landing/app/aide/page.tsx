@@ -11,7 +11,7 @@ export default function AidePage() {
       <FadeIn className="container mx-auto max-w-5xl">
         <SectionHeader
           title="Centre d'aide"
-          description="Trouvez les réponses à vos questions et apprenez à utiliser TomIA."
+          description="Trouvez les réponses à vos questions et apprenez à utiliser Tom."
           align="center"
         />
 
@@ -24,7 +24,7 @@ export default function AidePage() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Besoin d&apos;aide personnalisée ?</h3>
               <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                Notre équipe de support est disponible pour vous accompagner dans votre utilisation de TomIA.
+                Notre équipe de support est disponible pour vous accompagner dans votre utilisation de Tom.
               </p>
               <Link href="/contact">
                 <Button size="lg">Contacter le support</Button>

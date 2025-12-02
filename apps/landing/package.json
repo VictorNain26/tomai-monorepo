@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "description": "TomIA Landing Page - Site vitrine Next.js 15",
+  "description": "Tom Landing Page - Site vitrine Next.js 15",
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",

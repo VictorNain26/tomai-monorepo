@@ -1,4 +1,4 @@
-# CLAUDE.md - TomAI Monorepo
+# CLAUDE.md - Tom Monorepo
 
 **Monorepo Turborepo** unifiant le site vitrine (landing Next.js 15) et l'application métier (Vite + React Router 7).
 
@@ -16,7 +16,7 @@ tomai-monorepo/
 │   │   ├── package.json  # Next.js 15 + TailwindCSS 4
 │   │   └── next.config.js
 │   └── app/              # Application métier Vite (port 5173)
-│       ├── src/          # Code TomAI-client (inchangé)
+│       ├── src/          # Code Tom-client (inchangé)
 │       ├── package.json  # Vite + React Router 7
 │       └── vite.config.ts
 ├── packages/
@@ -102,7 +102,7 @@ pnpm lint             # ESLint
 - `app/globals.css` - TailwindCSS 4 @theme config
 - `next.config.js` - Next.js configuration
 
-### 2. App Métier (TomAI-client)
+### 2. App Métier (Tom-client)
 - **Framework** : Vite 7.1.5 + React 19.1.1
 - **Port** : 5173
 - **URL Dev** : http://localhost:5173

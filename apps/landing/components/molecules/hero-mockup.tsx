@@ -98,7 +98,7 @@ function ChatMockup({ example }: { example: Example }) {
           <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500/80" />
         </div>
         <span className="ml-3 text-xs font-medium text-muted-foreground">
-          TomIA – {example.subject}
+          Tom – {example.subject}
         </span>
       </div>
 

@@ -20,7 +20,9 @@
       "WebFetch(domain:support.microsoft.com)",
       "Bash(tasklist:*)",
       "WebFetch(domain:www.npmjs.com)",
-      "WebFetch(domain:npmtrends.com)"
+      "WebFetch(domain:npmtrends.com)",
+      "Bash(find:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

@@ -20,26 +20,26 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "TomIA - Assistant Pédagogique Socratique Adaptatif",
-    template: "%s | TomIA",
+    default: "Tom - Assistant Pédagogique Socratique Adaptatif",
+    template: "%s | Tom",
   },
   description: "Plateforme de tutorat intelligent pour étudiants français (CP à Terminale). Méthode socratique adaptative basée sur l'IA pour un apprentissage personnalisé.",
   keywords: ["tutorat", "éducation", "IA", "apprentissage", "socratique", "adaptatif", "français", "collège", "lycée"],
-  authors: [{ name: "TomIA" }],
-  creator: "TomIA",
+  authors: [{ name: "Tom" }],
+  creator: "Tom",
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    title: "TomIA - Assistant Pédagogique Socratique",
+    title: "Tom - Assistant Pédagogique Socratique",
     description: "Révolutionnez l'apprentissage avec l'IA socratique adaptative",
-    siteName: "TomIA",
+    siteName: "Tom",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TomIA - Assistant Pédagogique Socratique",
+    title: "Tom - Assistant Pédagogique Socratique",
     description: "Révolutionnez l'apprentissage avec l'IA socratique adaptative",
   },
-  metadataBase: new URL('https://tomai.fr'),
+  metadataBase: new URL('https://tom.fr'),
   alternates: {
     canonical: '/',
   },

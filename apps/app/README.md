@@ -1,6 +1,6 @@
-# 🎓 TomAI Client - Frontend React Adaptatif
+# 🎓 Tom Client - Frontend React Adaptatif
 
-Frontend React 19 + TypeScript de TomAI : Interface utilisateur adaptive pour tutorat socratique personnalisé selon l'âge et le niveau scolaire (CP à Terminale).
+Frontend React 19 + TypeScript de Tom : Interface utilisateur adaptive pour tutorat socratique personnalisé selon l'âge et le niveau scolaire (CP à Terminale).
 
 ## 🏗️ Stack Technique (2025)
 
@@ -26,7 +26,7 @@ Frontend React 19 + TypeScript de TomAI : Interface utilisateur adaptive pour tu
 ### Prérequis
 - **Node.js** : 18+ (recommandé 20+)
 - **Package Manager** : PNPM 10.15+ (obligatoire)
-- **Backend** : TomAI Server (Elysia.js) en cours d'exécution
+- **Backend** : Tom Server (Elysia.js) en cours d'exécution
 
 ### Installation & Configuration
 ```bash
@@ -66,7 +66,7 @@ Ce frontend React est conçu pour **hébergement indépendant** du backend Elysi
 
 ### 🔧 Configuration Backend Requise
 
-Le backend TomAI (Elysia.js) doit être configuré pour autoriser ce frontend :
+Le backend Tom (Elysia.js) doit être configuré pour autoriser ce frontend :
 
 ```typescript
 // server/src/app.ts - Configuration CORS
@@ -102,7 +102,7 @@ VITE_BETTER_AUTH_URL=http://localhost:8000
 # Application
 VITE_ENVIRONMENT=development
 VITE_DEBUG=true
-VITE_APP_NAME=TomAI
+VITE_APP_NAME=Tom
 ```
 
 #### Production (.env.production)
@@ -114,7 +114,7 @@ VITE_BETTER_AUTH_URL=https://tomai-api.onrender.com
 # Application
 VITE_ENVIRONMENT=production
 VITE_DEBUG=false
-VITE_APP_NAME=TomAI
+VITE_APP_NAME=Tom
 ```
 
 #### Staging (.env.staging)
@@ -145,7 +145,7 @@ pnpm preview
 
 ### 🥇 Vercel (Recommandé - Interface Éducative)
 
-**Avantages pour TomAI** :
+**Avantages pour Tom** :
 - **Performance** : Edge Network mondial, CDN optimisé
 - **Gratuité** : 300GB/mois, idéal pour applications éducatives
 - **Auto-Déploiement** : Intégration Git avec preview branches
@@ -161,7 +161,7 @@ vercel --prod
 
 # Method 2: Dashboard (Recommandé)
 # 1. Connecter GitHub → vercel.com
-# 2. Import project → Select TomAI repo
+# 2. Import project → Select Tom repo
 # 3. Framework: Vite
 # 4. Root Directory: client/
 # 5. Build Command: pnpm build
@@ -173,7 +173,7 @@ vercel --prod
 VITE_API_URL=https://tomai-api.onrender.com
 VITE_BETTER_AUTH_URL=https://tomai-api.onrender.com  
 VITE_ENVIRONMENT=production
-VITE_APP_NAME=TomAI
+VITE_APP_NAME=Tom
 ```
 
 ### 🥈 Netlify (Alternative Stable)
@@ -405,7 +405,7 @@ Content-Security-Policy: default-src 'self'
 
 **GitHub Actions Exemple** (`.github/workflows/deploy-frontend.yml`) :
 ```yaml
-name: Deploy TomAI Frontend
+name: Deploy Tom Frontend
 on:
   push:
     branches: [main, develop]
@@ -448,7 +448,7 @@ pnpm build          # Build production success
 
 ---
 
-## 🎓 Architecture Éducative TomAI
+## 🎓 Architecture Éducative Tom
 
 ### 🧠 Interface Adaptive Intelligente
 
@@ -509,7 +509,7 @@ pnpm preview      # Test build local
 
 ### 🚀 Prêt pour Production !
 
-**Frontend TomAI optimisé pour hébergement séparé** avec :
+**Frontend Tom optimisé pour hébergement séparé** avec :
 - ✅ React 19 + TypeScript strict
 - ✅ Interface adaptive éducative  
 - ✅ Better Auth intégré

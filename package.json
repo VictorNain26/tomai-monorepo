@@ -1,14 +1,14 @@
 {
-  "name": "tomai-monorepo",
+  "name": "tom-monorepo",
   "private": true,
-  "description": "TomAI - Plateforme de tutorat socratique adaptatif (Landing + App métier)",
+  "description": "Tom - Plateforme de tutorat socratique adaptatif (Landing + App métier)",
   "scripts": {
     "dev": "turbo run dev",
     "dev:landing": "turbo run dev --filter=landing",
-    "dev:app": "turbo run dev --filter=tomai-client",
+    "dev:app": "turbo run dev --filter=tom-client",
     "build": "turbo run build",
     "build:landing": "turbo run build --filter=landing",
-    "build:app": "turbo run build --filter=tomai-client",
+    "build:app": "turbo run build --filter=tom-client",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "validate": "pnpm run typecheck && pnpm run lint",

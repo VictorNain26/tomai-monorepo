@@ -7,15 +7,15 @@ const STEPS = [
   {
     number: "01",
     title: "Posez votre question",
-    description: "Maths, Français, Histoire... Votre enfant pose sa question à TomIA comme à un professeur.",
+    description: "Maths, Français, Histoire... Votre enfant pose sa question à Tom comme à un professeur.",
     icon: MessageSquare,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
   },
   {
     number: "02",
-    title: "TomIA guide la réflexion",
-    description: "TomIA pose des questions simples pour aider votre enfant à avancer, sans jamais donner la réponse.",
+    title: "Tom guide la réflexion",
+    description: "Tom pose des questions simples pour aider votre enfant à avancer, sans jamais donner la réponse.",
     icon: Lightbulb,
     color: "text-yellow-500",
     bg: "bg-yellow-500/10",
@@ -32,9 +32,9 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 overflow-hidden">
+    <section id="how-it-works" className="py-24 lg:py-32 overflow-hidden">
       <div className="container px-4 mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-20">
+        <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
             Comment ça marche ?
           </h2>

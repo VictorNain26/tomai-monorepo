@@ -1,108 +1,107 @@
 import { Check } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { APP_URL } from "@/lib/urls";
 
-const PLANS = [
-  {
-    name: "Découverte",
-    subtitle: "Pour tester sans engagement",
-    price: "Gratuit",
-    period: "",
-    description: "Pour découvrir TomIA avec votre enfant",
-    features: [
-      "Français, Maths et Anglais",
-      "Guidage intelligent sans donner les réponses",
-      "Suivi de progression",
-      "Sans carte bancaire",
-    ],
-    highlighted: false,
-  },
-  {
-    name: "Complet",
-    subtitle: "Pour la réussite de votre enfant",
-    price: "15€",
-    period: "/mois",
-    description: "Toutes les matières pour réussir toute l'année",
-    features: [
-      "Toutes les matières (CP → Terminale)",
-      "Mode révision examens",
-      "Support prioritaire",
-      "Tableau de bord détaillé",
-    ],
-    highlighted: true,
-    priceSubtitle: "puis 5€/mois par enfant supplémentaire",
-  },
+const FREE_FEATURES = [
+  "Français, Maths, Anglais",
+  "Du CP à la Terminale",
+  "~10 questions par jour",
+  "Aide aux devoirs",
+  "Suivi des progrès",
+];
+
+const PREMIUM_FEATURES = [
+  "Toutes les matières",
+  "Du CP à la Terminale",
+  "Questions illimitées",
+  "Aide aux devoirs",
+  "Suivi des progrès",
 ];
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-24">
+    <section id="pricing" className="py-24 lg:py-32 bg-secondary/30">
       <div className="container px-4 mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
-            Tarifs simples et transparents
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-3xl font-bold text-foreground sm:text-4xl mb-3">
+            Commencez gratuitement
           </h2>
           <p className="text-lg text-muted-foreground">
-            Commencez gratuitement, abonnez vos enfants quand vous le souhaitez.
+            Testez avec les matières principales, puis débloquez tout
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative flex flex-col p-8 rounded-2xl border transition-all duration-200 ${
-                plan.highlighted
-                  ? "border-primary bg-primary/5 shadow-lg"
-                  : "border-border bg-card hover:border-primary/50 hover:shadow-md"
-              }`}
-            >
-
-
-              {/* Header */}
-              <div className="mb-6">
-                <div className="text-sm font-medium text-primary mb-2">
-                  {plan.subtitle}
-                </div>
-                <h3 className="text-2xl font-bold text-foreground mb-2">
-                  {plan.name}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {plan.description}
-                </p>
+        {/* Two Cards Side by Side */}
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          {/* Free Card */}
+          <div className="bg-card rounded-2xl p-8 border-2 border-border shadow-md hover:shadow-lg transition-shadow">
+            <div className="mb-6">
+              <div className="inline-block px-3 py-1 bg-secondary rounded-full text-sm font-medium text-foreground mb-4">
+                Pour tester
               </div>
-
-              {/* Price */}
-              <div className="mb-8">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-foreground">
-                    {plan.price}
-                  </span>
-                  {plan.period && (
-                    <span className="text-muted-foreground">{plan.period}</span>
-                  )}
-                </div>
-                {plan.priceSubtitle && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {plan.priceSubtitle}
-                  </p>
-                )}
-              </div>
-
-              {/* Features */}
-              <ul className="space-y-4 flex-1">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <Check
-                      className={`h-5 w-5 shrink-0 ${
-                        plan.highlighted ? "text-primary" : "text-muted-foreground"
-                      }`}
-                    />
-                    <span className="text-sm text-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+              <h3 className="text-2xl font-bold text-foreground mb-2">Gratuit</h3>
+              <p className="text-3xl font-bold text-foreground">0€</p>
             </div>
-          ))}
+
+            <ul className="space-y-4 mb-8">
+              {FREE_FEATURES.map((feature, index) => (
+                <li key={index} className="flex items-start gap-3">
+                  <Check className="h-5 w-5 shrink-0 text-green-500 mt-0.5" />
+                  <span className="text-foreground">{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link href={APP_URL}>
+              <Button variant="outline" size="lg" className="w-full">
+                Commencer
+              </Button>
+            </Link>
+          </div>
+
+          {/* Premium Card */}
+          <div className="bg-card rounded-2xl p-8 border-2 border-primary shadow-lg hover:shadow-xl transition-shadow relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="bg-primary text-primary-foreground text-xs font-semibold px-4 py-1 rounded-full">
+                Recommandé
+              </span>
+            </div>
+
+            <div className="mb-6">
+              <div className="inline-block px-3 py-1 bg-primary/10 rounded-full text-sm font-medium text-primary mb-4">
+                Accès complet
+              </div>
+              <h3 className="text-2xl font-bold text-foreground mb-2">Complet</h3>
+              <div className="flex items-baseline gap-2">
+                <p className="text-4xl font-bold text-foreground">15€</p>
+                <span className="text-muted-foreground">/mois</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                +5€/mois par enfant supplémentaire
+              </p>
+            </div>
+
+            <ul className="space-y-4 mb-8">
+              {PREMIUM_FEATURES.map((feature, index) => (
+                <li key={index} className="flex items-start gap-3">
+                  <Check className="h-5 w-5 shrink-0 text-green-500 mt-0.5" />
+                  <span className="text-foreground font-medium">{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link href={APP_URL}>
+              <Button size="lg" className="w-full">
+                Essayer gratuitement
+              </Button>
+            </Link>
+          </div>
         </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-8">
+          Sans carte bancaire • Sans engagement
+        </p>
       </div>
     </section>
   );

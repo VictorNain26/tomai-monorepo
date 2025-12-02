@@ -19,7 +19,7 @@ export function CTA() {
             </h2>
 
             <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-              Créez votre compte parent gratuitement en 2 minutes. Aucun paiement requis pour démarrer et découvrir la méthode TomIA.
+              Créez votre compte parent gratuitement en 2 minutes. Aucun paiement requis pour démarrer et découvrir la méthode Tom.
             </p>
 
             <div className="flex flex-col items-center gap-6">

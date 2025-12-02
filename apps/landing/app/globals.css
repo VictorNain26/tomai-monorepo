@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  /* TomIA EdTech Design System - Light Mode (Premium) */
+  /* Tom EdTech Design System - Light Mode (Premium) */
 
   /* Base colors - Clean, professional, trustworthy */
-  --color-background: 216 34% 97%; /* #F7F9FB - Cooler, cleaner slate-50 */
-  --color-foreground: 220 40% 10%; /* #0A0F1C - Deep slate for maximum readability */
+  --color-background: 0 0% 100%; /* #FFFFFF - Pure white */
+  --color-foreground: 222 47% 11%; /* #0F172A - Slate 900 */
 
-  /* Primary - Vibrant Blurple (Stripe/Modern SaaS) */
-  --color-primary: 242 75% 62%; /* #635BFF - Premium blurple */
+  /* Primary - Professional Blue (Trust & Education) */
+  --color-primary: 217 91% 50%; /* #2563EB - Blue 600 */
   --color-primary-foreground: 0 0% 100%;
 
   /* Secondary - Subtle surface for contrast */
@@ -46,7 +46,7 @@
 
 @media (prefers-color-scheme: dark) {
   @theme {
-    /* TomIA EdTech Design System - Dark Mode (Premium) */
+    /* Tom EdTech Design System - Dark Mode (Premium) */
 
     /* Base colors - Rich Dark Blue (Not pure black) */
     --color-background: 224 71% 4%; /* #020617 - Slate 950 (Rich Dark) */

@@ -6,23 +6,23 @@ import { ChevronDown, ShieldCheck, BookOpen, BrainCircuit } from "lucide-react";
 
 const FAQS = [
   {
-    question: "Est-ce que TomIA donne les réponses aux exercices ?",
-    answer: "Non, et c'est tout l'intérêt ! TomIA guide par des questions. Au lieu de donner la réponse, il aide votre enfant à la trouver par lui-même. C'est comme avoir un professeur particulier qui explique, plutôt qu'un camarade qui laisse copier.",
+    question: "Est-ce que Tom donne les réponses aux exercices ?",
+    answer: "Non, et c'est tout l'intérêt ! Tom guide par des questions. Au lieu de donner la réponse, il aide votre enfant à la trouver par lui-même. C'est comme avoir un professeur particulier qui explique, plutôt qu'un camarade qui laisse copier.",
     icon: BrainCircuit,
   },
   {
     question: "Quelles matières sont couvertes ?",
-    answer: "TomIA couvre l'intégralité du programme officiel de l'Éducation Nationale, du CP à la Terminale. Cela inclut les Mathématiques, le Français, l'Histoire-Géo, les SVT, la Physique-Chimie, la Philosophie, et les langues vivantes.",
+    answer: "Tom couvre l'intégralité du programme officiel de l'Éducation Nationale, du CP à la Terminale. Cela inclut les Mathématiques, le Français, l'Histoire-Géo, les SVT, la Physique-Chimie, la Philosophie, et les langues vivantes.",
     icon: BookOpen,
   },
   {
     question: "Mes données sont-elles en sécurité ?",
-    answer: "Absolument. TomIA est une solution française. Toutes les données sont hébergées en Europe sur des serveurs sécurisés et certifiés. Nous ne vendons aucune donnée et il n'y a aucune publicité sur la plateforme.",
+    answer: "Absolument. Tom est une solution française. Toutes les données sont hébergées en Europe sur des serveurs sécurisés et certifiés. Nous ne vendons aucune donnée et il n'y a aucune publicité sur la plateforme.",
     icon: ShieldCheck,
   },
   {
     question: "Peut-on l'utiliser sur téléphone ?",
-    answer: "Oui, TomIA est accessible depuis n'importe quel appareil : ordinateur, tablette ou smartphone. L'interface s'adapte parfaitement pour une utilisation mobile.",
+    answer: "Oui, Tom est accessible depuis n'importe quel appareil : ordinateur, tablette ou smartphone. L'interface s'adapte parfaitement pour une utilisation mobile.",
     icon: null,
   },
 ];
@@ -38,7 +38,7 @@ export function FAQ() {
             Questions fréquentes
           </h2>
           <p className="text-lg text-muted-foreground">
-            Tout ce que vous devez savoir sur TomIA.
+            Tout ce que vous devez savoir sur Tom.
           </p>
         </div>
 

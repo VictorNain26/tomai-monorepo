@@ -19,7 +19,7 @@ export function ProblemSolution() {
             <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-6 sm:p-8">
               <h3 className="text-xl font-semibold text-destructive mb-6 flex items-center gap-2">
                 <XCircle className="h-6 w-6" />
-                Sans TomIA
+                Sans Tom
               </h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-muted-foreground">
@@ -47,7 +47,7 @@ export function ProblemSolution() {
             <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-6 sm:p-8">
               <h3 className="text-xl font-semibold text-green-600 dark:text-green-400 mb-6 flex items-center gap-2">
                 <CheckCircle2 className="h-6 w-6" />
-                Avec TomIA
+                Avec Tom
               </h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-foreground">
