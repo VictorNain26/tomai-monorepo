@@ -229,7 +229,7 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
 
         try {
-          const errorBody = await response.json();
+          const errorBody = await response.json() as { message?: string };
           if (errorBody.message) {
             errorMessage = errorBody.message;
           }
@@ -321,7 +321,7 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
               } else if (data.type === 'error') {
                 throw new Error(data.error ?? 'Erreur streaming');
               }
-            } catch (parseError) {
+            } catch {
               // Ignorer les erreurs de parsing pour les lignes incomplètes
               if (line.length > 10) {
                 logger.warn('SSE parse warning', { line: line.substring(0, 50) });
