@@ -825,11 +825,12 @@ export interface ICardResponse {
 
 /**
  * Generate deck request (AI generation)
+ * Note: schoolLevel n'est PAS envoyé - le backend utilise automatiquement
+ * le niveau du profil utilisateur pour garantir l'alignement programme
  */
 export interface IGenerateDeckRequest {
   subject: string;
   topic: string;
-  schoolLevel?: EducationLevelType;
   cardCount?: number;
 }
 

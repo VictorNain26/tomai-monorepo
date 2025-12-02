@@ -1,13 +1,13 @@
 /**
  * LearningDeckNew - Génération IA de deck
  * Interface simple: matière + thème → génération automatique via RAG
+ * Le niveau scolaire est automatiquement pris du profil utilisateur
  */
 
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Sparkles, Loader2, BookOpen } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, BookOpen, AlertCircle } from 'lucide-react';
 import { useGenerateDeck } from '@/hooks/useLearning';
-import { useUser } from '@/lib/auth';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { EducationLevelType, IGenerateDeckRequest } from '@/types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { IGenerateDeckRequest } from '@/types';
 
 // Matières disponibles
 const SUBJECTS = [
@@ -34,38 +35,21 @@ const SUBJECTS = [
   { value: 'philosophie', label: 'Philosophie' },
 ];
 
-// Niveaux scolaires
-const SCHOOL_LEVELS: { value: EducationLevelType; label: string }[] = [
-  { value: 'cp', label: 'CP' },
-  { value: 'ce1', label: 'CE1' },
-  { value: 'ce2', label: 'CE2' },
-  { value: 'cm1', label: 'CM1' },
-  { value: 'cm2', label: 'CM2' },
-  { value: 'sixieme', label: '6ème' },
-  { value: 'cinquieme', label: '5ème' },
-  { value: 'quatrieme', label: '4ème' },
-  { value: 'troisieme', label: '3ème' },
-  { value: 'seconde', label: '2nde' },
-  { value: 'premiere', label: '1ère' },
-  { value: 'terminale', label: 'Terminale' },
-];
-
 export default function LearningDeckNew(): ReactElement {
   const navigate = useNavigate();
-  const user = useUser();
   const { generateDeck, isGenerating } = useGenerateDeck();
 
-  // Form state
+  // Form state - seulement matière et thème (niveau = profil utilisateur)
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
-  const [schoolLevel, setSchoolLevel] = useState<EducationLevelType | ''>(
-    (user?.schoolLevel as EducationLevelType) || ''
-  );
+  const [error, setError] = useState<string | null>(null);
 
   const isFormValid = subject && topic.trim().length >= 3;
 
   const handleGenerate = async () => {
     if (!isFormValid) return;
+
+    setError(null);
 
     try {
       const request: IGenerateDeckRequest = {
@@ -73,15 +57,20 @@ export default function LearningDeckNew(): ReactElement {
         topic: topic.trim(),
         cardCount: 8,
       };
-      if (schoolLevel) {
-        request.schoolLevel = schoolLevel;
-      }
+      // schoolLevel n'est plus envoyé - le backend utilise le niveau du profil
+
       const result = await generateDeck(request);
 
       // Navigate to the generated deck
       void navigate(`/student/learning/${result.deck.id}`);
-    } catch {
-      // Error handled by hook (toast)
+    } catch (err) {
+      // Gérer l'erreur spécifique "thème non trouvé"
+      if (err instanceof Error) {
+        if (err.message.includes('TOPIC_NOT_IN_CURRICULUM') || err.message.includes('pas disponible')) {
+          setError('Ce thème n\'est pas dans le programme de ton niveau. Essaie un autre thème ou vérifie l\'orthographe.');
+        }
+      }
+      // Autres erreurs gérées par le hook (toast)
     }
   };
 
@@ -100,7 +89,7 @@ export default function LearningDeckNew(): ReactElement {
         </Button>
         <h1 className="text-3xl font-bold text-foreground">Créer un deck</h1>
         <p className="text-muted-foreground mt-1">
-          L'IA génère des cartes de révision alignées sur le programme officiel
+          L'IA génère des cartes de révision alignées sur le programme officiel de ton niveau
         </p>
       </div>
 
@@ -116,6 +105,14 @@ export default function LearningDeckNew(): ReactElement {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Error Alert */}
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             {/* Subject */}
             <div className="space-y-2">
               <Label htmlFor="subject">Matière *</Label>
@@ -140,34 +137,14 @@ export default function LearningDeckNew(): ReactElement {
                 id="topic"
                 placeholder="Ex: Les fractions, La Révolution française, Le théorème de Pythagore..."
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                onChange={(e) => {
+                  setTopic(e.target.value);
+                  setError(null); // Clear error on input change
+                }}
                 disabled={isGenerating}
               />
               <p className="text-xs text-muted-foreground">
-                Sois précis pour obtenir des cartes pertinentes
-              </p>
-            </div>
-
-            {/* School Level (optional override) */}
-            <div className="space-y-2">
-              <Label htmlFor="level">Niveau scolaire</Label>
-              <Select
-                value={schoolLevel}
-                onValueChange={(v) => setSchoolLevel(v as EducationLevelType)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Ton niveau (optionnel)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCHOOL_LEVELS.map((level) => (
-                    <SelectItem key={level.value} value={level.value}>
-                      {level.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Laisse vide pour utiliser ton niveau de profil
+                Le thème doit correspondre au programme officiel de ton niveau
               </p>
             </div>
 
