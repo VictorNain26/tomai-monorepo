@@ -6,7 +6,7 @@
  *
  * Architecture:
  * 1. Role Colors: Parent (Bleu), Élève (Vert), IA (Purple)
- * 2. UI Colors: Stats, Badges, Status
+ * 2. UI Colors: Stats, Status
  * 3. Helper Functions: Pour obtenir les couleurs facilement
  */
 
@@ -83,22 +83,14 @@ export function getRoleGradient(role: UserRoleType | 'assistant'): string {
 }
 
 // ==========================================
-// 2. COULEURS UI (Stats, Badges, Status)
+// 2. COULEURS UI (Stats, Status)
 // ==========================================
 
 /**
- * Couleurs pour les stats et badges
+ * Couleurs pour les stats
  * ✅ Palette cohérente et accessible (WCAG AA)
  */
 export const UI_COLORS = {
-  // Gamification (badges, streaks)
-  streak: 'orange',
-  trophy: 'yellow',
-  target: 'blue',
-  heart: 'pink',
-  star: 'yellow',
-  fire: 'orange',
-
   // Stats dashboard
   sessions: 'blue',
   studyTime: 'green',
@@ -257,7 +249,7 @@ export const STAT_CARD_VARIANTS = {
  *    - Modifier ROLE_COLORS
  *    - Utiliser getRoleColor(), getRoleClasses(), getRoleGradient()
  *
- * 2. Couleurs UI (Stats/Badges):
+ * 2. Couleurs UI (Stats):
  *    - Modifier UI_COLORS
  *    - Utiliser getUIColorClasses()
  *
@@ -276,8 +268,8 @@ export const STAT_CARD_VARIANTS = {
  * // Couleur selon rôle
  * <div className={getRoleClasses('parent', 'bg')}>Parent</div>
  *
- * // Couleur UI pour badge
- * const color = UI_COLORS.streak; // 'orange'
+ * // Couleur UI pour stats
+ * const color = UI_COLORS.sessions; // 'blue'
  *
  * // Couleur mode
  * <Card className={getModeCardClasses('primary')} />

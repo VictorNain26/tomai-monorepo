@@ -12,7 +12,6 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import OAuthCallback from './pages/OAuthCallback';
 import StudentDashboard from './pages/StudentDashboard';
-import StudentBadges from './pages/StudentBadges';
 import Chat from './pages/Chat';
 import ParentDashboard from './pages/ParentDashboard';
 import ChildView from './pages/ChildView';
@@ -120,7 +119,6 @@ function AppContent(): ReactElement {
             <Route path="/student">
               <Route index element={<StudentDashboard />} />
               <Route path="chat" element={<Chat />} />
-              <Route path="badges" element={<StudentBadges />} />
             </Route>
           </Route>
         </Route>

@@ -12,13 +12,12 @@ import type { IStudySession, IAppUser, EducationSubject } from '@/types';
 import { getMessage, ERROR_MESSAGES, SUCCESS_MESSAGES, getMessageWithParams } from '@/constants/messages';
 /**
  * Hook useStudentDashboard - Gestion d'état simplifiée dashboard étudiant (MVP)
- * Simplifié: Streak + Sessions pour suggestions + Matières uniquement
+ * Simplifié: Sessions pour suggestions + Matières uniquement
  */
 
 interface StudentDashboardState {
   sessions: IStudySession[];
   subjects: EducationSubject[];
-  streak: number;
   loading: boolean;
   _error: string | null;
 }
@@ -57,16 +56,6 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
   // Au lieu de fetcher 5 sessions, on récupère seulement la plus récente (économie bandwidth)
   const latestSessionQuery = useQuery({
     ...chatQueries.latestSession()
-  });
-
-  // Requête pour récupérer le streak depuis l'API gamification
-  const streakQuery = useQuery({
-    queryKey: ['student-gamification', 'streak'],
-    queryFn: async () => {
-      const response = await apiClient.get<{ currentStreak: number } | null>('/api/gamification/me');
-      return response?.currentStreak ?? 0;
-    },
-    staleTime: 5 * 60 * 1000 // 5 minutes cache
   });
 
   // Delete session mutation
@@ -120,11 +109,10 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
   }, [deleteSessionMutation]);
 
   // Si les données ne sont pas encore chargées, garder l'état loading
-  if (subjectsQuery.isLoading || latestSessionQuery.isLoading || streakQuery.isLoading || deleteSessionMutation.isPending) {
+  if (subjectsQuery.isLoading || latestSessionQuery.isLoading || deleteSessionMutation.isPending) {
     return {
       sessions: [],
       subjects: [],
-      streak: 0,
       loading: true,
       _error: null,
       startNewChat,
@@ -138,7 +126,7 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
   }
 
   // 🚨 SI ERREUR API: Gérer gracieusement sans crash
-  const apiError = subjectsQuery.error?.message ?? latestSessionQuery.error?.message ?? streakQuery.error?.message;
+  const apiError = subjectsQuery.error?.message ?? latestSessionQuery.error?.message;
   if (apiError) {
     // Log error mais ne pas throw - permet affichage UI d'erreur gracieux
     logger.error('Dashboard API Error', { apiError }, {
@@ -150,7 +138,6 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
     return {
       sessions: [],
       subjects: [],
-      streak: 0,
       loading: false,
       _error: apiError,
       startNewChat,
@@ -176,7 +163,6 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
   return {
     sessions,
     subjects: allActiveSubjects,
-    streak: streakQuery.data ?? 0,
     loading: false,
     _error: null,
     startNewChat,

@@ -409,28 +409,11 @@ export const invalidationHelpers = {
   },
 
   /**
-   * 🎯 Invalide les données de gamification (streak, badges)
-   * Utilisé après une activité réelle (envoi message) pour mise à jour automatique
-   */
-  invalidateGamificationData: (queryClient: QueryClient) => {
-    void queryClient.invalidateQueries({
-      queryKey: ['student-gamification'],
-      refetchType: 'active' // Refetch immédiatement si la query est active (composant monté)
-    });
-    void queryClient.invalidateQueries({
-      queryKey: ['badges-catalog'],
-      refetchType: 'active'
-    });
-  },
-
-  /**
    * 🚀 Invalide toutes les données impactées après une activité réelle
-   * (envoi message → met à jour streak + sessions)
-   * Combine invalidation sessions + gamification pour UX cohérente
+   * (envoi message → met à jour sessions)
    */
   invalidateAfterActivity: (queryClient: QueryClient) => {
     invalidationHelpers.invalidateStudentData(queryClient);
-    invalidationHelpers.invalidateGamificationData(queryClient);
   },
 };
 
