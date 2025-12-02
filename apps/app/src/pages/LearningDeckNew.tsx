@@ -22,11 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { IGenerateDeckRequest } from '@/types';
-
-interface TopicError {
-  message: string;
-  suggestions?: string[] | undefined;
-}
+import type { ApiError } from '@/lib/api-client';
 
 // Matières disponibles
 const SUBJECTS = [
@@ -44,10 +40,9 @@ export default function LearningDeckNew(): ReactElement {
   const navigate = useNavigate();
   const { generateDeck, isGenerating } = useGenerateDeck();
 
-  // Form state - seulement matière et thème (niveau = profil utilisateur)
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
-  const [error, setError] = useState<TopicError | null>(null);
+  const [error, setError] = useState<ApiError | null>(null);
 
   const isFormValid = subject && topic.trim().length >= 3;
 
@@ -62,29 +57,15 @@ export default function LearningDeckNew(): ReactElement {
         topic: topic.trim(),
         cardCount: 8,
       };
-      // schoolLevel n'est plus envoyé - le backend utilise le niveau du profil
 
       const result = await generateDeck(request);
-
-      // Navigate to the generated deck
       void navigate(`/student/learning/${result.deck.id}`);
     } catch (err) {
-      // Gérer l'erreur spécifique "thème non trouvé"
-      const apiError = err as { code?: string; message?: string; suggestions?: string[] };
+      const apiError = err as ApiError;
 
+      // Afficher l'erreur si c'est une erreur de validation (thème non trouvé)
       if (apiError.code === 'TOPIC_NOT_IN_CURRICULUM') {
-        setError({
-          message: apiError.message ?? 'Ce thème n\'est pas dans le programme de ton niveau.',
-          suggestions: apiError.suggestions,
-        });
-        return;
-      }
-
-      // Fallback pour anciens messages d'erreur
-      if (err instanceof Error && err.message.includes('pas disponible')) {
-        setError({
-          message: 'Ce thème n\'est pas dans le programme de ton niveau. Essaie un autre thème ou vérifie l\'orthographe.',
-        });
+        setError(apiError);
       }
       // Autres erreurs gérées par le hook (toast)
     }

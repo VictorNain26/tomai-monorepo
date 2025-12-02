@@ -26,7 +26,6 @@ export interface ApiError extends Error {
   status: number;
   code?: string | undefined; // Error code from backend (e.g., TOPIC_NOT_IN_CURRICULUM)
   suggestions?: string[] | undefined; // Helpful suggestions from backend
-  responseData?: Record<string, unknown> | undefined; // Full error response data
 }
 
 // Configuration par défaut optimisée
@@ -127,12 +126,10 @@ export class TanStackApiClient {
       let errorDetails = '';
       let errorCode: string | undefined;
       let errorSuggestions: string[] | undefined;
-      let responseData: Record<string, unknown> | undefined;
 
       if (isJson) {
         try {
           const errorData = await response.json();
-          responseData = errorData;
           errorMessage = errorData.message ?? errorData.error ?? errorData._error ?? errorMessage;
           errorType = errorData.errorType ?? 'GENERAL_ERROR';
           errorDetails = errorData.details ?? '';
@@ -174,7 +171,6 @@ export class TanStackApiClient {
       error.status = response.status;
       error.code = errorCode;
       error.suggestions = errorSuggestions;
-      error.responseData = responseData;
       throw error;
     }
 
