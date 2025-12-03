@@ -47,6 +47,8 @@ import type {
   CardContent,
   IGenerateDeckRequest,
   IGenerateDeckResponse,
+  Lv2Option,
+  EducationLevelType,
 } from '@/types';
 import type {
   EstablishmentData
@@ -102,6 +104,14 @@ export const queryKeys = {
     decks: () => [...queryKeys.learning.all, 'decks'] as const,
     deck: (deckId: string) => [...queryKeys.learning.decks(), deckId] as const,
     deckWithCards: (deckId: string) => [...queryKeys.learning.deck(deckId), 'cards'] as const,
+  },
+
+  // Education queries (subjects, levels from Qdrant)
+  education: {
+    all: ['education'] as const,
+    subjects: (level: EducationLevelType, selectedLv2?: Lv2Option | null) =>
+      [...queryKeys.education.all, 'subjects', level, selectedLv2 ?? 'no-lv2'] as const,
+    levels: () => [...queryKeys.education.all, 'levels'] as const,
   },
 } as const;
 
@@ -366,6 +376,39 @@ export const learningMutations = {
     mutationKey: ['learning', 'generate-deck'] as const,
     mutationFn: (data: IGenerateDeckRequest): Promise<IGenerateDeckResponse> =>
       apiClient.post('/api/learning/generate', data),
+  }),
+};
+
+// ===== EDUCATION QUERIES (Qdrant subjects/levels) =====
+
+/** Subject from Qdrant with metadata */
+export interface IEducationSubject {
+  key: string;
+  name: string;
+  description: string;
+  emoji: string;
+  color: string;
+  ragKeywords: string[];
+  ragAvailable: boolean;
+}
+
+/** Response from /api/subjects/:level endpoint */
+export interface IEducationSubjectsResponse {
+  success: boolean;
+  subjects: IEducationSubject[];
+  level: string;
+  selectedLv2: Lv2Option | null;
+  message?: string;
+}
+
+export const educationQueries = {
+  /** Get subjects available for a school level (filtered by LV2 if applicable) */
+  subjectsForLevel: (level: EducationLevelType, selectedLv2?: Lv2Option | null) => ({
+    queryKey: queryKeys.education.subjects(level, selectedLv2),
+    queryFn: async (): Promise<IEducationSubjectsResponse> => {
+      const params = selectedLv2 ? { selectedLv2 } : {};
+      return apiClient.get(`/api/subjects/${level}`, { params });
+    },
   }),
 };
 

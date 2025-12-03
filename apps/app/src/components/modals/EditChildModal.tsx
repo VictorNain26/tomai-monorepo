@@ -30,7 +30,8 @@ import {
 } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { getSchoolLevelOptions } from '@/constants/schoolLevels';
-import type { IChild } from '@/types';
+import { Lv2Selector } from '../Lv2Selector';
+import type { IChild, Lv2Option } from '@/types';
 
 interface EditChildModalProps {
   isOpen: boolean;
@@ -47,11 +48,18 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
 }) => {
   const queryClient = useQueryClient();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    schoolLevel: string;
+    selectedLv2: Lv2Option | null;
+  }>({
     firstName: '',
     lastName: '',
     dateOfBirth: '',
-    schoolLevel: ''
+    schoolLevel: '',
+    selectedLv2: null
   });
 
   // Removed subject selection - all subjects now available via RAG system
@@ -62,7 +70,8 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
         firstName: child.firstName ?? '',
         lastName: child.lastName ?? '',
         dateOfBirth: child.dateOfBirth ?? '',
-        schoolLevel: child.schoolLevel ?? ''
+        schoolLevel: child.schoolLevel ?? '',
+        selectedLv2: child.selectedLv2 ?? null
       });
     }
   }, [child, isOpen]);
@@ -98,7 +107,8 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
           dateOfBirth: formData.dateOfBirth,
-          schoolLevel: formData.schoolLevel
+          schoolLevel: formData.schoolLevel,
+          selectedLv2: formData.selectedLv2
         }
       });
 
@@ -196,6 +206,16 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* LV2 Selection - apparaît uniquement pour 5ème+ */}
+            <div className="col-span-full">
+              <Lv2Selector
+                schoolLevel={formData.schoolLevel}
+                selectedLv2={formData.selectedLv2}
+                onLv2Change={(lv2) => setFormData(prev => ({ ...prev, selectedLv2: lv2 }))}
+                disabled={isLoading}
+              />
             </div>
           </div>
 

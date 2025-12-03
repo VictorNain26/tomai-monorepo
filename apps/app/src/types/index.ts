@@ -83,6 +83,7 @@ export interface IAppUser {
   lastName?: string;
   username?: string;
   schoolLevel?: EducationLevelType;
+  selectedLv2?: Lv2Option | null;
   dateOfBirth?: string;
 }
 
@@ -259,6 +260,24 @@ export interface ICostTracking {
   warningThreshold: number;
 }
 
+// ======================================
+// LV2 (Langue Vivante 2) Types
+// ======================================
+
+/** Options LV2 disponibles - à partir de 5ème */
+export type Lv2Option = 'espagnol' | 'allemand' | 'italien';
+
+/** Niveaux où la LV2 est disponible */
+export const LV2_ELIGIBLE_LEVELS: EducationLevelType[] = [
+  'cinquieme', 'quatrieme', 'troisieme',
+  'seconde', 'premiere', 'terminale'
+];
+
+/** Vérifie si un niveau scolaire permet la LV2 */
+export function isLv2EligibleLevel(level?: string): boolean {
+  return level ? LV2_ELIGIBLE_LEVELS.includes(level as EducationLevelType) : false;
+}
+
 // Parent dashboard types
 export interface IChild {
   id: string;
@@ -266,6 +285,7 @@ export interface IChild {
   lastName: string;
   username: string;
   schoolLevel?: string;
+  selectedLv2?: Lv2Option | null; // LV2 choisie (espagnol, allemand, italien)
   dateOfBirth?: string;
   age?: number;
   studySessions?: IStudySession[];
@@ -315,6 +335,7 @@ export interface IUpdateChildRequest {
   lastName?: string;
   dateOfBirth?: string;
   schoolLevel?: EducationLevelType;
+  selectedLv2?: Lv2Option | null;
   username?: string;
 }
 
@@ -487,6 +508,7 @@ export interface ICreateChildData {
   lastName: string;
   dateOfBirth: string;
   schoolLevel: string;
+  selectedLv2?: Lv2Option | null; // LV2 choisie (à partir de 5ème)
   username: string;
   password: string;
   subjects?: string[];
@@ -498,6 +520,7 @@ export interface IUpdateChildData {
   lastName: string;
   dateOfBirth: string;
   schoolLevel: string;
+  selectedLv2?: Lv2Option | null; // LV2 choisie (à partir de 5ème)
 }
 
 // ======================================

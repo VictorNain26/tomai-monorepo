@@ -30,6 +30,8 @@ import {
 } from '../ui/select';
 import { getSchoolLevelOptions } from '@/constants/schoolLevels';
 import { generateUsername } from '@/utils/generateUsername';
+import { Lv2Selector } from '../Lv2Selector';
+import type { Lv2Option } from '@/types';
 
 interface CreateChildModalProps {
   isOpen: boolean;
@@ -54,11 +56,20 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
   const queryClient = useQueryClient();
   const firstInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    schoolLevel: string;
+    selectedLv2: Lv2Option | null;
+    username: string;
+    password: string;
+  }>({
     firstName: '',
     lastName: '',
     dateOfBirth: '',
     schoolLevel: '',
+    selectedLv2: null,
     username: '',
     password: ''
   });
@@ -98,6 +109,7 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
       lastName: '',
       dateOfBirth: '',
       schoolLevel: '',
+      selectedLv2: null,
       username: '',
       password: ''
     });
@@ -137,6 +149,7 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
       lastName: formData.lastName.trim(),
       dateOfBirth: formData.dateOfBirth,
       schoolLevel: formData.schoolLevel,
+      selectedLv2: formData.selectedLv2,
       username: formData.username.trim(),
       password: formData.password
       // subjects removed - all subjects available via RAG system
@@ -217,6 +230,14 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
                 </Select>
               </div>
             </div>
+
+            {/* LV2 Selection - apparaît uniquement pour 5ème+ */}
+            <Lv2Selector
+              schoolLevel={formData.schoolLevel}
+              selectedLv2={formData.selectedLv2}
+              onLv2Change={(lv2) => setFormData(prev => ({ ...prev, selectedLv2: lv2 }))}
+              disabled={createChildMutation.isPending}
+            />
           </div>
 
           {/* Identifiants de connexion */}

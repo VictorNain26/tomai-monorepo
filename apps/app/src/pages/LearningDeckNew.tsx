@@ -2,18 +2,32 @@
  * LearningDeckNew - Génération IA de deck
  * Interface simple: matière + thème → génération automatique via RAG
  * Le niveau scolaire est automatiquement pris du profil utilisateur
+ * Matières dynamiques depuis Qdrant (filtrées par niveau + LV2)
  */
 
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Sparkles, Loader2, BookOpen, AlertCircle, Lightbulb } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  ArrowLeft,
+  Sparkles,
+  Loader2,
+  BookOpen,
+  AlertCircle,
+  Lightbulb,
+  Lock,
+  Crown,
+} from 'lucide-react';
 import { useGenerateDeck } from '@/hooks/useLearning';
+import { useUser } from '@/lib/auth';
+import { educationQueries } from '@/lib/query-factories';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -21,35 +35,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { IGenerateDeckRequest } from '@/types';
+import type { IGenerateDeckRequest, EducationLevelType } from '@/types';
 import type { ApiError } from '@/lib/api-client';
-
-// Matières disponibles
-const SUBJECTS = [
-  { value: 'mathematiques', label: 'Mathématiques' },
-  { value: 'francais', label: 'Français' },
-  { value: 'histoire_geo', label: 'Histoire-Géographie' },
-  { value: 'sciences', label: 'Sciences' },
-  { value: 'anglais', label: 'Anglais' },
-  { value: 'physique_chimie', label: 'Physique-Chimie' },
-  { value: 'svt', label: 'SVT' },
-  { value: 'philosophie', label: 'Philosophie' },
-];
 
 export default function LearningDeckNew(): ReactElement {
   const navigate = useNavigate();
+  const user = useUser();
   const { generateDeck, isGenerating } = useGenerateDeck();
 
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [error, setError] = useState<ApiError | null>(null);
+  const [subscriptionRequired, setSubscriptionRequired] = useState(false);
 
+  // Récupérer le niveau et LV2 du profil utilisateur
+  const schoolLevel = (user?.schoolLevel ?? 'sixieme') as EducationLevelType;
+  const selectedLv2 = user?.selectedLv2 ?? null;
+
+  // Fetch subjects dynamiquement depuis Qdrant (filtrés par niveau + LV2)
+  const {
+    data: subjectsData,
+    isLoading: subjectsLoading,
+    error: subjectsError,
+  } = useQuery({
+    ...educationQueries.subjectsForLevel(schoolLevel, selectedLv2),
+    enabled: !!schoolLevel,
+  });
+
+  const subjects = subjectsData?.subjects ?? [];
   const isFormValid = subject && topic.trim().length >= 3;
 
   const handleGenerate = async () => {
     if (!isFormValid) return;
 
     setError(null);
+    setSubscriptionRequired(false);
 
     try {
       const request: IGenerateDeckRequest = {
@@ -63,11 +83,20 @@ export default function LearningDeckNew(): ReactElement {
     } catch (err) {
       const apiError = err as ApiError;
 
-      // Afficher l'erreur si c'est une erreur de validation (thème non trouvé)
+      // Erreur 403 - Abonnement requis
+      if (apiError.status === 403 || apiError.code === 'SUBSCRIPTION_REQUIRED') {
+        setSubscriptionRequired(true);
+        return;
+      }
+
+      // Erreur de validation (thème non trouvé dans le programme)
       if (apiError.code === 'TOPIC_NOT_IN_CURRICULUM') {
         setError(apiError);
+        return;
       }
-      // Autres erreurs gérées par le hook (toast)
+
+      // Autres erreurs - afficher le message
+      setError(apiError);
     }
   };
 
@@ -91,6 +120,49 @@ export default function LearningDeckNew(): ReactElement {
       </div>
 
       <div className="max-w-xl mx-auto">
+        {/* Alerte Abonnement Requis - Affichée en premier si nécessaire */}
+        {subscriptionRequired && (
+          <Card className="mb-6 border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <Crown className="h-5 w-5" />
+                Fonctionnalité Premium
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                <div className="space-y-2">
+                  <p className="text-amber-800 dark:text-amber-200 font-medium">
+                    La génération de cartes de révision par IA est réservée aux comptes Premium.
+                  </p>
+                  <p className="text-amber-700 dark:text-amber-300 text-sm">
+                    Demande à tes parents de souscrire un abonnement pour débloquer cette fonctionnalité
+                    et créer des decks personnalisés alignés sur ton programme scolaire.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSubscriptionRequired(false)}
+                  className="border-amber-500/50 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                >
+                  Compris
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => navigate('/student/learning')}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  Voir mes decks existants
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -102,10 +174,11 @@ export default function LearningDeckNew(): ReactElement {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Error Alert */}
-            {error && (
+            {/* Error Alert - Thème non trouvé ou autre erreur */}
+            {error && !subscriptionRequired && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erreur</AlertTitle>
                 <AlertDescription>
                   <div className="space-y-2">
                     <p>{error.message}</p>
@@ -127,21 +200,43 @@ export default function LearningDeckNew(): ReactElement {
               </Alert>
             )}
 
-            {/* Subject */}
+            {/* Subject - Dynamique depuis Qdrant */}
             <div className="space-y-2">
               <Label htmlFor="subject">Matière *</Label>
-              <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir une matière" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUBJECTS.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {subjectsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : subjectsError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Impossible de charger les matières. Réessaie plus tard.
+                  </AlertDescription>
+                </Alert>
+              ) : subjects.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Aucune matière disponible pour ton niveau ({schoolLevel}).
+                    Le contenu pédagogique est en cours de préparation.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Select value={subject} onValueChange={setSubject} disabled={isGenerating}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir une matière" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.map((s) => (
+                      <SelectItem key={s.key} value={s.key}>
+                        <span className="flex items-center gap-2">
+                          <span>{s.emoji}</span>
+                          <span>{s.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {/* Topic */}
@@ -153,9 +248,10 @@ export default function LearningDeckNew(): ReactElement {
                 value={topic}
                 onChange={(e) => {
                   setTopic(e.target.value);
-                  setError(null); // Clear error on input change
+                  setError(null);
+                  setSubscriptionRequired(false);
                 }}
-                disabled={isGenerating}
+                disabled={isGenerating || subjects.length === 0}
               />
               <p className="text-xs text-muted-foreground">
                 Le thème doit correspondre au programme officiel de ton niveau
@@ -165,7 +261,7 @@ export default function LearningDeckNew(): ReactElement {
             {/* Generate Button */}
             <Button
               onClick={() => void handleGenerate()}
-              disabled={!isFormValid || isGenerating}
+              disabled={!isFormValid || isGenerating || subjects.length === 0}
               className="w-full"
               size="lg"
             >
@@ -182,7 +278,7 @@ export default function LearningDeckNew(): ReactElement {
               )}
             </Button>
 
-            {/* Info */}
+            {/* Info during generation */}
             {isGenerating && (
               <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
                 <BookOpen className="h-5 w-5 text-primary mt-0.5" />
