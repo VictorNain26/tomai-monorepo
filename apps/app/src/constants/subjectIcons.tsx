@@ -14,8 +14,6 @@ import {
   Paintbrush,
   Atom,
   Landmark,
-  MessageCircle,
-  Speech,
   BrainCircuit,
   Dna,
   Earth,
@@ -60,8 +58,11 @@ export type SubjectKey =
   // Langues vivantes
   | 'anglais-lv1'
   | 'anglais-lv2'
+  | 'espagnol'
   | 'espagnol-lv2'
+  | 'allemand'
   | 'allemand-lv2'
+  | 'italien'
   | 'italien-lv2'
   | 'langues-vivantes'
   // Arts et Sport
@@ -169,20 +170,38 @@ export const SUBJECT_ICONS: Record<SubjectKey, SubjectIconConfig> = {
     bgColor: 'bg-red-50 dark:bg-red-900/20',
     label: 'Anglais LV2'
   },
+  espagnol: {
+    icon: Globe,
+    color: 'text-yellow-600 dark:text-yellow-400',
+    bgColor: 'bg-yellow-100 dark:bg-yellow-950/30',
+    label: 'Espagnol'
+  },
   'espagnol-lv2': {
-    icon: MessageCircle,
+    icon: Globe,
     color: 'text-yellow-600 dark:text-yellow-400',
     bgColor: 'bg-yellow-100 dark:bg-yellow-950/30',
     label: 'Espagnol LV2'
   },
+  allemand: {
+    icon: Globe,
+    color: 'text-slate-600 dark:text-slate-400',
+    bgColor: 'bg-slate-100 dark:bg-slate-950/30',
+    label: 'Allemand'
+  },
   'allemand-lv2': {
-    icon: Speech,
+    icon: Globe,
     color: 'text-slate-600 dark:text-slate-400',
     bgColor: 'bg-slate-100 dark:bg-slate-950/30',
     label: 'Allemand LV2'
   },
+  italien: {
+    icon: Globe,
+    color: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-green-100 dark:bg-green-950/30',
+    label: 'Italien'
+  },
   'italien-lv2': {
-    icon: Languages,
+    icon: Globe,
     color: 'text-green-600 dark:text-green-400',
     bgColor: 'bg-green-100 dark:bg-green-950/30',
     label: 'Italien LV2'
