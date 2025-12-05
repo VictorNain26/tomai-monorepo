@@ -133,6 +133,9 @@ export async function createCheckoutSession(
     if (error.code === 'EXISTING_SUBSCRIPTION') {
       throw new Error('Vous avez déjà un abonnement actif. Utilisez "Ajouter des enfants" pour mettre à niveau.');
     }
+    if (error.code === 'SUBSCRIPTION_CANCELED_PENDING') {
+      throw new Error('Votre abonnement est en cours d\'annulation. Utilisez "Ajouter des enfants" pour réactiver et ajouter de nouveaux enfants.');
+    }
     throw new Error(error.error ?? 'Échec de la création de la session de paiement');
   }
 
