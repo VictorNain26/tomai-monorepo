@@ -460,3 +460,54 @@ export async function previewAddChildren(
 
   return response.json() as Promise<IAddChildrenPreview>;
 }
+
+// ============================================
+// Reactivation (Cancel Pending Removal)
+// ============================================
+
+/**
+ * Response from the cancel-pending-removal endpoint
+ */
+export interface ICancelPendingRemovalResponse {
+  success: boolean;
+  message: string;
+  subscription: {
+    status: string;
+    premiumChildrenCount: number;
+    monthlyAmountCents: number;
+    currentPeriodEnd: string;
+    hasScheduledChanges: boolean;
+    pendingRemovalChildrenIds: string[];
+  };
+}
+
+/**
+ * Cancel pending removal of children (reactivate them)
+ *
+ * This cancels any scheduled removal and keeps all children on Premium.
+ * No additional charge is applied because they were already paid for.
+ *
+ * @param parentId - Parent user ID
+ */
+export async function cancelPendingRemoval(
+  parentId: string
+): Promise<ICancelPendingRemovalResponse> {
+  const response = await fetch(
+    `${API_URL}/api/subscriptions/cancel-pending-removal`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ parentId }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erreur réseau' }));
+    throw new Error(error.error ?? 'Échec de la réactivation');
+  }
+
+  return response.json() as Promise<ICancelPendingRemovalResponse>;
+}

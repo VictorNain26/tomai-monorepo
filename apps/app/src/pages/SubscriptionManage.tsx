@@ -59,6 +59,7 @@ import {
   isCanceledButActive,
   hasPendingChanges,
   previewAddChildren,
+  cancelPendingRemoval,
   type IAddChildrenPreview,
 } from '@/lib/subscription';
 import { useUser } from '@/lib/auth';
@@ -97,6 +98,9 @@ export default function SubscriptionManage(): ReactElement {
   const [prorataPreview, setProrataPreview] = useState<IAddChildrenPreview | null>(null);
   const [isLoadingProrata, setIsLoadingProrata] = useState(false);
   const [prorataError, setProrataError] = useState<string | null>(null);
+
+  // Reactivation state
+  const [isReactivating, setIsReactivating] = useState(false);
 
   // Fetch prorata when selection changes
   useEffect(() => {
@@ -236,6 +240,23 @@ export default function SubscriptionManage(): ReactElement {
     }
   };
 
+  const handleCancelPendingRemoval = async () => {
+    if (!user?.id) return;
+
+    setIsReactivating(true);
+    try {
+      await cancelPendingRemoval(user.id);
+      toast.success('Modifications annulées - tous les enfants restent Premium');
+      void refetch();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Erreur lors de la réactivation'
+      );
+    } finally {
+      setIsReactivating(false);
+    }
+  };
+
   // Loading state
   if (isLoading || isLoadingChildren) {
     return (
@@ -348,17 +369,35 @@ export default function SubscriptionManage(): ReactElement {
           <AlertTitle className="text-amber-700 dark:text-amber-400">
             Modifications programmées
           </AlertTitle>
-          <AlertDescription className="text-amber-700 dark:text-amber-400">
-            Des changements prendront effet le{' '}
-            <strong>{formatPeriodEnd(status.subscription.currentPeriodEnd)}</strong>.
-            {status.subscription.scheduledChildrenCount !== undefined && (
-              <span>
-                {' '}Nouveau total: {status.subscription.scheduledChildrenCount} enfant(s) Premium
-                {status.subscription.scheduledMonthlyAmountCents && (
-                  <> ({formatPriceEuros(status.subscription.scheduledMonthlyAmountCents / 100)}/mois)</>
-                )}
-              </span>
-            )}
+          <AlertDescription className="text-amber-700 dark:text-amber-400 flex flex-col gap-3">
+            <span>
+              Des changements prendront effet le{' '}
+              <strong>{formatPeriodEnd(status.subscription.currentPeriodEnd)}</strong>.
+              {status.subscription.scheduledChildrenCount !== undefined && (
+                <span>
+                  {' '}Nouveau total: {status.subscription.scheduledChildrenCount} enfant(s) Premium
+                  {status.subscription.scheduledMonthlyAmountCents && (
+                    <> ({formatPriceEuros(status.subscription.scheduledMonthlyAmountCents / 100)}/mois)</>
+                  )}
+                </span>
+              )}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancelPendingRemoval}
+              disabled={isReactivating}
+              className="w-fit border-amber-500 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400"
+            >
+              {isReactivating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Annulation...
+                </>
+              ) : (
+                'Annuler les modifications'
+              )}
+            </Button>
           </AlertDescription>
         </Alert>
       )}
