@@ -8,7 +8,7 @@
  * - Open Stripe customer portal
  */
 
-import { type ReactElement, useState, useMemo } from 'react';
+import { type ReactElement, useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
@@ -24,6 +24,8 @@ import {
   CreditCard,
   Calendar,
   Clock,
+  Info,
+  Loader2,
 } from 'lucide-react';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { LoadingState } from '@/components/shared/LoadingState';
@@ -56,11 +58,15 @@ import {
   isPremiumActive,
   isCanceledButActive,
   hasPendingChanges,
+  previewAddChildren,
+  type IAddChildrenPreview,
 } from '@/lib/subscription';
+import { useUser } from '@/lib/auth';
 import type { IChild } from '@/types';
 
 export default function SubscriptionManage(): ReactElement {
   const navigate = useNavigate();
+  const user = useUser();
   const {
     status,
     isLoading,
@@ -86,6 +92,36 @@ export default function SubscriptionManage(): ReactElement {
   // Selected children for add/remove
   const [selectedForAdd, setSelectedForAdd] = useState<string[]>([]);
   const [selectedForRemove, setSelectedForRemove] = useState<string[]>([]);
+
+  // Prorata preview state
+  const [prorataPreview, setProrataPreview] = useState<IAddChildrenPreview | null>(null);
+  const [isLoadingProrata, setIsLoadingProrata] = useState(false);
+  const [prorataError, setProrataError] = useState<string | null>(null);
+
+  // Fetch prorata when selection changes
+  useEffect(() => {
+    const fetchProrata = async () => {
+      if (!showAddDialog || selectedForAdd.length === 0 || !user?.id) {
+        setProrataPreview(null);
+        return;
+      }
+
+      setIsLoadingProrata(true);
+      setProrataError(null);
+
+      try {
+        const preview = await previewAddChildren(user.id, selectedForAdd.length);
+        setProrataPreview(preview);
+      } catch (error) {
+        setProrataError(error instanceof Error ? error.message : 'Erreur de calcul');
+        setProrataPreview(null);
+      } finally {
+        setIsLoadingProrata(false);
+      }
+    };
+
+    void fetchProrata();
+  }, [showAddDialog, selectedForAdd.length, user?.id]);
 
   // Derived state
   const isPremium = status ? isPremiumActive(status) : false;
@@ -542,18 +578,70 @@ export default function SubscriptionManage(): ReactElement {
         </Card>
       )}
 
+      {/* Billing Info Section */}
+      {isPremium && !isCanceled && (
+        <Card className="mt-6 border-dashed">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Info className="h-4 w-4 text-muted-foreground" />
+              Comment fonctionne la facturation ?
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-primary">Ajout d'enfant</p>
+                <p className="text-xs text-muted-foreground">
+                  Le montant est facturé au prorata immédiatement pour les jours
+                  restants. Vous verrez le montant exact avant confirmation.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Retrait d'enfant</p>
+                <p className="text-xs text-muted-foreground">
+                  Pas de remboursement. L'enfant garde l'accès Premium jusqu'à la fin
+                  de la période payée, puis le nouveau tarif s'applique.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-destructive">Annulation</p>
+                <p className="text-xs text-muted-foreground">
+                  Tous les enfants conservent l'accès Premium jusqu'à la fin de la
+                  période payée. Vous pouvez réactiver à tout moment.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">Tarification</p>
+                <p className="text-xs text-muted-foreground">
+                  Premier enfant : 15€/mois. Chaque enfant supplémentaire : +5€/mois.
+                  Exemple : 3 enfants = 25€/mois.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Add Children Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Ajouter des enfants à Premium</DialogTitle>
             <DialogDescription>
-              Sélectionnez les enfants à passer en Premium. Le montant sera
-              facturé au prorata immédiatement.
+              Sélectionnez les enfants à passer en Premium.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-4">
+          {/* Info banner about immediate billing */}
+          <Alert className="border-blue-500/50 bg-blue-500/10">
+            <Info className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-blue-700 dark:text-blue-400 text-sm">
+              <strong>Facturation immédiate :</strong> Un montant au prorata sera
+              débité maintenant pour les jours restants de la période en cours.
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-3 py-2">
             {freeChildren.map((child: IChild) => (
               <label
                 key={child.id}
@@ -581,17 +669,57 @@ export default function SubscriptionManage(): ReactElement {
             ))}
           </div>
 
+          {/* Prorata calculation result */}
           {selectedForAdd.length > 0 && (
-            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <div className="flex justify-between items-center text-sm">
-                <span>Nouveau montant mensuel:</span>
-                <span className="font-bold text-lg">
-                  {formatPriceEuros(addPrice.new)}/mois
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                +{formatPriceEuros(addPrice.diff)} (facturé au prorata aujourd'hui)
-              </p>
+            <div className="space-y-3">
+              {isLoadingProrata ? (
+                <div className="p-4 rounded-lg bg-muted/50 flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">Calcul du montant...</span>
+                </div>
+              ) : prorataError ? (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{prorataError}</AlertDescription>
+                </Alert>
+              ) : prorataPreview ? (
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
+                  {/* Immediate charge */}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium text-sm">Débit immédiat</p>
+                      <p className="text-xs text-muted-foreground">
+                        Prorata pour {prorataPreview.prorata.daysRemaining} jours restants
+                      </p>
+                    </div>
+                    <span className="text-xl font-bold text-primary">
+                      {prorataPreview.prorata.amount}
+                    </span>
+                  </div>
+
+                  <div className="border-t pt-3">
+                    {/* New monthly */}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Nouveau montant mensuel</span>
+                      <span className="font-medium">
+                        {prorataPreview.newSubscription.monthlyAmount}/mois
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      À partir du {formatPeriodEnd(prorataPreview.prorata.currentPeriodEnd)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Nouveau montant mensuel:</span>
+                    <span className="font-bold text-lg">
+                      {formatPriceEuros(addPrice.new)}/mois
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -601,12 +729,17 @@ export default function SubscriptionManage(): ReactElement {
             </Button>
             <Button
               onClick={handleAddChildren}
-              disabled={selectedForAdd.length === 0 || isAddingChildren}
+              disabled={selectedForAdd.length === 0 || isAddingChildren || isLoadingProrata}
             >
               {isAddingChildren ? (
                 <>
-                  <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Ajout...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Ajout en cours...
+                </>
+              ) : prorataPreview ? (
+                <>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Payer {prorataPreview.prorata.amount} maintenant
                 </>
               ) : (
                 <>
@@ -621,16 +754,38 @@ export default function SubscriptionManage(): ReactElement {
 
       {/* Remove Children Dialog */}
       <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Retirer des enfants de Premium</DialogTitle>
             <DialogDescription>
-              Les enfants retirés garderont l'accès Premium jusqu'à la fin de la
-              période actuelle. Pas de remboursement.
+              Sélectionnez les enfants à retirer de l'abonnement Premium.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-4">
+          {/* Important info about removal policy */}
+          <div className="space-y-3">
+            <Alert className="border-green-500/50 bg-green-500/10">
+              <Check className="h-4 w-4 text-green-500" />
+              <AlertDescription className="text-green-700 dark:text-green-400 text-sm">
+                <strong>Accès maintenu :</strong> Les enfants retirés conservent
+                l'accès Premium jusqu'à la fin de la période payée
+                {status?.subscription?.currentPeriodEnd && (
+                  <> (le {formatPeriodEnd(status.subscription.currentPeriodEnd)})</>
+                )}.
+              </AlertDescription>
+            </Alert>
+
+            <Alert className="border-amber-500/50 bg-amber-500/10">
+              <Info className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-amber-700 dark:text-amber-400 text-sm">
+                <strong>Pas de remboursement :</strong> Le retrait prend effet à la
+                prochaine échéance. Aucun remboursement n'est effectué pour la période
+                en cours.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <div className="space-y-3 py-2">
             {premiumChildren.map((child: IChild) => (
               <label
                 key={child.id}
@@ -659,20 +814,29 @@ export default function SubscriptionManage(): ReactElement {
           </div>
 
           {selectedForRemove.length > 0 && (
-            <Alert className="border-amber-500/50 bg-amber-500/10">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              <AlertDescription className="text-amber-700 dark:text-amber-400">
-                <p>
-                  À la fin de la période, votre abonnement passera à{' '}
-                  <strong>{formatPriceEuros(removePrice.new)}/mois</strong>.
-                </p>
-                {selectedForRemove.length === premiumChildrenCount && (
-                  <p className="mt-1 font-medium">
-                    Retirer tous les enfants annulera l'abonnement.
-                  </p>
-                )}
-              </AlertDescription>
-            </Alert>
+            <div className="p-4 rounded-lg bg-muted/50 border space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Nouveau montant mensuel</span>
+                <span className="font-bold text-lg">
+                  {removePrice.new > 0 ? formatPriceEuros(removePrice.new) : '0€'}/mois
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                À partir du {status?.subscription?.currentPeriodEnd
+                  ? formatPeriodEnd(status.subscription.currentPeriodEnd)
+                  : 'prochain renouvellement'}
+              </p>
+
+              {selectedForRemove.length === premiumChildrenCount && (
+                <Alert variant="destructive" className="mt-3">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    <strong>Attention :</strong> Retirer tous les enfants annulera
+                    votre abonnement à la fin de la période.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
           )}
 
           <DialogFooter>
@@ -686,13 +850,13 @@ export default function SubscriptionManage(): ReactElement {
             >
               {isRemovingChildren ? (
                 <>
-                  <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Retrait...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Retrait en cours...
                 </>
               ) : (
                 <>
                   <X className="h-4 w-4 mr-2" />
-                  Retirer ({selectedForRemove.length})
+                  Confirmer le retrait ({selectedForRemove.length})
                 </>
               )}
             </Button>

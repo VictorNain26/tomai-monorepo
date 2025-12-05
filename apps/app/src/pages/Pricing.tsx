@@ -6,7 +6,7 @@
  * - Additional children: +5€/month each
  */
 
-import { type ReactElement, useState, useEffect } from 'react';
+import { type ReactElement, useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ArrowLeft, Shield, Check, Users } from 'lucide-react';
@@ -30,12 +30,24 @@ export default function Pricing(): ReactElement {
   // Selected children for premium upgrade
   const [selectedChildrenIds, setSelectedChildrenIds] = useState<string[]>([]);
 
-  // Initialize with all children selected
+  // Get children with their subscription status from status.children (includes plan info)
+  const childrenWithStatus = useMemo(() => status?.children ?? [], [status?.children]);
+
+  // Filter out children who are already premium (memoized)
+  const freeChildren = useMemo(() => {
+    if (!children) return [];
+    return children.filter((child: IChild) => {
+      const childStatus = childrenWithStatus.find(c => c.id === child.id);
+      return childStatus?.plan !== 'premium';
+    });
+  }, [children, childrenWithStatus]);
+
+  // Initialize with only free children selected
   useEffect(() => {
-    if (children && children.length > 0) {
-      setSelectedChildrenIds(children.map((c: IChild) => c.id));
+    if (freeChildren.length > 0) {
+      setSelectedChildrenIds(freeChildren.map((c: IChild) => c.id));
     }
-  }, [children]);
+  }, [freeChildren]);
 
   const isParent = user?.role === 'parent';
   const childrenCount = selectedChildrenIds.length;
@@ -50,14 +62,16 @@ export default function Pricing(): ReactElement {
   };
 
   const handleSelectAll = () => {
-    if (children) {
-      setSelectedChildrenIds(children.map((c: IChild) => c.id));
-    }
+    // Only select children who are not already premium
+    setSelectedChildrenIds(freeChildren.map((c: IChild) => c.id));
   };
 
   const handleSelectNone = () => {
     setSelectedChildrenIds([]);
   };
+
+  // Count of premium children (already subscribed)
+  const premiumChildrenCount = (children?.length ?? 0) - freeChildren.length;
 
   const handleUpgrade = async () => {
     if (!user) {
@@ -225,11 +239,21 @@ export default function Pricing(): ReactElement {
                   </div>
                 </div>
 
-                {isLoadingChildren ? (
+                {isLoadingChildren || isLoading ? (
                   <div className="text-sm text-muted-foreground">Chargement...</div>
+                ) : freeChildren.length === 0 && premiumChildrenCount > 0 ? (
+                  <div className="text-sm text-muted-foreground p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="font-medium text-green-700 dark:text-green-400">
+                      Tous vos enfants sont déjà Premium !
+                    </p>
+                    <p className="text-xs mt-1 text-green-600 dark:text-green-500">
+                      Gérez votre abonnement depuis votre espace client.
+                    </p>
+                  </div>
                 ) : (
                   <div className="space-y-2">
-                    {children.map((child: IChild) => (
+                    {/* Free children - selectable */}
+                    {freeChildren.map((child: IChild) => (
                       <label
                         key={child.id}
                         className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
@@ -249,6 +273,26 @@ export default function Pricing(): ReactElement {
                           </span>
                         )}
                       </label>
+                    ))}
+                    {/* Premium children - already subscribed (display only) */}
+                    {children?.filter((child: IChild) => {
+                      const childStatus = childrenWithStatus.find(c => c.id === child.id);
+                      return childStatus?.plan === 'premium';
+                    }).map((child: IChild) => (
+                      <div
+                        key={child.id}
+                        className="flex items-center gap-3 p-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                      >
+                        <div className="h-4 w-4 flex items-center justify-center">
+                          <Check className="h-3 w-3 text-green-600" />
+                        </div>
+                        <span className="text-sm text-green-700 dark:text-green-400">
+                          {child.firstName} {child.lastName}
+                        </span>
+                        <Badge variant="outline" className="ml-auto text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700">
+                          Déjà Premium
+                        </Badge>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -282,7 +326,7 @@ export default function Pricing(): ReactElement {
                 isCheckingOut ||
                 isLoading ||
                 childrenCount === 0 ||
-                status?.plan === 'premium'
+                freeChildren.length === 0
               }
               size="lg"
               className="w-full"
@@ -292,8 +336,8 @@ export default function Pricing(): ReactElement {
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   Chargement...
                 </span>
-              ) : status?.plan === 'premium' ? (
-                'Déjà Premium'
+              ) : freeChildren.length === 0 && premiumChildrenCount > 0 ? (
+                'Tous vos enfants sont Premium'
               ) : childrenCount === 0 ? (
                 'Sélectionnez un enfant'
               ) : (

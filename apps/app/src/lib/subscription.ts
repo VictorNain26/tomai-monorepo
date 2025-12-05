@@ -402,3 +402,61 @@ export function hasPendingChanges(status: ISubscriptionStatus): boolean {
 export function getPendingRemovalChildrenIds(status: ISubscriptionStatus): string[] {
   return status.subscription?.pendingRemovalChildrenIds ?? [];
 }
+
+// ============================================
+// Prorata Preview Types and Functions
+// ============================================
+
+/**
+ * Response from the preview-add-children endpoint
+ */
+export interface IAddChildrenPreview {
+  childrenCount: number;
+  prorata: {
+    amountCents: number;
+    amount: string;
+    daysRemaining: number;
+    totalDaysInPeriod: number;
+    currentPeriodEnd: string;
+  };
+  newSubscription: {
+    monthlyAmountCents: number;
+    monthlyAmount: string;
+  };
+  pricePerChildCents: number;
+  pricePerChild: string;
+}
+
+/**
+ * Preview prorata amount for adding children
+ *
+ * Call this before showing the add-children confirmation modal
+ * to display the exact amount that will be charged.
+ *
+ * @param parentId - Parent user ID
+ * @param childrenCount - Number of children to add
+ */
+export async function previewAddChildren(
+  parentId: string,
+  childrenCount: number
+): Promise<IAddChildrenPreview> {
+  const params = new URLSearchParams({
+    parentId,
+    childrenCount: childrenCount.toString(),
+  });
+
+  const response = await fetch(
+    `${API_URL}/api/subscriptions/preview-add-children?${params.toString()}`,
+    {
+      method: 'GET',
+      credentials: 'include',
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erreur réseau' }));
+    throw new Error(error.error ?? 'Échec du calcul du prorata');
+  }
+
+  return response.json() as Promise<IAddChildrenPreview>;
+}
