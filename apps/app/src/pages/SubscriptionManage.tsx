@@ -541,7 +541,6 @@ export default function SubscriptionManage(): ReactElement {
                   setSelectedForAdd([]);
                   setShowAddDialog(true);
                 }}
-                disabled={isCanceled}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Ajouter
