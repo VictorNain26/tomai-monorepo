@@ -383,11 +383,12 @@ export function isPremiumActive(status: ISubscriptionStatus): boolean {
 
 /**
  * Check if subscription is canceled but still active until period end
+ * This happens when cancel_at_period_end is true in Stripe
+ * The billing status in DB may still be 'active' until period end
  */
 export function isCanceledButActive(status: ISubscriptionStatus): boolean {
   return (
     status.plan === 'premium' &&
-    status.status === 'canceled' &&
     status.subscription?.cancelAtPeriodEnd === true
   );
 }
