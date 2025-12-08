@@ -18,6 +18,7 @@ import {
   Minus,
   ExternalLink,
   Loader2,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageContainer } from '@/components/shared/PageContainer';
@@ -49,7 +50,7 @@ import type { IChild } from '@/types';
 // Types
 // ============================================
 
-type ActionType = 'add' | 'remove' | 'resume' | null;
+type ActionType = 'add' | 'remove' | 'resume' | 'reactivate' | null;
 
 interface ConfirmDialogState {
   type: ActionType;
@@ -74,6 +75,8 @@ export default function SubscriptionManage(): ReactElement {
     isOpeningPortal,
     resumeSubscription,
     isResuming,
+    cancelPendingRemoval,
+    isCancelingPendingRemoval,
     refetch,
   } = useSubscription();
   const { children, isLoading: isLoadingChildren } = useParentDataQuery();
@@ -91,16 +94,19 @@ export default function SubscriptionManage(): ReactElement {
   const premiumChildrenCount = status?.billing?.premiumChildrenCount;
   const currentPeriodEnd = status?.subscription?.currentPeriodEnd ?? null;
 
-  // Get child status from Stripe
+  // Get child status from Stripe (source of truth)
+  // pendingRemovalChildrenIds comes from subscription schedule metadata in Stripe
   const getChildStatus = useCallback(
     (childId: string) => {
       const childStatus = status?.children?.find((c) => c.id === childId);
+      const pendingRemovalIds = status?.subscription?.pendingRemovalChildrenIds ?? [];
+      const isPendingRemoval = pendingRemovalIds.includes(childId);
       return {
         isPremium: childStatus?.plan === 'premium',
-        isPendingRemoval: childStatus?.status === 'pending_removal',
+        isPendingRemoval,
       };
     },
-    [status?.children]
+    [status?.children, status?.subscription?.pendingRemovalChildrenIds]
   );
 
   // Fetch prorata when opening add dialog
@@ -164,15 +170,19 @@ export default function SubscriptionManage(): ReactElement {
           await resumeSubscription();
           toast.success("Abonnement réactivé");
           break;
+        case 'reactivate':
+          await cancelPendingRemoval();
+          toast.success("Retrait annulé - enfants réactivés");
+          break;
       }
       closeDialog();
       void refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erreur');
     }
-  }, [confirmDialog, addChildren, removeChildren, resumeSubscription, closeDialog, refetch]);
+  }, [confirmDialog, addChildren, removeChildren, resumeSubscription, cancelPendingRemoval, closeDialog, refetch]);
 
-  const isActionLoading = isAddingChildren || isRemovingChildren || isResuming;
+  const isActionLoading = isAddingChildren || isRemovingChildren || isResuming || isCancelingPendingRemoval;
 
   // Loading
   if (isLoading || isLoadingChildren) {
@@ -311,16 +321,27 @@ export default function SubscriptionManage(): ReactElement {
                     {/* Action button - only if not canceled */}
                     {!isCanceled && (
                       isChildPremium ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive"
-                          onClick={() => setConfirmDialog({ type: 'remove', child })}
-                          disabled={isPendingRemoval}
-                        >
-                          <Minus className="h-4 w-4 mr-1" />
-                          Retirer
-                        </Button>
+                        isPendingRemoval ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                            onClick={() => setConfirmDialog({ type: 'reactivate', child })}
+                          >
+                            <RotateCcw className="h-4 w-4 mr-1" />
+                            Réactiver
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() => setConfirmDialog({ type: 'remove', child })}
+                          >
+                            <Minus className="h-4 w-4 mr-1" />
+                            Retirer
+                          </Button>
+                        )
                       ) : (
                         <Button
                           variant="outline"
@@ -348,6 +369,7 @@ export default function SubscriptionManage(): ReactElement {
               {confirmDialog.type === 'add' && `Ajouter ${confirmDialog.child?.firstName} ?`}
               {confirmDialog.type === 'remove' && `Retirer ${confirmDialog.child?.firstName} ?`}
               {confirmDialog.type === 'resume' && "Réactiver l'abonnement ?"}
+              {confirmDialog.type === 'reactivate' && "Annuler le retrait ?"}
             </DialogTitle>
             <DialogDescription>
               {confirmDialog.type === 'add' && (
@@ -376,6 +398,12 @@ export default function SubscriptionManage(): ReactElement {
                 <>
                   Votre abonnement reprendra avec {premiumChildrenCount ?? 0} enfant{(premiumChildrenCount ?? 0) > 1 ? 's' : ''} Premium
                   {status?.billing?.monthlyAmount && <> à <strong>{status.billing.monthlyAmount}/mois</strong></>}.
+                </>
+              )}
+              {confirmDialog.type === 'reactivate' && (
+                <>
+                  Les enfants en attente de retrait seront réactivés et resteront Premium.
+                  Aucun frais supplémentaire ne sera appliqué.
                 </>
               )}
             </DialogDescription>

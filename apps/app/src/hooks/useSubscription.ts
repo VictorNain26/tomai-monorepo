@@ -17,6 +17,7 @@ import {
   resumeSubscription,
   redirectToCheckout,
   redirectToPortal,
+  cancelPendingRemoval,
 } from '@/lib/subscription';
 import type { ISubscriptionStatus } from '@/types';
 
@@ -208,6 +209,29 @@ export function useResumeSubscription() {
 }
 
 /**
+ * Hook for canceling pending removal (reactivating children scheduled for removal)
+ */
+export function useCancelPendingRemoval() {
+  const queryClient = useQueryClient();
+  const user = useUser();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!user?.id) throw new Error('Utilisateur non connecté');
+      if (user.role !== 'parent') throw new Error('Seuls les parents peuvent gérer les abonnements');
+      return cancelPendingRemoval(user.id);
+    },
+    onSuccess: () => {
+      if (user?.id) {
+        void queryClient.invalidateQueries({
+          queryKey: subscriptionKeys.status(user.id),
+        });
+      }
+    },
+  });
+}
+
+/**
  * Combined hook for subscription management
  */
 export function useSubscription() {
@@ -221,6 +245,7 @@ export function useSubscription() {
   const portal = usePortalRedirect();
   const cancel = useCancelSubscription();
   const resume = useResumeSubscription();
+  const cancelPending = useCancelPendingRemoval();
 
   return {
     // User info
@@ -256,5 +281,9 @@ export function useSubscription() {
     // Resume action
     resumeSubscription: resume.mutateAsync,
     isResuming: resume.isPending,
+
+    // Cancel pending removal (reactivate children)
+    cancelPendingRemoval: cancelPending.mutateAsync,
+    isCancelingPendingRemoval: cancelPending.isPending,
   };
 }
