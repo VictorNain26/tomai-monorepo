@@ -78,43 +78,29 @@ import type { IChild } from '@/types';
 
 type SubscriptionState = 'active' | 'canceled' | 'pending_changes' | 'past_due';
 
-interface StatusBannerConfig {
-  bg: string;
-  icon: ReactElement;
-  title: string;
-  buttonText: string;
-}
-
 interface StatusBannerProps {
   state: SubscriptionState;
   periodEnd: string | null;
   scheduledChildrenCount?: number | undefined;
   scheduledAmount?: number | undefined;
-  onResume: () => void;
-  onCancelPendingRemoval: () => void;
-  onUpdatePayment: () => void;
-  isLoading: boolean;
 }
 
 // ============================================
 // Status Banner Configuration (static)
 // ============================================
 
-const STATUS_BANNER_CONFIG: Record<Exclude<SubscriptionState, 'active'>, Omit<StatusBannerConfig, 'icon'>> = {
+const STATUS_BANNER_CONFIG: Record<Exclude<SubscriptionState, 'active'>, { bg: string; title: string }> = {
   canceled: {
     bg: 'bg-destructive/10 border-destructive/30',
     title: 'Abonnement annulé',
-    buttonText: "Réactiver l'abonnement",
   },
   pending_changes: {
     bg: 'bg-amber-500/10 border-amber-500/30',
     title: 'Modifications programmées',
-    buttonText: 'Annuler les modifications',
   },
   past_due: {
     bg: 'bg-destructive/10 border-destructive/30',
     title: 'Paiement en attente',
-    buttonText: 'Mettre à jour le paiement',
   },
 };
 
@@ -127,10 +113,6 @@ function StatusBanner({
   periodEnd,
   scheduledChildrenCount,
   scheduledAmount,
-  onResume,
-  onCancelPendingRemoval,
-  onUpdatePayment,
-  isLoading,
 }: StatusBannerProps): ReactElement | null {
   // Get icon based on state (before early return to respect hooks rules)
   const icon = useMemo(() => {
@@ -145,20 +127,6 @@ function StatusBanner({
         return null;
     }
   }, [state]);
-
-  // Get click handler based on state
-  const handleClick = useMemo(() => {
-    switch (state) {
-      case 'canceled':
-        return onResume;
-      case 'pending_changes':
-        return onCancelPendingRemoval;
-      case 'past_due':
-        return onUpdatePayment;
-      default:
-        return undefined;
-    }
-  }, [state, onResume, onCancelPendingRemoval, onUpdatePayment]);
 
   // Get description based on state
   const description = useMemo(() => {
@@ -176,7 +144,7 @@ function StatusBanner({
         return text;
       }
       case 'past_due':
-        return 'Mettez à jour votre moyen de paiement';
+        return 'Mettez à jour votre moyen de paiement dans le portail de facturation';
       default:
         return '';
     }
@@ -195,19 +163,6 @@ function StatusBanner({
           <p className="font-semibold">{config.title}</p>
           <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleClick}
-          disabled={isLoading}
-          className="shrink-0"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            config.buttonText
-          )}
-        </Button>
       </div>
     </div>
   );
@@ -636,6 +591,7 @@ export default function SubscriptionManage(): ReactElement {
     try {
       await resumeSubscription();
       toast.success('Abonnement réactivé avec succès');
+      setShowManageDialog(false);
       void refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erreur lors de la réactivation');
@@ -657,6 +613,7 @@ export default function SubscriptionManage(): ReactElement {
     try {
       await cancelPendingRemoval(user.id);
       toast.success('Modifications annulées - tous les enfants restent Premium');
+      setShowManageDialog(false);
       void refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erreur lors de la réactivation');
@@ -749,8 +706,6 @@ export default function SubscriptionManage(): ReactElement {
     );
   }
 
-  const isActionLoading = isResuming || isReactivating || isOpeningPortal;
-
   return (
     <PageContainer className="max-w-4xl">
       {/* Back Button */}
@@ -783,16 +738,12 @@ export default function SubscriptionManage(): ReactElement {
         </div>
       </div>
 
-      {/* Status Banner (single, conditional) */}
+      {/* Status Banner (informational only) */}
       <StatusBanner
         state={subscriptionState}
         periodEnd={status?.subscription?.currentPeriodEnd ?? null}
         scheduledChildrenCount={status?.subscription?.scheduledChildrenCount}
         scheduledAmount={status?.subscription?.scheduledMonthlyAmountCents}
-        onResume={handleResumeSubscription}
-        onCancelPendingRemoval={handleCancelPendingRemoval}
-        onUpdatePayment={handleOpenPortal}
-        isLoading={isActionLoading}
       />
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -897,14 +848,14 @@ export default function SubscriptionManage(): ReactElement {
             )}
           </CardContent>
           <CardFooter>
-            {!isCanceled && allChildren.length > 0 && (
+            {allChildren.length > 0 && (
               <Button
                 variant="outline"
                 className="w-full"
                 onClick={handleOpenManageDialog}
               >
                 <Settings className="h-4 w-4 mr-2" aria-hidden="true" />
-                Gérer l'accès Premium
+                Gérer l'abonnement
               </Button>
             )}
           </CardFooter>
@@ -915,11 +866,66 @@ export default function SubscriptionManage(): ReactElement {
       <Dialog open={showManageDialog} onOpenChange={setShowManageDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Gérer l'accès Premium</DialogTitle>
+            <DialogTitle>Gérer l'abonnement</DialogTitle>
             <DialogDescription>
-              Cliquez sur un enfant pour modifier son accès. Les changements s'appliquent en un clic.
+              {isCanceled
+                ? "Votre abonnement est annulé. Réactivez-le ou modifiez l'accès Premium de vos enfants."
+                : hasPending
+                  ? 'Des modifications sont programmées. Vous pouvez les annuler ou en faire de nouvelles.'
+                  : "Cliquez sur un enfant pour modifier son accès. Les changements s'appliquent en un clic."}
             </DialogDescription>
           </DialogHeader>
+
+          {/* Action buttons for canceled or pending states */}
+          {(isCanceled || hasPending) && (
+            <div className="space-y-2">
+              {isCanceled && (
+                <Button
+                  variant="default"
+                  className="w-full"
+                  onClick={handleResumeSubscription}
+                  disabled={isResuming}
+                >
+                  {isResuming ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                      Réactivation...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Réactiver l'abonnement
+                    </>
+                  )}
+                </Button>
+              )}
+              {hasPending && !isCanceled && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleCancelPendingRemoval}
+                  disabled={isReactivating}
+                >
+                  {isReactivating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                      Annulation...
+                    </>
+                  ) : (
+                    'Annuler les modifications programmées'
+                  )}
+                </Button>
+              )}
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">ou modifier</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-3 py-2">
             {allChildren.map((child: IChild) => {
@@ -936,7 +942,7 @@ export default function SubscriptionManage(): ReactElement {
                   targetPremium={targetPremium}
                   isPendingRemoval={isPendingRemoval}
                   onToggle={() => handleToggleChildPremium(child.id)}
-                  disabled={isAddingChildren || isRemovingChildren}
+                  disabled={isAddingChildren || isRemovingChildren || isCanceled}
                 />
               );
             })}
