@@ -50,7 +50,7 @@ import type { IChild } from '@/types';
 // Types
 // ============================================
 
-type ActionType = 'add' | 'remove' | 'resume' | 'reactivate' | null;
+type ActionType = 'add' | 'remove' | 'reactivate' | null;
 
 interface ConfirmDialogState {
   type: ActionType;
@@ -73,8 +73,6 @@ export default function SubscriptionManage(): ReactElement {
     isRemovingChildren,
     openPortal,
     isOpeningPortal,
-    resumeSubscription,
-    isResuming,
     cancelPendingRemoval,
     isCancelingPendingRemoval,
     refetch,
@@ -93,6 +91,16 @@ export default function SubscriptionManage(): ReactElement {
   const isCanceled = status ? isCanceledButActive(status) : false;
   const premiumChildrenCount = status?.billing?.premiumChildrenCount;
   const currentPeriodEnd = status?.subscription?.currentPeriodEnd ?? null;
+
+  // Check if this is a "full cancellation via child removal" vs "manual global cancellation"
+  // When all children are removed, cancelAtPeriodEnd is true BUT hasScheduledChanges is also true
+  // In this case, we want to allow individual child reactivation, not just global resume
+  const hasScheduledChanges = status?.subscription?.hasScheduledChanges ?? false;
+  const pendingRemovalChildrenIds = status?.subscription?.pendingRemovalChildrenIds ?? [];
+  const isAllChildrenPendingRemoval = hasScheduledChanges && pendingRemovalChildrenIds.length > 0;
+
+  // True global cancellation = canceled but NOT because all children were removed
+  const isGlobalCancellation = isCanceled && !isAllChildrenPendingRemoval;
 
   // Get child status from Stripe (source of truth)
   // pendingRemovalChildrenIds comes from subscription schedule metadata in Stripe
@@ -166,13 +174,11 @@ export default function SubscriptionManage(): ReactElement {
             toast.success(`${child.firstName} sera retiré à la fin de la période`);
           }
           break;
-        case 'resume':
-          await resumeSubscription();
-          toast.success("Abonnement réactivé");
-          break;
         case 'reactivate':
-          await cancelPendingRemoval();
-          toast.success("Retrait annulé - enfants réactivés");
+          if (child) {
+            await cancelPendingRemoval(child.id);
+            toast.success(`${child.firstName} restera Premium`);
+          }
           break;
       }
       closeDialog();
@@ -180,9 +186,9 @@ export default function SubscriptionManage(): ReactElement {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erreur');
     }
-  }, [confirmDialog, addChildren, removeChildren, resumeSubscription, cancelPendingRemoval, closeDialog, refetch]);
+  }, [confirmDialog, addChildren, removeChildren, cancelPendingRemoval, closeDialog, refetch]);
 
-  const isActionLoading = isAddingChildren || isRemovingChildren || isResuming || isCancelingPendingRemoval;
+  const isActionLoading = isAddingChildren || isRemovingChildren || isCancelingPendingRemoval;
 
   // Loading
   if (isLoading || isLoadingChildren) {
@@ -238,15 +244,26 @@ export default function SubscriptionManage(): ReactElement {
       </div>
 
       {/* Subscription Info Card */}
-      <Card className={cn('mb-6', isCanceled && 'border-amber-500/50')}>
+      <Card className={cn('mb-6', (isCanceled || isAllChildrenPendingRemoval) && 'border-amber-500/50')}>
         <CardContent className="pt-6">
-          {/* Status alert if canceled */}
-          {isCanceled && (
+          {/* Status alert for global cancellation */}
+          {isGlobalCancellation && (
             <div className="bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 rounded-lg p-4 mb-4">
               <p className="font-medium mb-1">Abonnement annulé</p>
               <p className="text-sm">
                 Vos enfants gardent l'accès Premium jusqu'au <strong>{formatPeriodEnd(currentPeriodEnd)}</strong>.
                 Après cette date, ils passeront au plan Gratuit.
+                Pour réactiver, utilisez le portail de facturation.
+              </p>
+            </div>
+          )}
+          {/* Status alert for all children pending removal (not global cancellation) */}
+          {isAllChildrenPendingRemoval && !isGlobalCancellation && (
+            <div className="bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 rounded-lg p-4 mb-4">
+              <p className="font-medium mb-1">Retrait programmé</p>
+              <p className="text-sm">
+                Tous vos enfants seront retirés du Premium le <strong>{formatPeriodEnd(currentPeriodEnd)}</strong>.
+                Vous pouvez réactiver individuellement chaque enfant ci-dessous.
               </p>
             </div>
           )}
@@ -269,17 +286,12 @@ export default function SubscriptionManage(): ReactElement {
             )}
           </div>
 
-          {/* Actions */}
+          {/* Actions - only billing portal, no global cancel/resume buttons */}
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleOpenPortal} disabled={isOpeningPortal}>
               <ExternalLink className="h-4 w-4 mr-1" />
               Facturation
             </Button>
-            {isCanceled && (
-              <Button size="sm" onClick={() => setConfirmDialog({ type: 'resume' })}>
-                Réactiver l'abonnement
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -318,8 +330,8 @@ export default function SubscriptionManage(): ReactElement {
                       )}
                     </div>
 
-                    {/* Action button - only if not canceled */}
-                    {!isCanceled && (
+                    {/* Action button - show if not globally canceled (individual actions still allowed when children pending removal) */}
+                    {!isGlobalCancellation && (
                       isChildPremium ? (
                         isPendingRemoval ? (
                           <Button
@@ -368,8 +380,7 @@ export default function SubscriptionManage(): ReactElement {
             <DialogTitle>
               {confirmDialog.type === 'add' && `Ajouter ${confirmDialog.child?.firstName} ?`}
               {confirmDialog.type === 'remove' && `Retirer ${confirmDialog.child?.firstName} ?`}
-              {confirmDialog.type === 'resume' && "Réactiver l'abonnement ?"}
-              {confirmDialog.type === 'reactivate' && "Annuler le retrait ?"}
+              {confirmDialog.type === 'reactivate' && `Réactiver ${confirmDialog.child?.firstName} ?`}
             </DialogTitle>
             <DialogDescription>
               {confirmDialog.type === 'add' && (
@@ -394,15 +405,9 @@ export default function SubscriptionManage(): ReactElement {
                   {(premiumChildrenCount ?? 0) <= 1 && " L'abonnement sera ensuite annulé."}
                 </>
               )}
-              {confirmDialog.type === 'resume' && (
-                <>
-                  Votre abonnement reprendra avec {premiumChildrenCount ?? 0} enfant{(premiumChildrenCount ?? 0) > 1 ? 's' : ''} Premium
-                  {status?.billing?.monthlyAmount && <> à <strong>{status.billing.monthlyAmount}/mois</strong></>}.
-                </>
-              )}
               {confirmDialog.type === 'reactivate' && (
                 <>
-                  Les enfants en attente de retrait seront réactivés et resteront Premium.
+                  {confirmDialog.child?.firstName} restera Premium.
                   Aucun frais supplémentaire ne sera appliqué.
                 </>
               )}

@@ -210,16 +210,17 @@ export function useResumeSubscription() {
 
 /**
  * Hook for canceling pending removal (reactivating children scheduled for removal)
+ * Accepts optional childId to reactivate a specific child
  */
 export function useCancelPendingRemoval() {
   const queryClient = useQueryClient();
   const user = useUser();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (childId?: string) => {
       if (!user?.id) throw new Error('Utilisateur non connecté');
       if (user.role !== 'parent') throw new Error('Seuls les parents peuvent gérer les abonnements');
-      return cancelPendingRemoval(user.id);
+      return cancelPendingRemoval(user.id, childId);
     },
     onSuccess: () => {
       if (user?.id) {

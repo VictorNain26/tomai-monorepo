@@ -494,7 +494,8 @@ export interface ICancelPendingRemovalResponse {
  * @param parentId - Parent user ID
  */
 export async function cancelPendingRemoval(
-  parentId: string
+  parentId: string,
+  childId?: string
 ): Promise<ICancelPendingRemovalResponse> {
   const response = await fetch(
     `${API_URL}/api/subscriptions/cancel-pending-removal`,
@@ -504,7 +505,7 @@ export async function cancelPendingRemoval(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ parentId }),
+      body: JSON.stringify({ parentId, childId }),
     }
   );
 
