@@ -8,7 +8,7 @@
  * - Stripe portal for billing
  */
 
-import { type ReactElement, useState, useMemo, useEffect, useCallback } from 'react';
+import { type ReactElement, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
@@ -36,8 +36,6 @@ import {
 import { useSubscription } from '@/hooks/useSubscription';
 import { useParentDataQuery } from '@/hooks/useParentDataQuery';
 import {
-  PRICING_INFO,
-  formatPriceEuros,
   formatPeriodEnd,
   isPremiumActive,
   isCanceledButActive,
@@ -87,10 +85,10 @@ export default function SubscriptionManage(): ReactElement {
   const [prorataPreview, setProrataPreview] = useState<IAddChildrenPreview | null>(null);
   const [isLoadingProrata, setIsLoadingProrata] = useState(false);
 
-  // Derived state from Stripe
+  // Derived state from Stripe (source of truth)
   const isPremium = status ? isPremiumActive(status) : false;
   const isCanceled = status ? isCanceledButActive(status) : false;
-  const premiumChildrenCount = status?.billing?.premiumChildrenCount ?? 0;
+  const premiumChildrenCount = status?.billing?.premiumChildrenCount;
   const currentPeriodEnd = status?.subscription?.currentPeriodEnd ?? null;
 
   // Get child status from Stripe
@@ -104,14 +102,6 @@ export default function SubscriptionManage(): ReactElement {
     },
     [status?.children]
   );
-
-  // Calculate new price after action
-  const newPriceAfterAction = useMemo(() => {
-    if (!confirmDialog.type || !confirmDialog.child) return null;
-    const delta = confirmDialog.type === 'add' ? 1 : -1;
-    const newCount = Math.max(0, premiumChildrenCount + delta);
-    return PRICING_INFO.calculateTotal(newCount);
-  }, [confirmDialog, premiumChildrenCount]);
 
   // Fetch prorata when opening add dialog
   useEffect(() => {
@@ -255,13 +245,13 @@ export default function SubscriptionManage(): ReactElement {
           <div className="grid grid-cols-2 gap-4 text-sm mb-4">
             <div>
               <p className="text-muted-foreground">Enfants Premium</p>
-              <p className="text-lg font-semibold">{premiumChildrenCount}</p>
+              <p className="text-lg font-semibold">{premiumChildrenCount ?? '—'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Tarification</p>
               <p className="text-lg font-semibold">15€ + 5€/enfant suppl.</p>
             </div>
-            {!isCanceled && (
+            {!isCanceled && currentPeriodEnd && (
               <div>
                 <p className="text-muted-foreground">Prochain renouvellement</p>
                 <p className="font-medium">{formatPeriodEnd(currentPeriodEnd)}</p>
@@ -368,22 +358,25 @@ export default function SubscriptionManage(): ReactElement {
                     <>
                       Vous serez facturé <strong>{prorataPreview.prorata.amount}</strong> maintenant
                       ({prorataPreview.prorata.daysRemaining}j restants).
-                      Puis <strong>{formatPriceEuros(newPriceAfterAction ?? 0)}/mois</strong>.
+                      Puis <strong>{prorataPreview.newSubscription.monthlyAmount}/mois</strong>.
                     </>
                   ) : (
-                    `Nouveau tarif : ${formatPriceEuros(newPriceAfterAction ?? 0)}/mois`
+                    'Erreur de calcul du montant'
                   )}
                 </>
               )}
-              {confirmDialog.type === 'remove' && (
+              {confirmDialog.type === 'remove' && currentPeriodEnd && (
                 <>
                   {confirmDialog.child?.firstName} gardera l'accès Premium jusqu'au{' '}
                   <strong>{formatPeriodEnd(currentPeriodEnd)}</strong>.
-                  Nouveau tarif : <strong>{formatPriceEuros(newPriceAfterAction ?? 0)}/mois</strong>.
+                  {(premiumChildrenCount ?? 0) <= 1 && " L'abonnement sera ensuite annulé."}
                 </>
               )}
               {confirmDialog.type === 'resume' && (
-                <>Votre abonnement reprendra normalement.</>
+                <>
+                  Votre abonnement reprendra avec {premiumChildrenCount ?? 0} enfant{(premiumChildrenCount ?? 0) > 1 ? 's' : ''} Premium
+                  {status?.billing?.monthlyAmount && <> à <strong>{status.billing.monthlyAmount}/mois</strong></>}.
+                </>
               )}
             </DialogDescription>
           </DialogHeader>
