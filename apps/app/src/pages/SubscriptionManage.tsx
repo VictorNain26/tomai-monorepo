@@ -51,7 +51,7 @@ import type { IChild } from '@/types';
 // Types
 // ============================================
 
-type ActionType = 'add' | 'remove' | 'cancel' | 'resume' | null;
+type ActionType = 'add' | 'remove' | 'resume' | null;
 
 interface ConfirmDialogState {
   type: ActionType;
@@ -74,8 +74,6 @@ export default function SubscriptionManage(): ReactElement {
     isRemovingChildren,
     openPortal,
     isOpeningPortal,
-    cancelSubscription,
-    isCanceling,
     resumeSubscription,
     isResuming,
     refetch,
@@ -172,10 +170,6 @@ export default function SubscriptionManage(): ReactElement {
             toast.success(`${child.firstName} sera retiré à la fin de la période`);
           }
           break;
-        case 'cancel':
-          await cancelSubscription();
-          toast.success("Abonnement annulé");
-          break;
         case 'resume':
           await resumeSubscription();
           toast.success("Abonnement réactivé");
@@ -186,9 +180,9 @@ export default function SubscriptionManage(): ReactElement {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erreur');
     }
-  }, [confirmDialog, addChildren, removeChildren, cancelSubscription, resumeSubscription, closeDialog, refetch]);
+  }, [confirmDialog, addChildren, removeChildren, resumeSubscription, closeDialog, refetch]);
 
-  const isActionLoading = isAddingChildren || isRemovingChildren || isCanceling || isResuming;
+  const isActionLoading = isAddingChildren || isRemovingChildren || isResuming;
 
   // Loading
   if (isLoading || isLoadingChildren) {
@@ -244,12 +238,16 @@ export default function SubscriptionManage(): ReactElement {
       </div>
 
       {/* Subscription Info Card */}
-      <Card className={cn('mb-6', isCanceled && 'border-destructive/50')}>
+      <Card className={cn('mb-6', isCanceled && 'border-amber-500/50')}>
         <CardContent className="pt-6">
           {/* Status alert if canceled */}
           {isCanceled && (
-            <div className="bg-destructive/10 text-destructive rounded-lg p-3 mb-4 text-sm">
-              Abonnement annulé - Accès jusqu'au {formatPeriodEnd(currentPeriodEnd)}
+            <div className="bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 rounded-lg p-4 mb-4">
+              <p className="font-medium mb-1">Abonnement annulé</p>
+              <p className="text-sm">
+                Vos enfants gardent l'accès Premium jusqu'au <strong>{formatPeriodEnd(currentPeriodEnd)}</strong>.
+                Après cette date, ils passeront au plan Gratuit.
+              </p>
             </div>
           )}
 
@@ -260,19 +258,15 @@ export default function SubscriptionManage(): ReactElement {
               <p className="text-lg font-semibold">{premiumChildrenCount}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Tarif mensuel</p>
-              <p className="text-lg font-semibold">
-                {formatPriceEuros(PRICING_INFO.calculateTotal(premiumChildrenCount))}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">{isCanceled ? "Fin d'accès" : 'Renouvellement'}</p>
-              <p className="font-medium">{formatPeriodEnd(currentPeriodEnd)}</p>
-            </div>
-            <div>
               <p className="text-muted-foreground">Tarification</p>
-              <p className="font-medium">15€ + 5€/enfant suppl.</p>
+              <p className="text-lg font-semibold">15€ + 5€/enfant suppl.</p>
             </div>
+            {!isCanceled && (
+              <div>
+                <p className="text-muted-foreground">Prochain renouvellement</p>
+                <p className="font-medium">{formatPeriodEnd(currentPeriodEnd)}</p>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -281,18 +275,9 @@ export default function SubscriptionManage(): ReactElement {
               <ExternalLink className="h-4 w-4 mr-1" />
               Facturation
             </Button>
-            {isCanceled ? (
+            {isCanceled && (
               <Button size="sm" onClick={() => setConfirmDialog({ type: 'resume' })}>
-                Réactiver
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={() => setConfirmDialog({ type: 'cancel' })}
-              >
-                Annuler
+                Réactiver l'abonnement
               </Button>
             )}
           </div>
@@ -372,7 +357,6 @@ export default function SubscriptionManage(): ReactElement {
             <DialogTitle>
               {confirmDialog.type === 'add' && `Ajouter ${confirmDialog.child?.firstName} ?`}
               {confirmDialog.type === 'remove' && `Retirer ${confirmDialog.child?.firstName} ?`}
-              {confirmDialog.type === 'cancel' && "Annuler l'abonnement ?"}
               {confirmDialog.type === 'resume' && "Réactiver l'abonnement ?"}
             </DialogTitle>
             <DialogDescription>
@@ -398,12 +382,6 @@ export default function SubscriptionManage(): ReactElement {
                   Nouveau tarif : <strong>{formatPriceEuros(newPriceAfterAction ?? 0)}/mois</strong>.
                 </>
               )}
-              {confirmDialog.type === 'cancel' && (
-                <>
-                  Vos enfants garderont l'accès jusqu'au{' '}
-                  <strong>{formatPeriodEnd(currentPeriodEnd)}</strong>.
-                </>
-              )}
               {confirmDialog.type === 'resume' && (
                 <>Votre abonnement reprendra normalement.</>
               )}
@@ -415,7 +393,7 @@ export default function SubscriptionManage(): ReactElement {
               Annuler
             </Button>
             <Button
-              variant={confirmDialog.type === 'cancel' || confirmDialog.type === 'remove' ? 'destructive' : 'default'}
+              variant={confirmDialog.type === 'remove' ? 'destructive' : 'default'}
               onClick={handleConfirmAction}
               disabled={isActionLoading || (confirmDialog.type === 'add' && isLoadingProrata)}
             >
