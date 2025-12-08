@@ -316,12 +316,12 @@ export async function redirectToCheckout(parentId: string, childrenIds?: string[
 }
 
 /**
- * Redirect to Customer Portal
+ * Open Customer Portal in new tab
  */
 export async function redirectToPortal(parentId: string): Promise<void> {
   const { url } = await getPortalSession(parentId);
   if (url) {
-    window.location.href = url;
+    window.open(url, '_blank', 'noopener,noreferrer');
   } else {
     throw new Error('URL du portail non disponible');
   }
