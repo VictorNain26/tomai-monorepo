@@ -17,10 +17,12 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { ScrollArea } from '../ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -127,89 +129,89 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={isLoading ? () => {} : onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader className="flex-shrink-0 border-b px-4 py-4 sm:px-6">
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             Modifier le profil de {child?.firstName}
           </DialogTitle>
           <DialogDescription>
-            Modifiez les informations personnelles et les préférences de matières de votre enfant.
+            Modifiez les informations personnelles de votre enfant.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informations personnelles */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Informations personnelles
-            </Label>
+        <ScrollArea className="flex-1 overflow-auto">
+          <form id="edit-child-form" onSubmit={handleSubmit} className="space-y-4 px-4 py-4 sm:px-6">
+            {/* Informations personnelles */}
+            <div className="space-y-4">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Informations personnelles
+              </Label>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">Prénom *</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                  placeholder="Prénom de l'enfant"
-                  disabled={isLoading}
-                />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">Prénom *</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                    placeholder="Prénom de l'enfant"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Nom de famille *</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                    placeholder="Nom de famille"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfBirth" className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Date de naissance *
+                  </Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                    max={new Date().toISOString().split('T')[0]}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="schoolLevel" className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4" />
+                    Niveau scolaire *
+                  </Label>
+                  <Select
+                    value={formData.schoolLevel}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, schoolLevel: value }))}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir le niveau" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {schoolLevels.map((level) => (
+                        <SelectItem key={level.value} value={level.value}>
+                          {level.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Nom de famille *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                  placeholder="Nom de famille"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateOfBirth" className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Date de naissance *
-                </Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                  max={new Date().toISOString().split('T')[0]}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="schoolLevel" className="flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4" />
-                  Niveau scolaire *
-                </Label>
-                <Select
-                  value={formData.schoolLevel}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, schoolLevel: value }))}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir le niveau" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {schoolLevels.map((level) => (
-                      <SelectItem key={level.value} value={level.value}>
-                        {level.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* LV2 Selection - apparaît uniquement pour 5ème+ */}
-            <div className="col-span-full">
+              {/* LV2 Selection - apparaît uniquement pour 5ème+ */}
               <Lv2Selector
                 schoolLevel={formData.schoolLevel}
                 selectedLv2={formData.selectedLv2}
@@ -217,57 +219,56 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
                 disabled={isLoading}
               />
             </div>
-          </div>
 
-          {/* Identifiant de connexion */}
-          <div className="space-y-4 border-t pt-4">
-            <Label className="text-base font-medium flex items-center gap-2">
-              <span className="text-xl">@</span>
-              Identifiant de connexion
-            </Label>
+            {/* Identifiant de connexion */}
+            <div className="space-y-3 border-t pt-4">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <span className="text-lg">@</span>
+                Identifiant de connexion
+              </Label>
 
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
-              <span className="font-mono text-lg font-semibold">
-                {child.username}
-              </span>
-              <Badge variant="outline">
-                Non modifiable
-              </Badge>
+              <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg border sm:flex-row sm:items-center sm:justify-between sm:p-4">
+                <span className="font-mono text-base font-semibold sm:text-lg">
+                  {child.username}
+                </span>
+                <Badge variant="outline" className="w-fit">
+                  Non modifiable
+                </Badge>
+              </div>
             </div>
-          </div>
+          </form>
+        </ScrollArea>
 
-          {/* All subjects now available automatically via RAG system */}
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-              disabled={!isFormValid || isLoading}
-              className="flex-1"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sauvegarde...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Sauvegarder
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
+        {/* Footer fixe avec boutons d'action */}
+        <DialogFooter className="flex-shrink-0 flex-col-reverse gap-2 border-t px-4 py-4 sm:flex-row sm:px-6">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isLoading}
+            className="w-full sm:w-auto"
+          >
+            Annuler
+          </Button>
+          <Button
+            type="submit"
+            form="edit-child-form"
+            disabled={!isFormValid || isLoading}
+            className="w-full sm:w-auto"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Sauvegarde...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Sauvegarder
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

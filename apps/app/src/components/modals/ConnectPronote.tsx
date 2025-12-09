@@ -5,11 +5,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
+import { ScrollArea } from '../ui/scroll-area';
 import type { IChild } from '@/types';
 import { useUser } from '@/lib/auth';
 
@@ -111,7 +113,7 @@ const ConnectPronote: React.FC<ConnectPronoteProps> = ({
   };
 
   const renderSearchStep = () => (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-6">
       <div className="text-center">
         <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-primary/20">
           <School className="w-8 h-8 text-primary" />
@@ -146,12 +148,12 @@ const ConnectPronote: React.FC<ConnectPronoteProps> = ({
           </Alert>
         )}
 
-        <div className="flex gap-3 pt-6 border-t border-primary/10">
+        <div className="flex flex-col-reverse gap-2 pt-6 border-t border-primary/10 sm:flex-row sm:gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
-            className="flex-1 border-primary/30 text-primary hover:bg-primary/10"
+            className="w-full border-primary/30 text-primary hover:bg-primary/10 sm:w-auto sm:flex-1"
           >
             Annuler
           </Button>
@@ -160,7 +162,7 @@ const ConnectPronote: React.FC<ConnectPronoteProps> = ({
             variant="default"
             onClick={handleSearch}
             disabled={!searchQuery.trim() || isSearching}
-            className="flex-1"
+            className="w-full sm:w-auto sm:flex-1"
           >
             {isSearching ? (
               <>
@@ -180,7 +182,7 @@ const ConnectPronote: React.FC<ConnectPronoteProps> = ({
   );
 
   const renderCredentialsStep = () => (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-6">
       <div className="text-center">
         <div className="w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-success/20">
           <CheckCircle className="w-8 h-8 text-success" />
@@ -226,12 +228,12 @@ const ConnectPronote: React.FC<ConnectPronoteProps> = ({
           </Alert>
         )}
 
-        <div className="flex gap-3 pt-6 border-t border-primary/10">
+        <div className="flex flex-col-reverse gap-2 pt-6 border-t border-primary/10 sm:flex-row sm:gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={() => setCurrentStep('search')}
-            className="flex-1 border-primary/30 text-primary hover:bg-primary/10"
+            className="w-full border-primary/30 text-primary hover:bg-primary/10 sm:w-auto sm:flex-1"
           >
             Retour
           </Button>
@@ -240,7 +242,7 @@ const ConnectPronote: React.FC<ConnectPronoteProps> = ({
             variant="default"
             onClick={handleConnect}
             disabled={!username.trim() || !password.trim()}
-            className="flex-1"
+            className="w-full sm:w-auto sm:flex-1"
           >
             Se connecter
           </Button>
@@ -250,7 +252,7 @@ const ConnectPronote: React.FC<ConnectPronoteProps> = ({
   );
 
   const renderConnectingStep = () => (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-6">
       <div className="text-center">
         <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-primary/20">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -263,7 +265,7 @@ const ConnectPronote: React.FC<ConnectPronoteProps> = ({
   );
 
   const renderSuccessStep = () => (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-6">
       <div className="text-center">
         <div className="w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-success/20">
           <CheckCircle className="w-8 h-8 text-success" />
@@ -310,21 +312,25 @@ const ConnectPronote: React.FC<ConnectPronoteProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={currentStep === 'connecting' ? () => {} : onClose}>
-      <DialogContent className="sm:max-w-md bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-        <DialogHeader className="border-b border-primary/10 pb-4">
+      <DialogContent className="flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 p-0 sm:max-w-md">
+        <DialogHeader className="flex-shrink-0 border-b border-primary/10 px-4 py-4 sm:px-6">
           <DialogTitle className="flex items-center gap-3 text-primary">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
               <School className="w-5 h-5 text-primary" />
             </div>
             <div>
               <span className="text-lg font-bold">{getTitle()}</span>
-              <p className="text-sm text-primary/70 font-medium mt-1">
-                Intégration Pronote pour {child.firstName}
-              </p>
             </div>
           </DialogTitle>
+          <DialogDescription className="text-sm text-primary/70 font-medium ml-[52px]">
+            Intégration Pronote pour {child.firstName}
+          </DialogDescription>
         </DialogHeader>
-        {renderContent()}
+        <ScrollArea className="flex-1 overflow-auto">
+          <div className="px-4 py-4 sm:px-6">
+            {renderContent()}
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
