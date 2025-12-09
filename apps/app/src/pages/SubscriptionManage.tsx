@@ -92,7 +92,7 @@ export default function SubscriptionManage(): ReactElement {
   const premiumChildrenCount = status?.billing?.premiumChildrenCount ?? 0;
   const currentPeriodEnd = status?.subscription?.currentPeriodEnd ?? null;
   const cancelAtPeriodEnd = status?.subscription?.cancelAtPeriodEnd ?? false;
-  const hasScheduledChanges = status?.subscription?.hasScheduledChanges ?? false;
+  const _hasScheduledChanges = status?.subscription?.hasScheduledChanges ?? false;
   const pendingRemovalChildrenIds = status?.subscription?.pendingRemovalChildrenIds ?? [];
 
   // Get child status from Stripe (source of truth)
