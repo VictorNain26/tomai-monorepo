@@ -13,6 +13,7 @@ import { getMessage, ERROR_MESSAGES, SUCCESS_MESSAGES, getMessageWithParams } fr
 /**
  * Hook useStudentDashboard - Gestion d'état simplifiée dashboard étudiant (MVP)
  * Simplifié: Sessions pour suggestions + Matières uniquement
+ * Support LV2: Les matières sont filtrées selon la LV2 de l'élève (à partir de 5ème)
  */
 
 interface StudentDashboardState {
@@ -40,19 +41,21 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
   const queryClient = useQueryClient();
   const user = useUser();
 
-  // 🎯 EXPERT: User REQUIS - l'app échoue si pas d'utilisateur ou schoolLevel manquant
+  // EXPERT: User REQUIS - l'app échoue si pas d'utilisateur ou schoolLevel manquant
   const tomaiUser = user as IAppUser | null;
   if (!tomaiUser?.schoolLevel) {
     throw new Error('User schoolLevel is required for dashboard - check authentication and user profile');
   }
 
   const userLevel = tomaiUser.schoolLevel;
+  const userLv2 = tomaiUser.selectedLv2 ?? null; // LV2 de l'utilisateur pour filtrage
   const mode = getUIMode(userLevel);
 
-  // Requêtes MVP simplifiées
-  const subjectsQuery = useAllSubjects(userLevel);
+  // Requêtes MVP simplifiées avec support LV2
+  // La LV2 est passée pour filtrer les matières de langues vivantes
+  const subjectsQuery = useAllSubjects(userLevel, userLv2);
 
-  // ⚡ OPTIMISATION: Récupérer uniquement la dernière session pour le dashboard
+  // OPTIMISATION: Récupérer uniquement la dernière session pour le dashboard
   // Au lieu de fetcher 5 sessions, on récupère seulement la plus récente (économie bandwidth)
   const latestSessionQuery = useQuery({
     ...chatQueries.latestSession()
@@ -125,7 +128,7 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
     };
   }
 
-  // 🚨 SI ERREUR API: Gérer gracieusement sans crash
+  // SI ERREUR API: Gérer gracieusement sans crash
   const apiError = subjectsQuery.error?.message ?? latestSessionQuery.error?.message;
   if (apiError) {
     // Log error mais ne pas throw - permet affichage UI d'erreur gracieux
@@ -150,13 +153,13 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
     };
   }
 
-  // ✅ RAG VIDE : Gérer gracieusement (premier déploiement ou maintenance)
+  // RAG VIDE : Gérer gracieusement (premier déploiement ou maintenance)
   const isRAGEmpty = !subjectsQuery.data || subjectsQuery.data.length === 0;
 
   // Toutes les matières sont maintenant disponibles depuis RAG
   const allActiveSubjects = subjectsQuery.data ?? [];
 
-  // ⚡ OPTIMISATION: Convertir latestSession en array pour compatibilité avec composants existants
+  // OPTIMISATION: Convertir latestSession en array pour compatibilité avec composants existants
   // NOTE: Architecture wraps single session in array for backwards compatibility with existing component structure
   const sessions = latestSessionQuery.data ? [latestSessionQuery.data] : [];
 

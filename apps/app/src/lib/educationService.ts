@@ -10,7 +10,8 @@ import type {
   EducationLevelType,
   EducationSubject,
   SubjectsAPIResponse,
-  ISubjectsForStudent
+  ISubjectsForStudent,
+  Lv2Option
 } from '@/types';
 
 interface SearchSubjectsResponse {
@@ -20,6 +21,7 @@ interface SearchSubjectsResponse {
 export interface LevelConfiguration {
   level: EducationLevelType;
   subjects: EducationSubject[];
+  selectedLv2?: Lv2Option | null;
 }
 
 export interface ValidationResult {
@@ -42,22 +44,27 @@ class EducationServiceFrontend {
   }
 
   /**
-   * Obtient la configuration complète pour un niveau
+   * Obtient la configuration complète pour un niveau avec support LV2
    * Récupère depuis PostgreSQL document_chunks + enrichissement backend
+   * @param level - Niveau scolaire
+   * @param selectedLv2 - LV2 sélectionnée (optionnel, pour niveaux >= 5ème)
    */
-  async getLevelConfiguration(level: EducationLevelType): Promise<LevelConfiguration> {
-    const cacheKey = `level:${level}`;
+  async getLevelConfiguration(level: EducationLevelType, selectedLv2?: Lv2Option | null): Promise<LevelConfiguration> {
+    // Cache key inclut la LV2 pour éviter les conflits
+    const cacheKey = `level:${level}:lv2:${selectedLv2 ?? 'none'}`;
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey) as LevelConfiguration;
     }
 
     try {
-      // ✅ ENDPOINT CORRIGÉ : /api/subjects/:level (backend educationService)
-      const response: SubjectsAPIResponse = await apiClient.get(`/api/subjects/${level}`);
+      // ENDPOINT avec support LV2 : /api/subjects/:level?selectedLv2=...
+      const queryParams = selectedLv2 ? `?selectedLv2=${selectedLv2}` : '';
+      const response: SubjectsAPIResponse = await apiClient.get(`/api/subjects/${level}${queryParams}`);
 
       const config: LevelConfiguration = {
         level,
-        subjects: response.subjects
+        subjects: response.subjects,
+        selectedLv2: selectedLv2 ?? null
       };
 
       this.cache.set(cacheKey, config);
@@ -68,14 +75,15 @@ class EducationServiceFrontend {
       logger.error(`Failed to fetch subjects for ${level}`, {
         operation: 'education-service',
         level,
+        selectedLv2: selectedLv2 ?? 'none',
         error: error instanceof Error ? error.message : String(error)
       });
 
-      // ⚠️ FALLBACK : Retourner liste vide si aucune donnée disponible
-      // Le StudentDashboard gérera l'affichage d'un message approprié
+      // Fallback : Retourner liste vide si aucune donnée disponible
       const fallbackConfig: LevelConfiguration = {
         level,
-        subjects: []
+        subjects: [],
+        selectedLv2: selectedLv2 ?? null
       };
 
       // Ne pas mettre en cache le fallback (retry à la prochaine requête)
@@ -84,13 +92,15 @@ class EducationServiceFrontend {
   }
 
   /**
-   * Obtient toutes les matières disponibles pour un niveau
+   * Obtient toutes les matières disponibles pour un niveau avec support LV2
    * Avec déduplication pour éviter les doublons entre API et fallback
+   * @param level - Niveau scolaire
+   * @param selectedLv2 - LV2 sélectionnée (optionnel, pour niveaux >= 5ème)
    */
-  async getAllSubjects(level: EducationLevelType): Promise<EducationSubject[]> {
-    const config = await this.getLevelConfiguration(level);
+  async getAllSubjects(level: EducationLevelType, selectedLv2?: Lv2Option | null): Promise<EducationSubject[]> {
+    const config = await this.getLevelConfiguration(level, selectedLv2);
 
-    // ✅ DÉDUPLICATION FINALE - Garantit l'absence de doublons
+    // Déduplication finale - Garantit l'absence de doublons
     const deduplicatedSubjects = config.subjects.reduce<EducationSubject[]>((acc, subject) => {
       const exists = acc.find(s => s.key === subject.key);
       if (!exists) {
@@ -130,8 +140,7 @@ class EducationServiceFrontend {
         error: error instanceof Error ? error.message : String(error)
       });
 
-      // ⚠️ FALLBACK VIDE : L'API doit être disponible
-      // Retourner liste vide pour forcer l'affichage d'un message approprié
+      // Fallback vide : L'API doit être disponible
       const fallbackSubjects: ISubjectsForStudent = {
         subjects: []
       };

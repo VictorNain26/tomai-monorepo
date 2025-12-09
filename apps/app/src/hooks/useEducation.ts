@@ -10,19 +10,22 @@ import { educationService } from '@/lib/educationService';
 import type {
   EducationLevelType,
   EducationSubject,
-  ISubjectsForStudent
+  ISubjectsForStudent,
+  Lv2Option
 } from '@/types';
 
 /**
- * Hook pour obtenir la configuration d'un niveau scolaire
+ * Hook pour obtenir la configuration d'un niveau scolaire avec support LV2
  * Remplace: useSubjectsPreview, useSubjectsPreviewLegacy
+ * @param level - Niveau scolaire
+ * @param selectedLv2 - LV2 sélectionnée (optionnel, pour niveaux >= 5ème)
  */
-export function useEducationLevel(level?: EducationLevelType) {
+export function useEducationLevel(level?: EducationLevelType, selectedLv2?: Lv2Option | null) {
   return useQuery({
-    queryKey: ['education', 'level', level],
+    queryKey: ['education', 'level', level, selectedLv2 ?? 'none'],
     queryFn: async () => {
       if (!level) throw new Error('Level is required');
-      return await educationService.getLevelConfiguration(level);
+      return await educationService.getLevelConfiguration(level, selectedLv2);
     },
     enabled: !!level,
     staleTime: 10 * 60 * 1000, // 10 minutes
@@ -30,17 +33,19 @@ export function useEducationLevel(level?: EducationLevelType) {
 }
 
 /**
- * Hook pour obtenir toutes les matières d'un niveau
+ * Hook pour obtenir toutes les matières d'un niveau avec support LV2
  * Avec déduplication côté client pour éviter les doublons d'affichage
+ * @param level - Niveau scolaire
+ * @param selectedLv2 - LV2 sélectionnée (optionnel, pour niveaux >= 5ème)
  */
-export function useAllSubjects(level?: EducationLevelType) {
+export function useAllSubjects(level?: EducationLevelType, selectedLv2?: Lv2Option | null) {
   return useQuery({
-    queryKey: ['education', 'subjects', 'all', level],
+    queryKey: ['education', 'subjects', 'all', level, selectedLv2 ?? 'none'],
     queryFn: async (): Promise<EducationSubject[]> => {
       if (!level) throw new Error('Level is required');
-      const subjects = await educationService.getAllSubjects(level);
+      const subjects = await educationService.getAllSubjects(level, selectedLv2);
 
-      // ✅ DÉDUPLICATION CÔTÉ CLIENT - Sécurité anti-doublons
+      // Déduplication côté client - Sécurité anti-doublons
       const deduplicatedSubjects = subjects.reduce<EducationSubject[]>((acc, subject) => {
         const exists = acc.find(s => s.key === subject.key);
         if (!exists) {
@@ -96,7 +101,7 @@ export function useSearchSubjects() {
       return await educationService.searchSubjectsByKeywords(keywords, level);
     },
     onError: (error: Error) => {
-      toast.error(`❌ Erreur de recherche: ${error.message}`);
+      toast.error(`Erreur de recherche: ${error.message}`);
     },
   });
 }
@@ -115,4 +120,3 @@ export function useSubjectEnrichment(subjects: EducationSubject[]) {
     staleTime: 15 * 60 * 1000, // 15 minutes
   });
 }
-

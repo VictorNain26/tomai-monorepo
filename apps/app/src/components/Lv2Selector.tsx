@@ -88,6 +88,7 @@ export const Lv2Selector: React.FC<ILv2SelectorProps> = ({
         {LV2_OPTIONS.map((option) => (
           <Button
             key={option.key}
+            type="button"
             onClick={() => onLv2Change(option.key)}
             disabled={disabled}
             variant={selectedLv2 === option.key ? "default" : "outline"}
@@ -116,6 +117,7 @@ export const Lv2Selector: React.FC<ILv2SelectorProps> = ({
       {/* Option pour retirer la LV2 */}
       {selectedLv2 && (
         <Button
+          type="button"
           onClick={() => onLv2Change(null)}
           disabled={disabled}
           variant="ghost"
