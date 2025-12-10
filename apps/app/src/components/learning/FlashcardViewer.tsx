@@ -1,12 +1,14 @@
 /**
  * FlashcardViewer - Composant de carte à retourner
  * Simple flip animation, pas de gamification
+ * Support KaTeX pour formules mathématiques
  */
 
 import { type ReactElement, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { MathContent } from '@/components/MathContent';
 import type { IFlashcardContent } from '@/types';
 
 interface FlashcardViewerProps {
@@ -49,9 +51,11 @@ export function FlashcardViewer({ content, onNext, isLast }: FlashcardViewerProp
             style={{ backfaceVisibility: 'hidden' }}
           >
             <CardContent className="p-0 text-center">
-              <p className="text-xl md:text-2xl font-medium text-foreground">
-                {content.front}
-              </p>
+              <MathContent
+                content={content.front}
+                className="text-xl md:text-2xl font-medium text-foreground"
+                centered
+              />
               <p className="text-sm text-muted-foreground mt-4">
                 Clique pour retourner
               </p>
@@ -67,9 +71,11 @@ export function FlashcardViewer({ content, onNext, isLast }: FlashcardViewerProp
             }}
           >
             <CardContent className="p-0 text-center">
-              <p className="text-xl md:text-2xl font-medium text-foreground">
-                {content.back}
-              </p>
+              <MathContent
+                content={content.back}
+                className="text-xl md:text-2xl font-medium text-foreground"
+                centered
+              />
             </CardContent>
           </Card>
         </div>

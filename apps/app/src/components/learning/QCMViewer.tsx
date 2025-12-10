@@ -1,12 +1,14 @@
 /**
  * QCMViewer - Composant de QCM (choix multiple)
  * Simple sélection, pas de score visible
+ * Support KaTeX pour formules mathématiques
  */
 
 import { type ReactElement, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { MathContent } from '@/components/MathContent';
 import { cn } from '@/lib/utils';
 import type { IQCMContent } from '@/types';
 
@@ -43,9 +45,11 @@ export function QCMViewer({ content, onNext, isLast }: QCMViewerProps): ReactEle
       {/* Question */}
       <Card>
         <CardContent className="p-6">
-          <p className="text-xl font-medium text-foreground text-center">
-            {content.question}
-          </p>
+          <MathContent
+            content={content.question}
+            className="text-xl font-medium text-foreground"
+            centered
+          />
         </CardContent>
       </Card>
 
@@ -88,7 +92,7 @@ export function QCMViewer({ content, onNext, isLast }: QCMViewerProps): ReactEle
                     String.fromCharCode(65 + index) // A, B, C, D
                   )}
                 </span>
-                <span className="flex-1 text-foreground">{option}</span>
+                <MathContent content={option} className="flex-1 text-foreground" />
               </div>
             </button>
           );
@@ -102,10 +106,10 @@ export function QCMViewer({ content, onNext, isLast }: QCMViewerProps): ReactEle
           isCorrect ? 'border-green-500/30 bg-green-500/5' : 'border-amber-500/30 bg-amber-500/5'
         )}>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">Explication : </span>
-              {content.explanation}
-            </p>
+              <MathContent content={content.explanation} className="inline" />
+            </div>
           </CardContent>
         </Card>
       )}
