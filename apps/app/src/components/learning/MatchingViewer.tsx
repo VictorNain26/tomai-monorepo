@@ -1,11 +1,27 @@
 /**
- * MatchingViewer - Composant d'association mot-traduction
- * Drag & drop ou click pour associer des paires
+ * MatchingViewer - Composant d'association mot-traduction avec drag-and-drop
+ * Glisser-déposer pour associer des paires
  * Idéal pour langues vivantes (vocabulaire)
+ *
+ * Utilise @dnd-kit pour une UX fluide et accessible
  */
 
-import { type ReactElement, useState, useMemo, useCallback } from 'react';
-import { Check, ChevronLeft, RotateCcw } from 'lucide-react';
+import { type ReactElement, useState, useMemo } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import { Check, ChevronLeft, RotateCcw, X, GripVertical, Link2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -19,8 +35,145 @@ interface MatchingViewerProps {
   isFirst?: boolean;
 }
 
+interface DraggableItemProps {
+  id: string;
+  text: string;
+  isMatched: boolean;
+  disabled: boolean;
+}
+
+interface DroppableTargetProps {
+  id: string;
+  text: string;
+  matchedText: string | null;
+  isCorrect: boolean | null;
+  hasValidated: boolean;
+  disabled: boolean;
+}
+
+/**
+ * Composant draggable pour un élément de gauche
+ */
+function DraggableItem({ id, text, isMatched, disabled }: DraggableItemProps): ReactElement {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id,
+    disabled: disabled || isMatched,
+  });
+
+  const style = transform ? {
+    transform: CSS.Translate.toString(transform),
+  } : undefined;
+
+  if (isMatched) {
+    return <div className="hidden" />;
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'p-3 rounded-lg border-2 bg-background transition-all flex items-center gap-2',
+        isDragging && 'opacity-50 shadow-lg ring-2 ring-primary',
+        !isDragging && 'border-primary/30 hover:border-primary hover:bg-primary/5',
+        disabled && 'opacity-50 cursor-not-allowed'
+      )}
+    >
+      {!disabled && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 rounded hover:bg-muted"
+          aria-label="Glisser pour associer"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+      )}
+      <span className="font-medium text-foreground">{text}</span>
+    </div>
+  );
+}
+
+/**
+ * Composant droppable pour un élément de droite (cible)
+ */
+function DroppableTarget({ id, text, matchedText, isCorrect, hasValidated, disabled }: DroppableTargetProps): ReactElement {
+  const { isOver, setNodeRef } = useDroppable({
+    id,
+    disabled,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'p-3 rounded-lg border-2 transition-all min-h-[56px] flex flex-col justify-center',
+        isOver && !matchedText && 'border-primary bg-primary/10 ring-2 ring-primary/30',
+        !matchedText && !isOver && 'border-dashed border-muted-foreground/30 bg-muted/20',
+        matchedText && !hasValidated && 'border-blue-500 bg-blue-500/10',
+        hasValidated && isCorrect === true && 'border-green-500 bg-green-500/10',
+        hasValidated && isCorrect === false && 'border-red-500 bg-red-500/10'
+      )}
+    >
+      {/* Target text (always visible) */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium text-foreground">{text}</span>
+        {hasValidated && isCorrect !== null && (
+          isCorrect
+            ? <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+            : <X className="h-4 w-4 text-red-600 flex-shrink-0" />
+        )}
+      </div>
+
+      {/* Matched item (if any) */}
+      {matchedText && (
+        <div className={cn(
+          'mt-2 pt-2 border-t flex items-center gap-2',
+          !hasValidated && 'border-blue-300',
+          hasValidated && isCorrect && 'border-green-300',
+          hasValidated && !isCorrect && 'border-red-300'
+        )}>
+          <Link2 className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+          <span className={cn(
+            'text-sm',
+            !hasValidated && 'text-blue-700',
+            hasValidated && isCorrect && 'text-green-700',
+            hasValidated && !isCorrect && 'text-red-700'
+          )}>
+            {matchedText}
+          </span>
+        </div>
+      )}
+
+      {/* Drop hint */}
+      {!matchedText && !hasValidated && (
+        <span className="text-xs text-muted-foreground italic">
+          Déposer ici
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Overlay pendant le drag
+ */
+function DragOverlayContent({ text }: { text: string }): ReactElement {
+  return (
+    <div className="p-3 rounded-lg border-2 border-primary bg-background shadow-xl">
+      <span className="font-medium text-foreground">{text}</span>
+    </div>
+  );
+}
+
 export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }: MatchingViewerProps): ReactElement {
-  // Shuffle right side items
+  // Shuffle right side items for display
   const shuffledRightIndices = useMemo(() => {
     const indices = content.pairs.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
@@ -32,34 +185,47 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
     return indices;
   }, [content.pairs]);
 
-  const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
-  const [selectedRight, setSelectedRight] = useState<number | null>(null);
   const [matches, setMatches] = useState<Map<number, number>>(new Map()); // leftIndex -> rightIndex
   const [hasValidated, setHasValidated] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
   const isComplete = matches.size === content.pairs.length;
-  const allCorrect = isComplete && Array.from(matches.entries()).every(([left, right]) => left === right);
+  const correctCount = Array.from(matches.entries()).filter(([left, right]) => left === right).length;
+  const allCorrect = isComplete && correctCount === content.pairs.length;
 
-  const handleLeftClick = useCallback((index: number) => {
-    if (hasValidated || matches.has(index)) return;
-    setSelectedLeft(selectedLeft === index ? null : index);
-  }, [hasValidated, matches, selectedLeft]);
+  // Get the text of the currently dragged item
+  const activeItem = activeId ? content.pairs[parseInt(activeId.replace('left-', ''))] : null;
 
-  const handleRightClick = useCallback((originalIndex: number) => {
-    if (hasValidated || Array.from(matches.values()).includes(originalIndex)) return;
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
 
-    if (selectedLeft !== null) {
-      // Make a match
-      const newMatches = new Map(matches);
-      newMatches.set(selectedLeft, originalIndex);
-      setMatches(newMatches);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
 
-      setSelectedLeft(null);
-      setSelectedRight(null);
-    } else {
-      setSelectedRight(selectedRight === originalIndex ? null : originalIndex);
-    }
-  }, [hasValidated, matches, selectedLeft, selectedRight]);
+    if (!over) return;
+
+    const leftIndex = parseInt((active.id as string).replace('left-', ''));
+    const rightIndex = parseInt((over.id as string).replace('right-', ''));
+
+    // Check if this right slot is already taken
+    const existingMatch = Array.from(matches.entries()).find(([_, r]) => r === rightIndex);
+    if (existingMatch) return;
+
+    const newMatches = new Map(matches);
+    newMatches.set(leftIndex, rightIndex);
+    setMatches(newMatches);
+  };
 
   const handleValidate = () => {
     setHasValidated(true);
@@ -67,9 +233,8 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
 
   const handleReset = () => {
     setMatches(new Map());
-    setSelectedLeft(null);
-    setSelectedRight(null);
     setHasValidated(false);
+    setActiveId(null);
   };
 
   const handleNext = () => {
@@ -77,40 +242,22 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
     onNext();
   };
 
-  const getLeftStyle = (index: number) => {
-    const isSelected = selectedLeft === index;
-    const isMatched = matches.has(index);
-    const matchedTo = matches.get(index);
-    const isCorrect = hasValidated && matchedTo === index;
-    const isWrong = hasValidated && isMatched && matchedTo !== index;
-
-    return cn(
-      'p-3 rounded-lg border-2 cursor-pointer transition-all text-center',
-      'hover:border-primary/50 hover:bg-primary/5',
-      isSelected && 'border-primary bg-primary/10',
-      isMatched && !hasValidated && 'border-blue-500 bg-blue-500/10',
-      isCorrect && 'border-green-500 bg-green-500/10',
-      isWrong && 'border-red-500 bg-red-500/10',
-      (hasValidated || isMatched) && 'cursor-default'
-    );
+  // Helper to get matched left text for a right index
+  const getMatchedLeftText = (rightIndex: number): string | null => {
+    const entry = Array.from(matches.entries()).find(([_, r]) => r === rightIndex);
+    if (entry) {
+      const pair = content.pairs[entry[0]];
+      return pair?.left ?? null;
+    }
+    return null;
   };
 
-  const getRightStyle = (originalIndex: number) => {
-    const isSelected = selectedRight === originalIndex;
-    const isMatched = Array.from(matches.values()).includes(originalIndex);
-    const matchedFrom = Array.from(matches.entries()).find(([_, v]) => v === originalIndex)?.[0];
-    const isCorrect = hasValidated && matchedFrom === originalIndex;
-    const isWrong = hasValidated && isMatched && matchedFrom !== originalIndex;
-
-    return cn(
-      'p-3 rounded-lg border-2 cursor-pointer transition-all text-center',
-      'hover:border-primary/50 hover:bg-primary/5',
-      isSelected && 'border-primary bg-primary/10',
-      isMatched && !hasValidated && 'border-blue-500 bg-blue-500/10',
-      isCorrect && 'border-green-500 bg-green-500/10',
-      isWrong && 'border-red-500 bg-red-500/10',
-      (hasValidated || isMatched) && 'cursor-default'
-    );
+  // Helper to check if a match is correct
+  const isMatchCorrect = (rightIndex: number): boolean | null => {
+    if (!hasValidated) return null;
+    const entry = Array.from(matches.entries()).find(([_, r]) => r === rightIndex);
+    if (!entry) return null;
+    return entry[0] === rightIndex; // left index should equal right index for correct match
   };
 
   return (
@@ -121,56 +268,79 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
           <p className="text-lg font-medium text-foreground text-center">
             {content.instruction}
           </p>
+          {!hasValidated && (
+            <p className="text-sm text-muted-foreground text-center mt-2">
+              Glisse chaque élément vers sa correspondance
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Matching columns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Left column */}
-        <div className="space-y-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1 text-center sm:text-left">
-            À associer
-          </span>
-          {content.pairs.map((pair) => {
-            const index = content.pairs.indexOf(pair);
-            return (
-            <button
-              key={`left-${pair.left}-${pair.right}`}
-              className={cn(getLeftStyle(index), 'w-full')}
-              onClick={() => handleLeftClick(index)}
-              disabled={hasValidated || matches.has(index)}
-              aria-label={`Sélectionner ${pair.left}`}
-              aria-pressed={selectedLeft === index}
-            >
-              <span className="font-medium">{pair.left}</span>
-            </button>
-            );
-          })}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* Left column - Draggable items */}
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">
+              À associer
+            </span>
+            <div className="space-y-2">
+              {content.pairs.map((pair, index) => (
+                <DraggableItem
+                  key={`left-${pair.left}-${pair.right}`}
+                  id={`left-${index}`}
+                  text={pair.left}
+                  isMatched={matches.has(index)}
+                  disabled={hasValidated}
+                />
+              ))}
+            </div>
+
+            {/* Empty state when all matched */}
+            {matches.size === content.pairs.length && !hasValidated && (
+              <p className="text-sm text-muted-foreground italic text-center py-2">
+                Tous les éléments sont placés
+              </p>
+            )}
+          </div>
+
+          {/* Right column - Droppable targets (shuffled) */}
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">
+              Correspondance
+            </span>
+            <div className="space-y-2">
+              {shuffledRightIndices.map((originalIndex) => {
+                const pair = content.pairs[originalIndex];
+                if (!pair) return null;
+
+                return (
+                  <DroppableTarget
+                    key={`right-${originalIndex}`}
+                    id={`right-${originalIndex}`}
+                    text={pair.right}
+                    matchedText={getMatchedLeftText(originalIndex)}
+                    isCorrect={isMatchCorrect(originalIndex)}
+                    hasValidated={hasValidated}
+                    disabled={hasValidated || Array.from(matches.values()).includes(originalIndex)}
+                  />
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        {/* Right column (shuffled) */}
-        <div className="space-y-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1 text-center sm:text-left">
-            Correspondance
-          </span>
-          {shuffledRightIndices.map((originalIndex) => {
-            const pair = content.pairs[originalIndex];
-            if (!pair) return null;
-            return (
-              <button
-                key={`right-${originalIndex}-${pair.right}`}
-                className={cn(getRightStyle(originalIndex), 'w-full')}
-                onClick={() => handleRightClick(originalIndex)}
-                disabled={hasValidated || Array.from(matches.values()).includes(originalIndex)}
-                aria-label={`Associer avec ${pair.right}`}
-                aria-pressed={selectedRight === originalIndex}
-              >
-                <span className="font-medium">{pair.right}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+        {/* Drag overlay */}
+        <DragOverlay>
+          {activeId && activeItem ? (
+            <DragOverlayContent text={activeItem.left} />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Result feedback */}
       {hasValidated && (
@@ -178,16 +348,40 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
           'border',
           allCorrect ? 'border-green-500/30 bg-green-500/5' : 'border-amber-500/30 bg-amber-500/5'
         )}>
-          <CardContent className="p-4 text-center">
+          <CardContent className="p-4">
             {allCorrect ? (
               <div className="flex items-center justify-center gap-2 text-green-600">
                 <Check className="h-5 w-5" />
                 <span className="font-medium">Parfait ! Toutes les associations sont correctes.</span>
               </div>
             ) : (
-              <span className="text-amber-600 font-medium">
-                Certaines associations sont incorrectes. Les bonnes réponses sont affichées en vert.
-              </span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-2 text-amber-600">
+                  <X className="h-5 w-5" />
+                  <span className="font-medium">
+                    {correctCount}/{content.pairs.length} associations correctes
+                  </span>
+                </div>
+
+                {/* Show correct associations */}
+                <div className="border-t border-amber-200 pt-3 mt-3">
+                  <p className="text-sm font-medium text-foreground mb-2 text-center">
+                    Associations correctes :
+                  </p>
+                  <div className="space-y-1">
+                    {content.pairs.map((pair) => (
+                      <div
+                        key={`correct-${pair.left}-${pair.right}`}
+                        className="flex items-center justify-center gap-2 text-sm"
+                      >
+                        <span className="font-medium text-foreground">{pair.left}</span>
+                        <Link2 className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{pair.right}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

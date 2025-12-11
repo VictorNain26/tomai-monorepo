@@ -1,11 +1,30 @@
 /**
- * TimelineViewer - Composant de chronologie
- * Drag & drop ou click pour ordonner des événements historiques
+ * TimelineViewer - Composant de chronologie avec drag-and-drop
+ * Glisser-déposer pour ordonner des événements historiques
  * Idéal pour histoire-géographie
+ *
+ * Utilise @dnd-kit pour une UX fluide et accessible
  */
 
 import { type ReactElement, useState, useMemo } from 'react';
-import { Check, ChevronLeft, RotateCcw, X, ArrowUp, ArrowDown, Calendar } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Check, ChevronLeft, RotateCcw, X, GripVertical, Calendar, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -17,6 +36,116 @@ interface TimelineViewerProps {
   onPrevious?: () => void;
   isLast: boolean;
   isFirst?: boolean;
+}
+
+interface SortableEventProps {
+  id: string;
+  eventIndex: number;
+  event: { event: string; date: string; hint?: string };
+  position: number;
+  hasAnswered: boolean;
+  isCorrectPosition: boolean;
+  correctPosition: number;
+}
+
+/**
+ * Composant sortable pour un événement de la timeline
+ */
+function SortableEvent({
+  id,
+  event,
+  position,
+  hasAnswered,
+  isCorrectPosition,
+  correctPosition,
+}: SortableEventProps): ReactElement {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled: hasAnswered });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'relative flex items-center gap-3',
+        isDragging && 'z-50'
+      )}
+    >
+      {/* Timeline dot */}
+      <div
+        className={cn(
+          'relative z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors',
+          !hasAnswered && 'bg-primary/10 text-primary border-2 border-primary',
+          hasAnswered && isCorrectPosition && 'bg-green-500 text-white',
+          hasAnswered && !isCorrectPosition && 'bg-red-500 text-white'
+        )}
+      >
+        {position + 1}
+      </div>
+
+      {/* Event card */}
+      <Card
+        className={cn(
+          'flex-1 transition-all',
+          isDragging && 'shadow-lg ring-2 ring-primary opacity-90',
+          !hasAnswered && !isDragging && 'border-border bg-background hover:border-primary/50',
+          hasAnswered && isCorrectPosition && 'border-green-500 bg-green-500/10',
+          hasAnswered && !isCorrectPosition && 'border-red-500 bg-red-500/10'
+        )}
+      >
+        <CardContent className="p-3 flex items-center">
+          {/* Drag handle */}
+          {!hasAnswered && (
+            <div
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 mr-2 rounded hover:bg-muted"
+              aria-label="Glisser pour réordonner"
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-foreground">{event.event}</p>
+
+            {/* Show date after answering */}
+            {hasAnswered && (
+              <p className="text-sm text-muted-foreground mt-1 font-mono">
+                {event.date}
+              </p>
+            )}
+
+            {/* Show hint before answering */}
+            {!hasAnswered && event.hint && (
+              <p className="text-xs text-muted-foreground mt-1 italic">
+                {event.hint}
+              </p>
+            )}
+
+            {/* Show correct position if wrong */}
+            {hasAnswered && !isCorrectPosition && (
+              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                <ArrowRight className="h-3 w-3" />
+                Position correcte : {correctPosition + 1}
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export function TimelineViewer({ content, onNext, onPrevious, isLast, isFirst }: TimelineViewerProps): ReactElement {
@@ -35,24 +164,36 @@ export function TimelineViewer({ content, onNext, onPrevious, isLast, isFirst }:
   const [userOrder, setUserOrder] = useState<number[]>(shuffledIndices);
   const [hasAnswered, setHasAnswered] = useState(false);
 
+  // Create stable IDs for dnd-kit
+  const itemIds = useMemo(
+    () => userOrder.map((eventIndex) => `event-${eventIndex}`),
+    [userOrder]
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px de mouvement avant activation (évite les clics accidentels)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const isCorrect = content.correctOrder.every((correctIdx, i) => userOrder[i] === correctIdx);
+  const correctCount = content.correctOrder.filter((correctIdx, i) => userOrder[i] === correctIdx).length;
 
-  const handleMoveUp = (position: number) => {
-    if (hasAnswered || position === 0) return;
-    const newOrder = [...userOrder];
-    const temp = newOrder[position - 1];
-    newOrder[position - 1] = newOrder[position] as number;
-    newOrder[position] = temp as number;
-    setUserOrder(newOrder);
-  };
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-  const handleMoveDown = (position: number) => {
-    if (hasAnswered || position === userOrder.length - 1) return;
-    const newOrder = [...userOrder];
-    const temp = newOrder[position + 1];
-    newOrder[position + 1] = newOrder[position] as number;
-    newOrder[position] = temp as number;
-    setUserOrder(newOrder);
+    if (over && active.id !== over.id) {
+      setUserOrder((items) => {
+        const oldIndex = itemIds.indexOf(active.id as string);
+        const newIndex = itemIds.indexOf(over.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   const handleValidate = () => {
@@ -60,24 +201,21 @@ export function TimelineViewer({ content, onNext, onPrevious, isLast, isFirst }:
   };
 
   const handleReset = () => {
-    setUserOrder([...shuffledIndices]);
+    // Re-shuffle
+    const indices = content.events.map((_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = indices[i];
+      indices[i] = indices[j] as number;
+      indices[j] = temp as number;
+    }
+    setUserOrder(indices);
     setHasAnswered(false);
   };
 
   const handleNext = () => {
-    setUserOrder([...shuffledIndices]);
-    setHasAnswered(false);
+    handleReset();
     onNext();
-  };
-
-  const getEventStyle = (eventIndex: number, position: number) => {
-    if (!hasAnswered) {
-      return 'border-border bg-background';
-    }
-    const correctPosition = content.correctOrder.indexOf(eventIndex);
-    return correctPosition === position
-      ? 'border-green-500 bg-green-500/10'
-      : 'border-red-500 bg-red-500/10';
   };
 
   return (
@@ -91,102 +229,100 @@ export function TimelineViewer({ content, onNext, onPrevious, isLast, isFirst }:
               {content.instruction}
             </p>
           </div>
+          {!hasAnswered && (
+            <p className="text-sm text-muted-foreground text-center mt-2">
+              Glisse les événements pour les remettre dans l'ordre chronologique
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Timeline events */}
+      {/* Timeline events with drag-and-drop */}
       <div className="relative">
         {/* Timeline line */}
         <div className="absolute left-5 sm:left-6 top-4 bottom-4 w-0.5 bg-border" />
 
-        <div className="space-y-3">
-          {userOrder.map((eventIndex, position) => {
-            const event = content.events[eventIndex];
-            if (!event) return null;
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {userOrder.map((eventIndex, position) => {
+                const event = content.events[eventIndex];
+                if (!event) return null;
 
-            return (
-              <div
-                key={`event-${eventIndex}-${event.event.slice(0, 20)}`}
-                className="relative flex items-center gap-3"
-              >
-                {/* Timeline dot */}
-                <div
-                  className={cn(
-                    'relative z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0',
-                    !hasAnswered && 'bg-primary/10 text-primary border-2 border-primary',
-                    hasAnswered && content.correctOrder.indexOf(eventIndex) === position && 'bg-green-500 text-white',
-                    hasAnswered && content.correctOrder.indexOf(eventIndex) !== position && 'bg-red-500 text-white'
-                  )}
-                >
-                  {position + 1}
-                </div>
+                const correctPosition = content.correctOrder.indexOf(eventIndex);
+                const isCorrectPosition = correctPosition === position;
 
-                {/* Event card */}
-                <Card className={cn('flex-1 transition-all', getEventStyle(eventIndex, position))}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{event.event}</p>
-                      {hasAnswered && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {event.date}
-                        </p>
-                      )}
-                      {!hasAnswered && event.hint && (
-                        <p className="text-xs text-muted-foreground mt-1 italic">
-                          {event.hint}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Move buttons */}
-                    {!hasAnswered && (
-                      <div className="flex flex-col gap-1 ml-2 flex-shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 sm:h-7 sm:w-7"
-                          onClick={() => handleMoveUp(position)}
-                          disabled={position === 0}
-                          aria-label="Déplacer vers le haut"
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 sm:h-7 sm:w-7"
-                          onClick={() => handleMoveDown(position)}
-                          disabled={position === userOrder.length - 1}
-                          aria-label="Déplacer vers le bas"
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            );
-          })}
-        </div>
+                return (
+                  <SortableEvent
+                    key={`event-${eventIndex}`}
+                    id={`event-${eventIndex}`}
+                    eventIndex={eventIndex}
+                    event={event}
+                    position={position}
+                    hasAnswered={hasAnswered}
+                    isCorrectPosition={isCorrectPosition}
+                    correctPosition={correctPosition}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
-      {/* Result feedback */}
+      {/* Result feedback - Enhanced */}
       {hasAnswered && (
         <Card className={cn(
           'border',
           isCorrect ? 'border-green-500/30 bg-green-500/5' : 'border-amber-500/30 bg-amber-500/5'
         )}>
-          <CardContent className="p-4 text-center">
+          <CardContent className="p-4">
             {isCorrect ? (
               <div className="flex items-center justify-center gap-2 text-green-600">
                 <Check className="h-5 w-5" />
                 <span className="font-medium">Parfait ! La chronologie est correcte.</span>
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-2 text-amber-600">
-                <X className="h-5 w-5" />
-                <span className="font-medium">Certains événements ne sont pas à la bonne place.</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-2 text-amber-600">
+                  <X className="h-5 w-5" />
+                  <span className="font-medium">
+                    {correctCount}/{content.events.length} événements bien placés
+                  </span>
+                </div>
+
+                {/* Show correct order */}
+                <div className="border-t border-amber-200 pt-3 mt-3">
+                  <p className="text-sm font-medium text-foreground mb-2 text-center">
+                    Ordre chronologique correct :
+                  </p>
+                  <ol className="space-y-1">
+                    {content.correctOrder.map((eventIndex, i) => {
+                      const event = content.events[eventIndex];
+                      if (!event) return null;
+                      return (
+                        <li
+                          key={`correct-${eventIndex}`}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <span className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {i + 1}
+                          </span>
+                          <span className="font-mono text-muted-foreground text-xs">
+                            {event.date}
+                          </span>
+                          <span className="text-foreground">
+                            {event.event}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
               </div>
             )}
           </CardContent>

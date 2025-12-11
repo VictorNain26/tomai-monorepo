@@ -252,15 +252,17 @@ export function useGenerateDeck(): UseGenerateDeckReturn {
   const generateMutation = useMutation({
     ...learningMutations.generateDeck(),
     onSuccess: () => {
+      // Invalidate cache pour que la liste des decks se mette à jour
       invalidationHelpers.invalidateLearningData(queryClient);
-      toast.success('Deck généré avec succès');
+      // Note: Les toasts sont gérés dans LearningDeckNew.tsx avec un ID unique
+      // pour éviter les doublons et permettre la mise à jour du toast loading
     },
     onError: (error: Error) => {
       logger.error('Error generating deck', error, {
         component: 'useLearning',
         operation: 'generateDeck',
       });
-      toast.error('Erreur lors de la génération du deck');
+      // Note: Les toasts d'erreur sont gérés dans LearningDeckNew.tsx
     },
   });
 
