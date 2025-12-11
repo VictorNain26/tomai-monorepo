@@ -1,29 +1,20 @@
 /**
  * LearningDeckNew - Génération IA de deck
  * Interface simple: matière + thème → génération automatique via RAG
- * Le niveau scolaire est automatiquement pris du profil utilisateur
- * Matières dynamiques depuis Qdrant (filtrées par niveau + LV2)
+ * Génération en arrière-plan pour ne pas bloquer l'utilisateur
  */
 
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowLeft,
-  Sparkles,
-  Loader2,
-  BookOpen,
-  AlertCircle,
-  Lightbulb,
-  Lock,
-  Crown,
-} from 'lucide-react';
+import { toast } from 'sonner';
+import { ArrowLeft, Sparkles, AlertCircle } from 'lucide-react';
 import { useGenerateDeck } from '@/hooks/useLearning';
 import { useUser } from '@/lib/auth';
 import { educationQueries, type ITopicsResponse } from '@/lib/query-factories';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -42,18 +33,14 @@ import type { ApiError } from '@/lib/api-client';
 export default function LearningDeckNew(): ReactElement {
   const navigate = useNavigate();
   const user = useUser();
-  const { generateDeck, isGenerating } = useGenerateDeck();
+  const { generateDeck } = useGenerateDeck();
 
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
-  const [error, setError] = useState<ApiError | null>(null);
-  const [subscriptionRequired, setSubscriptionRequired] = useState(false);
 
-  // Récupérer le niveau et LV2 du profil utilisateur
   const schoolLevel = (user?.schoolLevel ?? 'sixieme') as EducationLevelType;
   const selectedLv2 = user?.selectedLv2 ?? null;
 
-  // Fetch subjects dynamiquement depuis Qdrant (filtrés par niveau + LV2)
   const {
     data: subjectsData,
     isLoading: subjectsLoading,
@@ -63,7 +50,6 @@ export default function LearningDeckNew(): ReactElement {
     enabled: !!schoolLevel,
   });
 
-  // Fetch topics pour la matière sélectionnée (depuis RAG)
   const {
     data: topicsData,
     isLoading: topicsLoading,
@@ -76,53 +62,60 @@ export default function LearningDeckNew(): ReactElement {
   const subjects = subjectsData?.subjects ?? [];
   const domaines = (topicsData as ITopicsResponse | undefined)?.domaines ?? [];
   const isFormValid = subject && topic.length > 0;
+  const isLoadingTopics = !!subject && topicsLoading;
 
-  // Reset topic when subject changes
   const handleSubjectChange = (newSubject: string) => {
     setSubject(newSubject);
-    setTopic(''); // Reset topic when subject changes
-    setError(null);
-    setSubscriptionRequired(false);
+    setTopic('');
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!isFormValid) return;
 
-    setError(null);
-    setSubscriptionRequired(false);
+    const request: IGenerateDeckRequest = {
+      subject,
+      topic: topic.trim(),
+      cardCount: 8,
+    };
 
-    try {
-      const request: IGenerateDeckRequest = {
-        subject,
-        topic: topic.trim(),
-        cardCount: 8,
-      };
+    toast.loading('Génération du deck en cours...', {
+      id: 'deck-generation',
+      description: 'Tu seras notifié quand ce sera prêt.',
+    });
 
-      const result = await generateDeck(request);
-      void navigate(`/student/learning/${result.deck.id}`);
-    } catch (err) {
-      const apiError = err as ApiError;
+    void navigate('/student/learning');
 
-      // Erreur 403 - Abonnement requis
-      if (apiError.status === 403 || apiError.code === 'SUBSCRIPTION_REQUIRED') {
-        setSubscriptionRequired(true);
-        return;
-      }
+    generateDeck(request)
+      .then((result) => {
+        toast.success('Deck créé avec succès !', {
+          id: 'deck-generation',
+          description: `${result.deck.cardCount} cartes sur "${topic}"`,
+          action: {
+            label: 'Voir',
+            onClick: () => void navigate(`/student/learning/${result.deck.id}`),
+          },
+        });
+      })
+      .catch((err: unknown) => {
+        const apiError = err as ApiError;
 
-      // Erreur de validation (thème non trouvé dans le programme)
-      if (apiError.code === 'TOPIC_NOT_IN_CURRICULUM') {
-        setError(apiError);
-        return;
-      }
+        if (apiError.status === 403 || apiError.code === 'SUBSCRIPTION_REQUIRED') {
+          toast.error('Abonnement requis', {
+            id: 'deck-generation',
+            description: 'Demande à tes parents de souscrire un abonnement Premium.',
+          });
+          return;
+        }
 
-      // Autres erreurs - afficher le message
-      setError(apiError);
-    }
+        toast.error('Erreur de génération', {
+          id: 'deck-generation',
+          description: apiError.message ?? 'Une erreur est survenue.',
+        });
+      });
   };
 
   return (
     <PageContainer>
-      {/* Header */}
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -135,54 +128,11 @@ export default function LearningDeckNew(): ReactElement {
         </Button>
         <h1 className="text-3xl font-bold text-foreground">Créer un deck</h1>
         <p className="text-muted-foreground mt-1">
-          L'IA génère des cartes de révision alignées sur le programme officiel de ton niveau
+          L'IA génère des cartes alignées sur le programme officiel
         </p>
       </div>
 
       <div className="max-w-xl mx-auto">
-        {/* Alerte Abonnement Requis - Affichée en premier si nécessaire */}
-        {subscriptionRequired && (
-          <Card className="mb-6 border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                <Crown className="h-5 w-5" />
-                Fonctionnalité Premium
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                <div className="space-y-2">
-                  <p className="text-amber-800 dark:text-amber-200 font-medium">
-                    La génération de cartes de révision par IA est réservée aux comptes Premium.
-                  </p>
-                  <p className="text-amber-700 dark:text-amber-300 text-sm">
-                    Demande à tes parents de souscrire un abonnement pour débloquer cette fonctionnalité
-                    et créer des decks personnalisés alignés sur ton programme scolaire.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSubscriptionRequired(false)}
-                  className="border-amber-500/50 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
-                >
-                  Compris
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => navigate('/student/learning')}
-                  className="bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  Voir mes decks existants
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -190,58 +140,31 @@ export default function LearningDeckNew(): ReactElement {
               Génération automatique
             </CardTitle>
             <CardDescription>
-              Choisis une matière et un thème, l'IA crée les flashcards, QCM et Vrai/Faux
+              Choisis une matière et un thème, l'IA crée les cartes de révision
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Error Alert - Thème non trouvé ou autre erreur */}
-            {error && !subscriptionRequired && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erreur</AlertTitle>
-                <AlertDescription>
-                  <div className="space-y-2">
-                    <p>{error.message}</p>
-                    {error.suggestions && error.suggestions.length > 0 && (
-                      <div className="mt-3 p-3 rounded-md bg-destructive/10 border border-destructive/20">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Lightbulb className="h-4 w-4" />
-                          <span className="font-medium text-sm">Suggestions</span>
-                        </div>
-                        <ul className="list-disc list-inside text-sm space-y-1">
-                          {error.suggestions.map((suggestion) => (
-                            <li key={suggestion}>{suggestion}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Subject - Dynamique depuis Qdrant */}
+            {/* Matière */}
             <div className="space-y-2">
-              <Label htmlFor="subject">Matière *</Label>
+              <Label>Matière *</Label>
               {subjectsLoading ? (
                 <Skeleton className="h-10 w-full" />
               ) : subjectsError ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Impossible de charger les matières. Réessaie plus tard.
+                    Impossible de charger les matières.
                   </AlertDescription>
                 </Alert>
               ) : subjects.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Aucune matière disponible pour ton niveau ({schoolLevel}).
-                    Le contenu pédagogique est en cours de préparation.
+                    Aucune matière disponible pour ton niveau.
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Select value={subject} onValueChange={handleSubjectChange} disabled={isGenerating}>
+                <Select value={subject} onValueChange={handleSubjectChange} disabled={isLoadingTopics}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choisir une matière" />
                   </SelectTrigger>
@@ -259,9 +182,9 @@ export default function LearningDeckNew(): ReactElement {
               )}
             </div>
 
-            {/* Topic - Sélection guidée depuis RAG */}
+            {/* Thème */}
             <div className="space-y-2">
-              <Label htmlFor="topic">Thème / Chapitre *</Label>
+              <Label>Thème *</Label>
               {!subject ? (
                 <Select disabled>
                   <SelectTrigger>
@@ -274,29 +197,20 @@ export default function LearningDeckNew(): ReactElement {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Impossible de charger les thèmes. Réessaie plus tard.
+                    Impossible de charger les thèmes.
                   </AlertDescription>
                 </Alert>
               ) : domaines.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Aucun thème disponible pour cette matière à ton niveau ({schoolLevel}).
-                    Le contenu pédagogique est en cours de préparation.
+                    Aucun thème disponible pour cette matière.
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Select
-                  value={topic}
-                  onValueChange={(value) => {
-                    setTopic(value);
-                    setError(null);
-                    setSubscriptionRequired(false);
-                  }}
-                  disabled={isGenerating}
-                >
+                <Select value={topic} onValueChange={setTopic}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choisir un thème du programme" />
+                    <SelectValue placeholder="Choisir un thème" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {domaines.map((domaine) => (
@@ -314,44 +228,17 @@ export default function LearningDeckNew(): ReactElement {
                   </SelectContent>
                 </Select>
               )}
-              <p className="text-xs text-muted-foreground">
-                Thèmes du programme officiel de {schoolLevel}
-              </p>
             </div>
 
-            {/* Generate Button */}
             <Button
-              onClick={() => void handleGenerate()}
-              disabled={!isFormValid || isGenerating}
+              onClick={handleGenerate}
+              disabled={!isFormValid || isLoadingTopics}
               className="w-full"
               size="lg"
             >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Génération en cours...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Générer le deck
-                </>
-              )}
+              <Sparkles className="h-4 w-4 mr-2" />
+              Générer le deck
             </Button>
-
-            {/* Info during generation */}
-            {isGenerating && (
-              <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <BookOpen className="h-5 w-5 text-primary mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-foreground">Génération en cours</p>
-                  <p className="text-muted-foreground">
-                    L'IA analyse le programme officiel et crée des cartes adaptées à ton niveau.
-                    Cela peut prendre quelques secondes...
-                  </p>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
