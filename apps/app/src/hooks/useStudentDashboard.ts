@@ -48,11 +48,10 @@ export function useStudentDashboard(): UseStudentDashboardReturn {
   }
 
   const userLevel = tomaiUser.schoolLevel;
-  const userLv2 = tomaiUser.selectedLv2 ?? null; // LV2 de l'utilisateur pour filtrage
+  const userLv2 = tomaiUser.selectedLv2 ?? null;
   const mode = getUIMode(userLevel);
 
-  // Requêtes MVP simplifiées avec support LV2
-  // La LV2 est passée pour filtrer les matières de langues vivantes
+  // Requêtes MVP avec LV2 - Frontend passe toujours selectedLv2 pour éviter problèmes de cache
   const subjectsQuery = useAllSubjects(userLevel, userLv2);
 
   // OPTIMISATION: Récupérer uniquement la dernière session pour le dashboard

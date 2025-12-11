@@ -7,12 +7,13 @@
  * - Vrai/Faux
  * - Tout contenu éducatif avec formules
  *
- * Stack : react-markdown + remark-math + rehype-katex
+ * Stack : react-markdown + remark-math + remark-gfm + rehype-katex
  */
 
 import { type ReactElement, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
+import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { cn } from '@/lib/utils';
@@ -56,22 +57,31 @@ function MathContentComponent({
   return (
     <div
       className={cn(
-        'math-content',
+        'math-content prose prose-sm dark:prose-invert max-w-none',
         textSize && textSizeClasses[textSize],
         centered && 'text-center',
         // Styles pour les éléments markdown générés
-        '[&_p]:mb-0 [&_p:last-child]:mb-0',
+        '[&_p]:mb-2 [&_p:last-child]:mb-0',
         '[&_.katex-display]:my-2',
+        // Styles pour les tableaux GFM
+        '[&_table]:w-full [&_table]:border-collapse [&_table]:my-2',
+        '[&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_th]:bg-muted [&_th]:font-medium [&_th]:text-left',
+        '[&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1',
+        // Styles pour les listes
+        '[&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-1',
+        '[&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-1',
+        '[&_li]:my-0.5',
+        // Styles pour le code
+        '[&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs',
+        '[&_pre]:bg-muted [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto [&_pre]:text-xs [&_pre]:my-2',
+        // Bold/italic
+        '[&_strong]:font-semibold',
         className
       )}
     >
       <ReactMarkdown
-        remarkPlugins={[remarkMath]}
+        remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
-        components={{
-          // Évite les marges supplémentaires sur les paragraphes
-          p: ({ children }) => <span className="inline">{children}</span>,
-        }}
       >
         {content}
       </ReactMarkdown>

@@ -5,7 +5,7 @@
  */
 
 import { type ReactElement, useState } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, ChevronLeft } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MathContent } from '@/components/MathContent';
@@ -14,10 +14,12 @@ import type { IFlashcardContent } from '@/types';
 interface FlashcardViewerProps {
   content: IFlashcardContent;
   onNext: () => void;
+  onPrevious?: () => void;
   isLast: boolean;
+  isFirst?: boolean;
 }
 
-export function FlashcardViewer({ content, onNext, isLast }: FlashcardViewerProps): ReactElement {
+export function FlashcardViewer({ content, onNext, onPrevious, isLast, isFirst }: FlashcardViewerProps): ReactElement {
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleFlip = () => {
@@ -30,7 +32,7 @@ export function FlashcardViewer({ content, onNext, isLast }: FlashcardViewerProp
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 w-full max-w-xl mx-auto">
+    <div className="flex flex-col items-center gap-6 w-full max-w-2xl mx-auto">
       {/* Flashcard */}
       <div
         className="w-full aspect-[3/2] cursor-pointer perspective-1000"
@@ -82,10 +84,19 @@ export function FlashcardViewer({ content, onNext, isLast }: FlashcardViewerProp
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-center gap-3">
+        {!isFirst && onPrevious && (
+          <Button
+            variant="outline"
+            onClick={onPrevious}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Précédent
+          </Button>
+        )}
+
         <Button
           variant="outline"
-          size="sm"
           onClick={handleFlip}
         >
           <RotateCcw className="h-4 w-4 mr-1" />

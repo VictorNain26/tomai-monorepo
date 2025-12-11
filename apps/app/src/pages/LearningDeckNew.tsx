@@ -20,18 +20,19 @@ import {
 } from 'lucide-react';
 import { useGenerateDeck } from '@/hooks/useLearning';
 import { useUser } from '@/lib/auth';
-import { educationQueries } from '@/lib/query-factories';
+import { educationQueries, type ITopicsResponse } from '@/lib/query-factories';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -62,8 +63,27 @@ export default function LearningDeckNew(): ReactElement {
     enabled: !!schoolLevel,
   });
 
+  // Fetch topics pour la matière sélectionnée (depuis RAG)
+  const {
+    data: topicsData,
+    isLoading: topicsLoading,
+    error: topicsError,
+  } = useQuery({
+    ...educationQueries.topicsForSubject(schoolLevel, subject),
+    enabled: !!schoolLevel && !!subject,
+  });
+
   const subjects = subjectsData?.subjects ?? [];
-  const isFormValid = subject && topic.trim().length >= 3;
+  const domaines = (topicsData as ITopicsResponse | undefined)?.domaines ?? [];
+  const isFormValid = subject && topic.length > 0;
+
+  // Reset topic when subject changes
+  const handleSubjectChange = (newSubject: string) => {
+    setSubject(newSubject);
+    setTopic(''); // Reset topic when subject changes
+    setError(null);
+    setSubscriptionRequired(false);
+  };
 
   const handleGenerate = async () => {
     if (!isFormValid) return;
@@ -221,7 +241,7 @@ export default function LearningDeckNew(): ReactElement {
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Select value={subject} onValueChange={setSubject} disabled={isGenerating}>
+                <Select value={subject} onValueChange={handleSubjectChange} disabled={isGenerating}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choisir une matière" />
                   </SelectTrigger>
@@ -239,29 +259,70 @@ export default function LearningDeckNew(): ReactElement {
               )}
             </div>
 
-            {/* Topic */}
+            {/* Topic - Sélection guidée depuis RAG */}
             <div className="space-y-2">
               <Label htmlFor="topic">Thème / Chapitre *</Label>
-              <Input
-                id="topic"
-                placeholder="Ex: Les fractions, La Révolution française, Le théorème de Pythagore..."
-                value={topic}
-                onChange={(e) => {
-                  setTopic(e.target.value);
-                  setError(null);
-                  setSubscriptionRequired(false);
-                }}
-                disabled={isGenerating || subjects.length === 0}
-              />
+              {!subject ? (
+                <Select disabled>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisis d'abord une matière" />
+                  </SelectTrigger>
+                </Select>
+              ) : topicsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : topicsError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Impossible de charger les thèmes. Réessaie plus tard.
+                  </AlertDescription>
+                </Alert>
+              ) : domaines.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Aucun thème disponible pour cette matière à ton niveau ({schoolLevel}).
+                    Le contenu pédagogique est en cours de préparation.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Select
+                  value={topic}
+                  onValueChange={(value) => {
+                    setTopic(value);
+                    setError(null);
+                    setSubscriptionRequired(false);
+                  }}
+                  disabled={isGenerating}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un thème du programme" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {domaines.map((domaine) => (
+                      <SelectGroup key={domaine.domaine}>
+                        <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          {domaine.domaine}
+                        </SelectLabel>
+                        {domaine.themes.map((theme) => (
+                          <SelectItem key={`${domaine.domaine}-${theme}`} value={theme}>
+                            {theme}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <p className="text-xs text-muted-foreground">
-                Le thème doit correspondre au programme officiel de ton niveau
+                Thèmes du programme officiel de {schoolLevel}
               </p>
             </div>
 
             {/* Generate Button */}
             <Button
               onClick={() => void handleGenerate()}
-              disabled={!isFormValid || isGenerating || subjects.length === 0}
+              disabled={!isFormValid || isGenerating}
               className="w-full"
               size="lg"
             >

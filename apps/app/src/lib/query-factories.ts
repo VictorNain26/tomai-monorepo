@@ -112,6 +112,9 @@ export const queryKeys = {
     subjects: (level: EducationLevelType, selectedLv2?: Lv2Option | null) =>
       [...queryKeys.education.all, 'subjects', level, selectedLv2 ?? 'no-lv2'] as const,
     levels: () => [...queryKeys.education.all, 'levels'] as const,
+    // Topics from RAG (themes/chapters per subject)
+    topics: (niveau: EducationLevelType, matiere: string) =>
+      [...queryKeys.education.all, 'topics', niveau, matiere] as const,
   },
 } as const;
 
@@ -401,6 +404,20 @@ export interface IEducationSubjectsResponse {
   message?: string;
 }
 
+/** Domain with its topics from RAG */
+export interface IDomainWithTopics {
+  domaine: string;
+  themes: string[];
+}
+
+/** Response from /api/learning/topics endpoint */
+export interface ITopicsResponse {
+  matiere: string;
+  niveau: string;
+  domaines: IDomainWithTopics[];
+  totalTopics: number;
+}
+
 export const educationQueries = {
   /** Get subjects available for a school level (filtered by LV2 if applicable) */
   subjectsForLevel: (level: EducationLevelType, selectedLv2?: Lv2Option | null) => ({
@@ -410,6 +427,17 @@ export const educationQueries = {
       return apiClient.get(`/api/subjects/${level}`, { params });
     },
   }),
+
+  /** Get topics/themes from RAG for a subject at a given level */
+  topicsForSubject: (niveau: EducationLevelType, matiere: string) => ({
+    queryKey: queryKeys.education.topics(niveau, matiere),
+    queryFn: async (): Promise<ITopicsResponse> => {
+      return apiClient.get('/api/learning/topics', {
+        params: { niveau, matiere }
+      });
+    },
+    enabled: !!matiere && !!niveau,
+  }),
 };
 
 // ===== INVALIDATION HELPERS =====
@@ -417,12 +445,15 @@ export const educationQueries = {
 
 export const invalidationHelpers = {
   /**
-   * Invalide toutes les données parent (dashboard + enfants)
+   * Invalide toutes les données parent (dashboard + enfants + education)
    * Utilisé après création, modification, suppression d'enfant
+   * Inclut education/subjects car la LV2 peut changer
    */
   invalidateParentData: (queryClient: QueryClient) => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.parent.dashboard() });
     void queryClient.invalidateQueries({ queryKey: queryKeys.parent.children() });
+    // Invalider aussi les subjects education car la LV2 peut avoir changé
+    void queryClient.invalidateQueries({ queryKey: ['education', 'subjects'] });
   },
 
   /**

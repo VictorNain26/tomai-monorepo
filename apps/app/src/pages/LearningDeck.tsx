@@ -1,6 +1,7 @@
 /**
  * LearningDeck - Page de révision d'un deck
  * Affiche les cartes une par une, pas de score visible
+ * Supporte 13 types de cartes différents selon la matière
  */
 
 import { type ReactElement, useState, useMemo } from 'react';
@@ -9,13 +10,50 @@ import { ArrowLeft, Layers, Shuffle } from 'lucide-react';
 import { useDeck } from '@/hooks/useLearning';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { LoadingState } from '@/components/shared/LoadingState';
+// Universal viewers
 import { FlashcardViewer } from '@/components/learning/FlashcardViewer';
 import { QCMViewer } from '@/components/learning/QCMViewer';
 import { VraiFauxViewer } from '@/components/learning/VraiFauxViewer';
+// Language viewers
+import { MatchingViewer } from '@/components/learning/MatchingViewer';
+import { FillBlankViewer } from '@/components/learning/FillBlankViewer';
+import { WordOrderViewer } from '@/components/learning/WordOrderViewer';
+// Math/Science viewers
+import { CalculationViewer } from '@/components/learning/CalculationViewer';
+// History-Geo viewers
+import { TimelineViewer } from '@/components/learning/TimelineViewer';
+import { MatchingEraViewer } from '@/components/learning/MatchingEraViewer';
+import { CauseEffectViewer } from '@/components/learning/CauseEffectViewer';
+// SVT viewers
+import { ClassificationViewer } from '@/components/learning/ClassificationViewer';
+import { ProcessOrderViewer } from '@/components/learning/ProcessOrderViewer';
+// French viewers
+import { GrammarTransformViewer } from '@/components/learning/GrammarTransformViewer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import type { ILearningCard, IFlashcardContent, IQCMContent, IVraiFauxContent } from '@/types';
+import type {
+  ILearningCard,
+  // Universal
+  IFlashcardContent,
+  IQCMContent,
+  IVraiFauxContent,
+  // Languages
+  IMatchingContent,
+  IFillBlankContent,
+  IWordOrderContent,
+  // Math/Sciences
+  ICalculationContent,
+  // History-Geo
+  ITimelineContent,
+  IMatchingEraContent,
+  ICauseEffectContent,
+  // SVT
+  IClassificationContent,
+  IProcessOrderContent,
+  // French
+  IGrammarTransformContent,
+} from '@/types';
 
 // Shuffle array (Fisher-Yates)
 function shuffleArray<T>(array: T[]): T[] {
@@ -54,6 +92,12 @@ export default function LearningDeck(): ReactElement {
       setCurrentIndex(currentIndex + 1);
     } else {
       setIsComplete(true);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
     }
   };
 
@@ -192,7 +236,9 @@ export default function LearningDeck(): ReactElement {
           <CardViewer
             card={currentCard}
             onNext={handleNext}
+            onPrevious={handlePrevious}
             isLast={currentIndex === displayCards.length - 1}
+            isFirst={currentIndex === 0}
           />
         )}
       </div>
@@ -204,19 +250,26 @@ export default function LearningDeck(): ReactElement {
 function CardViewer({
   card,
   onNext,
+  onPrevious,
   isLast,
+  isFirst,
 }: {
   card: ILearningCard;
   onNext: () => void;
+  onPrevious: () => void;
   isLast: boolean;
+  isFirst: boolean;
 }): ReactElement {
   switch (card.cardType) {
+    // Universal types
     case 'flashcard':
       return (
         <FlashcardViewer
           content={card.content as IFlashcardContent}
           onNext={onNext}
+          onPrevious={onPrevious}
           isLast={isLast}
+          isFirst={isFirst}
         />
       );
     case 'qcm':
@@ -224,7 +277,9 @@ function CardViewer({
         <QCMViewer
           content={card.content as IQCMContent}
           onNext={onNext}
+          onPrevious={onPrevious}
           isLast={isLast}
+          isFirst={isFirst}
         />
       );
     case 'vrai_faux':
@@ -232,9 +287,122 @@ function CardViewer({
         <VraiFauxViewer
           content={card.content as IVraiFauxContent}
           onNext={onNext}
+          onPrevious={onPrevious}
           isLast={isLast}
+          isFirst={isFirst}
         />
       );
+
+    // Language types
+    case 'matching':
+      return (
+        <MatchingViewer
+          content={card.content as IMatchingContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+    case 'fill_blank':
+      return (
+        <FillBlankViewer
+          content={card.content as IFillBlankContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+    case 'word_order':
+      return (
+        <WordOrderViewer
+          content={card.content as IWordOrderContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+
+    // Math/Science types
+    case 'calculation':
+      return (
+        <CalculationViewer
+          content={card.content as ICalculationContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+
+    // History-Geo types
+    case 'timeline':
+      return (
+        <TimelineViewer
+          content={card.content as ITimelineContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+    case 'matching_era':
+      return (
+        <MatchingEraViewer
+          content={card.content as IMatchingEraContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+    case 'cause_effect':
+      return (
+        <CauseEffectViewer
+          content={card.content as ICauseEffectContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+
+    // SVT types
+    case 'classification':
+      return (
+        <ClassificationViewer
+          content={card.content as IClassificationContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+    case 'process_order':
+      return (
+        <ProcessOrderViewer
+          content={card.content as IProcessOrderContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+
+    // French types
+    case 'grammar_transform':
+      return (
+        <GrammarTransformViewer
+          content={card.content as IGrammarTransformContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+
     default:
       return (
         <Card>

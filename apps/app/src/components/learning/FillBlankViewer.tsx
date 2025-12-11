@@ -1,7 +1,7 @@
 /**
- * QCMViewer - Composant de QCM (choix multiple)
- * Simple sélection, pas de score visible
- * Support KaTeX pour formules mathématiques
+ * FillBlankViewer - Composant texte à trous
+ * Choix multiple pour compléter une phrase
+ * Idéal pour langues et français (grammaire, conjugaison)
  */
 
 import { type ReactElement, useState } from 'react';
@@ -10,17 +10,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MathContent } from '@/components/MathContent';
 import { cn } from '@/lib/utils';
-import type { IQCMContent } from '@/types';
+import type { IFillBlankContent } from '@/types';
 
-interface QCMViewerProps {
-  content: IQCMContent;
+interface FillBlankViewerProps {
+  content: IFillBlankContent;
   onNext: () => void;
   onPrevious?: () => void;
   isLast: boolean;
   isFirst?: boolean;
 }
 
-export function QCMViewer({ content, onNext, onPrevious, isLast, isFirst }: QCMViewerProps): ReactElement {
+export function FillBlankViewer({ content, onNext, onPrevious, isLast, isFirst }: FillBlankViewerProps): ReactElement {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
 
@@ -42,21 +42,43 @@ export function QCMViewer({ content, onNext, onPrevious, isLast, isFirst }: QCMV
 
   const isCorrect = selectedIndex === content.correctIndex;
 
+  // Split sentence at ___ to display with blank
+  const sentenceParts = content.sentence.split('___');
+  const filledAnswer = hasAnswered && selectedIndex !== null ? content.options[selectedIndex] : '___';
+
   return (
     <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
-      {/* Question */}
+      {/* Grammatical point badge (if provided) */}
+      {content.grammaticalPoint && (
+        <div className="flex justify-center">
+          <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
+            {content.grammaticalPoint}
+          </span>
+        </div>
+      )}
+
+      {/* Sentence with blank */}
       <Card>
         <CardContent className="p-6">
-          <MathContent
-            content={content.question}
-            className="text-xl font-medium text-foreground"
-            centered
-          />
+          <p className="text-xl font-medium text-foreground text-center">
+            {sentenceParts[0]}
+            <span
+              className={cn(
+                'inline-block min-w-[80px] px-2 py-1 mx-1 rounded border-2 border-dashed',
+                !hasAnswered && 'border-primary/50 bg-primary/5',
+                hasAnswered && isCorrect && 'border-green-500 bg-green-500/10',
+                hasAnswered && !isCorrect && 'border-red-500 bg-red-500/10'
+              )}
+            >
+              {filledAnswer}
+            </span>
+            {sentenceParts[1]}
+          </p>
         </CardContent>
       </Card>
 
       {/* Options */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {content.options.map((option, index) => {
           const optionKey = `option-${index}-${option.slice(0, 10)}`;
           const isSelected = selectedIndex === index;
@@ -67,7 +89,7 @@ export function QCMViewer({ content, onNext, onPrevious, isLast, isFirst }: QCMV
             <button
               key={optionKey}
               className={cn(
-                'w-full p-4 rounded-lg border text-left transition-all',
+                'p-4 rounded-lg border-2 text-center transition-all',
                 'hover:border-primary/50 hover:bg-primary/5',
                 !hasAnswered && isSelected && 'border-primary bg-primary/10',
                 showResult && isCorrectOption && 'border-green-500 bg-green-500/10',
@@ -77,24 +99,14 @@ export function QCMViewer({ content, onNext, onPrevious, isLast, isFirst }: QCMV
               onClick={() => handleSelect(index)}
               disabled={hasAnswered}
             >
-              <div className="flex items-center gap-3">
-                <span
-                  className={cn(
-                    'flex items-center justify-center w-8 h-8 rounded-full border text-sm font-medium',
-                    !hasAnswered && isSelected && 'border-primary bg-primary text-primary-foreground',
-                    showResult && isCorrectOption && 'border-green-500 bg-green-500 text-white',
-                    showResult && isSelected && !isCorrectOption && 'border-red-500 bg-red-500 text-white'
-                  )}
-                >
-                  {showResult && isCorrectOption ? (
-                    <Check className="h-4 w-4" />
-                  ) : showResult && isSelected && !isCorrectOption ? (
-                    <X className="h-4 w-4" />
-                  ) : (
-                    String.fromCharCode(65 + index) // A, B, C, D
-                  )}
-                </span>
-                <MathContent content={option} className="flex-1 text-foreground" />
+              <div className="flex items-center justify-center gap-2">
+                {showResult && isCorrectOption && (
+                  <Check className="h-4 w-4 text-green-600" />
+                )}
+                {showResult && isSelected && !isCorrectOption && (
+                  <X className="h-4 w-4 text-red-600" />
+                )}
+                <span className="font-medium">{option}</span>
               </div>
             </button>
           );
@@ -119,20 +131,14 @@ export function QCMViewer({ content, onNext, onPrevious, isLast, isFirst }: QCMV
       {/* Actions */}
       <div className="flex justify-center gap-3">
         {!isFirst && onPrevious && (
-          <Button
-            variant="outline"
-            onClick={onPrevious}
-          >
+          <Button variant="outline" onClick={onPrevious}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             Précédent
           </Button>
         )}
 
         {!hasAnswered ? (
-          <Button
-            onClick={handleValidate}
-            disabled={selectedIndex === null}
-          >
+          <Button onClick={handleValidate} disabled={selectedIndex === null}>
             Valider
           </Button>
         ) : (

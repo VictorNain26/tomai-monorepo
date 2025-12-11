@@ -5,7 +5,7 @@
  */
 
 import { type ReactElement, useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, ChevronLeft } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MathContent } from '@/components/MathContent';
@@ -15,10 +15,12 @@ import type { IVraiFauxContent } from '@/types';
 interface VraiFauxViewerProps {
   content: IVraiFauxContent;
   onNext: () => void;
+  onPrevious?: () => void;
   isLast: boolean;
+  isFirst?: boolean;
 }
 
-export function VraiFauxViewer({ content, onNext, isLast }: VraiFauxViewerProps): ReactElement {
+export function VraiFauxViewer({ content, onNext, onPrevious, isLast, isFirst }: VraiFauxViewerProps): ReactElement {
   const [selectedAnswer, setSelectedAnswer] = useState<boolean | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
 
@@ -41,7 +43,7 @@ export function VraiFauxViewer({ content, onNext, isLast }: VraiFauxViewerProps)
   const isCorrect = selectedAnswer === content.isTrue;
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-xl mx-auto">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
       {/* Statement */}
       <Card>
         <CardContent className="p-6">
@@ -127,6 +129,16 @@ export function VraiFauxViewer({ content, onNext, isLast }: VraiFauxViewerProps)
 
       {/* Actions */}
       <div className="flex justify-center gap-3">
+        {!isFirst && onPrevious && (
+          <Button
+            variant="outline"
+            onClick={onPrevious}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Précédent
+          </Button>
+        )}
+
         {!hasAnswered ? (
           <Button
             onClick={handleValidate}
