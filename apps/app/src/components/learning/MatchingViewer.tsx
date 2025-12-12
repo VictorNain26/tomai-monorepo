@@ -6,7 +6,7 @@
  * Utilise @dnd-kit pour une UX fluide et accessible
  */
 
-import { type ReactElement, useState, useMemo } from 'react';
+import { useState, useMemo, type ReactElement, type ReactNode } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -21,7 +21,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, ChevronLeft, RotateCcw, X, GripVertical, Link2 } from 'lucide-react';
+import { Check, ChevronLeft, X, GripVertical, Link2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -46,9 +46,11 @@ interface DroppableTargetProps {
   id: string;
   text: string;
   matchedText: string | null;
+  matchedLeftIndex: number | null;
   isCorrect: boolean | null;
   hasValidated: boolean;
   disabled: boolean;
+  onRemove?: () => void;
 }
 
 /**
@@ -78,24 +80,57 @@ function DraggableItem({ id, text, isMatched, disabled }: DraggableItemProps): R
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       className={cn(
         'p-3 rounded-lg border-2 bg-background transition-all flex items-center gap-2',
         isDragging && 'opacity-50 shadow-lg ring-2 ring-primary',
         !isDragging && 'border-primary/30 hover:border-primary hover:bg-primary/5',
+        !disabled && 'cursor-grab active:cursor-grabbing touch-none',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
+      aria-label="Glisser pour associer"
     >
-      {!disabled && (
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 rounded hover:bg-muted"
-          aria-label="Glisser pour associer"
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </div>
-      )}
+      <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
       <span className="font-medium text-foreground">{text}</span>
+    </div>
+  );
+}
+
+/**
+ * Composant draggable pour un élément déjà placé dans une zone de drop
+ */
+function PlacedItem({ id, text, disabled }: { id: string; text: string; disabled: boolean }): ReactElement {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id,
+    disabled,
+  });
+
+  const style = transform ? {
+    transform: CSS.Translate.toString(transform),
+  } : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        'mt-2 pt-2 border-t flex items-center gap-2',
+        !disabled && 'cursor-grab active:cursor-grabbing touch-none',
+        isDragging && 'opacity-50'
+      )}
+    >
+      <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+      <Link2 className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+      <span className="text-sm text-blue-700">{text}</span>
     </div>
   );
 }
@@ -103,10 +138,10 @@ function DraggableItem({ id, text, isMatched, disabled }: DraggableItemProps): R
 /**
  * Composant droppable pour un élément de droite (cible)
  */
-function DroppableTarget({ id, text, matchedText, isCorrect, hasValidated, disabled }: DroppableTargetProps): ReactElement {
+function DroppableTarget({ id, text, matchedText, matchedLeftIndex, isCorrect, hasValidated, disabled }: DroppableTargetProps): ReactElement {
   const { isOver, setNodeRef } = useDroppable({
     id,
-    disabled,
+    disabled: disabled || (!!matchedText && !hasValidated), // Allow drop when empty or after validation
   });
 
   return (
@@ -131,18 +166,25 @@ function DroppableTarget({ id, text, matchedText, isCorrect, hasValidated, disab
         )}
       </div>
 
-      {/* Matched item (if any) */}
-      {matchedText && (
+      {/* Matched item - draggable before validation, static after */}
+      {matchedText && !hasValidated && matchedLeftIndex !== null && (
+        <PlacedItem
+          id={`placed-${matchedLeftIndex}`}
+          text={matchedText}
+          disabled={hasValidated}
+        />
+      )}
+
+      {/* Matched item - static after validation */}
+      {matchedText && hasValidated && (
         <div className={cn(
           'mt-2 pt-2 border-t flex items-center gap-2',
-          !hasValidated && 'border-blue-300',
           hasValidated && isCorrect && 'border-green-300',
           hasValidated && !isCorrect && 'border-red-300'
         )}>
           <Link2 className="h-3 w-3 text-muted-foreground flex-shrink-0" />
           <span className={cn(
             'text-sm',
-            !hasValidated && 'text-blue-700',
             hasValidated && isCorrect && 'text-green-700',
             hasValidated && !isCorrect && 'text-red-700'
           )}>
@@ -157,6 +199,28 @@ function DroppableTarget({ id, text, matchedText, isCorrect, hasValidated, disab
           Déposer ici
         </span>
       )}
+    </div>
+  );
+}
+
+/**
+ * Zone droppable pour la colonne de gauche (pour remettre les éléments)
+ */
+function LeftColumnDropZone({ children, isActive }: { children: ReactNode; isActive: boolean }): ReactElement {
+  const { isOver, setNodeRef } = useDroppable({
+    id: 'left-column',
+    disabled: !isActive,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'space-y-2 p-2 -m-2 rounded-lg transition-all',
+        isActive && isOver && 'bg-primary/5 ring-2 ring-primary/30'
+      )}
+    >
+      {children}
     </div>
   );
 }
@@ -203,7 +267,17 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
   const allCorrect = isComplete && correctCount === content.pairs.length;
 
   // Get the text of the currently dragged item
-  const activeItem = activeId ? content.pairs[parseInt(activeId.replace('left-', ''))] : null;
+  const getActiveItemText = (): string | null => {
+    if (!activeId) return null;
+    let index: number;
+    if (activeId.startsWith('placed-')) {
+      index = parseInt(activeId.replace('placed-', ''));
+    } else {
+      index = parseInt(activeId.replace('left-', ''));
+    }
+    return content.pairs[index]?.left ?? null;
+  };
+  const activeItemText = getActiveItemText();
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -213,41 +287,61 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
     const { active, over } = event;
     setActiveId(null);
 
-    if (!over) return;
-
-    const leftIndex = parseInt((active.id as string).replace('left-', ''));
-    const rightIndex = parseInt((over.id as string).replace('right-', ''));
-
-    // Check if this right slot is already taken
-    const existingMatch = Array.from(matches.entries()).find(([_, r]) => r === rightIndex);
-    if (existingMatch) return;
-
+    const activeIdStr = active.id as string;
     const newMatches = new Map(matches);
-    newMatches.set(leftIndex, rightIndex);
-    setMatches(newMatches);
+
+    // Determine the left index being dragged
+    let leftIndex: number;
+    if (activeIdStr.startsWith('placed-')) {
+      leftIndex = parseInt(activeIdStr.replace('placed-', ''));
+    } else {
+      leftIndex = parseInt(activeIdStr.replace('left-', ''));
+    }
+
+    // If dropped outside or on the left column, remove the match (return to source)
+    if (!over || (over.id as string) === 'left-column') {
+      newMatches.delete(leftIndex);
+      setMatches(newMatches);
+      return;
+    }
+
+    const overId = over.id as string;
+
+    // If dropped on a right target
+    if (overId.startsWith('right-')) {
+      const rightIndex = parseInt(overId.replace('right-', ''));
+
+      // Check if this right slot is already taken by another item
+      const existingMatch = Array.from(newMatches.entries()).find(([l, r]) => r === rightIndex && l !== leftIndex);
+      if (existingMatch) return; // Slot taken, ignore
+
+      // Remove old match if re-dropping
+      newMatches.delete(leftIndex);
+      // Set new match
+      newMatches.set(leftIndex, rightIndex);
+      setMatches(newMatches);
+    }
   };
 
   const handleValidate = () => {
     setHasValidated(true);
   };
 
-  const handleReset = () => {
+  const handleNext = () => {
     setMatches(new Map());
     setHasValidated(false);
     setActiveId(null);
-  };
-
-  const handleNext = () => {
-    handleReset();
     onNext();
   };
 
-  // Helper to get matched left text for a right index
-  const getMatchedLeftText = (rightIndex: number): string | null => {
+  // Helper to get matched left index and text for a right index
+  const getMatchedLeftInfo = (rightIndex: number): { leftIndex: number; text: string } | null => {
     const entry = Array.from(matches.entries()).find(([_, r]) => r === rightIndex);
     if (entry) {
       const pair = content.pairs[entry[0]];
-      return pair?.left ?? null;
+      if (pair) {
+        return { leftIndex: entry[0], text: pair.left };
+      }
     }
     return null;
   };
@@ -283,12 +377,12 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {/* Left column - Draggable items */}
+          {/* Left column - Draggable items + drop zone to return items */}
           <div className="space-y-2">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">
               À associer
             </span>
-            <div className="space-y-2">
+            <LeftColumnDropZone isActive={!!activeId && activeId.startsWith('placed-') && !hasValidated}>
               {content.pairs.map((pair, index) => (
                 <DraggableItem
                   key={`left-${pair.left}-${pair.right}`}
@@ -298,14 +392,14 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
                   disabled={hasValidated}
                 />
               ))}
-            </div>
 
-            {/* Empty state when all matched */}
-            {matches.size === content.pairs.length && !hasValidated && (
-              <p className="text-sm text-muted-foreground italic text-center py-2">
-                Tous les éléments sont placés
-              </p>
-            )}
+              {/* Empty state when all matched */}
+              {matches.size === content.pairs.length && !hasValidated && !activeId && (
+                <p className="text-sm text-muted-foreground italic text-center py-2">
+                  Tous les éléments sont placés
+                </p>
+              )}
+            </LeftColumnDropZone>
           </div>
 
           {/* Right column - Droppable targets (shuffled) */}
@@ -317,16 +411,18 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
               {shuffledRightIndices.map((originalIndex) => {
                 const pair = content.pairs[originalIndex];
                 if (!pair) return null;
+                const matchInfo = getMatchedLeftInfo(originalIndex);
 
                 return (
                   <DroppableTarget
                     key={`right-${originalIndex}`}
                     id={`right-${originalIndex}`}
                     text={pair.right}
-                    matchedText={getMatchedLeftText(originalIndex)}
+                    matchedText={matchInfo?.text ?? null}
+                    matchedLeftIndex={matchInfo?.leftIndex ?? null}
                     isCorrect={isMatchCorrect(originalIndex)}
                     hasValidated={hasValidated}
-                    disabled={hasValidated || Array.from(matches.values()).includes(originalIndex)}
+                    disabled={hasValidated}
                   />
                 );
               })}
@@ -336,8 +432,8 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
 
         {/* Drag overlay */}
         <DragOverlay>
-          {activeId && activeItem ? (
-            <DragOverlayContent text={activeItem.left} />
+          {activeId && activeItemText ? (
+            <DragOverlayContent text={activeItemText} />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -397,15 +493,9 @@ export function MatchingViewer({ content, onNext, onPrevious, isLast, isFirst }:
         )}
 
         {!hasValidated && (
-          <>
-            <Button variant="outline" onClick={handleReset} disabled={matches.size === 0}>
-              <RotateCcw className="h-4 w-4 mr-1" />
-              Réinitialiser
-            </Button>
-            <Button onClick={handleValidate} disabled={!isComplete}>
-              Valider
-            </Button>
-          </>
+          <Button onClick={handleValidate} disabled={!isComplete}>
+            Valider
+          </Button>
         )}
 
         {hasValidated && (

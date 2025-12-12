@@ -1,19 +1,14 @@
 /**
  * LearningDeckNew - Génération IA de deck
- * Interface simple: matière + thème + niveau → génération automatique via RAG
- * Génération en arrière-plan pour ne pas bloquer l'utilisateur
- *
- * Niveaux de difficulté basés sur:
- * - Zone de Développement Proximal (Vygotsky)
- * - Spacing Effect et Desirable Difficulty (Bjork)
- * - 3 niveaux de maîtrise Éduscol
+ * Interface simple: matière + thème → génération automatique via RAG
+ * L'IA génère des cartes exhaustives couvrant tout le thème
  */
 
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Sparkles, AlertCircle, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Sparkles, AlertCircle } from 'lucide-react';
 import { useGenerateDeck } from '@/hooks/useLearning';
 import { useUser } from '@/lib/auth';
 import { educationQueries, type ITopicsResponse } from '@/lib/query-factories';
@@ -23,13 +18,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -39,48 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { IGenerateDeckRequest, EducationLevelType, DeckDifficultyMode, CardDifficulty } from '@/types';
+import type { IGenerateDeckRequest, EducationLevelType } from '@/types';
 import type { ApiError } from '@/lib/api-client';
-
-/**
- * Options de niveau de difficulté
- * Basé sur la recherche en sciences cognitives (Vygotsky ZPD, Bjork Desirable Difficulty)
- */
-const DIFFICULTY_OPTIONS: Array<{
-  value: DeckDifficultyMode;
-  label: string;
-  description: string;
-  distribution: string;
-}> = [
-  {
-    value: 'progressive',
-    label: 'Progressif',
-    description: 'Idéal pour découvrir un nouveau sujet',
-    distribution: '35% découverte → 45% standard → 20% approfondissement',
-  },
-  {
-    value: 'mixed',
-    label: 'Équilibré',
-    description: 'Pour réviser un sujet déjà vu',
-    distribution: '30% découverte, 50% standard, 20% approfondissement',
-  },
-  {
-    value: 'single',
-    label: 'Ciblé',
-    description: 'Toutes les cartes au même niveau',
-    distribution: 'Choisis le niveau ci-dessous',
-  },
-];
-
-const SINGLE_DIFFICULTY_OPTIONS: Array<{
-  value: CardDifficulty;
-  label: string;
-  description: string;
-}> = [
-  { value: 'decouverte', label: 'Découverte', description: 'Vocabulaire et concepts de base' },
-  { value: 'standard', label: 'Standard', description: 'Niveau attendu en classe' },
-  { value: 'approfondissement', label: 'Approfondissement', description: 'Pour aller plus loin' },
-];
 
 export default function LearningDeckNew(): ReactElement {
   const navigate = useNavigate();
@@ -89,8 +37,6 @@ export default function LearningDeckNew(): ReactElement {
 
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
-  const [difficultyMode, setDifficultyMode] = useState<DeckDifficultyMode>('progressive');
-  const [singleDifficulty, setSingleDifficulty] = useState<CardDifficulty>('standard');
 
   const schoolLevel = (user?.schoolLevel ?? 'sixieme') as EducationLevelType;
   const selectedLv2 = user?.selectedLv2 ?? null;
@@ -129,9 +75,7 @@ export default function LearningDeckNew(): ReactElement {
     const request: IGenerateDeckRequest = {
       subject,
       topic: topic.trim(),
-      cardCount: 10, // 10 cartes par défaut (recherche: optimal pour rétention)
-      difficultyMode,
-      ...(difficultyMode === 'single' && { singleDifficulty }),
+      cardCount: 10,
     };
 
     toast.loading('Génération du deck en cours...', {
@@ -166,7 +110,7 @@ export default function LearningDeckNew(): ReactElement {
         if (apiError.status === 429 || apiError.code === 'DECK_LIMIT_REACHED') {
           toast.error('Limite journalière atteinte', {
             id: 'deck-generation',
-            description: 'Tu as atteint ta limite de 2 decks par jour. Reviens demain !',
+            description: 'Tu as atteint ta limite de decks par jour. Reviens demain !',
           });
           return;
         }
@@ -291,82 +235,6 @@ export default function LearningDeckNew(): ReactElement {
                     ))}
                   </SelectContent>
                 </Select>
-              )}
-            </div>
-
-            {/* Niveau de difficulté */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Label>Niveau de difficulté</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-sm">
-                        Basé sur la Zone de Développement Proximal (Vygotsky) :
-                        apprendre est plus efficace avec un défi adapté à ton niveau.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-
-              <RadioGroup
-                value={difficultyMode}
-                onValueChange={(value) => setDifficultyMode(value as DeckDifficultyMode)}
-                className="space-y-2"
-              >
-                {DIFFICULTY_OPTIONS.map((option) => (
-                  <div
-                    key={option.value}
-                    className={`flex items-start space-x-3 rounded-lg border p-3 transition-colors ${
-                      difficultyMode === option.value
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:bg-muted/50'
-                    }`}
-                  >
-                    <RadioGroupItem value={option.value} id={option.value} className="mt-0.5" />
-                    <div className="flex-1 space-y-1">
-                      <label
-                        htmlFor={option.value}
-                        className="text-sm font-medium leading-none cursor-pointer"
-                      >
-                        {option.label}
-                      </label>
-                      <p className="text-xs text-muted-foreground">
-                        {option.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </RadioGroup>
-
-              {/* Sélection du niveau unique si mode "single" */}
-              {difficultyMode === 'single' && (
-                <div className="ml-6 mt-2">
-                  <Select
-                    value={singleDifficulty}
-                    onValueChange={(value) => setSingleDifficulty(value as CardDifficulty)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SINGLE_DIFFICULTY_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex flex-col">
-                            <span>{option.label}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {option.description}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               )}
             </div>
 

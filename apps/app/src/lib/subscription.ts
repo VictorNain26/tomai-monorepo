@@ -52,9 +52,6 @@ export const ADDITIONAL_CHILD_PRICE_CENTS = 500;
 /** Daily token limit for free plan */
 export const FREE_DAILY_TOKENS = 5000;
 
-/** Daily token limit for premium plan */
-export const PREMIUM_DAILY_TOKENS = 50000;
-
 /**
  * Pricing info for UI display
  */
@@ -328,16 +325,6 @@ export async function redirectToPortal(parentId: string): Promise<void> {
 }
 
 /**
- * Format price for display (French locale)
- */
-export function formatPrice(priceInCents: number): string {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(priceInCents / 100);
-}
-
-/**
  * Format price in euros for display (French locale)
  */
 export function formatPriceEuros(price: number): string {
@@ -368,13 +355,6 @@ export function getPlanDisplayName(plan: SubscriptionPlanType): string {
 }
 
 /**
- * Calculate monthly price for given number of children
- */
-export function calculateMonthlyPrice(childrenCount: number): number {
-  return PRICING_INFO.calculateTotal(childrenCount);
-}
-
-/**
  * Check if user has active premium subscription
  */
 export function isPremiumActive(status: ISubscriptionStatus): boolean {
@@ -398,13 +378,6 @@ export function isCanceledButActive(status: ISubscriptionStatus): boolean {
  */
 export function hasPendingChanges(status: ISubscriptionStatus): boolean {
   return status.subscription?.hasScheduledChanges === true;
-}
-
-/**
- * Get children IDs that are pending removal
- */
-export function getPendingRemovalChildrenIds(status: ISubscriptionStatus): string[] {
-  return status.subscription?.pendingRemovalChildrenIds ?? [];
 }
 
 // ============================================

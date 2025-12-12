@@ -34,8 +34,6 @@ import type {
   IDashboardStats,
   ICreateChildData,
   IMessage,
-  ISubjectsResponse,
-  ISubjectsForStudent,
   IDecksResponse,
   IDeckWithCardsResponse,
   IDeckResponse,
@@ -50,9 +48,6 @@ import type {
   Lv2Option,
   EducationLevelType,
 } from '@/types';
-import type {
-  EstablishmentData
-} from '@/services/establishment.service';
 
 // ===== QUERY KEYS FACTORIES (TanStack Best Practices) =====
 
@@ -66,16 +61,6 @@ export const queryKeys = {
     childProgress: (childId: string, period?: string) => [...queryKeys.parent.child(childId), 'progress', period] as const,
   },
 
-  // Student queries
-  student: {
-    all: ['student'] as const,
-    dashboard: () => [...queryKeys.student.all, 'dashboard'] as const,
-    profile: () => [...queryKeys.student.all, 'profile'] as const,
-    subjects: () => [...queryKeys.student.all, 'subjects'] as const,
-    activeSubjects: () => [...queryKeys.student.all, 'subjects', 'active'] as const,
-    progress: (subject?: string, period?: string) => [...queryKeys.student.all, 'progress', { subject, period }] as const,
-  },
-
   // Chat queries
   chat: {
     all: ['chat'] as const,
@@ -84,18 +69,9 @@ export const queryKeys = {
     messages: (sessionId: string) => [...queryKeys.chat.session(sessionId), 'messages'] as const,
   },
 
-  // Pronote queries
-  pronote: {
-    all: ['pronote'] as const,
-    connections: () => [...queryKeys.pronote.all, 'connections'] as const,
-    establishments: (query: string) => [...queryKeys.pronote.all, 'establishments', { query }] as const,
-  },
-
-  // Files queries
+  // Files queries (used for invalidation)
   files: {
     all: ['files'] as const,
-    userFiles: (userId: string) => [...queryKeys.files.all, 'user', userId] as const,
-    chatAttachments: (sessionId: string) => [...queryKeys.files.all, 'chat', sessionId] as const,
   },
 
   // Learning tools queries (flashcards, qcm, vrai/faux)
@@ -161,20 +137,6 @@ export const parentMutations = {
     mutationKey: ['parent', 'delete-child'] as const,
     mutationFn: (childId: string) =>
       apiClient.delete(`/api/parent/children/${childId}`),
-  }),
-};
-
-// ===== STUDENT QUERIES =====
-
-export const studentQueries = {
-  subjects: () => ({
-    queryKey: queryKeys.student.subjects(),
-    queryFn: (): Promise<ISubjectsResponse> => apiClient.get('/api/students/subjects/current'),
-  }),
-
-  activeSubjects: () => ({
-    queryKey: queryKeys.student.activeSubjects(),
-    queryFn: (): Promise<ISubjectsForStudent> => apiClient.get('/api/students/subjects/active'),
   }),
 };
 
@@ -254,54 +216,7 @@ export const chatMutations = {
   }),
 };
 
-// ===== PRONOTE QUERIES =====
-
-export const pronoteQueries = {
-  connections: () => ({
-    queryKey: queryKeys.pronote.connections(),
-    queryFn: (): Promise<Array<{ id: string; establishmentName: string; }>> => apiClient.get('/api/pronote/connections'),
-  }),
-
-  establishments: (query: string) => ({
-    queryKey: queryKeys.pronote.establishments(query),
-    queryFn: (): Promise<EstablishmentData[]> =>
-      apiClient.get('/api/pronote/establishments/search', { params: { q: query } }),
-  }),
-};
-
-export const pronoteMutations = {
-  authenticateQrCode: () => ({
-    mutationKey: ['pronote', 'authenticate-qrcode'] as const,
-    mutationFn: (establishmentUrl: string) =>
-      apiClient.post('/api/pronote/authenticate-qrcode', { establishmentUrl }),
-  }),
-
-  validatePin: () => ({
-    mutationKey: ['pronote', 'validate-pin'] as const,
-    mutationFn: ({ pin, sessionId }: { pin: string; sessionId: string }) =>
-      apiClient.post('/api/pronote/validate-pin', { pin, sessionId }),
-  }),
-
-  disconnect: () => ({
-    mutationKey: ['pronote', 'disconnect'] as const,
-    mutationFn: (connectionId: string) =>
-      apiClient.delete(`/api/pronote/connections/${connectionId}`),
-  }),
-};
-
-// ===== FILE QUERIES =====
-
-export const fileQueries = {
-  userFiles: (userId: string) => ({
-    queryKey: queryKeys.files.userFiles(userId),
-    queryFn: () => apiClient.get(`/api/files/user/${userId}`),
-  }),
-
-  chatAttachments: (sessionId: string) => ({
-    queryKey: queryKeys.files.chatAttachments(sessionId),
-    queryFn: () => apiClient.get(`/api/files/chat/${sessionId}`),
-  }),
-};
+// ===== FILE MUTATIONS =====
 
 export const fileMutations = {
   upload: () => ({
@@ -556,16 +471,6 @@ export const invalidationHelpers = {
    */
   invalidateFileData: (queryClient: QueryClient) => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.files.all });
-  },
-
-  /**
-   * Invalide les connexions Pronote
-   */
-  invalidatePronoteData: (queryClient: QueryClient, childId?: string) => {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.pronote.connections() });
-    if (childId) {
-      void queryClient.invalidateQueries({ queryKey: ['pronoteConnections', childId] });
-    }
   },
 
   /**

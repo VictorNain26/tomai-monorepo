@@ -162,15 +162,14 @@ export function SuperChatInput({
   // ========================================
   // Submit Handler
   // ========================================
-  const currentText = manualText;
-  const canSend = (currentText.trim().length > 0 || files.length > 0) && !isLoading && !disabled && !isProcessing && !voice.isActive;
+  const canSend = (manualText.trim().length > 0 || files.length > 0) && !isLoading && !disabled && !isProcessing && !voice.isActive;
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     if (!canSend) return;
 
-    const messageToSend = currentText.trim();
+    const messageToSend = manualText.trim();
 
     // Reset
     setManualText('');
@@ -368,7 +367,7 @@ export function SuperChatInput({
         <div className="flex-1">
           <Input
             ref={inputRef}
-            value={currentText}
+            value={manualText}
             onChange={(e) => setManualText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={

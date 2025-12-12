@@ -1022,22 +1022,6 @@ export interface ICardResponse {
 }
 
 /**
- * Mode de difficulté des cartes générées
- * Basé sur la Zone de Développement Proximal (Vygotsky) et le spacing effect
- *
- * - mixed: Mélange équilibré (30% découverte, 50% standard, 20% approfondissement)
- * - progressive: Commence facile, monte en difficulté (35% découverte → 45% standard → 20% approfondissement)
- * - single: Toutes les cartes au même niveau (pour cibler une difficulté spécifique)
- */
-export type DeckDifficultyMode = 'mixed' | 'progressive' | 'single';
-
-/**
- * Niveau de difficulté d'une carte individuelle
- * Aligné sur les 3 niveaux de maîtrise Éduscol
- */
-export type CardDifficulty = 'decouverte' | 'standard' | 'approfondissement';
-
-/**
  * Generate deck request (AI generation)
  * Note: schoolLevel n'est PAS envoyé - le backend utilise automatiquement
  * le niveau du profil utilisateur pour garantir l'alignement programme
@@ -1046,10 +1030,6 @@ export interface IGenerateDeckRequest {
   subject: string;
   topic: string;
   cardCount?: number;
-  /** Mode de répartition des difficultés (default: 'progressive') */
-  difficultyMode?: DeckDifficultyMode;
-  /** Si mode 'single', quelle difficulté unique (default: 'standard') */
-  singleDifficulty?: CardDifficulty;
 }
 
 /**

@@ -24,7 +24,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, ChevronLeft, RotateCcw, X, GripVertical, Calendar, ArrowRight } from 'lucide-react';
+import { Check, ChevronLeft, X, GripVertical, Calendar, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -77,10 +77,14 @@ function SortableEvent({
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       className={cn(
         'relative flex items-center gap-3',
-        isDragging && 'z-50'
+        isDragging && 'z-50',
+        !hasAnswered && 'cursor-grab active:cursor-grabbing touch-none'
       )}
+      aria-label="Glisser pour réordonner"
     >
       {/* Timeline dot */}
       <div
@@ -105,16 +109,9 @@ function SortableEvent({
         )}
       >
         <CardContent className="p-3 flex items-center">
-          {/* Drag handle */}
+          {/* Drag indicator */}
           {!hasAnswered && (
-            <div
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 mr-2 rounded hover:bg-muted"
-              aria-label="Glisser pour réordonner"
-            >
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </div>
+            <GripVertical className="h-5 w-5 text-muted-foreground mr-2 flex-shrink-0" />
           )}
 
           <div className="flex-1 min-w-0">
@@ -200,8 +197,8 @@ export function TimelineViewer({ content, onNext, onPrevious, isLast, isFirst }:
     setHasAnswered(true);
   };
 
-  const handleReset = () => {
-    // Re-shuffle
+  const handleNext = () => {
+    // Re-shuffle for next attempt
     const indices = content.events.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -211,10 +208,6 @@ export function TimelineViewer({ content, onNext, onPrevious, isLast, isFirst }:
     }
     setUserOrder(indices);
     setHasAnswered(false);
-  };
-
-  const handleNext = () => {
-    handleReset();
     onNext();
   };
 
@@ -339,15 +332,9 @@ export function TimelineViewer({ content, onNext, onPrevious, isLast, isFirst }:
         )}
 
         {!hasAnswered && (
-          <>
-            <Button variant="outline" onClick={handleReset}>
-              <RotateCcw className="h-4 w-4 mr-1" />
-              Mélanger
-            </Button>
-            <Button onClick={handleValidate}>
-              Valider
-            </Button>
-          </>
+          <Button onClick={handleValidate}>
+            Valider
+          </Button>
         )}
 
         {hasAnswered && (
