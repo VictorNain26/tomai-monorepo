@@ -30,10 +30,10 @@ const Chat: FC = (): ReactElement => {
   const sessionId = searchParams.get('sessionId');
   const subject = searchParams.get('subject') ?? 'mathematiques';
 
-  // Hook de chat avec architecture propre
+  // Hook de chat TanStack AI
   const {
     messages,
-    loading,
+    isLoading,
     error,
     sendMessage
   } = useChat({
@@ -118,6 +118,7 @@ const Chat: FC = (): ReactElement => {
       <div className="flex-1 min-h-0">
         <ChatConversation
           messages={messages}
+          isLoading={isLoading}
           error={error}
           isAudioEnabled={audio.state.isGlobalEnabled}
           emptyStateMessage="Posez votre première question pour commencer !"
@@ -129,7 +130,7 @@ const Chat: FC = (): ReactElement => {
         <SuperChatInput
           subject={subject}
           onSendMessage={(message, attachedFile) => handleSendMessage(message, attachedFile)}
-          isLoading={loading}
+          isLoading={isLoading}
           placeholder="Posez votre question..."
         />
       </div>

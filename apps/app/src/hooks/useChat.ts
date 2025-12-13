@@ -1,469 +1,317 @@
 /**
- * useChat - Hook de chat avec streaming SSE
+ * useChat - TanStack AI Protocol 2025
  *
- * Architecture propre:
- * - sessionId vient de l'URL (props)
- * - onSessionCreated callback quand backend crée une session
- * - Pas de state interne pour sessionId
- * - Hook pur de logique métier
+ * 100% TanStack AI implementation:
+ * - stream() adapter for dynamic payload (fileIds per message)
+ * - TanStack AI Protocol format: { messages, data }
+ * - SSE streaming with standard parser
+ * - Auth via Better Auth cookies
  */
 
-import { logger } from '@/lib/logger.js';
-import { useState, useCallback, useEffect } from 'react';
-import { flushSync } from 'react-dom';
+import { useCallback, useRef, useEffect } from 'react';
+import { useChat as useTanStackChat, stream, type UIMessage } from '@tanstack/ai-react';
+import type { StreamChunk, ModelMessage } from '@tanstack/ai';
 import { useUser } from '@/lib/auth';
-import { apiClient } from '@/lib/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers } from '@/lib/query-factories';
 import { getBackendURL } from '@/utils/urls';
-import type { IMessage } from '@/types';
+import { logger } from '@/lib/logger';
 
-// User type with chat-specific fields
-interface UserWithChatData {
-  id: string;
-  schoolLevel?: string;
-  firstName?: string;
-  dateOfBirth?: string;
-}
+// ============================================================================
+// Types
+// ============================================================================
 
-// REMOVED: Legacy single-file interface (migration to multi-files support)
-
-// API Response for history
-interface ChatHistoryResponse {
-  success: boolean;
-  messages?: Array<{
-    id: string;
-    role: 'user' | 'assistant';
-    content: string | {
-      content: string;
-      provider?: string;
-      tokensUsed?: number;
-    };
-    timestamp?: string;
-  }>;
-}
-
-/**
- * Hook options - sessionId est la source de vérité (vient de l'URL)
- */
 interface UseChatOptions {
   sessionId: string | null;
   subject: string;
   onSessionCreated?: (sessionId: string) => void;
 }
 
-/**
- * Hook return - Interface simplifiée
- */
-interface UseChatReturn {
-  messages: IMessage[];
-  loading: boolean;
-  error: string | null;
-  sendMessage: (content: string, fileIds?: string[]) => Promise<void>;
-  streamingMessage: IMessage | null;
-  clearError: () => void;
+/** TanStack AI Protocol - Custom data sent with each request */
+interface ChatRequestData {
+  subject: string;
+  sessionId?: string;
+  schoolLevel?: string;
+  firstName?: string;
+  fileId?: string;
 }
 
+/** Extended UIMessage with TomAI metadata */
+interface UIMessageWithMetadata extends UIMessage {
+  metadata?: {
+    sessionId?: string;
+    usedRAG?: boolean;
+  };
+}
+
+// ============================================================================
+// SSE Parser - Standard Web API pattern for stream() adapter
+// ============================================================================
+
 /**
- * Hook principal de chat
+ * Parse Server-Sent Events stream into TanStack AI StreamChunks
+ * This is the standard pattern when using stream() adapter with SSE backend
  */
-export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions): UseChatReturn {
+async function* parseServerSentEvents(response: Response): AsyncIterable<StreamChunk> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('No response body');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() ?? '';
+
+      for (const event of events) {
+        for (const line of event.split('\n')) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') continue;
+            if (!data) continue;
+
+            try {
+              yield JSON.parse(data) as StreamChunk;
+            } catch {
+              // Ignore malformed JSON
+            }
+          }
+        }
+      }
+    }
+
+    // Process remaining buffer
+    if (buffer.trim()) {
+      for (const line of buffer.split('\n')) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6).trim();
+          if (data && data !== '[DONE]') {
+            try {
+              yield JSON.parse(data) as StreamChunk;
+            } catch {
+              // Ignore
+            }
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// ============================================================================
+// useChat Hook
+// ============================================================================
+
+export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions) {
   const user = useUser();
   const queryClient = useQueryClient();
 
-  const [messages, setMessages] = useState<IMessage[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [streamingMessage, setStreamingMessage] = useState<IMessage | null>(null);
+  // Refs for dynamic data (accessible in stream adapter closure)
+  const fileIdsRef = useRef<string[]>([]);
+  const sessionIdRef = useRef<string | null>(sessionId);
 
-  /**
-   * Charger l'historique quand sessionId change
-   */
+  // Sync sessionId ref when prop changes
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
+
+  // ============================================================================
+  // TanStack AI stream() adapter
+  // Sends TanStack AI Protocol format: { messages, data }
+  // ============================================================================
+  const connection = stream(async function* (
+    messages: ModelMessage[],
+    _connectionData?: Record<string, unknown>
+  ): AsyncIterable<StreamChunk> {
+    // Build TanStack AI Protocol request data
+    const data: ChatRequestData = {
+      subject: subject.trim(),
+    };
+
+    if (sessionIdRef.current) {
+      data.sessionId = sessionIdRef.current;
+    }
+
+    if (user?.schoolLevel) {
+      data.schoolLevel = user.schoolLevel as string;
+    }
+
+    if (user?.firstName) {
+      data.firstName = user.firstName as string;
+    }
+
+    // File attachment (consumed once per message)
+    const firstFileId = fileIdsRef.current[0];
+    if (firstFileId) {
+      data.fileId = firstFileId;
+      fileIdsRef.current = []; // Clear after use
+    }
+
+    logger.info('TanStack AI Protocol request', {
+      messagesCount: messages.length,
+      data,
+      userId: user?.id ?? 'anonymous',
+    });
+
+    // Send TanStack AI Protocol format: { messages, data }
+    const response = await fetch(`${getBackendURL()}/api/chat/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, data }),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorBody = (await response.json()) as { message?: string };
+        if (errorBody.message) errorMessage = errorBody.message;
+      } catch {
+        // Use default error
+      }
+      throw new Error(errorMessage);
+    }
+
+    // Parse SSE response into StreamChunks
+    yield* parseServerSentEvents(response);
+  });
+
+  // ============================================================================
+  // TanStack AI useChat hook
+  // ============================================================================
+  const {
+    messages,
+    sendMessage: tanstackSendMessage,
+    isLoading,
+    error,
+    stop,
+    setMessages,
+    clear,
+  } = useTanStackChat({
+    connection,
+    onFinish: (message) => {
+      logger.info('TanStack AI message complete', {
+        messageId: message.id,
+        role: message.role,
+      });
+
+      // Extract sessionId from done chunk metadata
+      const messageWithMeta = message as UIMessageWithMetadata;
+      const newSessionId = messageWithMeta.metadata?.sessionId;
+
+      if (newSessionId && newSessionId !== sessionIdRef.current) {
+        logger.info('New session created by backend', {
+          oldSessionId: sessionIdRef.current,
+          newSessionId,
+        });
+        sessionIdRef.current = newSessionId;
+        onSessionCreated?.(newSessionId);
+      }
+
+      // Invalidate TanStack Query cache for dashboard updates
+      if (sessionIdRef.current) {
+        invalidationHelpers.invalidateAfterActivity(queryClient);
+      }
+    },
+    onError: (err) => {
+      logger.error('TanStack AI error', { error: err.message });
+    },
+  });
+
+  // ============================================================================
+  // sendMessage wrapper for fileIds
+  // ============================================================================
+  const sendMessage = useCallback(
+    async (content: string, fileIds?: string[]) => {
+      if (!user) {
+        logger.warn('sendMessage: No user');
+        return;
+      }
+
+      if (!content.trim() && (!fileIds || fileIds.length === 0)) {
+        logger.warn('sendMessage: No content or files');
+        return;
+      }
+
+      // Store fileIds for stream adapter to consume
+      if (fileIds && fileIds.length > 0) {
+        fileIdsRef.current = fileIds;
+      }
+
+      await tanstackSendMessage(content.trim() || '🎤 Enregistrement audio');
+    },
+    [user, tanstackSendMessage]
+  );
+
+  // ============================================================================
+  // Load conversation history when sessionId changes
+  // ============================================================================
   useEffect(() => {
     if (!sessionId) {
-      setMessages([]);
+      clear();
       return;
     }
 
-    let cancelled = false;
-
     const loadHistory = async () => {
       try {
-        setLoading(true);
-        const response = await apiClient.get(`/api/chat/session/${sessionId}/history`) as ChatHistoryResponse;
+        const response = await fetch(
+          `${getBackendURL()}/api/chat/session/${sessionId}/history`,
+          { credentials: 'include' }
+        );
 
-        if (cancelled) return;
+        if (!response.ok) return;
 
-        if (response.success && response.messages) {
-          const formattedMessages: IMessage[] = response.messages.map((msg) => {
-            const messageContent = typeof msg.content === 'string'
-              ? msg.content
-              : typeof msg.content === 'object' && msg.content.content
-              ? msg.content.content
-              : JSON.stringify(msg.content);
+        const result = (await response.json()) as {
+          success: boolean;
+          messages?: Array<{
+            id: string;
+            role: 'user' | 'assistant';
+            content: string | { content: string };
+            timestamp?: string;
+          }>;
+        };
 
-            return {
-              id: msg.id,
-              role: msg.role,
-              content: messageContent,
-              timestamp: msg.timestamp ?? new Date().toISOString(),
-              status: 'complete' as const,
-              sessionId
-            };
-          });
+        if (result.success && result.messages) {
+          const uiMessages: UIMessage[] = result.messages.map((msg) => ({
+            id: msg.id,
+            role: msg.role,
+            parts: [
+              {
+                type: 'text' as const,
+                content:
+                  typeof msg.content === 'string' ? msg.content : msg.content.content,
+              },
+            ],
+            createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+          }));
 
-          setMessages(formattedMessages);
-          setError(null);
-
-          logger.info('Historique chargé', {
-            sessionId,
-            messageCount: formattedMessages.length
-          });
+          setMessages(uiMessages);
+          logger.info('History loaded', { sessionId, count: uiMessages.length });
         }
       } catch (err) {
-        if (cancelled) return;
-
-        logger.error('Erreur chargement historique', {
-          error: err,
-          sessionId
-        });
-
-        setError('Erreur lors du chargement de l\'historique');
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        logger.error('Failed to load history', { error: err, sessionId });
       }
     };
 
     void loadHistory();
+  }, [sessionId, setMessages, clear]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionId]);
-
-  /**
-   * Envoyer un message avec streaming SSE
-   */
-  const sendMessage = useCallback(async (content: string, fileIds?: string[]): Promise<void> => {
-    // Validation: user requis + (contenu OU fichiers)
-    const hasContent = !!content.trim();
-    const hasFiles = !!(fileIds && fileIds.length > 0);
-
-    if (!user || (!hasContent && !hasFiles)) {
-      logger.warn('sendMessage: Missing required parameters', {
-        hasUser: !!user,
-        hasContent,
-        hasFiles
-      });
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    // Message utilisateur immédiat (optimistic UI)
-    const messageContent = content.trim() || (hasFiles ? '🎤 Enregistrement audio' : '');
-    const tempUserMessage: IMessage = {
-      id: `temp-user-${Date.now()}`,
-      role: 'user',
-      content: messageContent,
-      timestamp: new Date().toISOString(),
-      status: 'complete',
-      sessionId: sessionId ?? 'temp'
-    };
-
-    setMessages(prev => [...prev, tempUserMessage]);
-
-    try {
-      // Construction payload
-      const payload: Record<string, unknown> = {
-        content: content.trim() || (hasFiles ? '🎤 Enregistrement audio' : ''),
-        subject: subject.trim()
-      };
-
-      // Session ID optionnel (backend crée si absent)
-      if (sessionId) {
-        payload['sessionId'] = sessionId;
-      }
-
-      // User metadata
-      const userSchoolLevel = (user as UserWithChatData)?.schoolLevel;
-      if (userSchoolLevel) {
-        payload['schoolLevel'] = userSchoolLevel;
-      }
-
-      const userFirstName = (user as UserWithChatData)?.firstName;
-      if (userFirstName) {
-        payload['firstName'] = userFirstName;
-      }
-
-      const userDateOfBirth = (user as UserWithChatData)?.dateOfBirth;
-      if (userDateOfBirth) {
-        payload['dateOfBirth'] = userDateOfBirth;
-      }
-
-      // File attachments (multi-files support)
-      if (fileIds && fileIds.length > 0) {
-        payload['fileIds'] = fileIds;
-      }
-
-      logger.info('Streaming SSE démarré', {
-        payload,
-        userId: user.id
-      });
-
-      // 🚀 STREAMING SSE avec Fetch API - URL absolue pour architecture sous-domaines
-      const response = await fetch(`${getBackendURL()}/api/chat/stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload),
-        credentials: 'include' // Better Auth cookies cross-subdomain
-      });
-
-      if (!response.ok) {
-        // Gérer les erreurs avec body JSON (notamment 429 quota exceeded)
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-
-        try {
-          const errorBody = await response.json() as { message?: string };
-          if (errorBody.message) {
-            errorMessage = errorBody.message;
-          }
-        } catch {
-          // Body non-JSON, utiliser le message par défaut
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      if (!response.body) {
-        throw new Error('ReadableStream not supported');
-      }
-
-      // Lecture du stream SSE avec buffering correct
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      let accumulatedContent = '';
-      let receivedSessionId = sessionId;
-      let finalProvider = 'gemini';
-      let sseBuffer = ''; // Buffer pour gérer les événements SSE fragmentés
-
-      // Message initial en état "thinking" (en attente du premier chunk)
-      const streamingMsgId = `streaming-${Date.now()}`;
-      const initialStreamingMsg: IMessage = {
-        id: streamingMsgId,
-        role: 'assistant',
-        content: '',
-        timestamp: new Date().toISOString(),
-        status: 'thinking', // Tom réfléchit...
-        sessionId: receivedSessionId ?? 'temp'
-      };
-
-      setStreamingMessage(initialStreamingMsg);
-      setMessages(prev => [...prev, initialStreamingMsg]);
-
-      // Helper pour traiter un événement SSE complet
-      // Utilise flushSync pour forcer le rendu immédiat de chaque chunk
-      const processSSEEvent = (eventData: string) => {
-        // Extraire les lignes data: du bloc SSE
-        const lines = eventData.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const jsonStr = line.slice(6).trim();
-              if (!jsonStr) continue;
-
-              const data = JSON.parse(jsonStr);
-
-              if (data.type === 'chunk' && data.content) {
-                accumulatedContent += data.content;
-                finalProvider = data.provider ?? finalProvider;
-
-                // Mise à jour immédiate pour affichage progressif
-                const updatedMsg: IMessage = {
-                  id: streamingMsgId,
-                  role: 'assistant',
-                  content: accumulatedContent,
-                  timestamp: new Date().toISOString(),
-                  status: 'streaming',
-                  sessionId: receivedSessionId ?? 'temp',
-                  metadata: {
-                    provider: finalProvider,
-                    aiModelDetails: { name: finalProvider, tier: 'standard' }
-                  }
-                };
-
-                // flushSync force React à appliquer immédiatement les updates au DOM
-                // Cela permet l'affichage progressif même si plusieurs chunks arrivent ensemble
-                flushSync(() => {
-                  setStreamingMessage(updatedMsg);
-                  setMessages(prev => prev.map(msg =>
-                    msg.id === streamingMsgId ? updatedMsg : msg
-                  ));
-                });
-
-              } else if (data.type === 'end') {
-                accumulatedContent = data.content ?? accumulatedContent;
-                receivedSessionId = data.sessionId ?? receivedSessionId;
-                finalProvider = data.provider ?? finalProvider;
-
-                logger.info('Streaming complété', {
-                  ...(receivedSessionId && { sessionId: receivedSessionId }),
-                  contentLength: accumulatedContent.length,
-                  provider: finalProvider
-                });
-
-              } else if (data.type === 'error') {
-                throw new Error(data.error ?? 'Erreur streaming');
-              }
-            } catch {
-              // Ignorer les erreurs de parsing pour les lignes incomplètes
-              if (line.length > 10) {
-                logger.warn('SSE parse warning', { line: line.substring(0, 50) });
-              }
-            }
-          }
-        }
-      };
-
-      // Lire les chunks SSE avec buffering
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        // Décoder et ajouter au buffer
-        sseBuffer += decoder.decode(value, { stream: true });
-
-        // Traiter tous les événements SSE complets (séparés par \n\n)
-        const events = sseBuffer.split('\n\n');
-
-        // Garder le dernier élément dans le buffer s'il est incomplet
-        sseBuffer = events.pop() ?? '';
-
-        // Traiter chaque événement complet
-        for (const event of events) {
-          if (event.trim()) {
-            processSSEEvent(event);
-          }
-        }
-      }
-
-      // Traiter le reste du buffer
-      if (sseBuffer.trim()) {
-        processSSEEvent(sseBuffer);
-      }
-
-      // Finaliser le message
-      const finalMessage: IMessage = {
-        id: streamingMsgId,
-        role: 'assistant',
-        content: accumulatedContent,
-        timestamp: new Date().toISOString(),
-        status: 'complete',
-        sessionId: receivedSessionId ?? 'temp',
-        metadata: {
-          provider: finalProvider,
-          aiModelDetails: {
-            name: finalProvider,
-            tier: 'standard'
-          }
-        }
-      };
-
-      setStreamingMessage(null);
-      setMessages(prev => prev.map(msg =>
-        msg.id === streamingMsgId ? finalMessage : msg
-      ));
-
-      // Si nouvelle session créée par le backend, notifier Chat.tsx
-      if (receivedSessionId && receivedSessionId !== sessionId) {
-        logger.info('Nouvelle session créée par le backend', {
-          oldSessionId: sessionId,
-          newSessionId: receivedSessionId
-        });
-
-        onSessionCreated?.(receivedSessionId);
-      }
-
-      // Invalider le cache TanStack Query
-      if (receivedSessionId) {
-        const realMessages = messages.filter(m =>
-          m.status === 'complete' && !m.id.includes('temp')
-        );
-
-        invalidationHelpers.optimisticSessionUpdate(queryClient, {
-          id: receivedSessionId,
-          subject,
-          startedAt: new Date().toISOString(),
-          messagesCount: realMessages.length + 2
-        });
-
-        invalidationHelpers.invalidateAfterActivity(queryClient);
-
-        logger.info('Cache invalidé', {
-          sessionId: receivedSessionId,
-          messagesCount: realMessages.length + 2
-        });
-      }
-
-    } catch (err: unknown) {
-      // Nettoyer streaming message en cas d'erreur
-      setStreamingMessage(null);
-      setMessages(prev => prev.filter(msg => msg.status !== 'streaming'));
-
-      let errorMsg = 'Erreur lors du streaming';
-
-      if (err instanceof Error) {
-        if (err.name === 'AbortError' || err.message.includes('signal is aborted')) {
-          errorMsg = 'Requête annulée - Timeout de connexion';
-        } else if (err.message.includes('Failed to fetch')) {
-          errorMsg = 'Erreur de connexion au serveur';
-        } else if (err.message.includes('404')) {
-          errorMsg = 'Endpoint non trouvé';
-        } else if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-          errorMsg = 'Session expirée - Veuillez vous reconnecter';
-        } else if (err.message.includes('503')) {
-          errorMsg = 'Service IA temporairement indisponible';
-        } else {
-          errorMsg = err.message;
-        }
-      }
-
-      logger.error('Erreur streaming SSE', {
-        _error: err,
-        errorType: err instanceof Error ? err.name : 'Unknown',
-        errorMessage: err instanceof Error ? err.message : String(err),
-        subject,
-        userId: user?.id,
-        operation: 'useChat:sendMessage:streaming'
-      });
-
-      setError(errorMsg);
-      throw err;
-
-    } finally {
-      setLoading(false);
-    }
-  }, [user, sessionId, subject, onSessionCreated, queryClient, messages]);
-
-  /**
-   * Nettoyer l'erreur
-   */
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
-
+  // ============================================================================
+  // Return hook API
+  // ============================================================================
   return {
     messages,
-    loading,
-    error,
+    isLoading,
+    error: error?.message ?? null,
     sendMessage,
-    streamingMessage,
-    clearError
+    stop,
+    clearError: useCallback(() => {}, []),
   };
 }

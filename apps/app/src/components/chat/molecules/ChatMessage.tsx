@@ -1,33 +1,48 @@
 /**
  * ChatMessage - Molecule message complet
  *
+ * TanStack AI Protocol 2025 - UIMessage avec parts[]
  * Combine MessageAvatar + MessageBubble + MessageRenderer + Audio button
  */
 
 import { type ReactElement } from 'react';
+import type { UIMessage } from '@tanstack/ai-react';
 import { cn } from '@/lib/utils';
 import { MessageAvatar } from '../atoms/MessageAvatar';
 import { MessageBubble } from '../atoms/MessageBubble';
 import MessageRenderer from '@/components/MessageRenderer';
 import { MessageAudioButton } from '@/components/MessageAudioButton';
-import type { IMessage } from '@/types';
 
 export interface ChatMessageProps {
-  message: IMessage;
+  message: UIMessage;
+  /** True si ce message est le dernier ET que le chat est en streaming */
+  isStreaming?: boolean;
   isAudioEnabled?: boolean;
   className?: string;
 }
 
+/**
+ * Extrait le contenu texte des parts TanStack AI
+ */
+function getTextContent(message: UIMessage): string {
+  const textPart = message.parts.find(p => p.type === 'text');
+  return textPart?.type === 'text' ? textPart.content : '';
+}
+
 export function ChatMessage({
   message,
+  isStreaming = false,
   isAudioEnabled = false,
   className
 }: ChatMessageProps): ReactElement {
-  // Type guard: only user and assistant messages should reach this component
   const role = message.role === 'user' ? 'user' : 'assistant';
   const isUser = role === 'user';
-  const isThinking = message.status === 'thinking';
-  const isStreaming = message.status === 'streaming';
+  const content = getTextContent(message);
+
+  // Thinking = assistant message sans contenu pendant streaming
+  const isThinking = !isUser && isStreaming && content.length === 0;
+  // Streaming actif = assistant message avec contenu qui arrive
+  const isActiveStreaming = !isUser && isStreaming && content.length > 0;
 
   return (
     <div
@@ -56,20 +71,20 @@ export function ChatMessage({
         {/* Message bubble */}
         <MessageBubble role={role}>
           <MessageRenderer
-            content={message.content}
+            content={content}
             messageId={message.id}
             isUser={isUser}
             isThinking={isThinking}
-            isStreaming={isStreaming}
+            isStreaming={isActiveStreaming}
             autoSpeak={isAudioEnabled}
           />
         </MessageBubble>
 
         {/* Audio button pour messages assistant (uniquement si complet) */}
-        {!isUser && !isThinking && !isStreaming && isAudioEnabled && (
+        {!isUser && !isThinking && !isActiveStreaming && isAudioEnabled && content.length > 0 && (
           <div className="flex justify-end mt-2">
             <MessageAudioButton
-              content={message.content}
+              content={content}
               messageId={message.id}
             />
           </div>

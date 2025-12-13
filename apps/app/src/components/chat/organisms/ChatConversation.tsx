@@ -1,19 +1,21 @@
 /**
  * ChatConversation - Organism conversation complète
  *
+ * TanStack AI Protocol 2025 - UIMessage avec parts[]
  * Combine MessagesList + ChatError + EmptyState
- * NEW: Supporte affichage des séparateurs de conversation
  */
 
 import { type ReactElement } from 'react';
 import { MessageCircle } from 'lucide-react';
+import type { UIMessage } from '@tanstack/ai-react';
 import { cn } from '@/lib/utils';
 import { MessagesList } from '../molecules/MessagesList';
 import { ChatError } from '../molecules/ChatError';
-import type { IMessage } from '@/types';
 
 export interface ChatConversationProps {
-  messages: IMessage[];
+  messages: UIMessage[];
+  /** True si le chat est en cours de streaming */
+  isLoading?: boolean;
   error?: string | null;
   isAudioEnabled?: boolean;
   emptyStateMessage?: string;
@@ -22,13 +24,14 @@ export interface ChatConversationProps {
 
 export function ChatConversation({
   messages,
+  isLoading = false,
   error,
   isAudioEnabled = false,
   emptyStateMessage = 'Aucun message pour le moment. Commencez la conversation !',
   className
 }: ChatConversationProps): ReactElement {
-  // Filter out system messages (not displayed to user)
-  const displayMessages = messages.filter(msg => msg.role !== 'system');
+  // UIMessage n'a que 'user' et 'assistant' roles (pas de 'system')
+  const displayMessages = messages;
 
   // Empty state
   if (displayMessages.length === 0 && !error) {
@@ -54,6 +57,7 @@ export function ChatConversation({
       {/* Messages list - prend tout l'espace et gère son propre scroll */}
       <MessagesList
         messages={displayMessages}
+        isLoading={isLoading}
         isAudioEnabled={isAudioEnabled}
         className="flex-1 min-h-0"
       />

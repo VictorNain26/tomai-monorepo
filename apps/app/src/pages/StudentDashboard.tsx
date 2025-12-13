@@ -13,14 +13,23 @@ import { PageContainer } from '@/components/shared/PageContainer';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { DashboardSubjectsSection } from '@/components/dashboard/organisms/DashboardSubjectsSection';
 import { UsageCard } from '@/components/subscription';
-import { isITomUser } from '@/types';
+import { isITomUser, type IWindowUsage } from '@/types';
+
+/** Default window usage when no data available */
+const DEFAULT_WINDOW: IWindowUsage = {
+  tokensUsed: 0,
+  tokensRemaining: 5_000,
+  limit: 5_000,
+  usagePercent: 0,
+  refreshIn: '5h 0min',
+};
 
 export default function StudentDashboard(): ReactElement {
   const user = useUser();
   const navigate = useNavigate();
   const { subjects, sessions, mode, isLoading, isRAGEmpty } =
     useStudentDashboard();
-  const { usage, plan, isLoading: usageLoading } = useTokenUsage({
+  const { window: windowUsage, plan, isLoading: usageLoading } = useTokenUsage({
     userId: user?.id,
     enabled: !!user?.id,
   });
@@ -66,10 +75,10 @@ export default function StudentDashboard(): ReactElement {
         </p>
       </div>
 
-      {/* Token Usage Card - Affichage pour l'élève */}
-      {!usageLoading && usage && (
+      {/* Token Usage Card - Affichage rolling window pour l'élève */}
+      {!usageLoading && windowUsage && (
         <UsageCard
-          usage={usage}
+          windowUsage={windowUsage ?? DEFAULT_WINDOW}
           plan={plan}
           className="mb-6"
         />

@@ -33,7 +33,6 @@ import type {
   IChild,
   IDashboardStats,
   ICreateChildData,
-  IMessage,
   IDecksResponse,
   IDeckWithCardsResponse,
   IDeckResponse,
@@ -61,12 +60,11 @@ export const queryKeys = {
     childProgress: (childId: string, period?: string) => [...queryKeys.parent.child(childId), 'progress', period] as const,
   },
 
-  // Chat queries
+  // Chat queries - Sessions only (messages handled by useChat TanStack AI hook)
   chat: {
     all: ['chat'] as const,
     sessions: (limit?: number) => [...queryKeys.chat.all, 'sessions', { limit }] as const,
     session: (sessionId: string) => [...queryKeys.chat.all, 'session', sessionId] as const,
-    messages: (sessionId: string) => [...queryKeys.chat.session(sessionId), 'messages'] as const,
   },
 
   // Files queries (used for invalidation)
@@ -190,16 +188,7 @@ export const chatQueries = {
     queryKey: queryKeys.chat.session(sessionId),
     queryFn: () => apiClient.get(`/api/chat/session/${sessionId}`),
   }),
-
-  // Historique des messages d'une session
-  messages: (sessionId: string) => ({
-    queryKey: queryKeys.chat.messages(sessionId),
-    queryFn: async (): Promise<IMessage[]> => {
-      const response = await apiClient.get<{ history?: IMessage[]; messages?: IMessage[]; } | IMessage[]>(`/api/chat/session/${sessionId}/history`);
-      const messages = Array.isArray(response) ? response : (response.history ?? response.messages ?? []);
-      return Array.isArray(messages) ? messages : [];
-    },
-  }),
+  // Note: messages handled by useChat TanStack AI hook directly
 };
 
 export const chatMutations = {

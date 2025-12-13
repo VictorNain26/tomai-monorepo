@@ -2,7 +2,7 @@
  * ChildUsageCard - Token usage display for a specific child
  *
  * Used in ParentDashboard to show each child's AI usage.
- * Wraps UsageCard with child name/avatar.
+ * Shows rolling window 5h usage with weekly stats.
  */
 
 import { type ReactElement } from 'react';
@@ -11,14 +11,23 @@ import { useTokenUsage } from '@/hooks/useTokenUsage';
 import { UsageCard } from './UsageCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { IChild } from '@/types';
+import type { IChild, IWindowUsage } from '@/types';
 
 interface ChildUsageCardProps {
   child: IChild;
 }
 
+/** Default window usage when no data available */
+const DEFAULT_WINDOW: IWindowUsage = {
+  tokensUsed: 0,
+  tokensRemaining: 5_000,
+  limit: 5_000,
+  usagePercent: 0,
+  refreshIn: '5h 0min',
+};
+
 export function ChildUsageCard({ child }: ChildUsageCardProps): ReactElement {
-  const { usage, plan, isLoading } = useTokenUsage({
+  const { window: windowUsage, weekly, plan, isLoading } = useTokenUsage({
     userId: child.id,
     enabled: true,
   });
@@ -37,7 +46,7 @@ export function ChildUsageCard({ child }: ChildUsageCardProps): ReactElement {
     );
   }
 
-  if (!usage) {
+  if (!windowUsage) {
     return (
       <Card className="overflow-hidden">
         <CardContent className="p-4">
@@ -71,8 +80,13 @@ export function ChildUsageCard({ child }: ChildUsageCardProps): ReactElement {
           </div>
         </div>
 
-        {/* Usage display - inline version */}
-        <UsageCard usage={usage} plan={plan} compact />
+        {/* Usage display - inline version with rolling window */}
+        <UsageCard
+          windowUsage={windowUsage ?? DEFAULT_WINDOW}
+          plan={plan}
+          weeklyTokensUsed={weekly?.tokensUsed}
+          compact
+        />
       </CardContent>
     </Card>
   );

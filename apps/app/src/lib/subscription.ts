@@ -76,7 +76,7 @@ export const SUBSCRIPTION_PLANS: Record<Uppercase<SubscriptionPlanType>, ISubscr
     priceFirstChildCents: 0,
     priceAdditionalChildCents: 0,
     features: [
-      '5 000 tokens/jour',
+      '5 000 tokens par session',
       'Toutes les matières',
       'IA Gemini Flash',
       'Support communauté',
@@ -89,7 +89,8 @@ export const SUBSCRIPTION_PLANS: Record<Uppercase<SubscriptionPlanType>, ISubscr
     priceFirstChildCents: FIRST_CHILD_PRICE_CENTS,
     priceAdditionalChildCents: ADDITIONAL_CHILD_PRICE_CENTS,
     features: [
-      '50 000 tokens/jour par enfant',
+      '25 000 tokens par session (5h)',
+      '75 000 tokens/jour par enfant',
       'Toutes les matières',
       'IA Gemini Flash',
       'Support prioritaire',

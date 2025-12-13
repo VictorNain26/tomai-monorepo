@@ -1,18 +1,21 @@
 /**
  * MessagesList - Molecule liste messages
  *
+ * TanStack AI Protocol 2025 - UIMessage avec parts[]
  * Container scrollable avec messages organisés chronologiquement
  * ✨ UX MODERNE: Animations Framer Motion + Smooth scroll + Stagger effect
  */
 
 import { type ReactElement, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { UIMessage } from '@tanstack/ai-react';
 import { cn } from '@/lib/utils';
 import { ChatMessage } from './ChatMessage';
-import type { IMessage } from '@/types';
 
 export interface MessagesListProps {
-  messages: IMessage[];
+  messages: UIMessage[];
+  /** True si le chat est en cours de streaming */
+  isLoading?: boolean;
   isAudioEnabled?: boolean;
   className?: string;
 }
@@ -57,6 +60,7 @@ const messageVariants = {
 
 export function MessagesList({
   messages,
+  isLoading = false,
   isAudioEnabled = false,
   className
 }: MessagesListProps): ReactElement {
@@ -76,18 +80,25 @@ export function MessagesList({
         animate="visible"
       >
         <AnimatePresence mode="popLayout">
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              variants={messageVariants}
-              layout
-            >
-              <ChatMessage
-                message={message}
-                isAudioEnabled={isAudioEnabled}
-              />
-            </motion.div>
-          ))}
+          {messages.map((message, index) => {
+            // Le dernier message assistant est en streaming si isLoading=true
+            const isLastMessage = index === messages.length - 1;
+            const isStreaming = isLoading && isLastMessage && message.role === 'assistant';
+
+            return (
+              <motion.div
+                key={message.id}
+                variants={messageVariants}
+                layout
+              >
+                <ChatMessage
+                  message={message}
+                  isStreaming={isStreaming}
+                  isAudioEnabled={isAudioEnabled}
+                />
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </motion.div>
 

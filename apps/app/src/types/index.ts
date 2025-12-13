@@ -120,55 +120,11 @@ export interface IRegisterData {
   role: 'parent' | 'student';
 }
 
-// Message types
-export interface IMessage {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant' | 'system';
-  timestamp: string;
-  sessionId?: string;
-  isPartial?: boolean;
-  // État du message
-  status?: 'thinking' | 'streaming' | 'complete';
-  frustrationLevel?: number;
-  concept?: string;
-  aiModel?: string;
-  isFallback?: boolean;
-  tokensUsed?: number;
-  estimatedCost?: number;
-  // Fichier attaché
-  attachedFile?: {
-    fileName: string;
-    fileId?: string;
-    geminiFileId?: string;
-    mimeType?: string;
-    fileSizeBytes?: number;
-  };
-  metadata?: {
-    provider?: string;
-    questionLevel?: number;
-    frustrationLevel?: number;
-    tokensUsed?: number;
-    aiModelDetails?: {
-      name?: string;
-      tier?: string;
-    };
-  };
-}
-
-// Chat message for API request
-export interface IChatMessage {
-  content: string;
-  subject: string;
-  sessionId: string;
-  frustrationLevel: number;
-}
-
-// Chat API response types
-export interface IChatResponse {
-  message: IMessage;
-  sessionId: string;
-}
+// ======================================
+// Chat Types - TanStack AI Protocol 2025
+// ======================================
+// Note: Message types are now UIMessage from @tanstack/ai-react
+// See useChat.ts for TanStack AI implementation
 
 // Session creation response
 export interface ISessionResponse {
@@ -368,10 +324,8 @@ export interface ISessionsResponse {
   _data?: IStudySession[]; // Alternative backend format
 }
 
-export interface ISessionHistoryResponse {
-  history: IMessage[];
-  messages?: IMessage[]; // Alternative backend format
-}
+// Note: Session history now uses UIMessage[] from @tanstack/ai-react
+// See useChat.ts for TanStack AI implementation
 
 // Component Props types
 export interface IProtectedRouteProps {
@@ -693,7 +647,7 @@ export interface IResumeSubscriptionResponse {
 }
 
 /**
- * Token usage info for a user
+ * Token usage info for a user (legacy format for backward compatibility)
  */
 export interface ITokenUsage {
   tokensUsed: number;
@@ -705,11 +659,60 @@ export interface ITokenUsage {
 }
 
 /**
- * Usage response from API
+ * Rolling window usage (primary display - 5h window)
+ * Inspired by ChatGPT/Claude architecture 2025
+ */
+export interface IWindowUsage {
+  tokensUsed: number;
+  tokensRemaining: number;
+  limit: number;
+  usagePercent: number;
+  /** Format: "Xh Ymin" until next token refresh */
+  refreshIn: string;
+}
+
+/**
+ * Daily cap usage (secondary - anti-abuse measure)
+ */
+export interface IDailyUsage {
+  tokensUsed: number;
+  tokensRemaining: number;
+  limit: number;
+  usagePercent: number;
+  /** Format: "Xh Ymin" until 10h Paris reset */
+  resetsIn: string;
+}
+
+/**
+ * Weekly stats (for parent dashboard)
+ */
+export interface IWeeklyUsage {
+  tokensUsed: number;
+}
+
+/**
+ * Lifetime stats
+ */
+export interface ILifetimeUsage {
+  totalTokensUsed: number;
+  totalMessagesCount: number;
+}
+
+/**
+ * Usage response from API (new rolling window format 2025)
  */
 export interface IUsageResponse {
   userId: string;
   plan: 'free' | 'premium';
+  /** Rolling window 5h - primary display */
+  window: IWindowUsage;
+  /** Daily cap (reset 10h Paris) - secondary */
+  daily: IDailyUsage;
+  /** Weekly stats for parent dashboard */
+  weekly: IWeeklyUsage;
+  /** Lifetime stats */
+  lifetime: ILifetimeUsage;
+  /** Legacy format for backward compatibility */
   usage: ITokenUsage;
 }
 
