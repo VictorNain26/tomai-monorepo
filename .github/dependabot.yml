@@ -1,0 +1,40 @@
+# Dependabot Configuration
+# Creates PRs automatically for security updates and version bumps
+
+version: 2
+
+updates:
+  # pnpm dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 10
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    target-branch: "develop"
+    labels:
+      - "ci"
+    commit-message:
+      prefix: "ci"
