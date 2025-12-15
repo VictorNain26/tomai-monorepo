@@ -57,7 +57,7 @@ export function LoginForm() {
 
         if (response.ok) {
           // Force la synchronisation de la session Better Auth
-          refetch();
+          void refetch();
 
           // Redirection immédiate après synchronisation
           void navigate('/student', { replace: true });

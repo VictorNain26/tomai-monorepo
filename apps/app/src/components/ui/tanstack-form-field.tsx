@@ -5,7 +5,7 @@
 
 import * as React from "react"
 import { FieldApi } from "@tanstack/react-form"
-import { Eye as EyeIcon, EyeOff as EyeOffIcon } from "lucide-react"
+import { Eye as EyeIcon, EyeOff as EyeOffIcon, type LucideIcon } from "lucide-react"
 import { Label } from "./label"
 import { Input } from "./input"
 import {
@@ -36,7 +36,7 @@ interface TanStackInputFieldProps {
   id?: string
   autoComplete?: string
   required?: boolean
-  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  icon?: LucideIcon
 }
 
 // Main form field wrapper for TanStack + ShadCN integration
@@ -116,8 +116,8 @@ interface TanStackPasswordFieldProps extends Omit<TanStackInputFieldProps, 'type
   showPassword: boolean
   onTogglePassword: () => void
   toggleIcon?: {
-    show: React.ComponentType<React.SVGProps<SVGSVGElement>>
-    hide: React.ComponentType<React.SVGProps<SVGSVGElement>>
+    show: LucideIcon
+    hide: LucideIcon
   }
   showStrengthIndicator?: boolean
   suggestStrongPassword?: boolean
@@ -312,7 +312,7 @@ interface TanStackSelectFieldProps {
   className?: string
   id?: string
   required?: boolean
-  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  icon?: LucideIcon
   options: Array<{ value: string; label: string }>
 }
 

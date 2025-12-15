@@ -17,12 +17,12 @@ export function ForgotPasswordForm() {
   const [emailSent, setEmailSent] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Implémentation Better Auth forgetPassword
+  // Implémentation Better Auth requestPasswordReset (v1.4+)
   const handleForgotPassword = async (_data: ForgotPasswordFormData) => {
     setIsLoading(true);
     try {
-      // Better Auth forgetPassword avec redirect URL
-      await authClient.forgetPassword({
+      // Better Auth requestPasswordReset avec redirect URL
+      await authClient.requestPasswordReset({
         email: _data.email,
         redirectTo: `${window.location.origin}/auth/reset-password`
       });
