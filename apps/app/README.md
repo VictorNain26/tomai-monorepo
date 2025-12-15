@@ -6,14 +6,14 @@ Frontend React 19 + TypeScript de Tom : Interface utilisateur adaptive pour tuto
 
 ### Frontend Moderne
 - **Framework** : React 19 + TypeScript 5.9+ (Mode Strict)
-- **Bundler** : Vite 7.1+ avec optimisations avancées et proxy API
-- **State Management** : Zustand 4.5+ avec actions modulaires et persistance
-- **UI/UX** : TailwindCSS + Framer Motion 11.0+ (animations fluides)
-- **Routing** : React Router DOM v6 avec routes protégées
+- **Bundler** : Vite 7 avec optimisations avancées et proxy API
+- **État serveur** : TanStack Query 5 (cache, refetch, optimistic updates)
+- **Formulaires** : TanStack Form 1 (validation, state management)
+- **UI/UX** : TailwindCSS 4 + shadcn/ui + Framer Motion (animations fluides)
+- **Routing** : React Router 7 avec routes protégées
 
 ### Authentification & Communication
 - **Auth System** : Better Auth 1.3+ avec hooks React intégrés
-- **HTTP Client** : Axios avec intercepteurs et gestion d'erreur avancée
 - **Real-time** : Chat interface avec backend Elysia.js
 
 ### Interface Adaptive
@@ -264,9 +264,9 @@ server: {
 ```typescript
 manualChunks: {
   vendor: ['react', 'react-dom'],              // Core React
-  ui: ['lucide-react', 'framer-motion'],       // UI Components  
-  router: ['react-router-dom'],                // Routing
-  utils: ['axios', 'zustand'],                 // Utilities
+  ui: ['lucide-react', 'framer-motion'],       // UI Components
+  router: ['react-router'],                    // Routing
+  query: ['@tanstack/react-query'],            // État serveur
   auth: ['better-auth'],                       // Authentication
   editor: ['react-syntax-highlighter']         // Markdown/Code
 }
