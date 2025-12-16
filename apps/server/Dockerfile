@@ -25,11 +25,13 @@ RUN groupadd --gid 1001 tomai && \
 # ===========================================
 FROM base AS deps
 
-# Monorepo: copy from root
-COPY apps/server/package.json ./package.json
+# Monorepo structure: copier la hiérarchie complète pour workspace resolution
+COPY package.json ./
 COPY bun.lock ./
+COPY apps/server/package.json ./apps/server/
+COPY packages/shared-types/package.json ./packages/shared-types/
 
-# Installation avec cache mount pour performance
+# Installation avec cache mount - workspace resolution fonctionne
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --production
 
@@ -42,18 +44,23 @@ FROM base AS build
 ARG GIT_COMMIT_SHA=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 
-# Monorepo: copy from root
-COPY apps/server/package.json ./package.json
+# Monorepo structure: hiérarchie complète pour workspace resolution
+COPY package.json ./
 COPY bun.lock ./
+COPY apps/server/package.json ./apps/server/
+COPY packages/shared-types/package.json ./packages/shared-types/
 
 # Installation complète (dev + prod) pour build
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile
 
 # Sources et configuration (monorepo paths)
-COPY apps/server/src/ ./src/
-COPY packages/shared-types/ ./shared-types/
-COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./
+COPY apps/server/src/ ./apps/server/src/
+COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./apps/server/
+COPY packages/shared-types/src/ ./packages/shared-types/src/
+
+# Build depuis le contexte monorepo
+WORKDIR /app/apps/server
 
 # Validation stricte obligatoire
 RUN echo "=== TypeScript Validation ===" && \
@@ -73,17 +80,22 @@ FROM base AS development
 
 WORKDIR /app
 
-# Toutes les dépendances (dev inclus) - monorepo paths
-COPY apps/server/package.json ./package.json
+# Monorepo structure pour workspace resolution
+COPY package.json ./
 COPY bun.lock ./
+COPY apps/server/package.json ./apps/server/
+COPY packages/shared-types/package.json ./packages/shared-types/
+
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile
 
 # Sources et config (monorepo paths)
-COPY --chown=tomai:tomai apps/server/src/ ./src/
-COPY --chown=tomai:tomai apps/server/drizzle/ ./drizzle/
-COPY --chown=tomai:tomai packages/shared-types/ ./shared-types/
-COPY --chown=tomai:tomai apps/server/tsconfig*.json apps/server/drizzle.config*.ts apps/server/eslint.config.mjs ./
+COPY --chown=tomai:tomai apps/server/src/ ./apps/server/src/
+COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
+COPY --chown=tomai:tomai apps/server/tsconfig*.json apps/server/drizzle.config*.ts apps/server/eslint.config.mjs ./apps/server/
+COPY --chown=tomai:tomai packages/shared-types/src/ ./packages/shared-types/src/
+
+WORKDIR /app/apps/server
 
 ENV NODE_ENV=development
 ENV DOCKER_CONTAINER=true
@@ -101,15 +113,19 @@ FROM base AS production
 
 WORKDIR /app
 
-# Dépendances production uniquement
+# Structure monorepo minimale pour runtime
 COPY --from=deps --chown=tomai:tomai /app/node_modules ./node_modules
 COPY --from=deps --chown=tomai:tomai /app/package.json ./
+COPY --from=deps --chown=tomai:tomai /app/apps/server/package.json ./apps/server/
+COPY --from=deps --chown=tomai:tomai /app/packages/shared-types/package.json ./packages/shared-types/
 
-# Bundle compilé
-COPY --from=build --chown=tomai:tomai /app/dist ./dist
+# Bundle compilé depuis le build
+COPY --from=build --chown=tomai:tomai /app/apps/server/dist ./apps/server/dist
 
-# Migrations Drizzle (Runtime Migrator) - monorepo path
-COPY --chown=tomai:tomai apps/server/drizzle/ ./drizzle/
+# Migrations Drizzle (Runtime Migrator)
+COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
+
+WORKDIR /app/apps/server
 
 # Variables production
 ENV NODE_ENV=production
