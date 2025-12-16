@@ -47,10 +47,19 @@ jobs:
       - name: Security Audit
         run: |
           echo "Running bun audit for known vulnerabilities..."
-          bun audit --level high && echo "✅ No high severity vulnerabilities found" || {
-            echo "::warning::High severity vulnerabilities detected - review bun audit output above"
+          AUDIT_OUTPUT=$(bun audit 2>&1) || true
+          echo "$AUDIT_OUTPUT"
+
+          # Check for high or critical severity vulnerabilities
+          if echo "$AUDIT_OUTPUT" | grep -qE '\((.*high|.*critical)\)'; then
+            echo "::error::High/Critical severity vulnerabilities detected!"
             exit 1
-          }
+          elif echo "$AUDIT_OUTPUT" | grep -q 'vulnerabilities'; then
+            echo "::warning::Moderate/Low vulnerabilities found - review output above"
+            echo "✅ No HIGH/CRITICAL severity vulnerabilities - CI passes"
+          else
+            echo "✅ No vulnerabilities found"
+          fi
 
       - name: TypeScript
         run: bun run typecheck
