@@ -58,6 +58,8 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 COPY apps/server/src/ ./apps/server/src/
 COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./apps/server/
 COPY packages/shared-types/src/ ./packages/shared-types/src/
+# tsconfig.base.json racine pour héritage TypeScript
+COPY tsconfig.base.json ./
 
 # Build depuis le contexte monorepo
 WORKDIR /app/apps/server
@@ -94,6 +96,8 @@ COPY --chown=tomai:tomai apps/server/src/ ./apps/server/src/
 COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
 COPY --chown=tomai:tomai apps/server/tsconfig*.json apps/server/drizzle.config*.ts apps/server/eslint.config.mjs ./apps/server/
 COPY --chown=tomai:tomai packages/shared-types/src/ ./packages/shared-types/src/
+# tsconfig.base.json racine pour héritage TypeScript
+COPY --chown=tomai:tomai tsconfig.base.json ./
 
 WORKDIR /app/apps/server
 
