@@ -41,12 +41,21 @@ interface CreateChildModalProps {
   onSuccess: () => void;
 }
 
+/**
+ * Génère un nombre aléatoire cryptographiquement sécurisé entre 0 et max (exclus)
+ */
+const getSecureRandomInt = (max: number): number => {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] % max;
+};
+
 const generatePassword = (): string => {
   const adjectives = ['Super', 'Cool', 'Brave', 'Smart', 'Happy', 'Magic'];
   const nouns = ['Lion', 'Chat', 'Ours', 'Etoile', 'Soleil', 'Lune'];
-  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const number = Math.floor(Math.random() * 99) + 10;
+  const adjective = adjectives[getSecureRandomInt(adjectives.length)];
+  const noun = nouns[getSecureRandomInt(nouns.length)];
+  const number = getSecureRandomInt(89) + 10; // 10-99
   return `${adjective}${noun}${number}!`;
 };
 
