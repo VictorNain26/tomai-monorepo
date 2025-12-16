@@ -44,6 +44,25 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Security Audit (Bun)
+        run: bun audit --level high || true
+
+      - name: Check Critical CVEs (Dependabot)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking for critical/high severity Dependabot alerts..."
+          HIGH_ALERTS=$(gh api repos/${{ github.repository }}/dependabot/alerts \
+            --jq '[.[] | select(.state=="open" and (.security_advisory.severity=="critical" or .security_advisory.severity=="high"))] | length')
+
+          if [ "$HIGH_ALERTS" -gt 0 ]; then
+            echo "::error::Found $HIGH_ALERTS critical/high severity vulnerabilities!"
+            gh api repos/${{ github.repository }}/dependabot/alerts \
+              --jq '.[] | select(.state=="open" and (.security_advisory.severity=="critical" or .security_advisory.severity=="high")) | "- \(.security_advisory.severity | ascii_upcase): \(.security_vulnerability.package.name) - \(.security_advisory.summary)"'
+            exit 1
+          fi
+          echo "✅ No critical/high severity vulnerabilities found"
+
       - name: TypeScript
         run: bun run typecheck
 
