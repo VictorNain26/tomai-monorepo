@@ -7,21 +7,14 @@ import type {
   ISubscriptionPlan,
   IPricingInfo,
 } from '@/types';
+import { getBackendURL } from '@/utils/urls';
 
 // ============================================
 // API Configuration
 // ============================================
 
-export const getApiUrl = (): string => {
-  if (import.meta.env['VITE_API_URL']) {
-    return import.meta.env['VITE_API_URL'];
-  }
-  if (import.meta.env.DEV) {
-    return 'http://localhost:3000';
-  }
-  const { protocol, hostname } = window.location;
-  return `${protocol}//${hostname}`;
-};
+/** @deprecated Use getBackendURL from @/utils/urls directly */
+export const getApiUrl = getBackendURL;
 
 // ============================================
 // Pricing Configuration

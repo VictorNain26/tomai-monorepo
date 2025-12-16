@@ -1,27 +1,8 @@
 import { createAuthClient } from "better-auth/react";
 import type { IAppUser } from '@/types';
+import { getBackendURL } from '@/utils/urls';
 
-/**
- * Résolution de l'URL du backend API
- * Architecture sous-domaines: app.tomia.fr (frontend) + api.tomia.fr (backend)
- */
-const resolveBaseURL = (): string => {
-  // Priority 1: Environment variable explicite
-  if (import.meta.env['VITE_API_URL']) {
-    return import.meta.env['VITE_API_URL'];
-  }
-
-  // Priority 2: Development fallback
-  if (import.meta.env.DEV) {
-    return 'http://localhost:3000';
-  }
-
-  // Priority 3: Production - sous-domaine api.tomia.fr
-  // Frontend sur app.tomia.fr -> Backend sur api.tomia.fr
-  return 'https://api.tomia.fr';
-};
-
-const baseURL = resolveBaseURL();
+const baseURL = getBackendURL();
 
 // Better Auth client configuration avec support cross-origin
 export const authClient = createAuthClient({

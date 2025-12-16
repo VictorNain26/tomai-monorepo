@@ -9,7 +9,10 @@
     "build": "bun --bun next build",
     "start": "bun --bun next start",
     "lint": "eslint . --max-warnings 0",
+    "lint:ci": "eslint . --max-warnings 0 --format stylish",
     "typecheck": "tsc --noEmit",
+    "validate": "bun run typecheck && bun run lint",
+    "validate:ci": "bun run typecheck && bun run lint:ci",
     "clean": "rm -rf .next"
   },
   "dependencies": {
