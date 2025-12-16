@@ -25,7 +25,9 @@ RUN groupadd --gid 1001 tomai && \
 # ===========================================
 FROM base AS deps
 
-COPY package.json bun.lock ./
+# Monorepo: copy from root
+COPY apps/server/package.json ./package.json
+COPY bun.lock ./
 
 # Installation avec cache mount pour performance
 RUN --mount=type=cache,target=/root/.bun/install/cache \
@@ -40,16 +42,18 @@ FROM base AS build
 ARG GIT_COMMIT_SHA=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 
-COPY package.json bun.lock bunfig.toml ./
+# Monorepo: copy from root
+COPY apps/server/package.json ./package.json
+COPY bun.lock ./
 
 # Installation complète (dev + prod) pour build
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile
 
-# Sources et configuration
-COPY src/ ./src/
-COPY shared-types/ ./shared-types/
-COPY tsconfig*.json eslint.config.mjs ./
+# Sources et configuration (monorepo paths)
+COPY apps/server/src/ ./src/
+COPY packages/shared-types/ ./shared-types/
+COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./
 
 # Validation stricte obligatoire
 RUN echo "=== TypeScript Validation ===" && \
@@ -69,16 +73,17 @@ FROM base AS development
 
 WORKDIR /app
 
-# Toutes les dépendances (dev inclus)
-COPY package.json bun.lock bunfig.toml ./
+# Toutes les dépendances (dev inclus) - monorepo paths
+COPY apps/server/package.json ./package.json
+COPY bun.lock ./
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile
 
-# Sources et config
-COPY --chown=tomai:tomai src/ ./src/
-COPY --chown=tomai:tomai drizzle/ ./drizzle/
-COPY --chown=tomai:tomai shared-types/ ./shared-types/
-COPY --chown=tomai:tomai tsconfig*.json drizzle.config*.ts eslint.config.mjs ./
+# Sources et config (monorepo paths)
+COPY --chown=tomai:tomai apps/server/src/ ./src/
+COPY --chown=tomai:tomai apps/server/drizzle/ ./drizzle/
+COPY --chown=tomai:tomai packages/shared-types/ ./shared-types/
+COPY --chown=tomai:tomai apps/server/tsconfig*.json apps/server/drizzle.config*.ts apps/server/eslint.config.mjs ./
 
 ENV NODE_ENV=development
 ENV DOCKER_CONTAINER=true
@@ -103,8 +108,8 @@ COPY --from=deps --chown=tomai:tomai /app/package.json ./
 # Bundle compilé
 COPY --from=build --chown=tomai:tomai /app/dist ./dist
 
-# Migrations Drizzle (Runtime Migrator)
-COPY --chown=tomai:tomai drizzle/ ./drizzle/
+# Migrations Drizzle (Runtime Migrator) - monorepo path
+COPY --chown=tomai:tomai apps/server/drizzle/ ./drizzle/
 
 # Variables production
 ENV NODE_ENV=production
