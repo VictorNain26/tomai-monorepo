@@ -1,0 +1,115 @@
+# ============================================================
+# TomAI Backend - Docker Compose Production Local (2025)
+# Usage: docker compose -f docker-compose.production.yml up -d
+#
+# NOTE: Pour Koyeb, utiliser directement le Dockerfile (target: production)
+# Ce fichier est pour tester la production localement uniquement
+# ============================================================
+
+services:
+  # ===========================================
+  # Backend TomAI - Production build
+  # ===========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        GIT_COMMIT_SHA: ${GIT_COMMIT_SHA:-local}
+    container_name: tomai-backend-prod
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - DATABASE_URL=postgresql://tomai_prod:${POSTGRES_PASSWORD:-prod_password}@postgres:5432/tomai_prod
+      - REDIS_URL=redis://redis:6379
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://tomai.app}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tomai-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2GB
+          cpus: '2.0'
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ===========================================
+  # PostgreSQL 16 + pgvector - Production
+  # ===========================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: tomai-postgres-prod
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: tomai_prod
+      POSTGRES_USER: tomai_prod
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prod_password}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - tomai-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4GB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tomai_prod -d tomai_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # Redis 7 - Production
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: tomai-redis-prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - tomai-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1GB
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ===========================================
+# Volumes persistants
+# ===========================================
+volumes:
+  postgres_prod_data:
+    name: tomai_postgres_prod_data
+  redis_prod_data:
+    name: tomai_redis_prod_data
+
+# ===========================================
+# Réseau isolé production
+# ===========================================
+networks:
+  tomai-prod:
+    name: tomai-prod-network
+    driver: bridge

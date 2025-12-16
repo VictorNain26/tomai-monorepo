@@ -1,0 +1,34 @@
+# Bun configuration optimisée pour TomAI Server - Pure Bun Runtime
+[install]
+# Configuration package manager
+cache = true
+registry = "https://registry.npmjs.org"
+exact = false
+
+[install.scopes]
+# Scopes pour packages privés (si nécessaire)
+
+[test]
+# Configuration tests
+preload = ["./src/config/app.config.ts"]
+coverage = true
+timeout = 30000  # 30 secondes timeout
+
+[run]
+# PRODUCTION: Configuration runtime pour éviter memory leaks
+# Note: GC flags sont configurés dans les scripts package.json
+smol = false
+hot = false           # Désactiver hot reload en production
+
+[build]
+# Configuration build optimisée Bun
+target = "bun"
+format = "esm"
+splitting = true
+minify = true
+sourcemap = "external"
+
+[macros]
+# Macros personnalisées (si nécessaire)
+
+# Bun charge automatiquement .env, pas besoin de config ici

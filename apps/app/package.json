@@ -5,17 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",
-    "build": "pnpm run validate && vite build --mode production",
-    "build:staging": "pnpm run validate && vite build --mode staging",
+    "build": "bun run validate && vite build --mode production",
+    "build:staging": "bun run validate && vite build --mode staging",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:ci": "eslint . --max-warnings 0",
-    "validate": "pnpm run typecheck && pnpm run lint",
-    "validate:ci": "pnpm run typecheck && pnpm run lint:ci",
-    "analyze:deps": "npx depcheck",
+    "validate": "bun run typecheck && bun run lint",
+    "validate:ci": "bun run typecheck && bun run lint:ci",
+    "analyze:deps": "bunx depcheck",
     "test": "echo 'Tests à configurer'",
     "test:ci": "echo 'Tests CI à configurer'"
   },
@@ -41,6 +41,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@repo/shared-types": "workspace:*",
     "@tanstack/ai": "^0.0.3",
     "@tanstack/ai-client": "^0.0.3",
     "@tanstack/ai-react": "^0.0.3",
@@ -69,6 +70,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@tailwindcss/vite": "^4.1.18",
+    "@types/bun": "^1.2.21",
     "@types/node": "^24.5.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -83,8 +85,8 @@
     "eslint-plugin-react-refresh": "^0.4.25",
     "globals": "^16.5.0",
     "tailwindcss": "^4.1.18",
+    "tomai-server": "workspace:*",
     "typescript": "^5.9.3",
     "vite": "^7.3.0"
-  },
-  "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
+  }
 }

@@ -1,6 +1,5 @@
-# TomAI Monorepo - CI Pipeline
-# Best Practices 2025: Turborepo cache, pnpm cache, concurrency control
-# Sources: https://graphite.com/guides/monorepo-with-github-actions
+# TomAI Monorepo - CI Pipeline (Bun)
+# Best Practices 2025: Bun workspaces, Turborepo cache, concurrency control
 
 name: CI
 
@@ -23,15 +22,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        # Version read from package.json "packageManager" field
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: 'pnpm'
+          bun-version: latest
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
 
       - name: Turbo Cache
         uses: actions/cache@v4
@@ -41,13 +42,13 @@ jobs:
           restore-keys: turbo-${{ runner.os }}-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: TypeScript
-        run: pnpm typecheck
+        run: bun run typecheck
 
       - name: ESLint
-        run: pnpm lint
+        run: bun run lint
 
       - name: Build
-        run: pnpm build
+        run: bun run build

@@ -1,10 +1,6 @@
 # CLAUDE.md - Tom Monorepo
 
-Monorepo Turborepo unifiant le site vitrine (landing Next.js 16) et l'application métier (Vite + React Router 7).
-
-## Règle absolue
-
-**JAMAIS** inventer de solutions. **TOUJOURS** rechercher la documentation officielle avant toute modification.
+Monorepo Turborepo unifiant le site vitrine, l'application métier et le serveur backend.
 
 ## Architecture
 
@@ -12,114 +8,113 @@ Monorepo Turborepo unifiant le site vitrine (landing Next.js 16) et l'applicatio
 tomai-monorepo/
 ├── apps/
 │   ├── landing/          # Site vitrine Next.js 16 (port 3001)
-│   └── app/              # Application métier Vite (port 5173)
+│   ├── app/              # Application métier Vite (port 5173)
+│   └── server/           # Backend Elysia.js + Bun (port 3000)
 ├── packages/
+│   ├── shared-types/     # Types partagés frontend/backend
 │   ├── eslint-config/    # ESLint config
 │   └── typescript-config/ # TypeScript config
+├── tsconfig.base.json    # Configuration TypeScript commune
 ├── turbo.json            # Configuration Turborepo
-└── pnpm-workspace.yaml   # PNPM workspaces
+└── package.json          # Bun workspaces
 ```
+
+## Stack Technique
+
+| Couche | Technologies |
+|--------|--------------|
+| Runtime | **Bun** (monorepo unifié) |
+| Build | Turborepo |
+| Backend | Elysia.js, PostgreSQL 16, Redis, Drizzle ORM |
+| Frontend Landing | Next.js 16, TailwindCSS 4 |
+| Frontend App | Vite 7, React 19, React Router 7, TanStack Query/Form |
+| Auth | Better Auth + Google OAuth |
+| AI | Gemini 2.5 Flash, Mistral (embeddings), Qdrant (RAG) |
+| API Client | **Eden Treaty** (type-safe) |
 
 ## Commandes
 
-### Développement
 ```bash
-pnpm dev              # Tous les apps (landing + app)
-pnpm dev:landing      # Landing seulement (port 3001)
-pnpm dev:app          # App métier seulement (port 5173)
+# Installation
+bun install
+
+# Développement
+bun run dev              # Tous les apps
+bun run dev:landing      # Landing seulement (port 3001)
+bun run dev:app          # App métier seulement (port 5173)
+bun run dev:server       # Backend seulement (port 3000)
+
+# Validation (obligatoire avant commit)
+bun run typecheck        # TypeScript strict
+bun run lint             # ESLint
+bun run validate         # typecheck + lint
+
+# Build
+bun run build            # Production tous les apps
+
+# Database (depuis apps/server/)
+bun run db:push          # Appliquer schema (dev)
+bun run db:generate      # Générer migration (prod)
+bun run db:studio        # Interface Drizzle Studio
 ```
 
-### Build et Validation
-```bash
-pnpm build            # Build tous les apps
-pnpm typecheck        # TypeScript strict
-pnpm lint             # ESLint
-pnpm validate         # typecheck + lint
+## Eden Treaty - API Type-Safe
+
+Le client et le serveur partagent les types via Eden Treaty :
+
+```typescript
+// apps/app/src/lib/eden-client.ts
+import { treaty } from '@elysiajs/eden';
+import type { App } from 'tomai-server/app';
+
+export const api = treaty<App>(getBackendURL(), {
+  fetch: { credentials: 'include', mode: 'cors' }
+});
+
+// Usage avec autocomplete complet
+const { data, error } = await api.api.subjects.get({ query: { level: 'college-6' } });
 ```
 
-### Nettoyage
-```bash
-pnpm clean            # Clean tous les builds
-```
+## Configuration TypeScript
 
-## Apps
+Configuration unifiée au niveau du monorepo (`tsconfig.base.json`) avec :
+- `strict: true` et toutes les options de strictness standard
+- Compatible avec Drizzle ORM et les bibliothèques modernes
+- Pas de `exactOptionalPropertyTypes` (cause friction avec ORMs)
 
-### Landing (Site Vitrine)
-- **Framework** : Next.js 16 (App Router)
-- **Port** : 3001
-- **Styling** : TailwindCSS 4
-- **Features** : SEO, Static Generation
+Chaque app étend cette configuration avec ses spécificités :
+- **Client** : types Vite + Bun (pour Eden Treaty)
+- **Server** : types Bun uniquement
+- **Landing** : types Next.js
 
-### App Métier (Tom-client)
-- **Framework** : Vite 7 + React 19
-- **Port** : 5173
-- **Routing** : React Router 7
-- **État** : TanStack Query + TanStack Form
-- **Auth** : Better Auth
-- **UI** : shadcn/ui + TailwindCSS 4
+## Règles de Développement
 
-**Détails** : Voir `apps/app/CLAUDE.md`
+### Standards de Code
+- **TypeScript strict** : Aucun type `any`
+- **Zero warnings ESLint** en mode CI
+- **400 lignes max** par fichier
+- **shadcn/ui uniquement** pour les composants UI
 
-## Règles strictes
-
-### Longueur des fichiers
-
-- **400 lignes maximum** par fichier
-- Découper les composants si dépassement
-
-### Pas de sur-engineering
-
+### Pas de Sur-engineering
 - Pas d'abstractions prématurées
 - Pas de composants génériques pour un seul usage
-- Pas de state management complexe si TanStack Query suffit
-- Supprimer le code inutilisé
+- Supprimer le code inutilisé (pas le commenter)
 
-### Standards TypeScript
+### Workflow Git
+- Travailler sur `develop` (push direct OK)
+- PR `develop → main` pour production
+- CI doit passer avant merge
 
-```typescript
-// CORRECT : Types explicites
-interface UserFormData {
-  name: string;
-  email: string;
-}
+## Documentation Détaillée
 
-async function handleUser(user: UserFormData | null): Promise<void> {
-  if (!user) throw new Error('User required');
-  // ...
-}
+- `apps/app/CLAUDE.md` - Spécificités app React
+- `apps/server/CLAUDE.md` - Architecture backend et migrations
+- `apps/landing/CLAUDE.md` - Site vitrine Next.js
 
-// INTERDIT : Any types
-async function handleUser(user: any) { }
-```
-
-### UI : shadcn/ui uniquement
-
-```typescript
-// CORRECT : shadcn/ui components
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-
-<Button variant="default">Valider</Button>
-
-// INTERDIT : CSS custom, styles inline
-<button style={{ backgroundColor: 'blue' }}>
-<div className="custom-card-style">
-```
-
-## Sources officielles
-
-- **Turborepo** : https://turbo.build/repo/docs
-- **Next.js 16** : https://nextjs.org/docs
-- **Vite 7** : https://vitejs.dev/guide
-- **TailwindCSS 4** : https://tailwindcss.com/docs
-- **shadcn/ui** : https://ui.shadcn.com/docs/components
-- **TanStack Query** : https://tanstack.com/query/latest
-- **React Router 7** : https://reactrouter.com
-
-## Validation pré-commit
+## Validation Pré-Commit
 
 ```bash
-pnpm typecheck  # Zero erreur TypeScript
-pnpm lint       # Zero warnings ESLint
-pnpm build      # Build successful
+bun run typecheck  # Zero erreur TypeScript
+bun run lint       # Zero warnings ESLint
+bun run build      # Build successful
 ```
