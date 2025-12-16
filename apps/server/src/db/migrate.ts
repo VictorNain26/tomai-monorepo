@@ -19,6 +19,18 @@ import { logger } from '../lib/observability';
  * Best practice: Use a dedicated connection with max: 1 for migrations
  * to avoid conflicts and ensure sequential execution.
  */
+// Detect Supabase using proper URL hostname validation (CWE-20 compliant)
+function isSupabaseHost(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.endsWith('.supabase.com') ||
+           parsed.hostname.endsWith('.supabase.co') ||
+           parsed.hostname === 'supabase.com';
+  } catch {
+    return false;
+  }
+}
+
 export async function runMigrations(): Promise<void> {
   const connectionString = Bun.env['DATABASE_URL'];
 
@@ -27,7 +39,7 @@ export async function runMigrations(): Promise<void> {
   }
 
   // Detect Supabase for SSL configuration
-  const isSupabase = connectionString.includes('supabase.com') || connectionString.includes('pooler.supabase.com');
+  const isSupabase = isSupabaseHost(connectionString);
 
   logger.info('Starting database migrations...', {
     operation: 'db:migrate:start',

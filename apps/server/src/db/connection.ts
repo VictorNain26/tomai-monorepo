@@ -16,8 +16,18 @@ if (!connectionString) {
   throw new Error('DATABASE_URL environment variable is required');
 }
 
-// Detect Supabase for optimized configuration
-const isSupabase = connectionString.includes('supabase.com') ?? connectionString.includes('pooler.supabase.com');
+// Detect Supabase using proper URL hostname validation (CWE-20 compliant)
+function isSupabaseHost(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.endsWith('.supabase.com') ||
+           parsed.hostname.endsWith('.supabase.co') ||
+           parsed.hostname === 'supabase.com';
+  } catch {
+    return false;
+  }
+}
+const isSupabase = isSupabaseHost(connectionString);
 
 // Production-optimized postgres client
 export const sql = postgres(connectionString, {

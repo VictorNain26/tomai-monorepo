@@ -40,6 +40,17 @@ interface UpstashRedisClient {
 
 type RedisClient = StandardRedisClient | UpstashRedisClient;
 
+// Detect Upstash using proper URL hostname validation (CWE-20 compliant)
+function isUpstashHost(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.endsWith('.upstash.io') ||
+           parsed.hostname === 'upstash.io';
+  } catch {
+    return false;
+  }
+}
+
 // Interface pour les opérations Redis
 export interface RedisService {
   get<T>(key: string): Promise<T | null>;
@@ -87,7 +98,7 @@ class ProductionRedisService implements RedisService {
         });
       } else if (this.redisUrl) {
         // Priorité 2: URL Redis standard ou Upstash via URL
-        const isUpstash = this.redisUrl.includes('upstash.io');
+        const isUpstash = isUpstashHost(this.redisUrl);
 
         if (isUpstash) {
           // Configuration Upstash via URL (moins recommandé que REST)
