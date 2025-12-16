@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    /* PRODUCTION STRICT - NO SILENT ERRORS */
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "module": "ESNext", 
+    "moduleResolution": "bundler",
+    "types": ["bun-types"],
+    
+    /* STRICT VALIDATION - CATCH ALL ERRORS IN SRC */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+    
+    /* Skip node_modules but check our source */
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": false,
+    
+    /* ES Module setup */
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    
+    /* No output for typecheck only */
+    "noEmit": true,
+    
+    /* Path Mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules/**/*",
+    "dist/**/*",
+    "coverage/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/scripts/**/*",
+    "src/tests/integration/**/*"
+  ]
+}

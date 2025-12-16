@@ -5,16 +5,18 @@
   "private": true,
   "description": "Tom Landing Page - Site vitrine Next.js 15",
   "scripts": {
-    "dev": "next dev --port 3001",
-    "build": "next build",
-    "start": "next start",
+    "dev": "bun --bun next dev --port 3001",
+    "build": "bun --bun next build",
+    "start": "bun --bun next start",
     "lint": "eslint . --max-warnings 0",
+    "lint:ci": "eslint . --max-warnings 0 --format stylish",
     "typecheck": "tsc --noEmit",
+    "validate": "bun run typecheck && bun run lint",
+    "validate:ci": "bun run typecheck && bun run lint:ci",
     "clean": "rm -rf .next"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
-    "@repo/ui": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",

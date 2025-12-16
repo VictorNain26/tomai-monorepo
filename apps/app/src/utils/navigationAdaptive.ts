@@ -147,42 +147,6 @@ export const getCombinedNavigationStyles = (
 };
 
 /**
- * Gets educational navigation shortcuts based on role and age
- */
-export const getEducationalShortcuts = (mode: UIMode, role: UserRoleType) => {
-  if (role === 'student') {
-    const shortcuts = {
-      primary: [
-        { name: 'Parler avec Tom', href: '/student/chat/new', key: 'c', icon: 'MessageCircle' },
-        { name: 'Mes Discussions', href: '/student', key: 'h', icon: 'Home' }
-      ],
-      college: [
-        { name: 'Nouvelle Session', href: '/student/chat/new', key: 'n', icon: 'Plus' },
-        { name: 'Accueil', href: '/student', key: 'h', icon: 'Home' },
-        { name: 'Mes Devoirs', href: '/student/homework', key: 'd', icon: 'BookOpen' }
-      ],
-      lycee: [
-        { name: 'Nouvelle Session', href: '/student/chat/new', key: 'n', icon: 'Plus' },
-        { name: 'Dashboard', href: '/student', key: 'h', icon: 'Home' },
-        { name: 'Révisions', href: '/student/reviews', key: 'r', icon: 'BookOpen' },
-        { name: 'Calendrier', href: '/student/calendar', key: 'c', icon: 'Calendar' }
-      ]
-    };
-    return shortcuts[mode] || shortcuts.lycee;
-  }
-
-  // Parent shortcuts
-  const parentShortcuts = [
-    { name: 'Dashboard', href: '/parent', key: 'h', icon: 'BarChart3' },
-    { name: 'Gérer Enfants', href: '/parent/children/manage', key: 'e', icon: 'UserPlus' },
-    { name: 'Notifications', href: '/parent/notifications', key: 'n', icon: 'Bell' },
-    { name: 'Rapports', href: '/parent/reports', key: 'r', icon: 'FileText' }
-  ];
-
-  return parentShortcuts;
-};
-
-/**
  * Touch gesture configuration for mobile navigation
  */
 export const getTouchGestureConfig = (mode: UIMode) => {
@@ -200,75 +164,6 @@ export const getTouchGestureConfig = (mode: UIMode) => {
       doubleTap: mode !== 'primary' // Désactivé pour primaire (confusion)
     }
   };
-};
-
-/**
- * Audio feedback configuration for accessibility
- */
-export const getAudioFeedbackConfig = (mode: UIMode) => {
-  return {
-    enabled: true,
-    sounds: {
-      navigation: mode === 'primary' ? 'gentle-chime.mp3' : 'soft-click.mp3',
-      success: mode === 'primary' ? 'success-bell.mp3' : 'success-tone.mp3',
-      error: 'error-tone.mp3',
-      focus: mode === 'primary' ? 'focus-chime.mp3' : null
-    },
-    volume: mode === 'primary' ? 0.6 : 0.4,
-    allowUserControl: true
-  };
-};
-
-/**
- * Breadcrumb configuration for complex navigation
- */
-export const getBreadcrumbConfig = (mode: UIMode, role: UserRoleType) => {
-  if (role === 'student' && mode === 'primary') {
-    // Pas de breadcrumbs pour les primaires (trop complexe)
-    return { enabled: false };
-  }
-
-  return {
-    enabled: true,
-    maxItems: mode === 'college' ? 3 : 4,
-    showIcons: mode === 'primary',
-    separator: mode === 'primary' ? '→' : '/',
-    homeName: role === 'student' ? 'Accueil' : 'Dashboard'
-  };
-};
-
-/**
- * Keyboard navigation shortcuts
- */
-export const getKeyboardShortcuts = (mode: UIMode, role: UserRoleType) => {
-  const base = [
-    { key: 'Alt+H', action: 'home', description: 'Aller à l\'accueil' },
-    { key: 'Alt+G', action: 'guide', description: 'Ouvrir le guide' },
-    { key: 'Escape', action: 'close-menu', description: 'Fermer le menu' },
-    { key: 'Tab', action: 'next-item', description: 'Élément suivant' },
-    { key: 'Shift+Tab', action: 'prev-item', description: 'Élément précédent' }
-  ];
-
-  if (role === 'student') {
-    base.push(
-      { key: 'Alt+N', action: 'new-chat', description: 'Nouvelle discussion' },
-      { key: 'Alt+C', action: 'continue-chat', description: 'Continuer discussion' }
-    );
-  } else {
-    base.push(
-      { key: 'Alt+E', action: 'manage-children', description: 'Gérer les enfants' },
-      { key: 'Alt+R', action: 'reports', description: 'Voir les rapports' }
-    );
-  }
-
-  // Simplifier pour les primaires
-  if (mode === 'primary') {
-    return base.filter(shortcut =>
-      ['Alt+H', 'Alt+N', 'Escape'].includes(shortcut.key)
-    );
-  }
-
-  return base;
 };
 
 /**
@@ -302,10 +197,6 @@ export const getPerformanceConfig = (mode: UIMode) => {
 export default {
   getNavigationConfig,
   getCombinedNavigationStyles,
-  getEducationalShortcuts,
   getTouchGestureConfig,
-  getAudioFeedbackConfig,
-  getBreadcrumbConfig,
-  getKeyboardShortcuts,
   getPerformanceConfig
 };

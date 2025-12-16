@@ -1,27 +1,39 @@
 {
   "name": "tom-monorepo",
   "private": true,
-  "description": "Tom - Plateforme de tutorat socratique adaptatif (Landing + App métier)",
+  "description": "Tom - Plateforme de tutorat socratique adaptatif",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo run dev",
     "dev:landing": "turbo run dev --filter=landing",
     "dev:app": "turbo run dev --filter=tom-client",
+    "dev:server": "turbo run dev --filter=tomai-server",
     "build": "turbo run build",
     "build:landing": "turbo run build --filter=landing",
     "build:app": "turbo run build --filter=tom-client",
+    "build:server": "turbo run build --filter=tomai-server",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "validate": "pnpm run typecheck && pnpm run lint",
+    "validate": "bun run typecheck && bun run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "turbo run db:generate --filter=tomai-server",
+    "db:push": "turbo run db:push --filter=tomai-server",
+    "db:studio": "turbo run db:studio --filter=tomai-server"
   },
   "devDependencies": {
-    "prettier": "^3.6.2",
-    "turbo": "^2.6.0",
-    "typescript": "5.9.2"
+    "prettier": "^3.7.4",
+    "turbo": "^2.6.3",
+    "typescript": "5.9.3"
   },
-  "packageManager": "pnpm@10.23.0",
-  "engines": {
-    "node": ">=18"
+  "packageManager": "bun@1.3.2",
+  "dependencies": {
+    "better-auth": "^1.4.7",
+    "js-yaml": "^4.1.1",
+    "mdast-util-to-hast": "^13.2.1",
+    "vite": "^7.3.0"
   }
 }

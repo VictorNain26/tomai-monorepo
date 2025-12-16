@@ -22,7 +22,8 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    setMounted(true);
+    // Use queueMicrotask to avoid synchronous setState warning
+    queueMicrotask(() => setMounted(true));
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);

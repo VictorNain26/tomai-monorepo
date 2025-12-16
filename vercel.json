@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "turbo build",
-  "installCommand": "pnpm install",
+  "bunVersion": "1",
+  "buildCommand": "bun turbo build",
+  "installCommand": "bun install",
   "framework": null,
   "outputDirectory": null
 }

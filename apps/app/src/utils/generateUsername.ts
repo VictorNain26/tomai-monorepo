@@ -1,4 +1,13 @@
 /**
+ * Génère un nombre aléatoire cryptographiquement sécurisé entre 0 et max (exclus)
+ */
+const getSecureRandomInt = (max: number): number => {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] % max;
+};
+
+/**
  * Génère un nom d'utilisateur unique basé sur le prénom et nom
  * Format: prénom_nom_timestamp (respecte la regex [a-zA-Z0-9_]{3,20})
  */
@@ -16,9 +25,9 @@ export const generateUsername = (firstName: string, lastName: string): string =>
     .replace(/[^a-zA-Z0-9]/g, '')
     .toLowerCase();
 
-  // Générer un timestamp unique + random pour quasi-garantir l'unicité
+  // Générer un timestamp unique + random cryptographiquement sécurisé pour quasi-garantir l'unicité
   const timestamp = Date.now().toString().slice(-4); // Derniers 4 chiffres du timestamp
-  const random = Math.floor(Math.random() * 99).toString().padStart(2, '0'); // 2 chiffres random
+  const random = getSecureRandomInt(99).toString().padStart(2, '0'); // 2 chiffres random sécurisés
   const uniqueId = timestamp + random; // 6 chiffres au total
 
   // Format: prénom_nom_uniqueId (respecte la regex [a-zA-Z0-9_]{3,20})

@@ -327,7 +327,7 @@ export const educationQueries = {
   subjectsForLevel: (level: EducationLevelType, selectedLv2?: Lv2Option | null) => ({
     queryKey: queryKeys.education.subjects(level, selectedLv2),
     queryFn: async (): Promise<IEducationSubjectsResponse> => {
-      const params = selectedLv2 ? { selectedLv2 } : {};
+      const params: Record<string, string> | undefined = selectedLv2 ? { selectedLv2 } : undefined;
       return apiClient.get(`/api/subjects/${level}`, { params });
     },
   }),

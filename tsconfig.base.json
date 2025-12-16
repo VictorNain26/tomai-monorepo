@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    /* ========================================= */
+    /* TOM MONOREPO - BASE TYPESCRIPT CONFIG    */
+    /* 2025 Best Practices - Industry Standard  */
+    /* ========================================= */
+
+    /* Language & Environment */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "useDefineForClassFields": true,
+    "moduleDetection": "force",
+
+    /* Module System */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+
+    /* ========================================= */
+    /* Type Checking - Strict Mode              */
+    /* All options from strict: true            */
+    /* ========================================= */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+
+    /* Additional Strict Checks */
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+
+    /* ========================================= */
+    /* Options NOT enabled (industry standard)  */
+    /* These cause friction with ORMs/libs      */
+    /* ========================================= */
+    /* exactOptionalPropertyTypes: false        */
+    /* noUncheckedIndexedAccess: false          */
+    /* noPropertyAccessFromIndexSignature: false*/
+
+    /* Interop */
+    "skipLibCheck": true,
+
+    /* Output */
+    "noEmit": true
+  }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { MessageCircle, User } from "lucide-react";
@@ -113,7 +114,8 @@ function ChatMockup({ example }: { example: Example }) {
 }
 
 function RandomChatMockup() {
-  const randomIndex = Math.floor(Math.random() * EXAMPLES.length);
+  // Use useState with lazy initializer to avoid impure Math.random() during render
+  const [randomIndex] = useState(() => Math.floor(Math.random() * EXAMPLES.length));
   return <ChatMockup example={EXAMPLES[randomIndex]} />;
 }
 

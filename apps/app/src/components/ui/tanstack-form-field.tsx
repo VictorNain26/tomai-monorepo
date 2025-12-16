@@ -190,10 +190,9 @@ export function TanStackPasswordField({
 
   const generateStrongPassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
-    let password = ''
-    for (let i = 0; i < 16; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
+    const array = new Uint32Array(16)
+    crypto.getRandomValues(array)
+    const password = Array.from(array, (num) => chars.charAt(num % chars.length)).join('')
     field.handleChange(password)
   }
 
