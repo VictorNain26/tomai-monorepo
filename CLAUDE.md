@@ -1,6 +1,6 @@
 # CLAUDE.md - Tom Monorepo
 
-Monorepo Turborepo unifiant le site vitrine (landing Next.js 15) et l'application métier (Vite + React Router 7).
+Monorepo Turborepo unifiant le site vitrine (landing Next.js 16) et l'application métier (Vite + React Router 7).
 
 ## Règle absolue
 
@@ -11,7 +11,7 @@ Monorepo Turborepo unifiant le site vitrine (landing Next.js 15) et l'applicatio
 ```
 tomai-monorepo/
 ├── apps/
-│   ├── landing/          # Site vitrine Next.js 15 (port 3001)
+│   ├── landing/          # Site vitrine Next.js 16 (port 3001)
 │   └── app/              # Application métier Vite (port 5173)
 ├── packages/
 │   ├── eslint-config/    # ESLint config
@@ -45,7 +45,7 @@ pnpm clean            # Clean tous les builds
 ## Apps
 
 ### Landing (Site Vitrine)
-- **Framework** : Next.js 15 (App Router)
+- **Framework** : Next.js 16 (App Router)
 - **Port** : 3001
 - **Styling** : TailwindCSS 4
 - **Features** : SEO, Static Generation
@@ -109,7 +109,7 @@ import { Card, CardContent } from '@/components/ui/card'
 ## Sources officielles
 
 - **Turborepo** : https://turbo.build/repo/docs
-- **Next.js 15** : https://nextjs.org/docs
+- **Next.js 16** : https://nextjs.org/docs
 - **Vite 7** : https://vitejs.dev/guide
 - **TailwindCSS 4** : https://tailwindcss.com/docs
 - **shadcn/ui** : https://ui.shadcn.com/docs/components
