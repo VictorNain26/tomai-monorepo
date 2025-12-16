@@ -11,29 +11,13 @@
 import { type ReactElement, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import {
-  ArrowLeft,
-  Crown,
-  Plus,
-  Minus,
-  ExternalLink,
-  Loader2,
-  RotateCcw,
-} from 'lucide-react';
+import { ArrowLeft, Crown, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useParentDataQuery } from '@/hooks/useParentDataQuery';
 import {
@@ -44,13 +28,16 @@ import {
   type IAddChildrenPreview,
 } from '@/lib/subscription';
 import { useUser } from '@/lib/auth';
+import {
+  SubscriptionActionDialog,
+  type ActionType,
+} from '@/components/subscription/SubscriptionActionDialog';
+import { ChildPremiumCard } from '@/components/subscription/ChildPremiumCard';
 import type { IChild } from '@/types';
 
 // ============================================
 // Types
 // ============================================
-
-type ActionType = 'add' | 'remove' | 'reactivate' | null;
 
 interface ConfirmDialogState {
   type: ActionType;
@@ -303,91 +290,15 @@ export default function SubscriptionManage(): ReactElement {
             <div className="space-y-3">
               {children.map((child: IChild) => {
                 const { isPremium: isChildPremium, isPendingRemoval } = getChildStatus(child.id);
-
                 return (
-                  <div
+                  <ChildPremiumCard
                     key={child.id}
-                    className={cn(
-                      'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border transition-colors',
-                      isChildPremium
-                        ? 'bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'
-                        : 'bg-muted/30 border-border'
-                    )}
-                  >
-                    {/* Child info */}
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Avatar/Icon */}
-                      <div className={cn(
-                        'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center',
-                        isChildPremium
-                          ? 'bg-amber-100 dark:bg-amber-900/50'
-                          : 'bg-muted'
-                      )}>
-                        {isChildPremium ? (
-                          <Crown className="h-5 w-5 text-amber-500" />
-                        ) : (
-                          <span className="text-lg font-semibold text-muted-foreground">
-                            {child.firstName.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Name and details */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold truncate">{child.firstName}</span>
-                          {isPendingRemoval && (
-                            <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 whitespace-nowrap">
-                              Retrait prévu
-                            </Badge>
-                          )}
-                        </div>
-                        {child.schoolLevel && (
-                          <p className="text-sm text-muted-foreground">{child.schoolLevel}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Action button based on child status from Stripe */}
-                    <div className="flex-shrink-0 sm:ml-4">
-                      {isChildPremium ? (
-                        isPendingRemoval ? (
-                          // Child is premium but scheduled for removal - can reactivate
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full sm:w-auto text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                            onClick={() => setConfirmDialog({ type: 'reactivate', child })}
-                          >
-                            <RotateCcw className="h-4 w-4 mr-2" />
-                            Réactiver
-                          </Button>
-                        ) : !cancelAtPeriodEnd ? (
-                          // Child is premium, not pending removal, subscription active - can remove
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full sm:w-auto text-muted-foreground hover:text-destructive"
-                            onClick={() => setConfirmDialog({ type: 'remove', child })}
-                          >
-                            <Minus className="h-4 w-4 mr-2" />
-                            Retirer
-                          </Button>
-                        ) : null
-                      ) : !cancelAtPeriodEnd ? (
-                        // Child is not premium, subscription active - can add
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full sm:w-auto"
-                          onClick={() => setConfirmDialog({ type: 'add', child })}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Ajouter Premium
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
+                    child={child}
+                    isPremium={isChildPremium}
+                    isPendingRemoval={isPendingRemoval}
+                    cancelAtPeriodEnd={cancelAtPeriodEnd}
+                    onAction={(type, c) => setConfirmDialog({ type, child: c })}
+                  />
                 );
               })}
             </div>
@@ -396,77 +307,17 @@ export default function SubscriptionManage(): ReactElement {
       </Card>
 
       {/* Confirmation Dialog */}
-      <Dialog open={confirmDialog.type !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md mx-auto">
-          <DialogHeader className="text-left">
-            <DialogTitle className="text-lg sm:text-xl">
-              {confirmDialog.type === 'add' && `Ajouter ${confirmDialog.child?.firstName} ?`}
-              {confirmDialog.type === 'remove' && `Retirer ${confirmDialog.child?.firstName} ?`}
-              {confirmDialog.type === 'reactivate' && `Réactiver ${confirmDialog.child?.firstName} ?`}
-            </DialogTitle>
-            <DialogDescription className="text-sm sm:text-base pt-2">
-              {confirmDialog.type === 'add' && (
-                <span className="block space-y-2">
-                  {isLoadingProrata ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Calcul du montant...
-                    </span>
-                  ) : prorataPreview ? (
-                    <>
-                      <span className="block">
-                        Facturation immédiate : <strong className="text-foreground">{prorataPreview.prorata.amount}</strong>
-                        <span className="text-muted-foreground"> (prorata {prorataPreview.prorata.daysRemaining}j)</span>
-                      </span>
-                      <span className="block">
-                        Puis <strong className="text-foreground">{prorataPreview.newSubscription.monthlyAmount}/mois</strong>
-                      </span>
-                    </>
-                  ) : (
-                    'Erreur de calcul du montant'
-                  )}
-                </span>
-              )}
-              {confirmDialog.type === 'remove' && currentPeriodEnd && (
-                <span className="block">
-                  {confirmDialog.child?.firstName} conserve l'accès Premium jusqu'au{' '}
-                  <strong className="text-foreground">{formatPeriodEnd(currentPeriodEnd)}</strong>.
-                  {premiumChildrenCount <= 1 && (
-                    <span className="block mt-2 text-amber-600 dark:text-amber-400">
-                      L'abonnement prendra fin à cette date.
-                    </span>
-                  )}
-                </span>
-              )}
-              {confirmDialog.type === 'reactivate' && (
-                <span className="block">
-                  Le retrait prévu de {confirmDialog.child?.firstName} sera annulé.
-                  <span className="block mt-1 text-green-600 dark:text-green-400">
-                    L'abonnement continuera normalement sans frais supplémentaires.
-                  </span>
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-2 mt-4">
-            <Button variant="outline" onClick={closeDialog} className="w-full sm:w-auto">
-              Annuler
-            </Button>
-            <Button
-              variant={confirmDialog.type === 'remove' ? 'destructive' : 'default'}
-              onClick={handleConfirmAction}
-              disabled={isActionLoading || (confirmDialog.type === 'add' && isLoadingProrata)}
-              className="w-full sm:w-auto"
-            >
-              {isActionLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              {isActionLoading ? 'En cours...' : 'Confirmer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SubscriptionActionDialog
+        type={confirmDialog.type}
+        child={confirmDialog.child}
+        currentPeriodEnd={currentPeriodEnd}
+        premiumChildrenCount={premiumChildrenCount}
+        isLoading={isActionLoading}
+        isLoadingProrata={isLoadingProrata}
+        prorataPreview={prorataPreview}
+        onConfirm={handleConfirmAction}
+        onClose={closeDialog}
+      />
     </PageContainer>
   );
 }
