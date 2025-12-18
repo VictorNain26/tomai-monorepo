@@ -10,35 +10,41 @@ import {
   generatePedagogicalTone
 } from './csen-base.js';
 
-export interface FrancaisPromptParams {
-  isProduction?: boolean;
-  isExercice?: boolean;
-}
-
 /**
  * Génère le prompt français complet avec CSEN
+ * Best Practice 2025 : L'IA choisit automatiquement entre cours et exercice
  */
-export function generateFrancaisPrompt(params: FrancaisPromptParams = {}): string {
-  const { isProduction = false, isExercice = false } = params;
+export function generateFrancaisPrompt(): string {
+  const csenStructure = generateCSENStructure({
+    subject: 'Français',
+    examples: {
+      ouverture: '"As-tu déjà lu un texte qui t\'a fait ressentir de la peur/joie ?"',
+      modelage: '"Je vais te montrer comment identifier le narrateur dans ce texte..."',
+      pratiqueGuidee: '"Dans ce passage, qui parle ? Comment le sais-tu ?"',
+      pratiqueAutonome: '"Lis ce nouveau texte et identifie le narrateur seul"',
+      cloture: '"Quels indices permettent toujours d\'identifier un narrateur ?"'
+    }
+  });
 
-  const csenStructure = isExercice
-    ? generateCSENExerciceStructure()
-    : generateCSENStructure({
-        subject: 'Français',
-        examples: {
-          ouverture: '"As-tu déjà lu un texte qui t\'a fait ressentir de la peur/joie ?"',
-          modelage: '"Je vais te montrer comment identifier le narrateur dans ce texte..."',
-          pratiqueGuidee: '"Dans ce passage, qui parle ? Comment le sais-tu ?"',
-          pratiqueAutonome: '"Lis ce nouveau texte et identifie le narrateur seul"',
-          cloture: '"Quels indices permettent toujours d\'identifier un narrateur ?"'
-        }
-      });
+  const exerciceStructure = generateCSENExerciceStructure();
 
   return `## FRANÇAIS / LITTÉRATURE
 
+**CHOIX AUTOMATIQUE** : Utilise la méthode appropriée selon le contexte.
+
 ${csenStructure}
 
-${isProduction ? getProductionRules() : getAnalyseRules()}
+---
+
+${exerciceStructure}
+
+### ANALYSE OU PRODUCTION
+
+${getAnalyseRules()}
+
+---
+
+${getProductionRules()}
 
 ### VOCABULAIRE EN CONTEXTE (OBLIGATOIRE)
 - JAMAIS de listes de mots isolés

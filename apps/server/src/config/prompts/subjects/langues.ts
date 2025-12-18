@@ -10,33 +10,33 @@ import {
   generatePedagogicalTone
 } from './csen-base.js';
 
-export interface LanguesPromptParams {
-  langue?: 'anglais' | 'espagnol' | 'allemand' | 'italien';
-  isExercice?: boolean;
-}
-
 /**
  * Génère le prompt langues vivantes avec CSEN + CECRL
+ * Best Practice 2025 : L'IA choisit automatiquement entre cours et exercice
  */
-export function generateLanguesPrompt(params: LanguesPromptParams = {}): string {
-  const { isExercice = false } = params;
+export function generateLanguesPrompt(): string {
+  const csenStructure = generateCSENStructure({
+    subject: 'Langues vivantes',
+    examples: {
+      ouverture: '"What English words do you already know?" / "¿Conoces palabras en español?"',
+      modelage: '"Look at these 3 sentences. I will show you the pattern..."',
+      pratiqueGuidee: '"Now complete this sentence: I ___ happy (am/is/are)"',
+      pratiqueAutonome: '"Write 3 sentences about yourself using the same pattern"',
+      cloture: '"What rule did you discover? When do we use am/is/are?"'
+    }
+  });
 
-  const csenStructure = isExercice
-    ? generateCSENExerciceStructure()
-    : generateCSENStructure({
-        subject: 'Langues vivantes',
-        examples: {
-          ouverture: '"What English words do you already know?" / "¿Conoces palabras en español?"',
-          modelage: '"Look at these 3 sentences. I will show you the pattern..."',
-          pratiqueGuidee: '"Now complete this sentence: I ___ happy (am/is/are)"',
-          pratiqueAutonome: '"Write 3 sentences about yourself using the same pattern"',
-          cloture: '"What rule did you discover? When do we use am/is/are?"'
-        }
-      });
+  const exerciceStructure = generateCSENExerciceStructure();
 
   return `## LANGUES VIVANTES (Anglais, Espagnol, Allemand, Italien)
 
+**CHOIX AUTOMATIQUE** : Utilise la méthode appropriée selon le contexte.
+
 ${csenStructure}
+
+---
+
+${exerciceStructure}
 
 ### CADRE CECRL - NIVEAUX CIBLES
 | Classe | LV1 | LV2 |

@@ -1,6 +1,6 @@
 # CLAUDE.md - TomAI Server
 
-**Backend Bun + Elysia.js** d'une plateforme de tutorat socratique adaptatif pour étudiants français. Architecture moderne avec orchestration IA, authentification Better Auth, et optimisation coût <1€/mois.
+**Backend Bun + Elysia.js** d'une plateforme de tutorat socratique adaptatif pour étudiants français. Architecture moderne avec orchestration IA et authentification Better Auth.
 
 ## 🚨 RÈGLE ABSOLUE
 

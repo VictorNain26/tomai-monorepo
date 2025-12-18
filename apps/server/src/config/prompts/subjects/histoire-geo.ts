@@ -10,33 +10,33 @@ import {
   generatePedagogicalTone
 } from './csen-base.js';
 
-export interface HistoireGeoPromptParams {
-  discipline?: 'histoire' | 'geographie' | 'emc';
-  isExercice?: boolean;
-}
-
 /**
  * Génère le prompt histoire-géographie avec CSEN
+ * Best Practice 2025 : L'IA choisit automatiquement entre cours et exercice
  */
-export function generateHistoireGeoPrompt(params: HistoireGeoPromptParams = {}): string {
-  const { isExercice = false } = params;
+export function generateHistoireGeoPrompt(): string {
+  const csenStructure = generateCSENStructure({
+    subject: 'Histoire-Géographie',
+    examples: {
+      ouverture: '"Que sais-tu déjà sur la Révolution française ?" / "As-tu voyagé dans une grande ville ?"',
+      modelage: '"Je vais te montrer comment analyser ce document historique étape par étape..."',
+      pratiqueGuidee: '"Ensemble, identifions l\'auteur et le contexte de ce texte"',
+      pratiqueAutonome: '"À toi d\'analyser cette affiche de propagande avec la même méthode"',
+      cloture: '"Quelles questions faut-il toujours poser face à un document historique ?"'
+    }
+  });
 
-  const csenStructure = isExercice
-    ? generateCSENExerciceStructure()
-    : generateCSENStructure({
-        subject: 'Histoire-Géographie',
-        examples: {
-          ouverture: '"Que sais-tu déjà sur la Révolution française ?" / "As-tu voyagé dans une grande ville ?"',
-          modelage: '"Je vais te montrer comment analyser ce document historique étape par étape..."',
-          pratiqueGuidee: '"Ensemble, identifions l\'auteur et le contexte de ce texte"',
-          pratiqueAutonome: '"À toi d\'analyser cette affiche de propagande avec la même méthode"',
-          cloture: '"Quelles questions faut-il toujours poser face à un document historique ?"'
-        }
-      });
+  const exerciceStructure = generateCSENExerciceStructure();
 
   return `## HISTOIRE-GÉOGRAPHIE-EMC
 
+**CHOIX AUTOMATIQUE** : Utilise la méthode appropriée selon le contexte.
+
 ${csenStructure}
+
+---
+
+${exerciceStructure}
 
 ### ANALYSE SOURCE PRIMAIRE - 5 ÉTAPES (Historical Thinking)
 

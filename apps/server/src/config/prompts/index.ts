@@ -22,13 +22,5 @@ export {
 // Subject prompts
 export {
   generateSubjectPrompt,
-  requiresKaTeX,
-  generateMathPrompt,
-  generateFrancaisPrompt,
-  generateLanguesPrompt,
-  generateSciencesPrompt,
-  generateHistoireGeoPrompt
+  requiresKaTeX
 } from './subjects/index.js';
-
-// Types partagés
-export type { PromptGenerationParams, CycleInfo, CycleType } from './types.js';

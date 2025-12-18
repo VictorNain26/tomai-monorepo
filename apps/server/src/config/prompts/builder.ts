@@ -23,14 +23,12 @@ export interface PromptBuilderParams {
   userQuery: string;
   /** Contexte RAG (programmes officiels) */
   ragContext?: string;
-  /** Type d'activité détecté */
-  isExercice?: boolean;
-  isProduction?: boolean;
 }
 
 /**
  * Construit le prompt système complet
  * Architecture : Core + Vocabulaire + Structure + RAG + Subject
+ * Best Practice 2025 : L'IA choisit automatiquement le mode via les règles d'adaptation
  */
 export function buildSystemPrompt(params: PromptBuilderParams): string {
   const {
@@ -39,9 +37,7 @@ export function buildSystemPrompt(params: PromptBuilderParams): string {
     subject,
     firstName,
     userQuery,
-    ragContext,
-    isExercice,
-    isProduction
+    ragContext
   } = params;
 
   const studentName = firstName ?? "l'élève";
@@ -72,11 +68,10 @@ ${structuredGuide}`;
   // 6. SUBJECT : Règles spécifiques matière (~300-500 tokens)
   // Peut être null si matière non reconnue (conversation hors-sujet)
   // Passe le level pour adaptation KaTeX par niveau scolaire
+  // Best Practice 2025 : L'IA choisit automatiquement le mode (cours/exercice)
   const subjectPrompt = generateSubjectPrompt({
     subject,
     query: userQuery,
-    isExercice,
-    isProduction,
     level
   });
 

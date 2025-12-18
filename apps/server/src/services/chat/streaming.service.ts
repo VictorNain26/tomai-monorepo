@@ -88,6 +88,7 @@ class StreamingService {
   /**
    * Construit le system prompt pour le chat socratique avec RAG automatique
    * Le RAG est géré via Server Tools - L'AI décide quand chercher
+   * Best Practice 2025 : L'IA décide du mode (direct/socratique/exercice) via le prompt
    */
   private buildSystemPromptForChat(params: {
     level: EducationLevelType;
@@ -97,44 +98,16 @@ class StreamingService {
   }): string {
     const levelText = getLevelText(params.level);
 
-    // Détection type d'activité depuis la query
-    const isExercice = this.detectExercice(params.content);
-    const isProduction = this.detectProduction(params.content);
-
+    // L'IA décide automatiquement du mode approprié via generateAdaptiveRules()
+    // Plus de détection par mots-clés - Best Practice 2025
     return buildSystemPrompt({
       level: params.level,
       levelText,
       subject: params.subject,
       firstName: params.firstName,
       userQuery: params.content,
-      ragContext: '', // RAG automatique via Server Tools
-      isExercice,
-      isProduction
+      ragContext: '' // RAG automatique via Server Tools
     });
-  }
-
-  /**
-   * Détecte si la query demande un exercice
-   */
-  private detectExercice(query: string): boolean {
-    const exerciceKeywords = [
-      'exercice', 'exo', 'entraîn', 'pratiqu', 'quiz',
-      'question', 'test', 'évaluation', 'contrôle'
-    ];
-    const lowerQuery = query.toLowerCase();
-    return exerciceKeywords.some(kw => lowerQuery.includes(kw));
-  }
-
-  /**
-   * Détecte si la query demande une production écrite
-   */
-  private detectProduction(query: string): boolean {
-    const productionKeywords = [
-      'rédige', 'écris', 'dissertation', 'essai', 'texte',
-      'composition', 'paragraphe', 'résumé', 'commentaire'
-    ];
-    const lowerQuery = query.toLowerCase();
-    return productionKeywords.some(kw => lowerQuery.includes(kw));
   }
 
   /**
