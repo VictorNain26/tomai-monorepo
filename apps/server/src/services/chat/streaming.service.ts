@@ -149,14 +149,12 @@ class StreamingService {
         content: params.content
       });
 
-      // 2. Ajouter instructions RAG tool au system prompt
+      // 2. Instructions RAG tool (utilisation silencieuse)
+      // Les règles de transparence sont dans identity.ts (source unique)
       const ragToolInstructions = `
 
-OUTIL DE RECHERCHE ÉDUCATIVE:
-Tu disposes d'un outil "search_educational_content" pour rechercher dans les programmes officiels français.
-- Niveau scolaire de l'élève: ${params.schoolLevel}
-- Matière: ${params.subject}
-IMPORTANT: Utilise TOUJOURS cet outil pour les questions éducatives afin de fournir des réponses basées sur les programmes officiels Éduscol.`;
+## OUTIL DE RECHERCHE
+Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.`;
 
       const fullSystemPrompt = systemPrompt + ragToolInstructions;
 
