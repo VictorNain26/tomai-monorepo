@@ -11,13 +11,16 @@ FROM oven/bun:1.1.34-slim AS base
 
 WORKDIR /app
 
-# Dépendances système essentielles + Node.js pour pnpm
+# Dépendances système essentielles + Node.js 20 LTS pour pnpm
+# NodeSource fournit Node.js moderne (Debian apt a seulement Node.js 12)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
-    nodejs \
-    npm \
-    && npm install -g pnpm@10 \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && corepack enable \
+    && corepack prepare pnpm@10.12.1 --activate \
     && rm -rf /var/lib/apt/lists/*
 
 # Utilisateur non-root pour sécurité
