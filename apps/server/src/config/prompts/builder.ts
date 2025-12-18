@@ -132,14 +132,6 @@ ${context}
 }
 
 /**
- * Estime le nombre de tokens du prompt
- * Approximation : 1 token ≈ 4 caractères en français
- */
-export function estimateTokens(prompt: string): number {
-  return Math.ceil(prompt.length / 4);
-}
-
-/**
  * Vérifie si le prompt nécessite KaTeX
  */
 export function promptRequiresKaTeX(subject: string): boolean {
