@@ -21,7 +21,7 @@
  *   REDIS_URL=$REDIS_URL_PROD bun run src/scripts/invalidate-cache.ts
  */
 
-import { educationQdrantService } from '../services/education-qdrant.service.js';
+import { educationService } from '../services/education.service.js';
 import { redisCacheService } from '../services/redis-cache.service.js';
 import { logger } from '../lib/observability.js';
 
@@ -66,7 +66,7 @@ class CacheInvalidator {
     console.log('\n📚 Invalidating education cache...');
 
     try {
-      await educationQdrantService.invalidateAllCache();
+      await educationService.invalidateAllCache();
 
       // Count: 12 levels (cp → terminale)
       this.stats.educationCacheKeys = 12;
