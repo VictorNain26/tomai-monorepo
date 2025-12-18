@@ -108,13 +108,15 @@ export function useSearchSubjects() {
 
 /**
  * Hook pour obtenir l'enrichissement UI des matières
- * Remplace: enrichSubjectsWithUI
+ * L'enrichissement est maintenant fait automatiquement dans educationService
+ * Ce hook retourne simplement les matières déjà enrichies
  */
 export function useSubjectEnrichment(subjects: EducationSubject[]) {
   return useQuery({
     queryKey: ['education', 'enrichment', subjects.map(s => s.key).sort()],
     queryFn: async (): Promise<EducationSubject[]> => {
-      return await educationService.getSubjectEnrichment(subjects);
+      // Les sujets sont déjà enrichis par educationService.getLevelConfiguration()
+      return subjects;
     },
     enabled: subjects.length > 0,
     staleTime: 15 * 60 * 1000, // 15 minutes

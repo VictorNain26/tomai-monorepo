@@ -28,6 +28,7 @@
  */
 
 import { apiClient } from './api-client';
+import { educationService } from './educationService';
 import type { QueryClient } from '@tanstack/react-query';
 import type {
   IChild,
@@ -323,12 +324,25 @@ export interface ITopicsResponse {
 }
 
 export const educationQueries = {
-  /** Get subjects available for a school level (filtered by LV2 if applicable) */
+  /**
+   * Get subjects available for a school level (filtered by LV2 if applicable)
+   * Utilise educationService pour récupérer depuis le backend RAG ET enrichir avec métadonnées UI
+   */
   subjectsForLevel: (level: EducationLevelType, selectedLv2?: Lv2Option | null) => ({
     queryKey: queryKeys.education.subjects(level, selectedLv2),
     queryFn: async (): Promise<IEducationSubjectsResponse> => {
-      const params: Record<string, string> | undefined = selectedLv2 ? { selectedLv2 } : undefined;
-      return apiClient.get(`/api/subjects/${level}`, { params });
+      // Utilise educationService qui récupère les clés RAG et les enrichit avec UI metadata
+      const config = await educationService.getLevelConfiguration(level, selectedLv2);
+
+      return {
+        success: true,
+        level: config.level,
+        selectedLv2: config.selectedLv2 ?? null,
+        subjects: config.subjects.map((s) => ({
+          ...s,
+          ragAvailable: true,
+        })),
+      };
     },
   }),
 

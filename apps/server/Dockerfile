@@ -1,6 +1,7 @@
 # ============================================================
 # TomAI Backend - Dockerfile Unifié (2025)
 # Multi-stage optimisé pour: Development + Production + Koyeb
+# Runtime: Bun | Package Manager: pnpm
 # ============================================================
 
 # ===========================================
@@ -10,10 +11,16 @@ FROM oven/bun:1.1.34-slim AS base
 
 WORKDIR /app
 
-# Dépendances système essentielles (curl pour healthcheck, pg pour migrations)
+# Dépendances système essentielles + Node.js 20 LTS pour pnpm
+# NodeSource fournit Node.js moderne (Debian apt a seulement Node.js 12)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && corepack enable \
+    && corepack prepare pnpm@10.12.1 --activate \
     && rm -rf /var/lib/apt/lists/*
 
 # Utilisateur non-root pour sécurité
@@ -27,13 +34,14 @@ FROM base AS deps
 
 # Monorepo structure: copier la hiérarchie complète pour workspace resolution
 COPY package.json ./
-COPY bun.lock ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY apps/server/package.json ./apps/server/
 COPY packages/shared-types/package.json ./packages/shared-types/
 
-# Installation avec cache mount - workspace resolution fonctionne
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile --production
+# Installation avec cache mount - workspace resolution via pnpm
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --prod
 
 # ===========================================
 # Stage 3: BUILD - Compilation production
@@ -46,13 +54,14 @@ ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 
 # Monorepo structure: hiérarchie complète pour workspace resolution
 COPY package.json ./
-COPY bun.lock ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY apps/server/package.json ./apps/server/
 COPY packages/shared-types/package.json ./packages/shared-types/
 
-# Installation complète (dev + prod) pour build
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+# Installation complète (dev + prod) pour build via pnpm
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Sources et configuration (monorepo paths)
 COPY apps/server/src/ ./apps/server/src/
@@ -84,12 +93,13 @@ WORKDIR /app
 
 # Monorepo structure pour workspace resolution
 COPY package.json ./
-COPY bun.lock ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY apps/server/package.json ./apps/server/
 COPY packages/shared-types/package.json ./packages/shared-types/
 
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Sources et config (monorepo paths)
 COPY --chown=tomai:tomai apps/server/src/ ./apps/server/src/

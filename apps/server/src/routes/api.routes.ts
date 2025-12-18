@@ -32,58 +32,63 @@ import { logger } from '../lib/observability';
  */
 export const apiRoutes = new Elysia({ name: 'api-routes' })
 
-  // ✅ Route d'initialisation Qdrant - Crée la collection si nécessaire
-  .post('/init-qdrant', async () => {
+  // ✅ Route de vérification du service RAG (Qdrant + Mistral directs)
+  .get('/curriculum-health', async () => {
     try {
-      const { createCollection, checkQdrantHealth, getCollectionStats } = await import('../services/qdrant/index.js');
+      const { qdrantService } = await import('../services/qdrant.service.js');
+      const { mistralEmbeddingsService } = await import('../services/mistral-embeddings.service.js');
 
-      // 1. Health check
-      const isHealthy = await checkQdrantHealth();
-      if (!isHealthy) {
-        return { success: false, error: 'Qdrant connection failed' };
-      }
-
-      // 2. Créer la collection
-      await createCollection();
-
-      // 3. Stats de la collection
-      const stats = await getCollectionStats();
+      const [qdrantOk, mistralOk] = await Promise.all([
+        qdrantService.isAvailable(),
+        mistralEmbeddingsService.isAvailable(),
+      ]);
+      const stats = await qdrantService.getStats();
 
       return {
         success: true,
-        message: 'Qdrant collection ready',
-        stats
+        status: qdrantOk && mistralOk ? 'healthy' : 'degraded',
+        qdrant: qdrantOk,
+        mistral: mistralOk,
+        collection: 'tomai_educational',
+        pointsCount: stats.total_points
       };
     } catch (error) {
-      logger.error('Init Qdrant failed', {
-        operation: 'init-qdrant',
+      logger.error('RAG health check failed', {
+        operation: 'curriculum-health',
         _error: error instanceof Error ? error.message : String(error),
         severity: 'high' as const
       });
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Init Qdrant failed'
+        error: error instanceof Error ? error.message : 'RAG health check failed'
       };
     }
   })
 
-  // ✅ Route de test RAG - 3-Level Hybrid Semantic Chunking
+  // ✅ Route de test RAG (appels directs Qdrant + Mistral)
   .post('/test-rag', async ({ body }) => {
     const bodyData = body as { query?: string; subject?: string; niveau?: string };
     const query = bodyData.query ?? "Bonjour";
     const niveau = (bodyData.niveau ?? "cm1") as EducationLevelType;
-    const matiere = bodyData.subject ?? "mathématiques";
+    const matiere = bodyData.subject ?? "mathematiques";
 
     try {
-      // 1. Récupération contexte RAG hybrid search (Qdrant Cloud)
-      const { ragSemanticService } = await import('../services/rag.service.js');
+      // 1. Récupération contexte RAG (appels directs)
+      const { ragService } = await import('../services/rag.service.js');
 
-      const ragResult = await ragSemanticService.hybridSearch({
+      const isAvailable = await ragService.isAvailable();
+      if (!isAvailable) {
+        return {
+          success: false,
+          error: 'RAG service unavailable'
+        };
+      }
+
+      const ragResult = await ragService.hybridSearch({
         query,
         niveau,
         matiere,
         limit: 5,
-        minSimilarity: 0.7
       });
 
       // 2. Génération réponse Gemini avec contexte RAG (TanStack AI)
@@ -101,12 +106,9 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
         provider: response.provider,
         tokens: response.tokensUsed,
         rag: {
+          resultsCount: ragResult.semanticChunks.length,
           strategy: ragResult.strategy,
-          semanticChunks: ragResult.semanticChunks.length,
-          microChunks: ragResult.microChunks.length,
-          averageSimilarity: ragResult.averageSimilarity,
-          searchTime: ragResult.searchTime,
-          method: 'qdrant-hybrid-rrf'
+          method: 'direct-rrf'
         }
       };
     } catch (error) {
@@ -548,11 +550,11 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
       }
     })
 
-    // EDUCATION - Niveaux scolaires disponibles (depuis Qdrant)
+    // EDUCATION - Niveaux scolaires disponibles (depuis RAG)
     .get('/education/levels', async ({ set }) => {
       try {
-        const { educationQdrantService } = await import('../services/education-qdrant.service.js');
-        const levels = await educationQdrantService.getAvailableLevels();
+        const { educationService } = await import('../services/education.service.js');
+        const levels = await educationService.getAvailableLevels();
 
         logger.info('Education levels retrieved', {
           operation: 'api:education:levels:success',
@@ -574,99 +576,45 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
           severity: 'high' as const
         });
         set.status = 500;
-        return { _error: 'Failed to retrieve education levels' };
+        return { error: 'Curriculum service unavailable' };
       }
     })
 
-    // LV2 OPTIONS - Options de langue vivante 2 disponibles
-    .get('/education/lv2-options', async () => {
-      const { educationQdrantService } = await import('../services/education-qdrant.service.js');
-      const options = educationQdrantService.getLv2Options();
-
-      return {
-        success: true,
-        options,
-        count: options.length,
-        description: 'LV2 disponible à partir de la 5ème. Un seul choix possible.'
-      };
-    })
-
-    // LV2 CHECK - Vérifie si un niveau permet la LV2
-    .get('/education/lv2-eligible/:level', async ({ params }) => {
+    // SUBJECTS - Matières par niveau scolaire (depuis RAG)
+    // Retourne uniquement les clés RAG, le frontend enrichit avec UI metadata et filtre LV2
+    .get('/subjects/:level', async ({ params, set }) => {
       const level = params.level as EducationLevelType;
-      const { educationQdrantService } = await import('../services/education-qdrant.service.js');
-      const isEligible = educationQdrantService.isLv2EligibleLevel(level);
 
-      return {
-        success: true,
-        level,
-        lv2Eligible: isEligible,
-        message: isEligible
-          ? 'Ce niveau permet de choisir une LV2'
-          : 'La LV2 commence en 5ème'
-      };
-    })
+      if (!level) {
+        set.status = 400;
+        return { error: 'School level is required' };
+      }
 
-    // SUBJECTS - Matières par niveau scolaire (depuis Qdrant)
-    // LV2 fournie via query param ?selectedLv2=espagnol|allemand|italien
-    // Le frontend DOIT toujours passer selectedLv2 depuis useUser() pour éviter les problèmes de cache
-    .get('/subjects/:level', async ({ params, query, set }) => {
       try {
-        const level = params.level as EducationLevelType;
-        const selectedLv2 = (query as Record<string, string>).selectedLv2 as 'espagnol' | 'allemand' | 'italien' | undefined;
+        const { educationService } = await import('../services/education.service.js');
+        const subjects = await educationService.getSubjectsForLevel(level);
 
-        if (!level) {
-          set.status = 400;
-          return { _error: 'School level is required' };
-        }
-
-        // 🔍 Récupération depuis Qdrant avec filtrage LV2 (source de vérité RAG)
-        const { educationQdrantService } = await import('../services/education-qdrant.service.js');
-
-        // Utiliser getSubjectsForLevelWithLv2 pour appliquer la logique LV2
-        const subjects = await educationQdrantService.getSubjectsForLevelWithLv2(level, selectedLv2 ?? null);
-
-        if (subjects.length === 0) {
-          logger.warn('No subjects found for level in Qdrant', {
-            operation: 'api:subjects:empty',
-            level,
-            selectedLv2: selectedLv2 ?? 'none',
-            severity: 'medium' as const
-          });
-
-          // Retourner 200 avec tableau vide (pas une erreur, juste pas de contenu RAG)
-          return {
-            success: true,
-            subjects: [],
-            level,
-            selectedLv2: selectedLv2 ?? null,
-            message: 'No RAG content available for this level yet'
-          };
-        }
-
-        logger.info('Subjects retrieved from Qdrant', {
+        logger.info('Subjects retrieved from RAG', {
           operation: 'api:subjects:success',
           level,
-          selectedLv2: selectedLv2 ?? 'none',
           count: subjects.length,
           severity: 'low' as const
         });
 
         return {
           success: true,
-          subjects,
           level,
-          selectedLv2: selectedLv2 ?? null
+          subjects // [{ key: "mathematiques", ragAvailable: true }]
         };
       } catch (_error) {
         logger.error('Subjects retrieval failed', {
           operation: 'api:subjects:error',
-          level: params.level,
+          level,
           _error: _error instanceof Error ? _error.message : String(_error),
           severity: 'high' as const
         });
         set.status = 500;
-        return { _error: 'Failed to retrieve subjects from Qdrant' };
+        return { error: 'Curriculum service unavailable' };
       }
     })
 
@@ -705,26 +653,29 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
       }
     })
 
-    // RAG STATS - Statistiques Qdrant collection
+    // RAG STATS - Statistiques via Qdrant direct
     .get('/rag/stats', async () => {
       try {
-        const { getCollectionStats, checkQdrantHealth } = await import('../services/qdrant/index.js');
+        const { qdrantService } = await import('../services/qdrant.service.js');
 
-        const isHealthy = await checkQdrantHealth();
-        if (!isHealthy) {
+        const isAvailable = await qdrantService.isAvailable();
+        if (!isAvailable) {
           return {
             success: false,
-            error: 'Qdrant connection failed',
+            error: 'Qdrant service unavailable',
             healthy: false
           };
         }
 
-        const stats = await getCollectionStats();
+        const stats = await qdrantService.getStats();
 
         return {
           success: true,
           healthy: true,
-          collection: stats
+          collection: 'tomai_educational',
+          totalPoints: stats.total_points,
+          byNiveau: stats.by_niveau,
+          byMatiere: stats.by_matiere
         };
       } catch (_error) {
         logger.error('RAG stats retrieval failed', {

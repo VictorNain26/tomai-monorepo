@@ -22,7 +22,7 @@
     "build:koyeb": "bun run typecheck:strict && bun run lint:ci && bun build src/index.ts --outdir dist --target bun --minify --splitting --format esm",
     "start": "bun dist/index.js",
     "typecheck": "bun --bun tsc --noEmit",
-    "typecheck:strict": "bunx tsc --noEmit --project tsconfig.prod.json",
+    "typecheck:strict": "bun --bun tsc --noEmit",
     "lint": "bun --bun eslint src --ext .ts",
     "lint:fix": "bun --bun eslint src --ext .ts --fix",
     "lint:ci": "bun --bun eslint src --ext .ts --max-warnings 0",
@@ -54,6 +54,7 @@
   "dependencies": {
     "@elysiajs/cors": "^1.3.3",
     "@elysiajs/swagger": "^1.3.1",
+    "@sinclair/typebox": "^0.34.0",
     "@google/genai": "^1.20.0",
     "@mistralai/mistralai": "^1.10.0",
     "@qdrant/js-client-rest": "^1.16.2",
@@ -63,7 +64,6 @@
     "@upstash/redis": "^1.34.0",
     "better-auth": "1.4.7",
     "dotenv": "^17.2.2",
-    "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.44.5",
     "elysia": "^1.4.19",
     "glob": "^11.0.3",
@@ -78,6 +78,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.8",
     "@eslint/js": "^9.39.2",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",

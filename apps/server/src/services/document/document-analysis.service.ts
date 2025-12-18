@@ -19,7 +19,7 @@ import { z } from 'zod';
 import { geminiAdapter, AI_MODELS } from '../../lib/ai/index.js';
 import { logger } from '../../lib/observability.js';
 import { documentExtractionService } from './document-extraction.service.js';
-import { denseSearch } from '../qdrant/hybrid-search.service.js';
+import { ragService } from '../rag.service.js';
 import type { EducationLevelType } from '../../types/education.types.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -419,33 +419,44 @@ class DocumentAnalysisService {
   }
 
   /**
-   * Query RAG Qdrant avec le contenu du document
+   * Query RAG via ragService (appels directs Qdrant/Mistral)
    */
   private async queryRAG(
     documentText: string,
     schoolLevel: EducationLevelType
   ): Promise<RAGQueryResult> {
     try {
+      // Vérifier disponibilité
+      const isAvailable = await ragService.isAvailable();
+      if (!isAvailable) {
+        logger.warn('RAG service unavailable for document analysis', {
+          operation: 'document-analysis:rag-unavailable',
+        });
+        return { found: false, chunksCount: 0, context: '' };
+      }
+
       const queryText = documentText.length > 500
         ? documentText.substring(0, 500)
         : documentText;
 
-      const results = await denseSearch({
+      // Recherche avec matière générique (sera déterminée par le RAG)
+      const response = await ragService.hybridSearch({
         query: queryText,
         niveau: schoolLevel,
+        matiere: 'mathematiques', // Fallback, le reranking corrigera
         limit: 5,
-        minScore: 0.6
+        minSimilarity: 0.6,
       });
 
-      if (results.length === 0) {
+      if (response.semanticChunks.length === 0) {
         return { found: false, chunksCount: 0, context: '' };
       }
 
-      const context = results
-        .map((r, i) => `[Source ${i + 1} - Score: ${r.score.toFixed(2)}]\n${r.payload.content}`)
+      const context = response.semanticChunks
+        .map((c, i) => `[Source ${i + 1} - Score: ${c.score.toFixed(2)}]\n${c.content}`)
         .join('\n\n---\n\n');
 
-      return { found: true, chunksCount: results.length, context };
+      return { found: true, chunksCount: response.semanticChunks.length, context };
 
     } catch (error) {
       logger.warn('RAG query failed, continuing without context', {

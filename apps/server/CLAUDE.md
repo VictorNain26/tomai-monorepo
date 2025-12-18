@@ -20,7 +20,7 @@
 - **Auth** : Better Auth 1.4.7 + Google OAuth
 - **AI** : Google Gemini 2.5 Flash (chat), Mistral AI (embeddings 1024D), Gladia (STT), ElevenLabs (TTS)
 - **Cache** : Redis 7 (ioredis 5.4.1 + @upstash/redis 1.34.0)
-- **Vector Search** : Qdrant Cloud + Mistral embeddings 1024D
+- **Vector Search** : Qdrant Cloud direct + Mistral embeddings 1024D + BM25 reranking
 
 ## ⚡ Commandes CRITIQUES
 
@@ -122,12 +122,14 @@ src/
 ├── index.ts                         # Point d'entrée principal
 ├── app.ts                           # Configuration Elysia app
 ├── services/
-│   ├── pgvector-rag.service.ts     # RAG avec pgvector + Gemini
+│   ├── rag.service.ts              # RAG unifié (search + rerank)
+│   ├── qdrant.service.ts           # Client Qdrant Cloud direct
+│   ├── mistral-embeddings.service.ts # Embeddings Mistral 1024D
+│   ├── rerank.service.ts           # BM25 + RRF reranking
 │   ├── gemini-simple.service.ts    # Gemini 2.5 Flash direct
-│   ├── mistral-embeddings.service.ts # Génération embeddings Mistral 1024D
 │   ├── redis-cache.service.ts      # Gestion cache Redis
 │   ├── chat.service.ts             # Orchestration chat socratique
-│   └── subject-validation.service.ts # Validation matières scolaires
+│   └── education.service.ts        # Matières/niveaux disponibles
 ├── routes/                          # API endpoints
 │   ├── api.routes.ts               # Routes principales
 │   ├── chat-message.routes.ts      # Chat streaming

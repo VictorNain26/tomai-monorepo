@@ -1,120 +1,102 @@
-# CLAUDE.md - Tom Monorepo
+# CLAUDE.md
 
-Monorepo Turborepo unifiant le site vitrine, l'application métier et le serveur backend.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**Tom** - French AI tutoring platform for students from elementary to high school. Uses Gemini AI with RAG on 415 official Éduscol curricula, Socratic pedagogy, and Pronote integration.
+
+## Commands
+
+```bash
+# Install dependencies
+pnpm install
+
+# Development (all apps in parallel)
+pnpm run dev             # Landing:3001 + App:5173 + Server:3000
+
+# Single app development
+pnpm run dev:landing     # Next.js landing page (port 3001)
+pnpm run dev:app         # React Vite app (port 5173)
+pnpm run dev:server      # Elysia backend (port 3000)
+pnpm run dev:mobile      # Expo mobile app (port 8081)
+
+# Validation (required before commit)
+pnpm run typecheck       # TypeScript strict mode
+pnpm run lint            # ESLint
+pnpm run validate        # typecheck + lint combined
+
+# Production build
+pnpm run build           # All apps
+
+# Database (requires PostgreSQL via Docker)
+pnpm run db:push         # Apply schema changes (dev)
+pnpm run db:generate     # Generate migration (prod)
+pnpm run db:studio       # Drizzle Studio UI
+```
+
+**Backend requires Docker** for PostgreSQL and Redis:
+```bash
+cd apps/server && docker compose up -d
+```
 
 ## Architecture
 
 ```
 tomai-monorepo/
 ├── apps/
-│   ├── landing/          # Site vitrine Next.js 16 (port 3001)
-│   ├── app/              # Application métier Vite (port 5173)
-│   └── server/           # Backend Elysia.js + Bun (port 3000)
+│   ├── landing/       # Next.js 16 static landing page
+│   ├── app/           # React 19 + Vite 7 main tutoring app
+│   ├── mobile/        # Expo SDK 54 + React Native 0.81 mobile app
+│   └── server/        # Elysia.js + Bun backend
 ├── packages/
-│   ├── shared-types/     # Types partagés frontend/backend
-│   ├── eslint-config/    # ESLint config
-│   └── typescript-config/ # TypeScript config
-├── tsconfig.base.json    # Configuration TypeScript commune
-├── turbo.json            # Configuration Turborepo
-└── package.json          # Bun workspaces
+│   ├── api/           # Shared API client (platform-agnostic)
+│   └── shared-types/  # Shared TypeScript types
+└── tsconfig.base.json # Base TypeScript config
 ```
 
-## Stack Technique
+### Key Architecture Decisions
 
-| Couche | Technologies |
-|--------|--------------|
-| Runtime | **Bun** (monorepo unifié) |
-| Build | Turborepo |
-| Backend | Elysia.js, PostgreSQL 16, Redis, Drizzle ORM |
-| Frontend Landing | Next.js 16, TailwindCSS 4 |
-| Frontend App | Vite 7, React 19, React Router 7, TanStack Query/Form |
-| Auth | Better Auth + Google OAuth |
-| AI | Gemini 2.5 Flash, Mistral (embeddings), Qdrant (RAG) |
-| API Client | **Eden Treaty** (type-safe) |
-
-## Commandes
-
-```bash
-# Installation
-bun install
-
-# Développement
-bun run dev              # Tous les apps
-bun run dev:landing      # Landing seulement (port 3001)
-bun run dev:app          # App métier seulement (port 5173)
-bun run dev:server       # Backend seulement (port 3000)
-
-# Validation (obligatoire avant commit)
-bun run typecheck        # TypeScript strict
-bun run lint             # ESLint
-bun run validate         # typecheck + lint
-
-# Build
-bun run build            # Production tous les apps
-
-# Database (depuis apps/server/)
-bun run db:push          # Appliquer schema (dev)
-bun run db:generate      # Générer migration (prod)
-bun run db:studio        # Interface Drizzle Studio
-```
-
-## Eden Treaty - API Type-Safe
-
-Le client et le serveur partagent les types via Eden Treaty :
-
+**Eden Treaty**: Type-safe API client connecting React app to Elysia backend
 ```typescript
-// apps/app/src/lib/eden-client.ts
 import { treaty } from '@elysiajs/eden';
 import type { App } from 'tomai-server/app';
 
 export const api = treaty<App>(getBackendURL(), {
   fetch: { credentials: 'include', mode: 'cors' }
 });
-
-// Usage avec autocomplete complet
-const { data, error } = await api.api.subjects.get({ query: { level: 'college-6' } });
+// Full autocomplete: api.api.subjects.get({ query: { level: 'college-6' } })
 ```
 
-## Configuration TypeScript
+**State Management**:
+- Server state: TanStack Query
+- Form state: TanStack Form
+- Auth: Better Auth + Google OAuth
 
-Configuration unifiée au niveau du monorepo (`tsconfig.base.json`) avec :
-- `strict: true` et toutes les options de strictness standard
-- Compatible avec Drizzle ORM et les bibliothèques modernes
-- Pas de `exactOptionalPropertyTypes` (cause friction avec ORMs)
+**Database**: PostgreSQL 16 + Drizzle ORM
+- Schema source of truth: `apps/server/src/db/schema.ts`
+- Never edit `.sql` migration files manually
 
-Chaque app étend cette configuration avec ses spécificités :
-- **Client** : types Vite + Bun (pour Eden Treaty)
-- **Server** : types Bun uniquement
-- **Landing** : types Next.js
+**AI Stack**: Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Qdrant Cloud (RAG)
 
-## Règles de Développement
+## Development Rules
 
-### Standards de Code
-- **TypeScript strict** : Aucun type `any`
-- **Zero warnings ESLint** en mode CI
-- **400 lignes max** par fichier
-- **shadcn/ui uniquement** pour les composants UI
+1. **TypeScript strict**: No `any` types, explicit null handling
+2. **Zero ESLint warnings** in CI mode
+3. **400 lines max** per file
+4. **shadcn/ui only** for React components (no custom CSS or inline styles)
+5. **Evidence-based changes**: Read existing patterns before modifying
+6. **No over-engineering**: No premature abstractions, delete unused code
 
-### Pas de Sur-engineering
-- Pas d'abstractions prématurées
-- Pas de composants génériques pour un seul usage
-- Supprimer le code inutilisé (pas le commenter)
+## Git Workflow
 
-### Workflow Git
-- Travailler sur `develop` (push direct OK)
-- PR `develop → main` pour production
-- CI doit passer avant merge
+- Work on `develop` branch (direct push OK)
+- PR `develop → main` for production deployment
+- CI must pass before merge
+- Never push directly to `main`
 
-## Documentation Détaillée
+## App-Specific Documentation
 
-- `apps/app/CLAUDE.md` - Spécificités app React
-- `apps/server/CLAUDE.md` - Architecture backend et migrations
-- `apps/landing/CLAUDE.md` - Site vitrine Next.js
-
-## Validation Pré-Commit
-
-```bash
-bun run typecheck  # Zero erreur TypeScript
-bun run lint       # Zero warnings ESLint
-bun run build      # Build successful
-```
+- `apps/app/CLAUDE.md` - React app specifics
+- `apps/mobile/CLAUDE.md` - Mobile app specifics (Expo + React Native)
+- `apps/server/CLAUDE.md` - Backend architecture, migrations, AI services

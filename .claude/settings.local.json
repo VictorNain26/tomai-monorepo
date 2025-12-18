@@ -13,7 +13,6 @@
       "Bash(taskkill:*)",
       "Bash(powershell -Command:*)",
       "Bash(pnpm add:*)",
-      "Bash(pnpm dev:landing:*)",
       "Bash(npx kill-port:*)",
       "WebSearch",
       "WebFetch(domain:github.com)",
@@ -22,13 +21,42 @@
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:npmtrends.com)",
       "Bash(find:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "mcp__filesystem__list_directory",
+      "WebFetch(domain:reactnativereusables.com)",
+      "WebFetch(domain:tamagui.dev)",
+      "WebFetch(domain:onestack.dev)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(bun install:*)",
+      "Bash(dir:*)",
+      "Bash(del:*)",
+      "mcp__filesystem__directory_tree",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(bun run tsc:*)",
+      "Bash(bun run typecheck:*)",
+      "Bash(xargs:*)",
+      "Bash(bun run lint:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npx expo start:*)",
+      "WebFetch(domain:docs.expo.dev)",
+      "WebFetch(domain:expo.dev)",
+      "mcp__github__search_issues",
+      "Bash(pnpm run typecheck:*)",
+      "Bash(pnpm run lint)",
+      "Bash(pnpm why:*)",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__search_files",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

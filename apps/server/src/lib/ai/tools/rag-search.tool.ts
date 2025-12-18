@@ -110,7 +110,8 @@ export const ragSearchTool = ragSearchToolDef.server(async (input) => {
 
   try {
     // Vérifier disponibilité du service RAG
-    if (!ragService.isAvailable()) {
+    const isAvailable = await ragService.isAvailable();
+    if (!isAvailable) {
       logger.warn('RAG service unavailable', {
         operation: 'rag-tool-search'
       });
