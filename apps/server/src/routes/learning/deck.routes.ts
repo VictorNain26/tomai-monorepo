@@ -11,7 +11,8 @@ import { learningDecks, learningCards } from '../../db/schema';
 import { eq, and, desc, asc } from 'drizzle-orm';
 import { handleAuthWithCookies } from '../../middleware/auth.middleware';
 import { logger } from '../../lib/observability';
-import { getTopicsFromRAG, getAvailableSubjectsForLevel } from '../../services/qdrant/index';
+import { educationService } from '../../services/education.service';
+import { qdrantService } from '../../services/qdrant.service';
 import { subjectLabels } from './helpers';
 import type { EducationLevelType } from '../../types/index';
 
@@ -319,11 +320,11 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     const niveau = (query.niveau ?? authUser.schoolLevel ?? 'sixieme') as EducationLevelType;
 
     try {
-      const subjects = await getAvailableSubjectsForLevel(niveau);
+      const subjects = await educationService.getSubjectsForLevel(niveau);
 
       const formattedSubjects = subjects.map(s => ({
-        id: s,
-        label: subjectLabels[s] || s,
+        id: s.key,
+        label: subjectLabels[s.key] || s.key,
       }));
 
       logger.info('Subjects fetched for level', {
@@ -383,21 +384,24 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     }
 
     try {
-      const result = await getTopicsFromRAG({
-        matiere,
-        niveau,
-      });
+      const domaines = await qdrantService.getTopics(matiere, niveau);
+      const totalTopics = domaines.reduce((sum, d) => sum + d.themes.length, 0);
 
-      logger.info('Topics fetched from RAG', {
+      logger.info('Topics fetched from Qdrant', {
         operation: 'learning:topics:list',
         userId: authUser.id,
         matiere,
         niveau,
-        domainesCount: result.domaines.length,
-        totalTopics: result.totalTopics,
+        domainesCount: domaines.length,
+        totalTopics,
       });
 
-      return result;
+      return {
+        matiere,
+        niveau,
+        domaines,
+        totalTopics,
+      };
     } catch (error) {
       logger.error('Failed to fetch topics', {
         operation: 'learning:topics:list',

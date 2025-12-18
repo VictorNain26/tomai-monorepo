@@ -22,7 +22,13 @@ services:
       - REDIS_URL=redis://redis:6379
       - CORS_ORIGINS=http://localhost:5173
       - LOG_LEVEL=debug
+      # AI Services
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      # RAG - Qdrant Cloud
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-tomai_educational}
     env_file:
       - .env
     volumes:
