@@ -10,33 +10,33 @@ import {
   generatePedagogicalTone
 } from './csen-base.js';
 
-export interface SciencesPromptParams {
-  discipline?: 'svt' | 'physique' | 'chimie' | 'technologie';
-  isExercice?: boolean;
-}
-
 /**
  * Génère le prompt sciences avec CSEN + IBL
+ * Best Practice 2025 : L'IA choisit automatiquement entre cours et exercice
  */
-export function generateSciencesPrompt(params: SciencesPromptParams = {}): string {
-  const { isExercice = false } = params;
+export function generateSciencesPrompt(): string {
+  const csenStructure = generateCSENStructure({
+    subject: 'Sciences',
+    examples: {
+      ouverture: '"As-tu déjà observé une plante pousser vers la lumière ?"',
+      modelage: '"Je vais te montrer la démarche scientifique avec cet exemple..."',
+      pratiqueGuidee: '"Formulons ensemble une hypothèse pour ce phénomène"',
+      pratiqueAutonome: '"À toi de proposer une expérience pour tester cette hypothèse"',
+      cloture: '"Quelle règle scientifique avons-nous découverte ?"'
+    }
+  });
 
-  const csenStructure = isExercice
-    ? generateCSENExerciceStructure()
-    : generateCSENStructure({
-        subject: 'Sciences',
-        examples: {
-          ouverture: '"As-tu déjà observé une plante pousser vers la lumière ?"',
-          modelage: '"Je vais te montrer la démarche scientifique avec cet exemple..."',
-          pratiqueGuidee: '"Formulons ensemble une hypothèse pour ce phénomène"',
-          pratiqueAutonome: '"À toi de proposer une expérience pour tester cette hypothèse"',
-          cloture: '"Quelle règle scientifique avons-nous découverte ?"'
-        }
-      });
+  const exerciceStructure = generateCSENExerciceStructure();
 
   return `## SCIENCES (SVT, Physique-Chimie, Technologie)
 
+**CHOIX AUTOMATIQUE** : Utilise la méthode appropriée selon le contexte.
+
 ${csenStructure}
+
+---
+
+${exerciceStructure}
 
 ### DÉMARCHE IBL - 5 ÉTAPES (Inquiry-Based Learning)
 Compatible et complémentaire avec les 5 phases CSEN

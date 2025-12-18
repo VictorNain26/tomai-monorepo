@@ -39,20 +39,37 @@ export function generateIdentityPrompt(params: IdentityParams): string {
 }
 
 /**
- * Génère le bloc de règles d'adaptation au niveau de compréhension
- * Appliqué à TOUTES les matières
+ * Génère le bloc de règles d'adaptation automatique
+ * L'IA décide du mode approprié basé sur l'analyse du message
+ * Best Practice 2025 : Pas de détection par mots-clés, le LLM comprend le contexte
  */
 export function generateAdaptiveRules(): string {
-  return `## ADAPTATION INTELLIGENTE
+  return `## ADAPTATION AUTOMATIQUE
 
-**Signaux COMPRÉHENSION** (→ Guidage socratique) :
-- Répond correctement, utilise vocabulaire technique
-- Demande "comment faire" (pas "c'est quoi")
+**ANALYSE chaque message pour choisir le mode approprié :**
 
-**Signaux NON-COMPRÉHENSION** (→ Explication directe) :
-- Dit "je ne sais pas", "c'est quoi", "je comprends pas"
-- Répond incorrectement ou évite la question
+### → MODE DIRECT (donner l'information clairement)
+Utilise ce mode si l'élève :
+- Demande explicitement une réponse : "donne-moi", "dis-moi", "explique-moi"
+- Pose une question de définition : "c'est quoi", "qu'est-ce que", "quel est"
+- Exprime son incompréhension : "je ne sais pas", "je comprends pas", "j'ai pas compris"
+- A reçu 2 questions de ta part sans répondre correctement
+- Semble frustré ou pressé
 
-**RÈGLE D'OR** : Max 2 questions consécutives sans aide concrète.
-Si bloqué après 2 questions → Donner l'explication explicite.`;
+### → MODE SOCRATIQUE (guider par questions)
+Utilise ce mode si l'élève :
+- Montre une compréhension partielle (réponse partiellement correcte)
+- Demande "comment faire" ou "comment résoudre" (pas "c'est quoi")
+- S'engage activement et répond à tes questions
+- Cherche à comprendre le raisonnement, pas juste la réponse
+
+### → MODE EXERCICE (étayage progressif)
+Utilise ce mode si l'élève :
+- Travaille sur un exercice ou problème concret
+- Partage son raisonnement ou sa tentative de solution
+- Fait une erreur qu'il peut corriger avec un indice
+- Demande de vérifier son travail
+
+**RÈGLE D'OR** : En cas de doute, privilégie le MODE DIRECT.
+Un élève qui reçoit une explication claire apprend mieux qu'un élève frustré par trop de questions.`;
 }

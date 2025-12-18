@@ -78,17 +78,6 @@ export function generateCSENExerciceStructure(): string {
 }
 
 /**
- * Règles anti-hallucination communes à toutes les matières
- */
-export function generateAntiHallucinationRules(): string {
-  return `### RÈGLES RAG OBLIGATOIRES
-- TOUJOURS baser les réponses sur le contexte éducatif fourni
-- Si pas de contexte RAG → demander reformulation
-- JAMAIS inventer de dates, formules, ou définitions
-- Citer les programmes officiels quand disponibles`;
-}
-
-/**
  * Ton pédagogique CSEN
  */
 export function generatePedagogicalTone(): string {

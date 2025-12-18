@@ -24,8 +24,6 @@ import type { EducationLevelType } from '../../../types/index.js';
 export interface SubjectPromptParams {
   subject: string;
   query: string;
-  isExercice?: boolean;
-  isProduction?: boolean;
   /** Niveau scolaire pour adaptation KaTeX */
   level?: EducationLevelType;
 }
@@ -66,9 +64,10 @@ function normalizeSubject(subject: string): string | null {
  * Génère le prompt spécifique à la matière
  * Retourne les règles pédagogiques de la matière, ou null si non reconnue
  * Les conversations hors-sujet sont gérées par le core system prompt
+ * Best Practice 2025 : L'IA choisit automatiquement le mode (cours/exercice)
  */
 export function generateSubjectPrompt(params: SubjectPromptParams): string | null {
-  const { subject, query, isExercice, isProduction, level } = params;
+  const { subject, query, level } = params;
   const normalizedSubject = normalizeSubject(subject);
 
   if (!normalizedSubject) {
@@ -77,19 +76,19 @@ export function generateSubjectPrompt(params: SubjectPromptParams): string | nul
 
   switch (normalizedSubject) {
     case 'mathematiques':
-      return generateMathPrompt({ query, isExercice, level });
+      return generateMathPrompt({ query, level });
 
     case 'francais':
-      return generateFrancaisPrompt({ isProduction, isExercice });
+      return generateFrancaisPrompt();
 
     case 'langues':
-      return generateLanguesPrompt({ isExercice });
+      return generateLanguesPrompt();
 
     case 'sciences':
-      return generateSciencesPrompt({ isExercice });
+      return generateSciencesPrompt();
 
     case 'histoire-geo':
-      return generateHistoireGeoPrompt({ isExercice });
+      return generateHistoireGeoPrompt();
 
     default:
       return null;
@@ -103,10 +102,3 @@ export function requiresKaTeX(subject: string): boolean {
   const s = subject.toLowerCase();
   return s.includes('math') || s.includes('physique') || s.includes('chimie');
 }
-
-// Re-exports
-export { generateMathPrompt } from './mathematiques.js';
-export { generateFrancaisPrompt } from './francais.js';
-export { generateLanguesPrompt } from './langues.js';
-export { generateSciencesPrompt } from './sciences.js';
-export { generateHistoireGeoPrompt } from './histoire-geo.js';

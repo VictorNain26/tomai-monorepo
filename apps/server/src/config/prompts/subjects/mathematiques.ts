@@ -9,7 +9,6 @@ import { getCycleFromLevel } from '../../../config/education/education-mapping.j
 
 export interface MathPromptParams {
   query: string;
-  isExercice?: boolean;
   /** Niveau scolaire pour adaptation KaTeX */
   level?: EducationLevelType;
 }
@@ -130,9 +129,10 @@ vecteurs ($\\vec{u}$), matrices, sommes ($\\sum$), produits ($\\prod$)
 
 /**
  * Génère le prompt mathématiques complet
+ * Best Practice 2025 : L'IA choisit automatiquement entre cours et exercice
  */
 export function generateMathPrompt(params: MathPromptParams): string {
-  const { query, isExercice = false, level } = params;
+  const { query, level } = params;
   const sousMatiere = detectSousMatiere(query);
 
   return `## MATHÉMATIQUES
@@ -141,7 +141,13 @@ ${getKaTeXInstructionsForChatbot(level)}
 
 ### MÉTHODE COT (Chain-of-Thought OBLIGATOIRE)
 
-${isExercice ? getExerciceStructure() : getCoursStructure()}
+**CHOIX AUTOMATIQUE** : Utilise la structure appropriée selon le contexte.
+
+${getCoursStructure()}
+
+---
+
+${getExerciceStructure()}
 
 ### EXEMPLE DIFFÉRENT DU PROBLÈME
 
