@@ -2,10 +2,6 @@
   "name": "tom-monorepo",
   "private": true,
   "description": "Tom - Plateforme de tutorat socratique adaptatif",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "turbo run dev",
     "dev:landing": "turbo run dev --filter=landing",
@@ -33,5 +29,10 @@
     "turbo": "^2.6.3",
     "typescript": "5.9.3"
   },
-  "packageManager": "pnpm@10.12.1"
+  "packageManager": "pnpm@10.12.1",
+  "pnpm": {
+    "overrides": {
+      "esbuild": ">=0.25.0"
+    }
+  }
 }
