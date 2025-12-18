@@ -77,7 +77,10 @@ class MistralEmbeddingsService {
    */
   async embedBatch(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) return [];
-    if (texts.length === 1) return [await this.embed(texts[0])];
+    const firstText = texts[0];
+    if (texts.length === 1 && firstText !== undefined) {
+      return [await this.embed(firstText)];
+    }
 
     const client = this.getClient();
     const startTime = Date.now();

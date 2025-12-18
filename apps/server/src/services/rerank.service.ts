@@ -100,7 +100,9 @@ function reciprocalRankFusion(
 
   for (const ranking of rankings) {
     for (let rank = 0; rank < ranking.length; rank++) {
-      const [docIdx] = ranking[rank];
+      const item = ranking[rank];
+      if (!item) continue;
+      const [docIdx] = item;
       const current = rrfScores.get(docIdx) ?? 0;
       rrfScores.set(docIdx, current + 1 / (k + rank + 1));
     }
@@ -153,14 +155,17 @@ export function rerankWithBm25Rrf(
   const rrfResults = reciprocalRankFusion([vectorRanking, bm25Ranking]);
 
   // Reconstruire la liste ordonnée
-  const reranked: RerankedResult[] = rrfResults
-    .slice(0, topK)
-    .map(([docIdx, rrfScore]) => ({
-      ...results[docIdx],
+  const reranked: RerankedResult[] = [];
+  for (const [docIdx, rrfScore] of rrfResults.slice(0, topK)) {
+    const doc = results[docIdx];
+    if (!doc) continue;
+    reranked.push({
+      ...doc,
       bm25_score: bm25Scores[docIdx],
       rrf_score: rrfScore,
       final_score: rrfScore,
-    }));
+    });
+  }
 
   return reranked;
 }
