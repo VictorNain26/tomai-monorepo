@@ -9,7 +9,7 @@ export default function LoginScreen() {
 
   const handleLogin = () => {
     // TODO: Implement login with @repo/api
-    console.log('Login with:', { email, password });
+    console.log('Login attempt for:', email);
   };
 
   return (
