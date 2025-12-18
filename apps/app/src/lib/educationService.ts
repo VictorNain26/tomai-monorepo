@@ -1,21 +1,42 @@
 /**
  * EDUCATION SERVICE FRONTEND - Tom
- * Service frontend unifié qui communique avec le backend educationService
- * Remplace TOUTES les APIs obsolètes et mappings hardcodés
+ *
+ * Service frontend qui:
+ * 1. Récupère les clés de matières disponibles depuis le backend RAG
+ * 2. Enrichit localement avec les métadonnées UI (emoji, color, description)
+ *
+ * Architecture:
+ * - Backend retourne: { subjects: [{ key: "mathematiques", ragAvailable: true }] }
+ * - Frontend enrichit avec: SUBJECT_METADATA (emoji, color, description, etc.)
  */
 
 import { apiClient } from './api-client';
-import { logger } from './logger';
+import {
+  enrichSubjectKey,
+  isLv2Subject,
+  isLv2EligibleLevel,
+  type Lv2Option,
+} from '@/constants/subjects';
 import type {
   EducationLevelType,
   EducationSubject,
-  SubjectsAPIResponse,
   ISubjectsForStudent,
-  Lv2Option
 } from '@/types';
 
+/**
+ * Réponse brute du backend (clés RAG uniquement)
+ */
+interface RagSubjectsResponse {
+  success: boolean;
+  level: EducationLevelType;
+  subjects: Array<{
+    key: string;
+    ragAvailable: boolean;
+  }>;
+}
+
 interface SearchSubjectsResponse {
-  subjects: EducationSubject[];
+  subjects: Array<{ key: string; ragAvailable: boolean }>;
 }
 
 export interface LevelConfiguration {
@@ -45,50 +66,69 @@ class EducationServiceFrontend {
 
   /**
    * Obtient la configuration complète pour un niveau avec support LV2
-   * Récupère depuis PostgreSQL document_chunks + enrichissement backend
+   *
+   * 1. Récupère les clés RAG depuis le backend
+   * 2. Enrichit localement avec les métadonnées UI
+   * 3. Filtre les LV2 selon la sélection utilisateur
+   *
    * @param level - Niveau scolaire
    * @param selectedLv2 - LV2 sélectionnée (optionnel, pour niveaux >= 5ème)
    */
   async getLevelConfiguration(level: EducationLevelType, selectedLv2?: Lv2Option | null): Promise<LevelConfiguration> {
-    // Cache key inclut la LV2 pour éviter les conflits
     const cacheKey = `level:${level}:lv2:${selectedLv2 ?? 'none'}`;
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey) as LevelConfiguration;
     }
 
-    try {
-      // ENDPOINT avec support LV2 : /api/subjects/:level?selectedLv2=...
-      const queryParams = selectedLv2 ? `?selectedLv2=${selectedLv2}` : '';
-      const response: SubjectsAPIResponse = await apiClient.get(`/api/subjects/${level}${queryParams}`);
+    // Récupère les clés RAG depuis le backend
+    const response: RagSubjectsResponse = await apiClient.get(`/api/subjects/${level}`);
 
-      const config: LevelConfiguration = {
-        level,
-        subjects: response.subjects,
-        selectedLv2: selectedLv2 ?? null
-      };
+    // Enrichit avec métadonnées UI locales et filtre LV2
+    const subjects = this.enrichAndFilterSubjects(response.subjects, level, selectedLv2);
 
-      this.cache.set(cacheKey, config);
-      setTimeout(() => this.cache.delete(cacheKey), this.cacheTimeout);
+    const config: LevelConfiguration = {
+      level,
+      subjects,
+      selectedLv2: selectedLv2 ?? null
+    };
 
-      return config;
-    } catch (error) {
-      logger.error(`Failed to fetch subjects for ${level}`, {
-        operation: 'education-service',
-        level,
-        selectedLv2: selectedLv2 ?? 'none',
-        error: error instanceof Error ? error.message : String(error)
+    this.cache.set(cacheKey, config);
+    setTimeout(() => this.cache.delete(cacheKey), this.cacheTimeout);
+
+    return config;
+  }
+
+  /**
+   * Enrichit les clés RAG avec métadonnées UI et filtre les LV2
+   */
+  private enrichAndFilterSubjects(
+    ragSubjects: Array<{ key: string; ragAvailable: boolean }>,
+    level: EducationLevelType,
+    selectedLv2?: Lv2Option | null
+  ): EducationSubject[] {
+    const isLv2Level = isLv2EligibleLevel(level);
+
+    return ragSubjects
+      .filter((rag) => {
+        // Toujours inclure les matières non-LV2
+        if (!isLv2Subject(rag.key)) return true;
+        // Exclure LV2 si niveau non éligible
+        if (!isLv2Level) return false;
+        // Inclure seulement la LV2 sélectionnée
+        return selectedLv2 && rag.key === selectedLv2;
+      })
+      .map((rag) => {
+        const metadata = enrichSubjectKey(rag.key);
+        return {
+          key: rag.key,
+          name: metadata.name,
+          description: metadata.description,
+          emoji: metadata.emoji,
+          color: metadata.color,
+          ragKeywords: metadata.ragKeywords,
+          ttsLanguage: metadata.ttsLanguage,
+        };
       });
-
-      // Fallback : Retourner liste vide si aucune donnée disponible
-      const fallbackConfig: LevelConfiguration = {
-        level,
-        subjects: [],
-        selectedLv2: selectedLv2 ?? null
-      };
-
-      // Ne pas mettre en cache le fallback (retry à la prochaine requête)
-      return fallbackConfig;
-    }
   }
 
   /**
@@ -114,7 +154,7 @@ class EducationServiceFrontend {
 
   /**
    * Obtient les matières d'un enfant spécifique
-   * Remplace: useChildSubjects hook
+   * Enrichit les clés RAG avec métadonnées UI locales
    */
   async getChildSubjects(childId: string): Promise<ISubjectsForStudent> {
     const cacheKey = `child:${childId}`;
@@ -122,58 +162,74 @@ class EducationServiceFrontend {
       return this.cache.get(cacheKey) as ISubjectsForStudent;
     }
 
-    try {
-      const response: SubjectsAPIResponse = await apiClient.get(`/api/parent/children/${childId}/subjects`);
+    const response: RagSubjectsResponse = await apiClient.get(`/api/parent/children/${childId}/subjects`);
 
-      const subjects: ISubjectsForStudent = {
-        subjects: response.subjects
+    // Enrichit avec métadonnées UI locales
+    const enrichedSubjects = response.subjects.map((rag) => {
+      const metadata = enrichSubjectKey(rag.key);
+      return {
+        key: rag.key,
+        name: metadata.name,
+        description: metadata.description,
+        emoji: metadata.emoji,
+        color: metadata.color,
+        ragKeywords: metadata.ragKeywords,
+        ttsLanguage: metadata.ttsLanguage,
       };
+    });
 
-      this.cache.set(cacheKey, subjects);
-      setTimeout(() => this.cache.delete(cacheKey), this.cacheTimeout);
+    const subjects: ISubjectsForStudent = {
+      subjects: enrichedSubjects
+    };
 
-      return subjects;
-    } catch (error) {
-      logger.error(`Failed to fetch child subjects for ${childId}`, {
-        operation: 'education-service',
-        childId,
-        error: error instanceof Error ? error.message : String(error)
-      });
+    this.cache.set(cacheKey, subjects);
+    setTimeout(() => this.cache.delete(cacheKey), this.cacheTimeout);
 
-      // Fallback vide : L'API doit être disponible
-      const fallbackSubjects: ISubjectsForStudent = {
-        subjects: []
-      };
-
-      // Ne pas mettre en cache le fallback (retry à la prochaine requête)
-      return fallbackSubjects;
-    }
+    return subjects;
   }
 
   /**
    * Recherche de matières par mots-clés RAG
-   * Remplace: subjectEnrichment hardcodé
+   * Enrichit les résultats avec métadonnées UI locales
    */
   async searchSubjectsByKeywords(keywords: string[], level?: EducationLevelType): Promise<EducationSubject[]> {
-    try {
-      const response: SearchSubjectsResponse = await apiClient.post('/api/education/search', {
-        keywords,
-        level
-      });
-      return response.subjects || [];
-    } catch {
-      // Error logged by apiClient
-      return [];
-    }
+    const response: SearchSubjectsResponse = await apiClient.post('/api/education/search', {
+      keywords,
+      level
+    });
+
+    // Enrichit avec métadonnées UI locales
+    return (response.subjects || []).map((rag) => {
+      const metadata = enrichSubjectKey(rag.key);
+      return {
+        key: rag.key,
+        name: metadata.name,
+        description: metadata.description,
+        emoji: metadata.emoji,
+        color: metadata.color,
+        ragKeywords: metadata.ragKeywords,
+        ttsLanguage: metadata.ttsLanguage,
+      };
+    });
   }
 
   /**
-   * Obtient l'enrichissement UI des matières
-   * Les données sont déjà enrichies par le RAG depuis le backend
+   * Enrichit les clés de matières avec métadonnées UI
+   * Utilisé quand on a des clés brutes à enrichir
    */
-  async getSubjectEnrichment(subjects: EducationSubject[]): Promise<EducationSubject[]> {
-    // Les données sont déjà enrichies depuis le RAG backend
-    return subjects;
+  enrichSubjects(subjectKeys: string[]): EducationSubject[] {
+    return subjectKeys.map((key) => {
+      const metadata = enrichSubjectKey(key);
+      return {
+        key,
+        name: metadata.name,
+        description: metadata.description,
+        emoji: metadata.emoji,
+        color: metadata.color,
+        ragKeywords: metadata.ragKeywords,
+        ttsLanguage: metadata.ttsLanguage,
+      };
+    });
   }
 
   /**

@@ -22,7 +22,7 @@
     "build:koyeb": "bun run typecheck:strict && bun run lint:ci && bun build src/index.ts --outdir dist --target bun --minify --splitting --format esm",
     "start": "bun dist/index.js",
     "typecheck": "bun --bun tsc --noEmit",
-    "typecheck:strict": "bunx tsc --noEmit --project tsconfig.prod.json",
+    "typecheck:strict": "bun --bun tsc --noEmit",
     "lint": "bun --bun eslint src --ext .ts",
     "lint:fix": "bun --bun eslint src --ext .ts --fix",
     "lint:ci": "bun --bun eslint src --ext .ts --max-warnings 0",
@@ -54,6 +54,7 @@
   "dependencies": {
     "@elysiajs/cors": "^1.3.3",
     "@elysiajs/swagger": "^1.3.1",
+    "@sinclair/typebox": "^0.34.0",
     "@google/genai": "^1.20.0",
     "@mistralai/mistralai": "^1.10.0",
     "@qdrant/js-client-rest": "^1.16.2",

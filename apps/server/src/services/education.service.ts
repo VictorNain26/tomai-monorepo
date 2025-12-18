@@ -19,6 +19,7 @@ import type { EducationLevelType } from '../types/index.js';
 export interface RagSubject {
   key: string;
   ragAvailable: boolean;
+  chunksCount?: number;
 }
 
 export interface RagLevel {
@@ -90,6 +91,7 @@ class EducationService {
 
   /**
    * Retourne les matières disponibles dans le RAG pour un niveau
+   * FILTRE par niveau - retourne uniquement les matières ayant du contenu pour ce niveau
    */
   async getSubjectsForLevel(
     level: EducationLevelType,
@@ -109,19 +111,21 @@ class EducationService {
       }
     }
 
-    const stats = await qdrantService.getStats();
-    const allMatieres = Object.keys(stats.by_matiere);
+    // Récupérer les matières FILTRÉES par niveau depuis Qdrant
+    const matieresForLevel = await qdrantService.getMatieresForNiveau(level);
+    const matiereKeys = Object.keys(matieresForLevel);
 
-    const subjects: RagSubject[] = allMatieres.map((subjectKey) => ({
+    const subjects: RagSubject[] = matiereKeys.map((subjectKey) => ({
       key: subjectKey,
       ragAvailable: true,
+      chunksCount: matieresForLevel[subjectKey],
     }));
 
     if (!skipCache) {
       await redisCacheService.set('education:', cacheKey, subjects, this.CACHE_TTL);
     }
 
-    logger.info('Subjects retrieved from Qdrant', {
+    logger.info('Subjects retrieved from Qdrant for level', {
       operation: 'education:subjects:success',
       level,
       count: subjects.length,

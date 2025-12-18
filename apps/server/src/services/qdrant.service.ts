@@ -166,21 +166,8 @@ class QdrantService {
       }
     }
 
-    // Par matière (on récupère depuis les points existants)
-    const matieres = [
-      'mathematiques', 'francais', 'physique_chimie', 'svt',
-      'histoire_geo', 'anglais', 'espagnol', 'allemand',
-    ];
-    const by_matiere: Record<string, number> = {};
-
-    for (const matiere of matieres) {
-      const count = await client.count(COLLECTION_NAME, {
-        filter: { must: [{ key: 'matiere', match: { value: matiere } }] },
-      });
-      if (count.count > 0) {
-        by_matiere[matiere] = count.count;
-      }
-    }
+    // Récupérer les matières dynamiquement depuis les points existants
+    const by_matiere = await this.getUniqueMatieres();
 
     const stats: CollectionStats = {
       total_points,
@@ -198,6 +185,110 @@ class QdrantService {
     });
 
     return stats;
+  }
+
+  /**
+   * Récupère dynamiquement toutes les matières uniques depuis Qdrant
+   */
+  private async getUniqueMatieres(): Promise<Record<string, number>> {
+    const client = this.getClient();
+    const by_matiere: Record<string, number> = {};
+
+    // Scroll pour récupérer un échantillon de points et extraire les matières uniques
+    // Type compatible avec Qdrant SDK qui peut retourner différents types pour next_page_offset
+    let offset: Awaited<ReturnType<typeof client.scroll>>['next_page_offset'] = undefined;
+    const seenMatieres = new Set<string>();
+
+    // Limiter à quelques scrolls pour performance
+    for (let i = 0; i < 10; i++) {
+      const response = await client.scroll(COLLECTION_NAME, {
+        limit: 100,
+        offset,
+        with_payload: ['matiere'],
+      });
+
+      for (const point of response.points) {
+        const payload = point.payload as Record<string, unknown>;
+        const matiere = payload['matiere'];
+        if (matiere && typeof matiere === 'string') {
+          seenMatieres.add(matiere);
+        }
+      }
+
+      offset = response.next_page_offset;
+      if (!offset) break;
+    }
+
+    // Compter les points par matière
+    for (const matiere of seenMatieres) {
+      const count = await client.count(COLLECTION_NAME, {
+        filter: { must: [{ key: 'matiere', match: { value: matiere } }] },
+      });
+      if (count.count > 0) {
+        by_matiere[matiere] = count.count;
+      }
+    }
+
+    return by_matiere;
+  }
+
+  /**
+   * Récupère les matières disponibles pour un niveau spécifique
+   * @param niveau - Le niveau scolaire (cp, ce1, sixieme, etc.)
+   * @returns Record des matières avec leur nombre de chunks pour ce niveau
+   */
+  async getMatieresForNiveau(niveau: string): Promise<Record<string, number>> {
+    const client = this.getClient();
+    const by_matiere: Record<string, number> = {};
+
+    // Scroll pour récupérer les points de ce niveau et extraire les matières
+    // Type compatible avec Qdrant SDK qui peut retourner différents types pour next_page_offset
+    let offset: Awaited<ReturnType<typeof client.scroll>>['next_page_offset'] = undefined;
+    const seenMatieres = new Set<string>();
+
+    for (let i = 0; i < 10; i++) {
+      const response = await client.scroll(COLLECTION_NAME, {
+        limit: 100,
+        offset,
+        filter: { must: [{ key: 'niveau', match: { value: niveau } }] },
+        with_payload: ['matiere'],
+      });
+
+      for (const point of response.points) {
+        const payload = point.payload as Record<string, unknown>;
+        const matiere = payload['matiere'];
+        if (matiere && typeof matiere === 'string') {
+          seenMatieres.add(matiere);
+        }
+      }
+
+      offset = response.next_page_offset;
+      if (!offset) break;
+    }
+
+    // Compter les points par matière pour ce niveau
+    for (const matiere of seenMatieres) {
+      const count = await client.count(COLLECTION_NAME, {
+        filter: {
+          must: [
+            { key: 'niveau', match: { value: niveau } },
+            { key: 'matiere', match: { value: matiere } },
+          ],
+        },
+      });
+      if (count.count > 0) {
+        by_matiere[matiere] = count.count;
+      }
+    }
+
+    logger.info('Matieres for niveau retrieved', {
+      operation: 'qdrant:matieres-for-niveau',
+      niveau,
+      count: Object.keys(by_matiere).length,
+      matieres: Object.keys(by_matiere),
+    });
+
+    return by_matiere;
   }
 
   /**
