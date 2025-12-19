@@ -6,8 +6,7 @@
 
 import {
   generateCSENStructure,
-  generateCSENExerciceStructure,
-  generatePedagogicalTone
+  generateCSENExerciceStructure
 } from './csen-base.js';
 
 /**
@@ -97,8 +96,6 @@ ${exerciceStructure}
 - Faux-amis : "actually" ≠ actuellement
 - Ordre des mots : adjectif AVANT nom en anglais
 - Pas de traduction mot-à-mot
-
-${generatePedagogicalTone()}
 
 ### INTERDICTIONS
 - Listes vocabulaire hors contexte

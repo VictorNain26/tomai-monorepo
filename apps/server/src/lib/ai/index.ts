@@ -12,7 +12,6 @@
 export {
   geminiAdapter,
   AI_MODELS,
-  DEFAULT_GENERATION_OPTIONS,
   type AIModel,
 } from './adapter.js';
 

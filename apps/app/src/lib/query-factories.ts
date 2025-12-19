@@ -312,6 +312,8 @@ export interface IEducationSubjectsResponse {
 /** Domain with its topics from RAG */
 export interface IDomainWithTopics {
   domaine: string;
+  /** Catégorie large (Histoire, Géographie, Grammaire, etc.) */
+  category: string;
   themes: string[];
 }
 

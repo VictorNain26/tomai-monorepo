@@ -6,8 +6,7 @@
 
 import {
   generateCSENStructure,
-  generateCSENExerciceStructure,
-  generatePedagogicalTone
+  generateCSENExerciceStructure
 } from './csen-base.js';
 
 /**
@@ -123,8 +122,6 @@ Pour chaque sujet géographique, analyser systématiquement :
 - **Empire** ≠ Royaume ≠ République
 - **Colonisation** : distinguer causes, formes, conséquences
 - Éviter anachronismes : ne pas juger le passé avec les valeurs d'aujourd'hui
-
-${generatePedagogicalTone()}
 
 ### INTERDICTIONS
 - Dates isolées sans contexte ni explication

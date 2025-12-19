@@ -7,7 +7,6 @@
 // Builder principal (point d'entrée)
 export {
   buildSystemPrompt,
-  estimateTokens,
   promptRequiresKaTeX,
   type PromptBuilderParams
 } from './builder.js';

@@ -36,15 +36,6 @@ export const AI_MODELS = {
 } as const;
 
 /**
- * Options de génération par défaut
- */
-export const DEFAULT_GENERATION_OPTIONS = {
-  temperature: appConfig.ai.gemini.temperature,
-  maxOutputTokens: appConfig.ai.gemini.maxTokens,
-  topP: appConfig.ai.gemini.topP,
-} as const;
-
-/**
  * Type pour les modèles disponibles
  */
 export type AIModel = typeof AI_MODELS[keyof typeof AI_MODELS];

@@ -6,8 +6,7 @@
 
 import {
   generateCSENStructure,
-  generateCSENExerciceStructure,
-  generatePedagogicalTone
+  generateCSENExerciceStructure
 } from './csen-base.js';
 
 /**
@@ -107,8 +106,6 @@ Compatible et complémentaire avec les 5 phases CSEN
 | Chimie | "L'eau disparaît quand elle s'évapore" | Changement d'état, conservation matière |
 | SVT | "Les plantes se nourrissent par les racines" | Photosynthèse = principale source |
 | Électricité | "Le courant s'use dans le circuit" | Conservation du courant |
-
-${generatePedagogicalTone()}
 
 ### INTERDICTIONS
 - Réponse AVANT investigation

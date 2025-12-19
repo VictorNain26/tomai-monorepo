@@ -292,12 +292,20 @@ class QdrantService {
   }
 
   /**
-   * Récupère les topics (domaines/thèmes) pour une matière/niveau
+   * Récupère les chapitres (sousdomaine) et sous-chapitres (titres) pour une matière/niveau
+   *
+   * Hiérarchie RAG:
+   * - matiere: histoire_geo, francais, etc.
+   * - domaine: catégorie large (Histoire, Géographie, Grammaire)
+   * - sousdomaine: CHAPITRE réel ("Chrétientés et Islam", "La phrase", "Indicatif")
+   * - title: SOUS-CHAPITRE individuel ("L'Empire byzantin", "Types de phrases")
+   *
+   * Retourne: chapitres groupés par catégorie, avec leurs thèmes
    */
   async getTopics(
     matiere: string,
     niveau: string
-  ): Promise<{ domaine: string; themes: string[] }[]> {
+  ): Promise<{ domaine: string; category: string; themes: string[] }[]> {
     const client = this.getClient();
 
     // Scroll pour récupérer tous les points de ce niveau/matière
@@ -308,34 +316,42 @@ class QdrantService {
           { key: 'matiere', match: { value: matiere } },
         ],
       },
-      limit: 500,
-      with_payload: ['domaine', 'sousdomaine'],
+      limit: 1000,
+      with_payload: ['domaine', 'sousdomaine', 'title'],
     });
 
-    // Grouper par domaine
-    const domaineMap = new Map<string, Set<string>>();
+    // Grouper par sousdomaine (= chapitre) avec sa catégorie (= domaine RAG)
+    const chapitreMap = new Map<string, { category: string; themes: Set<string> }>();
 
     for (const point of points.points) {
       const payload = point.payload as Record<string, unknown>;
-      const domaine = String(payload['domaine'] ?? 'Autre');
-      const sousdomaine = payload['sousdomaine'] ? String(payload['sousdomaine']) : null;
+      const category = payload['domaine'] ? String(payload['domaine']) : 'Autre';
+      const chapitre = payload['sousdomaine'] ? String(payload['sousdomaine']) : null;
+      const theme = payload['title'] ? String(payload['title']) : null;
 
-      if (!domaineMap.has(domaine)) {
-        domaineMap.set(domaine, new Set());
+      if (!chapitre) continue;
+
+      if (!chapitreMap.has(chapitre)) {
+        chapitreMap.set(chapitre, { category, themes: new Set() });
       }
 
-      if (sousdomaine) {
-        domaineMap.get(domaine)!.add(sousdomaine);
+      if (theme) {
+        chapitreMap.get(chapitre)!.themes.add(theme);
       }
     }
 
-    // Convertir en format attendu
-    const result = Array.from(domaineMap.entries()).map(([domaine, themes]) => ({
-      domaine,
-      themes: Array.from(themes).sort(),
+    // Convertir et trier par catégorie puis par chapitre
+    const result = Array.from(chapitreMap.entries()).map(([chapitre, data]) => ({
+      domaine: chapitre,
+      category: data.category,
+      themes: Array.from(data.themes).sort(),
     }));
 
-    return result.sort((a, b) => a.domaine.localeCompare(b.domaine));
+    return result.sort((a, b) => {
+      const catCompare = a.category.localeCompare(b.category);
+      if (catCompare !== 0) return catCompare;
+      return a.domaine.localeCompare(b.domaine);
+    });
   }
 
   /**

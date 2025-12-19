@@ -6,8 +6,7 @@
 
 import {
   generateCSENStructure,
-  generateCSENExerciceStructure,
-  generatePedagogicalTone
+  generateCSENExerciceStructure
 } from './csen-base.js';
 
 /**
@@ -56,8 +55,6 @@ ${getProductionRules()}
 - Corriger APRÈS validation du sens (compréhension d'abord)
 - Expliquer la règle, pas juste corriger
 - Mnémotechniques : "on peut → on pouvait = on ; on ne peut pas = ont"
-
-${generatePedagogicalTone()}
 
 ### INTERDICTIONS
 - "Qu'as-tu compris ?" sans questions ciblées

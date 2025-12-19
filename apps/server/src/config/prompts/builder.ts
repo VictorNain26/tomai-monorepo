@@ -1,7 +1,7 @@
 /**
  * Prompt Builder - Compositeur de prompts optimisé
  * Assemble : Core (identité) + Subject (matière) + Context (RAG)
- * Réduction tokens : ~50% vs ancienne architecture
+ * Best Practice 2025 : Délimiteurs XML pour Gemini
  */
 
 import { generateIdentityPrompt, generateAdaptiveRules } from './core/index.js';
@@ -10,133 +10,96 @@ import { getVocabularyGuide } from '../../config/learning-config.js';
 import { getStructuredResponseGuide } from '../../config/education/education-mapping.js';
 import type { EducationLevelType } from '../../types/index.js';
 
+/** Limite tokens RAG (~1500 tokens ≈ 6000 chars FR) */
+const MAX_RAG_CHARS = 6000;
+
 export interface PromptBuilderParams {
-  /** Niveau scolaire */
   level: EducationLevelType;
-  /** Texte du niveau (ex: "5ème") */
   levelText: string;
-  /** Matière */
   subject: string;
-  /** Prénom élève */
   firstName?: string;
-  /** Query utilisateur (pour détection sous-matière) */
   userQuery: string;
-  /** Contexte RAG (programmes officiels) */
   ragContext?: string;
 }
 
 /**
  * Construit le prompt système complet
- * Architecture : Core + Vocabulaire + Structure + RAG + Subject
- * Best Practice 2025 : L'IA choisit automatiquement le mode via les règles d'adaptation
+ * Architecture XML : <system> + <context> + <subject> + <instruction>
  */
 export function buildSystemPrompt(params: PromptBuilderParams): string {
-  const {
-    level,
-    levelText,
-    subject,
-    firstName,
-    userQuery,
-    ragContext
-  } = params;
-
+  const { level, levelText, subject, firstName, userQuery, ragContext } = params;
   const studentName = firstName ?? "l'élève";
 
-  // 1. CORE : Identité Tom (~200 tokens)
-  const identityPrompt = generateIdentityPrompt({
-    studentName,
-    levelText,
-    subject
-  });
-
-  // 2. CORE : Règles d'adaptation (~100 tokens)
+  // 1. CORE : Identité + Règles
+  const identity = generateIdentityPrompt({ studentName, levelText, subject });
   const adaptiveRules = generateAdaptiveRules();
 
-  // 3. VOCABULAIRE : Adaptation au cycle scolaire (~50 tokens)
-  const vocabularyGuide = getVocabularyGuide(level);
-  const vocabularyBlock = `## ADAPTATION VOCABULAIRE (OBLIGATOIRE)
-${vocabularyGuide}`;
+  // 2. GUIDES : Vocabulaire + Structure
+  const vocabulary = getVocabularyGuide(level);
+  const structure = getStructuredResponseGuide(level);
 
-  // 4. STRUCTURE : Guide de réponse par cycle (~50 tokens)
-  const structuredGuide = getStructuredResponseGuide(level);
-  const structureBlock = `## STRUCTURE DES RÉPONSES
-${structuredGuide}`;
+  // 3. RAG : Contexte programmes (avec validation longueur)
+  const ragBlock = formatRAGContext(ragContext, levelText);
 
-  // 5. RAG : Contexte programmes officiels (variable)
-  const ragBlock = ragContext ? formatRAGContext(ragContext, levelText) : '';
+  // 4. SUBJECT : Règles spécifiques matière
+  const subjectPrompt = generateSubjectPrompt({ subject, query: userQuery, level });
 
-  // 6. SUBJECT : Règles spécifiques matière (~300-500 tokens)
-  // Peut être null si matière non reconnue (conversation hors-sujet)
-  // Passe le level pour adaptation KaTeX par niveau scolaire
-  // Best Practice 2025 : L'IA choisit automatiquement le mode (cours/exercice)
-  const subjectPrompt = generateSubjectPrompt({
-    subject,
-    query: userQuery,
-    level
-  });
-
-  // 7. COMPOSITION FINALE
-  const subjectBlock = subjectPrompt ? `\n${subjectPrompt}` : '';
-
-  return `${identityPrompt}
+  // 5. COMPOSITION XML (Best Practice Gemini 2025)
+  return `<system>
+${identity}
 
 ${adaptiveRules}
 
-${vocabularyBlock}
+<vocabulary>
+${vocabulary}
+</vocabulary>
 
-${structureBlock}
+<response_structure>
+${structure}
+</response_structure>
+</system>
 
-${ragBlock}${subjectBlock}
+<context>
+${ragBlock}
+</context>
 
----
-**Réponds maintenant à ${studentName} en t'adaptant à son niveau ${levelText}.**`;
+${subjectPrompt ? `<subject>\n${subjectPrompt}\n</subject>\n` : ''}
+<instruction>
+Réponds à ${studentName} en t'adaptant à son niveau ${levelText}.
+</instruction>`;
 }
 
 /**
- * Formate le contexte RAG pour inclusion dans le prompt
- * SÉCURITÉ: Si contexte vide, instruction explicite de NE PAS inventer de contenu éducatif
+ * Formate le contexte RAG avec validation longueur
+ * Tronque intelligemment si dépassement
  */
-function formatRAGContext(context: string, levelText: string): string {
+function formatRAGContext(context: string | undefined, levelText: string): string {
   if (!context || context.trim().length === 0) {
-    // SÉCURITÉ: Guard-rail pour empêcher Gemini d'inventer du contenu éducatif
-    // MAIS permet les interactions sociales (bonjour, merci, questions sur Tom...)
-    return `## ⚠️ AUCUN CONTEXTE PROGRAMME OFFICIEL DISPONIBLE
-
-**INTERACTIONS SOCIALES AUTORISÉES** :
-Tu peux répondre normalement aux salutations, remerciements, questions sur toi-même.
-Exemples : "Bonjour !" → "Bonjour ! Comment puis-je t'aider aujourd'hui ?"
-
-**CONTENU ÉDUCATIF INTERDIT sans source** :
-Si l'élève pose une question sur le programme scolaire, réponds :
-"Je n'ai pas accès aux informations du programme officiel pour cette question.
-Peux-tu me donner plus de détails ou reformuler ta question ?"
-
-**Tu ne dois JAMAIS** :
-- Inventer du contenu éducatif sans source officielle
-- Supposer le contenu du programme
-- Donner des exercices ou explications non vérifiés
-
-`;
+    return `<no_curriculum>
+Tu peux répondre aux salutations et questions sur toi-même.
+Pour le contenu éducatif sans source : "Peux-tu reformuler ta question ?"
+</no_curriculum>`;
   }
 
-  return `## PROGRAMMES OFFICIELS 2024-2025 (SOURCE DE VÉRITÉ)
+  // Validation longueur - tronquer si nécessaire
+  let safeContext = context;
+  if (context.length > MAX_RAG_CHARS) {
+    // Tronquer à la dernière phrase complète
+    const truncated = context.slice(0, MAX_RAG_CHARS);
+    const lastPeriod = truncated.lastIndexOf('.');
+    safeContext = lastPeriod > MAX_RAG_CHARS * 0.8
+      ? truncated.slice(0, lastPeriod + 1)
+      : truncated + '...';
+  }
 
-${context}
+  return `<curriculum source="Éduscol 2024-2025">
+${safeContext}
+</curriculum>
 
-**RÈGLES ABSOLUES** :
-- Tu dois UNIQUEMENT utiliser les informations ci-dessus pour répondre
-- Tu ne dois JAMAIS inventer ou ajouter d'informations non présentes dans ce contexte
-- Si notion absente du contexte : "Cette notion n'est pas au programme de ${levelText}"
-
-`;
-}
-
-/**
- * Estime le nombre de tokens du prompt
- * Approximation : 1 token ≈ 4 caractères en français
- */
-export function estimateTokens(prompt: string): number {
-  return Math.ceil(prompt.length / 4);
+<rules>
+- Utilise UNIQUEMENT le contenu ci-dessus
+- Si notion absente : "Cette notion n'est pas au programme de ${levelText}"
+</rules>`;
 }
 
 /**
@@ -145,4 +108,3 @@ export function estimateTokens(prompt: string): number {
 export function promptRequiresKaTeX(subject: string): boolean {
   return requiresKaTeX(subject);
 }
-

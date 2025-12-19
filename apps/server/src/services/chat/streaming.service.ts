@@ -15,7 +15,7 @@
 import { chat } from '@tanstack/ai';
 import { geminiAdapter, AI_MODELS } from '../../lib/ai/index.js';
 import { ragSearchTool } from '../../lib/ai/tools/rag-search.tool.js';
-import { buildSystemPrompt, estimateTokens } from '../../config/prompts/index.js';
+import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory } from '../../utils/conversation/index.js';
 import { logger } from '../../lib/observability.js';
@@ -149,14 +149,12 @@ class StreamingService {
         content: params.content
       });
 
-      // 2. Ajouter instructions RAG tool au system prompt
+      // 2. Instructions RAG tool (utilisation silencieuse)
+      // Les règles de transparence sont dans identity.ts (source unique)
       const ragToolInstructions = `
 
-OUTIL DE RECHERCHE ÉDUCATIVE:
-Tu disposes d'un outil "search_educational_content" pour rechercher dans les programmes officiels français.
-- Niveau scolaire de l'élève: ${params.schoolLevel}
-- Matière: ${params.subject}
-IMPORTANT: Utilise TOUJOURS cet outil pour les questions éducatives afin de fournir des réponses basées sur les programmes officiels Éduscol.`;
+## OUTIL DE RECHERCHE
+Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.`;
 
       const fullSystemPrompt = systemPrompt + ragToolInstructions;
 
@@ -179,6 +177,8 @@ IMPORTANT: Utilise TOUJOURS cet outil pour les questions éducatives afin de fou
       });
 
       // 5. Lancer le streaming TanStack AI avec Server Tools
+      // Note: maxOutputTokens configuré via appConfig (16384, Gemini 2.5 Flash supports 65536)
+      // TanStack AI @tanstack/ai-gemini v0.0.3 types limitées - topK seul supporté
       const stream = chat({
         adapter: geminiAdapter,
         model: model as 'gemini-2.5-flash',
@@ -238,8 +238,12 @@ IMPORTANT: Utilise TOUJOURS cet outil pour les questions éducatives afin de fou
         }
       }
 
-      // 7. Fallback estimation si tokens non disponibles
-      const totalTokens = promptTokens + completionTokens || estimateTokens(fullContent);
+      // 7. Calculer tokens totaux (Gemini fournit les valeurs exactes via TanStack AI)
+      // Fallback: estimation simple si Gemini ne retourne pas les tokens (rare)
+      const hasRealTokenCount = promptTokens > 0 || completionTokens > 0;
+      const totalTokens = hasRealTokenCount
+        ? promptTokens + completionTokens
+        : Math.ceil(fullContent.length / 4); // Approximation: 1 token ≈ 4 chars FR
 
       // 8. Yield événement 'done' au format TanStack AI Protocol
       yield {
@@ -265,7 +269,10 @@ IMPORTANT: Utilise TOUJOURS cet outil pour les questions éducatives afin de fou
         sessionId: params.sessionId,
         messageId,
         contentLength: fullContent.length,
+        promptTokens,
+        completionTokens,
         totalTokens,
+        tokenSource: hasRealTokenCount ? 'gemini' : 'estimated',
         toolCallsCount,
         usedRAG: toolCallsCount > 0,
         durationMs: Date.now() - startTime,

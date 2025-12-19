@@ -14,6 +14,7 @@ import { logger } from '../../lib/observability';
 import { ragService } from '../../services/rag.service';
 import { checkQuota, checkDeckQuota, incrementDeckUsage } from '../../services/token-quota.service';
 import { fsrsService } from '../../services/fsrs.service';
+import { getLevelConfig } from '../../config/learning-config.js';
 import {
   generateCards,
   isGenerationError,
@@ -279,8 +280,13 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
   })
 
   /**
-   * Generate a deck with AI from topic + subject
+   * Generate a deck with AI from domaine + optional topic
    * Uses RAG for curriculum alignment + Gemini for card generation
+   *
+   * Deux modes de génération:
+   * 1. Domaine seul → génère sur tout le domaine (ex: toute la Conjugaison)
+   * 2. Domaine + topic → génère sur le sous-chapitre spécifique (ex: Conditionnel)
+   *
    * POST /api/learning/generate
    */
   .post(
@@ -292,7 +298,11 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
       }
 
       const { user: authUser } = authContext;
-      const { subject, topic, cardCount = 15 } = body;
+      const { subject, domaine, topic } = body;
+
+      // Mode de génération: domaine complet ou sous-chapitre
+      const isFullDomaineMode = !topic || topic.trim() === '';
+      const searchQuery = isFullDomaineMode ? domaine : topic;
 
       // Always use user profile level
       const level = getUserLevel(authUser.id, authUser.schoolLevel);
@@ -341,17 +351,19 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
           operation: 'learning:generate:start',
           userId: authUser.id,
           subject,
-          topic,
+          domaine,
+          topic: topic ?? null,
+          mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
           level,
-          requestedCards: cardCount,
         });
 
         // 1. Get RAG context for curriculum alignment
+        // Le threshold de similarité (0.35) filtre automatiquement les résultats non pertinents
         const ragResult = await ragService.hybridSearch({
-          query: `${topic} ${subject}`,
+          query: `${searchQuery} ${subject}`,
           niveau: level,
           matiere: subject,
-          limit: 5,
+          limit: 20, // Récupérer assez de contexte, le threshold élimine les non-pertinents
         });
 
         const ragThresholds = ragService.getThresholds();
@@ -373,13 +385,17 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
         if (isRagDisabled || !hasValidResults || !hasGoodSimilarity) {
           const errorReason = isRagDisabled
             ? 'Service RAG temporairement indisponible'
-            : 'Thème non trouvé dans ton programme';
+            : isFullDomaineMode
+              ? 'Domaine non trouvé dans ton programme'
+              : 'Thème non trouvé dans ton programme';
 
           logger.warn('RAG validation failed - cannot generate without official context', {
             operation: 'learning:generate:rag-validation-failed',
             userId: authUser.id,
             subject,
-            topic,
+            domaine,
+            topic: topic ?? null,
+            mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
             level,
             reason: isRagDisabled ? 'rag_disabled' : 'insufficient_context',
             chunksFound: ragResult.semanticChunks.length,
@@ -391,7 +407,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
             error: errorReason,
             message: isRagDisabled
               ? 'Le service de programmes officiels est temporairement indisponible. Réessaie dans quelques minutes.'
-              : `Je n'ai pas trouvé "${topic}" dans le programme de ${subject} pour ton niveau. Cela peut arriver si le thème n'est pas au programme ou si l'orthographe est différente.`,
+              : `Je n'ai pas trouvé "${searchQuery}" dans le programme de ${subject} pour ton niveau. Cela peut arriver si le thème n'est pas au programme ou si l'orthographe est différente.`,
             suggestions: isRagDisabled
               ? ['Réessaie dans quelques minutes']
               : [
@@ -405,16 +421,34 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
           };
         }
 
-        // 3. Generate cards with TanStack AI structured output
+        // 3. Calculer cardCount basé sur la config scientifique par niveau
+        // Source: learning-config.ts (Éduscol, DRANE, Primlangues)
+        const levelConfig = getLevelConfig(level);
+        // Mode domaine complet: 100% du max recommandé pour le niveau
+        // Mode topic spécifique: 60% du max (session équilibrée)
+        const cardCount = isFullDomaineMode
+          ? levelConfig.cardsPerSession
+          : Math.round(levelConfig.cardsPerSession * 0.6);
+
+        logger.info('Card count from level config', {
+          operation: 'learning:generate:cardcount',
+          level,
+          cardsPerSession: levelConfig.cardsPerSession,
+          cardCount,
+          mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
+        });
+
+        // 4. Generate cards with structured output
         const generationResult = await generateCards({
-          topic,
+          topic: searchQuery,
           subject,
           level,
           ragContext: ragResult.context,
           cardCount,
+          domaine,
         });
 
-        // 4. Check for generation errors
+        // 5. Check for generation errors
         if (isGenerationError(generationResult)) {
           logger.error('AI card generation failed', {
             operation: 'learning:generate:failed',
@@ -429,18 +463,23 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
 
         const generatedCards = generationResult.cards;
 
-        // 5. Create deck using RAG official title
-        const deckTitle = ragResult.bestMatchTitle ?? topic;
+        // 5. Create deck with appropriate title based on mode
+        const deckTitle = isFullDomaineMode
+          ? domaine
+          : (ragResult.bestMatchTitle ?? topic ?? domaine);
+        const deckDescription = isFullDomaineMode
+          ? `Révision complète du domaine "${domaine}" - ${generatedCards.length} cartes`
+          : `Cartes sur "${topic}" (${domaine})`;
 
         const [newDeck] = await db
           .insert(learningDecks)
           .values({
             userId: authUser.id,
             title: deckTitle,
-            description: `Cartes générées par IA sur le thème "${ragResult.bestMatchTitle ?? topic}"`,
+            description: deckDescription,
             subject,
             source: 'rag_program',
-            sourcePrompt: topic,
+            sourcePrompt: isFullDomaineMode ? domaine : topic,
             schoolLevel: level,
             cardCount: generatedCards.length,
           })
@@ -495,7 +534,8 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
           operation: 'learning:generate:error',
           userId: authUser.id,
           subject,
-          topic,
+          domaine,
+          topic: topic ?? null,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'high' as const,
         });
@@ -506,8 +546,10 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
     {
       body: t.Object({
         subject: t.String({ minLength: 1, maxLength: 100 }),
-        topic: t.String({ minLength: 1, maxLength: 500 }),
-        cardCount: t.Optional(t.Number({ minimum: 5, maximum: 30 })),
+        /** Domaine obligatoire (ex: "Conjugaison", "Grammaire") */
+        domaine: t.String({ minLength: 1, maxLength: 200 }),
+        /** Sous-chapitre optionnel - si absent, génère sur tout le domaine */
+        topic: t.Optional(t.String({ minLength: 1, maxLength: 500 })),
       }),
     }
   );

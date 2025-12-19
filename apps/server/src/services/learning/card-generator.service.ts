@@ -20,6 +20,29 @@ import { logger } from '../../lib/observability.js';
 import type { CardGenerationParams, ParsedCard } from './types.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
+// INTERLEAVING - Mélange des cartes pour un meilleur apprentissage
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Applique l'interleaving aux cartes générées
+ *
+ * L'interleaving améliore l'apprentissage en évitant de regrouper
+ * les cartes du même type (Rohrer & Taylor, 2007).
+ * Utilise Fisher-Yates shuffle pour un mélange uniforme.
+ */
+function interleaveCards(cards: ParsedCard[]): ParsedCard[] {
+  if (cards.length <= 2) return cards;
+
+  // Fisher-Yates shuffle
+  const shuffled = [...cards];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -148,9 +171,10 @@ export async function generateCards(
       };
     }
 
-    const cards = validationResult.data;
+    // 6. Appliquer l'interleaving pour un meilleur apprentissage
+    const cards = interleaveCards(validationResult.data as ParsedCard[]);
 
-    // 6. Vérifier que des cartes ont été générées
+    // 7. Vérifier que des cartes ont été générées
     if (cards.length === 0) {
       logger.error('Card generation returned empty result', {
         operation: 'learning:generate:empty',
@@ -179,7 +203,7 @@ export async function generateCards(
     });
 
     return {
-      cards: cards as ParsedCard[],
+      cards,
       count: cards.length,
       tokensUsed,
       provider

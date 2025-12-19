@@ -76,7 +76,10 @@ function getKaTeXInstructionsForChatbot(level?: EducationLevelType): string {
 - Symboles π, ∞
 
 **Prix** : Écrire "5 euros" PAS "$5"
-**Vérification** : Nombre PAIR de $ avant envoi.`;
+**⚠️ VÉRIFICATION OBLIGATOIRE avant chaque envoi** :
+- Chaque $...$ doit être fermé avec un second $
+- Chaque $$...$$ doit être fermé avec $$
+- Ne JAMAIS couper une formule au milieu`;
 
     case 'cycle4':
       // 5ème-3ème (12-14 ans): KaTeX standard
@@ -95,7 +98,10 @@ x &= 3
 **Introduire progressivement** : Puissances négatives, notation scientifique
 
 **Prix** : Écrire "5 euros" PAS "$5"
-**Vérification** : Nombre PAIR de $ avant envoi.`;
+**⚠️ VÉRIFICATION OBLIGATOIRE avant chaque envoi** :
+- Chaque $...$ doit être fermé avec un second $
+- Chaque $$...$$ doit être fermé avec $$
+- Ne JAMAIS couper une formule au milieu`;
 
     case 'lycee':
       // Seconde-Terminale (15-17 ans): KaTeX complet
@@ -113,7 +119,10 @@ $$\\begin{align}
 vecteurs ($\\vec{u}$), matrices, sommes ($\\sum$), produits ($\\prod$)
 
 **Prix** : Écrire "5 euros" PAS "$5"
-**Vérification** : Nombre PAIR de $ avant envoi.`;
+**⚠️ VÉRIFICATION OBLIGATOIRE avant chaque envoi** :
+- Chaque $...$ doit être fermé avec un second $
+- Chaque $$...$$ doit être fermé avec $$
+- Ne JAMAIS couper une formule au milieu`;
 
     default:
       // Fallback cycle 4
@@ -123,7 +132,10 @@ vecteurs ($\\vec{u}$), matrices, sommes ($\\sum$), produits ($\\prod$)
 **Block** : $$formule$$ → équation centrée
 
 **Prix** : Écrire "5 euros" PAS "$5"
-**Vérification** : Nombre PAIR de $ avant envoi.`;
+**⚠️ VÉRIFICATION OBLIGATOIRE avant chaque envoi** :
+- Chaque $...$ doit être fermé avec un second $
+- Chaque $$...$$ doit être fermé avec $$
+- Ne JAMAIS couper une formule au milieu`;
   }
 }
 
