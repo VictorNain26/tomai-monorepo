@@ -27,7 +27,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -74,6 +76,18 @@ export default function LearningDeckNew(): ReactElement {
     () => (topicsData as ITopicsResponse | undefined)?.domaines ?? [],
     [topicsData]
   );
+
+  // Grouper les chapitres par catégorie (Histoire, Géographie, Grammaire, etc.)
+  const chapitresByCategory = useMemo(() => {
+    const grouped = new Map<string, typeof chapitres>();
+    for (const chapitre of chapitres) {
+      const category = chapitre.category ?? 'Autre';
+      const existing = grouped.get(category) ?? [];
+      existing.push(chapitre);
+      grouped.set(category, existing);
+    }
+    return Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [chapitres]);
 
   // Thèmes (titles RAG) disponibles pour le chapitre sélectionné
   const availableThemes = useMemo(() => {
@@ -267,13 +281,20 @@ export default function LearningDeckNew(): ReactElement {
                     <SelectValue placeholder="Choisir un chapitre" />
                   </SelectTrigger>
                   <SelectContent>
-                    {chapitres.map((c) => (
-                      <SelectItem key={c.domaine} value={c.domaine}>
-                        {c.domaine}
-                        <span className="text-muted-foreground ml-2">
-                          ({c.themes.length} thèmes)
-                        </span>
-                      </SelectItem>
+                    {chapitresByCategory.map(([category, categoryChapitres]) => (
+                      <SelectGroup key={category}>
+                        <SelectLabel className="font-semibold text-foreground">
+                          {category}
+                        </SelectLabel>
+                        {categoryChapitres.map((c) => (
+                          <SelectItem key={c.domaine} value={c.domaine}>
+                            {c.domaine}
+                            <span className="text-muted-foreground ml-2">
+                              ({c.themes.length} thèmes)
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
                   </SelectContent>
                 </Select>
