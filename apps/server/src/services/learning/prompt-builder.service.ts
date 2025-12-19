@@ -72,7 +72,8 @@ export function buildCardGenerationPrompt(params: CardGenerationParams): BuiltPr
     subject,
     level,
     ragContext,
-    cardCount
+    cardCount,
+    domaine: params.domaine
   });
 
   return {
@@ -94,13 +95,15 @@ function buildUserPrompt(params: {
   level: string;
   ragContext: string;
   cardCount: number;
+  domaine?: string;
 }): string {
   const {
     topic,
     subject,
     level,
     ragContext,
-    cardCount
+    cardCount,
+    domaine
   } = params;
 
   const lines: string[] = [];
@@ -108,9 +111,12 @@ function buildUserPrompt(params: {
   lines.push(`## DEMANDE DE GÉNÉRATION\n`);
   lines.push(`**Matière :** ${subject}`);
   lines.push(`**Niveau :** ${level}`);
-  lines.push(`**Thème :** ${topic}`);
+  if (domaine) {
+    lines.push(`**Domaine :** ${domaine}`);
+  }
+  lines.push(`**Sous-chapitre :** ${topic}`);
   lines.push(`**Nombre de cartes :** ${cardCount}`);
-  lines.push(`\n**Objectif :** Couvrir EXHAUSTIVEMENT toutes les notions du thème pour une révision complète.`);
+  lines.push(`\n**Objectif :** Couvrir EXHAUSTIVEMENT toutes les notions du sous-chapitre "${topic}" pour une révision complète.`);
 
   // Contexte RAG (programme officiel)
   if (ragContext && ragContext.trim().length > 0) {

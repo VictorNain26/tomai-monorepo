@@ -1,107 +1,85 @@
 /**
  * Configuration par matière pour la génération de cartes
  *
- * Architecture simplifiée:
- * - Instructions courtes et directes par catégorie
- * - Adaptation cycle scolaire intégrée
- * - RAG fournit le contenu, ici on guide le format
+ * Architecture libre 2025:
+ * - Types de cartes suggérés, pas imposés
+ * - Instructions courtes donnant le contexte disciplinaire
+ * - L'IA choisit les types les plus adaptés au contenu
  */
 
-import type { SubjectCategory, SubjectConfig, CardType, EducationCycle } from '../types.js';
-import { CARD_TYPES_BY_CATEGORY } from '../types.js';
+import type { SubjectCategory, CardType, EducationCycle } from '../types.js';
 import type { EducationLevelType } from '../../../types/index.js';
 
 // ============================================================================
-// CONFIGURATION PAR MATIÈRE (instructions courtes)
+// TOUS LES TYPES DE CARTES DISPONIBLES
 // ============================================================================
 
-const SUBJECT_CONFIGS: Record<SubjectCategory, SubjectConfig> = {
-  mathematiques: {
-    category: 'mathematiques',
-    requiresKaTeX: true,
-    recommendedCardTypes: CARD_TYPES_BY_CATEGORY.mathematiques,
-    instructions: `**MATHÉMATIQUES**
-- Toutes formules en KaTeX
-- Calculs avec étapes intermédiaires
-- Exemples numériques concrets
-- Varier : calcul mental, algèbre, géométrie`
-  },
+/**
+ * Liste complète des types - l'IA peut utiliser n'importe lequel
+ */
+export const ALL_CARD_TYPES: CardType[] = [
+  'flashcard', 'qcm', 'vrai_faux',
+  'matching', 'fill_blank', 'word_order',
+  'calculation',
+  'timeline', 'matching_era', 'cause_effect',
+  'classification', 'process_order',
+  'grammar_transform'
+];
 
-  sciences: {
-    category: 'sciences',
-    requiresKaTeX: true,
-    recommendedCardTypes: CARD_TYPES_BY_CATEGORY.sciences,
-    instructions: `**SCIENCES (SVT, Physique-Chimie)**
-- Vocabulaire scientifique précis
-- Unités obligatoires (m, kg, s, J, mol)
-- Processus en étapes ordonnées
-- Classifications avec critères clairs`
-  },
+// ============================================================================
+// TYPES SUGGÉRÉS PAR CATÉGORIE (guidance, pas restriction)
+// ============================================================================
 
-  francais: {
-    category: 'francais',
-    requiresKaTeX: false,
-    recommendedCardTypes: CARD_TYPES_BY_CATEGORY.francais,
-    instructions: `**FRANÇAIS**
-- Règles grammaticales avec exemples
-- Transformations (temps, voix, nombre)
-- Textes à trous pour conjugaison/accord
-- Astuce mnémotechnique si pertinent`
-  },
-
-  langues: {
-    category: 'langues',
-    requiresKaTeX: false,
-    recommendedCardTypes: CARD_TYPES_BY_CATEGORY.langues,
-    instructions: `**LANGUES VIVANTES**
-- Vocabulaire : mot → traduction + contexte
-- Grammaire : règle + phrase exemple
-- Matching : 4-6 paires mot/traduction
-- Word order : phrase mélangée à reconstruire`
-  },
-
-  'histoire-geo': {
-    category: 'histoire-geo',
-    requiresKaTeX: false,
-    recommendedCardTypes: CARD_TYPES_BY_CATEGORY['histoire-geo'],
-    instructions: `**HISTOIRE-GÉOGRAPHIE**
-- Dates avec contexte (pas isolées)
-- Timeline : 4-6 événements à ordonner
-- Cause → effet avec explication
-- Personnages associés à leur époque`
-  },
-
-  autre: {
-    category: 'autre',
-    requiresKaTeX: false,
-    recommendedCardTypes: CARD_TYPES_BY_CATEGORY.autre,
-    instructions: `**MATIÈRE GÉNÉRALE**
-- Questions directes et claires
-- Réponses concises
-- Varier flashcard, QCM, vrai/faux`
-  }
+/**
+ * Types particulièrement adaptés à chaque matière
+ * L'IA peut toujours utiliser d'autres types si pertinent
+ */
+export const SUGGESTED_CARD_TYPES: Record<SubjectCategory, CardType[]> = {
+  mathematiques: ['flashcard', 'qcm', 'vrai_faux', 'calculation', 'fill_blank'],
+  sciences: ['flashcard', 'qcm', 'vrai_faux', 'calculation', 'classification', 'process_order', 'cause_effect'],
+  francais: ['flashcard', 'qcm', 'vrai_faux', 'fill_blank', 'grammar_transform', 'matching'],
+  langues: ['flashcard', 'qcm', 'matching', 'fill_blank', 'word_order', 'vrai_faux'],
+  'histoire-geo': ['flashcard', 'qcm', 'vrai_faux', 'timeline', 'matching_era', 'cause_effect', 'matching'],
+  autre: ALL_CARD_TYPES
 };
 
 // ============================================================================
-// MAPPING MATIÈRE → CATÉGORIE
+// INSTRUCTIONS PAR MATIÈRE (contexte disciplinaire)
 // ============================================================================
 
-const SUBJECT_MAPPING: Record<string, SubjectCategory> = {
-  // Maths
-  math: 'mathematiques', maths: 'mathematiques', mathematiques: 'mathematiques', mathématiques: 'mathematiques',
-  // Sciences
-  svt: 'sciences', sciences: 'sciences', biologie: 'sciences', physique: 'sciences', chimie: 'sciences',
-  'physique-chimie': 'sciences', physique_chimie: 'sciences',
-  // Français
-  français: 'francais', francais: 'francais', lettres: 'francais', french: 'francais',
-  // Langues
-  anglais: 'langues', espagnol: 'langues', allemand: 'langues', italien: 'langues',
-  english: 'langues', spanish: 'langues', german: 'langues', italian: 'langues',
-  lv1: 'langues', lv2: 'langues',
-  // Histoire-Géo
-  histoire: 'histoire-geo', géographie: 'histoire-geo', geographie: 'histoire-geo',
-  'histoire-géographie': 'histoire-geo', 'histoire-geo': 'histoire-geo', histoire_geo: 'histoire-geo',
-  emc: 'histoire-geo', hggsp: 'histoire-geo', geo: 'histoire-geo', history: 'histoire-geo', geography: 'histoire-geo'
+const SUBJECT_INSTRUCTIONS: Record<SubjectCategory, string> = {
+  mathematiques: `**Mathématiques**
+- Formules en KaTeX obligatoire
+- Privilégie les calculs avec étapes
+- Varie : calcul mental, algèbre, géométrie, problèmes`,
+
+  sciences: `**Sciences (SVT, Physique-Chimie)**
+- Formules en KaTeX si nécessaire
+- Unités obligatoires (m, kg, s, J, mol)
+- Processus biologiques en étapes
+- Classifications avec critères scientifiques`,
+
+  francais: `**Français**
+- Règles de grammaire avec exemples
+- Transformations (temps, voix, accords)
+- Vocabulaire en contexte
+- Figures de style avec exemples littéraires`,
+
+  langues: `**Langues vivantes**
+- Vocabulaire avec contexte d'usage
+- Grammaire par l'exemple (induction)
+- Expressions idiomatiques
+- Constructions de phrases`,
+
+  'histoire-geo': `**Histoire-Géographie-EMC**
+- Dates avec contexte historique
+- Événements avec causes et conséquences
+- Personnages associés à leur époque
+- Notions de géographie avec exemples`,
+
+  autre: `**Matière générale**
+- Adapte les types de cartes au contenu
+- Privilégie la clarté et la concision`
 };
 
 // ============================================================================
@@ -115,26 +93,48 @@ const LEVEL_TO_CYCLE: Record<EducationLevelType, EducationCycle> = {
   seconde: 'lycee', premiere: 'lycee', terminale: 'lycee'
 };
 
-const CYCLE_INSTRUCTIONS: Record<EducationCycle, string> = {
-  cycle2: `## CYCLE 2 (CP-CE2, 6-8 ans)
-- Phrases courtes (max 8 mots)
-- Vocabulaire simple du quotidien
-- Éviter le jargon technique`,
+const CYCLE_GUIDANCE: Record<EducationCycle, string> = {
+  cycle2: `**Cycle 2 (CP-CE2, 6-8 ans)**
+- Langage simple et concret
+- Exemples du quotidien
+- Phrases courtes`,
 
-  cycle3: `## CYCLE 3 (CM1-6ème, 9-11 ans)
-- Phrases 15-20 mots max
-- Vocabulaire technique introduit progressivement
-- Début d'abstraction possible`,
+  cycle3: `**Cycle 3 (CM1-6ème, 9-11 ans)**
+- Introduction progressive du vocabulaire technique
+- Début d'abstraction
+- Exemples variés`,
 
-  cycle4: `## CYCLE 4 (5ème-3ème, 12-14 ans)
+  cycle4: `**Cycle 4 (5ème-3ème, 12-14 ans)**
 - Vocabulaire scolaire standard
 - Termes techniques du programme
 - Raisonnement et argumentation`,
 
-  lycee: `## LYCÉE (2nde-Terminale, 15-18 ans)
+  lycee: `**Lycée (2nde-Terminale, 15-18 ans)**
 - Vocabulaire académique complet
 - Précision scientifique
 - Niveau baccalauréat`
+};
+
+// ============================================================================
+// MAPPING MATIÈRE → CATÉGORIE
+// ============================================================================
+
+const SUBJECT_MAPPING: Record<string, SubjectCategory> = {
+  // Maths
+  math: 'mathematiques', maths: 'mathematiques', mathematiques: 'mathematiques', mathématiques: 'mathematiques',
+  // Sciences
+  svt: 'sciences', sciences: 'sciences', biologie: 'sciences', physique: 'sciences', chimie: 'sciences',
+  'physique-chimie': 'sciences', physique_chimie: 'sciences', technologie: 'sciences',
+  // Français
+  français: 'francais', francais: 'francais', lettres: 'francais', french: 'francais', litterature: 'francais',
+  // Langues
+  anglais: 'langues', espagnol: 'langues', allemand: 'langues', italien: 'langues',
+  english: 'langues', spanish: 'langues', german: 'langues', italian: 'langues',
+  lv1: 'langues', lv2: 'langues', langues: 'langues',
+  // Histoire-Géo
+  histoire: 'histoire-geo', géographie: 'histoire-geo', geographie: 'histoire-geo',
+  'histoire-géographie': 'histoire-geo', 'histoire-geo': 'histoire-geo', histoire_geo: 'histoire-geo',
+  emc: 'histoire-geo', hggsp: 'histoire-geo', geo: 'histoire-geo', history: 'histoire-geo', geography: 'histoire-geo'
 };
 
 // ============================================================================
@@ -146,20 +146,21 @@ export function getSubjectCategory(subject: string): SubjectCategory {
   return SUBJECT_MAPPING[normalized] ?? 'autre';
 }
 
-export function getSubjectConfig(subject: string): SubjectConfig {
-  return SUBJECT_CONFIGS[getSubjectCategory(subject)];
-}
-
 export function subjectRequiresKaTeX(subject: string): boolean {
-  return getSubjectConfig(subject).requiresKaTeX;
+  const category = getSubjectCategory(subject);
+  return category === 'mathematiques' || category === 'sciences';
 }
 
 export function getSubjectInstructions(subject: string): string {
-  return getSubjectConfig(subject).instructions;
+  return SUBJECT_INSTRUCTIONS[getSubjectCategory(subject)];
 }
 
 export function getRecommendedCardTypes(subject: string): CardType[] {
-  return getSubjectConfig(subject).recommendedCardTypes;
+  const category = getSubjectCategory(subject);
+  // Retourne tous les types avec les suggérés en premier
+  const suggested = SUGGESTED_CARD_TYPES[category];
+  const others = ALL_CARD_TYPES.filter(t => !suggested.includes(t));
+  return [...suggested, ...others];
 }
 
 export function getEducationCycle(level: EducationLevelType): EducationCycle {
@@ -167,5 +168,24 @@ export function getEducationCycle(level: EducationLevelType): EducationCycle {
 }
 
 export function getCycleAdaptationInstructions(cycle: EducationCycle): string {
-  return CYCLE_INSTRUCTIONS[cycle];
+  return CYCLE_GUIDANCE[cycle];
+}
+
+// Compat export
+export type { SubjectCategory };
+export interface SubjectConfig {
+  category: SubjectCategory;
+  requiresKaTeX: boolean;
+  instructions: string;
+  recommendedCardTypes: CardType[];
+}
+
+export function getSubjectConfig(subject: string): SubjectConfig {
+  const category = getSubjectCategory(subject);
+  return {
+    category,
+    requiresKaTeX: subjectRequiresKaTeX(subject),
+    instructions: SUBJECT_INSTRUCTIONS[category],
+    recommendedCardTypes: getRecommendedCardTypes(subject)
+  };
 }

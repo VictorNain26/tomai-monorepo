@@ -324,11 +324,17 @@ export interface ICardResponse {
  * Generate deck request (AI generation)
  * Note: schoolLevel n'est PAS envoyé - le backend utilise automatiquement
  * le niveau du profil utilisateur pour garantir l'alignement programme
+ *
+ * Deux modes de génération:
+ * 1. Domaine seul → génère sur tout le domaine (ex: toute la Conjugaison)
+ * 2. Domaine + topic → génère sur le sous-chapitre spécifique (ex: Conditionnel)
  */
 export interface IGenerateDeckRequest {
   subject: string;
-  topic: string;
-  cardCount?: number;
+  /** Domaine sélectionné (obligatoire) */
+  domaine: string;
+  /** Sous-chapitre optionnel - si absent, génère sur tout le domaine */
+  topic?: string;
 }
 
 /**

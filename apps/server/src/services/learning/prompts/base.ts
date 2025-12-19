@@ -1,166 +1,131 @@
 /**
- * Prompts de base pour la génération de cartes - Architecture PTCF
+ * Prompts de base pour la génération de cartes - Architecture libre 2025
  *
- * PTCF = Persona · Task · Context · Format (Gemini 2025 best practices)
- *
- * Principes appliqués:
- * - Few-shot examples (2-3 exemples complets)
- * - Instructions directes et concises
- * - Format JSON via structure claire
- * - RAG comme source de vérité pour le contenu
+ * Principes:
+ * - L'IA est libre de choisir les types de cartes adaptés au contenu
+ * - Pas de limites artificielles de caractères
+ * - Guidance pédagogique (Bloom, distracteurs) sans contraintes rigides
+ * - Few-shot examples pour le format JSON uniquement
  */
 
 import type { CardType } from '../types.js';
 
 // ============================================================================
-// PERSONA
+// PERSONA - Identité pédagogique
 // ============================================================================
 
-const PERSONA = `Tu es un expert pédagogue français spécialisé dans la création de cartes de révision.
-Tu maîtrises les programmes officiels de l'Éducation nationale (Éduscol).
-Tu crées des exercices variés, concis et adaptés au niveau de l'élève.`;
+const PERSONA = `Tu es un expert pédagogue français créant des cartes de révision.
+Tu maîtrises les programmes Éduscol et les sciences cognitives de l'apprentissage.
+Tu adaptes naturellement le contenu au niveau de l'élève.`;
 
 // ============================================================================
-// TASK CORE
+// PRINCIPES PÉDAGOGIQUES (guidance, pas contraintes)
 // ============================================================================
 
-const TASK_CORE = `Génère un deck de cartes de révision qui couvre EXHAUSTIVEMENT le thème demandé.
+const PEDAGOGICAL_PRINCIPLES = `## PRINCIPES PÉDAGOGIQUES
 
-**RÈGLES CRITIQUES :**
-- Chaque carte = UNE SEULE notion/compétence distincte
-- Utilise TOUS les types de cartes disponibles (pas que des flashcards)
-- Varie les angles : définition, application, contre-exemple, comparaison, cause/effet
-- Varie les exemples : ne JAMAIS réutiliser le même exemple
-- Ne PAS reprendre les exemples du contexte RAG, crée les tiens
+**Taxonomie de Bloom** - Varie les niveaux cognitifs :
+- Mémoriser : flashcard, matching (définitions, vocabulaire)
+- Comprendre : vrai_faux, fill_blank (reformulation, identification)
+- Appliquer : calculation, word_order (mise en pratique)
+- Analyser : cause_effect, classification (décomposition, relations)
 
-Le deck doit permettre de maîtriser l'intégralité du sujet.`;
+**Active Recall** - Chaque carte doit forcer une récupération active en mémoire.
 
-// ============================================================================
-// KATEX (matières scientifiques)
-// ============================================================================
+**Interleaving** - Mélange les types et les angles d'approche dans le deck.
 
-export const KATEX_INSTRUCTIONS = `
-## KaTeX (OBLIGATOIRE pour formules)
-- Inline: $formule$ — Display: $$formule$$
-- Dans JSON: double backslash (\\\\pi → \\pi)
-- Syntaxe: \\frac{a}{b}, \\sqrt{x}, x^2, x_1, \\times, \\leq, \\geq, \\pi, \\sum_{i=1}^{n}, \\int_a^b`;
+**Spacing Effect** - Chaque carte = UNE notion distincte pour permettre la répétition espacée.`;
 
 // ============================================================================
-// FORMAT JSON - Définitions compactes par type
+// GUIDANCE DISTRACTEURS (QCM, fill_blank, cause_effect)
+// ============================================================================
+
+const DISTRACTOR_GUIDANCE = `## DISTRACTEURS (pour QCM, fill_blank, cause_effect)
+
+Crée des distracteurs pédagogiquement utiles :
+- **Erreur de calcul courante** : 2+3×4 → proposer 20 (oubli priorité)
+- **Confusion concept proche** : aire vs périmètre, homonymes
+- **Erreur de raisonnement** : corrélation/causalité, inversion cause/effet
+- **Piège typique du niveau** : accord du participe, signe négatif
+
+Les distracteurs doivent être plausibles mais identifiables par un élève qui maîtrise.`;
+
+// ============================================================================
+// FORMAT JSON - Structures par type (exemples, pas contraintes)
 // ============================================================================
 
 const CARD_FORMATS: Record<CardType, string> = {
-  flashcard: `{"cardType":"flashcard","content":{"front":"Question","back":"Réponse"}}`,
-
+  flashcard: `{"cardType":"flashcard","content":{"front":"Question/concept","back":"Réponse/définition"}}`,
   qcm: `{"cardType":"qcm","content":{"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"..."}}`,
-
-  vrai_faux: `{"cardType":"vrai_faux","content":{"statement":"Affirmation","isTrue":true,"explanation":"..."}}`,
-
-  matching: `{"cardType":"matching","content":{"instruction":"Associe...","pairs":[{"left":"mot","right":"traduction"},...]}}`,
-
-  fill_blank: `{"cardType":"fill_blank","content":{"sentence":"She ___ to school.","options":["go","goes","going","went"],"correctIndex":1,"grammaticalPoint":"Present simple","explanation":"..."}}`,
-
-  word_order: `{"cardType":"word_order","content":{"instruction":"Remets dans l'ordre","words":["I","went","yesterday"],"correctSentence":"I went yesterday","translation":"..."}}`,
-
-  calculation: `{"cardType":"calculation","content":{"problem":"$2x+5=13$","steps":["$2x=8$","$x=4$"],"answer":"$x=4$","hint":"..."}}`,
-
-  timeline: `{"cardType":"timeline","content":{"instruction":"Ordre chronologique","events":[{"event":"...","date":"...","hint":"..."}],"correctOrder":[0,2,1]}}`,
-
-  matching_era: `{"cardType":"matching_era","content":{"instruction":"Associe à l'époque","items":["Vercingétorix","Louis XIV"],"eras":["Antiquité","Temps modernes"],"correctPairs":[[0,0],[1,1]]}}`,
-
-  cause_effect: `{"cardType":"cause_effect","content":{"context":"...","cause":"...","possibleEffects":["A","B","C","D"],"correctIndex":0,"explanation":"..."}}`,
-
-  classification: `{"cardType":"classification","content":{"instruction":"Classe...","items":["A","B","C"],"categories":["Cat1","Cat2"],"correctClassification":{"Cat1":[0],"Cat2":[1,2]},"explanation":"..."}}`,
-
-  process_order: `{"cardType":"process_order","content":{"instruction":"Ordre des étapes","processName":"...","steps":["Étape A","Étape B"],"correctOrder":[1,0],"explanation":"..."}}`,
-
-  grammar_transform: `{"cardType":"grammar_transform","content":{"instruction":"Mets au passé","originalSentence":"Je mange.","transformationType":"tense","correctAnswer":"J'ai mangé.","acceptableVariants":[],"explanation":"..."}}`
+  vrai_faux: `{"cardType":"vrai_faux","content":{"statement":"Affirmation","isTrue":true|false,"explanation":"..."}}`,
+  matching: `{"cardType":"matching","content":{"instruction":"Associe...","pairs":[{"left":"...","right":"..."}]}}`,
+  fill_blank: `{"cardType":"fill_blank","content":{"sentence":"Phrase avec ___","options":[...],"correctIndex":0,"explanation":"..."}}`,
+  word_order: `{"cardType":"word_order","content":{"instruction":"Remets dans l'ordre","words":[...],"correctSentence":"...","translation":"..."}}`,
+  calculation: `{"cardType":"calculation","content":{"problem":"Énoncé","steps":["Étape 1","Étape 2"],"answer":"Résultat","hint":"..."}}`,
+  timeline: `{"cardType":"timeline","content":{"instruction":"Ordre chronologique","events":[{"event":"...","date":"..."}],"correctOrder":[0,1,2]}}`,
+  matching_era: `{"cardType":"matching_era","content":{"instruction":"Associe à l'époque","items":[...],"eras":[...],"correctPairs":[[0,0],[1,1]]}}`,
+  cause_effect: `{"cardType":"cause_effect","content":{"context":"...","cause":"...","possibleEffects":[...],"correctIndex":0,"explanation":"..."}}`,
+  classification: `{"cardType":"classification","content":{"instruction":"Classe...","items":[...],"categories":[...],"correctClassification":{"cat":[0,1]}}}`,
+  process_order: `{"cardType":"process_order","content":{"instruction":"Ordre des étapes","processName":"...","steps":[...],"correctOrder":[...]}}`,
+  grammar_transform: `{"cardType":"grammar_transform","content":{"instruction":"Transforme...","originalSentence":"...","transformationType":"tense","correctAnswer":"...","explanation":"..."}}`
 };
 
 // ============================================================================
-// FEW-SHOT EXAMPLES (complets)
+// FEW-SHOT EXAMPLES - Format uniquement
 // ============================================================================
 
-const FEW_SHOT_MATH = `[
-  {"cardType":"flashcard","content":{"front":"Qu'est-ce qu'une fraction ?","back":"Un nombre qui représente une partie d'un tout : $\\\\frac{numérateur}{dénominateur}$"}},
-  {"cardType":"qcm","content":{"question":"$\\\\frac{3}{4} + \\\\frac{1}{4} = ?$","options":["$\\\\frac{4}{8}$","$1$","$\\\\frac{4}{4}$","$\\\\frac{3}{4}$"],"correctIndex":1,"explanation":"Même dénominateur : on additionne les numérateurs. $\\\\frac{3+1}{4} = \\\\frac{4}{4} = 1$"}},
-  {"cardType":"calculation","content":{"problem":"Simplifie $\\\\frac{12}{18}$","steps":["PGCD(12,18) = 6","$\\\\frac{12÷6}{18÷6}$"],"answer":"$\\\\frac{2}{3}$","hint":"Trouve le PGCD"}}
-]`;
+const FEW_SHOT_EXAMPLES = `## EXEMPLES DE FORMAT
 
-const FEW_SHOT_HISTOIRE = `[
-  {"cardType":"flashcard","content":{"front":"Quand a eu lieu la prise de la Bastille ?","back":"14 juillet 1789"}},
-  {"cardType":"timeline","content":{"instruction":"Remets dans l'ordre chronologique","events":[{"event":"Prise de la Bastille","date":"14 juillet 1789"},{"event":"Déclaration des droits de l'homme","date":"26 août 1789"},{"event":"Fuite à Varennes","date":"21 juin 1791"}],"correctOrder":[0,1,2]}},
+**Maths/Sciences (avec KaTeX):**
+[
+  {"cardType":"flashcard","content":{"front":"Formule de l'aire d'un cercle","back":"$A = \\\\pi r^2$ où r est le rayon"}},
+  {"cardType":"qcm","content":{"question":"$\\\\frac{3}{4} + \\\\frac{1}{4} = ?$","options":["$\\\\frac{4}{8}$","$1$","$\\\\frac{2}{4}$","$\\\\frac{3}{4}$"],"correctIndex":1,"explanation":"Même dénominateur : $\\\\frac{3+1}{4} = \\\\frac{4}{4} = 1$"}},
+  {"cardType":"calculation","content":{"problem":"Résous $2x + 5 = 13$","steps":["$2x = 13 - 5$","$2x = 8$","$x = 4$"],"answer":"$x = 4$"}}
+]
+
+**Histoire-Géo:**
+[
+  {"cardType":"timeline","content":{"instruction":"Remets ces événements dans l'ordre chronologique","events":[{"event":"Prise de la Bastille","date":"14 juillet 1789"},{"event":"Sacre de Napoléon","date":"2 décembre 1804"},{"event":"Révolution de 1848","date":"février 1848"}],"correctOrder":[0,1,2]}},
   {"cardType":"cause_effect","content":{"context":"Révolution française","cause":"Crise financière de la monarchie","possibleEffects":["Convocation des États généraux","Construction de Versailles","Signature du traité de Verdun","Guerre de Cent Ans"],"correctIndex":0,"explanation":"Louis XVI convoque les États généraux pour lever de nouveaux impôts"}}
-]`;
+]
 
-const FEW_SHOT_LANGUES = `[
-  {"cardType":"flashcard","content":{"front":"house","back":"maison"}},
-  {"cardType":"fill_blank","content":{"sentence":"She ___ to school every day.","options":["go","goes","going","went"],"correctIndex":1,"grammaticalPoint":"Present simple - 3rd person","explanation":"Avec 'she', on ajoute -s/-es au verbe"}},
-  {"cardType":"matching","content":{"instruction":"Associe chaque mot à sa traduction","pairs":[{"left":"book","right":"livre"},{"left":"car","right":"voiture"},{"left":"tree","right":"arbre"}]}}
+**Langues:**
+[
+  {"cardType":"matching","content":{"instruction":"Associe chaque mot à sa traduction","pairs":[{"left":"book","right":"livre"},{"left":"house","right":"maison"},{"left":"tree","right":"arbre"}]}},
+  {"cardType":"fill_blank","content":{"sentence":"She ___ to school every day.","options":["go","goes","going","went"],"correctIndex":1,"grammaticalPoint":"Present simple - 3rd person singular","explanation":"Avec 'she' (3ème personne), on ajoute -s au verbe"}}
 ]`;
 
 // ============================================================================
-// RÈGLES DE FORMAT
+// RÈGLES DE FORMAT JSON
 // ============================================================================
 
-const FORMAT_RULES = `
-## FORMAT DE SORTIE
+const JSON_FORMAT_RULES = `## FORMAT DE SORTIE
 
 Retourne UNIQUEMENT un tableau JSON valide :
-- Pas de texte avant/après
-- Pas de \`\`\`json
-- Guillemets doubles
+- Pas de texte avant/après le JSON
+- Pas de blocs markdown (\`\`\`json)
+- Guillemets doubles pour les strings
 - Nombres sans guillemets (correctIndex: 0, pas "0")
 - Booléens sans guillemets (isTrue: true, pas "true")
+- KaTeX : double backslash dans JSON (\\\\pi pour afficher \\pi)
 
-## LIMITES DE CARACTÈRES
-- Front/back flashcard : 150 max
-- Question QCM : 150 max
-- Options : 60 max chacune
-- Explanations : 200 max
-- Instructions : 100 max
-
-## INTERDIT
-- Tableaux markdown (mal rendus sur mobile)
-- Schémas ASCII
-- Listes longues (max 3 items)
-- "Méthodologie en X phases"
-- Réponses type "cours complet"
-- Répéter la question dans la réponse
-- Périphrases (aller droit au but)`;
+**Adapte la longueur au contenu** - une explication complexe peut être plus longue qu'une définition simple.`;
 
 // ============================================================================
-// FONCTIONS EXPORTÉES
+// FONCTION PRINCIPALE
 // ============================================================================
 
 /**
- * Retourne les formats JSON pour les types de cartes demandés
+ * Retourne la liste des formats disponibles
  */
-function getCardFormatInstructions(cardTypes: CardType[]): string {
+function getAvailableFormats(cardTypes: CardType[]): string {
   const formats = cardTypes.map(type => `- ${type}: ${CARD_FORMATS[type]}`);
-  return `## TYPES DE CARTES DISPONIBLES\n\n${formats.join('\n')}`;
+  return `## TYPES DE CARTES DISPONIBLES\n\nChoisis les types les plus adaptés au contenu :\n${formats.join('\n')}`;
 }
 
 /**
- * Sélectionne l'exemple few-shot approprié selon la matière
- */
-function getFewShotExample(cardTypes: CardType[]): string {
-  // Détecter la catégorie par les types de cartes présents
-  if (cardTypes.includes('calculation')) {
-    return `## EXEMPLE DE SORTIE (maths)\n\n${FEW_SHOT_MATH}`;
-  }
-  if (cardTypes.includes('timeline') || cardTypes.includes('matching_era') || cardTypes.includes('cause_effect')) {
-    return `## EXEMPLE DE SORTIE (histoire)\n\n${FEW_SHOT_HISTOIRE}`;
-  }
-  if (cardTypes.includes('matching') || cardTypes.includes('word_order')) {
-    return `## EXEMPLE DE SORTIE (langues)\n\n${FEW_SHOT_LANGUES}`;
-  }
-  // Défaut : maths (le plus complet)
-  return `## EXEMPLE DE SORTIE\n\n${FEW_SHOT_MATH}`;
-}
-
-/**
- * Construit le prompt de base complet (structure PTCF)
+ * Construit le prompt de base complet
+ * Architecture libre : guidance sans contraintes rigides
  */
 export function getBasePrompt(options: {
   cardTypes: CardType[];
@@ -168,33 +133,44 @@ export function getBasePrompt(options: {
 }): string {
   const parts: string[] = [];
 
-  // P - Persona
+  // Persona
   parts.push(PERSONA);
 
-  // T - Task
-  parts.push(TASK_CORE);
+  // Principes pédagogiques (guidance)
+  parts.push(PEDAGOGICAL_PRINCIPLES);
 
-  // C - Context (formats disponibles)
-  parts.push(getCardFormatInstructions(options.cardTypes));
+  // Guidance distracteurs
+  parts.push(DISTRACTOR_GUIDANCE);
+
+  // Types disponibles
+  parts.push(getAvailableFormats(options.cardTypes));
 
   // KaTeX si nécessaire
   if (options.requiresKaTeX) {
     parts.push(KATEX_INSTRUCTIONS);
   }
 
-  // Few-shot example
-  parts.push(getFewShotExample(options.cardTypes));
+  // Exemples few-shot
+  parts.push(FEW_SHOT_EXAMPLES);
 
-  // F - Format
-  parts.push(FORMAT_RULES);
+  // Format JSON
+  parts.push(JSON_FORMAT_RULES);
 
   return parts.join('\n\n');
 }
 
-// Exports pour compatibilité (utilisés dans les tests ou ailleurs)
-export { getCardFormatInstructions };
+// ============================================================================
+// KATEX INSTRUCTIONS
+// ============================================================================
 
-// Règles exportées pour les tests
-export const CONCISION_RULES = FORMAT_RULES;
-export const EXHAUSTIVE_COVERAGE_RULES = TASK_CORE;
-export const JSON_SAFETY_RULES = FORMAT_RULES;
+export const KATEX_INSTRUCTIONS = `## KaTeX (formules mathématiques)
+
+- Inline: $formule$ — Display: $$formule$$
+- Dans JSON: double backslash (\\\\pi → \\pi)
+- Syntaxe courante: \\frac{a}{b}, \\sqrt{x}, x^2, x_1, \\times, \\leq, \\geq, \\pi, \\sum, \\int`;
+
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+export { getAvailableFormats as getCardFormatInstructions };

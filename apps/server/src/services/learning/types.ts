@@ -269,18 +269,6 @@ export type SubjectCategory =
   | 'histoire-geo'       // Dates, événements, cartes mentales
   | 'autre';             // Générique (arts, musique, etc.)
 
-/**
- * Types de cartes recommandés par catégorie de matière
- */
-export const CARD_TYPES_BY_CATEGORY: Record<SubjectCategory, CardType[]> = {
-  mathematiques: ['flashcard', 'qcm', 'vrai_faux', 'calculation'],
-  sciences: ['flashcard', 'qcm', 'vrai_faux', 'calculation', 'classification', 'process_order'],
-  francais: ['flashcard', 'qcm', 'vrai_faux', 'fill_blank', 'grammar_transform'],
-  langues: ['flashcard', 'qcm', 'matching', 'fill_blank', 'word_order'],
-  'histoire-geo': ['flashcard', 'qcm', 'vrai_faux', 'timeline', 'matching_era', 'cause_effect'],
-  autre: ['flashcard', 'qcm', 'vrai_faux']
-};
-
 // ============================================
 // CYCLE SCOLAIRE
 // ============================================
@@ -312,7 +300,7 @@ export interface SubjectConfig {
  * Paramètres pour la génération de cartes
  */
 export interface CardGenerationParams {
-  /** Thème/chapitre du programme */
+  /** Thème/sous-chapitre du programme (sousdomaine) */
   topic: string;
   /** Matière (mathematiques, francais, etc.) */
   subject: string;
@@ -322,6 +310,8 @@ export interface CardGenerationParams {
   ragContext: string;
   /** Nombre de cartes à générer */
   cardCount: number;
+  /** Domaine parent optionnel pour contexte enrichi */
+  domaine?: string;
 }
 
 /**

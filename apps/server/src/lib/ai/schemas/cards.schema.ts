@@ -29,10 +29,10 @@ export const FlashcardContentSchema = z.object({
 export const QCMContentSchema = z.object({
   question: z.string().min(1).describe('La question posée'),
   options: z.array(z.string().min(1))
-    .length(4)
-    .describe('Exactement 4 options de réponse'),
-  correctIndex: z.number().int().min(0).max(3)
-    .describe('Index de la bonne réponse (0-3)'),
+    .min(2).max(6)
+    .describe('Options de réponse (2-6)'),
+  correctIndex: z.number().int().min(0)
+    .describe('Index de la bonne réponse'),
   explanation: z.string().min(1)
     .describe('Explication de la bonne réponse')
 });
@@ -70,10 +70,10 @@ export const FillBlankContentSchema = z.object({
   sentence: z.string().min(1)
     .describe('Phrase avec ___ pour le trou à compléter'),
   options: z.array(z.string().min(1))
-    .length(4)
-    .describe('4 options possibles'),
-  correctIndex: z.number().int().min(0).max(3)
-    .describe('Index de la bonne réponse (0-3)'),
+    .min(2).max(6)
+    .describe('Options possibles (2-6)'),
+  correctIndex: z.number().int().min(0)
+    .describe('Index de la bonne réponse'),
   grammaticalPoint: z.string().optional()
     .describe('Point de grammaire testé'),
   explanation: z.string().min(1)
@@ -159,10 +159,10 @@ export const CauseEffectContentSchema = z.object({
   cause: z.string().min(1)
     .describe('La cause à analyser'),
   possibleEffects: z.array(z.string().min(1))
-    .length(4)
-    .describe('4 effets possibles'),
-  correctIndex: z.number().int().min(0).max(3)
-    .describe('Index du bon effet (0-3)'),
+    .min(2).max(6)
+    .describe('Effets possibles (2-6)'),
+  correctIndex: z.number().int().min(0)
+    .describe('Index du bon effet'),
   explanation: z.string().min(1)
     .describe('Explication du lien cause-effet')
 });
@@ -317,11 +317,11 @@ export const ParsedCardSchema = z.discriminatedUnion('cardType', [
 
 /**
  * Schema pour un tableau de cartes (output de la génération)
+ * Pas de limite max - l'utilisateur spécifie le nombre
  */
 export const CardGenerationOutputSchema = z.array(ParsedCardSchema)
   .min(1)
-  .max(10)
-  .describe('Tableau de cartes générées (1-10 cartes)');
+  .describe('Tableau de cartes générées');
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPE EXPORTS
