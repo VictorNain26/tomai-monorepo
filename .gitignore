@@ -36,3 +36,9 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Local documentation (apps/server/CLAUDE.md L220-226)
+apps/server/docs/
