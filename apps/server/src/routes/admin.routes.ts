@@ -12,6 +12,7 @@ import { logger } from '../lib/observability';
  * Middleware admin: vérifie que l'utilisateur a le rôle admin
  * Utilise Better Auth session validation (JWT avec rôle dans claims)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function requireAdmin({ headers, set }: any) {
   const session = await auth.api.getSession({ headers });
 
@@ -43,8 +44,8 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
       const result = await adminService.listUsers(query);
 
       // React Admin ra-data-simple-rest attend un array + header Content-Range
-      const page = query.page || 1;
-      const perPage = query.perPage || 25;
+      const page = query.page ?? 1;
+      const perPage = query.perPage ?? 25;
       const start = (page - 1) * perPage;
       const end = Math.min(start + result.data.length - 1, result.total - 1);
 
@@ -87,7 +88,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
     async ({ body }) => {
       logger.info('Admin: Create user', { email: body.email, role: body.role, operation: 'admin:create-user' });
 
-      const newUser = await adminService.createUser(body as any); // Type coercion pour éviter union verbose
+      const newUser = await adminService.createUser(body as adminService.CreateUserData);
 
       return newUser;
     },
@@ -111,7 +112,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
     async ({ params, body }) => {
       logger.info('Admin: Update user', { userId: params.id, operation: 'admin:update-user' });
 
-      const updated = await adminService.updateUser(params.id, body as any); // Type coercion pour éviter union verbose
+      const updated = await adminService.updateUser(params.id, body as adminService.UpdateUserData);
 
       return updated;
     },

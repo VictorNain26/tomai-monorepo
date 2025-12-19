@@ -50,8 +50,8 @@ export interface UpdateUserData {
  * Liste tous les utilisateurs avec pagination et filtres
  */
 export async function listUsers(filters: ListUsersFilters): Promise<ListUsersResponse> {
-  const page = filters.page || 1;
-  const perPage = filters.perPage || 25;
+  const page = filters.page ?? 1;
+  const perPage = filters.perPage ?? 25;
   const offset = (page - 1) * perPage;
 
   // Construction des conditions WHERE
@@ -134,7 +134,7 @@ export async function createUser(data: CreateUserData): Promise<User> {
       firstName: data.firstName,
       lastName: data.lastName,
       role: data.role, // Notre rôle custom: 'student' | 'parent' | 'admin'
-      schoolLevel: data.schoolLevel as any,
+      schoolLevel: data.schoolLevel, // Drizzle accepte undefined pour champs optionnels
       dateOfBirth: data.dateOfBirth,
       parentId: data.parentId,
       isActive: true,
