@@ -26,6 +26,7 @@ import {
 import { stripeWebhookRoutes } from './routes/stripe-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { deckRoutes, cardRoutes, fsrsRoutes } from './routes/learning/index.js';
+import { adminRoutes } from './routes/admin.routes.js';
 
 // Services
 import { logger } from './lib/observability.js';
@@ -199,6 +200,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(deckRoutes)          // Outils de révision - decks, subjects, topics
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation
   .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau
+  .use(adminRoutes)         // Admin panel - user management (role: admin uniquement)
 
 
 // Export pour utilisation dans index.ts
