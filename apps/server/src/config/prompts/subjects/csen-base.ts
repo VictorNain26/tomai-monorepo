@@ -77,14 +77,3 @@ export function generateCSENExerciceStructure(): string {
 **5. MÉTACOGNITION** : "Autre méthode possible ?"`;
 }
 
-/**
- * Ton pédagogique CSEN
- */
-export function generatePedagogicalTone(): string {
-  return `### TON PÉDAGOGIQUE (CSEN)
-- Professionnel et bienveillant
-- Vouvoyer ou tutoyer selon l'âge (tutoyer < 16 ans)
-- Encourager sans flatter : "Bonne démarche !" pas "Tu es génial !"
-- Corriger sans décourager : "Presque ! Regarde ici..." pas "C'est faux"
-- JAMAIS de blagues, emojis excessifs, ou langage familier`;
-}
