@@ -292,7 +292,15 @@ class QdrantService {
   }
 
   /**
-   * Récupère les topics (domaines/thèmes) pour une matière/niveau
+   * Récupère les chapitres (sousdomaine) et sous-chapitres (titres) pour une matière/niveau
+   *
+   * Hiérarchie RAG:
+   * - matiere: histoire_geo, francais, etc.
+   * - domaine: catégorie large (Histoire, Géographie, Grammaire) - NON utilisé pour la sélection
+   * - sousdomaine: CHAPITRE réel ("Chrétientés et Islam", "La phrase", "Indicatif")
+   * - title: SOUS-CHAPITRE individuel ("L'Empire byzantin", "Types de phrases")
+   *
+   * Retourne: chapitres (sousdomaine) avec leurs sous-chapitres (titles)
    */
   async getTopics(
     matiere: string,
@@ -308,31 +316,36 @@ class QdrantService {
           { key: 'matiere', match: { value: matiere } },
         ],
       },
-      limit: 500,
-      with_payload: ['domaine', 'sousdomaine'],
+      limit: 1000, // Augmenté pour capturer tous les contenus
+      with_payload: ['sousdomaine', 'title'],
     });
 
-    // Grouper par domaine
-    const domaineMap = new Map<string, Set<string>>();
+    // Grouper par sousdomaine (= vrai chapitre) → titles (= sous-chapitres)
+    const chapitreMap = new Map<string, Set<string>>();
 
     for (const point of points.points) {
       const payload = point.payload as Record<string, unknown>;
-      const domaine = String(payload['domaine'] ?? 'Autre');
-      const sousdomaine = payload['sousdomaine'] ? String(payload['sousdomaine']) : null;
+      // sousdomaine = chapitre réel (ex: "Chrétientés et Islam")
+      const chapitre = payload['sousdomaine'] ? String(payload['sousdomaine']) : null;
+      // title = sous-chapitre individuel (ex: "L'Empire byzantin")
+      const sousChapitre = payload['title'] ? String(payload['title']) : null;
 
-      if (!domaineMap.has(domaine)) {
-        domaineMap.set(domaine, new Set());
+      if (!chapitre) continue; // Skip si pas de chapitre défini
+
+      if (!chapitreMap.has(chapitre)) {
+        chapitreMap.set(chapitre, new Set());
       }
 
-      if (sousdomaine) {
-        domaineMap.get(domaine)!.add(sousdomaine);
+      if (sousChapitre) {
+        chapitreMap.get(chapitre)!.add(sousChapitre);
       }
     }
 
-    // Convertir en format attendu
-    const result = Array.from(domaineMap.entries()).map(([domaine, themes]) => ({
-      domaine,
-      themes: Array.from(themes).sort(),
+    // Convertir en format attendu (domaine = chapitre, themes = sous-chapitres)
+    // On garde les noms "domaine" et "themes" pour compatibilité avec le frontend existant
+    const result = Array.from(chapitreMap.entries()).map(([chapitre, souschapitres]) => ({
+      domaine: chapitre, // Le "domaine" affiché = sousdomaine RAG = vrai chapitre
+      themes: Array.from(souschapitres).sort(),
     }));
 
     return result.sort((a, b) => a.domaine.localeCompare(b.domaine));

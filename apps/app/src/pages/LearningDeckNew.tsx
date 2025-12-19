@@ -1,8 +1,13 @@
 /**
  * LearningDeckNew - Génération IA de deck
  *
- * Interface en 3 étapes : matière → domaine → (optionnel) sous-chapitre
- * Permet de réviser soit un domaine complet, soit un sous-chapitre spécifique
+ * Interface en 3 étapes : matière → chapitre → (optionnel) thème
+ * Permet de réviser soit un chapitre complet, soit un thème spécifique
+ *
+ * Hiérarchie RAG:
+ * - matiere: histoire_geo, francais, mathematiques...
+ * - sousdomaine → "Chapitre" affiché (ex: "Chrétientés et Islam", "La phrase")
+ * - title → "Thème" affiché (ex: "L'Empire byzantin", "Types de phrases")
  */
 
 import { type ReactElement, useState, useMemo } from 'react';
@@ -29,8 +34,8 @@ import {
 import type { IGenerateDeckRequest, EducationLevelType } from '@/types';
 import type { ApiError } from '@/lib/api-client';
 
-/** Valeur spéciale pour indiquer "tout le domaine" */
-const FULL_DOMAINE_VALUE = '__FULL_DOMAINE__';
+/** Valeur spéciale pour indiquer "tout le chapitre" */
+const FULL_CHAPITRE_VALUE = '__FULL_CHAPITRE__';
 
 export default function LearningDeckNew(): ReactElement {
   const navigate = useNavigate();
@@ -38,8 +43,8 @@ export default function LearningDeckNew(): ReactElement {
   const { generateDeck } = useGenerateDeck();
 
   const [subject, setSubject] = useState('');
-  const [selectedDomaine, setSelectedDomaine] = useState('');
-  const [selectedTopic, setSelectedTopic] = useState('');
+  const [selectedChapitre, setSelectedChapitre] = useState('');
+  const [selectedTheme, setSelectedTheme] = useState('');
 
   const schoolLevel = (user?.schoolLevel ?? 'sixieme') as EducationLevelType;
   const selectedLv2 = user?.selectedLv2 ?? null;
@@ -64,39 +69,39 @@ export default function LearningDeckNew(): ReactElement {
 
   const subjects = subjectsData?.subjects ?? [];
 
-  // Memoize domaines pour éviter re-renders inutiles
-  const domaines = useMemo(
+  // Memoize chapitres (sousdomaine RAG) pour éviter re-renders inutiles
+  const chapitres = useMemo(
     () => (topicsData as ITopicsResponse | undefined)?.domaines ?? [],
     [topicsData]
   );
 
-  // Thèmes disponibles pour le domaine sélectionné
+  // Thèmes (titles RAG) disponibles pour le chapitre sélectionné
   const availableThemes = useMemo(() => {
-    if (!selectedDomaine) return [];
-    const domaine = domaines.find(d => d.domaine === selectedDomaine);
-    return domaine?.themes ?? [];
-  }, [domaines, selectedDomaine]);
+    if (!selectedChapitre) return [];
+    const chapitre = chapitres.find(c => c.domaine === selectedChapitre);
+    return chapitre?.themes ?? [];
+  }, [chapitres, selectedChapitre]);
 
-  // Mode de génération
-  const isFullDomaineMode = selectedTopic === FULL_DOMAINE_VALUE || selectedTopic === '';
+  // Mode de génération: chapitre complet ou thème spécifique
+  const isFullChapitreMode = selectedTheme === FULL_CHAPITRE_VALUE || selectedTheme === '';
 
-  // Validation: matière + domaine requis
-  const isFormValid = subject.length > 0 && selectedDomaine.length > 0;
+  // Validation: matière + chapitre requis
+  const isFormValid = subject.length > 0 && selectedChapitre.length > 0;
   const isLoadingTopics = !!subject && topicsLoading;
 
   const handleSubjectChange = (newSubject: string) => {
     setSubject(newSubject);
-    setSelectedDomaine('');
-    setSelectedTopic('');
+    setSelectedChapitre('');
+    setSelectedTheme('');
   };
 
-  const handleDomaineChange = (newDomaine: string) => {
-    setSelectedDomaine(newDomaine);
-    setSelectedTopic(''); // Reset topic, utilisateur peut choisir ou laisser vide
+  const handleChapitreChange = (newChapitre: string) => {
+    setSelectedChapitre(newChapitre);
+    setSelectedTheme(''); // Reset thème, utilisateur peut choisir ou laisser vide
   };
 
-  const handleTopicChange = (newTopic: string) => {
-    setSelectedTopic(newTopic);
+  const handleThemeChange = (newTheme: string) => {
+    setSelectedTheme(newTheme);
   };
 
   const handleGenerate = () => {
@@ -104,14 +109,14 @@ export default function LearningDeckNew(): ReactElement {
 
     const request: IGenerateDeckRequest = {
       subject,
-      domaine: selectedDomaine,
-      // topic optionnel: undefined si mode domaine complet
-      topic: isFullDomaineMode ? undefined : selectedTopic.trim(),
+      domaine: selectedChapitre, // Le "domaine" API = chapitre (sousdomaine RAG)
+      // topic optionnel: undefined si mode chapitre complet
+      topic: isFullChapitreMode ? undefined : selectedTheme.trim(),
     };
 
-    const displayName = isFullDomaineMode
-      ? `tout le domaine "${selectedDomaine}"`
-      : `"${selectedTopic}"`;
+    const displayName = isFullChapitreMode
+      ? `tout le chapitre "${selectedChapitre}"`
+      : `"${selectedTheme}"`;
 
     toast.loading('Génération du deck en cours...', {
       id: 'deck-generation',
@@ -183,7 +188,7 @@ export default function LearningDeckNew(): ReactElement {
               Génération automatique
             </CardTitle>
             <CardDescription>
-              Choisis ce que tu veux réviser : un domaine complet ou un sous-chapitre
+              Choisis ce que tu veux réviser : un chapitre complet ou un thème spécifique
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -228,11 +233,11 @@ export default function LearningDeckNew(): ReactElement {
               )}
             </div>
 
-            {/* 2. Domaine */}
+            {/* 2. Chapitre */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Layers className="h-4 w-4" />
-                Domaine
+                Chapitre
               </Label>
               {!subject ? (
                 <Select disabled>
@@ -246,27 +251,27 @@ export default function LearningDeckNew(): ReactElement {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Impossible de charger les domaines.
+                    Impossible de charger les chapitres.
                   </AlertDescription>
                 </Alert>
-              ) : domaines.length === 0 ? (
+              ) : chapitres.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Aucun domaine disponible pour cette matière.
+                    Aucun chapitre disponible pour cette matière.
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Select value={selectedDomaine} onValueChange={handleDomaineChange}>
+                <Select value={selectedChapitre} onValueChange={handleChapitreChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choisir un domaine" />
+                    <SelectValue placeholder="Choisir un chapitre" />
                   </SelectTrigger>
                   <SelectContent>
-                    {domaines.map((d) => (
-                      <SelectItem key={d.domaine} value={d.domaine}>
-                        {d.domaine}
+                    {chapitres.map((c) => (
+                      <SelectItem key={c.domaine} value={c.domaine}>
+                        {c.domaine}
                         <span className="text-muted-foreground ml-2">
-                          ({d.themes.length} thèmes)
+                          ({c.themes.length} thèmes)
                         </span>
                       </SelectItem>
                     ))}
@@ -275,21 +280,21 @@ export default function LearningDeckNew(): ReactElement {
               )}
             </div>
 
-            {/* 3. Sous-chapitre (optionnel) */}
-            {selectedDomaine && (
+            {/* 3. Thème (optionnel) */}
+            {selectedChapitre && (
               <div className="space-y-2">
                 <Label className="text-muted-foreground">
-                  Sous-chapitre (optionnel)
+                  Thème (optionnel)
                 </Label>
-                <Select value={selectedTopic} onValueChange={handleTopicChange}>
+                <Select value={selectedTheme} onValueChange={handleThemeChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Tout le domaine" />
+                    <SelectValue placeholder="Tout le chapitre" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={FULL_DOMAINE_VALUE}>
+                    <SelectItem value={FULL_CHAPITRE_VALUE}>
                       <span className="flex items-center gap-2 font-medium">
                         <Layers className="h-4 w-4" />
-                        Tout le domaine
+                        Tout le chapitre
                       </span>
                     </SelectItem>
                     {availableThemes.map((theme) => (
@@ -300,9 +305,9 @@ export default function LearningDeckNew(): ReactElement {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {isFullDomaineMode
-                    ? `Révise l'ensemble du domaine "${selectedDomaine}" (plus de cartes)`
-                    : `Révise uniquement "${selectedTopic}"`}
+                  {isFullChapitreMode
+                    ? `Révise l'ensemble du chapitre "${selectedChapitre}" (plus de cartes)`
+                    : `Révise uniquement "${selectedTheme}"`}
                 </p>
               </div>
             )}
@@ -314,8 +319,8 @@ export default function LearningDeckNew(): ReactElement {
               size="lg"
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              {isFullDomaineMode && selectedDomaine
-                ? `Générer sur tout "${selectedDomaine}"`
+              {isFullChapitreMode && selectedChapitre
+                ? `Générer sur tout "${selectedChapitre}"`
                 : 'Générer le deck'}
             </Button>
           </CardContent>
