@@ -27,6 +27,15 @@ out/
 build
 dist
 
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+.metro-health-check*
+
 
 # Debug
 npm-debug.log*
