@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MathContent } from '@/components/MathContent';
 import { cn } from '@/lib/utils';
+import { getRandomEncouragement } from './encouragements';
 import type { IGrammarTransformContent } from '@/types';
 
 interface GrammarTransformViewerProps {
@@ -31,6 +32,7 @@ const TRANSFORMATION_LABELS: Record<string, string> = {
 export function GrammarTransformViewer({ content, onNext, onPrevious, isLast, isFirst }: GrammarTransformViewerProps): ReactElement {
   const [userAnswer, setUserAnswer] = useState('');
   const [hasAnswered, setHasAnswered] = useState(false);
+  const [encouragement, setEncouragement] = useState<string | null>(null);
 
   // Normalize string for comparison
   const normalizeString = (str: string): string => {
@@ -43,8 +45,8 @@ export function GrammarTransformViewer({ content, onNext, onPrevious, isLast, is
       .replace(/\s+/g, ' '); // Normalize spaces
   };
 
-  const checkAnswer = (): boolean => {
-    const normalizedUser = normalizeString(userAnswer);
+  const checkAnswer = (answer: string): boolean => {
+    const normalizedUser = normalizeString(answer);
     const normalizedCorrect = normalizeString(content.correctAnswer);
 
     if (normalizedUser === normalizedCorrect) return true;
@@ -62,6 +64,10 @@ export function GrammarTransformViewer({ content, onNext, onPrevious, isLast, is
   const handleValidate = () => {
     if (!userAnswer.trim()) return;
     setHasAnswered(true);
+    // Encouragement si bonne réponse
+    if (checkAnswer(userAnswer)) {
+      setEncouragement(getRandomEncouragement());
+    }
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -73,10 +79,11 @@ export function GrammarTransformViewer({ content, onNext, onPrevious, isLast, is
   const handleNext = () => {
     setUserAnswer('');
     setHasAnswered(false);
+    setEncouragement(null);
     onNext();
   };
 
-  const isCorrect = checkAnswer();
+  const isCorrect = checkAnswer(userAnswer);
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
@@ -147,7 +154,9 @@ export function GrammarTransformViewer({ content, onNext, onPrevious, isLast, is
               {isCorrect ? (
                 <>
                   <Check className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-green-600">Correct !</span>
+                  <span className="font-medium text-green-600">
+                    {encouragement ?? 'Correct !'}
+                  </span>
                 </>
               ) : (
                 <>

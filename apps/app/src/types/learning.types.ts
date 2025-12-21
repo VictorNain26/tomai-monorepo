@@ -10,6 +10,7 @@ import type { EducationLevelType } from './education.types';
 
 /**
  * Card types for learning tools
+ * - Pedagogical: concept (theory before practice)
  * - Universal: flashcard, qcm, vrai_faux (all subjects)
  * - Languages: matching, fill_blank, word_order
  * - Math/Sciences: calculation
@@ -18,6 +19,8 @@ import type { EducationLevelType } from './education.types';
  * - French: grammar_transform
  */
 export type CardType =
+  // Pedagogical (theory before practice)
+  | 'concept'
   // Universal (all subjects)
   | 'flashcard'
   | 'qcm'
@@ -42,6 +45,22 @@ export type CardType =
  * Deck source - how the deck was created
  */
 export type DeckSource = 'prompt' | 'conversation' | 'document' | 'rag_program';
+
+// ======================================
+// Pedagogical Card Content Types
+// ======================================
+
+/**
+ * Concept content structure (theory before practice)
+ * Used to explain a notion before exercises
+ */
+export interface IConceptContent {
+  title: string;
+  explanation: string;
+  keyPoints: string[];
+  example?: string;
+  formula?: string; // KaTeX formula for math/science
+}
 
 // ======================================
 // Universal Card Content Types
@@ -205,6 +224,8 @@ export interface IGrammarTransformContent {
  * Card content union type
  */
 export type CardContent =
+  // Pedagogical
+  | IConceptContent
   // Universal
   | IFlashcardContent
   | IQCMContent

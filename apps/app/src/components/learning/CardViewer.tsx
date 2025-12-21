@@ -4,6 +4,8 @@
  */
 
 import type { ReactElement } from 'react';
+// Pedagogical viewers (theory before practice)
+import { ConceptViewer } from './ConceptViewer';
 // Universal viewers
 import { FlashcardViewer } from './FlashcardViewer';
 import { QCMViewer } from './QCMViewer';
@@ -27,6 +29,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type {
   ILearningCard,
+  // Pedagogical
+  IConceptContent,
   // Universal
   IFlashcardContent,
   IQCMContent,
@@ -64,6 +68,18 @@ export function CardViewer({
   isFirst,
 }: CardViewerProps): ReactElement {
   switch (card.cardType) {
+    // Pedagogical type (theory before practice)
+    case 'concept':
+      return (
+        <ConceptViewer
+          content={card.content as IConceptContent}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          isLast={isLast}
+          isFirst={isFirst}
+        />
+      );
+
     // Universal types
     case 'flashcard':
       return (

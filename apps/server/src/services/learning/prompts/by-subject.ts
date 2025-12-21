@@ -18,6 +18,7 @@ import type { EducationLevelType } from '../../../types/index.js';
  * Liste complète des types - l'IA peut utiliser n'importe lequel
  */
 export const ALL_CARD_TYPES: CardType[] = [
+  'concept', // Pédagogique - théorie avant pratique
   'flashcard', 'qcm', 'vrai_faux',
   'matching', 'fill_blank', 'word_order',
   'calculation',
@@ -33,13 +34,14 @@ export const ALL_CARD_TYPES: CardType[] = [
 /**
  * Types particulièrement adaptés à chaque matière
  * L'IA peut toujours utiliser d'autres types si pertinent
+ * 'concept' en premier pour les matières nécessitant théorie avant pratique
  */
 export const SUGGESTED_CARD_TYPES: Record<SubjectCategory, CardType[]> = {
-  mathematiques: ['flashcard', 'qcm', 'vrai_faux', 'calculation', 'fill_blank'],
-  sciences: ['flashcard', 'qcm', 'vrai_faux', 'calculation', 'classification', 'process_order', 'cause_effect'],
-  francais: ['flashcard', 'qcm', 'vrai_faux', 'fill_blank', 'grammar_transform', 'matching'],
-  langues: ['flashcard', 'qcm', 'matching', 'fill_blank', 'word_order', 'vrai_faux'],
-  'histoire-geo': ['flashcard', 'qcm', 'vrai_faux', 'timeline', 'matching_era', 'cause_effect', 'matching'],
+  mathematiques: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'calculation', 'fill_blank'],
+  sciences: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'calculation', 'classification', 'process_order', 'cause_effect'],
+  francais: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'fill_blank', 'grammar_transform', 'matching'],
+  langues: ['concept', 'flashcard', 'qcm', 'matching', 'fill_blank', 'word_order', 'vrai_faux'],
+  'histoire-geo': ['concept', 'flashcard', 'qcm', 'vrai_faux', 'timeline', 'matching_era', 'cause_effect', 'matching'],
   autre: ALL_CARD_TYPES
 };
 

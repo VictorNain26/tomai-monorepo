@@ -1,11 +1,11 @@
 /**
  * Service Learning - Génération de cartes de révision
  *
- * Architecture TanStack AI 2025:
+ * Architecture Meta-Planning 2025:
  * - types.ts: Types TypeScript
- * - prompts/: Construction des prompts par matière et cycle
- * - prompt-builder.service.ts: Assemblage du prompt final
- * - card-generator.service.ts: Génération avec TanStack AI structured output
+ * - deck-planner.service.ts: Phase 1 - Planification du deck
+ * - prompt-builder.service.ts: Phase 2 - Construction des prompts d'exécution
+ * - card-generator.service.ts: Orchestration 2 phases avec TanStack AI
  *
  * Usage:
  * ```typescript
@@ -23,6 +23,7 @@
  *   console.error(result.error);
  * } else {
  *   console.log(result.cards);
+ *   console.log(result.plan); // Le plan utilisé par l'IA
  * }
  * ```
  */
@@ -30,7 +31,7 @@
 // Types
 export * from './types.js';
 
-// TanStack AI Card Generation
+// TanStack AI Card Generation (Meta-Planning)
 export {
   generateCards,
   isGenerationError,
@@ -38,8 +39,16 @@ export {
   type CardGenerationError
 } from './card-generator.service.js';
 
-// Prompt building
-export { buildCardGenerationPrompt, estimatePromptTokens } from './prompt-builder.service.js';
+// Deck Planner (Phase 1)
+export {
+  generateDeckPlan,
+  isPlanError,
+  type DeckPlanResult,
+  type DeckPlanError
+} from './deck-planner.service.js';
+
+// Prompt building (Phase 2)
+export { buildCardExecutionPrompt, estimatePromptTokens } from './prompt-builder.service.js';
 export type { BuiltPrompt } from './prompt-builder.service.js';
 
 // Prompts utilities

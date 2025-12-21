@@ -15,6 +15,11 @@ import type { EducationLevelType } from '../../types/index.js';
 // ============================================
 
 /**
+ * Type de carte pédagogique (explication de concept)
+ */
+export type PedagogicalCardType = 'concept';
+
+/**
  * Types de cartes universels (toutes matières)
  */
 export type UniversalCardType = 'flashcard' | 'qcm' | 'vrai_faux';
@@ -59,6 +64,7 @@ export type FrenchCardType =
  * Tous les types de cartes supportés
  */
 export type CardType =
+  | PedagogicalCardType
   | UniversalCardType
   | LanguageCardType
   | MathScienceCardType
@@ -70,6 +76,8 @@ export type CardType =
  * Liste des types valides pour validation
  */
 export const VALID_CARD_TYPES: CardType[] = [
+  // Pédagogique
+  'concept',
   // Universel
   'flashcard', 'qcm', 'vrai_faux',
   // Langues
@@ -87,6 +95,18 @@ export const VALID_CARD_TYPES: CardType[] = [
 // ============================================
 // CONTENUS DES CARTES
 // ============================================
+
+/**
+ * Contenu d'une carte concept (explication théorique)
+ * Usage: Introduire une notion AVANT les exercices
+ */
+export interface ConceptContent {
+  title: string;           // Titre de la notion
+  explanation: string;     // Explication claire et concise
+  keyPoints: string[];     // Points clés à retenir (2-4)
+  example?: string;        // Exemple optionnel
+  formula?: string;        // Formule KaTeX optionnelle (maths/sciences)
+}
 
 /**
  * Contenu d'une flashcard classique
@@ -240,6 +260,7 @@ export interface GrammarTransformContent {
  * Union de tous les contenus possibles
  */
 export type CardContent =
+  | ConceptContent
   | FlashcardContent
   | QCMContent
   | VraiFauxContent
