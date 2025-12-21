@@ -42,7 +42,7 @@ const FULL_CHAPITRE_VALUE = '__FULL_CHAPITRE__';
 export default function LearningDeckNew(): ReactElement {
   const navigate = useNavigate();
   const user = useUser();
-  const { generateDeck } = useGenerateDeck();
+  const { generateDeck, isGenerating } = useGenerateDeck();
 
   const [subject, setSubject] = useState('');
   const [selectedChapitre, setSelectedChapitre] = useState('');
@@ -335,7 +335,7 @@ export default function LearningDeckNew(): ReactElement {
 
             <Button
               onClick={handleGenerate}
-              disabled={!isFormValid || isLoadingTopics}
+              disabled={!isFormValid || isLoadingTopics || isGenerating}
               className="w-full"
               size="lg"
             >

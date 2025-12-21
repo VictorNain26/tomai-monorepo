@@ -471,38 +471,46 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
           ? `Révision complète du domaine "${domaine}" - ${generatedCards.length} cartes`
           : `Cartes sur "${topic}" (${domaine})`;
 
-        const [newDeck] = await db
-          .insert(learningDecks)
-          .values({
-            userId: authUser.id,
-            title: deckTitle,
-            description: deckDescription,
-            subject,
-            source: 'rag_program',
-            sourcePrompt: isFullDomaineMode ? domaine : topic,
-            schoolLevel: level,
-            cardCount: generatedCards.length,
-          })
-          .returning();
+        // TRANSACTION ATOMIQUE: deck + cartes créés ensemble ou pas du tout
+        const { newDeck, insertedCards } = await db.transaction(async (tx) => {
+          const [createdDeck] = await tx
+            .insert(learningDecks)
+            .values({
+              userId: authUser.id,
+              title: deckTitle,
+              description: deckDescription,
+              subject,
+              source: 'rag_program',
+              sourcePrompt: isFullDomaineMode ? domaine : topic,
+              schoolLevel: level,
+              cardCount: generatedCards.length,
+            })
+            .returning();
 
-        if (!newDeck) {
-          set.status = 500;
-          return { error: 'Échec de la création du deck' };
-        }
+          if (!createdDeck) {
+            throw new Error('Échec de la création du deck');
+          }
 
-        // 6. Insert generated cards with FSRS initial data
-        const cardsToInsert = generatedCards.map((card, index) => ({
-          deckId: newDeck.id,
-          cardType: card.cardType,
-          content: card.content,
-          position: index,
-          fsrsData: fsrsService.initializeCardFsrsData(),
-        }));
+          // 6. Insert generated cards with FSRS initial data
+          const cardsToInsert = generatedCards.map((card, index) => ({
+            deckId: createdDeck.id,
+            cardType: card.cardType,
+            content: card.content,
+            position: index,
+            fsrsData: fsrsService.initializeCardFsrsData(),
+          }));
 
-        const insertedCards = await db
-          .insert(learningCards)
-          .values(cardsToInsert)
-          .returning();
+          const createdCards = await tx
+            .insert(learningCards)
+            .values(cardsToInsert)
+            .returning();
+
+          if (createdCards.length === 0) {
+            throw new Error('Échec de l\'insertion des cartes');
+          }
+
+          return { newDeck: createdDeck, insertedCards: createdCards };
+        });
 
         // Increment deck counter after successful generation
         const deckUsage = await incrementDeckUsage(authUser.id);
