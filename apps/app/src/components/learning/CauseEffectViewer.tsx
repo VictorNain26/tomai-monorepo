@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MathContent } from '@/components/MathContent';
 import { cn } from '@/lib/utils';
+import { getRandomEncouragement } from './encouragements';
 import type { ICauseEffectContent } from '@/types';
 
 interface CauseEffectViewerProps {
@@ -23,6 +24,7 @@ interface CauseEffectViewerProps {
 export function CauseEffectViewer({ content, onNext, onPrevious, isLast, isFirst }: CauseEffectViewerProps): ReactElement {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
+  const [encouragement, setEncouragement] = useState<string | null>(null);
 
   const handleSelect = (index: number) => {
     if (hasAnswered) return;
@@ -32,11 +34,16 @@ export function CauseEffectViewer({ content, onNext, onPrevious, isLast, isFirst
   const handleValidate = () => {
     if (selectedIndex === null) return;
     setHasAnswered(true);
+    // Encouragement si bonne réponse
+    if (selectedIndex === content.correctIndex) {
+      setEncouragement(getRandomEncouragement());
+    }
   };
 
   const handleNext = () => {
     setSelectedIndex(null);
     setHasAnswered(false);
+    setEncouragement(null);
     onNext();
   };
 
@@ -119,6 +126,11 @@ export function CauseEffectViewer({ content, onNext, onPrevious, isLast, isFirst
           );
         })}
       </div>
+
+      {/* Encouragement (shown after correct answer) */}
+      {encouragement && (
+        <p className="text-sm text-green-600 font-medium text-center">{encouragement}</p>
+      )}
 
       {/* Explanation (shown after answer) */}
       {hasAnswered && content.explanation && (

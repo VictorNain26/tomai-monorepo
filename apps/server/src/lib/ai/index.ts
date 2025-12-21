@@ -49,8 +49,18 @@ export {
   ClassificationContentSchema,
   ProcessOrderContentSchema,
   GrammarTransformContentSchema,
+  // Deck Planner Schemas
+  DeckPlanSchema,
+  PlannedCardSchema,
+  NotionGroupSchema,
+  validateDeckPlan,
+  autoFixPlan,
   // Types
   type CardType,
   type ParsedCard,
   type CardGenerationOutput,
+  type DeckPlan,
+  type PlannedCard,
+  type NotionGroup,
+  type PlanValidationResult,
 } from './schemas/index.js';

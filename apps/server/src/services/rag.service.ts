@@ -77,10 +77,12 @@ class RAGService {
 
       // 2. Recherche vectorielle (top-20 pour reranking)
       const initialLimit = 20;
+      const minScore = options.minSimilarity ?? RAG_THRESHOLDS.MIN_SCORE;
       const rawResults = await qdrantService.search(
         queryVector,
         { niveau: options.niveau, matiere: options.matiere },
-        initialLimit
+        initialLimit,
+        { scoreThreshold: minScore, hnswEf: 128 }
       );
 
       if (rawResults.length === 0) {
@@ -91,9 +93,8 @@ class RAGService {
       const topK = options.limit ?? 5;
       const rerankedResults = rerankWithBm25Rrf(options.query, rawResults, topK);
 
-      // 4. Filtrer par score minimum
-      const minScore = options.minSimilarity ?? RAG_THRESHOLDS.MIN_SCORE;
-      const filteredResults = rerankedResults.filter((r) => r.score >= minScore);
+      // 4. Résultats (déjà filtrés côté serveur par score_threshold)
+      const filteredResults = rerankedResults;
 
       // 5. Convertir au format interne
       const semanticChunks = this.toSemanticChunks(filteredResults);

@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MathContent } from '@/components/MathContent';
 import { cn } from '@/lib/utils';
+import { getRandomEncouragement } from './encouragements';
 import type { IVraiFauxContent } from '@/types';
 
 interface VraiFauxViewerProps {
@@ -23,6 +24,7 @@ interface VraiFauxViewerProps {
 export function VraiFauxViewer({ content, onNext, onPrevious, isLast, isFirst }: VraiFauxViewerProps): ReactElement {
   const [selectedAnswer, setSelectedAnswer] = useState<boolean | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
+  const [encouragement, setEncouragement] = useState<string | null>(null);
 
   const handleSelect = (answer: boolean) => {
     if (hasAnswered) return;
@@ -32,11 +34,16 @@ export function VraiFauxViewer({ content, onNext, onPrevious, isLast, isFirst }:
   const handleValidate = () => {
     if (selectedAnswer === null) return;
     setHasAnswered(true);
+    // Encouragement si bonne réponse
+    if (selectedAnswer === content.isTrue) {
+      setEncouragement(getRandomEncouragement());
+    }
   };
 
   const handleNext = () => {
     setSelectedAnswer(null);
     setHasAnswered(false);
+    setEncouragement(null);
     onNext();
   };
 
@@ -111,6 +118,11 @@ export function VraiFauxViewer({ content, onNext, onPrevious, isLast, isFirst }:
           </div>
         </button>
       </div>
+
+      {/* Encouragement (shown after correct answer) */}
+      {encouragement && (
+        <p className="text-sm text-green-600 font-medium text-center">{encouragement}</p>
+      )}
 
       {/* Explanation (shown after answer) */}
       {hasAnswered && content.explanation && (

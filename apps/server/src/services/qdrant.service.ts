@@ -37,6 +37,13 @@ export interface QdrantFilter {
   difficulty?: string;
 }
 
+export interface QdrantSearchOptions {
+  /** Filtre côté serveur - exclut les résultats sous ce score */
+  scoreThreshold?: number;
+  /** HNSW ef parameter - plus élevé = plus précis, plus lent (default: 128) */
+  hnswEf?: number;
+}
+
 export interface CollectionStats {
   total_points: number;
   by_niveau: Record<string, number>;
@@ -77,12 +84,17 @@ class QdrantService {
   }
 
   /**
-   * Recherche vectorielle dans Qdrant
+   * Recherche vectorielle dans Qdrant (optimisé best practices 2025)
+   *
+   * Options:
+   * - scoreThreshold: filtre côté serveur (réduit payload réseau)
+   * - hnswEf: précision de recherche (128 = bon équilibre)
    */
   async search(
     queryVector: number[],
     filter?: QdrantFilter,
-    limit: number = 20
+    limit: number = 20,
+    options?: QdrantSearchOptions
   ): Promise<QdrantSearchResult[]> {
     const client = this.getClient();
     const startTime = Date.now();
@@ -106,6 +118,8 @@ class QdrantService {
       limit,
       filter: qdrantFilter,
       with_payload: true,
+      score_threshold: options?.scoreThreshold,
+      params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
     });
 
     const results: QdrantSearchResult[] = response.points.map((point) => {

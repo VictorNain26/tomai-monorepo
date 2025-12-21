@@ -834,6 +834,8 @@ export type EstablishmentStatus = typeof establishmentStatusEnum.enumValues[numb
  */
 
 export const cardTypeEnum = pgEnum('card_type', [
+  // Pedagogical (theory before practice)
+  'concept',
   // Universal (all subjects)
   'flashcard', 'qcm', 'vrai_faux',
   // Languages (LV1, LV2)

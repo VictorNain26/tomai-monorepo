@@ -12,6 +12,28 @@
 import { z } from 'zod';
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SCHEMAS PÉDAGOGIQUES (1 type)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Concept - Explication théorique d'une notion
+ * À afficher AVANT les exercices pratiques
+ */
+export const ConceptContentSchema = z.object({
+  title: z.string().min(1)
+    .describe('Titre de la notion'),
+  explanation: z.string().min(1)
+    .describe('Explication claire et concise de la notion'),
+  keyPoints: z.array(z.string().min(1))
+    .min(2).max(4)
+    .describe('Points clés à retenir (2-4)'),
+  example: z.string().optional()
+    .describe('Exemple optionnel pour illustrer'),
+  formula: z.string().optional()
+    .describe('Formule KaTeX optionnelle (maths/sciences)')
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SCHEMAS UNIVERSELS (3 types)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -235,6 +257,8 @@ export const GrammarTransformContentSchema = z.object({
  * Types de cartes comme enum Zod
  */
 export const CardTypeSchema = z.enum([
+  // Pédagogique
+  'concept',
   // Universels
   'flashcard', 'qcm', 'vrai_faux',
   // Langues
@@ -255,6 +279,11 @@ export const CardTypeSchema = z.enum([
  * TanStack AI utilisera ce schema pour le structured output
  */
 export const ParsedCardSchema = z.discriminatedUnion('cardType', [
+  // Pédagogique
+  z.object({
+    cardType: z.literal('concept'),
+    content: ConceptContentSchema
+  }),
   // Universels
   z.object({
     cardType: z.literal('flashcard'),
@@ -332,6 +361,7 @@ export type ParsedCard = z.infer<typeof ParsedCardSchema>;
 export type CardGenerationOutput = z.infer<typeof CardGenerationOutputSchema>;
 
 // Content types exports
+export type ConceptContent = z.infer<typeof ConceptContentSchema>;
 export type FlashcardContent = z.infer<typeof FlashcardContentSchema>;
 export type QCMContent = z.infer<typeof QCMContentSchema>;
 export type VraiFauxContent = z.infer<typeof VraiFauxContentSchema>;

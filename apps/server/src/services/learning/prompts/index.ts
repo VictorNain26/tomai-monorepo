@@ -1,13 +1,17 @@
 /**
  * Index des modules de prompts pour la génération de cartes
  *
- * Architecture libre 2025:
- * - base.ts: Instructions pédagogiques et format JSON
+ * Architecture Meta-Planning 2025:
+ * - deck-planner.prompt.ts: Phase 1 - Planification de la structure
+ * - base.ts: Phase 2 - Génération des cartes selon le plan
  * - by-subject.ts: Configuration par matière et cycle
  */
 
-// Re-export depuis les modules
-export { getBasePrompt, KATEX_INSTRUCTIONS } from './base.js';
+// Meta-planning prompts (Phase 1)
+export { buildDeckPlannerPrompt } from './deck-planner.prompt.js';
+
+// Shared constants
+export { KATEX_INSTRUCTIONS, RICH_CONTENT_INSTRUCTIONS } from './base.js';
 export {
   getSubjectCategory,
   subjectRequiresKaTeX,
@@ -28,3 +32,4 @@ export type {
 } from '../types.js';
 
 export type { SubjectConfig } from './by-subject.js';
+export type { DeckPlannerPromptOptions } from './deck-planner.prompt.js';

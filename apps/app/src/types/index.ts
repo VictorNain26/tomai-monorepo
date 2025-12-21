@@ -118,6 +118,9 @@ export type {
 export type {
   CardType,
   DeckSource,
+  // Pedagogical
+  IConceptContent,
+  // Universal
   IFlashcardContent,
   IQCMContent,
   IVraiFauxContent,

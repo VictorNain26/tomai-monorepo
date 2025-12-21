@@ -47,3 +47,16 @@ export {
   type ProcessOrderContent,
   type GrammarTransformContent
 } from './cards.schema.js';
+
+// Deck Planner Schemas - Meta-planning
+export {
+  DeckPlanSchema,
+  PlannedCardSchema,
+  NotionGroupSchema,
+  validateDeckPlan,
+  autoFixPlan,
+  type DeckPlan,
+  type PlannedCard,
+  type NotionGroup,
+  type PlanValidationResult
+} from './deck-planner.schema.js';

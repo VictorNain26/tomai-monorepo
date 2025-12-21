@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MathContent } from '@/components/MathContent';
 import { cn } from '@/lib/utils';
+import { getRandomEncouragement } from './encouragements';
 import type { ICalculationContent } from '@/types';
 
 interface CalculationViewerProps {
@@ -24,6 +25,7 @@ export function CalculationViewer({ content, onNext, onPrevious, isLast, isFirst
   const [visibleSteps, setVisibleSteps] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [encouragement, setEncouragement] = useState<string | null>(null);
 
   const totalSteps = content.steps.length;
   const allStepsRevealed = visibleSteps >= totalSteps;
@@ -37,12 +39,14 @@ export function CalculationViewer({ content, onNext, onPrevious, isLast, isFirst
   const handleShowAnswer = () => {
     setShowAnswer(true);
     setVisibleSteps(totalSteps);
+    setEncouragement(getRandomEncouragement());
   };
 
   const handleNext = () => {
     setVisibleSteps(0);
     setShowHint(false);
     setShowAnswer(false);
+    setEncouragement(null);
     onNext();
   };
 
@@ -142,6 +146,9 @@ export function CalculationViewer({ content, onNext, onPrevious, isLast, isFirst
                 className="text-2xl font-bold text-green-700"
                 centered
               />
+              {encouragement && (
+                <p className="text-sm text-green-600 font-medium mt-3">{encouragement}</p>
+              )}
             </div>
           </CardContent>
         </Card>
