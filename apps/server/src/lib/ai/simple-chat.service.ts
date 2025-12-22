@@ -43,7 +43,6 @@ export async function generateSimpleResponse(
   });
 
   // Generate with TanStack AI (collect full response)
-  // Model is now specified in the adapter (gemini-2.5-flash)
   const stream = chat({
     adapter: geminiAdapter,
     messages: [

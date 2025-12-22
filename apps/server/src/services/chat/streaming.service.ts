@@ -178,7 +178,6 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
 
       // 5. Lancer le streaming TanStack AI avec Server Tools
       // Note: maxOutputTokens configuré via appConfig (16384, Gemini 2.5 Flash supports 65536)
-      // Model is now specified in the adapter (v0.1.0 API change)
       const stream = chat({
         adapter: geminiAdapter,
         messages,

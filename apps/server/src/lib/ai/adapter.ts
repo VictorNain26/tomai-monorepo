@@ -8,13 +8,13 @@
  * - Structured Output natif
  * - Streaming simplifié
  *
- * API v0.1.0: Model is now specified when creating the adapter
+ * API v0.1.0: Model is specified when creating the adapter via createGeminiChat
  */
 
 import { createGeminiChat, type GeminiTextConfig } from '@tanstack/ai-gemini';
 import { appConfig } from '../../config/app.config.js';
 
-/** Configuration Gemini avec API Key */
+/** Configuration Gemini optionnelle */
 const geminiConfig: Omit<GeminiTextConfig, 'apiKey'> = {};
 
 /**

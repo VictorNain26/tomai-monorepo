@@ -328,7 +328,6 @@ class DocumentAnalysisService {
     let fullContent = '';
     let tokensUsed = 0;
 
-    // Model is now specified in the adapter (v0.1.0 API change)
     const stream = chat({
       adapter: geminiAdapter,
       messages: [
@@ -379,7 +378,6 @@ class DocumentAnalysisService {
     let tokensUsed = 0;
 
     // Message multimodal avec image inline (TanStack AI format)
-    // Model is now specified in the adapter (v0.1.0 API change)
     const stream = chat({
       adapter: geminiAdapter,
       messages: [

@@ -188,7 +188,6 @@ export async function generateCards(
     // Appel IA avec retry pour robustesse
     const { fullContent, tokensUsed } = await withRetry(
       async () => {
-        // Model is now specified in the adapter (v0.1.0 API change)
         const stream = chat({
           adapter: geminiAdapter,
           messages: [{ role: 'user', content: userPrompt }],
