@@ -1,18 +1,26 @@
 /**
  * Qdrant Service - Client direct pour recherche vectorielle
  *
- * Remplace curriculum-client pour appels directs à Qdrant Cloud.
- * Utilisé par rag.service.ts et education.service.ts
+ * Architecture cache 2025:
+ * - Redis cache (1h TTL) pour persistance cross-instances
+ * - In-memory cache (1min) pour fast-path local
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { logger } from '../lib/observability.js';
+import { redisCacheService } from './redis-cache.service.js';
 
+// =============================================================================
 // Configuration
+// =============================================================================
+
 const QDRANT_URL = Bun.env['QDRANT_URL'] ?? '';
 const QDRANT_API_KEY = Bun.env['QDRANT_API_KEY'] ?? '';
-// Support both QDRANT_COLLECTION and QDRANT_COLLECTION_NAME (legacy Koyeb)
-const COLLECTION_NAME = Bun.env['QDRANT_COLLECTION'] ?? Bun.env['QDRANT_COLLECTION_NAME'] ?? 'tomai_educational';
+const COLLECTION_NAME =
+  Bun.env['QDRANT_COLLECTION'] ?? Bun.env['QDRANT_COLLECTION_NAME'] ?? 'tomai_educational';
+
+const CACHE_TTL = { REDIS: 3600, MEMORY: 60_000 } as const;
+const CACHE_PREFIX = 'qdrant:' as const;
 
 // =============================================================================
 // Types
@@ -38,9 +46,7 @@ export interface QdrantFilter {
 }
 
 export interface QdrantSearchOptions {
-  /** Filtre côté serveur - exclut les résultats sous ce score */
   scoreThreshold?: number;
-  /** HNSW ef parameter - plus élevé = plus précis, plus lent (default: 128) */
   hnswEf?: number;
 }
 
@@ -57,39 +63,23 @@ export interface CollectionStats {
 class QdrantService {
   private client: QdrantClient | null = null;
   private statsCache: { data: CollectionStats; timestamp: number } | null = null;
-  private readonly statsCacheTtl = 60_000; // 1 minute
 
-  /**
-   * Initialise le client Qdrant (lazy)
-   */
   private getClient(): QdrantClient {
     if (!this.client) {
       if (!QDRANT_URL || !QDRANT_API_KEY) {
         throw new Error('QDRANT_URL and QDRANT_API_KEY are required');
       }
-
-      this.client = new QdrantClient({
-        url: QDRANT_URL,
-        apiKey: QDRANT_API_KEY,
-      });
-
+      this.client = new QdrantClient({ url: QDRANT_URL, apiKey: QDRANT_API_KEY });
       logger.info('Qdrant client initialized', {
         operation: 'qdrant:init',
         url: QDRANT_URL.substring(0, 30) + '...',
         collection: COLLECTION_NAME,
       });
     }
-
     return this.client;
   }
 
-  /**
-   * Recherche vectorielle dans Qdrant (optimisé best practices 2025)
-   *
-   * Options:
-   * - scoreThreshold: filtre côté serveur (réduit payload réseau)
-   * - hnswEf: précision de recherche (128 = bon équilibre)
-   */
+  /** Recherche vectorielle avec filtres optionnels */
   async search(
     queryVector: number[],
     filter?: QdrantFilter,
@@ -99,97 +89,84 @@ class QdrantService {
     const client = this.getClient();
     const startTime = Date.now();
 
-    // Construire le filtre Qdrant
     const must: Array<{ key: string; match: { value: string } }> = [];
-    if (filter?.niveau) {
-      must.push({ key: 'niveau', match: { value: filter.niveau } });
-    }
-    if (filter?.matiere) {
-      must.push({ key: 'matiere', match: { value: filter.matiere } });
-    }
-    if (filter?.difficulty) {
-      must.push({ key: 'difficulty', match: { value: filter.difficulty } });
-    }
-
-    const qdrantFilter = must.length > 0 ? { must } : undefined;
+    if (filter?.niveau) must.push({ key: 'niveau', match: { value: filter.niveau } });
+    if (filter?.matiere) must.push({ key: 'matiere', match: { value: filter.matiere } });
+    if (filter?.difficulty) must.push({ key: 'difficulty', match: { value: filter.difficulty } });
 
     const response = await client.query(COLLECTION_NAME, {
       query: queryVector,
       limit,
-      filter: qdrantFilter,
+      filter: must.length > 0 ? { must } : undefined,
       with_payload: true,
       score_threshold: options?.scoreThreshold,
       params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
     });
 
     const results: QdrantSearchResult[] = response.points.map((point) => {
-      const payload = point.payload as Record<string, unknown>;
+      const p = point.payload as Record<string, unknown>;
       return {
         id: String(point.id),
         score: point.score ?? 0,
-        title: String(payload['title'] ?? ''),
-        content: String(payload['content'] ?? ''),
-        matiere: String(payload['matiere'] ?? ''),
-        niveau: String(payload['niveau'] ?? ''),
-        domaine: payload['domaine'] ? String(payload['domaine']) : undefined,
-        sousdomaine: payload['sousdomaine'] ? String(payload['sousdomaine']) : undefined,
-        content_type: payload['content_type'] ? String(payload['content_type']) : undefined,
-        difficulty: payload['difficulty'] ? String(payload['difficulty']) : undefined,
+        title: String(p['title'] ?? ''),
+        content: String(p['content'] ?? ''),
+        matiere: String(p['matiere'] ?? ''),
+        niveau: String(p['niveau'] ?? ''),
+        domaine: p['domaine'] ? String(p['domaine']) : undefined,
+        sousdomaine: p['sousdomaine'] ? String(p['sousdomaine']) : undefined,
+        content_type: p['content_type'] ? String(p['content_type']) : undefined,
+        difficulty: p['difficulty'] ? String(p['difficulty']) : undefined,
       };
     });
 
     logger.info('Qdrant search completed', {
       operation: 'qdrant:search',
       resultsCount: results.length,
-      filter: filter ?? {},
       durationMs: Date.now() - startTime,
     });
 
     return results;
   }
 
-  /**
-   * Récupère les statistiques de la collection
-   */
+  /** Statistiques collection - Cache: Redis (1h) + in-memory (1min) */
   async getStats(): Promise<CollectionStats> {
-    // Cache hit
-    if (this.statsCache && Date.now() - this.statsCache.timestamp < this.statsCacheTtl) {
+    const cacheKey = 'stats:collection';
+
+    // In-memory fast path
+    if (this.statsCache && Date.now() - this.statsCache.timestamp < CACHE_TTL.MEMORY) {
       return this.statsCache.data;
     }
 
-    const client = this.getClient();
+    // Redis cache
+    const cached = await redisCacheService.get<CollectionStats>(CACHE_PREFIX, cacheKey);
+    if (cached) {
+      this.statsCache = { data: cached, timestamp: Date.now() };
+      return cached;
+    }
 
-    // Total points
+    const client = this.getClient();
     const collectionInfo = await client.getCollection(COLLECTION_NAME);
     const total_points = collectionInfo.points_count ?? 0;
 
-    // Par niveau
+    // Compter par niveau
     const niveaux = [
       'cp', 'ce1', 'ce2', 'cm1', 'cm2',
       'sixieme', 'cinquieme', 'quatrieme', 'troisieme',
       'seconde', 'premiere', 'terminale',
     ];
     const by_niveau: Record<string, number> = {};
-
     for (const niveau of niveaux) {
       const count = await client.count(COLLECTION_NAME, {
         filter: { must: [{ key: 'niveau', match: { value: niveau } }] },
       });
-      if (count.count > 0) {
-        by_niveau[niveau] = count.count;
-      }
+      if (count.count > 0) by_niveau[niveau] = count.count;
     }
 
-    // Récupérer les matières dynamiquement depuis les points existants
     const by_matiere = await this.getUniqueMatieres();
-
-    const stats: CollectionStats = {
-      total_points,
-      by_niveau,
-      by_matiere,
-    };
+    const stats: CollectionStats = { total_points, by_niveau, by_matiere };
 
     this.statsCache = { data: stats, timestamp: Date.now() };
+    await redisCacheService.set(CACHE_PREFIX, cacheKey, stats, CACHE_TTL.REDIS);
 
     logger.info('Qdrant stats retrieved', {
       operation: 'qdrant:stats',
@@ -201,65 +178,52 @@ class QdrantService {
     return stats;
   }
 
-  /**
-   * Récupère dynamiquement toutes les matières uniques depuis Qdrant
-   */
+  /** Récupère les matières uniques depuis Qdrant */
   private async getUniqueMatieres(): Promise<Record<string, number>> {
     const client = this.getClient();
     const by_matiere: Record<string, number> = {};
-
-    // Scroll pour récupérer un échantillon de points et extraire les matières uniques
-    // Type compatible avec Qdrant SDK qui peut retourner différents types pour next_page_offset
-    let offset: Awaited<ReturnType<typeof client.scroll>>['next_page_offset'] = undefined;
     const seenMatieres = new Set<string>();
 
-    // Limiter à quelques scrolls pour performance
+    let offset: Awaited<ReturnType<typeof client.scroll>>['next_page_offset'] = undefined;
     for (let i = 0; i < 10; i++) {
       const response = await client.scroll(COLLECTION_NAME, {
         limit: 100,
         offset,
         with_payload: ['matiere'],
       });
-
       for (const point of response.points) {
-        const payload = point.payload as Record<string, unknown>;
-        const matiere = payload['matiere'];
-        if (matiere && typeof matiere === 'string') {
-          seenMatieres.add(matiere);
-        }
+        const matiere = (point.payload as Record<string, unknown>)['matiere'];
+        if (matiere && typeof matiere === 'string') seenMatieres.add(matiere);
       }
-
       offset = response.next_page_offset;
       if (!offset) break;
     }
 
-    // Compter les points par matière
     for (const matiere of seenMatieres) {
       const count = await client.count(COLLECTION_NAME, {
         filter: { must: [{ key: 'matiere', match: { value: matiere } }] },
       });
-      if (count.count > 0) {
-        by_matiere[matiere] = count.count;
-      }
+      if (count.count > 0) by_matiere[matiere] = count.count;
     }
 
     return by_matiere;
   }
 
-  /**
-   * Récupère les matières disponibles pour un niveau spécifique
-   * @param niveau - Le niveau scolaire (cp, ce1, sixieme, etc.)
-   * @returns Record des matières avec leur nombre de chunks pour ce niveau
-   */
+  /** Matières disponibles pour un niveau - Cache Redis 1h */
   async getMatieresForNiveau(niveau: string): Promise<Record<string, number>> {
+    const cacheKey = `matieres:${niveau}`;
+
+    const cached = await redisCacheService.get<Record<string, number>>(CACHE_PREFIX, cacheKey);
+    if (cached) {
+      logger.info('Matieres cache hit', { operation: 'qdrant:matieres:cache-hit', niveau });
+      return cached;
+    }
+
     const client = this.getClient();
     const by_matiere: Record<string, number> = {};
-
-    // Scroll pour récupérer les points de ce niveau et extraire les matières
-    // Type compatible avec Qdrant SDK qui peut retourner différents types pour next_page_offset
-    let offset: Awaited<ReturnType<typeof client.scroll>>['next_page_offset'] = undefined;
     const seenMatieres = new Set<string>();
 
+    let offset: Awaited<ReturnType<typeof client.scroll>>['next_page_offset'] = undefined;
     for (let i = 0; i < 10; i++) {
       const response = await client.scroll(COLLECTION_NAME, {
         limit: 100,
@@ -267,20 +231,14 @@ class QdrantService {
         filter: { must: [{ key: 'niveau', match: { value: niveau } }] },
         with_payload: ['matiere'],
       });
-
       for (const point of response.points) {
-        const payload = point.payload as Record<string, unknown>;
-        const matiere = payload['matiere'];
-        if (matiere && typeof matiere === 'string') {
-          seenMatieres.add(matiere);
-        }
+        const matiere = (point.payload as Record<string, unknown>)['matiere'];
+        if (matiere && typeof matiere === 'string') seenMatieres.add(matiere);
       }
-
       offset = response.next_page_offset;
       if (!offset) break;
     }
 
-    // Compter les points par matière pour ce niveau
     for (const matiere of seenMatieres) {
       const count = await client.count(COLLECTION_NAME, {
         filter: {
@@ -290,39 +248,32 @@ class QdrantService {
           ],
         },
       });
-      if (count.count > 0) {
-        by_matiere[matiere] = count.count;
-      }
+      if (count.count > 0) by_matiere[matiere] = count.count;
     }
 
-    logger.info('Matieres for niveau retrieved', {
-      operation: 'qdrant:matieres-for-niveau',
-      niveau,
-      count: Object.keys(by_matiere).length,
-      matieres: Object.keys(by_matiere),
-    });
+    await redisCacheService.set(CACHE_PREFIX, cacheKey, by_matiere, CACHE_TTL.REDIS);
+    logger.info('Matieres retrieved', { operation: 'qdrant:matieres', niveau, count: Object.keys(by_matiere).length });
 
     return by_matiere;
   }
 
-  /**
-   * Récupère les chapitres (sousdomaine) et sous-chapitres (titres) pour une matière/niveau
-   *
-   * Hiérarchie RAG:
-   * - matiere: histoire_geo, francais, etc.
-   * - domaine: catégorie large (Histoire, Géographie, Grammaire)
-   * - sousdomaine: CHAPITRE réel ("Chrétientés et Islam", "La phrase", "Indicatif")
-   * - title: SOUS-CHAPITRE individuel ("L'Empire byzantin", "Types de phrases")
-   *
-   * Retourne: chapitres groupés par catégorie, avec leurs thèmes
-   */
+  /** Chapitres et thèmes pour matière/niveau - Cache Redis 1h */
   async getTopics(
     matiere: string,
     niveau: string
   ): Promise<{ domaine: string; category: string; themes: string[] }[]> {
-    const client = this.getClient();
+    const cacheKey = `topics:${niveau}:${matiere}`;
 
-    // Scroll pour récupérer tous les points de ce niveau/matière
+    const cached = await redisCacheService.get<{ domaine: string; category: string; themes: string[] }[]>(
+      CACHE_PREFIX,
+      cacheKey
+    );
+    if (cached) {
+      logger.info('Topics cache hit', { operation: 'qdrant:topics:cache-hit', niveau, matiere });
+      return cached;
+    }
+
+    const client = this.getClient();
     const points = await client.scroll(COLLECTION_NAME, {
       filter: {
         must: [
@@ -334,60 +285,51 @@ class QdrantService {
       with_payload: ['domaine', 'sousdomaine', 'title'],
     });
 
-    // Grouper par sousdomaine (= chapitre) avec sa catégorie (= domaine RAG)
     const chapitreMap = new Map<string, { category: string; themes: Set<string> }>();
-
     for (const point of points.points) {
-      const payload = point.payload as Record<string, unknown>;
-      const category = payload['domaine'] ? String(payload['domaine']) : 'Autre';
-      const chapitre = payload['sousdomaine'] ? String(payload['sousdomaine']) : null;
-      const theme = payload['title'] ? String(payload['title']) : null;
+      const p = point.payload as Record<string, unknown>;
+      const category = p['domaine'] ? String(p['domaine']) : 'Autre';
+      const chapitre = p['sousdomaine'] ? String(p['sousdomaine']) : null;
+      const theme = p['title'] ? String(p['title']) : null;
 
       if (!chapitre) continue;
-
-      if (!chapitreMap.has(chapitre)) {
-        chapitreMap.set(chapitre, { category, themes: new Set() });
-      }
-
-      if (theme) {
-        chapitreMap.get(chapitre)!.themes.add(theme);
-      }
+      if (!chapitreMap.has(chapitre)) chapitreMap.set(chapitre, { category, themes: new Set() });
+      if (theme) chapitreMap.get(chapitre)!.themes.add(theme);
     }
 
-    // Convertir et trier par catégorie puis par chapitre
-    const result = Array.from(chapitreMap.entries()).map(([chapitre, data]) => ({
-      domaine: chapitre,
-      category: data.category,
-      themes: Array.from(data.themes).sort(),
-    }));
+    const result = Array.from(chapitreMap.entries())
+      .map(([chapitre, data]) => ({
+        domaine: chapitre,
+        category: data.category,
+        themes: Array.from(data.themes).sort(),
+      }))
+      .sort((a, b) => {
+        const cmp = a.category.localeCompare(b.category);
+        return cmp !== 0 ? cmp : a.domaine.localeCompare(b.domaine);
+      });
 
-    return result.sort((a, b) => {
-      const catCompare = a.category.localeCompare(b.category);
-      if (catCompare !== 0) return catCompare;
-      return a.domaine.localeCompare(b.domaine);
-    });
+    await redisCacheService.set(CACHE_PREFIX, cacheKey, result, CACHE_TTL.REDIS);
+    logger.info('Topics retrieved', { operation: 'qdrant:topics', niveau, matiere, count: result.length });
+
+    return result;
   }
 
-  /**
-   * Vérifie si Qdrant est disponible
-   */
+  /** Health check */
   async isAvailable(): Promise<boolean> {
     try {
-      const client = this.getClient();
-      await client.getCollection(COLLECTION_NAME);
+      await this.getClient().getCollection(COLLECTION_NAME);
       return true;
     } catch {
       return false;
     }
   }
 
-  /**
-   * Invalide le cache des stats
-   */
-  invalidateCache(): void {
+  /** Invalide le cache (in-memory + Redis) */
+  async invalidateCache(): Promise<void> {
     this.statsCache = null;
+    await redisCacheService.delete(CACHE_PREFIX, 'stats:collection');
+    logger.info('Qdrant cache invalidated', { operation: 'qdrant:cache:invalidate' });
   }
 }
 
-// Singleton
 export const qdrantService = new QdrantService();

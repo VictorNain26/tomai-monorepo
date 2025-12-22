@@ -6,11 +6,12 @@
  * ✅ Better Auth + TanStack Query patterns optimisés
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, Calendar, GraduationCap, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { parentMutations, invalidationHelpers } from "@/lib/query-factories";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { parentMutations, invalidationHelpers, educationQueries } from "@/lib/query-factories";
+import { SCHOOL_LEVELS } from '@/constants/schoolLevels';
 import {
   Dialog,
   DialogContent,
@@ -31,7 +32,6 @@ import {
   SelectValue,
 } from '../ui/select';
 import { Badge } from '../ui/badge';
-import { getSchoolLevelOptions } from '@/constants/schoolLevels';
 import { Lv2Selector } from '../Lv2Selector';
 import type { IChild, Lv2Option } from '@/types';
 
@@ -93,6 +93,20 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
     }
   });
 
+  // Niveaux scolaires dynamiques depuis Qdrant
+  const { data: levelsData, isLoading: isLoadingLevels } = useQuery(educationQueries.levels());
+
+  // Filtrer uniquement les niveaux disponibles dans Qdrant et enrichir avec labels UI
+  const schoolLevels = useMemo(() => {
+    if (!levelsData?.levels) return [];
+    return levelsData.levels
+      .filter((level) => level.ragAvailable)
+      .map((level) => ({
+        value: level.key,
+        label: SCHOOL_LEVELS[level.key]?.description ?? level.key,
+      }));
+  }, [levelsData?.levels]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -121,11 +135,9 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
     }
   };
 
-  const isLoading = updateChildMutation.isPending;
+  const isLoading = updateChildMutation.isPending || isLoadingLevels;
   const isFormValid = formData.firstName.trim() && formData.lastName.trim() &&
                      formData.dateOfBirth && formData.schoolLevel;
-
-  const schoolLevels = getSchoolLevelOptions('only-cinquieme');
 
   return (
     <Dialog open={isOpen} onOpenChange={isLoading ? () => {} : onClose}>
@@ -198,7 +210,14 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
                     disabled={isLoading}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choisir le niveau" />
+                      {isLoadingLevels ? (
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Chargement...
+                        </span>
+                      ) : (
+                        <SelectValue placeholder="Choisir le niveau" />
+                      )}
                     </SelectTrigger>
                     <SelectContent>
                       {schoolLevels.map((level) => (

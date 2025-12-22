@@ -142,7 +142,7 @@ class EducationService {
   async invalidateCacheForLevel(level: EducationLevelType): Promise<void> {
     await redisCacheService.delete('education:', `education:subjects:${level}`);
     await redisCacheService.delete('education:', 'education:levels:all');
-    qdrantService.invalidateCache();
+    await qdrantService.invalidateCache();
 
     logger.info('Cache invalidated for level', {
       operation: 'education:cache:invalidate',
@@ -159,7 +159,7 @@ class EducationService {
       await redisCacheService.delete('education:', `education:subjects:${level}`);
     }
     await redisCacheService.delete('education:', 'education:levels:all');
-    qdrantService.invalidateCache();
+    await qdrantService.invalidateCache();
 
     logger.info('All education cache invalidated', {
       operation: 'education:cache:invalidate-all',

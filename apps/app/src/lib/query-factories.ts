@@ -47,6 +47,7 @@ import type {
   IGenerateDeckResponse,
   Lv2Option,
   EducationLevelType,
+  RagLevel,
 } from '@/types';
 
 // ===== QUERY KEYS FACTORIES (TanStack Best Practices) =====
@@ -325,7 +326,27 @@ export interface ITopicsResponse {
   totalTopics: number;
 }
 
+/** Response from /api/education/levels endpoint */
+export interface IEducationLevelsResponse {
+  success: boolean;
+  levels: RagLevel[];
+  total: number;
+  ragAvailableCount: number;
+}
+
 export const educationQueries = {
+  /**
+   * Get all education levels with RAG availability from Qdrant
+   * Utilisé pour les selectors de création/édition d'enfant
+   */
+  levels: () => ({
+    queryKey: queryKeys.education.levels(),
+    queryFn: async (): Promise<IEducationLevelsResponse> => {
+      return apiClient.get('/api/education/levels');
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes - niveaux changent rarement
+  }),
+
   /**
    * Get subjects available for a school level (filtered by LV2 if applicable)
    * Utilise educationService pour récupérer depuis le backend RAG ET enrichir avec métadonnées UI

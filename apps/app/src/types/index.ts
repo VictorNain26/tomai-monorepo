@@ -22,6 +22,7 @@ export type {
   SubjectsAPIResponse,
   AICategorizedSubjects,
   ValidationResult,
+  RagLevel,
 } from './education.types';
 
 // User types

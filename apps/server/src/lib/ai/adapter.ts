@@ -7,33 +7,37 @@
  * - Server Tools avec Zod
  * - Structured Output natif
  * - Streaming simplifié
+ *
+ * API v0.2.0: Model baked into adapter via createGeminiChat
  */
 
-import { gemini, type GeminiAdapterConfig } from '@tanstack/ai-gemini';
+import { createGeminiChat, type GeminiTextConfig } from '@tanstack/ai-gemini';
 import { appConfig } from '../../config/app.config.js';
 
-/** Configuration Gemini avec API Key */
-const geminiConfig: GeminiAdapterConfig = {
-  apiKey: appConfig.ai.gemini.apiKey ?? '',
-};
-
-/**
- * Adapter Gemini configuré pour TomAI
- * Utilise les variables d'environnement centralisées
- */
-export const geminiAdapter = gemini(geminiConfig);
+/** Configuration Gemini optionnelle */
+const geminiConfig: Omit<GeminiTextConfig, 'apiKey'> = {};
 
 /**
  * Modèles disponibles pour différents cas d'usage
  */
 export const AI_MODELS = {
   /** Chat principal - Socratique éducatif */
-  chat: appConfig.ai.gemini.model,
+  chat: appConfig.ai.gemini.model as 'gemini-2.5-flash',
   /** Génération de cartes - Structured output */
-  cards: appConfig.ai.gemini.model,
+  cards: appConfig.ai.gemini.model as 'gemini-2.5-flash',
   /** Transcription audio */
   audio: appConfig.ai.gemini.audioModel,
 } as const;
+
+/**
+ * Adapter Gemini pour chat - modèle principal
+ * Utilise les variables d'environnement centralisées
+ */
+export const geminiAdapter = createGeminiChat(
+  AI_MODELS.chat,
+  appConfig.ai.gemini.apiKey ?? '',
+  geminiConfig
+);
 
 /**
  * Type pour les modèles disponibles

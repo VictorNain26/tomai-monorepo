@@ -6,11 +6,12 @@
  * ✅ Better Auth + TanStack Query patterns
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { UserPlus, RefreshCw } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { UserPlus, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { parentMutations, invalidationHelpers } from '@/lib/query-factories';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { parentMutations, invalidationHelpers, educationQueries } from '@/lib/query-factories';
+import { SCHOOL_LEVELS } from '@/constants/schoolLevels';
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { getSchoolLevelOptions } from '@/constants/schoolLevels';
 import { generateUsername } from '@/utils/generateUsername';
 import { Lv2Selector } from '../Lv2Selector';
 import type { Lv2Option } from '@/types';
@@ -114,6 +114,20 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
     }
   });
 
+  // Niveaux scolaires dynamiques depuis Qdrant
+  const { data: levelsData, isLoading: isLoadingLevels } = useQuery(educationQueries.levels());
+
+  // Filtrer uniquement les niveaux disponibles dans Qdrant et enrichir avec labels UI
+  const schoolLevels = useMemo(() => {
+    if (!levelsData?.levels) return [];
+    return levelsData.levels
+      .filter((level) => level.ragAvailable)
+      .map((level) => ({
+        value: level.key,
+        label: SCHOOL_LEVELS[level.key]?.description ?? level.key,
+      }));
+  }, [levelsData?.levels]);
+
   const handleClose = () => {
     setFormData({
       firstName: '',
@@ -166,8 +180,6 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
       // subjects removed - all subjects available via RAG system
     });
   };
-
-  const schoolLevels = getSchoolLevelOptions('only-cinquieme');
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -227,10 +239,17 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
                   <Select
                     value={formData.schoolLevel}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, schoolLevel: value }))}
-                    disabled={createChildMutation.isPending}
+                    disabled={createChildMutation.isPending || isLoadingLevels}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choisir le niveau" />
+                      {isLoadingLevels ? (
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Chargement...
+                        </span>
+                      ) : (
+                        <SelectValue placeholder="Choisir le niveau" />
+                      )}
                     </SelectTrigger>
                     <SelectContent>
                       {schoolLevels.map((level) => (
