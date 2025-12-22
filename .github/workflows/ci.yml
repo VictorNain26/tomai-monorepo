@@ -1,13 +1,13 @@
-# TomAI Monorepo - CI Pipeline (pnpm + Bun runtime)
-# Best Practices 2025: pnpm for package management (Expo), Bun for runtime (performance)
+# TomAI Monorepo - CI Pipeline
+# Best Practices 2025: Trunk-based development, single source of truth for validation
 
 name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -29,7 +29,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        # Version auto-detected from package.json "packageManager" field
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -38,8 +37,7 @@ jobs:
 
       - name: Get pnpm store directory
         shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Cache pnpm dependencies
         uses: actions/cache@v4
@@ -61,8 +59,7 @@ jobs:
       - name: Security Audit
         run: |
           echo "Running pnpm audit for known vulnerabilities..."
-          AUDIT_OUTPUT=$(pnpm audit 2>&1) || true
-          echo "$AUDIT_OUTPUT"
+          pnpm audit 2>&1 || true
           echo "✅ Security audit completed"
 
       - name: TypeScript
