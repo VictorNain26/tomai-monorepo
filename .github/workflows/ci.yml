@@ -1,13 +1,13 @@
 # TomAI Monorepo - CI Pipeline
-# Best Practices 2025: Trunk-based development, single source of truth for validation
+# Best Practices 2025: Staging workflow with protected main branch
 
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
-    branches: [main]
+    branches: [main, staging]
 
 concurrency:
   group: ci-${{ github.ref }}

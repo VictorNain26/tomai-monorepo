@@ -88,12 +88,12 @@ export const api = treaty<App>(getBackendURL(), {
 5. **Evidence-based changes**: Read existing patterns before modifying
 6. **No over-engineering**: No premature abstractions, delete unused code
 
-## Git Workflow - Trunk-Based Development (2025)
+## Git Workflow - Staging + Production (2025)
 
-- **main** is the only permanent branch (production)
-- Create feature branches: `git checkout -b feature/xyz`
-- Open PR → Preview deployment created automatically on Koyeb
-- Squash merge to main → Production deployment
+- **main** → Production (Vercel + Koyeb auto-deploy)
+- **staging** → Staging (Vercel + Koyeb auto-deploy)
+- Feature branches → Local development only
+- Workflow: `feature/* → PR → staging → PR → main`
 - See root `CLAUDE.md` for detailed workflow
 
 ## App-Specific Documentation
