@@ -8,7 +8,7 @@
  * - Structured Output natif
  * - Streaming simplifié
  *
- * API v0.1.0: Model is specified when creating the adapter via createGeminiChat
+ * API v0.2.0: Model baked into adapter via createGeminiChat
  */
 
 import { createGeminiChat, type GeminiTextConfig } from '@tanstack/ai-gemini';
@@ -38,13 +38,6 @@ export const geminiAdapter = createGeminiChat(
   appConfig.ai.gemini.apiKey ?? '',
   geminiConfig
 );
-
-/**
- * Crée un adapter Gemini pour un modèle spécifique
- */
-export function createAdapter(model: 'gemini-2.5-flash' | 'gemini-2.5-pro') {
-  return createGeminiChat(model, appConfig.ai.gemini.apiKey ?? '', geminiConfig);
-}
 
 /**
  * Type pour les modèles disponibles

@@ -142,14 +142,14 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@tanstack/ai':
-        specifier: ^0.1.0
-        version: 0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1)
+        specifier: 0.2.0
+        version: 0.2.0
       '@tanstack/ai-client':
-        specifier: ^0.1.0
-        version: 0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1)
+        specifier: 0.2.0
+        version: 0.2.0
       '@tanstack/ai-react':
-        specifier: ^0.1.0
-        version: 0.1.0(@tanstack/ai-client@0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1))(@tanstack/ai@0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1))(@types/react@19.2.7)(react@19.2.3)
+        specifier: 0.2.0
+        version: 0.2.0(@tanstack/ai@0.2.0)(@types/react@19.2.7)(react@19.2.3)
       '@tanstack/react-form':
         specifier: ^1.27.5
         version: 1.27.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -481,11 +481,11 @@ importers:
         specifier: ^0.34.0
         version: 0.34.41
       '@tanstack/ai':
-        specifier: ^0.1.0
-        version: 0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1)
+        specifier: 0.2.0
+        version: 0.2.0
       '@tanstack/ai-gemini':
-        specifier: ^0.1.0
-        version: 0.1.0(@tanstack/ai@0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1))(zod@4.2.1)
+        specifier: 0.2.0
+        version: 0.2.0(@tanstack/ai@0.2.0)(zod@4.2.1)
       '@upstash/redis':
         specifier: ^1.34.0
         version: 1.35.8
@@ -627,11 +627,6 @@ packages:
     peerDependenciesMeta:
       graphql:
         optional: true
-
-  '@alcyone-labs/zod-to-json-schema@4.0.10':
-    resolution: {integrity: sha512-TFsSpAPToqmqmT85SGHXuxoCwEeK9zUDvn512O9aBVvWRhSuy+VvAXZkifzsdllD3ncF0ZjUrf4MpBwIEixdWQ==}
-    peerDependencies:
-      zod: ^4.0.5
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -3178,29 +3173,25 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7
 
-  '@tanstack/ai-client@0.1.0':
-    resolution: {integrity: sha512-QJgMO123Om7gf8oX7BlrFLwypzQpjSAd0WhBAXua+LngQJZSq8qvwso/eoQgjugg1qt4eWz4C0m3PFUPVcea9Q==}
+  '@tanstack/ai-client@0.2.0':
+    resolution: {integrity: sha512-0XzSBVFEkgdJRAuHM0lT1U0RyuqCaJxxuxurw7tg9ouXt3MzgLtULvw9c7E6YdklurJb9Wt+UqBpeu7/4CbMIQ==}
 
-  '@tanstack/ai-gemini@0.1.0':
-    resolution: {integrity: sha512-/9d9k0b9oAK3M49TaoVcjJW977QOf6Le6aoO4oMHcdUTwMqwPa090FseNMXtrX4K5t6igIQ8i43uuIQ8T6naWg==}
+  '@tanstack/ai-gemini@0.2.0':
+    resolution: {integrity: sha512-0pt7QxTGBzqCFk/rnuUj0LABF1qdhw/Scj1nlSfquD2GSrr7lOyOiXu2RcJsR1l/sRztRTHKmGg4mbRfNYjtdA==}
     peerDependencies:
-      '@tanstack/ai': 0.1.0
+      '@tanstack/ai': ^0.2.0
       zod: ^4.0.0
 
-  '@tanstack/ai-react@0.1.0':
-    resolution: {integrity: sha512-FhmH94xCin4ILrl2TeuNOqEENB80V3YnUoLkHN4M1ibJRAz1xqfvB8CkwzaeM8yROoNE0BSSahV7vVRh6bgMiQ==}
+  '@tanstack/ai-react@0.2.0':
+    resolution: {integrity: sha512-tdwYN3/jIodP1louWsDBNzgbHqHchcUPO3RKVKqexM8Iy4xqyHpCrdCzJzXk9lCO6TpUlWvvk04Bq1GyMHC8nA==}
     peerDependencies:
-      '@tanstack/ai': 0.1.0
-      '@tanstack/ai-client': 0.1.0
+      '@tanstack/ai': ^0.2.0
       '@types/react': '>=18.0.0'
       react: '>=18.0.0'
 
-  '@tanstack/ai@0.1.0':
-    resolution: {integrity: sha512-qvosQxtF6h7b0NcFLJw3JN22UHquWnL99vV29nnxBxGxc1/hgBNdpk/xxUkhf+yLxafdVivi/RPtG4mRQ976LA==}
+  '@tanstack/ai@0.2.0':
+    resolution: {integrity: sha512-liGeP7pa7YsgDbUQZOSBHSunWXTQ9FdzDeBGFnDXt9iXF8Fa/GyYu+x2w8IwjK9aWaKLd4CNpULRbzwHP5SzYA==}
     engines: {node: '>=18'}
-    peerDependencies:
-      '@alcyone-labs/zod-to-json-schema': ^4.0.0
-      zod: ^3.0.0 || ^4.0.0
 
   '@tanstack/devtools-event-client@0.4.0':
     resolution: {integrity: sha512-RPfGuk2bDZgcu9bAJodvO2lnZeHuz4/71HjZ0bGb/SPg8+lyTA+RLSKQvo7fSmPSi8/vcH3aKQ8EM9ywf1olaw==}
@@ -8034,10 +8025,6 @@ snapshots:
 
   '@0no-co/graphql.web@1.2.0': {}
 
-  '@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1)':
-    dependencies:
-      zod: 4.2.1
-
   '@alloc/quick-lru@5.2.0': {}
 
   '@antfu/install-pkg@1.1.0':
@@ -10784,17 +10771,14 @@ snapshots:
       tailwindcss: 4.1.18
       vite: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.8.2)
 
-  '@tanstack/ai-client@0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1)':
+  '@tanstack/ai-client@0.2.0':
     dependencies:
-      '@tanstack/ai': 0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1)
-    transitivePeerDependencies:
-      - '@alcyone-labs/zod-to-json-schema'
-      - zod
+      '@tanstack/ai': 0.2.0
 
-  '@tanstack/ai-gemini@0.1.0(@tanstack/ai@0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1))(zod@4.2.1)':
+  '@tanstack/ai-gemini@0.2.0(@tanstack/ai@0.2.0)(zod@4.2.1)':
     dependencies:
       '@google/genai': 1.34.0
-      '@tanstack/ai': 0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1)
+      '@tanstack/ai': 0.2.0
       zod: 4.2.1
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
@@ -10802,19 +10786,17 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@tanstack/ai-react@0.1.0(@tanstack/ai-client@0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1))(@tanstack/ai@0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1))(@types/react@19.2.7)(react@19.2.3)':
+  '@tanstack/ai-react@0.2.0(@tanstack/ai@0.2.0)(@types/react@19.2.7)(react@19.2.3)':
     dependencies:
-      '@tanstack/ai': 0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1)
-      '@tanstack/ai-client': 0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1)
+      '@tanstack/ai': 0.2.0
+      '@tanstack/ai-client': 0.2.0
       '@types/react': 19.2.7
       react: 19.2.3
 
-  '@tanstack/ai@0.1.0(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.2.1))(zod@4.2.1)':
+  '@tanstack/ai@0.2.0':
     dependencies:
-      '@alcyone-labs/zod-to-json-schema': 4.0.10(zod@4.2.1)
       '@tanstack/devtools-event-client': 0.4.0
       partial-json: 0.1.7
-      zod: 4.2.1
 
   '@tanstack/devtools-event-client@0.4.0': {}
 
