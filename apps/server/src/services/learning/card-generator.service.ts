@@ -11,7 +11,7 @@
  */
 
 import { chat } from '@tanstack/ai';
-import { geminiAdapter, AI_MODELS, CardGenerationOutputSchema } from '../../lib/ai/index.js';
+import { geminiAdapter, CardGenerationOutputSchema } from '../../lib/ai/index.js';
 import {
   getSubjectInstructions,
   getRecommendedCardTypes,
