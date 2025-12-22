@@ -1,0 +1,87 @@
+# Trunk-Based Development - Preview Environments
+# Best Practice 2025: Deploy preview after CI passes (no duplicate validation)
+name: Preview Deploy
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    # Wait for CI to pass before deploying
+    needs: []
+    environment:
+      name: preview-${{ github.event.pull_request.number }}
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Wait for CI
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: 'Validate'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
+      - name: Install Koyeb CLI
+        uses: koyeb-community/koyeb-actions@v2
+        with:
+          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+
+      - name: Deploy to Koyeb
+        id: deploy
+        uses: koyeb/action-git-deploy@v1
+        with:
+          app-name: tomai-preview-${{ github.event.pull_request.number }}
+          service-name: api
+          service-ports: "3000:http"
+          service-routes: "/:3000"
+          service-instance-type: "eco-nano"
+          service-regions: "fra"
+          git-branch: ${{ github.head_ref }}
+          git-workdir: apps/server
+          git-docker-dockerfile: apps/server/Dockerfile
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.deploy.outputs.url }}';
+            const body = `## 🚀 Preview Deployment
+
+            | Environment | URL |
+            |-------------|-----|
+            | **API Preview** | ${url} |
+
+            Preview auto-deleted when PR is closed.`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body.includes('Preview Deployment'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }

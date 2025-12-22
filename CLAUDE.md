@@ -88,12 +88,13 @@ export const api = treaty<App>(getBackendURL(), {
 5. **Evidence-based changes**: Read existing patterns before modifying
 6. **No over-engineering**: No premature abstractions, delete unused code
 
-## Git Workflow
+## Git Workflow - Trunk-Based Development (2025)
 
-- Work on `develop` branch (direct push OK)
-- PR `develop → main` for production deployment
-- CI must pass before merge
-- Never push directly to `main`
+- **main** is the only permanent branch (production)
+- Create feature branches: `git checkout -b feature/xyz`
+- Open PR → Preview deployment created automatically on Koyeb
+- Squash merge to main → Production deployment
+- See root `CLAUDE.md` for detailed workflow
 
 ## App-Specific Documentation
 
