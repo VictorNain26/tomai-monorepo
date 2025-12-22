@@ -6,7 +6,7 @@
  */
 
 import { chat } from '@tanstack/ai';
-import { geminiAdapter, AI_MODELS } from './adapter.js';
+import { geminiAdapter } from './adapter.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import type { EducationLevelType } from '../../types/index.js';
@@ -43,14 +43,14 @@ export async function generateSimpleResponse(
   });
 
   // Generate with TanStack AI (collect full response)
+  // Model is now specified in the adapter (gemini-2.5-flash)
   const stream = chat({
     adapter: geminiAdapter,
-    model: AI_MODELS.chat as 'gemini-2.5-flash',
     messages: [
       { role: 'user', content: params.userQuery }
     ],
     systemPrompts: [systemPrompt],
-    providerOptions: {
+    modelOptions: {
       generationConfig: {
         topK: 40
       }

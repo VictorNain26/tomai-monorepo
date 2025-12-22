@@ -188,12 +188,12 @@ export async function generateCards(
     // Appel IA avec retry pour robustesse
     const { fullContent, tokensUsed } = await withRetry(
       async () => {
+        // Model is now specified in the adapter (v0.1.0 API change)
         const stream = chat({
           adapter: geminiAdapter,
-          model: AI_MODELS.cards as 'gemini-2.5-flash',
           messages: [{ role: 'user', content: userPrompt }],
           systemPrompts: [systemPrompt],
-          providerOptions: {
+          modelOptions: {
             generationConfig: {
               topK: 40,
               responseMimeType: 'application/json'

@@ -328,14 +328,14 @@ class DocumentAnalysisService {
     let fullContent = '';
     let tokensUsed = 0;
 
+    // Model is now specified in the adapter (v0.1.0 API change)
     const stream = chat({
       adapter: geminiAdapter,
-      model: AI_MODELS.chat as 'gemini-2.5-flash',
       messages: [
         { role: 'user', content: userPrompt }
       ],
       systemPrompts: [systemPrompt],
-      providerOptions: {
+      modelOptions: {
         generationConfig: {
           topK: 40
         }
@@ -379,9 +379,9 @@ class DocumentAnalysisService {
     let tokensUsed = 0;
 
     // Message multimodal avec image inline (TanStack AI format)
+    // Model is now specified in the adapter (v0.1.0 API change)
     const stream = chat({
       adapter: geminiAdapter,
-      model: AI_MODELS.chat as 'gemini-2.5-flash',
       messages: [
         {
           role: 'user',
@@ -396,7 +396,7 @@ class DocumentAnalysisService {
         }
       ],
       systemPrompts: [systemPrompt],
-      providerOptions: {
+      modelOptions: {
         generationConfig: {
           topK: 40
         }
