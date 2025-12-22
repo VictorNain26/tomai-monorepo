@@ -1,17 +1,14 @@
 /**
- * EditChildModal - Version refactorisée Tom 2025
- * ✅ Respecte standards shadcn/ui + Tom CLAUDE.md
- * ✅ UI simplifiée sans over-engineering
- * ✅ TypeScript strict + ESLint zero warnings
- * ✅ Better Auth + TanStack Query patterns optimisés
+ * EditChildModal - Formulaire modification enfant
+ * Reset automatique LV2 si niveau non éligible
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Calendar, GraduationCap, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parentMutations, invalidationHelpers, educationQueries } from "@/lib/query-factories";
-import { SCHOOL_LEVELS } from '@/constants/schoolLevels';
+import { parentMutations, invalidationHelpers, educationQueries } from '@/lib/query-factories';
+import { SCHOOL_LEVELS, CYCLES } from '@/constants/schoolLevels';
 import {
   Dialog,
   DialogContent,
@@ -27,13 +24,15 @@ import { ScrollArea } from '../ui/scroll-area';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { Lv2Selector } from '../Lv2Selector';
-import type { IChild, Lv2Option } from '@/types';
+import { isLv2EligibleLevel, type IChild, type Lv2Option } from '@/types';
 
 interface EditChildModalProps {
   isOpen: boolean;
@@ -50,22 +49,15 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
 }) => {
   const queryClient = useQueryClient();
 
-  const [formData, setFormData] = useState<{
-    firstName: string;
-    lastName: string;
-    dateOfBirth: string;
-    schoolLevel: string;
-    selectedLv2: Lv2Option | null;
-  }>({
+  const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     dateOfBirth: '',
     schoolLevel: '',
-    selectedLv2: null
+    selectedLv2: null as Lv2Option | null
   });
 
-  // Removed subject selection - all subjects now available via RAG system
-
+  // Charger données enfant à l'ouverture
   useEffect(() => {
     if (child && isOpen) {
       setFormData({
@@ -78,7 +70,34 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
     }
   }, [child, isOpen]);
 
-  // Removed subject selection effect - all subjects now available via RAG system
+  // Niveaux scolaires depuis Qdrant
+  const { data: levelsData, isLoading: isLoadingLevels } = useQuery(educationQueries.levels());
+
+  // Grouper niveaux par cycle (Primaire, Collège, Lycée)
+  const levelGroups = useMemo(() => {
+    if (!levelsData?.levels) return [];
+
+    const ragLevels = levelsData.levels
+      .filter((l) => l.ragAvailable)
+      .map((l) => l.key);
+
+    return Object.entries(CYCLES).map(([, cycle]) => ({
+      name: cycle.name,
+      levels: cycle.levels
+        .filter((lvl) => ragLevels.includes(lvl))
+        .map((lvl) => ({
+          value: lvl,
+          label: SCHOOL_LEVELS[lvl]?.description ?? lvl,
+        })),
+    })).filter((g) => g.levels.length > 0);
+  }, [levelsData?.levels]);
+
+  // Reset LV2 automatiquement si niveau non éligible
+  useEffect(() => {
+    if (formData.schoolLevel && !isLv2EligibleLevel(formData.schoolLevel) && formData.selectedLv2) {
+      setFormData(prev => ({ ...prev, selectedLv2: null }));
+    }
+  }, [formData.schoolLevel, formData.selectedLv2]);
 
   const updateChildMutation = useMutation({
     ...parentMutations.updateChild(),
@@ -89,23 +108,9 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
       onClose();
     },
     onError: (error: Error) => {
-      toast.error(`❌ Erreur: ${error.message || 'Échec de la mise à jour'}`);
+      toast.error(`Erreur: ${error.message || 'Échec de la mise à jour'}`);
     }
   });
-
-  // Niveaux scolaires dynamiques depuis Qdrant
-  const { data: levelsData, isLoading: isLoadingLevels } = useQuery(educationQueries.levels());
-
-  // Filtrer uniquement les niveaux disponibles dans Qdrant et enrichir avec labels UI
-  const schoolLevels = useMemo(() => {
-    if (!levelsData?.levels) return [];
-    return levelsData.levels
-      .filter((level) => level.ragAvailable)
-      .map((level) => ({
-        value: level.key,
-        label: SCHOOL_LEVELS[level.key]?.description ?? level.key,
-      }));
-  }, [levelsData?.levels]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,23 +121,16 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
       return;
     }
 
-    try {
-      await updateChildMutation.mutateAsync({
-        childId: child.id,
-        data: {
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          dateOfBirth: formData.dateOfBirth,
-          schoolLevel: formData.schoolLevel,
-          selectedLv2: formData.selectedLv2
-        }
-      });
-
-      // Removed subject comparison logic - all subjects now available via RAG system
-
-    } catch {
-      // Erreurs gérées par les mutations
-    }
+    await updateChildMutation.mutateAsync({
+      childId: child.id,
+      data: {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        dateOfBirth: formData.dateOfBirth,
+        schoolLevel: formData.schoolLevel,
+        selectedLv2: formData.selectedLv2
+      }
+    });
   };
 
   const isLoading = updateChildMutation.isPending || isLoadingLevels;
@@ -220,17 +218,22 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
                       )}
                     </SelectTrigger>
                     <SelectContent>
-                      {schoolLevels.map((level) => (
-                        <SelectItem key={level.value} value={level.value}>
-                          {level.label}
-                        </SelectItem>
+                      {levelGroups.map((group) => (
+                        <SelectGroup key={group.name}>
+                          <SelectLabel>{group.name}</SelectLabel>
+                          {group.levels.map((level) => (
+                            <SelectItem key={level.value} value={level.value}>
+                              {level.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              {/* LV2 Selection - apparaît uniquement pour 5ème+ */}
+              {/* LV2 - Apparaît uniquement pour 5ème+ */}
               <Lv2Selector
                 schoolLevel={formData.schoolLevel}
                 selectedLv2={formData.selectedLv2}
@@ -239,7 +242,7 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
               />
             </div>
 
-            {/* Identifiant de connexion */}
+            {/* Identifiant de connexion (non modifiable) */}
             <div className="space-y-3 border-t pt-4">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <span className="text-lg">@</span>
@@ -258,7 +261,6 @@ const EditChildModal: React.FC<EditChildModalProps> = ({
           </form>
         </ScrollArea>
 
-        {/* Footer fixe avec boutons d'action */}
         <DialogFooter className="flex-shrink-0 flex-col-reverse gap-2 border-t px-4 py-4 sm:flex-row sm:px-6">
           <Button
             type="button"

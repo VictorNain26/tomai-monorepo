@@ -1,9 +1,8 @@
 /**
- * CreateChildModal - Version refactorisée Tom 2025
- * ✅ Respecte standards shadcn/ui + Tom CLAUDE.md
- * ✅ UX simplifiée : 1 écran au lieu de 3 steps complexes
- * ✅ TypeScript strict + ESLint zero warnings
- * ✅ Better Auth + TanStack Query patterns
+ * CreateChildModal - Formulaire création enfant
+ * Adapté au système scolaire français :
+ * - Niveaux groupés par cycle (Primaire/Collège/Lycée)
+ * - LV2 uniquement à partir de la 5ème (reset auto si niveau change)
  */
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -11,7 +10,7 @@ import { UserPlus, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parentMutations, invalidationHelpers, educationQueries } from '@/lib/query-factories';
-import { SCHOOL_LEVELS } from '@/constants/schoolLevels';
+import { SCHOOL_LEVELS, CYCLES } from '@/constants/schoolLevels';
 import {
   Dialog,
   DialogContent,
@@ -27,13 +26,15 @@ import { ScrollArea } from '../ui/scroll-area';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
 import { generateUsername } from '@/utils/generateUsername';
 import { Lv2Selector } from '../Lv2Selector';
-import type { Lv2Option } from '@/types';
+import { isLv2EligibleLevel, type Lv2Option } from '@/types';
 
 interface CreateChildModalProps {
   isOpen: boolean;
@@ -41,9 +42,6 @@ interface CreateChildModalProps {
   onSuccess: () => void;
 }
 
-/**
- * Génère un nombre aléatoire cryptographiquement sécurisé entre 0 et max (exclus)
- */
 const getSecureRandomInt = (max: number): number => {
   const array = new Uint32Array(1);
   crypto.getRandomValues(array);
@@ -55,7 +53,7 @@ const generatePassword = (): string => {
   const nouns = ['Lion', 'Chat', 'Ours', 'Etoile', 'Soleil', 'Lune'];
   const adjective = adjectives[getSecureRandomInt(adjectives.length)];
   const noun = nouns[getSecureRandomInt(nouns.length)];
-  const number = getSecureRandomInt(89) + 10; // 10-99
+  const number = getSecureRandomInt(89) + 10;
   return `${adjective}${noun}${number}!`;
 };
 
@@ -67,33 +65,49 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
   const queryClient = useQueryClient();
   const firstInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<{
-    firstName: string;
-    lastName: string;
-    dateOfBirth: string;
-    schoolLevel: string;
-    selectedLv2: Lv2Option | null;
-    username: string;
-    password: string;
-  }>({
+  const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     dateOfBirth: '',
     schoolLevel: '',
-    selectedLv2: null,
+    selectedLv2: null as Lv2Option | null,
     username: '',
     password: ''
   });
 
-  // Removed subject selection - all subjects now available via RAG system
+  // Niveaux scolaires depuis Qdrant
+  const { data: levelsData, isLoading: isLoadingLevels } = useQuery(educationQueries.levels());
 
-  // Focus management (accessibility)
+  // Grouper niveaux par cycle (Primaire, Collège, Lycée)
+  const levelGroups = useMemo(() => {
+    if (!levelsData?.levels) return [];
+
+    const ragLevels = levelsData.levels
+      .filter((l) => l.ragAvailable)
+      .map((l) => l.key);
+
+    return Object.entries(CYCLES).map(([, cycle]) => ({
+      name: cycle.name,
+      levels: cycle.levels
+        .filter((lvl) => ragLevels.includes(lvl))
+        .map((lvl) => ({
+          value: lvl,
+          label: SCHOOL_LEVELS[lvl]?.description ?? lvl,
+        })),
+    })).filter((g) => g.levels.length > 0);
+  }, [levelsData?.levels]);
+
+  // Reset LV2 automatiquement si niveau non éligible
   useEffect(() => {
-    if (!isOpen || !firstInputRef.current) return;
+    if (formData.schoolLevel && !isLv2EligibleLevel(formData.schoolLevel) && formData.selectedLv2) {
+      setFormData(prev => ({ ...prev, selectedLv2: null }));
+    }
+  }, [formData.schoolLevel, formData.selectedLv2]);
 
-    const timer = setTimeout(() => {
-      firstInputRef.current?.focus();
-    }, 100);
+  // Focus premier champ à l'ouverture
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => firstInputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
   }, [isOpen]);
 
@@ -101,11 +115,9 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
     ...parentMutations.createChild(),
     onSuccess: () => {
       invalidationHelpers.invalidateParentData(queryClient);
-
       toast.success('🎉 Compte créé avec succès !', {
         description: `${formData.firstName} peut maintenant utiliser Tom.`
       });
-
       onSuccess();
       handleClose();
     },
@@ -113,20 +125,6 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
       toast.error(error.message || 'Erreur lors de la création du compte');
     }
   });
-
-  // Niveaux scolaires dynamiques depuis Qdrant
-  const { data: levelsData, isLoading: isLoadingLevels } = useQuery(educationQueries.levels());
-
-  // Filtrer uniquement les niveaux disponibles dans Qdrant et enrichir avec labels UI
-  const schoolLevels = useMemo(() => {
-    if (!levelsData?.levels) return [];
-    return levelsData.levels
-      .filter((level) => level.ragAvailable)
-      .map((level) => ({
-        value: level.key,
-        label: SCHOOL_LEVELS[level.key]?.description ?? level.key,
-      }));
-  }, [levelsData?.levels]);
 
   const handleClose = () => {
     setFormData({
@@ -138,11 +136,9 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
       username: '',
       password: ''
     });
-    // Subject selection removed - using RAG system
     onClose();
   };
 
-  // Form validation
   const isFormValid =
     formData.firstName.trim() &&
     formData.lastName.trim() &&
@@ -163,7 +159,6 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!isFormValid) {
       toast.error('Tous les champs requis doivent être remplis');
       return;
@@ -177,7 +172,6 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
       selectedLv2: formData.selectedLv2,
       username: formData.username.trim(),
       password: formData.password
-      // subjects removed - all subjects available via RAG system
     });
   };
 
@@ -252,17 +246,22 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
                       )}
                     </SelectTrigger>
                     <SelectContent>
-                      {schoolLevels.map((level) => (
-                        <SelectItem key={level.value} value={level.value}>
-                          {level.label}
-                        </SelectItem>
+                      {levelGroups.map((group) => (
+                        <SelectGroup key={group.name}>
+                          <SelectLabel>{group.name}</SelectLabel>
+                          {group.levels.map((level) => (
+                            <SelectItem key={level.value} value={level.value}>
+                              {level.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              {/* LV2 Selection - apparaît uniquement pour 5ème+ */}
+              {/* LV2 - Apparaît uniquement pour 5ème+ */}
               <Lv2Selector
                 schoolLevel={formData.schoolLevel}
                 selectedLv2={formData.selectedLv2}
@@ -316,7 +315,6 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
           </form>
         </ScrollArea>
 
-        {/* Footer fixe avec boutons d'action */}
         <DialogFooter className="flex-shrink-0 flex-col-reverse gap-2 border-t px-4 py-4 sm:flex-row sm:px-6">
           <Button
             type="button"
