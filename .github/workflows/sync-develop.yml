@@ -1,5 +1,8 @@
 # Auto-sync develop branch after main changes
 # Best Practice 2025: Keep develop always up-to-date with main
+#
+# Workflow: develop (staging) → PR → main (prod) → sync back to develop
+# This prevents "branch out-of-date" warnings on future PRs
 name: Sync Develop
 
 on:
@@ -12,6 +15,9 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    # Only run on actual merges, not direct pushes (safety)
+    if: github.event.head_commit.message != '' && contains(github.event.head_commit.message, '(#')
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,6 +28,17 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin develop
           git checkout develop
-          git merge origin/main --no-edit
+
+          # Check if sync is needed
+          if git merge-base --is-ancestor origin/main develop; then
+            echo "✅ develop is already up-to-date with main"
+            exit 0
+          fi
+
+          # Merge with [skip ci] to avoid triggering staging deploy
+          git merge origin/main --no-edit -m "chore: sync develop with main [skip ci]"
           git push origin develop
+          echo "✅ develop synced with main"
