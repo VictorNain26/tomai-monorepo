@@ -60,3 +60,10 @@ export interface ValidationResult {
   valid: boolean;
   errors: string[];
 }
+
+// ✅ UNIFIÉ avec backend - Niveau scolaire avec disponibilité RAG Qdrant
+export interface RagLevel {
+  key: EducationLevelType;
+  ragAvailable: boolean;
+  subjectsCount: number;
+}

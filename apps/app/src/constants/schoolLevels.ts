@@ -37,12 +37,8 @@ export const useLevelInfo = (level: EducationLevelType): ILevelInfo => {
   return SCHOOL_LEVELS[level];
 };
 
-export const getSchoolLevelOptions = (filter?: 'only-cinquieme'): { value: EducationLevelType; label: string }[] => {
-  const filteredLevels = filter === 'only-cinquieme'
-    ? schoolLevelsData.filter(([level]) => level === 'cinquieme')
-    : schoolLevelsData;
-
-  return filteredLevels.map(([level, info]) => ({
+export const getSchoolLevelOptions = (): { value: EducationLevelType; label: string }[] => {
+  return schoolLevelsData.map(([level, info]) => ({
     value: level,
     label: info.description
   }));

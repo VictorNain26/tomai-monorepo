@@ -85,6 +85,7 @@ export const schoolLevelLiterals = [
 
 /**
  * Subject labels for French UI
+ * Aligned with Qdrant matières and frontend SUBJECT_METADATA
  */
 export const subjectLabels: Record<string, string> = {
   mathematiques: 'Mathématiques',
@@ -93,4 +94,8 @@ export const subjectLabels: Record<string, string> = {
   svt: 'SVT',
   histoire_geo: 'Histoire-Géographie',
   anglais: 'Anglais',
+  espagnol: 'Espagnol',
+  allemand: 'Allemand',
+  italien: 'Italien',
+  technologie: 'Technologie',
 };
