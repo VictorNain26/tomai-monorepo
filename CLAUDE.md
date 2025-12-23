@@ -88,13 +88,12 @@ export const api = treaty<App>(getBackendURL(), {
 5. **Evidence-based changes**: Read existing patterns before modifying
 6. **No over-engineering**: No premature abstractions, delete unused code
 
-## Git Workflow - Staging + Production (2025)
+## Git Workflow (2025)
 
 - **main** → Production (Vercel + Koyeb auto-deploy)
-- **staging** → Staging (Vercel + Koyeb auto-deploy)
-- Feature branches → Local development only
-- Workflow: `feature/* → PR → staging → PR → main`
-- See root `CLAUDE.md` for detailed workflow
+- **develop** → Staging/Preview (Vercel preview + Koyeb staging)
+- Workflow: `develop (push direct) → PR → main`
+- See root `CLAUDE.md` for detailed workflow and Vercel troubleshooting
 
 ## App-Specific Documentation
 

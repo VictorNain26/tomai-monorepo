@@ -1,99 +1,106 @@
 # Tom Monorepo
 
-**Plateforme de tutorat socratique adaptatif** - Architecture Turborepo unifiée
+**Plateforme de tutorat IA adaptatif** - Architecture Turborepo unifiée
 
-## 🚀 Démarrage Rapide
+## Demarrage Rapide
 
 ```bash
 # Installation
 pnpm install
 
-# Développement (lance landing + app en parallèle)
+# Developpement (lance toutes les apps)
 pnpm dev
 # → Landing: http://localhost:3001
-# → App métier: http://localhost:5173
+# → App: http://localhost:5173
+# → Server: http://localhost:3000
 
 # Build production
 pnpm build
 
-# Validation complète
+# Validation complete
 pnpm validate
 ```
 
-## 📁 Structure
+**Backend** : Docker requis pour PostgreSQL et Redis
+```bash
+cd apps/server && docker compose up -d
+```
+
+## Structure
 
 ```
 tomai-monorepo/
 ├── apps/
-│   ├── landing/     # Site vitrine Next.js 15 (port 3001)
-│   └── app/         # Application métier Vite (port 5173)
+│   ├── landing/       # Next.js 16 site vitrine (port 3001)
+│   ├── app/           # React 19 + Vite 7 app tutorat (port 5173)
+│   ├── server/        # Bun + Elysia.js backend (port 3000)
+│   └── mobile/        # Expo SDK 54 app mobile (port 8081)
 ├── packages/
-│   ├── ui/          # Composants UI partagés
-│   ├── types/       # Types TypeScript partagés
-│   └── config/      # Configurations partagées
-└── CLAUDE.md        # Documentation complète développeur
+│   ├── api/           # @repo/api - Eden Treaty clients
+│   ├── shared-types/  # @repo/shared-types - Types partages
+│   └── eslint-config/ # @repo/eslint-config - Configs ESLint
+└── CLAUDE.md          # Documentation developpeur
 ```
 
-## 🎯 Apps
+## Apps
 
-### Landing (Site Vitrine)
-- **URL** : http://localhost:3001
-- **Tech** : Next.js 15 + TailwindCSS 4
-- **Features** : Homepage SEO, Static Generation, Design system moderne
+| App | Port | Tech | Description |
+|-----|------|------|-------------|
+| **landing** | 3001 | Next.js 16 | Site vitrine SEO |
+| **app** | 5173 | React 19 + Vite 7 | Application de tutorat |
+| **server** | 3000 | Bun + Elysia.js | API backend |
+| **mobile** | 8081 | Expo SDK 54 | Application mobile |
 
-### App Métier (Tom-client)
-- **URL** : http://localhost:5173
-- **Tech** : Vite 7 + React 19 + React Router 7
-- **Features** : Chat SSE, Better Auth, Pronote, Gamification
-
-## 📚 Documentation
-
-- **[CLAUDE.md](./CLAUDE.md)** - Guide développeur complet
-- **[MIGRATION_SUCCESS.md](./MIGRATION_SUCCESS.md)** - Rapport migration
-- **[apps/app/CLAUDE.md](./apps/app/CLAUDE.md)** - Documentation app métier
-
-## ⚡ Commandes
+## Commandes
 
 ```bash
-# Développement
-pnpm dev              # Tous les apps
+# Developpement
+pnpm dev              # Toutes les apps
 pnpm dev:landing      # Landing seulement
-pnpm dev:app          # App métier seulement
+pnpm dev:app          # App seulement
+pnpm dev:server       # Server seulement
+pnpm dev:mobile       # Mobile seulement
 
 # Build
-pnpm build            # Build production complet
-pnpm build:landing    # Landing seulement
-pnpm build:app        # App métier seulement
+pnpm build            # Build production
 
 # Validation
 pnpm typecheck        # TypeScript strict
 pnpm lint             # ESLint
 pnpm validate         # typecheck + lint
 
-# Maintenance
-pnpm clean            # Clean builds
+# Database
+pnpm db:push          # Appliquer schema (dev)
+pnpm db:generate      # Generer migration (prod)
+pnpm db:studio        # Drizzle Studio
 ```
 
-## 🔧 Stack Technique
+## Stack
 
-- **Monorepo** : Turborepo 2.6.0
-- **Package Manager** : PNPM 10.15.0
-- **Node.js** : ≥18
-- **TypeScript** : 5.9.2 (strict mode)
-- **Landing** : Next.js 15, TailwindCSS 4, Framer Motion
-- **App** : Vite 7, React 19, shadcn/ui, Better Auth, TanStack Query
+| Couche | Technologies |
+|--------|--------------|
+| Monorepo | Turborepo 2.7.1, PNPM 10.12.1 |
+| Backend | Bun, Elysia.js 1.3, PostgreSQL 16, Redis 7, Drizzle ORM |
+| Frontend | React 19, Vite 7, TailwindCSS 4, shadcn/ui |
+| Mobile | Expo SDK 54, React Native 0.81, NativeWind |
+| Auth | Better Auth + Google OAuth |
+| AI | Gemini 2.5 Flash, Mistral embeddings, Qdrant RAG |
 
-## ✅ Statut
+## Documentation
 
-- ✅ Build production : Successful (landing + app)
-- ✅ TypeScript : Strict mode, zero erreurs
-- ✅ ESLint : Warnings mineurs (non-bloquants)
-- ✅ Dev servers : Opérationnels (1831ms landing, instantané app)
+- **[CLAUDE.md](./CLAUDE.md)** - Guide developpeur
+- **[apps/app/CLAUDE.md](./apps/app/CLAUDE.md)** - App React
+- **[apps/server/CLAUDE.md](./apps/server/CLAUDE.md)** - Backend Elysia
 
-## 🎓 Mission
+## Git Workflow
 
-Plateforme servant de **vraies familles françaises** pour l'éducation de leurs enfants (CP à Terminale). Excellence technique, performance optimisée, sécurité RGPD.
+- **develop** : Branche de travail (push direct OK)
+- **main** : Production (PR obligatoire)
 
----
-
-**Créé avec** : Claude Code | **Méthodologie** : Evidence-based architecture | **Durée** : 2 heures
+```bash
+git checkout develop
+git pull origin develop
+# ... travailler ...
+git push origin develop
+# PR develop → main pour production
+```
