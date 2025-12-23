@@ -4,6 +4,15 @@
 
 export {
   generateIdentityPrompt,
-  generateAdaptiveRules,
   type IdentityParams
 } from './identity.js';
+
+export {
+  generatePedagogyPrinciples,
+  generateCSENMethod,
+  generateAdaptiveRules
+} from './pedagogy.js';
+
+export {
+  generateSafetyGuardrails
+} from './safety.js';

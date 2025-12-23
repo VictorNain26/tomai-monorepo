@@ -4,7 +4,7 @@
  */
 
 import type { EducationLevelType } from '../../types/index.js';
-import type { CycleType } from '../prompts/types.js';
+import type { CycleType } from '../prompts/index.js';
 import {
   TOKEN_CONFIG_BY_CYCLE,
   THINKING_BUDGET_BY_LEVEL,

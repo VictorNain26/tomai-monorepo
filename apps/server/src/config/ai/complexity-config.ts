@@ -5,7 +5,7 @@
  */
 
 import type { EducationLevelType } from '../../types/index.js';
-import type { CycleType } from '../prompts/types.js';
+import type { CycleType } from '../prompts/index.js';
 
 /**
  * Type de complexité de question
