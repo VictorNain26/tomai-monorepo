@@ -88,25 +88,23 @@ class StreamingService {
   /**
    * Construit le system prompt pour le chat socratique avec RAG automatique
    * Le RAG est géré via Server Tools - L'AI décide quand chercher
-   * Best Practice 2025 : L'IA décide du mode (direct/socratique/exercice) via le prompt
+   * Architecture LearnLM 2025: Prompt optimisé ~700 tokens
    */
   private buildSystemPromptForChat(params: {
     level: EducationLevelType;
     subject: string;
     firstName?: string;
-    content: string;
   }): string {
     const levelText = getLevelText(params.level);
 
-    // L'IA décide automatiquement du mode approprié via generateAdaptiveRules()
-    // Plus de détection par mots-clés - Best Practice 2025
+    // Architecture LearnLM v3: Plus de userQuery dans le system prompt
+    // Le mode adaptatif est géré dynamiquement par les règles
     return buildSystemPrompt({
       level: params.level,
       levelText,
       subject: params.subject,
-      firstName: params.firstName,
-      userQuery: params.content,
-      ragContext: '' // RAG automatique via Server Tools
+      firstName: params.firstName
+      // ragContext non fourni = RAG automatique via Server Tools
     });
   }
 
@@ -141,12 +139,11 @@ class StreamingService {
     const model = AI_MODELS.chat;
 
     try {
-      // 1. Construire le system prompt (RAG automatique via tools)
+      // 1. Construire le system prompt (LearnLM v3, ~700 tokens)
       const systemPrompt = this.buildSystemPromptForChat({
         level: params.schoolLevel,
         subject: params.subject,
-        firstName: params.firstName,
-        content: params.content
+        firstName: params.firstName
       });
 
       // 2. Instructions RAG tool (utilisation silencieuse)

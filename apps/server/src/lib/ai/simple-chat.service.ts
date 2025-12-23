@@ -33,12 +33,11 @@ export async function generateSimpleResponse(
   const provider = 'TanStack AI + Gemini';
   const levelText = getLevelText(params.level);
 
-  // Build system prompt with correct parameters
+  // Build system prompt (LearnLM v3 architecture)
   const systemPrompt = buildSystemPrompt({
     level: params.level,
     levelText,
     subject: params.subject,
-    userQuery: params.userQuery,
     ragContext: params.educationalContext,
   });
 
