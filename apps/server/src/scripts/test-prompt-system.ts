@@ -119,18 +119,31 @@ async function testLive() {
       });
 
       const startTime = Date.now();
-      const response = await chat({
+
+      // TanStack AI: utilise systemPrompts (array) et retourne un AsyncIterable
+      const stream = chat({
         adapter: geminiAdapter,
         messages: [{ role: 'user', content: testCase.query }],
-        system: systemPrompt,
-        maxTokens: 300,
+        systemPrompts: [systemPrompt],
+        modelOptions: {
+          generationConfig: { topK: 40 }
+        }
       });
+
+      // Collecter le contenu depuis le stream
+      let fullContent = '';
+      for await (const chunk of stream) {
+        if (chunk.type === 'content' && chunk.delta) {
+          fullContent += chunk.delta;
+        }
+      }
+
       const duration = Date.now() - startTime;
 
       console.log(`\n   ✅ Réponse (${duration}ms):`);
-      const preview = response.content.slice(0, 250).split('\n').map(l => '      ' + l).join('\n');
+      const preview = fullContent.slice(0, 250).split('\n').map((l: string) => '      ' + l).join('\n');
       console.log(preview);
-      if (response.content.length > 250) console.log('      [...]');
+      if (fullContent.length > 250) console.log('      [...]');
 
     } catch (error) {
       console.log(`   ❌ Erreur API: ${error instanceof Error ? error.message : 'Unknown'}`);
