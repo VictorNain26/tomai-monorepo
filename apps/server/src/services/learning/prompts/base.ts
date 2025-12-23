@@ -1,12 +1,9 @@
 /**
  * Prompts de base - Instructions KaTeX, Mermaid, et contenu enrichi
  *
- * Architecture Meta-Planning 2025:
+ * Architecture Single-Phase 2025:
  * Ce fichier contient les constantes partagées pour le rendu enrichi.
- *
- * Les prompts principaux sont dans :
- * - deck-planner.prompt.ts (Phase 1 - Planning)
- * - prompt-builder.service.ts (Phase 2 - Exécution)
+ * Utilisé par card-generator.service.ts pour la génération de cartes.
  */
 
 // ============================================================================
