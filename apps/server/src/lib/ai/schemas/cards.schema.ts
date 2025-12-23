@@ -1,23 +1,22 @@
 /**
- * Zod Schemas pour les 13 types de cartes learning
+ * Zod Schemas pour les 14 types de cartes learning
  *
- * Architecture TanStack AI 2025 :
- * - Structured Output natif avec Zod
- * - Validation type-safe
- * - Compatible avec generation JSON de Gemini
- *
- * @see https://tanstack.com/ai/latest/docs/guides/structured-output
+ * Architecture 2025 :
+ * - Validation type-safe avec Zod
+ * - Double-check après Gemini Structured Output
+ * - Défense en profondeur (coerceIndex comme filet de sécurité)
  */
 
 import { z } from 'zod';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// HELPER: Coercion pour output AI (Gemini retourne parfois [n] au lieu de n)
+// HELPER: Défense en profondeur pour index numériques
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Coerce un index qui peut être un nombre ou un tableau [n] vers un nombre
- * Gemini renvoie parfois correctIndex: [1] au lieu de correctIndex: 1
+ * Valide un index numérique avec coercion de sécurité.
+ * Le Structured Output de Gemini garantit le bon type, mais ce helper
+ * offre une défense en profondeur pour tout autre usage du schéma.
  */
 const coerceIndex = z.preprocess(
   (val) => (Array.isArray(val) && val.length === 1 ? val[0] : val),

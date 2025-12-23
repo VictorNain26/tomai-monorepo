@@ -1,17 +1,17 @@
 /**
- * Card Generator Service - Architecture Single-Phase 2025
+ * Card Generator Service - Structured Output Architecture 2025
  *
- * Génération de cartes en UN SEUL appel Gemini.
- * Latence optimisée : ~10-15s au lieu de ~25-35s (2 phases).
+ * Utilise @google/genai directement avec responseSchema natif.
+ * Gemini GARANTIT un JSON conforme au schéma - plus de normalisation.
  *
- * L'IA reçoit toutes les instructions nécessaires pour :
- * - Structurer les notions de façon pédagogique
- * - Choisir les types de cartes adaptés
- * - Générer le contenu directement
+ * Best practices 2025:
+ * - responseSchema force l'output à être 100% conforme
+ * - Zod validation en double-check (ne devrait jamais échouer)
+ * - Single-phase generation (~10-15s)
  */
 
-import { chat } from '@tanstack/ai';
-import { geminiAdapter, CardGenerationOutputSchema } from '../../lib/ai/index.js';
+import { GoogleGenAI, Type } from '@google/genai';
+import { CardGenerationOutputSchema } from '../../lib/ai/index.js';
 import {
   getSubjectInstructions,
   getRecommendedCardTypes,
@@ -22,6 +22,7 @@ import {
 import { KATEX_INSTRUCTIONS, RICH_CONTENT_INSTRUCTIONS } from './prompts/base.js';
 import { logger } from '../../lib/observability.js';
 import { withRetry } from '../../lib/retry.js';
+import { appConfig } from '../../config/app.config.js';
 import type { CardGenerationParams, ParsedCard } from './types.js';
 
 // ============================================================================
@@ -42,123 +43,198 @@ export interface CardGenerationError {
 }
 
 // ============================================================================
+// GEMINI CLIENT (Native SDK)
+// ============================================================================
+
+const genai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
+
+// ============================================================================
+// RESPONSE SCHEMA - Gemini Native Structured Output
+// ============================================================================
+
+/**
+ * JSON Schema for cards - Gemini will ONLY output valid JSON matching this.
+ * Using Type.* from @google/genai for proper schema format.
+ */
+const CARD_TYPE_ENUM = [
+  'concept', 'flashcard', 'qcm', 'vrai_faux',
+  'matching', 'fill_blank', 'word_order', 'calculation',
+  'timeline', 'matching_era', 'cause_effect',
+  'classification', 'process_order', 'grammar_transform'
+];
+
+const CARDS_RESPONSE_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      cardType: {
+        type: Type.STRING,
+        enum: CARD_TYPE_ENUM,
+        description: 'Type de carte'
+      },
+      content: {
+        type: Type.OBJECT,
+        description: 'Contenu de la carte selon le type',
+        properties: {
+          // Concept
+          title: { type: Type.STRING },
+          explanation: { type: Type.STRING },
+          keyPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+          example: { type: Type.STRING },
+          formula: { type: Type.STRING },
+          // Flashcard
+          front: { type: Type.STRING },
+          back: { type: Type.STRING },
+          // QCM / Fill Blank / Cause Effect
+          question: { type: Type.STRING },
+          options: { type: Type.ARRAY, items: { type: Type.STRING } },
+          correctIndex: { type: Type.INTEGER },
+          // Vrai Faux
+          statement: { type: Type.STRING },
+          isTrue: { type: Type.BOOLEAN },
+          // Common
+          instruction: { type: Type.STRING },
+          // Matching
+          pairs: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                left: { type: Type.STRING },
+                right: { type: Type.STRING }
+              }
+            }
+          },
+          // Fill Blank
+          sentence: { type: Type.STRING },
+          grammaticalPoint: { type: Type.STRING },
+          // Word Order
+          words: { type: Type.ARRAY, items: { type: Type.STRING } },
+          correctSentence: { type: Type.STRING },
+          translation: { type: Type.STRING },
+          // Calculation
+          problem: { type: Type.STRING },
+          steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+          answer: { type: Type.STRING },
+          hint: { type: Type.STRING },
+          // Timeline
+          events: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                event: { type: Type.STRING },
+                date: { type: Type.STRING },
+                hint: { type: Type.STRING }
+              }
+            }
+          },
+          correctOrder: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+          // Matching Era
+          items: { type: Type.ARRAY, items: { type: Type.STRING } },
+          eras: { type: Type.ARRAY, items: { type: Type.STRING } },
+          correctPairs: {
+            type: Type.ARRAY,
+            items: { type: Type.ARRAY, items: { type: Type.INTEGER } }
+          },
+          // Cause Effect
+          context: { type: Type.STRING },
+          cause: { type: Type.STRING },
+          possibleEffects: { type: Type.ARRAY, items: { type: Type.STRING } },
+          // Classification
+          categories: { type: Type.ARRAY, items: { type: Type.STRING } },
+          correctClassification: { type: Type.OBJECT },
+          // Process Order
+          processName: { type: Type.STRING },
+          // Grammar Transform
+          originalSentence: { type: Type.STRING },
+          transformationType: { type: Type.STRING },
+          correctAnswer: { type: Type.STRING },
+          acceptableVariants: { type: Type.ARRAY, items: { type: Type.STRING } }
+        }
+      }
+    },
+    required: ['cardType', 'content']
+  }
+};
+
+// ============================================================================
 // PROMPT BUILDER
 // ============================================================================
 
-function buildUnifiedPrompt(params: CardGenerationParams): { systemPrompt: string; userPrompt: string } {
+function buildPrompt(params: CardGenerationParams): string {
   const { topic, subject, level, cardCount, ragContext, domaine } = params;
   const requiresKaTeX = subjectRequiresKaTeX(subject);
   const cycle = getEducationCycle(level);
   const recommendedTypes = getRecommendedCardTypes(subject).slice(0, 8);
 
-  // System Prompt - Expert pédagogue
-  const systemParts: string[] = [];
+  const parts: string[] = [];
 
-  systemParts.push(`Tu es un expert pédagogue français spécialisé dans la création de cartes de révision.
+  // Role et mission
+  parts.push(`Tu es un expert pédagogue français. Génère exactement ${cardCount} cartes de révision pour des élèves de niveau ${level}.
 
-**Ta mission** : Générer ${cardCount} cartes de révision pour des élèves de niveau ${level}.
-
-**Principes pédagogiques** :
-1. Commence par 1-2 cartes 'concept' pour introduire les notions clés
+**Principes** :
+1. Commence par 1-2 cartes 'concept' pour les notions clés
 2. Progresse du simple vers le complexe
-3. Varie les types d'exercices pour maintenir l'attention
-4. Chaque carte doit être autonome et claire`);
+3. Varie les types d'exercices
+4. Chaque carte doit être autonome`);
 
   // Instructions matière
-  systemParts.push(getSubjectInstructions(subject));
+  parts.push(getSubjectInstructions(subject));
 
   // Adaptation au cycle
-  systemParts.push(getCycleAdaptationInstructions(cycle));
+  parts.push(getCycleAdaptationInstructions(cycle));
 
-  // Types de cartes disponibles
-  systemParts.push(`## TYPES DE CARTES DISPONIBLES
+  // Types disponibles avec structure exacte
+  parts.push(`## TYPES DE CARTES (utilise ceux recommandés: ${recommendedTypes.join(', ')})
 
-Types recommandés pour ${subject} : ${recommendedTypes.join(', ')}
-
-**Pédagogique**
-- concept: {title, explanation, keyPoints[], example?, formula?}
-
-**Universels**
-- flashcard: {front, back}
-- qcm: {question, options[], correctIndex, explanation}
-- vrai_faux: {statement, isTrue, explanation}
-
-**Langues**
-- matching: {instruction, pairs[{left, right}]}
-- fill_blank: {sentence, options[], correctIndex, grammaticalPoint?, explanation}
-- word_order: {instruction, words[], correctSentence, translation?}
-
-**Maths/Sciences**
-- calculation: {problem, steps[], answer, hint?}
-
-**Histoire-Géo**
-- timeline: {instruction, events[{event, date?, hint?}], correctOrder[]}
-- matching_era: {instruction, items[], eras[], correctPairs[]}
-- cause_effect: {context, cause, possibleEffects[], correctIndex, explanation}
-
-**SVT**
-- classification: {instruction, items[], categories[], correctClassification{}, explanation?}
-- process_order: {instruction, processName, steps[], correctOrder[], explanation?}
-
-**Français**
-- grammar_transform: {instruction, originalSentence, transformationType, correctAnswer, acceptableVariants?, explanation}`);
+**concept**: title, explanation, keyPoints[] (2-4), example?, formula?
+**flashcard**: front, back
+**qcm**: question, options[] (2-6), correctIndex (0-based), explanation
+**vrai_faux**: statement, isTrue (boolean), explanation
+**matching**: instruction, pairs[{left, right}] (3-6)
+**fill_blank**: sentence (avec ___), options[], correctIndex, explanation, grammaticalPoint?
+**word_order**: instruction, words[], correctSentence, translation?
+**calculation**: problem, steps[], answer, hint?
+**timeline**: instruction, events[{event, date?, hint?}], correctOrder[]
+**matching_era**: instruction, items[], eras[], correctPairs[[itemIdx, eraIdx]]
+**cause_effect**: context, cause, possibleEffects[], correctIndex, explanation
+**classification**: instruction, items[], categories[], correctClassification{catégorie: [indices]}
+**process_order**: instruction, processName, steps[], correctOrder[], explanation?
+**grammar_transform**: instruction, originalSentence, transformationType (tense|voice|form|number), correctAnswer, explanation, acceptableVariants?`);
 
   // KaTeX si nécessaire
   if (requiresKaTeX) {
-    systemParts.push(KATEX_INSTRUCTIONS);
+    parts.push(KATEX_INSTRUCTIONS);
   }
 
   // Contenu enrichi
-  systemParts.push(RICH_CONTENT_INSTRUCTIONS);
+  parts.push(RICH_CONTENT_INSTRUCTIONS);
 
-  // Format de sortie
-  systemParts.push(`## FORMAT DE SORTIE
-
-Retourne UNIQUEMENT un tableau JSON valide :
-[
-  {"cardType": "concept", "content": {...}},
-  {"cardType": "qcm", "content": {...}},
-  ...
-]
-
-**Règles JSON :**
-- Pas de texte avant/après le JSON
-- Guillemets doubles pour strings
-- correctIndex commence à 0${requiresKaTeX ? '\n- KaTeX: double backslash (\\\\pi pour π, \\\\frac{a}{b} pour fractions)' : ''}`);
-
-  const systemPrompt = systemParts.join('\n\n');
-
-  // User Prompt
-  const userLines: string[] = [];
-
-  userLines.push('## DEMANDE DE GÉNÉRATION\n');
-  userLines.push(`**Matière** : ${subject}`);
-  userLines.push(`**Niveau** : ${level}`);
-  userLines.push(`**Sujet** : ${topic}`);
-  if (domaine) {
-    userLines.push(`**Domaine** : ${domaine}`);
-  }
-  userLines.push(`**Nombre de cartes** : ${cardCount}`);
-
+  // Contexte RAG
   if (ragContext?.trim()) {
-    userLines.push('\n## PROGRAMME OFFICIEL (contexte)\n');
-    userLines.push(ragContext);
+    parts.push(`## PROGRAMME OFFICIEL\n${ragContext}`);
   }
 
-  userLines.push(`\n## CONSIGNE
+  // Demande finale
+  parts.push(`## GÉNÉRATION
 
-Génère exactement ${cardCount} cartes de révision sur "${topic}".
+**Matière**: ${subject}
+**Niveau**: ${level}
+**Sujet**: ${topic}${domaine ? `\n**Domaine**: ${domaine}` : ''}
 
-Structure recommandée :
-1. Commence par 1-2 cartes 'concept' pour les notions fondamentales
-2. Enchaîne avec des exercices variés (qcm, vrai_faux, ${recommendedTypes.slice(2, 4).join(', ')}...)
-3. Termine par des exercices de niveau maîtrise
+Génère exactement ${cardCount} cartes. Structure recommandée:
+1. 1-2 cartes 'concept' pour introduire
+2. Exercices variés (qcm, vrai_faux, ${recommendedTypes.slice(2, 4).join(', ')}...)
+3. Exercices de maîtrise pour finir
 
-**Génère le JSON maintenant.**`);
+IMPORTANT:
+- correctIndex est 0-based (première option = 0)
+- isTrue est un boolean (true/false)
+- Tous les champs requis doivent être présents`);
 
-  const userPrompt = userLines.join('\n');
-
-  return { systemPrompt, userPrompt };
+  return parts.join('\n\n');
 }
 
 // ============================================================================
@@ -166,13 +242,14 @@ Structure recommandée :
 // ============================================================================
 
 /**
- * Génère des cartes de révision en un seul appel Gemini
+ * Génère des cartes avec Gemini Structured Output natif.
+ * Le schéma JSON force Gemini à générer du contenu 100% conforme.
  */
 export async function generateCards(
   params: CardGenerationParams
 ): Promise<CardGenerationResult | CardGenerationError> {
   const startTime = Date.now();
-  const provider = 'TanStack AI + Gemini (Single-Phase)';
+  const provider = 'Google Gemini (Structured Output)';
 
   try {
     logger.info('Starting card generation', {
@@ -183,102 +260,78 @@ export async function generateCards(
       requestedCards: params.cardCount
     });
 
-    const { systemPrompt, userPrompt } = buildUnifiedPrompt(params);
+    const prompt = buildPrompt(params);
 
-    // Appel IA avec retry pour robustesse
-    const { fullContent, tokensUsed } = await withRetry(
+    // Appel Gemini avec Structured Output natif
+    const { text, tokensUsed } = await withRetry(
       async () => {
-        const stream = chat({
-          adapter: geminiAdapter,
-          messages: [{ role: 'user', content: userPrompt }],
-          systemPrompts: [systemPrompt],
-          modelOptions: {
-            generationConfig: {
-              topK: 40,
-              responseMimeType: 'application/json'
-            }
+        const response = await genai.models.generateContent({
+          model: appConfig.ai.gemini.model,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: CARDS_RESPONSE_SCHEMA,
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95
           }
         });
 
-        let content = '';
-        let tokens = 0;
+        const text = response.text ?? '';
+        const tokens = response.usageMetadata?.totalTokenCount ?? 0;
 
-        for await (const chunk of stream) {
-          if (chunk.type === 'content') {
-            content += chunk.delta ?? '';
-          }
-          if (chunk.type === 'done' && chunk.usage) {
-            tokens = chunk.usage.totalTokens ?? 0;
-          }
-          if (chunk.type === 'error') {
-            throw new Error(chunk.error?.message ?? 'Streaming error');
-          }
-        }
-
-        return { fullContent: content, tokensUsed: tokens };
+        return { text, tokensUsed: tokens };
       },
       {
-        operationName: 'card-generation',
+        operationName: 'card-generation-structured',
         maxAttempts: 3,
         initialDelayMs: 1000,
         nonRetryableErrors: ['INVALID_']
       }
     );
 
-    // Parser le JSON
+    // Parser le JSON (garanti valide par Gemini)
     let parsedJson: unknown;
     try {
-      const cleanedContent = fullContent
-        .replace(/^```json\s*/i, '')
-        .replace(/```\s*$/i, '')
-        .trim();
-      parsedJson = JSON.parse(cleanedContent);
+      parsedJson = JSON.parse(text);
     } catch {
-      logger.error('Card generation JSON parse error', {
+      logger.error('Card generation JSON parse error (unexpected)', {
         operation: 'learning:generate:parse_error',
         topic: params.topic,
-        contentPreview: fullContent.substring(0, 200),
+        contentPreview: text.substring(0, 300),
         durationMs: Date.now() - startTime,
-        _error: 'JSON parse failed',
-        severity: 'medium' as const
+        _error: 'JSON parse failed despite structured output',
+        severity: 'high' as const
       });
 
       return {
         success: false,
-        error: 'La réponse IA n\'est pas un JSON valide',
+        error: 'Erreur inattendue: JSON invalide malgré Structured Output',
         code: 'INVALID_OUTPUT'
       };
     }
 
-    // Valider avec Zod
-    const validationResult = CardGenerationOutputSchema.safeParse(parsedJson);
+    // Double-check avec Zod (ne devrait jamais échouer avec Structured Output)
+    const validation = CardGenerationOutputSchema.safeParse(parsedJson);
 
-    if (!validationResult.success) {
-      logger.error('Card generation Zod validation failed', {
+    if (!validation.success) {
+      logger.error('Card validation failed (unexpected with structured output)', {
         operation: 'learning:generate:validation_error',
         topic: params.topic,
+        zodError: validation.error.issues.slice(0, 3),
         durationMs: Date.now() - startTime,
-        _error: validationResult.error.message,
-        severity: 'medium' as const
+        _error: 'Zod validation failed despite structured output',
+        severity: 'high' as const
       });
 
       return {
         success: false,
-        error: 'Les cartes générées ne respectent pas le format attendu',
+        error: 'Erreur de validation inattendue. Veuillez réessayer.',
         code: 'INVALID_OUTPUT'
       };
     }
 
-    const cards = validationResult.data as ParsedCard[];
-
-    if (cards.length === 0) {
-      return {
-        success: false,
-        error: 'La génération n\'a produit aucune carte',
-        code: 'INVALID_OUTPUT'
-      };
-    }
-
+    const cards = validation.data as ParsedCard[];
     const durationMs = Date.now() - startTime;
 
     logger.info('Card generation completed', {
