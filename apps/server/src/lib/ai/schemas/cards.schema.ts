@@ -12,6 +12,19 @@
 import { z } from 'zod';
 
 // ═══════════════════════════════════════════════════════════════════════════
+// HELPER: Coercion pour output AI (Gemini retourne parfois [n] au lieu de n)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Coerce un index qui peut être un nombre ou un tableau [n] vers un nombre
+ * Gemini renvoie parfois correctIndex: [1] au lieu de correctIndex: 1
+ */
+const coerceIndex = z.preprocess(
+  (val) => (Array.isArray(val) && val.length === 1 ? val[0] : val),
+  z.number().int().min(0)
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SCHEMAS PÉDAGOGIQUES (1 type)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -53,8 +66,7 @@ export const QCMContentSchema = z.object({
   options: z.array(z.string().min(1))
     .min(2).max(6)
     .describe('Options de réponse (2-6)'),
-  correctIndex: z.number().int().min(0)
-    .describe('Index de la bonne réponse'),
+  correctIndex: coerceIndex.describe('Index de la bonne réponse'),
   explanation: z.string().min(1)
     .describe('Explication de la bonne réponse')
 });
@@ -94,8 +106,7 @@ export const FillBlankContentSchema = z.object({
   options: z.array(z.string().min(1))
     .min(2).max(6)
     .describe('Options possibles (2-6)'),
-  correctIndex: z.number().int().min(0)
-    .describe('Index de la bonne réponse'),
+  correctIndex: coerceIndex.describe('Index de la bonne réponse'),
   grammaticalPoint: z.string().optional()
     .describe('Point de grammaire testé'),
   explanation: z.string().min(1)
@@ -183,8 +194,7 @@ export const CauseEffectContentSchema = z.object({
   possibleEffects: z.array(z.string().min(1))
     .min(2).max(6)
     .describe('Effets possibles (2-6)'),
-  correctIndex: z.number().int().min(0)
-    .describe('Index du bon effet'),
+  correctIndex: coerceIndex.describe('Index du bon effet'),
   explanation: z.string().min(1)
     .describe('Explication du lien cause-effet')
 });
