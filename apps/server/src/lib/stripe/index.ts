@@ -16,7 +16,7 @@
  */
 
 // Re-export everything for backward compatibility
-export { stripe, clearPlanCache } from './config';
+export { stripe, clearPlanCache, isStripeEnabled, requireStripe } from './config';
 export { StripeSubscriptionService } from './service';
 export {
   StripeServiceError,
@@ -35,6 +35,9 @@ export type {
   SubscriptionInfo,
   ProrataCalculation,
 } from './types';
+
+// Export helper for secure JSON parsing
+export { parseChildrenIdsFromMetadata } from './helpers';
 
 // Singleton instance
 import { StripeSubscriptionService } from './service';

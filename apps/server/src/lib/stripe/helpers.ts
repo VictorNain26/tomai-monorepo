@@ -1,10 +1,16 @@
 /**
  * Stripe Service Helpers
  * Pure utility functions for subscription operations
+ *
+ * Security: All JSON parsing uses Zod validation
  */
 
 import type Stripe from 'stripe';
+import { z } from 'zod';
 import type { SubscriptionPeriod, PremiumPlanConfig } from './types';
+
+// Zod schemas for metadata validation
+const childrenIdsSchema = z.array(z.string());
 
 /** Default period duration in seconds (30 days) */
 export const DEFAULT_PERIOD_SECONDS = 30 * 24 * 60 * 60;
@@ -54,12 +60,19 @@ export function getPeriodStartWithFallback(period: SubscriptionPeriod): number {
 
 /**
  * Safely parse JSON array from metadata string
+ * Uses Zod validation to ensure type safety
  */
 export function parseChildrenIdsFromMetadata(jsonString: string | undefined): string[] {
   if (!jsonString) return [];
   try {
     const parsed = JSON.parse(jsonString);
-    return Array.isArray(parsed) ? parsed : [];
+    // SECURITY: Validate parsed data with Zod schema
+    const result = childrenIdsSchema.safeParse(parsed);
+    if (result.success) {
+      return result.data;
+    }
+    // If validation fails, return empty array (malformed data)
+    return [];
   } catch {
     return [];
   }

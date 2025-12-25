@@ -1,18 +1,7 @@
 /**
- * Core prompts - Export centralisé
+ * Core prompts
  */
 
-export {
-  generateIdentityPrompt,
-  type IdentityParams
-} from './identity.js';
-
-export {
-  generatePedagogyPrinciples,
-  generateCSENMethod,
-  generateAdaptiveRules
-} from './pedagogy.js';
-
-export {
-  generateSafetyGuardrails
-} from './safety.js';
+export { generateIdentityPrompt, type IdentityParams } from './identity.js';
+export { generatePedagogyPrinciples } from './pedagogy.js';
+export { generateSafetyGuardrails } from './safety.js';

@@ -1,35 +1,15 @@
 /**
- * System Prompt Builder - Architecture LearnLM 2025
- * Point d'entrée unique pour la génération du prompt système
- *
- * Réduction: ~1800 tokens → ~700 tokens (-60%)
- *
- * Architecture:
- * 1. Identity (role, tone, transparency)
- * 2. Pedagogy (LearnLM 5 principles + CSEN method)
- * 3. Safety (guardrails)
- * 4. Level adaptation (vocabulaire, structure par cycle)
- * 5. Subject specifics (variations minimales par matière)
- * 6. RAG context (si disponible)
- *
- * Sources:
- * - Google LearnLM Paper 2025
- * - Gemini Prompting Best Practices 2025
- * - CSEN Enseignement Explicite 2022
+ * System Prompt Builder
+ * Basé sur les recommandations du CSEN (Éducation Nationale)
  */
 
 import { generateIdentityPrompt } from './core/identity.js';
-import {
-  generatePedagogyPrinciples,
-  generateCSENMethod,
-  generateAdaptiveRules
-} from './core/pedagogy.js';
+import { generatePedagogyPrinciples } from './core/pedagogy.js';
 import { generateSafetyGuardrails } from './core/safety.js';
 import { generateLevelAdaptation } from './adaptation/by-level.js';
 import { generateSubjectSpecifics, requiresKaTeX } from './adaptation/by-subject.js';
 import type { EducationLevelType } from '../../types/index.js';
 
-/** Limite tokens RAG (~1500 tokens ≈ 6000 chars FR) */
 const MAX_RAG_CHARS = 6000;
 
 export interface SystemPromptParams {
@@ -41,43 +21,19 @@ export interface SystemPromptParams {
 }
 
 /**
- * Construit le prompt système complet - Architecture XML Gemini
- * ~700 tokens de base + RAG context
+ * Construit le prompt système complet
  */
 export function buildSystemPrompt(params: SystemPromptParams): string {
   const { level, levelText, subject, firstName, ragContext } = params;
   const studentName = firstName ?? "l'élève";
 
-  // 1. IDENTITY - Qui est Tom, ton, transparence
-  const identity = generateIdentityPrompt({ studentName, levelText, subject });
-
-  // 2. PEDAGOGY - Principes LearnLM + CSEN (une seule fois, pas par matière)
-  const pedagogy = generatePedagogyPrinciples();
-  const csenMethod = generateCSENMethod();
-  const adaptiveRules = generateAdaptiveRules();
-
-  // 3. SAFETY - Guardrails
-  const safety = generateSafetyGuardrails();
-
-  // 4. LEVEL ADAPTATION - Vocabulaire et structure par cycle
-  const levelAdaptation = generateLevelAdaptation(level);
-
-  // 5. SUBJECT SPECIFICS - Variations minimales par matière
-  const subjectSpecifics = generateSubjectSpecifics(subject);
-
-  // 6. RAG CONTEXT - Contenu programmes si disponible
-  const ragBlock = formatRAGContext(ragContext);
-
-  // ASSEMBLAGE XML - Format optimisé pour Gemini
   const parts = [
-    identity,
-    pedagogy,
-    csenMethod,
-    adaptiveRules,
-    safety,
-    levelAdaptation,
-    subjectSpecifics,
-    ragBlock
+    generateIdentityPrompt({ studentName, levelText, subject }),
+    generatePedagogyPrinciples(),
+    generateSafetyGuardrails(),
+    generateLevelAdaptation(level),
+    generateSubjectSpecifics(subject),
+    formatRAGContext(ragContext)
   ].filter(Boolean);
 
   return parts.join('\n\n');
@@ -118,5 +74,3 @@ export function promptRequiresKaTeX(subject: string): boolean {
   return requiresKaTeX(subject);
 }
 
-// Réexport pour compatibilité avec l'ancien builder.ts
-export type { SystemPromptParams as PromptBuilderParams };

@@ -2,6 +2,8 @@
  * Checkout Routes
  *
  * POST /api/subscriptions/checkout - Create Checkout session
+ *
+ * Security: All routes require authentication and verify caller === parentId
  */
 
 import { Elysia, t } from 'elysia';
@@ -9,7 +11,7 @@ import { stripeService, StripeServiceError } from '../../lib/stripe/index.js';
 import { db } from '../../db/connection.js';
 import { user, userSubscriptions } from '../../db/schema.js';
 import { eq, inArray, and } from 'drizzle-orm';
-import { verifyParent, getChildrenForParent, getPremiumPlanId } from './helpers.js';
+import { getAuthenticatedParent, verifyParentIdMatch, getChildrenForParent, getPremiumPlanId } from './helpers.js';
 
 export const checkoutRoutes = new Elysia({ prefix: '/api/subscriptions' })
   /**
@@ -18,17 +20,26 @@ export const checkoutRoutes = new Elysia({ prefix: '/api/subscriptions' })
    *
    * Creates a checkout session for upgrading children to Premium.
    * If no childrenIds provided, upgrades all parent's children.
+   *
+   * Security: Verifies authenticated user === body.parentId (IDOR protection)
    */
   .post(
     '/checkout',
-    async ({ body, set }) => {
+    async ({ body, set, request }) => {
       const { parentId, childrenIds } = body;
 
-      // Verify parent
-      const { isParent, error } = await verifyParent(parentId);
-      if (!isParent) {
+      // SECURITY: Get authenticated parent and verify identity match
+      const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
+      if (!parent) {
+        set.status = authStatus ?? 401;
+        return { error: authError };
+      }
+
+      // SECURITY: Verify caller is accessing their own subscription (IDOR protection)
+      const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
+      if (!valid) {
         set.status = 403;
-        return { error };
+        return { error: idorError };
       }
 
       // Get children to upgrade

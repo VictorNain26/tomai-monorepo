@@ -9,7 +9,7 @@ import { db } from '../../db/connection';
 import { familyBilling, userSubscriptions } from '../../db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
-import { stripe, getPremiumPlanConfig, getPremiumPlanId } from './config';
+import { requireStripe, getPremiumPlanConfig, getPremiumPlanId } from './config';
 import {
   NoPlanConfiguredError,
   NoSubscriptionError,
@@ -67,10 +67,10 @@ export async function cancelSubscriptionViaSchedule(
 
   if (subscription.schedule) {
     const scheduleId = typeof subscription.schedule === 'string' ? subscription.schedule : subscription.schedule.id;
-    const existingSchedule = await stripe.subscriptionSchedules.retrieve(scheduleId);
+    const existingSchedule = await requireStripe().subscriptionSchedules.retrieve(scheduleId);
     const scheduleStartDate = existingSchedule.phases[0]?.start_date ?? Math.floor(Date.now() / 1000);
 
-    await stripe.subscriptionSchedules.update(scheduleId, {
+    await requireStripe().subscriptionSchedules.update(scheduleId, {
       end_behavior: 'cancel',
       phases: [
         {
@@ -89,13 +89,13 @@ export async function cancelSubscriptionViaSchedule(
 
     logger.info(`[Stripe] Updated schedule ${scheduleId} with end_behavior: 'cancel' for parent ${parentId}`, { operation: 'stripe:schedule:update', parentId, scheduleId });
   } else {
-    const schedule = await stripe.subscriptionSchedules.create({
+    const schedule = await requireStripe().subscriptionSchedules.create({
       from_subscription: subscription.id,
     });
 
     const scheduleStartDate = schedule.phases[0]?.start_date ?? Math.floor(Date.now() / 1000);
 
-    await stripe.subscriptionSchedules.update(schedule.id, {
+    await requireStripe().subscriptionSchedules.update(schedule.id, {
       end_behavior: 'cancel',
       phases: [
         {
@@ -143,7 +143,7 @@ export async function cancelSubscription(parentId: string): Promise<Subscription
   const billing = await getBilling(parentId);
   if (!billing?.stripeSubscriptionId) throw new NoSubscriptionError();
 
-  const subscription = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId, {
+  const subscription = await requireStripe().subscriptions.retrieve(billing.stripeSubscriptionId, {
     expand: ['items.data'],
   });
 
@@ -161,7 +161,7 @@ export async function cancelSubscription(parentId: string): Promise<Subscription
     return cancelSubscriptionViaSchedule(parentId, billing, subscription, allChildrenIds);
   }
 
-  const updated = await stripe.subscriptions.update(billing.stripeSubscriptionId, {
+  const updated = await requireStripe().subscriptions.update(billing.stripeSubscriptionId, {
     cancel_at_period_end: true,
   });
 
@@ -184,7 +184,7 @@ export async function cancelPendingRemoval(
   const billing = await getBilling(parentId);
   if (!billing?.stripeSubscriptionId) throw new NoSubscriptionError();
 
-  const subscription = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId, {
+  const subscription = await requireStripe().subscriptions.retrieve(billing.stripeSubscriptionId, {
     expand: ['items.data'],
   });
 
@@ -193,7 +193,7 @@ export async function cancelPendingRemoval(
     throw new NoPendingChangesError();
   }
 
-  const schedule = await stripe.subscriptionSchedules.retrieve(scheduleId);
+  const schedule = await requireStripe().subscriptionSchedules.retrieve(scheduleId);
   const pendingRemovalIds = parseChildrenIdsFromMetadata(schedule.metadata?.removedChildrenIds);
 
   logger.info(`[Stripe] cancelPendingRemoval: schedule ${scheduleId}`, { operation: 'stripe:schedule:cancel-removal', scheduleId, endBehavior: schedule.end_behavior, pendingRemovalIds, childId });
@@ -255,7 +255,7 @@ async function updateScheduleForPartialReactivation(
   const currentItems = extractCurrentItemsFromPhase(currentPhase);
   const endBehavior: 'release' | 'cancel' = newChildrenCountNextPeriod > 0 ? 'release' : 'cancel';
 
-  await stripe.subscriptionSchedules.update(schedule.id, {
+  await requireStripe().subscriptionSchedules.update(schedule.id, {
     end_behavior: endBehavior,
     phases: [
       {
@@ -294,7 +294,7 @@ export async function resumeSubscription(parentId: string): Promise<Subscription
   const billing = await getBilling(parentId);
   if (!billing?.stripeSubscriptionId) throw new NoSubscriptionError();
 
-  const currentSub = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId, {
+  const currentSub = await requireStripe().subscriptions.retrieve(billing.stripeSubscriptionId, {
     expand: ['items.data'],
   });
 
@@ -305,7 +305,7 @@ export async function resumeSubscription(parentId: string): Promise<Subscription
 
   await releaseScheduleIfExists(currentSub, parentId);
 
-  const subscription = await stripe.subscriptions.update(billing.stripeSubscriptionId, {
+  const subscription = await requireStripe().subscriptions.update(billing.stripeSubscriptionId, {
     cancel_at_period_end: false,
     cancel_at: '',
   } as Stripe.SubscriptionUpdateParams);
@@ -325,7 +325,7 @@ async function releaseScheduleIfExists(
   const scheduleId = getScheduleId(subscription.schedule);
   if (!scheduleId) return;
 
-  await stripe.subscriptionSchedules.release(scheduleId);
+  await requireStripe().subscriptionSchedules.release(scheduleId);
   logger.info(`[Stripe] Released schedule ${scheduleId} for parent ${parentId}`, { operation: 'stripe:schedule:release', parentId, scheduleId });
 }
 

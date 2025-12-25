@@ -14,13 +14,14 @@
 
 ## 🏗️ Stack 2025
 
-- **Runtime** : Bun + Docker Compose (PostgreSQL 16 pgvector + Redis 7)
-- **Framework** : Elysia.js 1.3.21 (type-safe API)
-- **Database** : PostgreSQL 16 + Drizzle ORM 0.44.5 (Drizzle Kit 0.31.4)
+- **Runtime** : Bun 1.3 + Docker Compose (PostgreSQL 16 pgvector + Redis 7)
+- **Framework** : Elysia.js 1.4.19 (type-safe API)
+- **Database** : PostgreSQL 16 + Drizzle ORM 0.45.1 (Drizzle Kit 0.31.8)
 - **Auth** : Better Auth 1.4.7 + Google OAuth
 - **AI** : Google Gemini 2.5 Flash (chat), Mistral AI (embeddings 1024D), Gladia (STT), ElevenLabs (TTS)
-- **Cache** : Redis 7 (ioredis 5.4.1 + @upstash/redis 1.34.0)
+- **Cache** : Redis 7 (ioredis 5.4.1 + @upstash/redis 1.35.8)
 - **Vector Search** : Qdrant Cloud direct + Mistral embeddings 1024D + BM25 reranking
+- **Pronote** : Pawnote 1.6.2 + AES-256-GCM encryption (PBKDF2 600K iterations)
 
 ## ⚡ Commandes CRITIQUES
 
@@ -129,17 +130,20 @@ src/
 │   ├── gemini-simple.service.ts    # Gemini 2.5 Flash direct
 │   ├── redis-cache.service.ts      # Gestion cache Redis
 │   ├── chat.service.ts             # Orchestration chat socratique
-│   └── education.service.ts        # Matières/niveaux disponibles
+│   ├── education.service.ts        # Matières/niveaux disponibles
+│   └── pronote.service.ts          # Pronote QR auth + SSRF protection
 ├── routes/                          # API endpoints
 │   ├── api.routes.ts               # Routes principales
 │   ├── chat-message.routes.ts      # Chat streaming
-│   └── establishment.routes.ts     # Établissements scolaires
+│   ├── establishment.routes.ts     # Établissements scolaires
+│   └── pronote.routes.ts           # Intégration Pronote (QR code auth)
 ├── db/
 │   ├── schema.ts                   # Drizzle schema
 │   ├── connection.ts               # Configuration DB
 │   └── repositories/               # Data access layer
 ├── lib/
 │   ├── auth.ts                     # Better Auth config
+│   ├── encryption.ts               # AES-256-GCM + PBKDF2 (Pronote)
 │   ├── redis.service.ts            # Client Redis
 │   └── observability.ts            # Monitoring
 ├── middleware/                      # Auth, monitoring, memory
@@ -172,6 +176,41 @@ async function requireAuth({ request: { headers }, set }) {
   }
   return { user: session.user };
 }
+```
+
+## 🔗 Pronote Integration
+
+Intégration sécurisée avec Pronote via QR code (bypass ENT/CAS).
+
+### Architecture Sécurité
+- **Encryption** : AES-256-GCM avec PBKDF2 (600K iterations, OWASP 2023)
+- **SSRF Protection** : Allowlist domaines Pronote autorisés
+- **Rate Limiting** : 5 req/15min par utilisateur sur `/connect`
+- **Validation Startup** : Test encrypt/decrypt cycle au démarrage
+
+### Fichiers clés
+```
+src/
+├── lib/encryption.ts           # AES-256-GCM + PBKDF2
+├── services/pronote.service.ts # Pawnote wrapper + SSRF protection
+├── routes/pronote.routes.ts    # API endpoints (student role only)
+└── db/schema.ts               # Table pronote_connections
+```
+
+### Endpoints (students only)
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/pronote/connect` | Connexion QR code + PIN |
+| `DELETE /api/pronote/disconnect` | Suppression connexion |
+| `GET /api/pronote/status` | Statut connexion |
+| `GET /api/pronote/homework` | Devoirs (weekOffset) |
+| `GET /api/pronote/grades` | Notes période courante |
+| `GET /api/pronote/timetable` | Emploi du temps |
+
+### Variables d'environnement
+```bash
+# Générer avec: openssl rand -base64 48
+PRONOTE_ENCRYPTION_KEY=<64 chars base64>
 ```
 
 ## 📊 Seed RAG Data (Optionnel)
