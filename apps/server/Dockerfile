@@ -1,29 +1,32 @@
 # ============================================================
 # TomAI Backend - Dockerfile Unifié (2025)
 # Multi-stage optimisé pour: Development + Production + Koyeb
-# Runtime: Bun | Package Manager: pnpm
+# Runtime: Bun 1.3 (Alpine 3.22) | Package Manager: pnpm
+# Best Practices: https://docs.docker.com/guides/bun/
 # ============================================================
 
 # ===========================================
 # Stage 1: BASE - Runtime minimal partagé
 # ===========================================
-FROM oven/bun:1.1.34-slim AS base
+FROM oven/bun:1.3-slim AS base
 
 WORKDIR /app
 
-# Dépendances système essentielles + Node.js 20 LTS pour pnpm
-# NodeSource fournit Node.js moderne (Debian apt a seulement Node.js 12)
+# Dépendances système essentielles + Node.js 22 LTS pour pnpm
+# Combined RUN pour réduire les layers (best practice 2025)
+# IMPORTANT: pnpm version MUST match packageManager in root package.json
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && corepack enable \
     && corepack prepare pnpm@10.12.1 --activate \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Utilisateur non-root pour sécurité
+# Utilisateur non-root pour sécurité (OWASP best practice)
 RUN groupadd --gid 1001 tomai && \
     useradd --uid 1001 --gid tomai --shell /bin/bash --create-home tomai
 
@@ -33,9 +36,7 @@ RUN groupadd --gid 1001 tomai && \
 FROM base AS deps
 
 # Monorepo structure: copier la hiérarchie complète pour workspace resolution
-COPY package.json ./
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/server/package.json ./apps/server/
 COPY packages/shared-types/package.json ./packages/shared-types/
 
@@ -48,18 +49,18 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 # ===========================================
 FROM base AS build
 
-# Build args optionnels
+# Build args pour tracing des déploiements
 ARG GIT_COMMIT_SHA=unknown
+ARG BUILD_DATE=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
+ENV BUILD_DATE=${BUILD_DATE}
 
-# Monorepo structure: hiérarchie complète pour workspace resolution
-COPY package.json ./
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY .npmrc ./
+# Monorepo structure
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/server/package.json ./apps/server/
 COPY packages/shared-types/package.json ./packages/shared-types/
 
-# Installation complète (dev + prod) pour build via pnpm
+# Installation complète (dev + prod) pour build
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
@@ -67,13 +68,12 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 COPY apps/server/src/ ./apps/server/src/
 COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./apps/server/
 COPY packages/shared-types/src/ ./packages/shared-types/src/
-# tsconfig.base.json racine pour héritage TypeScript
 COPY tsconfig.base.json ./
 
 # Build depuis le contexte monorepo
 WORKDIR /app/apps/server
 
-# Validation stricte obligatoire
+# Validation stricte + Build production
 RUN echo "=== TypeScript Validation ===" && \
     bun run typecheck:strict && \
     echo "=== ESLint Validation ===" && \
@@ -92,9 +92,7 @@ FROM base AS development
 WORKDIR /app
 
 # Monorepo structure pour workspace resolution
-COPY package.json ./
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/server/package.json ./apps/server/
 COPY packages/shared-types/package.json ./packages/shared-types/
 
@@ -106,7 +104,6 @@ COPY --chown=tomai:tomai apps/server/src/ ./apps/server/src/
 COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
 COPY --chown=tomai:tomai apps/server/tsconfig*.json apps/server/drizzle.config*.ts apps/server/eslint.config.mjs ./apps/server/
 COPY --chown=tomai:tomai packages/shared-types/src/ ./packages/shared-types/src/
-# tsconfig.base.json racine pour héritage TypeScript
 COPY --chown=tomai:tomai tsconfig.base.json ./
 
 WORKDIR /app/apps/server
@@ -117,7 +114,11 @@ ENV DOCKER_CONTAINER=true
 USER tomai
 EXPOSE 3000
 
-# Dev avec hot-reload
+# Healthcheck dev
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -sf http://localhost:3000/health || exit 1
+
+# Dev avec hot-reload (Bun 1.3 --watch optimisé)
 CMD ["bun", "--watch", "src/index.ts"]
 
 # ===========================================
@@ -144,6 +145,7 @@ WORKDIR /app/apps/server
 # Variables production
 ENV NODE_ENV=production
 
+# Security: non-root user
 USER tomai
 
 # Port dynamique (Koyeb injecte $PORT)
@@ -151,14 +153,21 @@ EXPOSE ${PORT:-8000}
 
 # Healthcheck production
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -sf http://localhost:${PORT:-8000}/api/health || exit 1
+    CMD curl -sf http://localhost:${PORT:-8000}/health || exit 1
 
-# Démarrage optimisé Bun
+# Démarrage optimisé Bun (--smol = reduced memory footprint)
 CMD ["bun", "--smol", "dist/index.js"]
 
 # ===========================================
-# Metadata
+# Metadata OCI Standards (best practice 2025)
 # ===========================================
-LABEL maintainer="TomAI Team"
-LABEL version="2.0.0"
-LABEL description="TomAI Backend - Unified Dockerfile (Dev + Prod)"
+LABEL org.opencontainers.image.title="TomAI Backend"
+LABEL org.opencontainers.image.description="Backend Bun + Elysia.js pour plateforme tutorat IA"
+LABEL org.opencontainers.image.version="2.2.0"
+LABEL org.opencontainers.image.vendor="TomAI"
+LABEL org.opencontainers.image.authors="TomAI Team"
+LABEL org.opencontainers.image.source="https://github.com/tomai/tomai-monorepo"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.base.name="oven/bun:1.3-slim"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT_SHA}"

@@ -9,7 +9,7 @@ import { db } from '../../db/connection';
 import { familyBilling } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 
-import { stripe, getPremiumPlanConfig } from './config';
+import { requireStripe, getPremiumPlanConfig } from './config';
 import {
   NoPlanConfiguredError,
   NoSubscriptionError,
@@ -45,7 +45,7 @@ export async function createPortalSession(params: {
     throw new NoCustomerError();
   }
 
-  return stripe.billingPortal.sessions.create({
+  return requireStripe().billingPortal.sessions.create({
     customer: billing.stripeCustomerId,
     return_url: params.returnUrl,
   });
@@ -60,7 +60,7 @@ export async function getSubscriptionStatus(parentId: string): Promise<Subscript
   if (!billing?.stripeSubscriptionId) return null;
 
   try {
-    const subscription = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId, {
+    const subscription = await requireStripe().subscriptions.retrieve(billing.stripeSubscriptionId, {
       expand: ['items.data', 'schedule'],
     });
 
@@ -97,7 +97,7 @@ async function extractScheduleInfo(subscription: Stripe.Subscription): Promise<{
     return { hasScheduledChanges: false, cancelAtPeriodEnd: false };
   }
 
-  const schedule = await stripe.subscriptionSchedules.retrieve(scheduleId, {
+  const schedule = await requireStripe().subscriptionSchedules.retrieve(scheduleId, {
     expand: ['phases.items.price'],
   });
 
@@ -169,7 +169,7 @@ export async function calculateAddChildrenProrata(
     throw new NoSubscriptionError();
   }
 
-  const subscription = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId, {
+  const subscription = await requireStripe().subscriptions.retrieve(billing.stripeSubscriptionId, {
     expand: ['items.data', 'schedule'],
   });
 
@@ -200,7 +200,7 @@ export async function calculateAddChildrenProrata(
         ? subscription.schedule
         : subscription.schedule.id;
 
-    const schedule = await stripe.subscriptionSchedules.retrieve(scheduleId, {
+    const schedule = await requireStripe().subscriptionSchedules.retrieve(scheduleId, {
       expand: ['phases.items.price'],
     });
 
@@ -247,5 +247,5 @@ export async function constructWebhookEventAsync(
   signature: string,
   webhookSecret: string
 ): Promise<Stripe.Event> {
-  return await stripe.webhooks.constructEventAsync(payload, signature, webhookSecret);
+  return await requireStripe().webhooks.constructEventAsync(payload, signature, webhookSecret);
 }

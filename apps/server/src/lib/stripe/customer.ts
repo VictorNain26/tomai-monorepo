@@ -9,7 +9,7 @@ import { db } from '../../db/connection';
 import { user } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 
-import { stripe } from './config';
+import { requireStripe } from './config';
 import { ParentNotFoundError } from './errors';
 import {
   getBilling,
@@ -25,7 +25,7 @@ export async function createCustomer(params: {
   name?: string;
   metadata: Record<string, string>;
 }): Promise<Stripe.Customer> {
-  return stripe.customers.create({
+  return requireStripe().customers.create({
     email: params.email,
     name: params.name,
     metadata: params.metadata,

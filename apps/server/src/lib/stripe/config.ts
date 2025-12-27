@@ -1,6 +1,10 @@
 /**
  * Stripe Configuration
  * SDK instance and plan cache management
+ *
+ * Best Practice 2025:
+ * - Production: Stripe REQUIRED (throw error if missing)
+ * - Development: Stripe OPTIONAL (warning + disabled features)
  */
 
 import Stripe from 'stripe';
@@ -10,21 +14,55 @@ import { eq } from 'drizzle-orm';
 import type { PremiumPlanConfig } from './types';
 import { logger } from '../observability';
 
-// Environment validation
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is required in environment');
+// Environment detection
+const isProduction = process.env.NODE_ENV === 'production';
+const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
+
+// Production: Stripe is REQUIRED
+if (isProduction && !hasStripeKey) {
+  throw new Error('STRIPE_SECRET_KEY is required in production');
+}
+
+// Development: Stripe is OPTIONAL
+if (!hasStripeKey) {
+  logger.warn('Stripe not configured - payment features disabled', {
+    operation: 'stripe:config:skip',
+    environment: process.env.NODE_ENV ?? 'development',
+    impact: 'Checkout, subscriptions, and webhooks will not work'
+  });
 }
 
 /**
- * Stripe SDK instance with proper configuration
+ * Stripe SDK instance (null if not configured in development)
  */
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  appInfo: {
-    name: 'TomAI Server',
-    version: '2.0.0',
-    url: 'https://tomia.fr',
-  },
-});
+export const stripe: Stripe | null = hasStripeKey
+  ? new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      appInfo: {
+        name: 'TomAI Server',
+        version: '2.0.0',
+        url: 'https://tomia.fr',
+      },
+    })
+  : null;
+
+/**
+ * Check if Stripe is available
+ */
+export function isStripeEnabled(): boolean {
+  return stripe !== null;
+}
+
+/**
+ * Get Stripe instance with non-null assertion
+ * Use in internal modules that are only loaded when Stripe is enabled
+ * Throws if called when Stripe is not configured
+ */
+export function requireStripe(): Stripe {
+  if (!stripe) {
+    throw new Error('Stripe is not configured. This function should only be called when Stripe is enabled.');
+  }
+  return stripe;
+}
 
 // ============================================
 // Plan ID Cache

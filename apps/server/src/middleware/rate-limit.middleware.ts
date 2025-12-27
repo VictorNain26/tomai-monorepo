@@ -168,4 +168,17 @@ export const RateLimitPresets = {
     maxRequests: envUtils.isProduction ? 200 : 1000,
     windowSeconds: 60,
   },
+
+  // Pronote connection (très strict - brute force protection)
+  // 5 tentatives par 15 minutes en prod, clé basée sur userId
+  pronote: {
+    maxRequests: envUtils.isProduction ? 5 : 20,
+    windowSeconds: 900, // 15 minutes
+    keyGenerator: (context: Context) => {
+      // Rate limit par user authentifié
+      const ctx = context as Context & { student?: { id: string } };
+      const userId = ctx.student?.id;
+      return userId ? `pronote:user:${userId}` : defaultKeyGenerator(context);
+    },
+  },
 } as const;

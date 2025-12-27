@@ -26,7 +26,7 @@ import {
 import { stripeWebhookRoutes } from './routes/stripe-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { deckRoutes, cardRoutes, fsrsRoutes } from './routes/learning/index.js';
-import { adminRoutes } from './routes/admin.routes.js';
+import { pronoteRoutes } from './routes/pronote.routes.js';
 
 // Services
 import { logger } from './lib/observability.js';
@@ -39,6 +39,7 @@ import { db } from './db/connection.js';
 import { sql } from 'drizzle-orm';
 import { redisService } from './lib/redis.service.js';
 import { runMigrations } from './db/migrate.js';
+import { validateEncryptionSetup } from './lib/encryption.js';
 
 const isDev = envUtils.isDevelopment;
 
@@ -200,7 +201,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(deckRoutes)          // Outils de révision - decks, subjects, topics
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation
   .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau
-  .use(adminRoutes)         // Admin panel - user management (role: admin uniquement)
+  .use(pronoteRoutes)       // Pronote integration - QR code auth, homework, grades, timetable
 
 
 // Export pour utilisation dans index.ts
@@ -332,7 +333,30 @@ export async function initializeServices(): Promise<void> {
       });
     }
 
-    // 2. Run database migrations at startup (Drizzle best practice)
+    // 2. Validate Pronote encryption setup (SECURITY: fail fast if misconfigured)
+    const hasPronoteKey = !!Bun.env['PRONOTE_ENCRYPTION_KEY'];
+    if (hasPronoteKey) {
+      const encryptionValid = await validateEncryptionSetup();
+      if (!encryptionValid) {
+        logger.error('Pronote encryption validation failed', {
+          operation: 'services:init:encryption:failed',
+          _error: 'Encryption key validation failed - encrypt/decrypt cycle test failed',
+          severity: 'critical' as const,
+          impact: 'Pronote integration will not work'
+        });
+        throw new Error('PRONOTE_ENCRYPTION_KEY validation failed - check key format');
+      }
+      logger.info('Pronote encryption validated', {
+        operation: 'services:init:encryption',
+        status: 'ready'
+      });
+    } else {
+      logger.info('Pronote encryption not configured (optional feature)', {
+        operation: 'services:init:encryption:skipped'
+      });
+    }
+
+    // 3. Run database migrations at startup (Drizzle best practice)
     // This ensures schema is always up-to-date on deployment
     await runMigrations();
 

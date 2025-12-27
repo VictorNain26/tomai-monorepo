@@ -4,27 +4,38 @@
  * POST /api/subscriptions/cancel - Cancel subscription
  * POST /api/subscriptions/resume - Resume canceled subscription
  * GET /api/subscriptions/preview-add-children - Preview prorata calculation
+ *
+ * Security: All routes require authentication and verify caller === parentId
  */
 
 import { Elysia, t } from 'elysia';
 import { stripeService, StripeServiceError } from '../../lib/stripe/index.js';
-import { verifyParent, formatSubscriptionResponse } from './helpers.js';
+import { getAuthenticatedParent, verifyParentIdMatch, formatSubscriptionResponse } from './helpers.js';
 
 export const lifecycleRoutes = new Elysia({ prefix: '/api/subscriptions' })
   /**
    * Cancel Subscription (at period end)
    * POST /api/subscriptions/cancel
+   *
+   * Security: Verifies authenticated user === body.parentId (IDOR protection)
    */
   .post(
     '/cancel',
-    async ({ body, set }) => {
+    async ({ body, set, request }) => {
       const { parentId } = body;
 
-      // Verify parent
-      const { isParent, error } = await verifyParent(parentId);
-      if (!isParent) {
+      // SECURITY: Get authenticated parent and verify identity match
+      const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
+      if (!parent) {
+        set.status = authStatus ?? 401;
+        return { error: authError };
+      }
+
+      // SECURITY: Verify caller is accessing their own subscription (IDOR protection)
+      const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
+      if (!valid) {
         set.status = 403;
-        return { error };
+        return { error: idorError };
       }
 
       try {
@@ -55,17 +66,26 @@ export const lifecycleRoutes = new Elysia({ prefix: '/api/subscriptions' })
   /**
    * Resume Canceled Subscription
    * POST /api/subscriptions/resume
+   *
+   * Security: Verifies authenticated user === body.parentId (IDOR protection)
    */
   .post(
     '/resume',
-    async ({ body, set }) => {
+    async ({ body, set, request }) => {
       const { parentId } = body;
 
-      // Verify parent
-      const { isParent, error } = await verifyParent(parentId);
-      if (!isParent) {
+      // SECURITY: Get authenticated parent and verify identity match
+      const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
+      if (!parent) {
+        set.status = authStatus ?? 401;
+        return { error: authError };
+      }
+
+      // SECURITY: Verify caller is accessing their own subscription (IDOR protection)
+      const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
+      if (!valid) {
         set.status = 403;
-        return { error };
+        return { error: idorError };
       }
 
       try {
@@ -105,8 +125,10 @@ export const lifecycleRoutes = new Elysia({ prefix: '/api/subscriptions' })
    *
    * Returns the exact prorata amount that will be charged when adding children.
    * Use this before showing the confirmation modal.
+   *
+   * Security: Verifies authenticated user === query.parentId (IDOR protection)
    */
-  .get('/preview-add-children', async ({ query, set }) => {
+  .get('/preview-add-children', async ({ query, set, request }) => {
     const parentId = query.parentId;
     const childrenCount = parseInt(query.childrenCount ?? '1', 10);
 
@@ -120,11 +142,18 @@ export const lifecycleRoutes = new Elysia({ prefix: '/api/subscriptions' })
       return { error: 'childrenCount must be at least 1' };
     }
 
-    // Verify parent
-    const { isParent, error } = await verifyParent(parentId);
-    if (!isParent) {
+    // SECURITY: Get authenticated parent and verify identity match
+    const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
+    if (!parent) {
+      set.status = authStatus ?? 401;
+      return { error: authError };
+    }
+
+    // SECURITY: Verify caller is accessing their own subscription (IDOR protection)
+    const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
+    if (!valid) {
       set.status = 403;
-      return { error };
+      return { error: idorError };
     }
 
     try {

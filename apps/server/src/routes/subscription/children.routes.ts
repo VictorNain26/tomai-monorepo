@@ -4,6 +4,8 @@
  * POST /api/subscriptions/add-children - Add children to subscription
  * POST /api/subscriptions/remove-children - Remove children from subscription
  * POST /api/subscriptions/cancel-pending-removal - Cancel scheduled removal
+ *
+ * Security: All routes require authentication and verify caller === parentId
  */
 
 import { Elysia, t } from 'elysia';
@@ -11,7 +13,7 @@ import { stripeService, StripeServiceError } from '../../lib/stripe/index.js';
 import { db } from '../../db/connection.js';
 import { user, userSubscriptions } from '../../db/schema.js';
 import { eq, inArray, and } from 'drizzle-orm';
-import { verifyParent, formatSubscriptionResponse, getPremiumPlanId } from './helpers.js';
+import { getAuthenticatedParent, verifyParentIdMatch, formatSubscriptionResponse, getPremiumPlanId } from './helpers.js';
 import { logger } from '../../lib/observability.js';
 
 export const childrenRoutes = new Elysia({ prefix: '/api/subscriptions' })
@@ -20,17 +22,26 @@ export const childrenRoutes = new Elysia({ prefix: '/api/subscriptions' })
    * POST /api/subscriptions/add-children
    *
    * Adds additional children to an existing subscription with proration.
+   *
+   * Security: Verifies authenticated user === body.parentId (IDOR protection)
    */
   .post(
     '/add-children',
-    async ({ body, set }) => {
+    async ({ body, set, request }) => {
       const { parentId, childrenIds } = body;
 
-      // Verify parent
-      const { isParent, error } = await verifyParent(parentId);
-      if (!isParent) {
+      // SECURITY: Get authenticated parent and verify identity match
+      const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
+      if (!parent) {
+        set.status = authStatus ?? 401;
+        return { error: authError };
+      }
+
+      // SECURITY: Verify caller is accessing their own subscription (IDOR protection)
+      const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
+      if (!valid) {
         set.status = 403;
-        return { error };
+        return { error: idorError };
       }
 
       // Verify children belong to parent
@@ -128,17 +139,26 @@ export const childrenRoutes = new Elysia({ prefix: '/api/subscriptions' })
    * Schedules children for removal at period end (NO immediate downgrade).
    * Children keep Premium access until the billing period ends.
    * The webhook handles the actual downgrade when the schedule phase changes.
+   *
+   * Security: Verifies authenticated user === body.parentId (IDOR protection)
    */
   .post(
     '/remove-children',
-    async ({ body, set }) => {
+    async ({ body, set, request }) => {
       const { parentId, childrenIds } = body;
 
-      // Verify parent
-      const { isParent, error } = await verifyParent(parentId);
-      if (!isParent) {
+      // SECURITY: Get authenticated parent and verify identity match
+      const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
+      if (!parent) {
+        set.status = authStatus ?? 401;
+        return { error: authError };
+      }
+
+      // SECURITY: Verify caller is accessing their own subscription (IDOR protection)
+      const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
+      if (!valid) {
         set.status = 403;
-        return { error };
+        return { error: idorError };
       }
 
       try {
@@ -187,8 +207,10 @@ export const childrenRoutes = new Elysia({ prefix: '/api/subscriptions' })
    *
    * Cancels any scheduled removal of children. This "reactivates" children
    * that were marked for removal at the end of the billing period.
+   *
+   * Security: Verifies authenticated user === body.parentId (IDOR protection)
    */
-  .post('/cancel-pending-removal', async ({ body, set }) => {
+  .post('/cancel-pending-removal', async ({ body, set, request }) => {
     const { parentId, childId } = body as { parentId?: string; childId?: string };
 
     if (!parentId) {
@@ -196,11 +218,18 @@ export const childrenRoutes = new Elysia({ prefix: '/api/subscriptions' })
       return { error: 'parentId is required' };
     }
 
-    // Verify parent
-    const { isParent, error } = await verifyParent(parentId);
-    if (!isParent) {
+    // SECURITY: Get authenticated parent and verify identity match
+    const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
+    if (!parent) {
+      set.status = authStatus ?? 401;
+      return { error: authError };
+    }
+
+    // SECURITY: Verify caller is accessing their own subscription (IDOR protection)
+    const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
+    if (!valid) {
       set.status = 403;
-      return { error };
+      return { error: idorError };
     }
 
     try {

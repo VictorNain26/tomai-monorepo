@@ -4,7 +4,7 @@
  */
 
 import { betterAuth } from "better-auth";
-import { username, openAPI, mcp, admin } from "better-auth/plugins";
+import { username, openAPI, mcp } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 import { db } from "../db/connection";
@@ -218,10 +218,6 @@ export const auth = betterAuth({
     openAPI(),
     mcp({
       loginPage: "/sign-in"
-    }),
-    admin({
-      defaultRole: 'parent',
-      adminRole: ['admin']
     }),
   ],
 });

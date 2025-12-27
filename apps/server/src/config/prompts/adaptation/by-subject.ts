@@ -1,10 +1,7 @@
 /**
- * Adaptation par matière - Version optimisée
- * Remplace les 5 fichiers subjects/ (~1200 lignes → ~200 lignes)
- * Élimine la duplication CSEN
- *
- * Principe: Seulement les spécificités uniques à chaque matière
- * La pédagogie CSEN/LearnLM est dans core/pedagogy.ts
+ * Adaptation par matière
+ * Seulement les spécificités uniques à chaque matière
+ * La pédagogie (CSEN/Dehaene) est dans core/pedagogy.ts
  */
 
 export type SubjectType =

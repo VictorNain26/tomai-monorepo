@@ -276,6 +276,87 @@ export const establishments = pgTable('establishments', {
 
 
 // =============================================
+// PRONOTE INTEGRATION
+// =============================================
+
+/**
+ * Enum pour le statut de connexion Pronote
+ */
+export const pronoteConnectionStatusEnum = pgEnum('pronote_connection_status', [
+  'active',      // Connexion active et fonctionnelle
+  'expired',     // Token expiré, nécessite reconnexion
+  'error',       // Erreur lors du refresh
+  'disconnected' // Déconnecté manuellement
+]);
+
+/**
+ * Table pronote_connections - Connexions Pronote des élèves
+ *
+ * Stocke les tokens Pronote chiffrés AES-256-GCM pour chaque élève.
+ * Un élève ne peut avoir qu'une seule connexion Pronote active.
+ *
+ * Sécurité:
+ * - Token chiffré AES-256-GCM (jamais en clair)
+ * - Clé de chiffrement dans PRONOTE_ENCRYPTION_KEY
+ * - Refresh automatique toutes les 5 minutes
+ */
+export const pronoteConnections = pgTable('pronote_connections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+
+  // ===== RELATIONS =====
+  userId: varchar('user_id', { length: 255 }).notNull().unique(), // L'élève
+  establishmentRne: varchar('establishment_rne', { length: 8 }).notNull(), // Établissement
+
+  // ===== PRONOTE AUTH DATA (chiffré) =====
+  // Token Pronote chiffré AES-256-GCM
+  encryptedToken: text('encrypted_token').notNull(),
+  // URL instance Pronote (ex: https://0000000A.index-education.net/pronote/)
+  instanceUrl: varchar('instance_url', { length: 400 }).notNull(),
+  // Nom d'utilisateur Pronote
+  pronoteUsername: varchar('pronote_username', { length: 100 }).notNull(),
+  // UUID du device (généré côté serveur, utilisé pour le refresh)
+  deviceUuid: varchar('device_uuid', { length: 36 }).notNull(),
+  // Type de compte Pronote (student = 3)
+  accountKind: integer('account_kind').notNull().default(3),
+
+  // ===== STATUS =====
+  status: pronoteConnectionStatusEnum('status').notNull().default('active'),
+  lastError: text('last_error'), // Dernier message d'erreur si status = 'error'
+
+  // ===== TIMING =====
+  tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }).notNull(),
+  lastRefreshAt: timestamp('last_refresh_at', { withTimezone: true }).notNull().defaultNow(),
+  lastSyncAt: timestamp('last_sync_at', { withTimezone: true }), // Dernière sync données
+
+  // ===== SYNC METADATA =====
+  // Dernières données sync (pour éviter requêtes inutiles)
+  lastHomeworkSync: timestamp('last_homework_sync', { withTimezone: true }),
+  lastGradesSync: timestamp('last_grades_sync', { withTimezone: true }),
+  lastTimetableSync: timestamp('last_timetable_sync', { withTimezone: true }),
+
+  // ===== AUDIT =====
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [user.id],
+    name: 'pronote_connections_user_id_fkey'
+  }).onDelete('cascade'),
+
+  establishmentRneFk: foreignKey({
+    columns: [table.establishmentRne],
+    foreignColumns: [establishments.rne],
+    name: 'pronote_connections_establishment_rne_fkey'
+  }).onDelete('restrict'),
+
+  // Index pour queries fréquentes
+  statusIdx: index('idx_pronote_connections_status').on(table.status),
+  tokenExpiresIdx: index('idx_pronote_connections_expires').on(table.tokenExpiresAt),
+  establishmentIdx: index('idx_pronote_connections_establishment').on(table.establishmentRne),
+}));
+
+// =============================================
 // TOMAI LEARNING TABLES (conservées)
 // =============================================
 
@@ -501,6 +582,9 @@ export const userRelations = relations(user, ({ one, many }) => ({
 
   // Learning Tools (Flashcards, QCM, Vrai/Faux)
   learningDecks: many(learningDecks),
+
+  // Pronote Integration
+  pronoteConnection: one(pronoteConnections),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -548,6 +632,17 @@ export const costTrackingRelations = relations(costTracking, ({ one }) => ({
   session: one(studySessions, {
     fields: [costTracking.sessionId],
     references: [studySessions.id]
+  }),
+}));
+
+export const pronoteConnectionsRelations = relations(pronoteConnections, ({ one }) => ({
+  user: one(user, {
+    fields: [pronoteConnections.userId],
+    references: [user.id]
+  }),
+  establishment: one(establishments, {
+    fields: [pronoteConnections.establishmentRne],
+    references: [establishments.rne]
   }),
 }));
 
@@ -808,6 +903,16 @@ export type AIModel = typeof aiModelEnum.enumValues[number];
 // Enum types pour Establishments
 export type EstablishmentType = typeof establishmentTypeEnum.enumValues[number];
 export type EstablishmentStatus = typeof establishmentStatusEnum.enumValues[number];
+
+// Pronote Integration Types
+export type PronoteConnectionStatus = typeof pronoteConnectionStatusEnum.enumValues[number];
+export type PronoteConnection = typeof pronoteConnections.$inferSelect;
+export type NewPronoteConnection = typeof pronoteConnections.$inferInsert;
+
+export type PronoteConnectionWithRelations = PronoteConnection & {
+  user?: User;
+  establishment?: Establishment;
+};
 
 // =============================================
 // LEARNING TOOLS SYSTEM (Flashcards, QCM, Vrai/Faux)

@@ -5,7 +5,7 @@
  */
 
 import type Stripe from 'stripe';
-import { stripe, getPremiumPlanConfig } from './config';
+import { requireStripe, getPremiumPlanConfig } from './config';
 import {
   StripeServiceError,
   NoPlanConfiguredError,
@@ -42,7 +42,7 @@ async function validateNoActiveSubscription(
   parentId: string
 ): Promise<void> {
   try {
-    const existingSub = await stripe.subscriptions.retrieve(subscriptionId);
+    const existingSub = await requireStripe().subscriptions.retrieve(subscriptionId);
 
     if (existingSub.status === 'canceled') {
       await clearBillingSubscription(parentId);
@@ -89,7 +89,7 @@ export async function createCheckoutSession(params: {
     childrenCount: childrenIds.length.toString(),
   };
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await requireStripe().checkout.sessions.create({
     customer: customerId,
     mode: 'subscription',
     line_items: lineItems,

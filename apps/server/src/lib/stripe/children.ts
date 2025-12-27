@@ -5,7 +5,7 @@
  */
 
 import type Stripe from 'stripe';
-import { stripe, getPremiumPlanConfig } from './config';
+import { requireStripe, getPremiumPlanConfig } from './config';
 import {
   NoPlanConfiguredError,
   NoSubscriptionError,
@@ -36,7 +36,7 @@ import { logger } from '../observability';
 // ============================================
 
 async function getSubscriptionWithItems(subscriptionId: string): Promise<Stripe.Subscription> {
-  return stripe.subscriptions.retrieve(subscriptionId, {
+  return requireStripe().subscriptions.retrieve(subscriptionId, {
     expand: ['items.data'],
   });
 }
@@ -51,7 +51,7 @@ async function handleFullyCanceledSubscription(
 }
 
 async function clearSubscriptionCancellation(subscriptionId: string): Promise<Stripe.Subscription> {
-  return stripe.subscriptions.update(subscriptionId, {
+  return requireStripe().subscriptions.update(subscriptionId, {
     cancel_at_period_end: false,
     cancel_at: '',
   } as Stripe.SubscriptionUpdateParams);
@@ -77,14 +77,14 @@ function buildAddChildrenUpdateItems(
 
 async function cancelPendingSchedule(scheduleId: string, subscriptionId?: string): Promise<void> {
   try {
-    const schedule = await stripe.subscriptionSchedules.retrieve(scheduleId);
+    const schedule = await requireStripe().subscriptionSchedules.retrieve(scheduleId);
     const subId = subscriptionId ?? (schedule.subscription as string | null);
 
-    await stripe.subscriptionSchedules.release(scheduleId);
+    await requireStripe().subscriptionSchedules.release(scheduleId);
     logger.info(`[Stripe] Released schedule ${scheduleId}`, { operation: 'stripe:schedule:release', scheduleId });
 
     if (subId && schedule.end_behavior === 'cancel') {
-      await stripe.subscriptions.update(subId, {
+      await requireStripe().subscriptions.update(subId, {
         cancel_at: '',
       } as Stripe.SubscriptionUpdateParams);
       logger.info(`[Stripe] Cleared cancel_at on subscription ${subId}`, { operation: 'stripe:subscription:clear-cancel', subscriptionId: subId });
@@ -111,7 +111,7 @@ async function createDeferredRemovalSchedule(params: {
 
   const nextPhaseItems = buildSubscriptionItems(remainingChildrenIds.length, planConfig);
 
-  const schedule = await stripe.subscriptionSchedules.create({
+  const schedule = await requireStripe().subscriptionSchedules.create({
     from_subscription: subscription.id,
   });
 
@@ -121,7 +121,7 @@ async function createDeferredRemovalSchedule(params: {
     quantity: item.quantity ?? 1,
   }));
 
-  return stripe.subscriptionSchedules.update(schedule.id, {
+  return requireStripe().subscriptionSchedules.update(schedule.id, {
     end_behavior: 'release',
     phases: [
       {
@@ -194,7 +194,7 @@ export async function addChildrenToSubscription(
   );
 
   const allChildrenIds = [...new Set([...existingChildrenIds, ...newChildrenIds])];
-  const updatedSubscription = await stripe.subscriptions.update(billing.stripeSubscriptionId, {
+  const updatedSubscription = await requireStripe().subscriptions.update(billing.stripeSubscriptionId, {
     items: updateItems,
     proration_behavior: 'always_invoice',
     metadata: {
@@ -261,7 +261,7 @@ async function getExistingPendingRemovalIds(subscription: Stripe.Subscription): 
   if (!scheduleId) return [];
 
   try {
-    const schedule = await stripe.subscriptionSchedules.retrieve(scheduleId);
+    const schedule = await requireStripe().subscriptionSchedules.retrieve(scheduleId);
     return parseChildrenIdsFromMetadata(schedule.metadata?.removedChildrenIds);
   } catch {
     return [];
@@ -276,7 +276,7 @@ async function createScheduleForRemoval(
   newChildrenCount: number,
   removedChildrenIds: string[]
 ): Promise<Stripe.SubscriptionSchedule> {
-  const schedule = await stripe.subscriptionSchedules.create({
+  const schedule = await requireStripe().subscriptionSchedules.create({
     from_subscription: subscription.id,
   });
 
@@ -288,7 +288,7 @@ async function createScheduleForRemoval(
     })
   );
 
-  const updatedSchedule = await stripe.subscriptionSchedules.update(schedule.id, {
+  const updatedSchedule = await requireStripe().subscriptionSchedules.update(schedule.id, {
     end_behavior: 'release',
     phases: [
       {
@@ -329,17 +329,10 @@ async function updateScheduleForRemoval(
   newChildrenCount: number,
   removedChildrenIds: string[]
 ): Promise<Stripe.SubscriptionSchedule> {
-  const currentSchedule = await stripe.subscriptionSchedules.retrieve(scheduleId);
+  const currentSchedule = await requireStripe().subscriptionSchedules.retrieve(scheduleId);
 
-  let existingRemovedIds: string[] = [];
-  try {
-    const existingMetadata = currentSchedule.metadata?.removedChildrenIds;
-    if (existingMetadata) {
-      existingRemovedIds = JSON.parse(existingMetadata) as string[];
-    }
-  } catch {
-    // Ignore parse errors
-  }
+  // SECURITY: Use Zod-validated parsing for metadata
+  const existingRemovedIds = parseChildrenIdsFromMetadata(currentSchedule.metadata?.removedChildrenIds);
 
   const allRemovedChildrenIds = [...new Set([...existingRemovedIds, ...removedChildrenIds])];
   const currentPhase = currentSchedule.phases[0];
@@ -351,7 +344,7 @@ async function updateScheduleForRemoval(
       quantity: item.quantity ?? 1,
     })) ?? [];
 
-  const updatedSchedule = await stripe.subscriptionSchedules.update(scheduleId, {
+  const updatedSchedule = await requireStripe().subscriptionSchedules.update(scheduleId, {
     end_behavior: 'release',
     phases: [
       {

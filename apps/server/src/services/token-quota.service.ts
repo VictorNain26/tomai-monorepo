@@ -360,8 +360,18 @@ async function ensureUserSubscription(userId: string): Promise<{
 /**
  * Check if user has enough tokens remaining (rolling window + daily cap)
  * Handles automatic resets for window, daily, weekly, and monthly
+ * NOTE: Quotas are disabled in development (NODE_ENV=development)
  */
 export async function checkQuota(userId: string): Promise<QuotaCheckResult> {
+  // Bypass quotas in development
+  if (process.env.NODE_ENV === 'development') {
+    return createDefaultQuotaResult(
+      999_999, // Unlimited in dev
+      999_999,
+      'premium'
+    );
+  }
+
   try {
     const { windowLimit, dailyLimit, planName } = await ensureUserSubscription(userId);
     const windowHours = QUOTA_CONFIG[planName].windowHours;
