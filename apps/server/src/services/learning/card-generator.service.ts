@@ -5,6 +5,26 @@
  * - responseMimeType: 'application/json' → JSON syntaxiquement valide
  * - Prompt détaillé → structure correcte par type de carte
  * - Validation Zod → conformité métier stricte
+ *
+ * ## Fondements Scientifiques
+ *
+ * ### CSEN (Conseil Scientifique de l'Éducation Nationale) - SOURCES OFFICIELLES
+ * Les 4 piliers de l'apprentissage de Stanislas Dehaene (président CSEN) :
+ * 1. Attention - Focalisation sur une notion par carte
+ * 2. Engagement actif - Testing effect / récupération en mémoire
+ * 3. Retour sur erreur - Feedback constructif non stressant
+ * 4. Consolidation - Réactivation espacée, variation des formats
+ *
+ * Sources :
+ * - Dehaene, S. (2018). Apprendre ! Les talents du cerveau, le défi des machines.
+ * - CSEN / Académie Paris: https://pia.ac-paris.fr/portail/jcms/p1_3354981
+ * - Testing effect: https://www.site.ac-aix-marseille.fr/lyc-stexupery/spip/Tester-les-eleves-pour-les-faire-memoriser.html
+ *
+ * ### EXTENSIONS SCIENTIFIQUES (non-CSEN, académiquement validées)
+ * - Elaborative Interrogation (Pressley 1987) → type 'reformulation'
+ * - Scaffolding/ZPD (Vygotsky 1978) → champs 'hints'
+ *
+ * @see prompts/pedagogy.ts pour documentation détaillée des sources
  */
 
 import { GoogleGenAI } from '@google/genai';
@@ -14,9 +34,11 @@ import {
   getRecommendedCardTypes,
   subjectRequiresKaTeX,
   getEducationCycle,
-  getCycleAdaptationInstructions
+  getCycleAdaptationInstructions,
+  getPedagogyPromptBlock,
+  getTemplatesForTypes,
+  KATEX_INSTRUCTIONS
 } from './prompts/index.js';
-import { KATEX_INSTRUCTIONS, RICH_CONTENT_INSTRUCTIONS } from './prompts/base.js';
 import { logger } from '../../lib/observability.js';
 import { withRetry } from '../../lib/retry.js';
 import { appConfig } from '../../config/app.config.js';
@@ -49,6 +71,12 @@ const genai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
 // PROMPT BUILDER
 // ============================================================================
 
+/**
+ * Construit le prompt optimisé pour la génération de cartes
+ * Architecture modulaire utilisant les fichiers prompts/*.ts
+ *
+ * Tokens estimés: ~1000-1200 (optimisé pour quotas Gemini)
+ */
 function buildPrompt(params: CardGenerationParams): string {
   const { topic, subject, level, cardCount, ragContext, domaine } = params;
   const requiresKaTeX = subjectRequiresKaTeX(subject);
@@ -57,87 +85,41 @@ function buildPrompt(params: CardGenerationParams): string {
 
   const parts: string[] = [];
 
-  parts.push(`Tu es un expert pédagogue français. Génère exactement ${cardCount} cartes de révision pour des élèves de niveau ${level}.
+  // 1. Introduction + Principes pédagogiques CSEN (module pedagogy.ts)
+  parts.push(`Tu es un expert pédagogue français. Génère exactement ${cardCount} cartes de révision pour niveau ${level}.
 
-**Principes** :
-1. Commence par 1-2 cartes 'concept' pour les notions clés
-2. Progresse du simple vers le complexe
-3. Varie les types d'exercices
-4. Chaque carte doit être autonome`);
+${getPedagogyPromptBlock()}`);
 
+  // 2. Instructions spécifiques à la matière
   parts.push(getSubjectInstructions(subject));
+
+  // 3. Adaptation au cycle scolaire
   parts.push(getCycleAdaptationInstructions(cycle));
 
-  // Structure EXACTE par type - guide Gemini
-  parts.push(`## TYPES DE CARTES ET STRUCTURE EXACTE
+  // 4. Templates des types recommandés (module templates.ts)
+  parts.push(`## TYPES DE CARTES
+Utilise principalement: ${recommendedTypes.slice(0, 5).join(', ')}
 
-Utilise les types recommandés: ${recommendedTypes.join(', ')}
+${getTemplatesForTypes(recommendedTypes)}`);
 
-**concept** (REQUIS: title, explanation, keyPoints[2-4])
-{"cardType": "concept", "content": {"title": "...", "explanation": "...", "keyPoints": ["...", "..."], "example?": "...", "formula?": "..."}}
-
-**flashcard** (REQUIS: front, back)
-{"cardType": "flashcard", "content": {"front": "...", "back": "..."}}
-
-**qcm** (REQUIS: question, options[2-6], correctIndex, explanation)
-{"cardType": "qcm", "content": {"question": "...", "options": ["...", "..."], "correctIndex": 0, "explanation": "..."}}
-
-**vrai_faux** (REQUIS: statement, isTrue, explanation)
-{"cardType": "vrai_faux", "content": {"statement": "...", "isTrue": true, "explanation": "..."}}
-
-**matching** (REQUIS: instruction, pairs[3-6])
-{"cardType": "matching", "content": {"instruction": "...", "pairs": [{"left": "...", "right": "..."}]}}
-
-**fill_blank** (REQUIS: sentence, options, correctIndex, explanation)
-{"cardType": "fill_blank", "content": {"sentence": "La ___ est...", "options": ["...", "..."], "correctIndex": 0, "explanation": "...", "grammaticalPoint?": "..."}}
-
-**word_order** (REQUIS: instruction, words, correctSentence)
-{"cardType": "word_order", "content": {"instruction": "...", "words": ["...", "..."], "correctSentence": "...", "translation?": "..."}}
-
-**calculation** (REQUIS: problem, steps, answer)
-{"cardType": "calculation", "content": {"problem": "...", "steps": ["..."], "answer": "...", "hint?": "..."}}
-
-**timeline** (REQUIS: instruction, events[3-6], correctOrder)
-{"cardType": "timeline", "content": {"instruction": "...", "events": [{"event": "...", "date?": "...", "hint?": "..."}], "correctOrder": [0, 1, 2]}}
-
-**matching_era** (REQUIS: instruction, items, eras, correctPairs)
-{"cardType": "matching_era", "content": {"instruction": "...", "items": ["..."], "eras": ["..."], "correctPairs": [[0, 1]]}}
-
-**cause_effect** (REQUIS: context, cause, possibleEffects, correctIndex, explanation)
-{"cardType": "cause_effect", "content": {"context": "...", "cause": "...", "possibleEffects": ["...", "..."], "correctIndex": 0, "explanation": "..."}}
-
-**classification** (REQUIS: instruction, items, categories, correctClassification)
-{"cardType": "classification", "content": {"instruction": "...", "items": ["..."], "categories": ["..."], "correctClassification": {"catégorie": [0, 1]}, "explanation?": "..."}}
-
-**process_order** (REQUIS: instruction, processName, steps, correctOrder)
-{"cardType": "process_order", "content": {"instruction": "...", "processName": "...", "steps": ["..."], "correctOrder": [0, 1, 2], "explanation?": "..."}}
-
-**grammar_transform** (REQUIS: instruction, originalSentence, transformationType, correctAnswer, explanation)
-{"cardType": "grammar_transform", "content": {"instruction": "...", "originalSentence": "...", "transformationType": "tense|voice|form|number", "correctAnswer": "...", "explanation": "...", "acceptableVariants?": ["..."]}}`);
-
+  // 5. KaTeX si matière scientifique
   if (requiresKaTeX) {
     parts.push(KATEX_INSTRUCTIONS);
   }
 
-  parts.push(RICH_CONTENT_INSTRUCTIONS);
-
+  // 6. Contexte RAG (programme officiel)
   if (ragContext?.trim()) {
     parts.push(`## PROGRAMME OFFICIEL\n${ragContext}`);
   }
 
+  // 7. Instructions finales de génération
   parts.push(`## GÉNÉRATION
-
 **Matière**: ${subject}
 **Niveau**: ${level}
 **Sujet**: ${topic}${domaine ? `\n**Domaine**: ${domaine}` : ''}
 
 Génère exactement ${cardCount} cartes. Retourne UNIQUEMENT un tableau JSON valide.
-
-RÈGLES CRITIQUES:
-- correctIndex est 0-based (première option = 0)
-- isTrue est un boolean (true ou false, PAS une string)
-- Tous les champs REQUIS doivent être présents pour chaque type
-- Pas de texte avant/après le JSON`);
+Règles: correctIndex=0-based, isTrue=boolean (pas string), tous champs requis présents.`);
 
   return parts.join('\n\n');
 }

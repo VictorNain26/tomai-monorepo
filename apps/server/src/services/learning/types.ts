@@ -61,6 +61,13 @@ export type FrenchCardType =
   | 'grammar_transform';   // Transformer phrase (temps, voix, etc.)
 
 /**
+ * Types de cartes pour sciences cognitives (2025)
+ * Basé sur recherches Éduscol/DRANE
+ */
+export type CognitiveCardType =
+  | 'reformulation';       // Élaboration active - reformuler avec ses mots
+
+/**
  * Tous les types de cartes supportés
  */
 export type CardType =
@@ -70,7 +77,8 @@ export type CardType =
   | MathScienceCardType
   | HistoryGeoCardType
   | SVTCardType
-  | FrenchCardType;
+  | FrenchCardType
+  | CognitiveCardType;
 
 /**
  * Liste des types valides pour validation
@@ -89,7 +97,9 @@ export const VALID_CARD_TYPES: CardType[] = [
   // SVT
   'classification', 'process_order',
   // Français
-  'grammar_transform'
+  'grammar_transform',
+  // Sciences Cognitives (2025)
+  'reformulation'
 ];
 
 // ============================================
@@ -257,6 +267,21 @@ export interface GrammarTransformContent {
 }
 
 /**
+ * Contenu d'un exercice de reformulation (élaboration active)
+ * Usage: Toutes matières - Sciences Cognitives 2025
+ * Favorise l'ancrage mémoriel par la génération active
+ */
+export interface ReformulationContent {
+  concept: string;           // Nom du concept à reformuler
+  prompt: string;            // Consigne de reformulation
+  context?: string;          // Contexte facultatif
+  keyElements: string[];     // Éléments clés attendus (2-5)
+  sampleAnswer: string;      // Exemple de bonne reformulation
+  hints?: string[];          // Indices progressifs (max 3)
+  imageUrl?: string;         // Image/schéma pour double codage
+}
+
+/**
  * Union de tous les contenus possibles
  */
 export type CardContent =
@@ -273,7 +298,8 @@ export type CardContent =
   | CauseEffectContent
   | ClassificationContent
   | ProcessOrderContent
-  | GrammarTransformContent;
+  | GrammarTransformContent
+  | ReformulationContent;
 
 // ============================================
 // CATÉGORIES DE MATIÈRES

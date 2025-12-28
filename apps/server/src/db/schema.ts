@@ -952,7 +952,9 @@ export const cardTypeEnum = pgEnum('card_type', [
   // SVT/Sciences
   'classification', 'process_order',
   // French
-  'grammar_transform'
+  'grammar_transform',
+  // Cognitive Science - Elaboration (2025)
+  'reformulation'
 ]);
 export const deckSourceEnum = pgEnum('deck_source', ['prompt', 'conversation', 'document', 'rag_program']);
 
