@@ -180,7 +180,7 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
       // 3. AI Service Check (assume healthy - pas de dépendance directe)
       checks.ai = {
         status: 'healthy',
-        provider: 'gemini-2.5-flash'
+        provider: 'gemini-3-flash'
       };
 
       // 4. Set HTTP Status Code

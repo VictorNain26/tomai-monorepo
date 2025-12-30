@@ -19,7 +19,7 @@ export const schoolLevelEnum = pgEnum('school_level', [
 export const userRoleEnum = pgEnum('user_role', ['student', 'parent', 'admin']);
 export const sessionStatusEnum = pgEnum('session_status', ['draft', 'active', 'paused', 'completed', 'abandoned', 'timeout', 'error']);
 export const messageRoleEnum = pgEnum('message_role', ['user', 'assistant', 'system']);
-export const aiModelEnum = pgEnum('ai_model', ['gemini_2_5_flash']);
+export const aiModelEnum = pgEnum('ai_model', ['gemini_3_flash']);
 
 
 // =============================================
@@ -392,7 +392,7 @@ export const studySessions = pgTable('study_sessions', {
   hintsGiven: integer('hints_given').default(0),
 
   // Métriques techniques
-  aiModelUsed: aiModelEnum('ai_model_used').notNull().default('gemini_2_5_flash'),
+  aiModelUsed: aiModelEnum('ai_model_used').notNull().default('gemini_3_flash'),
   totalTokensUsed: integer('total_tokens_used').default(0),
   apiCostCents: integer('api_cost_cents').default(0),
   averageResponseTimeMs: integer('average_response_time_ms'),

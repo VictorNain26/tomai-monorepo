@@ -220,10 +220,10 @@ function createAiConfig(): AppConfig['ai'] {
     gemini: {
       apiKey: Bun.env['GEMINI_API_KEY'],
       // Modèles spécialisés pour usage optimal
-      model: Bun.env['GEMINI_MODEL'] ?? 'gemini-2.5-flash',           // Chat principal - gratuit et performant
-      audioModel: Bun.env['GEMINI_AUDIO_MODEL'] ?? 'gemini-2.5-flash',    // Analyse prononciation (multimodal)
-      ttsModel: Bun.env['GEMINI_TTS_MODEL'] ?? 'gemini-2.5-flash-preview-tts', // Text-to-Speech natif
-      maxTokens: parseInt(Bun.env['GEMINI_MAX_TOKENS'] ?? '16384', 10), // Gemini 2.5 Flash supports 65536 max
+      model: Bun.env['GEMINI_MODEL'] ?? 'gemini-3-flash-preview',           // Chat principal - Gemini 3 Flash (Dec 2025)
+      audioModel: Bun.env['GEMINI_AUDIO_MODEL'] ?? 'gemini-3-flash-preview',    // Analyse prononciation (multimodal)
+      ttsModel: Bun.env['GEMINI_TTS_MODEL'] ?? 'gemini-2.5-flash-preview-tts', // Text-to-Speech natif (pas encore 3.0)
+      maxTokens: parseInt(Bun.env['GEMINI_MAX_TOKENS'] ?? '16384', 10), // Gemini 3 Flash supports 1M context
       temperature: parseFloat(Bun.env['GEMINI_TEMPERATURE'] ?? '0.7'),    // Optimal pour éducation
       topP: parseFloat(Bun.env['GEMINI_TOP_P'] ?? '0.95'),                // Créativité contrôlée
       requestTimeout: parseInt(Bun.env['GEMINI_TIMEOUT'] ?? '60000', 10), // Timeout 60s

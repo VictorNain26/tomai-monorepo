@@ -82,7 +82,7 @@ export class ChatService {
       // - id: defaultRandom()
       // - status: default('active')
       // - startedAt: defaultNow()
-      // - aiModelUsed: default('gemini_2_5_flash')
+      // - aiModelUsed: default('gemini_3_flash')
       // - frustrationAvg, questionLevelsAvg, etc.: default('0')
       // - conceptsCovered: default(sql`'{}'::text[]`)
       // - sessionMetadata: default({})

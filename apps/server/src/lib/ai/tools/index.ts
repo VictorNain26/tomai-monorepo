@@ -10,7 +10,7 @@
  *
  * const stream = chat({
  *   adapter: geminiAdapter,
- *   model: 'gemini-2.5-flash',
+ *   model: 'gemini-3-flash',
  *   messages,
  *   tools: [ragSearchTool]
  * });

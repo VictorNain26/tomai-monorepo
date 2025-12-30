@@ -1,18 +1,18 @@
 /**
- * AI Models Utilities - Normalisation centralisée Gemini 2.5 Flash
+ * AI Models Utilities - Normalisation centralisée Gemini 3 Flash
  */
 
 import { logger } from '../lib/observability.js';
 
-export type AIModelEnum = 'gemini_2_5_flash';
+export type AIModelEnum = 'gemini_3_flash';
 
 /**
  * Mapping centralisé des noms de modèles Gemini 2025 (usage interne)
  */
 const AI_MODELS = {
   GEMINI: {
-    enum: 'gemini_2_5_flash' as const,
-    keywords: ['gemini', 'gemini-2.5-flash', 'gemini-flash']
+    enum: 'gemini_3_flash' as const,
+    keywords: ['gemini', 'gemini-3-flash', 'gemini-3-flash-preview', 'gemini-flash']
   }
 } as const;
 
