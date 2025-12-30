@@ -44,7 +44,6 @@ export const lifecycleRoutes = stripeEnabled
 
 // Re-export helpers (always available, no Stripe dependency)
 export {
-  verifyParent,
   getChildrenForParent,
   formatSubscriptionResponse,
 } from './helpers.js';

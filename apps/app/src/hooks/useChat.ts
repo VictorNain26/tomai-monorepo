@@ -36,14 +36,6 @@ interface ChatRequestData {
   fileId?: string;
 }
 
-/** Extended UIMessage with TomAI metadata */
-interface UIMessageWithMetadata extends UIMessage {
-  metadata?: {
-    sessionId?: string;
-    usedRAG?: boolean;
-  };
-}
-
 // ============================================================================
 // SSE Parser - Standard Web API pattern for stream() adapter
 // ============================================================================
@@ -116,6 +108,7 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   // Refs for dynamic data (accessible in stream adapter closure)
   const fileIdsRef = useRef<string[]>([]);
   const sessionIdRef = useRef<string | null>(sessionId);
+  const serverSessionIdRef = useRef<string | null>(null); // SessionId from backend 'done' chunk
 
   // Sync sessionId ref when prop changes
   useEffect(() => {
@@ -179,8 +172,20 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
       throw new Error(errorMessage);
     }
 
-    // Parse SSE response into StreamChunks
-    yield* parseServerSentEvents(response);
+    // Parse SSE response and intercept sessionId from 'done' chunk
+    for await (const chunk of parseServerSentEvents(response)) {
+      // Intercept 'done' chunk to capture sessionId before TanStack processes it
+      if (chunk.type === 'done') {
+        const doneChunk = chunk as { type: 'done'; metadata?: { sessionId?: string } };
+        if (doneChunk.metadata?.sessionId) {
+          serverSessionIdRef.current = doneChunk.metadata.sessionId;
+          logger.info('Captured sessionId from done chunk', {
+            sessionId: doneChunk.metadata.sessionId,
+          });
+        }
+      }
+      yield chunk;
+    }
   });
 
   // ============================================================================
@@ -202,9 +207,8 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
         role: message.role,
       });
 
-      // Extract sessionId from done chunk metadata
-      const messageWithMeta = message as UIMessageWithMetadata;
-      const newSessionId = messageWithMeta.metadata?.sessionId;
+      // Use sessionId captured from 'done' chunk by stream adapter
+      const newSessionId = serverSessionIdRef.current;
 
       if (newSessionId && newSessionId !== sessionIdRef.current) {
         logger.info('New session created by backend', {
@@ -212,6 +216,7 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
           newSessionId,
         });
         sessionIdRef.current = newSessionId;
+        serverSessionIdRef.current = null; // Reset after use
         onSessionCreated?.(newSessionId);
       }
 

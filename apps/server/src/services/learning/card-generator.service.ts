@@ -113,13 +113,41 @@ ${getTemplatesForTypes(recommendedTypes)}`);
   }
 
   // 7. Instructions finales de génération
+  // Créer une liste explicite avec guillemets pour éviter toute ambiguïté
+  const quotedTypes = recommendedTypes.map(t => `"${t}"`).join(' | ');
+
   parts.push(`## GÉNÉRATION
 **Matière**: ${subject}
 **Niveau**: ${level}
 **Sujet**: ${topic}${domaine ? `\n**Domaine**: ${domaine}` : ''}
 
-Génère exactement ${cardCount} cartes. Retourne UNIQUEMENT un tableau JSON valide.
-Règles: correctIndex=0-based, isTrue=boolean (pas string), tous champs requis présents.`);
+Génère exactement ${cardCount} cartes.
+
+**FORMAT JSON OBLIGATOIRE** - Chaque carte DOIT avoir cette structure exacte:
+\`\`\`json
+[
+  {
+    "cardType": "vrai_faux",
+    "content": { "statement": "...", "isTrue": true, "explanation": "..." }
+  },
+  {
+    "cardType": "qcm",
+    "content": { "question": "...", "options": [...], "correctIndex": 0, "explanation": "..." }
+  }
+]
+\`\`\`
+
+**ATTENTION CRITIQUE - cardType**:
+Le champ "cardType" DOIT être EXACTEMENT une de ces valeurs (snake_case, en minuscules):
+${quotedTypes}
+
+⚠️ N'utilise JAMAIS:
+- camelCase (vraiFaux, fillBlank) → INCORRECT
+- kebab-case (vrai-faux, fill-blank) → INCORRECT
+- Anglais (true_false, mcq) → INCORRECT
+- Autres variantes → INCORRECT
+
+Règles: cardType en snake_case EXACT, correctIndex=0-based, isTrue=boolean (pas string).`);
 
   return parts.join('\n\n');
 }
@@ -198,10 +226,13 @@ export async function generateCards(
     if (!validation.success) {
       const errors = validation.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`);
 
+      // Log première carte pour diagnostic
+      const firstCard = Array.isArray(parsedJson) ? parsedJson[0] : null;
+
       logger.error('Card validation failed', {
         operation: 'learning:generate:validation_error',
         topic: params.topic,
-        errors,
+        firstCard: firstCard ? JSON.stringify(firstCard) : 'N/A',
         durationMs: Date.now() - startTime,
         _error: errors.join('; '),
         severity: 'high' as const
