@@ -34,30 +34,6 @@ export async function getAuthenticatedUser(
 }
 
 /**
- * Verify user is a parent (can manage subscriptions)
- * @deprecated Use getAuthenticatedParent instead for IDOR protection
- */
-export async function verifyParent(
-  userId: string
-): Promise<{ isParent: boolean; error?: string }> {
-  const [userRecord] = await db
-    .select()
-    .from(user)
-    .where(eq(user.id, userId))
-    .limit(1);
-
-  if (!userRecord) {
-    return { isParent: false, error: 'User not found' };
-  }
-
-  if (userRecord.role !== 'parent') {
-    return { isParent: false, error: 'Only parents can manage subscriptions' };
-  }
-
-  return { isParent: true };
-}
-
-/**
  * SECURE: Get authenticated parent from request
  * Verifies:
  * 1. User is authenticated

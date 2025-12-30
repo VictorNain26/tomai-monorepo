@@ -348,9 +348,9 @@ export class ChatService {
 
       // Si limite spécifiée, l'appliquer MAIS garder TOUS les messages avec fichiers
       if (options?.limit && sessionMessages.length > options.limit) {
-        // Séparer les messages avec et sans fichiers - TEMPORAIRE: attachedFile désactivé
-        const messagesWithFiles = sessionMessages.filter(() => false); // _msg.attachedFile
-        const messagesWithoutFiles = sessionMessages.filter(() => true); // !_msg.attachedFile
+        // Séparer les messages avec et sans fichiers pour prioriser le contexte fichier
+        const messagesWithFiles = sessionMessages.filter(msg => msg.attachedFile !== null);
+        const messagesWithoutFiles = sessionMessages.filter(msg => msg.attachedFile === null);
 
         // Prendre les derniers messages sans fichiers selon la limite
         const recentMessages = messagesWithoutFiles.slice(-options.limit);
