@@ -11,7 +11,7 @@ const LINKS = [
   { href: "/#how-it-works", label: "Méthode" },
   { href: "/#features", label: "Fonctionnalités" },
   { href: "/#pricing", label: "Tarifs" },
-  { href: "/aide", label: "FAQ" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export function NavLinks({

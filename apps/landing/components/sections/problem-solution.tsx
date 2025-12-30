@@ -6,10 +6,10 @@ export function ProblemSolution() {
       <div className="container px-4">
         <div className="mx-auto max-w-3xl text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
-            Le dilemme des devoirs à la maison
+            Les devoirs, sans les conflits
           </h2>
           <p className="text-lg text-muted-foreground">
-            Entre le manque de temps et les programmes qui changent, aider son enfant peut devenir une source de conflit.
+            Entre le manque de temps et les programmes qui ont changé depuis votre scolarité, aider son enfant peut vite devenir stressant.
           </p>
         </div>
 
@@ -24,19 +24,19 @@ export function ProblemSolution() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Difficulté à expliquer certaines notions</span>
+                  <span>Les programmes ont changé, difficile d&apos;expliquer</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Manque de temps pour un suivi quotidien</span>
+                  <span>Pas le temps après une journée de travail</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Risque de donner la réponse trop vite</span>
+                  <span>ChatGPT donne les réponses, pas les méthodes</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Outils classiques souvent peu pédagogiques</span>
+                  <span>Les cours particuliers coûtent cher</span>
                 </li>
               </ul>
             </div>
@@ -52,19 +52,19 @@ export function ProblemSolution() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <span>Un tuteur patient et toujours disponible</span>
+                  <span>Un tuteur patient, disponible soir et week-end</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <span>L&apos;enfant gagne en autonomie</span>
+                  <span>Votre enfant comprend et gagne en autonomie</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <span>Un suivi parental simplifié</span>
+                  <span>Tableau de bord pour suivre ses progrès</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <span>Environnement sécurisé et adapté</span>
+                  <span>À partir de 15€/mois, sans engagement</span>
                 </li>
               </ul>
             </div>

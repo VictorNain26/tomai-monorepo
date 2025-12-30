@@ -6,23 +6,28 @@ import { ChevronDown, ShieldCheck, BookOpen, BrainCircuit } from "lucide-react";
 
 const FAQS = [
   {
-    question: "Est-ce que Tom donne les réponses aux exercices ?",
-    answer: "Non, et c'est tout l'intérêt ! Tom guide par des questions. Au lieu de donner la réponse, il aide votre enfant à la trouver par lui-même. C'est comme avoir un professeur particulier qui explique, plutôt qu'un camarade qui laisse copier.",
+    question: "Tom donne-t-il les réponses à mon enfant ?",
+    answer: "Non, jamais. Tom utilise la méthode socratique : il pose des questions pour guider votre enfant vers la solution. Contrairement à ChatGPT qui donne les réponses, Tom fait comprendre et mémoriser durablement.",
     icon: BrainCircuit,
   },
   {
-    question: "Quelles matières sont couvertes ?",
-    answer: "Tom couvre l'intégralité du programme officiel de l'Éducation Nationale, du CP à la Terminale. Cela inclut les Mathématiques, le Français, l'Histoire-Géo, les SVT, la Physique-Chimie, la Philosophie, et les langues vivantes.",
+    question: "Comment puis-je suivre les progrès de mon enfant ?",
+    answer: "Vous avez accès à un tableau de bord parental qui montre les matières travaillées, le temps passé, et les notions maîtrisées. Vous pouvez aussi définir des limites de temps d'utilisation quotidiennes.",
+    icon: null,
+  },
+  {
+    question: "Les contenus sont-ils alignés sur les programmes scolaires ?",
+    answer: "Oui, Tom est entraîné sur 415 programmes officiels Éduscol, du CP à la Terminale. Il couvre toutes les matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Anglais...",
     icon: BookOpen,
   },
   {
     question: "Mes données sont-elles en sécurité ?",
-    answer: "Absolument. Tom est une solution française. Toutes les données sont hébergées en Europe sur des serveurs sécurisés et certifiés. Nous ne vendons aucune donnée et il n'y a aucune publicité sur la plateforme.",
+    answer: "Absolument. Vos données sont hébergées en Europe, conformément au RGPD. Nous ne vendons jamais vos informations et n'affichons aucune publicité. La confidentialité de votre famille est notre priorité.",
     icon: ShieldCheck,
   },
   {
-    question: "Peut-on l'utiliser sur téléphone ?",
-    answer: "Oui, Tom est accessible depuis n'importe quel appareil : ordinateur, tablette ou smartphone. L'interface s'adapte parfaitement pour une utilisation mobile.",
+    question: "Puis-je annuler à tout moment ?",
+    answer: "Oui, l'abonnement est sans engagement. Vous pouvez annuler en un clic depuis votre espace parent, sans frais ni justification. Vous pouvez aussi commencer gratuitement sans carte bancaire.",
     icon: null,
   },
 ];
@@ -38,7 +43,7 @@ export function FAQ() {
             Questions fréquentes
           </h2>
           <p className="text-lg text-muted-foreground">
-            Tout ce que vous devez savoir sur Tom.
+            Tout ce que les parents veulent savoir avant de commencer.
           </p>
         </div>
 

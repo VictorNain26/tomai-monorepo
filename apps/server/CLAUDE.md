@@ -2,7 +2,7 @@
 
 **Backend Bun + Elysia.js** d'une plateforme de tutorat socratique adaptatif pour étudiants français. Architecture moderne avec orchestration IA et authentification Better Auth.
 
-## 🚨 RÈGLE ABSOLUE
+## Règle absolue
 
 **JAMAIS** inventer de solutions backend. **TOUJOURS** rechercher documentation officielle avant toute modification.
 
@@ -12,7 +12,7 @@
 3. **Docker Compose** validation (JAMAIS `bun run dev`)
 4. **Implémentation** evidence-based
 
-## 🏗️ Stack 2025
+## Stack
 
 - **Runtime** : Bun 1.3 + Docker Compose (PostgreSQL 16 pgvector + Redis 7)
 - **Framework** : Elysia.js 1.4.19 (type-safe API)
@@ -23,12 +23,12 @@
 - **Vector Search** : Qdrant Cloud direct + Mistral embeddings 1024D + BM25 reranking
 - **Pronote** : Pawnote 1.6.2 + AES-256-GCM encryption (PBKDF2 600K iterations)
 
-## ⚡ Commandes CRITIQUES
+## Commandes
 
 ```bash
-# ⚠️ INTERDIT: bun run dev (JAMAIS)
+# INTERDIT: bun run dev (JAMAIS)
 
-# ✅ OBLIGATOIRE: Docker Compose uniquement
+# OBLIGATOIRE: Docker Compose uniquement
 docker compose up -d
 
 # Validation
@@ -37,7 +37,7 @@ bun run lint         # ESLint zero warnings
 bun run build        # Build production
 ```
 
-## 🎯 Sources Obligatoires
+## Sources officielles
 
 - **Elysia.js** : https://elysiajs.com/quick-start.html - API patterns type-safe
 - **Drizzle ORM** : https://orm.drizzle.team/docs/overview - Schema, queries
@@ -46,9 +46,9 @@ bun run build        # Build production
 - **Google Gemini** : https://ai.google.dev/gemini-api/docs - API optimisée, adhérence 97%
 - **pgvector** : https://github.com/pgvector/pgvector - PostgreSQL vector extension pour RAG
 
-## 🔒 Règles Strictes
+## Règles strictes
 
-### 🗄️ MIGRATIONS DATABASE - Workflow Quotidien
+### Migrations base de données
 
 **SOURCE OF TRUTH** : `src/db/schema.ts` est la SEULE source de vérité.
 
@@ -63,19 +63,19 @@ bun run build        # Build production
 7. git push origin main        # Koyeb applique automatiquement
 ```
 
-**❌ INTERDICTIONS ABSOLUES:**
+**Interdictions absolues:**
 - JAMAIS éditer `.sql` ou `.json` manuellement
 - JAMAIS supprimer migrations appliquées en prod
 - JAMAIS modifier `drizzle.__drizzle_migrations__` directement
 
-**🔍 Diagnostic rapide:**
+**Diagnostic rapide:**
 ```bash
 bun run db:studio              # Interface Drizzle Studio
 bun run db:check               # Détecte schema drift
 bun run scripts/check-migration-state.ts  # État migrations
 ```
 
-**📚 Guide complet:** Voir `/docs/DATABASE_MIGRATIONS.md` pour:
+**Guide complet:** Voir `/docs/DATABASE_MIGRATIONS.md` pour:
 - Architecture Runtime Migrator détaillée
 - Scénarios de troubleshooting
 - Garanties anti-régression
@@ -83,13 +83,13 @@ bun run scripts/check-migration-state.ts  # État migrations
 
 ### Docker OBLIGATOIRE pour Développement
 ```bash
-# ✅ CORRECT : Stack complète (PostgreSQL 16 + Redis 7 + Backend)
+# CORRECT : Stack complète (PostgreSQL 16 + Redis 7 + Backend)
 docker compose up -d
 
-# ✅ ALTERNATIF : Services + dev local
+# ALTERNATIF : Services + dev local
 docker compose up -d postgres redis && bun run dev
 
-# ❌ INTERDIT : Runtime direct sans services
+# INTERDIT : Runtime direct sans services
 bun run dev  # ÉCHOUE si PostgreSQL/Redis non accessibles
 ```
 
@@ -102,7 +102,7 @@ bun run dev  # ÉCHOUE si PostgreSQL/Redis non accessibles
 
 ### TypeScript Strict
 ```typescript
-// ✅ CORRECT : Types explicites, null handling
+// CORRECT : Types explicites, null handling
 async function processUser(user: User | null): Promise<ProcessedUser> {
   if (!user) {
     throw new ValidationError('User is required');
@@ -110,13 +110,13 @@ async function processUser(user: User | null): Promise<ProcessedUser> {
   return await processValidUser(user);
 }
 
-// ❌ INTERDIT : Any types, null non-géré
+// INTERDIT : Any types, null non-géré
 async function processUser(user: any) {
   return await processValidUser(user);
 }
 ```
 
-## 📁 Structure
+## Structure
 
 ```
 src/
@@ -152,7 +152,7 @@ src/
 └── types/                           # Types partagés
 ```
 
-## 🔐 Better Auth
+## Better Auth
 
 ```typescript
 // Configuration server
@@ -178,7 +178,7 @@ async function requireAuth({ request: { headers }, set }) {
 }
 ```
 
-## 🔗 Pronote Integration
+## Pronote Integration
 
 Intégration sécurisée avec Pronote via QR code (bypass ENT/CAS).
 
@@ -213,7 +213,7 @@ src/
 PRONOTE_ENCRYPTION_KEY=<64 chars base64>
 ```
 
-## 📊 Seed RAG Data (Optionnel)
+## Seed RAG Data (Optionnel)
 
 **Note** : Le seed RAG (415 documents + 2,271 chunks) doit être recréé via ingestion manuelle.
 
@@ -230,7 +230,7 @@ DATABASE_URL="..." bun run scripts/seed-rag.ts
 - Embeddings Mistral 1024D générés
 - Format : SQL INSERT statements avec ON CONFLICT DO NOTHING
 
-## 🧠 Extended Thinking - Problèmes Complexes
+## Extended Thinking - Problèmes complexes
 
 **Niveaux de réflexion pour décisions critiques:**
 
@@ -248,14 +248,14 @@ DATABASE_URL="..." bun run scripts/seed-rag.ts
 "ultrathink migrating from Bun to Node.js for ecosystem compatibility"
 ```
 
-**📚 Guide complet:** Voir `/docs/EXTENDED_THINKING.md` pour:
+**Guide complet:** Voir `/docs/EXTENDED_THINKING.md` pour:
 - Quand utiliser chaque niveau
 - Examples TomIA spécifiques (RAG, auth, migrations)
 - Best practices et coûts
 
 ---
 
-## 📚 Documentation Locale
+## Documentation locale
 
 **Dossier `docs/`** (non versionné Git, local uniquement) :
 - `DATABASE_MIGRATIONS.md` - Guide complet migrations Drizzle ORM
@@ -265,19 +265,21 @@ DATABASE_URL="..." bun run scripts/seed-rag.ts
 
 **Pratique** : Documentation de référence locale, ne PAS commiter (`.gitignore` exclut `docs/`)
 
-## 🚨 Validation Pré-Commit
+## Validation pré-commit
 
 ```bash
-✅ docker compose ps     # Services actifs
-✅ bun run typecheck     # Zero erreur TypeScript strict
-✅ bun run lint          # Zero warnings ESLint
-✅ bun run build         # Build production successful
-✅ Documentation officielle vérifiée
-✅ Patterns Elysia.js respectés
-✅ Migrations validées: bun run db:generate (si schema modifié)
+docker compose ps       # Services actifs
+bun run typecheck       # Zero erreur TypeScript strict
+bun run lint            # Zero warnings ESLint
+bun run build           # Build production successful
 ```
 
-## 🎓 Mission Critique
+Checklist :
+- Documentation officielle vérifiée
+- Patterns Elysia.js respectés
+- Migrations validées: `bun run db:generate` (si schema modifié)
+
+## Mission
 
 Ce backend sert de **VRAIES familles françaises**. Chaque API endpoint impacte l'éducation d'enfants réels.
 

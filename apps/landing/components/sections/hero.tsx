@@ -21,15 +21,20 @@ export function Hero() {
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8">
-              Tom guide la réflexion de votre enfant au lieu de donner les réponses. Il comprend vraiment et gagne en autonomie.
+              Tom pose les bonnes questions pour que votre enfant trouve les réponses par lui-même. Il gagne en confiance et en autonomie.
             </p>
 
-            {/* CTA Button */}
-            <div className="flex justify-center lg:justify-start">
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <Link href={APP_URL}>
-                <Button size="lg" className="group">
-                  Commencer gratuitement
+                <Button size="lg" className="group w-full sm:w-auto">
+                  Essayer gratuitement
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                </Button>
+              </Link>
+              <Link href="#how-it-works">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  Découvrir comment ça marche
                 </Button>
               </Link>
             </div>
