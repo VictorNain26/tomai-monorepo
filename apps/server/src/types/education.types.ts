@@ -200,7 +200,7 @@ export interface EducationalResponse {
   /** Contenu de la réponse */
   content: string;
   /** Fournisseur IA utilisé */
-  provider: 'gemini-2.5-flash' | 'fallback';
+  provider: 'gemini-3-flash' | 'fallback';
   /** Tokens utilisés */
   tokensUsed: number;
   /** Contexte RAG utilisé */

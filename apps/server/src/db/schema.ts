@@ -19,7 +19,9 @@ export const schoolLevelEnum = pgEnum('school_level', [
 export const userRoleEnum = pgEnum('user_role', ['student', 'parent', 'admin']);
 export const sessionStatusEnum = pgEnum('session_status', ['draft', 'active', 'paused', 'completed', 'abandoned', 'timeout', 'error']);
 export const messageRoleEnum = pgEnum('message_role', ['user', 'assistant', 'system']);
-export const aiModelEnum = pgEnum('ai_model', ['gemini_2_5_flash']);
+
+// AI Model: TEXT au lieu d'ENUM - flexibilité pour nouveaux modèles sans migration
+// TypeScript type défini plus bas pour type-safety
 
 
 // =============================================
@@ -391,8 +393,8 @@ export const studySessions = pgTable('study_sessions', {
   questionsAnswered: integer('questions_answered').default(0),
   hintsGiven: integer('hints_given').default(0),
 
-  // Métriques techniques
-  aiModelUsed: aiModelEnum('ai_model_used').notNull().default('gemini_2_5_flash'),
+  // Métriques techniques - TEXT pour flexibilité (pas d'ENUM = pas de migration par modèle)
+  aiModelUsed: text('ai_model_used').notNull().default('gemini-3-flash'),
   totalTokensUsed: integer('total_tokens_used').default(0),
   apiCostCents: integer('api_cost_cents').default(0),
   averageResponseTimeMs: integer('average_response_time_ms'),
@@ -444,8 +446,8 @@ export const messages = pgTable('messages', {
   // Classification
   messageCategory: varchar('message_category', { length: 50 }),
 
-  // Métriques techniques
-  aiModel: aiModelEnum('ai_model'),
+  // Métriques techniques - TEXT pour flexibilité
+  aiModel: text('ai_model'),
   tokensUsed: integer('tokens_used').default(0),
   responseTimeMs: integer('response_time_ms'),
 
@@ -528,8 +530,8 @@ export const costTracking = pgTable('cost_tracking', {
   userId: varchar('user_id', { length: 255 }),
   sessionId: uuid('session_id'),
 
-  // Modèle et coûts
-  aiModel: aiModelEnum('ai_model').notNull(),
+  // Modèle et coûts - TEXT pour flexibilité
+  aiModel: text('ai_model').notNull(),
   operation: varchar('operation', { length: 50 }).notNull().default('chat'),
   tokensInput: integer('tokens_input').notNull().default(0),
   tokensOutput: integer('tokens_output').notNull().default(0),
@@ -898,7 +900,9 @@ export type UserRole = typeof userRoleEnum.enumValues[number];
 export type SchoolLevel = typeof schoolLevelEnum.enumValues[number];
 export type SessionStatus = typeof sessionStatusEnum.enumValues[number];
 export type MessageRole = typeof messageRoleEnum.enumValues[number];
-export type AIModel = typeof aiModelEnum.enumValues[number];
+
+// AI Model: string type (pas d'ENUM = flexibilité pour nouveaux modèles)
+export type AIModel = string;
 
 // Enum types pour Establishments
 export type EstablishmentType = typeof establishmentTypeEnum.enumValues[number];

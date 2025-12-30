@@ -14,7 +14,7 @@ import { Elysia } from 'elysia';
 const mockAiOrchestrator = {
   processMessage: async () => ({
     response: 'Réponse IA simulée',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-flash',
     tokens: 150,
     cost: 0.0001
   })
@@ -462,7 +462,7 @@ describe('API Endpoints Integration Tests', () => {
       expect(data.success).toBe(true);
       expect(data.response).toBe('Réponse IA simulée');
       expect(data.sessionId).toBe('test-session-123');
-      expect(data.model).toBe('gemini-2.5-flash');
+      expect(data.model).toBe('gemini-3-flash');
       expect(data.usage.tokens).toBe(150);
       expect(data.usage.cost).toBe(0.0001);
     });

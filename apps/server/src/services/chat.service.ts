@@ -7,9 +7,8 @@ import { eq } from 'drizzle-orm';
 import { usersRepository, studySessionsRepository, messagesRepository, progressRepository, type CreateStudySessionInput } from '../db/repositories';
 import { db } from '../db/connection';
 import { messages } from '../db/schema';
-import type { Message as DbMessage, SchoolLevel } from '../db/schema';
+import type { Message as DbMessage, SchoolLevel, AIModel } from '../db/schema';
 import { safeUUID } from '../utils/uuid';
-import { normalizeToEnum, type AIModelEnum } from '../utils/ai-models';
 import { logger } from '../lib/observability';
 
 export interface SessionDetails {
@@ -82,7 +81,7 @@ export class ChatService {
       // - id: defaultRandom()
       // - status: default('active')
       // - startedAt: defaultNow()
-      // - aiModelUsed: default('gemini_2_5_flash')
+      // - aiModelUsed: default('gemini_3_flash')
       // - frustrationAvg, questionLevelsAvg, etc.: default('0')
       // - conceptsCovered: default(sql`'{}'::text[]`)
       // - sessionMetadata: default({})
@@ -549,10 +548,11 @@ export class ChatService {
   }
 
   /**
-   * Map AI model names from providers to database enum values
+   * Map AI model names from providers to database TEXT field
+   * Architecture 2025: TEXT au lieu d'ENUM pour flexibilité
    */
-  private mapAIModelName(modelName?: string | null): AIModelEnum | null {
-    return modelName ? normalizeToEnum(modelName) : null;
+  private mapAIModelName(modelName?: string | null): AIModel | null {
+    return modelName ?? null;
   }
 
   /**
