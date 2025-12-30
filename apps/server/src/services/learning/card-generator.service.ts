@@ -27,7 +27,7 @@
  * @see prompts/pedagogy.ts pour documentation détaillée des sources
  */
 
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { CardGenerationOutputSchema } from '../../lib/ai/index.js';
 import {
   getSubjectInstructions,
@@ -68,40 +68,45 @@ export interface CardGenerationError {
 const genai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
 
 // ============================================================================
-// GEMINI RESPONSE SCHEMA - Force { cardType, content } structure
+// NORMALISATION - Corrige les erreurs courantes de Gemini
 // ============================================================================
 
+const VALID_CARD_TYPES = new Set([
+  'concept', 'flashcard', 'qcm', 'vrai_faux',
+  'matching', 'fill_blank', 'word_order',
+  'calculation', 'timeline', 'matching_era', 'cause_effect',
+  'classification', 'process_order', 'grammar_transform', 'reformulation'
+]);
+
 /**
- * ResponseSchema for Gemini Structured Output.
- * Forces correct structure that Zod validation expects.
- *
- * Without this, Gemini may return { type: "concept", title: "..." }
- * instead of the required { cardType: "concept", content: { title: "..." } }
+ * Normalise la sortie Gemini avant validation Zod.
+ * Corrige les erreurs courantes:
+ * - type → cardType
+ * - Champs au niveau racine → wrappés dans content
  */
-const CARD_RESPONSE_SCHEMA = {
-  type: Type.ARRAY,
-  items: {
-    type: Type.OBJECT,
-    properties: {
-      cardType: {
-        type: Type.STRING,
-        enum: [
-          'concept', 'flashcard', 'qcm', 'vrai_faux',
-          'matching', 'fill_blank', 'word_order',
-          'calculation', 'timeline', 'matching_era', 'cause_effect',
-          'classification', 'process_order', 'grammar_transform', 'reformulation'
-        ],
-        description: 'Type de carte en snake_case'
-      },
-      content: {
-        type: Type.OBJECT,
-        description: 'Contenu de la carte selon le type'
-      }
-    },
-    required: ['cardType', 'content'],
-    propertyOrdering: ['cardType', 'content']
-  }
-};
+function normalizeGeminiOutput(data: unknown): unknown {
+  if (!Array.isArray(data)) return data;
+
+  return data.map((card: Record<string, unknown>) => {
+    if (typeof card !== 'object' || card === null) return card;
+
+    // Si cardType existe et est valide, garder la carte telle quelle
+    if (card.cardType && VALID_CARD_TYPES.has(card.cardType as string)) {
+      return card;
+    }
+
+    // Cas: Gemini utilise "type" au lieu de "cardType"
+    if (card.type && VALID_CARD_TYPES.has(card.type as string)) {
+      const { type, content, ...rest } = card;
+      return {
+        cardType: type,
+        content: content ?? rest
+      };
+    }
+
+    return card;
+  });
+}
 
 // ============================================================================
 // PROMPT BUILDER
@@ -216,7 +221,6 @@ export async function generateCards(
           contents: prompt,
           config: {
             responseMimeType: 'application/json',
-            responseSchema: CARD_RESPONSE_SCHEMA,
             temperature: 0.7,
             topK: 40,
             topP: 0.95
@@ -257,8 +261,11 @@ export async function generateCards(
       };
     }
 
+    // Normalisation: corrige type → cardType et autres erreurs courantes
+    const normalizedJson = normalizeGeminiOutput(parsedJson);
+
     // Validation Zod stricte
-    const validation = CardGenerationOutputSchema.safeParse(parsedJson);
+    const validation = CardGenerationOutputSchema.safeParse(normalizedJson);
 
     if (!validation.success) {
       const errors = validation.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`);
