@@ -1,13 +1,59 @@
 /**
- * Zod Schemas pour les 14 types de cartes learning
+ * Zod Schemas pour les 15 types de cartes learning
  *
  * Architecture 2025 :
  * - Validation type-safe avec Zod
  * - Double-check après Gemini Structured Output
  * - Défense en profondeur (coerceIndex comme filet de sécurité)
+ *
+ * ## Fondements Scientifiques
+ *
+ * ### CSEN (Conseil Scientifique de l'Éducation Nationale) - SOURCES OFFICIELLES
+ * Les 4 piliers de Stanislas Dehaene appliqués aux types de cartes :
+ * - Attention → Un concept par carte (type 'concept')
+ * - Engagement actif → QCM, exercices, testing effect
+ * - Retour sur erreur → Champs 'explanation' obligatoires
+ * - Consolidation → Variation des 15 types de cartes
+ *
+ * ### EXTENSIONS SCIENTIFIQUES (non-CSEN, académiquement validées)
+ * Ces champs et types NE SONT PAS du CSEN mais sont scientifiquement validés :
+ * - Double codage : imageUrl optionnel (Paivio 1986)
+ * - Scaffolding : hints[] progressifs (Vygotsky 1978)
+ * - Erreur productive : commonMistakes[] (Chi 1978)
+ * - Élaboration : type 'reformulation' (Pressley 1987)
+ *
+ * @see services/learning/prompts/pedagogy.ts pour documentation complète
  */
 
 import { z } from 'zod';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS: Champs cognitifs communs (Sciences Cognitives 2025)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * URL d'image pour double codage (Paivio 1986)
+ * Supporte images externes ou data URLs pour schémas générés
+ */
+const imageUrlField = z.string().url().optional()
+  .describe('URL d\'image/schéma pour double codage visuel (optionnel)');
+
+/**
+ * Indices progressifs - scaffolding cognitif
+ * L'élève peut demander des indices avant de voir la réponse
+ */
+const hintsField = z.array(z.string().min(1)).max(3).optional()
+  .describe('Indices progressifs (du plus vague au plus précis, max 3)');
+
+/**
+ * Erreurs fréquentes - apprentissage par l'erreur productive
+ * Montrer les erreurs courantes renforce la plasticité neuronale
+ */
+const commonMistakesField = z.array(z.object({
+  mistake: z.string().min(1).describe('L\'erreur fréquente'),
+  why: z.string().min(1).describe('Pourquoi c\'est faux')
+})).max(3).optional()
+  .describe('Erreurs fréquentes à éviter avec explication (max 3)');
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HELPER: Défense en profondeur pour index numériques
@@ -42,7 +88,9 @@ export const ConceptContentSchema = z.object({
   example: z.string().optional()
     .describe('Exemple optionnel pour illustrer'),
   formula: z.string().optional()
-    .describe('Formule KaTeX optionnelle (maths/sciences)')
+    .describe('Formule KaTeX optionnelle (maths/sciences)'),
+  // Double codage (Sciences Cognitives)
+  imageUrl: imageUrlField
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -51,14 +99,19 @@ export const ConceptContentSchema = z.object({
 
 /**
  * Flashcard classique (recto/verso)
+ * Enrichi avec double codage et indices progressifs
  */
 export const FlashcardContentSchema = z.object({
   front: z.string().min(1).describe('Question ou concept (recto de la carte)'),
-  back: z.string().min(1).describe('Réponse ou définition (verso de la carte)')
+  back: z.string().min(1).describe('Réponse ou définition (verso de la carte)'),
+  // Sciences Cognitives 2025
+  imageUrl: imageUrlField,
+  hints: hintsField
 });
 
 /**
  * QCM - Question à Choix Multiples
+ * Enrichi avec erreur productive et indices
  */
 export const QCMContentSchema = z.object({
   question: z.string().min(1).describe('La question posée'),
@@ -67,16 +120,23 @@ export const QCMContentSchema = z.object({
     .describe('Options de réponse (2-6)'),
   correctIndex: coerceIndex.describe('Index de la bonne réponse'),
   explanation: z.string().min(1)
-    .describe('Explication de la bonne réponse')
+    .describe('Explication de la bonne réponse'),
+  // Sciences Cognitives 2025
+  imageUrl: imageUrlField,
+  hints: hintsField,
+  commonMistakes: commonMistakesField
 });
 
 /**
  * Vrai/Faux
+ * Enrichi avec erreur productive
  */
 export const VraiFauxContentSchema = z.object({
   statement: z.string().min(1).describe('Affirmation à évaluer'),
   isTrue: z.boolean().describe('true si affirmation vraie, false sinon'),
-  explanation: z.string().min(1).describe('Explication de la réponse')
+  explanation: z.string().min(1).describe('Explication de la réponse'),
+  // Sciences Cognitives 2025
+  commonMistakes: commonMistakesField
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -85,12 +145,14 @@ export const VraiFauxContentSchema = z.object({
 
 /**
  * Matching - Association paires (vocabulaire, dates, etc.)
+ * Enrichi avec double codage pour langues (images vocabulaire)
  */
 export const MatchingContentSchema = z.object({
   instruction: z.string().min(1).describe('Consigne pour l\'élève'),
   pairs: z.array(z.object({
     left: z.string().min(1).describe('Élément gauche (mot, événement, date)'),
-    right: z.string().min(1).describe('Élément droit (traduction, description)')
+    right: z.string().min(1).describe('Élément droit (traduction, description)'),
+    imageUrl: z.string().url().optional().describe('Image pour vocabulaire illustré')
   }))
     .min(3).max(6)
     .describe('Paires à associer (3-6 paires)')
@@ -98,6 +160,7 @@ export const MatchingContentSchema = z.object({
 
 /**
  * Fill Blank - Texte à trous
+ * Enrichi avec erreur productive et indices
  */
 export const FillBlankContentSchema = z.object({
   sentence: z.string().min(1)
@@ -109,11 +172,15 @@ export const FillBlankContentSchema = z.object({
   grammaticalPoint: z.string().optional()
     .describe('Point de grammaire testé'),
   explanation: z.string().min(1)
-    .describe('Explication de la réponse')
+    .describe('Explication de la réponse'),
+  // Sciences Cognitives 2025
+  hints: hintsField,
+  commonMistakes: commonMistakesField
 });
 
 /**
  * Word Order - Remise en ordre de mots
+ * Enrichi avec indices progressifs
  */
 export const WordOrderContentSchema = z.object({
   instruction: z.string().min(1).describe('Consigne'),
@@ -123,7 +190,9 @@ export const WordOrderContentSchema = z.object({
   correctSentence: z.string().min(1)
     .describe('Phrase correcte'),
   translation: z.string().optional()
-    .describe('Traduction (pour langues étrangères)')
+    .describe('Traduction (pour langues étrangères)'),
+  // Sciences Cognitives 2025
+  hints: hintsField
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -132,6 +201,7 @@ export const WordOrderContentSchema = z.object({
 
 /**
  * Calculation - Calcul avec étapes
+ * Enrichi avec indices progressifs et erreurs fréquentes
  */
 export const CalculationContentSchema = z.object({
   problem: z.string().min(1)
@@ -141,8 +211,10 @@ export const CalculationContentSchema = z.object({
     .describe('Étapes de résolution'),
   answer: z.string().min(1)
     .describe('Réponse finale (peut contenir KaTeX)'),
-  hint: z.string().optional()
-    .describe('Indice optionnel')
+  // Sciences Cognitives 2025 (remplace hint singulier par hints progressifs)
+  hints: hintsField,
+  commonMistakes: commonMistakesField,
+  imageUrl: imageUrlField
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -151,19 +223,23 @@ export const CalculationContentSchema = z.object({
 
 /**
  * Timeline - Chronologie
+ * Enrichi avec double codage (images historiques)
  */
 export const TimelineContentSchema = z.object({
   instruction: z.string().min(1).describe('Consigne'),
   events: z.array(z.object({
     event: z.string().min(1).describe('Nom de l\'événement'),
     date: z.string().optional().describe('Date (révélée après réponse)'),
-    hint: z.string().optional().describe('Indice optionnel')
+    hint: z.string().optional().describe('Indice optionnel'),
+    imageUrl: z.string().url().optional().describe('Image historique associée')
   }))
     .min(3).max(6)
     .describe('Événements à ordonner (3-6)'),
   correctOrder: z.array(z.number().int().min(0))
     .min(3).max(6)
-    .describe('Indices dans l\'ordre chronologique correct')
+    .describe('Indices dans l\'ordre chronologique correct'),
+  // Sciences Cognitives 2025
+  imageUrl: imageUrlField
 });
 
 /**
@@ -184,6 +260,7 @@ export const MatchingEraContentSchema = z.object({
 
 /**
  * Cause Effect - Cause et conséquence
+ * Enrichi avec erreur productive
  */
 export const CauseEffectContentSchema = z.object({
   context: z.string().min(1)
@@ -195,7 +272,10 @@ export const CauseEffectContentSchema = z.object({
     .describe('Effets possibles (2-6)'),
   correctIndex: coerceIndex.describe('Index du bon effet'),
   explanation: z.string().min(1)
-    .describe('Explication du lien cause-effet')
+    .describe('Explication du lien cause-effet'),
+  // Sciences Cognitives 2025
+  commonMistakes: commonMistakesField,
+  imageUrl: imageUrlField
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -204,6 +284,7 @@ export const CauseEffectContentSchema = z.object({
 
 /**
  * Classification - Classer éléments dans catégories
+ * Enrichi avec double codage (schémas scientifiques)
  */
 export const ClassificationContentSchema = z.object({
   instruction: z.string().min(1).describe('Consigne'),
@@ -216,11 +297,15 @@ export const ClassificationContentSchema = z.object({
   correctClassification: z.record(z.string(), z.array(z.number().int().min(0)))
     .describe('Classification correcte { "catégorie": [indices des items] }'),
   explanation: z.string().optional()
-    .describe('Explication optionnelle')
+    .describe('Explication optionnelle'),
+  // Sciences Cognitives 2025
+  imageUrl: imageUrlField,
+  commonMistakes: commonMistakesField
 });
 
 /**
  * Process Order - Ordre d'un processus
+ * Enrichi avec double codage (schémas processus biologiques)
  */
 export const ProcessOrderContentSchema = z.object({
   instruction: z.string().min(1).describe('Consigne'),
@@ -233,7 +318,10 @@ export const ProcessOrderContentSchema = z.object({
     .min(3).max(8)
     .describe('Indices dans l\'ordre correct'),
   explanation: z.string().optional()
-    .describe('Explication optionnelle')
+    .describe('Explication optionnelle'),
+  // Sciences Cognitives 2025
+  imageUrl: imageUrlField,
+  hints: hintsField
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -242,6 +330,7 @@ export const ProcessOrderContentSchema = z.object({
 
 /**
  * Grammar Transform - Transformation grammaticale
+ * Enrichi avec erreur productive
  */
 export const GrammarTransformContentSchema = z.object({
   instruction: z.string().min(1)
@@ -255,7 +344,44 @@ export const GrammarTransformContentSchema = z.object({
   acceptableVariants: z.array(z.string().min(1)).optional()
     .describe('Variantes acceptables'),
   explanation: z.string().min(1)
-    .describe('Explication de la transformation')
+    .describe('Explication de la transformation'),
+  // Sciences Cognitives 2025
+  hints: hintsField,
+  commonMistakes: commonMistakesField
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SCHEMAS ÉLABORATION (1 type) - Sciences Cognitives 2025
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Reformulation - Élaboration active
+ *
+ * EXTENSION SCIENTIFIQUE (non-CSEN) :
+ * Basé sur Elaborative Interrogation (Pressley et al., 1987)
+ * "Expliquer une notion avec ses propres mots renforce compréhension et mémorisation"
+ *
+ * L'élève doit reformuler un concept sans regarder la définition,
+ * activant ainsi le rappel actif + l'élaboration (double effet).
+ *
+ * Source: Pressley, M. et al. (1987). Elaborative interrogation.
+ *         Journal of Educational Psychology, 79(3), 217-228.
+ */
+export const ReformulationContentSchema = z.object({
+  concept: z.string().min(1)
+    .describe('Nom du concept à reformuler'),
+  prompt: z.string().min(1)
+    .describe('Consigne de reformulation (ex: "Explique ce théorème à un camarade")'),
+  context: z.string().optional()
+    .describe('Contexte facultatif pour guider la reformulation'),
+  keyElements: z.array(z.string().min(1))
+    .min(2).max(5)
+    .describe('Éléments clés attendus dans la reformulation (2-5)'),
+  sampleAnswer: z.string().min(1)
+    .describe('Exemple de bonne reformulation'),
+  // Sciences Cognitives 2025
+  hints: hintsField,
+  imageUrl: imageUrlField
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -263,7 +389,7 @@ export const GrammarTransformContentSchema = z.object({
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Types de cartes comme enum Zod
+ * Types de cartes comme enum Zod (15 types)
  */
 export const CardTypeSchema = z.enum([
   // Pédagogique
@@ -279,7 +405,9 @@ export const CardTypeSchema = z.enum([
   // SVT
   'classification', 'process_order',
   // Français
-  'grammar_transform'
+  'grammar_transform',
+  // Élaboration (Sciences Cognitives 2025)
+  'reformulation'
 ]);
 
 /**
@@ -350,6 +478,11 @@ export const ParsedCardSchema = z.discriminatedUnion('cardType', [
   z.object({
     cardType: z.literal('grammar_transform'),
     content: GrammarTransformContentSchema
+  }),
+  // Élaboration (Sciences Cognitives 2025)
+  z.object({
+    cardType: z.literal('reformulation'),
+    content: ReformulationContentSchema
   })
 ]);
 
@@ -384,3 +517,7 @@ export type CauseEffectContent = z.infer<typeof CauseEffectContentSchema>;
 export type ClassificationContent = z.infer<typeof ClassificationContentSchema>;
 export type ProcessOrderContent = z.infer<typeof ProcessOrderContentSchema>;
 export type GrammarTransformContent = z.infer<typeof GrammarTransformContentSchema>;
+export type ReformulationContent = z.infer<typeof ReformulationContentSchema>;
+
+// Type helper pour les erreurs fréquentes (réutilisable côté frontend)
+export type CommonMistake = { mistake: string; why: string };

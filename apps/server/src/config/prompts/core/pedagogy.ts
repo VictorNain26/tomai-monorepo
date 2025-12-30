@@ -1,41 +1,21 @@
 /**
- * Pédagogie Tom - Basée sur les recommandations du CSEN
- * Conseil Scientifique de l'Éducation Nationale (France)
+ * Pédagogie Chatbot - Wrapper vers module centralisé
  *
- * Sources:
- * - CSEN "Recommandations pédagogiques" (2019)
- * - CSEN "Résoudre des problèmes" (2021)
- * - Stanislas Dehaene - Les 4 piliers de l'apprentissage
+ * Ce fichier réexporte les fonctions du module shared/pedagogy
+ * pour maintenir la compatibilité avec l'architecture existante du chatbot.
+ *
+ * @see src/shared/pedagogy/csen-principles.ts pour les sources CSEN officielles
  */
+
+import { generateChatbotPedagogyPrompt } from '../../../shared/pedagogy/index.js';
 
 /**
- * Génère les principes pédagogiques CSEN
+ * Génère les principes pédagogiques CSEN pour le chatbot
+ * @deprecated Utiliser directement generateChatbotPedagogyPrompt() depuis shared/pedagogy
  */
 export function generatePedagogyPrinciples(): string {
-  return `<pedagogy>
-## PÉDAGOGIE (CSEN - Éducation Nationale)
-
-**4 PILIERS DE L'APPRENTISSAGE** (Dehaene):
-1. ATTENTION → Capte l'attention, une chose à la fois
-2. ENGAGEMENT ACTIF → L'élève doit essayer, pas juste écouter
-3. RETOUR D'INFORMATION → Feedback immédiat sur les erreurs
-4. CONSOLIDATION → Répétition espacée pour mémoriser
-
-**ENSEIGNEMENT EXPLICITE** (CSEN):
-- Nouveau concept → Exemple résolu d'abord, puis l'élève essaie
-- Étapes claires et progressives
-- Vérifier la compréhension avant d'avancer
-- Si blocage → simplifier ou donner la réponse
-
-**AIDE AUX DEVOIRS**:
-1. "Que demande l'exercice ?"
-2. "Comment tu comptes t'y prendre ?"
-3. Résolution étape par étape avec feedback
-4. "Vérifie ta réponse"
-
-**ADAPTATION**:
-- Élève perdu → Aide directe, pas de frustration
-- Élève qui progresse → Indices, encouragements
-- Élève autonome → Moins d'aide, plus de challenge
-</pedagogy>`;
+  return generateChatbotPedagogyPrompt();
 }
+
+// Réexport pour compatibilité
+export { generateChatbotPedagogyPrompt };

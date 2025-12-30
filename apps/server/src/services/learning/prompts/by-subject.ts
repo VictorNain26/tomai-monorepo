@@ -15,7 +15,7 @@ import type { EducationLevelType } from '../../../types/index.js';
 // ============================================================================
 
 /**
- * Liste complète des types - l'IA peut utiliser n'importe lequel
+ * Liste complète des types (15) - l'IA peut utiliser n'importe lequel
  */
 export const ALL_CARD_TYPES: CardType[] = [
   'concept', // Pédagogique - théorie avant pratique
@@ -24,7 +24,8 @@ export const ALL_CARD_TYPES: CardType[] = [
   'calculation',
   'timeline', 'matching_era', 'cause_effect',
   'classification', 'process_order',
-  'grammar_transform'
+  'grammar_transform',
+  'reformulation' // Sciences Cognitives 2025 - Élaboration active
 ];
 
 // ============================================================================
@@ -35,13 +36,14 @@ export const ALL_CARD_TYPES: CardType[] = [
  * Types particulièrement adaptés à chaque matière
  * L'IA peut toujours utiliser d'autres types si pertinent
  * 'concept' en premier pour les matières nécessitant théorie avant pratique
+ * 'reformulation' ajouté partout pour favoriser l'élaboration (Sciences Cognitives 2025)
  */
 export const SUGGESTED_CARD_TYPES: Record<SubjectCategory, CardType[]> = {
-  mathematiques: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'calculation', 'fill_blank'],
-  sciences: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'calculation', 'classification', 'process_order', 'cause_effect'],
-  francais: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'fill_blank', 'grammar_transform', 'matching'],
-  langues: ['concept', 'flashcard', 'qcm', 'matching', 'fill_blank', 'word_order', 'vrai_faux'],
-  'histoire-geo': ['concept', 'flashcard', 'qcm', 'vrai_faux', 'timeline', 'matching_era', 'cause_effect', 'matching'],
+  mathematiques: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'calculation', 'fill_blank', 'reformulation'],
+  sciences: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'calculation', 'classification', 'process_order', 'cause_effect', 'reformulation'],
+  francais: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'fill_blank', 'grammar_transform', 'matching', 'reformulation'],
+  langues: ['concept', 'flashcard', 'qcm', 'matching', 'fill_blank', 'word_order', 'vrai_faux', 'reformulation'],
+  'histoire-geo': ['concept', 'flashcard', 'qcm', 'vrai_faux', 'timeline', 'matching_era', 'cause_effect', 'matching', 'reformulation'],
   autre: ALL_CARD_TYPES
 };
 
