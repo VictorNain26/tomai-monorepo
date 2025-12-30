@@ -1,5 +1,5 @@
 {
-  "id": "aaf697cc-576a-462e-b1e5-bedd20862a41",
+  "id": "4996deb4-265b-4b25-8e82-7494c0936af3",
   "prevId": "9f913590-81c8-4607-9339-a8f1a85c84fe",
   "version": "7",
   "dialect": "postgresql",
@@ -179,8 +179,7 @@
         },
         "ai_model": {
           "name": "ai_model",
-          "type": "ai_model",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -1296,8 +1295,7 @@
         },
         "ai_model": {
           "name": "ai_model",
-          "type": "ai_model",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -2063,11 +2061,10 @@
         },
         "ai_model_used": {
           "name": "ai_model_used",
-          "type": "ai_model",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'gemini_3_flash'"
+          "default": "'gemini-3-flash'"
         },
         "total_tokens_used": {
           "name": "total_tokens_used",
@@ -2957,13 +2954,6 @@
     }
   },
   "enums": {
-    "public.ai_model": {
-      "name": "ai_model",
-      "schema": "public",
-      "values": [
-        "gemini_3_flash"
-      ]
-    },
     "public.card_type": {
       "name": "card_type",
       "schema": "public",
