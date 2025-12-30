@@ -27,7 +27,7 @@
  * @see prompts/pedagogy.ts pour documentation détaillée des sources
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { CardGenerationOutputSchema } from '../../lib/ai/index.js';
 import {
   getSubjectInstructions,
@@ -66,6 +66,42 @@ export interface CardGenerationError {
 // ============================================================================
 
 const genai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
+
+// ============================================================================
+// GEMINI RESPONSE SCHEMA - Force { cardType, content } structure
+// ============================================================================
+
+/**
+ * ResponseSchema for Gemini Structured Output.
+ * Forces correct structure that Zod validation expects.
+ *
+ * Without this, Gemini may return { type: "concept", title: "..." }
+ * instead of the required { cardType: "concept", content: { title: "..." } }
+ */
+const CARD_RESPONSE_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      cardType: {
+        type: Type.STRING,
+        enum: [
+          'concept', 'flashcard', 'qcm', 'vrai_faux',
+          'matching', 'fill_blank', 'word_order',
+          'calculation', 'timeline', 'matching_era', 'cause_effect',
+          'classification', 'process_order', 'grammar_transform', 'reformulation'
+        ],
+        description: 'Type de carte en snake_case'
+      },
+      content: {
+        type: Type.OBJECT,
+        description: 'Contenu de la carte selon le type'
+      }
+    },
+    required: ['cardType', 'content'],
+    propertyOrdering: ['cardType', 'content']
+  }
+};
 
 // ============================================================================
 // PROMPT BUILDER
@@ -180,6 +216,7 @@ export async function generateCards(
           contents: prompt,
           config: {
             responseMimeType: 'application/json',
+            responseSchema: CARD_RESPONSE_SCHEMA,
             temperature: 0.7,
             topK: 40,
             topP: 0.95
