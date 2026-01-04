@@ -11,18 +11,10 @@ import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parentMutations, invalidationHelpers, educationQueries } from '@/lib/query-factories';
 import { SCHOOL_LEVELS, CYCLES } from '@/constants/schoolLevels';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '../ui/dialog';
+import { BaseModal } from '../shared/BaseModal';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { ScrollArea } from '../ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -175,177 +167,180 @@ const CreateChildModal: React.FC<CreateChildModalProps> = ({
     });
   };
 
+  const titleElement = (
+    <>
+      <UserPlus className="h-5 w-5" />
+      Créer un compte enfant
+    </>
+  );
+
+  const footerElement = (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleClose}
+        disabled={createChildMutation.isPending}
+        className="w-full sm:w-auto"
+      >
+        Annuler
+      </Button>
+      <Button
+        type="submit"
+        form="create-child-form"
+        disabled={!isFormValid || createChildMutation.isPending}
+        className="w-full sm:w-auto"
+      >
+        {createChildMutation.isPending ? (
+          <>
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            Création...
+          </>
+        ) : (
+          <>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Créer le compte
+          </>
+        )}
+      </Button>
+    </>
+  );
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <DialogHeader className="flex-shrink-0 border-b px-4 py-4 sm:px-6">
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
-            Créer un compte enfant
-          </DialogTitle>
-          <DialogDescription>
-            Ajoutez un nouvel enfant à votre compte famille Tom
-          </DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className="flex-1 overflow-auto">
-          <form id="create-child-form" onSubmit={handleSubmit} className="space-y-4 px-4 py-4 sm:px-6">
-            {/* Informations personnelles */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">Prénom *</Label>
-                  <Input
-                    ref={firstInputRef}
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                    placeholder="Prénom de l'enfant"
-                    disabled={createChildMutation.isPending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Nom *</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                    placeholder="Nom de famille"
-                    disabled={createChildMutation.isPending}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date de naissance *</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={formData.dateOfBirth}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                    max={new Date().toISOString().split('T')[0]}
-                    disabled={createChildMutation.isPending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="schoolLevel">Niveau scolaire *</Label>
-                  <Select
-                    value={formData.schoolLevel}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, schoolLevel: value }))}
-                    disabled={createChildMutation.isPending || isLoadingLevels}
-                  >
-                    <SelectTrigger>
-                      {isLoadingLevels ? (
-                        <span className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Chargement...
-                        </span>
-                      ) : (
-                        <SelectValue placeholder="Choisir le niveau" />
-                      )}
-                    </SelectTrigger>
-                    <SelectContent>
-                      {levelGroups.map((group) => (
-                        <SelectGroup key={group.name}>
-                          <SelectLabel>{group.name}</SelectLabel>
-                          {group.levels.map((level) => (
-                            <SelectItem key={level.value} value={level.value}>
-                              {level.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* LV2 - Apparaît uniquement pour 5ème+ */}
-              <Lv2Selector
-                schoolLevel={formData.schoolLevel}
-                selectedLv2={formData.selectedLv2}
-                onLv2Change={(lv2) => setFormData(prev => ({ ...prev, selectedLv2: lv2 }))}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={titleElement}
+      description="Ajoutez un nouvel enfant à votre compte famille Tom"
+      footer={footerElement}
+      preventClose={createChildMutation.isPending}
+      noPadding
+    >
+      <form id="create-child-form" onSubmit={handleSubmit} className="space-y-4 px-4 py-4 sm:px-6">
+        {/* Informations personnelles */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">Prénom *</Label>
+              <Input
+                ref={firstInputRef}
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                placeholder="Prénom de l'enfant"
                 disabled={createChildMutation.isPending}
               />
             </div>
-
-            {/* Identifiants de connexion */}
-            <div className="space-y-3 border-t pt-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <Label className="text-sm font-medium">Identifiants de connexion</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={generateCredentials}
-                  disabled={createChildMutation.isPending}
-                  className="w-full sm:w-auto"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Générer
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username *</Label>
-                  <Input
-                    id="username"
-                    value={formData.username}
-                    onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                    placeholder="username123"
-                    className="font-mono"
-                    disabled={createChildMutation.isPending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe *</Label>
-                  <Input
-                    id="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="SuperChat42!"
-                    className="font-mono"
-                    disabled={createChildMutation.isPending}
-                  />
-                </div>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Nom *</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                placeholder="Nom de famille"
+                disabled={createChildMutation.isPending}
+              />
             </div>
-          </form>
-        </ScrollArea>
+          </div>
 
-        <DialogFooter className="flex-shrink-0 flex-col-reverse gap-2 border-t px-4 py-4 sm:flex-row sm:px-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleClose}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="dateOfBirth">Date de naissance *</Label>
+              <Input
+                id="dateOfBirth"
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                max={new Date().toISOString().split('T')[0]}
+                disabled={createChildMutation.isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="schoolLevel">Niveau scolaire *</Label>
+              <Select
+                value={formData.schoolLevel}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, schoolLevel: value }))}
+                disabled={createChildMutation.isPending || isLoadingLevels}
+              >
+                <SelectTrigger>
+                  {isLoadingLevels ? (
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Chargement...
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="Choisir le niveau" />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {levelGroups.map((group) => (
+                    <SelectGroup key={group.name}>
+                      <SelectLabel>{group.name}</SelectLabel>
+                      {group.levels.map((level) => (
+                        <SelectItem key={level.value} value={level.value}>
+                          {level.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* LV2 - Apparaît uniquement pour 5ème+ */}
+          <Lv2Selector
+            schoolLevel={formData.schoolLevel}
+            selectedLv2={formData.selectedLv2}
+            onLv2Change={(lv2) => setFormData(prev => ({ ...prev, selectedLv2: lv2 }))}
             disabled={createChildMutation.isPending}
-            className="w-full sm:w-auto"
-          >
-            Annuler
-          </Button>
-          <Button
-            type="submit"
-            form="create-child-form"
-            disabled={!isFormValid || createChildMutation.isPending}
-            className="w-full sm:w-auto"
-          >
-            {createChildMutation.isPending ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Création...
-              </>
-            ) : (
-              <>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Créer le compte
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          />
+        </div>
+
+        {/* Identifiants de connexion */}
+        <div className="space-y-3 border-t pt-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Label className="text-sm font-medium">Identifiants de connexion</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={generateCredentials}
+              disabled={createChildMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Générer
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username *</Label>
+              <Input
+                id="username"
+                value={formData.username}
+                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                placeholder="username123"
+                className="font-mono"
+                disabled={createChildMutation.isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Mot de passe *</Label>
+              <Input
+                id="password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="SuperChat42!"
+                className="font-mono"
+                disabled={createChildMutation.isPending}
+              />
+            </div>
+          </div>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
