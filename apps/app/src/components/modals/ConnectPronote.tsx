@@ -27,7 +27,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../ui/dialog';
+import { modalStyles } from '../shared/modal-styles';
 import { Button } from '../ui/button';
+import { cn } from '@/lib/utils';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
@@ -615,8 +617,8 @@ export default function ConnectPronote({
 
   return (
     <Dialog open={isOpen} onOpenChange={canClose ? onClose : undefined}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 p-0 sm:max-w-md">
-        <DialogHeader className="flex-shrink-0 border-b border-primary/10 px-4 py-3 sm:px-6">
+      <DialogContent className={cn(modalStyles.content, modalStyles.sizes.compact)}>
+        <DialogHeader className={modalStyles.header}>
           <DialogTitle className="flex items-center gap-3 text-primary">
             <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
               <School className="w-4 h-4 text-primary" />
