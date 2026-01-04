@@ -19,6 +19,12 @@ import LearningDeck from './pages/LearningDeck';
 import LearningDeckNew from './pages/LearningDeckNew';
 import ParentDashboard from './pages/ParentDashboard';
 import ChildView from './pages/ChildView';
+import ChildHomework from './pages/pronote/ChildHomework';
+import ChildGrades from './pages/pronote/ChildGrades';
+import ChildTimetable from './pages/pronote/ChildTimetable';
+import StudentHomework from './pages/pronote/StudentHomework';
+import StudentGrades from './pages/pronote/StudentGrades';
+import StudentTimetable from './pages/pronote/StudentTimetable';
 import Pricing from './pages/Pricing';
 import SubscriptionManage from './pages/SubscriptionManage';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
@@ -127,6 +133,9 @@ function AppContent(): ReactElement {
               <Route path="learning" element={<LearningDecks />} />
               <Route path="learning/new" element={<LearningDeckNew />} />
               <Route path="learning/:deckId" element={<LearningDeck />} />
+              <Route path="pronote/homework" element={<StudentHomework />} />
+              <Route path="pronote/grades" element={<StudentGrades />} />
+              <Route path="pronote/timetable" element={<StudentTimetable />} />
             </Route>
           </Route>
         </Route>
@@ -137,6 +146,9 @@ function AppContent(): ReactElement {
             <Route path="/parent">
               <Route index element={<ParentDashboard />} />
               <Route path="children/:childId" element={<ChildView />} />
+              <Route path="children/:childId/homework" element={<ChildHomework />} />
+              <Route path="children/:childId/grades" element={<ChildGrades />} />
+              <Route path="children/:childId/timetable" element={<ChildTimetable />} />
             </Route>
           </Route>
         </Route>
