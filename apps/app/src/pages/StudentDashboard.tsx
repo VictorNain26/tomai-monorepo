@@ -13,6 +13,7 @@ import { PageContainer } from '@/components/shared/PageContainer';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { DashboardSubjectsSection } from '@/components/dashboard/organisms/DashboardSubjectsSection';
 import { UsageCard } from '@/components/subscription';
+import { StudentPronoteSection } from '@/components/pronote/StudentPronoteSection';
 import { isITomUser, type IWindowUsage } from '@/types';
 
 /** Default window usage when no data available */
@@ -83,6 +84,9 @@ export default function StudentDashboard(): ReactElement {
           className="mb-6"
         />
       )}
+
+      {/* Section Pronote - Lecture seule pour l'élève */}
+      <StudentPronoteSection className="mb-6" />
 
       {/* Matières (avec suggestion de session récente) */}
       <DashboardSubjectsSection

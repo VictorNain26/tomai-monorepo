@@ -1,11 +1,15 @@
 /**
- * Pronote Service - Integration avec Pawnote
+ * Pronote Service - Parent Account Integration
  *
- * Gère la connexion et synchronisation avec Pronote via QR Code.
- * Les tokens sont chiffrés AES-256-GCM avant stockage en base.
+ * Architecture: Un compte parent Pronote par famille TomAI.
+ * Le parent se connecte UNE FOIS, puis peut mapper ses enfants Pronote
+ * aux comptes TomAI de ses enfants.
  *
- * IMPORTANT: Ce service utilise une API non-officielle (Pawnote).
- * L'élève accède à SES PROPRES données via SES credentials.
+ * Flow:
+ * 1. Parent scan QR code avec PIN → connexion parent
+ * 2. On récupère session.user.resources[] (liste des enfants Pronote)
+ * 3. Parent mappe chaque enfant Pronote → enfant TomAI
+ * 4. Étudiant accède à SES données via le mapping
  */
 
 import {
@@ -16,14 +20,21 @@ import {
   gradesOverview,
   timetableFromIntervals,
   AccountKind,
+  use,
   type SessionHandle,
   type RefreshInformation,
   type Assignment,
 } from 'pawnote';
 import type { Fetcher } from '@literate.ink/utilities';
 import { db } from '../db/connection.js';
-import { pronoteConnections, establishments, user } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import {
+  pronoteConnections,
+  pronoteChildMappings,
+  establishments,
+  user,
+  type PronoteResource,
+} from '../db/schema.js';
+import { eq, and } from 'drizzle-orm';
 import { encrypt, decrypt } from '../lib/encryption.js';
 import { logger } from '../lib/observability.js';
 
@@ -47,37 +58,28 @@ const TOKEN_REFRESH_BUFFER_MS = 30 * 1000;
 /**
  * SECURITY: Pronote URL allowlist - SSRF Protection
  * Only official Pronote domains are allowed
- * Source: Index Education (Pronote publisher)
  */
 const PRONOTE_ALLOWED_DOMAINS = [
   'index-education.net',
-  'pronote.toutatice.fr', // Académie Bretagne
-  'mon.lyceeconnecte.fr', // Nouvelle-Aquitaine
-  'ent.iledefrance.fr', // Île-de-France
-  'enthdf.fr', // Hauts-de-France
-  'monbureaunumerique.fr', // Grand Est
-  'e-lyco.fr', // Pays de la Loire
-  'l-educdenormandie.fr', // Normandie
-  'laclasse.com', // Auvergne-Rhône-Alpes
+  'pronote.toutatice.fr',
+  'mon.lyceeconnecte.fr',
+  'ent.iledefrance.fr',
+  'enthdf.fr',
+  'monbureaunumerique.fr',
+  'e-lyco.fr',
+  'l-educdenormandie.fr',
+  'laclasse.com',
 ];
 
-/**
- * SECURITY: Validates that a URL is a legitimate Pronote instance
- * Prevents SSRF attacks via malicious QR codes
- */
 function isAllowedPronoteUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString);
-
-    // Must be HTTPS in production
     if (url.protocol !== 'https:' && url.protocol !== 'http:') {
       return false;
     }
-
-    // Check against allowlist
     const hostname = url.hostname.toLowerCase();
-    return PRONOTE_ALLOWED_DOMAINS.some(domain =>
-      hostname === domain || hostname.endsWith(`.${domain}`)
+    return PRONOTE_ALLOWED_DOMAINS.some(
+      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
     );
   } catch {
     return false;
@@ -98,13 +100,14 @@ export interface PronoteConnectionResult {
   success: boolean;
   error?: string;
   establishmentName?: string;
+  resources?: PronoteResource[];
 }
 
 export interface PronoteHomework {
   id: string;
   subject: string;
   description: string;
-  deadline: Date;
+  dueDate: Date;
   done: boolean;
   difficulty: number;
   estimatedMinutes?: number;
@@ -117,7 +120,7 @@ export interface PronoteGrade {
   outOf: number;
   coefficient: number;
   date: Date;
-  comment: string;
+  description: string;
   average?: number;
   max?: number;
   min?: number;
@@ -134,14 +137,17 @@ export interface PronoteTimetableEntry {
   status?: string;
 }
 
+export interface ChildMappingInput {
+  childId: string;
+  resourceIndex: number;
+  pronoteChildName: string;
+  pronoteClassName?: string;
+}
+
 // =============================================
 // CUSTOM FETCHER
 // =============================================
 
-/**
- * Custom Fetcher avec User-Agent Pronote Mobile
- * Requis pour que Pronote accepte les requêtes
- */
 const pronoteFetcher: Fetcher = async (options) => {
   const response = await fetch(options.url, {
     method: options.method,
@@ -166,16 +172,11 @@ const pronoteFetcher: Fetcher = async (options) => {
 
 class PronoteService {
   /**
-   * Connecte un élève à Pronote via QR Code
-   *
-   * Flow:
-   * 1. Valider que l'établissement existe et a un URL Pronote
-   * 2. Parser le QR code JSON
-   * 3. Authentifier avec Pawnote
-   * 4. Chiffrer et stocker le token
+   * Connecte un PARENT à Pronote via QR Code
+   * Retourne la liste des enfants disponibles pour le mapping
    */
-  async connectWithQrCode(
-    userId: string,
+  async connectParentWithQrCode(
+    parentId: string,
     establishmentRne: string,
     qrCodeJson: string,
     pin: string
@@ -191,16 +192,16 @@ class PronoteService {
       }
 
       if (!establishment.hasPronote || !establishment.pronoteUrl) {
-        return { success: false, error: 'Cet établissement n\'a pas Pronote configuré' };
+        return { success: false, error: "Cet établissement n'a pas Pronote configuré" };
       }
 
-      // 2. Valider l'utilisateur
-      const existingUser = await db.query.user.findFirst({
-        where: eq(user.id, userId),
+      // 2. Valider que c'est bien un parent
+      const parentUser = await db.query.user.findFirst({
+        where: eq(user.id, parentId),
       });
 
-      if (!existingUser || existingUser.role !== 'student') {
-        return { success: false, error: 'Seuls les élèves peuvent se connecter à Pronote' };
+      if (!parentUser || parentUser.role !== 'parent') {
+        return { success: false, error: 'Seuls les parents peuvent connecter Pronote' };
       }
 
       // 3. Parser le QR code
@@ -214,26 +215,26 @@ class PronoteService {
         return { success: false, error: 'QR code invalide: format JSON incorrect' };
       }
 
-      // 4. SECURITY: Validate QR code URL against allowlist (SSRF protection)
+      // 4. SECURITY: SSRF protection
       if (!isAllowedPronoteUrl(qrData.url)) {
         logger.warn('Pronote SSRF attempt blocked', {
           operation: 'pronote:connect:ssrf-blocked',
-          userId,
+          parentId,
           establishmentRne,
-          blockedUrl: qrData.url.substring(0, 100), // Truncate for logs
+          blockedUrl: qrData.url.substring(0, 100),
         });
         return { success: false, error: 'URL Pronote non autorisée' };
       }
 
-      // 5. Valider le PIN (4 chiffres)
+      // 5. Valider le PIN
       if (!/^\d{4}$/.test(pin)) {
         return { success: false, error: 'Code PIN invalide (4 chiffres requis)' };
       }
 
-      // 5. Générer un deviceUUID unique
+      // 6. Générer un deviceUUID unique
       const deviceUuid = crypto.randomUUID();
 
-      // 6. Authentifier avec Pawnote
+      // 7. Authentifier avec Pawnote (PARENT account)
       const session = createSessionHandle(pronoteFetcher);
       let refreshInfo: RefreshInformation;
 
@@ -247,12 +248,11 @@ class PronoteService {
         const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
         logger.warn('Pronote QR auth failed', {
           operation: 'pronote:connect:auth-failed',
-          userId,
+          parentId,
           establishmentRne,
           error: errorMessage,
         });
 
-        // Messages d'erreur user-friendly
         if (errorMessage.includes('BadCredentials')) {
           return { success: false, error: 'Code PIN incorrect' };
         }
@@ -262,42 +262,73 @@ class PronoteService {
         return { success: false, error: 'Échec de connexion Pronote' };
       }
 
-      // 7. Chiffrer le token
+      // 8. Vérifier que c'est bien un compte parent
+      if (refreshInfo.kind !== AccountKind.PARENT) {
+        return {
+          success: false,
+          error: 'Veuillez scanner le QR code de votre espace PARENT Pronote',
+        };
+      }
+
+      // 9. Extraire la liste des enfants (resources)
+      const resources: PronoteResource[] = session.user.resources.map((r, index) => ({
+        name: r.name,
+        id: r.id || `resource_${index}`,
+        className: r.className,
+      }));
+
+      if (resources.length === 0) {
+        return { success: false, error: 'Aucun enfant trouvé sur ce compte Pronote' };
+      }
+
+      // 10. Chiffrer le token
       const encryptedToken = await encrypt(refreshInfo.token);
       const tokenExpiresAt = new Date(Date.now() + TOKEN_EXPIRY_MS);
 
-      // 8. Supprimer connexion existante si présente
-      await db.delete(pronoteConnections).where(eq(pronoteConnections.userId, userId));
+      // 11. Supprimer connexion et mappings existants
+      const existingConnection = await db.query.pronoteConnections.findFirst({
+        where: eq(pronoteConnections.parentId, parentId),
+      });
 
-      // 9. Créer la nouvelle connexion
+      if (existingConnection) {
+        await db
+          .delete(pronoteChildMappings)
+          .where(eq(pronoteChildMappings.connectionId, existingConnection.id));
+        await db.delete(pronoteConnections).where(eq(pronoteConnections.parentId, parentId));
+      }
+
+      // 12. Créer la nouvelle connexion
       await db.insert(pronoteConnections).values({
-        userId,
+        parentId,
         establishmentRne,
         encryptedToken,
         instanceUrl: refreshInfo.url,
         pronoteUsername: refreshInfo.username,
         deviceUuid,
-        accountKind: refreshInfo.kind,
+        accountKind: AccountKind.PARENT,
+        pronoteResources: resources,
         status: 'active',
         tokenExpiresAt,
         lastRefreshAt: new Date(),
       });
 
-      logger.info('Pronote connection successful', {
+      logger.info('Pronote parent connection successful', {
         operation: 'pronote:connect:success',
-        userId,
+        parentId,
         establishmentRne,
         username: refreshInfo.username,
+        childrenCount: resources.length,
       });
 
       return {
         success: true,
         establishmentName: establishment.name,
+        resources,
       };
     } catch (error) {
       logger.error('Pronote connection error', {
         operation: 'pronote:connect:error',
-        userId,
+        parentId,
         establishmentRne,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'high' as const,
@@ -307,24 +338,95 @@ class PronoteService {
   }
 
   /**
-   * Déconnecte un élève de Pronote
+   * Crée les mappings entre enfants Pronote et enfants TomAI
    */
-  async disconnect(userId: string): Promise<boolean> {
+  async createChildMappings(
+    parentId: string,
+    mappings: ChildMappingInput[]
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      await db
-        .delete(pronoteConnections)
-        .where(eq(pronoteConnections.userId, userId));
+      const connection = await db.query.pronoteConnections.findFirst({
+        where: eq(pronoteConnections.parentId, parentId),
+      });
 
-      logger.info('Pronote disconnected', {
+      if (!connection) {
+        return { success: false, error: 'Connexion Pronote non trouvée' };
+      }
+
+      // Supprimer les anciens mappings
+      await db
+        .delete(pronoteChildMappings)
+        .where(eq(pronoteChildMappings.connectionId, connection.id));
+
+      // Créer les nouveaux mappings
+      for (const mapping of mappings) {
+        // Vérifier que l'enfant existe et appartient au parent
+        const child = await db.query.user.findFirst({
+          where: and(eq(user.id, mapping.childId), eq(user.parentId, parentId)),
+        });
+
+        if (!child) {
+          logger.warn('Invalid child mapping attempt', {
+            parentId,
+            childId: mapping.childId,
+          });
+          continue;
+        }
+
+        await db.insert(pronoteChildMappings).values({
+          connectionId: connection.id,
+          childId: mapping.childId,
+          resourceIndex: mapping.resourceIndex,
+          pronoteChildName: mapping.pronoteChildName,
+          pronoteClassName: mapping.pronoteClassName,
+        });
+      }
+
+      logger.info('Child mappings created', {
+        operation: 'pronote:mappings:created',
+        parentId,
+        mappingsCount: mappings.length,
+      });
+
+      return { success: true };
+    } catch (error) {
+      logger.error('Create child mappings error', {
+        operation: 'pronote:mappings:error',
+        parentId,
+        _error: error instanceof Error ? error.message : String(error),
+        severity: 'medium' as const,
+      });
+      return { success: false, error: 'Erreur lors de la création des mappings' };
+    }
+  }
+
+  /**
+   * Déconnecte un parent de Pronote (supprime aussi les mappings)
+   */
+  async disconnectParent(parentId: string): Promise<boolean> {
+    try {
+      const connection = await db.query.pronoteConnections.findFirst({
+        where: eq(pronoteConnections.parentId, parentId),
+      });
+
+      if (connection) {
+        await db
+          .delete(pronoteChildMappings)
+          .where(eq(pronoteChildMappings.connectionId, connection.id));
+      }
+
+      await db.delete(pronoteConnections).where(eq(pronoteConnections.parentId, parentId));
+
+      logger.info('Pronote parent disconnected', {
         operation: 'pronote:disconnect',
-        userId,
+        parentId,
       });
 
       return true;
     } catch (error) {
       logger.error('Pronote disconnect error', {
         operation: 'pronote:disconnect:error',
-        userId,
+        parentId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
@@ -333,41 +435,69 @@ class PronoteService {
   }
 
   /**
-   * Obtient une session Pronote active (avec refresh si nécessaire)
+   * Obtient une session Pronote active pour le parent
    */
-  private async getActiveSession(userId: string): Promise<SessionHandle | null> {
-    // 1. Récupérer la connexion
+  private async getActiveParentSession(parentId: string): Promise<SessionHandle | null> {
     const connection = await db.query.pronoteConnections.findFirst({
-      where: eq(pronoteConnections.userId, userId),
+      where: eq(pronoteConnections.parentId, parentId),
     });
 
     if (!connection || connection.status !== 'active') {
       return null;
     }
 
-    // 2. Vérifier si le token doit être rafraîchi
+    return this.createSessionFromConnection(connection);
+  }
+
+  /**
+   * Obtient une session Pronote pour un enfant spécifique (via son mapping)
+   */
+  private async getActiveSessionForChild(
+    childId: string
+  ): Promise<{ session: SessionHandle; resourceIndex: number } | null> {
+    // Trouver le mapping de l'enfant
+    const mapping = await db.query.pronoteChildMappings.findFirst({
+      where: eq(pronoteChildMappings.childId, childId),
+      with: { connection: true },
+    });
+
+    if (!mapping || !mapping.connection || mapping.connection.status !== 'active') {
+      return null;
+    }
+
+    const session = await this.createSessionFromConnection(mapping.connection);
+    if (!session) return null;
+
+    // Switcher vers l'enfant dans la session
+    use(session, mapping.resourceIndex);
+
+    return { session, resourceIndex: mapping.resourceIndex };
+  }
+
+  /**
+   * Crée une session Pawnote à partir d'une connexion DB
+   */
+  private async createSessionFromConnection(
+    connection: typeof pronoteConnections.$inferSelect
+  ): Promise<SessionHandle | null> {
     const now = new Date();
     const shouldRefresh =
       connection.tokenExpiresAt.getTime() - now.getTime() < TOKEN_REFRESH_BUFFER_MS;
 
-    // 3. Déchiffrer le token
     let token: string;
     try {
       token = await decrypt(connection.encryptedToken);
     } catch {
-      // Token corrompu, marquer comme erreur
       await db
         .update(pronoteConnections)
         .set({ status: 'error', lastError: 'Token déchiffrement échoué' })
-        .where(eq(pronoteConnections.userId, userId));
+        .where(eq(pronoteConnections.id, connection.id));
       return null;
     }
 
-    // 4. Créer la session
     const session = createSessionHandle(pronoteFetcher);
 
     try {
-      // 5. Refresh si nécessaire
       if (shouldRefresh) {
         const refreshInfo = await loginToken(session, {
           url: connection.instanceUrl,
@@ -377,7 +507,6 @@ class PronoteService {
           deviceUUID: connection.deviceUuid,
         });
 
-        // Mettre à jour le token chiffré
         const newEncryptedToken = await encrypt(refreshInfo.token);
         const newExpiresAt = new Date(Date.now() + TOKEN_EXPIRY_MS);
 
@@ -389,14 +518,13 @@ class PronoteService {
             lastRefreshAt: new Date(),
             updatedAt: new Date(),
           })
-          .where(eq(pronoteConnections.userId, userId));
+          .where(eq(pronoteConnections.id, connection.id));
 
         logger.debug('Pronote token refreshed', {
           operation: 'pronote:refresh',
-          userId,
+          connectionId: connection.id,
         });
       } else {
-        // Utiliser le token existant
         await loginToken(session, {
           url: connection.instanceUrl,
           kind: connection.accountKind as AccountKind,
@@ -410,7 +538,6 @@ class PronoteService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      // Marquer la connexion comme expirée
       await db
         .update(pronoteConnections)
         .set({
@@ -418,11 +545,11 @@ class PronoteService {
           lastError: errorMessage,
           updatedAt: new Date(),
         })
-        .where(eq(pronoteConnections.userId, userId));
+        .where(eq(pronoteConnections.id, connection.id));
 
       logger.warn('Pronote session expired', {
         operation: 'pronote:session:expired',
-        userId,
+        connectionId: connection.id,
         error: errorMessage,
       });
 
@@ -430,37 +557,42 @@ class PronoteService {
     }
   }
 
+  // =============================================
+  // DATA FETCHING - FOR CHILD (via mapping)
+  // =============================================
+
   /**
-   * Récupère les devoirs de la semaine en cours
+   * Récupère les devoirs pour un enfant
    */
-  async getHomework(userId: string, weekOffset = 0): Promise<PronoteHomework[] | null> {
-    const session = await this.getActiveSession(userId);
-    if (!session) return null;
+  async getHomeworkForChild(childId: string, weekOffset = 0): Promise<PronoteHomework[] | null> {
+    const result = await this.getActiveSessionForChild(childId);
+    if (!result) return null;
+
+    const { session } = result;
 
     try {
-      // Calculer les dates de la semaine
       const now = new Date();
       const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay() + 1 + weekOffset * 7); // Lundi
+      startOfWeek.setDate(now.getDate() - now.getDay() + 1 + weekOffset * 7);
       startOfWeek.setHours(0, 0, 0, 0);
 
       const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6); // Dimanche
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
       const assignments = await assignmentsFromIntervals(session, startOfWeek, endOfWeek);
 
-      // Mettre à jour la date de dernière sync
+      // Update sync timestamp
       await db
-        .update(pronoteConnections)
-        .set({ lastHomeworkSync: new Date() })
-        .where(eq(pronoteConnections.userId, userId));
+        .update(pronoteChildMappings)
+        .set({ lastHomeworkSync: new Date(), updatedAt: new Date() })
+        .where(eq(pronoteChildMappings.childId, childId));
 
       return assignments.map((a: Assignment) => ({
         id: a.id,
         subject: a.subject.name,
         description: a.description,
-        deadline: a.deadline,
+        dueDate: a.deadline,
         done: a.done,
         difficulty: a.difficulty,
         estimatedMinutes: a.length,
@@ -468,7 +600,7 @@ class PronoteService {
     } catch (error) {
       logger.error('Pronote homework fetch error', {
         operation: 'pronote:homework:error',
-        userId,
+        childId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
@@ -477,27 +609,27 @@ class PronoteService {
   }
 
   /**
-   * Récupère les notes de la période en cours
+   * Récupère les notes pour un enfant
    */
-  async getGrades(userId: string): Promise<PronoteGrade[] | null> {
-    const session = await this.getActiveSession(userId);
-    if (!session) return null;
+  async getGradesForChild(childId: string): Promise<PronoteGrade[] | null> {
+    const result = await this.getActiveSessionForChild(childId);
+    if (!result) return null;
+
+    const { session } = result;
 
     try {
-      // Utiliser la période par défaut (trimestre actuel)
       const defaultPeriod = session.userResource.tabs.get(198)?.defaultPeriod;
       if (!defaultPeriod) {
-        logger.warn('No default period for grades', { userId });
+        logger.warn('No default period for grades', { childId });
         return [];
       }
 
       const overview = await gradesOverview(session, defaultPeriod);
 
-      // Mettre à jour la date de dernière sync
       await db
-        .update(pronoteConnections)
-        .set({ lastGradesSync: new Date() })
-        .where(eq(pronoteConnections.userId, userId));
+        .update(pronoteChildMappings)
+        .set({ lastGradesSync: new Date(), updatedAt: new Date() })
+        .where(eq(pronoteChildMappings.childId, childId));
 
       return overview.grades.map((g) => ({
         id: g.id,
@@ -506,7 +638,7 @@ class PronoteService {
         outOf: g.outOf.points,
         coefficient: g.coefficient,
         date: g.date,
-        comment: g.comment,
+        description: g.comment,
         average: g.average?.points,
         max: g.max?.points,
         min: g.min?.points,
@@ -514,7 +646,7 @@ class PronoteService {
     } catch (error) {
       logger.error('Pronote grades fetch error', {
         operation: 'pronote:grades:error',
-        userId,
+        childId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
@@ -523,30 +655,33 @@ class PronoteService {
   }
 
   /**
-   * Récupère l'emploi du temps de la semaine
+   * Récupère l'emploi du temps pour un enfant
    */
-  async getTimetable(userId: string, weekOffset = 0): Promise<PronoteTimetableEntry[] | null> {
-    const session = await this.getActiveSession(userId);
-    if (!session) return null;
+  async getTimetableForChild(
+    childId: string,
+    weekOffset = 0
+  ): Promise<PronoteTimetableEntry[] | null> {
+    const result = await this.getActiveSessionForChild(childId);
+    if (!result) return null;
+
+    const { session } = result;
 
     try {
-      // Calculer les dates de la semaine
       const now = new Date();
       const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay() + 1 + weekOffset * 7); // Lundi
+      startOfWeek.setDate(now.getDate() - now.getDay() + 1 + weekOffset * 7);
       startOfWeek.setHours(0, 0, 0, 0);
 
       const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6); // Dimanche
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
       const timetable = await timetableFromIntervals(session, startOfWeek, endOfWeek);
 
-      // Mettre à jour la date de dernière sync
       await db
-        .update(pronoteConnections)
-        .set({ lastTimetableSync: new Date() })
-        .where(eq(pronoteConnections.userId, userId));
+        .update(pronoteChildMappings)
+        .set({ lastTimetableSync: new Date(), updatedAt: new Date() })
+        .where(eq(pronoteChildMappings.childId, childId));
 
       return timetable.classes
         .filter((c): c is typeof c & { is: 'lesson' } => c.is === 'lesson')
@@ -563,7 +698,7 @@ class PronoteService {
     } catch (error) {
       logger.error('Pronote timetable fetch error', {
         operation: 'pronote:timetable:error',
-        userId,
+        childId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
@@ -571,21 +706,24 @@ class PronoteService {
     }
   }
 
+  // =============================================
+  // STATUS & INFO
+  // =============================================
+
   /**
-   * Vérifie le statut de connexion d'un utilisateur
+   * Vérifie le statut de connexion d'un parent
    */
-  async getConnectionStatus(userId: string): Promise<{
+  async getParentConnectionStatus(parentId: string): Promise<{
     connected: boolean;
     status?: string;
     establishmentName?: string;
+    resources?: PronoteResource[];
     lastSyncAt?: Date;
     error?: string;
   }> {
     const connection = await db.query.pronoteConnections.findFirst({
-      where: eq(pronoteConnections.userId, userId),
-      with: {
-        establishment: true,
-      },
+      where: eq(pronoteConnections.parentId, parentId),
+      with: { establishment: true, childMappings: true },
     });
 
     if (!connection) {
@@ -596,9 +734,72 @@ class PronoteService {
       connected: connection.status === 'active',
       status: connection.status,
       establishmentName: connection.establishment?.name,
+      resources: (connection.pronoteResources as PronoteResource[]) ?? [],
       lastSyncAt: connection.lastSyncAt ?? undefined,
       error: connection.lastError ?? undefined,
     };
+  }
+
+  /**
+   * Vérifie si un enfant a un mapping Pronote actif
+   */
+  async getChildPronoteStatus(childId: string): Promise<{
+    isConnected: boolean;
+    establishmentName?: string;
+    pronoteChildName?: string;
+    className?: string;
+  }> {
+    const mapping = await db.query.pronoteChildMappings.findFirst({
+      where: eq(pronoteChildMappings.childId, childId),
+      with: {
+        connection: {
+          with: { establishment: true },
+        },
+      },
+    });
+
+    if (!mapping || !mapping.connection || mapping.connection.status !== 'active') {
+      return { isConnected: false };
+    }
+
+    return {
+      isConnected: true,
+      establishmentName: mapping.connection.establishment?.name,
+      pronoteChildName: mapping.pronoteChildName,
+      className: mapping.pronoteClassName ?? undefined,
+    };
+  }
+
+  /**
+   * Récupère les mappings d'un parent
+   */
+  async getChildMappings(parentId: string): Promise<
+    Array<{
+      childId: string;
+      childName: string;
+      resourceIndex: number;
+      pronoteChildName: string;
+      pronoteClassName?: string;
+    }>
+  > {
+    const connection = await db.query.pronoteConnections.findFirst({
+      where: eq(pronoteConnections.parentId, parentId),
+      with: {
+        childMappings: {
+          with: { child: true },
+        },
+      },
+    });
+
+    if (!connection) return [];
+
+    return (connection.childMappings ?? []).map((m) => ({
+      childId: m.childId,
+      childName: m.child ? `${m.child.firstName} ${m.child.lastName}` : 'Inconnu',
+      resourceIndex: m.resourceIndex,
+      pronoteChildName: m.pronoteChildName,
+      pronoteClassName: m.pronoteClassName ?? undefined,
+    }));
   }
 }
 

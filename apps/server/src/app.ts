@@ -201,7 +201,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(deckRoutes)          // Outils de révision - decks, subjects, topics
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation
   .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau
-  .use(pronoteRoutes)       // Pronote integration - QR code auth, homework, grades, timetable
+  .use(pronoteRoutes)       // Pronote integration - Parent-based architecture
 
 
 // Export pour utilisation dans index.ts

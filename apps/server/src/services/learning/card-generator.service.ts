@@ -2,9 +2,11 @@
  * Card Generator Service - Single-Phase Architecture 2025
  *
  * Génération de cartes en UN SEUL appel Gemini.
- * - responseMimeType: 'application/json' → JSON syntaxiquement valide
- * - Prompt détaillé → structure correcte par type de carte
- * - Validation Zod → conformité métier stricte
+ *
+ * Best Practice 2025 - Gemini Structured Output:
+ * - responseJsonSchema (pas responseSchema) → supporte anyOf/oneOf complet
+ * - z.toJSONSchema() (Zod v4 natif) → conversion discriminatedUnion → anyOf
+ * - Validation Zod → défense en profondeur pour invariants métier
  *
  * ## Fondements Scientifiques
  *
@@ -28,6 +30,7 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
+import { z } from 'zod';
 import { CardGenerationOutputSchema } from '../../lib/ai/index.js';
 import {
   getSubjectInstructions,
@@ -68,45 +71,23 @@ export interface CardGenerationError {
 const genai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
 
 // ============================================================================
-// NORMALISATION - Corrige les erreurs courantes de Gemini
+// JSON SCHEMA - Best Practice 2025: responseJsonSchema avec anyOf
 // ============================================================================
 
-const VALID_CARD_TYPES = new Set([
-  'concept', 'flashcard', 'qcm', 'vrai_faux',
-  'matching', 'fill_blank', 'word_order',
-  'calculation', 'timeline', 'matching_era', 'cause_effect',
-  'classification', 'process_order', 'grammar_transform', 'reformulation'
-]);
-
 /**
- * Normalise la sortie Gemini avant validation Zod.
- * Corrige les erreurs courantes:
- * - type → cardType
- * - Champs au niveau racine → wrappés dans content
+ * JSON Schema généré depuis Zod v4 pour Gemini 2.5+
+ *
+ * Best Practice 2025:
+ * - responseJsonSchema (pas responseSchema) supporte anyOf/oneOf complet
+ * - Gemini 2.5 Flash supporte anyOf depuis Nov 2024
+ * - Zod v4 a z.toJSONSchema() natif
+ *
+ * @see https://ai.google.dev/gemini-api/docs/structured-output
  */
-function normalizeGeminiOutput(data: unknown): unknown {
-  if (!Array.isArray(data)) return data;
-
-  return data.map((card: Record<string, unknown>) => {
-    if (typeof card !== 'object' || card === null) return card;
-
-    // Si cardType existe et est valide, garder la carte telle quelle
-    if (card.cardType && VALID_CARD_TYPES.has(card.cardType as string)) {
-      return card;
-    }
-
-    // Cas: Gemini utilise "type" au lieu de "cardType"
-    if (card.type && VALID_CARD_TYPES.has(card.type as string)) {
-      const { type, content, ...rest } = card;
-      return {
-        cardType: type,
-        content: content ?? rest
-      };
-    }
-
-    return card;
-  });
-}
+const cardGenerationJsonSchema = z.toJSONSchema(CardGenerationOutputSchema, {
+  // Inclure les descriptions pour guider Gemini
+  io: 'output'
+});
 
 // ============================================================================
 // PROMPT BUILDER
@@ -220,7 +201,9 @@ export async function generateCards(
           model: appConfig.ai.gemini.model,
           contents: prompt,
           config: {
-            responseMimeType: 'application/json',
+            // Best Practice 2025: responseJsonSchema avec anyOf complet
+            // Supporte discriminatedUnion via JSON Schema anyOf
+            responseJsonSchema: cardGenerationJsonSchema,
             temperature: 0.7,
             topK: 40,
             topP: 0.95
@@ -261,11 +244,9 @@ export async function generateCards(
       };
     }
 
-    // Normalisation: corrige type → cardType et autres erreurs courantes
-    const normalizedJson = normalizeGeminiOutput(parsedJson);
-
-    // Validation Zod stricte
-    const validation = CardGenerationOutputSchema.safeParse(normalizedJson);
+    // Best Practice 2025: Validation Zod comme défense en profondeur
+    // responseJsonSchema garantit la structure, Zod valide les invariants métier
+    const validation = CardGenerationOutputSchema.safeParse(parsedJson);
 
     if (!validation.success) {
       const errors = validation.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`);
