@@ -71,12 +71,12 @@ tomai-monorepo/
 5. **Evidence-based** : Lire les patterns existants avant modification
 6. **Pas de sur-engineering** : Supprimer le code inutilisé
 
-## Workflow Git
+## Workflow Git (2026)
 
 - **main** → Production (Vercel + Koyeb auto-deploy)
-- **develop** → Staging/Preview
-- Workflow : `develop (push direct) → PR → main`
-- Voir `Tom/CLAUDE.md` pour le workflow détaillé
+- **staging** → Staging/Preview
+- Workflow : `staging (push direct) → PR (merge commit) → main`
+- **JAMAIS squash merge** (désynchronise les branches)
 
 ## Documentation par app
 
