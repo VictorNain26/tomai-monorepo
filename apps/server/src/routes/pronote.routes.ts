@@ -457,6 +457,7 @@ export const pronotePublicRoutes = new Elysia({ prefix: '/api/pronote' })
   /**
    * POST /api/pronote/schools/search
    * Search schools by geolocation (API Index Education)
+   * Rate limited to prevent abuse
    */
   .post(
     '/schools/search',
@@ -482,6 +483,7 @@ export const pronotePublicRoutes = new Elysia({ prefix: '/api/pronote' })
       };
     },
     {
+      beforeHandle: createRateLimitMiddleware(RateLimitPresets.public),
       body: t.Object({
         latitude: t.Number({ minimum: -90, maximum: 90, description: 'Latitude GPS' }),
         longitude: t.Number({ minimum: -180, maximum: 180, description: 'Longitude GPS' }),
@@ -490,7 +492,7 @@ export const pronotePublicRoutes = new Elysia({ prefix: '/api/pronote' })
         tags: ['Pronote'],
         summary: 'Search schools by location',
         description:
-          'Search for Pronote-enabled schools near GPS coordinates. Uses Index Education official API.',
+          'Search for Pronote-enabled schools near GPS coordinates. Uses Index Education official API. Rate limited.',
       },
     }
   );

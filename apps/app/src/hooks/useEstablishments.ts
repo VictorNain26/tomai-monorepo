@@ -51,6 +51,21 @@ interface PronoteSearchResponse {
 // =============================================
 
 /**
+ * Sanitize user input for API query (prevent injection)
+ * Removes characters that could break the WHERE clause
+ */
+function sanitizeSearchQuery(input: string): string {
+  // Remove quotes, backslashes, and control characters
+  // Keep only alphanumeric, spaces, accents, and hyphens
+  return input
+    .replace(/["\\'`]/g, '') // Remove quotes
+    .replace(/[<>{}[\]]/g, '') // Remove brackets
+    .replace(/[\x00-\x1f]/g, '') // Remove control chars
+    .trim()
+    .slice(0, 100); // Limit length
+}
+
+/**
  * Search schools by name (French gov API - Annuaire de l'Éducation)
  * Returns schools with city for disambiguation
  */
@@ -60,6 +75,10 @@ export function useSchoolSearch(query: string) {
     queryFn: async (): Promise<School[]> => {
       if (query.length < 3) return [];
 
+      // Sanitize input to prevent injection in API query
+      const sanitizedQuery = sanitizeSearchQuery(query);
+      if (sanitizedQuery.length < 3) return [];
+
       // Search in French gov education directory
       // Filter: only elementary schools, middle schools, high schools
       // Exclude: maternelles, admin services, medical-social, etc.
@@ -67,7 +86,7 @@ export function useSchoolSearch(query: string) {
       const excludeMaternelle = 'NOT nom_etablissement LIKE "maternelle"';
       const params = new URLSearchParams({
         limit: '20',
-        where: `nom_etablissement LIKE "${query}" AND ${typeFilter} AND ${excludeMaternelle}`,
+        where: `nom_etablissement LIKE "${sanitizedQuery}" AND ${typeFilter} AND ${excludeMaternelle}`,
         select: 'identifiant_de_l_etablissement,nom_etablissement,type_etablissement,nom_commune,code_postal,position',
       });
 
