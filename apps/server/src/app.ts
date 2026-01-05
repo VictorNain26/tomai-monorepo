@@ -162,11 +162,26 @@ const app = new Elysia({ name: 'tomai-server' })
       }
     }
 
-    // 3. AI Service Check (assume healthy - pas de dépendance directe)
-    checks.ai = {
-      status: 'healthy',
-      provider: 'gemini-3-flash'
-    };
+    // 3. AI Service Check (vérifie la configuration, pas l'API pour éviter rate limit)
+    const hasGeminiKey = !!appConfig.ai.gemini.apiKey;
+    const geminiModel = appConfig.ai.gemini.model;
+
+    if (!hasGeminiKey) {
+      checks.ai = {
+        status: 'unhealthy',
+        error: 'GEMINI_API_KEY not configured',
+        provider: geminiModel
+      };
+      // AI non configuré → degraded (fonctionnalités IA indisponibles)
+      if (overallStatus === 'healthy') {
+        overallStatus = 'degraded';
+      }
+    } else {
+      checks.ai = {
+        status: 'healthy',
+        provider: geminiModel
+      };
+    }
 
     // 4. Set HTTP Status Code
     if (overallStatus === 'unhealthy') {
@@ -183,6 +198,88 @@ const app = new Elysia({ name: 'tomai-server' })
       deployment: env.DEPLOYMENT_ID ?? 'local',
       checks
     };
+  })
+
+  // Diagnostic AI endpoint - Tests actual Gemini API connection
+  // Use this to debug AI issues without affecting main health check
+  .get('/health/ai', async ({ set }) => {
+    const startTime = Date.now();
+    const model = appConfig.ai.gemini.model;
+
+    // Check API key configuration
+    if (!appConfig.ai.gemini.apiKey) {
+      set.status = 503;
+      return {
+        status: 'unhealthy',
+        error: 'GEMINI_API_KEY not configured',
+        model,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    // Test actual API connection with minimal request
+    try {
+      const { GoogleGenAI } = await import('@google/genai');
+      const genai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey });
+
+      const response = await genai.models.generateContent({
+        model,
+        contents: 'Réponds uniquement "OK" sans rien ajouter.',
+        config: {
+          maxOutputTokens: 10,
+          temperature: 0
+        }
+      });
+
+      const latencyMs = Date.now() - startTime;
+      const responseText = response.text?.trim() ?? '';
+
+      logger.info('AI health check passed', {
+        operation: 'health:ai:success',
+        model,
+        latencyMs,
+        responsePreview: responseText.substring(0, 20)
+      });
+
+      return {
+        status: 'healthy',
+        model,
+        latencyMs,
+        responsePreview: responseText.substring(0, 50),
+        timestamp: new Date().toISOString()
+      };
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const latencyMs = Date.now() - startTime;
+
+      // Categorize the error
+      let errorType = 'unknown';
+      if (errorMessage.includes('429')) errorType = 'rate_limit';
+      else if (errorMessage.includes('401') || errorMessage.includes('api key')) errorType = 'api_key_invalid';
+      else if (errorMessage.includes('404') || errorMessage.includes('not found')) errorType = 'model_not_found';
+      else if (errorMessage.includes('quota')) errorType = 'quota_exceeded';
+      else if (errorMessage.includes('503') || errorMessage.includes('unavailable')) errorType = 'service_unavailable';
+
+      logger.error('AI health check failed', {
+        operation: 'health:ai:failed',
+        model,
+        _error: errorMessage,
+        errorType,
+        latencyMs,
+        severity: 'high' as const
+      });
+
+      set.status = 503;
+      return {
+        status: 'unhealthy',
+        model,
+        error: errorMessage, // OK to show in diagnostic endpoint
+        errorType,
+        latencyMs,
+        timestamp: new Date().toISOString()
+      };
+    }
   })
 
   // Routes modulaires
