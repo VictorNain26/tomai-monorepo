@@ -70,6 +70,9 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
   const startScanner = useCallback(async () => {
     if (!containerRef.current) return;
 
+    // Stop any existing scanner first to prevent duplicates
+    await stopScanner();
+
     setError(null);
     setIsScanning(true);
 
@@ -92,7 +95,7 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
             void stopScanner();
             onScan(qrData);
           } else {
-            setError('QR code invalide. Scannez le QR code depuis l\'app Pronote.');
+            setError('QR code invalide. Scannez le QR code généré depuis Pronote sur ordinateur.');
           }
         },
         () => {
@@ -171,13 +174,10 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
 
       {/* Instructions */}
       <div className="text-center text-sm text-primary/60 space-y-1">
-        <p className="font-medium">Comment obtenir le QR code ?</p>
-        <ol className="text-xs text-left pl-4 space-y-1">
-          <li>1. Ouvrez l'app Pronote sur votre téléphone</li>
-          <li>2. Allez dans Paramètres → Code QR</li>
-          <li>3. Notez le code PIN à 4 chiffres affiché</li>
-          <li>4. Scannez le QR code avec cette caméra</li>
-        </ol>
+        <p className="font-medium">Pointez la caméra vers le QR code Pronote</p>
+        <p className="text-xs">
+          Affiché sur votre ordinateur après avoir cliqué sur l'icône QR code dans Pronote
+        </p>
       </div>
     </div>
   );
