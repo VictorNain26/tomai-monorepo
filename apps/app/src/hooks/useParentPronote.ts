@@ -8,7 +8,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, PRONOTE_TIMEOUT } from '@/lib/api-client';
 
 // =============================================
 // Types
@@ -132,7 +132,8 @@ export function useConnectPronote() {
           qrCodeJson: data.qrCodeJson,
           pin: data.pin,
           establishmentName: data.establishmentName,
-        }
+        },
+        { timeout: PRONOTE_TIMEOUT } // Extended timeout for external Pronote server
       );
       return response;
     },
