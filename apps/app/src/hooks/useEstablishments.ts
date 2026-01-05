@@ -1,8 +1,7 @@
 /**
  * Establishment Hooks - TanStack Query hooks for Pronote school search
  *
- * Uses the Index Education API (via backend) to search schools by geolocation.
- * No local database - real-time search like Papillon app.
+ * Flow: User enters city/postal code → Get coordinates → Search nearby schools
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -19,11 +18,23 @@ export interface PronoteSchool {
   postalCode: string;
 }
 
+export interface City {
+  name: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+}
+
 interface SearchResponse {
   success: boolean;
   schools: PronoteSchool[];
   count: number;
-  error?: string;
+}
+
+interface GeoGouvResult {
+  centre: { coordinates: [number, number] };
+  nom: string;
+  codesPostaux: string[];
 }
 
 // =============================================
@@ -31,68 +42,56 @@ interface SearchResponse {
 // =============================================
 
 /**
- * Search schools by geolocation
- * Requires GPS coordinates (latitude, longitude)
+ * Search cities by name or postal code (French gov API)
  */
-export function useSchoolSearch(latitude: number | null, longitude: number | null) {
+export function useCitySearch(query: string) {
   return useQuery({
-    queryKey: ['schools', 'search', latitude, longitude],
-    queryFn: async (): Promise<PronoteSchool[]> => {
-      if (latitude === null || longitude === null) {
-        return [];
-      }
+    queryKey: ['cities', query],
+    queryFn: async (): Promise<City[]> => {
+      if (query.length < 2) return [];
 
-      const response = await apiClient.post<SearchResponse>(
-        '/api/pronote/schools/search',
-        { latitude, longitude }
-      );
+      const isPostalCode = /^\d{2,5}$/.test(query);
+      const endpoint = isPostalCode
+        ? `https://geo.api.gouv.fr/communes?codePostal=${query}&fields=centre,nom,codesPostaux&limit=10`
+        : `https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(query)}&fields=centre,nom,codesPostaux&boost=population&limit=10`;
 
-      if (!response.success) {
-        return [];
-      }
+      const response = await fetch(endpoint);
+      if (!response.ok) return [];
 
-      return response.schools;
+      const results: GeoGouvResult[] = await response.json();
+      return results
+        .filter((r) => r.centre?.coordinates)
+        .map((r) => ({
+          name: r.nom,
+          postalCode: r.codesPostaux[0] ?? '',
+          longitude: r.centre.coordinates[0],
+          latitude: r.centre.coordinates[1],
+        }));
     },
-    enabled: latitude !== null && longitude !== null,
-    staleTime: 10 * 60 * 1000, // 10 minutes (location-based, relatively stable)
-    gcTime: 30 * 60 * 1000,
+    enabled: query.length >= 2,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 }
 
 /**
- * Get user's current GPS position
- * Returns coordinates or null if not available/denied
+ * Search schools near a city
  */
-export function useGeolocation() {
+export function useSchoolSearch(city: City | null) {
   return useQuery({
-    queryKey: ['geolocation'],
-    queryFn: async (): Promise<{ latitude: number; longitude: number } | null> => {
-      if (!navigator.geolocation) {
-        return null;
-      }
+    queryKey: ['schools', city?.latitude, city?.longitude],
+    queryFn: async (): Promise<PronoteSchool[]> => {
+      if (!city) return [];
 
-      return new Promise((resolve) => {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            });
-          },
-          () => {
-            // User denied or error - return null
-            resolve(null);
-          },
-          {
-            enableHighAccuracy: false,
-            timeout: 10000,
-            maximumAge: 5 * 60 * 1000, // Cache for 5 minutes
-          }
-        );
-      });
+      const response = await apiClient.post<SearchResponse>(
+        '/api/pronote/schools/search',
+        { latitude: city.latitude, longitude: city.longitude }
+      );
+
+      return response.success ? response.schools : [];
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
-    retry: false,
+    enabled: !!city,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 }

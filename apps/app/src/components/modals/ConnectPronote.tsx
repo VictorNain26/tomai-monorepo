@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   Users,
   Link2,
+  Search,
 } from 'lucide-react';
 import {
   Dialog,
@@ -47,7 +48,7 @@ import {
   type PronoteResource,
   type ChildMappingInput,
 } from '@/hooks/useParentPronote';
-import { useSchoolSearch, useGeolocation, type PronoteSchool } from '@/hooks/useEstablishments';
+import { useSchoolSearch, useCitySearch, type PronoteSchool, type City } from '@/hooks/useEstablishments';
 import type { IChild } from '@/types';
 
 interface ConnectPronoteProps {
@@ -87,12 +88,13 @@ export default function ConnectPronote({
   // Mapping state
   const [mappings, setMappings] = useState<MappingState>({});
 
-  // Hooks - Geolocation-based search
-  const { data: geoLocation, isLoading: isGeoLoading } = useGeolocation();
-  const { data: schools, isLoading: isSearching } = useSchoolSearch(
-    geoLocation?.latitude ?? null,
-    geoLocation?.longitude ?? null
-  );
+  // City search state
+  const [cityQuery, setCityQuery] = useState('');
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+
+  // Hooks
+  const { data: cities, isLoading: isCitySearching } = useCitySearch(cityQuery);
+  const { data: schools, isLoading: isSchoolSearching } = useSchoolSearch(selectedCity);
   const connectMutation = useConnectPronote();
   const createMappingsMutation = useCreateChildMappings();
 
@@ -113,6 +115,8 @@ export default function ConnectPronote({
       setPronoteResources([]);
       setConnectedEstablishmentName('');
       setMappings({});
+      setCityQuery('');
+      setSelectedCity(null);
     }
   }, [isOpen]);
 
@@ -251,7 +255,7 @@ export default function ConnectPronote({
     setError(null);
   };
 
-  // Step 1: Search establishment by geolocation
+  // Step 1: Search establishment by city/postal code
   const renderSearchStep = () => (
     <div className="space-y-4">
       <div className="text-center">
@@ -259,34 +263,70 @@ export default function ConnectPronote({
           <School className="w-7 h-7 text-primary" />
         </div>
         <p className="text-sm text-primary/70">
-          Étape 1/4 : Sélectionnez l'établissement
+          Étape 1/4 : Recherchez l'établissement
         </p>
       </div>
 
-      {isGeoLoading && (
-        <div className="flex items-center justify-center py-4">
-          <Loader2 className="w-5 h-5 animate-spin text-primary/60" />
-          <span className="ml-2 text-sm text-primary/60">Localisation en cours...</span>
+      {/* City search input */}
+      <div className="space-y-2">
+        <Label htmlFor="city-search" className="text-primary font-medium">
+          Ville ou code postal
+        </Label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/50" />
+          <Input
+            id="city-search"
+            type="text"
+            value={cityQuery}
+            onChange={(e) => {
+              setCityQuery(e.target.value);
+              setSelectedCity(null);
+            }}
+            placeholder="Ex: Paris, 75001..."
+            className="pl-10 border-primary/20 bg-primary/5"
+          />
+        </div>
+      </div>
+
+      {/* City results */}
+      {isCitySearching && (
+        <div className="flex items-center justify-center py-2">
+          <Loader2 className="w-4 h-4 animate-spin text-primary/60" />
+          <span className="ml-2 text-sm text-primary/60">Recherche...</span>
         </div>
       )}
 
-      {!isGeoLoading && !geoLocation && (
-        <Alert>
-          <AlertDescription>
-            Impossible d'obtenir votre position. Veuillez autoriser la géolocalisation dans votre navigateur.
-          </AlertDescription>
-        </Alert>
+      {cities && cities.length > 0 && !selectedCity && (
+        <div className="space-y-1 max-h-32 overflow-y-auto">
+          {cities.map((city) => (
+            <button
+              key={`${city.name}-${city.postalCode}`}
+              onClick={() => setSelectedCity(city)}
+              className="w-full p-2 text-left rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
+            >
+              <p className="text-sm text-primary">{city.name} ({city.postalCode})</p>
+            </button>
+          ))}
+        </div>
       )}
 
-      {isSearching && geoLocation && (
-        <div className="flex items-center justify-center py-4">
-          <Loader2 className="w-5 h-5 animate-spin text-primary/60" />
-          <span className="ml-2 text-sm text-primary/60">Recherche des établissements proches...</span>
+      {/* Selected city indicator */}
+      {selectedCity && (
+        <p className="text-sm text-primary/70 text-center">
+          📍 {selectedCity.name} ({selectedCity.postalCode})
+        </p>
+      )}
+
+      {/* School results */}
+      {isSchoolSearching && selectedCity && (
+        <div className="flex items-center justify-center py-2">
+          <Loader2 className="w-4 h-4 animate-spin text-primary/60" />
+          <span className="ml-2 text-sm text-primary/60">Recherche des établissements...</span>
         </div>
       )}
 
       {schools && schools.length > 0 && (
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+        <div className="space-y-2 max-h-48 overflow-y-auto">
           {schools.map((school) => (
             <button
               key={school.url}
@@ -302,9 +342,9 @@ export default function ConnectPronote({
         </div>
       )}
 
-      {schools?.length === 0 && geoLocation && !isSearching && (
-        <p className="text-sm text-primary/60 text-center py-4">
-          Aucun établissement trouvé à proximité
+      {schools?.length === 0 && selectedCity && !isSchoolSearching && (
+        <p className="text-sm text-primary/60 text-center py-2">
+          Aucun établissement trouvé
         </p>
       )}
 
