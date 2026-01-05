@@ -61,9 +61,13 @@ export function useSchoolSearch(query: string) {
       if (query.length < 3) return [];
 
       // Search in French gov education directory
+      // Filter: only elementary schools, middle schools, high schools
+      // Exclude: maternelles, admin services, medical-social, etc.
+      const typeFilter = 'type_etablissement IN ("Ecole", "Collège", "Lycée")';
+      const excludeMaternelle = 'NOT nom_etablissement LIKE "maternelle"';
       const params = new URLSearchParams({
         limit: '20',
-        where: `nom_etablissement LIKE "${query}"`,
+        where: `nom_etablissement LIKE "${query}" AND ${typeFilter} AND ${excludeMaternelle}`,
         select: 'identifiant_de_l_etablissement,nom_etablissement,type_etablissement,nom_commune,code_postal,position',
       });
 
