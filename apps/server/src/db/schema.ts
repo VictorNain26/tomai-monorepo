@@ -4,7 +4,7 @@
  * Remplace complètement l'ancien système d'authentification
  */
 
-import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum, index, foreignKey, unique, real } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum, index, foreignKey, unique } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // =============================================
@@ -24,22 +24,6 @@ export const messageRoleEnum = pgEnum('message_role', ['user', 'assistant', 'sys
 // TypeScript type défini plus bas pour type-safety
 
 
-// =============================================
-// ESTABLISHMENT SEARCH ENUMS
-// =============================================
-export const establishmentTypeEnum = pgEnum('establishment_type', [
-  'college',
-  'lycee',
-  'lycee_general_technologique',
-  'lycee_professionnel',
-  'lycee_polyvalent',
-  'lycee_agricole',
-  'etablissement_regional_enseignement_adapte',
-  'cite_scolaire',
-  'autre'
-]);
-
-export const establishmentStatusEnum = pgEnum('establishment_status', ['ouvert', 'ferme', 'a_ouvrir']);
 
 // =============================================
 // BETTER AUTH CORE TABLES
@@ -172,109 +156,6 @@ export const verification = pgTable('verification', {
   identifierIdx: index('idx_verification_identifier').on(table.identifier),
 }));
 
-// =============================================
-// ESTABLISHMENT SEARCH TABLES
-// =============================================
-
-/**
- * Table establishments - Base locale des établissements scolaires français
- * Synchronisée depuis l'API Education Nationale avec Full-Text Search PostgreSQL
- */
-export const establishments = pgTable('establishments', {
-  // ===== IDENTIFICATION UNIQUE =====
-  rne: varchar('rne', { length: 8 }).primaryKey(), // Répertoire National des Établissements
-
-  // ===== INFORMATIONS DE BASE =====
-  name: varchar('name', { length: 300 }).notNull(), // Nom complet établissement
-  normalizedName: varchar('normalized_name', { length: 300 }).notNull(), // Nom normalisé pour recherche
-  type: establishmentTypeEnum('type').notNull(),
-  status: establishmentStatusEnum('status').notNull().default('ouvert'),
-
-  // ===== ADRESSE ET LOCALISATION =====
-  address1: varchar('address1', { length: 200 }), // Adresse ligne 1
-  address2: varchar('address2', { length: 200 }), // Adresse ligne 2 (optionnelle)
-  address3: varchar('address3', { length: 200 }), // Adresse ligne 3 (optionnelle)
-  fullAddress: varchar('full_address', { length: 600 }).notNull(), // Adresse complète formatée
-  city: varchar('city', { length: 100 }).notNull(),
-  postalCode: varchar('postal_code', { length: 5 }).notNull(),
-  department: varchar('department', { length: 100 }).notNull(),
-  departmentCode: varchar('department_code', { length: 3 }).notNull(),
-  academy: varchar('academy', { length: 100 }).notNull(),
-
-  // ===== GÉOLOCALISATION =====
-  latitude: real('latitude'), // Coordonnées GPS pour recherche géographique
-  longitude: real('longitude'),
-
-  // ===== INFORMATIONS ADMINISTRATIVES =====
-  publicPrivate: varchar('public_private', { length: 20 }), // Public/Privé
-  ministerialCode: varchar('ministerial_code', { length: 20 }), // Code ministériel
-  siret: varchar('siret', { length: 14 }), // SIRET de l'établissement
-
-  // ===== PRONOTE CONFIGURATION =====
-  pronoteUrl: varchar('pronote_url', { length: 400 }).notNull(), // URL Pronote générée
-  hasPronote: boolean('has_pronote').notNull().default(true), // Pronote disponible
-  pronoteCheckedAt: timestamp('pronote_checked_at', { withTimezone: true }), // Dernière vérification Pronote
-
-  // ===== ENSEIGNEMENT =====
-  voieGenerale: boolean('voie_generale').default(false), // Voie générale
-  voieTechnologique: boolean('voie_technologique').default(false), // Voie technologique
-  voieProfessionnelle: boolean('voie_professionnelle').default(false), // Voie professionnelle
-
-  // ===== MÉTADONNÉES RECHERCHE =====
-  searchTerms: text('search_terms').notNull(), // Termes de recherche concaténés
-  // Note: searchVector sera ajouté via migration SQL pour éviter les problèmes Drizzle ORM
-
-  // ===== QUALITÉ DONNÉES =====
-  dataQuality: integer('data_quality').default(100), // Score qualité 0-100
-  isValidated: boolean('is_validated').default(false), // Validation manuelle
-  validatedAt: timestamp('validated_at', { withTimezone: true }),
-  validatedBy: varchar('validated_by', { length: 255 }), // Qui a validé
-
-  // ===== SYNCHRONISATION =====
-  sourceApi: varchar('source_api', { length: 50 }).notNull().default('education_nationale'), // Source des données
-  lastSyncAt: timestamp('last_sync_at', { withTimezone: true }).notNull().defaultNow(), // Dernière sync
-  syncVersion: integer('sync_version').notNull().default(1), // Version de sync
-  dataHash: varchar('data_hash', { length: 64 }), // Hash pour détecter changements
-
-  // ===== AUDIT ET MÉTADONNÉES =====
-  metadata: jsonb('metadata').default(sql`'{}'::jsonb`), // Métadonnées flexibles
-  syncMetadata: jsonb('sync_metadata').default(sql`'{}'::jsonb`), // Métadonnées de synchronisation
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  // ===== INDEX FULL-TEXT SEARCH =====
-  // Full-text search vector sera ajouté via migration SQL si nécessaire
-  // searchVectorIdx: index('idx_establishments_search_vector').using('gin', sql`(${table.searchVector})`),
-
-  // ===== INDEX GÉOGRAPHIQUES =====
-  locationIdx: index('idx_establishments_location').on(table.latitude, table.longitude),
-  cityIdx: index('idx_establishments_city').on(table.city),
-  postalCodeIdx: index('idx_establishments_postal_code').on(table.postalCode),
-  departmentIdx: index('idx_establishments_department').on(table.departmentCode),
-  academyIdx: index('idx_establishments_academy').on(table.academy),
-
-  // ===== INDEX FONCTIONNELS =====
-  typeStatusIdx: index('idx_establishments_type_status').on(table.type, table.status),
-  nameIdx: index('idx_establishments_name').on(table.normalizedName),
-  hasPronoteIdx: index('idx_establishments_has_pronote').on(table.hasPronote),
-
-  // ===== INDEX SYNCHRONISATION =====
-  lastSyncIdx: index('idx_establishments_last_sync').on(table.lastSyncAt),
-  dataQualityIdx: index('idx_establishments_data_quality').on(table.dataQuality),
-  isValidatedIdx: index('idx_establishments_is_validated').on(table.isValidated),
-
-  // ===== INDEX COMPOSITES POUR PERFORMANCE =====
-  searchCompositeIdx: index('idx_establishments_search_composite').on(
-    table.type,
-    table.status,
-    table.hasPronote
-  ),
-  locationCompositeIdx: index('idx_establishments_location_composite').on(
-    table.departmentCode,
-    table.city,
-    table.type
-  ),
-}));
 
 
 // =============================================
@@ -309,7 +190,10 @@ export const pronoteConnections = pgTable('pronote_connections', {
 
   // ===== RELATIONS =====
   parentId: varchar('parent_id', { length: 255 }).notNull().unique(), // Le parent TomAI
-  establishmentRne: varchar('establishment_rne', { length: 8 }).notNull(), // Établissement
+
+  // ===== ÉTABLISSEMENT (stocké directement, pas de FK) =====
+  // Nom de l'établissement récupéré depuis l'API Index Education lors de la connexion
+  establishmentName: varchar('establishment_name', { length: 300 }).notNull(),
 
   // ===== PRONOTE AUTH DATA (chiffré) =====
   encryptedToken: text('encrypted_token').notNull(),
@@ -343,15 +227,8 @@ export const pronoteConnections = pgTable('pronote_connections', {
     name: 'pronote_connections_parent_id_fkey'
   }).onDelete('cascade'),
 
-  establishmentRneFk: foreignKey({
-    columns: [table.establishmentRne],
-    foreignColumns: [establishments.rne],
-    name: 'pronote_connections_establishment_rne_fkey'
-  }).onDelete('restrict'),
-
   statusIdx: index('idx_pronote_connections_status').on(table.status),
   tokenExpiresIdx: index('idx_pronote_connections_expires').on(table.tokenExpiresAt),
-  establishmentIdx: index('idx_pronote_connections_establishment').on(table.establishmentRne),
 }));
 
 /**
@@ -700,10 +577,6 @@ export const pronoteConnectionsRelations = relations(pronoteConnections, ({ one,
     fields: [pronoteConnections.parentId],
     references: [user.id]
   }),
-  establishment: one(establishments, {
-    fields: [pronoteConnections.establishmentRne],
-    references: [establishments.rne]
-  }),
   childMappings: many(pronoteChildMappings),
 }));
 
@@ -934,10 +807,6 @@ export interface AttachedFile {
   fileSizeBytes?: number;
 }
 
-// Types pour Establishments
-export type Establishment = typeof establishments.$inferSelect;
-export type NewEstablishment = typeof establishments.$inferInsert;
-
 // Types avec relations
 export type UserWithRelations = User & {
   parent?: User | null;
@@ -948,23 +817,6 @@ export type UserWithRelations = User & {
   progress?: Progress[];
 };
 
-// Types de recherche d'établissements
-export type EstablishmentSearchResult = {
-  rne: string;
-  name: string;
-  type: EstablishmentType;
-  address: string;
-  city: string;
-  postalCode: string;
-  department: string;
-  academy: string;
-  pronoteUrl: string;
-  status: EstablishmentStatus;
-  distance?: number; // Pour recherche géographique
-  relevance?: number; // Score de pertinence Full-Text Search
-  searchMethod?: 'fts' | 'fuzzy' | 'geo'; // Méthode de recherche utilisée
-};
-
 // Enum types
 export type UserRole = typeof userRoleEnum.enumValues[number];
 export type SchoolLevel = typeof schoolLevelEnum.enumValues[number];
@@ -973,10 +825,6 @@ export type MessageRole = typeof messageRoleEnum.enumValues[number];
 
 // AI Model: string type (pas d'ENUM = flexibilité pour nouveaux modèles)
 export type AIModel = string;
-
-// Enum types pour Establishments
-export type EstablishmentType = typeof establishmentTypeEnum.enumValues[number];
-export type EstablishmentStatus = typeof establishmentStatusEnum.enumValues[number];
 
 // Pronote Integration Types
 export type PronoteConnectionStatus = typeof pronoteConnectionStatusEnum.enumValues[number];
@@ -994,7 +842,6 @@ export interface PronoteResource {
 
 export type PronoteConnectionWithRelations = PronoteConnection & {
   parent?: User;
-  establishment?: Establishment;
   childMappings?: PronoteChildMapping[];
 };
 

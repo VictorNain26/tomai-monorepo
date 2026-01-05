@@ -135,8 +135,7 @@ src/
 ├── routes/                          # API endpoints
 │   ├── api.routes.ts               # Routes principales
 │   ├── chat-message.routes.ts      # Chat streaming
-│   ├── establishment.routes.ts     # Établissements scolaires
-│   └── pronote.routes.ts           # Intégration Pronote (QR code auth)
+│   └── pronote.routes.ts           # Intégration Pronote + recherche établissements
 ├── db/
 │   ├── schema.ts                   # Drizzle schema
 │   ├── connection.ts               # Configuration DB

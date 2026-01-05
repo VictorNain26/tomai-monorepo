@@ -47,11 +47,11 @@ export const pronoteParentRoutes = new Elysia({ prefix: '/api/pronote' })
         return { error: authError ?? 'Non authentifié' };
       }
 
-      const { qrCodeJson, pin, establishmentRne } = body;
+      const { qrCodeJson, pin, establishmentName } = body;
 
       const result = await pronoteService.connectParentWithQrCode(
         parent.id,
-        establishmentRne,
+        establishmentName,
         qrCodeJson,
         pin
       );
@@ -64,7 +64,7 @@ export const pronoteParentRoutes = new Elysia({ prefix: '/api/pronote' })
       logger.info('Pronote parent connected via API', {
         operation: 'pronote:api:connect',
         parentId: parent.id,
-        establishmentRne,
+        establishmentName,
         childrenCount: result.resources?.length ?? 0,
       });
 
@@ -80,7 +80,7 @@ export const pronoteParentRoutes = new Elysia({ prefix: '/api/pronote' })
       body: t.Object({
         qrCodeJson: t.String({ description: 'QR code JSON data from Pronote' }),
         pin: t.String({ minLength: 4, maxLength: 4, description: '4-digit PIN code' }),
-        establishmentRne: t.String({ minLength: 8, maxLength: 8, description: 'RNE code' }),
+        establishmentName: t.String({ minLength: 1, maxLength: 300, description: "Nom de l'établissement" }),
       }),
       detail: {
         tags: ['Pronote'],
@@ -449,7 +449,54 @@ export const pronoteStudentRoutes = new Elysia({ prefix: '/api/pronote/student' 
     }
   );
 
+// =============================================
+// PUBLIC ROUTES (school search - no auth required)
+// =============================================
+
+export const pronotePublicRoutes = new Elysia({ prefix: '/api/pronote' })
+  /**
+   * POST /api/pronote/schools/search
+   * Search schools by geolocation (API Index Education)
+   */
+  .post(
+    '/schools/search',
+    async ({ body, set }) => {
+      const { latitude, longitude } = body;
+
+      // Validate coordinates (France métropolitaine)
+      if (latitude < 41 || latitude > 51 || longitude < -5 || longitude > 10) {
+        set.status = 400;
+        return {
+          success: false,
+          error: 'Coordonnées hors de France métropolitaine',
+          schools: [],
+        };
+      }
+
+      const schools = await pronoteService.searchSchoolsByLocation(latitude, longitude);
+
+      return {
+        success: true,
+        schools,
+        count: schools.length,
+      };
+    },
+    {
+      body: t.Object({
+        latitude: t.Number({ minimum: -90, maximum: 90, description: 'Latitude GPS' }),
+        longitude: t.Number({ minimum: -180, maximum: 180, description: 'Longitude GPS' }),
+      }),
+      detail: {
+        tags: ['Pronote'],
+        summary: 'Search schools by location',
+        description:
+          'Search for Pronote-enabled schools near GPS coordinates. Uses Index Education official API.',
+      },
+    }
+  );
+
 // Combined routes for app registration
 export const pronoteRoutes = new Elysia()
+  .use(pronotePublicRoutes)
   .use(pronoteParentRoutes)
   .use(pronoteStudentRoutes);

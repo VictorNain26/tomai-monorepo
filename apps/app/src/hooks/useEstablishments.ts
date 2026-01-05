@@ -1,7 +1,8 @@
 /**
- * Establishment Hooks - TanStack Query hooks for establishment search API
+ * Establishment Hooks - TanStack Query hooks for Pronote school search
  *
- * Used by ConnectPronote modal to search for schools and get RNE codes.
+ * Uses the Index Education API (via backend) to search schools by geolocation.
+ * No local database - real-time search like Papillon app.
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -11,32 +12,18 @@ import { apiClient } from '@/lib/api-client';
 // Types
 // =============================================
 
-export interface Establishment {
-  id: string;
+export interface PronoteSchool {
   name: string;
-  city: string;
-  rne: string;
-  postalCode?: string;
-  department?: string;
-  type?: 'college' | 'lycee' | 'primaire';
+  url: string;
+  distance: number;
+  postalCode: string;
 }
 
 interface SearchResponse {
   success: boolean;
-  data?: {
-    establishments: Array<{
-      id: string;
-      name: string;
-      city: string;
-      rne: string;
-      postalCode?: string;
-      department?: string;
-      type?: string;
-    }>;
-    total: number;
-    query: string;
-  };
-  _error?: string;
+  schools: PronoteSchool[];
+  count: number;
+  error?: string;
 }
 
 // =============================================
@@ -44,63 +31,68 @@ interface SearchResponse {
 // =============================================
 
 /**
- * Search establishments by name
- * Debounced query - only searches when query >= 3 characters
+ * Search schools by geolocation
+ * Requires GPS coordinates (latitude, longitude)
  */
-export function useEstablishmentSearch(query: string) {
+export function useSchoolSearch(latitude: number | null, longitude: number | null) {
   return useQuery({
-    queryKey: ['establishments', 'search', query],
-    queryFn: async (): Promise<Establishment[]> => {
-      if (!query || query.trim().length < 3) {
+    queryKey: ['schools', 'search', latitude, longitude],
+    queryFn: async (): Promise<PronoteSchool[]> => {
+      if (latitude === null || longitude === null) {
         return [];
       }
 
       const response = await apiClient.post<SearchResponse>(
-        '/api/establishments/search',
-        { query: query.trim(), limit: 10 }
+        '/api/pronote/schools/search',
+        { latitude, longitude }
       );
 
-      if (!response.success || !response.data) {
+      if (!response.success) {
         return [];
       }
 
-      return response.data.establishments.map((est) => ({
-        id: est.id,
-        name: est.name,
-        city: est.city,
-        rne: est.rne,
-        postalCode: est.postalCode,
-        department: est.department,
-        type: est.type as Establishment['type'],
-      }));
+      return response.schools;
     },
-    enabled: query.trim().length >= 3,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 15 * 60 * 1000,
+    enabled: latitude !== null && longitude !== null,
+    staleTime: 10 * 60 * 1000, // 10 minutes (location-based, relatively stable)
+    gcTime: 30 * 60 * 1000,
   });
 }
 
 /**
- * Validate RNE code and get Pronote URL
+ * Get user's current GPS position
+ * Returns coordinates or null if not available/denied
  */
-export function useValidateRne(rne: string | null) {
+export function useGeolocation() {
   return useQuery({
-    queryKey: ['establishments', 'validate', rne],
-    queryFn: async () => {
-      if (!rne) return null;
+    queryKey: ['geolocation'],
+    queryFn: async (): Promise<{ latitude: number; longitude: number } | null> => {
+      if (!navigator.geolocation) {
+        return null;
+      }
 
-      const response = await apiClient.post<{
-        success: boolean;
-        rne: string;
-        isValid: boolean;
-        pronoteUrl?: string;
-        establishment?: Establishment;
-      }>('/api/establishments/validate', { rne });
-
-      return response;
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+          },
+          () => {
+            // User denied or error - return null
+            resolve(null);
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 10000,
+            maximumAge: 5 * 60 * 1000, // Cache for 5 minutes
+          }
+        );
+      });
     },
-    enabled: !!rne && rne.length === 8,
-    staleTime: 30 * 60 * 1000, // 30 minutes (RNE validation is stable)
-    gcTime: 60 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    retry: false,
   });
 }

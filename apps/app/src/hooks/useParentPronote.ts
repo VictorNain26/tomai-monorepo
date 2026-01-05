@@ -36,7 +36,7 @@ export interface ParentConnectionStatus {
 export interface PronoteConnectRequest {
   qrCodeJson: string;
   pin: string;
-  establishmentRne: string;
+  establishmentName: string;
 }
 
 /** Connect response */
@@ -131,7 +131,7 @@ export function useConnectPronote() {
         {
           qrCodeJson: data.qrCodeJson,
           pin: data.pin,
-          establishmentRne: data.establishmentRne,
+          establishmentName: data.establishmentName,
         }
       );
       return response;
