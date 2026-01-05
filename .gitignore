@@ -47,7 +47,7 @@ yarn-error.log*
 *.pem
 
 # Claude Code local settings
-.claude/settings.local.json
+**/.claude/
 
 # Local documentation (apps/server/CLAUDE.md L220-226)
 apps/server/docs/
