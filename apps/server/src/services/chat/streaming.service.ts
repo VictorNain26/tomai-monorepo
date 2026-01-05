@@ -276,25 +276,55 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      // Detect specific error types for better user feedback
+      const isRateLimit = errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit');
+      const isApiKey = errorMessage.toLowerCase().includes('api key') || errorMessage.includes('401');
+      const isModelNotFound = errorMessage.toLowerCase().includes('model not found') || errorMessage.includes('404');
+      const isQuota = errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('exceeded');
 
       logger.error('Streaming generation error', {
         _error: errorMessage,
+        stack: errorStack,
         userId: params.userId,
         sessionId: params.sessionId,
+        subject: params.subject,
+        schoolLevel: params.schoolLevel,
         durationMs: Date.now() - startTime,
         operation: 'streaming:error',
-        severity: 'medium' as const
+        errorType: isRateLimit ? 'rate_limit' : isApiKey ? 'api_key' : isModelNotFound ? 'model_not_found' : isQuota ? 'quota' : 'unknown',
+        severity: 'high' as const
       });
 
+      // User-friendly error message based on error type
+      let userMessage = 'Erreur lors de la génération de la réponse. Veuillez réessayer.';
+      let errorCode = 'generation_error';
+
+      if (isRateLimit) {
+        userMessage = 'Le service est temporairement surchargé. Réessayez dans quelques secondes.';
+        errorCode = 'rate_limit';
+      } else if (isApiKey) {
+        userMessage = 'Erreur de configuration du service AI. Contactez le support.';
+        errorCode = 'api_configuration';
+      } else if (isModelNotFound) {
+        userMessage = 'Le modèle AI n\'est pas disponible. Contactez le support.';
+        errorCode = 'model_unavailable';
+      } else if (isQuota) {
+        userMessage = 'Quota API dépassé. Réessayez plus tard.';
+        errorCode = 'quota_exceeded';
+      }
+
       // Yield erreur au format TanStack AI Protocol
+      // NOTE: Actual error details are logged server-side, NOT sent to client
       yield {
         type: 'error',
         id: messageId,
         model,
         timestamp: Date.now(),
         error: {
-          message: 'Erreur lors de la génération de la réponse. Veuillez réessayer.',
-          code: 'generation_error'
+          message: userMessage,
+          code: errorCode
         }
       };
     }

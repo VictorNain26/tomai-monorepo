@@ -1,12 +1,15 @@
 /**
- * Card Generator Service - Single-Phase Architecture 2025
+ * Card Generator Service - Architecture Simplifiée 2025
  *
- * Génération de cartes en UN SEUL appel Gemini.
+ * Génération de cartes en UN SEUL appel Gemini avec schema simplifié.
  *
- * Best Practice 2025 - Gemini Structured Output:
- * - responseJsonSchema (pas responseSchema) → supporte anyOf/oneOf complet
- * - z.toJSONSchema() (Zod v4 natif) → conversion discriminatedUnion → anyOf
- * - Validation Zod → défense en profondeur pour invariants métier
+ * Architecture Evidence-Based (Google recommandé):
+ * - Schema simplifié (cardType enum + content object) → respecte limite 4 niveaux
+ * - Prompt détaillé guide la structure de chaque type
+ * - Validation Zod stricte après parsing (discriminatedUnion)
+ *
+ * @see https://ai.google.dev/gemini-api/docs/structured-output
+ * @see https://discuss.ai.google.dev/t/maximum-tool-nesting-depth-update-this-morning/104341
  *
  * ## Fondements Scientifiques
  *
@@ -20,17 +23,11 @@
  * Sources :
  * - Dehaene, S. (2018). Apprendre ! Les talents du cerveau, le défi des machines.
  * - CSEN / Académie Paris: https://pia.ac-paris.fr/portail/jcms/p1_3354981
- * - Testing effect: https://www.site.ac-aix-marseille.fr/lyc-stexupery/spip/Tester-les-eleves-pour-les-faire-memoriser.html
- *
- * ### EXTENSIONS SCIENTIFIQUES (non-CSEN, académiquement validées)
- * - Elaborative Interrogation (Pressley 1987) → type 'reformulation'
- * - Scaffolding/ZPD (Vygotsky 1978) → champs 'hints'
  *
  * @see prompts/pedagogy.ts pour documentation détaillée des sources
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { z } from 'zod';
 import { CardGenerationOutputSchema } from '../../lib/ai/index.js';
 import {
   getSubjectInstructions,
@@ -62,6 +59,8 @@ export interface CardGenerationError {
   success: false;
   error: string;
   code: 'GENERATION_FAILED' | 'INVALID_OUTPUT' | 'SERVICE_UNAVAILABLE';
+  /** Debug info - ONLY logged server-side, NEVER sent to client */
+  _debug?: { actualError: string };
 }
 
 // ============================================================================
@@ -71,23 +70,49 @@ export interface CardGenerationError {
 const genai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
 
 // ============================================================================
-// JSON SCHEMA - Best Practice 2025: responseJsonSchema avec anyOf
+// JSON SCHEMA SIMPLIFIÉ - Respecte limite 4 niveaux Gemini
 // ============================================================================
 
 /**
- * JSON Schema généré depuis Zod v4 pour Gemini 2.5+
+ * Schema minimal pour Gemini - Architecture Evidence-Based
  *
- * Best Practice 2025:
- * - responseJsonSchema (pas responseSchema) supporte anyOf/oneOf complet
- * - Gemini 2.5 Flash supporte anyOf depuis Nov 2024
- * - Zod v4 a z.toJSONSchema() natif
+ * Problème: discriminatedUnion avec 15 types + nested objects dépasse
+ * la limite de nesting (4 niveaux) de Gemini → INVALID_ARGUMENT
  *
+ * Solution Google recommandée:
+ * "Simplify your schema by reducing nesting, rely on prompt to guide structure"
  * @see https://ai.google.dev/gemini-api/docs/structured-output
+ * @see https://discuss.ai.google.dev/t/maximum-tool-nesting-depth-update-this-morning/104341
+ *
+ * Architecture:
+ * - Phase 1: Schema simple (cardType enum + content object non typé)
+ * - Phase 2: Validation Zod stricte après parsing (discriminatedUnion)
+ *
+ * Niveaux: cards[] → {cardType, content} → content fields = 3 niveaux ✅
  */
-const cardGenerationJsonSchema = z.toJSONSchema(CardGenerationOutputSchema, {
-  // Inclure les descriptions pour guider Gemini
-  io: 'output'
-});
+const simplifiedCardSchema = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      cardType: {
+        type: 'string',
+        enum: [
+          'concept', 'flashcard', 'qcm', 'vrai_faux',
+          'matching', 'fill_blank', 'word_order',
+          'calculation', 'timeline', 'matching_era', 'cause_effect',
+          'classification', 'process_order', 'grammar_transform', 'reformulation'
+        ],
+        description: 'Type de carte (snake_case obligatoire)'
+      },
+      content: {
+        type: 'object',
+        description: 'Contenu de la carte selon le type (voir prompt pour structure)'
+      }
+    },
+    required: ['cardType', 'content']
+  }
+} as const;
 
 // ============================================================================
 // PROMPT BUILDER
@@ -201,9 +226,10 @@ export async function generateCards(
           model: appConfig.ai.gemini.model,
           contents: prompt,
           config: {
-            // Best Practice 2025: responseJsonSchema avec anyOf complet
-            // Supporte discriminatedUnion via JSON Schema anyOf
-            responseJsonSchema: cardGenerationJsonSchema,
+            // Schema simplifié pour respecter limite 4 niveaux Gemini
+            // Le prompt guide la structure, Zod valide après parsing
+            responseMimeType: 'application/json',
+            responseJsonSchema: simplifiedCardSchema,
             temperature: 0.7,
             topK: 40,
             topP: 0.95
@@ -293,20 +319,53 @@ export async function generateCards(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    // Detect specific error types for better diagnostics
+    const isRateLimit = errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit');
+    const isApiKey = errorMessage.toLowerCase().includes('api key') || errorMessage.includes('401');
+    const isModelNotFound = errorMessage.toLowerCase().includes('model not found') || errorMessage.includes('404');
+    const isQuota = errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('exceeded');
+    const isUnavailable = errorMessage.toLowerCase().includes('unavailable') || errorMessage.includes('503');
+
+    // Determine error code
+    let code: 'GENERATION_FAILED' | 'INVALID_OUTPUT' | 'SERVICE_UNAVAILABLE' = 'GENERATION_FAILED';
+    if (isUnavailable || isRateLimit) code = 'SERVICE_UNAVAILABLE';
 
     logger.error('Card generation failed', {
       operation: 'learning:generate:error',
       topic: params.topic,
       subject: params.subject,
+      level: params.level,
+      cardCount: params.cardCount,
       durationMs: Date.now() - startTime,
       _error: errorMessage,
+      stack: errorStack,
+      errorType: isRateLimit ? 'rate_limit' : isApiKey ? 'api_key' : isModelNotFound ? 'model_not_found' : isQuota ? 'quota' : isUnavailable ? 'unavailable' : 'unknown',
       severity: 'high' as const
     });
 
+    // User-friendly error message based on error type
+    let userMessage = 'Échec de la génération des cartes. Veuillez réessayer.';
+
+    if (isRateLimit) {
+      userMessage = 'Le service est temporairement surchargé. Réessayez dans quelques secondes.';
+    } else if (isApiKey) {
+      userMessage = 'Erreur de configuration du service AI. Contactez le support.';
+    } else if (isModelNotFound) {
+      userMessage = 'Le modèle AI n\'est pas disponible. Contactez le support.';
+    } else if (isQuota) {
+      userMessage = 'Quota API dépassé. Réessayez plus tard.';
+    } else if (isUnavailable) {
+      userMessage = 'Le service AI est temporairement indisponible. Réessayez dans quelques minutes.';
+    }
+
     return {
       success: false,
-      error: 'Échec de la génération des cartes. Veuillez réessayer.',
-      code: errorMessage.includes('UNAVAILABLE') ? 'SERVICE_UNAVAILABLE' : 'GENERATION_FAILED'
+      error: userMessage,
+      code,
+      // Include actual error details for debugging
+      _debug: { actualError: errorMessage }
     };
   }
 }

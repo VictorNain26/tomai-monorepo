@@ -450,15 +450,18 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
 
         // 5. Check for generation errors
         if (isGenerationError(generationResult)) {
+          // Log actual error details server-side (for Koyeb logs)
           logger.error('AI card generation failed', {
             operation: 'learning:generate:failed',
             userId: authUser.id,
             _error: generationResult.error,
+            _actualError: generationResult._debug?.actualError, // Technical details for debugging
             code: generationResult.code,
             severity: 'medium' as const,
           });
           set.status = 500;
-          return { error: generationResult.error };
+          // Only return user-friendly message, NOT technical details
+          return { error: generationResult.error, code: generationResult.code };
         }
 
         const generatedCards = generationResult.cards;
