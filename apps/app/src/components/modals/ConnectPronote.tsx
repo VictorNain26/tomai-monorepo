@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import {
-  School,
+  School as SchoolIcon,
   CheckCircle,
   Loader2,
   QrCode,
@@ -48,7 +48,7 @@ import {
   type PronoteResource,
   type ChildMappingInput,
 } from '@/hooks/useParentPronote';
-import { useSchoolSearch, useCitySearch, type PronoteSchool, type City } from '@/hooks/useEstablishments';
+import { useSchoolSearch, usePronoteUrl, type School } from '@/hooks/useEstablishments';
 import type { IChild } from '@/types';
 
 interface ConnectPronoteProps {
@@ -77,7 +77,7 @@ export default function ConnectPronote({
   const [error, setError] = useState<string | null>(null);
 
   // Data collected through steps
-  const [selectedSchool, setSelectedSchool] = useState<PronoteSchool | null>(null);
+  const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
   const [qrData, setQrData] = useState<PronoteQRData | null>(null);
   const [pin, setPin] = useState('');
 
@@ -88,13 +88,12 @@ export default function ConnectPronote({
   // Mapping state
   const [mappings, setMappings] = useState<MappingState>({});
 
-  // City search state
-  const [cityQuery, setCityQuery] = useState('');
-  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+  // School search state
+  const [schoolQuery, setSchoolQuery] = useState('');
 
   // Hooks
-  const { data: cities, isLoading: isCitySearching } = useCitySearch(cityQuery);
-  const { data: schools, isLoading: isSchoolSearching } = useSchoolSearch(selectedCity);
+  const { data: schools, isLoading: isSearching } = useSchoolSearch(schoolQuery);
+  const { data: pronoteSchool, isLoading: isLoadingPronote } = usePronoteUrl(selectedSchool);
   const connectMutation = useConnectPronote();
   const createMappingsMutation = useCreateChildMappings();
 
@@ -115,10 +114,16 @@ export default function ConnectPronote({
       setPronoteResources([]);
       setConnectedEstablishmentName('');
       setMappings({});
-      setCityQuery('');
-      setSelectedCity(null);
+      setSchoolQuery('');
     }
   }, [isOpen]);
+
+  // Auto-advance to scan when Pronote URL is loaded
+  useEffect(() => {
+    if (selectedSchool && pronoteSchool && currentStep === 'search') {
+      setCurrentStep('scan');
+    }
+  }, [selectedSchool, pronoteSchool, currentStep]);
 
   // Pre-select child if only one resource matches preselectedChild
   useEffect(() => {
@@ -136,10 +141,10 @@ export default function ConnectPronote({
     }
   }, [currentStep, preselectedChild, pronoteResources, mappings]);
 
-  // Handle school selection
-  const handleSelectSchool = (school: PronoteSchool) => {
+  // Handle school selection (from gov API results)
+  const handleSelectSchool = (school: School) => {
     setSelectedSchool(school);
-    setCurrentStep('scan');
+    // Will auto-advance to scan when pronoteSchool is loaded (useEffect above)
     setError(null);
   };
 
@@ -157,7 +162,7 @@ export default function ConnectPronote({
 
   // Handle PIN submission - Connect parent account
   const handlePinSubmit = async () => {
-    if (!selectedSchool || !qrData || pin.length !== 4) {
+    if (!selectedSchool || !pronoteSchool || !qrData || pin.length !== 4) {
       setError('Données manquantes. Veuillez recommencer.');
       return;
     }
@@ -238,6 +243,7 @@ export default function ConnectPronote({
     switch (currentStep) {
       case 'scan':
         setCurrentStep('search');
+        setSelectedSchool(null);
         break;
       case 'pin':
         setCurrentStep('scan');
@@ -255,96 +261,79 @@ export default function ConnectPronote({
     setError(null);
   };
 
-  // Step 1: Search establishment by city/postal code
+  // Step 1: Search establishment by name
   const renderSearchStep = () => (
     <div className="space-y-4">
       <div className="text-center">
         <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-primary/20">
-          <School className="w-7 h-7 text-primary" />
+          <SchoolIcon className="w-7 h-7 text-primary" />
         </div>
         <p className="text-sm text-primary/70">
           Étape 1/4 : Recherchez l'établissement
         </p>
       </div>
 
-      {/* City search input */}
+      {/* School search input */}
       <div className="space-y-2">
-        <Label htmlFor="city-search" className="text-primary font-medium">
-          Ville ou code postal
+        <Label htmlFor="school-search" className="text-primary font-medium">
+          Nom de l'établissement
         </Label>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/50" />
           <Input
-            id="city-search"
+            id="school-search"
             type="text"
-            value={cityQuery}
-            onChange={(e) => {
-              setCityQuery(e.target.value);
-              setSelectedCity(null);
-            }}
-            placeholder="Ex: Paris, 75001..."
+            value={schoolQuery}
+            onChange={(e) => setSchoolQuery(e.target.value)}
+            placeholder="Ex: Lycée Thiers, Collège Jean Moulin..."
             className="pl-10 border-primary/20 bg-primary/5"
           />
         </div>
       </div>
 
-      {/* City results */}
-      {isCitySearching && (
+      {/* Loading state */}
+      {isSearching && (
         <div className="flex items-center justify-center py-2">
           <Loader2 className="w-4 h-4 animate-spin text-primary/60" />
           <span className="ml-2 text-sm text-primary/60">Recherche...</span>
         </div>
       )}
 
-      {cities && cities.length > 0 && !selectedCity && (
-        <div className="space-y-1 max-h-32 overflow-y-auto">
-          {cities.map((city) => (
-            <button
-              key={`${city.name}-${city.postalCode}`}
-              onClick={() => setSelectedCity(city)}
-              className="w-full p-2 text-left rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
-            >
-              <p className="text-sm text-primary">{city.name} ({city.postalCode})</p>
-            </button>
-          ))}
+      {/* Selected school - loading Pronote URL */}
+      {selectedSchool && isLoadingPronote && (
+        <div className="flex items-center justify-center py-2">
+          <Loader2 className="w-4 h-4 animate-spin text-primary/60" />
+          <span className="ml-2 text-sm text-primary/60">Vérification Pronote...</span>
         </div>
-      )}
-
-      {/* Selected city indicator */}
-      {selectedCity && (
-        <p className="text-sm text-primary/70 text-center">
-          📍 {selectedCity.name} ({selectedCity.postalCode})
-        </p>
       )}
 
       {/* School results */}
-      {isSchoolSearching && selectedCity && (
-        <div className="flex items-center justify-center py-2">
-          <Loader2 className="w-4 h-4 animate-spin text-primary/60" />
-          <span className="ml-2 text-sm text-primary/60">Recherche des établissements...</span>
-        </div>
-      )}
-
-      {schools && schools.length > 0 && (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
+      {schools && schools.length > 0 && !selectedSchool && (
+        <div className="space-y-2 max-h-64 overflow-y-auto">
           {schools.map((school) => (
             <button
-              key={school.url}
+              key={school.id}
               onClick={() => handleSelectSchool(school)}
               className="w-full p-3 text-left rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
             >
               <p className="font-medium text-primary text-sm">{school.name}</p>
               <p className="text-xs text-primary/60">
-                {school.postalCode} • {school.distance < 1 ? `${Math.round(school.distance * 1000)}m` : `${school.distance.toFixed(1)}km`}
+                {school.type} • {school.city} ({school.postalCode})
               </p>
             </button>
           ))}
         </div>
       )}
 
-      {schools?.length === 0 && selectedCity && !isSchoolSearching && (
+      {schools?.length === 0 && schoolQuery.length >= 3 && !isSearching && (
         <p className="text-sm text-primary/60 text-center py-2">
           Aucun établissement trouvé
+        </p>
+      )}
+
+      {schoolQuery.length > 0 && schoolQuery.length < 3 && (
+        <p className="text-sm text-primary/60 text-center py-2">
+          Tapez au moins 3 caractères
         </p>
       )}
 
@@ -485,7 +474,7 @@ export default function ConnectPronote({
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <School className="w-5 h-5 text-primary" />
+                  <SchoolIcon className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="font-medium text-sm text-foreground">{resource.name}</p>
@@ -580,7 +569,7 @@ export default function ConnectPronote({
     <div className="space-y-4">
       <div className="py-4 text-center">
         <div className="w-14 h-14 bg-destructive/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-destructive/20">
-          <School className="w-7 h-7 text-destructive" />
+          <SchoolIcon className="w-7 h-7 text-destructive" />
         </div>
         <p className="font-medium text-destructive">Échec de la connexion</p>
         {error && (
@@ -653,7 +642,7 @@ export default function ConnectPronote({
         <DialogHeader className={modalStyles.header}>
           <DialogTitle className="flex items-center gap-3 text-primary">
             <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
-              <School className="w-4 h-4 text-primary" />
+              <SchoolIcon className="w-4 h-4 text-primary" />
             </div>
             <span className="text-base font-semibold">{getTitle()}</span>
           </DialogTitle>
