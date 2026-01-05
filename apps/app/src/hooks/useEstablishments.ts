@@ -51,16 +51,12 @@ interface PronoteSearchResponse {
 // =============================================
 
 /**
- * Sanitize user input for API query (prevent injection)
- * Removes characters that could break the WHERE clause
+ * Sanitize user input for API query
+ * Removes quotes that would break the LIKE clause syntax
  */
 function sanitizeSearchQuery(input: string): string {
-  // Remove quotes, backslashes, and control characters
-  // Keep only alphanumeric, spaces, accents, and hyphens
   return input
-    .replace(/["\\'`]/g, '') // Remove quotes
-    .replace(/[<>{}[\]]/g, '') // Remove brackets
-    .replace(/[\x00-\x1f]/g, '') // Remove control chars
+    .replace(/["'`]/g, '') // Remove quotes (break LIKE syntax)
     .trim()
     .slice(0, 100); // Limit length
 }
