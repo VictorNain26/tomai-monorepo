@@ -201,98 +201,6 @@ export function validateSchema<T>(
 /**
  * Types inférés pour TypeScript strict
  */
-// ============================================
-// SCHÉMAS ESTABLISHMENT SEARCH
-// ============================================
-
-export const establishmentSearchQuerySchema = z.object({
-  query: z.string()
-    .min(3, 'Recherche minimum 3 caractères')
-    .max(100, 'Recherche maximum 100 caractères')
-    .trim(),
-  limit: z.number()
-    .int('Limite doit être un entier')
-    .min(1, 'Limite minimum 1')
-    .max(50, 'Limite maximum 50')
-    .optional()
-    .default(10),
-  filters: z.object({
-    type: z.enum(['college', 'lycee', 'autre'], {
-      error: 'Type établissement invalide'
-    }).optional(),
-    department: z.string()
-      .min(2, 'Département minimum 2 caractères')
-      .max(100, 'Département maximum 100 caractères')
-      .optional(),
-    academy: z.string()
-      .min(2, 'Académie minimum 2 caractères')
-      .max(100, 'Académie maximum 100 caractères')
-      .optional(),
-    status: z.enum(['ouvert', 'ferme'], {
-      error: 'Statut invalide'
-    }).optional()
-  }).optional()
-});
-
-export const establishmentGeographicSearchSchema = z.object({
-  latitude: z.number()
-    .min(-90, 'Latitude invalide')
-    .max(90, 'Latitude invalide'),
-  longitude: z.number()
-    .min(-180, 'Longitude invalide')
-    .max(180, 'Longitude invalide'),
-  radiusKm: z.number()
-    .min(0.1, 'Rayon minimum 100m')
-    .max(50, 'Rayon maximum 50km')
-    .optional()
-    .default(10),
-  limit: z.number()
-    .int('Limite doit être un entier')
-    .min(1, 'Limite minimum 1')
-    .max(50, 'Limite maximum 50')
-    .optional()
-    .default(10),
-  filters: z.object({
-    type: z.enum(['college', 'lycee', 'autre']).optional(),
-    status: z.enum(['ouvert', 'ferme']).optional()
-  }).optional()
-});
-
-export const establishmentAutoSuggestSchema = z.object({
-  query: z.string()
-    .min(2, 'Recherche minimum 2 caractères')
-    .max(50, 'Recherche maximum 50 caractères')
-    .trim(),
-  limit: z.number()
-    .int('Limite doit être un entier')
-    .min(1, 'Limite minimum 1')
-    .max(20, 'Limite maximum 20')
-    .optional()
-    .default(5)
-});
-
-export const establishmentSyncSchema = z.object({
-  forceResync: z.boolean()
-    .optional()
-    .default(false),
-  batchSize: z.number()
-    .int('Taille batch doit être un entier')
-    .min(10, 'Taille batch minimum 10')
-    .max(1000, 'Taille batch maximum 1000')
-    .optional()
-    .default(100),
-  progressCallback: z.boolean()
-    .optional()
-    .default(false)
-});
-
-export const rneValidationSchema = z.string()
-  .length(8, 'RNE doit contenir exactement 8 caractères')
-  .regex(/^[0-9]{7}[A-Z]$/, 'RNE format invalide: 7 chiffres + 1 lettre majuscule');
-
-/**
- * Types inférés pour TypeScript strict
- */
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ChatSessionInput = z.infer<typeof chatSessionSchema>;
@@ -300,9 +208,3 @@ export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 export type StreamChatQueryInput = z.infer<typeof streamChatQuerySchema>;
 export type CreateChildInput = z.infer<typeof createChildSchema>;
 export type UpdateChildInput = z.infer<typeof updateChildSchema>;
-
-// Types pour establishment search
-export type EstablishmentSearchQueryInput = z.infer<typeof establishmentSearchQuerySchema>;
-export type EstablishmentGeographicSearchInput = z.infer<typeof establishmentGeographicSearchSchema>;
-export type EstablishmentAutoSuggestInput = z.infer<typeof establishmentAutoSuggestSchema>;
-export type EstablishmentSyncInput = z.infer<typeof establishmentSyncSchema>;

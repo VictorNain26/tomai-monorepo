@@ -30,7 +30,6 @@ import { db } from '../db/connection.js';
 import {
   pronoteConnections,
   pronoteChildMappings,
-  establishments,
   user,
   type PronoteResource,
 } from '../db/schema.js';
@@ -101,6 +100,22 @@ export interface PronoteConnectionResult {
   error?: string;
   establishmentName?: string;
   resources?: PronoteResource[];
+}
+
+// Types pour API Index Education (recherche d'établissements)
+export interface IndexEducationSchool {
+  url: string;
+  nomEtab: string;
+  lat: string;
+  long: string;
+  cp: string;
+}
+
+export interface PronoteSchoolResult {
+  name: string;
+  url: string;
+  distance: number;
+  postalCode: string;
 }
 
 export interface PronoteHomework {
@@ -174,25 +189,22 @@ class PronoteService {
   /**
    * Connecte un PARENT à Pronote via QR Code
    * Retourne la liste des enfants disponibles pour le mapping
+   *
+   * @param parentId - ID du parent TomAI
+   * @param establishmentName - Nom de l'établissement (affiché, pas de validation)
+   * @param qrCodeJson - JSON du QR code Pronote
+   * @param pin - Code PIN 4 chiffres
    */
   async connectParentWithQrCode(
     parentId: string,
-    establishmentRne: string,
+    establishmentName: string,
     qrCodeJson: string,
     pin: string
   ): Promise<PronoteConnectionResult> {
     try {
-      // 1. Valider l'établissement
-      const establishment = await db.query.establishments.findFirst({
-        where: eq(establishments.rne, establishmentRne),
-      });
-
-      if (!establishment) {
-        return { success: false, error: 'Établissement non trouvé' };
-      }
-
-      if (!establishment.hasPronote || !establishment.pronoteUrl) {
-        return { success: false, error: "Cet établissement n'a pas Pronote configuré" };
+      // 1. Valider le nom de l'établissement (juste présent)
+      if (!establishmentName?.trim()) {
+        return { success: false, error: "Nom de l'établissement requis" };
       }
 
       // 2. Valider que c'est bien un parent
@@ -220,7 +232,7 @@ class PronoteService {
         logger.warn('Pronote SSRF attempt blocked', {
           operation: 'pronote:connect:ssrf-blocked',
           parentId,
-          establishmentRne,
+          establishmentName,
           blockedUrl: qrData.url.substring(0, 100),
         });
         return { success: false, error: 'URL Pronote non autorisée' };
@@ -249,7 +261,7 @@ class PronoteService {
         logger.warn('Pronote QR auth failed', {
           operation: 'pronote:connect:auth-failed',
           parentId,
-          establishmentRne,
+          establishmentName,
           error: errorMessage,
         });
 
@@ -300,7 +312,7 @@ class PronoteService {
       // 12. Créer la nouvelle connexion
       await db.insert(pronoteConnections).values({
         parentId,
-        establishmentRne,
+        establishmentName: establishmentName.trim(),
         encryptedToken,
         instanceUrl: refreshInfo.url,
         pronoteUsername: refreshInfo.username,
@@ -315,21 +327,21 @@ class PronoteService {
       logger.info('Pronote parent connection successful', {
         operation: 'pronote:connect:success',
         parentId,
-        establishmentRne,
+        establishmentName,
         username: refreshInfo.username,
         childrenCount: resources.length,
       });
 
       return {
         success: true,
-        establishmentName: establishment.name,
+        establishmentName: establishmentName.trim(),
         resources,
       };
     } catch (error) {
       logger.error('Pronote connection error', {
         operation: 'pronote:connect:error',
         parentId,
-        establishmentRne,
+        establishmentName,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'high' as const,
       });
@@ -723,7 +735,7 @@ class PronoteService {
   }> {
     const connection = await db.query.pronoteConnections.findFirst({
       where: eq(pronoteConnections.parentId, parentId),
-      with: { establishment: true, childMappings: true },
+      with: { childMappings: true },
     });
 
     if (!connection) {
@@ -733,7 +745,7 @@ class PronoteService {
     return {
       connected: connection.status === 'active',
       status: connection.status,
-      establishmentName: connection.establishment?.name,
+      establishmentName: connection.establishmentName,
       resources: (connection.pronoteResources as PronoteResource[]) ?? [],
       lastSyncAt: connection.lastSyncAt ?? undefined,
       error: connection.lastError ?? undefined,
@@ -751,11 +763,7 @@ class PronoteService {
   }> {
     const mapping = await db.query.pronoteChildMappings.findFirst({
       where: eq(pronoteChildMappings.childId, childId),
-      with: {
-        connection: {
-          with: { establishment: true },
-        },
-      },
+      with: { connection: true },
     });
 
     if (!mapping || !mapping.connection || mapping.connection.status !== 'active') {
@@ -764,7 +772,7 @@ class PronoteService {
 
     return {
       isConnected: true,
-      establishmentName: mapping.connection.establishment?.name,
+      establishmentName: mapping.connection.establishmentName,
       pronoteChildName: mapping.pronoteChildName,
       className: mapping.pronoteClassName ?? undefined,
     };
@@ -800,6 +808,101 @@ class PronoteService {
       pronoteChildName: m.pronoteChildName,
       pronoteClassName: m.pronoteClassName ?? undefined,
     }));
+  }
+
+  // =============================================
+  // RECHERCHE D'ÉTABLISSEMENTS (API Index Education)
+  // =============================================
+
+  /**
+   * Recherche des établissements Pronote par géolocalisation
+   * Utilise l'API officielle Index Education (comme Papillon)
+   *
+   * @param latitude - Latitude GPS
+   * @param longitude - Longitude GPS
+   * @returns Liste des établissements triés par distance
+   */
+  async searchSchoolsByLocation(
+    latitude: number,
+    longitude: number
+  ): Promise<PronoteSchoolResult[]> {
+    try {
+      const response = await fetch('https://www.index-education.com/swie/geoloc.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          'User-Agent': PRONOTE_USER_AGENT,
+        },
+        body: `data=${JSON.stringify({
+          nomFonction: 'geoLoc',
+          lat: String(latitude),
+          long: String(longitude),
+        })}`,
+      });
+
+      const text = await response.text();
+
+      // Réponse vide = pas d'établissements
+      if (text === '{}' || !text.trim()) {
+        return [];
+      }
+
+      const data = JSON.parse(text) as IndexEducationSchool[];
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      // Calcul distance avec Haversine et tri
+      return data
+        .map((school) => ({
+          name: school.nomEtab,
+          url: school.url,
+          postalCode: school.cp,
+          distance: this.haversineDistance(
+            latitude,
+            longitude,
+            parseFloat(school.lat),
+            parseFloat(school.long)
+          ),
+        }))
+        .sort((a, b) => a.distance - b.distance);
+    } catch (error) {
+      logger.error('Index Education geolocation API error', {
+        operation: 'pronote:search:geoloc-error',
+        latitude,
+        longitude,
+        _error: error instanceof Error ? error.message : String(error),
+        severity: 'medium' as const,
+      });
+      return [];
+    }
+  }
+
+  /**
+   * Calcul de distance Haversine entre deux points GPS
+   */
+  private haversineDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ): number {
+    const R = 6371; // Rayon de la Terre en km
+    const dLat = this.toRad(lat2 - lat1);
+    const dLon = this.toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 10) / 10; // Distance en km, arrondie à 1 décimale
+  }
+
+  private toRad(deg: number): number {
+    return deg * (Math.PI / 180);
   }
 }
 

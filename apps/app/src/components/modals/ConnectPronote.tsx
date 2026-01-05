@@ -13,7 +13,6 @@ import {
   School,
   CheckCircle,
   Loader2,
-  Search,
   QrCode,
   KeyRound,
   ArrowLeft,
@@ -48,7 +47,7 @@ import {
   type PronoteResource,
   type ChildMappingInput,
 } from '@/hooks/useParentPronote';
-import { useEstablishmentSearch } from '@/hooks/useEstablishments';
+import { useSchoolSearch, useGeolocation, type PronoteSchool } from '@/hooks/useEstablishments';
 import type { IChild } from '@/types';
 
 interface ConnectPronoteProps {
@@ -61,13 +60,6 @@ interface ConnectPronoteProps {
 }
 
 type ModalStep = 'search' | 'scan' | 'pin' | 'connecting' | 'mapping' | 'saving' | 'success' | 'error';
-
-interface Establishment {
-  id: string;
-  name: string;
-  city: string;
-  rne: string;
-}
 
 /** Mapping state: resourceIndex → childId */
 type MappingState = Record<number, string>;
@@ -84,22 +76,23 @@ export default function ConnectPronote({
   const [error, setError] = useState<string | null>(null);
 
   // Data collected through steps
-  const [selectedEstablishment, setSelectedEstablishment] = useState<Establishment | null>(null);
+  const [selectedSchool, setSelectedSchool] = useState<PronoteSchool | null>(null);
   const [qrData, setQrData] = useState<PronoteQRData | null>(null);
   const [pin, setPin] = useState('');
 
   // Resources from connection response
   const [pronoteResources, setPronoteResources] = useState<PronoteResource[]>([]);
-  const [establishmentName, setEstablishmentName] = useState<string>('');
+  const [connectedEstablishmentName, setConnectedEstablishmentName] = useState<string>('');
 
   // Mapping state
   const [mappings, setMappings] = useState<MappingState>({});
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Hooks
-  const { data: searchResults, isLoading: isSearching } = useEstablishmentSearch(searchQuery);
+  // Hooks - Geolocation-based search
+  const { data: geoLocation, isLoading: isGeoLoading } = useGeolocation();
+  const { data: schools, isLoading: isSearching } = useSchoolSearch(
+    geoLocation?.latitude ?? null,
+    geoLocation?.longitude ?? null
+  );
   const connectMutation = useConnectPronote();
   const createMappingsMutation = useCreateChildMappings();
 
@@ -113,13 +106,12 @@ export default function ConnectPronote({
   useEffect(() => {
     if (isOpen) {
       setCurrentStep('search');
-      setSelectedEstablishment(null);
+      setSelectedSchool(null);
       setQrData(null);
       setPin('');
       setError(null);
-      setSearchQuery('');
       setPronoteResources([]);
-      setEstablishmentName('');
+      setConnectedEstablishmentName('');
       setMappings({});
     }
   }, [isOpen]);
@@ -140,9 +132,9 @@ export default function ConnectPronote({
     }
   }, [currentStep, preselectedChild, pronoteResources, mappings]);
 
-  // Handle establishment selection
-  const handleSelectEstablishment = (establishment: Establishment) => {
-    setSelectedEstablishment(establishment);
+  // Handle school selection
+  const handleSelectSchool = (school: PronoteSchool) => {
+    setSelectedSchool(school);
     setCurrentStep('scan');
     setError(null);
   };
@@ -161,7 +153,7 @@ export default function ConnectPronote({
 
   // Handle PIN submission - Connect parent account
   const handlePinSubmit = async () => {
-    if (!selectedEstablishment || !qrData || pin.length !== 4) {
+    if (!selectedSchool || !qrData || pin.length !== 4) {
       setError('Données manquantes. Veuillez recommencer.');
       return;
     }
@@ -173,12 +165,12 @@ export default function ConnectPronote({
       const result = await connectMutation.mutateAsync({
         qrCodeJson: JSON.stringify(qrData),
         pin,
-        establishmentRne: selectedEstablishment.rne,
+        establishmentName: selectedSchool.name,
       });
 
       if (result.resources && result.resources.length > 0) {
         setPronoteResources(result.resources);
-        setEstablishmentName(result.establishmentName ?? selectedEstablishment.name);
+        setConnectedEstablishmentName(result.establishmentName ?? selectedSchool.name);
         setCurrentStep('mapping');
       } else {
         setError('Aucun enfant trouvé dans votre compte Pronote.');
@@ -259,7 +251,7 @@ export default function ConnectPronote({
     setError(null);
   };
 
-  // Step 1: Search establishment
+  // Step 1: Search establishment by geolocation
   const renderSearchStep = () => (
     <div className="space-y-4">
       <div className="text-center">
@@ -267,52 +259,52 @@ export default function ConnectPronote({
           <School className="w-7 h-7 text-primary" />
         </div>
         <p className="text-sm text-primary/70">
-          Étape 1/4 : Recherchez l'établissement
+          Étape 1/4 : Sélectionnez l'établissement
         </p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="establishment-search" className="text-primary font-medium">
-          Nom de l'établissement
-        </Label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/50" />
-          <Input
-            id="establishment-search"
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Ex: Lycée Victor Hugo Paris"
-            className="pl-10 border-primary/20 bg-primary/5"
-          />
-        </div>
-      </div>
-
-      {isSearching && (
+      {isGeoLoading && (
         <div className="flex items-center justify-center py-4">
           <Loader2 className="w-5 h-5 animate-spin text-primary/60" />
-          <span className="ml-2 text-sm text-primary/60">Recherche...</span>
+          <span className="ml-2 text-sm text-primary/60">Localisation en cours...</span>
         </div>
       )}
 
-      {searchResults && searchResults.length > 0 && (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {searchResults.map((est) => (
+      {!isGeoLoading && !geoLocation && (
+        <Alert>
+          <AlertDescription>
+            Impossible d'obtenir votre position. Veuillez autoriser la géolocalisation dans votre navigateur.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isSearching && geoLocation && (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-primary/60" />
+          <span className="ml-2 text-sm text-primary/60">Recherche des établissements proches...</span>
+        </div>
+      )}
+
+      {schools && schools.length > 0 && (
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {schools.map((school) => (
             <button
-              key={est.id}
-              onClick={() => handleSelectEstablishment(est)}
+              key={school.url}
+              onClick={() => handleSelectSchool(school)}
               className="w-full p-3 text-left rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
             >
-              <p className="font-medium text-primary text-sm">{est.name}</p>
-              <p className="text-xs text-primary/60">{est.city} • RNE: {est.rne}</p>
+              <p className="font-medium text-primary text-sm">{school.name}</p>
+              <p className="text-xs text-primary/60">
+                {school.postalCode} • {school.distance < 1 ? `${Math.round(school.distance * 1000)}m` : `${school.distance.toFixed(1)}km`}
+              </p>
             </button>
           ))}
         </div>
       )}
 
-      {searchResults?.length === 0 && searchQuery.length > 2 && (
+      {schools?.length === 0 && geoLocation && !isSearching && (
         <p className="text-sm text-primary/60 text-center py-4">
-          Aucun établissement trouvé
+          Aucun établissement trouvé à proximité
         </p>
       )}
 
@@ -334,9 +326,9 @@ export default function ConnectPronote({
         <p className="text-sm text-primary/70">
           Étape 2/4 : Scannez le QR code Pronote
         </p>
-        {selectedEstablishment && (
+        {selectedSchool && (
           <p className="text-xs text-primary/50 mt-1">
-            {selectedEstablishment.name}
+            {selectedSchool.name}
           </p>
         )}
       </div>
@@ -435,7 +427,7 @@ export default function ConnectPronote({
           Étape 4/4 : Associez les comptes
         </p>
         <p className="text-xs text-primary/50 mt-1">
-          {establishmentName}
+          {connectedEstablishmentName}
         </p>
       </div>
 

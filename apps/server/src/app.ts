@@ -16,7 +16,6 @@ import { env, envUtils } from './config/environment.config.js';
 import { apiRoutes } from './routes/api.routes.js';
 import { chatMessageRoutes } from './routes/chat-message.routes.js';
 import { fileUploadRoutes } from './routes/file-upload.routes.js';
-import { establishmentRoutes } from './routes/establishment.routes.js';
 import {
   checkoutRoutes,
   childrenRoutes,
@@ -106,7 +105,6 @@ const app = new Elysia({ name: 'tomai-server' })
           health: '/health',
           api: '/api',
           auth: '/api/auth',
-          establishments: '/api/establishments',
           subscriptions: '/api/subscriptions',
           webhooks: '/webhooks/stripe',
           swagger: '/swagger'
@@ -191,7 +189,6 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(apiRoutes)
   .use(chatMessageRoutes)   // Messages chat HTTP simple
   .use(fileUploadRoutes)    // Upload et analyse de fichiers
-  .use(establishmentRoutes) // Recherche établissements scolaires
   .use(checkoutRoutes)      // Subscription checkout
   .use(childrenRoutes)      // Children management
   .use(statusRoutes)        // Subscription status, portal, usage
