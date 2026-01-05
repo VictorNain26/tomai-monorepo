@@ -362,6 +362,15 @@ export default function ConnectPronote({
         )}
       </div>
 
+      {/* Instructions pour générer le QR code */}
+      <Alert className="bg-primary/5 border-primary/20">
+        <AlertDescription className="text-xs text-primary/80">
+          <strong>Depuis un ordinateur</strong>, connectez-vous à Pronote (espace Parent),
+          puis cliquez sur l'icône QR code à côté de votre nom en haut de page.
+          Créez un code PIN à 4 chiffres pour générer le QR code.
+        </AlertDescription>
+      </Alert>
+
       <QRScanner onScan={handleQrScan} onError={handleQrError} />
 
       {error && (
@@ -390,7 +399,7 @@ export default function ConnectPronote({
           Étape 3/4 : Entrez le code PIN à 4 chiffres
         </p>
         <p className="text-xs text-primary/50 mt-1">
-          Affiché dans l'app Pronote avec le QR code
+          Le code que vous avez créé pour générer le QR code
         </p>
       </div>
 
