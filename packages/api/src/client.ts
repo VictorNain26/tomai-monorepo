@@ -39,7 +39,7 @@ export type UnauthorizedHandler = () => void;
 // ============================================================================
 
 export const UPLOAD_CONFIG = {
-  maxSize: 15 * 1024 * 1024, // 15MB
+  maxSize: 10 * 1024 * 1024, // 10MB (aligned with backend)
   allowedTypes: [
     // Images
     'image/jpeg',

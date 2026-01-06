@@ -32,6 +32,12 @@ export interface EnvironmentConfig {
   // IA et services externes
   GEMINI_API_KEY?: string;
 
+  // Scaleway Object Storage (RGPD - France)
+  SCALEWAY_ACCESS_KEY?: string;
+  SCALEWAY_SECRET_KEY?: string;
+  SCALEWAY_BUCKET?: string;
+  SCALEWAY_REGION?: string;
+
   // Authentication
   BETTER_AUTH_SECRET: string;
   GOOGLE_CLIENT_ID?: string;
@@ -120,6 +126,12 @@ function parseEnvironment(): EnvironmentConfig {
 
     // IA et services externes
     GEMINI_API_KEY: Bun.env['GEMINI_API_KEY'],
+
+    // Scaleway Object Storage (RGPD - France)
+    SCALEWAY_ACCESS_KEY: Bun.env['SCALEWAY_ACCESS_KEY'],
+    SCALEWAY_SECRET_KEY: Bun.env['SCALEWAY_SECRET_KEY'],
+    SCALEWAY_BUCKET: Bun.env['SCALEWAY_BUCKET'],
+    SCALEWAY_REGION: Bun.env['SCALEWAY_REGION'] ?? 'fr-par',
 
     // Authentication
     BETTER_AUTH_SECRET: Bun.env['BETTER_AUTH_SECRET']!,

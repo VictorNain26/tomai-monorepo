@@ -8,7 +8,7 @@
  * - Auth via Better Auth cookies
  */
 
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useState } from 'react';
 import { useChat as useTanStackChat, stream, type UIMessage } from '@tanstack/ai-react';
 import type { StreamChunk, ModelMessage } from '@tanstack/ai';
 import { useUser } from '@/lib/auth';
@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers } from '@/lib/query-factories';
 import { getBackendURL } from '@/utils/urls';
 import { logger } from '@/lib/logger';
+import type { IChatFileAttachment } from '@/types';
 
 // ============================================================================
 // Types
@@ -110,6 +111,11 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   const fileIdsRef = useRef<string[]>([]);
   const sessionIdRef = useRef<string | null>(sessionId);
   const serverSessionIdRef = useRef<string | null>(null); // SessionId from backend 'done' chunk
+
+  // Attachments storage - Map<messageId, attachments[]>
+  // Stocke les fichiers attachés pour chaque message user
+  const [messageAttachments, setMessageAttachments] = useState<Map<string, IChatFileAttachment[]>>(new Map());
+  const pendingAttachmentsRef = useRef<IChatFileAttachment[]>([]); // Temp storage before message created
 
   // Sync sessionId ref when prop changes
   useEffect(() => {
@@ -231,29 +237,49 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   });
 
   // ============================================================================
-  // sendMessage wrapper for fileIds
+  // sendMessage wrapper for fileIds + attachments
   // ============================================================================
   const sendMessage = useCallback(
-    async (content: string, fileIds?: string[]) => {
+    async (content: string, attachments?: IChatFileAttachment[]) => {
       if (!user) {
         logger.warn('sendMessage: No user');
         return;
       }
 
-      if (!content.trim() && (!fileIds || fileIds.length === 0)) {
+      const hasAttachments = attachments && attachments.length > 0;
+
+      if (!content.trim() && !hasAttachments) {
         logger.warn('sendMessage: No content or files');
         return;
       }
 
       // Store fileIds for stream adapter to consume
-      if (fileIds && fileIds.length > 0) {
-        fileIdsRef.current = fileIds;
+      if (hasAttachments) {
+        fileIdsRef.current = attachments.map(a => a.fileId);
+        // Store attachments for when message is created (will be associated via effect)
+        pendingAttachmentsRef.current = attachments;
       }
 
       await tanstackSendMessage(content.trim() || '🎤 Enregistrement audio');
     },
     [user, tanstackSendMessage]
   );
+
+  // Associate pending attachments with new user messages
+  useEffect(() => {
+    if (pendingAttachmentsRef.current.length === 0) return;
+
+    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+    if (lastUserMessage && !messageAttachments.has(lastUserMessage.id)) {
+      setMessageAttachments(prev => {
+        const newMap = new Map(prev);
+        newMap.set(lastUserMessage.id, pendingAttachmentsRef.current);
+        return newMap;
+      });
+      pendingAttachmentsRef.current = [];
+      logger.info('Attachments associated with message', { messageId: lastUserMessage.id });
+    }
+  }, [messages, messageAttachments]);
 
   // ============================================================================
   // Load conversation history when sessionId changes
@@ -291,22 +317,34 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
         };
 
         if (result.success && result.messages) {
-          const uiMessages: UIMessage[] = result.messages.map((msg) => {
+          const uiMessages: UIMessage[] = [];
+          const loadedAttachments = new Map<string, IChatFileAttachment[]>();
+
+          for (const msg of result.messages) {
             const textContent = typeof msg.content === 'string' ? msg.content : msg.content.content;
 
-            // Construire les parts TanStack AI
-            // Note: attachedFile est géré côté backend pour le contexte Gemini
-            // Le frontend affiche uniquement le texte pour l'instant
-            return {
+            uiMessages.push({
               id: msg.id,
               role: msg.role,
               parts: [{ type: 'text' as const, content: textContent }],
               createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-            };
-          });
+            });
+
+            // Charger les attachments depuis l'historique
+            if (msg.attachedFile?.fileId && msg.attachedFile.fileName) {
+              loadedAttachments.set(msg.id, [{
+                fileId: msg.attachedFile.fileId,
+                fileName: msg.attachedFile.fileName,
+                mimeType: msg.attachedFile.mimeType ?? 'application/octet-stream',
+              }]);
+            }
+          }
 
           setMessages(uiMessages);
-          logger.info('History loaded', { sessionId, count: uiMessages.length });
+          if (loadedAttachments.size > 0) {
+            setMessageAttachments(loadedAttachments);
+          }
+          logger.info('History loaded', { sessionId, count: uiMessages.length, attachments: loadedAttachments.size });
         }
       } catch (err) {
         logger.error('Failed to load history', { error: err, sessionId });
@@ -317,13 +355,44 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   }, [sessionId, setMessages, clear]);
 
   // ============================================================================
+  // Remove attachment from a message
+  // ============================================================================
+  const removeAttachment = useCallback((messageId: string, fileId: string) => {
+    setMessageAttachments(prev => {
+      const newMap = new Map(prev);
+      const attachments = newMap.get(messageId);
+      if (attachments) {
+        const filtered = attachments.filter(a => a.fileId !== fileId);
+        if (filtered.length > 0) {
+          newMap.set(messageId, filtered);
+        } else {
+          newMap.delete(messageId);
+        }
+      }
+      return newMap;
+    });
+    logger.info('Attachment removed', { messageId, fileId });
+  }, []);
+
+  // ============================================================================
+  // Clear messages with attachments
+  // ============================================================================
+  const clearAll = useCallback(() => {
+    clear();
+    setMessageAttachments(new Map());
+  }, [clear]);
+
+  // ============================================================================
   // Return hook API
   // ============================================================================
   return {
     messages,
+    messageAttachments,
     isLoading,
     error: error?.message ?? null,
     sendMessage,
     stop,
+    clear: clearAll,
+    removeAttachment,
   };
 }

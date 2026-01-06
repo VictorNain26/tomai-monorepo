@@ -39,7 +39,7 @@ export { PRONOTE_TIMEOUT };
 
 // Configuration validation upload centralisée
 export const UPLOAD_CONFIG = {
-  maxSize: 15 * 1024 * 1024, // 15MB
+  maxSize: 10 * 1024 * 1024, // 10MB (aligned with backend)
   allowedTypes: [
     // Images
     'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif',

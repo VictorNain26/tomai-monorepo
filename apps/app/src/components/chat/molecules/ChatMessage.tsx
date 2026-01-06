@@ -10,11 +10,17 @@ import type { UIMessage } from '@tanstack/ai-react';
 import { cn } from '@/lib/utils';
 import { MessageAvatar } from '../atoms/MessageAvatar';
 import { MessageBubble } from '../atoms/MessageBubble';
+import { MessageAttachment } from '../atoms/MessageAttachment';
 import MessageRenderer from '@/components/MessageRenderer';
 import { MessageAudioButton } from '@/components/MessageAudioButton';
+import type { IChatFileAttachment } from '@/types';
 
 export interface ChatMessageProps {
   message: UIMessage;
+  /** Fichiers attachés à ce message */
+  attachments?: IChatFileAttachment[];
+  /** Callback pour supprimer un fichier attaché */
+  onRemoveAttachment?: (fileId: string) => void;
   /** True si ce message est le dernier ET que le chat est en streaming */
   isStreaming?: boolean;
   isAudioEnabled?: boolean;
@@ -31,6 +37,8 @@ function getTextContent(message: UIMessage): string {
 
 export function ChatMessage({
   message,
+  attachments,
+  onRemoveAttachment,
   isStreaming = false,
   isAudioEnabled = false,
   className
@@ -43,6 +51,8 @@ export function ChatMessage({
   const isThinking = !isUser && isStreaming && content.length === 0;
   // Streaming actif = assistant message avec contenu qui arrive
   const isActiveStreaming = !isUser && isStreaming && content.length > 0;
+
+  const hasAttachments = attachments && attachments.length > 0;
 
   return (
     <div
@@ -70,6 +80,19 @@ export function ChatMessage({
 
         {/* Message bubble */}
         <MessageBubble role={role}>
+          {/* Fichiers attachés (messages user uniquement) */}
+          {hasAttachments && isUser && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {attachments.map((attachment) => (
+                <MessageAttachment
+                  key={attachment.fileId}
+                  attachment={attachment}
+                  onRemove={onRemoveAttachment}
+                />
+              ))}
+            </div>
+          )}
+
           <MessageRenderer
             content={content}
             messageId={message.id}

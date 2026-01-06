@@ -11,9 +11,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { UIMessage } from '@tanstack/ai-react';
 import { cn } from '@/lib/utils';
 import { ChatMessage } from './ChatMessage';
+import type { IChatFileAttachment } from '@/types';
 
 export interface MessagesListProps {
   messages: UIMessage[];
+  /** Fichiers attachés par message (Map<messageId, attachments[]>) */
+  messageAttachments?: Map<string, IChatFileAttachment[]>;
+  /** Callback pour supprimer un fichier attaché */
+  onRemoveAttachment?: (messageId: string, fileId: string) => void;
   /** True si le chat est en cours de streaming */
   isLoading?: boolean;
   isAudioEnabled?: boolean;
@@ -60,6 +65,8 @@ const messageVariants = {
 
 export function MessagesList({
   messages,
+  messageAttachments,
+  onRemoveAttachment,
   isLoading = false,
   isAudioEnabled = false,
   className
@@ -93,6 +100,8 @@ export function MessagesList({
               >
                 <ChatMessage
                   message={message}
+                  attachments={messageAttachments?.get(message.id)}
+                  onRemoveAttachment={onRemoveAttachment ? (fileId) => onRemoveAttachment(message.id, fileId) : undefined}
                   isStreaming={isStreaming}
                   isAudioEnabled={isAudioEnabled}
                 />

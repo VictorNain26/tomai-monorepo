@@ -285,7 +285,7 @@ const app = new Elysia({ name: 'tomai-server' })
   // Routes modulaires
   .use(apiRoutes)
   .use(chatMessageRoutes)   // Messages chat HTTP simple
-  .use(fileUploadRoutes)    // Upload et analyse de fichiers
+  .use(fileUploadRoutes)  // Upload: Scaleway + PostgreSQL (RGPD France)
   .use(checkoutRoutes)      // Subscription checkout
   .use(childrenRoutes)      // Children management
   .use(statusRoutes)        // Subscription status, portal, usage

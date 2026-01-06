@@ -18,7 +18,7 @@ import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
 import { AudioPreview } from './AudioPreview';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
-import { useOptimizedFileUpload } from '@/hooks/useOptimizedFileUpload';
+import { usePresignedUpload } from '@/hooks/usePresignedUpload';
 import type { IFileAttachment, VoiceMode } from '@/types';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
@@ -98,14 +98,14 @@ export function SuperChatInput({
     onTranscriptUpdate: handleTranscriptUpdate
   });
 
-  // File upload
+  // File upload (Scaleway presigned URLs)
   const {
     files,
     isProcessing,
     uploadFile,
     removeFile,
     clearFiles
-  } = useOptimizedFileUpload();
+  } = usePresignedUpload();
 
   // ========================================
   // Audio Preview State (mode audio uniquement)
