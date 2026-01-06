@@ -60,6 +60,9 @@ interface StoredFileData {
     uploadedAt: string;
     userId: string;
     schoolLevel?: EducationLevelType;
+    // Gemini Files API (TTL 48h)
+    fileUri?: string;
+    expiresAt?: string;
     educationalContext?: {
       analysisContext?: string;
       extractedText?: string;
@@ -89,6 +92,17 @@ interface StoredFileData {
 }
 
 /**
+ * Fichier prêt pour envoi multimodal à Gemini
+ */
+export interface MultimodalFile {
+  fileUri?: string;
+  base64?: string;
+  mimeType: string;
+  contentType: 'image' | 'document';
+  fileName: string;
+}
+
+/**
  * Service de gestion du contexte des fichiers
  */
 class FileContextService {
@@ -103,9 +117,24 @@ class FileContextService {
         return null;
       }
 
+      // Vérifier si le fileUri Gemini est encore valide (TTL 48h)
+      let geminiFileId = fileData.metadata.fileUri;
+      if (geminiFileId && fileData.metadata.expiresAt) {
+        const expiresAt = new Date(fileData.metadata.expiresAt);
+        if (expiresAt <= new Date()) {
+          logger.info('Gemini file URI expired', {
+            fileId,
+            expiredAt: fileData.metadata.expiresAt,
+            operation: 'retrieve-file-metadata'
+          });
+          geminiFileId = undefined;
+        }
+      }
+
       return {
         fileName: fileData.metadata.fileName,
         fileId: fileId,
+        geminiFileId, // URI Gemini Files API pour contexte visuel persistant
         mimeType: fileData.mimeType,
         fileSizeBytes: fileData.metadata.size
       };
@@ -420,6 +449,96 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       enrichedContent,
       sessionFilesContext
     };
+  }
+
+  /**
+   * Prépare les fichiers pour envoi multimodal à Gemini
+   * Utilise fileUri (Gemini Files API, 48h TTL) ou fallback base64
+   *
+   * @param fileIds - IDs des fichiers à préparer
+   * @returns Liste des fichiers prêts pour TanStack AI multimodal
+   */
+  async prepareMultimodalFiles(fileIds: string[]): Promise<MultimodalFile[]> {
+    if (!fileIds || fileIds.length === 0) {
+      return [];
+    }
+
+    const files: MultimodalFile[] = [];
+
+    for (const fileId of fileIds) {
+      try {
+        const fileData = await this.getStoredFileData(fileId);
+        if (!fileData) {
+          logger.warn('File not found for multimodal', { fileId, operation: 'prepare-multimodal' });
+          continue;
+        }
+
+        const { metadata, mimeType } = fileData;
+
+        // Déterminer le type de contenu
+        const isImage = mimeType.startsWith('image/');
+        const isPdf = mimeType === 'application/pdf';
+        const contentType: 'image' | 'document' = isImage ? 'image' : 'document';
+
+        // Vérifier si le fileUri est encore valide (TTL 48h)
+        let fileUri = metadata.fileUri;
+        if (fileUri && metadata.expiresAt) {
+          const expiresAt = new Date(metadata.expiresAt);
+          if (expiresAt <= new Date()) {
+            logger.info('Gemini file expired, falling back to base64', {
+              fileId,
+              expiredAt: metadata.expiresAt,
+              operation: 'prepare-multimodal'
+            });
+            fileUri = undefined;
+          }
+        }
+
+        // Construire le fichier multimodal
+        const multimodalFile: MultimodalFile = {
+          mimeType,
+          contentType,
+          fileName: metadata.fileName
+        };
+
+        if (fileUri) {
+          // Utiliser Gemini Files API URI (optimal)
+          multimodalFile.fileUri = fileUri;
+        } else if (isImage || isPdf) {
+          // Fallback: récupérer le base64 depuis Redis
+          const base64 = await this.getFileContent(fileId, fileData);
+          if (base64) {
+            multimodalFile.base64 = base64;
+          } else {
+            logger.warn('No content available for multimodal file', {
+              fileId,
+              operation: 'prepare-multimodal'
+            });
+            continue;
+          }
+        }
+
+        files.push(multimodalFile);
+
+        logger.info('Multimodal file prepared', {
+          fileId,
+          fileName: metadata.fileName,
+          contentType,
+          hasFileUri: !!multimodalFile.fileUri,
+          hasBase64: !!multimodalFile.base64,
+          operation: 'prepare-multimodal'
+        });
+
+      } catch (error) {
+        logger.warn('Failed to prepare multimodal file', {
+          fileId,
+          error: error instanceof Error ? error.message : String(error),
+          operation: 'prepare-multimodal'
+        });
+      }
+    }
+
+    return files;
   }
 
   // ============================================

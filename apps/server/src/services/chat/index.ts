@@ -8,12 +8,15 @@ export {
   fileContextService,
   type AttachedFileInfo,
   type FileAnalysisResult,
-  type FileAnalysisOptions
+  type FileAnalysisOptions,
+  type MultimodalFile
 } from './file-context.service.js';
 
 // Streaming Service - TanStack AI Protocol
 export {
   streamingService,
   type StreamGenerationParams,
-  type TanStackStreamChunk
+  type TanStackStreamChunk,
+  type AttachedFile,
+  type HistoricalFileRef
 } from './streaming.service.js';

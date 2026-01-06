@@ -22,8 +22,33 @@ import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 
 /**
+ * Fichier attaché au message (Gemini Files API ou fallback base64)
+ */
+export interface AttachedFile {
+  /** URI Gemini Files API (préféré, TTL 48h) */
+  fileUri?: string;
+  /** Fallback: base64 inline */
+  base64?: string;
+  /** MIME type du fichier */
+  mimeType: string;
+  /** Type de contenu pour TanStack AI */
+  contentType: 'image' | 'document';
+}
+
+/**
  * Paramètres pour génération streaming
  */
+/**
+ * Fichier attaché dans l'historique (référence Gemini Files API)
+ * Utilisé pour maintenir le contexte visuel sur plusieurs messages
+ */
+export interface HistoricalFileRef {
+  /** URI Gemini Files API (TTL 48h) */
+  geminiFileId?: string;
+  /** MIME type pour déterminer image vs document */
+  mimeType?: string;
+}
+
 export interface StreamGenerationParams {
   userId: string;
   content: string;
@@ -31,10 +56,14 @@ export interface StreamGenerationParams {
   schoolLevel: EducationLevelType;
   firstName?: string;
   sessionId: string;
+  /** Fichiers attachés au message courant (images, PDFs via Gemini Files API) */
+  files?: AttachedFile[];
   conversationHistory: Array<{
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
+    /** Fichier attaché à ce message historique (contexte visuel persistant) */
+    attachedFile?: HistoricalFileRef | null;
   }>;
 }
 
@@ -71,11 +100,21 @@ export interface TanStackStreamChunk {
 }
 
 /**
+ * Content part pour messages multimodaux TanStack AI Gemini
+ * Format: { type: 'text', content: string } pour texte (Gemini adapter)
+ */
+type ContentPart =
+  | { type: 'text'; content: string }
+  | { type: 'image'; source: { type: 'url'; value: string } | { type: 'data'; value: string }; metadata?: { mimeType: string } }
+  | { type: 'document'; source: { type: 'url'; value: string } | { type: 'data'; value: string }; metadata?: { mimeType: string } };
+
+/**
  * Message TanStack AI pour conversation history
+ * Support texte simple ou multimodal (content parts)
  */
 interface AIMessage {
   role: 'user' | 'assistant';
-  content: string;
+  content: string | ContentPart[];
 }
 
 /**
@@ -109,7 +148,48 @@ class StreamingService {
   }
 
   /**
+   * Construit les content parts pour un message avec fichiers
+   * Utilise fileUri (Gemini Files API) en priorité, fallback base64
+   */
+  private buildMultimodalContent(text: string, files?: AttachedFile[]): string | ContentPart[] {
+    if (!files || files.length === 0) {
+      return text;
+    }
+
+    const parts: ContentPart[] = [{ type: 'text', content: text }];
+
+    for (const file of files) {
+      // Priorité: fileUri (Gemini Files API, 48h TTL) > base64 inline
+      const source = file.fileUri
+        ? { type: 'url' as const, value: file.fileUri }
+        : file.base64
+          ? { type: 'data' as const, value: file.base64 }
+          : null;
+
+      if (!source) continue;
+
+      if (file.contentType === 'image') {
+        parts.push({
+          type: 'image',
+          source,
+          metadata: { mimeType: file.mimeType }
+        });
+      } else if (file.contentType === 'document') {
+        parts.push({
+          type: 'document',
+          source,
+          metadata: { mimeType: file.mimeType }
+        });
+      }
+    }
+
+    return parts.length === 1 ? text : parts;
+  }
+
+  /**
    * Construit l'historique de conversation au format TanStack AI
+   * Inclut les fichiers des messages précédents pour maintenir le contexte visuel
+   * Best Practice 2026: L'élève peut poser des questions sur une image précédente
    */
   private buildConversationHistory(
     conversationHistory: StreamGenerationParams['conversationHistory']
@@ -118,12 +198,56 @@ class StreamingService {
       return [];
     }
 
-    const optimizedHistory = optimizeConversationHistory(conversationHistory);
+    // optimizeConversationHistory préserve les propriétés additionnelles (attachedFile)
+    // mais son typage IAIMessage[] ne les expose pas - on utilise le type d'entrée
+    type HistoryMessage = StreamGenerationParams['conversationHistory'][number];
+    const optimizedHistory = optimizeConversationHistory(conversationHistory) as HistoryMessage[];
 
-    return optimizedHistory.map(msg => ({
-      role: msg.role === 'assistant' ? 'assistant' : 'user',
-      content: msg.content
-    })) as AIMessage[];
+    return optimizedHistory.map(msg => {
+      const role = msg.role === 'assistant' ? 'assistant' : 'user';
+
+      // Messages assistant: toujours text-only
+      if (role === 'assistant') {
+        return { role, content: msg.content };
+      }
+
+      // Messages user: vérifier s'il y a un fichier attaché
+      const file = msg.attachedFile;
+      if (!file?.geminiFileId) {
+        return { role, content: msg.content };
+      }
+
+      // Créer content parts multimodaux pour message avec fichier
+      const contentType = this.getContentTypeFromMime(file.mimeType);
+      const parts: ContentPart[] = [
+        { type: 'text', content: msg.content }
+      ];
+
+      // Ajouter le fichier Gemini (URI valide 48h)
+      if (contentType === 'image') {
+        parts.push({
+          type: 'image',
+          source: { type: 'url', value: file.geminiFileId },
+          metadata: { mimeType: file.mimeType ?? 'image/jpeg' }
+        });
+      } else {
+        parts.push({
+          type: 'document',
+          source: { type: 'url', value: file.geminiFileId },
+          metadata: { mimeType: file.mimeType ?? 'application/pdf' }
+        });
+      }
+
+      return { role, content: parts };
+    }) as AIMessage[];
+  }
+
+  /**
+   * Détermine le type de contenu à partir du MIME type
+   */
+  private getContentTypeFromMime(mimeType?: string): 'image' | 'document' {
+    if (!mimeType) return 'document';
+    return mimeType.startsWith('image/') ? 'image' : 'document';
   }
 
   /**
@@ -155,14 +279,19 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
 
       const fullSystemPrompt = systemPrompt + ragToolInstructions;
 
-      // 3. Construire l'historique de conversation
+      // 3. Construire l'historique de conversation (avec fichiers multimodaux)
       const history = this.buildConversationHistory(params.conversationHistory);
 
-      // 4. Ajouter le message utilisateur actuel
+      // 4. Ajouter le message utilisateur actuel (avec fichiers si présents)
+      const currentUserContent = this.buildMultimodalContent(params.content, params.files);
       const messages: AIMessage[] = [
         ...history,
-        { role: 'user', content: params.content }
+        { role: 'user', content: currentUserContent }
       ];
+
+      // Compter les fichiers pour le logging
+      const filesCount = params.files?.length ?? 0;
+      const hasMultimodal = filesCount > 0;
 
       logger.info('Starting TanStack AI streaming with RAG tool', {
         userId: params.userId,
@@ -170,14 +299,18 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
         subject: params.subject,
         schoolLevel: params.schoolLevel,
         messagesCount: messages.length,
+        filesCount,
+        hasMultimodal,
         operation: 'streaming:start'
       });
 
       // 5. Lancer le streaming TanStack AI avec Server Tools
       // Note: maxOutputTokens configuré via appConfig (16384, Gemini 2.5 Flash supports 65536)
+      // Type assertion pour compatibilité avec types internes TanStack AI Gemini
       const stream = chat({
         adapter: geminiAdapter,
-        messages,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        messages: messages as any, // Content parts compatibles avec Gemini multimodal
         systemPrompts: [fullSystemPrompt],
         tools: [ragSearchTool], // RAG automatique - L'AI décide quand chercher
         modelOptions: {

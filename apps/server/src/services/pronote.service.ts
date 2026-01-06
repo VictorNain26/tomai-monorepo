@@ -271,6 +271,15 @@ class PronoteService {
         if (errorMessage.includes('SessionExpired')) {
           return { success: false, error: 'QR code expiré, veuillez en scanner un nouveau' };
         }
+        // Network connectivity issue - server can't reach Pronote
+        if (errorMessage.includes('Unable to connect') || errorMessage.includes('ECONNREFUSED') || errorMessage.includes('ETIMEDOUT')) {
+          return {
+            success: false,
+            error: 'Impossible de contacter le serveur Pronote de cet établissement. ' +
+                   'Le serveur peut être temporairement indisponible ou bloquer les connexions externes. ' +
+                   'Réessayez plus tard ou contactez l\'établissement.'
+          };
+        }
         return { success: false, error: 'Échec de connexion Pronote' };
       }
 

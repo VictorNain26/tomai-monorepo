@@ -33,7 +33,10 @@ interface TanStackRequestData {
   sessionId?: string;
   schoolLevel?: string;
   firstName?: string;
+  /** @deprecated Use fileIds instead */
   fileId?: string;
+  /** IDs des fichiers attachés (images, PDFs) - multimodal */
+  fileIds?: string[];
 }
 
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
@@ -95,7 +98,9 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     const content = lastUserMessage?.content ?? '';
 
     // Extraire les métadonnées depuis data
-    const { subject, sessionId, schoolLevel, firstName, fileId } = data;
+    // Support rétrocompatibilité: fileId (deprecated) → fileIds[]
+    const { subject, sessionId, schoolLevel, firstName, fileId, fileIds: rawFileIds } = data;
+    const fileIds = rawFileIds ?? (fileId ? [fileId] : []);
 
     // 2. Vérification quota tokens (rolling window 5h + daily cap)
     const quotaCheck = await tokenQuotaService.checkQuota(user.id);
@@ -113,10 +118,10 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       };
     }
 
-    // 3. Validation contenu OU fichier requis (Best Practices 2025)
-    if ((!content || content.trim().length === 0) && !fileId) {
+    // 3. Validation contenu OU fichiers requis (Best Practices 2025)
+    if ((!content || content.trim().length === 0) && fileIds.length === 0) {
       set.status = 400;
-      return { _error: 'Validation Error', message: 'Content or file is required for streaming' };
+      return { _error: 'Validation Error', message: 'Content or files required for streaming' };
     }
 
     // 4. Créer ou récupérer session
@@ -127,22 +132,47 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     // 5. Récupérer historique
     const sessionHistory = await chatService.getSessionHistory(chatSessionId, { limit: 10 });
 
+    // Formater l'historique avec les fichiers attachés pour contexte visuel persistant
+    // Best Practice 2026: Gemini voit les images des messages précédents
     const formattedHistory = sessionHistory
       .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-      .map(msg => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-        timestamp: msg.createdAt.toISOString()
-      }));
+      .map(msg => {
+        // Type-safe extraction of attachedFile from JSONB
+        const attachedFile = msg.attachedFile as {
+          fileName?: string;
+          fileId?: string;
+          geminiFileId?: string;
+          mimeType?: string;
+          fileSizeBytes?: number;
+        } | null;
 
-    // 5b. Préparer contexte fichier via helper consolidé (DRY)
-    const { attachedFileInfo, enrichedContent } = await fileContextService.prepareFileContext({
-      fileId,
-      content: content ?? '',
-      schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
-      userId: user.id,
-      sessionHistory
-    });
+        return {
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          timestamp: msg.createdAt.toISOString(),
+          // Inclure référence fichier pour contexte visuel persistant
+          attachedFile: attachedFile?.geminiFileId ? {
+            geminiFileId: attachedFile.geminiFileId,
+            mimeType: attachedFile.mimeType
+          } : null
+        };
+      });
+
+    // 5b. Préparer contexte fichier + fichiers multimodaux en parallèle
+    const [fileContext, multimodalFiles] = await Promise.all([
+      // Contexte texte enrichi (analyse, extraction) - rétrocompatibilité
+      fileContextService.prepareFileContext({
+        fileId: fileIds[0], // Premier fichier pour enrichissement texte (legacy)
+        content: content ?? '',
+        schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
+        userId: user.id,
+        sessionHistory
+      }),
+      // Fichiers multimodaux pour Gemini (images, PDFs via Files API)
+      fileContextService.prepareMultimodalFiles(fileIds)
+    ]);
+
+    const { attachedFileInfo, enrichedContent } = fileContext;
 
     const startTime = Date.now();
 
@@ -151,7 +181,8 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       subject,
       sessionId: chatSessionId,
       level: schoolLevel ?? user.schoolLevel,
-      hasFile: !!fileId,
+      filesCount: fileIds.length,
+      multimodalFilesCount: multimodalFiles.length,
       operation: 'chat-stream:generator',
       windowTokensRemaining: quotaCheck.windowTokensRemaining,
       dailyTokensRemaining: quotaCheck.dailyTokensRemaining,
@@ -173,15 +204,22 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     // PHASE 3: Streaming via yield sse() - Headers envoyés au premier yield
     // ═══════════════════════════════════════════════════════════════════
 
-    // 7. Générer et yield les chunks SSE (avec contenu enrichi par fichiers)
+    // 7. Générer et yield les chunks SSE (avec contenu enrichi + fichiers multimodaux)
     const streamGenerator = streamingService.generateStreamChunks({
       userId: user.id,
-      content: enrichedContent, // ✅ Contenu enrichi avec transcription fichier TEXT
+      content: enrichedContent, // Contenu enrichi avec analyse texte (legacy)
       subject,
       schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
       firstName: firstName ?? user.firstName ?? undefined,
       sessionId: chatSessionId,
-      conversationHistory: formattedHistory
+      conversationHistory: formattedHistory,
+      // Fichiers multimodaux pour Gemini (images/PDFs via Files API ou base64)
+      files: multimodalFiles.map(f => ({
+        fileUri: f.fileUri,
+        base64: f.base64,
+        mimeType: f.mimeType,
+        contentType: f.contentType
+      }))
     });
 
     // 8. Variable pour tracking du contenu complet
@@ -275,7 +313,14 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         fileId: t.Optional(t.String({
           minLength: 20,
           maxLength: 100,
-          description: 'File ID stored in Redis cache'
+          description: '[DEPRECATED] Use fileIds instead'
+        })),
+        fileIds: t.Optional(t.Array(t.String({
+          minLength: 20,
+          maxLength: 100
+        }), {
+          maxItems: 5,
+          description: 'File IDs (images, PDFs) for multimodal messages'
         }))
       })
     })

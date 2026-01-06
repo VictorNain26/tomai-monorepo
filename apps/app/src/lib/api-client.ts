@@ -32,6 +32,10 @@ export interface ApiError extends Error {
 const DEFAULT_TIMEOUT = 30000; // 30 secondes
 const UPLOAD_TIMEOUT = 60000; // 1 minute pour uploads (backend traite en <10s normalement)
 const CHAT_TIMEOUT = 120000; // 2 minutes pour chat IA (réponses longues)
+const PRONOTE_TIMEOUT = 60000; // 1 minute pour Pronote (connexion serveur externe)
+
+// Export timeout for Pronote hooks
+export { PRONOTE_TIMEOUT };
 
 // Configuration validation upload centralisée
 export const UPLOAD_CONFIG = {

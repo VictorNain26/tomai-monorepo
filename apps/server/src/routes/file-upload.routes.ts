@@ -8,6 +8,7 @@ import { auth } from '../lib/auth.js';
 import { logger } from '../lib/observability.js';
 import { redis as redisClient } from '../lib/redis.service.js';
 import { audioTranscriptionService } from '../services/audio-transcription.service.js';
+import { geminiFilesService } from '../services/gemini-files.service.js';
 import type { User } from '../types/auth.types.js';
 import type { EducationLevelType } from '../types/education.types.js';
 
@@ -36,7 +37,11 @@ const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 export interface FileUploadResult {
   success: boolean;
   fileType: 'image' | 'pdf' | 'document' | 'audio' | 'unknown';
-  fileId?: string; // ID unique pour récupérer le fichier lors du message
+  fileId?: string; // ID unique pour récupérer le fichier depuis Redis
+  /** URI Gemini Files API (TTL 48h) - pour images/PDFs */
+  fileUri?: string;
+  /** Date d'expiration du fichier Gemini (48h) */
+  expiresAt?: string;
   // Pour les fichiers audio : transcription automatique
   transcription?: string;
   metadata?: {
@@ -48,6 +53,10 @@ export interface FileUploadResult {
     uploadedAt: string;
     userId: string;
     schoolLevel: string;
+    /** URI Gemini Files pour persistance 48h */
+    fileUri?: string;
+    /** Date d'expiration Gemini Files */
+    expiresAt?: string;
     [key: string]: unknown;
   };
   _error?: string;
@@ -367,12 +376,15 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         uploadedAt: new Date().toISOString(),
         userId: user.id,
         schoolLevel: user.schoolLevel as EducationLevelType,
+        // Gemini Files API (optionnel, rempli plus bas si disponible)
+        fileUri: undefined as string | undefined,
+        expiresAt: undefined as string | undefined,
         // Contexte éducatif construit automatiquement par le backend
         educationalContext: {
           ...intelligentEducationalContext,
           // Analyse différée - sera générée lors du premier message pour UX optimale
-          analysisContext: null, // Sera rempli lors du premier message
-          extractedText: null    // Sera rempli lors du premier message
+          analysisContext: null as string | null, // Sera rempli lors du premier message
+          extractedText: null as string | null    // Sera rempli lors du premier message
         }
       };
 
@@ -536,25 +548,83 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         }
       }
 
+      // ========================================
+      // 📁 UPLOAD GEMINI FILES API (images/PDFs)
+      // TTL 48h, gratuit, persistance pour conversations multi-tours
+      // ========================================
+      let fileUri: string | undefined;
+      let expiresAt: string | undefined;
+
+      if ((fileType === 'image' || fileType === 'pdf') && geminiFilesService.isAvailable()) {
+        try {
+          logger.info('Uploading to Gemini Files API', {
+            operation: 'gemini-files:upload-start',
+            fileId,
+            fileType,
+            mimeType: file.type
+          });
+
+          const geminiResult = await geminiFilesService.uploadFile(
+            buffer,
+            file.type,
+            sanitizedFileName
+          );
+
+          if (geminiResult.success && geminiResult.fileUri) {
+            fileUri = geminiResult.fileUri;
+            expiresAt = geminiResult.expiresAt?.toISOString();
+
+            // Ajouter aux métadonnées pour persistance
+            fileMetadata.fileUri = fileUri;
+            fileMetadata.expiresAt = expiresAt;
+
+            logger.info('Gemini Files API upload successful', {
+              operation: 'gemini-files:upload-complete',
+              fileId,
+              fileUri,
+              expiresAt,
+              ttlHours: 48
+            });
+          } else {
+            logger.warn('Gemini Files API upload failed, using Redis fallback', {
+              operation: 'gemini-files:upload-fallback',
+              fileId,
+              error: geminiResult.error
+            });
+          }
+        } catch (geminiError) {
+          logger.warn('Gemini Files API error (non-blocking, using Redis)', {
+            error: geminiError instanceof Error ? geminiError.message : String(geminiError),
+            operation: 'gemini-files:upload-error',
+            fileId
+          });
+          // Continue avec Redis comme fallback - non bloquant
+        }
+      }
+
       const result: FileUploadResult = {
         success: true,
         fileType,
         fileId,
+        fileUri,     // URI Gemini Files (48h TTL) pour images/PDFs
+        expiresAt,   // Date d'expiration Gemini
         transcription, // Inclus uniquement pour audio
         metadata: fileMetadata
       };
 
       logger.info('File uploaded successfully', {
-        operation: 'file:upload-fast',
+        operation: 'file:upload-complete',
         fileName: file.name,
         fileType,
         fileId,
+        fileUri: fileUri ?? 'redis-only',
         size: file.size,
         userId: user.id,
         storedInRedis: true,
-        ttlHours: 2,
+        storedInGemini: !!fileUri,
+        ttlHours: fileUri ? 48 : 2,
         hasTranscription: !!transcription,
-        strategy: fileType === 'audio' ? 'immediate-transcription' : 'deferred-analysis'
+        strategy: fileType === 'audio' ? 'immediate-transcription' : fileUri ? 'gemini-files-48h' : 'redis-deferred'
       });
 
       return result;

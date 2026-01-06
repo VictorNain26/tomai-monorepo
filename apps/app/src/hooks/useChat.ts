@@ -33,7 +33,8 @@ interface ChatRequestData {
   sessionId?: string;
   schoolLevel?: string;
   firstName?: string;
-  fileId?: string;
+  /** IDs des fichiers attachés (images, PDFs) - multimodal */
+  fileIds?: string[];
 }
 
 // ============================================================================
@@ -140,10 +141,9 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
       data.firstName = user.firstName as string;
     }
 
-    // File attachment (consumed once per message)
-    const firstFileId = fileIdsRef.current[0];
-    if (firstFileId) {
-      data.fileId = firstFileId;
+    // File attachments (consumed once per message)
+    if (fileIdsRef.current.length > 0) {
+      data.fileIds = [...fileIdsRef.current];
       fileIdsRef.current = []; // Clear after use
     }
 
