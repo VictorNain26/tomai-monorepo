@@ -104,13 +104,13 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       return { _error: 'Validation Error', message: 'Content or files required for streaming' };
     }
 
-    // 4. Créer ou récupérer session
+    // 4. Récupérer session existante pour cette matière, ou en créer une nouvelle
     const chatSessionId = sessionId?.trim()
       ? sessionId
-      : await chatService.createSession(user.id, subject);
+      : await chatService.getOrCreateSessionBySubject(user.id, subject);
 
-    // 5. Récupérer historique
-    const sessionHistory = await chatService.getSessionHistory(chatSessionId, { limit: 10 });
+    // 5. Récupérer historique (20 messages = 10 échanges complets, Best Practices 2025)
+    const sessionHistory = await chatService.getSessionHistory(chatSessionId, { limit: 20 });
 
     // Formater l'historique avec les fichiers attachés pour contexte visuel persistant
     // Best Practice 2026: Gemini voit les images des messages précédents

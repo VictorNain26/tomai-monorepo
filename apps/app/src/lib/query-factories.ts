@@ -62,11 +62,9 @@ export const queryKeys = {
     childProgress: (childId: string, period?: string) => [...queryKeys.parent.child(childId), 'progress', period] as const,
   },
 
-  // Chat queries - Sessions only (messages handled by useChat TanStack AI hook)
+  // Chat queries (latestSession for dashboard)
   chat: {
     all: ['chat'] as const,
-    sessions: (limit?: number) => [...queryKeys.chat.all, 'sessions', { limit }] as const,
-    session: (sessionId: string) => [...queryKeys.chat.all, 'session', sessionId] as const,
   },
 
   // Files queries (used for invalidation)
@@ -143,27 +141,6 @@ export const parentMutations = {
 // ===== CHAT QUERIES =====
 
 export const chatQueries = {
-  // Liste des sessions utilisateur
-  sessions: (limit = 20) => ({
-    queryKey: queryKeys.chat.sessions(limit),
-    queryFn: async (): Promise<Array<{
-      id: string;
-      subject: string;
-      startedAt: string;
-      endedAt?: string;
-      messagesCount: number;
-    }>> => {
-      const response = await apiClient.get<{ sessions: Array<{
-        id: string;
-        subject: string;
-        startedAt: string;
-        endedAt?: string;
-        messagesCount: number;
-      }> }>('/api/chat/sessions', { params: { limit } });
-      return response.sessions ?? [];
-    },
-  }),
-
   // Dernière session (optimisé pour dashboard)
   latestSession: () => ({
     queryKey: [...queryKeys.chat.all, 'latest'] as const,
@@ -183,27 +160,6 @@ export const chatQueries = {
       } | null }>('/api/chat/sessions/latest');
       return response.session;
     },
-  }),
-
-  // Détails d'une session spécifique
-  session: (sessionId: string) => ({
-    queryKey: queryKeys.chat.session(sessionId),
-    queryFn: () => apiClient.get(`/api/chat/session/${sessionId}`),
-  }),
-  // Note: messages handled by useChat TanStack AI hook directly
-};
-
-export const chatMutations = {
-  createSession: () => ({
-    mutationKey: ['chat', 'create-session'] as const,
-    mutationFn: (data: { subject: string }) =>
-      apiClient.post('/api/chat/session', data),
-  }),
-
-  deleteSession: () => ({
-    mutationKey: ['chat', 'delete-session'] as const,
-    mutationFn: (sessionId: string) =>
-      apiClient.delete(`/api/chat/session/${sessionId}`),
   }),
 };
 
@@ -403,90 +359,13 @@ export const invalidationHelpers = {
   },
 
   /**
-   * Invalide les données étudiant (sessions uniquement - MVP simplification)
-   * 🔧 FIX v2: Prévient race condition entre optimistic update et background refetch
-   *
-   * PROBLÈME RÉSOLU : Comportement aléatoire où sessions ne se mettaient pas à jour
-   * CAUSE : Background refetch overwritait l'optimistic update avant que le serveur ne persiste
-   *
-   * SOLUTION : refetchType: 'none' → marque "stale" sans refetch immédiat
-   * Les queries se rafraîchiront naturellement au prochain mount/focus/interaction
+   * Invalide les données étudiant (latestSession pour dashboard)
    */
   invalidateStudentData: (queryClient: QueryClient) => {
-    // Pattern TanStack Query v5: Invalidation sans refetch immédiat
-    // Invalide toutes les queries qui commencent par ['chat', 'sessions']
-    // Cela inclut chat.sessions(5), chat.sessions(10), etc.
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.chat.all,
-      predicate: (query) => {
-        // Matcher toutes les queries de sessions ET messages
-        const key = query.queryKey;
-        return (
-          key.length >= 2 &&
-          key[0] === 'chat' &&
-          (key[1] === 'sessions' || key[1] === 'session')
-        );
-      },
-      refetchType: 'none', // 🚨 CRITICAL: Ne pas refetch immédiatement pour éviter race condition
+      queryKey: [...queryKeys.chat.all, 'latest'],
+      refetchType: 'none',
     });
-  },
-
-  /**
-   * 🚀 Invalidation optimiste session créée pour UX instantanée
-   * MVP simplification: Only updates sessions cache, no dashboard stats
-   * 🔧 FIX: Met à jour TOUS les caches sessions (limit: 5 ET 10) + latest session pour dashboard
-   */
-  optimisticSessionUpdate: (queryClient: QueryClient, newSession: {
-    id: string;
-    subject: string;
-    startedAt: string;
-    messagesCount: number;
-  }) => {
-    // Fonction de mise à jour réutilisable pour différents limits
-    const updateSessionCache = (maxSessions: number) =>
-      (oldSessions: Array<{id: string; subject: string; startedAt: string; messagesCount: number}> = []) => {
-        // Si session existe déjà, mettre à jour ET RÉORDONNER en tête
-        const existingIndex = oldSessions.findIndex(s => s.id === newSession.id);
-        if (existingIndex >= 0 && oldSessions[existingIndex]) {
-          // Créer tableau sans la session existante
-          const withoutExisting = oldSessions.filter(s => s.id !== newSession.id);
-
-          // Ajouter session mise à jour EN PREMIÈRE POSITION
-          // Utiliser nouveau startedAt pour refléter l'activité récente
-          return [
-            {
-              id: newSession.id,
-              subject: newSession.subject,
-              startedAt: newSession.startedAt, // ✅ Nouveau timestamp pour réordonnancement
-              messagesCount: newSession.messagesCount
-            },
-            ...withoutExisting.slice(0, maxSessions - 1) // Garder max-1 autres sessions
-          ];
-        }
-
-        // Sinon ajouter nouvelle session en tête
-        return [
-          newSession,
-          ...oldSessions.slice(0, maxSessions - 1) // Garder max-1 sessions
-        ];
-      };
-
-    // 🔧 FIX: Mettre à jour TOUS les caches utilisés par l'app
-    queryClient.setQueryData(
-      queryKeys.chat.sessions(5), // Dashboard utilise limit: 5
-      updateSessionCache(5)
-    );
-
-    queryClient.setQueryData(
-      queryKeys.chat.sessions(10), // Autres composants utilisent limit: 10
-      updateSessionCache(10)
-    );
-
-    // ⚡ OPTIMISATION: Mettre à jour cache latest session (optimisé dashboard)
-    queryClient.setQueryData(
-      [...queryKeys.chat.all, 'latest'] as const,
-      newSession
-    );
   },
 
   /**

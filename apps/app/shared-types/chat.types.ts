@@ -60,8 +60,3 @@ export interface ISessionsResponse {
   sessions: IStudySession[];
   data?: IStudySession[];
 }
-
-export interface ISessionHistoryResponse {
-  history: IMessage[];
-  messages?: IMessage[];
-}
