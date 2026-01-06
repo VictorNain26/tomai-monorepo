@@ -1,12 +1,11 @@
 /**
- * Service de chat Gemini - @google/genai direct
+ * Service de chat Gemini 3 Flash - @google/genai
  *
- * Utilise @google/genai directement avec:
- * - chats.create() pour sessions multi-turn
- * - sendMessageStream() pour streaming
- * - Function calling pour RAG automatique (Qdrant + Mistral embeddings)
- *
- * Format chunks SSE: content/done/error pour compatibilité frontend
+ * Token-optimized architecture:
+ * - Backend manages history (limit: 10, auto-summarization)
+ * - Implicit caching via stable system prompt prefix
+ * - Function calling for RAG (Qdrant + Mistral embeddings)
+ * - SSE streaming with content/done/error chunks
  */
 
 import { GoogleGenAI, type FunctionDeclaration, type Part, type Content } from '@google/genai';

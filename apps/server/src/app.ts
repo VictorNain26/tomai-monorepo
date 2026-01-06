@@ -291,7 +291,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(statusRoutes)        // Subscription status, portal, usage
   .use(lifecycleRoutes)     // Cancel, resume, preview
   .use(stripeWebhookRoutes) // Webhooks Stripe (raw body)
-  .use(ttsRoutes)           // Text-to-Speech Gemini 2.5 Flash TTS
+  .use(ttsRoutes)           // Text-to-Speech (Gemini 2.5 Flash TTS - 3.0 pending)
   .use(deckRoutes)          // Outils de révision - decks, subjects, topics
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation
   .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau

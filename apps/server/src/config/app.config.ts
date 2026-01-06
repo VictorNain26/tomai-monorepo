@@ -30,9 +30,9 @@ export interface AppConfig {
   ai: {
     gemini: {
       apiKey: string | undefined;
-      model: string;           // Modèle principal (chat) - Gemini 2.5 Flash
-      audioModel: string;      // Modèle audio (analyse prononciation) - Gemini 2.5 Flash
-      ttsModel: string;        // Modèle TTS - Gemini 2.5 Flash TTS
+      model: string;           // Modèle principal (chat) - Gemini 3 Flash
+      audioModel: string;      // Modèle audio (analyse prononciation) - Gemini 3 Flash
+      ttsModel: string;        // Modèle TTS - Gemini 2.5 Flash TTS (pas encore 3.0)
       maxTokens: number;
       temperature: number;
       topP: number;

@@ -1,7 +1,7 @@
 /**
  * Configuration de complexité et budgets adaptatifs pour Gemini
  * Externalisation depuis gemini-simple.service.ts
- * Standards Éducation Nationale 2024-2025 + Gemini 2.5 Flash best practices
+ * Standards Éducation Nationale 2024-2025 + Gemini 3 Flash best practices
  */
 
 import type { EducationLevelType } from '../../types/index.js';
@@ -127,8 +127,7 @@ export const COMPLEX_SUBJECTS = ['mathematiques', 'physique', 'philosophie'] as 
 export const COMPLEX_QUERY_LENGTH_THRESHOLD = 200;
 
 /**
- * Budget thinking maximum selon modèle Gemini 2.5 Flash
- * Extraction de gemini-simple.service.ts ligne 821
+ * Budget thinking maximum selon modèle Gemini 3 Flash
  */
 export const MAX_THINKING_BUDGET = 24576;
 

@@ -1,12 +1,11 @@
 /**
- * Routes Chat SSE Streaming - @google/genai 2025
+ * Routes Chat SSE Streaming - Gemini 3 Flash
  *
- * Architecture:
- * - Accepte format { messages, data } pour compatibilité frontend
- * - Streaming via @google/genai sendMessageStream()
- * - Format SSE standard (data: {JSON}\n\n + data: [DONE]\n\n)
- * - RAG automatique via Gemini function calling
- * - Auth, quota, et sauvegarde messages côté serveur
+ * Token-optimized architecture:
+ * - Accepts { content, data } (frontend sends ONLY new message)
+ * - Backend manages history from DB (limit: 10, auto-summarization)
+ * - Implicit caching via stable system prompt prefix
+ * - RAG via Gemini function calling
  */
 
 import { Elysia, t, sse } from 'elysia';
@@ -18,15 +17,7 @@ import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
 
 /**
- * Chat Protocol - Message format (frontend compatibility)
- */
-interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
-/**
- * Chat Protocol - Request data (frontend compatibility)
+ * Chat Request data - Token optimized format
  */
 interface ChatRequestData {
   subject: string;
@@ -41,17 +32,11 @@ interface ChatRequestData {
 
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
   /**
-   * Route STREAMING SSE - @google/genai
-   * POST /api/chat/stream
+   * POST /api/chat/stream - SSE Streaming (Gemini 3 Flash)
    *
-   * Accepte format Chat Protocol: { messages, data }
-   * - messages: Array de messages conversation (ModelMessage[])
-   * - data: Métadonnées custom (subject, sessionId, schoolLevel, firstName, fileId)
-   *
-   * Format response SSE:
-   * - data: {"type":"content",...}\n\n
-   * - data: {"type":"done",...}\n\n
-   * - data: [DONE]\n\n
+   * Token-optimized format: { content, data }
+   * - content: New user message only (backend has history in DB)
+   * - data: { subject, sessionId, schoolLevel, firstName, fileIds }
    */
   .post('/stream', async function* ({ body, request: { headers }, set }) {
     // ═══════════════════════════════════════════════════════════════════
@@ -86,19 +71,14 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     const user = authResult.user;
 
     // ═══════════════════════════════════════════════════════════════════
-    // PHASE 1b: Parser Chat Protocol { messages, data }
+    // PHASE 1b: Parse optimized format { content, data }
     // ═══════════════════════════════════════════════════════════════════
-    const { messages, data } = body as {
-      messages: ChatMessage[];
+    const { content, data } = body as {
+      content: string;
       data: ChatRequestData;
     };
 
-    // Extraire le dernier message utilisateur
-    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-    const content = lastUserMessage?.content ?? '';
-
     // Extraire les métadonnées depuis data
-    // Support rétrocompatibilité: fileId (deprecated) → fileIds[]
     const { subject, sessionId, schoolLevel, firstName, fileId, fileIds: rawFileIds } = data;
     const fileIds = rawFileIds ?? (fileId ? [fileId] : []);
 
@@ -279,14 +259,11 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     // Return explicite pour satisfaire TypeScript (generator terminé)
     return;
   }, {
-    // Chat Protocol: { messages, data }
+    // Token-optimized format: { content, data }
     body: t.Object({
-      messages: t.Array(t.Object({
-        role: t.Union([t.Literal('user'), t.Literal('assistant'), t.Literal('system')]),
-        content: t.String({ maxLength: 10000 })
-      }), {
-        minItems: 1,
-        description: 'Conversation message array'
+      content: t.String({
+        maxLength: 10000,
+        description: 'New user message (backend manages history)'
       }),
       data: t.Object({
         subject: t.String({
@@ -320,7 +297,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           maxLength: 100
         }), {
           maxItems: 5,
-          description: 'File IDs (images, PDFs) for multimodal messages'
+          description: 'File IDs for multimodal messages'
         }))
       })
     })

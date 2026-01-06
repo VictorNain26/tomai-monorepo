@@ -1,11 +1,11 @@
 /**
- * useChat - TanStack AI Protocol 2025
+ * useChat - Optimized Chat Hook (Gemini 3 Flash)
  *
- * 100% TanStack AI implementation:
- * - stream() adapter for dynamic payload (fileIds per message)
- * - TanStack AI Protocol format: { messages, data }
- * - SSE streaming with standard parser
- * - Auth via Better Auth cookies
+ * Token-optimized architecture:
+ * - Frontend sends ONLY new message content (not history)
+ * - Backend manages history from DB (limit: 10, auto-summarization)
+ * - Implicit caching via stable prompt prefix
+ * - SSE streaming with @google/genai
  */
 
 import { useCallback, useRef, useEffect, useState } from 'react';
@@ -112,10 +112,8 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   const sessionIdRef = useRef<string | null>(sessionId);
   const serverSessionIdRef = useRef<string | null>(null); // SessionId from backend 'done' chunk
 
-  // Attachments storage - Map<messageId, attachments[]>
-  // Stocke les fichiers attachés pour chaque message user
-  const [messageAttachments, setMessageAttachments] = useState<Map<string, IChatFileAttachment[]>>(new Map());
-  const pendingAttachmentsRef = useRef<IChatFileAttachment[]>([]); // Temp storage before message created
+  // Liste des fichiers de la session (simple liste plate)
+  const [sessionFiles, setSessionFiles] = useState<IChatFileAttachment[]>([]);
 
   // Sync sessionId ref when prop changes
   useEffect(() => {
@@ -123,14 +121,18 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   }, [sessionId]);
 
   // ============================================================================
-  // TanStack AI stream() adapter
-  // Sends TanStack AI Protocol format: { messages, data }
+  // Stream adapter - Token optimized
+  // Sends ONLY new message content (backend manages history from DB)
   // ============================================================================
   const connection = stream(async function* (
     messages: ModelMessage[],
     _connectionData?: Record<string, unknown>
   ): AsyncIterable<StreamChunk> {
-    // Build TanStack AI Protocol request data
+    // Extract ONLY the last user message (backend has history in DB)
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    const content = lastUserMessage?.content ?? '';
+
+    // Build request data
     const data: ChatRequestData = {
       subject: subject.trim(),
     };
@@ -153,17 +155,17 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
       fileIdsRef.current = []; // Clear after use
     }
 
-    logger.info('TanStack AI Protocol request', {
-      messagesCount: messages.length,
+    logger.info('Chat request (optimized)', {
+      contentLength: content.length,
       data,
       userId: user?.id ?? 'anonymous',
     });
 
-    // Send TanStack AI Protocol format: { messages, data }
+    // Send optimized format: { content, data } (not full messages array)
     const response = await fetch(`${getBackendURL()}/api/chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, data }),
+      body: JSON.stringify({ content, data }),
       credentials: 'include',
     });
 
@@ -256,30 +258,14 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
       // Store fileIds for stream adapter to consume
       if (hasAttachments) {
         fileIdsRef.current = attachments.map(a => a.fileId);
-        // Store attachments for when message is created (will be associated via effect)
-        pendingAttachmentsRef.current = attachments;
+        // Ajouter les fichiers à la liste de session
+        setSessionFiles(prev => [...prev, ...attachments]);
       }
 
       await tanstackSendMessage(content.trim() || '🎤 Enregistrement audio');
     },
     [user, tanstackSendMessage]
   );
-
-  // Associate pending attachments with new user messages
-  useEffect(() => {
-    if (pendingAttachmentsRef.current.length === 0) return;
-
-    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
-    if (lastUserMessage && !messageAttachments.has(lastUserMessage.id)) {
-      setMessageAttachments(prev => {
-        const newMap = new Map(prev);
-        newMap.set(lastUserMessage.id, pendingAttachmentsRef.current);
-        return newMap;
-      });
-      pendingAttachmentsRef.current = [];
-      logger.info('Attachments associated with message', { messageId: lastUserMessage.id });
-    }
-  }, [messages, messageAttachments]);
 
   // ============================================================================
   // Load conversation history when sessionId changes
@@ -318,7 +304,7 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
 
         if (result.success && result.messages) {
           const uiMessages: UIMessage[] = [];
-          const loadedAttachments = new Map<string, IChatFileAttachment[]>();
+          const loadedFiles: IChatFileAttachment[] = [];
 
           for (const msg of result.messages) {
             const textContent = typeof msg.content === 'string' ? msg.content : msg.content.content;
@@ -330,21 +316,19 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
               createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
             });
 
-            // Charger les attachments depuis l'historique
+            // Charger les fichiers depuis l'historique
             if (msg.attachedFile?.fileId && msg.attachedFile.fileName) {
-              loadedAttachments.set(msg.id, [{
+              loadedFiles.push({
                 fileId: msg.attachedFile.fileId,
                 fileName: msg.attachedFile.fileName,
                 mimeType: msg.attachedFile.mimeType ?? 'application/octet-stream',
-              }]);
+              });
             }
           }
 
           setMessages(uiMessages);
-          if (loadedAttachments.size > 0) {
-            setMessageAttachments(loadedAttachments);
-          }
-          logger.info('History loaded', { sessionId, count: uiMessages.length, attachments: loadedAttachments.size });
+          setSessionFiles(loadedFiles);
+          logger.info('History loaded', { sessionId, count: uiMessages.length, files: loadedFiles.length });
         }
       } catch (err) {
         logger.error('Failed to load history', { error: err, sessionId });
@@ -355,31 +339,11 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   }, [sessionId, setMessages, clear]);
 
   // ============================================================================
-  // Remove attachment from a message
-  // ============================================================================
-  const removeAttachment = useCallback((messageId: string, fileId: string) => {
-    setMessageAttachments(prev => {
-      const newMap = new Map(prev);
-      const attachments = newMap.get(messageId);
-      if (attachments) {
-        const filtered = attachments.filter(a => a.fileId !== fileId);
-        if (filtered.length > 0) {
-          newMap.set(messageId, filtered);
-        } else {
-          newMap.delete(messageId);
-        }
-      }
-      return newMap;
-    });
-    logger.info('Attachment removed', { messageId, fileId });
-  }, []);
-
-  // ============================================================================
-  // Clear messages with attachments
+  // Clear messages and files
   // ============================================================================
   const clearAll = useCallback(() => {
     clear();
-    setMessageAttachments(new Map());
+    setSessionFiles([]);
   }, [clear]);
 
   // ============================================================================
@@ -387,12 +351,11 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   // ============================================================================
   return {
     messages,
-    messageAttachments,
+    sessionFiles,
     isLoading,
     error: error?.message ?? null,
     sendMessage,
     stop,
     clear: clearAll,
-    removeAttachment,
   };
 }
