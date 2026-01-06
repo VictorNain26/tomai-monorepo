@@ -105,10 +105,7 @@ export function SuperChatInput({
     uploadFile,
     removeFile,
     clearFiles
-  } = useOptimizedFileUpload({
-    maxSize: 15 * 1024 * 1024,
-    enablePreview: true
-  });
+  } = useOptimizedFileUpload();
 
   // ========================================
   // Audio Preview State (mode audio uniquement)
