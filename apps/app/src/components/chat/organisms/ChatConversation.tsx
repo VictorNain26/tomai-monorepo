@@ -1,19 +1,19 @@
 /**
  * ChatConversation - Organism conversation complète
  *
- * UIMessage avec parts[] - Combine MessagesList + ChatError + EmptyState
+ * ChatMessage simple - Combine MessagesList + ChatError + EmptyState
  * Note: Fichiers attachés affichés dans panneau Documents séparé
  */
 
 import { type ReactElement } from 'react';
 import { MessageCircle } from 'lucide-react';
-import type { UIMessage } from '@tanstack/ai-react';
+import type { ChatMessage } from '@/hooks/useChat';
 import { cn } from '@/lib/utils';
 import { MessagesList } from '../molecules/MessagesList';
 import { ChatError } from '../molecules/ChatError';
 
 export interface ChatConversationProps {
-  messages: UIMessage[];
+  messages: ChatMessage[];
   /** True si le chat est en cours de streaming */
   isLoading?: boolean;
   error?: string | null;
@@ -30,7 +30,6 @@ export function ChatConversation({
   emptyStateMessage = 'Aucun message pour le moment. Commencez la conversation !',
   className
 }: ChatConversationProps): ReactElement {
-  // UIMessage n'a que 'user' et 'assistant' roles (pas de 'system')
   const displayMessages = messages;
 
   // Empty state
