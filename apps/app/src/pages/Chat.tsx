@@ -35,8 +35,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import type { IFileAttachment, IChatFileAttachment } from '@/types';
 import { useAudio } from '@/lib/audioHooks';
 import { getBackendURL } from '@/utils/urls';
@@ -48,7 +46,6 @@ const Chat: FC = (): ReactElement => {
   const audio = useAudio();
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const [deleteFilesOnReset, setDeleteFilesOnReset] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
   // URL = source de vérité pour sessionId et subject
@@ -112,7 +109,7 @@ const Chat: FC = (): ReactElement => {
     void navigate('/student', { replace: true });
   };
 
-  // Reset session (clear messages, optionally delete files)
+  // Reset session: archive l'ancienne et crée une nouvelle
   const handleReset = useCallback(async () => {
     if (!sessionId) return;
 
@@ -121,25 +118,29 @@ const Chat: FC = (): ReactElement => {
       const response = await fetch(`${getBackendURL()}/api/chat/session/${sessionId}/reset`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deleteFiles: deleteFilesOnReset }),
       });
 
       if (!response.ok) {
         throw new Error('Erreur lors du reset');
       }
 
-      // Clear local state
-      clearChat();
+      const data = await response.json() as { success: boolean; sessionId?: string };
+      if (data.success && data.sessionId) {
+        // Naviguer vers la nouvelle session
+        const params = new URLSearchParams();
+        params.set('subject', subject);
+        params.set('sessionId', data.sessionId);
+        void navigate(`/student/chat?${params.toString()}`, { replace: true });
+        smartToast.success('Nouvelle conversation créée');
+      }
+
       setIsResetDialogOpen(false);
-      setDeleteFilesOnReset(false);
-      smartToast.success('Conversation réinitialisée');
     } catch {
       smartToast.error('Erreur lors de la réinitialisation');
     } finally {
       setIsResetting(false);
     }
-  }, [sessionId, deleteFilesOnReset, clearChat]);
+  }, [sessionId, subject, navigate]);
 
   // Download fichier via presigned URL (Scaleway)
   const handleDownload = useCallback(async (fileId: string, fileName: string) => {
@@ -265,30 +266,19 @@ const Chat: FC = (): ReactElement => {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Réinitialiser la conversation ?</AlertDialogTitle>
+                      <AlertDialogTitle>Nouvelle conversation ?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Cette action supprimera tous les messages de cette conversation.
-                        Tu pourras recommencer une nouvelle discussion sur ce sujet.
+                        Ta conversation actuelle sera archivée et tu pourras recommencer
+                        une nouvelle discussion sur ce sujet. Ton historique reste accessible.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <div className="flex items-center space-x-2 py-4">
-                      <Checkbox
-                        id="deleteFiles"
-                        checked={deleteFilesOnReset}
-                        onCheckedChange={(checked) => setDeleteFilesOnReset(checked === true)}
-                      />
-                      <Label htmlFor="deleteFiles" className="text-sm text-muted-foreground">
-                        Supprimer aussi les documents envoyés
-                      </Label>
-                    </div>
                     <AlertDialogFooter>
                       <AlertDialogCancel disabled={isResetting}>Annuler</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleReset}
                         disabled={isResetting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        {isResetting ? 'Réinitialisation...' : 'Réinitialiser'}
+                        {isResetting ? 'Création...' : 'Nouvelle conversation'}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

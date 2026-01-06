@@ -233,7 +233,7 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
       }
     })
 
-    // CHAT SESSIONS - Créer une nouvelle session
+    // CHAT SESSIONS - Récupérer ou créer session pour une matière
     .post('/chat/session', async ({ body, request: { headers }, set }) => {
       const authContext = await handleAuthWithCookies(headers, set);
       if (!authContext.success) {
@@ -247,38 +247,37 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
           return { _error: 'Subject is required' };
         }
 
-        const sessionId = await chatService.createSession(authContext.user.id, subject);
+        // Session unique par matière: récupère existante ou crée nouvelle
+        const sessionId = await chatService.getOrCreateSessionBySubject(authContext.user.id, subject);
 
         return {
           success: true,
-          sessionId,
-          message: 'Session created successfully'
+          sessionId
         };
       } catch (_error) {
-        logger.error('Session creation failed', {
-          operation: 'api:chat:session:create',
+        logger.error('Session retrieval failed', {
+          operation: 'api:chat:session:getOrCreate',
           userId: authContext.user.id,
           _error: _error instanceof Error ? _error.message : String(_error),
           severity: 'medium' as const
         });
         set.status = 500;
-        return { _error: 'Session creation failed' };
+        return { _error: 'Session retrieval failed' };
       }
     })
 
-    // CHAT SESSIONS - Reset une session (effacer messages, optionnellement fichiers)
-    .post('/chat/session/:id/reset', async ({ params, body, request: { headers }, set }) => {
+    // CHAT SESSIONS - Reset: archive l'ancienne session et crée une nouvelle
+    .post('/chat/session/:id/reset', async ({ params, request: { headers }, set }) => {
       const authContext = await handleAuthWithCookies(headers, set);
       if (!authContext.success) {
         return authContext.error;
       }
 
       try {
-        const { deleteFiles } = (body as { deleteFiles?: boolean }) ?? {};
-        await chatService.resetSession(params.id, authContext.user.id, { deleteFiles });
+        const newSessionId = await chatService.resetSession(params.id, authContext.user.id);
         return {
           success: true,
-          message: 'Session reset successfully'
+          sessionId: newSessionId
         };
       } catch (_error) {
         logger.error('Session reset failed', {
