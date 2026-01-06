@@ -1,11 +1,11 @@
 /**
- * useChat - Optimized Chat Hook (Gemini 3 Flash)
+ * useChat - Optimized Chat Hook (Gemini 2.5 Flash)
  *
- * Token-optimized architecture:
- * - Frontend sends ONLY new message content (not history)
- * - Backend manages history from DB (limit: 10, auto-summarization)
- * - Implicit caching via stable prompt prefix
- * - SSE streaming with @google/genai
+ * Architecture propre:
+ * - sessionId géré internement (fetch/create automatique)
+ * - Retourne currentSessionId pour que le parent mette à jour l'URL
+ * - Pas de callbacks = pas de boucles infinies
+ * - SSE streaming avec @google/genai
  */
 
 import { useCallback, useRef, useEffect, useState } from 'react';
@@ -23,9 +23,20 @@ import type { IChatFileAttachment } from '@/types';
 // ============================================================================
 
 interface UseChatOptions {
-  sessionId: string | null;
+  /** SessionId from URL (can be null for new sessions) */
+  initialSessionId: string | null;
   subject: string;
-  onSessionCreated?: (sessionId: string) => void;
+}
+
+interface UseChatReturn {
+  messages: UIMessage[];
+  sessionFiles: IChatFileAttachment[];
+  /** Current session ID (may differ from initialSessionId after creation) */
+  currentSessionId: string | null;
+  isLoading: boolean;
+  error: string | null;
+  sendMessage: (content: string, attachments?: IChatFileAttachment[]) => Promise<void>;
+  stop: () => void;
 }
 
 /** TanStack AI Protocol - Custom data sent with each request */
@@ -34,18 +45,13 @@ interface ChatRequestData {
   sessionId?: string;
   schoolLevel?: string;
   firstName?: string;
-  /** IDs des fichiers attachés (images, PDFs) - multimodal */
   fileIds?: string[];
 }
 
 // ============================================================================
-// SSE Parser - Standard Web API pattern for stream() adapter
+// SSE Parser
 // ============================================================================
 
-/**
- * Parse Server-Sent Events stream into TanStack AI StreamChunks
- * This is the standard pattern when using stream() adapter with SSE backend
- */
 async function* parseServerSentEvents(response: Response): AsyncIterable<StreamChunk> {
   const reader = response.body?.getReader();
   if (!reader) throw new Error('No response body');
@@ -79,7 +85,6 @@ async function* parseServerSentEvents(response: Response): AsyncIterable<StreamC
       }
     }
 
-    // Process remaining buffer
     if (buffer.trim()) {
       for (const line of buffer.split('\n')) {
         if (line.startsWith('data: ')) {
@@ -103,36 +108,42 @@ async function* parseServerSentEvents(response: Response): AsyncIterable<StreamC
 // useChat Hook
 // ============================================================================
 
-export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions) {
+export function useChat({ initialSessionId, subject }: UseChatOptions): UseChatReturn {
   const user = useUser();
   const queryClient = useQueryClient();
 
-  // Refs for dynamic data (accessible in stream adapter closure)
-  const fileIdsRef = useRef<string[]>([]);
-  const sessionIdRef = useRef<string | null>(sessionId);
-  const serverSessionIdRef = useRef<string | null>(null); // SessionId from backend 'done' chunk
-
-  // Liste des fichiers de la session (simple liste plate)
+  // State for current session (can change after creation)
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(initialSessionId);
   const [sessionFiles, setSessionFiles] = useState<IChatFileAttachment[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
-  // Sync sessionId ref when prop changes
+  // Refs for stream adapter closure (not reactive)
+  const fileIdsRef = useRef<string[]>([]);
+  const sessionIdRef = useRef<string | null>(initialSessionId);
+
+  // Sync ref when state changes
   useEffect(() => {
-    sessionIdRef.current = sessionId;
-  }, [sessionId]);
+    sessionIdRef.current = currentSessionId;
+  }, [currentSessionId]);
+
+  // Sync state when prop changes (navigation)
+  useEffect(() => {
+    if (initialSessionId !== currentSessionId) {
+      setCurrentSessionId(initialSessionId);
+      setHistoryLoaded(false); // Reset pour recharger l'historique
+    }
+  }, [initialSessionId, currentSessionId]);
 
   // ============================================================================
-  // Stream adapter - Token optimized
-  // Sends ONLY new message content (backend manages history from DB)
+  // Stream adapter
   // ============================================================================
   const connection = stream(async function* (
     messages: ModelMessage[],
     _connectionData?: Record<string, unknown>
   ): AsyncIterable<StreamChunk> {
-    // Extract ONLY the last user message (backend has history in DB)
     const lastUserMessage = messages.filter(m => m.role === 'user').pop();
     const content = lastUserMessage?.content ?? '';
 
-    // Build request data
     const data: ChatRequestData = {
       subject: subject.trim(),
     };
@@ -149,19 +160,13 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
       data.firstName = user.firstName as string;
     }
 
-    // File attachments (consumed once per message)
     if (fileIdsRef.current.length > 0) {
       data.fileIds = [...fileIdsRef.current];
-      fileIdsRef.current = []; // Clear after use
+      fileIdsRef.current = [];
     }
 
-    logger.info('Chat request (optimized)', {
-      contentLength: content.length,
-      data,
-      userId: user?.id ?? 'anonymous',
-    });
+    logger.info('Chat request', { contentLength: content.length, data });
 
-    // Send optimized format: { content, data } (not full messages array)
     const response = await fetch(`${getBackendURL()}/api/chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -175,21 +180,20 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
         const errorBody = (await response.json()) as { message?: string };
         if (errorBody.message) errorMessage = errorBody.message;
       } catch {
-        // Use default error
+        // Use default
       }
       throw new Error(errorMessage);
     }
 
-    // Parse SSE response and intercept sessionId from 'done' chunk
     for await (const chunk of parseServerSentEvents(response)) {
-      // Intercept 'done' chunk to capture sessionId before TanStack processes it
+      // Capture sessionId from 'done' chunk
       if (chunk.type === 'done') {
         const doneChunk = chunk as { type: 'done'; metadata?: { sessionId?: string } };
-        if (doneChunk.metadata?.sessionId) {
-          serverSessionIdRef.current = doneChunk.metadata.sessionId;
-          logger.info('Captured sessionId from done chunk', {
-            sessionId: doneChunk.metadata.sessionId,
-          });
+        if (doneChunk.metadata?.sessionId && doneChunk.metadata.sessionId !== sessionIdRef.current) {
+          const newSessionId = doneChunk.metadata.sessionId;
+          logger.info('New session from backend', { newSessionId });
+          sessionIdRef.current = newSessionId;
+          setCurrentSessionId(newSessionId);
         }
       }
       yield chunk;
@@ -197,7 +201,7 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   });
 
   // ============================================================================
-  // TanStack AI useChat hook
+  // TanStack AI useChat
   // ============================================================================
   const {
     messages,
@@ -206,40 +210,20 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
     error,
     stop,
     setMessages,
-    clear,
   } = useTanStackChat({
     connection,
-    onFinish: (message) => {
-      logger.info('TanStack AI message complete', {
-        messageId: message.id,
-        role: message.role,
-      });
-
-      // Use sessionId captured from 'done' chunk by stream adapter
-      const newSessionId = serverSessionIdRef.current;
-
-      if (newSessionId && newSessionId !== sessionIdRef.current) {
-        logger.info('New session created by backend', {
-          oldSessionId: sessionIdRef.current,
-          newSessionId,
-        });
-        sessionIdRef.current = newSessionId;
-        serverSessionIdRef.current = null; // Reset after use
-        onSessionCreated?.(newSessionId);
-      }
-
-      // Invalidate TanStack Query cache for dashboard updates
+    onFinish: () => {
       if (sessionIdRef.current) {
         invalidationHelpers.invalidateAfterActivity(queryClient);
       }
     },
     onError: (err) => {
-      logger.error('TanStack AI error', { error: err.message });
+      logger.error('Chat error', { error: err.message });
     },
   });
 
   // ============================================================================
-  // sendMessage wrapper for fileIds + attachments
+  // sendMessage wrapper
   // ============================================================================
   const sendMessage = useCallback(
     async (content: string, attachments?: IChatFileAttachment[]) => {
@@ -255,10 +239,8 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
         return;
       }
 
-      // Store fileIds for stream adapter to consume
       if (hasAttachments) {
         fileIdsRef.current = attachments.map(a => a.fileId);
-        // Ajouter fichiers (éviter doublons si historique rechargé)
         setSessionFiles(prev => {
           const existingIds = new Set(prev.map(f => f.fileId));
           const newFiles = attachments.filter(a => !existingIds.has(a.fileId));
@@ -266,23 +248,26 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
         });
       }
 
-      await tanstackSendMessage(content.trim() || '🎤 Enregistrement audio');
+      await tanstackSendMessage(content.trim() || '📎 Document');
     },
     [user, tanstackSendMessage]
   );
 
   // ============================================================================
-  // Load session and conversation history
+  // Session initialization & history loading
   // ============================================================================
   useEffect(() => {
-    // Si on a déjà un sessionId, charger l'historique directement
-    if (sessionId) {
-      void loadHistory(sessionId);
+    // Skip if already loaded for this session
+    if (historyLoaded) return;
+
+    // If we have a sessionId, load history
+    if (currentSessionId) {
+      void loadHistory(currentSessionId);
       return;
     }
 
-    // Sinon, récupérer/créer la session pour cette matière
-    if (subject) {
+    // Otherwise, fetch/create session for this subject
+    if (subject && user) {
       void fetchOrCreateSession();
     }
 
@@ -299,8 +284,9 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
 
         const result = (await response.json()) as { success: boolean; sessionId?: string };
         if (result.success && result.sessionId) {
+          setCurrentSessionId(result.sessionId);
           sessionIdRef.current = result.sessionId;
-          onSessionCreated?.(result.sessionId);
+          setHistoryLoaded(true); // New session = no history to load
         }
       } catch (err) {
         logger.error('Failed to fetch session', { error: err, subject });
@@ -314,7 +300,10 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
           { credentials: 'include' }
         );
 
-        if (!response.ok) return;
+        if (!response.ok) {
+          setHistoryLoaded(true);
+          return;
+        }
 
         const result = (await response.json()) as {
           success: boolean;
@@ -345,7 +334,6 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
               createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
             });
 
-            // Dédupliquer par fileId
             if (msg.attachedFile?.fileId && msg.attachedFile.fileName && !loadedFilesMap.has(msg.attachedFile.fileId)) {
               loadedFilesMap.set(msg.attachedFile.fileId, {
                 fileId: msg.attachedFile.fileId,
@@ -357,32 +345,24 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
 
           setMessages(uiMessages);
           setSessionFiles(Array.from(loadedFilesMap.values()));
-          logger.info('History loaded', { sessionId: sid, count: uiMessages.length, files: loadedFilesMap.size });
+          logger.info('History loaded', { sessionId: sid, count: uiMessages.length });
         }
+
+        setHistoryLoaded(true);
       } catch (err) {
         logger.error('Failed to load history', { error: err, sessionId: sid });
+        setHistoryLoaded(true);
       }
     }
-  }, [sessionId, subject, onSessionCreated, setMessages]);
+  }, [currentSessionId, subject, user, historyLoaded, setMessages]);
 
-  // ============================================================================
-  // Clear messages and files
-  // ============================================================================
-  const clearAll = useCallback(() => {
-    clear();
-    setSessionFiles([]);
-  }, [clear]);
-
-  // ============================================================================
-  // Return hook API
-  // ============================================================================
   return {
     messages,
     sessionFiles,
+    currentSessionId,
     isLoading,
     error: error?.message ?? null,
     sendMessage,
     stop,
-    clear: clearAll,
   };
 }
