@@ -1,12 +1,12 @@
 /**
- * Routes Chat SSE Streaming - TanStack AI Protocol 2025
+ * Routes Chat SSE Streaming - @google/genai 2025
  *
- * Architecture 100% TanStack AI:
- * - Accepte format TanStack AI Protocol: { messages, data }
- * - Format SSE standard TanStack AI (data: {JSON}\n\n + data: [DONE]\n\n)
- * - Compatible @tanstack/ai-react useChat hook avec stream() adapter
+ * Architecture:
+ * - Accepte format { messages, data } pour compatibilité frontend
+ * - Streaming via @google/genai sendMessageStream()
+ * - Format SSE standard (data: {JSON}\n\n + data: [DONE]\n\n)
+ * - RAG automatique via Gemini function calling
  * - Auth, quota, et sauvegarde messages côté serveur
- * - RAG automatique via Server Tools
  */
 
 import { Elysia, t, sse } from 'elysia';
@@ -18,17 +18,17 @@ import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
 
 /**
- * TanStack AI Protocol - Message format
+ * Chat Protocol - Message format (frontend compatibility)
  */
-interface TanStackMessage {
+interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
 /**
- * TanStack AI Protocol - Request data
+ * Chat Protocol - Request data (frontend compatibility)
  */
-interface TanStackRequestData {
+interface ChatRequestData {
   subject: string;
   sessionId?: string;
   schoolLevel?: string;
@@ -41,14 +41,14 @@ interface TanStackRequestData {
 
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
   /**
-   * Route STREAMING SSE - TanStack AI Protocol 2025
+   * Route STREAMING SSE - @google/genai
    * POST /api/chat/stream
    *
-   * Accepte format TanStack AI Protocol: { messages, data }
+   * Accepte format Chat Protocol: { messages, data }
    * - messages: Array de messages conversation (ModelMessage[])
    * - data: Métadonnées custom (subject, sessionId, schoolLevel, firstName, fileId)
    *
-   * Format response SSE (compatible @tanstack/ai-react):
+   * Format response SSE:
    * - data: {"type":"content",...}\n\n
    * - data: {"type":"done",...}\n\n
    * - data: [DONE]\n\n
@@ -86,11 +86,11 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     const user = authResult.user;
 
     // ═══════════════════════════════════════════════════════════════════
-    // PHASE 1b: Parser TanStack AI Protocol { messages, data }
+    // PHASE 1b: Parser Chat Protocol { messages, data }
     // ═══════════════════════════════════════════════════════════════════
     const { messages, data } = body as {
-      messages: TanStackMessage[];
-      data: TanStackRequestData;
+      messages: ChatMessage[];
+      data: ChatRequestData;
     };
 
     // Extraire le dernier message utilisateur
@@ -225,14 +225,14 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     // 8. Variable pour tracking du contenu complet
     let fullContent = '';
 
-    // 9. Yield chaque chunk au format TanStack AI Protocol
+    // 9. Yield chaque chunk au format Chat Protocol
     for await (const chunk of streamGenerator) {
 
       if (chunk.type === 'content') {
         // Accumuler le contenu pour sauvegarde
         fullContent = chunk.content ?? fullContent;
 
-        // Yield chunk TanStack AI Protocol
+        // Yield chunk Chat Protocol
         yield sse({ data: chunk });
 
       } else if (chunk.type === 'done') {
@@ -254,7 +254,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           await tokenQuotaService.incrementTokenUsage(user.id, tokensUsed);
         }
 
-        logger.info('Streaming message saved (TanStack AI Protocol)', {
+        logger.info('Streaming message saved (Chat Protocol)', {
           userId: user.id,
           sessionId: chatSessionId,
           messageId: chunk.id,
@@ -264,29 +264,29 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           operation: 'chat-stream:save'
         });
 
-        // Yield done chunk TanStack AI Protocol
+        // Yield done chunk Chat Protocol
         yield sse({ data: chunk });
 
       } else if (chunk.type === 'error') {
-        // Yield error chunk TanStack AI Protocol
+        // Yield error chunk Chat Protocol
         yield sse({ data: chunk });
       }
     }
 
-    // 10. Yield [DONE] marker (TanStack AI Protocol standard)
+    // 10. Yield [DONE] marker (Chat Protocol standard)
     yield sse({ data: '[DONE]' });
 
     // Return explicite pour satisfaire TypeScript (generator terminé)
     return;
   }, {
-    // TanStack AI Protocol: { messages, data }
+    // Chat Protocol: { messages, data }
     body: t.Object({
       messages: t.Array(t.Object({
         role: t.Union([t.Literal('user'), t.Literal('assistant'), t.Literal('system')]),
         content: t.String({ maxLength: 10000 })
       }), {
         minItems: 1,
-        description: 'TanStack AI ModelMessage array'
+        description: 'Conversation message array'
       }),
       data: t.Object({
         subject: t.String({

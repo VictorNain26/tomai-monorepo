@@ -91,7 +91,7 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
         limit: 5,
       });
 
-      // 2. Génération réponse Gemini avec contexte RAG (TanStack AI)
+      // 2. Génération réponse Gemini avec contexte RAG (@google/genai)
       const { generateSimpleResponse } = await import('../lib/ai/index');
       const response = await generateSimpleResponse({
         level: niveau,

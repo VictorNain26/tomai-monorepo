@@ -28,7 +28,7 @@
 // Types
 export * from './types.js';
 
-// TanStack AI Card Generation (Single-Phase)
+// AI Card Generation (Single-Phase)
 export {
   generateCards,
   isGenerationError,

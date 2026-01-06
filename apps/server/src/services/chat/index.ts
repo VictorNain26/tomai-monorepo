@@ -11,11 +11,12 @@ export {
   type MultimodalFile
 } from './file-context.service.js';
 
-// Streaming Service - TanStack AI Protocol
+// Gemini Chat Service - @google/genai direct
+// Export sous le nom 'streamingService' pour compatibilité routes
 export {
-  streamingService,
+  geminiChatService as streamingService,
   type StreamGenerationParams,
-  type TanStackStreamChunk,
+  type GeminiStreamChunk,
   type AttachedFile,
   type HistoricalFileRef
-} from './streaming.service.js';
+} from './gemini-chat.service.js';

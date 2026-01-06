@@ -413,7 +413,7 @@ export const CardTypeSchema = z.enum([
 /**
  * Carte avec discriminated union basée sur cardType
  *
- * TanStack AI utilisera ce schema pour le structured output
+ * @google/genai utilise ce schema pour le structured output
  */
 export const ParsedCardSchema = z.discriminatedUnion('cardType', [
   // Pédagogique

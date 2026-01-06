@@ -1,36 +1,23 @@
 /**
- * TanStack AI - Exports centralisés
+ * Gemini AI - Exports centralisés
  *
  * Usage:
  * ```typescript
- * import { geminiAdapter, AI_MODELS, ragSearchTool } from '@/lib/ai';
+ * import { generateSimpleResponse } from '@/lib/ai';
  * import { CardGenerationOutputSchema } from '@/lib/ai';
  * ```
+ *
+ * Note: Services utilisent @google/genai directement (pas TanStack AI)
  */
 
-// Adapter & Configuration
-export {
-  geminiAdapter,
-  AI_MODELS,
-  type AIModel,
-} from './adapter.js';
-
-// Server Tools
-export {
-  ragSearchTool,
-  ragSearchToolDef,
-  type RAGSearchInput,
-  type RAGSearchOutput,
-} from './tools/index.js';
-
-// Simple Chat Service
+// Simple Chat Service (pour cas simples sans streaming)
 export {
   generateSimpleResponse,
   type SimpleChatParams,
   type SimpleChatResult,
 } from './simple-chat.service.js';
 
-// Schemas for Structured Output
+// Schemas for Structured Output (card generation)
 export {
   // Card Schemas
   CardTypeSchema,
