@@ -1,14 +1,13 @@
 /**
  * SuperChatInput - Input chat avec entrée vocale Web Speech API
  *
- * Architecture simplifiée (Best Practices ChatGPT/Claude 2025):
- * - Upload fichiers multi-support
+ * Architecture simplifiée:
+ * - Fichiers uploadés directement au contexte de session (pas de preview)
  * - Entrée vocale via Web Speech API (transcription temps réel)
- * - Pas de mode audio complexe (supprimé)
  */
 
-import React, { type FormEvent, type KeyboardEvent, type ReactElement, useState, useRef, useCallback } from 'react';
-import { Send, Loader2, Mic, Square, Paperclip, X, FileText, FileImage, File as FileIcon, AlertCircle } from 'lucide-react';
+import { type FormEvent, type KeyboardEvent, type ReactElement, type ChangeEvent, useState, useRef, useCallback } from 'react';
+import { Send, Loader2, Mic, Square, Paperclip, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -20,37 +19,14 @@ import type { IFileAttachment } from '@/types';
 import { cn } from '@/lib/utils';
 
 // ========================================
-// Helpers
-// ========================================
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
-
-function getFileIcon(file: File): React.ReactElement {
-  const { type } = file;
-
-  if (type.startsWith('image/')) {
-    return <FileImage className="h-4 w-4 text-blue-500" />;
-  } else if (type === 'application/pdf') {
-    return <FileText className="h-4 w-4 text-red-500" />;
-  } else if (type.includes('audio')) {
-    return <Mic className="h-4 w-4 text-purple-500" />;
-  }
-
-  return <FileIcon className="h-4 w-4 text-muted-foreground" />;
-}
-
-// ========================================
 // Component
 // ========================================
 
 interface ISuperChatInputProps {
-  readonly onSendMessage: (message: string, attachedFiles?: IFileAttachment[]) => Promise<void>;
+  /** Envoi d'un message texte */
+  readonly onSendMessage: (message: string) => Promise<void>;
+  /** Upload direct de fichier au contexte de session */
+  readonly onFileAttachedToContext?: (file: IFileAttachment) => Promise<void>;
   readonly isLoading: boolean;
   readonly disabled?: boolean;
   readonly placeholder?: string;
@@ -58,6 +34,7 @@ interface ISuperChatInputProps {
 
 export function SuperChatInput({
   onSendMessage,
+  onFileAttachedToContext,
   isLoading,
   disabled = false,
   placeholder = "Écrivez votre question..."
@@ -78,19 +55,13 @@ export function SuperChatInput({
     onTranscriptUpdate: handleTranscriptUpdate
   });
 
-  // File upload (Scaleway presigned URLs)
-  const {
-    files,
-    isProcessing,
-    uploadFile,
-    removeFile,
-    clearFiles
-  } = usePresignedUpload();
+  // File upload (Scaleway presigned URLs) - fichiers vont directement au contexte
+  const { isProcessing, uploadFile, clearFiles } = usePresignedUpload();
 
   // ========================================
   // Submit Handler
   // ========================================
-  const canSend = (manualText.trim().length > 0 || files.length > 0) && !isLoading && !disabled && !isProcessing && !voice.isActive;
+  const canSend = manualText.trim().length > 0 && !isLoading && !disabled && !isProcessing && !voice.isActive;
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -101,8 +72,7 @@ export function SuperChatInput({
     setManualText('');
 
     try {
-      await onSendMessage(messageToSend, files.length > 0 ? files : undefined);
-      clearFiles();
+      await onSendMessage(messageToSend);
       inputRef.current?.focus();
     } catch {
       setManualText(messageToSend);
@@ -110,17 +80,22 @@ export function SuperChatInput({
   };
 
   // ========================================
-  // File Upload Handler
+  // File Upload Handler - Fichiers envoyés directement au contexte
   // ========================================
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const fileList = e.target.files;
     if (fileList && fileList.length > 0) {
       for (let i = 0; i < fileList.length; i++) {
         const file = fileList[i];
         if (file) {
-          await uploadFile(file);
+          const attachment = await uploadFile(file);
+          if (attachment && onFileAttachedToContext) {
+            await onFileAttachedToContext(attachment);
+          }
         }
       }
+      // Nettoyer le state local après envoi au contexte
+      clearFiles();
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -213,56 +188,6 @@ export function SuperChatInput({
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* File attachments preview */}
-      {files.length > 0 && (
-        <div className="mb-2 sm:mb-3 flex flex-col gap-1.5 sm:gap-2">
-          <AnimatePresence>
-            {files.map((file, index) => (
-              <motion.div
-                key={file.fileId ?? `file-${file.file.name}-${index}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg border border-border bg-muted/30"
-              >
-                <div className="flex-shrink-0">
-                  {file.preview ? (
-                    <img
-                      src={file.preview}
-                      alt={file.file.name}
-                      className="h-10 w-10 rounded object-cover"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
-                      {getFileIcon(file.file)}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium truncate">
-                    {file.file.name}
-                  </p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">
-                    {formatFileSize(file.file.size)}
-                  </p>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeFile(index)}
-                  className="h-7 w-7 flex-shrink-0"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
 
       {/* Form principal */}
       <form onSubmit={handleSubmit} className="flex items-center gap-2 sm:gap-3">

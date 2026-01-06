@@ -537,10 +537,11 @@ export class ChatService {
   }
 
   /**
-   * Reset a session: delete messages and optionally files
-   * Keeps the session itself active for continued use
+   * Reset a session: archive the old one and create a new one
+   * Preserves history for parent visibility
+   * @returns The new session ID
    */
-  async resetSession(sessionId: string, userId: string, options?: { deleteFiles?: boolean }): Promise<void> {
+  async resetSession(sessionId: string, userId: string): Promise<string> {
     try {
       const validSessionId = safeUUID(sessionId);
       if (!validSessionId) {
@@ -553,39 +554,23 @@ export class ChatService {
         throw new Error('Session not found or access denied');
       }
 
-      // Récupérer les messages pour extraire les fileIds si on doit supprimer les fichiers
-      const sessionMessages = await messagesRepository.findBySessionId(validSessionId);
-
-      if (options?.deleteFiles) {
-        // Extraire et supprimer les fichiers
-        for (const msg of sessionMessages) {
-          if (msg.attachedFile && typeof msg.attachedFile === 'object' && 'fileId' in msg.attachedFile) {
-            const fileId = (msg.attachedFile as { fileId?: string }).fileId;
-            if (fileId) {
-              const file = await filesRepository.findById(fileId);
-              if (file) {
-                await deleteScalewayFile(file.storageKey);
-                await filesRepository.hardDelete(fileId);
-              }
-            }
-          }
-        }
-      }
-
-      // Supprimer tous les messages
-      await db.delete(messages).where(eq(messages.sessionId, validSessionId));
-
-      // Reset les métadonnées de session (fichiers attachés)
+      // Archiver l'ancienne session (status: completed)
       await studySessionsRepository.update(validSessionId, {
-        sessionMetadata: {}
+        status: 'completed',
+        endedAt: new Date(),
       });
 
-      logger.info('Session reset successfully', {
+      // Créer une nouvelle session active pour la même matière
+      const newSessionId = await this.createSession(userId, session.subject);
+
+      logger.info('Session reset: archived old, created new', {
         operation: 'chat:session:reset',
-        sessionId: validSessionId,
-        messagesDeleted: sessionMessages.length,
-        filesDeleted: options?.deleteFiles ?? false,
+        oldSessionId: validSessionId,
+        newSessionId,
+        subject: session.subject,
       });
+
+      return newSessionId;
     } catch (_error) {
       logger.error('Error resetting session', {
         operation: 'chat:session:reset',

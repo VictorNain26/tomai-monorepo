@@ -272,19 +272,45 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   );
 
   // ============================================================================
-  // Load conversation history when sessionId changes
+  // Load session and conversation history
   // ============================================================================
   useEffect(() => {
-    if (!sessionId) {
-      clear();
-      setSessionFiles([]); // Reset fichiers pour nouvelle session
+    // Si on a déjà un sessionId, charger l'historique directement
+    if (sessionId) {
+      void loadHistory(sessionId);
       return;
     }
 
-    const loadHistory = async () => {
+    // Sinon, récupérer/créer la session pour cette matière
+    if (subject) {
+      void fetchOrCreateSession();
+    }
+
+    async function fetchOrCreateSession() {
+      try {
+        const response = await fetch(`${getBackendURL()}/api/chat/session`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject }),
+        });
+
+        if (!response.ok) return;
+
+        const result = (await response.json()) as { success: boolean; sessionId?: string };
+        if (result.success && result.sessionId) {
+          sessionIdRef.current = result.sessionId;
+          onSessionCreated?.(result.sessionId);
+        }
+      } catch (err) {
+        logger.error('Failed to fetch session', { error: err, subject });
+      }
+    }
+
+    async function loadHistory(sid: string) {
       try {
         const response = await fetch(
-          `${getBackendURL()}/api/chat/session/${sessionId}/history`,
+          `${getBackendURL()}/api/chat/session/${sid}/history`,
           { credentials: 'include' }
         );
 
@@ -297,11 +323,9 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
             role: 'user' | 'assistant';
             content: string | { content: string };
             timestamp?: string;
-            // Métadonnées fichier attaché (contexte visuel persistant)
             attachedFile?: {
               fileName?: string;
               fileId?: string;
-              geminiFileId?: string;
               mimeType?: string;
             } | null;
           }>;
@@ -309,7 +333,7 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
 
         if (result.success && result.messages) {
           const uiMessages: UIMessage[] = [];
-          const loadedFiles: IChatFileAttachment[] = [];
+          const loadedFilesMap = new Map<string, IChatFileAttachment>();
 
           for (const msg of result.messages) {
             const textContent = typeof msg.content === 'string' ? msg.content : msg.content.content;
@@ -321,9 +345,9 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
               createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
             });
 
-            // Charger les fichiers depuis l'historique
-            if (msg.attachedFile?.fileId && msg.attachedFile.fileName) {
-              loadedFiles.push({
+            // Dédupliquer par fileId
+            if (msg.attachedFile?.fileId && msg.attachedFile.fileName && !loadedFilesMap.has(msg.attachedFile.fileId)) {
+              loadedFilesMap.set(msg.attachedFile.fileId, {
                 fileId: msg.attachedFile.fileId,
                 fileName: msg.attachedFile.fileName,
                 mimeType: msg.attachedFile.mimeType ?? 'application/octet-stream',
@@ -332,16 +356,14 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
           }
 
           setMessages(uiMessages);
-          setSessionFiles(loadedFiles);
-          logger.info('History loaded', { sessionId, count: uiMessages.length, files: loadedFiles.length });
+          setSessionFiles(Array.from(loadedFilesMap.values()));
+          logger.info('History loaded', { sessionId: sid, count: uiMessages.length, files: loadedFilesMap.size });
         }
       } catch (err) {
-        logger.error('Failed to load history', { error: err, sessionId });
+        logger.error('Failed to load history', { error: err, sessionId: sid });
       }
-    };
-
-    void loadHistory();
-  }, [sessionId, setMessages, clear]);
+    }
+  }, [sessionId, subject, onSessionCreated, setMessages]);
 
   // ============================================================================
   // Clear messages and files
