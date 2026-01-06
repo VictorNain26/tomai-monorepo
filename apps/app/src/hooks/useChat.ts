@@ -258,8 +258,12 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
       // Store fileIds for stream adapter to consume
       if (hasAttachments) {
         fileIdsRef.current = attachments.map(a => a.fileId);
-        // Ajouter les fichiers à la liste de session
-        setSessionFiles(prev => [...prev, ...attachments]);
+        // Ajouter fichiers (éviter doublons si historique rechargé)
+        setSessionFiles(prev => {
+          const existingIds = new Set(prev.map(f => f.fileId));
+          const newFiles = attachments.filter(a => !existingIds.has(a.fileId));
+          return [...prev, ...newFiles];
+        });
       }
 
       await tanstackSendMessage(content.trim() || '🎤 Enregistrement audio');
@@ -273,6 +277,7 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
   useEffect(() => {
     if (!sessionId) {
       clear();
+      setSessionFiles([]); // Reset fichiers pour nouvelle session
       return;
     }
 

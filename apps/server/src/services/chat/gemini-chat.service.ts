@@ -2,7 +2,7 @@
  * Service de chat Gemini 3 Flash - @google/genai
  *
  * Token-optimized architecture:
- * - Backend manages history (limit: 10, auto-summarization)
+ * - Backend manages history (limit: 20, auto-summarization when >10)
  * - Implicit caching via stable system prompt prefix
  * - Function calling for RAG (Qdrant + Mistral embeddings)
  * - SSE streaming with content/done/error chunks

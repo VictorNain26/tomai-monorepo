@@ -88,7 +88,6 @@ export type {
 
 // Voice types
 export type {
-  VoiceMode,
   IVoiceState,
   ITextToSpeechState,
 } from './voice.types';

@@ -9,7 +9,7 @@
 
 import { useNavigate, useSearchParams } from 'react-router';
 import { type FC, type ReactElement, useCallback, useEffect, useState } from 'react';
-import { Brain, Volume2, VolumeX, FileText, Download } from 'lucide-react';
+import { Brain, Volume2, VolumeX, FileText, Download, RotateCcw } from 'lucide-react';
 import smartToast from '@/utils/toastUtils';
 import SuperChatInput from '@/components/SuperChatInput';
 import { useChat } from '@/hooks/useChat';
@@ -24,6 +24,19 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import type { IFileAttachment, IChatFileAttachment } from '@/types';
 import { useAudio } from '@/lib/audioHooks';
 import { getBackendURL } from '@/utils/urls';
@@ -34,6 +47,9 @@ const Chat: FC = (): ReactElement => {
   const { subjects } = useStudentDashboard();
   const audio = useAudio();
   const [isDocsOpen, setIsDocsOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [deleteFilesOnReset, setDeleteFilesOnReset] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   // URL = source de vérité pour sessionId et subject
   const sessionId = searchParams.get('sessionId');
@@ -46,6 +62,7 @@ const Chat: FC = (): ReactElement => {
     isLoading,
     error,
     sendMessage,
+    clear: clearChat,
   } = useChat({
     sessionId,
     subject,
@@ -94,6 +111,64 @@ const Chat: FC = (): ReactElement => {
   const handleBackToDashboard = () => {
     void navigate('/student', { replace: true });
   };
+
+  // Reset session (clear messages, optionally delete files)
+  const handleReset = useCallback(async () => {
+    if (!sessionId) return;
+
+    setIsResetting(true);
+    try {
+      const response = await fetch(`${getBackendURL()}/api/chat/session/${sessionId}/reset`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deleteFiles: deleteFilesOnReset }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du reset');
+      }
+
+      // Clear local state
+      clearChat();
+      setIsResetDialogOpen(false);
+      setDeleteFilesOnReset(false);
+      smartToast.success('Conversation réinitialisée');
+    } catch {
+      smartToast.error('Erreur lors de la réinitialisation');
+    } finally {
+      setIsResetting(false);
+    }
+  }, [sessionId, deleteFilesOnReset, clearChat]);
+
+  // Download fichier via presigned URL (Scaleway)
+  const handleDownload = useCallback(async (fileId: string, fileName: string) => {
+    try {
+      const response = await fetch(`${getBackendURL()}/api/upload/file/${fileId}`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du téléchargement');
+      }
+
+      const data = await response.json() as { success: boolean; downloadUrl?: string };
+      if (data.success && data.downloadUrl) {
+        // Ouvrir l'URL de téléchargement
+        const link = document.createElement('a');
+        link.href = data.downloadUrl;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        throw new Error('URL de téléchargement non disponible');
+      }
+    } catch {
+      smartToast.error('Erreur lors du téléchargement du fichier');
+    }
+  }, []);
 
   const currentSubjectData = subjects.find(s => s.key === subject);
 
@@ -149,16 +224,14 @@ const Chat: FC = (): ReactElement => {
                             <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                             <span className="text-sm truncate">{file.fileName}</span>
                           </div>
-                          <a
-                            href={`${getBackendURL()}/api/upload/file/${file.fileId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-shrink-0"
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={() => handleDownload(file.fileId, file.fileName)}
                           >
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </a>
+                            <Download className="h-4 w-4" />
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -176,6 +249,51 @@ const Chat: FC = (): ReactElement => {
               >
                 {audio.state.isGlobalEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               </Button>
+
+              {/* Bouton Reset - visible si session existe */}
+              {sessionId && (
+                <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9"
+                      title="Réinitialiser la conversation"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Réinitialiser la conversation ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Cette action supprimera tous les messages de cette conversation.
+                        Tu pourras recommencer une nouvelle discussion sur ce sujet.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="flex items-center space-x-2 py-4">
+                      <Checkbox
+                        id="deleteFiles"
+                        checked={deleteFilesOnReset}
+                        onCheckedChange={(checked) => setDeleteFilesOnReset(checked === true)}
+                      />
+                      <Label htmlFor="deleteFiles" className="text-sm text-muted-foreground">
+                        Supprimer aussi les documents envoyés
+                      </Label>
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isResetting}>Annuler</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleReset}
+                        disabled={isResetting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isResetting ? 'Réinitialisation...' : 'Réinitialiser'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           }
         />
@@ -195,7 +313,6 @@ const Chat: FC = (): ReactElement => {
       {/* Input fixe en bas - ne rétrécit jamais */}
       <div className="flex-shrink-0 border-t border-border">
         <SuperChatInput
-          subject={subject}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
           placeholder="Posez votre question..."

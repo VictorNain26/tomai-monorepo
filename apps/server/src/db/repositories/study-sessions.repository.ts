@@ -89,6 +89,25 @@ export class StudySessionsRepository {
       .limit(limit);
   }
 
+  /**
+   * Find the active session for a user and subject
+   * Pattern: Session unique par matière (1 session par user+subject)
+   */
+  async findActiveByUserSubject(userId: string, subject: string): Promise<StudySession | undefined> {
+    const [session] = await db
+      .select()
+      .from(studySessions)
+      .where(
+        sql`${studySessions.userId} = ${userId}
+            AND ${studySessions.subject} = ${subject}
+            AND ${studySessions.status} = 'active'`
+      )
+      .orderBy(desc(studySessions.startedAt))
+      .limit(1);
+
+    return session;
+  }
+
   async findByUserIdWithStats(userId: string): Promise<Array<StudySession & { messageCount: number }>> {
     return await db
       .select({
@@ -108,22 +127,6 @@ export class StudySessionsRepository {
       .set({
         ...input,
         updatedAt: sql`NOW()` // Best practice Drizzle ORM: DB-level timestamp
-      })
-      .where(eq(studySessions.id, id))
-      .returning();
-
-    return session;
-  }
-
-  async endSession(id: string, durationMinutes: number, frustrationAvg?: number): Promise<StudySession | undefined> {
-    const [session] = await db
-      .update(studySessions)
-      .set({
-        status: 'completed',
-        endedAt: sql`NOW()`, // Best practice Drizzle ORM: DB-level timestamp
-        durationMinutes,
-        ...(frustrationAvg !== undefined && { frustrationAvg: frustrationAvg.toString() }),
-        updatedAt: sql`NOW()`, // Best practice Drizzle ORM: DB-level timestamp
       })
       .where(eq(studySessions.id, id))
       .returning();

@@ -1,27 +1,23 @@
 /**
- * SuperChatInput - Input chat moderne avec entrée vocale intelligente
+ * SuperChatInput - Input chat avec entrée vocale Web Speech API
  *
- * Features:
+ * Architecture simplifiée (Best Practices ChatGPT/Claude 2025):
  * - Upload fichiers multi-support
- * - Entrée vocale adaptée au contexte pédagogique:
- *   - Mode 'text' (Web Speech API) pour matières générales
- *   - Mode 'audio' (MediaRecorder) pour langues vivantes
- * - Preview audio avant envoi (contrôle utilisateur)
+ * - Entrée vocale via Web Speech API (transcription temps réel)
+ * - Pas de mode audio complexe (supprimé)
  */
 
-import React, { type FormEvent, type KeyboardEvent, type ReactElement, useState, useRef, useEffect, useCallback } from 'react';
+import React, { type FormEvent, type KeyboardEvent, type ReactElement, useState, useRef, useCallback } from 'react';
 import { Send, Loader2, Mic, Square, Paperclip, X, FileText, FileImage, File as FileIcon, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
-import { AudioPreview } from './AudioPreview';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { usePresignedUpload } from '@/hooks/usePresignedUpload';
-import type { IFileAttachment, VoiceMode } from '@/types';
+import type { IFileAttachment } from '@/types';
 import { cn } from '@/lib/utils';
-import { logger } from '@/lib/logger';
 
 // ========================================
 // Helpers
@@ -49,13 +45,6 @@ function getFileIcon(file: File): React.ReactElement {
   return <FileIcon className="h-4 w-4 text-muted-foreground" />;
 }
 
-// Matières linguistiques nécessitant analyse audio (prononciation)
-const LANGUAGE_SUBJECTS = ['anglais', 'espagnol', 'allemand', 'italien', 'chinois', 'russe', 'arabe', 'japonais'];
-
-function detectVoiceMode(subject: string): VoiceMode {
-  return LANGUAGE_SUBJECTS.includes(subject.toLowerCase()) ? 'audio' : 'text';
-}
-
 // ========================================
 // Component
 // ========================================
@@ -65,35 +54,26 @@ interface ISuperChatInputProps {
   readonly isLoading: boolean;
   readonly disabled?: boolean;
   readonly placeholder?: string;
-  readonly subject: string; // ✅ NOUVEAU - Détection automatique mode vocal
 }
 
 export function SuperChatInput({
   onSendMessage,
   isLoading,
   disabled = false,
-  placeholder = "Écrivez votre question...",
-  subject
+  placeholder = "Écrivez votre question..."
 }: ISuperChatInputProps): ReactElement {
 
   const [manualText, setManualText] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Détection automatique mode vocal selon matière
-  const voiceMode = detectVoiceMode(subject);
-
-  // Callback stable pour transcription (évite boucle infinie)
+  // Callback stable pour transcription
   const handleTranscriptUpdate = useCallback((text: string) => {
-    // Mode 'text': injecter transcription dans input
-    if (voiceMode === 'text') {
-      setManualText(prev => `${prev} ${text}`);
-    }
-  }, [voiceMode]);
+    setManualText(prev => `${prev} ${text}`.trim());
+  }, []);
 
-  // Hook vocal unifié (text ou audio selon mode)
+  // Hook vocal simplifié (Web Speech API uniquement)
   const voice = useVoiceInput({
-    mode: voiceMode,
     lang: 'fr-FR',
     onTranscriptUpdate: handleTranscriptUpdate
   });
@@ -108,55 +88,6 @@ export function SuperChatInput({
   } = usePresignedUpload();
 
   // ========================================
-  // Audio Preview State (mode audio uniquement)
-  // ========================================
-  const [showAudioPreview, setShowAudioPreview] = useState(false);
-
-  // Afficher preview quand blob audio disponible
-  useEffect(() => {
-    if (voiceMode === 'audio' && voice.audioBlob && !voice.isActive) {
-      setShowAudioPreview(true);
-    }
-  }, [voiceMode, voice.audioBlob, voice.isActive]);
-
-  // ========================================
-  // Handlers Audio Preview
-  // ========================================
-  const handleAudioConfirm = async () => {
-    if (!voice.audioBlob) return;
-
-    try {
-      // Créer File depuis Blob
-      const audioFile = new File(
-        [voice.audioBlob],
-        `audio-${Date.now()}.webm`,
-        { type: voice.audioBlob.type }
-      );
-
-      // Upload du fichier audio
-      await uploadFile(audioFile, { context: 'voice-pronunciation-analysis' });
-
-      // Envoyer direct (files array sera mis à jour automatiquement)
-      await onSendMessage('', files.concat({ file: audioFile, type: 'document' }));
-
-      // Nettoyer
-      setShowAudioPreview(false);
-      voice.clear();
-      clearFiles();
-      inputRef.current?.focus();
-
-    } catch (error) {
-      logger.error('Erreur lors de l\'envoi de l\'audio', { error });
-    }
-  };
-
-  const handleAudioReRecord = () => {
-    setShowAudioPreview(false);
-    voice.clear();
-    void voice.start();
-  };
-
-  // ========================================
   // Submit Handler
   // ========================================
   const canSend = (manualText.trim().length > 0 || files.length > 0) && !isLoading && !disabled && !isProcessing && !voice.isActive;
@@ -167,8 +98,6 @@ export function SuperChatInput({
     if (!canSend) return;
 
     const messageToSend = manualText.trim();
-
-    // Reset
     setManualText('');
 
     try {
@@ -176,7 +105,6 @@ export function SuperChatInput({
       clearFiles();
       inputRef.current?.focus();
     } catch {
-      // Restaurer texte en cas d'erreur
       setManualText(messageToSend);
     }
   };
@@ -206,10 +134,7 @@ export function SuperChatInput({
     if (voice.isActive) {
       voice.stop();
     } else {
-      // Effacer le texte précédent quand on démarre une nouvelle transcription (mode text)
-      if (voiceMode === 'text') {
-        setManualText('');
-      }
+      setManualText('');
       void voice.start();
     }
   };
@@ -231,7 +156,7 @@ export function SuperChatInput({
   // ========================================
   return (
     <div className="p-3 sm:p-4 md:p-6">
-      {/* Indicateur enregistrement avec VAD (mode audio) ou transcription (mode text) */}
+      {/* Indicateur transcription en cours */}
       <AnimatePresence>
         {voice.isActive && (
           <motion.div
@@ -247,31 +172,11 @@ export function SuperChatInput({
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                 </span>
                 <span className="text-sm font-medium">
-                  {voiceMode === 'audio'
-                    ? (voice.isSpeaking ? '🎤 Parole détectée...' : '⏸️ Silence (auto-envoi dans 1.5s)')
-                    : '🎤 Transcription en cours...'
-                  }
+                  🎤 Transcription en cours...
                 </span>
               </div>
-              {voiceMode === 'audio' && (
-                <span className="text-sm font-mono text-muted-foreground">{voice.duration}s / 30s</span>
-              )}
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Preview Audio (mode audio uniquement) */}
-      <AnimatePresence>
-        {showAudioPreview && voice.audioBlob && (
-          <div className="mb-3">
-            <AudioPreview
-              blob={voice.audioBlob}
-              duration={voice.duration}
-              onConfirm={handleAudioConfirm}
-              onReRecord={handleAudioReRecord}
-            />
-          </div>
         )}
       </AnimatePresence>
 
@@ -367,11 +272,7 @@ export function SuperChatInput({
             value={manualText}
             onChange={(e) => setManualText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={
-              voice.isActive
-                ? (voiceMode === 'audio' ? `🎤 Enregistrement... (${voice.duration}s/30s)` : '🎤 Transcription...')
-                : placeholder
-            }
+            placeholder={voice.isActive ? '🎤 Transcription...' : placeholder}
             disabled={disabled || isLoading || voice.isActive}
             className="resize-none"
             autoFocus
@@ -394,23 +295,19 @@ export function SuperChatInput({
           )}
         </Button>
 
-        {/* Voice button - Mode adapté au contexte */}
+        {/* Voice button - Web Speech API */}
         {voice.isSupported && (
           <Button
             type="button"
             variant={voice.isActive ? "destructive" : "outline"}
             size="icon"
-            disabled={disabled || isLoading || showAudioPreview}
+            disabled={disabled || isLoading}
             onClick={handleVoiceToggle}
             className={cn(
               "shrink-0 h-10 w-10 sm:h-11 sm:w-11 transition-all",
               voice.isActive && "ring-2 ring-red-500 ring-offset-2"
             )}
-            title={
-              voiceMode === 'audio'
-                ? '🎤 Enregistrer pour analyse prononciation'
-                : '🎤 Parler pour transcrire en texte'
-            }
+            title="🎤 Parler pour transcrire en texte"
           >
             {voice.isActive ? (
               <Square className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -441,7 +338,7 @@ export function SuperChatInput({
         type="file"
         multiple
         onChange={handleFileUpload}
-        accept="image/*,.pdf,.doc,.docx,.txt,audio/*"
+        accept="image/*,.pdf,.doc,.docx,.txt"
         className="hidden"
       />
     </div>

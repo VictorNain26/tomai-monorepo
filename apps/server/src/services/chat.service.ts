@@ -4,7 +4,7 @@
  */
 
 import { eq } from 'drizzle-orm';
-import { usersRepository, studySessionsRepository, messagesRepository, progressRepository, filesRepository, type CreateStudySessionInput } from '../db/repositories';
+import { usersRepository, studySessionsRepository, messagesRepository, filesRepository, type CreateStudySessionInput } from '../db/repositories';
 import { db } from '../db/connection';
 import { messages } from '../db/schema';
 import type { Message as DbMessage, SchoolLevel, AIModel } from '../db/schema';
@@ -66,9 +66,40 @@ export interface UserSession {
 
 export class ChatService {
   /**
+   * Get existing active session for subject, or create a new one
+   * Pattern: Session unique par matière
+   */
+  async getOrCreateSessionBySubject(userId: string, subject: string): Promise<string> {
+    try {
+      // Chercher une session active existante pour cette matière
+      const existingSession = await studySessionsRepository.findActiveByUserSubject(userId, subject);
+
+      if (existingSession) {
+        logger.info('Resuming existing session for subject', {
+          sessionId: existingSession.id,
+          userId,
+          subject,
+          operation: 'getOrCreateSessionBySubject:resume'
+        });
+        return existingSession.id;
+      }
+
+      // Pas de session active → en créer une nouvelle
+      return await this.createSession(userId, subject);
+    } catch (error) {
+      logger.error('Failed to get or create session', {
+        _error: error instanceof Error ? error.message : String(error),
+        userId,
+        subject,
+        operation: 'getOrCreateSessionBySubject',
+        severity: 'high' as const
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Create a new active session in database
-   * Sessions are created only when first message is sent
-   * PRODUCTION READY: Explicit PostgreSQL error handling
    */
   async createSession(userId: string, subject: string, topic?: string): Promise<string> {
     try {
@@ -229,63 +260,6 @@ export class ChatService {
         severity: 'medium' as const
       });
       return [];
-    }
-  }
-
-  /**
-   * End a study session with UUID validation
-   */
-  async endSession(sessionId: string): Promise<void> {
-    try {
-      // Valider l'UUID avant la requête
-      const validSessionId = safeUUID(sessionId);
-      if (!validSessionId) {
-        throw new Error(`Invalid session UUID: "${sessionId}"`);
-      }
-      
-      const session = await studySessionsRepository.findById(validSessionId);
-      if (!session) {
-        throw new Error('Session not found');
-      }
-
-      const endTime = new Date();
-      const startTime = session.startedAt;
-      const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-
-      // Calculate averages from messages
-      const sessionMessages = await messagesRepository.findBySessionId(validSessionId);
-      const assistantMessages = sessionMessages.filter(msg => msg.role === 'assistant');
-      
-      let frustrationAvg = null;
-      let questionLevelsAvg = null;
-      
-      if (assistantMessages.length > 0) {
-        const frustrationLevels = assistantMessages
-          .map(msg => msg.frustrationLevel)
-          .filter((level): level is number => level !== null);
-        
-        const questionLevels = assistantMessages
-          .map(msg => msg.questionLevel)
-          .filter((level): level is number => level !== null);
-
-        if (frustrationLevels.length > 0) {
-          frustrationAvg = frustrationLevels.reduce((sum, level) => sum + level, 0) / frustrationLevels.length;
-        }
-
-        if (questionLevels.length > 0) {
-          questionLevelsAvg = questionLevels.reduce((sum, level) => sum + level, 0) / questionLevels.length;
-        }
-      }
-
-      await studySessionsRepository.update(validSessionId, {
-        endedAt: endTime,
-        durationMinutes,
-        frustrationAvg: frustrationAvg?.toString(),
-        questionLevelsAvg: questionLevelsAvg?.toString()
-      });
-    } catch (_error) {
-      logger.error('Error ending session', { operation: 'chat:session:end', _error: _error instanceof Error ? _error.message : String(_error), sessionId, severity: 'medium' as const });
-      throw new Error('Failed to end session');
     }
   }
 
@@ -563,28 +537,63 @@ export class ChatService {
   }
 
   /**
-   * Update user progress for a concept
+   * Reset a session: delete messages and optionally files
+   * Keeps the session itself active for continued use
    */
-  async updateProgress(
-    userId: string,
-    subject: string,
-    concept: string,
-    masteryLevel: number,
-    practiceTime: number,
-    successRate: number
-  ): Promise<void> {
+  async resetSession(sessionId: string, userId: string, options?: { deleteFiles?: boolean }): Promise<void> {
     try {
-      await progressRepository.upsertProgress(
-        userId,
-        subject,
-        concept,
-        masteryLevel,
-        practiceTime,
-        successRate
-      );
+      const validSessionId = safeUUID(sessionId);
+      if (!validSessionId) {
+        throw new Error(`Invalid session UUID: "${sessionId}"`);
+      }
+
+      // Vérifier que la session appartient à l'utilisateur
+      const session = await studySessionsRepository.findById(validSessionId);
+      if (!session || session.userId !== userId) {
+        throw new Error('Session not found or access denied');
+      }
+
+      // Récupérer les messages pour extraire les fileIds si on doit supprimer les fichiers
+      const sessionMessages = await messagesRepository.findBySessionId(validSessionId);
+
+      if (options?.deleteFiles) {
+        // Extraire et supprimer les fichiers
+        for (const msg of sessionMessages) {
+          if (msg.attachedFile && typeof msg.attachedFile === 'object' && 'fileId' in msg.attachedFile) {
+            const fileId = (msg.attachedFile as { fileId?: string }).fileId;
+            if (fileId) {
+              const file = await filesRepository.findById(fileId);
+              if (file) {
+                await deleteScalewayFile(file.storageKey);
+                await filesRepository.hardDelete(fileId);
+              }
+            }
+          }
+        }
+      }
+
+      // Supprimer tous les messages
+      await db.delete(messages).where(eq(messages.sessionId, validSessionId));
+
+      // Reset les métadonnées de session (fichiers attachés)
+      await studySessionsRepository.update(validSessionId, {
+        sessionMetadata: {}
+      });
+
+      logger.info('Session reset successfully', {
+        operation: 'chat:session:reset',
+        sessionId: validSessionId,
+        messagesDeleted: sessionMessages.length,
+        filesDeleted: options?.deleteFiles ?? false,
+      });
     } catch (_error) {
-      logger.error('Error updating progress', { operation: 'chat:progress:update', _error: _error instanceof Error ? _error.message : String(_error), userId, subject, concept, severity: 'medium' as const });
-      throw new Error('Failed to update progress');
+      logger.error('Error resetting session', {
+        operation: 'chat:session:reset',
+        _error: _error instanceof Error ? _error.message : String(_error),
+        sessionId,
+        severity: 'medium' as const
+      });
+      throw new Error('Failed to reset session');
     }
   }
 
