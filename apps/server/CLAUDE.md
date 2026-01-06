@@ -21,6 +21,7 @@
 - **AI** : Google Gemini 2.5 Flash (chat), Mistral AI (embeddings 1024D), Gladia (STT), ElevenLabs (TTS)
 - **Cache** : Redis 7 (ioredis 5.4.1 + @upstash/redis 1.35.8)
 - **Vector Search** : Qdrant Cloud direct + Mistral embeddings 1024D + BM25 reranking
+- **Storage** : Scaleway Object Storage (S3-compatible, RGPD France, fr-par)
 - **Pronote** : Pawnote 1.6.2 + AES-256-GCM encryption (PBKDF2 600K iterations)
 
 ## Commandes
@@ -45,6 +46,8 @@ bun run build        # Build production
 - **Bun Runtime** : https://bun.sh/docs - Performance, Docker
 - **Google Gemini** : https://ai.google.dev/gemini-api/docs - API optimisée, adhérence 97%
 - **pgvector** : https://github.com/pgvector/pgvector - PostgreSQL vector extension pour RAG
+- **Scaleway S3** : https://www.scaleway.com/en/docs/object-storage - Presigned URLs, RGPD France
+- **AWS SDK v3** : https://github.com/aws/aws-sdk-js-v3 - S3 client pour Scaleway
 
 ## Règles strictes
 
@@ -131,10 +134,15 @@ src/
 │   ├── redis-cache.service.ts      # Gestion cache Redis
 │   ├── chat.service.ts             # Orchestration chat socratique
 │   ├── education.service.ts        # Matières/niveaux disponibles
-│   └── pronote.service.ts          # Pronote QR auth + SSRF protection
+│   ├── pronote.service.ts          # Pronote QR auth + SSRF protection
+│   ├── storage/
+│   │   └── scaleway-storage.service.ts # Scaleway S3 presigned URLs
+│   └── chat/
+│       └── file-context.service.ts # Contexte fichiers pour chat
 ├── routes/                          # API endpoints
 │   ├── api.routes.ts               # Routes principales
 │   ├── chat-message.routes.ts      # Chat streaming
+│   ├── file-upload.routes.ts       # Upload presigned (Scaleway)
 │   └── pronote.routes.ts           # Intégration Pronote + recherche établissements
 ├── db/
 │   ├── schema.ts                   # Drizzle schema
@@ -210,6 +218,36 @@ src/
 ```bash
 # Générer avec: openssl rand -base64 48
 PRONOTE_ENCRYPTION_KEY=<64 chars base64>
+```
+
+## File Storage (Scaleway)
+
+Stockage fichiers RGPD-compliant via Scaleway Object Storage (datacenter fr-par).
+
+### Architecture
+- **Upload** : Presigned URLs (frontend → Scaleway direct, bypass backend)
+- **Metadata** : PostgreSQL (table `files`)
+- **Limite** : 10MB max, types images/PDF/audio/documents
+
+### Flow upload
+1. `GET /api/upload/presign` → Presigned URL (15min expiry)
+2. `PUT` direct vers Scaleway (client-side)
+3. `POST /api/upload/confirm/:fileId` → Validation + sync Gemini
+
+### Endpoints
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/upload/presign` | Génère presigned URL |
+| `POST /api/upload/confirm/:fileId` | Confirme upload réussi |
+| `GET /api/upload/file/:fileId` | Download presigned URL |
+| `DELETE /api/upload/file/:fileId` | Supprime fichier |
+
+### Variables d'environnement
+```bash
+SCALEWAY_ACCESS_KEY=<access_key>
+SCALEWAY_SECRET_KEY=<secret_key>
+SCALEWAY_BUCKET=<bucket_name>
+SCALEWAY_REGION=fr-par
 ```
 
 ## Seed RAG Data (Optionnel)

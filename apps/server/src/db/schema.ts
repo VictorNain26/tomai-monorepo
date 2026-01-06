@@ -488,6 +488,72 @@ export const costTracking = pgTable('cost_tracking', {
 }));
 
 // =============================================
+// FILES - Stockage Scaleway Object Storage (RGPD)
+// =============================================
+
+/**
+ * Enum pour le statut des fichiers
+ */
+export const fileStatusEnum = pgEnum('file_status', [
+  'pending',    // Upload en cours (presigned URL généré)
+  'uploaded',   // Fichier uploadé dans Scaleway
+  'processing', // Analyse en cours (Gemini)
+  'ready',      // Prêt à utiliser
+  'expired',    // Gemini URI expiré (48h)
+  'deleted'     // Supprimé
+]);
+
+// Type inféré de l'enum pour TypeScript
+export type FileStatus = (typeof fileStatusEnum.enumValues)[number];
+
+/**
+ * Table files - Métadonnées fichiers uploadés
+ * Stockage: Scaleway Object Storage (RGPD France)
+ * Analyse: Gemini Files API (cache 48h)
+ */
+export const files = pgTable('files', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+
+  // Infos fichier original
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+
+  // Stockage Scaleway S3
+  storageKey: varchar('storage_key', { length: 500 }).notNull(), // Clé S3 dans le bucket
+  storageBucket: varchar('storage_bucket', { length: 100 }).notNull(),
+  storageRegion: varchar('storage_region', { length: 20 }).notNull().default('fr-par'),
+
+  // Gemini Files API (cache 48h pour multimodal)
+  geminiFileUri: varchar('gemini_file_uri', { length: 500 }), // files/xxx format
+  geminiExpiresAt: timestamp('gemini_expires_at', { withTimezone: true }),
+
+  // Contexte éducatif (résultat d'analyse)
+  educationalContext: jsonb('educational_context').default(sql`'{}'::jsonb`),
+  // Structure: { analysisContext, extractedText, documentType, subject, hadRAG, classification, ragContext, metrics }
+
+  // Statut et métadonnées
+  status: fileStatusEnum('status').notNull().default('pending'),
+  metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
+
+  // Audit
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [user.id],
+    name: 'files_user_id_fkey'
+  }).onDelete('cascade'), // Supprimer fichiers si user supprimé
+
+  userIdIdx: index('idx_files_user_id').on(table.userId),
+  statusIdx: index('idx_files_status').on(table.status),
+  storageKeyIdx: index('idx_files_storage_key').on(table.storageKey),
+  createdAtIdx: index('idx_files_created_at').on(table.createdAt),
+}));
+
+// =============================================
 // RELATIONS DRIZZLE
 // =============================================
 
@@ -510,6 +576,9 @@ export const userRelations = relations(user, ({ one, many }) => ({
   studySessions: many(studySessions),
   progress: many(progress),
   costTracking: many(costTracking),
+
+  // File uploads (Scaleway Object Storage)
+  files: many(files),
 
   // Learning Tools (Flashcards, QCM, Vrai/Faux)
   learningDecks: many(learningDecks),
@@ -569,6 +638,13 @@ export const costTrackingRelations = relations(costTracking, ({ one }) => ({
   session: one(studySessions, {
     fields: [costTracking.sessionId],
     references: [studySessions.id]
+  }),
+}));
+
+export const filesRelations = relations(files, ({ one }) => ({
+  user: one(user, {
+    fields: [files.userId],
+    references: [user.id]
   }),
 }));
 

@@ -17,7 +17,7 @@ import { useStudentDashboard } from '@/hooks/useStudentDashboard';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { ChatConversation } from '@/components/chat/organisms/ChatConversation';
-import type { IFileAttachment } from '@/types';
+import type { IFileAttachment, IChatFileAttachment } from '@/types';
 import { useAudio } from '@/lib/audioHooks';
 
 const Chat: FC = (): ReactElement => {
@@ -33,9 +33,11 @@ const Chat: FC = (): ReactElement => {
   // Hook de chat TanStack AI
   const {
     messages,
+    messageAttachments,
     isLoading,
     error,
-    sendMessage
+    sendMessage,
+    removeAttachment
   } = useChat({
     sessionId,
     subject,
@@ -64,12 +66,18 @@ const Chat: FC = (): ReactElement => {
     }
 
     try {
-      // Extraire tous les fileIds des fichiers attachés
-      const fileIds = attachedFiles
-        ?.map(file => file.fileId)
-        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+      // Convertir IFileAttachment en IChatFileAttachment pour affichage
+      const attachments: IChatFileAttachment[] | undefined = attachedFiles
+        ?.filter((file): file is IFileAttachment & { fileId: string } => typeof file.fileId === 'string')
+        .map(file => ({
+          fileId: file.fileId,
+          fileName: file.file.name,
+          mimeType: file.file.type,
+          size: file.file.size,
+          preview: file.preview,
+        }));
 
-      await sendMessage(content, fileIds && fileIds.length > 0 ? fileIds : undefined);
+      await sendMessage(content, attachments && attachments.length > 0 ? attachments : undefined);
     } catch {
       smartToast.error('Erreur lors de l\'envoi du message');
     }
@@ -118,6 +126,8 @@ const Chat: FC = (): ReactElement => {
       <div className="flex-1 min-h-0">
         <ChatConversation
           messages={messages}
+          messageAttachments={messageAttachments}
+          onRemoveAttachment={removeAttachment}
           isLoading={isLoading}
           error={error}
           isAudioEnabled={audio.state.isGlobalEnabled}

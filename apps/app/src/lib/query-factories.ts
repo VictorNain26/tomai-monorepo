@@ -207,17 +207,14 @@ export const chatMutations = {
   }),
 };
 
-// ===== FILE MUTATIONS =====
+// ===== FILE MUTATIONS (Scaleway V2) =====
 
 export const fileMutations = {
-  upload: () => ({
-    mutationKey: ['files', 'upload'] as const,
-    mutationFn: (formData: FormData) => apiClient.upload('/api/upload/file', formData),
-  }),
+  // Upload handled by usePresignedUpload hook (presign → direct PUT → confirm)
 
   delete: () => ({
     mutationKey: ['files', 'delete'] as const,
-    mutationFn: (fileId: string) => apiClient.delete(`/api/files/${fileId}`),
+    mutationFn: (fileId: string) => apiClient.delete(`/api/upload/file/${fileId}`),
   }),
 };
 

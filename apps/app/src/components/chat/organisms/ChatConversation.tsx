@@ -11,9 +11,14 @@ import type { UIMessage } from '@tanstack/ai-react';
 import { cn } from '@/lib/utils';
 import { MessagesList } from '../molecules/MessagesList';
 import { ChatError } from '../molecules/ChatError';
+import type { IChatFileAttachment } from '@/types';
 
 export interface ChatConversationProps {
   messages: UIMessage[];
+  /** Fichiers attachés par message (Map<messageId, attachments[]>) */
+  messageAttachments?: Map<string, IChatFileAttachment[]>;
+  /** Callback pour supprimer un fichier attaché */
+  onRemoveAttachment?: (messageId: string, fileId: string) => void;
   /** True si le chat est en cours de streaming */
   isLoading?: boolean;
   error?: string | null;
@@ -24,6 +29,8 @@ export interface ChatConversationProps {
 
 export function ChatConversation({
   messages,
+  messageAttachments,
+  onRemoveAttachment,
   isLoading = false,
   error,
   isAudioEnabled = false,
@@ -57,6 +64,8 @@ export function ChatConversation({
       {/* Messages list - prend tout l'espace et gère son propre scroll */}
       <MessagesList
         messages={displayMessages}
+        messageAttachments={messageAttachments}
+        onRemoveAttachment={onRemoveAttachment}
         isLoading={isLoading}
         isAudioEnabled={isAudioEnabled}
         className="flex-1 min-h-0"

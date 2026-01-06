@@ -1,9 +1,8 @@
 /**
  * Export central des services chat
- * Architecture 100% TanStack AI Protocol 2025
  */
 
-// File Context Service - Gestion fichiers attachés et contexte session
+// File Context Service - Scaleway + PostgreSQL (RGPD France)
 export {
   fileContextService,
   type AttachedFileInfo,

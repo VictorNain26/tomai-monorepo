@@ -51,13 +51,14 @@ src/
 ├── components/
 │   ├── ui/              # shadcn/ui (SEULE source UI)
 │   ├── auth/            # Authentification
+│   ├── chat/            # Composants chat (atoms, molecules, organisms)
 │   ├── modals/          # Modals
 │   └── Layout/          # Sidebar, navigation
 ├── pages/               # Pages React Router
-├── hooks/               # Hooks personnalisés
-├── lib/                 # Config (auth, api, queryClient)
+├── hooks/               # Hooks personnalisés (useChat, usePresignedUpload)
+├── lib/                 # Config (auth, api-client, queryClient)
 ├── services/            # Services API
-├── types/               # Types globaux
+├── types/               # Types globaux (IFileAttachment, FileType)
 ├── utils/               # Utilitaires
 └── constants/           # Constantes
 ```
@@ -152,6 +153,28 @@ function Profile() {
 }
 ```
 
+### Upload fichiers (Presigned URLs)
+
+Upload direct vers Scaleway Object Storage (RGPD France) via presigned URLs.
+
+```typescript
+import { usePresignedUpload } from '@/hooks/usePresignedUpload'
+
+function FileUploader() {
+  const { uploadFile, files, isProcessing, removeFile } = usePresignedUpload();
+
+  const handleUpload = async (file: File) => {
+    // Flow: GET presigned URL → PUT direct Scaleway → CONFIRM backend
+    const attachment = await uploadFile(file, { context: 'chat' });
+    if (attachment) {
+      console.log('Upload réussi:', attachment.fileId);
+    }
+  };
+}
+```
+
+**Limites** : 10MB max, types supportés : images, PDF, audio, documents Word/texte.
+
 ## Sources officielles
 
 - **shadcn/ui** : https://ui.shadcn.com/docs/components
@@ -160,6 +183,7 @@ function Profile() {
 - **TanStack Query** : https://tanstack.com/query/latest
 - **React Router 7** : https://reactrouter.com
 - **Better Auth** : https://better-auth.com/docs
+- **Scaleway S3** : https://www.scaleway.com/en/docs/object-storage (presigned URLs)
 
 ## Validation pré-commit
 

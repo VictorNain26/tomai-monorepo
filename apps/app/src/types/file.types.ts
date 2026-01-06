@@ -2,7 +2,7 @@
  * File Types - Upload et gestion de fichiers
  */
 
-export type FileType = 'image' | 'pdf' | 'document';
+export type FileType = 'image' | 'pdf' | 'document' | 'audio';
 
 export interface IFileAttachment {
   file: File;
@@ -47,4 +47,16 @@ export interface IFileProcessingOptions {
   enablePreview?: boolean;
   useGeminiFiles?: boolean; // Auto for files >20MB
   analysisContext?: string;
+}
+
+/**
+ * Fichier attaché dans un message chat (affichage uniquement)
+ * Version légère pour affichage dans ChatMessage
+ */
+export interface IChatFileAttachment {
+  fileId: string;
+  fileName: string;
+  mimeType: string;
+  size?: number;
+  preview?: string; // URL ou base64 pour preview image
 }
