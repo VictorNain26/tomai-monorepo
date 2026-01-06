@@ -1,19 +1,18 @@
 /**
  * MessagesList - Molecule liste messages
  *
- * UIMessage avec parts[] - Container scrollable avec messages
- * ✨ UX MODERNE: Animations Framer Motion + Smooth scroll + Stagger effect
- * Note: Fichiers attachés affichés dans panneau Documents séparé
+ * Container scrollable avec messages
+ * Animations Framer Motion + Smooth scroll + Stagger effect
  */
 
 import { type ReactElement, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { UIMessage } from '@tanstack/ai-react';
+import type { ChatMessage as ChatMessageType } from '@/hooks/useChat';
 import { cn } from '@/lib/utils';
 import { ChatMessage } from './ChatMessage';
 
 export interface MessagesListProps {
-  messages: UIMessage[];
+  messages: ChatMessageType[];
   /** True si le chat est en cours de streaming */
   isLoading?: boolean;
   isAudioEnabled?: boolean;
