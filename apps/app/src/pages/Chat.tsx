@@ -81,27 +81,39 @@ const Chat: FC = (): ReactElement => {
     };
   }, [stopSpeaking]);
 
-  const handleSendMessage = useCallback(async (content: string, attachedFiles?: IFileAttachment[]) => {
+  const handleSendMessage = useCallback(async (content: string) => {
     if (!subject) {
       smartToast.error('Aucune matière sélectionnée');
       return;
     }
 
     try {
-      // Convertir IFileAttachment en IChatFileAttachment pour affichage
-      const attachments: IChatFileAttachment[] | undefined = attachedFiles
-        ?.filter((file): file is IFileAttachment & { fileId: string } => typeof file.fileId === 'string')
-        .map(file => ({
-          fileId: file.fileId,
-          fileName: file.file.name,
-          mimeType: file.file.type,
-          size: file.file.size,
-          preview: file.preview,
-        }));
-
-      await sendMessage(content, attachments && attachments.length > 0 ? attachments : undefined);
+      await sendMessage(content);
     } catch {
       smartToast.error('Erreur lors de l\'envoi du message');
+    }
+  }, [subject, sendMessage]);
+
+  // Upload fichier directement au contexte de session (sans message visible)
+  const handleFileAttachedToContext = useCallback(async (file: IFileAttachment) => {
+    if (!subject || !file.fileId) {
+      smartToast.error('Impossible d\'ajouter le document');
+      return;
+    }
+
+    try {
+      const attachment: IChatFileAttachment = {
+        fileId: file.fileId,
+        fileName: file.file.name,
+        mimeType: file.file.type,
+        size: file.file.size,
+        preview: file.preview,
+      };
+      // Envoyer avec placeholder pour attacher le fichier à la session
+      await sendMessage(`📎 ${file.file.name}`, [attachment]);
+      smartToast.success('Document ajouté au contexte');
+    } catch {
+      smartToast.error('Erreur lors de l\'ajout du document');
     }
   }, [subject, sendMessage]);
 
@@ -304,6 +316,7 @@ const Chat: FC = (): ReactElement => {
       <div className="flex-shrink-0 border-t border-border">
         <SuperChatInput
           onSendMessage={handleSendMessage}
+          onFileAttachedToContext={handleFileAttachedToContext}
           isLoading={isLoading}
           placeholder="Posez votre question..."
         />
