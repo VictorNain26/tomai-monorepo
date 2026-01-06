@@ -48,28 +48,32 @@ const Chat: FC = (): ReactElement => {
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
-  // URL = source de vérité pour sessionId et subject
-  const sessionId = searchParams.get('sessionId');
+  // URL = source de vérité pour subject, sessionId peut être créé par le hook
+  const urlSessionId = searchParams.get('sessionId');
   const subject = searchParams.get('subject') ?? 'mathematiques';
 
   // Hook de chat TanStack AI
   const {
     messages,
     sessionFiles,
+    currentSessionId,
     isLoading,
     error,
     sendMessage,
   } = useChat({
-    sessionId,
+    initialSessionId: urlSessionId,
     subject,
-    onSessionCreated: (newSessionId) => {
-      // Backend a créé une nouvelle session, mettre à jour l'URL
+  });
+
+  // Sync URL when session is created/changed
+  useEffect(() => {
+    if (currentSessionId && currentSessionId !== urlSessionId) {
       const params = new URLSearchParams();
       params.set('subject', subject);
-      params.set('sessionId', newSessionId);
+      params.set('sessionId', currentSessionId);
       void navigate(`/student/chat?${params.toString()}`, { replace: true });
     }
-  });
+  }, [currentSessionId, urlSessionId, subject, navigate]);
 
   const { stopSpeaking } = audio;
 
@@ -122,11 +126,11 @@ const Chat: FC = (): ReactElement => {
 
   // Reset session: archive l'ancienne et crée une nouvelle
   const handleReset = useCallback(async () => {
-    if (!sessionId) return;
+    if (!currentSessionId) return;
 
     setIsResetting(true);
     try {
-      const response = await fetch(`${getBackendURL()}/api/chat/session/${sessionId}/reset`, {
+      const response = await fetch(`${getBackendURL()}/api/chat/session/${currentSessionId}/reset`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -151,7 +155,7 @@ const Chat: FC = (): ReactElement => {
     } finally {
       setIsResetting(false);
     }
-  }, [sessionId, subject, navigate]);
+  }, [currentSessionId, subject, navigate]);
 
   // Download fichier via presigned URL (Scaleway)
   const handleDownload = useCallback(async (fileId: string, fileName: string) => {
@@ -263,7 +267,7 @@ const Chat: FC = (): ReactElement => {
               </Button>
 
               {/* Bouton Reset - visible si session existe */}
-              {sessionId && (
+              {currentSessionId && (
                 <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button
