@@ -388,103 +388,81 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         }
       };
 
-      // **SOLUTION OPTIMISÉE** : Redis chunking + TTL intelligent pour gros fichiers
-      // Promesse explicite avec gestion d'erreur - pas de floating promise
-      void (async () => {
-        let timeoutId: ReturnType<typeof setTimeout> | undefined;
-        try {
-          // TTL intelligent basé sur la taille du fichier
-          const getTTL = (fileSizeBytes: number): number => {
-            if (fileSizeBytes < 1024 * 1024) return 4 * 3600; // 4h petits files (<1MB)
-            if (fileSizeBytes < 5 * 1024 * 1024) return 2 * 3600; // 2h moyens (<5MB)
-            return 1 * 3600; // 1h gros files (≥5MB)
-          };
+      // **STOCKAGE REDIS SYNCHRONE** - Obligatoire avant de retourner le fileId
+      // Race condition corrigée: le fichier DOIT être dans Redis avant réponse
+      const getTTL = (fileSizeBytes: number): number => {
+        if (fileSizeBytes < 1024 * 1024) return 4 * 3600; // 4h petits files (<1MB)
+        if (fileSizeBytes < 5 * 1024 * 1024) return 2 * 3600; // 2h moyens (<5MB)
+        return 1 * 3600; // 1h gros files (≥5MB)
+      };
 
-          const ttl = getTTL(file.size);
-          const CHUNK_SIZE = 256 * 1024; // 256KB chunks pour optimiser Redis
+      const ttl = getTTL(file.size);
+      const CHUNK_SIZE = 256 * 1024; // 256KB chunks pour optimiser Redis
 
-          let storePromise: Promise<void>;
-
-          // Optimisation chunking pour fichiers >1MB
-          if (file.size > 1024 * 1024) {
-            // Stockage en chunks pour éviter les gros payloads Redis
-            const chunks: string[] = [];
-            for (let i = 0; i < base64Content.length; i += CHUNK_SIZE) {
-              chunks.push(base64Content.slice(i, i + CHUNK_SIZE));
-            }
-
-            // Métadonnées séparées + chunks en parallèle
-            const chunkPromises = chunks.map((chunk, index) =>
-              redisClient.setEx(`file:${fileId}:chunk:${index}`, ttl, chunk)
-            );
-
-            storePromise = Promise.all([
-              redisClient.setEx(`file:${fileId}:meta`, ttl, JSON.stringify({
-                metadata: fileMetadata,
-                mimeType: file.type,
-                totalChunks: chunks.length,
-                originalSize: file.size
-              })),
-              ...chunkPromises
-            ]).then(() => void 0);
-
-            logger.info('Using chunked storage for large file', {
-              operation: 'file:cache-chunked',
-              fileId,
-              chunks: chunks.length,
-              chunkSize: CHUNK_SIZE
-            });
-          } else {
-            // Stockage monolithique pour petits fichiers
-            storePromise = redisClient.setEx(
-              `file:${fileId}`,
-              ttl,
-              JSON.stringify({
-                content: base64Content,
-                metadata: fileMetadata,
-                mimeType: file.type
-              })
-            ).then(() => void 0);
+      try {
+        // Optimisation chunking pour fichiers >1MB
+        if (file.size > 1024 * 1024) {
+          // Stockage en chunks pour éviter les gros payloads Redis
+          const chunks: string[] = [];
+          for (let i = 0; i < base64Content.length; i += CHUNK_SIZE) {
+            chunks.push(base64Content.slice(i, i + CHUNK_SIZE));
           }
 
-          // Timeout Redis optimisé selon la stratégie
-          const timeoutMs = file.size > 1024 * 1024 ? 10000 : 5000; // 10s chunks, 5s mono
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(() => {
-              reject(new Error('Redis timeout'));
-            }, timeoutMs);
-          });
+          // Métadonnées séparées + chunks en parallèle
+          const chunkPromises = chunks.map((chunk, index) =>
+            redisClient.setEx(`file:${fileId}:chunk:${index}`, ttl, chunk)
+          );
 
-          await Promise.race([storePromise, timeoutPromise]);
+          await Promise.all([
+            redisClient.setEx(`file:${fileId}:meta`, ttl, JSON.stringify({
+              metadata: fileMetadata,
+              mimeType: file.type,
+              totalChunks: chunks.length,
+              originalSize: file.size
+            })),
+            ...chunkPromises
+          ]);
 
-          logger.info('File cached in Redis successfully (optimized)', {
-            operation: 'file:cache-optimized',
+          logger.info('Chunked storage complete', {
+            operation: 'file:cache-chunked',
             fileId,
-            sizeBytes: file.size,
-            ttlHours: ttl / 3600,
-            strategy: file.size > 1024 * 1024 ? 'chunked' : 'monolithic'
+            chunks: chunks.length,
+            chunkSize: CHUNK_SIZE
           });
-        } catch (cacheError) {
-          logger.error('Background Redis cache failed - this is critical for file processing', {
-            _error: cacheError instanceof Error ? cacheError.message : String(cacheError),
-            operation: 'file:cache-critical-failure',
-            fileId,
-            severity: 'high' as const
-          });
-          // Pas de fallback silencieux - les erreurs Redis doivent être remontées
-        } finally {
-          // Cleanup garanti dans tous les cas
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-          }
+        } else {
+          // Stockage monolithique pour petits fichiers
+          await redisClient.setEx(
+            `file:${fileId}`,
+            ttl,
+            JSON.stringify({
+              content: base64Content,
+              metadata: fileMetadata,
+              mimeType: file.type
+            })
+          );
         }
-      })();
 
-      logger.info('File upload completed (Redis caching in background)', {
-        operation: 'file:upload-fast',
-        fileId,
-        strategy: 'async-cache'
-      });
+        logger.info('File cached in Redis successfully', {
+          operation: 'file:cache-complete',
+          fileId,
+          sizeBytes: file.size,
+          ttlHours: ttl / 3600,
+          strategy: file.size > 1024 * 1024 ? 'chunked' : 'monolithic'
+        });
+      } catch (cacheError) {
+        logger.error('Redis cache failed - file upload rejected', {
+          _error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+          operation: 'file:cache-failure',
+          fileId,
+          severity: 'high' as const
+        });
+        set.status = 500;
+        return {
+          success: false,
+          fileType,
+          _error: 'File storage failed - please retry'
+        } as FileUploadResult;
+      }
 
       // ========================================
       // 🎤 TRANSCRIPTION AUTOMATIQUE AUDIO
