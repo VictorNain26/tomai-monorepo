@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useUser } from '@/lib/auth';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
@@ -47,7 +47,6 @@ export function useOptimizedFileUpload(
   const [error, setError] = useState<string | null>(null);
 
   const user = useUser();
-  const queryClient = useQueryClient();
 
   // TanStack Query mutation directe (optimal selon doc)
   const uploadMutation = useMutation({
@@ -58,17 +57,8 @@ export function useOptimizedFileUpload(
     },
     onSuccess: () => {
       toast.success('📁 Fichier uploadé avec succès');
-      // Invalider les caches liés - avec gestion d'erreur explicite
-      try {
-        void queryClient.invalidateQueries({ queryKey: ['user-files'] });
-        void queryClient.invalidateQueries({ queryKey: ['chat-attachments'] });
-      } catch (invalidateError) {
-        logger.warn('Cache invalidation failed', {
-          component: 'useOptimizedFileUpload',
-          operation: 'onSuccess',
-          metadata: { invalidateError }
-        });
-      }
+      // Note: Pas d'invalidation de cache nécessaire
+      // Les fichiers sont stockés en Redis (TTL) et gérés localement dans ce hook
     }
   });
 

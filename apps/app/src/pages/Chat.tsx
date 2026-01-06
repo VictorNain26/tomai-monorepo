@@ -129,7 +129,7 @@ const Chat: FC = (): ReactElement => {
       <div className="flex-shrink-0 border-t border-border">
         <SuperChatInput
           subject={subject}
-          onSendMessage={(message, attachedFile) => handleSendMessage(message, attachedFile)}
+          onSendMessage={handleSendMessage}
           isLoading={isLoading}
           placeholder="Posez votre question..."
         />
