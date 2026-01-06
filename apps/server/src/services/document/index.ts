@@ -1,9 +1,9 @@
 /**
  * Document Services - Point d'entrée unifié
  *
- * Architecture TanStack AI 2025:
+ * Architecture @google/genai 2025:
  * - DocumentExtractionService: Extraction texte locale (PDF, DOCX, TXT)
- * - DocumentAnalysisService: Classification + Analyse unifiée avec TanStack AI
+ * - DocumentAnalysisService: Classification + Analyse unifiée avec @google/genai
  */
 
 export { documentExtractionService } from './document-extraction.service.js';

@@ -1,9 +1,9 @@
 /**
  * MessagesList - Molecule liste messages
  *
- * TanStack AI Protocol 2025 - UIMessage avec parts[]
- * Container scrollable avec messages organisés chronologiquement
+ * UIMessage avec parts[] - Container scrollable avec messages
  * ✨ UX MODERNE: Animations Framer Motion + Smooth scroll + Stagger effect
+ * Note: Fichiers attachés affichés dans panneau Documents séparé
  */
 
 import { type ReactElement, useEffect, useRef } from 'react';
@@ -11,14 +11,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { UIMessage } from '@tanstack/ai-react';
 import { cn } from '@/lib/utils';
 import { ChatMessage } from './ChatMessage';
-import type { IChatFileAttachment } from '@/types';
 
 export interface MessagesListProps {
   messages: UIMessage[];
-  /** Fichiers attachés par message (Map<messageId, attachments[]>) */
-  messageAttachments?: Map<string, IChatFileAttachment[]>;
-  /** Callback pour supprimer un fichier attaché */
-  onRemoveAttachment?: (messageId: string, fileId: string) => void;
   /** True si le chat est en cours de streaming */
   isLoading?: boolean;
   isAudioEnabled?: boolean;
@@ -65,8 +60,6 @@ const messageVariants = {
 
 export function MessagesList({
   messages,
-  messageAttachments,
-  onRemoveAttachment,
   isLoading = false,
   isAudioEnabled = false,
   className
@@ -100,8 +93,6 @@ export function MessagesList({
               >
                 <ChatMessage
                   message={message}
-                  attachments={messageAttachments?.get(message.id)}
-                  onRemoveAttachment={onRemoveAttachment ? (fileId) => onRemoveAttachment(message.id, fileId) : undefined}
                   isStreaming={isStreaming}
                   isAudioEnabled={isAudioEnabled}
                 />

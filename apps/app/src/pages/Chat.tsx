@@ -8,8 +8,8 @@
  */
 
 import { useNavigate, useSearchParams } from 'react-router';
-import { type FC, type ReactElement, useCallback, useEffect } from 'react';
-import { Brain, Volume2, VolumeX } from 'lucide-react';
+import { type FC, type ReactElement, useCallback, useEffect, useState } from 'react';
+import { Brain, Volume2, VolumeX, FileText, Download } from 'lucide-react';
 import smartToast from '@/utils/toastUtils';
 import SuperChatInput from '@/components/SuperChatInput';
 import { useChat } from '@/hooks/useChat';
@@ -17,14 +17,23 @@ import { useStudentDashboard } from '@/hooks/useStudentDashboard';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { ChatConversation } from '@/components/chat/organisms/ChatConversation';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import type { IFileAttachment, IChatFileAttachment } from '@/types';
 import { useAudio } from '@/lib/audioHooks';
+import { getBackendURL } from '@/utils/urls';
 
 const Chat: FC = (): ReactElement => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { subjects } = useStudentDashboard();
   const audio = useAudio();
+  const [isDocsOpen, setIsDocsOpen] = useState(false);
 
   // URL = source de vérité pour sessionId et subject
   const sessionId = searchParams.get('sessionId');
@@ -33,11 +42,10 @@ const Chat: FC = (): ReactElement => {
   // Hook de chat TanStack AI
   const {
     messages,
-    messageAttachments,
+    sessionFiles,
     isLoading,
     error,
     sendMessage,
-    removeAttachment
   } = useChat({
     sessionId,
     subject,
@@ -109,15 +117,66 @@ const Chat: FC = (): ReactElement => {
           icon={currentSubjectData?.emoji ? <span className="text-2xl">{currentSubjectData.emoji}</span> : <Brain className="h-6 w-6" />}
           onBack={handleBackToDashboard}
           actions={
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={audio.toggleGlobal}
-              title={audio.state.isGlobalEnabled ? "Désactiver l'audio" : "Activer l'audio"}
-              className="h-9 w-9"
-            >
-              {audio.state.isGlobalEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Bouton Documents - visible si fichiers présents */}
+              {sessionFiles.length > 0 && (
+                <Sheet open={isDocsOpen} onOpenChange={setIsDocsOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 gap-2"
+                      title="Voir les documents"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="hidden sm:inline">Documents</span>
+                      <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                        {sessionFiles.length}
+                      </span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle>Documents de la session</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4 space-y-3">
+                      {sessionFiles.map((file) => (
+                        <div
+                          key={file.fileId}
+                          className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                            <span className="text-sm truncate">{file.fileName}</span>
+                          </div>
+                          <a
+                            href={`${getBackendURL()}/api/upload/file/${file.fileId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-shrink-0"
+                          >
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              )}
+
+              {/* Bouton Audio */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={audio.toggleGlobal}
+                title={audio.state.isGlobalEnabled ? "Désactiver l'audio" : "Activer l'audio"}
+                className="h-9 w-9"
+              >
+                {audio.state.isGlobalEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
+            </div>
           }
         />
       </div>
@@ -126,8 +185,6 @@ const Chat: FC = (): ReactElement => {
       <div className="flex-1 min-h-0">
         <ChatConversation
           messages={messages}
-          messageAttachments={messageAttachments}
-          onRemoveAttachment={removeAttachment}
           isLoading={isLoading}
           error={error}
           isAudioEnabled={audio.state.isGlobalEnabled}

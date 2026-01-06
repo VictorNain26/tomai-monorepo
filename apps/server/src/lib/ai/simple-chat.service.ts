@@ -1,12 +1,12 @@
 /**
- * Simple Chat Service - TanStack AI Non-Streaming
+ * Simple Chat Service - @google/genai Non-Streaming
  *
  * Provides a simple interface for generating single responses
  * without streaming. Used for test routes and simple generation tasks.
  */
 
-import { chat } from '@tanstack/ai';
-import { geminiAdapter } from './adapter.js';
+import { GoogleGenAI } from '@google/genai';
+import { appConfig } from '../../config/app.config.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import type { EducationLevelType } from '../../types/index.js';
@@ -24,13 +24,16 @@ export interface SimpleChatResult {
   tokensUsed: number;
 }
 
+// Singleton GoogleGenAI instance
+const ai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
+
 /**
- * Generate a simple non-streaming response using TanStack AI
+ * Generate a simple non-streaming response using @google/genai
  */
 export async function generateSimpleResponse(
   params: SimpleChatParams
 ): Promise<SimpleChatResult> {
-  const provider = 'TanStack AI + Gemini';
+  const provider = '@google/genai';
   const levelText = getLevelText(params.level);
 
   // Build system prompt (LearnLM v3 architecture)
@@ -41,38 +44,22 @@ export async function generateSimpleResponse(
     ragContext: params.educationalContext,
   });
 
-  // Generate with TanStack AI (collect full response)
-  const stream = chat({
-    adapter: geminiAdapter,
-    messages: [
-      { role: 'user', content: params.userQuery }
-    ],
-    systemPrompts: [systemPrompt],
-    modelOptions: {
-      generationConfig: {
-        topK: 40
-      }
+  // Generate with @google/genai
+  const response = await ai.models.generateContent({
+    model: appConfig.ai.gemini.model,
+    contents: params.userQuery,
+    config: {
+      systemInstruction: systemPrompt,
+      topK: 40
     }
   });
 
-  // Collect the full response
-  let fullContent = '';
-  let tokensUsed = 0;
-
-  for await (const chunk of stream) {
-    if (chunk.type === 'content') {
-      fullContent += chunk.delta ?? '';
-    }
-    if (chunk.type === 'done' && chunk.usage) {
-      tokensUsed = chunk.usage.totalTokens ?? 0;
-    }
-    if (chunk.type === 'error') {
-      throw new Error(chunk.error?.message ?? 'Chat error');
-    }
-  }
+  const tokensUsed = response.usageMetadata
+    ? (response.usageMetadata.promptTokenCount ?? 0) + (response.usageMetadata.candidatesTokenCount ?? 0)
+    : 0;
 
   return {
-    content: fullContent,
+    content: response.text ?? '',
     provider,
     tokensUsed
   };

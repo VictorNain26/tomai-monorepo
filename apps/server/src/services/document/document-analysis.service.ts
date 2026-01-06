@@ -1,5 +1,5 @@
 /**
- * Document Analysis Service - TanStack AI Architecture 2025
+ * Document Analysis Service - @google/genai Architecture 2025
  *
  * Architecture optimisée extraction + inline context:
  * - TOUJOURS extraire le texte localement (unpdf, mammoth)
@@ -13,10 +13,9 @@
  * - Meilleure gestion des erreurs
  */
 
-import { chat } from '@tanstack/ai';
-import type { GeminiImageMimeType } from '@tanstack/ai-gemini';
+import { GoogleGenAI, type Part } from '@google/genai';
 import { z } from 'zod';
-import { geminiAdapter, AI_MODELS } from '../../lib/ai/index.js';
+import { appConfig } from '../../config/app.config.js';
 import { logger } from '../../lib/observability.js';
 import { documentExtractionService } from './document-extraction.service.js';
 import { ragService } from '../rag.service.js';
@@ -98,19 +97,25 @@ export interface DocumentAnalysisOptions {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Service d'analyse de documents - Architecture TanStack AI
+ * Service d'analyse de documents - Architecture @google/genai
  */
 class DocumentAnalysisService {
+  private readonly ai: GoogleGenAI;
+  private readonly model: string;
+
   constructor() {
-    logger.info('DocumentAnalysisService initialized with TanStack AI', {
-      model: AI_MODELS.chat,
+    this.ai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
+    this.model = appConfig.ai.gemini.model;
+
+    logger.info('DocumentAnalysisService initialized with @google/genai', {
+      model: this.model,
       architecture: 'extraction-inline-context'
     });
   }
 
   /**
    * Analyse complète d'un document (PDF, DOCX, TXT)
-   * Architecture unifiée : Extraction locale → RAG → Analyse TanStack AI
+   * Architecture unifiée : Extraction locale → RAG → Analyse @google/genai
    */
   async analyzeDocument(
     buffer: ArrayBuffer,
@@ -122,7 +127,7 @@ class DocumentAnalysisService {
     const { schoolLevel, userId, userQuestion } = options;
     const cleanMimeType = mimeType.split(';')[0]?.trim() ?? '';
 
-    logger.info('Starting document analysis (TanStack AI)', {
+    logger.info('Starting document analysis (@google/genai)', {
       fileName,
       mimeType: cleanMimeType,
       schoolLevel,
@@ -157,11 +162,11 @@ class DocumentAnalysisService {
       const ragResult = await this.queryRAG(extraction.text, schoolLevel);
 
       // ════════════════════════════════════════════════════════════════════
-      // ÉTAPE 3: ANALYSE UNIFIÉE VIA TANSTACK AI
+      // ÉTAPE 3: ANALYSE UNIFIÉE VIA @google/genai
       // Classification + Analyse pédagogique en un seul appel
       // ════════════════════════════════════════════════════════════════════
       const analysisStart = Date.now();
-      const { classification, analysis, tokensUsed } = await this.analyzeWithTanStackAI(
+      const { classification, analysis, tokensUsed } = await this.analyzeWithGoogleGenAI(
         extraction.text,
         ragResult.context,
         schoolLevel,
@@ -171,7 +176,7 @@ class DocumentAnalysisService {
 
       const totalTimeMs = Date.now() - startTime;
 
-      logger.info('Document analysis completed (TanStack AI)', {
+      logger.info('Document analysis completed (@google/genai)', {
         fileName,
         documentType: classification.documentType,
         subject: classification.subject,
@@ -221,7 +226,7 @@ class DocumentAnalysisService {
   }
 
   /**
-   * Analyse d'une image via TanStack AI multimodal
+   * Analyse d'une image via @google/genai multimodal
    */
   async analyzeImage(
     base64Data: string,
@@ -232,7 +237,7 @@ class DocumentAnalysisService {
     const startTime = Date.now();
     const { schoolLevel, userId, userQuestion } = options;
 
-    logger.info('Starting image analysis (TanStack AI multimodal)', {
+    logger.info('Starting image analysis (@google/genai multimodal)', {
       fileName,
       mimeType,
       schoolLevel,
@@ -250,7 +255,7 @@ class DocumentAnalysisService {
       const ragResult = await this.queryRAG('document scolaire image', schoolLevel);
 
       // Analyse multimodale avec image inline
-      const { classification, analysis, extractedText, tokensUsed } = await this.analyzeImageWithTanStackAI(
+      const { classification, analysis, extractedText, tokensUsed } = await this.analyzeImageWithGoogleGenAI(
         base64Data,
         mimeType,
         ragResult.context,
@@ -261,7 +266,7 @@ class DocumentAnalysisService {
       const analysisTimeMs = Date.now() - analysisStart;
       const totalTimeMs = Date.now() - startTime;
 
-      logger.info('Image analysis completed (TanStack AI)', {
+      logger.info('Image analysis completed (@google/genai)', {
         fileName,
         documentType: classification.documentType,
         subject: classification.subject,
@@ -274,7 +279,7 @@ class DocumentAnalysisService {
         success: true,
         extraction: {
           text: extractedText,
-          method: 'tanstack-ai-vision',
+          method: 'google-genai-vision',
           wordCount: extractedText.split(/\s+/).filter(w => w.length > 0).length
         },
         classification: {
@@ -306,9 +311,9 @@ class DocumentAnalysisService {
   }
 
   /**
-   * Analyse unifiée via TanStack AI (texte uniquement)
+   * Analyse unifiée via @google/genai (texte uniquement)
    */
-  private async analyzeWithTanStackAI(
+  private async analyzeWithGoogleGenAI(
     documentText: string,
     ragContext: string,
     schoolLevel: EducationLevelType,
@@ -325,41 +330,29 @@ class DocumentAnalysisService {
     const systemPrompt = this.buildSystemPrompt(schoolLevel, ragContext, userQuestion);
     const userPrompt = this.buildUserPrompt(truncatedText, schoolLevel, userQuestion);
 
-    let fullContent = '';
-    let tokensUsed = 0;
-
-    const stream = chat({
-      adapter: geminiAdapter,
-      messages: [
-        { role: 'user', content: userPrompt }
-      ],
-      systemPrompts: [systemPrompt],
-      modelOptions: {
-        generationConfig: {
-          topK: 40
-        }
+    const response = await this.ai.models.generateContent({
+      model: this.model,
+      contents: userPrompt,
+      config: {
+        systemInstruction: systemPrompt,
+        topK: 40
       }
     });
 
-    for await (const chunk of stream) {
-      if (chunk.type === 'content') {
-        fullContent += chunk.delta ?? '';
-      }
-      if (chunk.type === 'done' && chunk.usage) {
-        tokensUsed = chunk.usage.totalTokens ?? 0;
-      }
-    }
+    const tokensUsed = response.usageMetadata
+      ? (response.usageMetadata.promptTokenCount ?? 0) + (response.usageMetadata.candidatesTokenCount ?? 0)
+      : 0;
 
     // Parser la réponse JSON
-    const { classification, analysis } = this.parseAnalysisResponse(fullContent);
+    const { classification, analysis } = this.parseAnalysisResponse(response.text ?? '');
 
     return { classification, analysis, tokensUsed };
   }
 
   /**
-   * Analyse image via TanStack AI multimodal
+   * Analyse image via @google/genai multimodal
    */
-  private async analyzeImageWithTanStackAI(
+  private async analyzeImageWithGoogleGenAI(
     base64Data: string,
     mimeType: string,
     ragContext: string,
@@ -374,44 +367,32 @@ class DocumentAnalysisService {
     const systemPrompt = this.buildSystemPrompt(schoolLevel, ragContext, userQuestion);
     const userTextPrompt = this.buildImagePrompt(schoolLevel, userQuestion);
 
-    let fullContent = '';
-    let tokensUsed = 0;
+    // Message multimodal avec image inline (@google/genai format)
+    const parts: Part[] = [
+      { text: userTextPrompt },
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType
+        }
+      }
+    ];
 
-    // Message multimodal avec image inline (TanStack AI format)
-    const stream = chat({
-      adapter: geminiAdapter,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', content: userTextPrompt },
-            {
-              type: 'image',
-              source: { type: 'data', value: base64Data },
-              metadata: { mimeType: mimeType as GeminiImageMimeType }
-            }
-          ]
-        }
-      ],
-      systemPrompts: [systemPrompt],
-      modelOptions: {
-        generationConfig: {
-          topK: 40
-        }
+    const response = await this.ai.models.generateContent({
+      model: this.model,
+      contents: parts,
+      config: {
+        systemInstruction: systemPrompt,
+        topK: 40
       }
     });
 
-    for await (const chunk of stream) {
-      if (chunk.type === 'content') {
-        fullContent += chunk.delta ?? '';
-      }
-      if (chunk.type === 'done' && chunk.usage) {
-        tokensUsed = chunk.usage.totalTokens ?? 0;
-      }
-    }
+    const tokensUsed = response.usageMetadata
+      ? (response.usageMetadata.promptTokenCount ?? 0) + (response.usageMetadata.candidatesTokenCount ?? 0)
+      : 0;
 
     // Parser la réponse JSON
-    const { classification, analysis, extractedText } = this.parseImageAnalysisResponse(fullContent);
+    const { classification, analysis, extractedText } = this.parseImageAnalysisResponse(response.text ?? '');
 
     return { classification, analysis, extractedText, tokensUsed };
   }

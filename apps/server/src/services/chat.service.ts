@@ -4,12 +4,13 @@
  */
 
 import { eq } from 'drizzle-orm';
-import { usersRepository, studySessionsRepository, messagesRepository, progressRepository, type CreateStudySessionInput } from '../db/repositories';
+import { usersRepository, studySessionsRepository, messagesRepository, progressRepository, filesRepository, type CreateStudySessionInput } from '../db/repositories';
 import { db } from '../db/connection';
 import { messages } from '../db/schema';
 import type { Message as DbMessage, SchoolLevel, AIModel } from '../db/schema';
 import { safeUUID } from '../utils/uuid';
 import { logger } from '../lib/observability';
+import { deleteFile as deleteScalewayFile } from './storage/scaleway-storage.service.js';
 
 export interface SessionDetails {
   id: string;
@@ -493,6 +494,7 @@ export class ChatService {
 
   /**
    * Delete a session and its messages with UUID validation
+   * Also deletes associated files from Scaleway storage
    */
   async deleteSession(sessionId: string, userId?: string): Promise<void> {
     try {
@@ -501,7 +503,7 @@ export class ChatService {
       if (!validSessionId) {
         throw new Error(`Invalid session UUID: "${sessionId}"`);
       }
-      
+
       // Vérifier que la session appartient à l'utilisateur si userId fourni
       if (userId) {
         const session = await studySessionsRepository.findById(validSessionId);
@@ -509,12 +511,51 @@ export class ChatService {
           throw new Error('Session not found or access denied');
         }
       }
-      
-      // Delete all messages first (due to foreign key constraint)
+
+      // Récupérer les messages pour extraire les fileIds
+      const sessionMessages = await messagesRepository.findBySessionId(validSessionId);
+
+      // Extraire les fileIds des messages avec fichiers attachés
+      const fileIds: string[] = [];
+      for (const msg of sessionMessages) {
+        if (msg.attachedFile && typeof msg.attachedFile === 'object' && 'fileId' in msg.attachedFile) {
+          const fileId = (msg.attachedFile as { fileId?: string }).fileId;
+          if (fileId) {
+            fileIds.push(fileId);
+          }
+        }
+      }
+
+      // Supprimer les fichiers de Scaleway et de la base de données
+      if (fileIds.length > 0) {
+        logger.info('Deleting files associated with session', {
+          operation: 'chat:session:delete:files',
+          sessionId: validSessionId,
+          fileCount: fileIds.length,
+        });
+
+        for (const fileId of fileIds) {
+          const file = await filesRepository.findById(fileId);
+          if (file) {
+            // Supprimer de Scaleway
+            await deleteScalewayFile(file.storageKey);
+            // Supprimer de la base de données
+            await filesRepository.hardDelete(fileId);
+          }
+        }
+      }
+
+      // Delete all messages (due to foreign key constraint)
       await db.delete(messages).where(eq(messages.sessionId, validSessionId));
-      
+
       // Delete the session
       await studySessionsRepository.deleteById(validSessionId);
+
+      logger.info('Session deleted successfully', {
+        operation: 'chat:session:delete',
+        sessionId: validSessionId,
+        filesDeleted: fileIds.length,
+      });
     } catch (_error) {
       logger.error('Error deleting session', { operation: 'chat:session:delete', _error: _error instanceof Error ? _error.message : String(_error), sessionId, severity: 'medium' as const });
       throw new Error('Failed to delete session');

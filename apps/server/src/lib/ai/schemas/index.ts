@@ -1,5 +1,5 @@
 /**
- * TanStack AI Schemas - Exports centralisés
+ * AI Schemas - Exports centralisés
  *
  * Schemas Zod pour structured output avec Gemini
  *
