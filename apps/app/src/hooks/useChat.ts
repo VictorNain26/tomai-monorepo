@@ -280,22 +280,30 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
             role: 'user' | 'assistant';
             content: string | { content: string };
             timestamp?: string;
+            // Métadonnées fichier attaché (contexte visuel persistant)
+            attachedFile?: {
+              fileName?: string;
+              fileId?: string;
+              geminiFileId?: string;
+              mimeType?: string;
+            } | null;
           }>;
         };
 
         if (result.success && result.messages) {
-          const uiMessages: UIMessage[] = result.messages.map((msg) => ({
-            id: msg.id,
-            role: msg.role,
-            parts: [
-              {
-                type: 'text' as const,
-                content:
-                  typeof msg.content === 'string' ? msg.content : msg.content.content,
-              },
-            ],
-            createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-          }));
+          const uiMessages: UIMessage[] = result.messages.map((msg) => {
+            const textContent = typeof msg.content === 'string' ? msg.content : msg.content.content;
+
+            // Construire les parts TanStack AI
+            // Note: attachedFile est géré côté backend pour le contexte Gemini
+            // Le frontend affiche uniquement le texte pour l'instant
+            return {
+              id: msg.id,
+              role: msg.role,
+              parts: [{ type: 'text' as const, content: textContent }],
+              createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            };
+          });
 
           setMessages(uiMessages);
           logger.info('History loaded', { sessionId, count: uiMessages.length });
@@ -317,6 +325,5 @@ export function useChat({ sessionId, subject, onSessionCreated }: UseChatOptions
     error: error?.message ?? null,
     sendMessage,
     stop,
-    clearError: useCallback(() => {}, []),
   };
 }

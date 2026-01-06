@@ -5,13 +5,11 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useUser } from '@/lib/auth';
 import { toast } from 'sonner';
-import { logger } from '@/lib/logger';
 import { fileMutations } from '@/lib/query-factories';
-import { UPLOAD_CONFIG } from '@/lib/api-client';
-import type { IFileAttachment, IFileProcessingOptions, IFileUploadResult, FileType } from '@/types';
+import type { IFileAttachment, IFileUploadResult, FileType } from '@/types';
 
 interface UseOptimizedFileUploadReturn {
   files: IFileAttachment[];
@@ -22,32 +20,17 @@ interface UseOptimizedFileUploadReturn {
   uploadFile: (file: File, options?: { context?: string }) => Promise<IFileAttachment | null>;
   removeFile: (index: number) => void;
   clearFiles: () => void;
-
-  // Intégration chat - Multi-fichiers support
-  prepareFilesForMessage: () => string[];
 }
-
-const DEFAULT_OPTIONS: IFileProcessingOptions = {
-  maxSize: UPLOAD_CONFIG.maxSize,
-  allowedTypes: [...UPLOAD_CONFIG.allowedTypes],
-  enablePreview: true,
-  useGeminiFiles: true // Auto pour files >20MB
-};
 
 /**
  * Hook unifié pour upload et traitement de fichiers
- * Utilise TanStack Query au lieu d'axios
+ * Config validée côté backend (15MB max, types supportés)
  */
-export function useOptimizedFileUpload(
-  options: Partial<IFileProcessingOptions> = {}
-): UseOptimizedFileUploadReturn {
-  const _config = { ...DEFAULT_OPTIONS, ...options };
-
+export function useOptimizedFileUpload(): UseOptimizedFileUploadReturn {
   const [files, setFiles] = useState<IFileAttachment[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const user = useUser();
-  const queryClient = useQueryClient();
 
   // TanStack Query mutation directe (optimal selon doc)
   const uploadMutation = useMutation({
@@ -58,17 +41,8 @@ export function useOptimizedFileUpload(
     },
     onSuccess: () => {
       toast.success('📁 Fichier uploadé avec succès');
-      // Invalider les caches liés - avec gestion d'erreur explicite
-      try {
-        void queryClient.invalidateQueries({ queryKey: ['user-files'] });
-        void queryClient.invalidateQueries({ queryKey: ['chat-attachments'] });
-      } catch (invalidateError) {
-        logger.warn('Cache invalidation failed', {
-          component: 'useOptimizedFileUpload',
-          operation: 'onSuccess',
-          metadata: { invalidateError }
-        });
-      }
+      // Note: Pas d'invalidation de cache nécessaire
+      // Les fichiers sont stockés en Redis (TTL) et gérés localement dans ce hook
     }
   });
 
@@ -144,37 +118,13 @@ export function useOptimizedFileUpload(
     setError(null);
   }, []);
 
-  /**
-   * Préparation pour envoi au chat - Multi-fichiers
-   * Retourne tous les fileIds pour l'API backend
-   */
-  const prepareFilesForMessage = useCallback((): string[] => {
-    // Extraire tous les fileIds non-null des fichiers uploadés
-    const fileIds = files
-      .map(file => file.fileId)
-      .filter((id): id is string => typeof id === 'string' && id.length > 0);
-
-    logger.info('Files prepared for message', {
-      component: 'useOptimizedFileUpload',
-      operation: 'prepareFilesForMessage',
-      metadata: {
-        totalFiles: files.length,
-        fileIdsCount: fileIds.length,
-        fileIds
-      }
-    });
-
-    return fileIds;
-  }, [files]);
-
   return {
     files,
     isProcessing: uploadMutation.isPending,
     error: error ?? uploadMutation.error?.message ?? null,
     uploadFile,
     removeFile,
-    clearFiles,
-    prepareFilesForMessage
+    clearFiles
   };
 }
 
