@@ -23,8 +23,9 @@ import { cn } from '@/lib/utils';
 // ========================================
 
 interface ISuperChatInputProps {
-  readonly onSendMessage: (message: string, attachedFiles?: IFileAttachment[]) => Promise<void>;
-  /** Callback pour upload direct de fichier au contexte (sans message) */
+  /** Envoi d'un message texte */
+  readonly onSendMessage: (message: string) => Promise<void>;
+  /** Upload direct de fichier au contexte de session */
   readonly onFileAttachedToContext?: (file: IFileAttachment) => Promise<void>;
   readonly isLoading: boolean;
   readonly disabled?: boolean;

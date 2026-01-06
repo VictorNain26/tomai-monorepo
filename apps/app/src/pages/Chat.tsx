@@ -59,7 +59,6 @@ const Chat: FC = (): ReactElement => {
     isLoading,
     error,
     sendMessage,
-    clear: clearChat,
   } = useChat({
     sessionId,
     subject,
