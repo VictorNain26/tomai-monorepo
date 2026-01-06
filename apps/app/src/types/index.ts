@@ -83,6 +83,7 @@ export type {
   IFileAttachment,
   IFileUploadResult,
   IFileProcessingOptions,
+  IChatFileAttachment,
 } from './file.types';
 
 // Voice types

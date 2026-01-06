@@ -1,21 +1,23 @@
 /**
  * Service de gestion du contexte des fichiers pour le chat
  *
- * Architecture 2025:
- * - Utilise DocumentAnalysisService pour analyse complète (extraction + classification + RAG)
- * - Cache intelligent Redis avec TTL adaptatif
- * - Support fichiers chunked (>1MB) et monolithiques
+ * Architecture Scaleway + PostgreSQL (RGPD France):
+ * - Métadonnées: PostgreSQL (table files)
+ * - Contenu binaire: Scaleway Object Storage
+ * - Analyse: DocumentAnalysisService + cache DB
  */
 
-import { redis as redisClient } from '../../lib/redis.service.js';
+import { filesRepository } from '../../db/repositories/index.js';
+import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
 import { documentAnalysisService, type DocumentAnalysisResult } from '../document/index.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { Message as DbMessage } from '../../db/schema.js';
 
-/**
- * Informations sur un fichier attaché
- */
+// ============================================================================
+// Types
+// ============================================================================
+
 export interface AttachedFileInfo {
   fileName: string;
   fileId?: string;
@@ -24,76 +26,21 @@ export interface AttachedFileInfo {
   fileSizeBytes?: number;
 }
 
-/**
- * Résultat d'analyse de fichier (enrichi avec nouvelle architecture)
- */
 export interface FileAnalysisResult {
   analysis: string;
   extractedText?: string;
   fileName: string;
-  // Nouvelles métadonnées
   documentType?: string;
   subject?: string;
   hadRAG?: boolean;
 }
 
-/**
- * Options pour analyse de fichier
- */
 export interface FileAnalysisOptions {
-  content?: string; // Question de l'élève
+  content?: string;
   schoolLevel: EducationLevelType;
   userId: string;
 }
 
-/**
- * Données de fichier stockées en Redis
- */
-interface StoredFileData {
-  content?: string; // Base64 (fichiers monolithiques)
-  metadata: {
-    fileId: string;
-    fileName: string;
-    originalFileName?: string;
-    size: number;
-    type: string;
-    uploadedAt: string;
-    userId: string;
-    schoolLevel?: EducationLevelType;
-    // Gemini Files API (TTL 48h)
-    fileUri?: string;
-    expiresAt?: string;
-    educationalContext?: {
-      analysisContext?: string;
-      extractedText?: string;
-      documentType?: string;
-      subject?: string;
-      hadRAG?: boolean;
-      classification?: {
-        documentType: string;
-        subject: string;
-        confidence: string;
-        needsRAG: boolean;
-        description: string;
-      };
-      ragContext?: string;
-      metrics?: {
-        totalTimeMs: number;
-        extractionTimeMs: number;
-        analysisTimeMs: number;
-        tokensUsed?: number;
-      };
-    };
-  };
-  mimeType: string;
-  // Pour fichiers chunked
-  totalChunks?: number;
-  originalSize?: number;
-}
-
-/**
- * Fichier prêt pour envoi multimodal à Gemini
- */
 export interface MultimodalFile {
   fileUri?: string;
   base64?: string;
@@ -102,29 +49,29 @@ export interface MultimodalFile {
   fileName: string;
 }
 
-/**
- * Service de gestion du contexte des fichiers
- */
+// ============================================================================
+// Service
+// ============================================================================
+
 class FileContextService {
   /**
-   * Récupère les métadonnées d'un fichier depuis Redis
+   * Récupère les métadonnées d'un fichier depuis PostgreSQL
    */
   async retrieveFileMetadata(fileId: string): Promise<AttachedFileInfo | null> {
     try {
-      const fileData = await this.getStoredFileData(fileId);
-      if (!fileData) {
-        logger.warn('File not found in Redis', { fileId, operation: 'retrieve-file-metadata' });
+      const file = await filesRepository.findById(fileId);
+      if (!file) {
+        logger.warn('File not found in DB', { fileId, operation: 'retrieve-file-metadata' });
         return null;
       }
 
       // Vérifier si le fileUri Gemini est encore valide (TTL 48h)
-      let geminiFileId = fileData.metadata.fileUri;
-      if (geminiFileId && fileData.metadata.expiresAt) {
-        const expiresAt = new Date(fileData.metadata.expiresAt);
-        if (expiresAt <= new Date()) {
+      let geminiFileId = file.geminiFileUri ?? undefined;
+      if (geminiFileId && file.geminiExpiresAt) {
+        if (file.geminiExpiresAt <= new Date()) {
           logger.info('Gemini file URI expired', {
             fileId,
-            expiredAt: fileData.metadata.expiresAt,
+            expiredAt: file.geminiExpiresAt.toISOString(),
             operation: 'retrieve-file-metadata'
           });
           geminiFileId = undefined;
@@ -132,11 +79,11 @@ class FileContextService {
       }
 
       return {
-        fileName: fileData.metadata.fileName,
-        fileId: fileId,
-        geminiFileId, // URI Gemini Files API pour contexte visuel persistant
-        mimeType: fileData.mimeType,
-        fileSizeBytes: fileData.metadata.size
+        fileName: file.fileName,
+        fileId: file.id,
+        geminiFileId,
+        mimeType: file.mimeType,
+        fileSizeBytes: file.sizeBytes
       };
     } catch (error) {
       logger.warn('Failed to retrieve file metadata', {
@@ -153,7 +100,6 @@ class FileContextService {
    */
   async getSessionFilesContext(sessionHistory: DbMessage[]): Promise<string> {
     try {
-      // Extraire les fichiers attachés de l'historique
       const filesInSession = sessionHistory
         .filter((msg): msg is DbMessage & { attachedFile: AttachedFileInfo } =>
           msg.attachedFile !== null && typeof msg.attachedFile === 'object')
@@ -169,26 +115,30 @@ class FileContextService {
         operation: 'get-session-files-context'
       });
 
-      // Récupération parallèle des contextes de fichiers
       const filePromises = filesInSession
         .filter((fileInfo): fileInfo is AttachedFileInfo & { fileId: string } =>
           'fileId' in fileInfo && typeof fileInfo.fileId === 'string')
         .map(async (fileInfo) => {
           try {
-            const fileData = await this.getStoredFileData(fileInfo.fileId);
-            if (fileData?.metadata?.educationalContext?.analysisContext) {
+            const file = await filesRepository.findById(fileInfo.fileId);
+            const eduContext = file?.educationalContext as {
+              analysisContext?: string;
+              documentType?: string;
+              subject?: string;
+            } | null;
+
+            if (eduContext?.analysisContext) {
               return {
                 fileName: fileInfo.fileName,
-                context: fileData.metadata.educationalContext.analysisContext,
-                documentType: fileData.metadata.educationalContext.documentType,
-                subject: fileData.metadata.educationalContext.subject
+                context: eduContext.analysisContext,
+                documentType: eduContext.documentType,
+                subject: eduContext.subject
               };
             }
             return null;
           } catch (error) {
             logger.warn('Failed to retrieve session file context', {
               fileId: fileInfo.fileId,
-              fileName: fileInfo.fileName,
               error: error instanceof Error ? error.message : String(error)
             });
             return null;
@@ -208,13 +158,6 @@ class FileContextService {
           })
           .join('');
 
-        logger.info('Session file contexts retrieved', {
-          totalFiles: filesInSession.length,
-          validContexts: validContexts.length,
-          contextLength: context.length,
-          operation: 'get-session-files-context'
-        });
-
         return context;
       }
 
@@ -230,8 +173,7 @@ class FileContextService {
   }
 
   /**
-   * Analyse un fichier avec le nouveau pipeline (extraction + classification + RAG)
-   * Utilise le cache si disponible
+   * Analyse un fichier avec le pipeline complet
    */
   async analyzeFileWithCache(
     fileId: string,
@@ -240,151 +182,112 @@ class FileContextService {
     try {
       const { content: userQuestion, schoolLevel, userId } = options;
 
-      logger.info('Starting file analysis', {
-        fileId,
-        userQuestion: userQuestion?.substring(0, 100),
-        userId,
-        operation: 'analyze-file-with-cache'
-      });
-
-      const fileData = await this.getStoredFileData(fileId);
-      if (!fileData) {
-        logger.warn('File not found in cache', { fileId, userId, operation: 'analyze-file-with-cache' });
+      const file = await filesRepository.findById(fileId);
+      if (!file) {
+        logger.warn('File not found in DB', { fileId, operation: 'analyze-file' });
         return null;
       }
 
-      const { metadata, mimeType } = fileData;
-      const educationalContext = metadata.educationalContext;
+      const eduContext = file.educationalContext as {
+        analysisContext?: string;
+        extractedText?: string;
+        documentType?: string;
+        subject?: string;
+        hadRAG?: boolean;
+      } | null;
 
-      // ✅ OPTIMISATION: Utiliser l'analyse en cache si disponible ET pas de question spécifique
-      if (educationalContext?.analysisContext && !userQuestion) {
-        logger.info('Using cached analysis', {
-          fileId,
-          fileName: metadata.fileName,
-          cachedAnalysisLength: educationalContext.analysisContext.length,
-          operation: 'analyze-file-cache-hit'
-        });
-
+      // Utiliser l'analyse en cache si disponible
+      if (eduContext?.analysisContext && !userQuestion) {
         return {
-          analysis: educationalContext.analysisContext,
-          extractedText: educationalContext.extractedText,
-          fileName: metadata.fileName,
-          documentType: educationalContext.documentType,
-          subject: educationalContext.subject,
-          hadRAG: educationalContext.hadRAG
+          analysis: eduContext.analysisContext,
+          extractedText: eduContext.extractedText,
+          fileName: file.fileName,
+          documentType: eduContext.documentType,
+          subject: eduContext.subject,
+          hadRAG: eduContext.hadRAG
         };
       }
 
-      // ✅ OPTIMISATION: Si question spécifique ET analyse générale disponible
-      // On réutilise le contexte extrait pour enrichir la question
-      if (userQuestion && educationalContext?.analysisContext) {
-        const contextualAnalysis = `ANALYSE DU DOCUMENT (${educationalContext.documentType ?? 'document'} - ${educationalContext.subject ?? 'matière non identifiée'}):
-${educationalContext.analysisContext}
+      // Enrichir avec question spécifique
+      if (userQuestion && eduContext?.analysisContext) {
+        const contextualAnalysis = `ANALYSE DU DOCUMENT (${eduContext.documentType ?? 'document'} - ${eduContext.subject ?? 'matière non identifiée'}):
+${eduContext.analysisContext}
 
 QUESTION DE L'ÉLÈVE: ${userQuestion}
 
 RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la réponse adaptée à votre question.`;
 
-        logger.info('Using cached analysis with specific question', {
-          fileId,
-          fileName: metadata.fileName,
-          question: userQuestion.substring(0, 50),
-          operation: 'analyze-file-cache-question'
-        });
-
         return {
           analysis: contextualAnalysis,
-          extractedText: educationalContext.extractedText,
-          fileName: metadata.fileName,
-          documentType: educationalContext.documentType,
-          subject: educationalContext.subject,
-          hadRAG: educationalContext.hadRAG
+          extractedText: eduContext.extractedText,
+          fileName: file.fileName,
+          documentType: eduContext.documentType,
+          subject: eduContext.subject,
+          hadRAG: eduContext.hadRAG
         };
       }
 
-      // ❌ FALLBACK: Pas d'analyse en cache → analyse complète avec nouveau pipeline
+      // Analyse complète nécessaire
       logger.info('No cached analysis, running full pipeline', {
         fileId,
-        fileName: metadata.fileName,
-        userId,
-        operation: 'analyze-file-full-pipeline'
+        fileName: file.fileName,
+        operation: 'analyze-file-pipeline'
       });
 
-      // Récupérer le contenu binaire du fichier
-      const base64Content = await this.getFileContent(fileId, fileData);
-      if (!base64Content) {
-        logger.error('Failed to retrieve file content', {
-          _error: 'Content retrieval returned null',
+      // Récupérer le contenu depuis Scaleway
+      const fileContent = await scalewayStorageService.getFileContent(file.storageKey);
+      if (!fileContent) {
+        logger.error('Failed to retrieve file from storage', {
+          _error: 'Storage returned null',
           fileId,
-          operation: 'analyze-file-content',
+          storageKey: file.storageKey,
+          operation: 'analyze-file',
           severity: 'medium' as const
         });
         return null;
       }
 
-      const fileBuffer = Buffer.from(base64Content, 'base64');
-
-      // Déterminer si c'est une image ou un document
-      const isImage = mimeType.startsWith('image/');
+      const isImage = file.mimeType.startsWith('image/');
 
       let analysisResult: DocumentAnalysisResult;
 
       if (isImage) {
-        // Analyse image via Vision API + RAG
+        const base64 = fileContent.content.toString('base64');
         analysisResult = await documentAnalysisService.analyzeImage(
-          base64Content,
-          mimeType,
-          metadata.fileName,
-          {
-            schoolLevel,
-            userId,
-            userQuestion
-          }
+          base64,
+          file.mimeType,
+          file.fileName,
+          { schoolLevel, userId, userQuestion }
         );
       } else {
-        // Analyse document (PDF, DOCX, TXT) via extraction + classification + RAG
         analysisResult = await documentAnalysisService.analyzeDocument(
-          fileBuffer.buffer,
-          metadata.fileName,
-          mimeType,
-          {
-            schoolLevel,
-            userId,
-            userQuestion
-          }
+          fileContent.content.buffer as ArrayBuffer,
+          file.fileName,
+          file.mimeType,
+          { schoolLevel, userId, userQuestion }
         );
       }
 
       if (analysisResult.success) {
-        // ✅ CACHE UPDATE: Sauvegarder l'analyse enrichie pour les prochaines utilisations
-        await this.updateFileCache(fileId, fileData, analysisResult);
+        // Sauvegarder l'analyse en DB
+        await this.updateFileAnalysis(file.id, analysisResult);
 
         return {
           analysis: analysisResult.analysis,
           extractedText: analysisResult.extraction.text,
-          fileName: metadata.fileName,
+          fileName: file.fileName,
           documentType: analysisResult.classification.documentType,
           subject: analysisResult.classification.subject,
           hadRAG: !!analysisResult.rag?.found
         };
       }
 
-      // Erreur d'analyse
-      logger.error('Document analysis failed', {
-        _error: analysisResult.error ?? 'Unknown analysis error',
-        fileId,
-        operation: 'analyze-file-pipeline-error',
-        severity: 'medium' as const
-      });
-
       return null;
-
     } catch (error) {
       logger.error('File analysis failed', {
         _error: error instanceof Error ? error.message : String(error),
         fileId,
-        userId: options.userId,
-        operation: 'analyze-file-with-cache',
+        operation: 'analyze-file',
         severity: 'medium' as const
       });
       return null;
@@ -393,7 +296,6 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
 
   /**
    * Prépare le contexte complet des fichiers pour une requête chat
-   * Helper consolidé pour éviter duplication entre /message et /stream (DRY)
    */
   async prepareFileContext(params: {
     fileId?: string;
@@ -408,18 +310,15 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
   }> {
     const { fileId, content, schoolLevel, userId, sessionHistory } = params;
 
-    // 1. Récupérer métadonnées fichier + contexte session en parallèle
     const [attachedFileInfo, sessionFilesContext] = await Promise.all([
       fileId ? this.retrieveFileMetadata(fileId) : Promise.resolve(null),
       this.getSessionFilesContext(sessionHistory)
     ]);
 
-    // 2. Analyser fichier si présent (utilise cache ou nouveau pipeline)
     const fileAnalysisResult = fileId
       ? await this.analyzeFileWithCache(fileId, { content, schoolLevel, userId })
       : null;
 
-    // 3. Enrichir le contenu avec le contexte fichier
     let enrichedContent = content;
 
     if (fileAnalysisResult?.analysis) {
@@ -434,16 +333,6 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       enrichedContent = `${sessionFilesContext}\n\n${enrichedContent}`;
     }
 
-    logger.info('File context prepared', {
-      userId,
-      hasFile: !!fileId,
-      hasAnalysis: !!fileAnalysisResult,
-      hadRAG: fileAnalysisResult?.hadRAG,
-      sessionFilesCount: sessionHistory.filter(m => m.attachedFile).length,
-      enrichedContentLength: enrichedContent.length,
-      operation: 'prepare-file-context'
-    });
-
     return {
       attachedFileInfo,
       enrichedContent,
@@ -453,10 +342,6 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
 
   /**
    * Prépare les fichiers pour envoi multimodal à Gemini
-   * Utilise fileUri (Gemini Files API, 48h TTL) ou fallback base64
-   *
-   * @param fileIds - IDs des fichiers à préparer
-   * @returns Liste des fichiers prêts pour TanStack AI multimodal
    */
   async prepareMultimodalFiles(fileIds: string[]): Promise<MultimodalFile[]> {
     if (!fileIds || fileIds.length === 0) {
@@ -467,68 +352,39 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
 
     for (const fileId of fileIds) {
       try {
-        const fileData = await this.getStoredFileData(fileId);
-        if (!fileData) {
-          logger.warn('File not found for multimodal', { fileId, operation: 'prepare-multimodal' });
-          continue;
-        }
+        const file = await filesRepository.findById(fileId);
+        if (!file) continue;
 
-        const { metadata, mimeType } = fileData;
-
-        // Déterminer le type de contenu
-        const isImage = mimeType.startsWith('image/');
-        const isPdf = mimeType === 'application/pdf';
+        const isImage = file.mimeType.startsWith('image/');
         const contentType: 'image' | 'document' = isImage ? 'image' : 'document';
 
-        // Vérifier si le fileUri est encore valide (TTL 48h)
-        let fileUri = metadata.fileUri;
-        if (fileUri && metadata.expiresAt) {
-          const expiresAt = new Date(metadata.expiresAt);
-          if (expiresAt <= new Date()) {
-            logger.info('Gemini file expired, falling back to base64', {
-              fileId,
-              expiredAt: metadata.expiresAt,
-              operation: 'prepare-multimodal'
-            });
+        // Vérifier si Gemini URI est valide
+        let fileUri = file.geminiFileUri ?? undefined;
+        if (fileUri && file.geminiExpiresAt) {
+          if (file.geminiExpiresAt <= new Date()) {
             fileUri = undefined;
           }
         }
 
-        // Construire le fichier multimodal
         const multimodalFile: MultimodalFile = {
-          mimeType,
+          mimeType: file.mimeType,
           contentType,
-          fileName: metadata.fileName
+          fileName: file.fileName
         };
 
         if (fileUri) {
-          // Utiliser Gemini Files API URI (optimal)
           multimodalFile.fileUri = fileUri;
-        } else if (isImage || isPdf) {
-          // Fallback: récupérer le base64 depuis Redis
-          const base64 = await this.getFileContent(fileId, fileData);
-          if (base64) {
-            multimodalFile.base64 = base64;
+        } else {
+          // Fallback: récupérer depuis Scaleway
+          const content = await scalewayStorageService.getFileContent(file.storageKey);
+          if (content) {
+            multimodalFile.base64 = content.content.toString('base64');
           } else {
-            logger.warn('No content available for multimodal file', {
-              fileId,
-              operation: 'prepare-multimodal'
-            });
             continue;
           }
         }
 
         files.push(multimodalFile);
-
-        logger.info('Multimodal file prepared', {
-          fileId,
-          fileName: metadata.fileName,
-          contentType,
-          hasFileUri: !!multimodalFile.fileUri,
-          hasBase64: !!multimodalFile.base64,
-          operation: 'prepare-multimodal'
-        });
-
       } catch (error) {
         logger.warn('Failed to prepare multimodal file', {
           fileId,
@@ -541,138 +397,53 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
     return files;
   }
 
-  // ============================================
-  // PRIVATE HELPERS
-  // ============================================
+  // ============================================================================
+  // Private Helpers
+  // ============================================================================
 
-  /**
-   * Récupère les données de fichier depuis Redis (gère chunked et monolithique)
-   */
-  private async getStoredFileData(fileId: string): Promise<StoredFileData | null> {
-    // Essayer d'abord le format monolithique
-    const monolithic = await redisClient.get(`file:${fileId}`);
-    if (monolithic) {
-      return JSON.parse(monolithic) as StoredFileData;
-    }
-
-    // Sinon essayer le format chunked (fichiers >1MB)
-    const meta = await redisClient.get(`file:${fileId}:meta`);
-    if (meta) {
-      return JSON.parse(meta) as StoredFileData;
-    }
-
-    return null;
-  }
-
-  /**
-   * Récupère le contenu binaire du fichier (reconstruit chunks si nécessaire)
-   */
-  private async getFileContent(fileId: string, fileData: StoredFileData): Promise<string | null> {
-    // Format monolithique: contenu directement disponible
-    if (fileData.content) {
-      return fileData.content;
-    }
-
-    // Format chunked: reconstruire depuis les chunks
-    if (fileData.totalChunks && fileData.totalChunks > 0) {
-      try {
-        const chunkPromises: Promise<string | null>[] = [];
-        for (let i = 0; i < fileData.totalChunks; i++) {
-          chunkPromises.push(redisClient.get(`file:${fileId}:chunk:${i}`));
-        }
-
-        const chunks = await Promise.all(chunkPromises);
-
-        // Vérifier que tous les chunks sont présents
-        if (chunks.some(c => c === null)) {
-          logger.error('Missing chunks for file', {
-            _error: 'Some file chunks are missing from Redis',
-            fileId,
-            totalChunks: fileData.totalChunks,
-            missingChunks: chunks.reduce((acc, c, i) => c === null ? [...acc, i] : acc, [] as number[]),
-            operation: 'get-file-content-chunks',
-            severity: 'medium' as const
-          });
-          return null;
-        }
-
-        // Reconstruire le contenu
-        return chunks.join('');
-
-      } catch (error) {
-        logger.error('Failed to reconstruct chunked file', {
-          _error: error instanceof Error ? error.message : String(error),
-          fileId,
-          operation: 'get-file-content-chunks',
-          severity: 'medium' as const
-        });
-        return null;
-      }
-    }
-
-    logger.error('No content found for file', {
-      _error: 'File has neither content nor chunks',
-      fileId,
-      operation: 'get-file-content',
-      severity: 'medium' as const
-    });
-    return null;
-  }
-
-  /**
-   * Met à jour le cache Redis avec les résultats d'analyse
-   */
-  private async updateFileCache(
-    fileId: string,
-    fileData: StoredFileData,
-    analysisResult: DocumentAnalysisResult
-  ): Promise<void> {
+  private async updateFileAnalysis(fileId: string, result: DocumentAnalysisResult): Promise<void> {
     try {
-      const updatedFileData: StoredFileData = {
-        ...fileData,
-        metadata: {
-          ...fileData.metadata,
-          educationalContext: {
-            analysisContext: analysisResult.analysis,
-            extractedText: analysisResult.extraction.text,
-            documentType: analysisResult.classification.documentType,
-            subject: analysisResult.classification.subject,
-            hadRAG: !!analysisResult.rag?.found,
-            classification: analysisResult.classification,
-            ragContext: analysisResult.rag?.context,
-            metrics: analysisResult.metrics
-          }
-        }
+      const file = await filesRepository.findById(fileId);
+      if (!file) return;
+
+      const existingContext = (file.educationalContext ?? {}) as Record<string, unknown>;
+      const updatedContext = {
+        ...existingContext,
+        analysisContext: result.analysis,
+        extractedText: result.extraction.text,
+        documentType: result.classification.documentType,
+        subject: result.classification.subject,
+        hadRAG: !!result.rag?.found,
+        classification: result.classification,
+        ragContext: result.rag?.context,
+        metrics: result.metrics
       };
 
-      // Déterminer la clé Redis (monolithique ou meta)
-      const key = fileData.content ? `file:${fileId}` : `file:${fileId}:meta`;
+      // Update via raw query pour le jsonb
+      const { db, sql } = await import('../../db/repositories/index.js');
+      const { files } = await import('../../db/schema.js');
+      const { eq } = await import('drizzle-orm');
 
-      // TTL basé sur la taille originale
-      const size = fileData.originalSize ?? fileData.metadata.size;
-      const ttl = size < 1024 * 1024 ? 4 * 3600 : size < 5 * 1024 * 1024 ? 2 * 3600 : 3600;
+      await db.update(files)
+        .set({
+          educationalContext: sql`${JSON.stringify(updatedContext)}::jsonb`,
+          updatedAt: new Date()
+        })
+        .where(eq(files.id, fileId));
 
-      await redisClient.setEx(key, ttl, JSON.stringify(updatedFileData));
-
-      logger.info('File cache updated with analysis', {
+      logger.info('File analysis saved to DB', {
         fileId,
-        fileName: fileData.metadata.fileName,
-        documentType: analysisResult.classification.documentType,
-        subject: analysisResult.classification.subject,
-        hadRAG: !!analysisResult.rag?.found,
-        totalTimeMs: analysisResult.metrics.totalTimeMs,
-        operation: 'update-file-cache'
+        documentType: result.classification.documentType,
+        operation: 'update-file-analysis'
       });
-
     } catch (error) {
-      logger.warn('Failed to update file cache', {
+      logger.warn('Failed to update file analysis in DB', {
         error: error instanceof Error ? error.message : String(error),
         fileId,
-        operation: 'update-file-cache'
+        operation: 'update-file-analysis'
       });
     }
   }
 }
 
-// Instance singleton
 export const fileContextService = new FileContextService();
