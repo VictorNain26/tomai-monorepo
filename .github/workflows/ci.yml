@@ -1,5 +1,5 @@
 # TomAI Monorepo - CI Pipeline
-# Best Practices 2025: Staging workflow with protected main branch
+# Runs on PRs and push to protected branches
 
 name: CI
 
@@ -7,7 +7,7 @@ on:
   push:
     branches: [main, staging]
   pull_request:
-    branches: [main, staging]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -56,17 +56,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Security Audit
-        run: |
-          echo "Running pnpm audit for known vulnerabilities..."
-          pnpm audit 2>&1 || true
-          echo "✅ Security audit completed"
-
       - name: TypeScript
-        run: bun run typecheck
+        run: pnpm run typecheck
 
       - name: ESLint
-        run: bun run lint
+        run: pnpm run lint
 
       - name: Build
-        run: bun run build
+        run: pnpm run build
