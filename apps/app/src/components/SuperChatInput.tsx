@@ -26,7 +26,9 @@ interface ISuperChatInputProps {
   /** Envoi d'un message texte */
   readonly onSendMessage: (message: string) => Promise<void>;
   /** Upload direct de fichier au contexte de session */
-  readonly onFileAttachedToContext?: (file: IFileAttachment) => Promise<void>;
+  readonly onFileAttachedToContext?: (file: IFileAttachment) => void;
+  /** Fichiers en attente d'envoi avec le prochain message */
+  readonly pendingAttachments?: Array<{ fileId: string; fileName: string }>;
   readonly isLoading: boolean;
   readonly disabled?: boolean;
   readonly placeholder?: string;
@@ -35,6 +37,7 @@ interface ISuperChatInputProps {
 export function SuperChatInput({
   onSendMessage,
   onFileAttachedToContext,
+  pendingAttachments = [],
   isLoading,
   disabled = false,
   placeholder = "Écrivez votre question..."
@@ -80,7 +83,7 @@ export function SuperChatInput({
   };
 
   // ========================================
-  // File Upload Handler - Fichiers envoyés directement au contexte
+  // File Upload Handler - Fichiers ajoutés au contexte pending
   // ========================================
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const fileList = e.target.files;
@@ -90,11 +93,10 @@ export function SuperChatInput({
         if (file) {
           const attachment = await uploadFile(file);
           if (attachment && onFileAttachedToContext) {
-            await onFileAttachedToContext(attachment);
+            onFileAttachedToContext(attachment);
           }
         }
       }
-      // Nettoyer le state local après envoi au contexte
       clearFiles();
     }
     if (fileInputRef.current) {
@@ -185,6 +187,24 @@ export function SuperChatInput({
               <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
               📤 Upload en cours...
             </Badge>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Fichiers en attente d'envoi */}
+      <AnimatePresence>
+        {pendingAttachments.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mb-2 flex flex-wrap gap-1.5"
+          >
+            {pendingAttachments.map((file) => (
+              <Badge key={file.fileId} variant="outline" className="text-xs">
+                📎 {file.fileName}
+              </Badge>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>

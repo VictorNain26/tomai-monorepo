@@ -52,14 +52,16 @@ const Chat: FC = (): ReactElement => {
   const urlSessionId = searchParams.get('sessionId');
   const subject = searchParams.get('subject') ?? 'mathematiques';
 
-  // Hook de chat TanStack AI
+  // Hook de chat
   const {
     messages,
     sessionFiles,
+    pendingAttachments,
     currentSessionId,
     isLoading,
     error,
     sendMessage,
+    addAttachment,
   } = useChat({
     initialSessionId: urlSessionId,
     subject,
@@ -97,28 +99,25 @@ const Chat: FC = (): ReactElement => {
     }
   }, [subject, sendMessage]);
 
-  // Upload fichier directement au contexte de session (sans message visible)
-  const handleFileAttachedToContext = useCallback(async (file: IFileAttachment) => {
+  // Upload fichier directement au contexte (sans message visible)
+  const handleFileAttachedToContext = useCallback((file: IFileAttachment) => {
     if (!subject || !file.fileId) {
       smartToast.error('Impossible d\'ajouter le document');
       return;
     }
 
-    try {
-      const attachment: IChatFileAttachment = {
-        fileId: file.fileId,
-        fileName: file.file.name,
-        mimeType: file.file.type,
-        size: file.file.size,
-        preview: file.preview,
-      };
-      // Envoyer avec placeholder pour attacher le fichier à la session
-      await sendMessage(`📎 ${file.file.name}`, [attachment]);
-      smartToast.success('Document ajouté au contexte');
-    } catch {
-      smartToast.error('Erreur lors de l\'ajout du document');
-    }
-  }, [subject, sendMessage]);
+    const attachment: IChatFileAttachment = {
+      fileId: file.fileId,
+      fileName: file.file.name,
+      mimeType: file.file.type,
+      size: file.file.size,
+      preview: file.preview,
+    };
+
+    // Ajouter au contexte pour le prochain message (pas d'envoi)
+    addAttachment(attachment);
+    smartToast.success(`📎 ${file.file.name} ajouté`);
+  }, [subject, addAttachment]);
 
   const handleBackToDashboard = () => {
     void navigate('/student', { replace: true });
@@ -320,6 +319,7 @@ const Chat: FC = (): ReactElement => {
         <SuperChatInput
           onSendMessage={handleSendMessage}
           onFileAttachedToContext={handleFileAttachedToContext}
+          pendingAttachments={pendingAttachments}
           isLoading={isLoading}
           placeholder="Posez votre question..."
         />
