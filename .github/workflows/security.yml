@@ -1,44 +1,19 @@
-# Security Scanning
-# Source: https://github.blog/security/application-security/how-to-secure-your-github-actions-workflows-with-codeql/
+# Security Scanning - Secret Detection
+# CodeQL removed (requires GitHub Advanced Security for private repos)
 
 name: Security
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 0 * * 1'
 
 concurrency:
   group: security-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  codeql:
-    name: CodeQL
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: typescript
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
-
-      - name: Analyze
-        uses: github/codeql-action/analyze@v4
-
   secrets:
     name: Secret Detection
     runs-on: ubuntu-latest
