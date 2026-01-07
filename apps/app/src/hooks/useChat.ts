@@ -45,10 +45,13 @@ interface UseChatOptions {
 interface UseChatReturn {
   messages: ChatMessage[];
   sessionFiles: IChatFileAttachment[];
+  pendingAttachments: IChatFileAttachment[];
   currentSessionId: string | null;
   isLoading: boolean;
   error: string | null;
-  sendMessage: (content: string, attachments?: IChatFileAttachment[]) => Promise<void>;
+  sendMessage: (content: string) => Promise<void>;
+  addAttachment: (attachment: IChatFileAttachment) => void;
+  clearPendingAttachments: () => void;
   stop: () => void;
 }
 
@@ -182,11 +185,13 @@ export function useChat({ initialSessionId, subject }: UseChatOptions): UseChatR
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localFiles, setLocalFiles] = useState<IChatFileAttachment[]>([]);
+  const [pendingAttachments, setPendingAttachments] = useState<IChatFileAttachment[]>([]);
 
   // Refs
   const abortControllerRef = useRef<AbortController | null>(null);
   const sessionIdRef = useRef<string | null>(initialSessionId);
   const historySyncedRef = useRef<string | null>(null);
+  const pendingAttachmentsRef = useRef<IChatFileAttachment[]>([]);
 
   // ============================================================================
   // Session Query
@@ -223,36 +228,46 @@ export function useChat({ initialSessionId, subject }: UseChatOptions): UseChatR
     logger.info('History synced', { sessionId: currentSessionId, count: historyData.messages.length });
   }, [historyQuery.data, currentSessionId]);
 
+  // Sync pendingAttachments ref
+  useEffect(() => {
+    pendingAttachmentsRef.current = pendingAttachments;
+  }, [pendingAttachments]);
+
   // ============================================================================
   // Send Message
   // ============================================================================
   const sendMessage = useCallback(
-    async (content: string, attachments?: IChatFileAttachment[]) => {
+    async (content: string) => {
       if (!user) return;
-      if (!content.trim() && (!attachments || attachments.length === 0)) return;
+      if (!content.trim()) return;
 
       setError(null);
       setIsLoading(true);
+
+      // Capture pending attachments from ref and clear state
+      const attachmentsToSend = [...pendingAttachmentsRef.current];
+      setPendingAttachments([]);
+      pendingAttachmentsRef.current = [];
 
       // Add user message immediately
       const userMessage: ChatMessage = {
         id: `user-${Date.now()}`,
         role: 'user',
-        content: content.trim() || '📎 Document',
+        content: content.trim(),
         createdAt: new Date(),
       };
       setMessages(prev => [...prev, userMessage]);
 
-      // Track files
-      if (attachments && attachments.length > 0) {
+      // Track files in session
+      if (attachmentsToSend.length > 0) {
         setLocalFiles(prev => {
           const existingIds = new Set(prev.map(f => f.fileId));
-          return [...prev, ...attachments.filter(a => !existingIds.has(a.fileId))];
+          return [...prev, ...attachmentsToSend.filter(a => !existingIds.has(a.fileId))];
         });
       }
 
       // Prepare request
-      const fileIds = attachments?.map(a => a.fileId) ?? [];
+      const fileIds = attachmentsToSend.map(a => a.fileId);
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
@@ -325,6 +340,20 @@ export function useChat({ initialSessionId, subject }: UseChatOptions): UseChatR
   );
 
   // ============================================================================
+  // Attachments Management
+  // ============================================================================
+  const addAttachment = useCallback((attachment: IChatFileAttachment) => {
+    setPendingAttachments(prev => {
+      if (prev.some(a => a.fileId === attachment.fileId)) return prev;
+      return [...prev, attachment];
+    });
+  }, []);
+
+  const clearPendingAttachments = useCallback(() => {
+    setPendingAttachments([]);
+  }, []);
+
+  // ============================================================================
   // Stop
   // ============================================================================
   const stop = useCallback(() => {
@@ -340,10 +369,13 @@ export function useChat({ initialSessionId, subject }: UseChatOptions): UseChatR
   return {
     messages,
     sessionFiles: uniqueFiles,
+    pendingAttachments,
     currentSessionId,
     isLoading: isLoading || sessionQuery.isLoading || historyQuery.isLoading,
     error: error ?? sessionQuery.error?.message ?? historyQuery.error?.message ?? null,
     sendMessage,
+    addAttachment,
+    clearPendingAttachments,
     stop,
   };
 }
