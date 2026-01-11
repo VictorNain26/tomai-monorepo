@@ -800,10 +800,16 @@ export const familyBilling = pgTable('family_billing', {
   id: uuid('id').primaryKey().defaultRandom(),
   parentId: varchar('parent_id', { length: 255 }).notNull().unique(), // Le parent payeur
 
-  // Stripe integration
+  // Stripe integration (web - legacy)
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).unique(),
   stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }).unique(),
-  billingStatus: varchar('billing_status', { length: 50 }).notNull().default('active'), // active, past_due, canceled
+
+  // RevenueCat integration (mobile)
+  revenuecatCustomerId: varchar('revenuecat_customer_id', { length: 255 }),
+  revenuecatSubscriptionId: varchar('revenuecat_subscription_id', { length: 255 }),
+
+  // Status (shared)
+  billingStatus: varchar('billing_status', { length: 50 }).notNull().default('active'), // active, past_due, canceled, expired
 
   // Billing period
   currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),
@@ -832,6 +838,7 @@ export const familyBilling = pgTable('family_billing', {
 
   stripeCustomerIdx: index('idx_family_billing_stripe_customer').on(table.stripeCustomerId),
   stripeSubscriptionIdx: index('idx_family_billing_stripe_subscription').on(table.stripeSubscriptionId),
+  revenuecatCustomerIdx: index('idx_family_billing_revenuecat_customer').on(table.revenuecatCustomerId),
   billingStatusIdx: index('idx_family_billing_status').on(table.billingStatus),
 }));
 
