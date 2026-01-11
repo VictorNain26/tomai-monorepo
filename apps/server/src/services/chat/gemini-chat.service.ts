@@ -207,17 +207,9 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
     return optimized.map(msg => {
       const role = msg.role === 'assistant' ? 'model' : 'user';
       const parts: Part[] = [{ text: msg.content }];
-
-      // Ajouter fichier si présent (contexte visuel persistant)
-      if (msg.role === 'user' && msg.attachedFile?.geminiFileId) {
-        parts.push({
-          fileData: {
-            fileUri: msg.attachedFile.geminiFileId,
-            mimeType: msg.attachedFile.mimeType ?? 'application/octet-stream'
-          }
-        });
-      }
-
+      // Note: Les fichiers historiques ne sont PAS inclus car les références
+      // Gemini Files API expirent après 48h. Le contexte textuel du fichier
+      // est déjà inclus dans msg.content via file-context.service.ts.
       return { role, parts };
     });
   }
