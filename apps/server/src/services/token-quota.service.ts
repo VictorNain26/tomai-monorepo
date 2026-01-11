@@ -157,22 +157,6 @@ function isWindowExpired(windowStartAt: Date, windowHours: number): boolean {
 }
 
 /**
- * Calculate time remaining until window refresh
- */
-function getWindowRefreshTime(windowStartAt: Date, windowHours: number): string {
-  const windowEndMs = windowStartAt.getTime() + (windowHours * 60 * 60 * 1000);
-  const remainingMs = Math.max(0, windowEndMs - Date.now());
-
-  const hours = Math.floor(remainingMs / (60 * 60 * 1000));
-  const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
-
-  if (hours === 0 && minutes === 0) return 'maintenant';
-  if (hours === 0) return `${minutes}min`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}min`;
-}
-
-/**
  * Check if daily reset is needed (10h Paris)
  */
 function needsDailyReset(lastResetAt: Date): boolean {
@@ -267,22 +251,6 @@ function getQuotaMode(usagePercent: number): QuotaMode {
   return 'normal';
 }
 
-/**
- * Get user-friendly message based on quota mode
- */
-function getQuotaMessage(mode: QuotaMode, refreshIn: string, plan: 'free' | 'premium'): string | undefined {
-  switch (mode) {
-    case 'blocked':
-      return `Quota atteint. Refresh dans ${refreshIn}.${plan === 'free' ? ' Passez à Premium pour plus de questions !' : ''}`;
-    case 'throttle':
-      return 'Presque au quota, les réponses peuvent être plus lentes.';
-    case 'warning':
-      return 'Tu approches de ta limite de questions.';
-    default:
-      return undefined;
-  }
-}
-
 // =============================================
 // ENSURE USER SUBSCRIPTION
 // =============================================
@@ -359,143 +327,13 @@ async function ensureUserSubscription(userId: string): Promise<{
 
 /**
  * Check if user has enough tokens remaining (rolling window + daily cap)
- * Handles automatic resets for window, daily, weekly, and monthly
- * NOTE: Quotas are disabled in development (NODE_ENV=development)
+ * NOTE: Quotas are currently DISABLED (unlimited usage)
+ * TODO: Re-enable quotas when subscription system is ready
  */
 export async function checkQuota(userId: string): Promise<QuotaCheckResult> {
-  // Bypass quotas in development
-  if (process.env.NODE_ENV === 'development') {
-    return createDefaultQuotaResult(
-      999_999, // Unlimited in dev
-      999_999,
-      'premium'
-    );
-  }
-
-  try {
-    const { windowLimit, dailyLimit, planName } = await ensureUserSubscription(userId);
-    const windowHours = QUOTA_CONFIG[planName].windowHours;
-
-    // Get current usage
-    const [subscription] = await db
-      .select({
-        windowTokensUsed: userSubscriptions.windowTokensUsed,
-        windowStartAt: userSubscriptions.windowStartAt,
-        tokensUsedToday: userSubscriptions.tokensUsedToday,
-        tokensUsedThisWeek: userSubscriptions.tokensUsedThisWeek,
-        lastResetAt: userSubscriptions.lastResetAt,
-        lastWeeklyResetAt: userSubscriptions.lastWeeklyResetAt,
-        lastMonthlyResetAt: userSubscriptions.lastMonthlyResetAt,
-      })
-      .from(userSubscriptions)
-      .where(eq(userSubscriptions.userId, userId))
-      .limit(1);
-
-    if (!subscription) {
-      // Should not happen after ensureUserSubscription
-      return createDefaultQuotaResult(windowLimit, dailyLimit, planName);
-    }
-
-    // Check and perform resets
-    const updates: Record<string, unknown> = {};
-    let currentWindowTokens = subscription.windowTokensUsed;
-    let currentDailyTokens = subscription.tokensUsedToday;
-    let windowStart = subscription.windowStartAt;
-
-    // Rolling window reset (5h)
-    if (isWindowExpired(subscription.windowStartAt, windowHours)) {
-      currentWindowTokens = 0;
-      windowStart = new Date();
-      updates.windowTokensUsed = 0;
-      updates.windowStartAt = windowStart;
-      logger.debug('Rolling window reset', { userId, plan: planName });
-    }
-
-    // Daily reset (10h Paris)
-    if (needsDailyReset(subscription.lastResetAt)) {
-      currentDailyTokens = 0;
-      updates.tokensUsedToday = 0;
-      updates.decksGeneratedToday = 0;
-      updates.lastResetAt = new Date();
-      logger.info('Daily quota reset', { userId, plan: planName });
-    }
-
-    // Weekly reset (Monday)
-    if (needsWeeklyReset(subscription.lastWeeklyResetAt)) {
-      updates.tokensUsedThisWeek = 0;
-      updates.lastWeeklyResetAt = new Date();
-      logger.debug('Weekly stats reset', { userId });
-    }
-
-    // Monthly reset (1st of month)
-    if (needsMonthlyReset(subscription.lastMonthlyResetAt)) {
-      updates.decksGeneratedThisMonth = 0;
-      updates.lastMonthlyResetAt = new Date();
-      logger.debug('Monthly stats reset', { userId });
-    }
-
-    // Apply updates if any
-    if (Object.keys(updates).length > 0) {
-      await db
-        .update(userSubscriptions)
-        .set({ ...updates, updatedAt: new Date() })
-        .where(eq(userSubscriptions.userId, userId));
-    }
-
-    // Calculate remaining tokens
-    const windowTokensRemaining = Math.max(0, windowLimit - currentWindowTokens);
-    const dailyTokensRemaining = Math.max(0, dailyLimit - currentDailyTokens);
-
-    // Use the more restrictive limit
-    const effectiveRemaining = Math.min(windowTokensRemaining, dailyTokensRemaining);
-
-    // Calculate usage percentages
-    const windowUsagePercent = Math.min(100, Math.round((currentWindowTokens / windowLimit) * 100));
-    const dailyUsagePercent = Math.min(100, Math.round((currentDailyTokens / dailyLimit) * 100));
-
-    // Use highest usage percentage for mode determination
-    const maxUsagePercent = Math.max(windowUsagePercent, dailyUsagePercent) / 100;
-    const mode = getQuotaMode(maxUsagePercent);
-
-    const windowRefreshIn = getWindowRefreshTime(windowStart, windowHours);
-    const dailyResetsIn = getDailyResetTime();
-
-    return {
-      allowed: effectiveRemaining > 0,
-      mode,
-
-      windowTokensUsed: currentWindowTokens,
-      windowTokensRemaining,
-      windowLimit,
-      windowUsagePercent,
-      windowRefreshIn,
-
-      dailyTokensUsed: currentDailyTokens,
-      dailyTokensRemaining,
-      dailyLimit,
-      dailyUsagePercent,
-      dailyResetsIn,
-
-      plan: planName,
-
-      throttleDelayMs: mode === 'throttle' ? 2000 : undefined,
-      message: getQuotaMessage(mode, windowRefreshIn, planName),
-    };
-
-  } catch (error) {
-    logger.error('Error checking token quota', {
-      _error: error instanceof Error ? error.message : String(error),
-      severity: 'medium' as const,
-      userId,
-    });
-
-    // Fail open but log
-    return createDefaultQuotaResult(
-      QUOTA_CONFIG.free.windowTokens,
-      QUOTA_CONFIG.free.dailyMaxTokens,
-      'free'
-    );
-  }
+  // TEMPORARY: Quotas disabled - unlimited usage for all users
+  void userId; // Signature preserved for future re-activation
+  return createDefaultQuotaResult(999_999, 999_999, 'premium');
 }
 
 function createDefaultQuotaResult(
@@ -699,91 +537,19 @@ export function getHoursUntilReset(): string {
 
 /**
  * Check if user can generate a new deck
- * Limits: 5/day, 50/month (premium users only)
+ * NOTE: Deck quotas are currently DISABLED (unlimited usage)
+ * TODO: Re-enable quotas when subscription system is ready
  */
 export async function checkDeckQuota(userId: string): Promise<DeckQuotaResult> {
-  const { dailyDecks, monthlyDecks } = QUOTA_CONFIG.premium;
-
-  try {
-    await ensureUserSubscription(userId);
-
-    const [subscription] = await db
-      .select({
-        decksGeneratedToday: userSubscriptions.decksGeneratedToday,
-        decksGeneratedThisMonth: userSubscriptions.decksGeneratedThisMonth,
-        lastResetAt: userSubscriptions.lastResetAt,
-        lastMonthlyResetAt: userSubscriptions.lastMonthlyResetAt,
-      })
-      .from(userSubscriptions)
-      .where(eq(userSubscriptions.userId, userId))
-      .limit(1);
-
-    if (!subscription) {
-      return {
-        allowed: true,
-        decksRemainingToday: dailyDecks,
-        decksRemainingThisMonth: monthlyDecks,
-        dailyLimit: dailyDecks,
-        monthlyLimit: monthlyDecks,
-      };
-    }
-
-    // Calculate with potential resets
-    const dailyNeedsReset = needsDailyReset(subscription.lastResetAt);
-    const decksToday = dailyNeedsReset ? 0 : subscription.decksGeneratedToday;
-    const decksRemainingToday = Math.max(0, dailyDecks - decksToday);
-
-    const monthlyNeedsReset = needsMonthlyReset(subscription.lastMonthlyResetAt);
-    const decksThisMonth = monthlyNeedsReset ? 0 : subscription.decksGeneratedThisMonth;
-    const decksRemainingThisMonth = Math.max(0, monthlyDecks - decksThisMonth);
-
-    // Check daily limit
-    if (decksRemainingToday <= 0) {
-      return {
-        allowed: false,
-        decksRemainingToday: 0,
-        decksRemainingThisMonth,
-        dailyLimit: dailyDecks,
-        monthlyLimit: monthlyDecks,
-        message: `Tu as atteint la limite de ${dailyDecks} decks par jour. Réinitialisation dans ${getDailyResetTime()}.`,
-      };
-    }
-
-    // Check monthly limit
-    if (decksRemainingThisMonth <= 0) {
-      return {
-        allowed: false,
-        decksRemainingToday,
-        decksRemainingThisMonth: 0,
-        dailyLimit: dailyDecks,
-        monthlyLimit: monthlyDecks,
-        message: `Tu as atteint la limite de ${monthlyDecks} decks ce mois-ci. Réinitialisation le 1er du mois prochain.`,
-      };
-    }
-
-    return {
-      allowed: true,
-      decksRemainingToday,
-      decksRemainingThisMonth,
-      dailyLimit: dailyDecks,
-      monthlyLimit: monthlyDecks,
-    };
-
-  } catch (error) {
-    logger.error('Error checking deck quota', {
-      _error: error instanceof Error ? error.message : String(error),
-      severity: 'medium' as const,
-      userId,
-    });
-
-    return {
-      allowed: true,
-      decksRemainingToday: dailyDecks,
-      decksRemainingThisMonth: monthlyDecks,
-      dailyLimit: dailyDecks,
-      monthlyLimit: monthlyDecks,
-    };
-  }
+  // TEMPORARY: Deck quotas disabled - unlimited usage for all users
+  void userId; // Signature preserved for future re-activation
+  return {
+    allowed: true,
+    decksRemainingToday: 999,
+    decksRemainingThisMonth: 999,
+    dailyLimit: 999,
+    monthlyLimit: 999,
+  };
 }
 
 /**

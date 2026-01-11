@@ -1,5 +1,5 @@
 # Auto-merge Dependabot PRs (patch/minor only)
-# Source: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/automating-dependabot-with-github-actions
+# Uses merge commit (not squash) to keep branches synchronized
 
 name: Auto-merge Dependabot
 
@@ -24,7 +24,7 @@ jobs:
 
       - name: Auto-merge patch and minor updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
