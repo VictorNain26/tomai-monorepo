@@ -8,32 +8,16 @@ import { type ReactElement } from 'react';
 import { useUser } from '@/lib/auth';
 import { useNavigate } from 'react-router';
 import { useStudentDashboard } from '@/hooks/useStudentDashboard';
-import { useTokenUsage } from '@/hooks/useTokenUsage';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { DashboardSubjectsSection } from '@/components/dashboard/organisms/DashboardSubjectsSection';
-import { UsageCard } from '@/components/subscription';
-import { StudentPronoteSection } from '@/components/pronote/StudentPronoteSection';
-import { isITomUser, type IWindowUsage } from '@/types';
-
-/** Default window usage when no data available */
-const DEFAULT_WINDOW: IWindowUsage = {
-  tokensUsed: 0,
-  tokensRemaining: 5_000,
-  limit: 5_000,
-  usagePercent: 0,
-  refreshIn: '5h 0min',
-};
+import { isITomUser } from '@/types';
 
 export default function StudentDashboard(): ReactElement {
   const user = useUser();
   const navigate = useNavigate();
   const { subjects, sessions, mode, isLoading, isRAGEmpty } =
     useStudentDashboard();
-  const { window: windowUsage, plan, isLoading: usageLoading } = useTokenUsage({
-    userId: user?.id,
-    enabled: !!user?.id,
-  });
 
   // Navigation vers chat avec matière
   const handleStartChat = (subjectKey: string) => {
@@ -75,18 +59,6 @@ export default function StudentDashboard(): ReactElement {
             : 'Prêt à apprendre ? Sélectionnez une matière pour commencer.'}
         </p>
       </div>
-
-      {/* Token Usage Card - Affichage rolling window pour l'élève */}
-      {!usageLoading && windowUsage && (
-        <UsageCard
-          windowUsage={windowUsage ?? DEFAULT_WINDOW}
-          plan={plan}
-          className="mb-6"
-        />
-      )}
-
-      {/* Section Pronote - Lecture seule pour l'élève */}
-      <StudentPronoteSection className="mb-6" />
 
       {/* Matières (avec suggestion de session récente) */}
       <DashboardSubjectsSection
