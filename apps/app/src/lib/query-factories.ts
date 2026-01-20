@@ -48,6 +48,7 @@ import type {
   Lv2Option,
   EducationLevelType,
   RagLevel,
+  ChaptersHierarchy,
 } from '@/types';
 
 // ===== QUERY KEYS FACTORIES (TanStack Best Practices) =====
@@ -86,9 +87,9 @@ export const queryKeys = {
     subjects: (level: EducationLevelType, selectedLv2?: Lv2Option | null) =>
       [...queryKeys.education.all, 'subjects', level, selectedLv2 ?? 'no-lv2'] as const,
     levels: () => [...queryKeys.education.all, 'levels'] as const,
-    // Topics from RAG (themes/chapters per subject)
-    topics: (niveau: EducationLevelType, matiere: string) =>
-      [...queryKeys.education.all, 'topics', niveau, matiere] as const,
+    // Chapters hierarchy from RAG (2026)
+    chapters: (niveau: EducationLevelType, matiere: string) =>
+      [...queryKeys.education.all, 'chapters', niveau, matiere] as const,
   },
 } as const;
 
@@ -263,22 +264,6 @@ export interface IEducationSubjectsResponse {
   message?: string;
 }
 
-/** Domain with its topics from RAG */
-export interface IDomainWithTopics {
-  domaine: string;
-  /** Catégorie large (Histoire, Géographie, Grammaire, etc.) */
-  category: string;
-  themes: string[];
-}
-
-/** Response from /api/learning/topics endpoint */
-export interface ITopicsResponse {
-  matiere: string;
-  niveau: string;
-  domaines: IDomainWithTopics[];
-  totalTopics: number;
-}
-
 /** Response from /api/education/levels endpoint */
 export interface IEducationLevelsResponse {
   success: boolean;
@@ -322,15 +307,19 @@ export const educationQueries = {
     },
   }),
 
-  /** Get topics/themes from RAG for a subject at a given level */
-  topicsForSubject: (niveau: EducationLevelType, matiere: string) => ({
-    queryKey: queryKeys.education.topics(niveau, matiere),
-    queryFn: async (): Promise<ITopicsResponse> => {
-      return apiClient.get('/api/learning/topics', {
-        params: { niveau, matiere }
+  /**
+   * Get chapters hierarchy from RAG for deck creation (2026)
+   * Structure: chapters → subChapters → topics
+   */
+  chaptersForSubject: (niveau: EducationLevelType, matiere: string) => ({
+    queryKey: queryKeys.education.chapters(niveau, matiere),
+    queryFn: async (): Promise<ChaptersHierarchy> => {
+      return apiClient.get('/api/learning/chapters', {
+        params: { niveau, matiere },
       });
     },
     enabled: !!matiere && !!niveau,
+    staleTime: 5 * 60 * 1000, // 5 minutes - cached in Redis backend
   }),
 };
 

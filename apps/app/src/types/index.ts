@@ -23,6 +23,9 @@ export type {
   AICategorizedSubjects,
   ValidationResult,
   RagLevel,
+  SubChapter,
+  Chapter,
+  ChaptersHierarchy,
 } from './education.types';
 
 // User types
