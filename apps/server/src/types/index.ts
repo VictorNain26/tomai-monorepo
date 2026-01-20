@@ -160,6 +160,32 @@ export interface ErrorWithContext extends Error {
   statusCode?: number;
 }
 
+// Types Chapitres/Curriculum - Structure hiérarchique RAG
+export interface SubChapter {
+  id: string;
+  name: string;
+  topics: string[];
+  topicsCount: number;
+}
+
+export interface Chapter {
+  id: string;
+  name: string;
+  subChapters: SubChapter[];
+  subChaptersCount: number;
+  topicsCount: number;
+}
+
+export interface ChaptersHierarchy {
+  niveau: EducationLevelType;
+  matiere: string;
+  matiereLabel: string;
+  chapters: Chapter[];
+  totalChapters: number;
+  totalSubChapters: number;
+  totalTopics: number;
+}
+
 
 // Global environment variables types pour Bun
 declare global {

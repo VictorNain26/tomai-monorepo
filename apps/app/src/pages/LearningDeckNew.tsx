@@ -1,23 +1,26 @@
 /**
  * LearningDeckNew - Génération IA de deck
  *
- * Interface en 3 étapes : matière → chapitre → (optionnel) thème
- * Permet de réviser soit un chapitre complet, soit un thème spécifique
+ * Interface en 4 étapes : matière → chapitre → sous-chapitre → (optionnel) thème
+ * Permet de réviser soit un sous-chapitre complet, soit un thème spécifique
  *
- * Hiérarchie RAG:
+ * Hiérarchie RAG (2026):
  * - matiere: histoire_geo, francais, mathematiques...
- * - sousdomaine → "Chapitre" affiché (ex: "Chrétientés et Islam", "La phrase")
- * - title → "Thème" affiché (ex: "L'Empire byzantin", "Types de phrases")
+ * - chapter (domaine): "Nombres et Calculs", "Géométrie"...
+ * - subChapter (sousdomaine): "Fractions", "Échelles"...
+ * - topic (title): "Addition de fractions", "Lecture d'échelle"...
+ *
+ * Architecture 2026: Pas de useMemo - React Compiler optimise automatiquement
  */
 
-import { type ReactElement, useState, useMemo } from 'react';
+import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArrowLeft, Sparkles, AlertCircle, BookOpen, Layers } from 'lucide-react';
 import { useGenerateDeck } from '@/hooks/useLearning';
 import { useUser } from '@/lib/auth';
-import { educationQueries, type ITopicsResponse } from '@/lib/query-factories';
+import { educationQueries } from '@/lib/query-factories';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -27,30 +30,32 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { IGenerateDeckRequest, EducationLevelType } from '@/types';
+import type { IGenerateDeckRequest, EducationLevelType, ChaptersHierarchy } from '@/types';
 import type { ApiError } from '@/lib/api-client';
 
-/** Valeur spéciale pour indiquer "tout le chapitre" */
-const FULL_CHAPITRE_VALUE = '__FULL_CHAPITRE__';
+/** Valeur spéciale pour indiquer "tout le sous-chapitre" */
+const FULL_SUBCHAPTER_VALUE = '__FULL_SUBCHAPTER__';
 
 export default function LearningDeckNew(): ReactElement {
   const navigate = useNavigate();
   const user = useUser();
   const { generateDeck, isGenerating } = useGenerateDeck();
 
+  // État du formulaire
   const [subject, setSubject] = useState('');
-  const [selectedChapitre, setSelectedChapitre] = useState('');
-  const [selectedTheme, setSelectedTheme] = useState('');
+  const [selectedChapter, setSelectedChapter] = useState('');
+  const [selectedSubChapter, setSelectedSubChapter] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState('');
 
+  // Données utilisateur
   const schoolLevel = (user?.schoolLevel ?? 'sixieme') as EducationLevelType;
   const selectedLv2 = user?.selectedLv2 ?? null;
 
+  // Queries TanStack
   const {
     data: subjectsData,
     isLoading: subjectsLoading,
@@ -61,61 +66,44 @@ export default function LearningDeckNew(): ReactElement {
   });
 
   const {
-    data: topicsData,
-    isLoading: topicsLoading,
-    error: topicsError,
+    data: chaptersData,
+    isLoading: chaptersLoading,
+    error: chaptersError,
   } = useQuery({
-    ...educationQueries.topicsForSubject(schoolLevel, subject),
+    ...educationQueries.chaptersForSubject(schoolLevel, subject),
     enabled: !!schoolLevel && !!subject,
   });
 
+  // Données dérivées (React Compiler optimise automatiquement)
   const subjects = subjectsData?.subjects ?? [];
+  const chapters = (chaptersData as ChaptersHierarchy | undefined)?.chapters ?? [];
+  const currentChapter = chapters.find((c) => c.name === selectedChapter);
+  const subChapters = currentChapter?.subChapters ?? [];
+  const currentSubChapter = subChapters.find((sc) => sc.name === selectedSubChapter);
+  const availableTopics = currentSubChapter?.topics ?? [];
 
-  // Memoize chapitres (sousdomaine RAG) pour éviter re-renders inutiles
-  const chapitres = useMemo(
-    () => (topicsData as ITopicsResponse | undefined)?.domaines ?? [],
-    [topicsData]
-  );
+  // États dérivés
+  const isFullSubChapterMode = selectedTopic === FULL_SUBCHAPTER_VALUE || selectedTopic === '';
+  const isFormValid = subject !== '' && selectedChapter !== '' && selectedSubChapter !== '';
+  const isLoadingChapters = subject !== '' && chaptersLoading;
 
-  // Grouper les chapitres par catégorie (Histoire, Géographie, Grammaire, etc.)
-  const chapitresByCategory = useMemo(() => {
-    const grouped = new Map<string, typeof chapitres>();
-    for (const chapitre of chapitres) {
-      const category = chapitre.category ?? 'Autre';
-      const existing = grouped.get(category) ?? [];
-      existing.push(chapitre);
-      grouped.set(category, existing);
-    }
-    return Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [chapitres]);
-
-  // Thèmes (titles RAG) disponibles pour le chapitre sélectionné
-  const availableThemes = useMemo(() => {
-    if (!selectedChapitre) return [];
-    const chapitre = chapitres.find(c => c.domaine === selectedChapitre);
-    return chapitre?.themes ?? [];
-  }, [chapitres, selectedChapitre]);
-
-  // Mode de génération: chapitre complet ou thème spécifique
-  const isFullChapitreMode = selectedTheme === FULL_CHAPITRE_VALUE || selectedTheme === '';
-
-  // Validation: matière + chapitre requis
-  const isFormValid = subject.length > 0 && selectedChapitre.length > 0;
-  const isLoadingTopics = !!subject && topicsLoading;
-
-  const handleSubjectChange = (newSubject: string) => {
-    setSubject(newSubject);
-    setSelectedChapitre('');
-    setSelectedTheme('');
+  // Handlers avec reset en cascade
+  const handleSubjectChange = (value: string) => {
+    setSubject(value);
+    setSelectedChapter('');
+    setSelectedSubChapter('');
+    setSelectedTopic('');
   };
 
-  const handleChapitreChange = (newChapitre: string) => {
-    setSelectedChapitre(newChapitre);
-    setSelectedTheme(''); // Reset thème, utilisateur peut choisir ou laisser vide
+  const handleChapterChange = (value: string) => {
+    setSelectedChapter(value);
+    setSelectedSubChapter('');
+    setSelectedTopic('');
   };
 
-  const handleThemeChange = (newTheme: string) => {
-    setSelectedTheme(newTheme);
+  const handleSubChapterChange = (value: string) => {
+    setSelectedSubChapter(value);
+    setSelectedTopic('');
   };
 
   const handleGenerate = () => {
@@ -123,14 +111,13 @@ export default function LearningDeckNew(): ReactElement {
 
     const request: IGenerateDeckRequest = {
       subject,
-      domaine: selectedChapitre, // Le "domaine" API = chapitre (sousdomaine RAG)
-      // topic optionnel: undefined si mode chapitre complet
-      topic: isFullChapitreMode ? undefined : selectedTheme.trim(),
+      domaine: selectedSubChapter,
+      topic: isFullSubChapterMode ? undefined : selectedTopic.trim(),
     };
 
-    const displayName = isFullChapitreMode
-      ? `tout le chapitre "${selectedChapitre}"`
-      : `"${selectedTheme}"`;
+    const displayName = isFullSubChapterMode
+      ? `tout "${selectedSubChapter}"`
+      : `"${selectedTopic}"`;
 
     toast.loading('Génération du deck en cours...', {
       id: 'deck-generation',
@@ -202,7 +189,7 @@ export default function LearningDeckNew(): ReactElement {
               Génération automatique
             </CardTitle>
             <CardDescription>
-              Choisis ce que tu veux réviser : un chapitre complet ou un thème spécifique
+              Choisis ce que tu veux réviser : un sous-chapitre complet ou un thème spécifique
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -217,19 +204,15 @@ export default function LearningDeckNew(): ReactElement {
               ) : subjectsError ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Impossible de charger les matières.
-                  </AlertDescription>
+                  <AlertDescription>Impossible de charger les matières.</AlertDescription>
                 </Alert>
               ) : subjects.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Aucune matière disponible pour ton niveau.
-                  </AlertDescription>
+                  <AlertDescription>Aucune matière disponible pour ton niveau.</AlertDescription>
                 </Alert>
               ) : (
-                <Select value={subject} onValueChange={handleSubjectChange} disabled={isLoadingTopics}>
+                <Select value={subject} onValueChange={handleSubjectChange} disabled={isLoadingChapters}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choisir une matière" />
                   </SelectTrigger>
@@ -247,101 +230,118 @@ export default function LearningDeckNew(): ReactElement {
               )}
             </div>
 
-            {/* 2. Chapitre */}
+            {/* 2. Chapitre (domaine) */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Layers className="h-4 w-4" />
                 Chapitre
               </Label>
-              {!subject ? (
+              {subject === '' ? (
                 <Select disabled>
                   <SelectTrigger>
                     <SelectValue placeholder="Choisis d'abord une matière" />
                   </SelectTrigger>
                 </Select>
-              ) : topicsLoading ? (
+              ) : chaptersLoading ? (
                 <Skeleton className="h-10 w-full" />
-              ) : topicsError ? (
+              ) : chaptersError ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Impossible de charger les chapitres.
-                  </AlertDescription>
+                  <AlertDescription>Impossible de charger les chapitres.</AlertDescription>
                 </Alert>
-              ) : chapitres.length === 0 ? (
+              ) : chapters.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Aucun chapitre disponible pour cette matière.
-                  </AlertDescription>
+                  <AlertDescription>Aucun chapitre disponible pour cette matière.</AlertDescription>
                 </Alert>
               ) : (
-                <Select value={selectedChapitre} onValueChange={handleChapitreChange}>
+                <Select value={selectedChapter} onValueChange={handleChapterChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choisir un chapitre" />
                   </SelectTrigger>
                   <SelectContent>
-                    {chapitresByCategory.map(([category, categoryChapitres]) => (
-                      <SelectGroup key={category}>
-                        <SelectLabel className="font-semibold text-foreground">
-                          {category}
-                        </SelectLabel>
-                        {categoryChapitres.map((c) => (
-                          <SelectItem key={c.domaine} value={c.domaine}>
-                            {c.domaine}
-                            <span className="text-muted-foreground ml-2">
-                              ({c.themes.length} thèmes)
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
+                    {chapters.map((chapter) => (
+                      <SelectItem key={chapter.id} value={chapter.name}>
+                        {chapter.name}
+                        <span className="text-muted-foreground ml-2">
+                          ({chapter.subChaptersCount} sous-chapitres)
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
             </div>
 
-            {/* 3. Thème (optionnel) */}
-            {selectedChapitre && (
+            {/* 3. Sous-chapitre (sousdomaine) */}
+            {selectedChapter !== '' && (
               <div className="space-y-2">
-                <Label className="text-muted-foreground">
-                  Thème (optionnel)
+                <Label className="flex items-center gap-2">
+                  <Layers className="h-4 w-4" />
+                  Sous-chapitre
                 </Label>
-                <Select value={selectedTheme} onValueChange={handleThemeChange}>
+                {subChapters.length === 0 ? (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>Aucun sous-chapitre disponible.</AlertDescription>
+                  </Alert>
+                ) : (
+                  <Select value={selectedSubChapter} onValueChange={handleSubChapterChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir un sous-chapitre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subChapters.map((sc) => (
+                        <SelectItem key={sc.id} value={sc.name}>
+                          {sc.name}
+                          <span className="text-muted-foreground ml-2">({sc.topicsCount} thèmes)</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
+            {/* 4. Thème (optionnel) */}
+            {selectedSubChapter !== '' && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Thème (optionnel)</Label>
+                <Select value={selectedTopic} onValueChange={setSelectedTopic}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Tout le chapitre" />
+                    <SelectValue placeholder="Tout le sous-chapitre" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={FULL_CHAPITRE_VALUE}>
+                    <SelectItem value={FULL_SUBCHAPTER_VALUE}>
                       <span className="flex items-center gap-2 font-medium">
                         <Layers className="h-4 w-4" />
-                        Tout le chapitre
+                        Tout le sous-chapitre
                       </span>
                     </SelectItem>
-                    {availableThemes.map((theme) => (
-                      <SelectItem key={theme} value={theme}>
-                        {theme}
+                    {availableTopics.map((topic) => (
+                      <SelectItem key={topic} value={topic}>
+                        {topic}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {isFullChapitreMode
-                    ? `Révise l'ensemble du chapitre "${selectedChapitre}" (plus de cartes)`
-                    : `Révise uniquement "${selectedTheme}"`}
+                  {isFullSubChapterMode
+                    ? `Révise l'ensemble de "${selectedSubChapter}" (plus de cartes)`
+                    : `Révise uniquement "${selectedTopic}"`}
                 </p>
               </div>
             )}
 
             <Button
               onClick={handleGenerate}
-              disabled={!isFormValid || isLoadingTopics || isGenerating}
+              disabled={!isFormValid || isLoadingChapters || isGenerating}
               className="w-full"
               size="lg"
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              {isFullChapitreMode && selectedChapitre
-                ? `Générer sur tout "${selectedChapitre}"`
+              {isFullSubChapterMode && selectedSubChapter !== ''
+                ? `Générer sur tout "${selectedSubChapter}"`
                 : 'Générer le deck'}
             </Button>
           </CardContent>

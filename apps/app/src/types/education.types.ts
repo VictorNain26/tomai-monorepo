@@ -67,3 +67,29 @@ export interface RagLevel {
   ragAvailable: boolean;
   subjectsCount: number;
 }
+
+// ✅ UNIFIÉ avec backend - Hiérarchie chapitres RAG (2026)
+export interface SubChapter {
+  id: string;
+  name: string;
+  topics: string[];
+  topicsCount: number;
+}
+
+export interface Chapter {
+  id: string;
+  name: string;
+  subChapters: SubChapter[];
+  subChaptersCount: number;
+  topicsCount: number;
+}
+
+export interface ChaptersHierarchy {
+  niveau: EducationLevelType;
+  matiere: string;
+  matiereLabel: string;
+  chapters: Chapter[];
+  totalChapters: number;
+  totalSubChapters: number;
+  totalTopics: number;
+}
