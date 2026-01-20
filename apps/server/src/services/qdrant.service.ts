@@ -9,6 +9,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { logger } from '../lib/observability.js';
 import { redisCacheService } from './redis-cache.service.js';
+import type { Chapter, SubChapter, ChaptersHierarchy, EducationLevelType } from '../types/index.js';
 
 // =============================================================================
 // Configuration
@@ -312,6 +313,125 @@ class QdrantService {
     logger.info('Topics retrieved', { operation: 'qdrant:topics', niveau, matiere, count: result.length });
 
     return result;
+  }
+
+  /**
+   * Hiérarchie des chapitres pour un niveau/matière - Best practice 2026
+   *
+   * Structure retournée:
+   * - Chapter (domaine): "Nombres et Calculs", "Géométrie"...
+   *   - SubChapter (sousdomaine): "Fractions", "Échelles"...
+   *     - Topics (titles): "Addition de fractions", "Lecture d'échelle"...
+   *
+   * Cache Redis 1h pour performance frontend
+   */
+  async getChaptersHierarchy(
+    matiere: string,
+    niveau: EducationLevelType,
+    matiereLabel: string
+  ): Promise<ChaptersHierarchy> {
+    const cacheKey = `chapters:${niveau}:${matiere}`;
+
+    const cached = await redisCacheService.get<ChaptersHierarchy>(CACHE_PREFIX, cacheKey);
+    if (cached) {
+      logger.info('Chapters hierarchy cache hit', {
+        operation: 'qdrant:chapters:cache-hit',
+        niveau,
+        matiere
+      });
+      return cached;
+    }
+
+    const client = this.getClient();
+    const points = await client.scroll(COLLECTION_NAME, {
+      filter: {
+        must: [
+          { key: 'niveau', match: { value: niveau } },
+          { key: 'matiere', match: { value: matiere } },
+        ],
+      },
+      limit: 1000,
+      with_payload: ['domaine', 'sousdomaine', 'title'],
+    });
+
+    // Build hierarchy: domaine → sousdomaine → titles
+    const hierarchyMap = new Map<string, Map<string, Set<string>>>();
+
+    for (const point of points.points) {
+      const p = point.payload as Record<string, unknown>;
+      const domaine = p['domaine'] ? String(p['domaine']) : 'Autre';
+      const sousdomaine = p['sousdomaine'] ? String(p['sousdomaine']) : null;
+      const title = p['title'] ? String(p['title']) : null;
+
+      if (!sousdomaine) continue;
+
+      if (!hierarchyMap.has(domaine)) {
+        hierarchyMap.set(domaine, new Map());
+      }
+      const subChaptersMap = hierarchyMap.get(domaine)!;
+
+      if (!subChaptersMap.has(sousdomaine)) {
+        subChaptersMap.set(sousdomaine, new Set());
+      }
+      if (title) {
+        subChaptersMap.get(sousdomaine)!.add(title);
+      }
+    }
+
+    // Convert to typed structure
+    const chapters: Chapter[] = Array.from(hierarchyMap.entries())
+      .map(([domaineName, subChaptersMap]) => {
+        const subChapters: SubChapter[] = Array.from(subChaptersMap.entries())
+          .map(([subChapterName, topicsSet]) => ({
+            id: this.slugify(subChapterName),
+            name: subChapterName,
+            topics: Array.from(topicsSet).sort(),
+            topicsCount: topicsSet.size,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+
+        return {
+          id: this.slugify(domaineName),
+          name: domaineName,
+          subChapters,
+          subChaptersCount: subChapters.length,
+          topicsCount: subChapters.reduce((sum, sc) => sum + sc.topicsCount, 0),
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+
+    const result: ChaptersHierarchy = {
+      niveau,
+      matiere,
+      matiereLabel,
+      chapters,
+      totalChapters: chapters.length,
+      totalSubChapters: chapters.reduce((sum, c) => sum + c.subChaptersCount, 0),
+      totalTopics: chapters.reduce((sum, c) => sum + c.topicsCount, 0),
+    };
+
+    await redisCacheService.set(CACHE_PREFIX, cacheKey, result, CACHE_TTL.REDIS);
+
+    logger.info('Chapters hierarchy built', {
+      operation: 'qdrant:chapters:build',
+      niveau,
+      matiere,
+      totalChapters: result.totalChapters,
+      totalSubChapters: result.totalSubChapters,
+      totalTopics: result.totalTopics,
+    });
+
+    return result;
+  }
+
+  /** Génère un slug URL-safe à partir d'un nom */
+  private slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
   /** Health check */

@@ -365,6 +365,7 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
    * Get available topics/themes for a given subject and level
    * GET /api/learning/topics?matiere=mathematiques&niveau=cinquieme
    *
+   * @deprecated Use GET /api/learning/chapters instead for cleaner hierarchy
    * Returns hierarchical structure: domaines → themes
    * Used for guided topic selection (no free text input)
    */
@@ -413,6 +414,73 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
       });
       set.status = 500;
       return { error: 'Failed to fetch topics' };
+    }
+  }, {
+    query: t.Object({
+      matiere: t.String({ minLength: 1 }),
+      niveau: t.Optional(t.Union([
+        t.Literal('cp'), t.Literal('ce1'), t.Literal('ce2'),
+        t.Literal('cm1'), t.Literal('cm2'),
+        t.Literal('sixieme'), t.Literal('cinquieme'),
+        t.Literal('quatrieme'), t.Literal('troisieme'),
+        t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
+      ])),
+    }),
+  })
+
+  /**
+   * Get chapters hierarchy for deck creation - Best practice 2026
+   * GET /api/learning/chapters?matiere=mathematiques&niveau=cinquieme
+   *
+   * Returns clean hierarchical structure for frontend:
+   * - chapters[] (domaines: "Nombres et Calculs", "Géométrie"...)
+   *   - subChapters[] (sousdomaines: "Fractions", "Échelles"...)
+   *     - topics[] (titles: individual content pieces)
+   *
+   * Used for guided deck creation with structured topic selection.
+   * Cached in Redis for 1h for performance.
+   */
+  .get('/chapters', async ({ request, query, set }) => {
+    const authContext = await handleAuthWithCookies(request.headers, set);
+    if (!authContext.success) {
+      return authContext.error;
+    }
+
+    const { user: authUser } = authContext;
+    const { matiere } = query;
+    const niveau = (query.niveau ?? authUser.schoolLevel ?? 'sixieme') as EducationLevelType;
+
+    if (!matiere) {
+      set.status = 400;
+      return { error: 'matiere is required' };
+    }
+
+    try {
+      const matiereLabel = subjectLabels[matiere] ?? matiere;
+      const hierarchy = await qdrantService.getChaptersHierarchy(matiere, niveau, matiereLabel);
+
+      logger.info('Chapters hierarchy fetched', {
+        operation: 'learning:chapters:list',
+        userId: authUser.id,
+        matiere,
+        niveau,
+        totalChapters: hierarchy.totalChapters,
+        totalSubChapters: hierarchy.totalSubChapters,
+        totalTopics: hierarchy.totalTopics,
+      });
+
+      return hierarchy;
+    } catch (error) {
+      logger.error('Failed to fetch chapters', {
+        operation: 'learning:chapters:list',
+        userId: authUser.id,
+        matiere,
+        niveau,
+        _error: error instanceof Error ? error.message : String(error),
+        severity: 'medium' as const,
+      });
+      set.status = 500;
+      return { error: 'Failed to fetch chapters' };
     }
   }, {
     query: t.Object({
