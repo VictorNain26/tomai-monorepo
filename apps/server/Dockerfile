@@ -79,7 +79,7 @@ RUN echo "=== TypeScript Validation ===" && \
     echo "=== ESLint Validation ===" && \
     bun run lint:ci && \
     echo "=== Build Production ===" && \
-    bun build src/index.ts --outdir dist --target bun --minify --splitting --format esm && \
+    bun build src/index.ts --outdir dist --target bun --minify --sourcemap=linked --format esm && \
     echo "=== Verification ===" && \
     test -f dist/index.js || (echo "ERREUR: dist/index.js manquant" && exit 1) && \
     ls -lh dist/
