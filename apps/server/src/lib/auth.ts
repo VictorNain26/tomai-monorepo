@@ -5,6 +5,7 @@
 
 import { betterAuth } from "better-auth";
 import { username, openAPI, mcp } from "better-auth/plugins";
+import { expo } from "@better-auth/expo";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 import { db } from "../db/connection";
@@ -57,7 +58,13 @@ function getTrustedOrigins(): string[] {
       'http://localhost:5175'
     );
   }
-  
+
+  // Mobile app deep link schemes (Expo)
+  origins.push(
+    'tomia://',           // Production app scheme
+    'exp://'              // Expo development
+  );
+
   // Déduplication et filtrage
   return Array.from(new Set(origins)).filter(Boolean);
 }
@@ -219,5 +226,6 @@ export const auth = betterAuth({
     mcp({
       loginPage: "/sign-in"
     }),
+    expo(),  // Mobile app support (deep links, secure storage)
   ],
 });

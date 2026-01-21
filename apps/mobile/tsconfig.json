@@ -5,6 +5,7 @@
     /* React Native specific */
     "jsx": "react-native",
     "lib": ["ES2022"],
+    "types": ["jest", "@testing-library/react-native"],
 
     /* Path Mapping */
     "baseUrl": ".",

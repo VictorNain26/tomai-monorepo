@@ -1,14 +1,14 @@
 /**
  * Qdrant Service - Client direct pour recherche vectorielle
  *
- * Architecture cache 2025:
- * - Redis cache (1h TTL) pour persistance cross-instances
- * - In-memory cache (1min) pour fast-path local
+ * Architecture cache 2026:
+ * - In-memory LRU cache (1h TTL) pour mono-instance
+ * - Zero latence réseau, zero coût externe
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { logger } from '../lib/observability.js';
-import { redisCacheService } from './redis-cache.service.js';
+import { cacheService } from './memory-cache.service.js';
 import type { Chapter, SubChapter, ChaptersHierarchy, EducationLevelType } from '../types/index.js';
 
 // =============================================================================
@@ -20,7 +20,7 @@ const QDRANT_API_KEY = Bun.env['QDRANT_API_KEY'] ?? '';
 const COLLECTION_NAME =
   Bun.env['QDRANT_COLLECTION'] ?? Bun.env['QDRANT_COLLECTION_NAME'] ?? 'tomai_educational';
 
-const CACHE_TTL = { REDIS: 3600, MEMORY: 60_000 } as const;
+const CACHE_TTL = { DEFAULT: 3600, MEMORY_CHECK: 60_000 } as const;
 const CACHE_PREFIX = 'qdrant:' as const;
 
 // =============================================================================
@@ -129,17 +129,17 @@ class QdrantService {
     return results;
   }
 
-  /** Statistiques collection - Cache: Redis (1h) + in-memory (1min) */
+  /** Statistiques collection - Cache in-memory (1h) */
   async getStats(): Promise<CollectionStats> {
     const cacheKey = 'stats:collection';
 
-    // In-memory fast path
-    if (this.statsCache && Date.now() - this.statsCache.timestamp < CACHE_TTL.MEMORY) {
+    // In-memory fast path (local instance check)
+    if (this.statsCache && Date.now() - this.statsCache.timestamp < CACHE_TTL.MEMORY_CHECK) {
       return this.statsCache.data;
     }
 
-    // Redis cache
-    const cached = await redisCacheService.get<CollectionStats>(CACHE_PREFIX, cacheKey);
+    // In-memory cache
+    const cached = cacheService.get<CollectionStats>(CACHE_PREFIX, cacheKey);
     if (cached) {
       this.statsCache = { data: cached, timestamp: Date.now() };
       return cached;
@@ -167,7 +167,7 @@ class QdrantService {
     const stats: CollectionStats = { total_points, by_niveau, by_matiere };
 
     this.statsCache = { data: stats, timestamp: Date.now() };
-    await redisCacheService.set(CACHE_PREFIX, cacheKey, stats, CACHE_TTL.REDIS);
+    cacheService.set(CACHE_PREFIX, cacheKey, stats, CACHE_TTL.DEFAULT);
 
     logger.info('Qdrant stats retrieved', {
       operation: 'qdrant:stats',
@@ -210,11 +210,11 @@ class QdrantService {
     return by_matiere;
   }
 
-  /** Matières disponibles pour un niveau - Cache Redis 1h */
+  /** Matières disponibles pour un niveau - Cache in-memory 1h */
   async getMatieresForNiveau(niveau: string): Promise<Record<string, number>> {
     const cacheKey = `matieres:${niveau}`;
 
-    const cached = await redisCacheService.get<Record<string, number>>(CACHE_PREFIX, cacheKey);
+    const cached = cacheService.get<Record<string, number>>(CACHE_PREFIX, cacheKey);
     if (cached) {
       logger.info('Matieres cache hit', { operation: 'qdrant:matieres:cache-hit', niveau });
       return cached;
@@ -252,20 +252,20 @@ class QdrantService {
       if (count.count > 0) by_matiere[matiere] = count.count;
     }
 
-    await redisCacheService.set(CACHE_PREFIX, cacheKey, by_matiere, CACHE_TTL.REDIS);
+    cacheService.set(CACHE_PREFIX, cacheKey, by_matiere, CACHE_TTL.DEFAULT);
     logger.info('Matieres retrieved', { operation: 'qdrant:matieres', niveau, count: Object.keys(by_matiere).length });
 
     return by_matiere;
   }
 
-  /** Chapitres et thèmes pour matière/niveau - Cache Redis 1h */
+  /** Chapitres et thèmes pour matière/niveau - Cache in-memory 1h */
   async getTopics(
     matiere: string,
     niveau: string
   ): Promise<{ domaine: string; category: string; themes: string[] }[]> {
     const cacheKey = `topics:${niveau}:${matiere}`;
 
-    const cached = await redisCacheService.get<{ domaine: string; category: string; themes: string[] }[]>(
+    const cached = cacheService.get<{ domaine: string; category: string; themes: string[] }[]>(
       CACHE_PREFIX,
       cacheKey
     );
@@ -309,7 +309,7 @@ class QdrantService {
         return cmp !== 0 ? cmp : a.domaine.localeCompare(b.domaine);
       });
 
-    await redisCacheService.set(CACHE_PREFIX, cacheKey, result, CACHE_TTL.REDIS);
+    cacheService.set(CACHE_PREFIX, cacheKey, result, CACHE_TTL.DEFAULT);
     logger.info('Topics retrieved', { operation: 'qdrant:topics', niveau, matiere, count: result.length });
 
     return result;
@@ -323,7 +323,7 @@ class QdrantService {
    *   - SubChapter (sousdomaine): "Fractions", "Échelles"...
    *     - Topics (titles): "Addition de fractions", "Lecture d'échelle"...
    *
-   * Cache Redis 1h pour performance frontend
+   * Cache in-memory 1h pour performance frontend
    */
   async getChaptersHierarchy(
     matiere: string,
@@ -332,7 +332,7 @@ class QdrantService {
   ): Promise<ChaptersHierarchy> {
     const cacheKey = `chapters:${niveau}:${matiere}`;
 
-    const cached = await redisCacheService.get<ChaptersHierarchy>(CACHE_PREFIX, cacheKey);
+    const cached = cacheService.get<ChaptersHierarchy>(CACHE_PREFIX, cacheKey);
     if (cached) {
       logger.info('Chapters hierarchy cache hit', {
         operation: 'qdrant:chapters:cache-hit',
@@ -410,7 +410,7 @@ class QdrantService {
       totalTopics: chapters.reduce((sum, c) => sum + c.topicsCount, 0),
     };
 
-    await redisCacheService.set(CACHE_PREFIX, cacheKey, result, CACHE_TTL.REDIS);
+    cacheService.set(CACHE_PREFIX, cacheKey, result, CACHE_TTL.DEFAULT);
 
     logger.info('Chapters hierarchy built', {
       operation: 'qdrant:chapters:build',
@@ -444,11 +444,38 @@ class QdrantService {
     }
   }
 
-  /** Invalide le cache (in-memory + Redis) */
-  async invalidateCache(): Promise<void> {
+  /** Invalide le cache (in-memory) */
+  invalidateCache(): void {
     this.statsCache = null;
-    await redisCacheService.delete(CACHE_PREFIX, 'stats:collection');
+    cacheService.delete(CACHE_PREFIX, 'stats:collection');
     logger.info('Qdrant cache invalidated', { operation: 'qdrant:cache:invalidate' });
+  }
+
+  /** Invalide le cache des chapitres (pattern: qdrant:chapters:*) */
+  invalidateChaptersCache(): number {
+    const pattern = `${CACHE_PREFIX}chapters:*`;
+    const deleted = cacheService.invalidateByPattern(pattern);
+    logger.info('Chapters cache invalidated', {
+      operation: 'qdrant:chapters:cache:invalidate',
+      pattern,
+      deletedKeys: deleted
+    });
+    return deleted;
+  }
+
+  /** Invalide tous les caches Qdrant (stats + matieres + topics + chapters) */
+  invalidateAllCache(): { stats: boolean; patterns: number } {
+    this.statsCache = null;
+    const statsDeleted = cacheService.delete(CACHE_PREFIX, 'stats:collection');
+    const patternsDeleted = cacheService.invalidateByPattern(`${CACHE_PREFIX}*`);
+
+    logger.info('All Qdrant cache invalidated', {
+      operation: 'qdrant:cache:invalidate:all',
+      statsDeleted,
+      patternsDeleted
+    });
+
+    return { stats: statsDeleted, patterns: patternsDeleted };
   }
 }
 

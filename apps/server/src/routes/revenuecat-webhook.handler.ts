@@ -12,7 +12,10 @@ import { db } from '../db/connection';
 import { familyBilling, userSubscriptions, subscriptionPlans } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { logger } from '../lib/observability';
-import { redisService } from '../lib/redis.service';
+import {
+  isRevenueCatEventProcessed,
+  markRevenueCatEventProcessed,
+} from '../services/webhook-idempotence.service';
 
 // ============================================
 // Types
@@ -64,43 +67,6 @@ type RevenueCatEventType =
 // ============================================
 
 const WEBHOOK_AUTH_HEADER = process.env.REVENUECAT_WEBHOOK_AUTH;
-const WEBHOOK_IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60; // 24 hours
-const WEBHOOK_EVENT_KEY_PREFIX = 'revenuecat:webhook:processed:';
-
-// ============================================
-// Helpers
-// ============================================
-
-async function isEventAlreadyProcessed(eventId: string): Promise<boolean> {
-  try {
-    return await redisService.exists(`${WEBHOOK_EVENT_KEY_PREFIX}${eventId}`);
-  } catch (error) {
-    logger.warn('[RevenueCat Webhook] Idempotency check failed', {
-      operation: 'revenuecat:webhook:idempotency:check',
-      eventId,
-      _error: error instanceof Error ? error.message : String(error),
-      severity: 'medium' as const,
-    });
-    return false;
-  }
-}
-
-async function markEventAsProcessed(eventId: string): Promise<void> {
-  try {
-    await redisService.set(
-      `${WEBHOOK_EVENT_KEY_PREFIX}${eventId}`,
-      Date.now().toString(),
-      WEBHOOK_IDEMPOTENCY_TTL_SECONDS
-    );
-  } catch (error) {
-    logger.warn('[RevenueCat Webhook] Failed to mark event as processed', {
-      operation: 'revenuecat:webhook:idempotency:mark',
-      eventId,
-      _error: error instanceof Error ? error.message : String(error),
-      severity: 'low' as const,
-    });
-  }
-}
 
 /**
  * Parse children IDs from subscriber attributes.
@@ -370,8 +336,8 @@ export function createRevenueCatWebhookRoutes() {
         return { received: true, skipped: 'sandbox' };
       }
 
-      // Idempotency check
-      if (await isEventAlreadyProcessed(event.id)) {
+      // Idempotency check (PostgreSQL-based)
+      if (await isRevenueCatEventProcessed(event.id)) {
         logger.info(`[RevenueCat Webhook] Duplicate event skipped: ${event.id}`, {
           operation: 'revenuecat:webhook:duplicate',
           eventId: event.id,
@@ -421,7 +387,7 @@ export function createRevenueCatWebhookRoutes() {
             });
         }
 
-        await markEventAsProcessed(event.id);
+        await markRevenueCatEventProcessed(event.id, event.type);
         return { received: true, event: event.type };
       } catch (error) {
         logger.error(`[RevenueCat Webhook] Error processing ${event.type}`, {

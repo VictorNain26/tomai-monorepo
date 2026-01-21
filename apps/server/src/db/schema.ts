@@ -866,6 +866,28 @@ export const familyBillingRelations = relations(familyBilling, ({ one }) => ({
 }));
 
 // =============================================
+// WEBHOOK EVENTS - Idempotence sans Redis
+// =============================================
+
+/**
+ * Table webhook_events - Stocke les événements traités pour idempotence
+ * Remplace Redis pour la déduplication Stripe/RevenueCat
+ * TTL géré par cleanup job (événements > 7 jours supprimés)
+ */
+export const webhookEvents = pgTable('webhook_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: varchar('event_id', { length: 255 }).notNull().unique(), // ID Stripe/RevenueCat
+  source: varchar('source', { length: 50 }).notNull(), // 'stripe' | 'revenuecat'
+  eventType: varchar('event_type', { length: 100 }).notNull(), // Type d'événement
+  processedAt: timestamp('processed_at', { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(), // Pour cleanup
+}, (table) => ({
+  eventIdIdx: index('idx_webhook_events_event_id').on(table.eventId),
+  sourceIdx: index('idx_webhook_events_source').on(table.source),
+  expiresAtIdx: index('idx_webhook_events_expires_at').on(table.expiresAt),
+}));
+
+// =============================================
 // TYPES TYPESCRIPT
 // =============================================
 export type User = typeof user.$inferSelect;
@@ -1100,6 +1122,11 @@ export type UserSubscriptionWithRelations = UserSubscription & {
 export type FamilyBillingWithRelations = FamilyBilling & {
   parent?: User;
 };
+
+// Webhook Events Types (idempotence sans Redis)
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
+export type WebhookSource = 'stripe' | 'revenuecat';
 
 // Learning Tools System Types
 export type CardType = typeof cardTypeEnum.enumValues[number];

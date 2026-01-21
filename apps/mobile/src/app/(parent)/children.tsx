@@ -1,26 +1,96 @@
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+/**
+ * Children Management Screen
+ *
+ * Full list of children with CRUD operations.
+ */
+
+import { View, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, User, ChevronRight, Mail, Clock, Trophy } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Plus, User, Mail } from 'lucide-react-native';
+import { useState, useCallback } from 'react';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ChildCard, CreateChildModal } from '@/components/parent';
+import { useParentDashboard, type IChild, type ICreateChildData } from '@/hooks';
 
-interface Child {
-  id: string;
-  name: string;
-  email: string;
-  level: string;
-  lastActive: string;
-  streakDays: number;
-}
-
-// Placeholder - will be fetched from API
-const children: Child[] = [];
+// ============================================================================
+// COMPONENT
+// ============================================================================
 
 export default function ChildrenScreen() {
+  const router = useRouter();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const {
+    children,
+    childrenCount,
+    levels,
+    isLoadingChildren,
+    isCreating,
+    createChild,
+    refresh,
+  } = useParentDashboard();
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    refresh();
+    setTimeout(() => setIsRefreshing(false), 500);
+  }, [refresh]);
+
+  const handleChildPress = (child: IChild) => {
+    // Navigate to child details (Phase 6)
+    router.push(`/(parent)/child/${child.id}`);
+  };
+
+  const handleCreateChild = useCallback(
+    async (data: ICreateChildData) => {
+      try {
+        await createChild(data);
+        setShowCreateModal(false);
+        Alert.alert('Succès', `${data.firstName} peut maintenant utiliser Tom !`);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Erreur lors de la création';
+        Alert.alert('Erreur', message);
+      }
+    },
+    [createChild]
+  );
+
+  // Loading skeleton
+  if (isLoadingChildren) {
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <ScrollView className="flex-1 px-4 py-6">
+          <View className="mb-6 flex-row items-center justify-between">
+            <View>
+              <Skeleton className="mb-2 h-7 w-32 rounded" />
+              <Skeleton className="h-4 w-48 rounded" />
+            </View>
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </View>
+          <View className="gap-3">
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <ScrollView className="flex-1 px-4 py-6">
+      <ScrollView
+        className="flex-1 px-4 py-6"
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        }
+      >
         {/* Header */}
         <View className="mb-6 flex-row items-center justify-between">
           <View>
@@ -28,10 +98,11 @@ export default function ChildrenScreen() {
               Mes enfants
             </Text>
             <Text variant="muted" className="mt-1">
-              Gérez les comptes de vos enfants
+              {childrenCount} {childrenCount === 1 ? 'compte' : 'comptes'}
             </Text>
           </View>
           <TouchableOpacity
+            onPress={() => setShowCreateModal(true)}
             className="h-10 w-10 items-center justify-center rounded-full bg-primary"
             activeOpacity={0.7}
           >
@@ -42,42 +113,12 @@ export default function ChildrenScreen() {
         {/* Children List */}
         {children.length > 0 ? (
           <View className="gap-3">
-            {children.map(child => (
-              <TouchableOpacity
+            {children.map((child) => (
+              <ChildCard
                 key={child.id}
-                className="rounded-xl border border-border bg-card p-4"
-                activeOpacity={0.7}
-              >
-                <View className="flex-row items-center">
-                  <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <Text className="text-lg font-semibold">
-                      {child.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-semibold">{child.name}</Text>
-                    <Text variant="muted" className="text-sm">
-                      {child.level}
-                    </Text>
-                  </View>
-                  <ChevronRight color="hsl(215.4, 16.3%, 46.9%)" size={20} />
-                </View>
-
-                <View className="mt-3 flex-row gap-4 border-t border-border pt-3">
-                  <View className="flex-row items-center gap-1">
-                    <Clock color="hsl(215.4, 16.3%, 46.9%)" size={14} />
-                    <Text variant="muted" className="text-xs">
-                      {child.lastActive}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-1">
-                    <Trophy color="hsl(215.4, 16.3%, 46.9%)" size={14} />
-                    <Text variant="muted" className="text-xs">
-                      {child.streakDays} jours
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
+                child={child}
+                onPress={handleChildPress}
+              />
             ))}
           </View>
         ) : (
@@ -94,7 +135,7 @@ export default function ChildrenScreen() {
                 Ajoutez vos enfants pour suivre leur progression et gérer leur
                 apprentissage.
               </Text>
-              <Button onPress={() => {}} className="mt-6">
+              <Button onPress={() => setShowCreateModal(true)} className="mt-6">
                 <View className="flex-row items-center gap-2">
                   <Plus color="hsl(210, 40%, 98%)" size={18} />
                   <Text className="font-semibold text-primary-foreground">
@@ -120,7 +161,7 @@ export default function ChildrenScreen() {
               </Text>
               <TouchableOpacity className="mt-3">
                 <Text className="font-semibold text-primary">
-                  Envoyer une invitation →
+                  Bientôt disponible →
                 </Text>
               </TouchableOpacity>
             </View>
@@ -136,25 +177,33 @@ export default function ChildrenScreen() {
             <View className="flex-row gap-2">
               <Text className="text-primary">1.</Text>
               <Text variant="muted" className="flex-1 text-sm">
-                Créez un compte pour votre enfant ou invitez-le par email
+                Créez un compte pour votre enfant avec un nom d'utilisateur
               </Text>
             </View>
             <View className="flex-row gap-2">
               <Text className="text-primary">2.</Text>
               <Text variant="muted" className="flex-1 text-sm">
-                Votre enfant utilise Tom pour réviser et apprendre
+                Votre enfant se connecte avec ses identifiants pour utiliser Tom
               </Text>
             </View>
             <View className="flex-row gap-2">
               <Text className="text-primary">3.</Text>
               <Text variant="muted" className="flex-1 text-sm">
-                Suivez sa progression et ses statistiques depuis votre tableau
-                de bord
+                Suivez sa progression depuis votre tableau de bord
               </Text>
             </View>
           </View>
         </View>
       </ScrollView>
+
+      {/* Create Child Modal */}
+      <CreateChildModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateChild}
+        isSubmitting={isCreating}
+        levels={levels}
+      />
     </SafeAreaView>
   );
 }

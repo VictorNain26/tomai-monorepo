@@ -6,7 +6,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // TomIA brand colors - matches web app
+        // TomIA brand colors - matches web app (light mode)
         primary: {
           DEFAULT: 'hsl(222.2 47.4% 11.2%)',
           foreground: 'hsl(210 40% 98%)',
@@ -41,6 +41,7 @@ module.exports = {
           foreground: 'hsl(222.2 84% 4.9%)',
         },
       },
+      // Dark mode overrides via CSS variables in global.css
       borderRadius: {
         lg: 8,
         md: 6,

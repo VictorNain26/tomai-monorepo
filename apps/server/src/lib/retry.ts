@@ -100,31 +100,6 @@ export async function withRetry<T>(
 }
 
 /**
- * Vérifie si une erreur est retryable (timeout, rate limit, service unavailable)
- */
-export function isRetryableError(error: unknown): boolean {
-  if (!(error instanceof Error)) return true;
-
-  const message = error.message.toLowerCase();
-
-  // Erreurs retryables
-  const retryablePatterns = [
-    'timeout',
-    'rate limit',
-    'too many requests',
-    'service unavailable',
-    'temporarily unavailable',
-    '429',
-    '503',
-    'econnreset',
-    'econnrefused',
-    'socket hang up'
-  ];
-
-  return retryablePatterns.some(pattern => message.includes(pattern));
-}
-
-/**
  * Délai asynchrone
  */
 function sleep(ms: number): Promise<void> {

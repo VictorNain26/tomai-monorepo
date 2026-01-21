@@ -1,10 +1,9 @@
 /**
  * Rate Limiting Middleware - Production-Ready
- * Protection DDoS et brute-force avec Redis backend
+ * Protection DDoS et brute-force avec in-memory backend
  */
 
 import type { Context } from 'elysia';
-import { CacheHelpers } from '../lib/redis.service';
 import { logger } from '../lib/observability';
 import { envUtils } from '../config/environment.config';
 
@@ -40,6 +39,47 @@ function defaultKeyGenerator(context: Context): string {
 }
 
 /**
+ * In-memory rate limit store (mono-instance)
+ */
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+// Cleanup expired entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of rateLimitStore.entries()) {
+    if (record.resetTime <= now) {
+      rateLimitStore.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
+
+/**
+ * Check rate limit (in-memory)
+ */
+function checkRateLimit(
+  identifier: string,
+  maxRequests: number,
+  windowSeconds: number
+): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const key = `ratelimit:${identifier}`;
+  const record = rateLimitStore.get(key);
+
+  // No record or expired
+  if (!record || record.resetTime <= now) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + windowSeconds * 1000 });
+    return { allowed: true, remaining: maxRequests - 1 };
+  }
+
+  // Increment
+  record.count++;
+  const allowed = record.count <= maxRequests;
+  const remaining = Math.max(0, maxRequests - record.count);
+
+  return { allowed, remaining };
+}
+
+/**
  * Middleware factory pour rate limiting
  */
 export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {}) {
@@ -49,30 +89,25 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
     keyGenerator: config.keyGenerator ?? defaultKeyGenerator,
   };
 
-  return async function rateLimitMiddleware(context: Context) {
+  return function rateLimitMiddleware(context: Context) {
     try {
       // Générer clé unique pour cet identifiant
       const identifier = finalConfig.keyGenerator!(context);
 
-      // Vérifier rate limit
-      const { allowed, remaining, degraded } = await CacheHelpers.checkRateLimit(
+      // Vérifier rate limit (in-memory, synchrone)
+      const { allowed, remaining } = checkRateLimit(
         identifier,
         finalConfig.maxRequests,
         finalConfig.windowSeconds
       );
 
-      // Ajouter headers rate limit (standard HTTP) - Cast explicite pour typage Elysia
+      // Ajouter headers rate limit (standard HTTP)
       const headers: Record<string, string> = {
         ...(context.set.headers as Record<string, string>),
         'X-RateLimit-Limit': finalConfig.maxRequests.toString(),
         'X-RateLimit-Remaining': remaining.toString(),
         'X-RateLimit-Reset': (Date.now() + finalConfig.windowSeconds * 1000).toString(),
       };
-
-      // ✅ Ajouter header si mode dégradé
-      if (degraded) {
-        headers['X-RateLimit-Degraded'] = 'true';
-      }
 
       (context.set.headers as Record<string, string>) = headers;
 
@@ -106,11 +141,10 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
         });
       }
 
-      // Retour explicite pour tous les chemins de code
       return;
 
     } catch (error) {
-      // En cas d'erreur Redis, permettre la requête (fail-open)
+      // En cas d'erreur, permettre la requête (fail-open)
       logger.error('Rate limit middleware error', {
         operation: 'rate-limit:error',
         _error: error instanceof Error ? error.message : String(error),

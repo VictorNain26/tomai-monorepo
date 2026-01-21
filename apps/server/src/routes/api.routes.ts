@@ -17,11 +17,11 @@ import { chatService } from '../services/chat.service';
 import { parentService } from '../services/parent.service';
 import { progressService } from '../services/progress.service';
 
-// Database & Redis
+// Database
 import { db } from '../db/connection';
 import { sql } from 'drizzle-orm';
-import { redisService } from '../lib/redis.service';
 import { env } from '../config/environment.config';
+import { cacheService } from '../services/memory-cache.service';
 
 // Types
 import type { EducationLevelType } from '../types/education.types';
@@ -154,28 +154,12 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
         overallStatus = 'unhealthy';  // Database critique → unhealthy
       }
 
-      // 2. Redis Check (NON critique → degraded si échoue)
-      try {
-        const start = Date.now();
-        const testKey = 'health_check_test';
-        await redisService.set(testKey, 'ping', 60);
-        await redisService.get(testKey);
-        await redisService.del(testKey);
-
-        checks.redis = {
-          status: 'healthy',
-          latency: Date.now() - start
-        };
-      } catch (error) {
-        checks.redis = {
-          status: 'unhealthy',
-          error: error instanceof Error ? error.message : 'Redis operation failed'
-        };
-        // Redis non critique → degraded (pas unhealthy)
-        if (overallStatus === 'healthy') {
-          overallStatus = 'degraded';
-        }
-      }
+      // 2. Cache Check (in-memory, always healthy)
+      const cacheHealth = cacheService.healthCheck();
+      checks.cache = {
+        status: cacheHealth.status,
+        latency: cacheHealth.latency,
+      };
 
       // 3. AI Service Check (assume healthy - pas de dépendance directe)
       checks.ai = {

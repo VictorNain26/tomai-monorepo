@@ -22,9 +22,8 @@ services:
       - PORT=3000
       - LOG_LEVEL=debug
       - DOCKER_CONTAINER=true
-      # Database & Cache (internal Docker network)
+      # Database (internal Docker network)
       - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
-      - REDIS_URL=redis://redis:6379
       # CORS
       - CORS_ORIGINS=http://localhost:5173,http://localhost:3001
       # Auth (REQUIRED)
@@ -55,8 +54,6 @@ services:
       - ./drizzle.config.ts:/app/apps/server/drizzle.config.ts:ro
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     networks:
       - tomai-dev
@@ -105,27 +102,6 @@ services:
       -c max_connections=100
 
   # ===========================================
-  # Redis 7 - Cache et sessions
-  # ===========================================
-  redis:
-    image: redis:7-alpine
-    container_name: tomai-redis-dev
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_dev_data:/data
-    networks:
-      - tomai-dev
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    # Performance config pour dev
-    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
-
-  # ===========================================
   # Outils optionnels (profile: tools)
   # Usage: docker compose --profile tools up -d
   # ===========================================
@@ -167,27 +143,12 @@ services:
     profiles:
       - tools
 
-  # Redis Commander - Redis UI (port 8081)
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: tomai-redis-commander
-    ports:
-      - "8081:8081"
-    environment:
-      - REDIS_HOSTS=local:redis:6379
-    networks:
-      - tomai-dev
-    profiles:
-      - tools
-
 # ===========================================
 # Volumes persistants
 # ===========================================
 volumes:
   postgres_dev_data:
     name: tomai_postgres_dev_data
-  redis_dev_data:
-    name: tomai_redis_dev_data
 
 # ===========================================
 # Réseau isolé development

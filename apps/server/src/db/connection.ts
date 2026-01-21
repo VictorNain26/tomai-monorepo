@@ -1,22 +1,36 @@
 /**
  * Database Connection - Clean Drizzle + Supabase Integration
- * Production-ready with auto-migration support
+ * Production-ready with lazy initialization for testability
  */
 
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import postgres, { type Sql } from 'postgres';
 import * as schema from './schema';
 import { logger } from '../lib/observability';
 
-// Environment-aware database configuration
-const environment = Bun.env['NODE_ENV'] ?? 'development';
-const connectionString = Bun.env['DATABASE_URL'];
+// ============================================================================
+// LAZY INITIALIZATION (2026 Best Practice for Testability)
+// ============================================================================
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL environment variable is required');
+let _sql: Sql | null = null;
+let _db: PostgresJsDatabase<typeof schema> | null = null;
+let _initialized = false;
+
+/**
+ * Get database connection string from environment
+ * Throws only when actually needed, not at import time
+ */
+function getConnectionString(): string {
+  const connectionString = Bun.env['DATABASE_URL'];
+  if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
+  return connectionString;
 }
 
-// Detect Supabase using proper URL hostname validation (CWE-20 compliant)
+/**
+ * Detect Supabase using proper URL hostname validation (CWE-20 compliant)
+ */
 function isSupabaseHost(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -27,58 +41,116 @@ function isSupabaseHost(url: string): boolean {
     return false;
   }
 }
-const isSupabase = isSupabaseHost(connectionString);
 
-// Production-optimized postgres client
-export const sql = postgres(connectionString, {
-  max: environment === 'production' ? 20 : 5,
-  // Workaround for postgres@3.4.7 TimeoutNegativeWarning bug
-  // Setting to 0 disables idle timeout to avoid negative calculation
-  idle_timeout: 0,
-  connect_timeout: isSupabase ? 20 : 10,
-  prepare: !isSupabase, // Supabase pooler doesn't support prepared statements
-  ssl: environment === 'production' || isSupabase ? 'require' : false,
-  transform: {
-    undefined: null, // Supabase compatibility
+/**
+ * Initialize database connection lazily
+ * Only creates connection when first accessed
+ */
+function initializeConnection(): void {
+  if (_initialized) return;
+
+  const environment = Bun.env['NODE_ENV'] ?? 'development';
+  const connectionString = getConnectionString();
+  const isSupabase = isSupabaseHost(connectionString);
+
+  // Production-optimized postgres client
+  _sql = postgres(connectionString, {
+    max: environment === 'production' ? 20 : 5,
+    idle_timeout: 0,
+    connect_timeout: isSupabase ? 20 : 10,
+    prepare: !isSupabase,
+    ssl: environment === 'production' || isSupabase ? 'require' : false,
+    transform: {
+      undefined: null,
+    },
+    onnotice: environment === 'production'
+      ? () => {}
+      : (notice) => {
+          if (notice.message) {
+            logger.debug('PostgreSQL notice', {
+              notice: notice.message,
+              operation: 'db:notice'
+            });
+          }
+        },
+    onclose: (connectionId) => {
+      logger.warn('Database connection closed', {
+        operation: 'db:connection:close',
+        connectionId: String(connectionId),
+        metadata: { timestamp: new Date().toISOString() }
+      });
+    }
+  });
+
+  // Create drizzle instance with full schema
+  _db = drizzle(_sql, {
+    schema,
+    logger: environment === 'development',
+  });
+
+  _initialized = true;
+
+  logger.info('Database connection initialized', {
+    operation: 'db:init',
+    metadata: {
+      environment,
+      isSupabase,
+      maxConnections: environment === 'production' ? 20 : 5
+    }
+  });
+}
+
+// ============================================================================
+// EXPORTS (Lazy Getters)
+// ============================================================================
+
+/**
+ * Get postgres SQL client (lazy initialization)
+ */
+export function getSql(): Sql {
+  initializeConnection();
+  return _sql!;
+}
+
+/**
+ * Get drizzle database instance (lazy initialization)
+ */
+export function getDb(): PostgresJsDatabase<typeof schema> {
+  initializeConnection();
+  return _db!;
+}
+
+// Legacy exports for backward compatibility
+// These trigger lazy initialization on first access
+export const sql = new Proxy({} as Sql, {
+  get(_target, prop) {
+    initializeConnection();
+    return (_sql as unknown as Record<string | symbol, unknown>)[prop];
   },
-
-  // Enhanced connection monitoring and _error handling
-  // Production: Ignore NOTICE (clean logs)
-  // Development: Log NOTICE for debugging
-  onnotice: environment === 'production'
-    ? () => {} // Supprime NOTICE en production (logs propres)
-    : (notice) => {
-        if (notice.message) {
-          logger.debug('PostgreSQL notice', {
-            notice: notice.message,
-            operation: 'db:notice'
-          });
-        }
-      },
-
-  onclose: (connectionId) => {
-    logger.warn('Database connection closed', {
-      operation: 'db:connection:close',
-      connectionId: String(connectionId),
-      metadata: { timestamp: new Date().toISOString() }
-    });
+  apply(_target, _thisArg, args) {
+    initializeConnection();
+    return (_sql as unknown as (...args: unknown[]) => unknown)(...args);
   }
 });
 
-// Create drizzle instance with full schema
-export const db = drizzle(sql, {
-  schema,
-  logger: environment === 'development',
+export const db = new Proxy({} as PostgresJsDatabase<typeof schema>, {
+  get(_target, prop) {
+    initializeConnection();
+    return (_db as unknown as Record<string | symbol, unknown>)[prop];
+  }
 });
 
-export type Database = typeof db;
+export type Database = PostgresJsDatabase<typeof schema>;
 
-// Pool warning tracking
+// ============================================================================
+// UTILITIES
+// ============================================================================
+
 let poolWarnings = 0;
 
 /**
  * Log pool warning
- * Appelé quand pool utilization > 80%
+ * Called when pool utilization > 80%
  */
 export function logPoolWarning(context: string): void {
   poolWarnings++;
@@ -90,15 +162,24 @@ export function logPoolWarning(context: string): void {
   });
 }
 
-// Graceful shutdown
+/**
+ * Graceful shutdown
+ */
 export const closeConnection = async (): Promise<void> => {
+  if (!_initialized || !_sql) {
+    return;
+  }
+
   try {
     logger.info('Closing database connection...', {
       operation: 'db:disconnect'
     });
-    
-    await sql.end();
-    
+
+    await _sql.end();
+    _sql = null;
+    _db = null;
+    _initialized = false;
+
     logger.info('Database connection closed', {
       operation: 'db:disconnect:success'
     });
@@ -111,12 +192,9 @@ export const closeConnection = async (): Promise<void> => {
   }
 };
 
-// Initialize connection on import
-logger.info('Database connection initialized', {
-  operation: 'db:init',
-  metadata: {
-    environment,
-    isSupabase,
-    maxConnections: environment === 'production' ? 20 : 5
-  }
-});
+/**
+ * Check if database is initialized (useful for tests)
+ */
+export function isDatabaseInitialized(): boolean {
+  return _initialized;
+}

@@ -369,13 +369,5 @@ export class AudioTranscriptionService {
   }
 }
 
-// Singleton
-let _audioTranscriptionService: AudioTranscriptionService | null = null;
-
-export function getAudioTranscriptionService(): AudioTranscriptionService {
-  _audioTranscriptionService ??= new AudioTranscriptionService();
-  return _audioTranscriptionService;
-}
-
-// Export pour compatibilité avec l'ancien code
+// Singleton export
 export const audioTranscriptionService = new AudioTranscriptionService();

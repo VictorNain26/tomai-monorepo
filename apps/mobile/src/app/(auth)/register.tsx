@@ -7,28 +7,19 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Link } from 'expo-router';
-import { signUp } from '@repo/api';
+import { signUp } from '@/lib/auth';
 
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-type Role = 'student' | 'parent';
-
 export default function RegisterScreen() {
-  const [step, setStep] = useState<'role' | 'form'>('role');
-  const [role, setRole] = useState<Role | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  function handleRoleSelect(selectedRole: Role) {
-    setRole(selectedRole);
-    setStep('form');
-  }
 
   async function handleRegister() {
     setError(null);
@@ -43,8 +34,8 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères');
+    if (password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
@@ -66,60 +57,6 @@ export default function RegisterScreen() {
     }
   }
 
-  // Role selection screen
-  if (step === 'role') {
-    return (
-      <View className="flex-1 justify-center bg-background px-6">
-        <View className="mb-8">
-          <Text variant="h1" className="text-center text-primary">
-            Inscription
-          </Text>
-          <Text variant="muted" className="mt-2 text-center">
-            Choisissez votre profil
-          </Text>
-        </View>
-
-        <View className="gap-4">
-          <TouchableOpacity
-            onPress={() => handleRoleSelect('student')}
-            className="rounded-xl border-2 border-border bg-card p-6"
-            activeOpacity={0.7}
-          >
-            <Text variant="h3" className="mb-2">
-              Je suis élève
-            </Text>
-            <Text variant="muted">
-              Accédez à un tuteur IA personnalisé pour vos révisions
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => handleRoleSelect('parent')}
-            className="rounded-xl border-2 border-border bg-card p-6"
-            activeOpacity={0.7}
-          >
-            <Text variant="h3" className="mb-2">
-              Je suis parent
-            </Text>
-            <Text variant="muted">
-              Gérez les comptes de vos enfants et suivez leur progression
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View className="mt-8 flex-row justify-center">
-          <Text variant="muted">Déjà un compte ? </Text>
-          <Link href="/(auth)/login" asChild>
-            <TouchableOpacity>
-              <Text className="font-semibold text-primary">Se connecter</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-      </View>
-    );
-  }
-
-  // Registration form
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -130,18 +67,13 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="flex-1 justify-center px-6 py-12">
-          {/* Back button */}
-          <TouchableOpacity onPress={() => setStep('role')} className="mb-4">
-            <Text className="text-primary">← Retour</Text>
-          </TouchableOpacity>
-
           {/* Header */}
           <View className="mb-8">
-            <Text variant="h2" className="text-primary">
-              {role === 'student' ? 'Compte élève' : 'Compte parent'}
+            <Text variant="h1" className="text-center text-primary">
+              Inscription
             </Text>
-            <Text variant="muted" className="mt-2">
-              Créez votre compte pour commencer
+            <Text variant="muted" className="mt-2 text-center">
+              Créez votre compte pour suivre la scolarité de vos enfants
             </Text>
           </View>
 
@@ -159,7 +91,7 @@ export default function RegisterScreen() {
                 Nom complet
               </Text>
               <Input
-                placeholder="Jean Dupont"
+                placeholder="Marie Dupont"
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
@@ -173,7 +105,7 @@ export default function RegisterScreen() {
                 Email
               </Text>
               <Input
-                placeholder="votre@email.com"
+                placeholder="marie.dupont@exemple.com"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -188,7 +120,7 @@ export default function RegisterScreen() {
                 Mot de passe
               </Text>
               <Input
-                placeholder="8 caractères minimum"
+                placeholder="6 caractères minimum"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry

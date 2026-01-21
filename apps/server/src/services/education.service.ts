@@ -2,13 +2,13 @@
  * Education Service - Récupération des matières disponibles dans le RAG
  *
  * Source de vérité: Qdrant Cloud (appels directs)
- * Retourne uniquement les clés RAG, pas de métadonnées UI.
+ * Cache: In-memory LRU (1h TTL) pour mono-instance
  *
  * L'enrichissement UI (emoji, color, description) est fait côté frontend.
  */
 
 import { qdrantService } from './qdrant.service.js';
-import { redisCacheService } from './redis-cache.service.js';
+import { cacheService } from './memory-cache.service.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
 
@@ -51,7 +51,7 @@ class EducationService {
   async getAvailableLevels(): Promise<RagLevel[]> {
     const cacheKey = 'education:levels:all';
 
-    const cached = await redisCacheService.get<RagLevel[]>('education:', cacheKey);
+    const cached = cacheService.get<RagLevel[]>('education:', cacheKey);
     if (cached) {
       logger.info('Cache hit for education levels', {
         operation: 'education:levels:cache-hit',
@@ -77,7 +77,7 @@ class EducationService {
       }
     }
 
-    await redisCacheService.set('education:', cacheKey, levels, this.CACHE_TTL);
+    cacheService.set('education:', cacheKey, levels, this.CACHE_TTL);
 
     logger.info('Education levels retrieved from Qdrant', {
       operation: 'education:levels:success',
@@ -100,7 +100,7 @@ class EducationService {
     const cacheKey = `education:subjects:${level}`;
 
     if (!skipCache) {
-      const cached = await redisCacheService.get<RagSubject[]>('education:', cacheKey);
+      const cached = cacheService.get<RagSubject[]>('education:', cacheKey);
       if (cached) {
         logger.info('Cache hit for education subjects', {
           operation: 'education:subjects:cache-hit',
@@ -122,7 +122,7 @@ class EducationService {
     }));
 
     if (!skipCache) {
-      await redisCacheService.set('education:', cacheKey, subjects, this.CACHE_TTL);
+      cacheService.set('education:', cacheKey, subjects, this.CACHE_TTL);
     }
 
     logger.info('Subjects retrieved from Qdrant for level', {
@@ -139,10 +139,10 @@ class EducationService {
   /**
    * Invalide le cache pour un niveau
    */
-  async invalidateCacheForLevel(level: EducationLevelType): Promise<void> {
-    await redisCacheService.delete('education:', `education:subjects:${level}`);
-    await redisCacheService.delete('education:', 'education:levels:all');
-    await qdrantService.invalidateCache();
+  invalidateCacheForLevel(level: EducationLevelType): void {
+    cacheService.delete('education:', `education:subjects:${level}`);
+    cacheService.delete('education:', 'education:levels:all');
+    qdrantService.invalidateCache();
 
     logger.info('Cache invalidated for level', {
       operation: 'education:cache:invalidate',
@@ -154,12 +154,12 @@ class EducationService {
   /**
    * Invalide tout le cache éducation
    */
-  async invalidateAllCache(): Promise<void> {
+  invalidateAllCache(): void {
     for (const level of ALL_LEVELS) {
-      await redisCacheService.delete('education:', `education:subjects:${level}`);
+      cacheService.delete('education:', `education:subjects:${level}`);
     }
-    await redisCacheService.delete('education:', 'education:levels:all');
-    await qdrantService.invalidateCache();
+    cacheService.delete('education:', 'education:levels:all');
+    qdrantService.invalidateCache();
 
     logger.info('All education cache invalidated', {
       operation: 'education:cache:invalidate-all',

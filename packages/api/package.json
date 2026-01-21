@@ -32,6 +32,8 @@
     "better-auth": "^1.4.10"
   },
   "devDependencies": {
+    "@types/react": "catalog:",
+    "react": "catalog:",
     "typescript": "catalog:"
   },
   "peerDependencies": {

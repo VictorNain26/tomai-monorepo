@@ -14,7 +14,7 @@ import { db } from '../db/connection';
 import { familyBilling, userSubscriptions } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { logger } from '../lib/observability';
-import { redisService } from '../lib/redis.service';
+import { isStripeEventProcessed, markStripeEventProcessed } from '../services/webhook-idempotence.service';
 
 // ============================================
 // Factory Function
@@ -23,48 +23,19 @@ import { redisService } from '../lib/redis.service';
 // Security: Max body size for Stripe webhooks (256KB is plenty for Stripe events)
 const MAX_WEBHOOK_BODY_SIZE = 256 * 1024; // 256KB
 
-// Idempotency: TTL for processed event IDs (24 hours)
-const WEBHOOK_IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60; // 24 hours
-const WEBHOOK_EVENT_KEY_PREFIX = 'stripe:webhook:processed:';
-
 /**
  * Check if a webhook event has already been processed (idempotency)
- * Returns true if the event was already processed
+ * Uses PostgreSQL instead of Redis for simplicity and reliability
  */
 async function isEventAlreadyProcessed(eventId: string): Promise<boolean> {
-  try {
-    return await redisService.exists(`${WEBHOOK_EVENT_KEY_PREFIX}${eventId}`);
-  } catch (error) {
-    // If Redis fails, allow processing (fail open for availability)
-    logger.warn('[Stripe Webhook] Idempotency check failed, allowing processing', {
-      operation: 'stripe:webhook:idempotency:check',
-      eventId,
-      _error: error instanceof Error ? error.message : String(error),
-      severity: 'medium' as const,
-    });
-    return false;
-  }
+  return isStripeEventProcessed(eventId);
 }
 
 /**
  * Mark a webhook event as processed (idempotency)
  */
-async function markEventAsProcessed(eventId: string): Promise<void> {
-  try {
-    await redisService.set(
-      `${WEBHOOK_EVENT_KEY_PREFIX}${eventId}`,
-      Date.now().toString(),
-      WEBHOOK_IDEMPOTENCY_TTL_SECONDS
-    );
-  } catch (error) {
-    // Log but don't fail - event was already processed successfully
-    logger.warn('[Stripe Webhook] Failed to mark event as processed', {
-      operation: 'stripe:webhook:idempotency:mark',
-      eventId,
-      _error: error instanceof Error ? error.message : String(error),
-      severity: 'low' as const,
-    });
-  }
+async function markEventAsProcessed(eventId: string, eventType: string): Promise<void> {
+  await markStripeEventProcessed(eventId, eventType);
 }
 
 /**
@@ -170,7 +141,7 @@ export function createWebhookRoutes(webhookSecret: string) {
         }
 
         // SECURITY: Mark event as processed for idempotency
-        await markEventAsProcessed(event.id);
+        await markEventAsProcessed(event.id, event.type);
 
         return { received: true, event: event.type };
       } catch (error) {

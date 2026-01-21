@@ -1,155 +1,130 @@
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+/**
+ * Learning Screen
+ *
+ * Displays user's learning decks with play/delete options.
+ */
+
+import { View, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  BookOpen,
-  Brain,
-  Calculator,
-  Globe,
-  Beaker,
-  History,
-  Languages,
-  Music,
-  Palette,
-} from 'lucide-react-native';
+import { useState, useCallback } from 'react';
+import { useRouter } from 'expo-router';
+import { BookOpen, Plus } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
-
-interface Subject {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  color: string;
-  cardCount: number;
-}
-
-const subjects: Subject[] = [
-  {
-    id: 'math',
-    name: 'Mathématiques',
-    icon: <Calculator color="hsl(222.2, 47.4%, 11.2%)" size={24} />,
-    color: 'bg-blue-100',
-    cardCount: 0,
-  },
-  {
-    id: 'french',
-    name: 'Français',
-    icon: <BookOpen color="hsl(222.2, 47.4%, 11.2%)" size={24} />,
-    color: 'bg-red-100',
-    cardCount: 0,
-  },
-  {
-    id: 'science',
-    name: 'Sciences',
-    icon: <Beaker color="hsl(222.2, 47.4%, 11.2%)" size={24} />,
-    color: 'bg-green-100',
-    cardCount: 0,
-  },
-  {
-    id: 'history',
-    name: 'Histoire-Géo',
-    icon: <History color="hsl(222.2, 47.4%, 11.2%)" size={24} />,
-    color: 'bg-amber-100',
-    cardCount: 0,
-  },
-  {
-    id: 'english',
-    name: 'Anglais',
-    icon: <Globe color="hsl(222.2, 47.4%, 11.2%)" size={24} />,
-    color: 'bg-purple-100',
-    cardCount: 0,
-  },
-  {
-    id: 'languages',
-    name: 'Langues',
-    icon: <Languages color="hsl(222.2, 47.4%, 11.2%)" size={24} />,
-    color: 'bg-pink-100',
-    cardCount: 0,
-  },
-  {
-    id: 'philosophy',
-    name: 'Philosophie',
-    icon: <Brain color="hsl(222.2, 47.4%, 11.2%)" size={24} />,
-    color: 'bg-indigo-100',
-    cardCount: 0,
-  },
-  {
-    id: 'arts',
-    name: 'Arts',
-    icon: <Palette color="hsl(222.2, 47.4%, 11.2%)" size={24} />,
-    color: 'bg-orange-100',
-    cardCount: 0,
-  },
-  {
-    id: 'music',
-    name: 'Musique',
-    icon: <Music color="hsl(222.2, 47.4%, 11.2%)" size={24} />,
-    color: 'bg-teal-100',
-    cardCount: 0,
-  },
-];
+import { Skeleton } from '@/components/ui/skeleton';
+import { DeckCard } from '@/components/learning';
+import { useLearning } from '@/hooks';
 
 export default function LearningScreen() {
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
+  const { decks, isLoading, error, refetch, deleteDeck, isDeleting } =
+    useLearning();
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      await deleteDeck(id);
+    },
+    [deleteDeck]
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <ScrollView className="flex-1 px-4 py-6">
+      <ScrollView
+        className="flex-1 px-4 py-6"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Header */}
-        <View className="mb-6">
-          <Text variant="h2" className="text-primary">
-            Révisions
-          </Text>
-          <Text variant="muted" className="mt-1">
-            Sélectionne une matière pour commencer
-          </Text>
+        <View className="mb-6 flex-row items-start justify-between">
+          <View className="flex-1">
+            <Text variant="h2" className="text-primary">
+              Révisions
+            </Text>
+            <Text variant="muted" className="mt-1">
+              {decks.length > 0
+                ? `${decks.length} deck${decks.length > 1 ? 's' : ''} disponible${decks.length > 1 ? 's' : ''}`
+                : 'Crée ton premier deck'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => router.push('/(student)/deck/create')}
+            className="h-10 w-10 items-center justify-center rounded-full bg-primary"
+          >
+            <Plus color="white" size={20} />
+          </TouchableOpacity>
         </View>
 
-        {/* Due for review section */}
-        <View className="mb-6 rounded-xl border border-border bg-card p-4">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text variant="h3">À réviser aujourd'hui</Text>
-              <Text variant="muted" className="mt-1">
-                0 cartes en attente
-              </Text>
+        {/* Error */}
+        {error && (
+          <View className="mb-4 rounded-xl bg-destructive/10 p-4">
+            <Text className="text-center text-destructive">{error}</Text>
+          </View>
+        )}
+
+        {/* Loading */}
+        {isLoading && (
+          <View className="gap-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-24 w-full rounded-xl" />
+            ))}
+          </View>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && decks.length === 0 && (
+          <View className="items-center py-12">
+            <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+              <BookOpen color="hsl(222.2, 47.4%, 11.2%)" size={40} />
             </View>
+            <Text variant="h3" className="text-center">
+              Pas encore de decks
+            </Text>
+            <Text variant="muted" className="mt-2 px-8 text-center">
+              Crée des flashcards pour réviser tes cours. Choisis une matière et
+              un thème pour commencer !
+            </Text>
             <TouchableOpacity
-              className="rounded-lg bg-primary px-4 py-2"
-              disabled={true}
+              onPress={() => router.push('/(student)/deck/create')}
+              className="mt-6 flex-row items-center gap-2 rounded-xl bg-primary px-6 py-3"
             >
+              <Plus color="white" size={18} />
               <Text className="font-semibold text-primary-foreground">
-                Commencer
+                Créer un deck
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        )}
 
-        {/* Subjects Grid */}
-        <Text variant="h3" className="mb-4">
-          Par matière
-        </Text>
-        <View className="flex-row flex-wrap gap-3">
-          {subjects.map(subject => (
-            <TouchableOpacity
-              key={subject.id}
-              className={`w-[48%] rounded-xl border border-border p-4 ${subject.color}`}
-              activeOpacity={0.7}
-            >
-              <View className="mb-2">{subject.icon}</View>
-              <Text className="font-semibold">{subject.name}</Text>
-              <Text variant="muted" className="text-sm">
-                {subject.cardCount} cartes
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Decks List */}
+        {!isLoading && decks.length > 0 && (
+          <View className="gap-4">
+            {decks.map((deck) => (
+              <DeckCard
+                key={deck.id}
+                deck={deck}
+                onDelete={handleDelete}
+                isDeleting={isDeleting}
+              />
+            ))}
+          </View>
+        )}
 
-        {/* Empty state info */}
-        <View className="mt-6 rounded-xl border border-border bg-muted/50 p-4">
-          <Text variant="muted" className="text-center text-sm">
-            💡 Les flashcards sont générées automatiquement à partir de tes
-            conversations avec Tom. Plus tu poses de questions, plus tu auras de
-            cartes à réviser !
-          </Text>
-        </View>
+        {/* Info */}
+        {!isLoading && decks.length > 0 && (
+          <View className="mt-6 rounded-xl border border-border bg-muted/50 p-4">
+            <Text variant="muted" className="text-center text-sm">
+              💡 Appuie sur ▶️ pour jouer un deck ou 🗑️ pour le supprimer.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

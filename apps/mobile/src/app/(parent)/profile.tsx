@@ -2,10 +2,7 @@ import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
-  User,
   Settings,
-  Bell,
-  Shield,
   HelpCircle,
   LogOut,
   ChevronRight,
@@ -16,7 +13,7 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { useUser, signOut } from '@repo/api';
+import { useUser, signOut } from '@/lib/auth';
 
 interface MenuItem {
   icon: React.ReactNode;
@@ -45,11 +42,6 @@ export default function ParentProfileScreen() {
 
   const menuItems: MenuItem[] = [
     {
-      icon: <User color="hsl(222.2, 47.4%, 11.2%)" size={20} />,
-      label: 'Modifier mon profil',
-      onPress: () => {},
-    },
-    {
       icon: <Users color="hsl(222.2, 47.4%, 11.2%)" size={20} />,
       label: 'Gérer les enfants',
       onPress: () => router.push('/(parent)/children'),
@@ -60,19 +52,9 @@ export default function ParentProfileScreen() {
       onPress: () => {},
     },
     {
-      icon: <Bell color="hsl(222.2, 47.4%, 11.2%)" size={20} />,
-      label: 'Notifications',
-      onPress: () => {},
-    },
-    {
-      icon: <Shield color="hsl(222.2, 47.4%, 11.2%)" size={20} />,
-      label: 'Confidentialité',
-      onPress: () => {},
-    },
-    {
       icon: <Settings color="hsl(222.2, 47.4%, 11.2%)" size={20} />,
       label: 'Paramètres',
-      onPress: () => {},
+      onPress: () => router.push('/(parent)/settings'),
     },
     {
       icon: <HelpCircle color="hsl(222.2, 47.4%, 11.2%)" size={20} />,

@@ -103,6 +103,7 @@ export async function signIn(email: string, password: string) {
 
 /**
  * Inscription avec email/password.
+ * Note: Les students sont créés par les parents, pas via ce formulaire.
  */
 export async function signUp(data: {
   email: string;
@@ -126,6 +127,28 @@ export async function signInWithGoogle(callbackURL?: string) {
   return getAuthClient().signIn.social({
     provider: 'google',
     callbackURL,
+  });
+}
+
+/**
+ * Demande de réinitialisation de mot de passe.
+ * Envoie un email avec un lien de réinitialisation.
+ */
+export async function requestPasswordReset(email: string, redirectTo?: string) {
+  return getAuthClient().requestPasswordReset({
+    email,
+    redirectTo,
+  });
+}
+
+/**
+ * Réinitialisation du mot de passe avec token.
+ * Appelé après que l'utilisateur clique sur le lien dans l'email.
+ */
+export async function resetPassword(token: string, newPassword: string) {
+  return getAuthClient().resetPassword({
+    token,
+    newPassword,
   });
 }
 

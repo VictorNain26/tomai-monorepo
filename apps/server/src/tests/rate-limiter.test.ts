@@ -1,13 +1,67 @@
 /**
  * Tests unitaires - Rate Limiting TomAI
  * Tests complets du système de rate limiting
+ *
+ * Note: Ces tests utilisent un mock in-memory isolé pour éviter
+ * la dépendance à Redis en CI.
  */
 
-import { describe, it, expect, beforeEach } from 'bun:test';
-import { 
-  checkRateLimit, 
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
+
+// ============================================
+// MOCK DU SERVICE REDIS
+// ============================================
+
+// Store in-memory isolé pour les tests
+const testStore = new Map<string, { count: number; resetTime: number }>();
+
+// Mock CacheHelpers avant l'import
+mock.module('../lib/redis.service', () => ({
+  CacheHelpers: {
+    checkRateLimit: async (key: string, maxRequests: number, windowSeconds: number) => {
+      const now = Date.now();
+      const existing = testStore.get(key);
+
+      // Nettoyer si expiré
+      if (existing && existing.resetTime <= now) {
+        testStore.delete(key);
+      }
+
+      const current = testStore.get(key);
+      if (!current) {
+        testStore.set(key, { count: 1, resetTime: now + windowSeconds * 1000 });
+        return { allowed: true, remaining: maxRequests - 1 };
+      }
+
+      current.count++;
+      testStore.set(key, current);
+
+      const allowed = current.count <= maxRequests;
+      const remaining = Math.max(0, maxRequests - current.count);
+      return { allowed, remaining };
+    }
+  },
+  redisService: {
+    exists: mock(() => Promise.resolve(false)),
+    get: mock(() => Promise.resolve(null)),
+    set: mock(() => Promise.resolve()),
+  }
+}));
+
+mock.module('../lib/observability', () => ({
+  logger: {
+    debug: mock(() => {}),
+    info: mock(() => {}),
+    warn: mock(() => {}),
+    error: mock(() => {}),
+  }
+}));
+
+// Import après les mocks
+import {
+  checkRateLimit,
   createRateLimitResponse,
-  rateLimitConfigs 
+  rateLimitConfigs
 } from '../lib/rate-limiter';
 
 // Mock Request object pour tests
@@ -20,6 +74,11 @@ function createMockRequest(ip: string = '127.0.0.1'): Request {
     ])
   } as unknown as Request;
 }
+
+// Reset store avant chaque test
+beforeEach(() => {
+  testStore.clear();
+});
 
 // Mock Context set pour tests
 function createMockSet() {

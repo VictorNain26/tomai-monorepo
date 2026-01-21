@@ -62,5 +62,10 @@ jobs:
       - name: ESLint
         run: pnpm run lint
 
+      - name: Tests
+        run: pnpm run test
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Build
         run: pnpm run build

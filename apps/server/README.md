@@ -90,7 +90,7 @@ docker compose --profile tools up -d  # Adminer + Redis Commander + Drizzle Stud
 | `QDRANT_URL` | Qdrant Cloud pour RAG |
 | `QDRANT_API_KEY` | API key Qdrant |
 | `PRONOTE_ENCRYPTION_KEY` | AES-256-GCM pour tokens Pronote |
-| `STRIPE_SECRET_KEY` | Paiements Stripe |
+| `REVENUECAT_WEBHOOK_AUTH` | Webhooks RevenueCat (mobile IAP) |
 | `GLADIA_API_KEY` | Speech-to-Text |
 | `ELEVENLABS_API_KEY` | Text-to-Speech |
 
