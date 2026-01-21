@@ -22,6 +22,7 @@
  */
 
 import { educationService } from '../services/education.service.js';
+import { qdrantService } from '../services/qdrant.service.js';
 import { redisCacheService } from '../services/redis-cache.service.js';
 import { logger } from '../lib/observability.js';
 
@@ -31,6 +32,7 @@ import { logger } from '../lib/observability.js';
 
 interface CacheStats {
   educationCacheKeys: number;
+  qdrantCacheKeys: number;
   ragCacheKeys: number;
   otherCacheKeys: number;
   totalInvalidated: number;
@@ -43,6 +45,7 @@ interface CacheStats {
 class CacheInvalidator {
   private stats: CacheStats = {
     educationCacheKeys: 0,
+    qdrantCacheKeys: 0,
     ragCacheKeys: 0,
     otherCacheKeys: 0,
     totalInvalidated: 0
@@ -75,6 +78,28 @@ class CacheInvalidator {
     } catch (error) {
       logger.error('Failed to invalidate education cache', {
         operation: 'cache:invalidate:education',
+        _error: error instanceof Error ? error.message : String(error),
+        severity: 'high' as const
+      });
+
+      throw error;
+    }
+  }
+
+  /**
+   * Invalidate Qdrant cache (stats + chapters hierarchy)
+   */
+  private async invalidateQdrantCache(): Promise<void> {
+    console.log('\n📊 Invalidating Qdrant cache (chapters, stats, topics)...');
+
+    try {
+      const result = await qdrantService.invalidateAllCache();
+      this.stats.qdrantCacheKeys = result.patterns + (result.stats ? 1 : 0);
+      console.log(`✅ Invalidated Qdrant cache: ${this.stats.qdrantCacheKeys} keys`);
+
+    } catch (error) {
+      logger.error('Failed to invalidate Qdrant cache', {
+        operation: 'cache:invalidate:qdrant',
         _error: error instanceof Error ? error.message : String(error),
         severity: 'high' as const
       });
@@ -162,9 +187,10 @@ class CacheInvalidator {
 
     console.log(`\n📊 Summary:`);
     console.log(`   Education cache keys: ${this.stats.educationCacheKeys}`);
+    console.log(`   Qdrant cache keys:    ${this.stats.qdrantCacheKeys}`);
     console.log(`   RAG cache keys:       ${this.stats.ragCacheKeys} (will expire)`);
     console.log(`   Other cache keys:     ${this.stats.otherCacheKeys}`);
-    console.log(`   Total invalidated:    ${this.stats.educationCacheKeys + this.stats.otherCacheKeys}`);
+    console.log(`   Total invalidated:    ${this.stats.educationCacheKeys + this.stats.qdrantCacheKeys + this.stats.otherCacheKeys}`);
 
     console.log('\n' + '='.repeat(60) + '\n');
   }
@@ -188,6 +214,7 @@ class CacheInvalidator {
         await this.clearAllCache();
       } else {
         await this.invalidateEducationCache();
+        await this.invalidateQdrantCache();
         await this.invalidateRagCache();
       }
 

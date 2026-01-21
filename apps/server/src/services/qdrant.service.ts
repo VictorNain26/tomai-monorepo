@@ -450,6 +450,33 @@ class QdrantService {
     await redisCacheService.delete(CACHE_PREFIX, 'stats:collection');
     logger.info('Qdrant cache invalidated', { operation: 'qdrant:cache:invalidate' });
   }
+
+  /** Invalide le cache des chapitres (Redis pattern: qdrant:chapters:*) */
+  async invalidateChaptersCache(): Promise<number> {
+    const pattern = `${CACHE_PREFIX}chapters:*`;
+    const deleted = await redisCacheService.invalidateByPattern(pattern);
+    logger.info('Chapters cache invalidated', {
+      operation: 'qdrant:chapters:cache:invalidate',
+      pattern,
+      deletedKeys: deleted
+    });
+    return deleted;
+  }
+
+  /** Invalide tous les caches Qdrant (stats + matieres + topics + chapters) */
+  async invalidateAllCache(): Promise<{ stats: boolean; patterns: number }> {
+    this.statsCache = null;
+    const statsDeleted = await redisCacheService.delete(CACHE_PREFIX, 'stats:collection');
+    const patternsDeleted = await redisCacheService.invalidateByPattern(`${CACHE_PREFIX}*`);
+
+    logger.info('All Qdrant cache invalidated', {
+      operation: 'qdrant:cache:invalidate:all',
+      statsDeleted,
+      patternsDeleted
+    });
+
+    return { stats: statsDeleted, patterns: patternsDeleted };
+  }
 }
 
 export const qdrantService = new QdrantService();
