@@ -66,7 +66,6 @@ jobs:
         run: pnpm run test
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
 
       - name: Build
         run: pnpm run build

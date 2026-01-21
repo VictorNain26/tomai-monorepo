@@ -89,14 +89,6 @@ export function getLevelText(level: EducationLevelType): string {
  * Génère le guide de réponses structurées selon le cycle
  * Extraction de gemini-simple.service.ts lignes 398-430
  */
-/**
- * Retourne le cycle pédagogique pour un niveau donné
- * Helper simplifié de getCycleInfo
- */
-export function getCycleFromLevel(level: EducationLevelType): CycleType {
-  return getCycleInfo(level).cycle;
-}
-
 export function getStructuredResponseGuide(level: EducationLevelType): string {
   const cycleInfo = getCycleInfo(level);
 

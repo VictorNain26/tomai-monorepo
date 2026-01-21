@@ -197,8 +197,8 @@ export class MemoryMonitor {
         global.gc();
       }
 
-      // 2. pgvector RAG service n'a pas de cache interne
-      // Utilise Redis pour cache, géré par redis-cache.service
+      // 2. RAG service uses in-memory cache
+      // Cache is managed by memory-cache.service
 
       logger.info('Emergency cleanup completed', {
         operation: 'memory:emergency-cleanup-completed'
@@ -221,8 +221,8 @@ export class MemoryMonitor {
     });
 
     try {
-      // pgvector RAG service - cache géré par Redis
-      // Service stateless, cache externe
+      // RAG service - cache géré par memory-cache.service
+      // In-memory LRU cache for mono-instance
 
       // Forcer GC si disponible
       if (global.gc) {
@@ -258,33 +258,3 @@ export class MemoryMonitor {
 
 // Export singleton
 export const memoryMonitor = MemoryMonitor.getInstance();
-
-/**
- * Middleware Elysia pour monitoring mémoire sur requêtes sensibles
- */
-export const memoryMonitorMiddleware = (options: { threshold?: number } = {}) => {
-  const threshold = options.threshold ?? 600; // 600MB par défaut
-
-  return (context: { request?: { url?: string } }) => {
-    const beforeMemory = process.memoryUsage().heapUsed;
-
-    // Note: En réalité, ce middleware doit être adapté à la structure Elysia
-    // Pour l'instant, on simule un monitoring simple
-    const afterMemory = process.memoryUsage().heapUsed;
-    const heapUsedMB = Math.round(afterMemory / 1024 / 1024);
-    const memoryDelta = Math.round((afterMemory - beforeMemory) / 1024 / 1024);
-
-    // Logger si consommation élevée
-    if (heapUsedMB > threshold || memoryDelta > 50) {
-      logger.warn('High memory usage detected on request', {
-        operation: 'memory:request-monitor',
-        heapUsedMB,
-        memoryDeltaMB: memoryDelta,
-        threshold,
-        path: context.request?.url ?? 'unknown'
-      });
-    }
-
-    return context;
-  };
-};

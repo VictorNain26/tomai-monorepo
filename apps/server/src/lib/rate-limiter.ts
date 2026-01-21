@@ -1,10 +1,11 @@
 /**
  * Rate Limiter natif Elysia - Protection DDoS professionnelle
- * Implémentation clean avec Redis et stratégies adaptatives
+ *
+ * Architecture 2026: In-memory pour mono-instance
+ * Suffisant pour TomAI sur Koyeb (single instance)
  */
 
 import type { Context } from 'elysia';
-import { CacheHelpers } from './redis.service';
 import { logger } from './observability';
 
 interface RateLimitConfig {
@@ -144,7 +145,7 @@ function generateKey(request: Request, identifier?: string): string {
 }
 
 /**
- * Fonction principale de rate limiting avec Redis
+ * Fonction principale de rate limiting (in-memory)
  */
 export async function checkRateLimit(
   request: Request,
@@ -152,40 +153,26 @@ export async function checkRateLimit(
   identifier?: string
 ): Promise<RateLimitResult> {
   const key = generateKey(request, identifier);
-  const windowSeconds = Math.ceil(config.windowMs / 1000);
-  
-  try {
-    // Utiliser Redis pour le rate limiting en production
-    const result = await CacheHelpers.checkRateLimit(key, config.maxRequests, windowSeconds);
-    
-    const resetTime = Date.now() + config.windowMs;
-    const totalHits = config.maxRequests - result.remaining + (result.allowed ? 0 : 1);
-    
-    return {
-      allowed: result.allowed,
-      remaining: result.remaining,
-      resetTime,
-      totalHits
-    };
-  } catch (_error) {
-    // Fallback vers le store en mémoire si Redis échoue
-    logger.warn('Redis rate limit failed, using memory fallback', {
-      operation: 'ratelimit:fallback',
+
+  const record = await store.increment(key, config.windowMs);
+  const allowed = record.count <= config.maxRequests;
+  const remaining = Math.max(0, config.maxRequests - record.count);
+
+  if (!allowed) {
+    logger.debug('Rate limit exceeded', {
+      operation: 'ratelimit:exceeded',
       key,
-      _error: _error instanceof Error ? _error.message : String(_error)
+      count: record.count,
+      max: config.maxRequests,
     });
-    
-    const record = await store.increment(key, config.windowMs);
-    const allowed = record.count <= config.maxRequests;
-    const remaining = Math.max(0, config.maxRequests - record.count);
-    
-    return {
-      allowed,
-      remaining,
-      resetTime: record.resetTime,
-      totalHits: record.count
-    };
   }
+
+  return {
+    allowed,
+    remaining,
+    resetTime: record.resetTime,
+    totalHits: record.count,
+  };
 }
 
 /**

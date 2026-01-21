@@ -22,12 +22,6 @@ export interface EnvironmentConfig {
 
   // Base de données
   DATABASE_URL: string;
-  REDIS_URL?: string;
-
-  // Upstash Redis (production serverless)
-  UPSTASH_REDIS_REST_URL?: string;
-  UPSTASH_REDIS_REST_TOKEN?: string;
-  UPSTASH_DISABLE_TELEMETRY?: string;
 
   // IA et services externes
   GEMINI_API_KEY?: string;
@@ -113,16 +107,8 @@ function parseEnvironment(): EnvironmentConfig {
 
     // Base de données - Auto-switch Docker/localhost
     DATABASE_URL: inDocker
-      ? Bun.env['DATABASE_URL']! // redis://redis:6379 dans Docker
-      : (Bun.env['DATABASE_URL_EXTERNAL'] ?? Bun.env['DATABASE_URL'])!, // localhost hors Docker
-    REDIS_URL: inDocker
-      ? Bun.env['REDIS_URL'] // redis://redis:6379 dans Docker
-      : (Bun.env['REDIS_URL_EXTERNAL'] ?? Bun.env['REDIS_URL']), // localhost hors Docker
-
-    // Upstash Redis (production serverless)
-    UPSTASH_REDIS_REST_URL: Bun.env['UPSTASH_REDIS_REST_URL'],
-    UPSTASH_REDIS_REST_TOKEN: Bun.env['UPSTASH_REDIS_REST_TOKEN'],
-    UPSTASH_DISABLE_TELEMETRY: Bun.env['UPSTASH_DISABLE_TELEMETRY'],
+      ? Bun.env['DATABASE_URL']!
+      : (Bun.env['DATABASE_URL_EXTERNAL'] ?? Bun.env['DATABASE_URL'])!,
 
     // IA et services externes
     GEMINI_API_KEY: Bun.env['GEMINI_API_KEY'],

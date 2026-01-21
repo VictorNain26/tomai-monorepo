@@ -34,12 +34,12 @@ import { memoryMonitor } from './middleware/memory-monitor.middleware.js';
 import { createRateLimitMiddleware, RateLimitPresets } from './middleware/rate-limit.middleware.js';
 import { tokenQuotaService } from './services/token-quota.service.js';
 
-// Database & Redis (pour health checks)
+// Database (pour health checks)
 import { db } from './db/connection.js';
 import { sql } from 'drizzle-orm';
-import { redisService } from './lib/redis.service.js';
 import { runMigrations } from './db/migrate.js';
 import { validateEncryptionSetup } from './lib/encryption.js';
+import { cacheService } from './services/memory-cache.service.js';
 
 const isDev = envUtils.isDevelopment;
 
@@ -140,28 +140,12 @@ const app = new Elysia({ name: 'tomai-server' })
       overallStatus = 'unhealthy';  // Database critique → unhealthy
     }
 
-    // 2. Redis Check (NON critique → degraded si échoue)
-    try {
-      const start = Date.now();
-      const testKey = 'health_check_test';
-      await redisService.set(testKey, 'ping', 60);
-      await redisService.get(testKey);
-      await redisService.del(testKey);
-
-      checks.redis = {
-        status: 'healthy',
-        latency: Date.now() - start
-      };
-    } catch (error) {
-      checks.redis = {
-        status: 'unhealthy',
-        error: error instanceof Error ? error.message : 'Redis operation failed'
-      };
-      // Redis non critique → degraded (pas unhealthy)
-      if (overallStatus === 'healthy') {
-        overallStatus = 'degraded';
-      }
-    }
+    // 2. Cache Check (in-memory, always healthy)
+    const cacheHealth = cacheService.healthCheck();
+    checks.cache = {
+      status: cacheHealth.status,
+      latency: cacheHealth.latency,
+    };
 
     // 3. AI Service Check (vérifie la configuration, pas l'API pour éviter rate limit)
     const hasGeminiKey = !!appConfig.ai.gemini.apiKey;
@@ -382,8 +366,7 @@ function startTokenResetCron(): void {
 
 /**
  * Fonction d'initialisation des services
- * Phase 1.1: Explicit initialization pour éviter race conditions
- * Initialise Redis (lazy→eager) et vérifie PostgreSQL (import-time)
+ * Architecture 2026: PostgreSQL + In-memory cache (pas de Redis)
  */
 export async function initializeServices(): Promise<void> {
   try {
@@ -392,42 +375,11 @@ export async function initializeServices(): Promise<void> {
       environment: env.NODE_ENV
     });
 
-    // 1. Initialize Redis first (lazy → eager)
-    // Force connection pour éviter race conditions au premier health check
-    try {
-      const redisStart = Date.now();
-      await redisService.ping();
-      const redisLatency = Date.now() - redisStart;
-
-      logger.info('Redis initialized successfully', {
-        operation: 'services:init:redis',
-        latency_ms: redisLatency,
-        provider: 'upstash-rest'
-      });
-    } catch (redisError) {
-      const environment = Bun.env['NODE_ENV'] ?? 'development';
-      const errorMessage = redisError instanceof Error ? redisError.message : String(redisError);
-
-      logger.error('Redis initialization failed - CRITICAL', {
-        operation: 'services:init:redis:failed',
-        _error: errorMessage,
-        environment,
-        severity: 'critical' as const,
-        impact: 'Cache and rate limiting unavailable'
-      });
-
-      // ✅ FAIL FAST: Redis requis en production
-      if (environment === 'production') {
-        throw new Error(`Redis required in production - cannot start: ${errorMessage}`);
-      }
-
-      // ⚠️ DEVELOPMENT ONLY: Mode dégradé accepté en dev
-      logger.warn('Redis degraded mode enabled (development only)', {
-        operation: 'services:init:redis:degraded',
-        severity: 'medium' as const,
-        note: 'This degraded mode is NOT allowed in production'
-      });
-    }
+    // 1. In-memory cache is always ready (no initialization needed)
+    logger.info('In-memory cache ready', {
+      operation: 'services:init:cache',
+      provider: 'memory-lru'
+    });
 
     // 2. Validate Pronote encryption setup (SECURITY: fail fast if misconfigured)
     const hasPronoteKey = !!Bun.env['PRONOTE_ENCRYPTION_KEY'];
@@ -488,7 +440,7 @@ export async function initializeServices(): Promise<void> {
       operation: 'services:init:success',
       services: {
         database: 'ready',
-        redis: 'ready',
+        cache: 'memory-lru',
         rag: 'qdrant-cloud-gemini',
         memory_monitor: 'active',
         token_reset_cron: 'active'

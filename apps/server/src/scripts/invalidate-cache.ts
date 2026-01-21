@@ -2,11 +2,11 @@
 /**
  * Cache Invalidation Script
  *
- * 🎯 Mission: Invalidate Redis cache after RAG seeding
+ * 🎯 Mission: Invalidate in-memory cache after RAG seeding
  *
  * Features:
  * - ✅ Invalidate education subjects cache (all levels)
- * - ✅ Invalidate RAG query cache
+ * - ✅ Invalidate Qdrant cache (stats, chapters, topics)
  * - ✅ Optional: Clear entire cache
  * - ✅ Statistics and confirmation
  *
@@ -14,16 +14,13 @@
  *   # Invalidate education cache only
  *   bun run src/scripts/invalidate-cache.ts
  *
- *   # Clear entire Redis cache (use with caution)
+ *   # Clear entire cache (use with caution)
  *   bun run src/scripts/invalidate-cache.ts --all
- *
- *   # Production
- *   REDIS_URL=$REDIS_URL_PROD bun run src/scripts/invalidate-cache.ts
  */
 
 import { educationService } from '../services/education.service.js';
 import { qdrantService } from '../services/qdrant.service.js';
-import { redisCacheService } from '../services/redis-cache.service.js';
+import { cacheService } from '../services/memory-cache.service.js';
 import { logger } from '../lib/observability.js';
 
 // ===================================================
@@ -136,32 +133,26 @@ class CacheInvalidator {
   }
 
   /**
-   * Clear entire Redis cache (DANGEROUS - use with caution)
+   * Clear entire cache (in-memory)
    */
   private async clearAllCache(): Promise<void> {
     console.log('\n⚠️  CLEARING ENTIRE CACHE (ALL KEYS)');
     console.log('   This will affect:');
     console.log('   - Education cache');
+    console.log('   - Qdrant cache');
     console.log('   - RAG query cache');
-    console.log('   - Session cache (if any)');
-    console.log('   - Any other cached data');
-    console.log('\n   Press Ctrl+C to cancel, or wait 5 seconds...');
+    console.log('\n   Press Ctrl+C to cancel, or wait 3 seconds...');
 
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
-      // Use FLUSHDB to clear current database
-      // Note: Requires direct Redis client access
+      console.log('\n🗑️  Clearing in-memory cache...');
 
-      console.log('\n🗑️  Flushing Redis database...');
+      cacheService.clear();
 
-      // Fallback: Invalidate known patterns
-      await this.invalidateEducationCache();
-      await this.invalidateRagCache();
+      console.log('✅ Cache cleared');
 
-      console.log('✅ Cache cleared (known patterns)');
-
-      logger.warn('Redis cache cleared', {
+      logger.warn('In-memory cache cleared', {
         operation: 'cache:clear:all',
         severity: 'medium' as const
       });
