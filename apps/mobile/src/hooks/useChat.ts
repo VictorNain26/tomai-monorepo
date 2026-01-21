@@ -115,43 +115,34 @@ async function fetchHistory(
 }
 
 // ============================================================================
-// SSE STREAMING PARSER
+// SSE STREAMING PARSER (React Native compatible)
 // ============================================================================
 
+/**
+ * Parse SSE response - React Native doesn't support ReadableStream,
+ * so we use response.text() and parse the complete response.
+ * For true streaming on RN, consider using EventSource polyfill.
+ */
 async function* parseSSE(response: Response): AsyncIterable<StreamChunk> {
-  const reader = response.body?.getReader();
-  if (!reader) {
-    throw new Error('No response body');
-  }
+  // React Native doesn't support response.body streaming
+  // Fall back to reading the entire response as text
+  const text = await response.text();
 
-  const decoder = new TextDecoder();
-  let buffer = '';
+  // Parse SSE events from complete response
+  const events = text.split('\n\n');
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const events = buffer.split('\n\n');
-      buffer = events.pop() ?? '';
-
-      for (const event of events) {
-        for (const line of event.split('\n')) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim();
-            if (data === '[DONE]' || !data) continue;
-            try {
-              yield JSON.parse(data) as StreamChunk;
-            } catch {
-              // Ignore malformed JSON
-            }
-          }
+  for (const event of events) {
+    for (const line of event.split('\n')) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6).trim();
+        if (data === '[DONE]' || !data) continue;
+        try {
+          yield JSON.parse(data) as StreamChunk;
+        } catch {
+          // Ignore malformed JSON
         }
       }
     }
-  } finally {
-    reader.releaseLock();
   }
 }
 

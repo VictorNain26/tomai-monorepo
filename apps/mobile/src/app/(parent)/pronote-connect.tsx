@@ -80,8 +80,11 @@ export default function PronoteConnectScreen() {
         const url = parsed.url as string;
         let establishment = 'Mon établissement';
         try {
-          const urlObj = new URL(url);
-          establishment = urlObj.hostname.split('.')[0] || establishment;
+          // React Native URL doesn't have hostname, use regex
+          const hostnameMatch = url.match(/^https?:\/\/([^/:]+)/);
+          if (hostnameMatch?.[1]) {
+            establishment = hostnameMatch[1].split('.')[0] || establishment;
+          }
         } catch {
           // Ignore URL parsing errors
         }
