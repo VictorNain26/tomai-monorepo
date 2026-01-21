@@ -65,7 +65,8 @@ jobs:
       - name: Tests
         run: pnpm run test
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Dummy URL for unit tests - real DB connections are mocked
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
 
       - name: Build
         run: pnpm run build
