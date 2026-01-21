@@ -401,10 +401,10 @@ importers:
         specifier: ^1.6.2
         version: 1.6.2
       react:
-        specifier: 19.1.0
+        specifier: 'catalog:'
         version: 19.1.0
       react-dom:
-        specifier: 19.1.0
+        specifier: 'catalog:'
         version: 19.1.0(react@19.1.0)
       react-native:
         specifier: 0.81.5
@@ -453,7 +453,7 @@ importers:
         specifier: 29.5.14
         version: 29.5.14
       '@types/react':
-        specifier: ~19.1.17
+        specifier: 'catalog:'
         version: 19.1.17
       babel-preset-expo:
         specifier: ~54.0.9
@@ -474,7 +474,7 @@ importers:
         specifier: ^3.4.17
         version: 3.4.19(yaml@2.8.2)
       typescript:
-        specifier: 5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
 
   apps/server:
