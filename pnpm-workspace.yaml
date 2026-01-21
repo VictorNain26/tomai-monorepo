@@ -1,3 +1,33 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+# =============================================================================
+# PNPM Catalog (Best Practice 2026)
+# Centralise les versions des dépendances partagées entre tous les packages.
+# Référence: https://pnpm.io/catalogs
+#
+# Utilisation dans package.json: "react": "catalog:"
+# Avantages:
+#   - Une seule source de vérité pour les versions
+#   - Impossible d'avoir des mismatches entre packages
+#   - Mise à jour centralisée (modifier ici = tous les packages mis à jour)
+# =============================================================================
+catalog:
+  # React ecosystem - versions exactes pour éviter les problèmes de types
+  react: 19.1.0
+  react-dom: 19.1.0
+  '@types/react': 19.1.17
+  '@types/react-dom': 19.1.11
+
+  # TypeScript - version fixe pour cohérence monorepo
+  typescript: 5.9.3
+
+  # ESLint
+  eslint: ^9.39.2
+
+  # TailwindCSS
+  tailwindcss: ^4.1.18
+
+  # Lucide icons
+  lucide-react: ^0.562.0

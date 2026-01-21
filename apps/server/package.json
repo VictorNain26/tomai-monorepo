@@ -85,9 +85,9 @@
     "@typescript-eslint/parser": "^8.50.0",
     "bun-types": "^1.3.5",
     "drizzle-kit": "^0.31.8",
-    "eslint": "^9.39.2",
+    "eslint": "catalog:",
     "globals": "^16.5.0",
-    "typescript": "5.9.3"
+    "typescript": "catalog:"
   },
   "trustedDependencies": [
     "better-auth",
