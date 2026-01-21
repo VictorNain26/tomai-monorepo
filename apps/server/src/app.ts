@@ -23,6 +23,7 @@ import {
   lifecycleRoutes
 } from './routes/subscription/index.js';
 import { stripeWebhookRoutes } from './routes/stripe-webhook.routes.js';
+import { revenuecatWebhookRoutes } from './routes/revenuecat-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { deckRoutes, cardRoutes, fsrsRoutes } from './routes/learning/index.js';
 import { pronoteRoutes } from './routes/pronote.routes.js';
@@ -291,6 +292,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(statusRoutes)        // Subscription status, portal, usage
   .use(lifecycleRoutes)     // Cancel, resume, preview
   .use(stripeWebhookRoutes) // Webhooks Stripe (raw body)
+  .use(revenuecatWebhookRoutes) // Webhooks RevenueCat (mobile IAP)
   .use(ttsRoutes)           // Text-to-Speech (Gemini 2.5 Flash TTS - 3.0 pending)
   .use(deckRoutes)          // Outils de révision - decks, subjects, topics
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation

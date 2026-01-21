@@ -1,4 +1,74 @@
 // Hooks - Export central
-// À remplir au fur et à mesure de la migration
 
-export {};
+export { useChat, type ChatMessage, type ChatFileAttachment } from './useChat';
+export {
+  usePresignedUpload,
+  type FileAttachment,
+  type FileType,
+} from './usePresignedUpload';
+export {
+  useStudentDashboard,
+  type Subject,
+  type TokenUsage,
+  type LatestSession,
+} from './useStudentDashboard';
+export {
+  useLearning,
+  useDecks,
+  useDeck,
+  useDeleteDeck,
+  useCreateDeck,
+  useLearningSubjects,
+  useLearningTopics,
+  type LearningDeck,
+  type LearningCard,
+  type CardType,
+  type CreateDeckRequest,
+  type LearningSubject,
+  type LearningDomaine,
+} from './useLearning';
+export {
+  useParentDashboard,
+  type IChild,
+  type ICreateChildData,
+  type SchoolLevel,
+  type EducationLevelType,
+  type Lv2Option,
+} from './useParentDashboard';
+export {
+  useParentPronoteStatus,
+  useChildMappings,
+  useConnectPronote,
+  useDisconnectPronote,
+  useChildHomework,
+  useChildGrades,
+  useChildTimetable,
+  useChildPronote,
+  type ParentConnectionStatus,
+  type ChildMapping,
+  type PronoteHomework,
+  type PronoteGrade,
+  type PronoteTimetableEntry,
+} from './useParentPronote';
+export {
+  useStudentPronoteStatus,
+  useStudentHomework,
+  useStudentGrades,
+  useStudentTimetable,
+  useStudentPronote,
+  type StudentPronoteStatus,
+  type PronoteHomework as StudentPronoteHomework,
+  type PronoteGrade as StudentPronoteGrade,
+  type PronoteTimetableEntry as StudentPronoteTimetableEntry,
+} from './useStudentPronote';
+export {
+  useTheme,
+  type ThemeMode,
+  type ColorScheme,
+} from './useTheme';
+export {
+  useSubscription,
+  useIsPro,
+  type SubscriptionState,
+  type SubscriptionActions,
+} from './useSubscription';

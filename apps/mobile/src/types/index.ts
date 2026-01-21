@@ -1,7 +1,7 @@
 // Types locaux mobile
 
-export type { LevelId, CycleId } from '@/constants/levels';
-export type { SubjectId } from '@/constants/subjects';
+export type { EducationLevelType, CycleId, Lv2Option } from '@/constants/levels';
+export type { SubjectMetadata } from '@/constants/subjects';
 
 // Navigation types
 export type RootStackParamList = {
@@ -13,44 +13,23 @@ export type RootStackParamList = {
   '(parent)': undefined;
 };
 
-// Chat types
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  createdAt: Date;
-  attachments?: FileAttachment[];
-}
+// Chat types - re-exported from useChat hook (source of truth)
+export type {
+  ChatMessage,
+  AttachedFileInfo,
+  ChatFileAttachment,
+} from '@/hooks/useChat';
 
-export interface FileAttachment {
-  id: string;
-  name: string;
-  type: string;
-  url: string;
-  size: number;
-}
+// Pronote types - re-exported from hooks (source of truth)
+export type {
+  PronoteHomework,
+  PronoteGrade,
+  PronoteTimetableEntry,
+  ParentConnectionStatus,
+  ChildMapping,
+  PronoteResource,
+} from '@/hooks/useParentPronote';
 
-// Pronote types (client-side)
-export interface PronoteSession {
-  isConnected: boolean;
-  studentName?: string;
-  schoolName?: string;
-  lastSync?: Date;
-}
-
-export interface Homework {
-  id: string;
-  subject: string;
-  description: string;
-  dueDate: Date;
-  done: boolean;
-}
-
-export interface Grade {
-  id: string;
-  subject: string;
-  value: number;
-  outOf: number;
-  date: Date;
-  comment?: string;
-}
+export type {
+  StudentPronoteStatus,
+} from '@/hooks/useStudentPronote';

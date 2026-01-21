@@ -46,6 +46,8 @@ export {
   signUp,
   signOut,
   signInWithGoogle,
+  requestPasswordReset,
+  resetPassword,
   resetAuthClient,
   type IAppUser,
 } from './auth';

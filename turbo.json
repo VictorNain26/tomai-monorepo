@@ -6,7 +6,8 @@
   ],
   "globalEnv": [
     "NODE_ENV",
-    "CI"
+    "CI",
+    "APP_ENV"
   ],
   "tasks": {
     "build": {
@@ -74,6 +75,17 @@
     "db:studio": {
       "cache": false,
       "persistent": true
+    },
+    "test": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "jest.config.*",
+        "__tests__/**",
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ],
+      "outputs": ["coverage/**"],
+      "env": ["NODE_ENV", "CI"]
     }
   }
 }

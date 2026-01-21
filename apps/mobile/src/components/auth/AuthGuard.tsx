@@ -8,7 +8,7 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { useSession, useUser, type IAppUser } from '@repo/api';
+import { useSession, useUser, type IAppUser } from '@/lib/auth';
 
 interface AuthGuardProps {
   children: React.ReactNode;

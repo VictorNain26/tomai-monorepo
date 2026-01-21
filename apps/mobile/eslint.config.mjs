@@ -11,4 +11,24 @@ export default [
       'react/no-unescaped-entities': 'off',
     },
   },
+  // Test files configuration
+  {
+    files: ['**/__tests__/**/*', '**/*.test.ts', '**/*.test.tsx', 'jest.setup.js', '__mocks__/**/*'],
+    languageOptions: {
+      globals: {
+        jest: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      'react/display-name': 'off',
+    },
+  },
 ];
