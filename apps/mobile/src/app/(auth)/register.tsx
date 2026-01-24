@@ -96,7 +96,7 @@ export default function RegisterScreen() {
                 onChangeText={setName}
                 autoCapitalize="words"
                 autoComplete="name"
-                editable={!isLoading}
+                disabled={isLoading}
               />
             </View>
 
@@ -111,7 +111,7 @@ export default function RegisterScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
-                editable={!isLoading}
+                disabled={isLoading}
               />
             </View>
 
@@ -125,7 +125,7 @@ export default function RegisterScreen() {
                 onChangeText={setPassword}
                 secureTextEntry
                 autoCapitalize="none"
-                editable={!isLoading}
+                disabled={isLoading}
               />
             </View>
 
@@ -139,7 +139,7 @@ export default function RegisterScreen() {
                 onChangeText={setConfirmPassword}
                 secureTextEntry
                 autoCapitalize="none"
-                editable={!isLoading}
+                disabled={isLoading}
               />
             </View>
 

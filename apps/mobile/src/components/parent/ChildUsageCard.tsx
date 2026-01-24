@@ -1,58 +1,68 @@
 /**
- * TokenUsageCard Component
+ * ChildUsageCard Component
  *
- * Displays token usage with soft limit thresholds (rolling window 5h).
- * Architecture 2026 inspired by ChatGPT/Claude:
- * - 0-70%: Normal (green)
- * - 70-85%: Warning (amber)
- * - 85-95%: Throttle (orange)
- * - 95-100%: Near limit (red)
- * - 100%+: Exhausted (destructive)
+ * Displays token usage for a child (parent view).
+ * Shows rolling window usage with weekly stats.
  */
 
 import { View } from 'react-native';
 import { Zap, Crown, RefreshCw, AlertTriangle } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useIconColors } from '@/hooks';
 import { cn } from '@/lib/utils';
-import type { TokenUsage } from '@/hooks/useStudentDashboard';
+import type { ChildWindowUsage, ChildWeeklyUsage } from '@/hooks';
 
-interface TokenUsageCardProps {
-  usage: TokenUsage | null;
+// ============================================================================
+// PROPS
+// ============================================================================
+
+interface ChildUsageCardProps {
+  window: ChildWindowUsage | null;
+  weekly: ChildWeeklyUsage | null;
+  plan: 'free' | 'premium';
   isLoading?: boolean;
 }
 
-export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps) {
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+export function ChildUsageCard({
+  window: windowUsage,
+  weekly,
+  plan,
+  isLoading = false,
+}: ChildUsageCardProps) {
   const iconColors = useIconColors();
 
   if (isLoading) {
     return (
       <View className="rounded-xl border border-border bg-card p-4">
         <View className="mb-3 flex-row items-center gap-2">
-          <View className="h-8 w-8 animate-pulse rounded-lg bg-muted" />
+          <Skeleton className="h-8 w-8 rounded-lg" />
           <View className="flex-1">
-            <View className="mb-1 h-4 w-24 animate-pulse rounded bg-muted" />
-            <View className="h-3 w-16 animate-pulse rounded bg-muted" />
+            <Skeleton className="mb-1 h-4 w-24 rounded" />
+            <Skeleton className="h-3 w-16 rounded" />
           </View>
         </View>
-        <View className="mb-2 h-2 w-full animate-pulse rounded-full bg-muted" />
-        <View className="h-3 w-32 animate-pulse rounded bg-muted" />
+        <Skeleton className="mb-2 h-2 w-full rounded-full" />
+        <Skeleton className="h-3 w-32 rounded" />
       </View>
     );
   }
 
-  if (!usage) {
+  if (!windowUsage) {
     return (
       <View className="rounded-xl border border-border bg-card p-4">
         <Text variant="muted" className="text-center text-sm">
-          Impossible de charger l'usage
+          Aucune donnée d'utilisation disponible
         </Text>
       </View>
     );
   }
 
-  const { window: windowUsage, plan } = usage;
   const isPremium = plan === 'premium';
   const usagePercent = windowUsage.usagePercent;
 
@@ -118,36 +128,46 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
       </View>
 
       {/* Usage display */}
-      <View className="items-center">
-        <Text className={cn('text-2xl font-bold', getStatusColor())}>
-          {Math.round(remainingPercent)}%
-        </Text>
+      <View className="flex-row items-center gap-3">
+        <View className="flex-row items-center gap-1.5">
+          <Zap
+            color={isPremium ? iconColors.warning : iconColors.foreground}
+            size={16}
+          />
+          <Text className={cn('text-sm font-medium', getStatusColor())}>
+            {Math.round(remainingPercent)}% restant
+          </Text>
+        </View>
+        <Progress
+          value={usagePercent}
+          className="h-2 flex-1"
+          variant={getProgressVariant()}
+        />
+      </View>
+
+      {/* Token count */}
+      <View className="mt-2 flex-row items-center justify-between">
         <Text variant="muted" className="text-xs">
-          restant
+          {windowUsage.tokensRemaining.toLocaleString('fr-FR')} /{' '}
+          {windowUsage.limit.toLocaleString('fr-FR')} tokens
         </Text>
       </View>
 
-      {/* Progress bar */}
-      <Progress
-        value={usagePercent}
-        className="my-3"
-        variant={getProgressVariant()}
-      />
+      {/* Weekly stats */}
+      {weekly && weekly.tokensUsed > 0 && (
+        <View className="mt-3 border-t border-border pt-3">
+          <Text variant="muted" className="text-center text-xs">
+            Cette semaine: {(weekly.tokensUsed / 1000).toFixed(1)}K tokens utilisés
+          </Text>
+        </View>
+      )}
 
-      {/* Token counts */}
-      <View className="flex-row items-center justify-center">
-        <Text variant="muted" className="text-xs">
-          {windowUsage.tokensRemaining.toLocaleString('fr-FR')} tokens sur{' '}
-          {windowUsage.limit.toLocaleString('fr-FR')}
-        </Text>
-      </View>
-
-      {/* Warning messages based on soft limits */}
+      {/* Warning messages */}
       {isExhausted && (
         <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg bg-destructive/10 p-2">
           <AlertTriangle color={iconColors.destructive} size={14} />
           <Text className="text-xs text-destructive">
-            Limite atteinte • Recharge dans {windowUsage.refreshIn}
+            Limite atteinte
           </Text>
         </View>
       )}
@@ -155,21 +175,14 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
         <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg bg-destructive/10 p-2">
           <AlertTriangle color={iconColors.destructive} size={14} />
           <Text className="text-xs text-destructive">
-            Presque épuisé • Économise tes tokens !
+            Presque épuisé
           </Text>
         </View>
       )}
       {isThrottle && !isNearLimit && (
         <View className="mt-3 rounded-lg bg-warning/10 p-2">
           <Text className="text-center text-xs text-warning">
-            Quota faible • Réponses ralenties
-          </Text>
-        </View>
-      )}
-      {isWarning && !isThrottle && (
-        <View className="mt-3 rounded-lg bg-warning/10 p-2">
-          <Text className="text-center text-xs text-warning">
-            Attention : quota limité
+            Quota faible
           </Text>
         </View>
       )}

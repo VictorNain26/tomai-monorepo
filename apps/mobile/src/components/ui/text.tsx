@@ -1,4 +1,8 @@
-import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
+import {
+  Text as RNText,
+  type TextProps as RNTextProps,
+  type AccessibilityRole,
+} from 'react-native';
 import { Text as SlotText } from '@rn-primitives/slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
@@ -23,16 +27,45 @@ const textVariants = cva('text-base text-foreground web:select-text', {
   },
 });
 
+/**
+ * Get accessibility role based on text variant
+ * Headings get 'header' role for screen readers
+ */
+function getAccessibilityRole(
+  variant: TextProps['variant']
+): AccessibilityRole | undefined {
+  if (
+    variant === 'heading' ||
+    variant === 'h1' ||
+    variant === 'h2' ||
+    variant === 'h3' ||
+    variant === 'h4'
+  ) {
+    return 'header';
+  }
+  return undefined;
+}
+
 type TextProps = RNTextProps &
   VariantProps<typeof textVariants> & {
     asChild?: boolean;
   };
 
-function Text({ className, variant, asChild = false, ...props }: TextProps) {
+function Text({
+  className,
+  variant,
+  asChild = false,
+  accessibilityRole,
+  ...props
+}: TextProps) {
   const Component = asChild ? SlotText : RNText;
+  // Use provided accessibilityRole or derive from variant
+  const derivedRole = accessibilityRole ?? getAccessibilityRole(variant);
+
   return (
     <Component
       className={cn(textVariants({ variant }), className)}
+      accessibilityRole={derivedRole}
       {...props}
     />
   );

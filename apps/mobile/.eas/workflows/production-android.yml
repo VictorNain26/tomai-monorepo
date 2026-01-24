@@ -1,0 +1,26 @@
+name: Production Android (Build & Submit)
+
+# Production workflow: always builds fresh and submits to Play Store
+# Triggered on main branch pushes or version tags
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+
+jobs:
+  build:
+    name: Build Android AAB
+    type: build
+    params:
+      platform: android
+      profile: production
+
+  submit:
+    name: Submit to Play Store
+    needs: [build]
+    type: submit
+    params:
+      build_id: ${{ needs.build.outputs.build_id }}

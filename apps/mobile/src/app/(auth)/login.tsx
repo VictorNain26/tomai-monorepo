@@ -169,7 +169,7 @@ export default function LoginScreen() {
                 keyboardType={currentConfig.keyboardType}
                 autoCapitalize="none"
                 autoComplete={currentConfig.autoComplete}
-                editable={!isLoading}
+                disabled={isLoading}
               />
             </View>
 
@@ -184,7 +184,7 @@ export default function LoginScreen() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="password"
-                editable={!isLoading}
+                disabled={isLoading}
               />
             </View>
 

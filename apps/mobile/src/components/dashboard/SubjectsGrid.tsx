@@ -55,13 +55,24 @@ export function SubjectsGrid({ subjects, isLoading = false }: SubjectsGridProps)
       scrollEnabled={false}
       columnWrapperStyle={{ gap: 12 }}
       contentContainerStyle={{ gap: 12 }}
+      accessibilityRole="list"
+      accessibilityLabel="Liste des matières"
       renderItem={({ item }) => (
         <TouchableOpacity
           onPress={() => handleSubjectPress(item)}
           className="flex-1 items-center rounded-xl border border-border bg-card p-3"
           style={{ minWidth: '30%', maxWidth: '32%' }}
+          accessibilityRole="button"
+          accessibilityLabel={`${item.name}${!item.ragAvailable ? ', bientôt disponible' : ''}`}
+          accessibilityHint={
+            item.ragAvailable
+              ? `Ouvre une conversation avec Tom sur ${item.name}`
+              : `${item.name} sera bientôt disponible`
+          }
         >
-          <Text className="mb-1 text-2xl">{item.emoji}</Text>
+          <Text className="mb-1 text-2xl" accessibilityLabel="">
+            {item.emoji}
+          </Text>
           <Text className="text-center text-xs font-medium" numberOfLines={2}>
             {item.name}
           </Text>

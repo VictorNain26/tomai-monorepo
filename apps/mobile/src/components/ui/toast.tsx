@@ -38,10 +38,10 @@ export function useToast() {
 
 const variantStyles: Record<ToastVariant, string> = {
   default: 'bg-card border-border',
-  success: 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800',
-  error: 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800',
-  warning: 'bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800',
-  info: 'bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800',
+  success: 'bg-success/10 border-success/30',
+  error: 'bg-destructive/10 border-destructive/30',
+  warning: 'bg-warning/10 border-warning/30',
+  info: 'bg-primary/10 border-primary/30',
 };
 
 const variantIcons: Record<ToastVariant, typeof CheckCircle> = {
@@ -52,12 +52,13 @@ const variantIcons: Record<ToastVariant, typeof CheckCircle> = {
   info: Info,
 };
 
+// Icon colors using semantic HSL values from global.css
 const variantColors: Record<ToastVariant, string> = {
-  default: '#64748B',
-  success: '#22C55E',
-  error: '#EF4444',
-  warning: '#F59E0B',
-  info: '#3B82F6',
+  default: 'hsl(215.4, 16.3%, 46.9%)', // muted-foreground
+  success: 'hsl(142, 76%, 36%)', // success
+  error: 'hsl(0, 84.2%, 60.2%)', // destructive
+  warning: 'hsl(43, 96%, 56%)', // warning
+  info: 'hsl(222.2, 47.4%, 11.2%)', // primary
 };
 
 interface ToastItemProps {

@@ -196,7 +196,7 @@ export default function ResetPasswordScreen() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="new-password"
-                editable={!isLoading}
+                disabled={isLoading}
               />
             </View>
 
@@ -211,7 +211,7 @@ export default function ResetPasswordScreen() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="new-password"
-                editable={!isLoading}
+                disabled={isLoading}
               />
             </View>
 

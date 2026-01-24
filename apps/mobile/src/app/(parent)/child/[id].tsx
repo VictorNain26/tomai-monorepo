@@ -8,7 +8,7 @@
 import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   ArrowLeft,
   School,
@@ -21,13 +21,15 @@ import {
   GraduationCap,
   User,
   Edit3,
+  Trash2,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar } from '@/components/ui/avatar';
-import { useParentDashboard } from '@/hooks';
+import { DeleteChildModal, ChildUsageCard } from '@/components/parent';
+import { useParentDashboard, useChildTokenUsage } from '@/hooks';
 import { useChildPronote } from '@/hooks/useParentPronote';
 import { getLevelLabel } from '@/constants/levels';
 
@@ -39,14 +41,40 @@ export default function ChildDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { children, isLoading: isLoadingChildren } = useParentDashboard();
+  const {
+    children,
+    isLoading: isLoadingChildren,
+    deleteChild,
+    isDeleting,
+  } = useParentDashboard();
   const pronote = useChildPronote(id);
+  const tokenUsage = useChildTokenUsage({ childId: id });
+
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Find child by ID
   const child = useMemo(
     () => children.find((c) => c.id === id),
     [children, id]
   );
+
+  // Delete child handler - must be defined before early returns
+  const handleDeleteChild = useCallback(async () => {
+    if (!id) return;
+    try {
+      await deleteChild(id);
+      setShowDeleteModal(false);
+      Alert.alert('Succès', 'Le compte a été supprimé', [
+        { text: 'OK', onPress: () => router.replace('/(parent)/children') },
+      ]);
+    } catch (error) {
+      Alert.alert(
+        'Erreur',
+        error instanceof Error ? error.message : 'Impossible de supprimer le compte'
+      );
+    }
+  }, [id, deleteChild, router]);
 
   // Loading state
   if (isLoadingChildren || !id) {
@@ -123,12 +151,20 @@ export default function ChildDetailScreen() {
               <Text className="text-lg font-semibold">{fullName}</Text>
               <Text variant="muted">@{child.username}</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => router.push(`/(parent)/child/${id}/edit`)}
-              className="p-2"
-            >
-              <Edit3 color="hsl(222.2, 47.4%, 11.2%)" size={20} />
-            </TouchableOpacity>
+            <View className="flex-row items-center gap-2">
+              <TouchableOpacity
+                onPress={() => router.push(`/(parent)/child/${id}/edit`)}
+                className="p-2"
+              >
+                <Edit3 color="hsl(222.2, 47.4%, 11.2%)" size={20} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowDeleteModal(true)}
+                className="p-2"
+              >
+                <Trash2 color="#dc2626" size={20} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View className="mt-4 flex-row gap-4">
@@ -144,6 +180,16 @@ export default function ChildDetailScreen() {
               </View>
             )}
           </View>
+        </View>
+
+        {/* Token Usage Section */}
+        <View className="mb-6">
+          <ChildUsageCard
+            window={tokenUsage.window}
+            weekly={tokenUsage.weekly}
+            plan={tokenUsage.plan}
+            isLoading={tokenUsage.isLoading}
+          />
         </View>
 
         {/* Pronote Section */}
@@ -250,6 +296,16 @@ export default function ChildDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Delete Child Modal */}
+      <DeleteChildModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteChild}
+        childName={child.firstName}
+        childUsername={child.username}
+        isDeleting={isDeleting}
+      />
     </SafeAreaView>
   );
 }

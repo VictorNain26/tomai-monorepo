@@ -1,3 +1,111 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * CSS Variables for Light/Dark Mode
+ *
+ * These variables are used by NativeWind to support theming.
+ * Values are HSL without the hsl() wrapper for Tailwind compatibility.
+ *
+ * @see tailwind.config.ts for usage
+ * @see https://ui.shadcn.com/themes for color palette
+ */
+@layer base {
+  :root {
+    /* Background colors */
+    --color-background: 0 0% 100%;
+    --color-foreground: 222.2 47.4% 11.2%;
+
+    /* Card colors */
+    --color-card: 0 0% 100%;
+    --color-card-foreground: 222.2 47.4% 11.2%;
+
+    /* Popover colors */
+    --color-popover: 0 0% 100%;
+    --color-popover-foreground: 222.2 47.4% 11.2%;
+
+    /* Primary colors */
+    --color-primary: 222.2 47.4% 11.2%;
+    --color-primary-foreground: 210 40% 98%;
+
+    /* Secondary colors */
+    --color-secondary: 210 40% 96.1%;
+    --color-secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* Muted colors */
+    --color-muted: 210 40% 96.1%;
+    --color-muted-foreground: 215.4 16.3% 46.9%;
+
+    /* Accent colors */
+    --color-accent: 210 40% 96.1%;
+    --color-accent-foreground: 222.2 47.4% 11.2%;
+
+    /* Destructive colors */
+    --color-destructive: 0 84.2% 60.2%;
+    --color-destructive-foreground: 210 40% 98%;
+
+    /* Success colors (custom) */
+    --color-success: 142 76% 36%;
+    --color-success-foreground: 210 40% 98%;
+
+    /* Warning colors (custom) */
+    --color-warning: 43 96% 56%;
+    --color-warning-foreground: 222.2 47.4% 11.2%;
+
+    /* Border and input colors */
+    --color-border: 214.3 31.8% 91.4%;
+    --color-input: 214.3 31.8% 91.4%;
+    --color-ring: 222.2 47.4% 11.2%;
+
+    /* Border radius */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Background colors */
+    --color-background: 222.2 84% 4.9%;
+    --color-foreground: 210 40% 98%;
+
+    /* Card colors */
+    --color-card: 222.2 84% 4.9%;
+    --color-card-foreground: 210 40% 98%;
+
+    /* Popover colors */
+    --color-popover: 222.2 84% 4.9%;
+    --color-popover-foreground: 210 40% 98%;
+
+    /* Primary colors */
+    --color-primary: 210 40% 98%;
+    --color-primary-foreground: 222.2 47.4% 11.2%;
+
+    /* Secondary colors */
+    --color-secondary: 217.2 32.6% 17.5%;
+    --color-secondary-foreground: 210 40% 98%;
+
+    /* Muted colors */
+    --color-muted: 217.2 32.6% 17.5%;
+    --color-muted-foreground: 215 20.2% 65.1%;
+
+    /* Accent colors */
+    --color-accent: 217.2 32.6% 17.5%;
+    --color-accent-foreground: 210 40% 98%;
+
+    /* Destructive colors */
+    --color-destructive: 0 62.8% 30.6%;
+    --color-destructive-foreground: 210 40% 98%;
+
+    /* Success colors (custom) */
+    --color-success: 142 76% 46%;
+    --color-success-foreground: 222.2 47.4% 11.2%;
+
+    /* Warning colors (custom) */
+    --color-warning: 43 96% 66%;
+    --color-warning-foreground: 222.2 47.4% 11.2%;
+
+    /* Border and input colors */
+    --color-border: 217.2 32.6% 17.5%;
+    --color-input: 217.2 32.6% 17.5%;
+    --color-ring: 212.7 26.8% 83.9%;
+  }
+}

@@ -2,19 +2,22 @@
  * @repo/api - Platform-agnostic API package
  *
  * Shared API logic for Web (Vite) and Mobile (Expo).
+ * 100% platform-agnostic - no browser-only or native-only dependencies.
+ *
+ * Auth is handled separately by each app:
+ * - Web: better-auth/react in apps/app/src/lib/auth.ts
+ * - Mobile: @better-auth/expo in apps/mobile/src/lib/auth.ts
  *
  * @example
  * // Initialize at app startup
- * import { initializeApi } from '@repo/api';
+ * import { initializeApi, apiClient } from '@repo/api';
  *
  * initializeApi({
- *   baseUrl: 'https://api.tomia.fr', // or import.meta.env.VITE_API_URL
+ *   baseUrl: 'https://api.tomia.fr',
  * });
  *
  * // Use queries with TanStack Query
- * import { parentQueries, queryKeys } from '@repo/api/queries';
- *
- * const { data } = useQuery(parentQueries.dashboard());
+ * import { parentQueries } from '@repo/api/queries';
  */
 
 // Configuration
@@ -36,18 +39,5 @@ export {
   type UnauthorizedHandler,
 } from './client';
 
-// Auth (Better Auth hooks)
-export {
-  useSession,
-  useUser,
-  useIsAuthenticated,
-  useIsAuthLoading,
-  signIn,
-  signUp,
-  signOut,
-  signInWithGoogle,
-  requestPasswordReset,
-  resetPassword,
-  resetAuthClient,
-  type IAppUser,
-} from './auth';
+// Shared Types (platform-agnostic)
+export { type IAppUser } from './types';

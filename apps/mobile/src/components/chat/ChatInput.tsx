@@ -1,10 +1,11 @@
 /**
  * ChatInput Component
  *
- * Input pour envoyer des messages avec support attachments.
+ * Input pour envoyer des messages avec support attachments et voice input.
+ * Intègre la dictée vocale avec transcription automatique.
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   View,
   TextInput,
@@ -13,11 +14,14 @@ import {
   Platform,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { Mic, Square } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
 import type { ChatFileAttachment } from '@/hooks';
 
 interface ChatInputProps {
@@ -44,8 +48,40 @@ export function ChatInput({
   const [message, setMessage] = useState('');
   const inputRef = useRef<TextInput>(null);
 
+  // Voice input hook
+  const voice = useVoiceInput();
+
   const canSend =
-    !isLoading && (message.trim().length > 0 || pendingAttachments.length > 0);
+    !isLoading && !voice.isRecording && !voice.isProcessing &&
+    (message.trim().length > 0 || pendingAttachments.length > 0);
+
+  // Handle voice recording toggle
+  const handleVoiceToggle = useCallback(async () => {
+    if (voice.isRecording) {
+      // Stop and get transcription
+      const transcription = await voice.stopRecording();
+      if (transcription) {
+        // Append transcription to message
+        setMessage((prev) =>
+          prev ? `${prev} ${transcription}` : transcription
+        );
+      }
+    } else if (!voice.isProcessing) {
+      // Start recording
+      const started = await voice.startRecording();
+      if (!started && voice.error) {
+        Alert.alert('Erreur microphone', voice.error);
+        voice.clearError();
+      }
+    }
+  }, [voice]);
+
+  // Cancel recording on long press
+  const handleVoiceCancel = useCallback(async () => {
+    if (voice.isRecording) {
+      await voice.cancelRecording();
+    }
+  }, [voice]);
 
   async function handleSend() {
     if (!canSend) return;
@@ -181,16 +217,48 @@ export function ChatInput({
               ref={inputRef}
               value={message}
               onChangeText={setMessage}
-              placeholder={placeholder}
+              placeholder={
+                voice.isRecording
+                  ? `🎙️ Enregistrement... ${voice.duration}s`
+                  : voice.isProcessing
+                    ? '⏳ Transcription en cours...'
+                    : placeholder
+              }
               placeholderTextColor="hsl(215.4 16.3% 46.9%)"
               multiline
               maxLength={2000}
-              editable={!isLoading}
+              editable={!isLoading && !voice.isRecording && !voice.isProcessing}
               onSubmitEditing={handleSend}
               blurOnSubmit={false}
               className="max-h-24 flex-1 py-3 text-base text-foreground"
             />
           </View>
+
+          {/* Voice Button */}
+          <TouchableOpacity
+            onPress={handleVoiceToggle}
+            onLongPress={handleVoiceCancel}
+            disabled={isLoading || voice.isProcessing}
+            className={cn(
+              'h-10 w-10 items-center justify-center rounded-full',
+              voice.isRecording
+                ? 'bg-destructive'
+                : voice.isProcessing
+                  ? 'bg-muted'
+                  : 'bg-muted'
+            )}
+          >
+            {voice.isRecording ? (
+              <Square color="white" size={16} fill="white" />
+            ) : voice.isProcessing ? (
+              <Text className="text-xs">⏳</Text>
+            ) : (
+              <Mic
+                color="hsl(222.2, 47.4%, 11.2%)"
+                size={18}
+              />
+            )}
+          </TouchableOpacity>
 
           {/* Send Button */}
           <TouchableOpacity

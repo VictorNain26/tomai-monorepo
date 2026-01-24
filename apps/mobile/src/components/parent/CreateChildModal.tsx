@@ -195,7 +195,7 @@ export function CreateChildModal({
                   onChangeText={setFirstName}
                   placeholder="Prénom de l'enfant"
                   autoCapitalize="words"
-                  editable={!isSubmitting}
+                  disabled={isSubmitting}
                 />
               </View>
 
@@ -207,7 +207,7 @@ export function CreateChildModal({
                   onChangeText={setLastName}
                   placeholder="Nom de famille"
                   autoCapitalize="words"
-                  editable={!isSubmitting}
+                  disabled={isSubmitting}
                 />
               </View>
 
@@ -219,7 +219,7 @@ export function CreateChildModal({
                   onChangeText={setDateOfBirth}
                   placeholder="JJ/MM/AAAA"
                   keyboardType="numeric"
-                  editable={!isSubmitting}
+                  disabled={isSubmitting}
                 />
               </View>
 
@@ -288,7 +288,7 @@ export function CreateChildModal({
                     placeholder="username123"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    editable={!isSubmitting}
+                    disabled={isSubmitting}
                   />
                 </View>
 
@@ -301,7 +301,7 @@ export function CreateChildModal({
                     placeholder="SuperChat42!"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    editable={!isSubmitting}
+                    disabled={isSubmitting}
                   />
                   <Text variant="muted" className="text-xs">
                     Gardez ces identifiants en lieu sûr !

@@ -72,3 +72,25 @@ export {
   type SubscriptionState,
   type SubscriptionActions,
 } from './useSubscription';
+export {
+  useVoiceInput,
+  type VoiceInputState,
+} from './useVoiceInput';
+export {
+  useTextToSpeech,
+  type TextToSpeechState,
+  type TTSOptions,
+} from './useTextToSpeech';
+export {
+  useFileShare,
+  type FileShareState,
+} from './useFileShare';
+export {
+  useChildTokenUsage,
+  type ChildWindowUsage,
+  type ChildWeeklyUsage,
+} from './useChildTokenUsage';
+export {
+  useIconColors,
+  type IconColors,
+} from './useIconColors';

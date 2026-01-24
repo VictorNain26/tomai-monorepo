@@ -17,6 +17,7 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useIconColors } from '@/hooks';
 import type { StudentPronoteStatus } from '@/hooks/useStudentPronote';
 
 // ============================================================================
@@ -42,6 +43,8 @@ export function StudentPronoteCard({
   isLoading = false,
   onNavigate,
 }: StudentPronoteCardProps) {
+  const iconColors = useIconColors();
+
   // Loading state
   if (isLoading) {
     return (
@@ -69,7 +72,7 @@ export function StudentPronoteCard({
       {/* Header */}
       <View className="flex-row items-center gap-3 border-b border-border p-4">
         <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-          <School color="hsl(222.2, 47.4%, 11.2%)" size={20} />
+          <School color={iconColors.primary} size={20} />
         </View>
         <View className="flex-1">
           <Text className="font-semibold">Pronote</Text>
@@ -78,9 +81,9 @@ export function StudentPronoteCard({
           </Text>
         </View>
         {isConnected ? (
-          <CheckCircle color="hsl(142, 76%, 36%)" size={20} />
+          <CheckCircle color={iconColors.success} size={20} />
         ) : (
-          <XCircle color="hsl(0, 84.2%, 60.2%)" size={20} />
+          <XCircle color={iconColors.destructive} size={20} />
         )}
       </View>
 
@@ -89,12 +92,12 @@ export function StudentPronoteCard({
         {isConnected && status ? (
           <>
             {/* Connected state */}
-            <View className="mb-4 rounded-xl bg-green-50 p-3">
-              <Text className="font-medium text-green-700">
+            <View className="mb-4 rounded-xl bg-success/10 p-3">
+              <Text className="font-medium text-success">
                 {status.establishmentName ?? 'Établissement Pronote'}
               </Text>
               {status.className && (
-                <Text className="text-sm text-green-600">
+                <Text className="text-sm text-success/80">
                   Classe: {status.className}
                 </Text>
               )}
@@ -119,28 +122,37 @@ export function StudentPronoteCard({
             </View>
 
             {/* Quick actions */}
-            <View className="flex-row gap-3">
+            <View className="flex-row gap-3" accessibilityRole="toolbar">
               <TouchableOpacity
                 onPress={() => onNavigate?.('homework')}
                 className="flex-1 items-center rounded-xl border border-primary/30 p-3"
+                accessibilityRole="button"
+                accessibilityLabel="Voir les devoirs"
+                accessibilityHint="Ouvre la liste des devoirs Pronote"
               >
-                <FileText color="hsl(222.2, 47.4%, 11.2%)" size={18} />
+                <FileText color={iconColors.primary} size={18} />
                 <Text className="mt-1 text-xs font-medium">Devoirs</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => onNavigate?.('grades')}
                 className="flex-1 items-center rounded-xl border border-primary/30 p-3"
+                accessibilityRole="button"
+                accessibilityLabel="Voir les notes"
+                accessibilityHint="Ouvre la liste des notes Pronote"
               >
-                <BarChart3 color="hsl(222.2, 47.4%, 11.2%)" size={18} />
+                <BarChart3 color={iconColors.primary} size={18} />
                 <Text className="mt-1 text-xs font-medium">Notes</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => onNavigate?.('timetable')}
                 className="flex-1 items-center rounded-xl border border-primary/30 p-3"
+                accessibilityRole="button"
+                accessibilityLabel="Voir l'emploi du temps"
+                accessibilityHint="Ouvre l'emploi du temps Pronote"
               >
-                <Calendar color="hsl(222.2, 47.4%, 11.2%)" size={18} />
+                <Calendar color={iconColors.primary} size={18} />
                 <Text className="mt-1 text-xs font-medium">EDT</Text>
               </TouchableOpacity>
             </View>
@@ -149,7 +161,7 @@ export function StudentPronoteCard({
           /* Not connected state */
           <View className="items-center py-4">
             <View className="mb-3 h-12 w-12 items-center justify-center rounded-xl bg-muted">
-              <XCircle color="hsl(215.4, 16.3%, 46.9%)" size={24} />
+              <XCircle color={iconColors.muted} size={24} />
             </View>
             <Text className="mb-1 text-center font-medium">
               Pronote non connecté

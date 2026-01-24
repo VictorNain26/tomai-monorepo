@@ -9,11 +9,13 @@ import {
   Crown,
   CreditCard,
   Users,
+  Sparkles,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { useUser, signOut } from '@/lib/auth';
+import { useIsPro, useTheme } from '@/hooks';
 
 interface MenuItem {
   icon: React.ReactNode;
@@ -25,6 +27,10 @@ interface MenuItem {
 export default function ParentProfileScreen() {
   const router = useRouter();
   const user = useUser();
+  const { isPro, isLoading: isLoadingPro } = useIsPro();
+  const { isDark } = useTheme();
+
+  const iconColor = isDark ? 'hsl(210, 40%, 98%)' : 'hsl(222.2, 47.4%, 11.2%)';
 
   async function handleLogout() {
     Alert.alert('Déconnexion', 'Voulez-vous vraiment vous déconnecter ?', [
@@ -42,22 +48,22 @@ export default function ParentProfileScreen() {
 
   const menuItems: MenuItem[] = [
     {
-      icon: <Users color="hsl(222.2, 47.4%, 11.2%)" size={20} />,
+      icon: <Users color={iconColor} size={20} />,
       label: 'Gérer les enfants',
       onPress: () => router.push('/(parent)/children'),
     },
     {
-      icon: <CreditCard color="hsl(222.2, 47.4%, 11.2%)" size={20} />,
+      icon: <CreditCard color={iconColor} size={20} />,
       label: 'Abonnement et facturation',
-      onPress: () => {},
+      onPress: () => router.push('/(parent)/pricing'),
     },
     {
-      icon: <Settings color="hsl(222.2, 47.4%, 11.2%)" size={20} />,
+      icon: <Settings color={iconColor} size={20} />,
       label: 'Paramètres',
       onPress: () => router.push('/(parent)/settings'),
     },
     {
-      icon: <HelpCircle color="hsl(222.2, 47.4%, 11.2%)" size={20} />,
+      icon: <HelpCircle color={iconColor} size={20} />,
       label: 'Aide et support',
       onPress: () => {},
     },
@@ -78,23 +84,45 @@ export default function ParentProfileScreen() {
 
           {/* Role badge */}
           <View className="mt-3 flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1">
-            <Users color="hsl(222.2, 47.4%, 11.2%)" size={14} />
+            <Users color={iconColor} size={14} />
             <Text className="text-sm font-medium">Compte Parent</Text>
           </View>
         </View>
 
         {/* Subscription Card */}
-        <View className="mb-6 rounded-xl border border-primary bg-primary/5 p-4">
+        <View
+          className={`mb-6 rounded-xl border p-4 ${
+            isPro
+              ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20'
+              : 'border-border bg-card'
+          }`}
+        >
           <View className="flex-row items-center gap-2">
-            <Crown color="hsl(222.2, 47.4%, 11.2%)" size={20} />
-            <Text variant="h3">Plan Famille</Text>
+            {isPro ? (
+              <Sparkles color="#16a34a" size={20} />
+            ) : (
+              <Crown color={iconColor} size={20} />
+            )}
+            <Text variant="h3">
+              {isLoadingPro ? 'Chargement...' : isPro ? 'Plan Premium' : 'Plan Gratuit'}
+            </Text>
           </View>
           <Text variant="muted" className="mb-3 mt-1 text-sm">
-            Gérez jusqu'à 5 comptes enfants avec un seul abonnement
+            {isPro
+              ? 'Profitez de toutes les fonctionnalités TomIA'
+              : 'Passez Premium pour un accès illimité'}
           </Text>
-          <Button onPress={() => {}} className="self-start">
-            <Text className="font-semibold text-primary-foreground">
-              Gérer l'abonnement
+          <Button
+            onPress={() => router.push('/(parent)/pricing')}
+            variant={isPro ? 'outline' : 'default'}
+            className="self-start"
+          >
+            <Text
+              className={`font-semibold ${
+                isPro ? 'text-foreground' : 'text-primary-foreground'
+              }`}
+            >
+              {isPro ? 'Gérer l\'abonnement' : 'Passer Premium'}
             </Text>
           </Button>
         </View>
