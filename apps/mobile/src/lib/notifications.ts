@@ -28,6 +28,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     priority: Notifications.AndroidNotificationPriority.HIGH,
   }),
 });
@@ -261,7 +263,7 @@ export async function scheduleLocalNotification(
     content: {
       title,
       body,
-      data: data as Record<string, unknown>,
+      data: data as unknown as Record<string, unknown>,
       sound: 'default',
       ...(Platform.OS === 'android' && { channelId }),
     },
@@ -287,7 +289,7 @@ export async function scheduleHomeworkReminder(
   return scheduleLocalNotification(
     'Rappel devoir',
     `N'oublie pas : ${homeworkTitle}`,
-    { date: reminderDate },
+    { date: reminderDate } as Notifications.NotificationTriggerInput,
     {
       type: 'homework_reminder',
       data: { homeworkTitle, dueDate: dueDate.toISOString() },
@@ -315,7 +317,7 @@ export async function scheduleStreakReminder(
   return scheduleLocalNotification(
     'Continue ta série !',
     `Tu as une série de ${currentStreak} jours. Révise maintenant pour ne pas la perdre !`,
-    { date: reminderTime },
+    { date: reminderTime } as Notifications.NotificationTriggerInput,
     {
       type: 'study_streak',
       data: { currentStreak },

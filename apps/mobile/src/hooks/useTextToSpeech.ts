@@ -81,7 +81,11 @@ export function useTextToSpeech() {
       currentTextRef.current = null;
       // Clean up temp file
       if (tempFileRef.current) {
-        tempFileRef.current.delete().catch(() => {});
+        try {
+          void tempFileRef.current.delete();
+        } catch {
+          // Ignore cleanup errors
+        }
         tempFileRef.current = null;
       }
     }

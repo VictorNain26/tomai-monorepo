@@ -13,7 +13,7 @@ import {
   useAudioRecorder,
   RecordingPresets,
   AudioModule,
-  RecordingStatus,
+  type RecordingStatus,
 } from 'expo-audio';
 import { apiClient } from '@repo/api';
 
@@ -81,9 +81,11 @@ export function useVoiceInput() {
   const stopRecordingRef = useRef<() => Promise<string | null>>(() => Promise.resolve(null));
 
   // expo-audio recorder hook with HIGH_QUALITY preset
+  // Note: RecordingStatus type varies by expo-audio version
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY, (status: RecordingStatus) => {
-    // Auto-stop at max duration
-    if (status.isRecording && status.durationMillis >= MAX_DURATION_MS) {
+    // Auto-stop at max duration - use type assertion for compatibility
+    const statusAny = status as { isRecording?: boolean; durationMillis?: number };
+    if (statusAny.isRecording && (statusAny.durationMillis ?? 0) >= MAX_DURATION_MS) {
       void stopRecordingRef.current();
     }
   });

@@ -200,7 +200,7 @@ export async function triggerManualSync(): Promise<{
 // ============================================================================
 
 import { useEffect, useState, useCallback } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, type AppStateStatus } from 'react-native';
 
 /**
  * Hook to manage background sync and trigger sync on app foreground.
