@@ -15,11 +15,12 @@ packages:
 # =============================================================================
 catalog:
   # React ecosystem - versions exactes pour éviter les problèmes de types
-  # Upgraded to 19.2.3 (stable October 2025) - Activity API, +11% perf
-  react: 19.2.3
-  react-dom: 19.2.3
-  '@types/react': 19.2.3
-  '@types/react-dom': 19.2.3
+  # React 19.1.0 required by Expo SDK 54 (mobile app)
+  # Compatible with Next.js 16 and Vite 7
+  react: 19.1.0
+  react-dom: 19.1.0
+  '@types/react': ~19.1.17
+  '@types/react-dom': ~19.1.5
 
   # TypeScript - version fixe pour cohérence monorepo
   typescript: 5.9.3

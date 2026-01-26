@@ -3,12 +3,16 @@
  *
  * Port du hook web adapté à React Native.
  * Gère les sessions, le streaming SSE, et les attachments.
+ *
+ * Best Practice 2026: Uses react-native-sse for native EventSource support.
+ * @see https://github.com/binaryminds/react-native-sse
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getBaseUrl, apiClient } from '@repo/api';
 import { useUser, type IAppUser } from '@/lib/auth';
+import EventSource from 'react-native-sse';
 
 // ============================================================================
 // TYPES (aligned with backend apps/server/src/routes/api.routes.ts)
@@ -115,38 +119,6 @@ async function fetchHistory(
 }
 
 // ============================================================================
-// SSE STREAMING PARSER (React Native compatible)
-// ============================================================================
-
-/**
- * Parse SSE response - React Native doesn't support ReadableStream,
- * so we use response.text() and parse the complete response.
- * For true streaming on RN, consider using EventSource polyfill.
- */
-async function* parseSSE(response: Response): AsyncIterable<StreamChunk> {
-  // React Native doesn't support response.body streaming
-  // Fall back to reading the entire response as text
-  const text = await response.text();
-
-  // Parse SSE events from complete response
-  const events = text.split('\n\n');
-
-  for (const event of events) {
-    for (const line of event.split('\n')) {
-      if (line.startsWith('data: ')) {
-        const data = line.slice(6).trim();
-        if (data === '[DONE]' || !data) continue;
-        try {
-          yield JSON.parse(data) as StreamChunk;
-        } catch {
-          // Ignore malformed JSON
-        }
-      }
-    }
-  }
-}
-
-// ============================================================================
 // HOOK
 // ============================================================================
 
@@ -169,7 +141,7 @@ export function useChat({
   // Refs for stable values
   const sessionIdRef = useRef<string | null>(initialSessionId ?? null);
   const pendingAttachmentsRef = useRef<ChatFileAttachment[]>([]);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
   const historySyncedRef = useRef<string | null>(null);
 
   // Keep refs in sync
@@ -211,7 +183,14 @@ export function useChat({
     setMessages(historyQuery.data.messages);
   }, [historyQuery.data, currentSessionId]);
 
-  // Send message
+  // Cleanup EventSource on unmount
+  useEffect(() => {
+    return () => {
+      eventSourceRef.current?.close();
+    };
+  }, []);
+
+  // Send message using react-native-sse
   const sendMessage = useCallback(
     async (content: string) => {
       if (!user || !subject) return;
@@ -247,17 +226,18 @@ export function useChat({
       setIsStreaming(true);
       setError(null);
 
-      // Create abort controller
-      abortControllerRef.current = new AbortController();
+      // Close previous EventSource if any
+      eventSourceRef.current?.close();
 
       try {
         const baseUrl = getBaseUrl();
 
-        // SSE streaming requires direct fetch (apiClient doesn't support streaming)
-        const response = await fetch(`${baseUrl}/api/chat/stream`, {
+        // Use react-native-sse for native EventSource support
+        const es = new EventSource(`${baseUrl}/api/chat/stream`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: abortControllerRef.current.signal as RequestInit['signal'],
           body: JSON.stringify({
             content: trimmedContent || '📎 Document',
             data: {
@@ -268,41 +248,75 @@ export function useChat({
               fileIds: attachmentsToSend.map((a) => a.fileId),
             },
           }),
+          // Disable auto-reconnect for one-shot streaming
+          pollingInterval: 0,
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+        eventSourceRef.current = es;
 
-        // Stream response
-        for await (const chunk of parseSSE(response)) {
-          if (chunk.type === 'content' && chunk.content) {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId ? { ...m, content: chunk.content! } : m
-              )
-            );
-          } else if (chunk.type === 'done') {
-            // Update session ID if new session was created
-            if (
-              chunk.metadata?.sessionId &&
-              chunk.metadata.sessionId !== sessionIdRef.current
-            ) {
-              sessionIdRef.current = chunk.metadata.sessionId;
-              queryClient.setQueryData(
-                queryKeys.session(subject),
-                chunk.metadata.sessionId
-              );
-            }
-          } else if (chunk.type === 'error') {
-            setError(chunk.error?.message ?? 'Erreur de streaming');
+        es.addEventListener('message', (event) => {
+          if (!event.data) return;
+
+          if (event.data === '[DONE]') {
+            es.close();
+            setIsLoading(false);
+            setIsStreaming(false);
+            eventSourceRef.current = null;
+            return;
           }
-        }
+
+          try {
+            const chunk = JSON.parse(event.data) as StreamChunk;
+
+            if (chunk.type === 'content' && chunk.content) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, content: chunk.content! } : m
+                )
+              );
+            } else if (chunk.type === 'done') {
+              // Update session ID if new session was created
+              if (
+                chunk.metadata?.sessionId &&
+                chunk.metadata.sessionId !== sessionIdRef.current
+              ) {
+                sessionIdRef.current = chunk.metadata.sessionId;
+                queryClient.setQueryData(
+                  queryKeys.session(subject),
+                  chunk.metadata.sessionId
+                );
+              }
+            } else if (chunk.type === 'error') {
+              setError(chunk.error?.message ?? 'Erreur de streaming');
+            }
+          } catch {
+            // Ignore malformed JSON
+          }
+        });
+
+        es.addEventListener('error', (event) => {
+          console.error('[SSE] Error:', event);
+          es.close();
+          eventSourceRef.current = null;
+          setIsLoading(false);
+          setIsStreaming(false);
+
+          // Remove empty assistant message on error
+          setMessages((prev) =>
+            prev.filter(
+              (m) => !(m.id === assistantId && m.content.length === 0)
+            )
+          );
+
+          setError('Erreur de connexion au serveur');
+        });
+
+        es.addEventListener('close', () => {
+          setIsLoading(false);
+          setIsStreaming(false);
+          eventSourceRef.current = null;
+        });
       } catch (err) {
-        if ((err as Error).name === 'AbortError') {
-          // User cancelled
-          return;
-        }
         const message =
           err instanceof Error ? err.message : 'Erreur de connexion';
         setError(message);
@@ -313,10 +327,9 @@ export function useChat({
             (m) => !(m.id === assistantId && m.content.length === 0)
           )
         );
-      } finally {
+
         setIsLoading(false);
         setIsStreaming(false);
-        abortControllerRef.current = null;
       }
     },
     [user, subject, queryClient]
@@ -324,7 +337,10 @@ export function useChat({
 
   // Stop streaming
   const stop = useCallback(() => {
-    abortControllerRef.current?.abort();
+    eventSourceRef.current?.close();
+    eventSourceRef.current = null;
+    setIsStreaming(false);
+    setIsLoading(false);
   }, []);
 
   // Attachment management

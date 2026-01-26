@@ -2,14 +2,14 @@
  * useTextToSpeech Hook
  *
  * Text-to-Speech using backend ElevenLabs service.
- * Uses expo-av for audio playback.
+ * Uses expo-audio (SDK 54+) for audio playback.
  *
- * Best Practice 2026: Uses expo-av which is fully compatible with
- * Expo Go and production builds.
+ * Best Practice 2026: Uses expo-audio which replaces deprecated expo-av.
+ * @see https://docs.expo.dev/versions/latest/sdk/audio/
  */
 
-import { useState, useCallback, useRef } from 'react';
-import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useAudioPlayer, useAudioPlayerStatus, AudioModule } from 'expo-audio';
 import { Paths, File } from 'expo-file-system';
 import { apiClient } from '@repo/api';
 
@@ -64,25 +64,51 @@ export function useTextToSpeech() {
     error: null,
   });
 
-  const soundRef = useRef<Audio.Sound | null>(null);
   const currentTextRef = useRef<string | null>(null);
+  const tempFileRef = useRef<File | null>(null);
+
+  // expo-audio player hook (source will be set dynamically)
+  const player = useAudioPlayer(null);
+  const status = useAudioPlayerStatus(player);
+
+  // Sync isSpeaking state with player status
+  useEffect(() => {
+    if (status.playing) {
+      setState((prev) => ({ ...prev, isSpeaking: true }));
+    } else if (status.didJustFinish) {
+      // Playback finished - cleanup
+      setState((prev) => ({ ...prev, isSpeaking: false }));
+      currentTextRef.current = null;
+      // Clean up temp file
+      if (tempFileRef.current) {
+        tempFileRef.current.delete().catch(() => {});
+        tempFileRef.current = null;
+      }
+    }
+  }, [status.playing, status.didJustFinish]);
 
   /**
    * Stop any current playback
    */
   const stop = useCallback(async () => {
-    if (soundRef.current) {
-      try {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-      } catch {
-        // Ignore errors during cleanup
-      }
-      soundRef.current = null;
+    try {
+      player.pause();
+    } catch {
+      // Ignore errors during cleanup
     }
     currentTextRef.current = null;
     setState((prev) => ({ ...prev, isSpeaking: false }));
-  }, []);
+
+    // Clean up temp file
+    if (tempFileRef.current) {
+      try {
+        await tempFileRef.current.delete();
+      } catch {
+        // Ignore
+      }
+      tempFileRef.current = null;
+    }
+  }, [player]);
 
   /**
    * Speak the given text
@@ -116,13 +142,9 @@ export function useTextToSpeech() {
         currentTextRef.current = text;
 
         // Configure audio mode for playback
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-          playsInSilentModeIOS: true,
-          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
+        await AudioModule.setAudioModeAsync({
+          allowsRecording: false,
+          playsInSilentMode: true,
         });
 
         // Call backend TTS API
@@ -144,9 +166,10 @@ export function useTextToSpeech() {
           throw new Error(response.error ?? 'Échec de la synthèse vocale');
         }
 
-        // Save base64 audio to temp file (expo-av requires file URI)
+        // Save base64 audio to temp file (expo-audio requires file URI)
         const tempFileName = `tts_${Date.now()}.mp3`;
         const tempFile = new File(Paths.cache, tempFileName);
+        tempFileRef.current = tempFile;
 
         // Decode base64 and write to file
         const binaryString = atob(response.audio.data);
@@ -161,24 +184,16 @@ export function useTextToSpeech() {
         // Check if we were stopped during file write
         if (currentTextRef.current !== text) {
           await tempFile.delete();
+          tempFileRef.current = null;
           return false;
         }
 
-        // Create and play sound
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: tempUri },
-          { shouldPlay: true },
-          (status) => {
-            if (status.isLoaded && status.didJustFinish) {
-              // Playback finished
-              stop();
-              // Clean up temp file
-              tempFile.delete();
-            }
-          }
-        );
+        // Load and play audio using expo-audio
+        // expo-audio: replace source and play
+        player.replace({ uri: tempUri });
+        player.seekTo(0); // Reset position (expo-audio best practice)
+        player.play();
 
-        soundRef.current = sound;
         setState({
           isSpeaking: true,
           isLoading: false,
@@ -196,7 +211,7 @@ export function useTextToSpeech() {
         return false;
       }
     },
-    [stop]
+    [stop, player]
   );
 
   /**

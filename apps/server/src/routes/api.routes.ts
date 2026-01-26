@@ -667,4 +667,122 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
         };
       }
     })
+
+    // PUSH TOKENS - Save Expo push token for notifications
+    .post('/users/push-token', async ({ body, request: { headers }, set }) => {
+      const authContext = await handleAuthWithCookies(headers, set);
+      if (!authContext.success) {
+        return authContext.error;
+      }
+
+      try {
+        const { token, platform, deviceName } = body as {
+          token: string;
+          platform: 'ios' | 'android';
+          deviceName?: string;
+        };
+
+        if (!token || !platform) {
+          set.status = 400;
+          return { error: 'Token and platform are required' };
+        }
+
+        // Validate Expo push token format
+        if (!token.startsWith('ExponentPushToken[') && !token.startsWith('ExpoPushToken[')) {
+          set.status = 400;
+          return { error: 'Invalid Expo push token format' };
+        }
+
+        // Import schema and upsert token
+        const { devicePushTokens } = await import('../db/schema');
+
+        // Upsert: update if token exists, insert if new
+        await db
+          .insert(devicePushTokens)
+          .values({
+            userId: authContext.user.id,
+            token,
+            platform,
+            deviceName: deviceName ?? null,
+            isActive: true,
+            lastUsedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: devicePushTokens.token,
+            set: {
+              userId: authContext.user.id,
+              platform,
+              deviceName: deviceName ?? null,
+              isActive: true,
+              lastUsedAt: new Date(),
+              updatedAt: new Date(),
+            },
+          });
+
+        logger.info('Push token saved', {
+          operation: 'api:users:push-token',
+          userId: authContext.user.id,
+          platform,
+          tokenPrefix: token.slice(0, 30),
+          severity: 'low' as const
+        });
+
+        return { success: true };
+      } catch (_error) {
+        logger.error('Push token save failed', {
+          operation: 'api:users:push-token',
+          userId: authContext.user.id,
+          _error: _error instanceof Error ? _error.message : String(_error),
+          severity: 'medium' as const
+        });
+        set.status = 500;
+        return { error: 'Failed to save push token' };
+      }
+    })
+
+    // PUSH TOKENS - Delete push token (logout/unregister)
+    .delete('/users/push-token', async ({ body, request: { headers }, set }) => {
+      const authContext = await handleAuthWithCookies(headers, set);
+      if (!authContext.success) {
+        return authContext.error;
+      }
+
+      try {
+        const { token } = body as { token: string };
+
+        if (!token) {
+          set.status = 400;
+          return { error: 'Token is required' };
+        }
+
+        const { devicePushTokens } = await import('../db/schema');
+        const { eq, and } = await import('drizzle-orm');
+
+        await db
+          .delete(devicePushTokens)
+          .where(
+            and(
+              eq(devicePushTokens.userId, authContext.user.id),
+              eq(devicePushTokens.token, token)
+            )
+          );
+
+        logger.info('Push token deleted', {
+          operation: 'api:users:push-token:delete',
+          userId: authContext.user.id,
+          severity: 'low' as const
+        });
+
+        return { success: true };
+      } catch (_error) {
+        logger.error('Push token delete failed', {
+          operation: 'api:users:push-token:delete',
+          userId: authContext.user.id,
+          _error: _error instanceof Error ? _error.message : String(_error),
+          severity: 'medium' as const
+        });
+        set.status = 500;
+        return { error: 'Failed to delete push token' };
+      }
+    })
   );

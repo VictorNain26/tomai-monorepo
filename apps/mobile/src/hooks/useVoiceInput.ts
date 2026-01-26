@@ -2,14 +2,19 @@
  * useVoiceInput Hook
  *
  * Records audio and transcribes it using the backend Gladia service.
- * Uses expo-av for recording and the existing presigned upload flow.
+ * Uses expo-audio (SDK 54+) for recording.
  *
- * Best Practice 2026: Uses expo-av which is fully compatible with
- * Expo Go and production builds.
+ * Best Practice 2026: Uses expo-audio which replaces deprecated expo-av.
+ * @see https://docs.expo.dev/versions/latest/sdk/audio/
  */
 
-import { useState, useCallback, useRef } from 'react';
-import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import {
+  useAudioRecorder,
+  RecordingPresets,
+  AudioModule,
+  RecordingStatus,
+} from 'expo-audio';
 import { apiClient } from '@repo/api';
 
 // ============================================================================
@@ -57,30 +62,6 @@ interface ConfirmUploadResponse {
 // CONSTANTS
 // ============================================================================
 
-const RECORDING_OPTIONS: Audio.RecordingOptions = {
-  isMeteringEnabled: true,
-  android: {
-    extension: '.m4a',
-    outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-    audioEncoder: Audio.AndroidAudioEncoder.AAC,
-    sampleRate: 44100,
-    numberOfChannels: 1,
-    bitRate: 128000,
-  },
-  ios: {
-    extension: '.m4a',
-    outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-    audioQuality: Audio.IOSAudioQuality.HIGH,
-    sampleRate: 44100,
-    numberOfChannels: 1,
-    bitRate: 128000,
-  },
-  web: {
-    mimeType: 'audio/webm',
-    bitsPerSecond: 128000,
-  },
-};
-
 const MAX_DURATION_MS = 120000; // 2 minutes max
 
 // ============================================================================
@@ -95,18 +76,33 @@ export function useVoiceInput() {
     error: null,
   });
 
-  const recordingRef = useRef<Audio.Recording | null>(null);
   const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
   const stopRecordingRef = useRef<() => Promise<string | null>>(() => Promise.resolve(null));
+
+  // expo-audio recorder hook with HIGH_QUALITY preset
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY, (status: RecordingStatus) => {
+    // Auto-stop at max duration
+    if (status.isRecording && status.durationMillis >= MAX_DURATION_MS) {
+      void stopRecordingRef.current();
+    }
+  });
+
+  // Sync isRecording state with recorder
+  useEffect(() => {
+    setState((prev) => ({
+      ...prev,
+      isRecording: recorder.isRecording,
+    }));
+  }, [recorder.isRecording]);
 
   /**
    * Request audio permissions
    */
   const requestPermissions = useCallback(async (): Promise<boolean> => {
     try {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
+      const status = await AudioModule.requestRecordingPermissionsAsync();
+      if (!status.granted) {
         setState((prev) => ({
           ...prev,
           error: 'Permission microphone refusée',
@@ -132,33 +128,22 @@ export function useVoiceInput() {
       const hasPermission = await requestPermissions();
       if (!hasPermission) return false;
 
-      // Configure audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-        playsInSilentModeIOS: true,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
+      // Configure audio mode for recording
+      await AudioModule.setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
       });
 
-      // Create and start recording
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(RECORDING_OPTIONS);
-      await recording.startAsync();
+      // Prepare and start recording
+      await recorder.prepareToRecordAsync();
+      recorder.record();
 
-      recordingRef.current = recording;
       startTimeRef.current = Date.now();
 
       // Start duration timer
       durationIntervalRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
         setState((prev) => ({ ...prev, duration: elapsed }));
-
-        // Auto-stop at max duration
-        if (elapsed * 1000 >= MAX_DURATION_MS) {
-          void stopRecordingRef.current();
-        }
       }, 500);
 
       setState({
@@ -177,7 +162,7 @@ export function useVoiceInput() {
       }));
       return false;
     }
-  }, [requestPermissions]);
+  }, [requestPermissions, recorder]);
 
   /**
    * Stop recording and get transcription
@@ -189,8 +174,7 @@ export function useVoiceInput() {
       durationIntervalRef.current = null;
     }
 
-    const recording = recordingRef.current;
-    if (!recording) {
+    if (!recorder.isRecording) {
       setState((prev) => ({ ...prev, isRecording: false }));
       return null;
     }
@@ -202,23 +186,18 @@ export function useVoiceInput() {
         isProcessing: true,
       }));
 
-      // Stop recording
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      recordingRef.current = null;
+      // Stop recording - uri available at recorder.uri
+      await recorder.stop();
+      const uri = recorder.uri;
 
       if (!uri) {
         throw new Error('Aucun fichier audio enregistré');
       }
 
       // Reset audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        interruptionModeIOS: InterruptionModeIOS.MixWithOthers,
-        playsInSilentModeIOS: true,
-        interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
+      await AudioModule.setAudioModeAsync({
+        allowsRecording: false,
+        playsInSilentMode: true,
       });
 
       // Upload and transcribe
@@ -240,7 +219,7 @@ export function useVoiceInput() {
       }));
       return null;
     }
-  }, []);
+  }, [recorder]);
 
   // Keep ref updated for auto-stop timer
   stopRecordingRef.current = stopRecording;
@@ -255,24 +234,18 @@ export function useVoiceInput() {
       durationIntervalRef.current = null;
     }
 
-    const recording = recordingRef.current;
-    if (recording) {
+    if (recorder.isRecording) {
       try {
-        await recording.stopAndUnloadAsync();
+        await recorder.stop();
       } catch {
         // Ignore errors
       }
-      recordingRef.current = null;
     }
 
     // Reset audio mode
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      interruptionModeIOS: InterruptionModeIOS.MixWithOthers,
-      playsInSilentModeIOS: true,
-      interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
+    await AudioModule.setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
     });
 
     setState({
@@ -281,7 +254,7 @@ export function useVoiceInput() {
       duration: 0,
       error: null,
     });
-  }, []);
+  }, [recorder]);
 
   /**
    * Clear error

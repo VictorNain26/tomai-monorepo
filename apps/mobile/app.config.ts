@@ -38,8 +38,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: 'fr.tomia.mobile',
     infoPlist: {
-      // Background modes for future audio features (TTS)
-      UIBackgroundModes: ['audio', 'remote-notification'],
+      // Background modes for audio, notifications, and background tasks
+      UIBackgroundModes: ['audio', 'remote-notification', 'processing', 'fetch'],
       // Privacy descriptions (required by App Store)
       NSCameraUsageDescription:
         "TomIA utilise la caméra pour scanner des documents et prendre des photos de devoirs.",
@@ -102,10 +102,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     [
-      'expo-av',
+      'expo-audio',
       {
         microphonePermission:
           'TomIA utilise le microphone pour la dictée vocale.',
+      },
+    ],
+    [
+      'expo-notifications',
+      {
+        icon: './assets/notification-icon.png',
+        color: '#4f46e5',
       },
     ],
     [
