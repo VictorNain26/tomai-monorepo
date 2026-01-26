@@ -35,8 +35,7 @@
   "packageManager": "pnpm@10.12.1",
   "pnpm": {
     "overrides": {
-      "esbuild": ">=0.25.0",
-      "react-native-reanimated": "~3.16.0"
+      "esbuild": ">=0.25.0"
     }
   }
 }
