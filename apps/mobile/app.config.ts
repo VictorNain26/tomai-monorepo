@@ -157,7 +157,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   experiments: {
     typedRoutes: true,
     // Resolves react/react-dom to single version in monorepo
-    // Prevents mismatches between native modules and JS modules
+    // Prevents mismatches between native modules and JS modules (SDK 54+)
     autolinkingModuleResolution: true,
   },
 
