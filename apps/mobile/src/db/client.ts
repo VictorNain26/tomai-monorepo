@@ -2,6 +2,7 @@
  * SQLite Database Client
  *
  * Initializes expo-sqlite with Drizzle ORM for offline-first support.
+ * Uses LAZY INITIALIZATION to avoid crash before React Native bridge is ready.
  *
  * Best Practice 2026: expo-sqlite + Drizzle ORM with WAL mode and proper migrations.
  * @see https://docs.expo.dev/versions/latest/sdk/sqlite/
@@ -9,7 +10,7 @@
  */
 
 import { drizzle } from 'drizzle-orm/expo-sqlite';
-import { openDatabaseSync } from 'expo-sqlite';
+import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 import * as schema from './schema';
 
 // ============================================================================
@@ -20,20 +21,54 @@ const DATABASE_NAME = 'tomia.db';
 const CURRENT_DB_VERSION = 1;
 
 // ============================================================================
-// DATABASE INSTANCE
+// LAZY DATABASE INSTANCE
 // ============================================================================
 
 /**
- * Open SQLite database with change listener enabled for live queries.
+ * Lazy-initialized database instances.
+ * CRITICAL: Do NOT initialize at module level - causes crash before RN bridge is ready.
  */
-const expo = openDatabaseSync(DATABASE_NAME, {
-  enableChangeListener: true,
-});
+let _expo: SQLiteDatabase | null = null;
+let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
 /**
- * Drizzle ORM client with schema.
+ * Get the raw expo-sqlite database instance.
+ * Lazy-initializes on first call.
  */
-export const db = drizzle(expo, { schema });
+function getExpo(): SQLiteDatabase {
+  if (!_expo) {
+    _expo = openDatabaseSync(DATABASE_NAME, {
+      enableChangeListener: true,
+    });
+  }
+  return _expo;
+}
+
+/**
+ * Get the Drizzle ORM client.
+ * Lazy-initializes on first call.
+ */
+export function getDatabase() {
+  if (!_db) {
+    _db = drizzle(getExpo(), { schema });
+  }
+  return _db;
+}
+
+/**
+ * @deprecated Use getDatabase() instead. Kept for backward compatibility.
+ * Will throw if accessed before initializeDatabase() is called.
+ */
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  get(_, prop) {
+    const database = getDatabase();
+    const value = database[prop as keyof typeof database];
+    if (typeof value === 'function') {
+      return value.bind(database);
+    }
+    return value;
+  },
+});
 
 // ============================================================================
 // MIGRATIONS
@@ -43,6 +78,7 @@ export const db = drizzle(expo, { schema });
  * Get current database version using PRAGMA user_version.
  */
 function getDatabaseVersion(): number {
+  const expo = getExpo();
   const result = expo.getFirstSync<{ user_version: number }>('PRAGMA user_version');
   return result?.user_version ?? 0;
 }
@@ -51,6 +87,7 @@ function getDatabaseVersion(): number {
  * Set database version using PRAGMA user_version.
  */
 function setDatabaseVersion(version: number): void {
+  const expo = getExpo();
   expo.execSync(`PRAGMA user_version = ${version}`);
 }
 
@@ -66,6 +103,8 @@ async function runMigrations(): Promise<void> {
     console.log('[DB] Database is up to date');
     return;
   }
+
+  const expo = getExpo();
 
   // Migration from version 0 to 1 (initial schema)
   if (currentVersion < 1) {
@@ -196,6 +235,7 @@ export async function initializeDatabase(): Promise<void> {
 export async function clearDatabase(): Promise<void> {
   console.log('[DB] Clearing all data...');
 
+  const expo = getExpo();
   expo.execSync(`
     DELETE FROM chat_messages;
     DELETE FROM chat_sessions;
@@ -224,6 +264,7 @@ export function getDatabaseStats(): Record<string, number> {
   ];
 
   const stats: Record<string, number> = {};
+  const expo = getExpo();
 
   for (const table of tables) {
     const result = expo.getFirstSync<{ count: number }>(`SELECT COUNT(*) as count FROM ${table}`);
@@ -239,6 +280,7 @@ export function getDatabaseStats(): Record<string, number> {
  * Check database integrity.
  */
 export function checkDatabaseIntegrity(): boolean {
+  const expo = getExpo();
   const result = expo.getFirstSync<{ integrity_check: string }>('PRAGMA integrity_check');
   const isOk = result?.integrity_check === 'ok';
 

@@ -17,15 +17,28 @@ import NetInfo from '@react-native-community/netinfo';
 // ============================================================================
 
 /**
- * Configure online manager to use NetInfo for network status.
- * TanStack Query doesn't auto-detect network changes on mobile.
+ * Track if NetInfo listener has been initialized.
+ * CRITICAL: Do NOT initialize at module level - native module may not be ready.
  */
-onlineManager.setEventListener((setOnline) => {
-  return NetInfo.addEventListener((state) => {
-    const isOnline = Boolean(state.isConnected && state.isInternetReachable !== false);
-    setOnline(isOnline);
+let _netInfoInitialized = false;
+
+/**
+ * Initialize the online manager with NetInfo.
+ * Call this after React Native bridge is ready (e.g., in useEffect).
+ */
+export function initializeNetInfo(): void {
+  if (_netInfoInitialized) return;
+
+  onlineManager.setEventListener((setOnline) => {
+    return NetInfo.addEventListener((state) => {
+      const isOnline = Boolean(state.isConnected && state.isInternetReachable !== false);
+      setOnline(isOnline);
+    });
   });
-});
+
+  _netInfoInitialized = true;
+  console.log('[QueryClient] NetInfo initialized');
+}
 
 // ============================================================================
 // QUERY CLIENT

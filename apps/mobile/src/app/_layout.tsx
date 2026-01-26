@@ -20,7 +20,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
 
-import { queryClient, persistOptions } from '@/lib/query-client';
+import { queryClient, persistOptions, initializeNetInfo } from '@/lib/query-client';
 import { initializeAppApi } from '@/lib/api';
 import { initializeDatabase } from '@/db';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -53,6 +53,9 @@ export default function RootLayout() {
       try {
         // Initialize API client
         initializeAppApi();
+
+        // Initialize NetInfo for online/offline detection
+        initializeNetInfo();
 
         // Initialize SQLite database
         await initializeDatabase();
