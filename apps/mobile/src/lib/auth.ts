@@ -4,12 +4,18 @@
  * Uses @better-auth/expo with SecureStore for secure token storage.
  * This replaces the web-based auth from @repo/api for mobile.
  *
+ * Quick Switch 2026: Uses Better Auth Admin plugin impersonation
+ * - Parent can impersonate their children (server validates relationship)
+ * - useSession() automatically updates when switching
+ * - stopImpersonating() returns to parent session
+ *
  * @see https://www.better-auth.com/docs/integrations/expo
+ * @see https://www.better-auth.com/docs/plugins/admin
  */
 
 import { createAuthClient } from 'better-auth/react';
 import { expoClient } from '@better-auth/expo/client';
-import { usernameClient } from 'better-auth/client/plugins';
+import { usernameClient, adminClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
 import * as Constants from 'expo-constants';
 import { apiClient } from '@repo/api';
@@ -63,6 +69,11 @@ export interface IAppUser {
 /**
  * Better Auth client configured for Expo.
  * Uses SecureStore for token persistence and deep links for OAuth.
+ *
+ * Plugins:
+ * - expoClient: Secure storage + deep links for mobile
+ * - usernameClient: Username login for students
+ * - adminClient: Quick Switch impersonation (parent → child)
  */
 export const authClient = createAuthClient({
   baseURL: API_URL,
@@ -73,6 +84,7 @@ export const authClient = createAuthClient({
       storage: SecureStore,
     }),
     usernameClient(), // Username login for students
+    adminClient(),    // Quick Switch: impersonation for parents
   ],
 });
 
@@ -83,6 +95,8 @@ export const authClient = createAuthClient({
 /**
  * Hook pour accéder à la session Better Auth.
  * Retourne { data, isPending, error }.
+ *
+ * Quick Switch: La session inclut `impersonatedBy` si en mode impersonation.
  */
 export function useSession() {
   return authClient.useSession();
@@ -115,6 +129,16 @@ export function useIsAuthenticated(): boolean {
 export function useIsAuthLoading(): boolean {
   const { isPending } = useSession();
   return isPending;
+}
+
+/**
+ * Hook pour vérifier si on est en mode impersonation (Quick Switch actif).
+ * Retourne l'ID du parent si on est en impersonation, null sinon.
+ */
+export function useImpersonatedBy(): string | null {
+  const { data: session } = useSession();
+  // Better Auth admin plugin adds impersonatedBy to session
+  return (session?.session as { impersonatedBy?: string } | undefined)?.impersonatedBy ?? null;
 }
 
 // ============================================================================
@@ -188,132 +212,80 @@ export async function requestPasswordReset(email: string, redirectTo?: string) {
 /**
  * Réinitialisation du mot de passe avec token.
  */
-export async function resetPassword(token: string, newPassword: string) {
+export async function resetPassword(_token: string, newPassword: string) {
   return authClient.resetPassword({
     newPassword,
   });
 }
 
 // ============================================================================
-// QUICK SWITCH (Parent → Child session swap)
-// Architecture: Backend gère les sessions, mobile stocke uniquement le restore token
-// Ref: https://www.better-auth.com/docs/integrations/expo
+// QUICK SWITCH (Parent ↔ Child session swap)
+// Best Practice 2026: Better Auth Admin plugin impersonation
+// - Server validates parent-child relationship via impersonationAllowed hook
+// - Client uses built-in impersonateUser/stopImpersonating
+// - useSession() auto-updates when switching
 // ============================================================================
 
-/** Clé pour stocker le token de restauration parent (notre propre clé, pas Better Auth) */
-const PARENT_RESTORE_TOKEN_KEY = 'tomia_parent_restore_token';
-
 /**
- * Clé de session Better Auth.
- * Format: {storagePrefix}.session_token (voir config expoClient)
- * Better Auth stocke un JSON: {"value": "token", "expires": "ISO date"}
- */
-const BETTER_AUTH_SESSION_KEY = 'tomia.session_token';
-
-/**
- * Crée le format JSON attendu par Better Auth pour stocker une session.
- */
-function createBetterAuthSessionValue(token: string, expiresAt: string): string {
-  return JSON.stringify({
-    value: token,
-    expires: expiresAt,
-  });
-}
-
-/**
- * Vérifie si un restore token parent est disponible.
- * Indique que la session actuelle a été lancée depuis un compte parent.
+ * Vérifie si un restore parent est possible (en mode impersonation).
+ * Utilise le flag impersonatedBy de Better Auth au lieu d'un token custom.
  */
 export async function hasParentSessionBackup(): Promise<boolean> {
   try {
-    const token = await SecureStore.getItemAsync(PARENT_RESTORE_TOKEN_KEY);
-    return !!token;
+    const session = await authClient.getSession();
+    // Check if session has impersonatedBy field (means we're impersonating)
+    return !!(session?.data?.session as { impersonatedBy?: string } | undefined)?.impersonatedBy;
   } catch {
     return false;
   }
 }
 
 /**
- * Restaure la session parent en utilisant le restore token.
- * Appelle le backend pour créer une nouvelle session parent valide.
+ * Restaure la session parent (arrête l'impersonation).
+ * Better Auth gère automatiquement le retour à la session parent originale.
  */
 export async function restoreParentSession(): Promise<boolean> {
   try {
-    const restoreToken = await SecureStore.getItemAsync(PARENT_RESTORE_TOKEN_KEY);
-    if (!restoreToken) {
-      return false;
-    }
-
-    // Call backend to create new parent session
-    const response = await apiClient.post<{
-      success: boolean;
-      sessionToken?: string;
-      expiresAt?: string;
-      error?: string;
-    }>('/api/parent/restore-session', { restoreToken });
-
-    if (!response.success || !response.sessionToken || !response.expiresAt) {
-      return false;
-    }
-
-    // Set parent session in Better Auth storage format
-    const sessionValue = createBetterAuthSessionValue(
-      response.sessionToken,
-      response.expiresAt
-    );
-    await SecureStore.setItemAsync(BETTER_AUTH_SESSION_KEY, sessionValue);
-
-    // Clear restore token
-    await SecureStore.deleteItemAsync(PARENT_RESTORE_TOKEN_KEY);
-
-    return true;
+    const result = await authClient.admin.stopImpersonating();
+    return !result.error;
   } catch {
     return false;
   }
 }
 
 /**
- * Nettoie le restore token parent (si l'enfant se déconnecte).
+ * Nettoie la session d'impersonation (appelé si l'enfant se déconnecte).
+ * Avec Better Auth, signOut suffit car il n'y a pas de token custom à nettoyer.
  */
 export async function clearParentSessionBackup(): Promise<void> {
-  try {
-    await SecureStore.deleteItemAsync(PARENT_RESTORE_TOKEN_KEY);
-  } catch {
-    // Ignore
-  }
+  // No-op with Better Auth admin plugin
+  // signOut() handles everything
 }
 
 /**
  * Lance une session enfant depuis le compte parent (Quick Switch).
- * Le backend crée la session enfant ET un token pour restaurer le parent.
+ *
+ * Better Auth Admin Plugin:
+ * - Le serveur vérifie que le parent peut impersonner cet enfant spécifique
+ * - La session parent est préservée automatiquement
+ * - useSession() retourne l'enfant après impersonation
+ * - stopImpersonating() restaure la session parent
  */
 export async function launchChildSession(childId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
   try {
-    // Call backend to create child session and get parent restore token
-    const response = await apiClient.post<{
-      success: boolean;
-      childSessionToken?: string;
-      childSessionExpiresAt?: string;
-      parentRestoreToken?: string;
-      error?: string;
-    }>(`/api/parent/children/${childId}/launch-session`, {});
+    const result = await authClient.admin.impersonateUser({
+      userId: childId,
+    });
 
-    if (!response.success || !response.childSessionToken || !response.parentRestoreToken || !response.childSessionExpiresAt) {
-      return { success: false, error: response.error ?? 'Erreur de création de session' };
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error.message ?? 'Impossible de lancer la session enfant',
+      };
     }
-
-    // 1. Store parent restore token (our own key, simple string)
-    await SecureStore.setItemAsync(PARENT_RESTORE_TOKEN_KEY, response.parentRestoreToken);
-
-    // 2. Set child session in Better Auth storage format
-    const sessionValue = createBetterAuthSessionValue(
-      response.childSessionToken,
-      response.childSessionExpiresAt
-    );
-    await SecureStore.setItemAsync(BETTER_AUTH_SESSION_KEY, sessionValue);
 
     return { success: true };
   } catch (error) {

@@ -90,7 +90,7 @@ export const user = pgTable('user', {
 }));
 
 /**
- * Table session - Better Auth standard
+ * Table session - Better Auth standard + Admin plugin impersonation
  */
 export const session = pgTable('session', {
   id: varchar('id', { length: 255 }).primaryKey(),
@@ -101,6 +101,8 @@ export const session = pgTable('session', {
   userAgent: text('user_agent'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  // Better Auth Admin Plugin: impersonation tracking
+  impersonatedBy: varchar('impersonated_by', { length: 255 }),
 }, (table) => ({
   userIdFk: foreignKey({
     columns: [table.userId],
@@ -108,9 +110,16 @@ export const session = pgTable('session', {
     name: 'session_user_id_fkey'
   }).onDelete('cascade'),
 
+  impersonatedByFk: foreignKey({
+    columns: [table.impersonatedBy],
+    foreignColumns: [user.id],
+    name: 'session_impersonated_by_fkey'
+  }).onDelete('cascade'),
+
   tokenIdx: index('idx_session_token').on(table.token),
   userIdIdx: index('idx_session_user_id').on(table.userId),
   expiresAtIdx: index('idx_session_expires_at').on(table.expiresAt),
+  impersonatedByIdx: index('idx_session_impersonated_by').on(table.impersonatedBy),
 }));
 
 /**
