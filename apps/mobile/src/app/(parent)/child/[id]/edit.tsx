@@ -37,6 +37,7 @@ import {
   type EducationLevelType,
   type Lv2Option,
 } from '@/constants/levels';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // COMPONENT
@@ -159,7 +160,7 @@ export default function EditChildScreen() {
         <ScrollView className="flex-1 px-4 py-6">
           {/* Child Info */}
           <View className="mb-6 items-center">
-            <View className="mb-3 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <View className="mb-3 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
               <Text className="text-2xl">
                 {fullName.charAt(0).toUpperCase()}
               </Text>
@@ -193,9 +194,8 @@ export default function EditChildScreen() {
             <TouchableOpacity
               onPress={() => isLv2Eligible && setShowLv2Picker(true)}
               disabled={!isLv2Eligible}
-              className={`flex-row items-center justify-between rounded-xl border border-border bg-card px-4 py-4 ${
-                !isLv2Eligible ? 'opacity-50' : ''
-              }`}
+              className="flex-row items-center justify-between rounded-xl border border-border bg-card px-4 py-4"
+              style={!isLv2Eligible ? { opacity: 0.5 } : undefined}
             >
               <View className="flex-row items-center gap-3">
                 <Globe color="hsl(222.2, 47.4%, 11.2%)" size={20} />
@@ -215,7 +215,7 @@ export default function EditChildScreen() {
           <Button
             onPress={handleSave}
             disabled={!hasChanges || isUpdating}
-            className={!hasChanges ? 'opacity-50' : ''}
+            style={!hasChanges ? { opacity: 0.5 } : undefined}
           >
             <Text className="font-semibold text-primary-foreground">
               {isUpdating ? 'Enregistrement...' : 'Enregistrer les modifications'}
@@ -231,7 +231,7 @@ export default function EditChildScreen() {
         transparent
         onRequestClose={() => setShowLevelPicker(false)}
       >
-        <View className="flex-1 justify-end bg-black/50">
+        <View className="flex-1 justify-end" style={{ backgroundColor: bgColors.black[50] }}>
           <View className="max-h-[70%] rounded-t-3xl bg-card">
             <View className="flex-row items-center justify-between border-b border-border p-4">
               <Text className="font-semibold">Niveau scolaire</Text>
@@ -272,7 +272,7 @@ export default function EditChildScreen() {
         transparent
         onRequestClose={() => setShowLv2Picker(false)}
       >
-        <View className="flex-1 justify-end bg-black/50">
+        <View className="flex-1 justify-end" style={{ backgroundColor: bgColors.black[50] }}>
           <View className="rounded-t-3xl bg-card">
             <View className="flex-row items-center justify-between border-b border-border p-4">
               <Text className="font-semibold">Langue vivante 2</Text>

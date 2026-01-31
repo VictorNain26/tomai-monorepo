@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -87,8 +88,9 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
             onPress={() => handleCategoryPress(category)}
             disabled={validated || selectedItem === null}
             className={`rounded-lg border p-2 ${
-              selectedItem !== null ? 'border-primary bg-primary/10' : 'border-border bg-muted'
+              selectedItem !== null ? 'border-primary' : 'border-border bg-muted'
             }`}
+            style={selectedItem !== null ? { backgroundColor: bgColors.primary[10] } : undefined}
           >
             <Text className="text-sm font-medium">{category}</Text>
           </TouchableOpacity>
@@ -109,9 +111,10 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
                 assignedCategory !== undefined
                   ? 'border-green-500 bg-green-50'
                   : isSelected
-                    ? 'border-primary bg-primary/10'
+                    ? 'border-primary'
                     : 'border-border bg-card'
               }`}
+              style={assignedCategory === undefined && isSelected ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
               <Text className="flex-1">{item}</Text>
               {assignedCategory !== undefined && (
@@ -181,7 +184,8 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
               <TouchableOpacity
                 key={position}
                 onPress={() => handleRemove(position)}
-                className="flex-row items-center gap-3 rounded-lg border border-primary bg-primary/10 p-3"
+                className="flex-row items-center gap-3 rounded-lg border border-primary p-3"
+                style={{ backgroundColor: bgColors.primary[10] }}
               >
                 <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
                   <Text className="text-xs text-primary-foreground">{position + 1}</Text>

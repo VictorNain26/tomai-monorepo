@@ -12,8 +12,8 @@ const badgeVariants = cva(
         secondary: 'bg-secondary',
         destructive: 'bg-destructive',
         outline: 'border border-border bg-transparent',
-        success: 'bg-green-500',
-        warning: 'bg-amber-500',
+        success: 'bg-success',
+        warning: 'bg-warning',
         // Subject colors - aligned with SUBJECT_COLORS
         french: 'bg-violet-500',
         mathematics: 'bg-blue-500',
@@ -44,8 +44,8 @@ const badgeTextVariants = cva('font-medium', {
       secondary: 'text-secondary-foreground',
       destructive: 'text-destructive-foreground',
       outline: 'text-foreground',
-      success: 'text-white',
-      warning: 'text-white',
+      success: 'text-success-foreground',
+      warning: 'text-warning-foreground',
       // Subject text colors
       french: 'text-white',
       mathematics: 'text-white',

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
-import { View, Pressable } from 'react-native';
+import { View, Pressable, type ViewStyle } from 'react-native';
 import Animated, {
   FadeInUp,
   FadeOutUp,
@@ -7,8 +7,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react-native';
-import { cn } from '@/lib/utils';
 import { Text } from './text';
+import { shadows, bgColors, borderColors } from '@/lib/styles';
 
 type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
 
@@ -36,12 +36,28 @@ export function useToast() {
   return context;
 }
 
-const variantStyles: Record<ToastVariant, string> = {
-  default: 'bg-card border-border',
-  success: 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800',
-  error: 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800',
-  warning: 'bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800',
-  info: 'bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800',
+// Use inline styles to avoid NativeWind navigation context bug
+const variantStyles: Record<ToastVariant, ViewStyle> = {
+  default: {
+    backgroundColor: 'hsl(0, 0%, 100%)',
+    borderColor: 'hsl(214.3, 31.8%, 91.4%)',
+  },
+  success: {
+    backgroundColor: bgColors.success[10],
+    borderColor: borderColors.success[30],
+  },
+  error: {
+    backgroundColor: bgColors.destructive[10],
+    borderColor: borderColors.destructive[30],
+  },
+  warning: {
+    backgroundColor: bgColors.warning[10],
+    borderColor: borderColors.warning[30],
+  },
+  info: {
+    backgroundColor: bgColors.primary[10],
+    borderColor: borderColors.primary[30],
+  },
 };
 
 const variantIcons: Record<ToastVariant, typeof CheckCircle> = {
@@ -52,13 +68,17 @@ const variantIcons: Record<ToastVariant, typeof CheckCircle> = {
   info: Info,
 };
 
+// Icon colors using semantic HSL values from global.css (matching exactly)
 const variantColors: Record<ToastVariant, string> = {
-  default: '#64748B',
-  success: '#22C55E',
-  error: '#EF4444',
-  warning: '#F59E0B',
-  info: '#3B82F6',
+  default: 'hsl(220, 9%, 46%)',   // --color-muted-foreground
+  success: 'hsl(160, 84%, 39%)',  // --color-success
+  error: 'hsl(0, 72%, 51%)',      // --color-destructive
+  warning: 'hsl(32, 95%, 44%)',   // --color-warning
+  info: 'hsl(221, 83%, 53%)',     // --color-primary
 };
+
+// Muted color for close button
+const CLOSE_BUTTON_COLOR = 'hsl(220, 9%, 46%)'; // --color-muted-foreground
 
 interface ToastItemProps {
   toast: Toast;
@@ -75,10 +95,8 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       entering={FadeInUp.duration(200)}
       exiting={FadeOutUp.duration(200)}
       layout={Layout.springify()}
-      className={cn(
-        'mx-4 mb-2 flex-row items-start gap-3 rounded-xl border p-4 shadow-lg',
-        variantStyles[variant]
-      )}
+      className="mx-4 mb-2 flex-row items-start gap-3 rounded-xl border p-4"
+      style={[variantStyles[variant], shadows.lg]}
     >
       <Icon size={20} color={iconColor} />
       <View className="flex-1">
@@ -90,7 +108,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
         )}
       </View>
       <Pressable onPress={onDismiss} hitSlop={8}>
-        <X size={18} color="#94A3B8" />
+        <X size={18} color={CLOSE_BUTTON_COLOR} />
       </Pressable>
     </Animated.View>
   );
@@ -143,8 +161,13 @@ export function ToastProvider({ children }: ToastProviderProps) {
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
       <View
-        className="absolute left-0 right-0 z-50"
-        style={{ top: insets.top + 8 }}
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: insets.top + 8,
+          zIndex: 50,
+        }}
         pointerEvents="box-none"
       >
         {toasts.map((t) => (

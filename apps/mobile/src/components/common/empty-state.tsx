@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { useIconColors } from '@/hooks/useIconColors';
 
 type EmptyStatePreset = 'no-chats' | 'no-decks' | 'pronote-disconnected' | 'no-results' | 'custom';
 
@@ -66,6 +67,7 @@ export function EmptyState({
   style,
 }: EmptyStateProps) {
   const config = preset !== 'custom' ? presets[preset] : null;
+  const iconColors = useIconColors();
 
   const Icon = CustomIcon ?? config?.icon ?? MessageSquare;
   const title = customTitle ?? config?.title ?? 'Rien à afficher';
@@ -79,7 +81,7 @@ export function EmptyState({
     >
       <View className="items-center max-w-xs">
         <View className="h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-          <Icon size={32} color="#94A3B8" />
+          <Icon size={32} color={iconColors.muted} />
         </View>
 
         <Text variant="h3" className="text-center mb-2">

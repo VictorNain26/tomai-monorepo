@@ -22,6 +22,7 @@ import { getBaseUrl } from '@repo/api';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { bgColors } from '@/lib/styles';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -126,7 +127,7 @@ export default function ForgotPasswordScreen() {
 
           {/* Header */}
           <View className="mb-8 items-center">
-            <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
               <Mail color="hsl(222.2, 47.4%, 11.2%)" size={32} />
             </View>
 
@@ -152,7 +153,7 @@ export default function ForgotPasswordScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
-                editable={!isLoading}
+                disabled={isLoading}
               />
             </View>
 

@@ -7,7 +7,7 @@
 import { View, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Plus, User, Mail } from 'lucide-react-native';
+import { Plus, User } from 'lucide-react-native';
 import { useState, useCallback } from 'react';
 
 import { Text } from '@/components/ui/text';
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChildCard, CreateChildModal } from '@/components/parent';
 import { useParentDashboard, type IChild, type ICreateChildData } from '@/hooks';
+import { useChildMappings } from '@/hooks/useParentPronote';
 
 // ============================================================================
 // COMPONENT
@@ -34,6 +35,13 @@ export default function ChildrenScreen() {
     createChild,
     refresh,
   } = useParentDashboard();
+
+  // Fetch Pronote mappings to show status on child cards
+  const { data: pronoteMappings } = useChildMappings();
+  const hasPronoteFor = useCallback(
+    (childId: string) => pronoteMappings?.some((m) => m.childId === childId) ?? false,
+    [pronoteMappings]
+  );
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -117,6 +125,7 @@ export default function ChildrenScreen() {
               <ChildCard
                 key={child.id}
                 child={child}
+                hasPronote={hasPronoteFor(child.id)}
                 onPress={handleChildPress}
               />
             ))}
@@ -146,27 +155,6 @@ export default function ChildrenScreen() {
             </View>
           </View>
         )}
-
-        {/* Invite Section */}
-        <View className="mt-6 rounded-xl border border-border bg-muted/50 p-4">
-          <View className="flex-row items-start gap-3">
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <Mail color="hsl(222.2, 47.4%, 11.2%)" size={20} />
-            </View>
-            <View className="flex-1">
-              <Text className="font-semibold">Inviter par email</Text>
-              <Text variant="muted" className="mt-1 text-sm">
-                Envoyez une invitation à votre enfant pour qu'il crée son compte
-                et le lie à votre espace parent.
-              </Text>
-              <TouchableOpacity className="mt-3">
-                <Text className="font-semibold text-primary">
-                  Bientôt disponible →
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
 
         {/* Help Section */}
         <View className="mt-6 rounded-xl border border-border bg-card p-4">

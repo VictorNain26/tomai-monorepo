@@ -24,8 +24,8 @@ const progressIndicatorVariants = cva('h-full rounded-full', {
   variants: {
     variant: {
       default: 'bg-primary',
-      success: 'bg-green-500',
-      warning: 'bg-amber-500',
+      success: 'bg-success',
+      warning: 'bg-warning',
       destructive: 'bg-destructive',
     },
   },

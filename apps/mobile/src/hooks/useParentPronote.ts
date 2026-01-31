@@ -125,6 +125,20 @@ async function disconnectPronote(): Promise<{ success: boolean }> {
   return apiClient.delete('/api/pronote/disconnect');
 }
 
+/** Create mapping request - single child mapping */
+export interface CreateMappingRequest {
+  childId: string;
+  resourceIndex: number;
+  pronoteChildName: string;
+  pronoteClassName?: string;
+}
+
+async function createMappings(
+  mappings: CreateMappingRequest[]
+): Promise<{ success: boolean; error?: string }> {
+  return apiClient.post('/api/pronote/mappings', { mappings });
+}
+
 async function fetchHomework(
   childId: string,
   weekOffset: number
@@ -194,6 +208,18 @@ export function useDisconnectPronote() {
 
   return useMutation({
     mutationFn: disconnectPronote,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.all });
+    },
+  });
+}
+
+/** Create child mappings (Pronote student → TomAI child) */
+export function useCreateMappings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createMappings,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.all });
     },

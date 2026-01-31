@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -100,9 +101,10 @@ export function MatchingViewer({ content }: { content: MatchingContent }) {
                   isMatched
                     ? 'border-green-500 bg-green-50'
                     : isSelected
-                      ? 'border-primary bg-primary/10'
+                      ? 'border-primary'
                       : 'border-border bg-card'
                 }`}
+                style={!isMatched && isSelected ? { backgroundColor: bgColors.primary[10] } : undefined}
               >
                 <Text numberOfLines={2}>{pair.left}</Text>
               </TouchableOpacity>
@@ -122,10 +124,9 @@ export function MatchingViewer({ content }: { content: MatchingContent }) {
                 className={`rounded-lg border p-3 ${
                   isUsed
                     ? 'border-green-500 bg-green-50'
-                    : selectedLeft !== null
-                      ? 'border-primary/50 bg-card'
-                      : 'border-border bg-card'
+                    : 'border-border bg-card'
                 }`}
+                style={!isUsed && selectedLeft !== null ? { borderColor: borderColors.primary[50] } : undefined}
               >
                 <Text numberOfLines={2}>{pair.right}</Text>
               </TouchableOpacity>
@@ -177,12 +178,14 @@ export function FillBlankViewer({ content }: { content: FillBlankContent }) {
           const isCorrectOption = index === content.correctIndex;
 
           let bgClass = 'bg-card border-border';
+          let useInlineStyle = false;
           if (validated && isCorrectOption) {
             bgClass = 'bg-green-100 border-green-500';
           } else if (validated && isSelected && !isCorrectOption) {
             bgClass = 'bg-red-100 border-red-500';
           } else if (isSelected) {
-            bgClass = 'bg-primary/10 border-primary';
+            bgClass = 'border-primary';
+            useInlineStyle = true;
           }
 
           return (
@@ -191,6 +194,7 @@ export function FillBlankViewer({ content }: { content: FillBlankContent }) {
               onPress={() => !validated && setSelected(index)}
               disabled={validated}
               className={`rounded-lg border p-3 ${bgClass}`}
+              style={useInlineStyle ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
               <Text className="text-center">{option}</Text>
             </TouchableOpacity>

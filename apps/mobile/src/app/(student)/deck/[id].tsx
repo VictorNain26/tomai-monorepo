@@ -16,6 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardViewer } from '@/components/learning';
 import { useDeck } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 export default function DeckPlayScreen() {
   const router = useRouter();
@@ -146,9 +147,8 @@ export default function DeckPlayScreen() {
         <TouchableOpacity
           onPress={handlePrevious}
           disabled={currentIndex === 0}
-          className={`h-12 w-12 items-center justify-center rounded-full ${
-            currentIndex === 0 ? 'bg-muted' : 'bg-primary/10'
-          }`}
+          className="h-12 w-12 items-center justify-center rounded-full"
+          style={{ backgroundColor: currentIndex === 0 ? undefined : bgColors.primary[10] }}
         >
           <ChevronLeft
             color={

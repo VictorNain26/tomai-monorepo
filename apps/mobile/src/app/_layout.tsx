@@ -1,9 +1,10 @@
 import '../global.css';
 
-import { useEffect, useRef } from 'react';
-import { Stack } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Slot } from 'expo-router';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PortalHost } from '@rn-primitives/portal';
@@ -20,18 +21,32 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
 
-import { queryClient } from '@/lib/query-client';
+import { queryClient, persistOptions, initializeNetInfo } from '@/lib/query-client';
 import { initializeAppApi } from '@/lib/api';
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { ErrorBoundary } from '@/components/common/error-boundary';
-import { ToastProvider } from '@/components/ui/toast';
+import { initializeDatabase } from '@/db';
 import { ThemeProvider, RevenueCatProvider } from '@/components/providers';
 
-// Keep splash screen visible while loading fonts
+// Keep splash screen visible while loading
 SplashScreen.preventAutoHideAsync();
 
+/**
+ * Root Layout - Expo Router Best Practice 2026
+ *
+ * IMPORTANT: No NativeWind (className) before Slot!
+ * NativeWind/css-interop requires NavigationContainer which Slot provides.
+ *
+ * Provider order (outside to inside):
+ * 1. GestureHandlerRootView (native, no className)
+ * 2. SafeAreaProvider (native, no className)
+ * 3. PersistQueryClientProvider (React context only)
+ * 4. ThemeProvider (React context only - no View with className!)
+ * 5. Slot (expo-router - initializes NavigationContainer)
+ *
+ * Providers that use NativeWind (ToastProvider, etc.) go INSIDE the routes.
+ */
 export default function RootLayout() {
   const apiInitialized = useRef(false);
+  const [isReady, setIsReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -42,53 +57,55 @@ export default function RootLayout() {
     JetBrainsMono_400Regular,
   });
 
-  // Initialize API once when component mounts (safe for native modules)
   useEffect(() => {
-    if (!apiInitialized.current) {
+    async function initialize() {
+      if (apiInitialized.current) return;
       apiInitialized.current = true;
-      initializeAppApi();
+
+      try {
+        initializeAppApi();
+        initializeNetInfo();
+        await initializeDatabase();
+        setIsReady(true);
+      } catch (error) {
+        console.error('[App] Initialization error:', error);
+        setIsReady(true);
+      }
     }
+
+    initialize();
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded && isReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, isReady]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !isReady) {
     return null;
   }
 
+  // IMPORTANT: Only native components and pure React context providers here
+  // NO className usage before Slot!
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ErrorBoundary>
-        <SafeAreaProvider>
-          <QueryClientProvider client={queryClient}>
-            <ThemeProvider>
-              <ToastProvider>
-                <AuthGuard>
-                  <RevenueCatProvider>
-                    <Stack
-                      screenOptions={{
-                        headerShown: false,
-                        animation: 'slide_from_right',
-                      }}
-                    >
-                      <Stack.Screen name="index" />
-                      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                      <Stack.Screen name="(student)" options={{ headerShown: false }} />
-                      <Stack.Screen name="(parent)" options={{ headerShown: false }} />
-                    </Stack>
-                  </RevenueCatProvider>
-                </AuthGuard>
+      <SafeAreaProvider>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={persistOptions}
+        >
+          <ThemeProvider>
+            <RevenueCatProvider>
+              <View style={{ flex: 1 }}>
+                <Slot />
                 <StatusBar style="auto" />
                 <PortalHost />
-              </ToastProvider>
-            </ThemeProvider>
-          </QueryClientProvider>
-        </SafeAreaProvider>
-      </ErrorBoundary>
+              </View>
+            </RevenueCatProvider>
+          </ThemeProvider>
+        </PersistQueryClientProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

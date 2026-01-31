@@ -2,7 +2,11 @@
  * Pronote QR Connect Screen
  *
  * Camera-based QR code scanner for Pronote parent connection.
- * Follows same pattern as pronote.routes.ts POST /api/pronote/connect
+ * Optionally accepts childId to auto-show mapping selector after connection.
+ *
+ * Usage:
+ * - From parent dashboard: /(parent)/pronote-connect
+ * - From child detail: /(parent)/pronote-connect?childId=xxx
  */
 
 import { useState, useCallback } from 'react';
@@ -15,7 +19,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import {
   ArrowLeft,
@@ -30,18 +34,29 @@ import {
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useConnectPronote } from '@/hooks/useParentPronote';
-import { useTheme } from '@/hooks';
+import { PronoteChildSelectorModal } from '@/components/parent';
+import {
+  useConnectPronote,
+  useCreateMappings,
+  type PronoteResource,
+} from '@/hooks/useParentPronote';
+import { useParentDashboard, useTheme } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type Step = 'scan' | 'pin';
+type Step = 'scan' | 'pin' | 'select';
 
 interface QrData {
   json: string;
   establishment: string;
+}
+
+interface ConnectResult {
+  resources: PronoteResource[];
+  establishmentName: string;
 }
 
 // ============================================================================
@@ -50,16 +65,27 @@ interface QrData {
 
 export default function PronoteConnectScreen() {
   const router = useRouter();
+  const { childId } = useLocalSearchParams<{ childId?: string }>();
   const { isDark } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const connectMutation = useConnectPronote();
+  const createMappingsMutation = useCreateMappings();
+  const { children } = useParentDashboard();
 
   const [step, setStep] = useState<Step>('scan');
   const [qrData, setQrData] = useState<QrData | null>(null);
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [connectResult, setConnectResult] = useState<ConnectResult | null>(null);
+  const [showSelector, setShowSelector] = useState(false);
 
   const iconColor = isDark ? 'hsl(210, 40%, 98%)' : 'hsl(222.2, 47.4%, 11.2%)';
+
+  // Find child name if childId is provided
+  const currentChild = childId ? children.find((c) => c.id === childId) : null;
+  const childName = currentChild
+    ? `${currentChild.firstName} ${currentChild.lastName}`
+    : '';
 
   // Handle QR code scan
   const handleBarCodeScanned = useCallback(
@@ -123,16 +149,67 @@ export default function PronoteConnectScreen() {
         return;
       }
 
-      // Success
-      Alert.alert(
-        'Connexion réussie',
-        `Votre compte Pronote est maintenant connecté.`,
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
+      // Connection successful - check if we have a childId to map
+      const resources = (result as { resources?: PronoteResource[] }).resources ?? [];
+      const establishment = (result as { establishmentName?: string }).establishmentName ?? qrData.establishment;
+
+      if (childId && resources.length > 0) {
+        // Show selector to map child
+        setConnectResult({ resources, establishmentName: establishment });
+        setStep('select');
+        setShowSelector(true);
+      } else if (resources.length === 0) {
+        // No children found in Pronote
+        Alert.alert(
+          'Connexion réussie',
+          'Votre compte Pronote est connecté, mais aucun enfant n\'a été trouvé.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } else {
+        // No childId - just connected globally
+        Alert.alert(
+          'Connexion réussie',
+          `Votre compte Pronote est connecté. ${resources.length} enfant(s) trouvé(s).`,
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      }
     } catch {
       setError('Erreur de connexion. Vérifiez le code PIN.');
     }
   };
+
+  // Handle child selection from modal
+  const handleChildSelect = useCallback(
+    async (resourceIndex: number, resource: PronoteResource) => {
+      if (!childId) return;
+
+      try {
+        const result = await createMappingsMutation.mutateAsync([
+          {
+            childId,
+            resourceIndex,
+            pronoteChildName: resource.name,
+            pronoteClassName: resource.className,
+          },
+        ]);
+
+        if (result.error) {
+          Alert.alert('Erreur', result.error);
+          return;
+        }
+
+        setShowSelector(false);
+        Alert.alert(
+          'Association réussie',
+          `${resource.name} est maintenant lié à ${childName}.`,
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } catch {
+        Alert.alert('Erreur', 'Impossible de créer l\'association.');
+      }
+    },
+    [childId, childName, createMappingsMutation, router]
+  );
 
   // Reset to scan step
   const handleReset = () => {
@@ -216,34 +293,37 @@ export default function PronoteConnectScreen() {
                 </View>
               </View>
 
-              {/* Camera View */}
+              {/* Camera View with overlay using absolute positioning */}
               <View className="flex-1 overflow-hidden">
+                {/* Camera layer */}
                 <CameraView
-                  style={{ flex: 1 }}
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                   facing="back"
                   barcodeScannerSettings={{
                     barcodeTypes: ['qr'],
                   }}
                   onBarcodeScanned={handleBarCodeScanned}
+                />
+                {/* Overlay with scan area (absolute positioned on top) */}
+                <View
+                  className="absolute inset-0 items-center justify-center"
+                  style={{ backgroundColor: bgColors.black[50] }}
                 >
-                  {/* Overlay with scan area */}
-                  <View className="flex-1 items-center justify-center bg-black/50">
-                    <View className="h-64 w-64 rounded-2xl border-4 border-white">
-                      <View className="absolute -left-1 -top-1 h-8 w-8 rounded-tl-xl border-l-4 border-t-4 border-primary" />
-                      <View className="absolute -right-1 -top-1 h-8 w-8 rounded-tr-xl border-r-4 border-t-4 border-primary" />
-                      <View className="absolute -bottom-1 -left-1 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-primary" />
-                      <View className="absolute -bottom-1 -right-1 h-8 w-8 rounded-br-xl border-b-4 border-r-4 border-primary" />
-                    </View>
-                    <Text className="mt-4 text-center text-white">
-                      Placez le QR code dans le cadre
-                    </Text>
+                  <View className="h-64 w-64 rounded-2xl border-4 border-white">
+                    <View className="absolute -left-1 -top-1 h-8 w-8 rounded-tl-xl border-l-4 border-t-4 border-primary" />
+                    <View className="absolute -right-1 -top-1 h-8 w-8 rounded-tr-xl border-r-4 border-t-4 border-primary" />
+                    <View className="absolute -bottom-1 -left-1 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-primary" />
+                    <View className="absolute -bottom-1 -right-1 h-8 w-8 rounded-br-xl border-b-4 border-r-4 border-primary" />
                   </View>
-                </CameraView>
+                  <Text className="mt-4 text-center text-white">
+                    Placez le QR code dans le cadre
+                  </Text>
+                </View>
               </View>
 
               {/* Error message */}
               {error && (
-                <View className="mx-4 my-4 rounded-xl bg-destructive/10 p-4">
+                <View className="mx-4 my-4 rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
                   <Text className="text-center text-destructive">{error}</Text>
                 </View>
               )}
@@ -302,7 +382,7 @@ export default function PronoteConnectScreen() {
 
               {/* Error message */}
               {error && (
-                <View className="mb-4 rounded-xl bg-destructive/10 p-4">
+                <View className="mb-4 rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
                   <Text className="text-center text-destructive">{error}</Text>
                 </View>
               )}
@@ -319,7 +399,7 @@ export default function PronoteConnectScreen() {
               </Button>
 
               {/* Help Text */}
-              <View className="mt-6 rounded-xl border border-border bg-muted/50 p-4">
+              <View className="mt-6 rounded-xl border border-border p-4" style={{ backgroundColor: bgColors.muted[50] }}>
                 <Text variant="muted" className="text-center text-sm">
                   Le code PIN est affiché sur l'écran Pronote après le QR code.
                   {'\n'}Il expire après quelques minutes.
@@ -329,6 +409,22 @@ export default function PronoteConnectScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Pronote Child Selector Modal */}
+      {connectResult && (
+        <PronoteChildSelectorModal
+          visible={showSelector}
+          onClose={() => {
+            setShowSelector(false);
+            router.back();
+          }}
+          onSelect={handleChildSelect}
+          resources={connectResult.resources}
+          childName={childName}
+          establishmentName={connectResult.establishmentName}
+          isSubmitting={createMappingsMutation.isPending}
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -25,6 +25,7 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
+import { shadows, bgColors } from '@/lib/styles';
 import {
   useGenerateDeck,
   useLearningSubjects,
@@ -134,8 +135,8 @@ export default function CreateDeckScreen() {
     <SafeAreaView className="flex-1 bg-background">
       {/* Loading overlay during generation */}
       {generateMutation.isPending && (
-        <View className="absolute inset-0 z-50 items-center justify-center bg-background/90">
-          <View className="items-center gap-4 rounded-2xl bg-card p-8 shadow-lg">
+        <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: bgColors.background[90] }}>
+          <View className="items-center gap-4 rounded-2xl bg-card p-8" style={shadows.lg}>
             <ActivityIndicator size="large" color="hsl(222.2, 47.4%, 11.2%)" />
             <View className="items-center gap-2">
               <Text className="text-lg font-semibold">Génération en cours...</Text>
@@ -192,7 +193,7 @@ export default function CreateDeckScreen() {
               )}
 
               {subjectsQuery.error && (
-                <View className="rounded-xl bg-destructive/10 p-4">
+                <View className="rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
                   <Text className="text-center text-destructive">
                     Erreur de chargement des matières
                   </Text>
@@ -241,7 +242,7 @@ export default function CreateDeckScreen() {
               )}
 
               {topicsQuery.error && (
-                <View className="rounded-xl bg-destructive/10 p-4">
+                <View className="rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
                   <Text className="text-center text-destructive">
                     Erreur de chargement des thèmes
                   </Text>
@@ -259,7 +260,8 @@ export default function CreateDeckScreen() {
                   {topicsQuery.data.map((domaine) => (
                     <View
                       key={domaine.domaine}
-                      className={`rounded-xl border border-border bg-card ${generateMutation.isPending ? 'opacity-50' : ''}`}
+                      className="rounded-xl border border-border bg-card"
+                      style={generateMutation.isPending ? { opacity: 0.5 } : undefined}
                     >
                       {/* Domaine header - clickable for whole domaine */}
                       <TouchableOpacity

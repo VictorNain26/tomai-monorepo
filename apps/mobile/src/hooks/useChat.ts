@@ -3,152 +3,33 @@
  *
  * Port du hook web adapté à React Native.
  * Gère les sessions, le streaming SSE, et les attachments.
+ *
+ * Best Practice 2026: Uses react-native-sse for native EventSource support.
+ * @see https://github.com/binaryminds/react-native-sse
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getBaseUrl, apiClient } from '@repo/api';
+import { getBaseUrl } from '@repo/api';
 import { useUser, type IAppUser } from '@/lib/auth';
+import EventSource from 'react-native-sse';
 
-// ============================================================================
-// TYPES (aligned with backend apps/server/src/routes/api.routes.ts)
-// ============================================================================
+import type {
+  ChatMessage,
+  ChatFileAttachment,
+  StreamChunk,
+  UseChatOptions,
+  UseChatReturn,
+} from './chat/types';
+import {
+  chatQueryKeys,
+  fetchOrCreateSession,
+  fetchHistory,
+  resetChatSession,
+} from './chat/api';
 
-/** Backend chat history message (GET /api/chat/session/:id/history) */
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string; // ISO string from backend
-  aiModel?: string | null;
-  attachedFile?: AttachedFileInfo | null;
-}
-
-/** Backend attachedFile structure (from messages table JSONB) */
-export interface AttachedFileInfo {
-  fileName: string;
-  fileId?: string;
-  geminiFileId?: string;
-  mimeType?: string;
-  fileSizeBytes?: number;
-}
-
-/** File attachment for pending uploads (client-side) */
-export interface ChatFileAttachment {
-  fileId: string;
-  fileName: string;
-  mimeType: string;
-  preview?: string;
-}
-
-/** Backend SSE stream chunk (from gemini-chat.service.ts GeminiStreamChunk) */
-interface StreamChunk {
-  type: 'content' | 'done' | 'error';
-  id: string;
-  model?: string;
-  timestamp?: number;
-  delta?: string;
-  content?: string;
-  role?: 'assistant';
-  finishReason?: 'stop' | 'length' | 'error';
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
-  metadata?: {
-    sessionId?: string;
-    usedRAG?: boolean;
-  };
-  error?: {
-    message: string;
-    code?: string;
-  };
-}
-
-interface UseChatOptions {
-  initialSessionId?: string | null;
-  subject: string;
-}
-
-interface UseChatReturn {
-  messages: ChatMessage[];
-  pendingAttachments: ChatFileAttachment[];
-  currentSessionId: string | null;
-  isLoading: boolean;
-  isStreaming: boolean;
-  error: string | null;
-  sendMessage: (content: string) => Promise<void>;
-  addAttachment: (attachment: ChatFileAttachment) => void;
-  removeAttachment: (fileId: string) => void;
-  clearPendingAttachments: () => void;
-  resetSession: () => Promise<string | null>;
-  stop: () => void;
-}
-
-// ============================================================================
-// QUERY KEYS
-// ============================================================================
-
-const queryKeys = {
-  session: (subject: string) => ['chat', 'session', subject] as const,
-  history: (sessionId: string) => ['chat', 'history', sessionId] as const,
-};
-
-// ============================================================================
-// API FUNCTIONS
-// ============================================================================
-
-async function fetchOrCreateSession(subject: string): Promise<string> {
-  const data = await apiClient.post<{ sessionId: string }>('/api/chat/session', { subject });
-  return data.sessionId;
-}
-
-async function fetchHistory(
-  sessionId: string
-): Promise<{ messages: ChatMessage[] }> {
-  try {
-    return await apiClient.get<{ messages: ChatMessage[] }>(`/api/chat/session/${sessionId}/history`);
-  } catch {
-    return { messages: [] };
-  }
-}
-
-// ============================================================================
-// SSE STREAMING PARSER (React Native compatible)
-// ============================================================================
-
-/**
- * Parse SSE response - React Native doesn't support ReadableStream,
- * so we use response.text() and parse the complete response.
- * For true streaming on RN, consider using EventSource polyfill.
- */
-async function* parseSSE(response: Response): AsyncIterable<StreamChunk> {
-  // React Native doesn't support response.body streaming
-  // Fall back to reading the entire response as text
-  const text = await response.text();
-
-  // Parse SSE events from complete response
-  const events = text.split('\n\n');
-
-  for (const event of events) {
-    for (const line of event.split('\n')) {
-      if (line.startsWith('data: ')) {
-        const data = line.slice(6).trim();
-        if (data === '[DONE]' || !data) continue;
-        try {
-          yield JSON.parse(data) as StreamChunk;
-        } catch {
-          // Ignore malformed JSON
-        }
-      }
-    }
-  }
-}
-
-// ============================================================================
-// HOOK
-// ============================================================================
+// Re-export types for consumers
+export type { ChatMessage, ChatFileAttachment, AttachedFileInfo } from './chat/types';
 
 export function useChat({
   initialSessionId,
@@ -169,7 +50,7 @@ export function useChat({
   // Refs for stable values
   const sessionIdRef = useRef<string | null>(initialSessionId ?? null);
   const pendingAttachmentsRef = useRef<ChatFileAttachment[]>([]);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
   const historySyncedRef = useRef<string | null>(null);
 
   // Keep refs in sync
@@ -179,7 +60,7 @@ export function useChat({
 
   // Session query (lazy creation)
   const sessionQuery = useQuery({
-    queryKey: queryKeys.session(subject),
+    queryKey: chatQueryKeys.session(subject),
     queryFn: () => fetchOrCreateSession(subject),
     enabled: !initialSessionId && !!subject && !!user,
     staleTime: Infinity,
@@ -195,23 +76,31 @@ export function useChat({
 
   // History query
   const historyQuery = useQuery({
-    queryKey: queryKeys.history(currentSessionId ?? ''),
+    queryKey: chatQueryKeys.history(currentSessionId ?? ''),
     queryFn: () => fetchHistory(currentSessionId ?? ''),
     enabled: !!currentSessionId,
     staleTime: Infinity,
   });
 
-  // Sync history once
+  // Sync history once - this is a valid pattern for syncing query data to local state
   useEffect(() => {
     if (!historyQuery.data) return;
     if (historySyncedRef.current === currentSessionId) return;
     if (historyQuery.data.messages.length === 0) return;
 
     historySyncedRef.current = currentSessionId;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMessages(historyQuery.data.messages);
   }, [historyQuery.data, currentSessionId]);
 
-  // Send message
+  // Cleanup EventSource on unmount
+  useEffect(() => {
+    return () => {
+      eventSourceRef.current?.close();
+    };
+  }, []);
+
+  // Send message using react-native-sse
   const sendMessage = useCallback(
     async (content: string) => {
       if (!user || !subject) return;
@@ -247,17 +136,18 @@ export function useChat({
       setIsStreaming(true);
       setError(null);
 
-      // Create abort controller
-      abortControllerRef.current = new AbortController();
+      // Close previous EventSource if any
+      eventSourceRef.current?.close();
 
       try {
         const baseUrl = getBaseUrl();
 
-        // SSE streaming requires direct fetch (apiClient doesn't support streaming)
-        const response = await fetch(`${baseUrl}/api/chat/stream`, {
+        // Use react-native-sse for native EventSource support
+        const es = new EventSource(`${baseUrl}/api/chat/stream`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: abortControllerRef.current.signal as RequestInit['signal'],
           body: JSON.stringify({
             content: trimmedContent || '📎 Document',
             data: {
@@ -268,41 +158,75 @@ export function useChat({
               fileIds: attachmentsToSend.map((a) => a.fileId),
             },
           }),
+          // Disable auto-reconnect for one-shot streaming
+          pollingInterval: 0,
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+        eventSourceRef.current = es;
 
-        // Stream response
-        for await (const chunk of parseSSE(response)) {
-          if (chunk.type === 'content' && chunk.content) {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId ? { ...m, content: chunk.content! } : m
-              )
-            );
-          } else if (chunk.type === 'done') {
-            // Update session ID if new session was created
-            if (
-              chunk.metadata?.sessionId &&
-              chunk.metadata.sessionId !== sessionIdRef.current
-            ) {
-              sessionIdRef.current = chunk.metadata.sessionId;
-              queryClient.setQueryData(
-                queryKeys.session(subject),
-                chunk.metadata.sessionId
-              );
-            }
-          } else if (chunk.type === 'error') {
-            setError(chunk.error?.message ?? 'Erreur de streaming');
+        es.addEventListener('message', (event) => {
+          if (!event.data) return;
+
+          if (event.data === '[DONE]') {
+            es.close();
+            setIsLoading(false);
+            setIsStreaming(false);
+            eventSourceRef.current = null;
+            return;
           }
-        }
+
+          try {
+            const chunk = JSON.parse(event.data) as StreamChunk;
+
+            if (chunk.type === 'content' && chunk.content) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, content: chunk.content! } : m
+                )
+              );
+            } else if (chunk.type === 'done') {
+              // Update session ID if new session was created
+              if (
+                chunk.metadata?.sessionId &&
+                chunk.metadata.sessionId !== sessionIdRef.current
+              ) {
+                sessionIdRef.current = chunk.metadata.sessionId;
+                queryClient.setQueryData(
+                  chatQueryKeys.session(subject),
+                  chunk.metadata.sessionId
+                );
+              }
+            } else if (chunk.type === 'error') {
+              setError(chunk.error?.message ?? 'Erreur de streaming');
+            }
+          } catch {
+            // Ignore malformed JSON
+          }
+        });
+
+        es.addEventListener('error', (event) => {
+          console.error('[SSE] Error:', event);
+          es.close();
+          eventSourceRef.current = null;
+          setIsLoading(false);
+          setIsStreaming(false);
+
+          // Remove empty assistant message on error
+          setMessages((prev) =>
+            prev.filter(
+              (m) => !(m.id === assistantId && m.content.length === 0)
+            )
+          );
+
+          setError('Erreur de connexion au serveur');
+        });
+
+        es.addEventListener('close', () => {
+          setIsLoading(false);
+          setIsStreaming(false);
+          eventSourceRef.current = null;
+        });
       } catch (err) {
-        if ((err as Error).name === 'AbortError') {
-          // User cancelled
-          return;
-        }
         const message =
           err instanceof Error ? err.message : 'Erreur de connexion';
         setError(message);
@@ -313,10 +237,9 @@ export function useChat({
             (m) => !(m.id === assistantId && m.content.length === 0)
           )
         );
-      } finally {
+
         setIsLoading(false);
         setIsStreaming(false);
-        abortControllerRef.current = null;
       }
     },
     [user, subject, queryClient]
@@ -324,7 +247,10 @@ export function useChat({
 
   // Stop streaming
   const stop = useCallback(() => {
-    abortControllerRef.current?.abort();
+    eventSourceRef.current?.close();
+    eventSourceRef.current = null;
+    setIsStreaming(false);
+    setIsLoading(false);
   }, []);
 
   // Attachment management
@@ -345,9 +271,7 @@ export function useChat({
     if (!sessionIdRef.current) return null;
 
     try {
-      const data = await apiClient.post<{ sessionId: string }>(
-        `/api/chat/session/${sessionIdRef.current}/reset`
-      );
+      const data = await resetChatSession(sessionIdRef.current);
 
       // Update state
       sessionIdRef.current = data.sessionId;
@@ -356,9 +280,9 @@ export function useChat({
       setError(null);
 
       // Update query cache
-      queryClient.setQueryData(queryKeys.session(subject), data.sessionId);
+      queryClient.setQueryData(chatQueryKeys.session(subject), data.sessionId);
       queryClient.removeQueries({
-        queryKey: queryKeys.history(sessionIdRef.current ?? ''),
+        queryKey: chatQueryKeys.history(sessionIdRef.current ?? ''),
       });
 
       return data.sessionId;

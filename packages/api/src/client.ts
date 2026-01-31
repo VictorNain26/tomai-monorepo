@@ -5,7 +5,7 @@
  * Compatible Web (Vite) et Mobile (React Native/Expo).
  */
 
-import { getBaseUrl, getApiConfig } from './config';
+import { getBaseUrl, getApiConfig, type ApiConfig } from './config';
 
 // ============================================================================
 // TYPES
@@ -110,12 +110,28 @@ class ApiClient {
   ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const config = getApiConfig();
 
     try {
+      // In React Native, we need to manually inject cookies
+      // In browsers, credentials: 'include' handles this automatically
+      const headers = { ...options.headers } as Record<string, string>;
+
+      if (config.cookieProvider) {
+        // React Native: manually inject cookie, use credentials: 'omit'
+        const cookie = config.cookieProvider();
+        if (cookie) {
+          headers['Cookie'] = cookie;
+        }
+      }
+
       const response = await fetch(url, {
         ...options,
+        headers,
         signal: controller.signal as RequestInit['signal'],
-        credentials: 'include', // Required for Better Auth cookies
+        // Use 'omit' when we have a cookie provider (React Native)
+        // Use 'include' for browsers (automatic cookie handling)
+        credentials: typeof config.cookieProvider === 'function' ? 'omit' : 'include',
         mode: 'cors',
       });
 

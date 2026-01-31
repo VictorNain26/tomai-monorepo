@@ -16,19 +16,15 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, UserPlus, RefreshCw, ChevronDown, Check } from 'lucide-react-native';
+import { X, UserPlus, RefreshCw, ChevronDown } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  getLevelLabel,
-  isLv2Eligible,
-  LV2_OPTIONS,
-  LV2_ELIGIBLE_LEVELS,
-  type Lv2Option,
-} from '@/constants/levels';
+import { getLevelLabel, isLv2Eligible, type Lv2Option } from '@/constants/levels';
 import type { ICreateChildData, SchoolLevel } from '@/hooks/useParentDashboard';
+import { LevelPickerModal } from './LevelPickerModal';
+import { Lv2PickerModal } from './Lv2PickerModal';
 
 // ============================================================================
 // HELPERS
@@ -195,7 +191,7 @@ export function CreateChildModal({
                   onChangeText={setFirstName}
                   placeholder="Prénom de l'enfant"
                   autoCapitalize="words"
-                  editable={!isSubmitting}
+                  disabled={isSubmitting}
                 />
               </View>
 
@@ -207,7 +203,7 @@ export function CreateChildModal({
                   onChangeText={setLastName}
                   placeholder="Nom de famille"
                   autoCapitalize="words"
-                  editable={!isSubmitting}
+                  disabled={isSubmitting}
                 />
               </View>
 
@@ -219,7 +215,7 @@ export function CreateChildModal({
                   onChangeText={setDateOfBirth}
                   placeholder="JJ/MM/AAAA"
                   keyboardType="numeric"
-                  editable={!isSubmitting}
+                  disabled={isSubmitting}
                 />
               </View>
 
@@ -288,7 +284,7 @@ export function CreateChildModal({
                     placeholder="username123"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    editable={!isSubmitting}
+                    disabled={isSubmitting}
                   />
                 </View>
 
@@ -301,7 +297,7 @@ export function CreateChildModal({
                     placeholder="SuperChat42!"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    editable={!isSubmitting}
+                    disabled={isSubmitting}
                   />
                   <Text variant="muted" className="text-xs">
                     Gardez ces identifiants en lieu sûr !
@@ -331,89 +327,26 @@ export function CreateChildModal({
         </KeyboardAvoidingView>
 
         {/* Level Picker Modal */}
-        <Modal
+        <LevelPickerModal
           visible={showLevelPicker}
-          animationType="slide"
-          presentationStyle="formSheet"
-          onRequestClose={() => setShowLevelPicker(false)}
-        >
-          <SafeAreaView className="flex-1 bg-background">
-            <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
-              <Text className="text-lg font-semibold">Niveau scolaire</Text>
-              <TouchableOpacity onPress={() => setShowLevelPicker(false)}>
-                <X color="hsl(215.4, 16.3%, 46.9%)" size={24} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView className="flex-1">
-              {levels.map((level) => (
-                <TouchableOpacity
-                  key={level.key}
-                  onPress={() => {
-                    setSchoolLevel(level.key);
-                    // Reset LV2 if new level is not eligible
-                    if (!LV2_ELIGIBLE_LEVELS.includes(level.key)) {
-                      setSelectedLv2(undefined);
-                    }
-                    setShowLevelPicker(false);
-                  }}
-                  className="flex-row items-center justify-between border-b border-border px-4 py-4"
-                >
-                  <Text>{getLevelLabel(level.key)}</Text>
-                  {schoolLevel === level.key && (
-                    <Check color="hsl(222.2, 47.4%, 11.2%)" size={20} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
+          onClose={() => setShowLevelPicker(false)}
+          levels={levels}
+          selectedLevel={schoolLevel}
+          onSelect={(levelKey, isEligible) => {
+            setSchoolLevel(levelKey);
+            if (!isEligible) {
+              setSelectedLv2(undefined);
+            }
+          }}
+        />
 
         {/* LV2 Picker Modal */}
-        <Modal
+        <Lv2PickerModal
           visible={showLv2Picker}
-          animationType="slide"
-          presentationStyle="formSheet"
-          onRequestClose={() => setShowLv2Picker(false)}
-        >
-          <SafeAreaView className="flex-1 bg-background">
-            <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
-              <Text className="text-lg font-semibold">Langue vivante 2</Text>
-              <TouchableOpacity onPress={() => setShowLv2Picker(false)}>
-                <X color="hsl(215.4, 16.3%, 46.9%)" size={24} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView className="flex-1">
-              {/* None option */}
-              <TouchableOpacity
-                onPress={() => {
-                  setSelectedLv2(undefined);
-                  setShowLv2Picker(false);
-                }}
-                className="flex-row items-center justify-between border-b border-border px-4 py-4"
-              >
-                <Text className="text-muted-foreground">Aucune</Text>
-                {!selectedLv2 && (
-                  <Check color="hsl(222.2, 47.4%, 11.2%)" size={20} />
-                )}
-              </TouchableOpacity>
-              {LV2_OPTIONS.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  onPress={() => {
-                    setSelectedLv2(option.value);
-                    setShowLv2Picker(false);
-                  }}
-                  className="flex-row items-center justify-between border-b border-border px-4 py-4"
-                >
-                  <Text>{option.label}</Text>
-                  {selectedLv2 === option.value && (
-                    <Check color="hsl(222.2, 47.4%, 11.2%)" size={20} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
+          onClose={() => setShowLv2Picker(false)}
+          selectedLv2={selectedLv2}
+          onSelect={setSelectedLv2}
+        />
       </SafeAreaView>
     </Modal>
   );

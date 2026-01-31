@@ -140,6 +140,13 @@ COPY --from=build --chown=tomai:tomai /app/apps/server/dist ./apps/server/dist
 # Migrations Drizzle (Runtime Migrator)
 COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
 
+# Migration script for runtime migrations
+COPY --chown=tomai:tomai apps/server/src/db/migrate.ts ./apps/server/src/db/migrate.ts
+
+# Entrypoint script (runs migrations before server)
+COPY --chown=tomai:tomai apps/server/docker-entrypoint.sh ./apps/server/docker-entrypoint.sh
+RUN chmod +x ./apps/server/docker-entrypoint.sh
+
 WORKDIR /app/apps/server
 
 # Variables production
@@ -155,7 +162,8 @@ EXPOSE ${PORT:-8000}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -sf http://localhost:${PORT:-8000}/health || exit 1
 
-# Démarrage optimisé Bun (--smol = reduced memory footprint)
+# Entrypoint runs migrations, then CMD starts server
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["bun", "--smol", "dist/index.js"]
 
 # ===========================================

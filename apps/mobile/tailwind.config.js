@@ -5,47 +5,92 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      /**
+       * TomAI Design System - 2026
+       *
+       * Palette sobre et professionnelle.
+       * Variables CSS définies dans src/global.css
+       */
       colors: {
-        // TomIA brand colors - matches web app (light mode)
+        // Core semantic colors
         primary: {
-          DEFAULT: 'hsl(222.2 47.4% 11.2%)',
-          foreground: 'hsl(210 40% 98%)',
+          DEFAULT: 'hsl(var(--color-primary))',
+          foreground: 'hsl(var(--color-primary-foreground))',
         },
         secondary: {
-          DEFAULT: 'hsl(210 40% 96.1%)',
-          foreground: 'hsl(222.2 47.4% 11.2%)',
+          DEFAULT: 'hsl(var(--color-secondary))',
+          foreground: 'hsl(var(--color-secondary-foreground))',
         },
         destructive: {
-          DEFAULT: 'hsl(0 84.2% 60.2%)',
-          foreground: 'hsl(210 40% 98%)',
+          DEFAULT: 'hsl(var(--color-destructive))',
+          foreground: 'hsl(var(--color-destructive-foreground))',
         },
         muted: {
-          DEFAULT: 'hsl(210 40% 96.1%)',
-          foreground: 'hsl(215.4 16.3% 46.9%)',
+          DEFAULT: 'hsl(var(--color-muted))',
+          foreground: 'hsl(var(--color-muted-foreground))',
         },
         accent: {
-          DEFAULT: 'hsl(210 40% 96.1%)',
-          foreground: 'hsl(222.2 47.4% 11.2%)',
+          DEFAULT: 'hsl(var(--color-accent))',
+          foreground: 'hsl(var(--color-accent-foreground))',
         },
         popover: {
-          DEFAULT: 'hsl(0 0% 100%)',
-          foreground: 'hsl(222.2 84% 4.9%)',
+          DEFAULT: 'hsl(var(--color-popover))',
+          foreground: 'hsl(var(--color-popover-foreground))',
         },
-        border: 'hsl(214.3 31.8% 91.4%)',
-        input: 'hsl(214.3 31.8% 91.4%)',
-        ring: 'hsl(222.2 84% 4.9%)',
-        background: 'hsl(0 0% 100%)',
-        foreground: 'hsl(222.2 84% 4.9%)',
+
+        // Status colors
+        success: {
+          DEFAULT: 'hsl(var(--color-success))',
+          foreground: 'hsl(var(--color-success-foreground))',
+        },
+        warning: {
+          DEFAULT: 'hsl(var(--color-warning))',
+          foreground: 'hsl(var(--color-warning-foreground))',
+        },
+        info: {
+          DEFAULT: 'hsl(var(--color-info))',
+          foreground: 'hsl(var(--color-info-foreground))',
+        },
+
+        // Layout colors
+        border: 'hsl(var(--color-border))',
+        input: 'hsl(var(--color-input))',
+        ring: 'hsl(var(--color-ring))',
+        background: 'hsl(var(--color-background))',
+        foreground: 'hsl(var(--color-foreground))',
         card: {
-          DEFAULT: 'hsl(0 0% 100%)',
-          foreground: 'hsl(222.2 84% 4.9%)',
+          DEFAULT: 'hsl(var(--color-card))',
+          foreground: 'hsl(var(--color-card-foreground))',
         },
       },
-      // Dark mode overrides via CSS variables in global.css
+
+      /**
+       * Border Radius
+       * Modern but not excessive - professional look
+       */
       borderRadius: {
-        lg: 8,
-        md: 6,
-        sm: 4,
+        '2xl': 16,  // Large cards, modals
+        xl: 14,     // Cards, buttons large
+        lg: 12,     // Default cards
+        md: 10,     // Buttons, inputs
+        sm: 8,      // Small elements
+        xs: 6,      // Badges, tags
+      },
+
+      /**
+       * Spacing additions
+       * Consistent spacing scale
+       */
+      spacing: {
+        18: '4.5rem',   // 72px
+        22: '5.5rem',   // 88px
+      },
+
+      /**
+       * Font sizes optimized for mobile education
+       */
+      fontSize: {
+        '2xs': ['0.625rem', { lineHeight: '0.875rem' }],  // 10px - badges
       },
     },
   },

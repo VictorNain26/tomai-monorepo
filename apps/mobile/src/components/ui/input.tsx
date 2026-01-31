@@ -1,31 +1,127 @@
 import { forwardRef } from 'react';
-import { TextInput, type TextInputProps } from 'react-native';
+import { TextInput, View, type TextInputProps } from 'react-native';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
+import { Text } from './text';
+import { colors } from '@/lib/styles';
 
-export interface InputProps extends TextInputProps {
+/**
+ * TomAI Input Component - 2026
+ *
+ * Design principles:
+ * - Clear visual states (default, focus, error, success)
+ * - Generous height for comfortable touch
+ * - Semantic color feedback
+ * - Accessible labels and hints
+ */
+
+// Semantic placeholder colors (matching new color palette)
+const PLACEHOLDER_COLORS = {
+  default: colors.muted.foreground, // #6B7280
+  error: colors.destructive.DEFAULT, // #DC2626
+  success: colors.success.DEFAULT, // #059669
+} as const;
+
+const inputVariants = cva(
+  'h-12 w-full rounded-lg border bg-background px-4 py-3 text-base text-foreground web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-offset-2',
+  {
+    variants: {
+      variant: {
+        default:
+          'border-input native:focus:border-primary web:focus-visible:ring-primary',
+        error:
+          'border-destructive native:focus:border-destructive web:focus-visible:ring-destructive',
+        success:
+          'border-success native:focus:border-success web:focus-visible:ring-success',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+);
+
+export interface InputProps
+  extends Omit<TextInputProps, 'editable'>,
+    VariantProps<typeof inputVariants> {
   className?: string;
+  /** Disabled state */
+  disabled?: boolean;
+  /** Error message to display below input */
+  errorMessage?: string;
+  /** Label to display above input */
+  label?: string;
+  /** Helper text to display below input */
+  helperText?: string;
+  /** Accessibility label for screen readers */
+  accessibilityLabel?: string;
+  /** Accessibility hint describing the input */
+  accessibilityHint?: string;
 }
 
 const Input = forwardRef<TextInput, InputProps>(
-  ({ className, placeholderTextColor, ...props }, ref) => {
+  (
+    {
+      className,
+      variant,
+      disabled,
+      errorMessage,
+      label,
+      helperText,
+      placeholderTextColor,
+      accessibilityLabel,
+      accessibilityHint,
+      ...props
+    },
+    ref
+  ) => {
+    // Determine variant based on error message
+    const effectiveVariant = errorMessage ? 'error' : variant;
+
+    // Get placeholder color based on variant
+    const defaultPlaceholderColor =
+      effectiveVariant === 'error'
+        ? PLACEHOLDER_COLORS.error
+        : effectiveVariant === 'success'
+          ? PLACEHOLDER_COLORS.success
+          : PLACEHOLDER_COLORS.default;
+
     return (
-      <TextInput
-        ref={ref}
-        className={cn(
-          'h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-base text-foreground',
-          'placeholder:text-muted-foreground',
-          'web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2',
-          'native:focus:border-ring',
-          props.editable === false && 'opacity-50',
-          className
+      <View className="w-full gap-1.5">
+        {label && (
+          <Text variant="small" className="text-foreground">
+            {label}
+          </Text>
         )}
-        placeholderTextColor={placeholderTextColor ?? 'hsl(215.4 16.3% 46.9%)'}
-        {...props}
-      />
+        <TextInput
+          ref={ref}
+          className={cn(
+            inputVariants({ variant: effectiveVariant }),
+            className
+          )}
+          style={disabled ? { opacity: 0.5 } : undefined}
+          editable={!disabled}
+          placeholderTextColor={placeholderTextColor ?? defaultPlaceholderColor}
+          accessibilityLabel={accessibilityLabel ?? label}
+          accessibilityHint={accessibilityHint}
+          accessibilityState={{
+            disabled,
+          }}
+          {...props}
+        />
+        {errorMessage && (
+          <Text variant="small" className="text-destructive">
+            {errorMessage}
+          </Text>
+        )}
+        {helperText && !errorMessage && (
+          <Text variant="muted">{helperText}</Text>
+        )}
+      </View>
     );
   }
 );
 
 Input.displayName = 'Input';
 
-export { Input };
+export { Input, inputVariants };

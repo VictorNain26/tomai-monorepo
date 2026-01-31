@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -62,8 +63,9 @@ export function FlashcardViewer({ content }: { content: FlashcardContent }) {
     <TouchableOpacity
       onPress={() => setIsFlipped(!isFlipped)}
       className={`flex-1 items-center justify-center rounded-xl border p-6 ${
-        isFlipped ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
+        isFlipped ? '' : 'border-border bg-card'
       }`}
+      style={isFlipped ? { borderColor: borderColors.primary[30], backgroundColor: bgColors.primary[5] } : undefined}
       activeOpacity={0.8}
     >
       <Text className="mb-4 text-center text-lg leading-relaxed">
@@ -97,12 +99,14 @@ export function QCMViewer({ content }: { content: QCMContent }) {
           const isCorrectOption = index === content.correctIndex;
 
           let bgClass = 'bg-card border-border';
+          let useInlineStyle = false;
           if (validated && isCorrectOption) {
             bgClass = 'bg-green-100 border-green-500';
           } else if (validated && isSelected && !isCorrectOption) {
             bgClass = 'bg-red-100 border-red-500';
           } else if (isSelected) {
-            bgClass = 'bg-primary/10 border-primary';
+            bgClass = 'border-primary';
+            useInlineStyle = true;
           }
 
           return (
@@ -111,6 +115,7 @@ export function QCMViewer({ content }: { content: QCMContent }) {
               onPress={() => !validated && setSelected(index)}
               disabled={validated}
               className={`rounded-xl border p-4 ${bgClass}`}
+              style={useInlineStyle ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
               <Text className={validated && isCorrectOption ? 'font-semibold' : ''}>
                 {option}

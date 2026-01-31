@@ -1,5 +1,11 @@
-// Dashboard Components
+/**
+ * Dashboard Components - TomAI 2026
+ *
+ * Pronote-centered engagement (no gamification)
+ */
 
-export { SubjectsGrid } from './SubjectsGrid';
 export { TokenUsageCard } from './TokenUsageCard';
-export { StudentPronoteCard } from './StudentPronoteCard';
+export { HomeworkUrgentCard, type HomeworkItem } from './HomeworkUrgentCard';
+export { GradesRecentCard, type GradeItem } from './GradesRecentCard';
+export { UpcomingTestsCard, type TestItem } from './UpcomingTestsCard';
+export { QuickAskCard } from './QuickAskCard';
