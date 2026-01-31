@@ -1,41 +1,106 @@
 /**
- * Chat Screen - Student
+ * Chat Screen - TomAI 2026
  *
- * Interface de chat avec Tom (tuteur IA) utilisant SSE streaming.
+ * AI tutor chat with Pronote context integration.
+ * The chat knows what homework/grade/test the student is working on.
+ *
+ * Context params:
+ * - subject: The school subject
+ * - context: "homework:id" | "grade:id" | "test:id" | undefined
+ * - prompt: Pre-filled question from dashboard
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { RotateCcw } from 'lucide-react-native';
+import { ArrowLeft, RotateCcw, BookOpen, FileText, BarChart3 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { ChatMessage, ChatInput } from '@/components/chat';
+import { TomAvatar } from '@/components/common';
 import {
   useChat,
   usePresignedUpload,
+  useStudentPronote,
+  useIconColors,
   type ChatMessage as ChatMessageType,
 } from '@/hooks';
+import { bgColors, shadows, colors } from '@/lib/styles';
 
-// Subjects available for students
-const SUBJECTS = [
-  { id: 'mathematiques', label: 'Maths', emoji: '🔢' },
-  { id: 'francais', label: 'Français', emoji: '📚' },
-  { id: 'histoire-geo', label: 'Histoire-Géo', emoji: '🌍' },
-  { id: 'sciences', label: 'Sciences', emoji: '🔬' },
-  { id: 'anglais', label: 'Anglais', emoji: '🇬🇧' },
-] as const;
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface ChatParams {
+  subject?: string;
+  sessionId?: string;
+  context?: string; // "homework:id" | "grade:id" | "test:id"
+  prompt?: string;
+}
+
+interface ContextInfo {
+  type: 'homework' | 'grade' | 'test' | 'general';
+  id?: string;
+  title?: string;
+  subject?: string;
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+function parseContext(contextParam?: string): ContextInfo {
+  if (!contextParam) return { type: 'general' };
+
+  const [type, id] = contextParam.split(':');
+  if (type === 'homework' || type === 'grade' || type === 'test') {
+    return { type, id };
+  }
+  return { type: 'general' };
+}
+
+function getSubjectEmoji(subject?: string): string {
+  if (!subject) return '📚';
+  const s = subject.toLowerCase();
+
+  if (s.includes('math')) return '📐';
+  if (s.includes('français') || s.includes('francais')) return '📖';
+  if (s.includes('anglais')) return '🇬🇧';
+  if (s.includes('espagnol')) return '🇪🇸';
+  if (s.includes('allemand')) return '🇩🇪';
+  if (s.includes('histoire') || s.includes('géo')) return '🌍';
+  if (s.includes('physique') || s.includes('chimie')) return '⚗️';
+  if (s.includes('svt') || s.includes('biologie')) return '🧬';
+  if (s.includes('techno')) return '⚙️';
+  if (s.includes('sport') || s.includes('eps')) return '🏃';
+  if (s.includes('musique')) return '🎵';
+  if (s.includes('arts')) return '🎨';
+  if (s.includes('philo')) return '🤔';
+  if (s.includes('ses') || s.includes('économie')) return '📊';
+  if (s.includes('info') || s.includes('nsi')) return '💻';
+
+  return '📚';
+}
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
 
 export default function ChatScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ subject?: string; sessionId?: string }>();
+  const params = useLocalSearchParams<Record<string, string>>();
   const flatListRef = useRef<FlatList>(null);
+  const iconColors = useIconColors();
 
-  // Subject selection (default to maths)
-  const [selectedSubject, setSelectedSubject] = useState(
-    params.subject ?? 'mathematiques'
-  );
+  // Parse context from params
+  const contextInfo = useMemo(() => parseContext(params.context), [params.context]);
+  const subject = params.subject ?? 'général';
+
+  // Pronote data for suggestions
+  const pronote = useStudentPronote();
 
   // Chat hook
   const {
@@ -51,11 +116,20 @@ export default function ChatScreen() {
     resetSession,
   } = useChat({
     initialSessionId: params.sessionId,
-    subject: selectedSubject,
+    subject,
   });
 
   // File upload hook
   const { uploadFile, isProcessing: isUploading } = usePresignedUpload();
+
+  // Send initial prompt if provided
+  const [sentInitialPrompt, setSentInitialPrompt] = useState(false);
+  useEffect(() => {
+    if (params.prompt && !sentInitialPrompt && messages.length === 0) {
+      setSentInitialPrompt(true);
+      sendMessage(params.prompt);
+    }
+  }, [params.prompt, sentInitialPrompt, messages.length, sendMessage]);
 
   // Handle file selection
   const handleFileSelected = useCallback(
@@ -85,38 +159,27 @@ export default function ChatScreen() {
           onPress: async () => {
             const newSessionId = await resetSession();
             if (newSessionId) {
-              // Update URL params
               router.setParams({
-                subject: selectedSubject,
+                subject,
                 sessionId: newSessionId,
+                context: undefined,
+                prompt: undefined,
               });
             }
           },
         },
       ]
     );
-  }, [resetSession, selectedSubject, router]);
+  }, [resetSession, subject, router]);
 
-  // Handle subject change
-  const handleSubjectChange = useCallback(
-    (subject: string) => {
-      if (subject !== selectedSubject) {
-        setSelectedSubject(subject);
-        // Navigate with new subject (will create new session)
-        router.setParams({ subject, sessionId: undefined });
-      }
-    },
-    [selectedSubject, router]
-  );
-
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
     if (messages.length > 0) {
       flatListRef.current?.scrollToEnd({ animated: true });
     }
   }, [messages.length]);
 
-  // Render message item
+  // Render message
   const renderMessage = useCallback(
     ({ item, index }: { item: ChatMessageType; index: number }) => {
       const isLastAssistant =
@@ -128,79 +191,104 @@ export default function ChatScreen() {
     [messages.length, isStreaming]
   );
 
-  const subjectLabel =
-    SUBJECTS.find((s) => s.id === selectedSubject)?.label ?? selectedSubject;
+  // Quick suggestions based on Pronote data
+  const suggestions = useMemo(() => {
+    if (!pronote.isConnected) return [];
+
+    const items: { label: string; prompt: string }[] = [];
+
+    // Add suggestions based on pending homework
+    const pendingHomework = pronote.homework
+      .filter((h) => !h.done)
+      .slice(0, 2);
+
+    pendingHomework.forEach((h) => {
+      items.push({
+        label: `Aide : ${h.subject}`,
+        prompt: `Aide-moi avec mon devoir de ${h.subject} : ${h.description}`,
+      });
+    });
+
+    // Add general suggestions if not enough
+    if (items.length < 3) {
+      items.push({
+        label: 'Explique ce cours',
+        prompt: `Peux-tu m'expliquer mon dernier cours de ${subject} ?`,
+      });
+    }
+
+    return items.slice(0, 3);
+  }, [pronote.isConnected, pronote.homework, subject]);
+
+  // Context badge info
+  const contextBadge = useMemo(() => {
+    switch (contextInfo.type) {
+      case 'homework':
+        return { icon: FileText, label: 'Devoir', color: colors.warning.DEFAULT };
+      case 'grade':
+        return { icon: BarChart3, label: 'Révision note', color: colors.primary.DEFAULT };
+      case 'test':
+        return { icon: BookOpen, label: 'Préparation contrôle', color: colors.destructive.DEFAULT };
+      default:
+        return null;
+    }
+  }, [contextInfo.type]);
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+        >
+          <ArrowLeft color={iconColors.foreground} size={20} />
+        </TouchableOpacity>
+
         <View className="flex-1">
-          <Text variant="h3">Chat avec Tom</Text>
-          <Text variant="muted" className="text-sm">
-            {subjectLabel}
-          </Text>
+          <View className="flex-row items-center gap-2">
+            <Text className="text-xl">{getSubjectEmoji(subject)}</Text>
+            <Text variant="large">Tom</Text>
+          </View>
+          {contextBadge && (
+            <View className="mt-0.5 flex-row items-center gap-1">
+              <contextBadge.icon color={contextBadge.color} size={12} />
+              <Text variant="tiny" style={{ color: contextBadge.color }}>
+                {contextBadge.label}
+              </Text>
+            </View>
+          )}
         </View>
+
         {currentSessionId && (
           <TouchableOpacity
             onPress={handleReset}
             className="h-10 w-10 items-center justify-center rounded-full bg-muted"
           >
-            <RotateCcw color="hsl(215.4, 16.3%, 46.9%)" size={18} />
+            <RotateCcw color={iconColors.muted} size={18} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Subject Selector */}
-      <View className="border-b border-border px-4 py-2">
-        <FlatList
-          horizontal
-          data={SUBJECTS}
-          keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => handleSubjectChange(item.id)}
-              className={`mr-2 flex-row items-center rounded-full px-3 py-1.5 ${
-                selectedSubject === item.id ? 'bg-primary' : 'bg-muted'
-              }`}
-            >
-              <Text className="mr-1">{item.emoji}</Text>
-              <Text
-                className={`text-sm font-medium ${
-                  selectedSubject === item.id
-                    ? 'text-primary-foreground'
-                    : 'text-foreground'
-                }`}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
-      </View>
-
       {/* Error Message */}
       {error && (
-        <View className="mx-4 mt-2 rounded-lg bg-destructive/10 p-3">
+        <View
+          className="mx-4 mt-2 rounded-lg p-3"
+          style={{ backgroundColor: bgColors.destructive[10] }}
+        >
           <Text className="text-center text-destructive">{error}</Text>
         </View>
       )}
 
-      {/* Messages */}
+      {/* Messages or Welcome */}
       {messages.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-            <Text className="text-4xl">🧠</Text>
-          </View>
-          <Text variant="h3" className="text-center">
-            Salut ! Je suis Tom
-          </Text>
-          <Text variant="muted" className="mt-2 text-center">
-            Pose-moi une question sur tes cours de {subjectLabel.toLowerCase()},
-            je suis là pour t'aider à comprendre et réviser !
-          </Text>
-        </View>
+        <WelcomeScreen
+          subject={subject}
+          contextInfo={contextInfo}
+          suggestions={suggestions}
+          onSuggestionPress={(prompt) => sendMessage(prompt)}
+          isLoading={isLoading}
+        />
       ) : (
         <FlatList
           ref={flatListRef}
@@ -221,8 +309,95 @@ export default function ChatScreen() {
         pendingAttachments={pendingAttachments}
         onRemoveAttachment={removeAttachment}
         isLoading={isLoading || isUploading}
-        placeholder={`Pose ta question de ${subjectLabel.toLowerCase()}...`}
+        placeholder="Pose ta question..."
       />
     </SafeAreaView>
+  );
+}
+
+// ============================================================================
+// WELCOME SCREEN
+// ============================================================================
+
+interface WelcomeScreenProps {
+  subject: string;
+  contextInfo: ContextInfo;
+  suggestions: { label: string; prompt: string }[];
+  onSuggestionPress: (prompt: string) => void;
+  isLoading: boolean;
+}
+
+function WelcomeScreen({
+  subject,
+  contextInfo,
+  suggestions,
+  onSuggestionPress,
+  isLoading,
+}: WelcomeScreenProps) {
+  const iconColors = useIconColors();
+
+  // Context-specific welcome message
+  const getWelcomeMessage = () => {
+    switch (contextInfo.type) {
+      case 'homework':
+        return "Je suis prêt à t'aider avec ce devoir. Qu'est-ce qui te pose problème ?";
+      case 'grade':
+        return "Revoyons ensemble ce chapitre pour améliorer ta compréhension.";
+      case 'test':
+        return "Préparons ce contrôle ensemble. Par quoi veux-tu commencer ?";
+      default:
+        return `Pose-moi une question sur tes cours, je suis là pour t'aider à comprendre et réviser !`;
+    }
+  };
+
+  return (
+    <View className="flex-1 px-4 py-6">
+      {/* Tom Avatar & Welcome */}
+      <View className="items-center mb-6">
+        <TomAvatar size="lg" className="mb-4" />
+        <Text variant="h3" className="text-center">
+          Salut ! Je suis Tom
+        </Text>
+        <Text variant="muted" className="mt-2 text-center px-4">
+          {getWelcomeMessage()}
+        </Text>
+      </View>
+
+      {/* Suggestions */}
+      {suggestions.length > 0 && !isLoading && (
+        <View className="gap-2">
+          <Text variant="small" className="text-muted-foreground px-1">
+            Suggestions
+          </Text>
+          {suggestions.map((suggestion, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() => onSuggestionPress(suggestion.prompt)}
+              activeOpacity={0.7}
+            >
+              <Card style={shadows.xs}>
+                <View className="flex-row items-center gap-3 p-4">
+                  <View
+                    className="h-8 w-8 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: bgColors.primary[10] }}
+                  >
+                    <FileText color={iconColors.primary} size={16} />
+                  </View>
+                  <Text className="flex-1">{suggestion.label}</Text>
+                  <Text className="text-primary">→</Text>
+                </View>
+              </Card>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* General tips */}
+      <View className="mt-auto pt-6">
+        <Text variant="caption" className="text-center">
+          Tu peux aussi envoyer une photo de ton exercice
+        </Text>
+      </View>
+    </View>
   );
 }

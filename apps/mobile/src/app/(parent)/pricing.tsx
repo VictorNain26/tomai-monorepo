@@ -22,6 +22,8 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks';
 import { useTheme } from '@/hooks';
+import { useIconColors } from '@/hooks/useIconColors';
+import { bgColors, colors } from '@/lib/styles';
 
 // ============================================================================
 // CONSTANTS
@@ -52,10 +54,8 @@ const PREMIUM_FEATURES = [
 export default function PricingScreen() {
   const router = useRouter();
   const { isDark } = useTheme();
+  const iconColors = useIconColors();
   const subscription = useSubscription();
-
-  const iconColor = isDark ? 'hsl(210, 40%, 98%)' : 'hsl(222.2, 47.4%, 11.2%)';
-  const mutedColor = isDark ? 'hsl(215, 20.2%, 65.1%)' : 'hsl(215.4, 16.3%, 46.9%)';
 
   // Get first available package for purchase
   const availablePackage = subscription.offering?.availablePackages[0];
@@ -75,7 +75,7 @@ export default function PricingScreen() {
       {/* Header */}
       <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
         <TouchableOpacity onPress={() => router.back()} className="p-1">
-          <ArrowLeft color={iconColor} size={24} />
+          <ArrowLeft color={iconColors.foreground} size={24} />
         </TouchableOpacity>
         <Text variant="h3">Abonnement</Text>
       </View>
@@ -84,7 +84,7 @@ export default function PricingScreen() {
         {/* Expo Go Warning */}
         {subscription.isExpoGo && (
           <View className="mb-6 flex-row items-start gap-3 rounded-xl border border-yellow-300 bg-yellow-50 p-4 dark:border-yellow-700 dark:bg-yellow-900/20">
-            <AlertCircle color="#ca8a04" size={20} />
+            <AlertCircle color={iconColors.warning} size={20} />
             <View className="flex-1">
               <Text className="font-semibold text-yellow-800 dark:text-yellow-200">
                 Mode Expo Go
@@ -100,7 +100,7 @@ export default function PricingScreen() {
         {/* Already Premium Banner */}
         {subscription.isPro && (
           <View className="mb-6 flex-row items-start gap-3 rounded-xl border border-green-300 bg-green-50 p-4 dark:border-green-700 dark:bg-green-900/20">
-            <Sparkles color="#16a34a" size={20} />
+            <Sparkles color={iconColors.success} size={20} />
             <View className="flex-1">
               <Text className="font-semibold text-green-800 dark:text-green-200">
                 Vous êtes Premium !
@@ -134,7 +134,6 @@ export default function PricingScreen() {
             period="/mois"
             features={FREE_FEATURES}
             isCurrentPlan={!subscription.isPro}
-            mutedColor={mutedColor}
           />
 
           {/* Premium Plan */}
@@ -145,7 +144,6 @@ export default function PricingScreen() {
             features={PREMIUM_FEATURES}
             isCurrentPlan={subscription.isPro}
             isPremium
-            mutedColor={mutedColor}
           />
         </View>
 
@@ -191,13 +189,13 @@ export default function PricingScreen() {
         {/* Trust Badges */}
         <View className="mt-8 gap-3">
           <View className="flex-row items-center justify-center gap-2">
-            <Shield color="#16a34a" size={16} />
+            <Shield color={iconColors.success} size={16} />
             <Text variant="muted" className="text-sm">
               Paiement sécurisé via {subscription.isExpoGo ? 'App Store / Play Store' : 'votre store'}
             </Text>
           </View>
           <View className="flex-row items-center justify-center gap-2">
-            <Clock color={mutedColor} size={16} />
+            <Clock color={iconColors.muted} size={16} />
             <Text variant="muted" className="text-sm">
               Annulation à tout moment
             </Text>
@@ -241,7 +239,6 @@ interface PlanCardProps {
   features: { text: string; included: boolean }[];
   isCurrentPlan: boolean;
   isPremium?: boolean;
-  mutedColor: string;
 }
 
 function PlanCard({
@@ -251,24 +248,26 @@ function PlanCard({
   features,
   isCurrentPlan,
   isPremium = false,
-  mutedColor,
 }: PlanCardProps) {
+  const iconColors = useIconColors();
+
   return (
     <View
       className={`rounded-xl border p-4 ${
         isPremium
-          ? 'border-primary bg-primary/5'
+          ? 'border-primary'
           : 'border-border bg-card'
       }`}
+      style={isPremium ? { backgroundColor: bgColors.primary[5] } : undefined}
     >
       {/* Header */}
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
-          {isPremium && <Sparkles color="hsl(262, 83%, 58%)" size={20} />}
+          {isPremium && <Sparkles color={iconColors.primary} size={20} />}
           <Text className="text-lg font-bold">{title}</Text>
         </View>
         {isCurrentPlan && (
-          <View className="rounded-full bg-primary/10 px-3 py-1">
+          <View className="rounded-full px-3 py-1" style={{ backgroundColor: bgColors.primary[10] }}>
             <Text className="text-xs font-semibold text-primary">
               Plan actuel
             </Text>
@@ -289,12 +288,12 @@ function PlanCard({
         {features.map((feature) => (
           <View key={feature.text} className="flex-row items-center gap-3">
             {feature.included ? (
-              <View className="h-5 w-5 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                <Check color="#16a34a" size={12} />
+              <View className="h-5 w-5 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.success[10] }}>
+                <Check color={iconColors.success} size={12} />
               </View>
             ) : (
               <View className="h-5 w-5 items-center justify-center rounded-full bg-muted">
-                <X color={mutedColor} size={12} />
+                <X color={iconColors.muted} size={12} />
               </View>
             )}
             <Text

@@ -5,12 +5,14 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      /**
+       * TomAI Design System - 2026
+       *
+       * Palette sobre et professionnelle.
+       * Variables CSS définies dans src/global.css
+       */
       colors: {
-        /**
-         * TomIA brand colors using CSS variables for dark mode support
-         * Variables defined in src/global.css
-         * @see https://ui.shadcn.com/themes
-         */
+        // Core semantic colors
         primary: {
           DEFAULT: 'hsl(var(--color-primary))',
           foreground: 'hsl(var(--color-primary-foreground))',
@@ -35,6 +37,8 @@ module.exports = {
           DEFAULT: 'hsl(var(--color-popover))',
           foreground: 'hsl(var(--color-popover-foreground))',
         },
+
+        // Status colors
         success: {
           DEFAULT: 'hsl(var(--color-success))',
           foreground: 'hsl(var(--color-success-foreground))',
@@ -43,6 +47,12 @@ module.exports = {
           DEFAULT: 'hsl(var(--color-warning))',
           foreground: 'hsl(var(--color-warning-foreground))',
         },
+        info: {
+          DEFAULT: 'hsl(var(--color-info))',
+          foreground: 'hsl(var(--color-info-foreground))',
+        },
+
+        // Layout colors
         border: 'hsl(var(--color-border))',
         input: 'hsl(var(--color-input))',
         ring: 'hsl(var(--color-ring))',
@@ -53,10 +63,34 @@ module.exports = {
           foreground: 'hsl(var(--color-card-foreground))',
         },
       },
+
+      /**
+       * Border Radius
+       * Modern but not excessive - professional look
+       */
       borderRadius: {
-        lg: 8,
-        md: 6,
-        sm: 4,
+        '2xl': 16,  // Large cards, modals
+        xl: 14,     // Cards, buttons large
+        lg: 12,     // Default cards
+        md: 10,     // Buttons, inputs
+        sm: 8,      // Small elements
+        xs: 6,      // Badges, tags
+      },
+
+      /**
+       * Spacing additions
+       * Consistent spacing scale
+       */
+      spacing: {
+        18: '4.5rem',   // 72px
+        22: '5.5rem',   // 88px
+      },
+
+      /**
+       * Font sizes optimized for mobile education
+       */
+      fontSize: {
+        '2xs': ['0.625rem', { lineHeight: '0.875rem' }],  // 10px - badges
       },
     },
   },

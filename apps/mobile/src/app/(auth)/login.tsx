@@ -1,4 +1,10 @@
-import { useState } from 'react';
+/**
+ * Login Screen - TomAI 2026
+ *
+ * Authentication screen for parents (email) and students (username).
+ */
+
+import { useState, useEffect } from 'react';
 import {
   View,
   KeyboardAvoidingView,
@@ -8,21 +14,41 @@ import {
   TouchableOpacity,
   Pressable,
 } from 'react-native';
-import { Link } from 'expo-router';
-import { signIn, signInWithUsername, signInWithGoogle } from '@/lib/auth';
+import { Link, useRouter } from 'expo-router';
+import { signIn, signInWithUsername, signInWithGoogle, useSession } from '@/lib/auth';
 
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { TomAvatar } from '@/components/common';
+import { useTheme } from '@/hooks';
+import { bgColors, colors, shadows } from '@/lib/styles';
+
+// Card colors for segmented control
+const CARD_COLORS = {
+  light: '#FFFFFF',
+  dark: '#374151', // colors.card dark
+};
 
 type AccountType = 'parent' | 'student';
 
 export default function LoginScreen() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const { isDark } = useTheme();
   const [accountType, setAccountType] = useState<AccountType>('parent');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect when session becomes available (handles OAuth callback and email login)
+  useEffect(() => {
+    if (session?.user) {
+      router.replace('/');
+    }
+  }, [session, router]);
 
   const config = {
     parent: {
@@ -50,24 +76,20 @@ export default function LoginScreen() {
 
     try {
       if (accountType === 'parent') {
-        // Parent: email login with Better Auth
         const result = await signIn(identifier, password);
-
         if (result.error) {
           setError(result.error.message ?? 'Email ou mot de passe incorrect');
           return;
         }
-        // Auth successful - AuthGuard will redirect
       } else {
-        // Student: username login with Better Auth
         const result = await signInWithUsername(identifier, password);
-
         if (result.error) {
           setError(result.error.message ?? "Nom d'utilisateur ou mot de passe incorrect");
           return;
         }
-        // Auth successful - AuthGuard will redirect
       }
+      // Login successful - redirect to home which handles role-based routing
+      router.replace('/');
     } catch {
       setError('Erreur de connexion. Vérifiez vos identifiants.');
     } finally {
@@ -77,7 +99,6 @@ export default function LoginScreen() {
 
   async function handleGoogleLogin() {
     try {
-      // expoClient handles the callback automatically via deep link
       await signInWithGoogle();
     } catch {
       Alert.alert('Erreur', 'Impossible de se connecter avec Google');
@@ -104,9 +125,10 @@ export default function LoginScreen() {
       >
         <View className="flex-1 justify-center px-6 py-12">
           {/* Header */}
-          <View className="mb-8">
+          <View className="mb-8 items-center">
+            <TomAvatar size="lg" className="mb-4" />
             <Text variant="h1" className="text-center text-primary">
-              TomIA
+              Tom
             </Text>
             <Text variant="muted" className="mt-2 text-center">
               Connectez-vous pour continuer
@@ -114,12 +136,18 @@ export default function LoginScreen() {
           </View>
 
           {/* Account type toggle */}
-          <View className="mb-6 flex-row rounded-lg bg-muted p-1">
+          <View
+            className="mb-6 flex-row rounded-xl p-1"
+            style={{ backgroundColor: bgColors.muted[50] }}
+          >
             <Pressable
               onPress={() => handleAccountTypeChange('parent')}
-              className={`flex-1 rounded-md py-2 ${
-                accountType === 'parent' ? 'bg-background shadow-sm' : ''
-              }`}
+              className="flex-1 rounded-lg py-3"
+              style={
+                accountType === 'parent'
+                  ? [shadows.xs, { backgroundColor: isDark ? CARD_COLORS.dark : CARD_COLORS.light }]
+                  : undefined
+              }
             >
               <Text
                 className={`text-center font-medium ${
@@ -133,9 +161,12 @@ export default function LoginScreen() {
             </Pressable>
             <Pressable
               onPress={() => handleAccountTypeChange('student')}
-              className={`flex-1 rounded-md py-2 ${
-                accountType === 'student' ? 'bg-background shadow-sm' : ''
-              }`}
+              className="flex-1 rounded-lg py-3"
+              style={
+                accountType === 'student'
+                  ? [shadows.xs, { backgroundColor: isDark ? CARD_COLORS.dark : CARD_COLORS.light }]
+                  : undefined
+              }
             >
               <Text
                 className={`text-center font-medium ${
@@ -151,18 +182,19 @@ export default function LoginScreen() {
 
           {/* Error message */}
           {error && (
-            <View className="mb-4 rounded-md bg-destructive/10 p-3">
+            <View
+              className="mb-4 rounded-xl p-3"
+              style={{ backgroundColor: bgColors.destructive[10] }}
+            >
               <Text className="text-center text-destructive">{error}</Text>
             </View>
           )}
 
           {/* Form */}
-          <View className="gap-4">
-            <View>
-              <Text variant="small" className="mb-2 font-medium">
-                {currentConfig.label}
-              </Text>
+          <Card style={shadows.sm}>
+            <View className="gap-4 p-4">
               <Input
+                label={currentConfig.label}
                 placeholder={currentConfig.placeholder}
                 value={identifier}
                 onChangeText={setIdentifier}
@@ -171,13 +203,9 @@ export default function LoginScreen() {
                 autoComplete={currentConfig.autoComplete}
                 disabled={isLoading}
               />
-            </View>
 
-            <View>
-              <Text variant="small" className="mb-2 font-medium">
-                Mot de passe
-              </Text>
               <Input
+                label="Mot de passe"
                 placeholder="Votre mot de passe"
                 value={password}
                 onChangeText={setPassword}
@@ -186,28 +214,24 @@ export default function LoginScreen() {
                 autoComplete="password"
                 disabled={isLoading}
               />
+
+              {accountType === 'parent' && (
+                <Link href="/(auth)/forgot-password" asChild>
+                  <TouchableOpacity>
+                    <Text variant="small" className="text-right text-primary">
+                      Mot de passe oublié ?
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+              )}
+
+              <Button onPress={handleLogin} disabled={isLoading} className="mt-2">
+                <Text className="font-semibold text-primary-foreground">
+                  {isLoading ? 'Connexion...' : 'Se connecter'}
+                </Text>
+              </Button>
             </View>
-
-            {accountType === 'parent' && (
-              <Link href="/(auth)/forgot-password" asChild>
-                <TouchableOpacity>
-                  <Text variant="small" className="text-right text-primary">
-                    Mot de passe oublié ?
-                  </Text>
-                </TouchableOpacity>
-              </Link>
-            )}
-
-            <Button
-              onPress={handleLogin}
-              disabled={isLoading}
-              className="mt-2"
-            >
-              <Text className="font-semibold text-primary-foreground">
-                {isLoading ? 'Connexion...' : 'Se connecter'}
-              </Text>
-            </Button>
-          </View>
+          </Card>
 
           {/* Google OAuth - Parent only */}
           {accountType === 'parent' && (
@@ -240,8 +264,15 @@ export default function LoginScreen() {
 
           {/* Info for students */}
           {accountType === 'student' && (
-            <View className="mt-8">
-              <Text variant="muted" className="text-center text-sm">
+            <View
+              className="mt-6 rounded-xl p-4"
+              style={{ backgroundColor: bgColors.info[10] }}
+            >
+              <Text
+                variant="small"
+                className="text-center"
+                style={{ color: colors.info.DEFAULT }}
+              >
                 Ton compte a été créé par tes parents.{'\n'}
                 Utilise ton nom d'utilisateur pour te connecter.
               </Text>

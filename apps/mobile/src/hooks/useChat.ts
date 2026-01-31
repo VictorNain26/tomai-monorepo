@@ -10,117 +10,26 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getBaseUrl, apiClient } from '@repo/api';
+import { getBaseUrl } from '@repo/api';
 import { useUser, type IAppUser } from '@/lib/auth';
 import EventSource from 'react-native-sse';
 
-// ============================================================================
-// TYPES (aligned with backend apps/server/src/routes/api.routes.ts)
-// ============================================================================
+import type {
+  ChatMessage,
+  ChatFileAttachment,
+  StreamChunk,
+  UseChatOptions,
+  UseChatReturn,
+} from './chat/types';
+import {
+  chatQueryKeys,
+  fetchOrCreateSession,
+  fetchHistory,
+  resetChatSession,
+} from './chat/api';
 
-/** Backend chat history message (GET /api/chat/session/:id/history) */
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string; // ISO string from backend
-  aiModel?: string | null;
-  attachedFile?: AttachedFileInfo | null;
-}
-
-/** Backend attachedFile structure (from messages table JSONB) */
-export interface AttachedFileInfo {
-  fileName: string;
-  fileId?: string;
-  geminiFileId?: string;
-  mimeType?: string;
-  fileSizeBytes?: number;
-}
-
-/** File attachment for pending uploads (client-side) */
-export interface ChatFileAttachment {
-  fileId: string;
-  fileName: string;
-  mimeType: string;
-  preview?: string;
-}
-
-/** Backend SSE stream chunk (from gemini-chat.service.ts GeminiStreamChunk) */
-interface StreamChunk {
-  type: 'content' | 'done' | 'error';
-  id: string;
-  model?: string;
-  timestamp?: number;
-  delta?: string;
-  content?: string;
-  role?: 'assistant';
-  finishReason?: 'stop' | 'length' | 'error';
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
-  metadata?: {
-    sessionId?: string;
-    usedRAG?: boolean;
-  };
-  error?: {
-    message: string;
-    code?: string;
-  };
-}
-
-interface UseChatOptions {
-  initialSessionId?: string | null;
-  subject: string;
-}
-
-interface UseChatReturn {
-  messages: ChatMessage[];
-  pendingAttachments: ChatFileAttachment[];
-  currentSessionId: string | null;
-  isLoading: boolean;
-  isStreaming: boolean;
-  error: string | null;
-  sendMessage: (content: string) => Promise<void>;
-  addAttachment: (attachment: ChatFileAttachment) => void;
-  removeAttachment: (fileId: string) => void;
-  clearPendingAttachments: () => void;
-  resetSession: () => Promise<string | null>;
-  stop: () => void;
-}
-
-// ============================================================================
-// QUERY KEYS
-// ============================================================================
-
-const queryKeys = {
-  session: (subject: string) => ['chat', 'session', subject] as const,
-  history: (sessionId: string) => ['chat', 'history', sessionId] as const,
-};
-
-// ============================================================================
-// API FUNCTIONS
-// ============================================================================
-
-async function fetchOrCreateSession(subject: string): Promise<string> {
-  const data = await apiClient.post<{ sessionId: string }>('/api/chat/session', { subject });
-  return data.sessionId;
-}
-
-async function fetchHistory(
-  sessionId: string
-): Promise<{ messages: ChatMessage[] }> {
-  try {
-    return await apiClient.get<{ messages: ChatMessage[] }>(`/api/chat/session/${sessionId}/history`);
-  } catch {
-    return { messages: [] };
-  }
-}
-
-// ============================================================================
-// HOOK
-// ============================================================================
+// Re-export types for consumers
+export type { ChatMessage, ChatFileAttachment, AttachedFileInfo } from './chat/types';
 
 export function useChat({
   initialSessionId,
@@ -151,7 +60,7 @@ export function useChat({
 
   // Session query (lazy creation)
   const sessionQuery = useQuery({
-    queryKey: queryKeys.session(subject),
+    queryKey: chatQueryKeys.session(subject),
     queryFn: () => fetchOrCreateSession(subject),
     enabled: !initialSessionId && !!subject && !!user,
     staleTime: Infinity,
@@ -167,7 +76,7 @@ export function useChat({
 
   // History query
   const historyQuery = useQuery({
-    queryKey: queryKeys.history(currentSessionId ?? ''),
+    queryKey: chatQueryKeys.history(currentSessionId ?? ''),
     queryFn: () => fetchHistory(currentSessionId ?? ''),
     enabled: !!currentSessionId,
     staleTime: Infinity,
@@ -282,7 +191,7 @@ export function useChat({
               ) {
                 sessionIdRef.current = chunk.metadata.sessionId;
                 queryClient.setQueryData(
-                  queryKeys.session(subject),
+                  chatQueryKeys.session(subject),
                   chunk.metadata.sessionId
                 );
               }
@@ -361,9 +270,7 @@ export function useChat({
     if (!sessionIdRef.current) return null;
 
     try {
-      const data = await apiClient.post<{ sessionId: string }>(
-        `/api/chat/session/${sessionIdRef.current}/reset`
-      );
+      const data = await resetChatSession(sessionIdRef.current);
 
       // Update state
       sessionIdRef.current = data.sessionId;
@@ -372,9 +279,9 @@ export function useChat({
       setError(null);
 
       // Update query cache
-      queryClient.setQueryData(queryKeys.session(subject), data.sessionId);
+      queryClient.setQueryData(chatQueryKeys.session(subject), data.sessionId);
       queryClient.removeQueries({
-        queryKey: queryKeys.history(sessionIdRef.current ?? ''),
+        queryKey: chatQueryKeys.history(sessionIdRef.current ?? ''),
       });
 
       return data.sessionId;

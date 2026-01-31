@@ -21,6 +21,7 @@ import { resetPassword } from '@/lib/auth';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { bgColors } from '@/lib/styles';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -115,7 +116,7 @@ export default function ResetPasswordScreen() {
     return (
       <View className="flex-1 justify-center bg-background px-6">
         <View className="items-center">
-          <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+          <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.destructive[10] }}>
             <AlertCircle color="hsl(0, 84.2%, 60.2%)" size={32} />
           </View>
 
@@ -169,7 +170,7 @@ export default function ResetPasswordScreen() {
 
           {/* Header */}
           <View className="mb-8 items-center">
-            <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
               <Lock color="hsl(222.2, 47.4%, 11.2%)" size={32} />
             </View>
 

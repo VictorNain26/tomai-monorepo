@@ -1,6 +1,7 @@
 import { View, ActivityIndicator } from 'react-native';
 import { cn } from '@/lib/utils';
 import { Text } from '@/components/ui/text';
+import { colors } from '@/lib/styles';
 
 interface LoadingScreenProps {
   message?: string;
@@ -18,7 +19,7 @@ export function LoadingScreen({
         className
       )}
     >
-      <ActivityIndicator size="large" color="#3B82F6" />
+      <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
       {message && (
         <Text variant="muted" className="mt-4">
           {message}

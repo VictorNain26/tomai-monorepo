@@ -9,24 +9,39 @@ import {
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
+import { colors, opacity } from '@/lib/styles';
+
+/**
+ * TomAI Button Component - 2026
+ *
+ * Design principles:
+ * - Generous padding for comfortable touch targets
+ * - Modern rounded corners (not excessive)
+ * - Clear visual hierarchy between variants
+ * - Accessible focus states
+ */
 
 const buttonVariants = cva(
-  'flex-row items-center justify-center gap-2 rounded-md web:ring-offset-background web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2',
+  'flex-row items-center justify-center gap-2 rounded-lg web:ring-offset-background web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2',
   {
     variants: {
       variant: {
-        default: 'bg-primary active:opacity-90',
-        destructive: 'bg-destructive active:opacity-90',
-        outline: 'border border-input bg-background active:bg-accent',
-        secondary: 'bg-secondary active:opacity-80',
+        default: 'bg-primary',
+        destructive: 'bg-destructive',
+        outline: 'border border-border bg-background active:bg-accent',
+        secondary: 'bg-secondary',
         ghost: 'active:bg-accent',
         link: '',
+        // New: Subtle variant for less prominent actions
+        subtle: 'bg-accent active:bg-secondary',
       },
       size: {
-        default: 'h-12 px-5 py-3',
-        sm: 'h-9 px-3',
-        lg: 'h-14 px-8',
+        default: 'h-12 px-6 py-3',
+        sm: 'h-10 px-4 py-2',
+        lg: 'h-14 px-8 py-4',
         icon: 'h-12 w-12',
+        'icon-sm': 'h-10 w-10',
+        'icon-lg': 'h-14 w-14',
       },
     },
     defaultVariants: {
@@ -36,7 +51,7 @@ const buttonVariants = cva(
   }
 );
 
-const buttonTextVariants = cva('font-medium text-center', {
+const buttonTextVariants = cva('font-semibold text-center', {
   variants: {
     variant: {
       default: 'text-primary-foreground',
@@ -45,12 +60,15 @@ const buttonTextVariants = cva('font-medium text-center', {
       secondary: 'text-secondary-foreground',
       ghost: 'text-foreground',
       link: 'text-primary underline',
+      subtle: 'text-accent-foreground',
     },
     size: {
       default: 'text-base',
       sm: 'text-sm',
       lg: 'text-lg',
       icon: 'text-base',
+      'icon-sm': 'text-sm',
+      'icon-lg': 'text-lg',
     },
   },
   defaultVariants: {
@@ -85,6 +103,7 @@ function Button({
   className,
   variant,
   size,
+  style,
   children,
   disabled,
   isLoading,
@@ -96,20 +115,42 @@ function Button({
   const textClass = buttonTextVariants({ variant, size });
   const isDisabled = disabled || isLoading;
 
-  // Determine spinner color based on variant
-  const spinnerColor =
-    variant === 'outline' || variant === 'ghost' || variant === 'link'
-      ? 'hsl(222.2, 47.4%, 11.2%)'
-      : 'hsl(210, 40%, 98%)';
+  // Determine spinner color based on variant (using new color palette)
+  const getSpinnerColor = () => {
+    switch (variant) {
+      case 'default':
+        return colors.primary.foreground;
+      case 'destructive':
+        return colors.destructive.foreground;
+      case 'outline':
+      case 'ghost':
+      case 'subtle':
+        return colors.primary.DEFAULT;
+      case 'link':
+        return colors.primary.DEFAULT;
+      case 'secondary':
+        return colors.foreground.light;
+      default:
+        return colors.primary.foreground;
+    }
+  };
+
+  // Variants that need active opacity feedback
+  const needsActiveOpacity =
+    variant === 'default' ||
+    variant === 'destructive' ||
+    variant === 'secondary' ||
+    variant === 'subtle';
 
   return (
     <TextClassContext.Provider value={textClass}>
       <Pressable
-        className={cn(
-          buttonVariants({ variant, size }),
-          isDisabled && 'opacity-50',
-          className
-        )}
+        className={cn(buttonVariants({ variant, size }), className)}
+        style={({ pressed }) => [
+          isDisabled && { opacity: opacity.disabled },
+          pressed && needsActiveOpacity && { opacity: opacity.active },
+          style,
+        ]}
         disabled={isDisabled}
         accessibilityRole={accessibilityRole}
         accessibilityLabel={accessibilityLabel}
@@ -121,7 +162,7 @@ function Button({
         {...props}
       >
         {isLoading ? (
-          <ActivityIndicator size="small" color={spinnerColor} />
+          <ActivityIndicator size="small" color={getSpinnerColor()} />
         ) : typeof children === 'string' ? (
           <Text className={textClass}>{children}</Text>
         ) : (

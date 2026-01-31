@@ -14,6 +14,7 @@ import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DeckCard } from '@/components/learning';
 import { useLearning } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 export default function LearningScreen() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function LearningScreen() {
 
         {/* Error */}
         {error && (
-          <View className="mb-4 rounded-xl bg-destructive/10 p-4">
+          <View className="mb-4 rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
             <Text className="text-center text-destructive">{error}</Text>
           </View>
         )}
@@ -81,7 +82,7 @@ export default function LearningScreen() {
         {/* Empty State */}
         {!isLoading && decks.length === 0 && (
           <View className="items-center py-12">
-            <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+            <View className="mb-4 h-20 w-20 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
               <BookOpen color="hsl(222.2, 47.4%, 11.2%)" size={40} />
             </View>
             <Text variant="h3" className="text-center">
@@ -119,7 +120,7 @@ export default function LearningScreen() {
 
         {/* Info */}
         {!isLoading && decks.length > 0 && (
-          <View className="mt-6 rounded-xl border border-border bg-muted/50 p-4">
+          <View className="mt-6 rounded-xl border border-border p-4" style={{ backgroundColor: bgColors.muted[50] }}>
             <Text variant="muted" className="text-center text-sm">
               💡 Appuie sur ▶️ pour jouer un deck ou 🗑️ pour le supprimer.
             </Text>

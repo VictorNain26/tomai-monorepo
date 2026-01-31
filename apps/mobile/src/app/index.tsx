@@ -1,28 +1,50 @@
-import { View, Text, Pressable } from 'react-native';
-import { Link } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+/**
+ * App Entry Point
+ *
+ * Redirects to appropriate screen based on auth state.
+ * Best Practice 2026: No landing page, direct to login or dashboard.
+ */
 
-export default function HomeScreen() {
+import { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSession, useUser } from '@/lib/auth';
+import { useTheme } from '@/hooks';
+import { colors } from '@/lib/styles';
+
+export default function Index() {
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+  const user = useUser();
+  const { isDark } = useTheme();
+
+  useEffect(() => {
+    if (isPending) return;
+
+    if (session?.user) {
+      // Authenticated -> redirect to dashboard
+      if (user?.role === 'parent') {
+        router.replace('/(parent)/');
+      } else {
+        router.replace('/(student)/');
+      }
+    } else {
+      // Not authenticated -> redirect to login
+      router.replace('/(auth)/login');
+    }
+  }, [isPending, session, user, router]);
+
+  // Show loading while checking auth
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-4xl font-bold text-foreground mb-2">TomIA</Text>
-        <Text className="text-lg text-muted-foreground text-center mb-8">
-          Ton tuteur IA pour réussir à l'école
-        </Text>
-
-        <Link href="/login" asChild>
-          <Pressable className="bg-primary px-8 py-4 rounded-lg active:opacity-80">
-            <Text className="text-primary-foreground font-semibold text-lg">
-              Commencer
-            </Text>
-          </Pressable>
-        </Link>
-
-        <Text className="text-sm text-muted-foreground mt-12">
-          Du CP à la Terminale • Pédagogie socratique
-        </Text>
-      </View>
-    </SafeAreaView>
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isDark ? colors.background.dark : colors.background.light,
+      }}
+    >
+      <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
+    </View>
   );
 }

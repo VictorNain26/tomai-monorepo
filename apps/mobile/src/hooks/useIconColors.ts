@@ -33,25 +33,25 @@ export interface IconColors {
 // COLOR DEFINITIONS
 // ============================================================================
 
-// Light mode colors (matching global.css :root)
+// Light mode colors (matching global.css :root exactly)
 const LIGHT_COLORS: IconColors = {
-  foreground: 'hsl(222.2, 47.4%, 11.2%)',
-  muted: 'hsl(215.4, 16.3%, 46.9%)',
-  primary: 'hsl(222.2, 47.4%, 11.2%)',
-  destructive: 'hsl(0, 84.2%, 60.2%)',
-  success: 'hsl(142, 76%, 36%)',
-  warning: 'hsl(43, 96%, 56%)',
+  foreground: 'hsl(220, 14%, 17%)',       // --color-foreground
+  muted: 'hsl(220, 9%, 46%)',             // --color-muted-foreground
+  primary: 'hsl(221, 83%, 53%)',          // --color-primary
+  destructive: 'hsl(0, 72%, 51%)',        // --color-destructive
+  success: 'hsl(160, 84%, 39%)',          // --color-success
+  warning: 'hsl(32, 95%, 44%)',           // --color-warning
   white: 'hsl(0, 0%, 100%)',
 };
 
-// Dark mode colors (matching global.css .dark)
+// Dark mode colors (matching global.css .dark exactly)
 const DARK_COLORS: IconColors = {
-  foreground: 'hsl(210, 40%, 98%)',
-  muted: 'hsl(215, 20.2%, 65.1%)',
-  primary: 'hsl(210, 40%, 98%)',
-  destructive: 'hsl(0, 62.8%, 30.6%)',
-  success: 'hsl(142, 76%, 46%)',
-  warning: 'hsl(43, 96%, 66%)',
+  foreground: 'hsl(210, 40%, 98%)',       // --color-foreground
+  muted: 'hsl(218, 11%, 65%)',            // --color-muted-foreground
+  primary: 'hsl(217, 91%, 60%)',          // --color-primary
+  destructive: 'hsl(0, 63%, 31%)',        // --color-destructive
+  success: 'hsl(160, 84%, 39%)',          // --color-success
+  warning: 'hsl(32, 95%, 44%)',           // --color-warning
   white: 'hsl(0, 0%, 100%)',
 };
 

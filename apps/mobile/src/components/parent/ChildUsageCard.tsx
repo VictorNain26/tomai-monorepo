@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useIconColors } from '@/hooks';
 import { cn } from '@/lib/utils';
 import type { ChildWindowUsage, ChildWeeklyUsage } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // PROPS
@@ -99,10 +100,8 @@ export function ChildUsageCard({
       <View className="mb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
           <View
-            className={cn(
-              'h-8 w-8 items-center justify-center rounded-lg',
-              isPremium ? 'bg-warning/10' : 'bg-primary/10'
-            )}
+            className="h-8 w-8 items-center justify-center rounded-lg"
+            style={{ backgroundColor: isPremium ? bgColors.warning[10] : bgColors.primary[10] }}
           >
             {isPremium ? (
               <Crown color={iconColors.warning} size={18} />
@@ -164,7 +163,7 @@ export function ChildUsageCard({
 
       {/* Warning messages */}
       {isExhausted && (
-        <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg bg-destructive/10 p-2">
+        <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
           <AlertTriangle color={iconColors.destructive} size={14} />
           <Text className="text-xs text-destructive">
             Limite atteinte
@@ -172,7 +171,7 @@ export function ChildUsageCard({
         </View>
       )}
       {isNearLimit && !isExhausted && (
-        <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg bg-destructive/10 p-2">
+        <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
           <AlertTriangle color={iconColors.destructive} size={14} />
           <Text className="text-xs text-destructive">
             Presque épuisé
@@ -180,7 +179,7 @@ export function ChildUsageCard({
         </View>
       )}
       {isThrottle && !isNearLimit && (
-        <View className="mt-3 rounded-lg bg-warning/10 p-2">
+        <View className="mt-3 rounded-lg p-2" style={{ backgroundColor: bgColors.warning[10] }}>
           <Text className="text-center text-xs text-warning">
             Quota faible
           </Text>

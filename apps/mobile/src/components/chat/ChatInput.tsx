@@ -1,5 +1,5 @@
 /**
- * ChatInput Component
+ * ChatInput Component - TomAI 2026
  *
  * Input pour envoyer des messages avec support attachments et voice input.
  * Intègre la dictée vocale avec transcription automatique.
@@ -18,11 +18,12 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { Mic, Square } from 'lucide-react-native';
+import { Mic, Square, Send, ImageIcon, Paperclip } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
-import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { useVoiceInput, useIconColors } from '@/hooks';
 import type { ChatFileAttachment } from '@/hooks';
+import { bgColors, colors, opacity } from '@/lib/styles';
 
 interface ChatInputProps {
   onSendMessage: (content: string) => Promise<void>;
@@ -47,6 +48,7 @@ export function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const inputRef = useRef<TextInput>(null);
+  const iconColors = useIconColors();
 
   // Voice input hook
   const voice = useVoiceInput();
@@ -150,21 +152,25 @@ export function ChatInput({
               {pendingAttachments.map((attachment) => (
                 <View
                   key={attachment.fileId}
-                  className="relative rounded-lg bg-muted p-2"
+                  className="relative rounded-xl bg-muted p-2"
                 >
                   {attachment.preview ? (
                     <Image
                       source={{ uri: attachment.preview }}
-                      className="h-16 w-16 rounded"
+                      className="h-16 w-16 rounded-lg"
                       resizeMode="cover"
                     />
                   ) : (
-                    <View className="h-16 w-16 items-center justify-center rounded bg-muted-foreground/20">
+                    <View
+                      className="h-16 w-16 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: bgColors.primary[10] }}
+                    >
                       <Text className="text-2xl">📄</Text>
                     </View>
                   )}
                   <Text
-                    className="mt-1 max-w-[64px] text-xs text-muted-foreground"
+                    variant="tiny"
+                    className="mt-1 max-w-[64px] text-muted-foreground"
                     numberOfLines={1}
                   >
                     {attachment.fileName}
@@ -191,22 +197,24 @@ export function ChatInput({
               <TouchableOpacity
                 onPress={handlePickImage}
                 disabled={isLoading}
-                className={cn(
-                  'h-10 w-10 items-center justify-center rounded-full bg-muted',
-                  isLoading && 'opacity-50'
-                )}
+                className="h-10 w-10 items-center justify-center rounded-full"
+                style={[
+                  { backgroundColor: bgColors.muted[50] },
+                  isLoading ? { opacity: opacity.disabled } : undefined,
+                ]}
               >
-                <Text className="text-lg">🖼️</Text>
+                <ImageIcon color={iconColors.muted} size={18} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handlePickDocument}
                 disabled={isLoading}
-                className={cn(
-                  'h-10 w-10 items-center justify-center rounded-full bg-muted',
-                  isLoading && 'opacity-50'
-                )}
+                className="h-10 w-10 items-center justify-center rounded-full"
+                style={[
+                  { backgroundColor: bgColors.muted[50] },
+                  isLoading ? { opacity: opacity.disabled } : undefined,
+                ]}
               >
-                <Text className="text-lg">📎</Text>
+                <Paperclip color={iconColors.muted} size={18} />
               </TouchableOpacity>
             </View>
           )}
@@ -219,12 +227,12 @@ export function ChatInput({
               onChangeText={setMessage}
               placeholder={
                 voice.isRecording
-                  ? `🎙️ Enregistrement... ${voice.duration}s`
+                  ? `Enregistrement... ${voice.duration}s`
                   : voice.isProcessing
-                    ? '⏳ Transcription en cours...'
+                    ? 'Transcription en cours...'
                     : placeholder
               }
-              placeholderTextColor="hsl(215.4 16.3% 46.9%)"
+              placeholderTextColor={colors.muted.foreground}
               multiline
               maxLength={2000}
               editable={!isLoading && !voice.isRecording && !voice.isProcessing}
@@ -239,24 +247,20 @@ export function ChatInput({
             onPress={handleVoiceToggle}
             onLongPress={handleVoiceCancel}
             disabled={isLoading || voice.isProcessing}
-            className={cn(
-              'h-10 w-10 items-center justify-center rounded-full',
-              voice.isRecording
-                ? 'bg-destructive'
-                : voice.isProcessing
-                  ? 'bg-muted'
-                  : 'bg-muted'
-            )}
+            className="h-10 w-10 items-center justify-center rounded-full"
+            style={{
+              backgroundColor: voice.isRecording
+                ? colors.destructive.DEFAULT
+                : bgColors.muted[50],
+              opacity: isLoading || voice.isProcessing ? opacity.disabled : 1,
+            }}
           >
             {voice.isRecording ? (
-              <Square color="white" size={16} fill="white" />
+              <Square color={colors.primary.foreground} size={16} fill={colors.primary.foreground} />
             ) : voice.isProcessing ? (
-              <Text className="text-xs">⏳</Text>
+              <Mic color={iconColors.muted} size={18} />
             ) : (
-              <Mic
-                color="hsl(222.2, 47.4%, 11.2%)"
-                size={18}
-              />
+              <Mic color={iconColors.foreground} size={18} />
             )}
           </TouchableOpacity>
 
@@ -264,14 +268,18 @@ export function ChatInput({
           <TouchableOpacity
             onPress={handleSend}
             disabled={!canSend}
-            className={cn(
-              'h-10 w-10 items-center justify-center rounded-full',
-              canSend ? 'bg-primary' : 'bg-muted'
-            )}
+            className="h-10 w-10 items-center justify-center rounded-full"
+            style={{
+              backgroundColor: canSend
+                ? colors.primary.DEFAULT
+                : bgColors.muted[50],
+            }}
           >
-            <Text className={cn('text-lg', canSend ? '' : 'opacity-50')}>
-              {isLoading ? '⏳' : '➤'}
-            </Text>
+            <Send
+              color={canSend ? colors.primary.foreground : iconColors.muted}
+              size={18}
+              style={!canSend ? { opacity: opacity.disabled } : undefined}
+            />
           </TouchableOpacity>
         </View>
       </View>

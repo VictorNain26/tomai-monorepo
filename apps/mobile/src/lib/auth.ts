@@ -244,9 +244,14 @@ export async function restoreParentSession(): Promise<boolean> {
     }
 
     // Call backend to create new parent session
-    const response = await apiClient.post('/api/parent/restore-session', { restoreToken });
+    const response = await apiClient.post<{
+      success: boolean;
+      sessionToken?: string;
+      expiresAt?: string;
+      error?: string;
+    }>('/api/parent/restore-session', { restoreToken });
 
-    if (!response.success || !response.sessionToken) {
+    if (!response.success || !response.sessionToken || !response.expiresAt) {
       return false;
     }
 
@@ -287,9 +292,15 @@ export async function launchChildSession(childId: string): Promise<{
 }> {
   try {
     // Call backend to create child session and get parent restore token
-    const response = await apiClient.post(`/api/parent/children/${childId}/launch-session`, {});
+    const response = await apiClient.post<{
+      success: boolean;
+      childSessionToken?: string;
+      childSessionExpiresAt?: string;
+      parentRestoreToken?: string;
+      error?: string;
+    }>(`/api/parent/children/${childId}/launch-session`, {});
 
-    if (!response.success || !response.childSessionToken || !response.parentRestoreToken) {
+    if (!response.success || !response.childSessionToken || !response.parentRestoreToken || !response.childSessionExpiresAt) {
       return { success: false, error: response.error ?? 'Erreur de création de session' };
     }
 

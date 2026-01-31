@@ -9,6 +9,8 @@ import { useRouter } from 'expo-router';
 import { Play, Trash2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import type { LearningDeck } from '@/hooks/useLearning';
+import { useIconColors } from '@/hooks/useIconColors';
+import { bgColors, colors } from '@/lib/styles';
 
 interface DeckCardProps {
   deck: LearningDeck;
@@ -30,7 +32,7 @@ const SUBJECT_EMOJIS: Record<string, string> = {
   anglais: '🇬🇧',
   espagnol: '🇪🇸',
   allemand: '🇩🇪',
-  philosophie: '🧠',
+  philosophie: '🤔',
 };
 
 function getSubjectEmoji(subject: string): string {
@@ -40,6 +42,7 @@ function getSubjectEmoji(subject: string): string {
 
 export function DeckCard({ deck, onDelete, isDeleting }: DeckCardProps) {
   const router = useRouter();
+  const iconColors = useIconColors();
 
   function handlePlay() {
     router.push({
@@ -75,7 +78,7 @@ export function DeckCard({ deck, onDelete, isDeleting }: DeckCardProps) {
     <View className="rounded-xl border border-border bg-card p-4">
       <View className="flex-row items-start gap-3">
         {/* Emoji */}
-        <View className="h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+        <View className="h-12 w-12 items-center justify-center rounded-lg" style={{ backgroundColor: bgColors.primary[10] }}>
           <Text className="text-2xl">{emoji}</Text>
         </View>
 
@@ -106,16 +109,17 @@ export function DeckCard({ deck, onDelete, isDeleting }: DeckCardProps) {
             onPress={handlePlay}
             className="h-10 w-10 items-center justify-center rounded-full bg-primary"
           >
-            <Play color="white" size={18} fill="white" />
+            <Play color={colors.primary.foreground} size={18} fill={colors.primary.foreground} />
           </TouchableOpacity>
 
           {onDelete && (
             <TouchableOpacity
               onPress={handleDelete}
               disabled={isDeleting}
-              className="h-10 w-10 items-center justify-center rounded-full bg-destructive/10"
+              className="h-10 w-10 items-center justify-center rounded-full"
+              style={{ backgroundColor: bgColors.destructive[10] }}
             >
-              <Trash2 color="hsl(0 84.2% 60.2%)" size={18} />
+              <Trash2 color={iconColors.destructive} size={18} />
             </TouchableOpacity>
           )}
         </View>

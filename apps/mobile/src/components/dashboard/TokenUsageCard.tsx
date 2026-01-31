@@ -17,6 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { useIconColors } from '@/hooks';
 import { cn } from '@/lib/utils';
 import type { TokenUsage } from '@/hooks/useStudentDashboard';
+import { bgColors } from '@/lib/styles';
 
 interface TokenUsageCardProps {
   usage: TokenUsage | null;
@@ -89,10 +90,8 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
       <View className="mb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
           <View
-            className={cn(
-              'h-8 w-8 items-center justify-center rounded-lg',
-              isPremium ? 'bg-warning/10' : 'bg-primary/10'
-            )}
+            className="h-8 w-8 items-center justify-center rounded-lg"
+            style={{ backgroundColor: isPremium ? bgColors.warning[10] : bgColors.primary[10] }}
           >
             {isPremium ? (
               <Crown color={iconColors.warning} size={18} />
@@ -144,7 +143,7 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
 
       {/* Warning messages based on soft limits */}
       {isExhausted && (
-        <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg bg-destructive/10 p-2">
+        <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
           <AlertTriangle color={iconColors.destructive} size={14} />
           <Text className="text-xs text-destructive">
             Limite atteinte • Recharge dans {windowUsage.refreshIn}
@@ -152,7 +151,7 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
         </View>
       )}
       {isNearLimit && !isExhausted && (
-        <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg bg-destructive/10 p-2">
+        <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
           <AlertTriangle color={iconColors.destructive} size={14} />
           <Text className="text-xs text-destructive">
             Presque épuisé • Économise tes tokens !
@@ -160,14 +159,14 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
         </View>
       )}
       {isThrottle && !isNearLimit && (
-        <View className="mt-3 rounded-lg bg-warning/10 p-2">
+        <View className="mt-3 rounded-lg p-2" style={{ backgroundColor: bgColors.warning[10] }}>
           <Text className="text-center text-xs text-warning">
             Quota faible • Réponses ralenties
           </Text>
         </View>
       )}
       {isWarning && !isThrottle && (
-        <View className="mt-3 rounded-lg bg-warning/10 p-2">
+        <View className="mt-3 rounded-lg p-2" style={{ backgroundColor: bgColors.warning[10] }}>
           <Text className="text-center text-xs text-warning">
             Attention : quota limité
           </Text>

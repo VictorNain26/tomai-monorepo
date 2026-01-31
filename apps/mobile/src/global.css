@@ -3,109 +3,163 @@
 @tailwind utilities;
 
 /**
- * CSS Variables for Light/Dark Mode
+ * TomAI Design System - 2026
  *
- * These variables are used by NativeWind to support theming.
- * Values are HSL without the hsl() wrapper for Tailwind compatibility.
+ * Palette sobre et professionnelle pour une application éducative.
+ * Engagement via Pronote, pas de gamification superficielle.
  *
- * @see tailwind.config.ts for usage
- * @see https://ui.shadcn.com/themes for color palette
+ * Principes :
+ * - Couleurs sobres, pas enfantines
+ * - Contraste élevé pour l'accessibilité
+ * - Fond chaud pour le confort de lecture
+ *
+ * @see tailwind.config.js for usage
  */
 @layer base {
   :root {
-    /* Background colors */
-    --color-background: 0 0% 100%;
-    --color-foreground: 222.2 47.4% 11.2%;
+    /* ============================================
+     * BACKGROUND COLORS
+     * Warm whites for comfortable reading
+     * ============================================ */
+    --color-background: 60 9% 98%;           /* #FAFAF9 warm white */
+    --color-foreground: 220 14% 17%;          /* #1F2937 dark gray */
 
-    /* Card colors */
-    --color-card: 0 0% 100%;
-    --color-card-foreground: 222.2 47.4% 11.2%;
+    /* ============================================
+     * CARD COLORS
+     * Subtle elevation with pure white
+     * ============================================ */
+    --color-card: 0 0% 100%;                  /* #FFFFFF pure white */
+    --color-card-foreground: 220 14% 17%;     /* #1F2937 */
 
-    /* Popover colors */
+    /* ============================================
+     * POPOVER COLORS
+     * ============================================ */
     --color-popover: 0 0% 100%;
-    --color-popover-foreground: 222.2 47.4% 11.2%;
+    --color-popover-foreground: 220 14% 17%;
 
-    /* Primary colors */
-    --color-primary: 222.2 47.4% 11.2%;
-    --color-primary-foreground: 210 40% 98%;
+    /* ============================================
+     * PRIMARY - Deep Blue
+     * Actions principales, liens, boutons
+     * ============================================ */
+    --color-primary: 221 83% 53%;             /* #1E40AF deep blue */
+    --color-primary-foreground: 210 40% 98%;  /* #F8FAFC white */
 
-    /* Secondary colors */
-    --color-secondary: 210 40% 96.1%;
-    --color-secondary-foreground: 222.2 47.4% 11.2%;
+    /* ============================================
+     * SECONDARY - Light Gray
+     * Boutons secondaires, backgrounds subtils
+     * ============================================ */
+    --color-secondary: 220 14% 96%;           /* #F3F4F6 light gray */
+    --color-secondary-foreground: 220 14% 17%;
 
-    /* Muted colors */
-    --color-muted: 210 40% 96.1%;
-    --color-muted-foreground: 215.4 16.3% 46.9%;
+    /* ============================================
+     * MUTED - Subtle Text
+     * Textes secondaires, placeholders
+     * ============================================ */
+    --color-muted: 220 14% 96%;               /* #F3F4F6 */
+    --color-muted-foreground: 220 9% 46%;     /* #6B7280 gray-500 */
 
-    /* Accent colors */
-    --color-accent: 210 40% 96.1%;
-    --color-accent-foreground: 222.2 47.4% 11.2%;
+    /* ============================================
+     * ACCENT - Subtle Highlight
+     * Hover states, selected items
+     * ============================================ */
+    --color-accent: 221 83% 96%;              /* Blue tinted background */
+    --color-accent-foreground: 221 83% 53%;   /* Primary blue */
 
-    /* Destructive colors */
-    --color-destructive: 0 84.2% 60.2%;
-    --color-destructive-foreground: 210 40% 98%;
+    /* ============================================
+     * DESTRUCTIVE - Discreet Red
+     * Erreurs, suppressions (jamais agressif)
+     * ============================================ */
+    --color-destructive: 0 72% 51%;           /* #DC2626 red-600 */
+    --color-destructive-foreground: 0 0% 100%;
 
-    /* Success colors (custom) */
-    --color-success: 142 76% 36%;
-    --color-success-foreground: 210 40% 98%;
+    /* ============================================
+     * SUCCESS - Sober Green
+     * Validations, notes positives
+     * ============================================ */
+    --color-success: 160 84% 39%;             /* #059669 emerald-600 */
+    --color-success-foreground: 0 0% 100%;
 
-    /* Warning colors (custom) */
-    --color-warning: 43 96% 56%;
-    --color-warning-foreground: 222.2 47.4% 11.2%;
+    /* ============================================
+     * WARNING - Soft Orange
+     * Alertes, devoirs urgents, contrôles proches
+     * ============================================ */
+    --color-warning: 32 95% 44%;              /* #D97706 amber-600 */
+    --color-warning-foreground: 0 0% 100%;
 
-    /* Border and input colors */
-    --color-border: 214.3 31.8% 91.4%;
-    --color-input: 214.3 31.8% 91.4%;
-    --color-ring: 222.2 47.4% 11.2%;
+    /* ============================================
+     * INFO - Calm Blue
+     * Informations, notifications neutres
+     * ============================================ */
+    --color-info: 199 89% 48%;                /* #0EA5E9 sky-500 */
+    --color-info-foreground: 0 0% 100%;
 
-    /* Border radius */
-    --radius: 0.5rem;
+    /* ============================================
+     * BORDER & INPUT
+     * Subtle, not distracting
+     * ============================================ */
+    --color-border: 220 13% 91%;              /* #E5E7EB gray-200 */
+    --color-input: 220 13% 91%;
+    --color-ring: 221 83% 53%;                /* Primary for focus */
+
+    /* ============================================
+     * BORDER RADIUS
+     * Smooth but not childish
+     * ============================================ */
+    --radius: 0.75rem;                        /* 12px - modern but not excessive */
   }
 
+  /* ============================================
+   * DARK MODE
+   * Comfortable for evening study sessions
+   * ============================================ */
   .dark {
-    /* Background colors */
-    --color-background: 222.2 84% 4.9%;
-    --color-foreground: 210 40% 98%;
+    /* Backgrounds */
+    --color-background: 222 47% 11%;          /* #1F2937 gray-800 */
+    --color-foreground: 210 40% 98%;          /* #F8FAFC slate-50 */
 
-    /* Card colors */
-    --color-card: 222.2 84% 4.9%;
+    /* Cards - slightly elevated */
+    --color-card: 217 33% 17%;                /* #374151 gray-700 */
     --color-card-foreground: 210 40% 98%;
 
-    /* Popover colors */
-    --color-popover: 222.2 84% 4.9%;
+    /* Popovers */
+    --color-popover: 217 33% 17%;
     --color-popover-foreground: 210 40% 98%;
 
-    /* Primary colors */
-    --color-primary: 210 40% 98%;
-    --color-primary-foreground: 222.2 47.4% 11.2%;
+    /* Primary - lighter for dark mode */
+    --color-primary: 217 91% 60%;             /* #3B82F6 blue-500 */
+    --color-primary-foreground: 222 47% 11%;
 
-    /* Secondary colors */
-    --color-secondary: 217.2 32.6% 17.5%;
+    /* Secondary */
+    --color-secondary: 217 33% 17%;
     --color-secondary-foreground: 210 40% 98%;
 
-    /* Muted colors */
-    --color-muted: 217.2 32.6% 17.5%;
-    --color-muted-foreground: 215 20.2% 65.1%;
+    /* Muted */
+    --color-muted: 217 33% 17%;
+    --color-muted-foreground: 218 11% 65%;    /* #9CA3AF gray-400 */
 
-    /* Accent colors */
-    --color-accent: 217.2 32.6% 17.5%;
-    --color-accent-foreground: 210 40% 98%;
+    /* Accent */
+    --color-accent: 217 33% 22%;
+    --color-accent-foreground: 217 91% 60%;
 
-    /* Destructive colors */
-    --color-destructive: 0 62.8% 30.6%;
+    /* Destructive */
+    --color-destructive: 0 63% 31%;           /* #991B1B red-800 */
     --color-destructive-foreground: 210 40% 98%;
 
-    /* Success colors (custom) */
-    --color-success: 142 76% 46%;
-    --color-success-foreground: 222.2 47.4% 11.2%;
+    /* Success */
+    --color-success: 160 84% 39%;
+    --color-success-foreground: 210 40% 98%;
 
-    /* Warning colors (custom) */
-    --color-warning: 43 96% 66%;
-    --color-warning-foreground: 222.2 47.4% 11.2%;
+    /* Warning */
+    --color-warning: 32 95% 44%;
+    --color-warning-foreground: 210 40% 98%;
 
-    /* Border and input colors */
-    --color-border: 217.2 32.6% 17.5%;
-    --color-input: 217.2 32.6% 17.5%;
-    --color-ring: 212.7 26.8% 83.9%;
+    /* Info */
+    --color-info: 199 89% 48%;
+    --color-info-foreground: 210 40% 98%;
+
+    /* Borders */
+    --color-border: 217 33% 25%;              /* #4B5563 gray-600 */
+    --color-input: 217 33% 25%;
+    --color-ring: 217 91% 60%;
   }
 }

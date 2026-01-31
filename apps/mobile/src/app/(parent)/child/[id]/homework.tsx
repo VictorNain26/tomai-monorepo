@@ -25,6 +25,7 @@ import {
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useChildHomework, useParentDashboard } from '@/hooks';
+import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
 // HELPERS
@@ -170,13 +171,14 @@ export default function ChildHomeworkScreen() {
                     return (
                       <View
                         key={hw.id}
-                        className={`rounded-xl border bg-card p-4 ${
+                        className={`rounded-xl border p-4 ${
                           overdue
-                            ? 'border-destructive/30 bg-destructive/5'
+                            ? ''
                             : hw.done
                               ? 'border-green-200 bg-green-50'
-                              : 'border-border'
+                              : 'border-border bg-card'
                         }`}
+                        style={overdue ? { borderColor: borderColors.destructive[30], backgroundColor: bgColors.destructive[5] } : undefined}
                       >
                         <View className="flex-row items-start gap-3">
                           {hw.done ? (

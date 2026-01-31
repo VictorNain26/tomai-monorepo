@@ -1,3 +1,9 @@
+/**
+ * Register Screen - TomAI 2026
+ *
+ * Parent registration screen.
+ */
+
 import { useState } from 'react';
 import {
   View,
@@ -6,14 +12,18 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { signUp } from '@/lib/auth';
 
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { TomAvatar } from '@/components/common';
+import { bgColors, shadows } from '@/lib/styles';
 
 export default function RegisterScreen() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,7 +59,8 @@ export default function RegisterScreen() {
         return;
       }
 
-      // Registration successful - AuthGuard will handle redirect
+      // Registration successful - redirect to home which handles role-based routing
+      router.replace('/');
     } catch {
       setError("Erreur lors de l'inscription. Veuillez réessayer.");
     } finally {
@@ -68,29 +79,31 @@ export default function RegisterScreen() {
       >
         <View className="flex-1 justify-center px-6 py-12">
           {/* Header */}
-          <View className="mb-8">
+          <View className="mb-8 items-center">
+            <TomAvatar size="lg" className="mb-4" />
             <Text variant="h1" className="text-center text-primary">
               Inscription
             </Text>
-            <Text variant="muted" className="mt-2 text-center">
+            <Text variant="muted" className="mt-2 text-center px-4">
               Créez votre compte pour suivre la scolarité de vos enfants
             </Text>
           </View>
 
           {/* Error message */}
           {error && (
-            <View className="mb-4 rounded-md bg-destructive/10 p-3">
+            <View
+              className="mb-4 rounded-xl p-3"
+              style={{ backgroundColor: bgColors.destructive[10] }}
+            >
               <Text className="text-center text-destructive">{error}</Text>
             </View>
           )}
 
           {/* Form */}
-          <View className="gap-4">
-            <View>
-              <Text variant="small" className="mb-2 font-medium">
-                Nom complet
-              </Text>
+          <Card style={shadows.sm}>
+            <View className="gap-4 p-4">
               <Input
+                label="Nom complet"
                 placeholder="Marie Dupont"
                 value={name}
                 onChangeText={setName}
@@ -98,13 +111,9 @@ export default function RegisterScreen() {
                 autoComplete="name"
                 disabled={isLoading}
               />
-            </View>
 
-            <View>
-              <Text variant="small" className="mb-2 font-medium">
-                Email
-              </Text>
               <Input
+                label="Email"
                 placeholder="marie.dupont@exemple.com"
                 value={email}
                 onChangeText={setEmail}
@@ -113,13 +122,9 @@ export default function RegisterScreen() {
                 autoComplete="email"
                 disabled={isLoading}
               />
-            </View>
 
-            <View>
-              <Text variant="small" className="mb-2 font-medium">
-                Mot de passe
-              </Text>
               <Input
+                label="Mot de passe"
                 placeholder="6 caractères minimum"
                 value={password}
                 onChangeText={setPassword}
@@ -127,13 +132,9 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 disabled={isLoading}
               />
-            </View>
 
-            <View>
-              <Text variant="small" className="mb-2 font-medium">
-                Confirmer le mot de passe
-              </Text>
               <Input
+                label="Confirmer le mot de passe"
                 placeholder="Confirmez votre mot de passe"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -141,18 +142,18 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 disabled={isLoading}
               />
-            </View>
 
-            <Button
-              onPress={handleRegister}
-              disabled={isLoading}
-              className="mt-4"
-            >
-              <Text className="font-semibold text-primary-foreground">
-                {isLoading ? 'Création...' : 'Créer mon compte'}
-              </Text>
-            </Button>
-          </View>
+              <Button
+                onPress={handleRegister}
+                disabled={isLoading}
+                className="mt-2"
+              >
+                <Text className="font-semibold text-primary-foreground">
+                  {isLoading ? 'Création...' : 'Créer mon compte'}
+                </Text>
+              </Button>
+            </View>
+          </Card>
 
           {/* Login link */}
           <View className="mt-8 flex-row justify-center">

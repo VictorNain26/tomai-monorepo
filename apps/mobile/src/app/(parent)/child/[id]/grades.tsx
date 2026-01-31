@@ -24,6 +24,7 @@ import {
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useChildGrades, useParentDashboard } from '@/hooks';
+import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
 // HELPERS
@@ -47,7 +48,7 @@ function getGradeColor(value: number | null, outOf: number): string {
 }
 
 function getGradeBgColor(value: number | null, outOf: number): string {
-  if (value === null) return 'bg-muted/50 border-border';
+  if (value === null) return 'bg-muted border-border';
   const percent = (value / outOf) * 100;
   if (percent >= 80) return 'bg-green-50 border-green-200';
   if (percent >= 60) return 'bg-blue-50 border-blue-200';
@@ -149,10 +150,10 @@ export default function ChildGradesScreen() {
       >
         {/* Overall average card */}
         {!isLoading && overallAverage !== null && (
-          <View className="m-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <View className="m-4 rounded-xl border p-4" style={{ borderColor: borderColors.primary[20], backgroundColor: bgColors.primary[5] }}>
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center gap-3">
-                <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <View className="h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
                   <BarChart3 color="hsl(222.2, 47.4%, 11.2%)" size={24} />
                 </View>
                 <View>

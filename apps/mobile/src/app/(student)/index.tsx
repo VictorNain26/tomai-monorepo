@@ -1,170 +1,220 @@
 /**
- * Student Dashboard
+ * Student Dashboard - TomAI 2026
  *
- * Main screen with subjects grid, token usage, and recent sessions.
+ * Pronote-centered engagement: real school data drives the experience.
+ * No artificial gamification - the motivation comes from actual schoolwork.
+ *
+ * Hierarchy:
+ * 1. Urgent homework → immediate action
+ * 2. Recent grades → diagnostic and review
+ * 3. Upcoming tests → preparation
+ * 4. Quick access to Tom → always available
  */
 
-import { View, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import { View, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState, useCallback } from 'react';
-import { MessageCircle, BookOpen, Clock } from 'lucide-react-native';
+import { useState, useCallback, useMemo } from 'react';
+import { Settings } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { SubjectsGrid, TokenUsageCard, StudentPronoteCard } from '@/components/dashboard';
-import { useStudentDashboard, useStudentPronote } from '@/hooks';
+import {
+  HomeworkUrgentCard,
+  GradesRecentCard,
+  UpcomingTestsCard,
+  QuickAskCard,
+  TokenUsageCard,
+  type HomeworkItem,
+  type GradeItem,
+  type TestItem,
+} from '@/components/dashboard';
+import { useStudentDashboard, useStudentPronote, useIconColors } from '@/hooks';
+
+// ============================================================================
+// HELPERS - Transform Pronote data to component interfaces
+// ============================================================================
+
+/** Map subject name to emoji */
+function getSubjectEmoji(subject: string): string {
+  const subjectLower = subject.toLowerCase();
+
+  if (subjectLower.includes('math')) return '📐';
+  if (subjectLower.includes('français') || subjectLower.includes('francais')) return '📖';
+  if (subjectLower.includes('anglais')) return '🇬🇧';
+  if (subjectLower.includes('espagnol')) return '🇪🇸';
+  if (subjectLower.includes('allemand')) return '🇩🇪';
+  if (subjectLower.includes('histoire') || subjectLower.includes('géo')) return '🌍';
+  if (subjectLower.includes('physique') || subjectLower.includes('chimie')) return '⚗️';
+  if (subjectLower.includes('svt') || subjectLower.includes('biologie')) return '🧬';
+  if (subjectLower.includes('techno')) return '⚙️';
+  if (subjectLower.includes('sport') || subjectLower.includes('eps')) return '🏃';
+  if (subjectLower.includes('musique')) return '🎵';
+  if (subjectLower.includes('arts') || subjectLower.includes('plastiques')) return '🎨';
+  if (subjectLower.includes('philo')) return '🤔';
+  if (subjectLower.includes('ses') || subjectLower.includes('économie')) return '📊';
+  if (subjectLower.includes('info') || subjectLower.includes('nsi')) return '💻';
+
+  return '📚';
+}
+
+/** Calculate days until a date */
+function daysUntil(dateStr: string): number {
+  const date = new Date(dateStr);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+  return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
 
 export default function StudentDashboard() {
   const router = useRouter();
+  const iconColors = useIconColors();
   const [refreshing, setRefreshing] = useState(false);
 
-  const {
-    subjects,
-    isLoadingSubjects,
-    usage,
-    isLoadingUsage,
-    latestSession,
-    userName,
-  } = useStudentDashboard();
-
+  // Data hooks
+  const { usage, isLoadingUsage, userName } = useStudentDashboard();
   const pronote = useStudentPronote();
 
+  // Refresh handler
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     // Queries will refetch automatically due to staleTime
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
-  function handleContinueSession() {
-    if (latestSession) {
-      router.push({
-        pathname: '/(student)/chat',
-        params: {
-          subject: latestSession.subject,
-          sessionId: latestSession.id,
-        },
-      });
-    }
+  // Transform homework data
+  const homeworkItems: HomeworkItem[] = useMemo(() => {
+    return pronote.homework.map((h) => ({
+      id: h.id,
+      subject: h.subject,
+      subjectEmoji: getSubjectEmoji(h.subject),
+      title: h.description,
+      dueDate: new Date(h.dueDate),
+      daysUntilDue: daysUntil(h.dueDate),
+      isDone: h.done,
+    }));
+  }, [pronote.homework]);
+
+  // Transform grades data
+  const gradeItems: GradeItem[] = useMemo(() => {
+    return pronote.grades
+      .filter((g) => g.value !== null)
+      .map((g) => ({
+        id: g.id,
+        subject: g.subject,
+        subjectEmoji: getSubjectEmoji(g.subject),
+        title: g.description,
+        grade: g.value as number,
+        maxGrade: g.outOf,
+        classAverage: g.average,
+        date: new Date(g.date),
+      }));
+  }, [pronote.grades]);
+
+  // Calculate grade trend (simplified: compare recent vs older)
+  const gradeTrend = useMemo(() => {
+    if (gradeItems.length < 4) return undefined;
+
+    const sorted = [...gradeItems].sort((a, b) => b.date.getTime() - a.date.getTime());
+    const recent = sorted.slice(0, Math.ceil(sorted.length / 2));
+    const older = sorted.slice(Math.ceil(sorted.length / 2));
+
+    const recentAvg = recent.reduce((sum, g) => sum + (g.grade / g.maxGrade) * 20, 0) / recent.length;
+    const olderAvg = older.reduce((sum, g) => sum + (g.grade / g.maxGrade) * 20, 0) / older.length;
+
+    if (recentAvg > olderAvg + 0.5) return 'up' as const;
+    if (recentAvg < olderAvg - 0.5) return 'down' as const;
+    return 'stable' as const;
+  }, [gradeItems]);
+
+  // TODO: Tests would come from a separate Pronote endpoint (agenda/evaluations)
+  // For now, this is a placeholder - would need backend support
+  const testItems: TestItem[] = [];
+
+  // Navigation handlers
+  function handleViewAllHomework() {
+    router.push('/(student)/pronote/homework');
   }
 
-  function handlePronoteNavigate(section: 'homework' | 'grades' | 'timetable') {
-    if (!pronote.isConnected) {
-      Alert.alert(
-        'Pronote non connecté',
-        'Demande à ton parent de connecter Pronote.'
-      );
-      return;
-    }
-    router.push(`/(student)/pronote/${section}`);
+  function handleViewAllGrades() {
+    router.push('/(student)/pronote/grades');
   }
+
+  // First name only for greeting
+  const firstName = userName?.split(' ')[0] ?? 'Élève';
 
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView
-        className="flex-1 px-4 py-6"
+        className="flex-1"
+        contentContainerClassName="px-4 py-5 gap-5"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View className="mb-6">
-          <Text variant="h2" className="text-primary">
-            Bonjour, {userName} 👋
-          </Text>
-          <Text variant="muted" className="mt-1">
-            Prêt pour une session de révision ?
-          </Text>
+        <View className="flex-row items-center justify-between">
+          <View>
+            <Text variant="h2">Bonjour {firstName}</Text>
+            {pronote.isConnected && pronote.className && (
+              <Text variant="muted">{pronote.className}</Text>
+            )}
+          </View>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onPress={() => router.push('/(student)/settings')}
+            accessibilityLabel="Paramètres"
+          >
+            <Settings color={iconColors.muted} size={22} />
+          </Button>
         </View>
 
-        {/* Token Usage */}
-        <View className="mb-6">
+        {/* 1. Homework - Primary engagement driver */}
+        <HomeworkUrgentCard
+          homework={homeworkItems}
+          isConnected={pronote.isConnected}
+          isLoading={pronote.isLoadingData}
+          maxItems={3}
+          onViewAll={handleViewAllHomework}
+        />
+
+        {/* 2. Upcoming Tests - If any */}
+        {testItems.length > 0 && (
+          <UpcomingTestsCard
+            tests={testItems}
+            isConnected={pronote.isConnected}
+            isLoading={pronote.isLoadingData}
+            maxItems={2}
+          />
+        )}
+
+        {/* 3. Recent Grades - Diagnostic */}
+        {pronote.isConnected && (
+          <GradesRecentCard
+            grades={gradeItems}
+            averageGrade={pronote.averageGrade}
+            trend={gradeTrend}
+            isConnected={pronote.isConnected}
+            isLoading={pronote.isLoadingData}
+            maxItems={3}
+            onViewAll={handleViewAllGrades}
+          />
+        )}
+
+        {/* 4. Quick Ask - Always available */}
+        <QuickAskCard userName={firstName} />
+
+        {/* 5. Token Usage - Secondary info (collapsed style) */}
+        <View className="mt-2">
           <TokenUsageCard usage={usage} isLoading={isLoadingUsage} />
         </View>
-
-        {/* Quick Actions */}
-        <View className="mb-6 gap-3">
-          <Button
-            onPress={() => router.push('/(student)/chat')}
-            className="flex-row items-center justify-start gap-3 p-4"
-          >
-            <MessageCircle color="hsl(210, 40%, 98%)" size={24} />
-            <View>
-              <Text className="font-semibold text-primary-foreground">
-                Nouvelle conversation
-              </Text>
-              <Text className="text-sm text-primary-foreground/80">
-                Pose tes questions à Tom
-              </Text>
-            </View>
-          </Button>
-
-          <Button
-            variant="outline"
-            onPress={() => router.push('/(student)/learning')}
-            className="flex-row items-center justify-start gap-3 p-4"
-          >
-            <BookOpen color="hsl(222.2, 47.4%, 11.2%)" size={24} />
-            <View>
-              <Text className="font-semibold">Réviser mes flashcards</Text>
-              <Text variant="muted" className="text-sm">
-                Continue ton apprentissage
-              </Text>
-            </View>
-          </Button>
-        </View>
-
-        {/* Pronote Section */}
-        <View className="mb-6">
-          <StudentPronoteCard
-            status={pronote.isConnected ? {
-              isConnected: true,
-              establishmentName: pronote.establishmentName,
-              pronoteChildName: pronote.studentName,
-              className: pronote.className,
-            } : undefined}
-            upcomingHomework={pronote.upcomingHomework}
-            averageGrade={pronote.averageGrade}
-            isLoading={pronote.isLoading}
-            onNavigate={handlePronoteNavigate}
-          />
-        </View>
-
-        {/* Subjects Grid */}
-        <Text variant="h3" className="mb-4">
-          Matières
-        </Text>
-        <View className="mb-6">
-          <SubjectsGrid subjects={subjects} isLoading={isLoadingSubjects} />
-        </View>
-
-        {/* Recent Session */}
-        {latestSession && (
-          <>
-            <Text variant="h3" className="mb-4">
-              Dernière conversation
-            </Text>
-            <TouchableOpacity
-              onPress={handleContinueSession}
-              className="mb-6 rounded-xl border border-border bg-card p-4"
-            >
-              <View className="flex-row items-center gap-3">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <Clock color="hsl(222.2, 47.4%, 11.2%)" size={20} />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-medium capitalize">
-                    {latestSession.subject.replace('-', ' ')}
-                  </Text>
-                  <Text variant="muted" className="text-sm">
-                    {latestSession.messagesCount} messages
-                  </Text>
-                </View>
-                <Text className="text-primary">Continuer →</Text>
-              </View>
-            </TouchableOpacity>
-          </>
-        )}
       </ScrollView>
     </SafeAreaView>
   );

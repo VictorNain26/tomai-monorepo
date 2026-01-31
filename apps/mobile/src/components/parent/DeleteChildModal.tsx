@@ -22,6 +22,8 @@ import { X, AlertTriangle, Trash2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useIconColors } from '@/hooks/useIconColors';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -49,6 +51,7 @@ export function DeleteChildModal({
   isDeleting,
 }: DeleteChildModalProps) {
   const [confirmText, setConfirmText] = useState('');
+  const iconColors = useIconColors();
 
   // Must type the child's first name exactly to confirm
   const isConfirmValid = confirmText.toLowerCase() === childName.toLowerCase();
@@ -75,14 +78,14 @@ export function DeleteChildModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <View className="flex-1 items-center justify-center bg-black/60 px-6">
+        <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: bgColors.black[60] }}>
           <SafeAreaView className="w-full max-w-sm">
             <View className="rounded-2xl bg-card">
               {/* Header */}
               <View className="flex-row items-center justify-between border-b border-border p-4">
                 <View className="flex-row items-center gap-3">
-                  <View className="h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
-                    <AlertTriangle color="#dc2626" size={20} />
+                  <View className="h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.destructive[10] }}>
+                    <AlertTriangle color={iconColors.destructive} size={20} />
                   </View>
                   <Text className="text-lg font-semibold">
                     Supprimer le compte
@@ -93,7 +96,7 @@ export function DeleteChildModal({
                   disabled={isDeleting}
                   className="p-2"
                 >
-                  <X color="hsl(215.4, 16.3%, 46.9%)" size={20} />
+                  <X color={iconColors.muted} size={20} />
                 </TouchableOpacity>
               </View>
 
@@ -107,7 +110,7 @@ export function DeleteChildModal({
                   (@{childUsername}).
                 </Text>
 
-                <View className="mb-4 rounded-xl bg-destructive/5 p-3">
+                <View className="mb-4 rounded-xl p-3" style={{ backgroundColor: bgColors.destructive[5] }}>
                   <Text className="text-sm text-destructive">
                     Cette action est irréversible. Toutes les données de l'enfant
                     seront définitivement supprimées :

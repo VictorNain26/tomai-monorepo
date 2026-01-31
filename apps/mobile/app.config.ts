@@ -143,6 +143,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-updates',
+    '@react-native-google-signin/google-signin',
   ],
 
   // EAS Updates configuration

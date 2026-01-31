@@ -3,21 +3,32 @@ import { TextInput, View, type TextInputProps } from 'react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
+import { colors } from '@/lib/styles';
 
-// Semantic placeholder colors (matching CSS variables from global.css)
+/**
+ * TomAI Input Component - 2026
+ *
+ * Design principles:
+ * - Clear visual states (default, focus, error, success)
+ * - Generous height for comfortable touch
+ * - Semantic color feedback
+ * - Accessible labels and hints
+ */
+
+// Semantic placeholder colors (matching new color palette)
 const PLACEHOLDER_COLORS = {
-  default: 'hsl(215.4, 16.3%, 46.9%)', // muted-foreground
-  error: 'hsl(0, 84.2%, 60.2%)', // destructive
-  success: 'hsl(142, 76%, 36%)', // success
+  default: colors.muted.foreground, // #6B7280
+  error: colors.destructive.DEFAULT, // #DC2626
+  success: colors.success.DEFAULT, // #059669
 } as const;
 
 const inputVariants = cva(
-  'h-12 w-full rounded-md border bg-background px-3 py-2 text-base text-foreground web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-offset-2',
+  'h-12 w-full rounded-lg border bg-background px-4 py-3 text-base text-foreground web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-offset-2',
   {
     variants: {
       variant: {
         default:
-          'border-input native:focus:border-ring web:focus-visible:ring-ring',
+          'border-input native:focus:border-primary web:focus-visible:ring-primary',
         error:
           'border-destructive native:focus:border-destructive web:focus-visible:ring-destructive',
         success:
@@ -38,6 +49,10 @@ export interface InputProps
   disabled?: boolean;
   /** Error message to display below input */
   errorMessage?: string;
+  /** Label to display above input */
+  label?: string;
+  /** Helper text to display below input */
+  helperText?: string;
   /** Accessibility label for screen readers */
   accessibilityLabel?: string;
   /** Accessibility hint describing the input */
@@ -51,6 +66,8 @@ const Input = forwardRef<TextInput, InputProps>(
       variant,
       disabled,
       errorMessage,
+      label,
+      helperText,
       placeholderTextColor,
       accessibilityLabel,
       accessibilityHint,
@@ -70,17 +87,22 @@ const Input = forwardRef<TextInput, InputProps>(
           : PLACEHOLDER_COLORS.default;
 
     return (
-      <View className="w-full">
+      <View className="w-full gap-1.5">
+        {label && (
+          <Text variant="small" className="text-foreground">
+            {label}
+          </Text>
+        )}
         <TextInput
           ref={ref}
           className={cn(
             inputVariants({ variant: effectiveVariant }),
-            disabled && 'opacity-50',
             className
           )}
+          style={disabled ? { opacity: 0.5 } : undefined}
           editable={!disabled}
           placeholderTextColor={placeholderTextColor ?? defaultPlaceholderColor}
-          accessibilityLabel={accessibilityLabel}
+          accessibilityLabel={accessibilityLabel ?? label}
           accessibilityHint={accessibilityHint}
           accessibilityState={{
             disabled,
@@ -88,7 +110,12 @@ const Input = forwardRef<TextInput, InputProps>(
           {...props}
         />
         {errorMessage && (
-          <Text className="mt-1 text-sm text-destructive">{errorMessage}</Text>
+          <Text variant="small" className="text-destructive">
+            {errorMessage}
+          </Text>
+        )}
+        {helperText && !errorMessage && (
+          <Text variant="muted">{helperText}</Text>
         )}
       </View>
     );

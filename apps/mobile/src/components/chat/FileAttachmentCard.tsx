@@ -8,6 +8,7 @@ import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { FileText, Image, File, Share2, Music } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useFileShare, useTheme } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -45,7 +46,7 @@ export function FileAttachmentCard({
   return (
     <View className="mt-2 flex-row items-center gap-3 rounded-lg border border-border bg-card p-3">
       {/* File Icon */}
-      <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+      <View className="h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: bgColors.primary[10] }}>
         <FileIconView mimeType={mimeType} color={iconColor} size={20} />
       </View>
 
@@ -65,7 +66,8 @@ export function FileAttachmentCard({
       <TouchableOpacity
         onPress={handleDownloadAndShare}
         disabled={isLoading}
-        className="flex-row items-center gap-1 rounded-lg bg-primary/10 px-3 py-2"
+        className="flex-row items-center gap-1 rounded-lg px-3 py-2"
+        style={{ backgroundColor: bgColors.primary[10] }}
       >
         {isLoading ? (
           <ActivityIndicator size="small" color={iconColor} />

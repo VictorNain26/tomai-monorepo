@@ -17,6 +17,7 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { useUser } from '@/lib/auth';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // CONSTANTS
@@ -84,7 +85,7 @@ export default function ProfileInfoScreen() {
       <ScrollView className="flex-1 px-4 py-6">
         {/* Profile Avatar */}
         <View className="mb-6 items-center">
-          <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-primary/10">
+          <View className="mb-4 h-24 w-24 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
             <Text className="text-4xl">
               {user?.name ? user.name.charAt(0).toUpperCase() : '👤'}
             </Text>
@@ -118,7 +119,7 @@ export default function ProfileInfoScreen() {
         </View>
 
         {/* Info Notice */}
-        <View className="rounded-xl bg-muted/50 p-4">
+        <View className="rounded-xl p-4" style={{ backgroundColor: bgColors.muted[50] }}>
           <View className="flex-row items-start gap-3">
             <Info color="hsl(215.4, 16.3%, 46.9%)" size={20} />
             <View className="flex-1">

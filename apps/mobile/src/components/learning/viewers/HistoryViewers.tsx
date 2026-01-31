@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -101,7 +102,8 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
                 <TouchableOpacity
                   key={position}
                   onPress={() => handleRemove(position)}
-                  className="flex-row items-center gap-3 rounded-lg border border-primary bg-primary/10 p-3"
+                  className="flex-row items-center gap-3 rounded-lg border border-primary p-3"
+                  style={{ backgroundColor: bgColors.primary[10] }}
                 >
                   <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
                     <Text className="text-xs text-primary-foreground">{position + 1}</Text>
@@ -186,8 +188,9 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
             onPress={() => handleEraPress(index)}
             disabled={validated || selectedItem === null}
             className={`rounded-lg border p-2 ${
-              selectedItem !== null ? 'border-primary bg-primary/10' : 'border-border bg-muted'
+              selectedItem !== null ? 'border-primary' : 'border-border bg-muted'
             }`}
+            style={selectedItem !== null ? { backgroundColor: bgColors.primary[10] } : undefined}
           >
             <Text className="text-sm font-medium">{era}</Text>
           </TouchableOpacity>
@@ -208,9 +211,10 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
                 assignedEra !== undefined
                   ? 'border-green-500 bg-green-50'
                   : isSelected
-                    ? 'border-primary bg-primary/10'
+                    ? 'border-primary'
                     : 'border-border bg-card'
               }`}
+              style={assignedEra === undefined && isSelected ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
               <Text className="flex-1">{item}</Text>
               {assignedEra !== undefined && (
@@ -266,12 +270,14 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
           const isCorrectOption = index === content.correctIndex;
 
           let bgClass = 'bg-card border-border';
+          let useInlineStyle = false;
           if (validated && isCorrectOption) {
             bgClass = 'bg-green-100 border-green-500';
           } else if (validated && isSelected && !isCorrectOption) {
             bgClass = 'bg-red-100 border-red-500';
           } else if (isSelected) {
-            bgClass = 'bg-primary/10 border-primary';
+            bgClass = 'border-primary';
+            useInlineStyle = true;
           }
 
           return (
@@ -280,6 +286,7 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
               onPress={() => !validated && setSelected(index)}
               disabled={validated}
               className={`rounded-lg border p-3 ${bgClass}`}
+              style={useInlineStyle ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
               <Text>{effect}</Text>
             </TouchableOpacity>

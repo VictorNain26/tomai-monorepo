@@ -22,6 +22,13 @@ export interface ApiConfig {
   uploadTimeout?: number;
   /** Timeout pour le chat IA en ms (défaut: 120000) */
   chatTimeout?: number;
+  /**
+   * Cookie provider for React Native (Expo).
+   * In browsers, cookies are handled automatically.
+   * In React Native, we need to manually inject the session cookie.
+   * @returns The cookie string to add to headers, or undefined
+   */
+  cookieProvider?: () => string | undefined;
 }
 
 // Configuration singleton

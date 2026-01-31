@@ -1,58 +1,31 @@
 /**
  * Auth Guard Component
  *
- * Protects routes requiring authentication.
- * Redirects to login if not authenticated.
+ * Utility component for protecting individual screens.
+ * NOTE: Main auth protection is handled in _layout.tsx NavigationGuard.
  */
 
-import { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { useRouter, useSegments } from 'expo-router';
-import { useSession, useUser, type IAppUser } from '@/lib/auth';
+import { useUser, type IAppUser } from '@/lib/auth';
 
 interface AuthGuardProps {
   children: React.ReactNode;
   requiredRole?: 'student' | 'parent';
+  fallback?: React.ReactNode;
 }
 
-export function AuthGuard({ children, requiredRole }: AuthGuardProps) {
-  const router = useRouter();
-  const segments = useSegments();
-  const { data: session, isPending } = useSession();
+/**
+ * Optional auth guard for protecting specific content within screens.
+ * Returns fallback (or null) if user doesn't match requirements.
+ */
+export function AuthGuard({ children, requiredRole, fallback = null }: AuthGuardProps) {
   const user = useUser();
 
-  useEffect(() => {
-    if (isPending) return;
+  if (!user) {
+    return <>{fallback}</>;
+  }
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const isAuthenticated = !!session?.user;
-
-    if (!isAuthenticated && !inAuthGroup) {
-      // Not authenticated and not in auth group -> redirect to login
-      router.replace('/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      // Authenticated but in auth group -> redirect to appropriate dashboard
-      if (user?.role === 'parent') {
-        router.replace('/(parent)/');
-      } else {
-        router.replace('/(student)/');
-      }
-    } else if (isAuthenticated && requiredRole && user?.role !== requiredRole) {
-      // Wrong role -> redirect to correct dashboard
-      if (user?.role === 'parent') {
-        router.replace('/(parent)/');
-      } else {
-        router.replace('/(student)/');
-      }
-    }
-  }, [isPending, session, segments, requiredRole, user, router]);
-
-  if (isPending) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="hsl(222.2 47.4% 11.2%)" />
-      </View>
-    );
+  if (requiredRole && user.role !== requiredRole) {
+    return <>{fallback}</>;
   }
 
   return <>{children}</>;

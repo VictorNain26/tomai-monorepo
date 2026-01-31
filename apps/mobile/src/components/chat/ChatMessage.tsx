@@ -1,10 +1,12 @@
 /**
- * ChatMessage Component
+ * ChatMessage Component - TomAI 2026
  *
- * Affiche un message user ou assistant avec avatar et bulle stylisée.
- * Supporte le rendu LaTeX/KaTeX pour les formules mathématiques.
- * Supporte le rendu Mermaid pour les diagrammes.
- * Inclut bouton TTS pour lecture vocale des réponses assistant.
+ * Displays a user or assistant message with styled bubble.
+ * Supports:
+ * - LaTeX/KaTeX for math formulas
+ * - Mermaid for diagrams
+ * - TTS for voice playback
+ * - File attachments
  */
 
 import { View, TouchableOpacity } from 'react-native';
@@ -15,11 +17,13 @@ import {
   containsMath,
   MermaidDiagram,
   containsMermaid,
+  TomAvatar,
 } from '@/components/common';
 import { FileAttachmentCard } from './FileAttachmentCard';
 import { cn } from '@/lib/utils';
-import { useTextToSpeech } from '@/hooks';
+import { useTextToSpeech, useIconColors } from '@/hooks';
 import type { ChatMessage as ChatMessageType } from '@/hooks';
+import { bgColors, colors } from '@/lib/styles';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -30,6 +34,7 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
   const isUser = message.role === 'user';
   const isThinking = !isUser && isStreaming && message.content.length === 0;
   const tts = useTextToSpeech();
+  const iconColors = useIconColors();
 
   // Can speak if assistant message with content and not streaming
   const canSpeak = !isUser && message.content.length > 0 && !isStreaming;
@@ -47,23 +52,20 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
       )}
     >
       {/* Avatar */}
-      <View
-        className={cn(
-          'h-8 w-8 items-center justify-center rounded-full',
-          isUser ? 'bg-primary' : 'bg-purple-600'
-        )}
-      >
-        <Text className="text-sm text-white">{isUser ? '👤' : '🧠'}</Text>
-      </View>
+      {isUser ? (
+        <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
+          <Text className="text-sm text-primary-foreground">👤</Text>
+        </View>
+      ) : (
+        <TomAvatar size="sm" />
+      )}
 
       {/* Message Bubble + Actions */}
       <View className="max-w-[80%]">
         <View
           className={cn(
             'rounded-2xl px-4 py-3',
-            isUser
-              ? 'rounded-tr-sm bg-primary'
-              : 'rounded-tl-sm bg-muted'
+            isUser ? 'rounded-tr-sm bg-primary' : 'rounded-tl-sm bg-muted'
           )}
         >
           {isThinking ? (
@@ -83,27 +85,19 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
             <TouchableOpacity
               onPress={handleSpeakToggle}
               disabled={tts.isLoading}
-              className={cn(
-                'flex-row items-center gap-1 rounded-full px-2 py-1',
-                tts.isSpeaking ? 'bg-primary/20' : 'bg-transparent'
-              )}
+              className="flex-row items-center gap-1 rounded-full px-2 py-1"
+              style={tts.isSpeaking ? { backgroundColor: bgColors.primary[15] } : undefined}
             >
               {tts.isLoading ? (
-                <Loader2
-                  color="hsl(215.4, 16.3%, 46.9%)"
-                  size={14}
-                  className="animate-spin"
-                />
+                <Loader2 color={iconColors.muted} size={14} />
               ) : tts.isSpeaking ? (
-                <VolumeX color="hsl(222.2, 47.4%, 11.2%)" size={14} />
+                <VolumeX color={iconColors.foreground} size={14} />
               ) : (
-                <Volume2 color="hsl(215.4, 16.3%, 46.9%)" size={14} />
+                <Volume2 color={iconColors.muted} size={14} />
               )}
               <Text
-                className={cn(
-                  'text-xs',
-                  tts.isSpeaking ? 'text-foreground' : 'text-muted-foreground'
-                )}
+                variant="tiny"
+                className={tts.isSpeaking ? 'text-foreground' : 'text-muted-foreground'}
               >
                 {tts.isLoading
                   ? 'Chargement...'
@@ -115,7 +109,7 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
           </View>
         )}
 
-        {/* File Attachment - if message has attached file */}
+        {/* File Attachment */}
         {message.attachedFile?.fileId && (
           <FileAttachmentCard
             fileId={message.attachedFile.fileId}
@@ -129,22 +123,36 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
   );
 }
 
+// ============================================================================
+// THINKING INDICATOR
+// ============================================================================
+
 function ThinkingIndicator() {
   return (
-    <View className="flex-row items-center gap-1">
+    <View className="flex-row items-center gap-2">
       <Text className="text-muted-foreground">Tom réfléchit</Text>
       <View className="flex-row gap-1">
-        <View className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-        <View className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary delay-75" />
-        <View className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary delay-150" />
+        <View
+          className="h-1.5 w-1.5 animate-pulse rounded-full"
+          style={{ backgroundColor: colors.primary.DEFAULT }}
+        />
+        <View
+          className="h-1.5 w-1.5 animate-pulse rounded-full"
+          style={{ backgroundColor: colors.primary.DEFAULT, animationDelay: '75ms' }}
+        />
+        <View
+          className="h-1.5 w-1.5 animate-pulse rounded-full"
+          style={{ backgroundColor: colors.primary.DEFAULT, animationDelay: '150ms' }}
+        />
       </View>
     </View>
   );
 }
 
-/**
- * MessageContent - renders message with math and/or mermaid diagrams
- */
+// ============================================================================
+// MESSAGE CONTENT
+// ============================================================================
+
 interface MessageContentProps {
   content: string;
   isUser: boolean;
@@ -182,7 +190,7 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
   const hasMath = !isUser && containsMath(content);
   const hasMermaid = !isUser && containsMermaid(content);
 
-  // For user messages or simple text, use simple Text
+  // User messages or simple text
   if (isUser || (!hasMath && !hasMermaid)) {
     return (
       <Text
@@ -192,12 +200,14 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
         )}
       >
         {content}
-        {isStreaming && <Text className="text-primary">▋</Text>}
+        {isStreaming && (
+          <Text style={{ color: colors.primary.DEFAULT }}>▋</Text>
+        )}
       </Text>
     );
   }
 
-  // For assistant messages with Mermaid diagrams
+  // Assistant messages with Mermaid diagrams
   if (hasMermaid) {
     const segments = parseMermaidContent(content);
     return (
@@ -225,18 +235,22 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
             </Text>
           );
         })}
-        {isStreaming && <Text className="text-primary">▋</Text>}
+        {isStreaming && (
+          <Text style={{ color: colors.primary.DEFAULT }}>▋</Text>
+        )}
       </View>
     );
   }
 
-  // For assistant messages with only math (no mermaid)
+  // Assistant messages with only math
   return (
     <View>
-      <MathText fontSize={16} textColor={isUser ? '#fafafa' : undefined}>
+      <MathText fontSize={16} textColor={isUser ? colors.primary.foreground : undefined}>
         {content}
       </MathText>
-      {isStreaming && <Text className="text-primary">▋</Text>}
+      {isStreaming && (
+        <Text style={{ color: colors.primary.DEFAULT }}>▋</Text>
+      )}
     </View>
   );
 }
