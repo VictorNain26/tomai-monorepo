@@ -11,7 +11,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-async function runMigrations(): Promise<void> {
+export async function runMigrations(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!databaseUrl) {
@@ -39,4 +39,7 @@ async function runMigrations(): Promise<void> {
   }
 }
 
-runMigrations();
+// Run directly if executed as script (not when imported)
+if (import.meta.main) {
+  runMigrations();
+}
