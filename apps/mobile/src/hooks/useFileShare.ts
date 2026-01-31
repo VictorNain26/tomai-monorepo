@@ -107,8 +107,14 @@ export function useFileShare() {
         setState((prev) => ({ ...prev, progress: 50 }));
 
         // Convert response to blob and write to file
+        // React Native: use FileReader to convert Blob to ArrayBuffer
         const blob = await downloadResponse.blob();
-        const arrayBuffer = await blob.arrayBuffer();
+        const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as ArrayBuffer);
+          reader.onerror = () => reject(new Error('Failed to read blob'));
+          reader.readAsArrayBuffer(blob);
+        });
         const bytes = new Uint8Array(arrayBuffer);
 
         cacheFile.write(bytes);

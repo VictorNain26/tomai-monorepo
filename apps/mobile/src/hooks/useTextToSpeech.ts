@@ -176,12 +176,10 @@ export function useTextToSpeech() {
         tempFileRef.current = tempFile;
 
         // Decode base64 and write to file
-        const binaryString = atob(response.audio.data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        await tempFile.write(bytes);
+        // React Native: use Buffer from 'buffer' polyfill (included in React Native)
+        const { Buffer } = await import('buffer');
+        const bytes = Buffer.from(response.audio.data, 'base64');
+        await tempFile.write(new Uint8Array(bytes));
 
         const tempUri = tempFile.uri;
 
