@@ -34,6 +34,7 @@
     "validate:prod": "bun run typecheck:strict && bun run lint:ci",
     "clean": "rm -rf dist bun.lockb node_modules/.cache",
     "db:generate": "bun --bun drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate": "bun run src/db/migrate.ts",
     "db:push": "bun --bun drizzle-kit push --config=drizzle.config.ts --force",
     "db:studio": "bunx drizzle-kit studio",
     "db:check": "bun --bun drizzle-kit check",
