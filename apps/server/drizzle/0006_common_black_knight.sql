@@ -1,4 +1,5 @@
-CREATE TYPE "public"."file_status" AS ENUM('pending', 'uploaded', 'processing', 'ready', 'expired', 'deleted');--> statement-breakpoint
+-- file_status enum already created in 0005_files_table.sql
+--> statement-breakpoint
 CREATE TABLE "device_push_tokens" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" varchar(255) NOT NULL,
