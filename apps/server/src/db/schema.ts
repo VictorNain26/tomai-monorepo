@@ -156,6 +156,42 @@ export const verification = pgTable('verification', {
   identifierIdx: index('idx_verification_identifier').on(table.identifier),
 }));
 
+/**
+ * Table parent_restore_token - Quick Switch tokens (Parent → Child)
+ *
+ * Sécurité 2026:
+ * - Token aléatoire stocké en base (pas de signature cryptographique côté client)
+ * - Usage unique (usedAt marqué à l'utilisation)
+ * - Expiration courte (24h)
+ * - Audit trail complet (parentId, childId, timestamps)
+ * - Révocation possible (suppression du token)
+ */
+export const parentRestoreToken = pgTable('parent_restore_token', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  token: varchar('token', { length: 64 }).notNull().unique(), // 32 bytes hex = 64 chars
+  parentId: varchar('parent_id', { length: 255 }).notNull(),
+  childId: varchar('child_id', { length: 255 }).notNull(), // For audit trail
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }), // NULL = not used, set on restore
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  tokenIdx: index('idx_parent_restore_token_token').on(table.token),
+  parentIdIdx: index('idx_parent_restore_token_parent_id').on(table.parentId),
+  expiresAtIdx: index('idx_parent_restore_token_expires_at').on(table.expiresAt),
+
+  parentIdFk: foreignKey({
+    columns: [table.parentId],
+    foreignColumns: [user.id],
+    name: 'parent_restore_token_parent_id_fkey'
+  }).onDelete('cascade'),
+
+  childIdFk: foreignKey({
+    columns: [table.childId],
+    foreignColumns: [user.id],
+    name: 'parent_restore_token_child_id_fkey'
+  }).onDelete('cascade'),
+}));
+
 
 
 // =============================================

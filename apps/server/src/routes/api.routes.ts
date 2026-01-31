@@ -19,6 +19,7 @@ import { progressService } from '../services/progress.service';
 
 // Database
 import { db } from '../db/connection';
+import { usersRepository } from '../db/repositories';
 import { sql } from 'drizzle-orm';
 import { env } from '../config/environment.config';
 import { cacheService } from '../services/memory-cache.service';
@@ -737,6 +738,180 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
         });
         set.status = 500;
         return { error: 'Failed to save push token' };
+      }
+    })
+
+    // PARENT - Launch child session (Quick Switch)
+    // Creates a session for the child and a restore token for the parent
+    // Security 2026: Database-backed tokens with one-time use
+    .post('/parent/children/:id/launch-session', async ({ params, request: { headers }, set }) => {
+      const authContext = await handleParentAuthWithCookies(headers, set);
+      if (!authContext.success) {
+        return authContext.error;
+      }
+
+      try {
+        const childId = params.id;
+        const parentId = authContext.user.id;
+
+        // Verify child belongs to this parent
+        const isParent = await parentService.isParentOf(parentId, childId);
+        if (!isParent) {
+          set.status = 403;
+          return { error: 'Access denied: Child does not belong to this parent' };
+        }
+
+        // Get child info
+        const children = await parentService.getParentChildren(parentId);
+        const child = children.find(c => c.id === childId);
+        if (!child) {
+          set.status = 404;
+          return { error: 'Child not found' };
+        }
+
+        // Import required modules
+        const { session: sessionTable, parentRestoreToken: restoreTokenTable } = await import('../db/schema');
+        const crypto = await import('crypto');
+
+        // 1. Create child session token
+        const childSessionToken = crypto.randomBytes(32).toString('hex');
+        const childSessionExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+        await db.insert(sessionTable).values({
+          id: crypto.randomUUID(),
+          userId: childId,
+          token: childSessionToken,
+          expiresAt: childSessionExpires,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        // 2. Create parent restore token (database-backed, one-time use, 24h validity)
+        const restoreToken = crypto.randomBytes(32).toString('hex');
+        const restoreTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+        await db.insert(restoreTokenTable).values({
+          token: restoreToken,
+          parentId,
+          childId,
+          expiresAt: restoreTokenExpires,
+        });
+
+        logger.info('Child session launched', {
+          operation: 'api:parent:child:launch-session',
+          parentId,
+          childId,
+          severity: 'low' as const
+        });
+
+        return {
+          success: true,
+          childSessionToken,
+          childSessionExpiresAt: childSessionExpires.toISOString(),
+          parentRestoreToken: restoreToken,
+          child: {
+            id: child.id,
+            firstName: child.firstName,
+            username: child.username,
+          },
+        };
+      } catch (_error) {
+        logger.error('Launch child session failed', {
+          operation: 'api:parent:child:launch-session',
+          userId: authContext.user.id,
+          childId: params.id,
+          _error: _error instanceof Error ? _error.message : String(_error),
+          severity: 'medium' as const
+        });
+        set.status = 500;
+        return { error: 'Failed to create child session' };
+      }
+    })
+
+    // PARENT - Restore parent session from restore token
+    // Security 2026: One-time use tokens stored in database
+    .post('/parent/restore-session', async ({ body, set }) => {
+      try {
+        const { restoreToken } = body as { restoreToken?: string };
+
+        if (!restoreToken) {
+          set.status = 400;
+          return { error: 'Restore token is required' };
+        }
+
+        const { session: sessionTable, parentRestoreToken: restoreTokenTable } = await import('../db/schema');
+        const { eq, and, isNull, gt } = await import('drizzle-orm');
+        const crypto = await import('crypto');
+
+        // Find valid restore token (not used, not expired)
+        const [tokenRecord] = await db
+          .select()
+          .from(restoreTokenTable)
+          .where(
+            and(
+              eq(restoreTokenTable.token, restoreToken),
+              isNull(restoreTokenTable.usedAt),
+              gt(restoreTokenTable.expiresAt, new Date())
+            )
+          )
+          .limit(1);
+
+        if (!tokenRecord) {
+          set.status = 401;
+          return { error: 'Invalid, expired, or already used restore token' };
+        }
+
+        // Mark token as used (one-time use)
+        await db
+          .update(restoreTokenTable)
+          .set({ usedAt: new Date() })
+          .where(eq(restoreTokenTable.id, tokenRecord.id));
+
+        // Verify parent still exists
+        const parent = await usersRepository.findById(tokenRecord.parentId);
+        if (!parent || parent.role !== 'parent') {
+          set.status = 404;
+          return { error: 'Parent account not found' };
+        }
+
+        // Create new parent session
+        const parentSessionToken = crypto.randomBytes(32).toString('hex');
+        const parentSessionExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+        await db.insert(sessionTable).values({
+          id: crypto.randomUUID(),
+          userId: tokenRecord.parentId,
+          token: parentSessionToken,
+          expiresAt: parentSessionExpires,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        logger.info('Parent session restored', {
+          operation: 'api:parent:restore-session',
+          parentId: tokenRecord.parentId,
+          severity: 'low' as const
+        });
+
+        return {
+          success: true,
+          sessionToken: parentSessionToken,
+          expiresAt: parentSessionExpires.toISOString(),
+          user: {
+            id: parent.id,
+            name: parent.name,
+            email: parent.email,
+            role: parent.role,
+          },
+        };
+      } catch (_error) {
+        logger.error('Restore parent session failed', {
+          operation: 'api:parent:restore-session',
+          _error: _error instanceof Error ? _error.message : String(_error),
+          severity: 'medium' as const
+        });
+        set.status = 500;
+        return { error: 'Failed to restore session' };
       }
     })
 
