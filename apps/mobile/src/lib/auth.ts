@@ -28,6 +28,7 @@ const isExpoGo = Constants.default.executionEnvironment === 'storeClient';
 let GoogleSignin: typeof import('@react-native-google-signin/google-signin').GoogleSignin | null = null;
 if (!isExpoGo) {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('@react-native-google-signin/google-signin');
     GoogleSignin = mod.GoogleSignin;
     GoogleSignin?.configure({

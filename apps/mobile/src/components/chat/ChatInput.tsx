@@ -20,7 +20,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Mic, Square, Send, ImageIcon, Paperclip } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
-import { cn } from '@/lib/utils';
 import { useVoiceInput, useIconColors } from '@/hooks';
 import type { ChatFileAttachment } from '@/hooks';
 import { bgColors, colors, opacity } from '@/lib/styles';

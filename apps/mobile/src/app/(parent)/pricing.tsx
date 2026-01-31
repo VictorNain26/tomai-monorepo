@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks';
 import { useTheme } from '@/hooks';
 import { useIconColors } from '@/hooks/useIconColors';
-import { bgColors, colors } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // CONSTANTS
@@ -53,7 +53,7 @@ const PREMIUM_FEATURES = [
 
 export default function PricingScreen() {
   const router = useRouter();
-  const { isDark } = useTheme();
+  useTheme(); // Trigger re-render on theme change
   const iconColors = useIconColors();
   const subscription = useSubscription();
 

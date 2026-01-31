@@ -7,7 +7,7 @@
  * Best Practice 2026: Queue pending actions and sync when online.
  */
 
-import { eq, and, lt } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from './client';
 import {
   pendingActions,
@@ -15,7 +15,6 @@ import {
   chatMessages,
   learningDecks,
   type PendingAction,
-  type NewPendingAction,
 } from './schema';
 import { apiClient } from '@repo/api';
 

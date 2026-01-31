@@ -10,14 +10,13 @@
  * - prompt: Pre-filled question from dashboard
  */
 
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useCallback, useEffect, useMemo } from 'react';
 import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, RotateCcw, BookOpen, FileText, BarChart3 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChatMessage, ChatInput } from '@/components/chat';
 import { TomAvatar } from '@/components/common';
@@ -33,13 +32,6 @@ import { bgColors, shadows, colors } from '@/lib/styles';
 // ============================================================================
 // TYPES
 // ============================================================================
-
-interface ChatParams {
-  subject?: string;
-  sessionId?: string;
-  context?: string; // "homework:id" | "grade:id" | "test:id"
-  prompt?: string;
-}
 
 interface ContextInfo {
   type: 'homework' | 'grade' | 'test' | 'general';
@@ -123,13 +115,13 @@ export default function ChatScreen() {
   const { uploadFile, isProcessing: isUploading } = usePresignedUpload();
 
   // Send initial prompt if provided
-  const [sentInitialPrompt, setSentInitialPrompt] = useState(false);
+  const sentInitialPromptRef = useRef(false);
   useEffect(() => {
-    if (params.prompt && !sentInitialPrompt && messages.length === 0) {
-      setSentInitialPrompt(true);
+    if (params.prompt && !sentInitialPromptRef.current && messages.length === 0) {
+      sentInitialPromptRef.current = true;
       sendMessage(params.prompt);
     }
-  }, [params.prompt, sentInitialPrompt, messages.length, sendMessage]);
+  }, [params.prompt, messages.length, sendMessage]);
 
   // Handle file selection
   const handleFileSelected = useCallback(
@@ -283,7 +275,6 @@ export default function ChatScreen() {
       {/* Messages or Welcome */}
       {messages.length === 0 ? (
         <WelcomeScreen
-          subject={subject}
           contextInfo={contextInfo}
           suggestions={suggestions}
           onSuggestionPress={(prompt) => sendMessage(prompt)}
@@ -320,7 +311,6 @@ export default function ChatScreen() {
 // ============================================================================
 
 interface WelcomeScreenProps {
-  subject: string;
   contextInfo: ContextInfo;
   suggestions: { label: string; prompt: string }[];
   onSuggestionPress: (prompt: string) => void;
@@ -328,7 +318,6 @@ interface WelcomeScreenProps {
 }
 
 function WelcomeScreen({
-  subject,
   contextInfo,
   suggestions,
   onSuggestionPress,

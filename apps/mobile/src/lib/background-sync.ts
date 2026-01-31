@@ -218,22 +218,6 @@ export function useBackgroundSync() {
     registerBackgroundSync().then(setIsRegistered);
   }, []);
 
-  // Sync when app comes to foreground
-  useEffect(() => {
-    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
-        console.log('[BackgroundSync] App came to foreground, syncing...');
-        await sync();
-      }
-    };
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
   const sync = useCallback(async () => {
     if (isSyncing) return;
 
@@ -245,6 +229,22 @@ export function useBackgroundSync() {
       setIsSyncing(false);
     }
   }, [isSyncing]);
+
+  // Sync when app comes to foreground
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        console.log('[BackgroundSync] App came to foreground, syncing...');
+        await triggerManualSync();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   return {
     isRegistered,

@@ -82,13 +82,14 @@ export function useChat({
     staleTime: Infinity,
   });
 
-  // Sync history once
+  // Sync history once - this is a valid pattern for syncing query data to local state
   useEffect(() => {
     if (!historyQuery.data) return;
     if (historySyncedRef.current === currentSessionId) return;
     if (historyQuery.data.messages.length === 0) return;
 
     historySyncedRef.current = currentSessionId;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMessages(historyQuery.data.messages);
   }, [historyQuery.data, currentSessionId]);
 
