@@ -41,5 +41,5 @@ export async function runMigrations(): Promise<void> {
 
 // Run directly if executed as script (not when imported)
 if (import.meta.main) {
-  runMigrations();
+  void runMigrations();
 }
