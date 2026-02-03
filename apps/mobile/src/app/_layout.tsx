@@ -2,15 +2,8 @@ import '../global.css';
 
 import { useEffect, useRef, useState } from 'react';
 import { Slot } from 'expo-router';
-import { View, LogBox } from 'react-native';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-
-// Best Practice 2026: Suppress deprecation warnings from third-party dependencies
-// Our code uses react-native-safe-area-context, but some dependencies still reference
-// the deprecated RN core SafeAreaView. This warning cannot be fixed in user code.
-LogBox.ignoreLogs([
-  'SafeAreaView has been deprecated',
-]);
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
