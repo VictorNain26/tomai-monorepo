@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
-import { View, Pressable, type ViewStyle } from 'react-native';
+import { View, Pressable, Text as RNText, type ViewStyle, type TextStyle } from 'react-native';
 import Animated, {
   FadeInUp,
   FadeOutUp,
@@ -7,8 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react-native';
-import { Text } from './text';
-import { shadows, bgColors, borderColors } from '@/lib/styles';
+import { shadows } from '@/lib/styles';
 import { haptics } from '@/lib/haptics';
 
 type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
@@ -34,10 +33,10 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
  *
  * Usage:
  *   const toast = useToast();
- *   toast.success('Enfant créé !');
+ *   toast.success('Enfant cree !');
  *   toast.error('Impossible de se connecter');
- *   toast.warning('Session expirée bientôt');
- *   toast.info('Mise à jour disponible');
+ *   toast.warning('Session expiree bientot');
+ *   toast.info('Mise a jour disponible');
  */
 export function useToast() {
   const context = useContext(ToastContext);
@@ -70,27 +69,31 @@ export function useToast() {
   };
 }
 
-// Use inline styles to avoid NativeWind navigation context bug
+// ============================================================================
+// Toast Item - Fully inline styles (self-contained, no NativeWind dependency)
+// This allows ToastProvider to live in the root layout above Slot.
+// ============================================================================
+
 const variantStyles: Record<ToastVariant, ViewStyle> = {
   default: {
     backgroundColor: 'hsl(0, 0%, 100%)',
     borderColor: 'hsl(214.3, 31.8%, 91.4%)',
   },
   success: {
-    backgroundColor: bgColors.success[10],
-    borderColor: borderColors.success[30],
+    backgroundColor: 'hsl(160, 84%, 96%)',
+    borderColor: 'hsl(160, 84%, 80%)',
   },
   error: {
-    backgroundColor: bgColors.destructive[10],
-    borderColor: borderColors.destructive[30],
+    backgroundColor: 'hsl(0, 72%, 96%)',
+    borderColor: 'hsl(0, 72%, 82%)',
   },
   warning: {
-    backgroundColor: bgColors.warning[10],
-    borderColor: borderColors.warning[30],
+    backgroundColor: 'hsl(32, 95%, 95%)',
+    borderColor: 'hsl(32, 95%, 78%)',
   },
   info: {
-    backgroundColor: bgColors.primary[10],
-    borderColor: borderColors.primary[30],
+    backgroundColor: 'hsl(221, 83%, 96%)',
+    borderColor: 'hsl(221, 83%, 82%)',
   },
 };
 
@@ -102,17 +105,40 @@ const variantIcons: Record<ToastVariant, typeof CheckCircle> = {
   info: Info,
 };
 
-// Icon colors using semantic HSL values from global.css (matching exactly)
 const variantColors: Record<ToastVariant, string> = {
-  default: 'hsl(220, 9%, 46%)',   // --color-muted-foreground
-  success: 'hsl(160, 84%, 39%)',  // --color-success
-  error: 'hsl(0, 72%, 51%)',      // --color-destructive
-  warning: 'hsl(32, 95%, 44%)',   // --color-warning
-  info: 'hsl(221, 83%, 53%)',     // --color-primary
+  default: 'hsl(220, 9%, 46%)',
+  success: 'hsl(160, 84%, 39%)',
+  error: 'hsl(0, 72%, 51%)',
+  warning: 'hsl(32, 95%, 44%)',
+  info: 'hsl(221, 83%, 53%)',
 };
 
-// Muted color for close button
-const CLOSE_BUTTON_COLOR = 'hsl(220, 9%, 46%)'; // --color-muted-foreground
+const CLOSE_BUTTON_COLOR = 'hsl(220, 9%, 46%)';
+const TEXT_COLOR = 'hsl(222.2, 47.4%, 11.2%)';
+const MUTED_TEXT_COLOR = 'hsl(220, 9%, 46%)';
+
+const toastItemStyle: ViewStyle = {
+  marginHorizontal: 16,
+  marginBottom: 8,
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  gap: 12,
+  borderRadius: 12,
+  borderWidth: 1,
+  padding: 16,
+};
+
+const titleStyle: TextStyle = {
+  fontWeight: '600',
+  fontSize: 15,
+  color: TEXT_COLOR,
+};
+
+const descriptionStyle: TextStyle = {
+  fontSize: 13,
+  color: MUTED_TEXT_COLOR,
+  marginTop: 4,
+};
 
 interface ToastItemProps {
   toast: Toast;
@@ -129,18 +155,15 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       entering={FadeInUp.duration(200)}
       exiting={FadeOutUp.duration(200)}
       layout={Layout.springify()}
-      className="mx-4 mb-2 flex-row items-start gap-3 rounded-xl border p-4"
-      style={[variantStyles[variant], shadows.lg]}
+      style={[toastItemStyle, variantStyles[variant], shadows.lg]}
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
     >
       <Icon size={20} color={iconColor} />
-      <View className="flex-1">
-        <Text className="font-semibold text-foreground">{toast.title}</Text>
+      <View style={{ flex: 1 }}>
+        <RNText style={titleStyle}>{toast.title}</RNText>
         {toast.description && (
-          <Text variant="small" className="text-muted-foreground mt-1">
-            {toast.description}
-          </Text>
+          <RNText style={descriptionStyle}>{toast.description}</RNText>
         )}
       </View>
       <Pressable onPress={onDismiss} hitSlop={8}>
@@ -149,6 +172,10 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
     </Animated.View>
   );
 }
+
+// ============================================================================
+// Toast Provider - Global context, goes in root _layout.tsx
+// ============================================================================
 
 interface ToastProviderProps {
   children: ReactNode;
