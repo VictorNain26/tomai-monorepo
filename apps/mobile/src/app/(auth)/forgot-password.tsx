@@ -60,12 +60,11 @@ export default function ForgotPasswordScreen() {
       if (apiUrl.includes('localhost')) {
         webUrl = apiUrl.replace(':3000', ':5173');
       } else {
-        const url = new URL(apiUrl);
         // api.X → app.X | api-staging.X → staging.X
-        url.hostname = url.hostname.replace(/^api([.-])/, (_, sep) =>
-          sep === '.' ? 'app.' : ''
+        webUrl = apiUrl.replace(
+          /\/\/api([.-])/,
+          (_: string, sep: string) => (sep === '.' ? '//app.' : '//')
         );
-        webUrl = url.origin;
       }
 
       await requestPasswordReset(email, `${webUrl}/auth/reset-password`);

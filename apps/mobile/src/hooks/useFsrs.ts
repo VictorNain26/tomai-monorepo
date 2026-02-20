@@ -2,7 +2,7 @@
  * useFsrs Hook
  *
  * FSRS (Free Spaced Repetition Scheduler) hooks for review sessions.
- * Connects to server endpoints: /api/learning/review, /due, /stats, /config
+ * Connects to server endpoints: /api/learning/review, /due, /stats
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -75,22 +75,6 @@ interface StatsResponse {
   stats: DeckStats;
 }
 
-/** FSRS config from GET /api/learning/config */
-export interface FSRSConfig {
-  level: string;
-  config: {
-    cardsPerSession: number;
-    sessionMinutes: number;
-    cycle: string;
-    ageRange: string;
-  };
-  ui: {
-    showTimer: boolean;
-    encourageBreaks: boolean;
-    maxNewCardsPerSession: number;
-  };
-}
-
 // ============================================================================
 // QUERY KEYS
 // ============================================================================
@@ -98,7 +82,6 @@ export interface FSRSConfig {
 export const fsrsQueryKeys = {
   dueCards: (deckId: string) => ['fsrs', 'due', deckId] as const,
   stats: (deckId: string) => ['fsrs', 'stats', deckId] as const,
-  config: ['fsrs', 'config'] as const,
 };
 
 // ============================================================================
@@ -127,19 +110,6 @@ async function fetchDeckStats(deckId: string): Promise<DeckStats> {
   return response.stats;
 }
 
-async function fetchFsrsConfig(): Promise<FSRSConfig> {
-  return apiClient.get<FSRSConfig>('/api/learning/config');
-}
-
-async function resetDeckFsrs(
-  deckId: string
-): Promise<{ cardsReset: number; message: string }> {
-  return apiClient.post<{
-    success: boolean;
-    cardsReset: number;
-    message: string;
-  }>(`/api/learning/decks/${deckId}/reset`);
-}
 
 // ============================================================================
 // HOOKS
@@ -179,23 +149,3 @@ export function useDeckStats(deckId: string) {
   });
 }
 
-/** Get FSRS config adapted to user's level */
-export function useFsrsConfig() {
-  return useQuery({
-    queryKey: fsrsQueryKeys.config,
-    queryFn: fetchFsrsConfig,
-    staleTime: 10 * 60 * 1000,
-  });
-}
-
-/** Reset all FSRS data for a deck */
-export function useResetDeckFsrs() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: resetDeckFsrs,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['fsrs'] });
-    },
-  });
-}

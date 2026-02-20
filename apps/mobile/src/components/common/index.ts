@@ -6,6 +6,3 @@ export { EmptyState } from './empty-state';
 export { MathText, containsMath } from './MathText';
 export { MermaidDiagram, containsMermaid, extractMermaidCode } from './MermaidDiagram';
 export { TomAvatar } from './TomAvatar';
-
-// Feedback components (2026 best practices)
-export { LoadingState, ErrorState, InlineError } from './feedback';

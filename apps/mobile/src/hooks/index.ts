@@ -96,12 +96,9 @@ export {
   useDueCards,
   useReviewCard,
   useDeckStats,
-  useFsrsConfig,
-  useResetDeckFsrs,
   type FSRSRating,
   type FSRSState,
   type DueCard,
   type ReviewResult,
   type DeckStats,
-  type FSRSConfig,
 } from './useFsrs';
