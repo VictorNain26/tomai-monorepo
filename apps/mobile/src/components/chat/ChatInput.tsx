@@ -14,12 +14,12 @@ import {
   Platform,
   ScrollView,
   Image,
-  Alert,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Mic, Square, Send, ImageIcon, Paperclip } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
 import { useVoiceInput, useIconColors } from '@/hooks';
 import type { ChatFileAttachment } from '@/hooks';
 import { bgColors, colors, opacity } from '@/lib/styles';
@@ -48,6 +48,7 @@ export function ChatInput({
   const [message, setMessage] = useState('');
   const inputRef = useRef<TextInput>(null);
   const iconColors = useIconColors();
+  const toast = useToast();
 
   // Voice input hook
   const voice = useVoiceInput();
@@ -71,11 +72,11 @@ export function ChatInput({
       // Start recording
       const started = await voice.startRecording();
       if (!started && voice.error) {
-        Alert.alert('Erreur microphone', voice.error);
+        toast.error('Erreur microphone', voice.error);
         voice.clearError();
       }
     }
-  }, [voice]);
+  }, [voice, toast]);
 
   // Cancel recording on long press
   const handleVoiceCancel = useCallback(async () => {
@@ -201,6 +202,7 @@ export function ChatInput({
                   { backgroundColor: bgColors.muted[50] },
                   isLoading ? { opacity: opacity.disabled } : undefined,
                 ]}
+                accessibilityLabel="Ajouter une image"
               >
                 <ImageIcon color={iconColors.muted} size={18} />
               </TouchableOpacity>
@@ -212,6 +214,7 @@ export function ChatInput({
                   { backgroundColor: bgColors.muted[50] },
                   isLoading ? { opacity: opacity.disabled } : undefined,
                 ]}
+                accessibilityLabel="Ajouter un document"
               >
                 <Paperclip color={iconColors.muted} size={18} />
               </TouchableOpacity>
@@ -253,6 +256,8 @@ export function ChatInput({
                 : bgColors.muted[50],
               opacity: isLoading || voice.isProcessing ? opacity.disabled : 1,
             }}
+            accessibilityLabel={voice.isRecording ? 'Arrêter l\'enregistrement' : 'Enregistrer un message vocal'}
+            accessibilityHint="Appui long pour annuler"
           >
             {voice.isRecording ? (
               <Square color={colors.primary.foreground} size={16} fill={colors.primary.foreground} />
@@ -273,6 +278,7 @@ export function ChatInput({
                 ? colors.primary.DEFAULT
                 : bgColors.muted[50],
             }}
+            accessibilityLabel="Envoyer le message"
           >
             <Send
               color={canSend ? colors.primary.foreground : iconColors.muted}

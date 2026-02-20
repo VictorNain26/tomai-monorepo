@@ -12,7 +12,6 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Mail, CheckCircle, ArrowLeft } from 'lucide-react-native';
@@ -22,10 +21,14 @@ import { getBaseUrl } from '@repo/api';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { bgColors } from '@/lib/styles';
+import { useToast } from '@/components/ui/toast';
+import { useIconColors } from '@/hooks';
+import { bgColors, colors } from '@/lib/styles';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const toast = useToast();
+  const iconColors = useIconColors();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -36,27 +39,39 @@ export default function ForgotPasswordScreen() {
 
   async function handleSendResetEmail() {
     if (!email.trim()) {
-      Alert.alert('Erreur', 'Veuillez saisir votre adresse email');
+      toast.error('Erreur', 'Veuillez saisir votre adresse email');
       return;
     }
 
     if (!validateEmail(email)) {
-      Alert.alert('Erreur', 'Veuillez saisir une adresse email valide');
+      toast.error('Erreur', 'Veuillez saisir une adresse email valide');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Send reset email with web redirect URL
-      // User will reset password in browser, then return to app
-      const baseUrl = getBaseUrl();
-      const webUrl = baseUrl.replace('/api', '').replace(':3000', ':5173');
+      // Derive frontend URL from API URL:
+      //   Dev:     http://localhost:3000        → http://localhost:5173
+      //   Staging: https://api-staging.tomia.fr → https://staging.tomia.fr
+      //   Prod:    https://api.tomia.fr         → https://app.tomia.fr
+      const apiUrl = getBaseUrl();
+      let webUrl: string;
+      if (apiUrl.includes('localhost')) {
+        webUrl = apiUrl.replace(':3000', ':5173');
+      } else {
+        const url = new URL(apiUrl);
+        // api.X → app.X | api-staging.X → staging.X
+        url.hostname = url.hostname.replace(/^api([.-])/, (_, sep) =>
+          sep === '.' ? 'app.' : ''
+        );
+        webUrl = url.origin;
+      }
 
       await requestPasswordReset(email, `${webUrl}/auth/reset-password`);
       setEmailSent(true);
     } catch (error) {
-      Alert.alert(
+      toast.error(
         'Erreur',
         (error as Error).message || "Impossible d'envoyer l'email de récupération"
       );
@@ -70,8 +85,8 @@ export default function ForgotPasswordScreen() {
     return (
       <View className="flex-1 justify-center bg-background px-6">
         <View className="items-center">
-          <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <CheckCircle color="hsl(142, 76%, 36%)" size={32} />
+          <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.success[10] }}>
+            <CheckCircle color={colors.success.DEFAULT} size={32} />
           </View>
 
           <Text variant="h2" className="text-center">
@@ -120,15 +135,18 @@ export default function ForgotPasswordScreen() {
           <TouchableOpacity
             onPress={() => router.back()}
             className="absolute left-6 top-16 flex-row items-center"
+            style={{ minHeight: 44 }}
+            accessibilityLabel="Retour"
+            accessibilityRole="button"
           >
-            <ArrowLeft color="hsl(222.2, 47.4%, 11.2%)" size={20} />
+            <ArrowLeft color={iconColors.foreground} size={20} />
             <Text className="ml-1 text-primary">Retour</Text>
           </TouchableOpacity>
 
           {/* Header */}
           <View className="mb-8 items-center">
             <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
-              <Mail color="hsl(222.2, 47.4%, 11.2%)" size={32} />
+              <Mail color={iconColors.foreground} size={32} />
             </View>
 
             <Text variant="h2" className="text-center">
@@ -172,7 +190,7 @@ export default function ForgotPasswordScreen() {
           <View className="mt-8 flex-row justify-center">
             <Text variant="muted">Vous vous souvenez ? </Text>
             <Link href="/(auth)/login" asChild>
-              <TouchableOpacity>
+              <TouchableOpacity accessibilityLabel="Se connecter">
                 <Text className="font-semibold text-primary">Se connecter</Text>
               </TouchableOpacity>
             </Link>

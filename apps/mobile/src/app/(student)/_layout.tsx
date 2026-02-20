@@ -1,26 +1,30 @@
 /**
  * Student Layout - TomAI 2026
  *
- * Simplified 3-tab navigation:
- * 1. Accueil - Pronote-centered dashboard with Tom access
- * 2. Révisions - Flashcards and learning
- * 3. Plus - Profile, settings, detailed Pronote views
+ * Optimized navigation structure with proper Stack navigators inside each tab.
+ * Uses popToTopOnBlur to reset stacks when switching tabs (standard UX).
  *
- * Chat is a full-screen modal accessed from dashboard, not a tab.
+ * Structure:
+ * - (home)/    → Stack: Dashboard, Chat
+ * - (learning)/ → Stack: Decks list, Create deck, Deck detail
+ * - (profile)/ → Stack: Profile menu, Settings, Info, Pronote screens
  *
- * Quick Switch 2026: Shows "Return to Parent" banner when in impersonation mode.
+ * Quick Switch: Shows "Return to Parent" banner when in impersonation mode.
  */
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, BookOpen, Menu, ArrowLeft } from 'lucide-react-native';
+import { Home, BookOpen, User, ArrowLeft } from 'lucide-react-native';
 import { useSession, useUser, useImpersonatedBy, restoreParentSession } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
 import { useTheme } from '@/hooks';
 import { colors } from '@/lib/styles';
+import { useTabScreenOptions } from '@/lib/navigation';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
+import { setupPushNotifications } from '@/lib/notifications';
 
 // Base tab bar height (without safe area)
 const TAB_BAR_HEIGHT = 56;
@@ -28,7 +32,8 @@ const TAB_BAR_PADDING_TOP = 8;
 
 export default function StudentLayout() {
   const router = useRouter();
-  const { data: session, isPending } = useSession();
+  const toast = useToast();
+  const { data: session, isPending, refetch: refetchSession } = useSession();
   const user = useUser();
   const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -39,6 +44,8 @@ export default function StudentLayout() {
   const [isRestoring, setIsRestoring] = useState(false);
 
   // Handle return to parent
+  // Uses refetch() to sync React state after stopping impersonation
+  // @see https://github.com/better-auth/better-auth/discussions/3860
   const handleReturnToParent = useCallback(async () => {
     Alert.alert(
       'Retour au compte parent',
@@ -50,18 +57,20 @@ export default function StudentLayout() {
           onPress: async () => {
             setIsRestoring(true);
             const success = await restoreParentSession();
-            setIsRestoring(false);
 
             if (success) {
+              // Refresh session state before navigation
+              await refetchSession();
               router.replace('/(parent)/');
             } else {
-              Alert.alert('Erreur', 'Impossible de restaurer la session parent');
+              toast.error('Erreur', 'Impossible de restaurer la session parent');
             }
+            setIsRestoring(false);
           },
         },
       ]
     );
-  }, [router]);
+  }, [router, toast, refetchSession]);
 
   // Compute tab colors based on theme
   const tabColors = useMemo(
@@ -86,6 +95,15 @@ export default function StudentLayout() {
     }),
     [tabColors, insets.bottom]
   );
+
+  // Shared tab animation/performance options (React Navigation 7)
+  const tabOptions = useTabScreenOptions(tabColors.background);
+
+  // Push notification registration (once, non-blocking)
+  useEffect(() => {
+    if (!session?.user || isImpersonating) return;
+    void setupPushNotifications();
+  }, [session?.user, isImpersonating]);
 
   useEffect(() => {
     if (isPending) return;
@@ -134,6 +152,8 @@ export default function StudentLayout() {
               justifyContent: 'center',
               gap: 8,
             }}
+            accessibilityLabel="Retour au compte parent"
+            accessibilityRole="button"
           >
             <ArrowLeft color={colors.primary.foreground} size={16} />
             <Text
@@ -154,22 +174,23 @@ export default function StudentLayout() {
             tabBarActiveTintColor: tabColors.active,
             tabBarInactiveTintColor: tabColors.inactive,
             tabBarStyle,
-            tabBarLabelStyle: {
-              fontSize: 12,
-              fontWeight: '600',
-            },
+            tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+            popToTopOnBlur: true,
+            ...tabOptions,
           }}
         >
-          {/* Main tabs */}
+          {/* Tab 1: Home (Dashboard + Chat) */}
           <Tabs.Screen
-            name="index"
+            name="(home)"
             options={{
               title: 'Accueil',
               tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
             }}
           />
+
+          {/* Tab 2: Learning (Decks) */}
           <Tabs.Screen
-            name="learning"
+            name="(learning)"
             options={{
               title: 'Révisions',
               tabBarIcon: ({ color, size }) => (
@@ -177,20 +198,15 @@ export default function StudentLayout() {
               ),
             }}
           />
+
+          {/* Tab 3: Profile (Settings, Pronote, etc.) */}
           <Tabs.Screen
-            name="profile"
+            name="(profile)"
             options={{
-              title: 'Plus',
-              tabBarIcon: ({ color, size }) => <Menu color={color} size={size} />,
+              title: 'Profil',
+              tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
             }}
           />
-
-          {/* Hidden screens - accessed via navigation, not tabs */}
-          <Tabs.Screen name="chat" options={{ href: null }} />
-          <Tabs.Screen name="deck" options={{ href: null }} />
-          <Tabs.Screen name="pronote" options={{ href: null }} />
-          <Tabs.Screen name="profile-info" options={{ href: null }} />
-          <Tabs.Screen name="settings" options={{ href: null }} />
         </Tabs>
       </View>
     </AppProviders>

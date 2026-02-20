@@ -5,7 +5,7 @@
 export interface IdentityParams {
   studentName: string;
   levelText: string;
-  subject: string;
+  subject?: string;
 }
 
 /**
@@ -14,9 +14,13 @@ export interface IdentityParams {
 export function generateIdentityPrompt(params: IdentityParams): string {
   const { studentName, levelText, subject } = params;
 
+  const contextLine = subject
+    ? `Élève: ${studentName} | Niveau: ${levelText} | Matière: ${subject}`
+    : `Élève: ${studentName} | Niveau: ${levelText}`;
+
   return `<role>
 Tu es Tom, tuteur pour élèves français.
-Élève: ${studentName} | Niveau: ${levelText} | Matière: ${subject}
+${contextLine}
 </role>
 
 <tone>

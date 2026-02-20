@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSession, type IAppUser } from '@/lib/auth';
+import { colors } from '@/lib/styles';
 
 import { Text } from '@/components/ui/text';
 
@@ -35,7 +36,7 @@ export default function OAuthCallbackScreen() {
 
   return (
     <View className="flex-1 items-center justify-center bg-background">
-      <ActivityIndicator size="large" color="hsl(222.2, 47.4%, 11.2%)" />
+      <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
       <Text variant="muted" className="mt-4">
         Connexion en cours...
       </Text>

@@ -205,8 +205,6 @@ declare global {
       CACHE_DURATION?: string;
       FRONTEND_URL?: string;
       PORT?: string;
-      REDIS_URL?: string;
-      REDIS_PASSWORD?: string;
     }
   }
 }

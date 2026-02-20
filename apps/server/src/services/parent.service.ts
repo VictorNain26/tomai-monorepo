@@ -13,9 +13,6 @@ import { withPoolLimit } from '../db/pool-limiter.js';
 
 import type { SchoolLevel } from '../db/schema.js';
 
-// LV2 type (espagnol, allemand, italien)
-export type Lv2Option = 'espagnol' | 'allemand' | 'italien';
-
 // Child type definition
 export interface ChildInfo {
   id: string;
@@ -23,7 +20,6 @@ export interface ChildInfo {
   lastName: string;
   username: string;
   schoolLevel: string;
-  selectedLv2?: Lv2Option | null; // LV2 choisie (à partir de 5ème)
   dateOfBirth?: string;
   isActive: boolean;
   parentId: string;
@@ -96,7 +92,6 @@ export class ParentService {
         lastName: child.lastName ?? '',
         username: child.username ?? '',
         schoolLevel: child.schoolLevel ?? '',
-        selectedLv2: (child.selectedLv2 as Lv2Option | null) ?? null,
         dateOfBirth: child.dateOfBirth ?? undefined,
         isActive: child.isActive ?? true,
         parentId: parentId,
@@ -362,7 +357,6 @@ export class ParentService {
     password: string;
     schoolLevel: string;
     dateOfBirth: string;
-    selectedLv2?: Lv2Option | null;
   }): Promise<ChildInfo> {
     // Vérification unicité username
     const existingUser = await usersRepository.findByUsername(childData.username);
@@ -389,7 +383,6 @@ export class ParentService {
       displayUsername: childData.username, // Assurer compatibilité plugin username
       role: 'student',
       schoolLevel: childData.schoolLevel as SchoolLevel,
-      selectedLv2: childData.selectedLv2 ?? null,
       dateOfBirth: childData.dateOfBirth,
       parentId: parentId
     });
@@ -401,7 +394,6 @@ export class ParentService {
       lastName: childData.lastName,
       username: childData.username,
       schoolLevel: childData.schoolLevel,
-      selectedLv2: childData.selectedLv2 ?? null,
       dateOfBirth: childData.dateOfBirth ?? undefined,
       isActive: true,
       parentId: parentId,
@@ -439,7 +431,6 @@ export class ParentService {
         lastName: updatedChild.lastName ?? '',
         username: updatedChild.username ?? '',
         schoolLevel: updatedChild.schoolLevel ?? '',
-        selectedLv2: (updatedChild.selectedLv2 as Lv2Option | null) ?? null,
         dateOfBirth: updatedChild.dateOfBirth ?? undefined,
         isActive: updatedChild.isActive ?? true,
         parentId: parentId,
@@ -479,7 +470,6 @@ export class ParentService {
     lastName?: string;
     dateOfBirth?: Date;
     schoolLevel?: string;
-    selectedLv2?: Lv2Option | null;
     password?: string;
     username?: string;
   }): Promise<ChildInfo> {
@@ -497,7 +487,6 @@ export class ParentService {
         firstName: string;
         lastName: string;
         schoolLevel: SchoolLevel;
-        selectedLv2: string | null;
         dateOfBirth: string;
         updatedAt: Date;
         name: string; // For username
@@ -517,9 +506,6 @@ export class ParentService {
       if (updateData.schoolLevel !== undefined) {
         updateObject.schoolLevel = updateData.schoolLevel as SchoolLevel;
       }
-      if (updateData.selectedLv2 !== undefined) {
-        updateObject.selectedLv2 = updateData.selectedLv2;
-      }
       if (updateData.username !== undefined) {
         updateObject.name = updateData.username; // 'name' est le champ username dans la DB
       }
@@ -537,7 +523,6 @@ export class ParentService {
         lastName: updatedChild.lastName ?? '',
         username: updatedChild.username ?? '',
         schoolLevel: updatedChild.schoolLevel ?? '',
-        selectedLv2: (updatedChild.selectedLv2 as Lv2Option | null) ?? null,
         dateOfBirth: updatedChild.dateOfBirth ?? undefined,
         isActive: updatedChild.isActive ?? true,
         parentId: parentId,

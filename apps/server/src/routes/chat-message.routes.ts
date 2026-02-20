@@ -1,17 +1,18 @@
 /**
- * Routes Chat SSE Streaming - Gemini 3 Flash
+ * Routes Chat SSE Streaming - Gemini Agent Multi-Tool
  *
  * Token-optimized architecture:
  * - Accepts { content, data } (frontend sends ONLY new message)
  * - Backend manages history from DB (limit: 10, auto-summarization)
  * - Implicit caching via stable system prompt prefix
- * - RAG via Gemini function calling
+ * - Agent multi-tool: RAG, Pronote, flashcards, profil cognitif
  */
 
 import { Elysia, t, sse } from 'elysia';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { chatService } from '../services/chat.service.js';
 import { fileContextService, streamingService } from '../services/chat/index.js';
+import { cognitiveProfileService } from '../services/cognitive-profile.service.js';
 import { tokenQuotaService } from '../services/token-quota.service.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
@@ -20,7 +21,7 @@ import type { EducationLevelType } from '../types/index.js';
  * Chat Request data - Token optimized format
  */
 interface ChatRequestData {
-  subject: string;
+  subject?: string;
   sessionId?: string;
   schoolLevel?: string;
   firstName?: string;
@@ -104,10 +105,20 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       return { _error: 'Validation Error', message: 'Content or files required for streaming' };
     }
 
-    // 4. Récupérer session existante pour cette matière, ou en créer une nouvelle
-    const chatSessionId = sessionId?.trim()
-      ? sessionId
-      : await chatService.getOrCreateSessionBySubject(user.id, subject);
+    // 4. Récupérer session existante ou en créer une nouvelle
+    let chatSessionId: string;
+    if (sessionId?.trim()) {
+      // Verify session belongs to user (prevent session hijacking)
+      const session = await chatService.getSession(sessionId);
+      if (!session || session.userId !== user.id) {
+        set.status = 403;
+        return { _error: 'Access Denied', message: 'Session not found or access denied' };
+      }
+      chatSessionId = sessionId;
+    } else {
+      // Chat unique multi-matière
+      chatSessionId = await chatService.getOrCreateActiveSession(user.id);
+    }
 
     // 5. Récupérer historique (20 messages = 10 échanges complets, Best Practices 2025)
     const sessionHistory = await chatService.getSessionHistory(chatSessionId, { limit: 20 });
@@ -138,8 +149,8 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         };
       });
 
-    // 5b. Préparer contexte fichier + fichiers multimodaux en parallèle
-    const [fileContext, multimodalFiles] = await Promise.all([
+    // 5b. Préparer contexte fichier + fichiers multimodaux + profil cognitif en parallèle
+    const [fileContext, multimodalFiles, cognitiveProfileSummary] = await Promise.all([
       // Contexte texte enrichi (analyse, extraction) - rétrocompatibilité
       fileContextService.prepareFileContext({
         fileId: fileIds[0], // Premier fichier pour enrichissement texte (legacy)
@@ -149,10 +160,18 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         sessionHistory
       }),
       // Fichiers multimodaux pour Gemini (images, PDFs via Files API)
-      fileContextService.prepareMultimodalFiles(fileIds)
+      fileContextService.prepareMultimodalFiles(fileIds),
+      // Profil cognitif pour personnalisation du system prompt
+      cognitiveProfileService.getProfileSummary(user.id)
     ]);
 
-    const { attachedFileInfo, enrichedContent } = fileContext;
+    const { attachedFileInfo, enrichedContent: rawEnrichedContent } = fileContext;
+
+    // Cap enriched content to prevent sending huge payloads to Gemini
+    const MAX_ENRICHED_CONTENT_CHARS = 50_000;
+    const enrichedContent = rawEnrichedContent.length > MAX_ENRICHED_CONTENT_CHARS
+      ? rawEnrichedContent.slice(0, MAX_ENRICHED_CONTENT_CHARS) + '\n\n[Contenu tronqué]'
+      : rawEnrichedContent;
 
     const startTime = Date.now();
 
@@ -188,10 +207,11 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     const streamGenerator = streamingService.generateStreamChunks({
       userId: user.id,
       content: enrichedContent, // Contenu enrichi avec analyse texte (legacy)
-      subject,
+      // Chat multi-matière: ne pas passer subject pour que le system prompt inclue toutes les matières
       schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
       firstName: firstName ?? user.firstName ?? undefined,
       sessionId: chatSessionId,
+      cognitiveProfileSummary,
       conversationHistory: formattedHistory,
       // Fichiers multimodaux pour Gemini (images/PDFs via Files API ou base64)
       files: multimodalFiles.map(f => ({
@@ -266,11 +286,11 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         description: 'New user message (backend manages history)'
       }),
       data: t.Object({
-        subject: t.String({
+        subject: t.Optional(t.String({
           minLength: 2,
           maxLength: 50,
-          description: 'Educational subject'
-        }),
+          description: 'Educational subject (optional for multi-subject chat)'
+        })),
         sessionId: t.Optional(t.String({
           minLength: 36,
           maxLength: 36,

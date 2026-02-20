@@ -66,32 +66,28 @@ export interface UserSession {
 
 export class ChatService {
   /**
-   * Get existing active session for subject, or create a new one
-   * Pattern: Session unique par matière
+   * Get existing active session for user (any subject), or create a new one
+   * Pattern: Chat unique multi-matière
    */
-  async getOrCreateSessionBySubject(userId: string, subject: string): Promise<string> {
+  async getOrCreateActiveSession(userId: string): Promise<string> {
     try {
-      // Chercher une session active existante pour cette matière
-      const existingSession = await studySessionsRepository.findActiveByUserSubject(userId, subject);
+      const existingSession = await studySessionsRepository.findActiveByUser(userId);
 
       if (existingSession) {
-        logger.info('Resuming existing session for subject', {
+        logger.info('Resuming existing active session', {
           sessionId: existingSession.id,
           userId,
-          subject,
-          operation: 'getOrCreateSessionBySubject:resume'
+          operation: 'getOrCreateActiveSession:resume'
         });
         return existingSession.id;
       }
 
-      // Pas de session active → en créer une nouvelle
-      return await this.createSession(userId, subject);
+      return await this.createSession(userId, 'général');
     } catch (error) {
-      logger.error('Failed to get or create session', {
+      logger.error('Failed to get or create active session', {
         _error: error instanceof Error ? error.message : String(error),
         userId,
-        subject,
-        operation: 'getOrCreateSessionBySubject',
+        operation: 'getOrCreateActiveSession',
         severity: 'high' as const
       });
       throw error;

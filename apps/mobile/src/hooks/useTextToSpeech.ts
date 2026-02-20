@@ -71,6 +71,20 @@ export function useTextToSpeech() {
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
 
+  // Cleanup temp file on unmount (prevents file leaks if component unmounts during playback)
+  useEffect(() => {
+    return () => {
+      if (tempFileRef.current) {
+        try {
+          void tempFileRef.current.delete();
+        } catch {
+          // Ignore cleanup errors on unmount
+        }
+        tempFileRef.current = null;
+      }
+    };
+  }, []);
+
   // Sync isSpeaking state with player status
   useEffect(() => {
     if (status.playing) {

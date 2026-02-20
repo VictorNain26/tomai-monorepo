@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react-native';
 import { Text } from './text';
 import { shadows, bgColors, borderColors } from '@/lib/styles';
+import { haptics } from '@/lib/haptics';
 
 type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
 
@@ -28,12 +29,45 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
+/**
+ * useToast hook with convenience methods
+ *
+ * Usage:
+ *   const toast = useToast();
+ *   toast.success('Enfant créé !');
+ *   toast.error('Impossible de se connecter');
+ *   toast.warning('Session expirée bientôt');
+ *   toast.info('Mise à jour disponible');
+ */
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
     throw new Error('useToast must be used within ToastProvider');
   }
-  return context;
+
+  const { addToast, removeToast, toasts } = context;
+
+  return {
+    toasts,
+    addToast,
+    removeToast,
+
+    /** Show success toast */
+    success: (title: string, description?: string) =>
+      addToast({ title, description, variant: 'success' }),
+
+    /** Show error toast */
+    error: (title: string, description?: string) =>
+      addToast({ title, description, variant: 'error' }),
+
+    /** Show warning toast */
+    warning: (title: string, description?: string) =>
+      addToast({ title, description, variant: 'warning' }),
+
+    /** Show info toast */
+    info: (title: string, description?: string) =>
+      addToast({ title, description, variant: 'info' }),
+  };
 }
 
 // Use inline styles to avoid NativeWind navigation context bug
@@ -97,6 +131,8 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       layout={Layout.springify()}
       className="mx-4 mb-2 flex-row items-start gap-3 rounded-xl border p-4"
       style={[variantStyles[variant], shadows.lg]}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
     >
       <Icon size={20} color={iconColor} />
       <View className="flex-1">
@@ -135,6 +171,22 @@ export function ToastProvider({ children }: ToastProviderProps) {
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substring(7);
     const newToast: Toast = { ...toast, id };
+
+    // Trigger haptic feedback based on variant
+    const variant = toast.variant ?? 'default';
+    switch (variant) {
+      case 'success':
+        haptics.success();
+        break;
+      case 'error':
+        haptics.error();
+        break;
+      case 'warning':
+        haptics.warning();
+        break;
+      default:
+        haptics.light();
+    }
 
     setToasts((prev) => [...prev, newToast]);
 

@@ -1,17 +1,16 @@
 /**
  * useChat Hook - React Native
  *
- * Port du hook web adapté à React Native.
- * Gère les sessions, le streaming SSE, et les attachments.
+ * SSE streaming hook with error-first design.
+ * No silent fallbacks: every failure is surfaced to the user.
  *
- * Best Practice 2026: Uses react-native-sse for native EventSource support.
  * @see https://github.com/binaryminds/react-native-sse
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getBaseUrl } from '@repo/api';
-import { useUser, type IAppUser } from '@/lib/auth';
+import { authClient, useUser, type IAppUser } from '@/lib/auth';
 import EventSource from 'react-native-sse';
 
 import type {
@@ -31,10 +30,18 @@ import {
 // Re-export types for consumers
 export type { ChatMessage, ChatFileAttachment, AttachedFileInfo } from './chat/types';
 
+/** Inactivity timeout: if no SSE event received for 45s, abort */
+const STREAM_INACTIVITY_TIMEOUT_MS = 45_000;
+
+/** Generate a unique message ID (no collision risk) */
+let messageCounter = 0;
+function generateMessageId(role: 'user' | 'assistant'): string {
+  return `${role}-${Date.now()}-${++messageCounter}`;
+}
+
 export function useChat({
   initialSessionId,
-  subject,
-}: UseChatOptions): UseChatReturn {
+}: UseChatOptions = {}): UseChatReturn {
   const queryClient = useQueryClient();
   const user = useUser();
 
@@ -52,6 +59,8 @@ export function useChat({
   const pendingAttachmentsRef = useRef<ChatFileAttachment[]>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
   const historySyncedRef = useRef<string | null>(null);
+  const streamIdRef = useRef(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep refs in sync
   useEffect(() => {
@@ -60,9 +69,9 @@ export function useChat({
 
   // Session query (lazy creation)
   const sessionQuery = useQuery({
-    queryKey: chatQueryKeys.session(subject),
-    queryFn: () => fetchOrCreateSession(subject),
-    enabled: !initialSessionId && !!subject && !!user,
+    queryKey: chatQueryKeys.session(),
+    queryFn: () => fetchOrCreateSession(),
+    enabled: !initialSessionId && !!user,
     staleTime: Infinity,
   });
 
@@ -74,15 +83,15 @@ export function useChat({
     }
   }, [currentSessionId]);
 
-  // History query
+  // History query (errors propagated via TanStack Query, not swallowed)
   const historyQuery = useQuery({
-    queryKey: chatQueryKeys.history(currentSessionId ?? ''),
-    queryFn: () => fetchHistory(currentSessionId ?? ''),
+    queryKey: chatQueryKeys.history(currentSessionId ?? '__none__'),
+    queryFn: () => fetchHistory(currentSessionId!),
     enabled: !!currentSessionId,
     staleTime: Infinity,
   });
 
-  // Sync history once - this is a valid pattern for syncing query data to local state
+  // Sync history once
   useEffect(() => {
     if (!historyQuery.data) return;
     if (historySyncedRef.current === currentSessionId) return;
@@ -93,17 +102,55 @@ export function useChat({
     setMessages(historyQuery.data.messages);
   }, [historyQuery.data, currentSessionId]);
 
-  // Cleanup EventSource on unmount
+  // Cleanup EventSource + timeout on unmount
   useEffect(() => {
     return () => {
       eventSourceRef.current?.close();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
+
+  /** Abort streaming with error message and clean up */
+  const abortStream = useCallback(
+    (assistantId: string, errorMessage: string) => {
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      setIsLoading(false);
+      setIsStreaming(false);
+      setError(errorMessage);
+
+      // Remove empty assistant message placeholder
+      setMessages((prev) =>
+        prev.filter(
+          (m) => !(m.id === assistantId && m.content.length === 0)
+        )
+      );
+    },
+    []
+  );
+
+  /** Reset the inactivity timeout (called on each SSE event) */
+  const resetInactivityTimeout = useCallback(
+    (assistantId: string) => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        abortStream(
+          assistantId,
+          'Le serveur ne répond plus. Vérifie ta connexion et réessaie.'
+        );
+      }, STREAM_INACTIVITY_TIMEOUT_MS);
+    },
+    [abortStream]
+  );
 
   // Send message using react-native-sse
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!user || !subject) return;
+      if (!user) return;
 
       const trimmedContent = content.trim();
       if (!trimmedContent && pendingAttachmentsRef.current.length === 0) return;
@@ -115,15 +162,15 @@ export function useChat({
 
       // Add user message optimistically
       const userMessage: ChatMessage = {
-        id: `user-${Date.now()}`,
+        id: generateMessageId('user'),
         role: 'user',
-        content: trimmedContent || '📎 Document',
+        content: trimmedContent || 'Document',
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, userMessage]);
 
       // Prepare assistant message placeholder
-      const assistantId = `assistant-${Date.now()}`;
+      const assistantId = generateMessageId('assistant');
       const assistantMessage: ChatMessage = {
         id: assistantId,
         role: 'assistant',
@@ -138,36 +185,48 @@ export function useChat({
 
       // Close previous EventSource if any
       eventSourceRef.current?.close();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+      // Track stream ID to detect stale callbacks
+      const currentStreamId = ++streamIdRef.current;
 
       try {
         const baseUrl = getBaseUrl();
+        const cookie = authClient.getCookie();
 
-        // Use react-native-sse for native EventSource support
         const es = new EventSource(`${baseUrl}/api/chat/stream`, {
           headers: {
             'Content-Type': 'application/json',
+            ...(cookie ? { Cookie: cookie } : {}),
           },
           method: 'POST',
           body: JSON.stringify({
-            content: trimmedContent || '📎 Document',
+            content: trimmedContent || 'Document',
             data: {
-              subject: subject.trim(),
               sessionId: sessionIdRef.current,
               schoolLevel: (user as IAppUser).schoolLevel,
-              firstName: (user as IAppUser).name?.split(' ')[0] ?? 'Élève',
+              firstName: (user as IAppUser).name?.split(' ')[0] ?? 'Eleve',
               fileIds: attachmentsToSend.map((a) => a.fileId),
             },
           }),
-          // Disable auto-reconnect for one-shot streaming
           pollingInterval: 0,
         });
 
         eventSourceRef.current = es;
 
+        // Start inactivity timeout
+        resetInactivityTimeout(assistantId);
+
         es.addEventListener('message', (event) => {
           if (!event.data) return;
+          if (streamIdRef.current !== currentStreamId) return;
+
+          // Reset timeout on every received event
+          resetInactivityTimeout(assistantId);
 
           if (event.data === '[DONE]') {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
             es.close();
             setIsLoading(false);
             setIsStreaming(false);
@@ -175,53 +234,45 @@ export function useChat({
             return;
           }
 
+          let chunk: StreamChunk;
           try {
-            const chunk = JSON.parse(event.data) as StreamChunk;
+            chunk = JSON.parse(event.data) as StreamChunk;
+          } catch (parseError) {
+            console.error('[SSE] Malformed JSON:', event.data, parseError);
+            setError('Erreur de communication avec le serveur');
+            return;
+          }
 
-            if (chunk.type === 'content' && chunk.content) {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId ? { ...m, content: chunk.content! } : m
-                )
+          if (chunk.type === 'content' && chunk.content) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, content: chunk.content! } : m
+              )
+            );
+          } else if (chunk.type === 'done') {
+            if (
+              chunk.metadata?.sessionId &&
+              chunk.metadata.sessionId !== sessionIdRef.current
+            ) {
+              sessionIdRef.current = chunk.metadata.sessionId;
+              queryClient.setQueryData(
+                chatQueryKeys.session(),
+                chunk.metadata.sessionId
               );
-            } else if (chunk.type === 'done') {
-              // Update session ID if new session was created
-              if (
-                chunk.metadata?.sessionId &&
-                chunk.metadata.sessionId !== sessionIdRef.current
-              ) {
-                sessionIdRef.current = chunk.metadata.sessionId;
-                queryClient.setQueryData(
-                  chatQueryKeys.session(subject),
-                  chunk.metadata.sessionId
-                );
-              }
-            } else if (chunk.type === 'error') {
-              setError(chunk.error?.message ?? 'Erreur de streaming');
             }
-          } catch {
-            // Ignore malformed JSON
+          } else if (chunk.type === 'error') {
+            setError(chunk.error?.message ?? 'Erreur de streaming');
           }
         });
 
         es.addEventListener('error', (event) => {
           console.error('[SSE] Error:', event);
-          es.close();
-          eventSourceRef.current = null;
-          setIsLoading(false);
-          setIsStreaming(false);
-
-          // Remove empty assistant message on error
-          setMessages((prev) =>
-            prev.filter(
-              (m) => !(m.id === assistantId && m.content.length === 0)
-            )
-          );
-
-          setError('Erreur de connexion au serveur');
+          abortStream(assistantId, 'Erreur de connexion au serveur');
         });
 
         es.addEventListener('close', () => {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
           setIsLoading(false);
           setIsStreaming(false);
           eventSourceRef.current = null;
@@ -229,26 +280,18 @@ export function useChat({
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Erreur de connexion';
-        setError(message);
-
-        // Remove empty assistant message on error
-        setMessages((prev) =>
-          prev.filter(
-            (m) => !(m.id === assistantId && m.content.length === 0)
-          )
-        );
-
-        setIsLoading(false);
-        setIsStreaming(false);
+        abortStream(assistantId, message);
       }
     },
-    [user, subject, queryClient]
+    [user, queryClient, abortStream, resetInactivityTimeout]
   );
 
   // Stop streaming
   const stop = useCallback(() => {
     eventSourceRef.current?.close();
     eventSourceRef.current = null;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
     setIsStreaming(false);
     setIsLoading(false);
   }, []);
@@ -273,24 +316,22 @@ export function useChat({
     try {
       const data = await resetChatSession(sessionIdRef.current);
 
-      // Update state
       sessionIdRef.current = data.sessionId;
       historySyncedRef.current = null;
       setMessages([]);
       setError(null);
 
-      // Update query cache
-      queryClient.setQueryData(chatQueryKeys.session(subject), data.sessionId);
+      queryClient.setQueryData(chatQueryKeys.session(), data.sessionId);
       queryClient.removeQueries({
         queryKey: chatQueryKeys.history(sessionIdRef.current ?? ''),
       });
 
       return data.sessionId;
     } catch {
-      setError('Impossible de réinitialiser la conversation');
+      setError('Impossible de reinitialiser la conversation');
       return null;
     }
-  }, [subject, queryClient]);
+  }, [queryClient]);
 
   return {
     messages,
@@ -298,7 +339,7 @@ export function useChat({
     currentSessionId,
     isLoading: isLoading || sessionQuery.isLoading,
     isStreaming,
-    error: error ?? (sessionQuery.error?.message || null),
+    error: error ?? historyQuery.error?.message ?? sessionQuery.error?.message ?? null,
     sendMessage,
     addAttachment,
     removeAttachment,

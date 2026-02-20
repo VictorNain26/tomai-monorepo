@@ -7,7 +7,7 @@
 import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { FileText, Image, File, Share2, Music } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
-import { useFileShare, useTheme } from '@/hooks';
+import { useFileShare, useIconColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
 // ============================================================================
@@ -31,10 +31,10 @@ export function FileAttachmentCard({
   mimeType,
   fileSizeBytes,
 }: FileAttachmentCardProps) {
-  const { isDark } = useTheme();
+  const iconColors = useIconColors();
   const fileShare = useFileShare();
 
-  const iconColor = isDark ? 'hsl(210, 40%, 98%)' : 'hsl(222.2, 47.4%, 11.2%)';
+  const iconColor = iconColors.foreground;
 
   const handleDownloadAndShare = async () => {
     await fileShare.downloadAndShare(fileId, fileName, mimeType);

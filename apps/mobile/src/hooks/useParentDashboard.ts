@@ -8,10 +8,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@repo/api';
 import { useUser } from '@/lib/auth';
-import type { EducationLevelType, Lv2Option } from '@/constants/levels';
+import type { EducationLevelType } from '@/constants/levels';
 
 // Re-export types for consumers
-export type { EducationLevelType, Lv2Option } from '@/constants/levels';
+export type { EducationLevelType } from '@/constants/levels';
 
 // ============================================================================
 // TYPES (aligned with backend apps/server/src/types/index.ts)
@@ -24,7 +24,6 @@ export interface IChild {
   lastName: string;
   username: string;
   schoolLevel: string; // Backend returns string, not enum
-  selectedLv2?: Lv2Option | null;
   dateOfBirth?: string;
   isActive: boolean;
   parentId: string;
@@ -39,7 +38,6 @@ export interface ICreateChildData {
   password: string;
   schoolLevel: string;
   dateOfBirth?: string;
-  selectedLv2?: Lv2Option | null;
 }
 
 /** Backend ParentDashboardMetrics - per-child metrics */

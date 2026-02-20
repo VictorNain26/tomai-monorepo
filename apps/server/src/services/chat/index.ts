@@ -11,7 +11,7 @@ export {
   type MultimodalFile
 } from './file-context.service.js';
 
-// Gemini Chat Service - @google/genai direct
+// Gemini Chat Service - Agent multi-tool
 // Export sous le nom 'streamingService' pour compatibilité routes
 export {
   geminiChatService as streamingService,
@@ -20,3 +20,7 @@ export {
   type AttachedFile,
   type HistoricalFileRef
 } from './gemini-chat.service.js';
+
+// Tool Declarations & Executor
+export { agentToolDeclarations } from './tool-declarations.js';
+export { executeTool, type ToolExecutionContext } from './tool-executor.js';

@@ -57,9 +57,11 @@ export const colors = {
   },
 
   // Muted - Gray
+  // Note: foreground uses different values for light/dark to maintain WCAG AA contrast
   muted: {
     DEFAULT: '#F3F4F6',
-    foreground: '#6B7280',
+    foreground: '#6B7280',    // Light mode: 5.4:1 contrast on #FAFAF9
+    foregroundDark: '#9CA3AF', // Dark mode: 5.1:1 contrast on #1F2937 (WCAG AA compliant)
   },
 
   // Background

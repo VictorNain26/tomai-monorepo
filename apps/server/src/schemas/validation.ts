@@ -40,14 +40,6 @@ export const schoolLevelSchema = z.enum([
   error: 'Niveau scolaire invalide'
 });
 
-// Niveaux où la LV2 est disponible (à partir de 5ème)
-const LV2_ELIGIBLE_LEVELS = ['cinquieme', 'quatrieme', 'troisieme', 'seconde', 'premiere', 'terminale'];
-
-// Options LV2 disponibles
-export const lv2OptionSchema = z.enum(['espagnol', 'allemand', 'italien'], {
-  error: 'LV2 invalide: espagnol, allemand ou italien'
-}).nullable().optional();
-
 export const dateOfBirthSchema = z.string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format date invalide (YYYY-MM-DD)')
   .refine((date) => {
@@ -132,17 +124,7 @@ export const createChildSchema = z.object({
   password: passwordSchema,
   schoolLevel: schoolLevelSchema,
   dateOfBirth: dateOfBirthSchema,
-  selectedLv2: lv2OptionSchema
-}).refine(
-  (data) => {
-    // Si niveau non éligible LV2, selectedLv2 doit être null/undefined
-    if (!LV2_ELIGIBLE_LEVELS.includes(data.schoolLevel)) {
-      return !data.selectedLv2;
-    }
-    return true;
-  },
-  { message: 'La LV2 commence en 5ème. Niveau actuel non éligible.', path: ['selectedLv2'] }
-);
+});
 
 export const updateChildSchema = z.object({
   firstName: nameSchema.optional(),
@@ -151,7 +133,6 @@ export const updateChildSchema = z.object({
   password: passwordSchema.optional(),
   schoolLevel: schoolLevelSchema.optional(),
   dateOfBirth: dateOfBirthSchema.optional(),
-  selectedLv2: lv2OptionSchema
 }).refine(
   (data) => Object.values(data).some(value => value !== undefined),
   { message: 'Au moins un champ doit être fourni pour la mise à jour' }

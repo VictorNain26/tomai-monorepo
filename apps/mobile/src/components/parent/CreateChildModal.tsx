@@ -13,7 +13,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, UserPlus, RefreshCw, ChevronDown } from 'lucide-react-native';
@@ -21,10 +20,11 @@ import { X, UserPlus, RefreshCw, ChevronDown } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getLevelLabel, isLv2Eligible, type Lv2Option } from '@/constants/levels';
+import { useToast } from '@/components/ui/toast';
+import { useIconColors } from '@/hooks';
+import { getLevelLabel } from '@/constants/levels';
 import type { ICreateChildData, SchoolLevel } from '@/hooks/useParentDashboard';
 import { LevelPickerModal } from './LevelPickerModal';
-import { Lv2PickerModal } from './Lv2PickerModal';
 
 // ============================================================================
 // HELPERS
@@ -73,18 +73,16 @@ export function CreateChildModal({
   isSubmitting,
   levels,
 }: CreateChildModalProps) {
+  const toast = useToast();
+  const iconColors = useIconColors();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [schoolLevel, setSchoolLevel] = useState('');
-  const [selectedLv2, setSelectedLv2] = useState<Lv2Option | undefined>();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const [showLevelPicker, setShowLevelPicker] = useState(false);
-  const [showLv2Picker, setShowLv2Picker] = useState(false);
-
-  const lv2Eligible = isLv2Eligible(schoolLevel);
 
   const isFormValid =
     firstName.trim() &&
@@ -99,19 +97,18 @@ export function CreateChildModal({
     setLastName('');
     setDateOfBirth('');
     setSchoolLevel('');
-    setSelectedLv2(undefined);
     setUsername('');
     setPassword('');
   }, []);
 
   const handleGenerateCredentials = useCallback(() => {
     if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert('Attention', 'Saisissez d\'abord le prénom et le nom');
+      toast.warning('Attention', 'Saisissez d\'abord le prénom et le nom');
       return;
     }
     setUsername(generateUsername(firstName, lastName));
     setPassword(generatePassword());
-  }, [firstName, lastName]);
+  }, [firstName, lastName, toast]);
 
   const handleSubmit = useCallback(async () => {
     if (!isFormValid) return;
@@ -123,7 +120,6 @@ export function CreateChildModal({
       password: password.trim(),
       schoolLevel: schoolLevel as ICreateChildData['schoolLevel'],
       dateOfBirth: dateOfBirth.trim(),
-      selectedLv2: lv2Eligible ? selectedLv2 : undefined,
     });
 
     // Reset form on success (onClose will be called by parent)
@@ -136,8 +132,6 @@ export function CreateChildModal({
     password,
     schoolLevel,
     dateOfBirth,
-    selectedLv2,
-    lv2Eligible,
     onSubmit,
     resetForm,
   ]);
@@ -167,8 +161,10 @@ export function CreateChildModal({
               onPress={handleClose}
               disabled={isSubmitting}
               className="p-2"
+              accessibilityLabel="Fermer"
+              accessibilityRole="button"
             >
-              <X color="hsl(215.4, 16.3%, 46.9%)" size={24} />
+              <X color={iconColors.muted} size={24} />
             </TouchableOpacity>
             <View className="flex-1 items-center">
               <Text className="text-lg font-semibold">Créer un compte enfant</Text>
@@ -232,28 +228,10 @@ export function CreateChildModal({
                   >
                     {selectedLevelLabel ?? 'Sélectionner le niveau'}
                   </Text>
-                  <ChevronDown color="hsl(215.4, 16.3%, 46.9%)" size={20} />
+                  <ChevronDown color={iconColors.muted} size={20} />
                 </TouchableOpacity>
               </View>
 
-              {/* LV2 Picker (only if eligible) */}
-              {lv2Eligible && (
-                <View className="gap-1.5">
-                  <Text className="text-sm font-medium">Langue vivante 2</Text>
-                  <TouchableOpacity
-                    onPress={() => setShowLv2Picker(true)}
-                    disabled={isSubmitting}
-                    className="h-12 flex-row items-center justify-between rounded-md border border-input bg-background px-3"
-                  >
-                    <Text
-                      className={selectedLv2 ? 'capitalize' : 'text-muted-foreground'}
-                    >
-                      {selectedLv2 ?? 'Optionnel'}
-                    </Text>
-                    <ChevronDown color="hsl(215.4, 16.3%, 46.9%)" size={20} />
-                  </TouchableOpacity>
-                </View>
-              )}
             </View>
 
             {/* Credentials Section */}
@@ -266,8 +244,9 @@ export function CreateChildModal({
                   onPress={handleGenerateCredentials}
                   disabled={isSubmitting}
                   className="flex-row items-center gap-1"
+                  accessibilityLabel="Générer les identifiants"
                 >
-                  <RefreshCw color="hsl(222.2, 47.4%, 11.2%)" size={14} />
+                  <RefreshCw color={iconColors.foreground} size={14} />
                   <Text className="text-sm font-medium text-primary">
                     Générer
                   </Text>
@@ -332,20 +311,9 @@ export function CreateChildModal({
           onClose={() => setShowLevelPicker(false)}
           levels={levels}
           selectedLevel={schoolLevel}
-          onSelect={(levelKey, isEligible) => {
+          onSelect={(levelKey) => {
             setSchoolLevel(levelKey);
-            if (!isEligible) {
-              setSelectedLv2(undefined);
-            }
           }}
-        />
-
-        {/* LV2 Picker Modal */}
-        <Lv2PickerModal
-          visible={showLv2Picker}
-          onClose={() => setShowLv2Picker(false)}
-          selectedLv2={selectedLv2}
-          onSelect={setSelectedLv2}
         />
       </SafeAreaView>
     </Modal>

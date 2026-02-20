@@ -225,14 +225,7 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
       }
 
       try {
-        const { subject } = body as { subject: string };
-        if (!subject || typeof subject !== 'string') {
-          set.status = 400;
-          return { _error: 'Subject is required' };
-        }
-
-        // Session unique par matière: récupère existante ou crée nouvelle
-        const sessionId = await chatService.getOrCreateSessionBySubject(authContext.user.id, subject);
+        const sessionId = await chatService.getOrCreateActiveSession(authContext.user.id);
 
         return {
           success: true,
@@ -550,44 +543,6 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
       } catch (_error) {
         logger.error('Education levels retrieval failed', {
           operation: 'api:education:levels:error',
-          _error: _error instanceof Error ? _error.message : String(_error),
-          severity: 'high' as const
-        });
-        set.status = 500;
-        return { error: 'Curriculum service unavailable' };
-      }
-    })
-
-    // SUBJECTS - Matières par niveau scolaire (depuis RAG)
-    // Retourne uniquement les clés RAG, le frontend enrichit avec UI metadata et filtre LV2
-    .get('/subjects/:level', async ({ params, set }) => {
-      const level = params.level as EducationLevelType;
-
-      if (!level) {
-        set.status = 400;
-        return { error: 'School level is required' };
-      }
-
-      try {
-        const { educationService } = await import('../services/education.service.js');
-        const subjects = await educationService.getSubjectsForLevel(level);
-
-        logger.info('Subjects retrieved from RAG', {
-          operation: 'api:subjects:success',
-          level,
-          count: subjects.length,
-          severity: 'low' as const
-        });
-
-        return {
-          success: true,
-          level,
-          subjects // [{ key: "mathematiques", ragAvailable: true }]
-        };
-      } catch (_error) {
-        logger.error('Subjects retrieval failed', {
-          operation: 'api:subjects:error',
-          level,
           _error: _error instanceof Error ? _error.message : String(_error),
           severity: 'high' as const
         });

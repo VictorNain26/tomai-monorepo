@@ -38,17 +38,6 @@ describe('useStudentDashboard', () => {
 
     // Default mock responses
     mockApiClient.get.mockImplementation((url: string) => {
-      if (url.includes('/api/subjects/')) {
-        return Promise.resolve({
-          success: true,
-          level: 'quatrieme',
-          subjects: [
-            { key: 'mathematiques', ragAvailable: true },
-            { key: 'francais', ragAvailable: true },
-            { key: 'histoire-geo', ragAvailable: false },
-          ],
-        });
-      }
       if (url === '/api/subscriptions/usage') {
         return Promise.resolve({
           userId: 'user-1',
@@ -82,33 +71,6 @@ describe('useStudentDashboard', () => {
       }
       return Promise.reject(new Error('Unknown endpoint'));
     });
-  });
-
-  it('should fetch and enrich subjects', async () => {
-    const { wrapper, queryClient } = createTestWrapper();
-    const { result } = renderHook(() => useStudentDashboard(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.isLoadingSubjects).toBe(false);
-    });
-
-    expect(result.current.subjects).toHaveLength(3);
-
-    // Check enrichment
-    const mathSubject = result.current.subjects.find(
-      (s) => s.key === 'mathematiques'
-    );
-    expect(mathSubject?.name).toBe('Mathématiques');
-    expect(mathSubject?.emoji).toBe('📐');
-    expect(mathSubject?.ragAvailable).toBe(true);
-
-    // Check normalized key handling
-    const histoSubject = result.current.subjects.find(
-      (s) => s.key === 'histoire-geo'
-    );
-    expect(histoSubject?.name).toBe('Histoire-Géographie');
-
-    queryClient.clear();
   });
 
   it('should fetch token usage', async () => {
@@ -159,11 +121,11 @@ describe('useStudentDashboard', () => {
     const { result } = renderHook(() => useStudentDashboard(), { wrapper });
 
     await waitFor(() => {
-      expect(result.current.isLoadingSubjects).toBe(false);
+      expect(result.current.isLoadingUsage).toBe(false);
     });
 
-    expect(result.current.subjectsError).toBe('API Error');
-    expect(result.current.subjects).toEqual([]);
+    expect(result.current.usageError).toBe('API Error');
+    expect(result.current.usage).toBeNull();
 
     queryClient.clear();
   });

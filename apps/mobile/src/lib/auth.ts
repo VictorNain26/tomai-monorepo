@@ -32,16 +32,21 @@ const isExpoGo = Constants.default.executionEnvironment === 'storeClient';
 
 // Lazy-load native Google Sign-In SDK (only available in dev builds / production)
 let GoogleSignin: typeof import('@react-native-google-signin/google-signin').GoogleSignin | null = null;
+let isSuccessResponse: typeof import('@react-native-google-signin/google-signin').isSuccessResponse;
+let isCancelledResponse: typeof import('@react-native-google-signin/google-signin').isCancelledResponse;
+
 if (!isExpoGo) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('@react-native-google-signin/google-signin');
     GoogleSignin = mod.GoogleSignin;
+    isSuccessResponse = mod.isSuccessResponse;
+    isCancelledResponse = mod.isCancelledResponse;
     GoogleSignin?.configure({
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     });
-  } catch {
-    // Native module not available — fall back to web OAuth
+  } catch (err) {
+    console.warn('[Auth] Google native SDK not available, falling back to web OAuth:', err);
   }
 }
 
@@ -57,7 +62,6 @@ export interface IAppUser {
   role: 'parent' | 'student';
   schoolLevel?: string;
   parentId?: string;
-  selectedLv2?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -94,9 +98,11 @@ export const authClient = createAuthClient({
 
 /**
  * Hook pour accéder à la session Better Auth.
- * Retourne { data, isPending, error }.
+ * Retourne { data, isPending, error, refetch }.
  *
  * Quick Switch: La session inclut `impersonatedBy` si en mode impersonation.
+ * Après impersonation/stopImpersonating, appeler refetch() pour mettre à jour l'UI.
+ * @see https://github.com/better-auth/better-auth/discussions/3860
  */
 export function useSession() {
   return authClient.useSession();
@@ -168,31 +174,45 @@ export async function signUp(data: { email: string; password: string; name: stri
 
 /**
  * Déconnexion.
+ * Also clears Google native session so the user can pick a different account next time.
  */
 export async function signOut() {
-  return authClient.signOut();
+  await authClient.signOut();
+  if (GoogleSignin) {
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // Best-effort: user is already signed out of Better Auth
+    }
+  }
 }
 
 /**
  * Connexion avec Google OAuth.
  * - Dev build / production : SDK natif → idToken → Better Auth
  * - Expo Go : flux web OAuth via navigateur (fallback)
+ *
+ * Returns null if the user cancelled the sign-in flow.
  */
 export async function signInWithGoogle() {
   if (GoogleSignin) {
     await GoogleSignin.hasPlayServices();
     const response = await GoogleSignin.signIn();
 
-    if (!response.data?.idToken) {
-      throw new Error('Google Sign-In failed: no idToken received');
+    // User cancelled — not an error
+    if (isCancelledResponse(response)) {
+      return null;
     }
 
-    return authClient.signIn.social({
-      provider: 'google',
-      idToken: {
-        token: response.data.idToken,
-      },
-    });
+    // Success — extract idToken
+    if (isSuccessResponse(response) && response.data.idToken) {
+      return authClient.signIn.social({
+        provider: 'google',
+        idToken: { token: response.data.idToken },
+      });
+    }
+
+    throw new Error('Google Sign-In: aucun idToken reçu');
   }
 
   // Fallback: web OAuth via browser (Expo Go)
@@ -211,10 +231,12 @@ export async function requestPasswordReset(email: string, redirectTo?: string) {
 
 /**
  * Réinitialisation du mot de passe avec token.
+ * Le token provient du deep link email (tomia://auth/reset-password?token=xxx).
  */
-export async function resetPassword(_token: string, newPassword: string) {
+export async function resetPassword(token: string, newPassword: string) {
   return authClient.resetPassword({
     newPassword,
+    token,
   });
 }
 
@@ -243,6 +265,10 @@ export async function hasParentSessionBackup(): Promise<boolean> {
 /**
  * Restaure la session parent (arrête l'impersonation).
  * Better Auth gère automatiquement le retour à la session parent originale.
+ *
+ * Important: Le composant appelant doit appeler refetch() de useSession()
+ * après cette opération pour mettre à jour l'état React.
+ * @see https://github.com/better-auth/better-auth/discussions/3860
  */
 export async function restoreParentSession(): Promise<boolean> {
   try {
@@ -270,6 +296,10 @@ export async function clearParentSessionBackup(): Promise<void> {
  * - La session parent est préservée automatiquement
  * - useSession() retourne l'enfant après impersonation
  * - stopImpersonating() restaure la session parent
+ *
+ * Important: Le composant appelant doit appeler refetch() de useSession()
+ * après cette opération pour mettre à jour l'état React.
+ * @see https://github.com/better-auth/better-auth/discussions/3860
  */
 export async function launchChildSession(childId: string): Promise<{
   success: boolean;

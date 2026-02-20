@@ -19,6 +19,10 @@ import { isOnline } from './query-client';
 
 const BACKGROUND_SYNC_TASK = 'TOMIA_BACKGROUND_SYNC';
 
+// Task version: increment when changing the task callback signature or behavior.
+// On version mismatch, the task will re-register to avoid stale behavior.
+const TASK_VERSION = 1;
+
 // Minimum interval between background tasks (in minutes)
 // iOS/Android: minimum is 15 minutes, actual interval decided by OS
 const MIN_INTERVAL_MINUTES = 15;
@@ -88,12 +92,21 @@ export async function registerBackgroundSync(): Promise<boolean> {
       return false;
     }
 
-    // Check if already registered
+    // Check if already registered - re-register on version change
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_SYNC_TASK);
 
     if (isRegistered) {
-      console.log('[BackgroundSync] Already registered');
-      return true;
+      // Unregister and re-register if task version changed
+      const storedVersion = await import('@react-native-async-storage/async-storage')
+        .then((m) => m.default.getItem('TOMIA_BG_TASK_VERSION'))
+        .catch(() => null);
+      if (storedVersion === String(TASK_VERSION)) {
+        console.log('[BackgroundSync] Already registered (v' + TASK_VERSION + ')');
+        return true;
+      }
+      // Version mismatch - re-register
+      await BackgroundTask.unregisterTaskAsync(BACKGROUND_SYNC_TASK);
+      console.log('[BackgroundSync] Re-registering due to version change');
     }
 
     // Register with BackgroundTask
@@ -101,7 +114,12 @@ export async function registerBackgroundSync(): Promise<boolean> {
       minimumInterval: MIN_INTERVAL_MINUTES,
     });
 
-    console.log('[BackgroundSync] Registered successfully');
+    // Store current version
+    await import('@react-native-async-storage/async-storage')
+      .then((m) => m.default.setItem('TOMIA_BG_TASK_VERSION', String(TASK_VERSION)))
+      .catch(() => {});
+
+    console.log('[BackgroundSync] Registered successfully (v' + TASK_VERSION + ')');
     return true;
   } catch (error) {
     console.error('[BackgroundSync] Registration failed:', error);

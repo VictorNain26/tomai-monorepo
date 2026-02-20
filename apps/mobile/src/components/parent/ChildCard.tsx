@@ -96,17 +96,6 @@ export function ChildCard({ child, hasPronote = false, onPress }: ChildCardProps
               )}
             </View>
 
-            {/* LV2 if set */}
-            {child.selectedLv2 && (
-              <View
-                className="ml-auto rounded-full px-2.5 py-1"
-                style={{ backgroundColor: bgColors.muted[50] }}
-              >
-                <Text variant="tiny" className="text-muted-foreground capitalize">
-                  LV2: {child.selectedLv2}
-                </Text>
-              </View>
-            )}
           </View>
         </View>
       </Card>

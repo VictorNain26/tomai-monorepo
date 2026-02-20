@@ -9,13 +9,13 @@ import type { ChatMessage } from './types';
 
 /** Query keys for TanStack Query */
 export const chatQueryKeys = {
-  session: (subject: string) => ['chat', 'session', subject] as const,
+  session: () => ['chat', 'session'] as const,
   history: (sessionId: string) => ['chat', 'history', sessionId] as const,
 };
 
-/** Fetch or create a chat session */
-export async function fetchOrCreateSession(subject: string): Promise<string> {
-  const data = await apiClient.post<{ sessionId: string }>('/api/chat/session', { subject });
+/** Fetch or create a chat session (multi-subject, no subject needed) */
+export async function fetchOrCreateSession(): Promise<string> {
+  const data = await apiClient.post<{ sessionId: string }>('/api/chat/session', {});
   return data.sessionId;
 }
 
@@ -23,11 +23,7 @@ export async function fetchOrCreateSession(subject: string): Promise<string> {
 export async function fetchHistory(
   sessionId: string
 ): Promise<{ messages: ChatMessage[] }> {
-  try {
-    return await apiClient.get<{ messages: ChatMessage[] }>(`/api/chat/session/${sessionId}/history`);
-  } catch {
-    return { messages: [] };
-  }
+  return apiClient.get<{ messages: ChatMessage[] }>(`/api/chat/session/${sessionId}/history`);
 }
 
 /** Reset a chat session */
@@ -37,4 +33,11 @@ export async function resetChatSession(
   return apiClient.post<{ sessionId: string }>(
     `/api/chat/session/${sessionId}/reset`
   );
+}
+
+/** Delete a chat session (permanent) */
+export async function deleteChatSession(
+  sessionId: string
+): Promise<void> {
+  await apiClient.delete(`/api/chat/session/${sessionId}`);
 }

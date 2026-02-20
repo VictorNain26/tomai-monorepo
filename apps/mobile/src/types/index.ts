@@ -1,6 +1,6 @@
 // Types locaux mobile
 
-export type { EducationLevelType, CycleId, Lv2Option } from '@/constants/levels';
+export type { EducationLevelType, CycleId } from '@/constants/levels';
 export type { SubjectMetadata } from '@/constants/subjects';
 
 // Navigation types

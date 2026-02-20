@@ -8,7 +8,6 @@ export {
 } from './usePresignedUpload';
 export {
   useStudentDashboard,
-  type Subject,
   type TokenUsage,
   type LatestSession,
 } from './useStudentDashboard';
@@ -33,7 +32,6 @@ export {
   type ICreateChildData,
   type SchoolLevel,
   type EducationLevelType,
-  type Lv2Option,
 } from './useParentDashboard';
 export {
   useParentPronoteStatus,
@@ -94,3 +92,16 @@ export {
   useIconColors,
   type IconColors,
 } from './useIconColors';
+export {
+  useDueCards,
+  useReviewCard,
+  useDeckStats,
+  useFsrsConfig,
+  useResetDeckFsrs,
+  type FSRSRating,
+  type FSRSState,
+  type DueCard,
+  type ReviewResult,
+  type DeckStats,
+  type FSRSConfig,
+} from './useFsrs';

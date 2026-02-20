@@ -17,9 +17,6 @@ export type EducationLevelType =
   | 'sixieme' | 'cinquieme' | 'quatrieme' | 'troisieme'
   | 'seconde' | 'premiere' | 'terminale';
 
-/** Backend Lv2Option - ONLY 3 options */
-export type Lv2Option = 'espagnol' | 'allemand' | 'italien';
-
 export type CycleId = 'cycle2' | 'cycle3' | 'cycle4' | 'lycee';
 
 // =============================================================================
@@ -97,33 +94,3 @@ export function getLevelLabel(key: string): string {
   return LEVEL_LABELS[key as EducationLevelType] ?? key;
 }
 
-// =============================================================================
-// LV2 Options
-// =============================================================================
-
-export const LV2_OPTIONS: { value: Lv2Option; label: string }[] = [
-  { value: 'espagnol', label: 'Espagnol' },
-  { value: 'allemand', label: 'Allemand' },
-  { value: 'italien', label: 'Italien' },
-];
-
-/** Levels where LV2 is available (5ème onwards) */
-export const LV2_ELIGIBLE_LEVELS: EducationLevelType[] = [
-  'cinquieme',
-  'quatrieme',
-  'troisieme',
-  'seconde',
-  'premiere',
-  'terminale',
-];
-
-/** Check if a level is eligible for LV2 */
-export function isLv2Eligible(level: string): boolean {
-  return LV2_ELIGIBLE_LEVELS.includes(level as EducationLevelType);
-}
-
-/** Get LV2 label from value */
-export function getLv2Label(value: Lv2Option | null | undefined): string | null {
-  if (!value) return null;
-  return LV2_OPTIONS.find((o) => o.value === value)?.label ?? value;
-}

@@ -219,10 +219,6 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
-      selectedLv2: {
-        type: "string",
-        required: false,
-      },
     }
   },
 

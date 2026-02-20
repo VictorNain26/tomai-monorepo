@@ -111,12 +111,11 @@ export function GradesRecentCard({
   // Navigate to chat with grade context for review
   function handleReviewWithTom(item: GradeItem) {
     router.push({
-      pathname: '/(student)/chat',
+      pathname: '/(student)/(home)/chat',
       params: {
-        subject: item.subject,
         context: `grade:${item.id}`,
         prompt: item.chapter
-          ? `J'ai eu ${formatGrade(item.grade, item.maxGrade)} sur "${item.chapter}". Peux-tu m'aider à revoir ce chapitre ?`
+          ? `J'ai eu ${formatGrade(item.grade, item.maxGrade)} sur "${item.chapter}" en ${item.subject}. Peux-tu m'aider à revoir ce chapitre ?`
           : `J'ai eu ${formatGrade(item.grade, item.maxGrade)} en ${item.subject}. Peux-tu m'aider à comprendre mes erreurs ?`,
       },
     });

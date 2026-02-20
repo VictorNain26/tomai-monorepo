@@ -93,6 +93,62 @@ export function generateSubjectSpecifics(subject: string): string | null {
 }
 
 /**
+ * Génère les spécificités de TOUTES les matières
+ * Pour le chat unique multi-matière (~571 tokens)
+ * Le modèle applique le bon bloc selon le contexte de la question
+ */
+export function generateAllSubjectSpecifics(): string {
+  const allSpecifics: Record<string, string> = {
+    mathematiques: `<subject_specifics matiere="Mathématiques">
+**NOTATION**: Utilise KaTeX ($...$) adapté au niveau. Prix en euros: "5 euros" pas "$5".
+**MÉTHODE**: Chain-of-Thought obligatoire. Étape par étape avec justifications.
+**VÉRIFICATION**: Toujours demander de vérifier le résultat.
+**VISUALISATION**: Géométrie → description textuelle détaillée. ASCII optionnel.
+**EXEMPLE**: Utilise un exemple DIFFÉRENT du problème de l'élève pour enseigner, puis "À toi d'appliquer !"
+</subject_specifics>`,
+
+    francais: `<subject_specifics matiere="Français">
+**ANALYSE TEXTUELLE** - 4 niveaux:
+1. Littéral (qui, quoi, où, quand)
+2. Inférentiel (déduire l'implicite)
+3. Interprétatif (style, procédés)
+4. Critique (opinion argumentée)
+
+**ÉCRITURE**: Planification → Rédaction → Révision → Correction.
+**VOCABULAIRE**: Toujours en contexte, jamais de listes isolées.
+**ORTHOGRAPHE**: Corriger APRÈS validation du sens. Expliquer la règle.
+</subject_specifics>`,
+
+    langues: `<subject_specifics matiere="Langues vivantes">
+**CECRL**: A1-A2 (collège) → B1-B2 (lycée).
+**i+1 (Krashen)**: Input légèrement supérieur au niveau actuel.
+**GRAMMAIRE INDUCTIVE**: 3 exemples → observation → règle → application.
+**FEEDBACK**: Sens d'abord ("J'ai compris !"), forme ensuite ("Un anglophone dirait...").
+**CONTEXTUALISATION**: Situations authentiques (restaurant, voyage...).
+</subject_specifics>`,
+
+    sciences: `<subject_specifics matiere="Sciences">
+**DÉMARCHE IBL** (Inquiry-Based Learning):
+1. Observation → 2. Question → 3. Hypothèse ("Si...alors...") → 4. Investigation → 5. Conclusion
+
+**ANALOGIES**: Obligatoires pour concepts abstraits + mentionner leurs limites.
+**FORMULES**: KaTeX + unités OBLIGATOIRES ("5 m/s" pas juste "5").
+**MISCONCEPTIONS**: Anticiper erreurs courantes (ex: "objets lourds tombent plus vite" → faux).
+</subject_specifics>`,
+
+    'histoire-geo': `<subject_specifics matiere="Histoire-Géographie-EMC">
+**ANALYSE SOURCE**: Identification → Description → Contexte → Critique → Mise en perspective.
+**CAUSALITÉ**: Distinguer causes profondes / moyennes / déclencheur. Causes ≠ prétextes.
+**GÉOGRAPHIE**: Toujours multi-échelles (local → national → mondial).
+**EMC**: Méthode du dilemme moral + valeurs républicaines.
+**VOCABULAIRE**: Précis (Révolution ≠ Révolte ≠ Coup d'État). Pas d'anachronismes.
+</subject_specifics>`
+  };
+
+  return Object.values(allSpecifics).join('\n\n');
+}
+
+/**
  * Vérifie si la matière nécessite KaTeX
  */
 export function requiresKaTeX(subject: string): boolean {

@@ -147,8 +147,9 @@ export async function registerForPushNotifications(): Promise<PushTokenResult> {
       };
     }
 
-    // Get project ID from Expo config
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    // Get project ID from Expo config (official pattern with fallback)
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
     if (!projectId) {
       console.error('[Notifications] EAS project ID not found');
       return {
@@ -206,6 +207,12 @@ export async function savePushTokenToBackend(token: string): Promise<boolean> {
  * Full registration flow: setup channels, get token, and save to backend.
  */
 export async function setupPushNotifications(): Promise<boolean> {
+  // Skip in Expo Go - push notifications require a development build
+  if (Constants.appOwnership === 'expo') {
+    console.log('[Notifications] Skipping push setup in Expo Go');
+    return false;
+  }
+
   const result = await registerForPushNotifications();
 
   if (!result.token) {

@@ -59,7 +59,6 @@ export interface StreamChunk {
 
 export interface UseChatOptions {
   initialSessionId?: string | null;
-  subject: string;
 }
 
 export interface UseChatReturn {

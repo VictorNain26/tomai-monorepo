@@ -44,7 +44,7 @@ export function QuickAskCard({
     if (!question.trim()) return;
 
     router.push({
-      pathname: '/(student)/chat',
+      pathname: '/(student)/(home)/chat',
       params: {
         prompt: question.trim(),
       },
@@ -126,11 +126,11 @@ export function QuickAskCard({
       <View className="flex-row flex-wrap gap-2 px-4 pb-4">
         <QuickSuggestion
           text="Aide-moi avec mes devoirs"
-          onPress={() => router.push({ pathname: '/(student)/chat', params: { prompt: 'Aide-moi avec mes devoirs' } })}
+          onPress={() => router.push({ pathname: '/(student)/(home)/chat', params: { prompt: 'Aide-moi avec mes devoirs' } })}
         />
         <QuickSuggestion
           text="Explique ce cours"
-          onPress={() => router.push({ pathname: '/(student)/chat', params: { prompt: 'Peux-tu m\'expliquer ce cours ?' } })}
+          onPress={() => router.push({ pathname: '/(student)/(home)/chat', params: { prompt: 'Peux-tu m\'expliquer ce cours ?' } })}
         />
       </View>
     </TouchableOpacity>

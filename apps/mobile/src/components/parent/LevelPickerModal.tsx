@@ -9,7 +9,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Check } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
-import { getLevelLabel, LV2_ELIGIBLE_LEVELS } from '@/constants/levels';
+import { useIconColors } from '@/hooks';
+import { getLevelLabel } from '@/constants/levels';
 import type { SchoolLevel } from '@/hooks/useParentDashboard';
 
 interface LevelPickerModalProps {
@@ -17,7 +18,7 @@ interface LevelPickerModalProps {
   onClose: () => void;
   levels: SchoolLevel[];
   selectedLevel: string;
-  onSelect: (levelKey: string, isLv2Eligible: boolean) => void;
+  onSelect: (levelKey: string) => void;
 }
 
 export function LevelPickerModal({
@@ -27,6 +28,8 @@ export function LevelPickerModal({
   selectedLevel,
   onSelect,
 }: LevelPickerModalProps) {
+  const iconColors = useIconColors();
+
   return (
     <Modal
       visible={visible}
@@ -38,7 +41,7 @@ export function LevelPickerModal({
         <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
           <Text className="text-lg font-semibold">Niveau scolaire</Text>
           <TouchableOpacity onPress={onClose}>
-            <X color="hsl(215.4, 16.3%, 46.9%)" size={24} />
+            <X color={iconColors.muted} size={24} />
           </TouchableOpacity>
         </View>
         <ScrollView className="flex-1">
@@ -46,15 +49,14 @@ export function LevelPickerModal({
             <TouchableOpacity
               key={level.key}
               onPress={() => {
-                const isLv2Eligible = LV2_ELIGIBLE_LEVELS.includes(level.key);
-                onSelect(level.key, isLv2Eligible);
+                onSelect(level.key);
                 onClose();
               }}
               className="flex-row items-center justify-between border-b border-border px-4 py-4"
             >
               <Text>{getLevelLabel(level.key)}</Text>
               {selectedLevel === level.key && (
-                <Check color="hsl(222.2, 47.4%, 11.2%)" size={20} />
+                <Check color={iconColors.foreground} size={20} />
               )}
             </TouchableOpacity>
           ))}

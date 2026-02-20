@@ -93,9 +93,8 @@ export function UpcomingTestsCard({
       : '';
 
     router.push({
-      pathname: '/(student)/chat',
+      pathname: '/(student)/(home)/chat',
       params: {
-        subject: item.subject,
         context: `test:${item.id}`,
         prompt: `J'ai un contrôle de ${item.subject} sur "${item.title}" dans ${item.daysUntil} jours. ${topicsPrompt} Peux-tu m'aider à réviser ?`,
       },
@@ -105,7 +104,7 @@ export function UpcomingTestsCard({
   // Create flashcards for the test
   function handleCreateFlashcards(item: TestItem) {
     router.push({
-      pathname: '/(student)/deck/create',
+      pathname: '/(student)/(learning)/create',
       params: {
         subject: item.subject,
         title: item.title,

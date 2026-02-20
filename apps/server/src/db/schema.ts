@@ -52,7 +52,6 @@ export const user = pgTable('user', {
   lastName: varchar('last_name', { length: 100 }),   // Nom séparé du 'name'
   role: userRoleEnum('role').notNull().default('parent'), // Défaut parent (comme auth.ts)
   schoolLevel: schoolLevelEnum('school_level'), // Niveau scolaire pour élèves
-  selectedLv2: varchar('selected_lv2', { length: 50 }), // LV2 choisie (espagnol, allemand, italien) - à partir de 5ème
   dateOfBirth: varchar('date_of_birth', { length: 10 }), // Format YYYY-MM-DD string (comme auth.ts)
   parentId: varchar('parent_id', { length: 255 }), // Référence parent-enfant
   isActive: boolean('is_active').notNull().default(true), // État du compte
@@ -344,7 +343,7 @@ export const studySessions = pgTable('study_sessions', {
   userId: varchar('user_id', { length: 255 }).notNull(),
 
   // Détails pédagogiques
-  subject: varchar('subject', { length: 100 }).notNull(),
+  subject: varchar('subject', { length: 100 }).notNull().default('général'),
   topic: varchar('topic', { length: 200 }),
   status: sessionStatusEnum('status').notNull().default('active'),
 
@@ -636,6 +635,12 @@ export const userRelations = relations(user, ({ one, many }) => ({
   }),
   // Child has mappings to parent's connection
   pronoteChildMappings: many(pronoteChildMappings),
+
+  // Cognitive Profile (agent-updated)
+  cognitiveProfile: one(studentCognitiveProfiles, {
+    fields: [user.id],
+    references: [studentCognitiveProfiles.userId],
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -1190,6 +1195,49 @@ export const learningCardsRelations = relations(learningCards, ({ one }) => ({
   }),
 }));
 
+// =============================================
+// STUDENT COGNITIVE PROFILES
+// =============================================
+
+/**
+ * Table student_cognitive_profiles - Profil cognitif persistant
+ *
+ * Mis à jour par l'agent IA au fil des conversations.
+ * Utilisé pour personnaliser les réponses pédagogiques.
+ */
+export const studentCognitiveProfiles = pgTable('student_cognitive_profiles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: varchar('user_id', { length: 255 }).notNull().unique(),
+
+  // Profil cognitif (mis à jour par l'agent)
+  strengths: jsonb('strengths').default(sql`'[]'::jsonb`),
+  weaknesses: jsonb('weaknesses').default(sql`'[]'::jsonb`),
+  preferredStyle: varchar('preferred_style', { length: 50 }),
+
+  // Historique des observations (append-only, max 50 entries)
+  observations: jsonb('observations').default(sql`'[]'::jsonb`),
+
+  // Timestamps
+  lastUpdatedByAgent: timestamp('last_updated_by_agent', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [user.id],
+    name: 'student_cognitive_profiles_user_id_fkey'
+  }).onDelete('cascade'),
+
+  userIdIdx: index('idx_student_cognitive_profiles_user_id').on(table.userId),
+}));
+
+export const studentCognitiveProfilesRelations = relations(studentCognitiveProfiles, ({ one }) => ({
+  user: one(user, {
+    fields: [studentCognitiveProfiles.userId],
+    references: [user.id]
+  }),
+}));
+
 // Subscription System Types
 export type SubscriptionPlanTypeEnum = typeof subscriptionPlanTypeEnum.enumValues[number];
 export type SubscriptionStatusEnum = typeof subscriptionStatusEnum.enumValues[number];
@@ -1272,4 +1320,14 @@ export interface FSRSData {
   lapses?: number;
   state?: number; // 0=new, 1=learning, 2=review, 3=relearning
   lastReview?: string; // ISO date
+}
+
+// Cognitive Profile Types
+export type StudentCognitiveProfile = typeof studentCognitiveProfiles.$inferSelect;
+export type NewStudentCognitiveProfile = typeof studentCognitiveProfiles.$inferInsert;
+
+export interface CognitiveObservation {
+  date: string;
+  observation: string;
+  subject?: string;
 }
