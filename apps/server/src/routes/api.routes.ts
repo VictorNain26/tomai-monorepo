@@ -218,7 +218,7 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
     })
 
     // CHAT SESSIONS - Récupérer ou créer session pour une matière
-    .post('/chat/session', async ({ body, request: { headers }, set }) => {
+    .post('/chat/session', async ({ request: { headers }, set }) => {
       const authContext = await handleAuthWithCookies(headers, set);
       if (!authContext.success) {
         return authContext.error;
