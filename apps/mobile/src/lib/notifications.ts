@@ -1,68 +1,30 @@
 /**
  * Push Notifications Service
  *
- * Handles Expo Push Notifications registration and handling.
+ * Handles Expo Push Notifications registration and token sync.
  *
- * Best Practice 2026: expo-notifications with proper permission handling.
+ * ARCHITECTURE: expo-notifications is loaded via dynamic import() AFTER the
+ * Expo Go guard. This prevents the native module from loading in Expo Go,
+ * which avoids the WARN + ERROR that appear since SDK 53 removed push
+ * notification support from Expo Go on Android.
+ *
  * @see https://docs.expo.dev/push-notifications/overview/
- *
- * IMPORTANT: Push notifications require a development build (not Expo Go on Android SDK 53+)
  */
 
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { apiClient } from '@repo/api';
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
-/**
- * Configure notification handling behavior.
- * This determines how notifications are displayed when app is in foreground.
- */
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    priority: Notifications.AndroidNotificationPriority.HIGH,
-  }),
-});
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-export interface NotificationData {
-  type: 'homework_reminder' | 'study_streak' | 'parent_message' | 'system';
-  title?: string;
-  body?: string;
-  data?: Record<string, unknown>;
-}
-
-export interface PushTokenResult {
-  token: string | null;
-  error: string | null;
-}
-
-// ============================================================================
-// ANDROID CHANNELS
-// ============================================================================
-
 /**
  * Setup Android notification channels.
- * IMPORTANT: On Android 13+, channels MUST be created BEFORE getting push token,
- * as the permission prompt won't appear until at least one channel exists.
+ * On Android 13+, channels MUST be created BEFORE getting push token.
  */
-async function setupAndroidChannels(): Promise<void> {
+async function setupAndroidChannels(
+  Notifications: typeof import('expo-notifications')
+): Promise<void> {
   if (Platform.OS !== 'android') return;
 
-  // Default channel for general notifications
   await Notifications.setNotificationChannelAsync('default', {
     name: 'Notifications générales',
     description: 'Notifications générales de TomIA',
@@ -74,7 +36,6 @@ async function setupAndroidChannels(): Promise<void> {
     enableLights: true,
   });
 
-  // Homework reminders channel
   await Notifications.setNotificationChannelAsync('homework', {
     name: 'Rappels devoirs',
     description: 'Rappels pour les devoirs à rendre',
@@ -83,7 +44,6 @@ async function setupAndroidChannels(): Promise<void> {
     enableVibrate: true,
   });
 
-  // Study streaks channel
   await Notifications.setNotificationChannelAsync('streaks', {
     name: 'Séries d\'étude',
     description: 'Notifications pour maintenir ta série d\'étude',
@@ -91,7 +51,6 @@ async function setupAndroidChannels(): Promise<void> {
     enableVibrate: false,
   });
 
-  // Parent messages channel
   await Notifications.setNotificationChannelAsync('parent', {
     name: 'Messages parents',
     description: 'Messages de tes parents',
@@ -103,37 +62,23 @@ async function setupAndroidChannels(): Promise<void> {
   console.log('[Notifications] Android channels configured');
 }
 
-// ============================================================================
-// REGISTRATION
-// ============================================================================
-
 /**
  * Register for push notifications and get Expo push token.
- * Returns null if notifications are not available or permission denied.
- *
- * IMPORTANT: This won't work in Expo Go on Android (SDK 53+).
- * A development build is required.
  */
-export async function registerForPushNotifications(): Promise<PushTokenResult> {
-  // Check if running on physical device
+async function registerForPushNotifications(
+  Notifications: typeof import('expo-notifications')
+): Promise<{ token: string | null; error: string | null }> {
   if (!Device.isDevice) {
     console.log('[Notifications] Not a physical device, skipping registration');
-    return {
-      token: null,
-      error: 'Les notifications push nécessitent un appareil physique',
-    };
+    return { token: null, error: 'Appareil physique requis' };
   }
 
   try {
-    // IMPORTANT: Setup Android channels BEFORE requesting permissions
-    // On Android 13+, the permission prompt won't appear until a channel exists
-    await setupAndroidChannels();
+    await setupAndroidChannels(Notifications);
 
-    // Check existing permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
-    // Request permission if not already granted
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
@@ -141,41 +86,19 @@ export async function registerForPushNotifications(): Promise<PushTokenResult> {
 
     if (finalStatus !== 'granted') {
       console.log('[Notifications] Permission not granted');
-      return {
-        token: null,
-        error: 'Permission refusée pour les notifications',
-      };
+      return { token: null, error: 'Permission refusée' };
     }
 
-    // Get project ID from Expo config (official pattern with fallback)
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
     if (!projectId) {
       console.error('[Notifications] EAS project ID not found');
-      return {
-        token: null,
-        error: 'Configuration EAS manquante (projectId)',
-      };
+      return { token: null, error: 'Configuration EAS manquante (projectId)' };
     }
 
-    // Get Expo push token with retry logic for offline scenarios
-    let token: string;
-    try {
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId,
-      });
-      token = tokenData.data;
-    } catch (tokenError) {
-      console.error('[Notifications] Error getting push token:', tokenError);
-      return {
-        token: null,
-        error: 'Impossible d\'obtenir le token push. Vérifiez votre connexion.',
-      };
-    }
-
-    console.log('[Notifications] Push token obtained:', token.slice(0, 20) + '...');
-
-    return { token, error: null };
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+    console.log('[Notifications] Push token obtained:', tokenData.data.slice(0, 20) + '...');
+    return { token: tokenData.data, error: null };
   } catch (error) {
     console.error('[Notifications] Registration error:', error);
     return {
@@ -188,7 +111,7 @@ export async function registerForPushNotifications(): Promise<PushTokenResult> {
 /**
  * Send push token to backend for storage.
  */
-export async function savePushTokenToBackend(token: string): Promise<boolean> {
+async function savePushTokenToBackend(token: string): Promise<boolean> {
   try {
     await apiClient.post('/api/users/push-token', {
       token,
@@ -204,16 +127,31 @@ export async function savePushTokenToBackend(token: string): Promise<boolean> {
 }
 
 /**
- * Full registration flow: setup channels, get token, and save to backend.
+ * Full push notification setup: configure handler, register, save token.
+ *
+ * expo-notifications is dynamically imported here, AFTER the Expo Go guard,
+ * so the native module never loads in Expo Go (no WARN/ERROR).
  */
 export async function setupPushNotifications(): Promise<boolean> {
-  // Skip in Expo Go - push notifications require a development build
   if (Constants.appOwnership === 'expo') {
     console.log('[Notifications] Skipping push setup in Expo Go');
     return false;
   }
 
-  const result = await registerForPushNotifications();
+  const Notifications = await import('expo-notifications');
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+      priority: Notifications.AndroidNotificationPriority.HIGH,
+    }),
+  });
+
+  const result = await registerForPushNotifications(Notifications);
 
   if (!result.token) {
     console.warn('[Notifications] Setup failed:', result.error);
@@ -221,172 +159,4 @@ export async function setupPushNotifications(): Promise<boolean> {
   }
 
   return savePushTokenToBackend(result.token);
-}
-
-// ============================================================================
-// NOTIFICATION HANDLING
-// ============================================================================
-
-/**
- * Add listener for received notifications (app in foreground).
- */
-export function addNotificationReceivedListener(
-  callback: (notification: Notifications.Notification) => void
-): Notifications.EventSubscription {
-  return Notifications.addNotificationReceivedListener(callback);
-}
-
-/**
- * Add listener for notification interactions (tap).
- */
-export function addNotificationResponseListener(
-  callback: (response: Notifications.NotificationResponse) => void
-): Notifications.EventSubscription {
-  return Notifications.addNotificationResponseReceivedListener(callback);
-}
-
-/**
- * Get last notification response (if app opened from notification).
- */
-export async function getLastNotificationResponse(): Promise<Notifications.NotificationResponse | null> {
-  return Notifications.getLastNotificationResponseAsync();
-}
-
-// ============================================================================
-// LOCAL NOTIFICATIONS
-// ============================================================================
-
-/**
- * Schedule a local notification.
- */
-export async function scheduleLocalNotification(
-  title: string,
-  body: string,
-  trigger: Notifications.NotificationTriggerInput,
-  data?: NotificationData,
-  channelId: string = 'default'
-): Promise<string> {
-  return Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      data: data as unknown as Record<string, unknown>,
-      sound: 'default',
-      ...(Platform.OS === 'android' && { channelId }),
-    },
-    trigger,
-  });
-}
-
-/**
- * Schedule a homework reminder.
- */
-export async function scheduleHomeworkReminder(
-  homeworkTitle: string,
-  dueDate: Date,
-  hoursBeforeDue: number = 24
-): Promise<string> {
-  const reminderDate = new Date(dueDate.getTime() - hoursBeforeDue * 60 * 60 * 1000);
-
-  // Don't schedule if reminder date is in the past
-  if (reminderDate <= new Date()) {
-    return '';
-  }
-
-  return scheduleLocalNotification(
-    'Rappel devoir',
-    `N'oublie pas : ${homeworkTitle}`,
-    { date: reminderDate } as Notifications.NotificationTriggerInput,
-    {
-      type: 'homework_reminder',
-      data: { homeworkTitle, dueDate: dueDate.toISOString() },
-    },
-    'homework'
-  );
-}
-
-/**
- * Schedule a study streak reminder.
- */
-export async function scheduleStreakReminder(
-  currentStreak: number
-): Promise<string> {
-  // Schedule for 6 PM local time
-  const now = new Date();
-  const reminderTime = new Date(now);
-  reminderTime.setHours(18, 0, 0, 0);
-
-  // If 6 PM has passed, schedule for tomorrow
-  if (reminderTime <= now) {
-    reminderTime.setDate(reminderTime.getDate() + 1);
-  }
-
-  return scheduleLocalNotification(
-    'Continue ta série !',
-    `Tu as une série de ${currentStreak} jours. Révise maintenant pour ne pas la perdre !`,
-    { date: reminderTime } as Notifications.NotificationTriggerInput,
-    {
-      type: 'study_streak',
-      data: { currentStreak },
-    },
-    'streaks'
-  );
-}
-
-/**
- * Cancel a scheduled notification.
- */
-export async function cancelNotification(notificationId: string): Promise<void> {
-  await Notifications.cancelScheduledNotificationAsync(notificationId);
-}
-
-/**
- * Cancel all scheduled notifications.
- */
-export async function cancelAllNotifications(): Promise<void> {
-  await Notifications.cancelAllScheduledNotificationsAsync();
-}
-
-/**
- * Get all scheduled notifications.
- */
-export async function getScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
-  return Notifications.getAllScheduledNotificationsAsync();
-}
-
-// ============================================================================
-// BADGE MANAGEMENT
-// ============================================================================
-
-/**
- * Set app badge count.
- */
-export async function setBadgeCount(count: number): Promise<void> {
-  await Notifications.setBadgeCountAsync(count);
-}
-
-/**
- * Get current badge count.
- */
-export async function getBadgeCount(): Promise<number> {
-  return Notifications.getBadgeCountAsync();
-}
-
-/**
- * Clear badge count.
- */
-export async function clearBadge(): Promise<void> {
-  await Notifications.setBadgeCountAsync(0);
-}
-
-// ============================================================================
-// PERMISSION CHECK
-// ============================================================================
-
-/**
- * Check if notifications are enabled.
- */
-export async function areNotificationsEnabled(): Promise<boolean> {
-  const { status } = await Notifications.getPermissionsAsync();
-  return status === 'granted';
 }

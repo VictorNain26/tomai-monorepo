@@ -31,6 +31,15 @@ interface ChatRequestData {
   fileIds?: string[];
 }
 
+// Track active SSE connections per user (single-instance guard)
+const activeSSEConnections = new Map<string, number>();
+const MAX_CONCURRENT_SSE = 2;
+
+/** Strip null bytes and control characters from user input */
+function sanitizePrompt(text: string): string {
+  return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+}
+
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
   /**
    * POST /api/chat/stream - SSE Streaming (Gemini 3 Flash)
@@ -82,6 +91,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     // Extraire les métadonnées depuis data
     const { subject, sessionId, schoolLevel, firstName, fileId, fileIds: rawFileIds } = data;
     const fileIds = rawFileIds ?? (fileId ? [fileId] : []);
+    const safeContent = sanitizePrompt(content ?? '');
 
     // 2. Vérification quota tokens (rolling window 5h + daily cap)
     const quotaCheck = await tokenQuotaService.checkQuota(user.id);
@@ -99,11 +109,19 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       };
     }
 
-    // 3. Validation contenu OU fichiers requis (Best Practices 2025)
-    if ((!content || content.trim().length === 0) && fileIds.length === 0) {
+    // 3. Validation contenu OU fichiers requis
+    if (safeContent.trim().length === 0 && fileIds.length === 0) {
       set.status = 400;
       return { _error: 'Validation Error', message: 'Content or files required for streaming' };
     }
+
+    // 3b. Concurrent SSE limit
+    const currentConns = activeSSEConnections.get(user.id) ?? 0;
+    if (currentConns >= MAX_CONCURRENT_SSE) {
+      set.status = 429;
+      return { _error: 'Too Many Streams', message: 'Trop de conversations simultanées. Attends la fin de la réponse en cours.' };
+    }
+    activeSSEConnections.set(user.id, currentConns + 1);
 
     // 4. Récupérer session existante ou en créer une nouvelle
     let chatSessionId: string;
@@ -154,7 +172,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       // Contexte texte enrichi (analyse, extraction) - rétrocompatibilité
       fileContextService.prepareFileContext({
         fileId: fileIds[0], // Premier fichier pour enrichissement texte (legacy)
-        content: content ?? '',
+        content: safeContent,
         schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
         userId: user.id,
         sessionHistory
@@ -195,7 +213,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     await chatService.saveMessage(
       chatSessionId,
       'user',
-      content ?? '',
+      safeContent,
       attachedFileInfo ? { attachedFile: attachedFileInfo } : {}
     );
 
@@ -267,6 +285,9 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         // Yield done chunk Chat Protocol
         yield sse({ data: chunk });
 
+      } else if (chunk.type === 'status') {
+        // Heartbeat during tool calls — forward to client
+        yield sse({ data: chunk });
       } else if (chunk.type === 'error') {
         // Yield error chunk Chat Protocol
         yield sse({ data: chunk });
@@ -275,6 +296,11 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
 
     // 10. Yield [DONE] marker (Chat Protocol standard)
     yield sse({ data: '[DONE]' });
+
+    // Release concurrent SSE slot
+    const connCount = activeSSEConnections.get(user.id) ?? 1;
+    if (connCount <= 1) activeSSEConnections.delete(user.id);
+    else activeSSEConnections.set(user.id, connCount - 1);
 
     // Return explicite pour satisfaire TypeScript (generator terminé)
     return;

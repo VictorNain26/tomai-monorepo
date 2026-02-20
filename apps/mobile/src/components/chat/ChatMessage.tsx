@@ -106,6 +106,11 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
                     : 'Écouter'}
               </Text>
             </TouchableOpacity>
+            {tts.error && (
+              <Text variant="tiny" className="ml-1 self-center text-destructive" numberOfLines={1}>
+                {tts.error}
+              </Text>
+            )}
           </View>
         )}
 

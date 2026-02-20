@@ -34,7 +34,7 @@ export interface ChatFileAttachment {
 
 /** Backend SSE stream chunk (from gemini-chat.service.ts GeminiStreamChunk) */
 export interface StreamChunk {
-  type: 'content' | 'done' | 'error';
+  type: 'content' | 'done' | 'error' | 'status';
   id: string;
   model?: string;
   timestamp?: number;
@@ -55,6 +55,8 @@ export interface StreamChunk {
     message: string;
     code?: string;
   };
+  /** Status message during tool calls (heartbeat) */
+  status?: string;
 }
 
 export interface UseChatOptions {
@@ -69,6 +71,7 @@ export interface UseChatReturn {
   isStreaming: boolean;
   error: string | null;
   sendMessage: (content: string) => Promise<void>;
+  retry: () => Promise<void>;
   addAttachment: (attachment: ChatFileAttachment) => void;
   removeAttachment: (fileId: string) => void;
   clearPendingAttachments: () => void;

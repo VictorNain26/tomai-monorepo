@@ -24,6 +24,19 @@ import type { EducationLevelType } from '../../types/index.js';
 
 const MAX_TOOL_ITERATIONS = 5;
 
+/** Human-readable label for tool status SSE events */
+function getToolStatusLabel(name: string): string {
+  switch (name) {
+    case 'search_educational_content': return 'Recherche dans les programmes...';
+    case 'get_student_homework': return 'Consultation des devoirs...';
+    case 'get_student_grades': return 'Consultation des notes...';
+    case 'get_student_timetable': return "Consultation de l'emploi du temps...";
+    case 'generate_flashcards': return 'Création de flashcards...';
+    case 'get_student_profile': return 'Analyse du profil...';
+    default: return 'Traitement en cours...';
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════
@@ -71,7 +84,7 @@ export interface StreamGenerationParams {
 
 /** SSE StreamChunk types (frontend compatibility) */
 export interface GeminiStreamChunk {
-  type: 'content' | 'done' | 'error';
+  type: 'content' | 'done' | 'error' | 'status';
   id: string;
   model: string;
   timestamp: number;
@@ -91,6 +104,8 @@ export interface GeminiStreamChunk {
     message: string;
     code?: string;
   };
+  // Status chunk fields (heartbeat during tool calls)
+  status?: string;
   // TomAI custom metadata
   metadata?: {
     sessionId: string;
@@ -321,6 +336,15 @@ Seules exceptions: salutations, questions personnelles, questions sur Pronote (d
           toolNames: pendingCalls.map(c => c.name),
           operation: 'gemini-chat:tool-calls'
         });
+
+        // Yield status event: heartbeat + user-facing feedback during tool execution
+        yield {
+          type: 'status' as const,
+          id: messageId,
+          model: this.model,
+          timestamp: Date.now(),
+          status: pendingCalls.map(c => getToolStatusLabel(c.name)).join(' · ')
+        };
 
         const results = await Promise.all(
           pendingCalls.map(call =>

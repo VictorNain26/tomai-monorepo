@@ -13,7 +13,7 @@ import { useRef, useCallback, useEffect, useMemo } from 'react';
 import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, RotateCcw, Trash2, BookOpen, FileText, BarChart3 } from 'lucide-react-native';
+import { ArrowLeft, RotateCcw, Trash2, BookOpen, FileText, BarChart3, RefreshCw } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
@@ -79,6 +79,7 @@ export default function ChatScreen() {
     isStreaming,
     error,
     sendMessage,
+    retry,
     addAttachment,
     removeAttachment,
     resetSession,
@@ -277,15 +278,25 @@ export default function ChatScreen() {
         )}
       </View>
 
-      {/* Error Message */}
+      {/* Error Message with Retry */}
       {error && (
         <View
-          className="mx-4 mt-2 rounded-lg p-3"
+          className="mx-4 mt-2 flex-row items-center gap-3 rounded-lg p-3"
           style={{ backgroundColor: bgColors.destructive[10] }}
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
         >
-          <Text className="text-center text-destructive">{error}</Text>
+          <Text className="flex-1 text-destructive">{error}</Text>
+          <TouchableOpacity
+            onPress={retry}
+            className="flex-row items-center gap-1 rounded-full px-3 py-1.5"
+            style={{ backgroundColor: bgColors.destructive[20] }}
+            accessibilityLabel="Réessayer"
+            accessibilityRole="button"
+          >
+            <RefreshCw color={colors.destructive.DEFAULT} size={14} />
+            <Text className="text-sm font-semibold text-destructive">Réessayer</Text>
+          </TouchableOpacity>
         </View>
       )}
 
