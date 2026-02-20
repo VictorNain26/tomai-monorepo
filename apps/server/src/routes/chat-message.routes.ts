@@ -37,6 +37,7 @@ const MAX_CONCURRENT_SSE = 2;
 
 /** Strip null bytes and control characters from user input */
 function sanitizePrompt(text: string): string {
+  // eslint-disable-next-line no-control-regex
   return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
 
