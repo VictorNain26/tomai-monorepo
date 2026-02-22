@@ -7,8 +7,8 @@ import { SectionHeader } from "../atoms/section-header";
 
 const FAQS = [
   {
-    question: "Tom donne-t-il les réponses à mon enfant ?",
-    answer: "Non, jamais. Tom utilise la méthode socratique : il pose des questions pour guider votre enfant vers la solution. Contrairement aux IA génératives qui donnent les réponses, Tom fait comprendre et mémoriser durablement.",
+    question: "TomIA donne-t-il les réponses à mon enfant ?",
+    answer: "Non, jamais. TomIA utilise la méthode socratique : il pose des questions pour guider votre enfant vers la solution. Contrairement aux IA génératives qui donnent les réponses, TomIA fait comprendre et mémoriser durablement.",
     icon: BrainCircuit,
   },
   {
@@ -18,7 +18,7 @@ const FAQS = [
   },
   {
     question: "Les contenus sont-ils alignés sur les programmes scolaires ?",
-    answer: "Oui, Tom est entraîné sur 415 programmes officiels Éduscol, du CP à la Terminale. Il couvre toutes les matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Anglais...",
+    answer: "Oui, TomIA est entraîné sur 415 programmes officiels Éduscol, du CP à la Terminale. Il couvre toutes les matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Anglais...",
     icon: BookOpen,
   },
   {
@@ -32,23 +32,23 @@ const FAQS = [
     icon: CreditCard,
   },
   {
-    question: "Sur quels appareils Tom est-il disponible ?",
-    answer: "Tom est disponible sur le web (ordinateur, tablette) et en application mobile sur iOS et Android. Votre enfant peut travailler depuis n'importe quel appareil, à la maison ou en déplacement.",
+    question: "Sur quels appareils TomIA est-il disponible ?",
+    answer: "TomIA est disponible sur le web (ordinateur, tablette) et en application mobile sur iOS et Android. Votre enfant peut travailler depuis n'importe quel appareil, à la maison ou en déplacement.",
     icon: Smartphone,
   },
   {
-    question: "Tom est-il compatible avec Pronote ?",
-    answer: "Oui, Tom peut se connecter à Pronote pour récupérer automatiquement l'emploi du temps, les devoirs et les notes de votre enfant. Cela permet à Tom de personnaliser son accompagnement en fonction du programme réel de la classe.",
+    question: "TomIA est-il compatible avec Pronote ?",
+    answer: "Oui, TomIA peut se connecter à Pronote pour récupérer automatiquement l'emploi du temps, les devoirs et les notes de votre enfant. Cela permet à TomIA de personnaliser son accompagnement en fonction du programme réel de la classe.",
     icon: GraduationCap,
   },
   {
-    question: "Tom est-il disponible en d'autres langues ?",
-    answer: "Actuellement, Tom est disponible uniquement en français, car il est spécialement conçu pour les programmes scolaires français (Éduscol). D'autres langues pourront être envisagées à l'avenir.",
+    question: "TomIA est-il disponible en d'autres langues ?",
+    answer: "Actuellement, TomIA est disponible uniquement en français, car il est spécialement conçu pour les programmes scolaires français (Éduscol). D'autres langues pourront être envisagées à l'avenir.",
     icon: Languages,
   },
   {
     question: "Y a-t-il une limite d'utilisation quotidienne ?",
-    answer: "L'offre gratuite inclut un usage quotidien limité, suffisant pour une session de devoirs. L'offre Complet propose un quota plus généreux pour un usage intensif. Les parents peuvent également définir leurs propres limites de temps.",
+    answer: "L'offre gratuite inclut 5 questions par jour, suffisant pour une session de devoirs. L'offre Complet propose des questions illimitées. Les parents peuvent également définir leurs propres limites de temps.",
     icon: Gauge,
   },
   {

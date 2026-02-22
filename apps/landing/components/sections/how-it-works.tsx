@@ -11,15 +11,15 @@ const STEPS = [
   {
     number: "01",
     title: "Posez votre question",
-    description: "Maths, Français, Histoire... Votre enfant pose sa question à Tom comme à un professeur.",
+    description: "Maths, Français, Histoire... Votre enfant pose sa question à TomIA comme à un professeur.",
     icon: MessageSquare,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
   },
   {
     number: "02",
-    title: "Tom guide la réflexion",
-    description: "Tom pose des questions simples pour aider votre enfant à avancer, sans jamais donner la réponse.",
+    title: "TomIA guide la réflexion",
+    description: "TomIA pose des questions simples pour aider votre enfant à avancer, sans jamais donner la réponse.",
     icon: Lightbulb,
     color: "text-yellow-500",
     bg: "bg-yellow-500/10",

@@ -20,26 +20,27 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Tom - L'IA qui aide votre enfant à comprendre ses leçons",
-    template: "%s | Tom",
+    default: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
+    template: "%s | TomIA",
   },
-  description: "Tom est un assistant IA pour les élèves du CP à la Terminale. Il guide votre enfant avec la méthode socratique, sans donner les réponses. Aligné sur les programmes Éduscol.",
-  keywords: ["tutorat", "éducation", "IA", "aide aux devoirs", "soutien scolaire", "méthode socratique", "collège", "lycée", "CP", "Terminale"],
-  authors: [{ name: "Tom" }],
-  creator: "Tom",
+  description: "TomIA est un assistant IA pour les élèves du CP à la Terminale. Il guide votre enfant avec la méthode socratique, sans donner les réponses. Aligné sur les programmes Éduscol.",
+  keywords: ["TomIA", "tutorat", "éducation", "IA", "aide aux devoirs", "soutien scolaire", "méthode socratique", "collège", "lycée", "CP", "Terminale"],
+  authors: [{ name: "TomIA" }],
+  creator: "TomIA",
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    title: "Tom - L'IA qui aide votre enfant à comprendre ses leçons",
+    title: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
     description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, programmes Éduscol, sans donner les réponses.",
-    siteName: "Tom",
+    siteName: "TomIA",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tom - L'IA qui aide votre enfant à comprendre ses leçons",
+    title: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
     description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, programmes Éduscol, sans donner les réponses.",
   },
-  metadataBase: new URL('https://tomai.fr'),
+  metadataBase: new URL('https://tomia.fr'),
   alternates: {
     canonical: '/',
   },
@@ -56,6 +57,30 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "TomIA",
+  applicationCategory: "EducationalApplication",
+  operatingSystem: "Web, iOS, Android",
+  description: "Assistant IA de tutorat pour élèves du CP à la Terminale. Méthode socratique, programmes Éduscol.",
+  offers: [
+    {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "EUR",
+      name: "Gratuit",
+    },
+    {
+      "@type": "Offer",
+      price: "15",
+      priceCurrency: "EUR",
+      name: "Complet",
+      billingIncrement: "P1M",
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -64,6 +89,10 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${inter.variable} ${jakarta.variable}`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md">
           Aller au contenu principal
         </a>

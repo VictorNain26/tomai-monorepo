@@ -5,7 +5,7 @@ import {
   LineChart,
   BookOpen,
   ShieldCheck,
-  Gamepad2,
+  Sparkles,
   Clock
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -14,15 +14,15 @@ import { SectionHeader } from "../atoms/section-header";
 const FEATURES = [
   {
     title: "Apprendre en réfléchissant",
-    description: "Tom pose les bonnes questions pour guider votre enfant vers la solution. Il comprend vraiment et retient durablement.",
+    description: "TomIA pose les bonnes questions pour guider votre enfant vers la solution. Il comprend vraiment et retient durablement.",
     icon: BrainCircuit,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
+    color: "text-primary",
+    bg: "bg-primary/10",
     colSpan: "lg:col-span-2",
   },
   {
     title: "Chaque enfant avance à son rythme",
-    description: "Tom identifie les lacunes et adapte ses explications au niveau réel de votre enfant, sans pression.",
+    description: "TomIA identifie les lacunes et adapte ses explications au niveau réel de votre enfant.",
     icon: LineChart,
     color: "text-green-500",
     bg: "bg-green-500/10",
@@ -30,15 +30,15 @@ const FEATURES = [
   },
   {
     title: "Aligné sur les programmes Éduscol",
-    description: "Du CP à la Terminale, Tom suit les programmes officiels du Ministère : Maths, Français, Histoire-Géo, Sciences...",
+    description: "Du CP à la Terminale, TomIA suit les programmes officiels du Ministère de l'Éducation nationale.",
     icon: BookOpen,
-    color: "text-purple-500",
-    bg: "bg-purple-500/10",
+    color: "text-violet",
+    bg: "bg-violet/10",
     colSpan: "lg:col-span-1",
   },
   {
     title: "Vos données protégées en France",
-    description: "Hébergement en Europe, conformité RGPD. Aucune publicité, aucune revente de données. Jamais.",
+    description: "Hébergement en Europe, conformité RGPD. Aucune publicité, aucune revente de données.",
     icon: ShieldCheck,
     color: "text-red-500",
     bg: "bg-red-500/10",
@@ -46,15 +46,15 @@ const FEATURES = [
   },
   {
     title: "Votre enfant reste motivé",
-    description: "Des fiches de révision générées automatiquement et la répétition espacée encouragent la régularité. Sessions courtes de 15-20 min pour un apprentissage efficace.",
-    icon: Gamepad2,
+    description: "Fiches de révision automatiques et répétition espacée pour ancrer les connaissances durablement.",
+    icon: Sparkles,
     color: "text-yellow-500",
     bg: "bg-yellow-500/10",
     colSpan: "lg:col-span-1",
   },
   {
     title: "Disponible quand vous en avez besoin",
-    description: "Aide aux devoirs accessible 24h/24 : le soir, le week-end, pendant les vacances. Votre enfant n'est jamais bloqué. Disponible sur mobile (iOS et Android) et sur le web.",
+    description: "Le soir, le week-end, pendant les vacances. Sur mobile et sur le web.",
     icon: Clock,
     color: "text-cyan-500",
     bg: "bg-cyan-500/10",

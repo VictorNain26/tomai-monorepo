@@ -7,17 +7,19 @@ import { SectionHeader } from "../atoms/section-header";
 const FREE_FEATURES = [
   "Français, Maths, Anglais",
   "Du CP à la Terminale",
-  "Usage quotidien limité",
+  "5 questions par jour",
   "Aide aux devoirs",
-  "Suivi des progrès",
+  "Suivi des matières travaillées",
 ];
 
 const PREMIUM_FEATURES = [
   "Toutes les matières",
   "Du CP à la Terminale",
-  "Quota tokens plus généreux",
-  "Aide aux devoirs",
-  "Suivi des progrès",
+  "Questions illimitées",
+  "Fiches de révision + répétition espacée",
+  "Tableau de bord parental complet",
+  "Intégration Pronote",
+  "Support prioritaire",
 ];
 
 export function Pricing() {
@@ -25,8 +27,8 @@ export function Pricing() {
     <section id="pricing" className="py-24 lg:py-32 bg-secondary/30">
       <div className="container px-4 mx-auto">
         <SectionHeader
-          title="Commencez gratuitement"
-          description="Testez avec les matières principales, puis débloquez tout"
+          title="Un prix simple, sans surprise"
+          description="Commencez gratuitement, puis passez au plan Complet quand votre enfant en a besoin."
         />
 
         {/* Two Cards Side by Side */}
@@ -52,7 +54,7 @@ export function Pricing() {
 
             <Link href={APP_URL}>
               <Button variant="outline" size="lg" className="w-full">
-                Commencer
+                Commencer gratuitement
               </Button>
             </Link>
           </div>
@@ -89,8 +91,8 @@ export function Pricing() {
             </ul>
 
             <Link href={APP_URL}>
-              <Button size="lg" className="w-full">
-                Commencer
+              <Button variant="premium" size="lg" className="w-full">
+                Choisir le plan Complet
               </Button>
             </Link>
           </div>

@@ -6,7 +6,7 @@
 /**
  * URL de l'application client (app)
  * - Development: http://localhost:5173
- * - Production: https://app.tomai.fr
+ * - Production: https://app.tomia.fr
  */
 export const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
@@ -14,7 +14,7 @@ export const APP_URL =
 /**
  * URL de la landing page
  * - Development: http://localhost:3001
- * - Production: https://tomai.fr
+ * - Production: https://tomia.fr
  */
 export const LANDING_URL =
   process.env.NEXT_PUBLIC_LANDING_URL || "http://localhost:3001";
