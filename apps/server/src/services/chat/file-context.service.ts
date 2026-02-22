@@ -13,7 +13,6 @@ import { documentAnalysisService, type DocumentAnalysisResult } from '../documen
 import { geminiFilesService } from '../gemini-files.service.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { Message as DbMessage } from '../../db/schema.js';
 
 // ============================================================================
 // Types

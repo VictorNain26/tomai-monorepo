@@ -23,7 +23,7 @@ import {
   useIconColors,
   type LibraryFile,
 } from '@/hooks';
-import { bgColors, colors, shadows } from '@/lib/styles';
+import { bgColors, colors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
