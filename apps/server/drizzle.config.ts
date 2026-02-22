@@ -17,7 +17,8 @@ function getDatabaseUrl(): string {
     return process.env.DATABASE_URL;
   }
 
-  throw new Error('❌ No DATABASE_URL configured. Check your .env file.');
+  // Placeholder for drizzle-kit generate (no DB connection needed)
+  return 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
 }
 
 export default defineConfig({

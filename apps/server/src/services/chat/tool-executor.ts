@@ -9,12 +9,17 @@ import { ragService } from '../rag.service.js';
 import { pronoteService } from '../pronote.service.js';
 import { generateCards, type CardGenerationResult } from '../learning/card-generator.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
+import { fsrsService } from '../fsrs.service.js';
+import { db } from '../../db/connection.js';
+import { learningDecks, learningCards } from '../../db/schema.js';
+import { getLevelConfig } from '../../config/learning-config.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 
 export interface ToolExecutionContext {
   userId: string;
   schoolLevel: EducationLevelType;
+  sessionId: string;
 }
 
 /**
@@ -186,13 +191,18 @@ async function executeGenerateFlashcards(
 ): Promise<object> {
   const topic = args.topic as string;
   const subject = args.subject as string;
-  const cardCount = Math.min(Math.max((args.cardCount as number) ?? 5, 3), 10);
+
+  // Adapt card count to school level (half of cardsPerSession, capped at 10 for chat)
+  const levelConfig = getLevelConfig(context.schoolLevel);
+  const maxChatCards = Math.min(Math.floor(levelConfig.cardsPerSession / 2), 10);
+  const requestedCount = (args.cardCount as number) ?? 5;
+  const cardCount = Math.min(Math.max(requestedCount, 3), maxChatCards);
 
   // Fetch RAG context for the flashcard topic
   let ragContext = '';
-  try {
-    const isAvailable = await ragService.isAvailable();
-    if (isAvailable) {
+  const isAvailable = await ragService.isAvailable();
+  if (isAvailable) {
+    try {
       const ragResult = await ragService.hybridSearch({
         query: topic,
         niveau: context.schoolLevel,
@@ -200,9 +210,13 @@ async function executeGenerateFlashcards(
         limit: 3,
       });
       ragContext = ragResult.context;
+    } catch (err) {
+      logger.warn('RAG unavailable for flashcards, continuing without context', {
+        operation: 'tool-executor:flashcards-rag',
+        _error: err instanceof Error ? err.message : String(err),
+        userId: context.userId,
+      });
     }
-  } catch {
-    // RAG context is optional for flashcards
   }
 
   const result = await generateCards({
@@ -222,16 +236,62 @@ async function executeGenerateFlashcards(
 
   const successResult = result as CardGenerationResult;
 
+  // Persist deck + cards in DB via atomic transaction
+  const { newDeck, insertedCards } = await db.transaction(async (tx) => {
+    const [createdDeck] = await tx
+      .insert(learningDecks)
+      .values({
+        userId: context.userId,
+        title: topic,
+        description: `Cartes créées depuis la conversation`,
+        subject,
+        source: 'conversation',
+        sourceId: context.sessionId,
+        schoolLevel: context.schoolLevel,
+        cardCount: successResult.count,
+      })
+      .returning();
+
+    if (!createdDeck) {
+      throw new Error('Échec de la création du deck');
+    }
+
+    const cardsToInsert = successResult.cards.map((card, index) => ({
+      deckId: createdDeck.id,
+      cardType: card.cardType,
+      content: card.content,
+      position: index,
+      fsrsData: fsrsService.initializeCardFsrsData(),
+    }));
+
+    const createdCards = await tx
+      .insert(learningCards)
+      .values(cardsToInsert)
+      .returning();
+
+    if (createdCards.length === 0) {
+      throw new Error("Échec de l'insertion des cartes");
+    }
+
+    return { newDeck: createdDeck, insertedCards: createdCards };
+  });
+
+  logger.info('Flashcards persisted from chat', {
+    operation: 'tool-executor:flashcards-persisted',
+    userId: context.userId,
+    sessionId: context.sessionId,
+    deckId: newDeck.id,
+    cardCount: insertedCards.length,
+  });
+
   return {
     generated: true,
-    cardCount: successResult.count,
+    deckId: newDeck.id,
+    deckTitle: newDeck.title,
+    cardCount: insertedCards.length,
     topic,
     subject,
-    message: `${successResult.count} cartes de révision ont été générées sur "${topic}".`,
-    cards: successResult.cards.map((c) => ({
-      cardType: c.cardType,
-      preview: JSON.stringify(c.content).substring(0, 200),
-    })),
+    message: `${insertedCards.length} cartes de révision sur "${topic}" ont été créées et sauvegardées.`,
   };
 }
 

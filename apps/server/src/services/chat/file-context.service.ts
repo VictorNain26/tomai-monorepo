@@ -10,6 +10,7 @@
 import { filesRepository } from '../../db/repositories/index.js';
 import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
 import { documentAnalysisService, type DocumentAnalysisResult } from '../document/index.js';
+import { geminiFilesService } from '../gemini-files.service.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { Message as DbMessage } from '../../db/schema.js';
@@ -298,35 +299,47 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
    * Prépare le contexte complet des fichiers pour une requête chat
    */
   async prepareFileContext(params: {
-    fileId?: string;
+    fileIds: string[];
     content: string;
     schoolLevel: EducationLevelType;
     userId: string;
     sessionHistory: DbMessage[];
   }): Promise<{
-    attachedFileInfo: AttachedFileInfo | null;
+    attachedFileInfos: AttachedFileInfo[];
     enrichedContent: string;
     sessionFilesContext: string;
   }> {
-    const { fileId, content, schoolLevel, userId, sessionHistory } = params;
+    const { fileIds, content, schoolLevel, userId, sessionHistory } = params;
 
-    const [attachedFileInfo, sessionFilesContext] = await Promise.all([
-      fileId ? this.retrieveFileMetadata(fileId) : Promise.resolve(null),
+    const [fileMetadatas, sessionFilesContext] = await Promise.all([
+      Promise.all(fileIds.map(id => this.retrieveFileMetadata(id))),
       this.getSessionFilesContext(sessionHistory)
     ]);
 
-    const fileAnalysisResult = fileId
-      ? await this.analyzeFileWithCache(fileId, { content, schoolLevel, userId })
-      : null;
+    const attachedFileInfos = fileMetadatas.filter(
+      (info): info is AttachedFileInfo => info !== null
+    );
+
+    // Analyze all files (sequentially to avoid rate limits)
+    const analysisResults: (FileAnalysisResult | null)[] = [];
+    for (const fileId of fileIds) {
+      const result = await this.analyzeFileWithCache(fileId, { content, schoolLevel, userId });
+      analysisResults.push(result);
+    }
 
     let enrichedContent = content;
 
-    if (fileAnalysisResult?.analysis) {
-      const fileHeader = fileAnalysisResult.documentType && fileAnalysisResult.subject
-        ? `[Fichier joint - ${attachedFileInfo?.fileName ?? 'document'} | ${fileAnalysisResult.documentType} - ${fileAnalysisResult.subject}]`
-        : `[Fichier joint - ${attachedFileInfo?.fileName ?? 'document'}]`;
+    // Concatenate all file enrichments
+    for (let i = 0; i < analysisResults.length; i++) {
+      const result = analysisResults[i];
+      if (!result?.analysis) continue;
 
-      enrichedContent = `${fileHeader}\n${fileAnalysisResult.analysis}\n\n${enrichedContent}`;
+      const fileName = attachedFileInfos[i]?.fileName ?? 'document';
+      const fileHeader = result.documentType && result.subject
+        ? `[Fichier joint - ${fileName} | ${result.documentType} - ${result.subject}]`
+        : `[Fichier joint - ${fileName}]`;
+
+      enrichedContent = `${fileHeader}\n${result.analysis}\n\n${enrichedContent}`;
     }
 
     if (sessionFilesContext) {
@@ -334,7 +347,7 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
     }
 
     return {
-      attachedFileInfo,
+      attachedFileInfos,
       enrichedContent,
       sessionFilesContext
     };
@@ -360,10 +373,9 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
 
         // Vérifier si Gemini URI est valide
         let fileUri = file.geminiFileUri ?? undefined;
-        if (fileUri && file.geminiExpiresAt) {
-          if (file.geminiExpiresAt <= new Date()) {
-            fileUri = undefined;
-          }
+        const isExpired = fileUri && file.geminiExpiresAt && file.geminiExpiresAt <= new Date();
+        if (isExpired) {
+          fileUri = undefined;
         }
 
         const multimodalFile: MultimodalFile = {
@@ -375,12 +387,34 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
         if (fileUri) {
           multimodalFile.fileUri = fileUri;
         } else {
-          // Fallback: récupérer depuis Scaleway
+          // Récupérer depuis Scaleway pour re-upload ou fallback base64
           const content = await scalewayStorageService.getFileContent(file.storageKey);
-          if (content) {
-            multimodalFile.base64 = content.content.toString('base64');
+          if (!content) continue;
+
+          // Re-upload vers Gemini Files API
+          const uploadResult = await geminiFilesService.uploadFile(
+            content.content.buffer as ArrayBuffer,
+            file.mimeType,
+            file.fileName
+          );
+
+          if (uploadResult.success && uploadResult.fileUri && uploadResult.expiresAt) {
+            multimodalFile.fileUri = uploadResult.fileUri;
+            // Persister le nouveau URI en DB
+            await filesRepository.updateGeminiInfo(
+              file.id,
+              uploadResult.fileUri,
+              uploadResult.expiresAt
+            );
+            logger.info('Re-uploaded expired file to Gemini', {
+              fileId, fileName: file.fileName, operation: 'prepare-multimodal'
+            });
           } else {
-            continue;
+            // Fallback base64 si re-upload échoue
+            multimodalFile.base64 = content.content.toString('base64');
+            logger.warn('Gemini re-upload failed, using base64 fallback', {
+              fileId, error: uploadResult.error, operation: 'prepare-multimodal'
+            });
           }
         }
 

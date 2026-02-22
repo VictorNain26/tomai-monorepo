@@ -9,7 +9,8 @@ echo "📍 Environment: ${NODE_ENV:-development}"
 
 # Run database migrations (production + staging)
 if [ "$NODE_ENV" != "development" ] && [ -d "./drizzle" ]; then
-  echo "🔄 Running database migrations..."
+  MIGRATION_COUNT=$(find ./drizzle -maxdepth 1 -name "*.sql" -type f | wc -l)
+  echo "🔄 Running $MIGRATION_COUNT database migrations..."
   bun run src/db/migrate.ts
   echo "✅ Migrations complete"
 fi

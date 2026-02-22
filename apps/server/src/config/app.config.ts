@@ -40,7 +40,7 @@ export interface AppConfig {
       retryAttempts: number;
       retryDelay: number;
       safetySettings: 'none' | 'low' | 'medium' | 'high';
-      thinkingBudget: number;
+      thinkingLevel: 'minimal' | 'low' | 'medium' | 'high';
     };
     mistral?: {
       apiKey: string | undefined;
@@ -230,7 +230,7 @@ function createAiConfig(): AppConfig['ai'] {
       retryAttempts: parseInt(Bun.env['GEMINI_RETRY_ATTEMPTS'] ?? '3', 10),
       retryDelay: parseInt(Bun.env['GEMINI_RETRY_DELAY'] ?? '1000', 10),
       safetySettings: (Bun.env['GEMINI_SAFETY'] as 'none' | 'low' | 'medium' | 'high') ?? 'medium',
-      thinkingBudget: parseInt(Bun.env['GEMINI_THINKING_BUDGET'] ?? '0', 10),
+      thinkingLevel: (Bun.env['GEMINI_THINKING_LEVEL'] as 'minimal' | 'low' | 'medium' | 'high') ?? 'low',
     },
     // Mistral AI - Embeddings 1024D (migration Gemini → Mistral Jan 2025)
     mistral: Bun.env['MISTRAL_API_KEY'] ? {

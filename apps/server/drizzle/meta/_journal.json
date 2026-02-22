@@ -57,6 +57,13 @@
       "when": 1771576799493,
       "tag": "0007_strange_argent",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1771785365590,
+      "tag": "0008_sturdy_jackal",
+      "breakpoints": true
     }
   ]
 }
