@@ -98,7 +98,6 @@ function validateFile(
 // ============================================================================
 
 export function usePresignedUpload() {
-  const [files, setFiles] = useState<FileAttachment[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -194,7 +193,6 @@ export function usePresignedUpload() {
           transcription: confirmResult.transcription,
         };
 
-        setFiles((prev) => [...prev, attachment]);
         return attachment;
       } catch (err) {
         const message =
@@ -208,28 +206,17 @@ export function usePresignedUpload() {
     [presignMutation, confirmMutation]
   );
 
-  const removeFile = useCallback((fileId: string) => {
-    setFiles((prev) => prev.filter((f) => f.fileId !== fileId));
-  }, []);
-
-  const clearFiles = useCallback(() => {
-    setFiles([]);
-  }, []);
-
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
   return {
-    files,
     isProcessing:
       isProcessing ||
       presignMutation.isPending ||
       confirmMutation.isPending,
     error,
     uploadFile,
-    removeFile,
-    clearFiles,
     clearError,
   };
 }

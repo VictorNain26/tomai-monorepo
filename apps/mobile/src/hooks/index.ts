@@ -1,6 +1,6 @@
 // Hooks - Export central
 
-export { useChat, type ChatMessage, type ChatFileAttachment } from './useChat';
+export { useChat, type ChatMessage, type ChatFileAttachment, type CreatedDeck } from './useChat';
 export {
   usePresignedUpload,
   type FileAttachment,
@@ -102,3 +102,4 @@ export {
   type ReviewResult,
   type DeckStats,
 } from './useFsrs';
+export { useDueSummary } from './useDueSummary';

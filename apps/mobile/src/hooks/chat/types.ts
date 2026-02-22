@@ -22,6 +22,8 @@ export interface AttachedFileInfo {
   geminiFileId?: string;
   mimeType?: string;
   fileSizeBytes?: number;
+  /** Local image preview URI (client-side only, not persisted) */
+  preview?: string;
 }
 
 /** File attachment for pending uploads (client-side) */
@@ -34,7 +36,7 @@ export interface ChatFileAttachment {
 
 /** Backend SSE stream chunk (from gemini-chat.service.ts GeminiStreamChunk) */
 export interface StreamChunk {
-  type: 'content' | 'done' | 'error' | 'status';
+  type: 'content' | 'done' | 'error' | 'status' | 'deck_created';
   id: string;
   model?: string;
   timestamp?: number;
@@ -57,6 +59,21 @@ export interface StreamChunk {
   };
   /** Status message during tool calls (heartbeat) */
   status?: string;
+  /** Deck created event from generate_flashcards tool */
+  deck?: {
+    deckId: string;
+    title: string;
+    cardCount: number;
+    subject: string;
+  };
+}
+
+/** Deck created during chat via generate_flashcards tool */
+export interface CreatedDeck {
+  deckId: string;
+  title: string;
+  cardCount: number;
+  subject: string;
 }
 
 export interface UseChatOptions {
@@ -66,6 +83,7 @@ export interface UseChatOptions {
 export interface UseChatReturn {
   messages: ChatMessage[];
   pendingAttachments: ChatFileAttachment[];
+  createdDecks: CreatedDeck[];
   currentSessionId: string | null;
   isLoading: boolean;
   isStreaming: boolean;
@@ -75,6 +93,7 @@ export interface UseChatReturn {
   addAttachment: (attachment: ChatFileAttachment) => void;
   removeAttachment: (fileId: string) => void;
   clearPendingAttachments: () => void;
+  clearCreatedDecks: () => void;
   resetSession: () => Promise<string | null>;
   stop: () => void;
 }

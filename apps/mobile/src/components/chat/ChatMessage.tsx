@@ -9,7 +9,7 @@
  * - File attachments
  */
 
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, Image } from 'react-native';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import {
@@ -114,8 +114,21 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
           </View>
         )}
 
-        {/* File Attachment */}
-        {message.attachedFile?.fileId && (
+        {/* Image Preview */}
+        {message.attachedFile?.preview && message.attachedFile.mimeType?.startsWith('image/') && (
+          <View className="mt-2">
+            <Image
+              source={{ uri: message.attachedFile.preview }}
+              className="rounded-xl"
+              style={{ width: 200, height: 200 }}
+              resizeMode="cover"
+              accessibilityLabel={`Image: ${message.attachedFile.fileName}`}
+            />
+          </View>
+        )}
+
+        {/* File Attachment (non-image or without preview) */}
+        {message.attachedFile?.fileId && !(message.attachedFile.preview && message.attachedFile.mimeType?.startsWith('image/')) && (
           <FileAttachmentCard
             fileId={message.attachedFile.fileId}
             fileName={message.attachedFile.fileName}

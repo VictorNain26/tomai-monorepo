@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, BookOpen, User, ArrowLeft } from 'lucide-react-native';
 import { useSession, useUser, useImpersonatedBy, restoreParentSession } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
-import { useTheme } from '@/hooks';
+import { useTheme, useDueSummary } from '@/hooks';
 import { colors } from '@/lib/styles';
 import { useTabScreenOptions } from '@/lib/navigation';
 import { Text } from '@/components/ui/text';
@@ -37,6 +37,10 @@ export default function StudentLayout() {
   const user = useUser();
   const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
+
+  // Due cards count for Learning tab badge
+  const { data: dueSummary } = useDueSummary();
+  const dueCount = dueSummary?.totalDue ?? 0;
 
   // Quick Switch: Check if this is an impersonated session
   const impersonatedBy = useImpersonatedBy();
@@ -196,6 +200,8 @@ export default function StudentLayout() {
               tabBarIcon: ({ color, size }) => (
                 <BookOpen color={color} size={size} />
               ),
+              tabBarBadge: dueCount > 0 ? (dueCount > 99 ? '99+' : dueCount) : undefined,
+              tabBarBadgeStyle: dueCount > 0 ? { backgroundColor: colors.warning.DEFAULT, fontSize: 10 } : undefined,
             }}
           />
 

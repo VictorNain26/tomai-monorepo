@@ -13,21 +13,20 @@ import { useRef, useCallback, useEffect, useMemo } from 'react';
 import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, RotateCcw, Trash2, BookOpen, FileText, BarChart3, RefreshCw } from 'lucide-react-native';
+import { ArrowLeft, MoreVertical, ChevronRight, FileText, BarChart3, RefreshCw } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
-import { Card } from '@/components/ui/card';
-import { ChatMessage, ChatInput } from '@/components/chat';
+import { ChatMessage, ChatInput, DeckActionCard } from '@/components/chat';
 import { TomAvatar } from '@/components/common';
 import {
   useChat,
   usePresignedUpload,
-  useStudentPronote,
   useIconColors,
+  useStudentPronote,
   type ChatMessage as ChatMessageType,
 } from '@/hooks';
 import { deleteChatSession } from '@/hooks/chat/api';
-import { bgColors, shadows, colors } from '@/lib/styles';
+import { bgColors, colors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -43,6 +42,17 @@ interface ContextInfo {
 // ============================================================================
 // HELPERS
 // ============================================================================
+
+function getSubjectEmoji(subject: string): string {
+  const s = subject.toLowerCase();
+  if (s.includes('math')) return '📐';
+  if (s.includes('français') || s.includes('francais')) return '📖';
+  if (s.includes('anglais')) return '🇬🇧';
+  if (s.includes('histoire') || s.includes('géo')) return '🌍';
+  if (s.includes('physique') || s.includes('chimie')) return '⚗️';
+  if (s.includes('svt') || s.includes('biologie')) return '🧬';
+  return '📚';
+}
 
 function parseContext(contextParam?: string): ContextInfo {
   if (!contextParam) return { type: 'general' };
@@ -67,13 +77,11 @@ export default function ChatScreen() {
   // Parse context from params
   const contextInfo = useMemo(() => parseContext(params.context), [params.context]);
 
-  // Pronote data for suggestions
-  const pronote = useStudentPronote();
-
   // Chat hook (chat unique multi-matière)
   const {
     messages,
     pendingAttachments,
+    createdDecks,
     currentSessionId,
     isLoading,
     isStreaming,
@@ -86,6 +94,39 @@ export default function ChatScreen() {
   } = useChat({
     initialSessionId: params.sessionId,
   });
+
+  // Pronote data for suggestions
+  const pronote = useStudentPronote();
+
+  // Compute contextual suggestions from Pronote homework
+  const suggestions = useMemo(() => {
+    const items: { emoji: string; label: string; prompt: string }[] = [];
+
+    // Undone homework (max 2)
+    const undone = pronote.homework
+      .filter((h) => !h.done)
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 2);
+
+    for (const h of undone) {
+      items.push({
+        emoji: getSubjectEmoji(h.subject),
+        label: `Aide : ${h.subject}`,
+        prompt: `Aide-moi avec mon devoir de ${h.subject} : ${h.description}`,
+      });
+    }
+
+    // Fill up to 3 with generic suggestion
+    if (items.length < 2) {
+      items.push({
+        emoji: '📖',
+        label: 'Explique mon dernier cours',
+        prompt: 'Explique-moi mon dernier cours de maniere simple',
+      });
+    }
+
+    return items;
+  }, [pronote.homework]);
 
   // File upload hook
   const { uploadFile, isProcessing: isUploading } = usePresignedUpload();
@@ -178,41 +219,28 @@ export default function ChatScreen() {
     ({ item, index }: { item: ChatMessageType; index: number }) => {
       const isLastAssistant =
         item.role === 'assistant' && index === messages.length - 1;
+      const showDecks = isLastAssistant && !isStreaming && createdDecks.length > 0;
       return (
-        <ChatMessage message={item} isStreaming={isLastAssistant && isStreaming} />
+        <View>
+          <ChatMessage message={item} isStreaming={isLastAssistant && isStreaming} />
+          {showDecks && (
+            <View className="mt-2 gap-2 ml-10">
+              {createdDecks.map((deck) => (
+                <DeckActionCard
+                  key={deck.deckId}
+                  deckId={deck.deckId}
+                  title={deck.title}
+                  cardCount={deck.cardCount}
+                  subject={deck.subject}
+                />
+              ))}
+            </View>
+          )}
+        </View>
       );
     },
-    [messages.length, isStreaming]
+    [messages.length, isStreaming, createdDecks]
   );
-
-  // Quick suggestions based on Pronote data
-  const suggestions = useMemo(() => {
-    if (!pronote.isConnected) return [];
-
-    const items: { label: string; prompt: string }[] = [];
-
-    // Add suggestions based on pending homework
-    const pendingHomework = pronote.homework
-      .filter((h) => !h.done)
-      .slice(0, 2);
-
-    pendingHomework.forEach((h) => {
-      items.push({
-        label: `Aide : ${h.subject}`,
-        prompt: `Aide-moi avec mon devoir de ${h.subject} : ${h.description}`,
-      });
-    });
-
-    // Add general suggestions if not enough
-    if (items.length < 3) {
-      items.push({
-        label: 'Explique ce cours',
-        prompt: `Peux-tu m'expliquer mon dernier cours ?`,
-      });
-    }
-
-    return items.slice(0, 3);
-  }, [pronote.isConnected, pronote.homework]);
 
   // Context badge info
   const contextBadge = useMemo(() => {
@@ -222,7 +250,7 @@ export default function ChatScreen() {
       case 'grade':
         return { icon: BarChart3, label: 'Révision note', color: colors.primary.DEFAULT };
       case 'test':
-        return { icon: BookOpen, label: 'Préparation contrôle', color: colors.destructive.DEFAULT };
+        return { icon: BarChart3, label: 'Préparation contrôle', color: colors.destructive.DEFAULT };
       default:
         return null;
     }
@@ -257,24 +285,20 @@ export default function ChatScreen() {
         </View>
 
         {currentSessionId && (
-          <View className="flex-row gap-1">
-            <TouchableOpacity
-              onPress={handleDelete}
-              className="h-10 w-10 items-center justify-center rounded-full bg-muted"
-              accessibilityLabel="Supprimer la conversation"
-              accessibilityRole="button"
-            >
-              <Trash2 color={iconColors.muted} size={18} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleReset}
-              className="h-10 w-10 items-center justify-center rounded-full bg-muted"
-              accessibilityLabel="Nouvelle conversation"
-              accessibilityRole="button"
-            >
-              <RotateCcw color={iconColors.muted} size={18} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert('Options', undefined, [
+                { text: 'Nouvelle conversation', onPress: handleReset },
+                { text: 'Supprimer', onPress: handleDelete, style: 'destructive' },
+                { text: 'Annuler', style: 'cancel' },
+              ]);
+            }}
+            className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+            accessibilityLabel="Options de conversation"
+            accessibilityRole="button"
+          >
+            <MoreVertical color={iconColors.muted} size={18} />
+          </TouchableOpacity>
         )}
       </View>
 
@@ -302,12 +326,32 @@ export default function ChatScreen() {
 
       {/* Messages or Welcome */}
       {messages.length === 0 ? (
-        <WelcomeScreen
-          contextInfo={contextInfo}
-          suggestions={suggestions}
-          onSuggestionPress={(prompt) => sendMessage(prompt)}
-          isLoading={isLoading}
-        />
+        <View className="flex-1 items-center justify-center px-6">
+          <TomAvatar size="lg" className="mb-4" />
+          <Text variant="h3" className="text-center">
+            Salut ! Je suis Tom
+          </Text>
+          <Text variant="muted" className="mt-2 text-center">
+            Pose-moi une question sur tes cours !
+          </Text>
+
+          {suggestions.length > 0 && (
+            <View className="mt-6 w-full gap-2">
+              {suggestions.map((s, i) => (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => sendMessage(s.prompt)}
+                  className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3"
+                  activeOpacity={0.7}
+                >
+                  <Text className="text-lg">{s.emoji}</Text>
+                  <Text className="flex-1">{s.label}</Text>
+                  <ChevronRight color={iconColors.muted} size={16} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       ) : (
         <FlatList
           ref={flatListRef}
@@ -327,96 +371,10 @@ export default function ChatScreen() {
         onFileSelected={handleFileSelected}
         pendingAttachments={pendingAttachments}
         onRemoveAttachment={removeAttachment}
-        isLoading={isLoading || isUploading}
+        isLoading={isLoading}
+        isUploading={isUploading}
         placeholder="Pose ta question..."
       />
     </SafeAreaView>
-  );
-}
-
-// ============================================================================
-// WELCOME SCREEN
-// ============================================================================
-
-interface WelcomeScreenProps {
-  contextInfo: ContextInfo;
-  suggestions: { label: string; prompt: string }[];
-  onSuggestionPress: (prompt: string) => void;
-  isLoading: boolean;
-}
-
-function WelcomeScreen({
-  contextInfo,
-  suggestions,
-  onSuggestionPress,
-  isLoading,
-}: WelcomeScreenProps) {
-  const iconColors = useIconColors();
-
-  // Context-specific welcome message
-  const getWelcomeMessage = () => {
-    switch (contextInfo.type) {
-      case 'homework':
-        return "Je suis prêt à t'aider avec ce devoir. Qu'est-ce qui te pose problème ?";
-      case 'grade':
-        return "Revoyons ensemble ce chapitre pour améliorer ta compréhension.";
-      case 'test':
-        return "Préparons ce contrôle ensemble. Par quoi veux-tu commencer ?";
-      default:
-        return `Pose-moi une question sur tes cours, je suis là pour t'aider à comprendre et réviser !`;
-    }
-  };
-
-  return (
-    <View className="flex-1 px-4 py-6">
-      {/* Tom Avatar & Welcome */}
-      <View className="items-center mb-6">
-        <TomAvatar size="lg" className="mb-4" />
-        <Text variant="h3" className="text-center">
-          Salut ! Je suis Tom
-        </Text>
-        <Text variant="muted" className="mt-2 text-center px-4">
-          {getWelcomeMessage()}
-        </Text>
-      </View>
-
-      {/* Suggestions */}
-      {suggestions.length > 0 && !isLoading && (
-        <View className="gap-2">
-          <Text variant="small" className="text-muted-foreground px-1">
-            Suggestions
-          </Text>
-          {suggestions.map((suggestion, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => onSuggestionPress(suggestion.prompt)}
-              activeOpacity={0.7}
-              accessibilityLabel={suggestion.label}
-              accessibilityHint="Envoyer cette suggestion à Tom"
-            >
-              <Card style={shadows.xs}>
-                <View className="flex-row items-center gap-3 p-4">
-                  <View
-                    className="h-8 w-8 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: bgColors.primary[10] }}
-                  >
-                    <FileText color={iconColors.primary} size={16} />
-                  </View>
-                  <Text className="flex-1">{suggestion.label}</Text>
-                  <Text className="text-primary">→</Text>
-                </View>
-              </Card>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {/* General tips */}
-      <View className="mt-auto pt-6">
-        <Text variant="caption" className="text-center">
-          Tu peux aussi envoyer une photo de ton exercice
-        </Text>
-      </View>
-    </View>
   );
 }

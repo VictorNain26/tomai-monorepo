@@ -28,8 +28,9 @@ import {
 import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
+import { TokenUsageCard } from '@/components/dashboard';
 import { useUser, useSession, signOut, hasParentSessionBackup, restoreParentSession } from '@/lib/auth';
-import { useStudentPronote, useIconColors } from '@/hooks';
+import { useStudentDashboard, useStudentPronote, useIconColors } from '@/hooks';
 import { bgColors, borderColors, shadows, colors } from '@/lib/styles';
 import { useEffect, useState } from 'react';
 
@@ -61,6 +62,7 @@ export default function StudentProfileScreen() {
   const user = useUser();
   const { refetch: refetchSession } = useSession();
   const iconColors = useIconColors();
+  const { usage, isLoadingUsage } = useStudentDashboard();
   const pronote = useStudentPronote();
 
   // Check if parent session is available (launched from parent account)
@@ -222,6 +224,9 @@ export default function StudentProfileScreen() {
             </View>
           </View>
         </Card>
+
+        {/* Token Usage */}
+        <TokenUsageCard usage={usage} isLoading={isLoadingUsage} />
 
         {/* Menu Sections */}
         {sections.map((section) => (

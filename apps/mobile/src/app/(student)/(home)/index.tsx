@@ -7,29 +7,23 @@
  * Hierarchy:
  * 1. Urgent homework → immediate action
  * 2. Recent grades → diagnostic and review
- * 3. Upcoming tests → preparation
- * 4. Quick access to Tom → always available
  */
 
 import { View, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useState, useCallback, useMemo } from 'react';
-import { Settings } from 'lucide-react-native';
+import { Link2 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
 import {
   HomeworkUrgentCard,
   GradesRecentCard,
-  UpcomingTestsCard,
-  QuickAskCard,
-  TokenUsageCard,
+  ResumeCard,
   type HomeworkItem,
   type GradeItem,
-  type TestItem,
 } from '@/components/dashboard';
-import { useStudentDashboard, useStudentPronote, useIconColors } from '@/hooks';
+import { useStudentDashboard, useStudentPronote, useIconColors, useDueSummary } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // HELPERS - Transform Pronote data to component interfaces
@@ -72,13 +66,13 @@ function daysUntil(dateStr: string): number {
 // ============================================================================
 
 export default function StudentDashboard() {
-  const router = useRouter();
   const iconColors = useIconColors();
   const [refreshing, setRefreshing] = useState(false);
 
   // Data hooks
-  const { usage, isLoadingUsage, userName } = useStudentDashboard();
+  const { userName, latestSession, isLoadingSession } = useStudentDashboard();
   const pronote = useStudentPronote();
+  const { data: dueSummary, isLoading: isLoadingDue } = useDueSummary();
 
   // Refresh handler
   const onRefresh = useCallback(async () => {
@@ -132,18 +126,28 @@ export default function StudentDashboard() {
     return 'stable' as const;
   }, [gradeItems]);
 
-  // TODO: Tests would come from a separate Pronote endpoint (agenda/evaluations)
-  // For now, this is a placeholder - would need backend support
-  const testItems: TestItem[] = [];
+  // Contextual message from Tom (Step 4)
+  const tomMessage = useMemo(() => {
+    const hour = new Date().getHours();
 
-  // Navigation handlers - updated paths for new structure
-  function handleViewAllHomework() {
-    router.push('/(student)/(profile)/pronote/homework');
-  }
+    // Urgent homework
+    const urgentHomework = homeworkItems.filter((h) => !h.isDone && h.daysUntilDue <= 1);
+    if (urgentHomework.length > 0) {
+      const hw = urgentHomework[0];
+      return `Tu as un devoir de ${hw.subject} pour ${hw.daysUntilDue === 0 ? "aujourd'hui" : 'demain'}. On s'y met ?`;
+    }
 
-  function handleViewAllGrades() {
-    router.push('/(student)/(profile)/pronote/grades');
-  }
+    // Due cards
+    const dueCount = dueSummary?.totalDue ?? 0;
+    if (dueCount > 0) {
+      return `Tu as ${dueCount} carte${dueCount > 1 ? 's' : ''} a reviser. C'est le moment !`;
+    }
+
+    // Time of day
+    if (hour < 12) return 'Bonne matinee ! Pret a apprendre ?';
+    if (hour < 18) return "Bon apres-midi ! Besoin d'aide pour tes cours ?";
+    return 'Bonne soiree ! Derniere revision avant demain ?';
+  }, [homeworkItems, dueSummary?.totalDue]);
 
   // First name only for greeting
   const firstName = userName?.split(' ')[0] ?? 'Élève';
@@ -159,22 +163,20 @@ export default function StudentDashboard() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text variant="h2">Bonjour {firstName}</Text>
-            {pronote.isConnected && pronote.className && (
-              <Text variant="muted">{pronote.className}</Text>
-            )}
-          </View>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onPress={() => router.push('/(student)/(profile)/settings')}
-            accessibilityLabel="Paramètres"
-          >
-            <Settings color={iconColors.muted} size={22} />
-          </Button>
+        <View>
+          <Text variant="h2">Bonjour {firstName}</Text>
+          {pronote.isConnected && pronote.className && (
+            <Text variant="muted">{pronote.className}</Text>
+          )}
+          <Text variant="muted" className="mt-0.5">{tomMessage}</Text>
         </View>
+
+        {/* Resume card - continuity */}
+        <ResumeCard
+          latestSession={latestSession}
+          totalDueCards={dueSummary?.totalDue ?? 0}
+          isLoading={isLoadingSession || isLoadingDue}
+        />
 
         {/* 1. Homework - Primary engagement driver */}
         <HomeworkUrgentCard
@@ -182,20 +184,9 @@ export default function StudentDashboard() {
           isConnected={pronote.isConnected}
           isLoading={pronote.isLoadingData}
           maxItems={3}
-          onViewAll={handleViewAllHomework}
         />
 
-        {/* 2. Upcoming Tests - If any */}
-        {testItems.length > 0 && (
-          <UpcomingTestsCard
-            tests={testItems}
-            isConnected={pronote.isConnected}
-            isLoading={pronote.isLoadingData}
-            maxItems={2}
-          />
-        )}
-
-        {/* 3. Recent Grades - Diagnostic */}
+        {/* 2. Recent Grades - Diagnostic */}
         {pronote.isConnected && (
           <GradesRecentCard
             grades={gradeItems}
@@ -204,17 +195,24 @@ export default function StudentDashboard() {
             isConnected={pronote.isConnected}
             isLoading={pronote.isLoadingData}
             maxItems={3}
-            onViewAll={handleViewAllGrades}
           />
         )}
 
-        {/* 4. Quick Ask - Always available */}
-        <QuickAskCard userName={firstName} />
-
-        {/* 5. Token Usage - Secondary info (collapsed style) */}
-        <View className="mt-2">
-          <TokenUsageCard usage={usage} isLoading={isLoadingUsage} />
-        </View>
+        {/* Fallback: Pronote not connected */}
+        {!pronote.isConnected && (
+          <View className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-4">
+            <View
+              className="h-10 w-10 items-center justify-center rounded-lg"
+              style={{ backgroundColor: bgColors.primary[10] }}
+            >
+              <Link2 color={iconColors.primary} size={20} />
+            </View>
+            <View className="flex-1">
+              <Text className="font-semibold">Pronote non connecte</Text>
+              <Text variant="muted">Demande a ton parent de connecter Pronote pour voir tes devoirs et notes ici</Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

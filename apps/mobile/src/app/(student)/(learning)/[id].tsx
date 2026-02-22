@@ -86,6 +86,16 @@ export default function DeckReviewScreen() {
     void refetch();
   }, [refetch]);
 
+  const handleAskTom = useCallback(() => {
+    const failedCount = results.filter((r) => r.rating === 1).length;
+    router.push({
+      pathname: '/(student)/(home)/chat',
+      params: {
+        prompt: `J'ai eu du mal avec ${failedCount} carte${failedCount > 1 ? 's' : ''} dans "${deck?.title}". Peux-tu m'aider ?`,
+      },
+    });
+  }, [results, deck?.title, router]);
+
   // Loading
   if (isLoading) {
     return (
@@ -149,6 +159,7 @@ export default function DeckReviewScreen() {
         totalCards={totalCards}
         onContinue={handleContinue}
         onClose={handleClose}
+        onAskTom={results.some((r) => r.rating === 1) ? handleAskTom : undefined}
       />
     );
   }
@@ -235,6 +246,7 @@ interface SessionCompleteProps {
   totalCards: number;
   onContinue: () => void;
   onClose: () => void;
+  onAskTom?: () => void;
 }
 
 function SessionComplete({
@@ -242,6 +254,7 @@ function SessionComplete({
   totalCards,
   onContinue,
   onClose,
+  onAskTom,
 }: SessionCompleteProps) {
   const breakdown = [
     { label: 'À revoir', count: results.filter((r) => r.rating === 1).length, color: colors.destructive.DEFAULT, bg: bgColors.destructive[10] },
@@ -287,6 +300,11 @@ function SessionComplete({
           <Button variant="outline" onPress={onClose}>
             <Text className="font-semibold">Retour aux decks</Text>
           </Button>
+          {onAskTom && (
+            <Button variant="outline" onPress={onAskTom}>
+              <Text className="font-semibold">Demander a Tom</Text>
+            </Button>
+          )}
         </View>
       </View>
     </SafeAreaView>

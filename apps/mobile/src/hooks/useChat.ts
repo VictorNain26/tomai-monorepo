@@ -22,6 +22,7 @@ import EventSource from 'react-native-sse';
 import type {
   ChatMessage,
   ChatFileAttachment,
+  CreatedDeck,
   StreamChunk,
   UseChatOptions,
   UseChatReturn,
@@ -34,7 +35,7 @@ import {
 } from './chat/api';
 
 // Re-export types for consumers
-export type { ChatMessage, ChatFileAttachment, AttachedFileInfo } from './chat/types';
+export type { ChatMessage, ChatFileAttachment, AttachedFileInfo, CreatedDeck } from './chat/types';
 
 /** Inactivity timeout: if no SSE event received for 45s, abort */
 const STREAM_INACTIVITY_TIMEOUT_MS = 45_000;
@@ -54,6 +55,7 @@ export function useChat({
   // State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pendingAttachments, setPendingAttachments] = useState<ChatFileAttachment[]>([]);
+  const [createdDecks, setCreatedDecks] = useState<CreatedDeck[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -206,6 +208,12 @@ export function useChat({
           role: 'user',
           content: content || 'Document',
           timestamp: new Date().toISOString(),
+          attachedFile: attachments.length > 0 ? {
+            fileName: attachments[0].fileName,
+            fileId: attachments[0].fileId,
+            mimeType: attachments[0].mimeType,
+            preview: attachments[0].preview,
+          } : undefined,
         };
         setMessages((prev) => [...prev, userMessage]);
       }
@@ -220,9 +228,10 @@ export function useChat({
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Reset debounce state
+      // Reset debounce state and created decks
       streamContentRef.current = '';
       streamAssistantIdRef.current = assistantId;
+      setCreatedDecks([]);
 
       setIsLoading(true);
       setIsStreaming(true);
@@ -311,6 +320,9 @@ export function useChat({
             }
           } else if (chunk.type === 'status') {
             // Heartbeat during tool calls — timeout already reset above
+          } else if (chunk.type === 'deck_created' && chunk.deck) {
+            setCreatedDecks(prev => [...prev, chunk.deck!]);
+            queryClient.invalidateQueries({ queryKey: ['decks'] });
           } else if (chunk.type === 'done') {
             if (chunk.metadata?.sessionId && chunk.metadata.sessionId !== sessionIdRef.current) {
               sessionIdRef.current = chunk.metadata.sessionId;
@@ -396,6 +408,10 @@ export function useChat({
     setPendingAttachments([]);
   }, []);
 
+  const clearCreatedDecks = useCallback(() => {
+    setCreatedDecks([]);
+  }, []);
+
   // Reset session
   const resetSession = useCallback(async (): Promise<string | null> => {
     if (!sessionIdRef.current) return null;
@@ -423,6 +439,7 @@ export function useChat({
   return {
     messages,
     pendingAttachments,
+    createdDecks,
     currentSessionId,
     isLoading: isLoading || sessionQuery.isLoading,
     isStreaming,
@@ -432,6 +449,7 @@ export function useChat({
     addAttachment,
     removeAttachment,
     clearPendingAttachments,
+    clearCreatedDecks,
     resetSession,
     stop,
   };

@@ -16,6 +16,7 @@ import {
   type RecordingStatus,
 } from 'expo-audio';
 import { apiClient } from '@repo/api';
+import { haptics } from '@/lib/haptics';
 
 // ============================================================================
 // TYPES
@@ -139,6 +140,7 @@ export function useVoiceInput() {
       // Prepare and start recording
       await recorder.prepareToRecordAsync();
       recorder.record();
+      void haptics.medium();
 
       startTimeRef.current = Date.now();
 
@@ -190,6 +192,7 @@ export function useVoiceInput() {
 
       // Stop recording - uri available at recorder.uri
       await recorder.stop();
+      void haptics.success();
       const uri = recorder.uri;
 
       if (!uri) {
@@ -249,6 +252,8 @@ export function useVoiceInput() {
       allowsRecording: false,
       playsInSilentMode: true,
     });
+
+    void haptics.warning();
 
     setState({
       isRecording: false,
