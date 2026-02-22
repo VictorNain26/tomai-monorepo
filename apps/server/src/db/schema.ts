@@ -379,6 +379,10 @@ export const studySessions = pgTable('study_sessions', {
   userSatisfaction: integer('user_satisfaction'),
   sessionRating: integer('session_rating'),
 
+  // Résumé conversationnel (SummaryBuffer pattern)
+  conversationSummary: text('conversation_summary'),
+  summaryUpToMessageId: uuid('summary_up_to_message_id'),
+
   // Métadonnées
   // CRITICAL FIX: JSONB default must use sql`'{}'::jsonb` NOT .default({})
   // See: https://orm.drizzle.team/docs/column-types/pg#default-value

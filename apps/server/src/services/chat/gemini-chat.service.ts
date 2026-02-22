@@ -8,13 +8,16 @@
  * - SSE streaming avec content/done/error chunks
  */
 
-import { GoogleGenAI, type Part, type Content } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, type Part, type Content } from '@google/genai';
+import { eq, and, sql } from 'drizzle-orm';
 import { appConfig } from '../../config/app.config.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
-import { optimizeConversationHistory } from '../../utils/conversation/index.js';
+import { optimizeConversationHistory, type OptimizationContext } from '../../utils/conversation/index.js';
 import { agentToolDeclarations } from './tool-declarations.js';
 import { executeTool } from './tool-executor.js';
+import { db } from '../../db/connection.js';
+import { learningCards, learningDecks } from '../../db/schema.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 
@@ -23,6 +26,14 @@ import type { EducationLevelType } from '../../types/index.js';
 // ═══════════════════════════════════════════════════════════════════════════
 
 const MAX_TOOL_ITERATIONS = 5;
+
+/** Map config string values to SDK ThinkingLevel enum */
+const THINKING_LEVEL_MAP: Record<string, ThinkingLevel> = {
+  minimal: ThinkingLevel.MINIMAL,
+  low: ThinkingLevel.LOW,
+  medium: ThinkingLevel.MEDIUM,
+  high: ThinkingLevel.HIGH,
+};
 
 /** Human-readable label for tool status SSE events */
 function getToolStatusLabel(name: string): string {
@@ -34,6 +45,73 @@ function getToolStatusLabel(name: string): string {
     case 'generate_flashcards': return 'Création de flashcards...';
     case 'get_student_profile': return 'Analyse du profil...';
     default: return 'Traitement en cours...';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LEARNING CONTEXT
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Fetches learning context for the system prompt:
+ * - Number of cards due today
+ * - Subjects with most lapses (weak concepts)
+ */
+export async function getLearningContext(userId: string): Promise<string | null> {
+  try {
+    // Count due cards
+    const dueResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(learningCards)
+      .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
+      .where(and(
+        eq(learningDecks.userId, userId),
+        sql`(${learningCards.fsrsData}->>'due')::timestamptz <= now()`
+      ));
+
+    const dueCount = dueResult[0]?.count ?? 0;
+
+    // Find subjects with most lapses (weak concepts)
+    const weakSubjects = await db
+      .select({
+        subject: learningDecks.subject,
+        totalLapses: sql<number>`sum((${learningCards.fsrsData}->>'lapses')::int)::int`,
+      })
+      .from(learningCards)
+      .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
+      .where(and(
+        eq(learningDecks.userId, userId),
+        sql`(${learningCards.fsrsData}->>'lapses')::int > 0`
+      ))
+      .groupBy(learningDecks.subject)
+      .orderBy(sql`sum((${learningCards.fsrsData}->>'lapses')::int) desc`)
+      .limit(3);
+
+    if (dueCount === 0 && weakSubjects.length === 0) return null;
+
+    let context = '## CONTEXTE RÉVISION\n';
+
+    if (dueCount > 0) {
+      context += `L'élève a ${dueCount} carte${dueCount > 1 ? 's' : ''} de révision en attente.\n`;
+    }
+
+    if (weakSubjects.length > 0) {
+      const weakList = weakSubjects
+        .map(s => `${s.subject} (${s.totalLapses} erreurs)`)
+        .join(', ');
+      context += `Sujets à renforcer : ${weakList}.\n`;
+    }
+
+    context += '→ Si le sujet de la conversation touche un de ces thèmes, propose des flashcards à la fin.';
+
+    return context;
+  } catch (err) {
+    logger.warn('Failed to fetch learning context', {
+      operation: 'gemini-chat:learning-context',
+      _error: err instanceof Error ? err.message : String(err),
+      userId,
+    });
+    return null;
   }
 }
 
@@ -71,6 +149,10 @@ export interface StreamGenerationParams {
   sessionId: string;
   /** Résumé du profil cognitif (injecté dans le system prompt) */
   cognitiveProfileSummary?: string | null;
+  /** Contexte learning (cartes dues, sujets faibles) */
+  learningContext?: string | null;
+  /** Résumé conversationnel (SummaryBuffer pattern) */
+  conversationSummary?: string | null;
   /** Fichiers attachés au message courant (images, PDFs) */
   files?: AttachedFile[];
   conversationHistory: Array<{
@@ -84,7 +166,7 @@ export interface StreamGenerationParams {
 
 /** SSE StreamChunk types (frontend compatibility) */
 export interface GeminiStreamChunk {
-  type: 'content' | 'done' | 'error' | 'status';
+  type: 'content' | 'done' | 'error' | 'status' | 'deck_created';
   id: string;
   model: string;
   timestamp: number;
@@ -106,6 +188,13 @@ export interface GeminiStreamChunk {
   };
   // Status chunk fields (heartbeat during tool calls)
   status?: string;
+  // Deck created event (from generate_flashcards tool)
+  deck?: {
+    deckId: string;
+    title: string;
+    cardCount: number;
+    subject: string;
+  };
   // TomAI custom metadata
   metadata?: {
     sessionId: string;
@@ -136,6 +225,7 @@ class GeminiChatService {
     subject?: string;
     firstName?: string;
     cognitiveProfileSummary?: string | null;
+    learningContext?: string | null;
   }): string {
     const levelText = getLevelText(params.level);
     const basePrompt = buildSystemPrompt({
@@ -149,32 +239,29 @@ class GeminiChatService {
 
 ## OUTILS DISPONIBLES
 
-Tu disposes de plusieurs outils pour aider l'élève:
-
-1. **search_educational_content** - Recherche dans les programmes officiels Éduscol
-2. **get_student_homework** - Consulte les devoirs Pronote de l'élève
-3. **get_student_grades** - Consulte les notes Pronote de l'élève
-4. **get_student_timetable** - Consulte l'emploi du temps Pronote
-5. **generate_flashcards** - Crée des cartes de révision
-6. **get_student_profile** - Consulte le profil cognitif de l'élève
-
 ### RÈGLE OBLIGATOIRE - search_educational_content
-**Tu DOIS appeler search_educational_content pour TOUTE question liée au programme scolaire.**
-Cela inclut: questions de cours, exercices, définitions, théorèmes, méthodes, révisions, explications de notions.
-Ne réponds JAMAIS à une question scolaire sans avoir d'abord consulté les programmes officiels via cet outil.
-Seules exceptions: salutations, questions personnelles, questions sur Pronote (devoirs/notes/EDT), et demandes de flashcards.
+**Pour TOUTE question liée au programme scolaire**, tu DOIS t'appuyer sur le contexte des programmes officiels.
+Si un contexte "📚 PROGRAMMES OFFICIELS" est déjà présent dans le message, utilise-le directement.
+Sinon, appelle search_educational_content pour le récupérer.
+Ne réponds JAMAIS à une question scolaire sans contexte programme.
+Seules exceptions: salutations, questions personnelles, questions sur Pronote, demandes de flashcards.
 
-### AUTRES RÈGLES
+### RÈGLES D'UTILISATION
 - Utilise les outils de façon transparente, sans dire à l'élève que tu les utilises.
 - Consulte les devoirs/notes Pronote quand l'élève parle de ses devoirs, ses notes, ou un contrôle.
 - Génère des flashcards quand l'élève demande de réviser ou de s'entraîner.
-- Consulte le profil cognitif en début de conversation pour adapter ton approche.`;
+- Consulte le profil cognitif en début de conversation pour adapter ton approche.
+- TOUJOURS demander confirmation avant de générer des flashcards ("Veux-tu que je crée des cartes ?").`;
 
     const profileSection = params.cognitiveProfileSummary
       ? `\n\n## PROFIL DE L'ÉLÈVE\n${params.cognitiveProfileSummary}`
       : '';
 
-    return basePrompt + toolSection + profileSection;
+    const learningSection = params.learningContext
+      ? `\n\n${params.learningContext}`
+      : '';
+
+    return basePrompt + toolSection + profileSection + learningSection;
   }
 
   /**
@@ -206,14 +293,16 @@ Seules exceptions: salutations, questions personnelles, questions sur Pronote (d
 
   /**
    * Construit l'historique de conversation au format Gemini Content[]
+   * Intègre le résumé conversationnel via SummaryBuffer si disponible
    */
   private buildConversationHistory(
-    history: StreamGenerationParams['conversationHistory']
+    history: StreamGenerationParams['conversationHistory'],
+    conversationSummary?: string | null
   ): Content[] {
     if (!history || history.length === 0) return [];
 
-    type HistoryMessage = StreamGenerationParams['conversationHistory'][number];
-    const optimized = optimizeConversationHistory(history) as HistoryMessage[];
+    const context: OptimizationContext = { conversationSummary };
+    const optimized = optimizeConversationHistory(history, context);
 
     return optimized.map(msg => {
       const role = msg.role === 'assistant' ? 'model' : 'user';
@@ -236,11 +325,12 @@ Seules exceptions: salutations, questions personnelles, questions sur Pronote (d
         level: params.schoolLevel,
         subject: params.subject,
         firstName: params.firstName,
-        cognitiveProfileSummary: params.cognitiveProfileSummary
+        cognitiveProfileSummary: params.cognitiveProfileSummary,
+        learningContext: params.learningContext
       });
 
-      // 2. Construire l'historique
-      const history = this.buildConversationHistory(params.conversationHistory);
+      // 2. Construire l'historique (avec résumé SummaryBuffer si disponible)
+      const history = this.buildConversationHistory(params.conversationHistory, params.conversationSummary);
 
       // 3. Construire les parts du message utilisateur (texte + fichiers)
       const userParts: Part[] = [{ text: params.content }];
@@ -257,12 +347,15 @@ Seules exceptions: salutations, questions personnelles, questions sur Pronote (d
         operation: 'gemini-chat:agent-start'
       });
 
-      // 4. Créer la session chat avec tous les outils
+      // 4. Créer la session chat avec tous les outils + thinkingConfig
       const chat = this.ai.chats.create({
         model: this.model,
         config: {
           systemInstruction: systemPrompt,
-          tools: [{ functionDeclarations: agentToolDeclarations }]
+          tools: [{ functionDeclarations: agentToolDeclarations }],
+          thinkingConfig: {
+            thinkingLevel: THINKING_LEVEL_MAP[appConfig.ai.gemini.thinkingLevel] ?? ThinkingLevel.LOW,
+          }
         },
         history
       });
@@ -350,10 +443,30 @@ Seules exceptions: salutations, questions personnelles, questions sur Pronote (d
           pendingCalls.map(call =>
             executeTool(call.name, call.args, {
               userId: params.userId,
-              schoolLevel: params.schoolLevel
+              schoolLevel: params.schoolLevel,
+              sessionId: params.sessionId
             })
           )
         );
+
+        // Emit deck_created events for any generated decks
+        for (const result of results) {
+          const r = result as Record<string, unknown>;
+          if (r.deckId && r.generated) {
+            yield {
+              type: 'deck_created' as const,
+              id: messageId,
+              model: this.model,
+              timestamp: Date.now(),
+              deck: {
+                deckId: r.deckId as string,
+                title: r.deckTitle as string,
+                cardCount: r.cardCount as number,
+                subject: r.subject as string,
+              },
+            };
+          }
+        }
 
         // Build function response parts for the next iteration
         nextMessage = results.map((result, i) => ({

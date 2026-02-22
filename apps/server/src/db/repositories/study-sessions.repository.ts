@@ -44,6 +44,8 @@ export interface UpdateStudySessionInput {
   userSatisfaction?: number;
   sessionRating?: number;
   sessionMetadata?: Record<string, unknown>;
+  conversationSummary?: string;
+  summaryUpToMessageId?: string;
 }
 
 export class StudySessionsRepository {
