@@ -9,6 +9,7 @@ import {
   Clock
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { SectionHeader } from "../atoms/section-header";
 
 const FEATURES = [
   {
@@ -61,26 +62,22 @@ const FEATURES = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
 
-
-import { SectionHeader } from "../atoms/section-header";
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+};
 
 export function Features() {
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
-
   return (
     <section id="features" className="py-24 lg:py-32 bg-secondary/30">
       <div className="container px-4 mx-auto">
@@ -90,7 +87,7 @@ export function Features() {
         />
 
         <motion.div
-          variants={container}
+          variants={containerVariants}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
@@ -99,7 +96,7 @@ export function Features() {
           {FEATURES.map((feature, index) => (
             <motion.div
               key={index}
-              variants={item}
+              variants={itemVariants}
               className={`group relative overflow-hidden rounded-2xl bg-card border border-border p-8 transition-all duration-300 hover:shadow-xl hover:border-transparent ${feature.colSpan}`}
             >
               {/* Gradient Border on Hover */}

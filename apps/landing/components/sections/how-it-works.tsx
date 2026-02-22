@@ -2,6 +2,7 @@
 
 import { MessageSquare, Lightbulb, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
+import { SectionHeader } from "../atoms/section-header";
 
 const STEPS = [
   {
@@ -34,14 +35,10 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="py-24 lg:py-32 overflow-hidden">
       <div className="container px-4 mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
-            Comment ça marche ?
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Une méthode simple et efficace pour redonner confiance à votre enfant.
-          </p>
-        </div>
+        <SectionHeader
+          title="Comment ça marche ?"
+          description="Une méthode simple et efficace pour redonner confiance à votre enfant."
+        />
 
         <div className="relative grid md:grid-cols-3 gap-12">
           {/* Connecting Line (Desktop) */}
