@@ -32,7 +32,7 @@ export function ProblemSolution() {
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>ChatGPT donne les réponses, pas les méthodes</span>
+                  <span>Les IA génératives donnent les réponses, pas les méthodes</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />

@@ -1,7 +1,10 @@
 "use client";
 
-import { MessageSquare, Lightbulb, GraduationCap } from "lucide-react";
+import { MessageSquare, Lightbulb, GraduationCap, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { APP_URL } from "@/lib/urls";
+import { Button } from "@/components/ui/button";
 
 const STEPS = [
   {
@@ -71,6 +74,15 @@ export function HowItWorks() {
               </p>
             </motion.div>
           ))}
+        </div>
+
+        <div className="text-center mt-16">
+          <Link href={APP_URL}>
+            <Button size="lg" className="group">
+              Essayer gratuitement
+              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

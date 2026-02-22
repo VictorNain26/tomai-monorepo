@@ -43,5 +43,4 @@ export const LandingRoutes = {
   pricing: `${LANDING_URL}/#pricing`,
   howItWorks: `${LANDING_URL}/#how-it-works`,
   features: `${LANDING_URL}/#features`,
-  testimonials: `${LANDING_URL}/#testimonials`,
 } as const;

@@ -6,7 +6,7 @@ import { APP_URL } from "@/lib/urls";
 const FREE_FEATURES = [
   "Français, Maths, Anglais",
   "Du CP à la Terminale",
-  "~10 questions par jour",
+  "Usage quotidien limité",
   "Aide aux devoirs",
   "Suivi des progrès",
 ];
@@ -14,7 +14,7 @@ const FREE_FEATURES = [
 const PREMIUM_FEATURES = [
   "Toutes les matières",
   "Du CP à la Terminale",
-  "Questions illimitées",
+  "Quota tokens plus généreux",
   "Aide aux devoirs",
   "Suivi des progrès",
 ];
@@ -38,7 +38,7 @@ export function Pricing() {
           <div className="bg-card rounded-2xl p-8 border-2 border-border shadow-md hover:shadow-lg transition-shadow">
             <div className="mb-6">
               <div className="inline-block px-3 py-1 bg-secondary rounded-full text-sm font-medium text-foreground mb-4">
-                Pour tester
+                Pour découvrir
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-2">Gratuit</h3>
               <p className="text-3xl font-bold text-foreground">0€</p>
@@ -93,7 +93,7 @@ export function Pricing() {
 
             <Link href={APP_URL}>
               <Button size="lg" className="w-full">
-                Essayer gratuitement
+                Commencer
               </Button>
             </Link>
           </div>

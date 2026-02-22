@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ShieldCheck, BookOpen, BrainCircuit } from "lucide-react";
+import { ChevronDown, ShieldCheck, BookOpen, BrainCircuit, BarChart3, CreditCard } from "lucide-react";
 
 const FAQS = [
   {
     question: "Tom donne-t-il les réponses à mon enfant ?",
-    answer: "Non, jamais. Tom utilise la méthode socratique : il pose des questions pour guider votre enfant vers la solution. Contrairement à ChatGPT qui donne les réponses, Tom fait comprendre et mémoriser durablement.",
+    answer: "Non, jamais. Tom utilise la méthode socratique : il pose des questions pour guider votre enfant vers la solution. Contrairement aux IA génératives qui donnent les réponses, Tom fait comprendre et mémoriser durablement.",
     icon: BrainCircuit,
   },
   {
     question: "Comment puis-je suivre les progrès de mon enfant ?",
     answer: "Vous avez accès à un tableau de bord parental qui montre les matières travaillées, le temps passé, et les notions maîtrisées. Vous pouvez aussi définir des limites de temps d'utilisation quotidiennes.",
-    icon: null,
+    icon: BarChart3,
   },
   {
     question: "Les contenus sont-ils alignés sur les programmes scolaires ?",
@@ -28,7 +28,7 @@ const FAQS = [
   {
     question: "Puis-je annuler à tout moment ?",
     answer: "Oui, l'abonnement est sans engagement. Vous pouvez annuler en un clic depuis votre espace parent, sans frais ni justification. Vous pouvez aussi commencer gratuitement sans carte bancaire.",
-    icon: null,
+    icon: CreditCard,
   },
 ];
 

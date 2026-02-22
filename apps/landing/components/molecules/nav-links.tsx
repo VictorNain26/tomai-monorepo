@@ -8,7 +8,7 @@ interface NavLinksProps {
 }
 
 const LINKS = [
-  { href: "/#how-it-works", label: "Méthode" },
+  { href: "/#how-it-works", label: "Comment ça marche" },
   { href: "/#features", label: "Fonctionnalités" },
   { href: "/#pricing", label: "Tarifs" },
   { href: "/#faq", label: "FAQ" },

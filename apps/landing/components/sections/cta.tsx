@@ -13,13 +13,13 @@ export function CTA() {
           </h2>
 
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Commencez gratuitement en 2 minutes. Sans carte bancaire, sans engagement.
+            Commencez gratuitement. Sans carte bancaire, sans engagement.
           </p>
 
           <div className="flex flex-col items-center gap-6">
             <Link href={APP_URL}>
               <Button size="lg" className="group">
-                Créer mon compte parent
+                Essayer gratuitement
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>

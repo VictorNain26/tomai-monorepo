@@ -45,7 +45,7 @@ const FEATURES = [
   },
   {
     title: "Votre enfant reste motivé",
-    description: "Un système de récompenses encourage la régularité. Sessions courtes de 15-20 min pour un apprentissage efficace.",
+    description: "Des fiches de révision générées automatiquement et la répétition espacée encouragent la régularité. Sessions courtes de 15-20 min pour un apprentissage efficace.",
     icon: Gamepad2,
     color: "text-yellow-500",
     bg: "bg-yellow-500/10",
@@ -53,7 +53,7 @@ const FEATURES = [
   },
   {
     title: "Disponible quand vous en avez besoin",
-    description: "Aide aux devoirs accessible 24h/24 : le soir, le week-end, pendant les vacances. Votre enfant n'est jamais bloqué.",
+    description: "Aide aux devoirs accessible 24h/24 : le soir, le week-end, pendant les vacances. Votre enfant n'est jamais bloqué. Disponible sur mobile (iOS et Android) et sur le web.",
     icon: Clock,
     color: "text-cyan-500",
     bg: "bg-cyan-500/10",

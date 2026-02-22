@@ -21,7 +21,7 @@ export function Hero() {
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8">
-              Tom pose les bonnes questions pour que votre enfant trouve les réponses par lui-même. Il gagne en confiance et en autonomie.
+              Tom pose les bonnes questions pour que votre enfant trouve les réponses par lui-même et gagne en confiance et en autonomie.
             </p>
 
             {/* CTA Buttons */}

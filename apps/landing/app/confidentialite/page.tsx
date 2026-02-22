@@ -45,7 +45,7 @@ export default function ConfidentialitePage() {
 
               <h3>5. Protection des informations</h3>
               <p>
-                Nous mettons en œuvre une variété de mesures de sécurité pour préserver la sécurité de vos informations personnelles. We use a cryptage à la pointe de la technologie pour protéger les informations sensibles transmises en ligne. Nous protégeons également vos informations hors ligne. Seuls les employés qui ont besoin d&apos;effectuer un travail spécifique (par exemple, la facturation ou le service à la clientèle) ont accès aux informations personnelles identifiables.
+                Nous mettons en œuvre une variété de mesures de sécurité pour préserver la sécurité de vos informations personnelles. Nous utilisons un chiffrement de pointe pour protéger les informations sensibles transmises en ligne. Nous protégeons également vos informations hors ligne. Seuls les responsables qui ont besoin d&apos;effectuer un travail spécifique (par exemple, la facturation ou le service client) ont accès aux informations personnelles identifiables.
               </p>
 
               <h3>6. Consentement</h3>

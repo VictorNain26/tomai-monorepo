@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Logo } from "../atoms/logo";
 
 export function Footer() {
@@ -79,16 +79,12 @@ export function Footer() {
 
         <div className="mt-12 border-t border-border/60 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2025 Tom. Tous droits réservés.
+            © {new Date().getFullYear()} Tom. Tous droits réservés.
           </p>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               <span>France</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              <span>contact@tom.fr</span>
             </div>
           </div>
         </div>

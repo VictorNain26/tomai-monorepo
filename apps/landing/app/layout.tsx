@@ -20,26 +20,26 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Tom - Assistant Pédagogique Socratique Adaptatif",
+    default: "Tom - L'IA qui aide votre enfant à comprendre ses leçons",
     template: "%s | Tom",
   },
-  description: "Plateforme de tutorat intelligent pour étudiants français (CP à Terminale). Méthode socratique adaptative basée sur l'IA pour un apprentissage personnalisé.",
-  keywords: ["tutorat", "éducation", "IA", "apprentissage", "socratique", "adaptatif", "français", "collège", "lycée"],
+  description: "Tom est un assistant IA pour les élèves du CP à la Terminale. Il guide votre enfant avec la méthode socratique, sans donner les réponses. Aligné sur les programmes Éduscol.",
+  keywords: ["tutorat", "éducation", "IA", "aide aux devoirs", "soutien scolaire", "méthode socratique", "collège", "lycée", "CP", "Terminale"],
   authors: [{ name: "Tom" }],
   creator: "Tom",
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    title: "Tom - Assistant Pédagogique Socratique",
-    description: "Révolutionnez l'apprentissage avec l'IA socratique adaptative",
+    title: "Tom - L'IA qui aide votre enfant à comprendre ses leçons",
+    description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, programmes Éduscol, sans donner les réponses.",
     siteName: "Tom",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tom - Assistant Pédagogique Socratique",
-    description: "Révolutionnez l'apprentissage avec l'IA socratique adaptative",
+    title: "Tom - L'IA qui aide votre enfant à comprendre ses leçons",
+    description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, programmes Éduscol, sans donner les réponses.",
   },
-  metadataBase: new URL('https://tom.fr'),
+  metadataBase: new URL('https://tomai.fr'),
   alternates: {
     canonical: '/',
   },
