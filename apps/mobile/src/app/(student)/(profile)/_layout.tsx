@@ -14,6 +14,7 @@ export default function ProfileLayout() {
     <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" />
       <Stack.Screen name="info" />
+      <Stack.Screen name="files" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="pronote" />
     </Stack>

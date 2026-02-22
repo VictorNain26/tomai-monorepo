@@ -695,6 +695,169 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
       }
     })
 
+    // FILES - Classeur (bibliothèque de documents de l'élève)
+    .get('/files', async ({ request: { headers }, set }) => {
+      const authContext = await handleAuthWithCookies(headers, set);
+      if (!authContext.success) {
+        return authContext.error;
+      }
+
+      try {
+        const { filesRepository } = await import('../db/repositories/index');
+
+        const userFiles = await filesRepository.findByUserId(authContext.user.id);
+        return {
+          success: true,
+          files: userFiles.map(f => {
+            const eduCtx = f.educationalContext as {
+              documentType?: string;
+              subject?: string;
+            } | null;
+            return {
+              id: f.id,
+              fileName: f.fileName,
+              mimeType: f.mimeType,
+              sizeBytes: f.sizeBytes,
+              documentType: eduCtx?.documentType ?? null,
+              subject: eduCtx?.subject ?? null,
+              createdAt: f.createdAt.toISOString(),
+            };
+          }),
+        };
+      } catch (_error) {
+        logger.error('Files listing failed', {
+          operation: 'api:files:list',
+          userId: authContext.user.id,
+          _error: _error instanceof Error ? _error.message : String(_error),
+          severity: 'medium' as const
+        });
+        set.status = 500;
+        return { error: 'Failed to list files' };
+      }
+    })
+
+    // SESSION FILES - Lister les fichiers attachés à une session
+    .get('/chat/session/:id/files', async ({ params, request: { headers }, set }) => {
+      const authContext = await handleAuthWithCookies(headers, set);
+      if (!authContext.success) {
+        return authContext.error;
+      }
+
+      try {
+        // Verify session belongs to user
+        const session = await chatService.getSession(params.id);
+        if (!session || session.userId !== authContext.user.id) {
+          set.status = 403;
+          return { error: 'Session not found or access denied' };
+        }
+
+        const { sessionFilesRepository } = await import('../db/repositories/index');
+        const attachedFiles = await sessionFilesRepository.findBySession(params.id);
+
+        return {
+          success: true,
+          files: attachedFiles.map(f => ({
+            id: f.fileId,
+            fileName: f.fileName,
+            mimeType: f.mimeType,
+            sizeBytes: f.sizeBytes,
+            attachedAt: f.attachedAt.toISOString(),
+          })),
+        };
+      } catch (_error) {
+        logger.error('Session files listing failed', {
+          operation: 'api:chat:session:files:list',
+          userId: authContext.user.id,
+          _error: _error instanceof Error ? _error.message : String(_error),
+          severity: 'medium' as const
+        });
+        set.status = 500;
+        return { error: 'Failed to list session files' };
+      }
+    })
+
+    // SESSION FILES - Attacher un fichier du classeur à la session
+    .post('/chat/session/:id/files', async ({ params, body, request: { headers }, set }) => {
+      const authContext = await handleAuthWithCookies(headers, set);
+      if (!authContext.success) {
+        return authContext.error;
+      }
+
+      try {
+        const { fileId } = body as { fileId: string };
+        if (!fileId) {
+          set.status = 400;
+          return { error: 'fileId is required' };
+        }
+
+        // Verify session belongs to user
+        const session = await chatService.getSession(params.id);
+        if (!session || session.userId !== authContext.user.id) {
+          set.status = 403;
+          return { error: 'Session not found or access denied' };
+        }
+
+        // Verify file belongs to user
+        const { filesRepository, sessionFilesRepository } = await import('../db/repositories/index');
+        const file = await filesRepository.findById(fileId);
+        if (!file || file.userId !== authContext.user.id) {
+          set.status = 403;
+          return { error: 'File not found or access denied' };
+        }
+
+        // Check max 10 files per session
+        const count = await sessionFilesRepository.countBySession(params.id);
+        if (count >= 10) {
+          set.status = 400;
+          return { error: 'Maximum 10 fichiers par session' };
+        }
+
+        await sessionFilesRepository.attach(params.id, fileId);
+
+        return { success: true };
+      } catch (_error) {
+        logger.error('Session file attach failed', {
+          operation: 'api:chat:session:files:attach',
+          userId: authContext.user.id,
+          _error: _error instanceof Error ? _error.message : String(_error),
+          severity: 'medium' as const
+        });
+        set.status = 500;
+        return { error: 'Failed to attach file' };
+      }
+    })
+
+    // SESSION FILES - Détacher un fichier de la session
+    .delete('/chat/session/:id/files/:fileId', async ({ params, request: { headers }, set }) => {
+      const authContext = await handleAuthWithCookies(headers, set);
+      if (!authContext.success) {
+        return authContext.error;
+      }
+
+      try {
+        // Verify session belongs to user
+        const session = await chatService.getSession(params.id);
+        if (!session || session.userId !== authContext.user.id) {
+          set.status = 403;
+          return { error: 'Session not found or access denied' };
+        }
+
+        const { sessionFilesRepository } = await import('../db/repositories/index');
+        await sessionFilesRepository.detach(params.id, params.fileId);
+
+        return { success: true };
+      } catch (_error) {
+        logger.error('Session file detach failed', {
+          operation: 'api:chat:session:files:detach',
+          userId: authContext.user.id,
+          _error: _error instanceof Error ? _error.message : String(_error),
+          severity: 'medium' as const
+        });
+        set.status = 500;
+        return { error: 'Failed to detach file' };
+      }
+    })
+
     // NOTE: Quick Switch (parent impersonation) is now handled by Better Auth Admin Plugin
     // Endpoints: POST /api/auth/admin/impersonate-user, POST /api/auth/admin/stop-impersonating
     // Server-side authorization in auth.ts validates parent-child relationship

@@ -9,20 +9,21 @@
  * - prompt: Pre-filled question from dashboard
  */
 
-import { useRef, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, MoreVertical, ChevronRight, FileText, BarChart3, RefreshCw } from 'lucide-react-native';
+import { MoreVertical, ChevronRight, FileText, BarChart3, RefreshCw, FolderOpen } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
-import { ChatMessage, ChatInput, DeckActionCard } from '@/components/chat';
+import { ChatMessage, ChatInput, DeckActionCard, FileLibraryPicker } from '@/components/chat';
 import { TomAvatar } from '@/components/common';
 import {
   useChat,
   usePresignedUpload,
   useIconColors,
   useStudentPronote,
+  useSessionFiles,
   type ChatMessage as ChatMessageType,
 } from '@/hooks';
 import { deleteChatSession } from '@/hooks/chat/api';
@@ -94,6 +95,10 @@ export default function ChatScreen() {
   } = useChat({
     initialSessionId: params.sessionId,
   });
+
+  // Session files (classeur)
+  const { files: sessionAttachedFiles } = useSessionFiles(currentSessionId);
+  const [showClasseur, setShowClasseur] = useState(false);
 
   // Pronote data for suggestions
   const pronote = useStudentPronote();
@@ -197,7 +202,14 @@ export default function ChatScreen() {
           onPress: async () => {
             try {
               await deleteChatSession(currentSessionId);
-              router.back();
+              const newSessionId = await resetSession();
+              if (newSessionId) {
+                router.setParams({
+                  sessionId: newSessionId,
+                  context: undefined,
+                  prompt: undefined,
+                });
+              }
             } catch {
               Alert.alert('Erreur', 'Impossible de supprimer la conversation');
             }
@@ -205,7 +217,7 @@ export default function ChatScreen() {
         },
       ]
     );
-  }, [currentSessionId, router]);
+  }, [currentSessionId, resetSession, router]);
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -260,22 +272,13 @@ export default function ChatScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="h-10 w-10 items-center justify-center rounded-full bg-muted"
-          accessibilityLabel="Retour"
-          accessibilityRole="button"
-        >
-          <ArrowLeft color={iconColors.foreground} size={20} />
-        </TouchableOpacity>
-
         <View className="flex-1">
           <View className="flex-row items-center gap-2">
             <TomAvatar size="sm" />
             <Text variant="large">Tom</Text>
           </View>
           {contextBadge && (
-            <View className="mt-0.5 flex-row items-center gap-1">
+            <View className="mt-0.5 flex-row items-center gap-1 ml-10">
               <contextBadge.icon color={contextBadge.color} size={12} />
               <Text variant="tiny" style={{ color: contextBadge.color }}>
                 {contextBadge.label}
@@ -285,20 +288,37 @@ export default function ChatScreen() {
         </View>
 
         {currentSessionId && (
-          <TouchableOpacity
-            onPress={() => {
-              Alert.alert('Options', undefined, [
-                { text: 'Nouvelle conversation', onPress: handleReset },
-                { text: 'Supprimer', onPress: handleDelete, style: 'destructive' },
-                { text: 'Annuler', style: 'cancel' },
-              ]);
-            }}
-            className="h-10 w-10 items-center justify-center rounded-full bg-muted"
-            accessibilityLabel="Options de conversation"
-            accessibilityRole="button"
-          >
-            <MoreVertical color={iconColors.muted} size={18} />
-          </TouchableOpacity>
+          <View className="flex-row items-center gap-2">
+            {/* Classeur badge */}
+            {sessionAttachedFiles.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setShowClasseur(true)}
+                className="flex-row items-center gap-1 rounded-full px-2.5 py-1.5"
+                style={{ backgroundColor: bgColors.primary[10] }}
+                accessibilityLabel={`${sessionAttachedFiles.length} fichier(s) attaché(s)`}
+              >
+                <FolderOpen color={colors.primary.DEFAULT} size={14} />
+                <Text variant="tiny" className="text-primary font-medium">
+                  {sessionAttachedFiles.length}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              onPress={() => {
+                Alert.alert('Options', undefined, [
+                  { text: 'Nouvelle conversation', onPress: handleReset },
+                  { text: 'Supprimer', onPress: handleDelete, style: 'destructive' },
+                  { text: 'Annuler', style: 'cancel' },
+                ]);
+              }}
+              className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+              accessibilityLabel="Options de conversation"
+              accessibilityRole="button"
+            >
+              <MoreVertical color={iconColors.muted} size={18} />
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -369,11 +389,19 @@ export default function ChatScreen() {
       <ChatInput
         onSendMessage={sendMessage}
         onFileSelected={handleFileSelected}
+        onOpenClasseur={() => setShowClasseur(true)}
         pendingAttachments={pendingAttachments}
         onRemoveAttachment={removeAttachment}
         isLoading={isLoading}
         isUploading={isUploading}
         placeholder="Pose ta question..."
+      />
+
+      {/* Classeur Picker */}
+      <FileLibraryPicker
+        visible={showClasseur}
+        onClose={() => setShowClasseur(false)}
+        sessionId={currentSessionId}
       />
     </SafeAreaView>
   );

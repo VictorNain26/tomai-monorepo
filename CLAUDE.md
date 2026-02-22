@@ -26,8 +26,10 @@ pnpm validate            # typecheck + lint
 pnpm build               # Toutes les apps
 
 # Base de données (Docker requis)
-pnpm db:push             # Appliquer schema (dev)
-pnpm db:generate         # Générer migration (prod)
+pnpm db:push             # Dev: sync direct schema → DB locale (JAMAIS en prod)
+pnpm db:generate         # Prod: génère fichier SQL de migration versionné
+pnpm db:migrate          # Prod: applique migrations (auto via docker-entrypoint)
+pnpm db:check            # Vérifie si schema et DB sont synchronisés
 pnpm db:studio           # Interface Drizzle Studio
 ```
 

@@ -23,6 +23,7 @@ import {
   Calendar,
   School,
   UserCircle,
+  FolderOpen,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
@@ -157,6 +158,13 @@ export default function StudentProfileScreen() {
           icon: <User color={iconColors.foreground} size={20} />,
           label: 'Mon profil',
           onPress: () => router.push('/(student)/(profile)/info'),
+          showChevron: true,
+        },
+        {
+          icon: <FolderOpen color={iconColors.foreground} size={20} />,
+          label: 'Mon Classeur',
+          sublabel: 'Documents et fichiers',
+          onPress: () => router.push('/(student)/(profile)/files'),
           showChevron: true,
         },
       ],

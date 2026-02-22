@@ -103,3 +103,11 @@ export {
   type DeckStats,
 } from './useFsrs';
 export { useDueSummary } from './useDueSummary';
+export {
+  useUserFiles,
+  useSessionFiles,
+  useAttachFile,
+  useDetachFile,
+  type LibraryFile,
+  type SessionFile,
+} from './useFiles';

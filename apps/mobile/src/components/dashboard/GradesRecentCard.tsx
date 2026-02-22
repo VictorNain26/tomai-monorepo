@@ -111,7 +111,7 @@ export function GradesRecentCard({
   // Navigate to chat with grade context for review
   function handleReviewWithTom(item: GradeItem) {
     router.push({
-      pathname: '/(student)/(home)/chat',
+      pathname: '/(student)/(chat)',
       params: {
         context: `grade:${item.id}`,
         prompt: item.chapter

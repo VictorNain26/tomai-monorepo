@@ -5,7 +5,8 @@
  * Uses popToTopOnBlur to reset stacks when switching tabs (standard UX).
  *
  * Structure:
- * - (home)/    → Stack: Dashboard, Chat
+ * - (home)/    → Stack: Dashboard
+ * - (chat)/    → Stack: Chat (Tom AI tutor)
  * - (learning)/ → Stack: Decks list, Create deck, Deck detail
  * - (profile)/ → Stack: Profile menu, Settings, Info, Pronote screens
  *
@@ -16,7 +17,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, BookOpen, User, ArrowLeft } from 'lucide-react-native';
+import { Home, MessageCircle, BookOpen, User, ArrowLeft } from 'lucide-react-native';
 import { useSession, useUser, useImpersonatedBy, restoreParentSession } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
 import { useTheme, useDueSummary } from '@/hooks';
@@ -183,7 +184,7 @@ export default function StudentLayout() {
             ...tabOptions,
           }}
         >
-          {/* Tab 1: Home (Dashboard + Chat) */}
+          {/* Tab 1: Home (Dashboard) */}
           <Tabs.Screen
             name="(home)"
             options={{
@@ -192,7 +193,16 @@ export default function StudentLayout() {
             }}
           />
 
-          {/* Tab 2: Learning (Decks) */}
+          {/* Tab 2: Chat (Tom AI tutor) */}
+          <Tabs.Screen
+            name="(chat)"
+            options={{
+              title: 'Tom',
+              tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} />,
+            }}
+          />
+
+          {/* Tab 3: Learning (Decks) */}
           <Tabs.Screen
             name="(learning)"
             options={{
@@ -205,7 +215,7 @@ export default function StudentLayout() {
             }}
           />
 
-          {/* Tab 3: Profile (Settings, Pronote, etc.) */}
+          {/* Tab 4: Profile (Settings, Pronote, etc.) */}
           <Tabs.Screen
             name="(profile)"
             options={{

@@ -57,7 +57,7 @@ export function ResumeCard({ latestSession, totalDueCards, isLoading }: ResumeCa
           <TouchableOpacity
             onPress={() =>
               router.push({
-                pathname: '/(student)/(home)/chat',
+                pathname: '/(student)/(chat)',
                 params: { sessionId: latestSession.id },
               })
             }

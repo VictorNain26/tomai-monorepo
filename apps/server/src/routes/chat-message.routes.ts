@@ -11,6 +11,7 @@
 import { Elysia, t, sse } from 'elysia';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { chatService } from '../services/chat.service.js';
+import { sessionFilesRepository } from '../db/repositories/index.js';
 import { fileContextService, streamingService, getLearningContext, summarizationService } from '../services/chat/index.js';
 import { cognitiveProfileService } from '../services/cognitive-profile.service.js';
 import { ragService } from '../services/rag.service.js';
@@ -182,7 +183,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         content: safeContent,
         schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
         userId: user.id,
-        sessionHistory
+        sessionId: chatSessionId
       }),
       // Fichiers multimodaux pour Gemini (images, PDFs via Files API)
       fileContextService.prepareMultimodalFiles(fileIds),
@@ -248,6 +249,13 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       safeContent,
       attachedFileInfo ? { attachedFile: attachedFileInfo } : {}
     );
+
+    // 6b. Auto-attach fichiers dans session_files (classeur)
+    if (fileIds.length > 0) {
+      await Promise.all(
+        fileIds.map(fId => sessionFilesRepository.attach(chatSessionId, fId))
+      );
+    }
 
     // ═══════════════════════════════════════════════════════════════════
     // PHASE 3: Streaming via yield sse() - Headers envoyés au premier yield

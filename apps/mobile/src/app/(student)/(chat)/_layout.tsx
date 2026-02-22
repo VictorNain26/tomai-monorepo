@@ -1,13 +1,13 @@
 /**
- * Student Home Stack - TomAI 2026
+ * Student Chat Stack - TomAI 2026
  *
- * Screens: Dashboard
+ * Screens: Chat (Tom AI tutor)
  */
 
 import { Stack } from 'expo-router';
 import { useStackScreenOptions } from '@/lib/navigation';
 
-export default function HomeLayout() {
+export default function ChatLayout() {
   const screenOptions = useStackScreenOptions();
 
   return (

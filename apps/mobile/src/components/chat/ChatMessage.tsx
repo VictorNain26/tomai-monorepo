@@ -19,6 +19,7 @@ import {
   containsMermaid,
   TomAvatar,
 } from '@/components/common';
+import { MarkdownContent } from './MarkdownContent';
 import { FileAttachmentCard } from './FileAttachmentCard';
 import { cn } from '@/lib/utils';
 import { useTextToSpeech, useIconColors } from '@/hooks';
@@ -208,20 +209,15 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
   const hasMath = !isUser && containsMath(content);
   const hasMermaid = !isUser && containsMermaid(content);
 
-  // User messages or simple text
+  // User messages or simple text — render with markdown
   if (isUser || (!hasMath && !hasMermaid)) {
     return (
-      <Text
-        className={cn(
-          'text-base leading-relaxed',
-          isUser ? 'text-primary-foreground' : 'text-foreground'
-        )}
-      >
-        {content}
+      <View>
+        <MarkdownContent isUser={isUser}>{content}</MarkdownContent>
         {isStreaming && (
           <Text style={{ color: colors.primary.DEFAULT }}>▋</Text>
         )}
-      </Text>
+      </View>
     );
   }
 
@@ -245,12 +241,9 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
             );
           }
           return (
-            <Text
-              key={`text-${index}`}
-              className="text-base leading-relaxed text-foreground"
-            >
+            <MarkdownContent key={`text-${index}`}>
               {segment.content}
-            </Text>
+            </MarkdownContent>
           );
         })}
         {isStreaming && (

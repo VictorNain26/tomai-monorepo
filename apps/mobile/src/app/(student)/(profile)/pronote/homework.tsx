@@ -33,7 +33,7 @@ export default function HomeworkScreen() {
   // Navigate to Tom chat with homework context
   const handleAskTom = (subject: string, description: string, homeworkId: string) => {
     router.push({
-      pathname: '/(student)/(home)/chat',
+      pathname: '/(student)/(chat)',
       params: {
         context: `homework:${homeworkId}`,
         prompt: `Aide-moi avec ce devoir de ${subject} : ${description}`,

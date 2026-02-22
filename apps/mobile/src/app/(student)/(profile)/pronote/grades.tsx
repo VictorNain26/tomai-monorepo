@@ -31,7 +31,7 @@ export default function GradesScreen() {
   // Navigate to Tom chat for revision
   const handleReviewWithTom = (subject: string, gradeId: string, description?: string) => {
     router.push({
-      pathname: '/(student)/(home)/chat',
+      pathname: '/(student)/(chat)',
       params: {
         context: `grade:${gradeId}`,
         prompt: `Je voudrais revoir ${description ? `"${description}"` : 'cette notion'} en ${subject} pour m'améliorer.`,

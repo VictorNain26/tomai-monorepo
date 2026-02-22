@@ -89,7 +89,7 @@ export default function DeckReviewScreen() {
   const handleAskTom = useCallback(() => {
     const failedCount = results.filter((r) => r.rating === 1).length;
     router.push({
-      pathname: '/(student)/(home)/chat',
+      pathname: '/(student)/(chat)',
       params: {
         prompt: `J'ai eu du mal avec ${failedCount} carte${failedCount > 1 ? 's' : ''} dans "${deck?.title}". Peux-tu m'aider ?`,
       },

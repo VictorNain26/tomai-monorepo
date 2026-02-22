@@ -25,7 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { Mic, Square, Send, ImageIcon, Plus, Camera, FileText, Loader2 } from 'lucide-react-native';
+import { Mic, Square, Send, ImageIcon, Plus, Camera, FileText, Loader2, FolderOpen } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useVoiceInput, useIconColors } from '@/hooks';
@@ -39,6 +39,7 @@ interface ChatInputProps {
     fileName: string,
     mimeType: string
   ) => Promise<void>;
+  onOpenClasseur?: () => void;
   pendingAttachments: ChatFileAttachment[];
   onRemoveAttachment?: (fileId: string) => void;
   isLoading?: boolean;
@@ -49,6 +50,7 @@ interface ChatInputProps {
 export function ChatInput({
   onSendMessage,
   onFileSelected,
+  onOpenClasseur,
   pendingAttachments,
   onRemoveAttachment,
   isLoading = false,
@@ -307,6 +309,19 @@ export function ChatInput({
                     <FileText color={colors.primary.DEFAULT} size={18} />
                     <Text className="text-sm text-foreground">Document</Text>
                   </TouchableOpacity>
+                  {onOpenClasseur && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowAttachmentMenu(false);
+                        onOpenClasseur();
+                      }}
+                      className="flex-row items-center gap-3 px-4 py-3"
+                      accessibilityLabel="Mon Classeur"
+                    >
+                      <FolderOpen color={colors.primary.DEFAULT} size={18} />
+                      <Text className="text-sm text-foreground">Mon Classeur</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             </View>

@@ -51,38 +51,78 @@ bun run build        # Build production
 
 ## Règles strictes
 
-### Migrations base de données
+### Migrations base de données (Drizzle ORM 2026)
 
-**SOURCE OF TRUTH** : `src/db/schema.ts` est la SEULE source de vérité.
+**SOURCE OF TRUTH** : `src/db/schema.ts` (approche codebase-first)
+
+Drizzle supporte deux workflows. Chacun a son contexte :
+
+#### Workflow 1 : `db:push` (dev local uniquement)
+
+Sync direct schema TypeScript → DB. Pas de fichier SQL généré.
+Idéal pour itérer rapidement en local.
 
 ```bash
-# Workflow standard (dev → prod)
-1. vim src/db/schema.ts        # Modifier schema uniquement
-2. docker compose up -d         # Stack complète requise
-3. bun run db:push             # Test rapid prototyping
-4. bun run db:generate         # Génère migration pour prod
-5. git add src/db/schema.ts drizzle/
-6. git commit -m "feat(db): Description"
-7. git push origin main        # Koyeb applique automatiquement
+# 1. Modifier schema
+vim src/db/schema.ts
+
+# 2. Stack DB requise
+docker compose up -d
+
+# 3. Appliquer directement (--strict demande confirmation)
+bun run db:push
 ```
 
-**Interdictions absolues:**
-- JAMAIS éditer `.sql` ou `.json` manuellement
-- JAMAIS supprimer migrations appliquées en prod
+**Quand utiliser** : prototypage, ajout de tables/colonnes en dev, itérations rapides.
+**Limitation** : aucun audit trail, pas de rollback, pas de fichier SQL versionné.
+
+#### Workflow 2 : `db:generate` + `db:migrate` (staging + production)
+
+Génère des fichiers SQL versionnés, appliqués par `migrate()` au démarrage.
+
+```bash
+# 1. Modifier schema
+vim src/db/schema.ts
+
+# 2. Générer le fichier SQL de migration
+bun run db:generate
+
+# 3. Vérifier le SQL généré dans ./drizzle/
+# 4. Commiter schema + migration
+git add src/db/schema.ts drizzle/
+git commit -m "feat(db): description"
+
+# 5. Deploy → docker-entrypoint.sh exécute src/db/migrate.ts
+```
+
+**Le Runtime Migrator** (`src/db/migrate.ts`) :
+- Connexion dédiée (`max: 1`) séparée du pool applicatif
+- Exécuté par `docker-entrypoint.sh` AVANT le démarrage du serveur
+- Applique les migrations SQL depuis `./drizzle/`
+- SSL automatique en production / Supabase
+
+#### Interdictions absolues
+
+- JAMAIS `db:push` en production ou staging
+- JAMAIS éditer les fichiers `.sql` ou `_journal.json` manuellement
+- JAMAIS supprimer des migrations déjà appliquées en prod
 - JAMAIS modifier `drizzle.__drizzle_migrations__` directement
+- JAMAIS créer une nouvelle migration si la précédente n'est pas commitée
 
-**Diagnostic rapide:**
+#### Zero-downtime (bonnes pratiques)
+
+- Nouvelles colonnes → `nullable` d'abord, contrainte ajoutée après
+- Données existantes → mise à jour en batch (ex: 1000 lignes)
+- Index → `CREATE INDEX CONCURRENTLY` (pas de lock table)
+- Backup DB AVANT toute migration destructive (DROP, ALTER TYPE)
+
+#### Diagnostic
+
 ```bash
-bun run db:studio              # Interface Drizzle Studio
-bun run db:check               # Détecte schema drift
-bun run scripts/check-migration-state.ts  # État migrations
+bun run db:check               # Détecte schema drift (diff schema ↔ DB)
+bun run db:studio              # Interface visuelle Drizzle Studio
+bun run db:pull                # Reverse-engineer DB → schema (debug)
 ```
-
-**Guide complet:** Voir `/docs/DATABASE_MIGRATIONS.md` pour:
-- Architecture Runtime Migrator détaillée
-- Scénarios de troubleshooting
-- Garanties anti-régression
-- Workflow avancés (ENUMs, reset, etc.)
 
 ### Docker OBLIGATOIRE pour Développement
 ```bash
@@ -314,7 +354,7 @@ bun run build           # Build production successful
 Checklist :
 - Documentation officielle vérifiée
 - Patterns Elysia.js respectés
-- Migrations validées: `bun run db:generate` (si schema modifié)
+- Si schema.ts modifié : `bun run db:push` (dev local) OU `bun run db:generate` + commit SQL (prod)
 
 ## Mission
 

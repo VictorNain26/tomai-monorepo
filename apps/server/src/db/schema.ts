@@ -602,6 +602,41 @@ export const files = pgTable('files', {
 }));
 
 // =============================================
+// SESSION FILES - Pivot many-to-many sessions ↔ files
+// =============================================
+
+/**
+ * Table session_files - Fichiers attachés à une session de chat
+ *
+ * Permet aux élèves de gérer quels fichiers du classeur sont
+ * injectés dans le contexte AI d'une session donnée.
+ */
+export const sessionFiles = pgTable('session_files', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id').notNull(),
+  fileId: uuid('file_id').notNull(),
+  attachedAt: timestamp('attached_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  sessionIdFk: foreignKey({
+    columns: [table.sessionId],
+    foreignColumns: [studySessions.id],
+    name: 'session_files_session_id_fkey'
+  }).onDelete('cascade'),
+
+  fileIdFk: foreignKey({
+    columns: [table.fileId],
+    foreignColumns: [files.id],
+    name: 'session_files_file_id_fkey'
+  }).onDelete('cascade'),
+
+  sessionFileUnique: unique('session_files_session_file_unique')
+    .on(table.sessionId, table.fileId),
+
+  sessionIdx: index('idx_session_files_session').on(table.sessionId),
+  fileIdx: index('idx_session_files_file').on(table.fileId),
+}));
+
+// =============================================
 // RELATIONS DRIZZLE
 // =============================================
 
@@ -668,6 +703,7 @@ export const studySessionsRelations = relations(studySessions, ({ one, many }) =
   }),
   messages: many(messages),
   costTracking: many(costTracking),
+  sessionFiles: many(sessionFiles),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -695,10 +731,22 @@ export const costTrackingRelations = relations(costTracking, ({ one }) => ({
   }),
 }));
 
-export const filesRelations = relations(files, ({ one }) => ({
+export const filesRelations = relations(files, ({ one, many }) => ({
   user: one(user, {
     fields: [files.userId],
     references: [user.id]
+  }),
+  sessionFiles: many(sessionFiles),
+}));
+
+export const sessionFilesRelations = relations(sessionFiles, ({ one }) => ({
+  session: one(studySessions, {
+    fields: [sessionFiles.sessionId],
+    references: [studySessions.id]
+  }),
+  file: one(files, {
+    fields: [sessionFiles.fileId],
+    references: [files.id]
   }),
 }));
 
@@ -1335,3 +1383,7 @@ export interface CognitiveObservation {
   observation: string;
   subject?: string;
 }
+
+// Session Files Types (Classeur)
+export type SessionFile = typeof sessionFiles.$inferSelect;
+export type NewSessionFile = typeof sessionFiles.$inferInsert;

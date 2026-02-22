@@ -83,7 +83,7 @@ export function HomeworkUrgentCard({
   // Navigate to chat with homework context
   function handleStudyWithTom(item: HomeworkItem) {
     router.push({
-      pathname: '/(student)/(home)/chat',
+      pathname: '/(student)/(chat)',
       params: {
         context: `homework:${item.id}`,
         prompt: `Aide-moi avec mon devoir de ${item.subject} : ${item.title}`,
