@@ -2,6 +2,7 @@ import { Check } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { APP_URL } from "@/lib/urls";
+import { SectionHeader } from "../atoms/section-header";
 
 const FREE_FEATURES = [
   "Français, Maths, Anglais",
@@ -23,14 +24,10 @@ export function Pricing() {
   return (
     <section id="pricing" className="py-24 lg:py-32 bg-secondary/30">
       <div className="container px-4 mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl mb-3">
-            Commencez gratuitement
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Testez avec les matières principales, puis débloquez tout
-          </p>
-        </div>
+        <SectionHeader
+          title="Commencez gratuitement"
+          description="Testez avec les matières principales, puis débloquez tout"
+        />
 
         {/* Two Cards Side by Side */}
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
