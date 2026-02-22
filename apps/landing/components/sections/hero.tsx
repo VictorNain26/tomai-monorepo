@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowRight, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { APP_URL } from "@/lib/urls";

@@ -10,14 +10,12 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <div className="flex flex-col">
-        <ProblemSolution />
-        <HowItWorks />
-        <Features />
-        <Pricing />
-        <FAQ />
-        <CTA />
-      </div>
+      <ProblemSolution />
+      <HowItWorks />
+      <Features />
+      <Pricing />
+      <FAQ />
+      <CTA />
     </>
   );
 }
