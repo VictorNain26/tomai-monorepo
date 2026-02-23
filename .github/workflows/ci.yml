@@ -1,6 +1,6 @@
 # TomAI Monorepo - CI Pipeline
 # Validates code quality on push and PRs
-# Turbo handles parallelism across apps (server, app, landing, mobile)
+# Turbo handles parallelism across apps (server, landing, mobile)
 
 name: CI
 

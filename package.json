@@ -14,7 +14,7 @@
     "build:landing": "turbo run build --filter=landing",
 
     "build:server": "turbo run build --filter=tomai-server",
-    "build:mobile": "turbo run build:web --filter=tom-mobile",
+    "build:mobile": "turbo run build --filter=tom-mobile",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "validate": "pnpm run typecheck && pnpm run lint",
