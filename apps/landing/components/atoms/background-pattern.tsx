@@ -22,8 +22,6 @@ export function BackgroundPattern() {
           }}
         />
 
-        {/* Marge rouge — signature cahier français */}
-        <div className="absolute top-0 bottom-0 left-[64px] w-px bg-red-400/20" />
       </div>
 
       {/* Subtle color blobs overlay for depth */}
