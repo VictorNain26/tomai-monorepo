@@ -42,7 +42,7 @@ export function Hero() {
             <span>🇫🇷</span>
             <span>Hébergé en France</span>
           </div>
-          <span>Sans carte bancaire</span>
+          <span>Gratuit pour commencer</span>
         </div>
       </div>
     </section>

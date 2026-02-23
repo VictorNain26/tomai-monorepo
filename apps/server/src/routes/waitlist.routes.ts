@@ -19,10 +19,15 @@ export const waitlistRoutes = new Elysia({ name: 'waitlist-routes' })
     }
 
     try {
-      await db
+      const result = await db
         .insert(waitlistEntries)
         .values({ email: email.toLowerCase().trim(), source: source ?? null })
-        .onConflictDoNothing({ target: waitlistEntries.email });
+        .onConflictDoNothing({ target: waitlistEntries.email })
+        .returning({ id: waitlistEntries.id });
+
+      if (result.length === 0) {
+        return { success: true, alreadyExists: true };
+      }
 
       logger.info('Waitlist signup', {
         operation: 'waitlist:signup',
@@ -30,7 +35,7 @@ export const waitlistRoutes = new Elysia({ name: 'waitlist-routes' })
         severity: 'low' as const,
       });
 
-      return { success: true };
+      return { success: true, alreadyExists: false };
     } catch (error) {
       logger.error('Waitlist signup failed', {
         operation: 'waitlist:signup:error',

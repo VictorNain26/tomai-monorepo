@@ -47,7 +47,7 @@
   --color-violet-foreground: hsl(0 0% 100%);
 
   /* Grid pattern */
-  --grid-color: hsl(214 32% 91% / 0.10);
+  --grid-color: hsl(214 32% 80% / 0.25);
 
   /* Radius */
   --radius: 0.75rem; /* 12px for modern, friendly feel */
@@ -76,7 +76,7 @@
   --color-border: hsl(215 28% 17%); /* #1E293B */
   --color-input: hsl(215 28% 17%);
   --color-ring: hsl(217 91% 60%);
-  --grid-color: hsl(215 28% 17% / 0.15);
+  --grid-color: hsl(215 28% 30% / 0.25);
 }
 
 /* Global base styles */

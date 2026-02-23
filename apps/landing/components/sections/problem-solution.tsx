@@ -5,7 +5,7 @@ import { FadeIn } from "../atoms/fade-in";
 
 export function ProblemSolution() {
   return (
-    <section className="py-16 sm:py-24 bg-secondary/30">
+    <section className="py-16 sm:py-24 bg-secondary/50">
       <div className="container px-4">
         <div className="mx-auto max-w-3xl text-center mb-16">
           <FadeIn>

@@ -73,7 +73,7 @@ export async function executeTool(
     });
     return {
       error: true,
-      message: `Erreur lors de l'exécution de ${toolName}. Réponds avec tes connaissances.`,
+      message: `Erreur lors de l'exécution de ${toolName}. Indique à l'élève que tu n'as pas pu vérifier dans les programmes officiels.`,
     };
   }
 }
@@ -99,7 +99,7 @@ async function executeRagSearch(args: Record<string, unknown>): Promise<object> 
       chunks: [],
       searchTimeMs: Date.now() - startTime,
       serviceUnavailable: true,
-      message: 'Le service de recherche est temporairement indisponible. Réponds avec tes connaissances générales.',
+      message: 'Le service de recherche est temporairement indisponible. Indique à l\'élève que tu ne peux pas vérifier dans les programmes officiels actuellement.',
     };
   }
 

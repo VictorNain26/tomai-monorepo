@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, Loader2, ArrowRight } from "lucide-react";
+import { CheckCircle2, Info, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { joinWaitlist } from "@/lib/actions/waitlist";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,7 @@ export function WaitlistForm({
   buttonText = "Rejoindre la liste d'attente",
 }: WaitlistFormProps) {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "success" | "already" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -31,13 +31,24 @@ export function WaitlistForm({
     );
   }
 
+  if (status === "already") {
+    return (
+      <div className={cn("flex items-center gap-2 text-primary font-medium", className)}>
+        <Info className="h-5 w-5" />
+        <span>Cet email est déjà dans la liste d&apos;attente, vous serez notifié !</span>
+      </div>
+    );
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg("");
 
     startTransition(async () => {
       const result = await joinWaitlist(email, source);
-      if (result.success) {
+      if (result.success && result.alreadyExists) {
+        setStatus("already");
+      } else if (result.success) {
         setStatus("success");
       } else {
         setStatus("error");

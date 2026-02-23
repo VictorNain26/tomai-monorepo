@@ -13,8 +13,9 @@ export {
 // Core exports
 export {
   generateIdentityPrompt,
-  generatePedagogyPrinciples,
   generateSafetyGuardrails,
+  generateRAGSourceOfTruth,
+  generateToolInstructions,
   type IdentityParams
 } from './core/index.js';
 
@@ -24,7 +25,7 @@ export {
   getCycleFromLevel,
   needsSimplifiedKaTeX,
   generateSubjectSpecifics,
-  generateAllSubjectSpecifics,
+  generateSubjectBlock,
   normalizeSubject,
   requiresKaTeX,
   type CycleType,
