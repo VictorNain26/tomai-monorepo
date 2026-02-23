@@ -7,7 +7,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export async function joinWaitlist(
   email: string,
   source: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; alreadyExists?: boolean; error?: string }> {
   if (!email || !EMAIL_REGEX.test(email)) {
     return { success: false, error: "Adresse email invalide" };
   }
@@ -19,7 +19,7 @@ export async function joinWaitlist(
       body: JSON.stringify({ email, source }),
     });
 
-    const data = (await res.json()) as { success: boolean; error?: string };
+    const data = (await res.json()) as { success: boolean; alreadyExists?: boolean; error?: string };
     return data;
   } catch {
     return { success: false, error: "Erreur de connexion au serveur" };

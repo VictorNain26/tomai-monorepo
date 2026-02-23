@@ -24,7 +24,7 @@ const PREMIUM_FEATURES = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-24 lg:py-32 bg-secondary/30">
+    <section id="pricing" className="py-24 lg:py-32">
       <div className="container px-4 mx-auto">
         <SectionHeader
           title="Un prix simple, sans surprise"

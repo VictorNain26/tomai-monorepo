@@ -70,7 +70,7 @@ const itemVariants = {
 
 export function Features() {
   return (
-    <section id="features" className="py-24 lg:py-32 bg-secondary/30">
+    <section id="features" className="py-24 lg:py-32 bg-secondary/50">
       <div className="container px-4 mx-auto">
         <SectionHeader
           title="Tout ce qu'il faut pour réussir"

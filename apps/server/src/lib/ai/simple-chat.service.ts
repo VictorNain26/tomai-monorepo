@@ -36,18 +36,22 @@ export async function generateSimpleResponse(
   const provider = '@google/genai';
   const levelText = getLevelText(params.level);
 
-  // Build system prompt (LearnLM v3 architecture)
+  // Build system prompt (without ragContext — injected in user content)
   const systemPrompt = buildSystemPrompt({
     level: params.level,
     levelText,
     subject: params.subject,
-    ragContext: params.educationalContext,
   });
+
+  // Inject educational context directly in user content
+  const userContent = params.educationalContext
+    ? `<context source="curriculum">\n${params.educationalContext}\n</context>\n\n${params.userQuery}`
+    : params.userQuery;
 
   // Generate with @google/genai
   const response = await ai.models.generateContent({
     model: appConfig.ai.gemini.model,
-    contents: params.userQuery,
+    contents: userContent,
     config: {
       systemInstruction: systemPrompt,
       topK: 40

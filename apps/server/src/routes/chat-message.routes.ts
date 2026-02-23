@@ -14,7 +14,6 @@ import { chatService } from '../services/chat.service.js';
 import { sessionFilesRepository } from '../db/repositories/index.js';
 import { fileContextService, streamingService, getLearningContext, summarizationService } from '../services/chat/index.js';
 import { cognitiveProfileService } from '../services/cognitive-profile.service.js';
-import { ragService } from '../services/rag.service.js';
 import { tokenQuotaService } from '../services/token-quota.service.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
@@ -175,8 +174,8 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         };
       });
 
-    // 5b. Préparer contexte fichier + fichiers multimodaux + profil cognitif + learning + RAG spéculatif en parallèle
-    const [fileContext, multimodalFiles, cognitiveProfileSummary, learningContext, speculativeRag] = await Promise.all([
+    // 5b. Préparer contexte fichier + fichiers multimodaux + profil cognitif + learning en parallèle
+    const [fileContext, multimodalFiles, cognitiveProfileSummary, learningContext] = await Promise.all([
       // Contexte texte enrichi (analyse, extraction) pour tous les fichiers
       fileContextService.prepareFileContext({
         fileIds,
@@ -191,13 +190,6 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       cognitiveProfileService.getProfileSummary(user.id),
       // Contexte learning (cartes dues, sujets faibles)
       getLearningContext(user.id),
-      // RAG spéculatif — lancer en parallèle, résultat ignoré si non pertinent
-      ragService.hybridSearch({
-        query: safeContent,
-        niveau: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
-        matiere: subject ?? '',
-        limit: 5,
-      }).catch(() => null)
     ]);
 
     const { attachedFileInfos, enrichedContent: rawEnrichedContent } = fileContext;
@@ -209,20 +201,6 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     const enrichedContent = rawEnrichedContent.length > MAX_ENRICHED_CONTENT_CHARS
       ? rawEnrichedContent.slice(0, MAX_ENRICHED_CONTENT_CHARS) + '\n\n[Contenu tronqué]'
       : rawEnrichedContent;
-
-    // Inject speculative RAG context if results are relevant (score >= 0.5)
-    const RAG_RELEVANCE_THRESHOLD = 0.5;
-    let ragEnrichedContent = enrichedContent;
-    if (speculativeRag && speculativeRag.averageSimilarity >= RAG_RELEVANCE_THRESHOLD && speculativeRag.context) {
-      ragEnrichedContent = `📚 PROGRAMMES OFFICIELS\n${speculativeRag.context}\n\n${enrichedContent}`;
-      logger.info('Speculative RAG injected', {
-        userId: user.id,
-        avgSimilarity: speculativeRag.averageSimilarity,
-        strategy: speculativeRag.strategy,
-        searchTimeMs: speculativeRag.searchTime,
-        operation: 'chat-stream:speculative-rag'
-      });
-    }
 
     const startTime = Date.now();
 
@@ -273,7 +251,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     // 8. Générer et yield les chunks SSE (avec contenu enrichi + fichiers multimodaux)
     const streamGenerator = streamingService.generateStreamChunks({
       userId: user.id,
-      content: ragEnrichedContent, // Contenu enrichi + RAG spéculatif si pertinent
+      content: enrichedContent,
       // Chat multi-matière: ne pas passer subject pour que le system prompt inclue toutes les matières
       schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
       firstName: firstName ?? user.firstName ?? undefined,
