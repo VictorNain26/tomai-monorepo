@@ -6,9 +6,9 @@ import { FadeIn } from "../atoms/fade-in";
 
 const STATS = [
   {
-    value: 415,
+    value: 30,
     suffix: "+",
-    label: "programmes Éduscol",
+    label: "matières couvertes",
     icon: BookOpen,
   },
   {
@@ -32,7 +32,7 @@ const STATS = [
 
 export function Stats() {
   return (
-    <section className="py-12 border-y border-border/40">
+    <section className="py-16 sm:py-20 border-y border-border/40">
       <div className="container px-4 mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {STATS.map((stat, index) => (

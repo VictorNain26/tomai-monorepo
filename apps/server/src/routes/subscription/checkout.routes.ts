@@ -93,7 +93,7 @@ export const checkoutRoutes = new Elysia({ prefix: '/api/subscriptions' })
       }
 
       try {
-        const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+        const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3001';
 
         const result = await stripeService.createCheckoutSession({
           parentId,

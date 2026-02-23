@@ -1,98 +1,82 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* TomIA EdTech Design System - Light Mode (Premium) */
 
   /* Base colors - Clean, professional, trustworthy */
-  --color-background: 0 0% 100%; /* #FFFFFF - Pure white */
-  --color-foreground: 222 47% 11%; /* #0F172A - Slate 900 */
+  --color-background: hsl(0 0% 100%); /* #FFFFFF - Pure white */
+  --color-foreground: hsl(222 47% 11%); /* #0F172A - Slate 900 */
 
   /* Primary - Professional Blue (Trust & Education) */
-  --color-primary: 217 91% 50%; /* #2563EB - Blue 600 */
-  --color-primary-foreground: 0 0% 100%;
+  --color-primary: hsl(217 91% 50%); /* #2563EB - Blue 600 */
+  --color-primary-foreground: hsl(0 0% 100%);
 
   /* Secondary - Subtle surface for contrast */
-  --color-secondary: 210 40% 96.1%; /* #F1F5F9 - Slate 100 */
-  --color-secondary-foreground: 222 47% 11%;
+  --color-secondary: hsl(210 40% 96.1%); /* #F1F5F9 - Slate 100 */
+  --color-secondary-foreground: hsl(222 47% 11%);
 
   /* Muted - For supporting text */
-  --color-muted: 210 40% 96.1%;
-  --color-muted-foreground: 215 16% 47%; /* #64748B - Slate 500 */
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215 16% 47%); /* #64748B - Slate 500 */
 
   /* Accent - Interactive elements */
-  --color-accent: 210 40% 96.1%;
-  --color-accent-foreground: 222 47% 11%;
+  --color-accent: hsl(210 40% 96.1%);
+  --color-accent-foreground: hsl(222 47% 11%);
 
   /* Card - Pure white for elevation */
-  --color-card: 0 0% 100%;
-  --color-card-foreground: 222 47% 11%;
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222 47% 11%);
 
   /* Popover */
-  --color-popover: 0 0% 100%;
-  --color-popover-foreground: 222 47% 11%;
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222 47% 11%);
 
   /* Destructive */
-  --color-destructive: 0 84% 60%;
-  --color-destructive-foreground: 0 0% 100%;
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 100%);
 
   /* Border */
-  --color-border: 214 32% 91%; /* #E2E8F0 - Slate 200 */
-  --color-input: 214 32% 91%;
-  --color-ring: 221 83% 53%;
+  --color-border: hsl(214 32% 91%); /* #E2E8F0 - Slate 200 */
+  --color-input: hsl(214 32% 91%);
+  --color-ring: hsl(221 83% 53%);
 
   /* Violet accent */
-  --color-violet: 263 70% 50%;
-  --color-violet-foreground: 0 0% 100%;
+  --color-violet: hsl(263 70% 50%);
+  --color-violet-foreground: hsl(0 0% 100%);
+
+  /* Grid pattern */
+  --grid-color: hsl(214 32% 91% / 0.10);
 
   /* Radius */
   --radius: 0.75rem; /* 12px for modern, friendly feel */
 }
 
-@media (prefers-color-scheme: dark) {
-  @theme {
-    /* TomIA EdTech Design System - Dark Mode (Premium) */
-
-    /* Base colors - Rich Dark Blue (Not pure black) */
-    --color-background: 224 71% 4%; /* #020617 - Slate 950 (Rich Dark) */
-    --color-foreground: 210 40% 98%; /* #F8FAFC - Slate 50 */
-
-    /* Primary - Brighter for dark mode contrast */
-    --color-primary: 217 91% 60%; /* #3B82F6 - Blue 500 */
-    --color-primary-foreground: 222 47% 11%;
-
-    /* Secondary - Deep surface */
-    --color-secondary: 215 28% 17%; /* #1E293B - Slate 800 */
-    --color-secondary-foreground: 210 40% 98%;
-
-    /* Muted */
-    --color-muted: 215 28% 17%;
-    --color-muted-foreground: 215 20% 65%; /* #94A3B8 - Slate 400 */
-
-    /* Accent */
-    --color-accent: 215 28% 17%;
-    --color-accent-foreground: 210 40% 98%;
-
-    /* Card - Glass-like dark surface */
-    --color-card: 222 47% 11%; /* #0F172A - Slate 900 */
-    --color-card-foreground: 210 40% 98%;
-
-    /* Popover */
-    --color-popover: 222 47% 11%;
-    --color-popover-foreground: 210 40% 98%;
-
-    /* Destructive */
-    --color-destructive: 0 63% 31%;
-    --color-destructive-foreground: 210 40% 98%;
-
-    /* Violet accent */
-    --color-violet: 263 70% 60%;
-    --color-violet-foreground: 0 0% 100%;
-
-    /* Border - Subtle in dark mode */
-    --color-border: 215 28% 17%; /* #1E293B */
-    --color-input: 215 28% 17%;
-    --color-ring: 217 91% 60%;
-  }
+/* Dark mode overrides (class-based via next-themes) */
+.dark {
+  --color-background: hsl(224 71% 4%); /* #020617 - Slate 950 */
+  --color-foreground: hsl(210 40% 98%); /* #F8FAFC - Slate 50 */
+  --color-primary: hsl(217 91% 60%); /* #3B82F6 - Blue 500 */
+  --color-primary-foreground: hsl(222 47% 11%);
+  --color-secondary: hsl(215 28% 17%); /* #1E293B - Slate 800 */
+  --color-secondary-foreground: hsl(210 40% 98%);
+  --color-muted: hsl(215 28% 17%);
+  --color-muted-foreground: hsl(215 20% 65%); /* #94A3B8 - Slate 400 */
+  --color-accent: hsl(215 28% 17%);
+  --color-accent-foreground: hsl(210 40% 98%);
+  --color-card: hsl(222 47% 13%); /* Slightly lighter for better contrast */
+  --color-card-foreground: hsl(210 40% 98%);
+  --color-popover: hsl(222 47% 11%);
+  --color-popover-foreground: hsl(210 40% 98%);
+  --color-destructive: hsl(0 63% 31%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-violet: hsl(263 70% 60%);
+  --color-violet-foreground: hsl(0 0% 100%);
+  --color-border: hsl(215 28% 17%); /* #1E293B */
+  --color-input: hsl(215 28% 17%);
+  --color-ring: hsl(217 91% 60%);
+  --grid-color: hsl(215 28% 17% / 0.15);
 }
 
 /* Global base styles */
@@ -139,12 +123,12 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--color-primary) / 0.3);
+  background: color-mix(in srgb, var(--color-primary) 30%, transparent);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--color-primary) / 0.5);
+  background: color-mix(in srgb, var(--color-primary) 50%, transparent);
 }
 
 /* Cursor Pointer for Buttons */

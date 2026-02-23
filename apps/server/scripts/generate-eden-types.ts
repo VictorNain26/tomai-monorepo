@@ -54,10 +54,10 @@ async function main() {
 1. Build the server to generate JavaScript:
    bun run build
 
-2. Copy the types to frontend:
-   cp dist/eden-types.d.ts ../tomai-monorepo/apps/app/src/types/
+2. Copy the types to mobile:
+   cp dist/eden-types.d.ts ../tomai-monorepo/apps/mobile/src/types/
 
-3. Update frontend eden-client.ts to import the type:
+3. Update mobile eden-client.ts to import the type:
    import type { App } from '@/types/eden-types';
    export const api = treaty<App>(getBackendURL(), { ... });
 

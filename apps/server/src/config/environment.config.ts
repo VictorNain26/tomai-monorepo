@@ -97,7 +97,7 @@ function parseEnvironment(): EnvironmentConfig {
 
     // URLs et CORS
     BETTER_AUTH_URL: Bun.env['BETTER_AUTH_URL'] ?? (isDevelopment ? 'http://localhost:3000' : ''),
-    FRONTEND_URL: Bun.env['FRONTEND_URL'] ?? Bun.env['CORS_ORIGIN'] ?? (isDevelopment ? 'http://localhost:5173' : ''),
+    FRONTEND_URL: Bun.env['FRONTEND_URL'] ?? Bun.env['CORS_ORIGIN'] ?? (isDevelopment ? 'http://localhost:3001' : ''),
     CORS_ORIGINS: corsOrigins,
     TRUSTED_ORIGINS: trustedOrigins,
 

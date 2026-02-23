@@ -1,9 +1,10 @@
 "use client";
 
-import { MessageSquare, Lightbulb, GraduationCap } from "lucide-react";
+import { MessageSquare, Lightbulb, GraduationCap, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 import { SectionHeader } from "../atoms/section-header";
-import { WaitlistForm } from "../molecules/waitlist-form";
+import { ChatDemo } from "../molecules/chat-demo";
 
 const STEPS = [
   {
@@ -77,12 +78,27 @@ export function HowItWorks() {
           ))}
         </div>
 
+        {/* Live demo — the steps above in action */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-16"
+        >
+          <p className="text-center text-sm font-medium text-muted-foreground mb-6">
+            Voici ce que ça donne en vrai
+          </p>
+          <ChatDemo />
+        </motion.div>
+
         <div className="flex justify-center mt-16">
-          <WaitlistForm
-            source="how-it-works"
-            buttonText="Être notifié du lancement"
-            className="max-w-lg w-full"
-          />
+          <Button size="lg" variant="outline" className="group" asChild>
+            <a href="#waitlist">
+              Être notifié du lancement
+              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </a>
+          </Button>
         </div>
       </div>
     </section>
