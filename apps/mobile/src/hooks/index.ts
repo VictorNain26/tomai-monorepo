@@ -1,6 +1,6 @@
 // Hooks - Export central
 
-export { useChat, type ChatMessage, type ChatFileAttachment } from './useChat';
+export { useChat, type ChatMessage, type ChatFileAttachment, type CreatedDeck } from './useChat';
 export {
   usePresignedUpload,
   type FileAttachment,
@@ -8,7 +8,6 @@ export {
 } from './usePresignedUpload';
 export {
   useStudentDashboard,
-  type Subject,
   type TokenUsage,
   type LatestSession,
 } from './useStudentDashboard';
@@ -33,7 +32,6 @@ export {
   type ICreateChildData,
   type SchoolLevel,
   type EducationLevelType,
-  type Lv2Option,
 } from './useParentDashboard';
 export {
   useParentPronoteStatus,
@@ -94,3 +92,22 @@ export {
   useIconColors,
   type IconColors,
 } from './useIconColors';
+export {
+  useDueCards,
+  useReviewCard,
+  useDeckStats,
+  type FSRSRating,
+  type FSRSState,
+  type DueCard,
+  type ReviewResult,
+  type DeckStats,
+} from './useFsrs';
+export { useDueSummary } from './useDueSummary';
+export {
+  useUserFiles,
+  useSessionFiles,
+  useAttachFile,
+  useDetachFile,
+  type LibraryFile,
+  type SessionFile,
+} from './useFiles';

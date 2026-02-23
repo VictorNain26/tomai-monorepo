@@ -2,23 +2,24 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ShieldCheck, BookOpen, BrainCircuit, BarChart3, CreditCard, Smartphone, GraduationCap, Languages, Gauge, Users } from "lucide-react";
+import { ChevronDown, BrainCircuit, BarChart3, BookOpen, ShieldCheck, CreditCard, Smartphone, GraduationCap } from "lucide-react";
+import Link from "next/link";
 import { SectionHeader } from "../atoms/section-header";
 
 const FAQS = [
   {
-    question: "Tom donne-t-il les réponses à mon enfant ?",
-    answer: "Non, jamais. Tom utilise la méthode socratique : il pose des questions pour guider votre enfant vers la solution. Contrairement aux IA génératives qui donnent les réponses, Tom fait comprendre et mémoriser durablement.",
+    question: "TomIA donne-t-il les réponses à mon enfant ?",
+    answer: "Non, jamais. TomIA utilise la méthode socratique : il pose des questions pour guider votre enfant vers la solution. Contrairement aux IA génératives qui donnent les réponses, TomIA fait comprendre et mémoriser durablement.",
     icon: BrainCircuit,
   },
   {
     question: "Comment puis-je suivre les progrès de mon enfant ?",
-    answer: "Vous avez accès à un tableau de bord parental qui montre les matières travaillées, le temps passé, et les notions maîtrisées. Vous pouvez aussi définir des limites de temps d'utilisation quotidiennes.",
+    answer: "Vous avez accès à un tableau de bord parental qui montre les matières travaillées, le temps passé, et les notions maîtrisées. Vous pouvez aussi définir des limites de temps d'utilisation quotidiennes et recevoir des résumés d'activité.",
     icon: BarChart3,
   },
   {
     question: "Les contenus sont-ils alignés sur les programmes scolaires ?",
-    answer: "Oui, Tom est entraîné sur 415 programmes officiels Éduscol, du CP à la Terminale. Il couvre toutes les matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Anglais...",
+    answer: "Oui, TomIA est entraîné sur 415 programmes officiels Éduscol, du CP à la Terminale. Il couvre toutes les matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Anglais...",
     icon: BookOpen,
   },
   {
@@ -28,33 +29,18 @@ const FAQS = [
   },
   {
     question: "Puis-je annuler à tout moment ?",
-    answer: "Oui, l'abonnement est sans engagement. Vous pouvez annuler en un clic depuis votre espace parent, sans frais ni justification. Vous pouvez aussi commencer gratuitement sans carte bancaire.",
+    answer: "Oui, l'abonnement est sans engagement. Vous pouvez annuler en un clic depuis votre espace parent, sans frais ni justification. L'offre gratuite inclut 5 questions par jour, et l'offre Complet propose des questions illimitées. Les parents peuvent également définir leurs propres limites de temps.",
     icon: CreditCard,
   },
   {
-    question: "Sur quels appareils Tom est-il disponible ?",
-    answer: "Tom est disponible sur le web (ordinateur, tablette) et en application mobile sur iOS et Android. Votre enfant peut travailler depuis n'importe quel appareil, à la maison ou en déplacement.",
+    question: "Sur quels appareils TomIA est-il disponible ?",
+    answer: "TomIA est disponible en application mobile sur iOS et Android. Votre enfant peut travailler depuis son smartphone ou sa tablette, à la maison ou en déplacement.",
     icon: Smartphone,
   },
   {
-    question: "Tom est-il compatible avec Pronote ?",
-    answer: "Oui, Tom peut se connecter à Pronote pour récupérer automatiquement l'emploi du temps, les devoirs et les notes de votre enfant. Cela permet à Tom de personnaliser son accompagnement en fonction du programme réel de la classe.",
+    question: "TomIA est-il compatible avec Pronote ?",
+    answer: "Oui, TomIA peut se connecter à Pronote pour récupérer automatiquement l'emploi du temps, les devoirs et les notes de votre enfant. Cela permet à TomIA de personnaliser son accompagnement en fonction du programme réel de la classe.",
     icon: GraduationCap,
-  },
-  {
-    question: "Tom est-il disponible en d'autres langues ?",
-    answer: "Actuellement, Tom est disponible uniquement en français, car il est spécialement conçu pour les programmes scolaires français (Éduscol). D'autres langues pourront être envisagées à l'avenir.",
-    icon: Languages,
-  },
-  {
-    question: "Y a-t-il une limite d'utilisation quotidienne ?",
-    answer: "L'offre gratuite inclut un usage quotidien limité, suffisant pour une session de devoirs. L'offre Complet propose un quota plus généreux pour un usage intensif. Les parents peuvent également définir leurs propres limites de temps.",
-    icon: Gauge,
-  },
-  {
-    question: "Comment fonctionne le suivi pour les parents ?",
-    answer: "Les parents disposent d'un espace dédié avec un tableau de bord complet : matières travaillées, temps passé, notions maîtrisées et axes de progression. Vous pouvez aussi paramétrer des limites d'utilisation et recevoir des résumés d'activité.",
-    icon: Users,
   },
 ];
 
@@ -118,6 +104,13 @@ export function FAQ() {
             </div>
           ))}
         </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-8">
+          Vous avez une autre question ?{" "}
+          <Link href="/contact" className="text-primary hover:underline font-medium">
+            Contactez-nous
+          </Link>
+        </p>
       </div>
     </section>
   );

@@ -7,7 +7,7 @@ import { generateIdentityPrompt } from './core/identity.js';
 import { generatePedagogyPrinciples } from './core/pedagogy.js';
 import { generateSafetyGuardrails } from './core/safety.js';
 import { generateLevelAdaptation } from './adaptation/by-level.js';
-import { generateSubjectSpecifics, requiresKaTeX } from './adaptation/by-subject.js';
+import { generateSubjectSpecifics, generateAllSubjectSpecifics, requiresKaTeX } from './adaptation/by-subject.js';
 import type { EducationLevelType } from '../../types/index.js';
 
 const MAX_RAG_CHARS = 6000;
@@ -15,7 +15,7 @@ const MAX_RAG_CHARS = 6000;
 export interface SystemPromptParams {
   level: EducationLevelType;
   levelText: string;
-  subject: string;
+  subject?: string;
   firstName?: string;
   ragContext?: string;
 }
@@ -27,12 +27,16 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
   const { level, levelText, subject, firstName, ragContext } = params;
   const studentName = firstName ?? "l'élève";
 
+  const subjectBlock = subject
+    ? generateSubjectSpecifics(subject)
+    : generateAllSubjectSpecifics();
+
   const parts = [
     generateIdentityPrompt({ studentName, levelText, subject }),
     generatePedagogyPrinciples(),
     generateSafetyGuardrails(),
     generateLevelAdaptation(level),
-    generateSubjectSpecifics(subject),
+    subjectBlock,
     formatRAGContext(ragContext)
   ].filter(Boolean);
 

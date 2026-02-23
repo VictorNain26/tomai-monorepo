@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Tom EdTech Design System - Light Mode (Premium) */
+  /* TomIA EdTech Design System - Light Mode (Premium) */
 
   /* Base colors - Clean, professional, trustworthy */
   --color-background: 0 0% 100%; /* #FFFFFF - Pure white */
@@ -40,13 +40,17 @@
   --color-input: 214 32% 91%;
   --color-ring: 221 83% 53%;
 
+  /* Violet accent */
+  --color-violet: 263 70% 50%;
+  --color-violet-foreground: 0 0% 100%;
+
   /* Radius */
   --radius: 0.75rem; /* 12px for modern, friendly feel */
 }
 
 @media (prefers-color-scheme: dark) {
   @theme {
-    /* Tom EdTech Design System - Dark Mode (Premium) */
+    /* TomIA EdTech Design System - Dark Mode (Premium) */
 
     /* Base colors - Rich Dark Blue (Not pure black) */
     --color-background: 224 71% 4%; /* #020617 - Slate 950 (Rich Dark) */
@@ -79,6 +83,10 @@
     /* Destructive */
     --color-destructive: 0 63% 31%;
     --color-destructive-foreground: 210 40% 98%;
+
+    /* Violet accent */
+    --color-violet: 263 70% 60%;
+    --color-violet-foreground: 0 0% 100%;
 
     /* Border - Subtle in dark mode */
     --color-border: 215 28% 17%; /* #1E293B */

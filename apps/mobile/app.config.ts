@@ -63,8 +63,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     permissions: [
       'CAMERA',
       'RECORD_AUDIO',
-      'READ_EXTERNAL_STORAGE',
-      'WRITE_EXTERNAL_STORAGE',
+      'READ_MEDIA_IMAGES',       // Android 13+ (replaces READ_EXTERNAL_STORAGE)
+      'READ_MEDIA_VIDEO',        // Android 13+
       'VIBRATE',
       'POST_NOTIFICATIONS',
       'ACCESS_NETWORK_STATE',
@@ -133,8 +133,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         android: {
           // SDK 54 defaults
           minSdkVersion: 24,
-          // Allow HTTP for local dev
-          usesCleartextTraffic: true,
+          // HTTPS only (staging + production are both HTTPS)
+          usesCleartextTraffic: false,
         },
         ios: {
           // SDK 54 minimum iOS 15.1
@@ -142,13 +142,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         },
       },
     ],
+    'expo-background-task',
     'expo-updates',
     '@react-native-google-signin/google-signin',
   ],
 
   // EAS Updates configuration
+  // fingerprint policy: auto-detects native changes, prevents incompatible OTA updates
   runtimeVersion: {
-    policy: 'appVersion',
+    policy: 'fingerprint',
   },
   updates: {
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,

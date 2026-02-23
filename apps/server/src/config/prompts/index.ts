@@ -24,6 +24,7 @@ export {
   getCycleFromLevel,
   needsSimplifiedKaTeX,
   generateSubjectSpecifics,
+  generateAllSubjectSpecifics,
   normalizeSubject,
   requiresKaTeX,
   type CycleType,

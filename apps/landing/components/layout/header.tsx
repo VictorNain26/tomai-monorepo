@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
-import { APP_URL } from "@/lib/urls";
 import { Logo } from "../atoms/logo";
 import { NavLinks } from "../molecules/nav-links";
 
@@ -16,13 +15,11 @@ export function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Effet scroll subtil
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 10);
   }, []);
 
   useEffect(() => {
-    // Use queueMicrotask to avoid synchronous setState warning
     queueMicrotask(() => setMounted(true));
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -69,28 +66,13 @@ export function Header() {
               )}
             </Button>
           )}
-          <Link href={APP_URL}>
-            <Button size="sm">Commencer gratuitement</Button>
+          <Link href="#waitlist">
+            <Button size="sm">Rejoindre la liste d&apos;attente</Button>
           </Link>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Menu Button (no theme toggle) */}
         <div className="flex items-center gap-2 md:hidden z-20">
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-full"
-              aria-label="Changer de thème"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"
@@ -121,8 +103,8 @@ export function Header() {
             onLinkClick={() => setMobileMenuOpen(false)}
           />
           <div className="pt-2">
-            <Link href={APP_URL} className="block">
-              <Button className="w-full">Commencer gratuitement</Button>
+            <Link href="#waitlist" className="block">
+              <Button className="w-full">Rejoindre la liste d&apos;attente</Button>
             </Link>
           </div>
         </div>

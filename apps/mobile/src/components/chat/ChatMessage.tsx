@@ -9,7 +9,7 @@
  * - File attachments
  */
 
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, Image } from 'react-native';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import {
@@ -19,6 +19,7 @@ import {
   containsMermaid,
   TomAvatar,
 } from '@/components/common';
+import { MarkdownContent } from './MarkdownContent';
 import { FileAttachmentCard } from './FileAttachmentCard';
 import { cn } from '@/lib/utils';
 import { useTextToSpeech, useIconColors } from '@/hooks';
@@ -106,11 +107,29 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
                     : 'Écouter'}
               </Text>
             </TouchableOpacity>
+            {tts.error && (
+              <Text variant="tiny" className="ml-1 self-center text-destructive" numberOfLines={1}>
+                {tts.error}
+              </Text>
+            )}
           </View>
         )}
 
-        {/* File Attachment */}
-        {message.attachedFile?.fileId && (
+        {/* Image Preview */}
+        {message.attachedFile?.preview && message.attachedFile.mimeType?.startsWith('image/') && (
+          <View className="mt-2">
+            <Image
+              source={{ uri: message.attachedFile.preview }}
+              className="rounded-xl"
+              style={{ width: 200, height: 200 }}
+              resizeMode="cover"
+              accessibilityLabel={`Image: ${message.attachedFile.fileName}`}
+            />
+          </View>
+        )}
+
+        {/* File Attachment (non-image or without preview) */}
+        {message.attachedFile?.fileId && !(message.attachedFile.preview && message.attachedFile.mimeType?.startsWith('image/')) && (
           <FileAttachmentCard
             fileId={message.attachedFile.fileId}
             fileName={message.attachedFile.fileName}
@@ -190,20 +209,15 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
   const hasMath = !isUser && containsMath(content);
   const hasMermaid = !isUser && containsMermaid(content);
 
-  // User messages or simple text
+  // User messages or simple text — render with markdown
   if (isUser || (!hasMath && !hasMermaid)) {
     return (
-      <Text
-        className={cn(
-          'text-base leading-relaxed',
-          isUser ? 'text-primary-foreground' : 'text-foreground'
-        )}
-      >
-        {content}
+      <View>
+        <MarkdownContent isUser={isUser}>{content}</MarkdownContent>
         {isStreaming && (
           <Text style={{ color: colors.primary.DEFAULT }}>▋</Text>
         )}
-      </Text>
+      </View>
     );
   }
 
@@ -227,12 +241,9 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
             );
           }
           return (
-            <Text
-              key={`text-${index}`}
-              className="text-base leading-relaxed text-foreground"
-            >
+            <MarkdownContent key={`text-${index}`}>
               {segment.content}
-            </Text>
+            </MarkdownContent>
           );
         })}
         {isStreaming && (

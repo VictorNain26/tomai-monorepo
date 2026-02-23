@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, MapPin } from "lucide-react";
+import { MapPin, ShieldCheck, Server, Lock, Smartphone } from "lucide-react";
 import { Logo } from "../atoms/logo";
 
 export function Footer() {
@@ -13,6 +13,28 @@ export function Footer() {
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               L&apos;assistant qui aide les élèves français à comprendre leurs leçons, sans donner les réponses.
             </p>
+
+            {/* Trust badges */}
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                <span>RGPD</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Server className="h-3.5 w-3.5 text-primary" />
+                <span>Hébergé en Europe</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Lock className="h-3.5 w-3.5 text-primary" />
+                <span>Aucune publicité</span>
+              </div>
+            </div>
+
+            {/* Mobile availability */}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Smartphone className="h-3.5 w-3.5 text-primary" />
+              <span>Disponible sur iOS et Android</span>
+            </div>
           </div>
 
           {/* Product */}
@@ -79,16 +101,12 @@ export function Footer() {
 
         <div className="mt-12 border-t border-border/60 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2025 Tom. Tous droits réservés.
+            © {new Date().getFullYear()} TomIA. Tous droits réservés.
           </p>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               <span>France</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              <span>contact@tom.fr</span>
             </div>
           </div>
         </div>

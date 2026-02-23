@@ -52,7 +52,6 @@ export const user = pgTable('user', {
   lastName: varchar('last_name', { length: 100 }),   // Nom séparé du 'name'
   role: userRoleEnum('role').notNull().default('parent'), // Défaut parent (comme auth.ts)
   schoolLevel: schoolLevelEnum('school_level'), // Niveau scolaire pour élèves
-  selectedLv2: varchar('selected_lv2', { length: 50 }), // LV2 choisie (espagnol, allemand, italien) - à partir de 5ème
   dateOfBirth: varchar('date_of_birth', { length: 10 }), // Format YYYY-MM-DD string (comme auth.ts)
   parentId: varchar('parent_id', { length: 255 }), // Référence parent-enfant
   isActive: boolean('is_active').notNull().default(true), // État du compte
@@ -90,7 +89,7 @@ export const user = pgTable('user', {
 }));
 
 /**
- * Table session - Better Auth standard
+ * Table session - Better Auth standard + Admin plugin impersonation
  */
 export const session = pgTable('session', {
   id: varchar('id', { length: 255 }).primaryKey(),
@@ -101,6 +100,8 @@ export const session = pgTable('session', {
   userAgent: text('user_agent'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  // Better Auth Admin Plugin: impersonation tracking
+  impersonatedBy: varchar('impersonated_by', { length: 255 }),
 }, (table) => ({
   userIdFk: foreignKey({
     columns: [table.userId],
@@ -108,9 +109,16 @@ export const session = pgTable('session', {
     name: 'session_user_id_fkey'
   }).onDelete('cascade'),
 
+  impersonatedByFk: foreignKey({
+    columns: [table.impersonatedBy],
+    foreignColumns: [user.id],
+    name: 'session_impersonated_by_fkey'
+  }).onDelete('cascade'),
+
   tokenIdx: index('idx_session_token').on(table.token),
   userIdIdx: index('idx_session_user_id').on(table.userId),
   expiresAtIdx: index('idx_session_expires_at').on(table.expiresAt),
+  impersonatedByIdx: index('idx_session_impersonated_by').on(table.impersonatedBy),
 }));
 
 /**
@@ -335,7 +343,7 @@ export const studySessions = pgTable('study_sessions', {
   userId: varchar('user_id', { length: 255 }).notNull(),
 
   // Détails pédagogiques
-  subject: varchar('subject', { length: 100 }).notNull(),
+  subject: varchar('subject', { length: 100 }).notNull().default('général'),
   topic: varchar('topic', { length: 200 }),
   status: sessionStatusEnum('status').notNull().default('active'),
 
@@ -370,6 +378,10 @@ export const studySessions = pgTable('study_sessions', {
   // Évaluation utilisateur
   userSatisfaction: integer('user_satisfaction'),
   sessionRating: integer('session_rating'),
+
+  // Résumé conversationnel (SummaryBuffer pattern)
+  conversationSummary: text('conversation_summary'),
+  summaryUpToMessageId: uuid('summary_up_to_message_id'),
 
   // Métadonnées
   // CRITICAL FIX: JSONB default must use sql`'{}'::jsonb` NOT .default({})
@@ -590,6 +602,41 @@ export const files = pgTable('files', {
 }));
 
 // =============================================
+// SESSION FILES - Pivot many-to-many sessions ↔ files
+// =============================================
+
+/**
+ * Table session_files - Fichiers attachés à une session de chat
+ *
+ * Permet aux élèves de gérer quels fichiers du classeur sont
+ * injectés dans le contexte AI d'une session donnée.
+ */
+export const sessionFiles = pgTable('session_files', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id').notNull(),
+  fileId: uuid('file_id').notNull(),
+  attachedAt: timestamp('attached_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  sessionIdFk: foreignKey({
+    columns: [table.sessionId],
+    foreignColumns: [studySessions.id],
+    name: 'session_files_session_id_fkey'
+  }).onDelete('cascade'),
+
+  fileIdFk: foreignKey({
+    columns: [table.fileId],
+    foreignColumns: [files.id],
+    name: 'session_files_file_id_fkey'
+  }).onDelete('cascade'),
+
+  sessionFileUnique: unique('session_files_session_file_unique')
+    .on(table.sessionId, table.fileId),
+
+  sessionIdx: index('idx_session_files_session').on(table.sessionId),
+  fileIdx: index('idx_session_files_file').on(table.fileId),
+}));
+
+// =============================================
 // RELATIONS DRIZZLE
 // =============================================
 
@@ -627,6 +674,12 @@ export const userRelations = relations(user, ({ one, many }) => ({
   }),
   // Child has mappings to parent's connection
   pronoteChildMappings: many(pronoteChildMappings),
+
+  // Cognitive Profile (agent-updated)
+  cognitiveProfile: one(studentCognitiveProfiles, {
+    fields: [user.id],
+    references: [studentCognitiveProfiles.userId],
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -650,6 +703,7 @@ export const studySessionsRelations = relations(studySessions, ({ one, many }) =
   }),
   messages: many(messages),
   costTracking: many(costTracking),
+  sessionFiles: many(sessionFiles),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -677,10 +731,22 @@ export const costTrackingRelations = relations(costTracking, ({ one }) => ({
   }),
 }));
 
-export const filesRelations = relations(files, ({ one }) => ({
+export const filesRelations = relations(files, ({ one, many }) => ({
   user: one(user, {
     fields: [files.userId],
     references: [user.id]
+  }),
+  sessionFiles: many(sessionFiles),
+}));
+
+export const sessionFilesRelations = relations(sessionFiles, ({ one }) => ({
+  session: one(studySessions, {
+    fields: [sessionFiles.sessionId],
+    references: [studySessions.id]
+  }),
+  file: one(files, {
+    fields: [sessionFiles.fileId],
+    references: [files.id]
   }),
 }));
 
@@ -1181,6 +1247,49 @@ export const learningCardsRelations = relations(learningCards, ({ one }) => ({
   }),
 }));
 
+// =============================================
+// STUDENT COGNITIVE PROFILES
+// =============================================
+
+/**
+ * Table student_cognitive_profiles - Profil cognitif persistant
+ *
+ * Mis à jour par l'agent IA au fil des conversations.
+ * Utilisé pour personnaliser les réponses pédagogiques.
+ */
+export const studentCognitiveProfiles = pgTable('student_cognitive_profiles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: varchar('user_id', { length: 255 }).notNull().unique(),
+
+  // Profil cognitif (mis à jour par l'agent)
+  strengths: jsonb('strengths').default(sql`'[]'::jsonb`),
+  weaknesses: jsonb('weaknesses').default(sql`'[]'::jsonb`),
+  preferredStyle: varchar('preferred_style', { length: 50 }),
+
+  // Historique des observations (append-only, max 50 entries)
+  observations: jsonb('observations').default(sql`'[]'::jsonb`),
+
+  // Timestamps
+  lastUpdatedByAgent: timestamp('last_updated_by_agent', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [user.id],
+    name: 'student_cognitive_profiles_user_id_fkey'
+  }).onDelete('cascade'),
+
+  userIdIdx: index('idx_student_cognitive_profiles_user_id').on(table.userId),
+}));
+
+export const studentCognitiveProfilesRelations = relations(studentCognitiveProfiles, ({ one }) => ({
+  user: one(user, {
+    fields: [studentCognitiveProfiles.userId],
+    references: [user.id]
+  }),
+}));
+
 // Subscription System Types
 export type SubscriptionPlanTypeEnum = typeof subscriptionPlanTypeEnum.enumValues[number];
 export type SubscriptionStatusEnum = typeof subscriptionStatusEnum.enumValues[number];
@@ -1264,3 +1373,38 @@ export interface FSRSData {
   state?: number; // 0=new, 1=learning, 2=review, 3=relearning
   lastReview?: string; // ISO date
 }
+
+// Cognitive Profile Types
+export type StudentCognitiveProfile = typeof studentCognitiveProfiles.$inferSelect;
+export type NewStudentCognitiveProfile = typeof studentCognitiveProfiles.$inferInsert;
+
+export interface CognitiveObservation {
+  date: string;
+  observation: string;
+  subject?: string;
+}
+
+// Session Files Types (Classeur)
+export type SessionFile = typeof sessionFiles.$inferSelect;
+export type NewSessionFile = typeof sessionFiles.$inferInsert;
+
+// =============================================
+// WAITLIST - Landing page email collection
+// =============================================
+
+/**
+ * Table waitlist_entries - Collecte d'emails pour la liste d'attente
+ * Utilisée par la landing page avant le lancement de l'app mobile
+ */
+export const waitlistEntries = pgTable('waitlist_entries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 320 }).notNull().unique(),
+  source: varchar('source', { length: 50 }), // ex: "landing-hero", "pricing-free"
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  emailIdx: index('idx_waitlist_entries_email').on(table.email),
+}));
+
+// Waitlist Types
+export type WaitlistEntry = typeof waitlistEntries.$inferSelect;
+export type NewWaitlistEntry = typeof waitlistEntries.$inferInsert;

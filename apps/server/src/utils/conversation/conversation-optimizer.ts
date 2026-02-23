@@ -1,20 +1,72 @@
 /**
- * Optimiseur de conversations - Simple pass-through
+ * Optimiseur de conversations — SummaryBuffer pattern
  *
- * Best Practice 2025 (Buffer Memory):
- * Avec 20 messages max depuis la DB (~4000 tokens),
- * on est largement dans le budget Gemini (8000 tokens historique).
- * Pas besoin de résumé - garder l'historique tel quel.
+ * Best Practice 2026:
+ * - Si pas de résumé → retourner l'historique tel quel (backward compatible)
+ * - Si résumé disponible → injecter un message synthétique de résumé + historique récent
+ * - Budget tokens géré par truncation intelligente (sentence-aware)
  */
 
-import type { IAIMessage } from './types.js';
+import type { IAIMessage, OptimizationContext } from './types.js';
+import { estimateTokens, truncateToTokenBudget, calculateBudget } from '../../services/chat/token-budget.service.js';
 
 /**
- * Retourne l'historique tel quel (simple Buffer Memory)
- *
- * Avec limite de 20 messages en DB, pas besoin de compression.
- * Le sliding window de 20 messages est suffisant pour le contexte pédagogique.
+ * Nombre max de messages récents gardés verbatim (5 échanges user+assistant)
  */
-export function optimizeConversationHistory(history: IAIMessage[]): IAIMessage[] {
-  return history;
+const RECENT_WINDOW_SIZE = 10;
+
+/**
+ * Optimise l'historique conversationnel avec le pattern SummaryBuffer.
+ *
+ * - Sans résumé: retourne l'historique tel quel (backward compatible)
+ * - Avec résumé: [message résumé synthétique] + [N derniers messages verbatim]
+ * - Budget tokens respecté via truncation intelligente
+ */
+export function optimizeConversationHistory(
+  history: IAIMessage[],
+  context?: OptimizationContext
+): IAIMessage[] {
+  // Backward compatible: pas de résumé → pass-through
+  if (!context?.conversationSummary) {
+    return history;
+  }
+
+  const budget = calculateBudget();
+
+  // Tronquer le résumé au budget alloué
+  const { text: truncatedSummary } = truncateToTokenBudget(
+    context.conversationSummary,
+    budget.summaryMaxTokens
+  );
+
+  // Créer le message synthétique de résumé
+  const summaryMessage: IAIMessage = {
+    role: 'system',
+    content: `[Résumé de la conversation précédente]\n${truncatedSummary}`,
+    timestamp: new Date().toISOString(),
+  };
+
+  // Garder les messages récents (fenêtre glissante)
+  const recentMessages = history.slice(-RECENT_WINDOW_SIZE);
+
+  // Vérifier le budget tokens pour l'historique récent
+  const historyText = recentMessages.map(m => m.content).join('\n');
+  const historyTokens = estimateTokens(historyText);
+
+  // Si l'historique récent dépasse le budget, supprimer les plus anciens
+  if (historyTokens > budget.historyMaxTokens) {
+    let currentTokens = historyTokens;
+    const trimmed = [...recentMessages];
+
+    while (trimmed.length > 2 && currentTokens > budget.historyMaxTokens) {
+      const removed = trimmed.shift();
+      if (removed) {
+        currentTokens -= estimateTokens(removed.content);
+      }
+    }
+
+    return [summaryMessage, ...trimmed];
+  }
+
+  return [summaryMessage, ...recentMessages];
 }

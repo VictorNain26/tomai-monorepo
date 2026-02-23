@@ -99,7 +99,7 @@ function ChatMockup({ example }: { example: Example }) {
           <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500/80" />
         </div>
         <span className="ml-3 text-xs font-medium text-muted-foreground">
-          Tom – {example.subject}
+          TomIA – {example.subject}
         </span>
       </div>
 
@@ -155,7 +155,7 @@ const DynamicChat = dynamic(() => Promise.resolve(RandomChatMockup), {
 export function HeroMockup() {
   return (
     <div className="relative mx-auto w-full max-w-md lg:max-w-none animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-      <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-blue-600/20 rounded-2xl blur-lg opacity-30" />
+      <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-violet/20 rounded-2xl blur-lg opacity-30" />
       <DynamicChat />
     </div>
   );

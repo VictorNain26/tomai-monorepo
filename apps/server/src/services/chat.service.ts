@@ -66,32 +66,28 @@ export interface UserSession {
 
 export class ChatService {
   /**
-   * Get existing active session for subject, or create a new one
-   * Pattern: Session unique par matière
+   * Get existing active session for user (any subject), or create a new one
+   * Pattern: Chat unique multi-matière
    */
-  async getOrCreateSessionBySubject(userId: string, subject: string): Promise<string> {
+  async getOrCreateActiveSession(userId: string): Promise<string> {
     try {
-      // Chercher une session active existante pour cette matière
-      const existingSession = await studySessionsRepository.findActiveByUserSubject(userId, subject);
+      const existingSession = await studySessionsRepository.findActiveByUser(userId);
 
       if (existingSession) {
-        logger.info('Resuming existing session for subject', {
+        logger.info('Resuming existing active session', {
           sessionId: existingSession.id,
           userId,
-          subject,
-          operation: 'getOrCreateSessionBySubject:resume'
+          operation: 'getOrCreateActiveSession:resume'
         });
         return existingSession.id;
       }
 
-      // Pas de session active → en créer une nouvelle
-      return await this.createSession(userId, subject);
+      return await this.createSession(userId, 'général');
     } catch (error) {
-      logger.error('Failed to get or create session', {
+      logger.error('Failed to get or create active session', {
         _error: error instanceof Error ? error.message : String(error),
         userId,
-        subject,
-        operation: 'getOrCreateSessionBySubject',
+        operation: 'getOrCreateActiveSession',
         severity: 'high' as const
       });
       throw error;
@@ -302,11 +298,43 @@ export class ChatService {
   }
 
   /**
+   * Get session summary data for SummaryBuffer pattern
+   */
+  async getSessionWithSummary(sessionId: string): Promise<{
+    conversationSummary: string | null;
+    summaryUpToMessageId: string | null;
+  } | null> {
+    try {
+      const validSessionId = safeUUID(sessionId);
+      if (!validSessionId) return null;
+
+      const session = await studySessionsRepository.findById(validSessionId);
+      if (!session) return null;
+
+      return {
+        conversationSummary: session.conversationSummary ?? null,
+        summaryUpToMessageId: session.summaryUpToMessageId ?? null,
+      };
+    } catch (_error) {
+      logger.error('Error getting session summary', {
+        operation: 'chat:session:summary',
+        _error: _error instanceof Error ? _error.message : String(_error),
+        sessionId,
+        severity: 'medium' as const
+      });
+      return null;
+    }
+  }
+
+  /**
    * Get session message history with UUID validation
    * Options permettent de limiter le nombre de messages pour l'historique conversationnel
    * MAIS gardent tous les fichiers pour maintenir le contexte complet
+   *
+   * afterMessageId: Si fourni, ne retourne que les messages APRÈS ce message ID
+   * (utilisé avec SummaryBuffer pour ne charger que les messages récents)
    */
-  async getSessionHistory(sessionId: string, options?: { limit?: number }): Promise<DbMessage[]> {
+  async getSessionHistory(sessionId: string, options?: { limit?: number; afterMessageId?: string }): Promise<DbMessage[]> {
     try {
       // Valider l'UUID avant la requête
       const validSessionId = safeUUID(sessionId);
@@ -319,7 +347,15 @@ export class ChatService {
         return [];
       }
 
-      const sessionMessages = await messagesRepository.findBySessionId(validSessionId);
+      let sessionMessages = await messagesRepository.findBySessionId(validSessionId);
+
+      // Filtrer par afterMessageId si fourni (SummaryBuffer: ne garder que les récents)
+      if (options?.afterMessageId) {
+        const cutoffIndex = sessionMessages.findIndex(m => m.id === options.afterMessageId);
+        if (cutoffIndex !== -1) {
+          sessionMessages = sessionMessages.slice(cutoffIndex + 1);
+        }
+      }
 
       // Si limite spécifiée, l'appliquer MAIS garder TOUS les messages avec fichiers
       if (options?.limit && sessionMessages.length > options.limit) {

@@ -4,8 +4,7 @@ import {
   BrainCircuit,
   LineChart,
   BookOpen,
-  ShieldCheck,
-  Gamepad2,
+  Sparkles,
   Clock
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -14,51 +13,38 @@ import { SectionHeader } from "../atoms/section-header";
 const FEATURES = [
   {
     title: "Apprendre en réfléchissant",
-    description: "Tom pose les bonnes questions pour guider votre enfant vers la solution. Il comprend vraiment et retient durablement.",
+    description: "Votre enfant construit sa compréhension au lieu de copier des réponses.",
     icon: BrainCircuit,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-    colSpan: "lg:col-span-2",
+    color: "text-primary",
+    bg: "bg-primary/10",
   },
   {
     title: "Chaque enfant avance à son rythme",
-    description: "Tom identifie les lacunes et adapte ses explications au niveau réel de votre enfant, sans pression.",
+    description: "TomIA détecte les lacunes et adapte ses explications en temps réel.",
     icon: LineChart,
     color: "text-green-500",
     bg: "bg-green-500/10",
-    colSpan: "lg:col-span-1",
   },
   {
     title: "Aligné sur les programmes Éduscol",
-    description: "Du CP à la Terminale, Tom suit les programmes officiels du Ministère : Maths, Français, Histoire-Géo, Sciences...",
+    description: "Du CP à la Terminale, TomIA suit les programmes officiels du Ministère de l'Éducation nationale.",
     icon: BookOpen,
-    color: "text-purple-500",
-    bg: "bg-purple-500/10",
-    colSpan: "lg:col-span-1",
-  },
-  {
-    title: "Vos données protégées en France",
-    description: "Hébergement en Europe, conformité RGPD. Aucune publicité, aucune revente de données. Jamais.",
-    icon: ShieldCheck,
-    color: "text-red-500",
-    bg: "bg-red-500/10",
-    colSpan: "lg:col-span-2",
+    color: "text-violet",
+    bg: "bg-violet/10",
   },
   {
     title: "Votre enfant reste motivé",
-    description: "Un système de récompenses encourage la régularité. Sessions courtes de 15-20 min pour un apprentissage efficace.",
-    icon: Gamepad2,
+    description: "Fiches auto-générées et répétition espacée pour ancrer durablement.",
+    icon: Sparkles,
     color: "text-yellow-500",
     bg: "bg-yellow-500/10",
-    colSpan: "lg:col-span-1",
   },
   {
     title: "Disponible quand vous en avez besoin",
-    description: "Aide aux devoirs accessible 24h/24 : le soir, le week-end, pendant les vacances. Votre enfant n'est jamais bloqué.",
+    description: "Le soir, le week-end, en vacances — sur iOS et Android, partout et à tout moment.",
     icon: Clock,
     color: "text-cyan-500",
     bg: "bg-cyan-500/10",
-    colSpan: "lg:col-span-2",
   },
 ];
 
@@ -67,14 +53,14 @@ const containerVariants = {
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1
-    }
-  }
+      staggerChildren: 0.1,
+    },
+  },
 };
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
+  show: { opacity: 1, y: 0 },
 };
 
 export function Features() {
@@ -97,7 +83,7 @@ export function Features() {
             <motion.div
               key={index}
               variants={itemVariants}
-              className={`group relative overflow-hidden rounded-2xl bg-card border border-border p-8 transition-all duration-300 hover:shadow-xl hover:border-transparent ${feature.colSpan}`}
+              className="group relative overflow-hidden rounded-2xl bg-card border border-border p-8 transition-all duration-300 hover:shadow-xl hover:border-transparent"
             >
               {/* Gradient Border on Hover */}
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />

@@ -37,7 +37,7 @@ export function initializeAppApi(): void {
     console.warn('[API] Session expired - redirecting to login');
     // Dynamic import to avoid native module access at module load
     import('expo-router').then(({ router }) => {
-      router.replace('/login');
+      router.replace('/(auth)/login');
     });
   });
 }

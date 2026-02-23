@@ -9,33 +9,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@repo/api';
 import { useUser } from '@/lib/auth';
-import { enrichSubjectKey } from '@/constants/subjects';
 
 // ============================================================================
 // TYPES
 // ============================================================================
-
-/** Subject with UI metadata (enriched client-side) */
-export interface Subject {
-  key: string;
-  name: string;
-  description: string;
-  emoji: string;
-  color: string;
-  ragAvailable: boolean;
-}
-
-/** Raw response from backend (only key + ragAvailable) */
-interface RagSubject {
-  key: string;
-  ragAvailable: boolean;
-}
-
-interface SubjectsResponse {
-  success: boolean;
-  level: string;
-  subjects: RagSubject[];
-}
 
 export interface TokenUsage {
   plan: 'free' | 'premium';
@@ -76,7 +53,6 @@ interface LatestSessionResponse {
 // ============================================================================
 
 const queryKeys = {
-  subjects: (level: string) => ['education', 'subjects', level] as const,
   usage: (userId: string) => ['subscription', 'usage', userId] as const,
   latestSession: ['chat', 'latest'] as const,
 };
@@ -84,21 +60,6 @@ const queryKeys = {
 // ============================================================================
 // API FUNCTIONS
 // ============================================================================
-
-async function fetchSubjects(level: string): Promise<Subject[]> {
-  const response = await apiClient.get<SubjectsResponse>(
-    `/api/subjects/${level}`
-  );
-  // Enrich RAG subjects with UI metadata (name, description, emoji, color)
-  return response.subjects.map((ragSubject) => {
-    const metadata = enrichSubjectKey(ragSubject.key);
-    return {
-      key: ragSubject.key,
-      ragAvailable: ragSubject.ragAvailable,
-      ...metadata,
-    };
-  });
-}
 
 async function fetchTokenUsage(userId: string): Promise<TokenUsage> {
   const response = await apiClient.get<UsageResponse>(
@@ -128,14 +89,6 @@ export function useStudentDashboard() {
   const userId = user?.id ?? '';
   const schoolLevel = user?.schoolLevel ?? 'sixieme';
 
-  // Fetch subjects for user's level
-  const subjectsQuery = useQuery({
-    queryKey: queryKeys.subjects(schoolLevel),
-    queryFn: () => fetchSubjects(schoolLevel),
-    enabled: !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
   // Fetch token usage
   const usageQuery = useQuery({
     queryKey: queryKeys.usage(userId),
@@ -154,11 +107,6 @@ export function useStudentDashboard() {
   });
 
   return {
-    // Subjects
-    subjects: subjectsQuery.data ?? [],
-    isLoadingSubjects: subjectsQuery.isLoading,
-    subjectsError: subjectsQuery.error?.message ?? null,
-
     // Token usage
     usage: usageQuery.data ?? null,
     isLoadingUsage: usageQuery.isLoading,

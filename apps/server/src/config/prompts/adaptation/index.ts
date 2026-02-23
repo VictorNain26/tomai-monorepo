@@ -11,6 +11,7 @@ export {
 
 export {
   generateSubjectSpecifics,
+  generateAllSubjectSpecifics,
   normalizeSubject,
   requiresKaTeX,
   type SubjectType

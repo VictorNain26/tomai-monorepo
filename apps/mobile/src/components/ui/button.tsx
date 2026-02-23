@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useCallback } from 'react';
 import {
   Pressable,
   ActivityIndicator,
@@ -10,6 +10,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
 import { colors, opacity } from '@/lib/styles';
+import { haptics } from '@/lib/haptics';
 
 /**
  * TomAI Button Component - 2026
@@ -37,10 +38,10 @@ const buttonVariants = cva(
       },
       size: {
         default: 'h-12 px-6 py-3',
-        sm: 'h-10 px-4 py-2',
+        sm: 'h-11 px-4 py-2', // 44px minimum touch target (WCAG 2.1)
         lg: 'h-14 px-8 py-4',
         icon: 'h-12 w-12',
-        'icon-sm': 'h-10 w-10',
+        'icon-sm': 'h-11 w-11', // 44px minimum touch target (was 40px)
         'icon-lg': 'h-14 w-14',
       },
     },
@@ -84,6 +85,8 @@ export function useButtonTextClass() {
   return useContext(TextClassContext);
 }
 
+type HapticFeedback = 'none' | 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning';
+
 interface ButtonProps
   extends Omit<PressableProps, 'style'>,
     VariantProps<typeof buttonVariants> {
@@ -97,6 +100,11 @@ interface ButtonProps
   accessibilityHint?: string;
   /** Override accessibility role (default: button) */
   accessibilityRole?: AccessibilityRole;
+  /**
+   * Haptic feedback on press (default: 'light' for standard buttons, 'heavy' for destructive)
+   * Set to 'none' to disable haptics
+   */
+  haptic?: HapticFeedback;
 }
 
 function Button({
@@ -110,10 +118,45 @@ function Button({
   accessibilityLabel,
   accessibilityHint,
   accessibilityRole = 'button',
+  haptic,
+  onPress,
   ...props
 }: ButtonProps) {
   const textClass = buttonTextVariants({ variant, size });
   const isDisabled = disabled || isLoading;
+
+  // Determine haptic type based on variant (unless explicitly set)
+  const hapticType: HapticFeedback = haptic ?? (variant === 'destructive' ? 'heavy' : 'light');
+
+  // Wrap onPress to include haptic feedback
+  const handlePress = useCallback(
+    (e: Parameters<NonNullable<PressableProps['onPress']>>[0]) => {
+      if (hapticType !== 'none') {
+        switch (hapticType) {
+          case 'light':
+            haptics.light();
+            break;
+          case 'medium':
+            haptics.medium();
+            break;
+          case 'heavy':
+            haptics.heavy();
+            break;
+          case 'success':
+            haptics.success();
+            break;
+          case 'error':
+            haptics.error();
+            break;
+          case 'warning':
+            haptics.warning();
+            break;
+        }
+      }
+      onPress?.(e);
+    },
+    [hapticType, onPress]
+  );
 
   // Determine spinner color based on variant (using new color palette)
   const getSpinnerColor = () => {
@@ -159,6 +202,7 @@ function Button({
           disabled: isDisabled,
           busy: isLoading,
         }}
+        onPress={handlePress}
         {...props}
       >
         {isLoading ? (
@@ -188,3 +232,4 @@ function ButtonText({
 }
 
 export { Button, ButtonText, buttonVariants, buttonTextVariants };
+export type { ButtonProps, HapticFeedback };

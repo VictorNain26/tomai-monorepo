@@ -1,17 +1,20 @@
 /**
- * Routes Chat SSE Streaming - Gemini 3 Flash
+ * Routes Chat SSE Streaming - Gemini Agent Multi-Tool
  *
  * Token-optimized architecture:
  * - Accepts { content, data } (frontend sends ONLY new message)
  * - Backend manages history from DB (limit: 10, auto-summarization)
  * - Implicit caching via stable system prompt prefix
- * - RAG via Gemini function calling
+ * - Agent multi-tool: RAG, Pronote, flashcards, profil cognitif
  */
 
 import { Elysia, t, sse } from 'elysia';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { chatService } from '../services/chat.service.js';
-import { fileContextService, streamingService } from '../services/chat/index.js';
+import { sessionFilesRepository } from '../db/repositories/index.js';
+import { fileContextService, streamingService, getLearningContext, summarizationService } from '../services/chat/index.js';
+import { cognitiveProfileService } from '../services/cognitive-profile.service.js';
+import { ragService } from '../services/rag.service.js';
 import { tokenQuotaService } from '../services/token-quota.service.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
@@ -20,7 +23,7 @@ import type { EducationLevelType } from '../types/index.js';
  * Chat Request data - Token optimized format
  */
 interface ChatRequestData {
-  subject: string;
+  subject?: string;
   sessionId?: string;
   schoolLevel?: string;
   firstName?: string;
@@ -28,6 +31,16 @@ interface ChatRequestData {
   fileId?: string;
   /** IDs des fichiers attachés (images, PDFs) - multimodal */
   fileIds?: string[];
+}
+
+// Track active SSE connections per user (single-instance guard)
+const activeSSEConnections = new Map<string, number>();
+const MAX_CONCURRENT_SSE = 2;
+
+/** Strip null bytes and control characters from user input */
+function sanitizePrompt(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
 
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
@@ -81,6 +94,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     // Extraire les métadonnées depuis data
     const { subject, sessionId, schoolLevel, firstName, fileId, fileIds: rawFileIds } = data;
     const fileIds = rawFileIds ?? (fileId ? [fileId] : []);
+    const safeContent = sanitizePrompt(content ?? '');
 
     // 2. Vérification quota tokens (rolling window 5h + daily cap)
     const quotaCheck = await tokenQuotaService.checkQuota(user.id);
@@ -98,19 +112,42 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       };
     }
 
-    // 3. Validation contenu OU fichiers requis (Best Practices 2025)
-    if ((!content || content.trim().length === 0) && fileIds.length === 0) {
+    // 3. Validation contenu OU fichiers requis
+    if (safeContent.trim().length === 0 && fileIds.length === 0) {
       set.status = 400;
       return { _error: 'Validation Error', message: 'Content or files required for streaming' };
     }
 
-    // 4. Récupérer session existante pour cette matière, ou en créer une nouvelle
-    const chatSessionId = sessionId?.trim()
-      ? sessionId
-      : await chatService.getOrCreateSessionBySubject(user.id, subject);
+    // 3b. Concurrent SSE limit
+    const currentConns = activeSSEConnections.get(user.id) ?? 0;
+    if (currentConns >= MAX_CONCURRENT_SSE) {
+      set.status = 429;
+      return { _error: 'Too Many Streams', message: 'Trop de conversations simultanées. Attends la fin de la réponse en cours.' };
+    }
+    activeSSEConnections.set(user.id, currentConns + 1);
 
-    // 5. Récupérer historique (20 messages = 10 échanges complets, Best Practices 2025)
-    const sessionHistory = await chatService.getSessionHistory(chatSessionId, { limit: 20 });
+    // 4. Récupérer session existante ou en créer une nouvelle
+    let chatSessionId: string;
+    if (sessionId?.trim()) {
+      // Verify session belongs to user (prevent session hijacking)
+      const session = await chatService.getSession(sessionId);
+      if (!session || session.userId !== user.id) {
+        set.status = 403;
+        return { _error: 'Access Denied', message: 'Session not found or access denied' };
+      }
+      chatSessionId = sessionId;
+    } else {
+      // Chat unique multi-matière
+      chatSessionId = await chatService.getOrCreateActiveSession(user.id);
+    }
+
+    // 5. Charger résumé conversationnel + historique récent (SummaryBuffer pattern)
+    const sessionSummary = await chatService.getSessionWithSummary(chatSessionId);
+
+    const sessionHistory = await chatService.getSessionHistory(chatSessionId, {
+      limit: 20,
+      afterMessageId: sessionSummary?.summaryUpToMessageId ?? undefined,
+    });
 
     // Formater l'historique avec les fichiers attachés pour contexte visuel persistant
     // Best Practice 2026: Gemini voit les images des messages précédents
@@ -138,21 +175,54 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         };
       });
 
-    // 5b. Préparer contexte fichier + fichiers multimodaux en parallèle
-    const [fileContext, multimodalFiles] = await Promise.all([
-      // Contexte texte enrichi (analyse, extraction) - rétrocompatibilité
+    // 5b. Préparer contexte fichier + fichiers multimodaux + profil cognitif + learning + RAG spéculatif en parallèle
+    const [fileContext, multimodalFiles, cognitiveProfileSummary, learningContext, speculativeRag] = await Promise.all([
+      // Contexte texte enrichi (analyse, extraction) pour tous les fichiers
       fileContextService.prepareFileContext({
-        fileId: fileIds[0], // Premier fichier pour enrichissement texte (legacy)
-        content: content ?? '',
+        fileIds,
+        content: safeContent,
         schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
         userId: user.id,
-        sessionHistory
+        sessionId: chatSessionId
       }),
       // Fichiers multimodaux pour Gemini (images, PDFs via Files API)
-      fileContextService.prepareMultimodalFiles(fileIds)
+      fileContextService.prepareMultimodalFiles(fileIds),
+      // Profil cognitif pour personnalisation du system prompt
+      cognitiveProfileService.getProfileSummary(user.id),
+      // Contexte learning (cartes dues, sujets faibles)
+      getLearningContext(user.id),
+      // RAG spéculatif — lancer en parallèle, résultat ignoré si non pertinent
+      ragService.hybridSearch({
+        query: safeContent,
+        niveau: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
+        matiere: subject ?? '',
+        limit: 5,
+      }).catch(() => null)
     ]);
 
-    const { attachedFileInfo, enrichedContent } = fileContext;
+    const { attachedFileInfos, enrichedContent: rawEnrichedContent } = fileContext;
+    // Use first file info for message metadata (DB column is single object)
+    const attachedFileInfo = attachedFileInfos[0] ?? null;
+
+    // Cap enriched content to prevent sending huge payloads to Gemini
+    const MAX_ENRICHED_CONTENT_CHARS = 50_000;
+    const enrichedContent = rawEnrichedContent.length > MAX_ENRICHED_CONTENT_CHARS
+      ? rawEnrichedContent.slice(0, MAX_ENRICHED_CONTENT_CHARS) + '\n\n[Contenu tronqué]'
+      : rawEnrichedContent;
+
+    // Inject speculative RAG context if results are relevant (score >= 0.5)
+    const RAG_RELEVANCE_THRESHOLD = 0.5;
+    let ragEnrichedContent = enrichedContent;
+    if (speculativeRag && speculativeRag.averageSimilarity >= RAG_RELEVANCE_THRESHOLD && speculativeRag.context) {
+      ragEnrichedContent = `📚 PROGRAMMES OFFICIELS\n${speculativeRag.context}\n\n${enrichedContent}`;
+      logger.info('Speculative RAG injected', {
+        userId: user.id,
+        avgSimilarity: speculativeRag.averageSimilarity,
+        strategy: speculativeRag.strategy,
+        searchTimeMs: speculativeRag.searchTime,
+        operation: 'chat-stream:speculative-rag'
+      });
+    }
 
     const startTime = Date.now();
 
@@ -176,22 +246,41 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     await chatService.saveMessage(
       chatSessionId,
       'user',
-      content ?? '',
+      safeContent,
       attachedFileInfo ? { attachedFile: attachedFileInfo } : {}
     );
+
+    // 6b. Auto-attach fichiers dans session_files (classeur)
+    if (fileIds.length > 0) {
+      await Promise.all(
+        fileIds.map(fId => sessionFilesRepository.attach(chatSessionId, fId))
+      );
+    }
 
     // ═══════════════════════════════════════════════════════════════════
     // PHASE 3: Streaming via yield sse() - Headers envoyés au premier yield
     // ═══════════════════════════════════════════════════════════════════
 
-    // 7. Générer et yield les chunks SSE (avec contenu enrichi + fichiers multimodaux)
+    // 7. Immediate SSE acknowledgment — user sees "thinking" instantly
+    yield sse({ data: {
+      type: 'status',
+      id: `ack_${Date.now()}`,
+      model: 'gemini-3-flash-preview',
+      timestamp: Date.now(),
+      status: 'thinking'
+    } });
+
+    // 8. Générer et yield les chunks SSE (avec contenu enrichi + fichiers multimodaux)
     const streamGenerator = streamingService.generateStreamChunks({
       userId: user.id,
-      content: enrichedContent, // Contenu enrichi avec analyse texte (legacy)
-      subject,
+      content: ragEnrichedContent, // Contenu enrichi + RAG spéculatif si pertinent
+      // Chat multi-matière: ne pas passer subject pour que le system prompt inclue toutes les matières
       schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
       firstName: firstName ?? user.firstName ?? undefined,
       sessionId: chatSessionId,
+      cognitiveProfileSummary,
+      learningContext,
+      conversationSummary: sessionSummary?.conversationSummary,
       conversationHistory: formattedHistory,
       // Fichiers multimodaux pour Gemini (images/PDFs via Files API ou base64)
       files: multimodalFiles.map(f => ({
@@ -202,10 +291,10 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       }))
     });
 
-    // 8. Variable pour tracking du contenu complet
+    // 9. Variable pour tracking du contenu complet
     let fullContent = '';
 
-    // 9. Yield chaque chunk au format Chat Protocol
+    // 10. Yield chaque chunk au format Chat Protocol
     for await (const chunk of streamGenerator) {
 
       if (chunk.type === 'content') {
@@ -244,17 +333,38 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           operation: 'chat-stream:save'
         });
 
+        // Trigger async summarization (non-blocking, fire-and-forget)
+        summarizationService.summarizeIfNeeded(chatSessionId).catch(err => {
+          logger.error('Background summarization failed', {
+            _error: err instanceof Error ? err.message : String(err),
+            sessionId: chatSessionId,
+            operation: 'chat-stream:summarization-bg',
+            severity: 'low' as const,
+          });
+        });
+
         // Yield done chunk Chat Protocol
         yield sse({ data: chunk });
 
+      } else if (chunk.type === 'deck_created') {
+        // Deck created during tool call — forward to client
+        yield sse({ data: chunk });
+      } else if (chunk.type === 'status') {
+        // Heartbeat during tool calls — forward to client
+        yield sse({ data: chunk });
       } else if (chunk.type === 'error') {
         // Yield error chunk Chat Protocol
         yield sse({ data: chunk });
       }
     }
 
-    // 10. Yield [DONE] marker (Chat Protocol standard)
+    // 11. Yield [DONE] marker (Chat Protocol standard)
     yield sse({ data: '[DONE]' });
+
+    // Release concurrent SSE slot
+    const connCount = activeSSEConnections.get(user.id) ?? 1;
+    if (connCount <= 1) activeSSEConnections.delete(user.id);
+    else activeSSEConnections.set(user.id, connCount - 1);
 
     // Return explicite pour satisfaire TypeScript (generator terminé)
     return;
@@ -266,11 +376,11 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         description: 'New user message (backend manages history)'
       }),
       data: t.Object({
-        subject: t.String({
+        subject: t.Optional(t.String({
           minLength: 2,
           maxLength: 50,
-          description: 'Educational subject'
-        }),
+          description: 'Educational subject (optional for multi-subject chat)'
+        })),
         sessionId: t.Optional(t.String({
           minLength: 36,
           maxLength: 36,

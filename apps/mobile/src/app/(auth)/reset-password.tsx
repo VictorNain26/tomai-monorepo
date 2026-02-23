@@ -12,7 +12,6 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { Lock, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react-native';
@@ -21,15 +20,19 @@ import { resetPassword } from '@/lib/auth';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { bgColors } from '@/lib/styles';
+import { useToast } from '@/components/ui/toast';
+import { useIconColors } from '@/hooks';
+import { bgColors, colors } from '@/lib/styles';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const toast = useToast();
   const { token } = useLocalSearchParams<{ token?: string }>();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const iconColors = useIconColors();
   const [tokenValid, setTokenValid] = useState(true);
   const [resetSuccess, setResetSuccess] = useState(false);
 
@@ -50,18 +53,18 @@ export default function ResetPasswordScreen() {
 
   async function handleResetPassword() {
     if (!token) {
-      Alert.alert('Erreur', 'Token de réinitialisation manquant');
+      toast.error('Erreur', 'Token de réinitialisation manquant');
       return;
     }
 
     const passwordError = validatePassword(password);
     if (passwordError) {
-      Alert.alert('Erreur', passwordError);
+      toast.error('Erreur', passwordError);
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+      toast.error('Erreur', 'Les mots de passe ne correspondent pas');
       return;
     }
 
@@ -71,7 +74,7 @@ export default function ResetPasswordScreen() {
       await resetPassword(token, password);
       setResetSuccess(true);
     } catch (error) {
-      Alert.alert(
+      toast.error(
         'Erreur',
         (error as Error).message || 'Impossible de réinitialiser le mot de passe'
       );
@@ -85,8 +88,8 @@ export default function ResetPasswordScreen() {
     return (
       <View className="flex-1 justify-center bg-background px-6">
         <View className="items-center">
-          <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <CheckCircle color="hsl(142, 76%, 36%)" size={32} />
+          <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.success[10] }}>
+            <CheckCircle color={colors.success.DEFAULT} size={32} />
           </View>
 
           <Text variant="h2" className="text-center">
@@ -117,7 +120,7 @@ export default function ResetPasswordScreen() {
       <View className="flex-1 justify-center bg-background px-6">
         <View className="items-center">
           <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.destructive[10] }}>
-            <AlertCircle color="hsl(0, 84.2%, 60.2%)" size={32} />
+            <AlertCircle color={colors.destructive.DEFAULT} size={32} />
           </View>
 
           <Text variant="h2" className="text-center">
@@ -139,7 +142,7 @@ export default function ResetPasswordScreen() {
           </Button>
 
           <Link href="/(auth)/login" asChild>
-            <TouchableOpacity className="mt-4">
+            <TouchableOpacity className="mt-4" accessibilityLabel="Retour à la connexion">
               <Text className="text-primary">Retour à la connexion</Text>
             </TouchableOpacity>
           </Link>
@@ -163,15 +166,18 @@ export default function ResetPasswordScreen() {
           <TouchableOpacity
             onPress={() => router.back()}
             className="absolute left-6 top-16 flex-row items-center"
+            style={{ minHeight: 44 }}
+            accessibilityLabel="Retour"
+            accessibilityRole="button"
           >
-            <ArrowLeft color="hsl(222.2, 47.4%, 11.2%)" size={20} />
+            <ArrowLeft color={iconColors.foreground} size={20} />
             <Text className="ml-1 text-primary">Retour</Text>
           </TouchableOpacity>
 
           {/* Header */}
           <View className="mb-8 items-center">
             <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
-              <Lock color="hsl(222.2, 47.4%, 11.2%)" size={32} />
+              <Lock color={iconColors.foreground} size={32} />
             </View>
 
             <Text variant="h2" className="text-center">

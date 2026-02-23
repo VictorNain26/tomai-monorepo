@@ -44,6 +44,8 @@ export interface UpdateStudySessionInput {
   userSatisfaction?: number;
   sessionRating?: number;
   sessionMetadata?: Record<string, unknown>;
+  conversationSummary?: string;
+  summaryUpToMessageId?: string;
 }
 
 export class StudySessionsRepository {
@@ -90,16 +92,15 @@ export class StudySessionsRepository {
   }
 
   /**
-   * Find the active session for a user and subject
-   * Pattern: Session unique par matière (1 session par user+subject)
+   * Find the most recent active session for a user (any subject)
+   * Pattern: Session unique par élève (chat multi-matière)
    */
-  async findActiveByUserSubject(userId: string, subject: string): Promise<StudySession | undefined> {
+  async findActiveByUser(userId: string): Promise<StudySession | undefined> {
     const [session] = await db
       .select()
       .from(studySessions)
       .where(
         sql`${studySessions.userId} = ${userId}
-            AND ${studySessions.subject} = ${subject}
             AND ${studySessions.status} = 'active'`
       )
       .orderBy(desc(studySessions.startedAt))

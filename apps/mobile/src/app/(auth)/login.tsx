@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   TouchableOpacity,
   Pressable,
 } from 'react-native';
@@ -78,30 +77,40 @@ export default function LoginScreen() {
       if (accountType === 'parent') {
         const result = await signIn(identifier, password);
         if (result.error) {
-          setError(result.error.message ?? 'Email ou mot de passe incorrect');
+          setError('Identifiants incorrects');
           return;
         }
       } else {
         const result = await signInWithUsername(identifier, password);
         if (result.error) {
-          setError(result.error.message ?? "Nom d'utilisateur ou mot de passe incorrect");
+          setError('Identifiants incorrects');
           return;
         }
       }
       // Login successful - redirect to home which handles role-based routing
       router.replace('/');
-    } catch {
-      setError('Erreur de connexion. Vérifiez vos identifiants.');
+    } catch (err) {
+      console.error('[Login] Login failed:', err);
+      setError('Erreur de connexion. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }
   }
 
   async function handleGoogleLogin() {
+    setIsLoading(true);
+    setError(null);
     try {
-      await signInWithGoogle();
-    } catch {
-      Alert.alert('Erreur', 'Impossible de se connecter avec Google');
+      const result = await signInWithGoogle();
+      if (result === null) return; // User cancelled
+      if (result?.error) {
+        setError(result.error.message ?? 'Impossible de se connecter avec Google');
+      }
+    } catch (err) {
+      console.error('[Login] Google OAuth failed:', err);
+      setError('Impossible de se connecter avec Google');
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -185,6 +194,8 @@ export default function LoginScreen() {
             <View
               className="mb-4 rounded-xl p-3"
               style={{ backgroundColor: bgColors.destructive[10] }}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
             >
               <Text className="text-center text-destructive">{error}</Text>
             </View>
@@ -217,7 +228,7 @@ export default function LoginScreen() {
 
               {accountType === 'parent' && (
                 <Link href="/(auth)/forgot-password" asChild>
-                  <TouchableOpacity>
+                  <TouchableOpacity accessibilityLabel="Mot de passe oublié">
                     <Text variant="small" className="text-right text-primary">
                       Mot de passe oublié ?
                     </Text>
@@ -244,7 +255,7 @@ export default function LoginScreen() {
                 <View className="h-px flex-1 bg-border" />
               </View>
 
-              <Button variant="outline" onPress={handleGoogleLogin}>
+              <Button variant="outline" onPress={handleGoogleLogin} disabled={isLoading}>
                 <Text className="font-semibold">Continuer avec Google</Text>
               </Button>
             </>
@@ -255,7 +266,7 @@ export default function LoginScreen() {
             <View className="mt-8 flex-row justify-center">
               <Text variant="muted">Pas encore de compte ? </Text>
               <Link href="/(auth)/register" asChild>
-                <TouchableOpacity>
+                <TouchableOpacity accessibilityLabel="Créer un compte">
                   <Text className="font-semibold text-primary">S'inscrire</Text>
                 </TouchableOpacity>
               </Link>

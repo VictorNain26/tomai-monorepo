@@ -4,36 +4,20 @@
  */
 
 /**
- * URL de l'application client (app)
- * - Development: http://localhost:5173
- * - Production: https://app.tomai.fr
+ * URL du serveur backend
+ * - Development: http://localhost:3000
+ * - Production: https://api.tomia.fr (ou Koyeb URL)
  */
-export const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+export const SERVER_URL =
+  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 
 /**
  * URL de la landing page
  * - Development: http://localhost:3001
- * - Production: https://tomai.fr
+ * - Production: https://tomia.fr
  */
 export const LANDING_URL =
   process.env.NEXT_PUBLIC_LANDING_URL || "http://localhost:3001";
-
-/**
- * Routes de l'application
- */
-export const AppRoutes = {
-  /** Page d'inscription */
-  register: `${APP_URL}/auth/register`,
-  /** Page de connexion */
-  login: `${APP_URL}/auth/login`,
-  /** Dashboard parent */
-  parentDashboard: `${APP_URL}/parent/dashboard`,
-  /** Dashboard étudiant */
-  studentDashboard: `${APP_URL}/student/dashboard`,
-  /** Chat */
-  chat: `${APP_URL}/chat`,
-} as const;
 
 /**
  * Routes de la landing page
@@ -43,5 +27,4 @@ export const LandingRoutes = {
   pricing: `${LANDING_URL}/#pricing`,
   howItWorks: `${LANDING_URL}/#how-it-works`,
   features: `${LANDING_URL}/#features`,
-  testimonials: `${LANDING_URL}/#testimonials`,
 } as const;

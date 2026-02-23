@@ -1,21 +1,119 @@
 /**
- * Service de chat Gemini 3 Flash - @google/genai
+ * Service de chat Gemini 3 Flash - Agent multi-tool
  *
- * Token-optimized architecture:
- * - Backend manages history (limit: 20, auto-summarization when >10)
- * - Implicit caching via stable system prompt prefix
- * - Function calling for RAG (Qdrant + Mistral embeddings)
- * - SSE streaming with content/done/error chunks
+ * Architecture agent avec boucle d'exécution:
+ * - 6 outils: RAG, Pronote (devoirs/notes/EDT), flashcards, profil cognitif
+ * - Boucle while max 5 itérations (sécurité anti-boucle infinie)
+ * - Support multi-tool par itération
+ * - SSE streaming avec content/done/error chunks
  */
 
-import { GoogleGenAI, type FunctionDeclaration, type Part, type Content } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, type Part, type Content } from '@google/genai';
+import { eq, and, sql } from 'drizzle-orm';
 import { appConfig } from '../../config/app.config.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
-import { optimizeConversationHistory } from '../../utils/conversation/index.js';
-import { ragService } from '../rag.service.js';
+import { optimizeConversationHistory, type OptimizationContext } from '../../utils/conversation/index.js';
+import { agentToolDeclarations } from './tool-declarations.js';
+import { executeTool } from './tool-executor.js';
+import { db } from '../../db/connection.js';
+import { learningCards, learningDecks } from '../../db/schema.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const MAX_TOOL_ITERATIONS = 5;
+
+/** Map config string values to SDK ThinkingLevel enum */
+const THINKING_LEVEL_MAP: Record<string, ThinkingLevel> = {
+  minimal: ThinkingLevel.MINIMAL,
+  low: ThinkingLevel.LOW,
+  medium: ThinkingLevel.MEDIUM,
+  high: ThinkingLevel.HIGH,
+};
+
+/** Human-readable label for tool status SSE events */
+function getToolStatusLabel(name: string): string {
+  switch (name) {
+    case 'search_educational_content': return 'Recherche dans les programmes...';
+    case 'get_student_homework': return 'Consultation des devoirs...';
+    case 'get_student_grades': return 'Consultation des notes...';
+    case 'get_student_timetable': return "Consultation de l'emploi du temps...";
+    case 'generate_flashcards': return 'Création de flashcards...';
+    case 'get_student_profile': return 'Analyse du profil...';
+    default: return 'Traitement en cours...';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LEARNING CONTEXT
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Fetches learning context for the system prompt:
+ * - Number of cards due today
+ * - Subjects with most lapses (weak concepts)
+ */
+export async function getLearningContext(userId: string): Promise<string | null> {
+  try {
+    // Count due cards
+    const dueResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(learningCards)
+      .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
+      .where(and(
+        eq(learningDecks.userId, userId),
+        sql`(${learningCards.fsrsData}->>'due')::timestamptz <= now()`
+      ));
+
+    const dueCount = dueResult[0]?.count ?? 0;
+
+    // Find subjects with most lapses (weak concepts)
+    const weakSubjects = await db
+      .select({
+        subject: learningDecks.subject,
+        totalLapses: sql<number>`sum((${learningCards.fsrsData}->>'lapses')::int)::int`,
+      })
+      .from(learningCards)
+      .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
+      .where(and(
+        eq(learningDecks.userId, userId),
+        sql`(${learningCards.fsrsData}->>'lapses')::int > 0`
+      ))
+      .groupBy(learningDecks.subject)
+      .orderBy(sql`sum((${learningCards.fsrsData}->>'lapses')::int) desc`)
+      .limit(3);
+
+    if (dueCount === 0 && weakSubjects.length === 0) return null;
+
+    let context = '## CONTEXTE RÉVISION\n';
+
+    if (dueCount > 0) {
+      context += `L'élève a ${dueCount} carte${dueCount > 1 ? 's' : ''} de révision en attente.\n`;
+    }
+
+    if (weakSubjects.length > 0) {
+      const weakList = weakSubjects
+        .map(s => `${s.subject} (${s.totalLapses} erreurs)`)
+        .join(', ');
+      context += `Sujets à renforcer : ${weakList}.\n`;
+    }
+
+    context += '→ Si le sujet de la conversation touche un de ces thèmes, propose des flashcards à la fin.';
+
+    return context;
+  } catch (err) {
+    logger.warn('Failed to fetch learning context', {
+      operation: 'gemini-chat:learning-context',
+      _error: err instanceof Error ? err.message : String(err),
+      userId,
+    });
+    return null;
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -45,10 +143,16 @@ export interface HistoricalFileRef {
 export interface StreamGenerationParams {
   userId: string;
   content: string;
-  subject: string;
+  subject?: string;
   schoolLevel: EducationLevelType;
   firstName?: string;
   sessionId: string;
+  /** Résumé du profil cognitif (injecté dans le system prompt) */
+  cognitiveProfileSummary?: string | null;
+  /** Contexte learning (cartes dues, sujets faibles) */
+  learningContext?: string | null;
+  /** Résumé conversationnel (SummaryBuffer pattern) */
+  conversationSummary?: string | null;
   /** Fichiers attachés au message courant (images, PDFs) */
   files?: AttachedFile[];
   conversationHistory: Array<{
@@ -62,7 +166,7 @@ export interface StreamGenerationParams {
 
 /** SSE StreamChunk types (frontend compatibility) */
 export interface GeminiStreamChunk {
-  type: 'content' | 'done' | 'error';
+  type: 'content' | 'done' | 'error' | 'status' | 'deck_created';
   id: string;
   model: string;
   timestamp: number;
@@ -82,51 +186,23 @@ export interface GeminiStreamChunk {
     message: string;
     code?: string;
   };
+  // Status chunk fields (heartbeat during tool calls)
+  status?: string;
+  // Deck created event (from generate_flashcards tool)
+  deck?: {
+    deckId: string;
+    title: string;
+    cardCount: number;
+    subject: string;
+  };
   // TomAI custom metadata
   metadata?: {
     sessionId: string;
     usedRAG: boolean;
+    toolsUsed: string[];
+    toolCallsCount: number;
   };
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// RAG FUNCTION DECLARATION
-// ═══════════════════════════════════════════════════════════════════════════
-
-const ragSearchDeclaration: FunctionDeclaration = {
-  name: 'search_educational_content',
-  description: `Recherche dans les programmes officiels français (Éduscol).
-Utilise cet outil pour trouver des informations précises sur les contenus éducatifs.
-Retourne des extraits des programmes officiels avec leur source et pertinence.
-IMPORTANT: Toujours utiliser avant de répondre à une question scolaire.`,
-  parametersJsonSchema: {
-    type: 'object',
-    properties: {
-      query: {
-        type: 'string',
-        description: 'La question ou le sujet à rechercher dans les programmes officiels'
-      },
-      niveau: {
-        type: 'string',
-        enum: [
-          'cp', 'ce1', 'ce2', 'cm1', 'cm2',
-          'sixieme', 'cinquieme', 'quatrieme', 'troisieme',
-          'seconde', 'premiere', 'terminale'
-        ],
-        description: "Le niveau scolaire de l'élève"
-      },
-      matiere: {
-        type: 'string',
-        description: 'La matière scolaire (mathematiques, francais, histoire, etc.)'
-      },
-      limit: {
-        type: 'number',
-        description: 'Nombre maximum de résultats (1-10, défaut: 5)'
-      }
-    },
-    required: ['query', 'niveau', 'matiere']
-  }
-};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SERVICE
@@ -142,12 +218,14 @@ class GeminiChatService {
   }
 
   /**
-   * Construit le system prompt pour le chat socratique
+   * Construit le system prompt pour le chat socratique avec instructions multi-tool
    */
   private buildSystemPromptForChat(params: {
     level: EducationLevelType;
-    subject: string;
+    subject?: string;
     firstName?: string;
+    cognitiveProfileSummary?: string | null;
+    learningContext?: string | null;
   }): string {
     const levelText = getLevelText(params.level);
     const basePrompt = buildSystemPrompt({
@@ -157,11 +235,33 @@ class GeminiChatService {
       firstName: params.firstName
     });
 
-    // Ajouter instructions RAG tool
-    return basePrompt + `
+    const toolSection = `
 
-## OUTIL DE RECHERCHE
-Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.`;
+## OUTILS DISPONIBLES
+
+### RÈGLE OBLIGATOIRE - search_educational_content
+**Pour TOUTE question liée au programme scolaire**, tu DOIS t'appuyer sur le contexte des programmes officiels.
+Si un contexte "📚 PROGRAMMES OFFICIELS" est déjà présent dans le message, utilise-le directement.
+Sinon, appelle search_educational_content pour le récupérer.
+Ne réponds JAMAIS à une question scolaire sans contexte programme.
+Seules exceptions: salutations, questions personnelles, questions sur Pronote, demandes de flashcards.
+
+### RÈGLES D'UTILISATION
+- Utilise les outils de façon transparente, sans dire à l'élève que tu les utilises.
+- Consulte les devoirs/notes Pronote quand l'élève parle de ses devoirs, ses notes, ou un contrôle.
+- Génère des flashcards quand l'élève demande de réviser ou de s'entraîner.
+- Consulte le profil cognitif en début de conversation pour adapter ton approche.
+- TOUJOURS demander confirmation avant de générer des flashcards ("Veux-tu que je crée des cartes ?").`;
+
+    const profileSection = params.cognitiveProfileSummary
+      ? `\n\n## PROFIL DE L'ÉLÈVE\n${params.cognitiveProfileSummary}`
+      : '';
+
+    const learningSection = params.learningContext
+      ? `\n\n${params.learningContext}`
+      : '';
+
+    return basePrompt + toolSection + profileSection + learningSection;
   }
 
   /**
@@ -173,7 +273,6 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
     const parts: Part[] = [];
     for (const file of files) {
       if (file.fileUri) {
-        // Gemini Files API URI (préféré)
         parts.push({
           fileData: {
             fileUri: file.fileUri,
@@ -181,7 +280,6 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
           }
         });
       } else if (file.base64) {
-        // Fallback base64 inline
         parts.push({
           inlineData: {
             data: file.base64,
@@ -195,88 +293,27 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
 
   /**
    * Construit l'historique de conversation au format Gemini Content[]
+   * Intègre le résumé conversationnel via SummaryBuffer si disponible
    */
   private buildConversationHistory(
-    history: StreamGenerationParams['conversationHistory']
+    history: StreamGenerationParams['conversationHistory'],
+    conversationSummary?: string | null
   ): Content[] {
     if (!history || history.length === 0) return [];
 
-    type HistoryMessage = StreamGenerationParams['conversationHistory'][number];
-    const optimized = optimizeConversationHistory(history) as HistoryMessage[];
+    const context: OptimizationContext = { conversationSummary };
+    const optimized = optimizeConversationHistory(history, context);
 
     return optimized.map(msg => {
       const role = msg.role === 'assistant' ? 'model' : 'user';
       const parts: Part[] = [{ text: msg.content }];
-      // Note: Les fichiers historiques ne sont PAS inclus car les références
-      // Gemini Files API expirent après 48h. Le contexte textuel du fichier
-      // est déjà inclus dans msg.content via file-context.service.ts.
       return { role, parts };
     });
   }
 
   /**
-   * Exécute le RAG tool et retourne le résultat
-   */
-  private async executeRagSearch(args: {
-    query: string;
-    niveau: string;
-    matiere: string;
-    limit?: number;
-  }): Promise<object> {
-    const startTime = Date.now();
-
-    try {
-      const isAvailable = await ragService.isAvailable();
-      if (!isAvailable) {
-        return {
-          found: false,
-          context: '',
-          resultsCount: 0,
-          averageScore: 0,
-          chunks: [],
-          searchTimeMs: Date.now() - startTime
-        };
-      }
-
-      const result = await ragService.hybridSearch({
-        query: args.query,
-        niveau: args.niveau as EducationLevelType,
-        matiere: args.matiere,
-        limit: args.limit ?? 5
-      });
-
-      return {
-        found: result.semanticChunks.length > 0,
-        context: result.context,
-        resultsCount: result.semanticChunks.length,
-        averageScore: result.averageSimilarity,
-        bestMatchTitle: result.bestMatchTitle,
-        bestMatchDomaine: result.bestMatchDomaine,
-        chunks: result.semanticChunks,
-        searchTimeMs: Date.now() - startTime
-      };
-    } catch (error) {
-      logger.error('RAG search failed', {
-        _error: error instanceof Error ? error.message : String(error),
-        query: args.query.substring(0, 50),
-        operation: 'gemini-chat:rag-error',
-        severity: 'high' as const
-      });
-
-      return {
-        found: false,
-        context: '',
-        resultsCount: 0,
-        averageScore: 0,
-        chunks: [],
-        searchTimeMs: Date.now() - startTime
-      };
-    }
-  }
-
-  /**
-   * Génère un AsyncGenerator de chunks streaming
-   * Format SSE compatible frontend
+   * Génère un AsyncGenerator de chunks streaming - Agent multi-tool
+   * Boucle d'exécution: stream → collect tool calls → execute → feed back → repeat
    */
   async *generateStreamChunks(params: StreamGenerationParams): AsyncGenerator<GeminiStreamChunk> {
     const startTime = Date.now();
@@ -287,146 +324,170 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
       const systemPrompt = this.buildSystemPromptForChat({
         level: params.schoolLevel,
         subject: params.subject,
-        firstName: params.firstName
+        firstName: params.firstName,
+        cognitiveProfileSummary: params.cognitiveProfileSummary,
+        learningContext: params.learningContext
       });
 
-      // 2. Construire l'historique
-      const history = this.buildConversationHistory(params.conversationHistory);
+      // 2. Construire l'historique (avec résumé SummaryBuffer si disponible)
+      const history = this.buildConversationHistory(params.conversationHistory, params.conversationSummary);
 
       // 3. Construire les parts du message utilisateur (texte + fichiers)
       const userParts: Part[] = [{ text: params.content }];
       const fileParts = this.buildFileParts(params.files);
       userParts.push(...fileParts);
 
-      logger.info('Starting Gemini chat streaming', {
+      logger.info('Starting Gemini agent streaming', {
         userId: params.userId,
         sessionId: params.sessionId,
         subject: params.subject,
         schoolLevel: params.schoolLevel,
         historyLength: history.length,
         filesCount: params.files?.length ?? 0,
-        operation: 'gemini-chat:start'
+        operation: 'gemini-chat:agent-start'
       });
 
-      // 4. Créer la session chat avec tools
+      // 4. Créer la session chat avec tous les outils + thinkingConfig
       const chat = this.ai.chats.create({
         model: this.model,
         config: {
           systemInstruction: systemPrompt,
-          tools: [{ functionDeclarations: [ragSearchDeclaration] }]
+          tools: [{ functionDeclarations: agentToolDeclarations }],
+          thinkingConfig: {
+            thinkingLevel: THINKING_LEVEL_MAP[appConfig.ai.gemini.thinkingLevel] ?? ThinkingLevel.LOW,
+          }
         },
         history
       });
 
-      // 5. Envoyer le message et streamer la réponse
+      // 5. Agent loop
       let fullContent = '';
-      let toolCallsCount = 0;
       let promptTokens = 0;
       let completionTokens = 0;
+      const toolsUsed: string[] = [];
+      let toolCallsCount = 0;
+      let iteration = 0;
 
-      // Première passe: envoyer le message
-      const stream = await chat.sendMessageStream({ message: userParts });
+      // First message is the user's parts, subsequent messages are function responses
+      let nextMessage: Part[] | Part[][] = userParts;
 
-      // Buffer pour accumuler les function calls
-      let pendingFunctionCall: { name: string; args: Record<string, unknown> } | null = null;
+      while (iteration < MAX_TOOL_ITERATIONS) {
+        const stream = await chat.sendMessageStream({ message: nextMessage });
 
-      for await (const chunk of stream) {
-        // Vérifier si c'est un function call
-        if (chunk.functionCalls && chunk.functionCalls.length > 0) {
-          const fc = chunk.functionCalls[0];
-          pendingFunctionCall = {
-            name: fc.name ?? '',
-            args: fc.args as Record<string, unknown>
-          };
-          continue;
-        }
+        // Collect function calls from this iteration
+        const pendingCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
 
-        // Streamer le texte
-        const text = chunk.text ?? '';
-        if (text) {
-          fullContent += text;
-          yield {
-            type: 'content',
-            id: messageId,
-            model: this.model,
-            timestamp: Date.now(),
-            delta: text,
-            content: fullContent,
-            role: 'assistant'
-          };
-        }
-
-        // Capturer usage si disponible
-        if (chunk.usageMetadata) {
-          promptTokens = chunk.usageMetadata.promptTokenCount ?? 0;
-          completionTokens = chunk.usageMetadata.candidatesTokenCount ?? 0;
-        }
-      }
-
-      // 6. Si function call demandé, l'exécuter et continuer
-      if (pendingFunctionCall && pendingFunctionCall.name === 'search_educational_content') {
-        toolCallsCount++;
-
-        logger.info('RAG tool called', {
-          userId: params.userId,
-          sessionId: params.sessionId,
-          toolName: pendingFunctionCall.name,
-          operation: 'gemini-chat:tool-call'
-        });
-
-        // Exécuter la recherche RAG
-        const ragResult = await this.executeRagSearch(
-          pendingFunctionCall.args as {
-            query: string;
-            niveau: string;
-            matiere: string;
-            limit?: number;
-          }
-        );
-
-        // Envoyer le résultat au modèle et streamer la réponse finale
-        const finalStream = await chat.sendMessageStream({
-          message: [{
-            functionResponse: {
-              name: pendingFunctionCall.name,
-              response: ragResult as Record<string, unknown>
+        for await (const chunk of stream) {
+          // Collect function calls
+          if (chunk.functionCalls && chunk.functionCalls.length > 0) {
+            for (const fc of chunk.functionCalls) {
+              pendingCalls.push({
+                name: fc.name ?? '',
+                args: (fc.args as Record<string, unknown>) ?? {}
+              });
             }
-          }]
-        });
+            continue;
+          }
 
-        for await (const chunk of finalStream) {
+          // Stream text to client
           const text = chunk.text ?? '';
           if (text) {
             fullContent += text;
             yield {
-              type: 'content',
+              type: 'content' as const,
               id: messageId,
               model: this.model,
               timestamp: Date.now(),
               delta: text,
               content: fullContent,
-              role: 'assistant'
+              role: 'assistant' as const
             };
           }
 
-          // Capturer usage final
+          // Capture usage
           if (chunk.usageMetadata) {
-            promptTokens += chunk.usageMetadata.promptTokenCount ?? 0;
+            promptTokens = chunk.usageMetadata.promptTokenCount ?? promptTokens;
             completionTokens += chunk.usageMetadata.candidatesTokenCount ?? 0;
           }
         }
+
+        // No tool calls = agent is done
+        if (pendingCalls.length === 0) break;
+
+        // Execute all tool calls in parallel
+        toolCallsCount += pendingCalls.length;
+        for (const call of pendingCalls) {
+          if (!toolsUsed.includes(call.name)) {
+            toolsUsed.push(call.name);
+          }
+        }
+
+        logger.info('Agent tool calls', {
+          userId: params.userId,
+          sessionId: params.sessionId,
+          iteration,
+          toolNames: pendingCalls.map(c => c.name),
+          operation: 'gemini-chat:tool-calls'
+        });
+
+        // Yield status event: heartbeat + user-facing feedback during tool execution
+        yield {
+          type: 'status' as const,
+          id: messageId,
+          model: this.model,
+          timestamp: Date.now(),
+          status: pendingCalls.map(c => getToolStatusLabel(c.name)).join(' · ')
+        };
+
+        const results = await Promise.all(
+          pendingCalls.map(call =>
+            executeTool(call.name, call.args, {
+              userId: params.userId,
+              schoolLevel: params.schoolLevel,
+              sessionId: params.sessionId
+            })
+          )
+        );
+
+        // Emit deck_created events for any generated decks
+        for (const result of results) {
+          const r = result as Record<string, unknown>;
+          if (r.deckId && r.generated) {
+            yield {
+              type: 'deck_created' as const,
+              id: messageId,
+              model: this.model,
+              timestamp: Date.now(),
+              deck: {
+                deckId: r.deckId as string,
+                title: r.deckTitle as string,
+                cardCount: r.cardCount as number,
+                subject: r.subject as string,
+              },
+            };
+          }
+        }
+
+        // Build function response parts for the next iteration
+        nextMessage = results.map((result, i) => ({
+          functionResponse: {
+            name: pendingCalls[i].name,
+            response: result as Record<string, unknown>
+          }
+        }));
+
+        iteration++;
       }
 
-      // 7. Calculer tokens totaux
+      // 6. Yield done event
       const totalTokens = promptTokens + completionTokens;
 
-      // 8. Yield événement 'done'
       yield {
-        type: 'done',
+        type: 'done' as const,
         id: messageId,
         model: this.model,
         timestamp: Date.now(),
-        finishReason: 'stop',
+        finishReason: 'stop' as const,
         usage: {
           promptTokens,
           completionTokens,
@@ -434,11 +495,13 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
         },
         metadata: {
           sessionId: params.sessionId,
-          usedRAG: toolCallsCount > 0
+          usedRAG: toolsUsed.includes('search_educational_content'),
+          toolsUsed,
+          toolCallsCount
         }
       };
 
-      logger.info('Streaming completed', {
+      logger.info('Agent streaming completed', {
         userId: params.userId,
         sessionId: params.sessionId,
         messageId,
@@ -447,30 +510,29 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
         completionTokens,
         totalTokens,
         toolCallsCount,
-        usedRAG: toolCallsCount > 0,
+        toolsUsed,
+        iterations: iteration,
         durationMs: Date.now() - startTime,
-        operation: 'gemini-chat:complete'
+        operation: 'gemini-chat:agent-complete'
       });
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
-      // Detect specific error types
       const isRateLimit = errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit');
       const isApiKey = errorMessage.toLowerCase().includes('api key') || errorMessage.includes('401');
       const isQuota = errorMessage.toLowerCase().includes('quota');
 
-      logger.error('Streaming error', {
+      logger.error('Agent streaming error', {
         _error: errorMessage,
         stack: error instanceof Error ? error.stack : undefined,
         userId: params.userId,
         sessionId: params.sessionId,
         durationMs: Date.now() - startTime,
-        operation: 'gemini-chat:error',
+        operation: 'gemini-chat:agent-error',
         severity: 'high' as const
       });
 
-      // User-friendly error message
       let userMessage = 'Erreur lors de la génération de la réponse. Veuillez réessayer.';
       let errorCode = 'generation_error';
 
@@ -486,7 +548,7 @@ Tu disposes de l'outil "search_educational_content". Utilise-le silencieusement.
       }
 
       yield {
-        type: 'error',
+        type: 'error' as const,
         id: messageId,
         model: this.model,
         timestamp: Date.now(),

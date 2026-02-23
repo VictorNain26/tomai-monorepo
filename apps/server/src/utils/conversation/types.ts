@@ -15,3 +15,11 @@ export interface HistoryOptimizationConfig {
   recentMessagesCount: number;
   maxTopics: number;
 }
+
+/**
+ * Contexte d'optimisation — résumé conversationnel pour le SummaryBuffer pattern
+ */
+export interface OptimizationContext {
+  conversationSummary?: string | null;
+  summaryUpToMessageId?: string | null;
+}

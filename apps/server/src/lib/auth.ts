@@ -1,12 +1,18 @@
 /**
  * Better Auth Configuration - Production Ready
  * Configuration propre et flexible basée sur la configuration centralisée
+ *
+ * Plugins 2026:
+ * - admin: Parent impersonation (Quick Switch) with parent-child verification
+ * - username: Student login with username
+ * - expo: Mobile app support
  */
 
 import { betterAuth } from "better-auth";
-import { username, openAPI, mcp } from "better-auth/plugins";
+import { username, openAPI, mcp, admin } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { eq } from "drizzle-orm";
 
 import { db } from "../db/connection";
 import { user, session, account, verification } from "../db/schema";
@@ -213,10 +219,6 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
-      selectedLv2: {
-        type: "string",
-        required: false,
-      },
     }
   },
 
@@ -227,5 +229,80 @@ export const auth = betterAuth({
       loginPage: "/sign-in"
     }),
     expo(),  // Mobile app support (deep links, secure storage)
+
+    // Admin plugin for Quick Switch (parent impersonation)
+    // Best Practice 2026: Built-in impersonation with custom authorization
+    admin({
+      // Session duration: 7 days (same as normal sessions)
+      impersonationSessionDuration: 7 * 24 * 60 * 60,
+
+      // Don't allow impersonating other parents
+      allowImpersonatingAdmins: false,
+
+      // Custom authorization: Only parents can impersonate their own children
+      // This hook runs BEFORE the impersonation happens
+      async impersonationAllowed(ctx: {
+        session?: { user: { id: string; role: string } };
+        body?: { userId?: string };
+      }) {
+        const requestingUser = ctx.session?.user;
+        const targetUserId = ctx.body?.userId;
+
+        if (!requestingUser || !targetUserId) {
+          logger.warn('Impersonation denied: missing user or target', {
+            operation: 'auth:impersonation:denied',
+            hasUser: !!requestingUser,
+            hasTarget: !!targetUserId,
+          });
+          return false;
+        }
+
+        // Only parents can impersonate
+        if (requestingUser.role !== 'parent') {
+          logger.warn('Impersonation denied: user is not a parent', {
+            operation: 'auth:impersonation:denied',
+            userId: requestingUser.id,
+            role: requestingUser.role,
+          });
+          return false;
+        }
+
+        // Verify target is a child of the requesting parent
+        const [targetUser] = await db
+          .select({ parentId: user.parentId, role: user.role })
+          .from(user)
+          .where(eq(user.id, targetUserId))
+          .limit(1);
+
+        if (!targetUser) {
+          logger.warn('Impersonation denied: target user not found', {
+            operation: 'auth:impersonation:denied',
+            parentId: requestingUser.id,
+            targetId: targetUserId,
+          });
+          return false;
+        }
+
+        // Target must be a student AND be the child of the requesting parent
+        if (targetUser.role !== 'student' || targetUser.parentId !== requestingUser.id) {
+          logger.warn('Impersonation denied: target is not child of parent', {
+            operation: 'auth:impersonation:denied',
+            parentId: requestingUser.id,
+            targetId: targetUserId,
+            targetRole: targetUser.role,
+            targetParentId: targetUser.parentId,
+          });
+          return false;
+        }
+
+        logger.info('Impersonation allowed: parent switching to child', {
+          operation: 'auth:impersonation:allowed',
+          parentId: requestingUser.id,
+          childId: targetUserId,
+        });
+
+        return true;
+      },
+    }),
   ],
 });

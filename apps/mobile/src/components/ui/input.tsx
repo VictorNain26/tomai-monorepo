@@ -1,5 +1,6 @@
-import { forwardRef } from 'react';
-import { TextInput, View, type TextInputProps } from 'react-native';
+import { forwardRef, useState } from 'react';
+import { TextInput, View, Pressable, type TextInputProps } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
@@ -71,10 +72,14 @@ const Input = forwardRef<TextInput, InputProps>(
       placeholderTextColor,
       accessibilityLabel,
       accessibilityHint,
+      secureTextEntry,
       ...props
     },
     ref
   ) => {
+    const [showPassword, setShowPassword] = useState(false);
+    const isPasswordField = secureTextEntry === true;
+
     // Determine variant based on error message
     const effectiveVariant = errorMessage ? 'error' : variant;
 
@@ -93,22 +98,41 @@ const Input = forwardRef<TextInput, InputProps>(
             {label}
           </Text>
         )}
-        <TextInput
-          ref={ref}
-          className={cn(
-            inputVariants({ variant: effectiveVariant }),
-            className
+        <View className="relative">
+          <TextInput
+            ref={ref}
+            className={cn(
+              inputVariants({ variant: effectiveVariant }),
+              isPasswordField && 'pr-12',
+              className
+            )}
+            style={disabled ? { opacity: 0.5 } : undefined}
+            editable={!disabled}
+            secureTextEntry={isPasswordField && !showPassword}
+            placeholderTextColor={placeholderTextColor ?? defaultPlaceholderColor}
+            accessibilityLabel={accessibilityLabel ?? label}
+            accessibilityHint={accessibilityHint}
+            accessibilityState={{
+              disabled,
+            }}
+            {...props}
+          />
+          {isPasswordField && (
+            <Pressable
+              onPress={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-0 h-12 w-10 items-center justify-center"
+              accessibilityLabel={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+              accessibilityRole="button"
+              hitSlop={8}
+            >
+              {showPassword ? (
+                <EyeOff size={20} color={colors.muted.foreground} />
+              ) : (
+                <Eye size={20} color={colors.muted.foreground} />
+              )}
+            </Pressable>
           )}
-          style={disabled ? { opacity: 0.5 } : undefined}
-          editable={!disabled}
-          placeholderTextColor={placeholderTextColor ?? defaultPlaceholderColor}
-          accessibilityLabel={accessibilityLabel ?? label}
-          accessibilityHint={accessibilityHint}
-          accessibilityState={{
-            disabled,
-          }}
-          {...props}
-        />
+        </View>
         {errorMessage && (
           <Text variant="small" className="text-destructive">
             {errorMessage}

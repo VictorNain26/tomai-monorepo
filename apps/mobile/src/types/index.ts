@@ -1,17 +1,7 @@
 // Types locaux mobile
 
-export type { EducationLevelType, CycleId, Lv2Option } from '@/constants/levels';
+export type { EducationLevelType } from '@/constants/levels';
 export type { SubjectMetadata } from '@/constants/subjects';
-
-// Navigation types
-export type RootStackParamList = {
-  index: undefined;
-  '(auth)/login': undefined;
-  '(auth)/register': undefined;
-  '(auth)/forgot-password': undefined;
-  '(student)': undefined;
-  '(parent)': undefined;
-};
 
 // Chat types - re-exported from useChat hook (source of truth)
 export type {

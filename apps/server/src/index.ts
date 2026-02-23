@@ -13,7 +13,7 @@ const PORT = parseInt(process.env.PORT ?? process.env.BACKEND_PORT ?? '3000');
 
 async function startServer() {
   try {
-    // Initialiser les services (DB connection, Redis, AI, etc.)
+    // Initialiser les services (DB connection, AI, etc.)
     await initializeServices();
 
     // Démarrer le serveur

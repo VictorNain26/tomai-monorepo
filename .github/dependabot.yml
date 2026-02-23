@@ -13,7 +13,7 @@ updates:
       time: "09:00"
       timezone: "Europe/Paris"
     open-pull-requests-limit: 10
-    target-branch: "develop"
+    target-branch: "staging"
     labels:
       - "dependencies"
     commit-message:
@@ -33,7 +33,7 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    target-branch: "develop"
+    target-branch: "staging"
     labels:
       - "ci"
     commit-message:

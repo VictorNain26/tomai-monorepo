@@ -1,21 +1,25 @@
 /**
  * Parent Layout - TomAI 2026
  *
- * 3-tab navigation for parents:
- * 1. Accueil - Dashboard with children stats
- * 2. Enfants - Child management
- * 3. Plus - Profile, subscription, settings
+ * Optimized navigation structure with proper Stack navigators inside each tab.
+ * Uses popToTopOnBlur to reset stacks when switching tabs (standard UX).
+ *
+ * Structure:
+ * - (home)/    → Stack: Dashboard, Child screens
+ * - (profile)/ → Stack: Profile menu, Settings, Pricing, Pronote
  */
 
 import { useEffect, useMemo } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Users, Menu } from 'lucide-react-native';
+import { Home, User } from 'lucide-react-native';
 import { useSession, useUser } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
 import { useTheme } from '@/hooks';
 import { colors } from '@/lib/styles';
+import { useTabScreenOptions } from '@/lib/navigation';
+import { setupPushNotifications } from '@/lib/notifications';
 
 // Base tab bar height (without safe area)
 const TAB_BAR_HEIGHT = 56;
@@ -52,6 +56,15 @@ export default function ParentLayout() {
     [tabColors, insets.bottom]
   );
 
+  // Shared tab animation/performance options (React Navigation 7)
+  const tabOptions = useTabScreenOptions(tabColors.background);
+
+  // Push notification registration (once, non-blocking)
+  useEffect(() => {
+    if (!session?.user) return;
+    void setupPushNotifications();
+  }, [session?.user]);
+
   useEffect(() => {
     if (isPending) return;
 
@@ -86,40 +99,28 @@ export default function ParentLayout() {
           tabBarActiveTintColor: tabColors.active,
           tabBarInactiveTintColor: tabColors.inactive,
           tabBarStyle,
-          tabBarLabelStyle: {
-            fontSize: 12,
-            fontWeight: '600',
-          },
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+          popToTopOnBlur: true,
+          ...tabOptions,
         }}
       >
-        {/* Main tabs */}
+        {/* Tab 1: Home (Dashboard + Child screens) */}
         <Tabs.Screen
-          name="index"
+          name="(home)"
           options={{
             title: 'Accueil',
             tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
           }}
         />
-        <Tabs.Screen
-          name="children"
-          options={{
-            title: 'Enfants',
-            tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Plus',
-            tabBarIcon: ({ color, size }) => <Menu color={color} size={size} />,
-          }}
-        />
 
-        {/* Hidden screens - accessed via navigation, not tabs */}
-        <Tabs.Screen name="settings" options={{ href: null }} />
-        <Tabs.Screen name="pricing" options={{ href: null }} />
-        <Tabs.Screen name="pronote-connect" options={{ href: null }} />
-        <Tabs.Screen name="child" options={{ href: null }} />
+        {/* Tab 2: Profile (Settings, Pricing, Pronote) */}
+        <Tabs.Screen
+          name="(profile)"
+          options={{
+            title: 'Profil',
+            tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          }}
+        />
       </Tabs>
     </AppProviders>
   );

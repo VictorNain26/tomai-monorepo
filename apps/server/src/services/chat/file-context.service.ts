@@ -7,12 +7,12 @@
  * - Analyse: DocumentAnalysisService + cache DB
  */
 
-import { filesRepository } from '../../db/repositories/index.js';
+import { filesRepository, sessionFilesRepository } from '../../db/repositories/index.js';
 import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
 import { documentAnalysisService, type DocumentAnalysisResult } from '../document/index.js';
+import { geminiFilesService } from '../gemini-files.service.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { Message as DbMessage } from '../../db/schema.js';
 
 // ============================================================================
 // Types
@@ -96,60 +96,44 @@ class FileContextService {
   }
 
   /**
-   * Récupère le contexte de tous les fichiers d'une session
+   * Récupère le contexte de tous les fichiers attachés à une session
+   * Lit depuis la table session_files (classeur) au lieu de scanner l'historique
    */
-  async getSessionFilesContext(sessionHistory: DbMessage[]): Promise<string> {
+  async getSessionFilesContext(sessionId: string): Promise<string> {
     try {
-      const filesInSession = sessionHistory
-        .filter((msg): msg is DbMessage & { attachedFile: AttachedFileInfo } =>
-          msg.attachedFile !== null && typeof msg.attachedFile === 'object')
-        .map(msg => msg.attachedFile as AttachedFileInfo);
+      const attachedFiles = await sessionFilesRepository.findBySessionWithContext(sessionId);
 
-      if (filesInSession.length === 0) {
+      if (attachedFiles.length === 0) {
         return '';
       }
 
-      logger.info('Found files in session history', {
-        filesCount: filesInSession.length,
-        fileNames: filesInSession.map(f => f.fileName),
+      logger.info('Found attached files for session', {
+        filesCount: attachedFiles.length,
+        fileNames: attachedFiles.map(f => f.fileName),
         operation: 'get-session-files-context'
       });
 
-      const filePromises = filesInSession
-        .filter((fileInfo): fileInfo is AttachedFileInfo & { fileId: string } =>
-          'fileId' in fileInfo && typeof fileInfo.fileId === 'string')
-        .map(async (fileInfo) => {
-          try {
-            const file = await filesRepository.findById(fileInfo.fileId);
-            const eduContext = file?.educationalContext as {
-              analysisContext?: string;
-              documentType?: string;
-              subject?: string;
-            } | null;
+      const validContexts = attachedFiles
+        .map(f => {
+          const eduContext = f.educationalContext as {
+            analysisContext?: string;
+            documentType?: string;
+            subject?: string;
+          } | null;
 
-            if (eduContext?.analysisContext) {
-              return {
-                fileName: fileInfo.fileName,
-                context: eduContext.analysisContext,
-                documentType: eduContext.documentType,
-                subject: eduContext.subject
-              };
-            }
-            return null;
-          } catch (error) {
-            logger.warn('Failed to retrieve session file context', {
-              fileId: fileInfo.fileId,
-              error: error instanceof Error ? error.message : String(error)
-            });
-            return null;
-          }
-        });
+          if (!eduContext?.analysisContext) return null;
 
-      const fileContexts = await Promise.all(filePromises);
-      const validContexts = fileContexts.filter((ctx): ctx is NonNullable<typeof ctx> => ctx !== null);
+          return {
+            fileName: f.fileName,
+            context: eduContext.analysisContext,
+            documentType: eduContext.documentType,
+            subject: eduContext.subject,
+          };
+        })
+        .filter((ctx): ctx is NonNullable<typeof ctx> => ctx !== null);
 
       if (validContexts.length > 0) {
-        const context = validContexts
+        return validContexts
           .map(ctx => {
             const typeInfo = ctx.documentType && ctx.subject
               ? ` (${ctx.documentType} - ${ctx.subject})`
@@ -157,8 +141,6 @@ class FileContextService {
             return `\n\nCONTEXTE DU FICHIER "${ctx.fileName}"${typeInfo}:\n${ctx.context}`;
           })
           .join('');
-
-        return context;
       }
 
       return '';
@@ -298,35 +280,47 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
    * Prépare le contexte complet des fichiers pour une requête chat
    */
   async prepareFileContext(params: {
-    fileId?: string;
+    fileIds: string[];
     content: string;
     schoolLevel: EducationLevelType;
     userId: string;
-    sessionHistory: DbMessage[];
+    sessionId: string;
   }): Promise<{
-    attachedFileInfo: AttachedFileInfo | null;
+    attachedFileInfos: AttachedFileInfo[];
     enrichedContent: string;
     sessionFilesContext: string;
   }> {
-    const { fileId, content, schoolLevel, userId, sessionHistory } = params;
+    const { fileIds, content, schoolLevel, userId, sessionId } = params;
 
-    const [attachedFileInfo, sessionFilesContext] = await Promise.all([
-      fileId ? this.retrieveFileMetadata(fileId) : Promise.resolve(null),
-      this.getSessionFilesContext(sessionHistory)
+    const [fileMetadatas, sessionFilesContext] = await Promise.all([
+      Promise.all(fileIds.map(id => this.retrieveFileMetadata(id))),
+      this.getSessionFilesContext(sessionId)
     ]);
 
-    const fileAnalysisResult = fileId
-      ? await this.analyzeFileWithCache(fileId, { content, schoolLevel, userId })
-      : null;
+    const attachedFileInfos = fileMetadatas.filter(
+      (info): info is AttachedFileInfo => info !== null
+    );
+
+    // Analyze all files (sequentially to avoid rate limits)
+    const analysisResults: (FileAnalysisResult | null)[] = [];
+    for (const fileId of fileIds) {
+      const result = await this.analyzeFileWithCache(fileId, { content, schoolLevel, userId });
+      analysisResults.push(result);
+    }
 
     let enrichedContent = content;
 
-    if (fileAnalysisResult?.analysis) {
-      const fileHeader = fileAnalysisResult.documentType && fileAnalysisResult.subject
-        ? `[Fichier joint - ${attachedFileInfo?.fileName ?? 'document'} | ${fileAnalysisResult.documentType} - ${fileAnalysisResult.subject}]`
-        : `[Fichier joint - ${attachedFileInfo?.fileName ?? 'document'}]`;
+    // Concatenate all file enrichments
+    for (let i = 0; i < analysisResults.length; i++) {
+      const result = analysisResults[i];
+      if (!result?.analysis) continue;
 
-      enrichedContent = `${fileHeader}\n${fileAnalysisResult.analysis}\n\n${enrichedContent}`;
+      const fileName = attachedFileInfos[i]?.fileName ?? 'document';
+      const fileHeader = result.documentType && result.subject
+        ? `[Fichier joint - ${fileName} | ${result.documentType} - ${result.subject}]`
+        : `[Fichier joint - ${fileName}]`;
+
+      enrichedContent = `${fileHeader}\n${result.analysis}\n\n${enrichedContent}`;
     }
 
     if (sessionFilesContext) {
@@ -334,7 +328,7 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
     }
 
     return {
-      attachedFileInfo,
+      attachedFileInfos,
       enrichedContent,
       sessionFilesContext
     };
@@ -360,10 +354,9 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
 
         // Vérifier si Gemini URI est valide
         let fileUri = file.geminiFileUri ?? undefined;
-        if (fileUri && file.geminiExpiresAt) {
-          if (file.geminiExpiresAt <= new Date()) {
-            fileUri = undefined;
-          }
+        const isExpired = fileUri && file.geminiExpiresAt && file.geminiExpiresAt <= new Date();
+        if (isExpired) {
+          fileUri = undefined;
         }
 
         const multimodalFile: MultimodalFile = {
@@ -375,12 +368,34 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
         if (fileUri) {
           multimodalFile.fileUri = fileUri;
         } else {
-          // Fallback: récupérer depuis Scaleway
+          // Récupérer depuis Scaleway pour re-upload ou fallback base64
           const content = await scalewayStorageService.getFileContent(file.storageKey);
-          if (content) {
-            multimodalFile.base64 = content.content.toString('base64');
+          if (!content) continue;
+
+          // Re-upload vers Gemini Files API
+          const uploadResult = await geminiFilesService.uploadFile(
+            content.content.buffer as ArrayBuffer,
+            file.mimeType,
+            file.fileName
+          );
+
+          if (uploadResult.success && uploadResult.fileUri && uploadResult.expiresAt) {
+            multimodalFile.fileUri = uploadResult.fileUri;
+            // Persister le nouveau URI en DB
+            await filesRepository.updateGeminiInfo(
+              file.id,
+              uploadResult.fileUri,
+              uploadResult.expiresAt
+            );
+            logger.info('Re-uploaded expired file to Gemini', {
+              fileId, fileName: file.fileName, operation: 'prepare-multimodal'
+            });
           } else {
-            continue;
+            // Fallback base64 si re-upload échoue
+            multimodalFile.base64 = content.content.toString('base64');
+            logger.warn('Gemini re-upload failed, using base64 fallback', {
+              fileId, error: uploadResult.error, operation: 'prepare-multimodal'
+            });
           }
         }
 

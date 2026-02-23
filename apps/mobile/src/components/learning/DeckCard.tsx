@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { Play, Trash2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import type { LearningDeck } from '@/hooks/useLearning';
-import { useIconColors } from '@/hooks/useIconColors';
+import { useDeckStats, useIconColors } from '@/hooks';
 import { bgColors, colors } from '@/lib/styles';
 
 interface DeckCardProps {
@@ -43,10 +43,13 @@ function getSubjectEmoji(subject: string): string {
 export function DeckCard({ deck, onDelete, isDeleting }: DeckCardProps) {
   const router = useRouter();
   const iconColors = useIconColors();
+  const { data: stats } = useDeckStats(deck.id);
+
+  const dueCount = stats?.dueToday ?? 0;
 
   function handlePlay() {
     router.push({
-      pathname: '/(student)/deck/[id]',
+      pathname: '/(student)/(learning)/[id]',
       params: { id: deck.id },
     });
   }
@@ -100,6 +103,16 @@ export function DeckCard({ deck, onDelete, isDeleting }: DeckCardProps) {
             <Text variant="muted" className="text-xs">
               {dateStr}
             </Text>
+            {dueCount > 0 && (
+              <>
+                <Text variant="muted" className="text-xs">
+                  •
+                </Text>
+                <Text className="text-xs font-semibold" style={{ color: colors.primary.DEFAULT }}>
+                  {dueCount} à réviser
+                </Text>
+              </>
+            )}
           </View>
         </View>
 

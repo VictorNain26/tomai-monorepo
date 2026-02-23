@@ -1,8 +1,9 @@
-import { ArrowRight, ChevronDown } from "lucide-react";
-import Link from "next/link";
-import { APP_URL } from "@/lib/urls";
+"use client";
+
+import { GraduationCap } from "lucide-react";
 import { HeroMockup } from "../molecules/hero-mockup";
-import { Button } from "@/components/ui/button";
+import { RotatingText } from "../atoms/rotating-text";
+import { WaitlistForm } from "../molecules/waitlist-form";
 
 export function Hero() {
   return (
@@ -11,41 +12,34 @@ export function Hero() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center w-full">
           {/* Left Column: Copy + CTA */}
           <div className="text-center lg:text-left">
+            {/* Credibility badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+              <GraduationCap className="h-4 w-4" />
+              <span>Du CP à la Terminale — 415 programmes Éduscol</span>
+            </div>
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
               L&apos;IA qui aide à{" "}
-              <span className="text-primary">comprendre</span>,
+              <RotatingText words={["comprendre", "réfléchir", "progresser", "réussir"]} />
+              ,
               <br />
               pas à copier
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8">
-              Tom pose les bonnes questions pour que votre enfant trouve les réponses par lui-même. Il gagne en confiance et en autonomie.
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0 mb-4">
+              TomIA pose les bonnes questions pour que votre enfant trouve les réponses par lui-même et gagne en confiance et en autonomie.
             </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <Link href={APP_URL}>
-                <Button size="lg" className="group w-full sm:w-auto">
-                  Essayer gratuitement
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                </Button>
-              </Link>
-              <Link href="#how-it-works">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  Découvrir comment ça marche
-                </Button>
-              </Link>
-            </div>
+            <p className="text-sm font-medium text-primary mb-6">
+              L&apos;app arrive bientôt — inscrivez-vous pour être notifié
+            </p>
+
+            <WaitlistForm source="hero" className="max-w-lg mx-auto lg:mx-0" />
           </div>
 
           {/* Right Column: Visual Mockup */}
           <HeroMockup />
         </div>
-      </div>
-
-      {/* Scroll indicator */}
-      <div className="flex justify-center pb-6">
-        <ChevronDown className="h-5 w-5 text-muted-foreground animate-bounce" />
       </div>
     </section>
   );

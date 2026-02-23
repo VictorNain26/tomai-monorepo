@@ -1,8 +1,9 @@
 export function BackgroundPattern() {
   return (
     <div className="fixed inset-0 -z-50 pointer-events-none overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-      <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>
+      <div className="absolute -top-32 -left-32 h-[420px] w-[420px] rounded-full bg-primary/10 blur-[120px]" />
+      <div className="absolute -bottom-32 -right-32 h-[380px] w-[380px] rounded-full bg-violet/15 blur-[120px]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[300px] w-[300px] rounded-full bg-primary/5 blur-[120px]" />
     </div>
   );
 }

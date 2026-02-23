@@ -27,6 +27,7 @@ import { revenuecatWebhookRoutes } from './routes/revenuecat-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { deckRoutes, cardRoutes, fsrsRoutes } from './routes/learning/index.js';
 import { pronoteRoutes } from './routes/pronote.routes.js';
+import { waitlistRoutes } from './routes/waitlist.routes.js';
 
 // Services
 import { logger } from './lib/observability.js';
@@ -37,7 +38,6 @@ import { tokenQuotaService } from './services/token-quota.service.js';
 // Database (pour health checks)
 import { db } from './db/connection.js';
 import { sql } from 'drizzle-orm';
-import { runMigrations } from './db/migrate.js';
 import { validateEncryptionSetup } from './lib/encryption.js';
 import { cacheService } from './services/memory-cache.service.js';
 
@@ -282,6 +282,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation
   .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau
   .use(pronoteRoutes)       // Pronote integration - Parent-based architecture
+  .use(waitlistRoutes)      // Waitlist - Landing page email collection
 
 
 // Export pour utilisation dans index.ts
@@ -404,11 +405,7 @@ export async function initializeServices(): Promise<void> {
       });
     }
 
-    // 3. Run database migrations at startup (Drizzle best practice)
-    // This ensures schema is always up-to-date on deployment
-    await runMigrations();
-
-    // 3. Verify PostgreSQL connection after migrations
+    // 3. Verify PostgreSQL connection (migrations run via docker-entrypoint.sh)
     const dbStart = Date.now();
     await db.execute(sql`SELECT 1 as health_check`);
     const dbLatency = Date.now() - dbStart;

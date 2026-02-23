@@ -23,7 +23,7 @@ import type { EducationLevelType } from '../types/education.types.js';
 // ============================================================================
 
 const SUPPORTED_MIME_TYPES = {
-  image: ['image/jpeg', 'image/png', 'image/webp'],
+  image: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
   pdf: ['application/pdf'],
   document: [
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -32,7 +32,8 @@ const SUPPORTED_MIME_TYPES = {
   ],
   audio: [
     'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg',
-    'audio/wav', 'audio/x-wav', 'audio/mp3'
+    'audio/wav', 'audio/x-wav', 'audio/mp3',
+    'audio/aac', 'audio/flac', 'audio/aiff', 'audio/x-aiff'
   ]
 } as const;
 

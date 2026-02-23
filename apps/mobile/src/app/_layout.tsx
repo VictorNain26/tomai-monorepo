@@ -25,6 +25,7 @@ import { queryClient, persistOptions, initializeNetInfo } from '@/lib/query-clie
 import { initializeAppApi } from '@/lib/api';
 import { initializeDatabase } from '@/db';
 import { ThemeProvider, RevenueCatProvider } from '@/components/providers';
+import { ToastProvider } from '@/components/ui/toast';
 
 // Keep splash screen visible while loading
 SplashScreen.preventAutoHideAsync();
@@ -32,17 +33,17 @@ SplashScreen.preventAutoHideAsync();
 /**
  * Root Layout - Expo Router Best Practice 2026
  *
- * IMPORTANT: No NativeWind (className) before Slot!
- * NativeWind/css-interop requires NavigationContainer which Slot provides.
- *
  * Provider order (outside to inside):
- * 1. GestureHandlerRootView (native, no className)
- * 2. SafeAreaProvider (native, no className)
- * 3. PersistQueryClientProvider (React context only)
- * 4. ThemeProvider (React context only - no View with className!)
- * 5. Slot (expo-router - initializes NavigationContainer)
+ * 1. GestureHandlerRootView (native)
+ * 2. SafeAreaProvider (native)
+ * 3. PersistQueryClientProvider (React context)
+ * 4. ThemeProvider (React context)
+ * 5. RevenueCatProvider (React context)
+ * 6. ToastProvider (global — inline styles, no NativeWind dependency)
+ * 7. Slot (expo-router — initializes NavigationContainer)
  *
- * Providers that use NativeWind (ToastProvider, etc.) go INSIDE the routes.
+ * NativeWind className must NOT be used before Slot (css-interop needs NavigationContainer).
+ * ToastProvider uses inline styles only, so it can safely live above Slot.
  */
 export default function RootLayout() {
   const apiInitialized = useRef(false);
@@ -86,8 +87,6 @@ export default function RootLayout() {
     return null;
   }
 
-  // IMPORTANT: Only native components and pure React context providers here
-  // NO className usage before Slot!
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -97,11 +96,13 @@ export default function RootLayout() {
         >
           <ThemeProvider>
             <RevenueCatProvider>
-              <View style={{ flex: 1 }}>
-                <Slot />
-                <StatusBar style="auto" />
-                <PortalHost />
-              </View>
+              <ToastProvider>
+                <View style={{ flex: 1 }}>
+                  <Slot />
+                  <StatusBar style="auto" />
+                  <PortalHost />
+                </View>
+              </ToastProvider>
             </RevenueCatProvider>
           </ThemeProvider>
         </PersistQueryClientProvider>

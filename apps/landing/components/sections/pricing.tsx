@@ -1,23 +1,25 @@
-import { Check } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { APP_URL } from "@/lib/urls";
+"use client";
+
+import { Check, ShieldCheck } from "lucide-react";
 import { SectionHeader } from "../atoms/section-header";
+import { WaitlistForm } from "../molecules/waitlist-form";
 
 const FREE_FEATURES = [
   "Français, Maths, Anglais",
   "Du CP à la Terminale",
-  "~10 questions par jour",
+  "5 questions par jour",
   "Aide aux devoirs",
-  "Suivi des progrès",
+  "Suivi des matières travaillées",
 ];
 
 const PREMIUM_FEATURES = [
   "Toutes les matières",
   "Du CP à la Terminale",
   "Questions illimitées",
-  "Aide aux devoirs",
-  "Suivi des progrès",
+  "Fiches de révision + répétition espacée",
+  "Tableau de bord parental complet",
+  "Intégration Pronote",
+  "Support prioritaire",
 ];
 
 export function Pricing() {
@@ -25,8 +27,8 @@ export function Pricing() {
     <section id="pricing" className="py-24 lg:py-32 bg-secondary/30">
       <div className="container px-4 mx-auto">
         <SectionHeader
-          title="Commencez gratuitement"
-          description="Testez avec les matières principales, puis débloquez tout"
+          title="Un prix simple, sans surprise"
+          description="Commencez gratuitement, puis passez au plan Complet quand votre enfant en a besoin."
         />
 
         {/* Two Cards Side by Side */}
@@ -35,7 +37,7 @@ export function Pricing() {
           <div className="bg-card rounded-2xl p-8 border-2 border-border shadow-md hover:shadow-lg transition-shadow">
             <div className="mb-6">
               <div className="inline-block px-3 py-1 bg-secondary rounded-full text-sm font-medium text-foreground mb-4">
-                Pour tester
+                Pour découvrir
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-2">Gratuit</h3>
               <p className="text-3xl font-bold text-foreground">0€</p>
@@ -50,11 +52,10 @@ export function Pricing() {
               ))}
             </ul>
 
-            <Link href={APP_URL}>
-              <Button variant="outline" size="lg" className="w-full">
-                Commencer
-              </Button>
-            </Link>
+            <WaitlistForm
+              source="pricing-free"
+              buttonText="S'inscrire à la liste d'attente"
+            />
           </div>
 
           {/* Premium Card */}
@@ -70,10 +71,18 @@ export function Pricing() {
                 Accès complet
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-2">Complet</h3>
+
+              {/* Price comparison */}
+              <p className="text-sm text-muted-foreground mb-1">
+                <span className="line-through">35€/h cours particulier</span>
+              </p>
               <div className="flex items-baseline gap-2">
                 <p className="text-4xl font-bold text-foreground">15€</p>
                 <span className="text-muted-foreground">/mois</span>
               </div>
+              <p className="text-sm text-primary font-medium mt-1">
+                Moins de 0,50€ par jour
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
                 +5€/mois par enfant supplémentaire
               </p>
@@ -88,11 +97,16 @@ export function Pricing() {
               ))}
             </ul>
 
-            <Link href={APP_URL}>
-              <Button size="lg" className="w-full">
-                Essayer gratuitement
-              </Button>
-            </Link>
+            <WaitlistForm
+              source="pricing-premium"
+              buttonText="Être notifié du lancement"
+            />
+
+            {/* Guarantee badge */}
+            <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
+              <ShieldCheck className="h-4 w-4 text-green-500" />
+              <span>Satisfait ou remboursé</span>
+            </div>
           </div>
         </div>
 
