@@ -1,11 +1,10 @@
 /**
  * @repo/api - Platform-agnostic API package
  *
- * Shared API logic for Web (Vite) and Mobile (Expo).
+ * Shared API logic for Mobile (Expo).
  * 100% platform-agnostic - no browser-only or native-only dependencies.
  *
- * Auth is handled separately by each app:
- * - Web: better-auth/react in apps/app/src/lib/auth.ts
+ * Auth is handled by:
  * - Mobile: @better-auth/expo in apps/mobile/src/lib/auth.ts
  *
  * @example

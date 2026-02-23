@@ -20,19 +20,17 @@ export function RotatingText({
   }, [words.length, interval]);
 
   return (
-    <span className="inline-block relative">
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={words[index]}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="inline-block bg-gradient-to-r from-primary to-violet bg-clip-text text-transparent"
-        >
-          {words[index]}
-        </motion.span>
-      </AnimatePresence>
-    </span>
+    <AnimatePresence mode="wait">
+      <motion.span
+        key={words[index]}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className="inline-block bg-gradient-to-r from-primary to-violet bg-clip-text text-transparent pb-1"
+      >
+        {words[index]}
+      </motion.span>
+    </AnimatePresence>
   );
 }

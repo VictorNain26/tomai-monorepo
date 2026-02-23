@@ -38,15 +38,6 @@
       "cache": false,
       "persistent": true
     },
-    "build:web": {
-      "dependsOn": ["^build"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env.production",
-        "!.env.local"
-      ],
-      "outputs": ["dist/**", "web-build/**"]
-    },
     "lint": {
       "inputs": [
         "$TURBO_DEFAULT$",

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export function MobileCTABar() {
@@ -22,11 +21,11 @@ export function MobileCTABar() {
         visible ? "translate-y-0" : "translate-y-full"
       }`}
     >
-      <Link href="#waitlist" className="block">
-        <Button className="w-full" size="lg">
+      <Button className="w-full" size="lg" asChild>
+        <a href="#waitlist">
           Rejoindre la liste d&apos;attente
-        </Button>
-      </Link>
+        </a>
+      </Button>
     </div>
   );
 }

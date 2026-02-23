@@ -1,9 +1,9 @@
 "use client";
 
-import { MessageSquare, Lightbulb, GraduationCap } from "lucide-react";
+import { MessageSquare, Lightbulb, GraduationCap, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 import { SectionHeader } from "../atoms/section-header";
-import { WaitlistForm } from "../molecules/waitlist-form";
 
 const STEPS = [
   {
@@ -78,11 +78,12 @@ export function HowItWorks() {
         </div>
 
         <div className="flex justify-center mt-16">
-          <WaitlistForm
-            source="how-it-works"
-            buttonText="Être notifié du lancement"
-            className="max-w-lg w-full"
-          />
+          <Button size="lg" variant="outline" className="group" asChild>
+            <a href="#waitlist">
+              Être notifié du lancement
+              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </a>
+          </Button>
         </div>
       </div>
     </section>

@@ -23,7 +23,7 @@ export function ProblemSolution() {
           </FadeIn>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 md:gap-8 lg:gap-12 items-center max-w-5xl mx-auto">
           {/* Problem Side */}
           <FadeIn direction="left">
             <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-6 sm:p-8">
@@ -34,15 +34,15 @@ export function ProblemSolution() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Les programmes ont changé, difficile d&apos;expliquer</span>
+                  <span>Les programmes ont changé — difficile d&apos;expliquer ce qu&apos;on ne maîtrise plus</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Pas le temps après une journée de travail</span>
+                  <span>Après 8h de travail, ni le temps ni la patience</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <XCircle className="h-5 w-5 text-destructive/60 shrink-0 mt-0.5" />
-                  <span>Les IA génératives donnent les réponses, pas les méthodes</span>
+                  <span>ChatGPT donne les réponses — votre enfant oublie demain</span>
                 </li>
               </ul>
             </div>
@@ -58,15 +58,15 @@ export function ProblemSolution() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <span>Un tuteur patient, disponible soir et week-end</span>
+                  <span>Un tuteur patient, disponible soir et week-end, connecté à Pronote</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <span>Votre enfant comprend et gagne en autonomie</span>
+                  <span>Votre enfant comprend et retient — pas de copier-coller</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
                   <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <span>Tableau de bord pour suivre ses progrès</span>
+                  <span>Vous suivez ses progrès depuis votre tableau de bord</span>
                 </li>
               </ul>
             </div>

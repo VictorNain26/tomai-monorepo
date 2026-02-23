@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Menu, X, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
@@ -66,9 +65,9 @@ export function Header() {
               )}
             </Button>
           )}
-          <Link href="#waitlist">
-            <Button size="sm">Rejoindre la liste d&apos;attente</Button>
-          </Link>
+          <Button size="sm" asChild>
+            <a href="#waitlist">Rejoindre la liste d&apos;attente</a>
+          </Button>
         </div>
 
         {/* Mobile Menu Button (no theme toggle) */}
@@ -103,9 +102,9 @@ export function Header() {
             onLinkClick={() => setMobileMenuOpen(false)}
           />
           <div className="pt-2">
-            <Link href="#waitlist" className="block">
-              <Button className="w-full">Rejoindre la liste d&apos;attente</Button>
-            </Link>
+            <Button className="w-full" asChild>
+              <a href="#waitlist">Rejoindre la liste d&apos;attente</a>
+            </Button>
           </div>
         </div>
       </div>

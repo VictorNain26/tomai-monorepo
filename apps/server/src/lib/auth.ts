@@ -60,8 +60,7 @@ function getTrustedOrigins(): string[] {
   if (envUtils.isDevelopment) {
     origins.push(
       'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:5175'
+      'http://localhost:3001'
     );
   }
 
@@ -79,7 +78,7 @@ const trustedOrigins = getTrustedOrigins();
 
 /**
  * Détermine le domaine cookie pour les sous-domaines
- * En production: ".tomia.fr" pour partager entre app.tomia.fr et api.tomia.fr
+ * En production: ".tomia.fr" pour partager entre tomia.fr et api.tomia.fr
  * En développement: undefined (localhost)
  */
 function getCookieDomain(): string | undefined {
@@ -138,7 +137,7 @@ export const auth = betterAuth({
 
   // Configuration des cookies pour sous-domaines
   advanced: {
-    // Cookies partagés entre sous-domaines (app.tomia.fr <-> api.tomia.fr)
+    // Cookies partagés entre sous-domaines (tomia.fr <-> api.tomia.fr)
     crossSubDomainCookies: envUtils.isProduction ? {
       enabled: true,
       domain: cookieDomain // ".tomia.fr"

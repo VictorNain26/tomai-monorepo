@@ -26,7 +26,7 @@ export function WaitlistForm({
     return (
       <div className={cn("flex items-center gap-2 text-green-600 dark:text-green-400 font-medium", className)}>
         <CheckCircle2 className="h-5 w-5" />
-        <span>Vous serez notifie du lancement !</span>
+        <span>Vous serez notifié du lancement !</span>
       </div>
     );
   }

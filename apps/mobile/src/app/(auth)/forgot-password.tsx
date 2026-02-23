@@ -52,18 +52,18 @@ export default function ForgotPasswordScreen() {
 
     try {
       // Derive frontend URL from API URL:
-      //   Dev:     http://localhost:3000        → http://localhost:5173
+      //   Dev:     http://localhost:3000        → http://localhost:3001
       //   Staging: https://api-staging.tomia.fr → https://staging.tomia.fr
-      //   Prod:    https://api.tomia.fr         → https://app.tomia.fr
+      //   Prod:    https://api.tomia.fr         → https://tomia.fr
       const apiUrl = getBaseUrl();
       let webUrl: string;
       if (apiUrl.includes('localhost')) {
-        webUrl = apiUrl.replace(':3000', ':5173');
+        webUrl = apiUrl.replace(':3000', ':3001');
       } else {
-        // api.X → app.X | api-staging.X → staging.X
+        // api.X → X | api-staging.X → staging.X
         webUrl = apiUrl.replace(
           /\/\/api([.-])/,
-          (_: string, sep: string) => (sep === '.' ? '//app.' : '//')
+          (_: string, sep: string) => (sep === '.' ? '//' : '//')
         );
       }
 

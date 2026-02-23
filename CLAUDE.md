@@ -9,12 +9,11 @@ Monorepo Turborepo pour la plateforme de tutorat Tom.
 pnpm install
 
 # Développement (toutes les apps en parallèle)
-pnpm dev                 # Landing:3001 + App:5173 + Server:3000
+pnpm dev                 # Landing:3001 + Server:3000
 pnpm dev:mobile          # Expo mobile (port 8081)
 
 # Développement app individuelle
 pnpm dev:landing         # Next.js landing (port 3001)
-pnpm dev:app             # React Vite app (port 5173)
 pnpm dev:server          # Backend Elysia (port 3000)
 
 # Validation (obligatoire avant commit)
@@ -44,7 +43,6 @@ cd apps/server && docker compose up -d
 tomai-monorepo/
 ├── apps/
 │   ├── landing/       # Next.js 16 - Landing page SEO
-│   ├── app/           # React 19 + Vite 7 - Application tutorat
 │   ├── mobile/        # Expo SDK 54 - Application mobile
 │   └── server/        # Bun + Elysia.js - Backend API
 ├── packages/
@@ -59,7 +57,6 @@ tomai-monorepo/
 |--------|--------------|
 | Backend | Bun, Elysia.js, PostgreSQL 16, Redis 7, Drizzle ORM |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion |
-| App | Vite 7, React 19, TanStack Query/Form, shadcn/ui |
 | Mobile | Expo SDK 54, React Native 0.81, NativeWind |
 | Auth | Better Auth + Google OAuth |
 | AI | Gemini 2.5 Flash, Mistral embeddings, Qdrant Cloud |
@@ -83,6 +80,5 @@ tomai-monorepo/
 ## Documentation par app
 
 - `apps/landing/CLAUDE.md` - Landing page Next.js
-- `apps/app/CLAUDE.md` - Application React
 - `apps/mobile/CLAUDE.md` - Application mobile Expo
 - `apps/server/CLAUDE.md` - Backend Bun + Elysia

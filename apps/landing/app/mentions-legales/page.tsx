@@ -9,7 +9,7 @@ export default function MentionsLegalesPage() {
           <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
             <h3>Éditeur du site</h3>
             <p>
-              Le site Tom est édité par Victor Lenain, micro-entrepreneur.
+              Le site tomia.fr est édité par Victor Lenain, micro-entrepreneur.
             </p>
             <p>
               <strong>Directeur de la publication :</strong> Victor Lenain

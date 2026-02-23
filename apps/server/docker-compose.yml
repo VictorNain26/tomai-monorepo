@@ -25,7 +25,7 @@ services:
       # Database (internal Docker network)
       - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
       # CORS
-      - CORS_ORIGINS=http://localhost:5173,http://localhost:3001
+      - CORS_ORIGINS=http://localhost:3001
       # Auth (REQUIRED)
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - BETTER_AUTH_URL=http://localhost:3000

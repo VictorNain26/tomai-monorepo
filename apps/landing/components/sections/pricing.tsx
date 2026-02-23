@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, ShieldCheck } from "lucide-react";
+import { Check, ShieldCheck, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { SectionHeader } from "../atoms/section-header";
-import { WaitlistForm } from "../molecules/waitlist-form";
 
 const FREE_FEATURES = [
   "Français, Maths, Anglais",
@@ -32,7 +32,7 @@ export function Pricing() {
         />
 
         {/* Two Cards Side by Side */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
           {/* Free Card */}
           <div className="bg-card rounded-2xl p-8 border-2 border-border shadow-md hover:shadow-lg transition-shadow">
             <div className="mb-6">
@@ -52,10 +52,12 @@ export function Pricing() {
               ))}
             </ul>
 
-            <WaitlistForm
-              source="pricing-free"
-              buttonText="S'inscrire à la liste d'attente"
-            />
+            <Button variant="outline" className="w-full group" asChild>
+              <a href="#waitlist">
+                Rejoindre la liste d&apos;attente
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </a>
+            </Button>
           </div>
 
           {/* Premium Card */}
@@ -97,10 +99,12 @@ export function Pricing() {
               ))}
             </ul>
 
-            <WaitlistForm
-              source="pricing-premium"
-              buttonText="Être notifié du lancement"
-            />
+            <Button className="w-full group" asChild>
+              <a href="#waitlist">
+                Être notifié du lancement
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </a>
+            </Button>
 
             {/* Guarantee badge */}
             <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">

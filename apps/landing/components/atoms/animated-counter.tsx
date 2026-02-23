@@ -16,10 +16,10 @@ export function AnimatedCounter({
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
-  const [display, setDisplay] = useState(0);
+  const [display, setDisplay] = useState(value === 0 ? 0 : 0);
 
   useEffect(() => {
-    if (!isInView) return;
+    if (!isInView || value === 0) return;
 
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const start = performance.now();

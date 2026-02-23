@@ -17,22 +17,22 @@ export function Footer() {
             {/* Trust badges */}
             <div className="flex flex-wrap gap-3 pt-2">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                <ShieldCheck className="h-4 w-4 text-primary" />
                 <span>RGPD</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Server className="h-3.5 w-3.5 text-primary" />
+                <Server className="h-4 w-4 text-primary" />
                 <span>Hébergé en Europe</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Lock className="h-3.5 w-3.5 text-primary" />
+                <Lock className="h-4 w-4 text-primary" />
                 <span>Aucune publicité</span>
               </div>
             </div>
 
             {/* Mobile availability */}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Smartphone className="h-3.5 w-3.5 text-primary" />
+              <Smartphone className="h-4 w-4 text-primary" />
               <span>Disponible sur iOS et Android</span>
             </div>
           </div>
