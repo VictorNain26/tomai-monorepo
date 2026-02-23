@@ -1,8 +1,9 @@
-import { ArrowRight, GraduationCap } from "lucide-react";
-import Link from "next/link";
-import { APP_URL } from "@/lib/urls";
+"use client";
+
+import { GraduationCap } from "lucide-react";
 import { HeroMockup } from "../molecules/hero-mockup";
-import { Button } from "@/components/ui/button";
+import { RotatingText } from "../atoms/rotating-text";
+import { WaitlistForm } from "../molecules/waitlist-form";
 
 export function Hero() {
   return (
@@ -19,33 +20,21 @@ export function Hero() {
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
               L&apos;IA qui aide à{" "}
-              <span className="bg-gradient-to-r from-primary to-violet bg-clip-text text-transparent">comprendre</span>,
+              <RotatingText words={["comprendre", "réfléchir", "progresser", "réussir"]} />
+              ,
               <br />
               pas à copier
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8">
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0 mb-4">
               TomIA pose les bonnes questions pour que votre enfant trouve les réponses par lui-même et gagne en confiance et en autonomie.
             </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <Link href={APP_URL}>
-                <Button size="lg" className="group w-full sm:w-auto">
-                  Commencer gratuitement
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                </Button>
-              </Link>
-              <Link href="#how-it-works">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  Voir comment ça marche
-                </Button>
-              </Link>
-            </div>
-
-            <p className="text-sm text-muted-foreground mt-4">
-              Sans carte bancaire · Sans engagement
+            <p className="text-sm font-medium text-primary mb-6">
+              L&apos;app arrive bientôt — inscrivez-vous pour être notifié
             </p>
+
+            <WaitlistForm source="hero" className="max-w-lg mx-auto lg:mx-0" />
           </div>
 
           {/* Right Column: Visual Mockup */}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { MapPin, ShieldCheck, Server, Lock, Smartphone } from "lucide-react";
 import { Logo } from "../atoms/logo";
 
 export function Footer() {
@@ -13,6 +13,28 @@ export function Footer() {
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               L&apos;assistant qui aide les élèves français à comprendre leurs leçons, sans donner les réponses.
             </p>
+
+            {/* Trust badges */}
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                <span>RGPD</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Server className="h-3.5 w-3.5 text-primary" />
+                <span>Hébergé en Europe</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Lock className="h-3.5 w-3.5 text-primary" />
+                <span>Aucune publicité</span>
+              </div>
+            </div>
+
+            {/* Mobile availability */}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Smartphone className="h-3.5 w-3.5 text-primary" />
+              <span>Disponible sur iOS et Android</span>
+            </div>
           </div>
 
           {/* Product */}

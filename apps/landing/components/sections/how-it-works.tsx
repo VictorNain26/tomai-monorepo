@@ -1,11 +1,9 @@
 "use client";
 
-import { MessageSquare, Lightbulb, GraduationCap, ArrowRight } from "lucide-react";
+import { MessageSquare, Lightbulb, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
-import Link from "next/link";
-import { APP_URL } from "@/lib/urls";
-import { Button } from "@/components/ui/button";
 import { SectionHeader } from "../atoms/section-header";
+import { WaitlistForm } from "../molecules/waitlist-form";
 
 const STEPS = [
   {
@@ -44,15 +42,21 @@ export function HowItWorks() {
         />
 
         <div className="relative grid md:grid-cols-3 gap-12">
-          {/* Connecting Line (Desktop) */}
-          <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-blue-500/0 via-blue-500/20 to-blue-500/0" />
+          {/* Animated Connecting Line (Desktop) */}
+          <motion.div
+            className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-blue-500/30 via-yellow-500/30 to-green-500/30 origin-left"
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          />
 
           {STEPS.map((step, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "-80px" }}
               transition={{ delay: index * 0.2, duration: 0.5 }}
               className="relative flex flex-col items-center text-center"
             >
@@ -73,13 +77,12 @@ export function HowItWorks() {
           ))}
         </div>
 
-        <div className="text-center mt-16">
-          <Link href={APP_URL}>
-            <Button size="lg" className="group">
-              Essayer gratuitement
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
+        <div className="flex justify-center mt-16">
+          <WaitlistForm
+            source="how-it-works"
+            buttonText="Être notifié du lancement"
+            className="max-w-lg w-full"
+          />
         </div>
       </div>
     </section>

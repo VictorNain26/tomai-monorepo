@@ -1,8 +1,8 @@
-import { Check } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { APP_URL } from "@/lib/urls";
+"use client";
+
+import { Check, ShieldCheck } from "lucide-react";
 import { SectionHeader } from "../atoms/section-header";
+import { WaitlistForm } from "../molecules/waitlist-form";
 
 const FREE_FEATURES = [
   "Français, Maths, Anglais",
@@ -52,11 +52,10 @@ export function Pricing() {
               ))}
             </ul>
 
-            <Link href={APP_URL}>
-              <Button variant="outline" size="lg" className="w-full">
-                Commencer gratuitement
-              </Button>
-            </Link>
+            <WaitlistForm
+              source="pricing-free"
+              buttonText="S'inscrire à la liste d'attente"
+            />
           </div>
 
           {/* Premium Card */}
@@ -72,10 +71,18 @@ export function Pricing() {
                 Accès complet
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-2">Complet</h3>
+
+              {/* Price comparison */}
+              <p className="text-sm text-muted-foreground mb-1">
+                <span className="line-through">35€/h cours particulier</span>
+              </p>
               <div className="flex items-baseline gap-2">
                 <p className="text-4xl font-bold text-foreground">15€</p>
                 <span className="text-muted-foreground">/mois</span>
               </div>
+              <p className="text-sm text-primary font-medium mt-1">
+                Moins de 0,50€ par jour
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
                 +5€/mois par enfant supplémentaire
               </p>
@@ -90,11 +97,16 @@ export function Pricing() {
               ))}
             </ul>
 
-            <Link href={APP_URL}>
-              <Button variant="premium" size="lg" className="w-full">
-                Choisir le plan Complet
-              </Button>
-            </Link>
+            <WaitlistForm
+              source="pricing-premium"
+              buttonText="Être notifié du lancement"
+            />
+
+            {/* Guarantee badge */}
+            <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
+              <ShieldCheck className="h-4 w-4 text-green-500" />
+              <span>Satisfait ou remboursé</span>
+            </div>
           </div>
         </div>
 
