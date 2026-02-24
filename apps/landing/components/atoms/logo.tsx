@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Brain } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -11,13 +11,16 @@ export function Logo({ className }: LogoProps) {
     <Link
       href="/"
       className={cn("flex items-center gap-2 hover:opacity-90 transition-opacity", className)}
+      aria-label="TomIA - Accueil"
     >
-      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-        <Brain className="h-6 w-6 text-primary" />
-      </div>
-      <span className="text-xl font-bold text-foreground">
-        Tom<span className="text-primary">IA</span>
-      </span>
+      <Image
+        src="/logo.svg"
+        alt="TomIA"
+        width={120}
+        height={48}
+        className="h-8 w-auto"
+        priority
+      />
     </Link>
   );
 }
