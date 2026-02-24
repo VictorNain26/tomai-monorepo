@@ -37,6 +37,14 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "TomIA" }],
   creator: "TomIA",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     locale: "fr_FR",
@@ -56,6 +64,7 @@ export const metadata: Metadata = {
   },
   other: {
     "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
   },
   robots: {
     index: true,
@@ -99,7 +108,7 @@ const jsonLd = [
     "@type": "Organization",
     name: "TomIA",
     url: "https://tomia.fr",
-    logo: "https://tomia.fr/logo.png",
+    logo: "https://tomia.fr/logo.svg",
   },
   {
     "@context": "https://schema.org",
