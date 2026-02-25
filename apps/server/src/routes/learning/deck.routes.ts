@@ -438,7 +438,7 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
    *     - topics[] (titles: individual content pieces)
    *
    * Used for guided deck creation with structured topic selection.
-   * Cached in Redis for 1h for performance.
+   * Cached in memory for 1h for performance.
    */
   .get('/chapters', async ({ request, query, set }) => {
     const authContext = await handleAuthWithCookies(request.headers, set);

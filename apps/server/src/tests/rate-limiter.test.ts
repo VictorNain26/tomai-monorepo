@@ -2,14 +2,13 @@
  * Tests unitaires - Rate Limiting TomAI
  * Tests complets du système de rate limiting
  *
- * Note: Ces tests utilisent un mock in-memory isolé pour éviter
- * la dépendance à Redis en CI.
+ * Note: Ces tests utilisent un mock in-memory isolé.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 
 // ============================================
-// MOCK DU SERVICE REDIS
+// MOCK DU SERVICE CACHE
 // ============================================
 
 // Store in-memory isolé pour les tests

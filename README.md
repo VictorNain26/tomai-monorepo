@@ -107,3 +107,4 @@ staging (push direct OK, CI auto)
 - [apps/server/README.md](./apps/server/README.md) - Backend API
 - [apps/landing/README.md](./apps/landing/README.md) - Landing page
 - [apps/mobile/README.md](./apps/mobile/README.md) - App mobile Expo
+- [docs/AGENT-IA-ROADMAP.md](./docs/AGENT-IA-ROADMAP.md) - Roadmap agent IA

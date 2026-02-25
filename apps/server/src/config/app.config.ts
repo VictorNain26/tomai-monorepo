@@ -78,7 +78,7 @@ export interface AppConfig {
     contextMaxLength: number;           // Longueur max contexte RAG (tokens)
 
     // Cache configuration
-    cacheTtlSeconds: number;            // TTL cache Redis (secondes)
+    cacheTtlSeconds: number;            // TTL cache (secondes)
 
     // Hybrid search configuration (BM25 + Semantic)
     hybridSearch: {

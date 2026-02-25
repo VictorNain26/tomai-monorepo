@@ -1,0 +1,22 @@
+# Gitleaks configuration
+# Extends default rules, adds allowlists for known false positives
+
+title = "TomAI Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+# Allowlist: dev passwords, env var names, example values
+[allowlist]
+description = "Known safe patterns"
+regexTarget = "match"
+regexes = [
+  '''tomai_dev_password''',
+  '''(?i)example|placeholder|dummy|fake|your[-_]''',
+]
+paths = [
+  '''\.env\.example$''',
+  '''docker-compose.*\.yml$''',
+  '''CLAUDE\.md$''',
+  '''README\.md$''',
+]

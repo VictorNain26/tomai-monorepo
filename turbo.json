@@ -9,6 +9,10 @@
     "CI",
     "APP_ENV"
   ],
+  "globalPassThroughEnv": [
+    "GITHUB_ACTIONS",
+    "VERCEL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -50,7 +54,8 @@
       "dependsOn": ["^typecheck"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "tsconfig.json"
+        "tsconfig.json",
+        "tsconfig.*.json"
       ],
       "outputs": []
     },

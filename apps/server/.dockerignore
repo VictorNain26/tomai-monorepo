@@ -1,8 +1,3 @@
-# ===========================================
-# TomAI Server - Docker Build Ignore
-# Optimise build context et cache layers
-# ===========================================
-
 # Dependencies (installed inside container)
 node_modules/
 .pnpm-store/
@@ -11,26 +6,27 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# Development files
+# Environment
 .env
 .env.*
 !.env.example
 
-# IDE and editor
+# IDE
 .vscode/
 .idea/
 *.swp
-*.swo
 *~
 
 # Git
 .git/
 .gitignore
 
-# Documentation (not needed for runtime)
+# Docs and AI config
 docs/
 *.md
-!README.md
+.claude/
+.gitleaks.toml
+SECURITY.md
 
 # Tests
 *.test.ts
@@ -39,23 +35,17 @@ __tests__/
 coverage/
 
 # Logs
-logs/
 *.log
-npm-debug.log*
 
-# OS files
+# OS
 .DS_Store
-Thumbs.db
 
-# Docker files (prevent recursive copy)
+# Docker (prevent recursive copy)
 Dockerfile
 docker-compose*.yml
 .dockerignore
 
-# Temporary files
+# Temp
 tmp/
-temp/
 .cache/
-
-# Drizzle Studio data
 drizzle-studio/
