@@ -1,363 +1,55 @@
-# CLAUDE.md - TomAI Server
+# Server Tom
 
-**Backend Bun + Elysia.js** d'une plateforme de tutorat socratique adaptatif pour étudiants français. Architecture moderne avec orchestration IA et authentification Better Auth.
-
-## Règle absolue
-
-**JAMAIS** inventer de solutions backend. **TOUJOURS** rechercher documentation officielle avant toute modification.
-
-### Processus obligatoire :
-1. **WebFetch** documentation officielle
-2. **Read/Grep** patterns backend existants
-3. **Docker Compose** validation (JAMAIS `bun run dev`)
-4. **Implémentation** evidence-based
-
-## Stack
-
-- **Runtime** : Bun 1.3 + Docker Compose (PostgreSQL 16 pgvector + Redis 7)
-- **Framework** : Elysia.js 1.4.19 (type-safe API)
-- **Database** : PostgreSQL 16 + Drizzle ORM 0.45.1 (Drizzle Kit 0.31.8)
-- **Auth** : Better Auth 1.4.7 + Google OAuth
-- **AI** : Google Gemini 2.5 Flash (chat), Mistral AI (embeddings 1024D), Gladia (STT), ElevenLabs (TTS)
-- **Cache** : Redis 7 (ioredis 5.4.1 + @upstash/redis 1.35.8)
-- **Vector Search** : Qdrant Cloud direct + Mistral embeddings 1024D + BM25 reranking
-- **Storage** : Scaleway Object Storage (S3-compatible, RGPD France, fr-par)
-- **Pronote** : Pawnote 1.6.2 + AES-256-GCM encryption (PBKDF2 600K iterations)
+Backend Bun + Elysia.js pour tutorat socratique adaptatif.
 
 ## Commandes
 
 ```bash
-# INTERDIT: bun run dev (JAMAIS)
-
-# OBLIGATOIRE: Docker Compose uniquement
-docker compose up -d
-
-# Validation
-bun run typecheck    # TypeScript strict
-bun run lint         # ESLint zero warnings
-bun run build        # Build production
+docker compose up -d              # OBLIGATOIRE : PostgreSQL 16 pgvector + Backend
+bun run typecheck && bun run lint # Validation
+bun run build                     # Build production
 ```
+
+JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `docker compose up -d postgres && bun run dev`.
+
+## Stack
+
+- **Runtime** : Bun 1.3 + Docker Compose
+- **Framework** : Elysia.js 1.4 (type-safe API)
+- **Database** : PostgreSQL 16 pgvector + Drizzle ORM 0.45
+- **Cache** : MemoryCacheService (LRU in-memory avec TTL) - PAS de Redis
+- **Auth** : Better Auth 1.4 + Google OAuth
+- **AI** : Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Gladia (STT), ElevenLabs (TTS)
+- **RAG** : Qdrant Cloud + Mistral embeddings + BM25 reranking
+- **Paiement** : Stripe (webhooks) + RevenueCat (mobile webhooks)
+- **Storage** : Scaleway S3 (presigned URLs, RGPD fr-par)
+- **Pronote** : Pawnote 1.6 + AES-256-GCM (PBKDF2 600K iterations)
+
+## Architecture
+
+- **Services** (`src/services/`) : logique metier separee des routes
+- **Routes** (`src/routes/`) : endpoints API (chat, upload, pronote, learning, subscription, tts, webhooks)
+- **Repositories** (`src/db/repositories/`) : data access layer Drizzle
+- **Middleware** (`src/middleware/`) : auth, rate-limit, memory-monitor
+- **Schemas** (`src/schemas/`) : validation Zod pour toutes les requests
+- **Config** (`src/config/`) : configuration app
+
+### Modules principaux
+
+- **Chat** (`src/services/chat/`) : orchestration Gemini, summarization, tool execution, token budget
+- **Learning** : flashcards FSRS (spaced repetition), decks, progression, profil cognitif
+- **Subscription** : checkout Stripe, lifecycle, gestion enfants (role parent)
+- **RAG** : recherche unifiee Qdrant + BM25 reranking
+- **Pronote** : auth QR code, devoirs, notes, emploi du temps (SSRF protection)
+- **Storage** : upload presigned Scaleway, confirmation, sync Gemini
+
+## Patterns
+
+- JAMAIS de logique metier dans les route handlers → utiliser les services
+- TOUJOURS valider les inputs avec Zod schemas
+- Auth : `Better Auth session` via middleware, JAMAIS de verification manuelle
+- Presigned URLs pour uploads (frontend → Scaleway direct, bypass backend)
 
 ## Sources officielles
 
-- **Elysia.js** : https://elysiajs.com/quick-start.html - API patterns type-safe
-- **Drizzle ORM** : https://orm.drizzle.team/docs/overview - Schema, queries
-- **Better Auth** : https://better-auth.com/docs/installation - Server config
-- **Bun Runtime** : https://bun.sh/docs - Performance, Docker
-- **Google Gemini** : https://ai.google.dev/gemini-api/docs - API optimisée, adhérence 97%
-- **pgvector** : https://github.com/pgvector/pgvector - PostgreSQL vector extension pour RAG
-- **Scaleway S3** : https://www.scaleway.com/en/docs/object-storage - Presigned URLs, RGPD France
-- **AWS SDK v3** : https://github.com/aws/aws-sdk-js-v3 - S3 client pour Scaleway
-
-## Règles strictes
-
-### Migrations base de données (Drizzle ORM 2026)
-
-**SOURCE OF TRUTH** : `src/db/schema.ts` (approche codebase-first)
-
-Drizzle supporte deux workflows. Chacun a son contexte :
-
-#### Workflow 1 : `db:push` (dev local uniquement)
-
-Sync direct schema TypeScript → DB. Pas de fichier SQL généré.
-Idéal pour itérer rapidement en local.
-
-```bash
-# 1. Modifier schema
-vim src/db/schema.ts
-
-# 2. Stack DB requise
-docker compose up -d
-
-# 3. Appliquer directement (--strict demande confirmation)
-bun run db:push
-```
-
-**Quand utiliser** : prototypage, ajout de tables/colonnes en dev, itérations rapides.
-**Limitation** : aucun audit trail, pas de rollback, pas de fichier SQL versionné.
-
-#### Workflow 2 : `db:generate` + `db:migrate` (staging + production)
-
-Génère des fichiers SQL versionnés, appliqués par `migrate()` au démarrage.
-
-```bash
-# 1. Modifier schema
-vim src/db/schema.ts
-
-# 2. Générer le fichier SQL de migration
-bun run db:generate
-
-# 3. Vérifier le SQL généré dans ./drizzle/
-# 4. Commiter schema + migration
-git add src/db/schema.ts drizzle/
-git commit -m "feat(db): description"
-
-# 5. Deploy → docker-entrypoint.sh exécute src/db/migrate.ts
-```
-
-**Le Runtime Migrator** (`src/db/migrate.ts`) :
-- Connexion dédiée (`max: 1`) séparée du pool applicatif
-- Exécuté par `docker-entrypoint.sh` AVANT le démarrage du serveur
-- Applique les migrations SQL depuis `./drizzle/`
-- SSL automatique en production / Supabase
-
-#### Interdictions absolues
-
-- JAMAIS `db:push` en production ou staging
-- JAMAIS éditer les fichiers `.sql` ou `_journal.json` manuellement
-- JAMAIS supprimer des migrations déjà appliquées en prod
-- JAMAIS modifier `drizzle.__drizzle_migrations__` directement
-- JAMAIS créer une nouvelle migration si la précédente n'est pas commitée
-
-#### Zero-downtime (bonnes pratiques)
-
-- Nouvelles colonnes → `nullable` d'abord, contrainte ajoutée après
-- Données existantes → mise à jour en batch (ex: 1000 lignes)
-- Index → `CREATE INDEX CONCURRENTLY` (pas de lock table)
-- Backup DB AVANT toute migration destructive (DROP, ALTER TYPE)
-
-#### Diagnostic
-
-```bash
-bun run db:check               # Détecte schema drift (diff schema ↔ DB)
-bun run db:studio              # Interface visuelle Drizzle Studio
-bun run db:pull                # Reverse-engineer DB → schema (debug)
-```
-
-### Docker OBLIGATOIRE pour Développement
-```bash
-# CORRECT : Stack complète (PostgreSQL 16 + Redis 7 + Backend)
-docker compose up -d
-
-# ALTERNATIF : Services + dev local
-docker compose up -d postgres redis && bun run dev
-
-# INTERDIT : Runtime direct sans services
-bun run dev  # ÉCHOUE si PostgreSQL/Redis non accessibles
-```
-
-### Architecture Patterns
-- **Services** : Business logic séparée des routes
-- **Repositories** : Data access layer avec Drizzle
-- **Validation** : Zod schemas pour toutes requests
-- **Error Handling** : Types erreur + logging structuré
-- **Auth Middleware** : Better Auth session validation
-
-### TypeScript Strict
-```typescript
-// CORRECT : Types explicites, null handling
-async function processUser(user: User | null): Promise<ProcessedUser> {
-  if (!user) {
-    throw new ValidationError('User is required');
-  }
-  return await processValidUser(user);
-}
-
-// INTERDIT : Any types, null non-géré
-async function processUser(user: any) {
-  return await processValidUser(user);
-}
-```
-
-## Structure
-
-```
-src/
-├── index.ts                         # Point d'entrée principal
-├── app.ts                           # Configuration Elysia app
-├── services/
-│   ├── rag.service.ts              # RAG unifié (search + rerank)
-│   ├── qdrant.service.ts           # Client Qdrant Cloud direct
-│   ├── mistral-embeddings.service.ts # Embeddings Mistral 1024D
-│   ├── rerank.service.ts           # BM25 + RRF reranking
-│   ├── gemini-simple.service.ts    # Gemini 2.5 Flash direct
-│   ├── redis-cache.service.ts      # Gestion cache Redis
-│   ├── chat.service.ts             # Orchestration chat socratique
-│   ├── education.service.ts        # Matières/niveaux disponibles
-│   ├── pronote.service.ts          # Pronote QR auth + SSRF protection
-│   ├── storage/
-│   │   └── scaleway-storage.service.ts # Scaleway S3 presigned URLs
-│   └── chat/
-│       └── file-context.service.ts # Contexte fichiers pour chat
-├── routes/                          # API endpoints
-│   ├── api.routes.ts               # Routes principales
-│   ├── chat-message.routes.ts      # Chat streaming
-│   ├── file-upload.routes.ts       # Upload presigned (Scaleway)
-│   └── pronote.routes.ts           # Intégration Pronote + recherche établissements
-├── db/
-│   ├── schema.ts                   # Drizzle schema
-│   ├── connection.ts               # Configuration DB
-│   └── repositories/               # Data access layer
-├── lib/
-│   ├── auth.ts                     # Better Auth config
-│   ├── encryption.ts               # AES-256-GCM + PBKDF2 (Pronote)
-│   ├── redis.service.ts            # Client Redis
-│   └── observability.ts            # Monitoring
-├── middleware/                      # Auth, monitoring, memory
-├── config/                          # Configuration app
-├── schemas/                         # Validation Zod
-└── types/                           # Types partagés
-```
-
-## Better Auth
-
-```typescript
-// Configuration server
-export const auth = betterAuth({
-  database: db,
-  emailAndPassword: { enabled: true },
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    },
-  },
-});
-
-// Middleware obligatoire
-async function requireAuth({ request: { headers }, set }) {
-  const session = await auth.api.getSession({ headers });
-  if (!session?.user) {
-    set.status = 401;
-    return { error: 'Unauthorized' };
-  }
-  return { user: session.user };
-}
-```
-
-## Pronote Integration
-
-Intégration sécurisée avec Pronote via QR code (bypass ENT/CAS).
-
-### Architecture Sécurité
-- **Encryption** : AES-256-GCM avec PBKDF2 (600K iterations, OWASP 2023)
-- **SSRF Protection** : Allowlist domaines Pronote autorisés
-- **Rate Limiting** : 5 req/15min par utilisateur sur `/connect`
-- **Validation Startup** : Test encrypt/decrypt cycle au démarrage
-
-### Fichiers clés
-```
-src/
-├── lib/encryption.ts           # AES-256-GCM + PBKDF2
-├── services/pronote.service.ts # Pawnote wrapper + SSRF protection
-├── routes/pronote.routes.ts    # API endpoints (student role only)
-└── db/schema.ts               # Table pronote_connections
-```
-
-### Endpoints (students only)
-| Endpoint | Description |
-|----------|-------------|
-| `POST /api/pronote/connect` | Connexion QR code + PIN |
-| `DELETE /api/pronote/disconnect` | Suppression connexion |
-| `GET /api/pronote/status` | Statut connexion |
-| `GET /api/pronote/homework` | Devoirs (weekOffset) |
-| `GET /api/pronote/grades` | Notes période courante |
-| `GET /api/pronote/timetable` | Emploi du temps |
-
-### Variables d'environnement
-```bash
-# Générer avec: openssl rand -base64 48
-PRONOTE_ENCRYPTION_KEY=<64 chars base64>
-```
-
-## File Storage (Scaleway)
-
-Stockage fichiers RGPD-compliant via Scaleway Object Storage (datacenter fr-par).
-
-### Architecture
-- **Upload** : Presigned URLs (frontend → Scaleway direct, bypass backend)
-- **Metadata** : PostgreSQL (table `files`)
-- **Limite** : 10MB max, types images/PDF/audio/documents
-
-### Flow upload
-1. `GET /api/upload/presign` → Presigned URL (15min expiry)
-2. `PUT` direct vers Scaleway (client-side)
-3. `POST /api/upload/confirm/:fileId` → Validation + sync Gemini
-
-### Endpoints
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/upload/presign` | Génère presigned URL |
-| `POST /api/upload/confirm/:fileId` | Confirme upload réussi |
-| `GET /api/upload/file/:fileId` | Download presigned URL |
-| `DELETE /api/upload/file/:fileId` | Supprime fichier |
-
-### Variables d'environnement
-```bash
-SCALEWAY_ACCESS_KEY=<access_key>
-SCALEWAY_SECRET_KEY=<secret_key>
-SCALEWAY_BUCKET=<bucket_name>
-SCALEWAY_REGION=fr-par
-```
-
-## Seed RAG Data (Optionnel)
-
-**Note** : Le seed RAG (415 documents + 2,271 chunks) doit être recréé via ingestion manuelle.
-
-```bash
-# Option 1: Ingestion depuis fichiers source
-bun run scripts/ingest-production-data.sh
-
-# Option 2: Si backup SQL disponible
-DATABASE_URL="..." bun run scripts/seed-rag.ts
-```
-
-**Fichiers requis** :
-- Documents programmes officiels (CP → Terminale)
-- Embeddings Mistral 1024D générés
-- Format : SQL INSERT statements avec ON CONFLICT DO NOTHING
-
-## Extended Thinking - Problèmes complexes
-
-**Niveaux de réflexion pour décisions critiques:**
-
-| Niveau | Usage | Exemple Backend |
-|--------|-------|-----------------|
-| `"think"` (~4K tokens) | Analyse multi-fichiers | RAG pipeline optimization |
-| `"think hard"` (~10K tokens) | Architecture système | Redis vs pgvector caching |
-| `"think harder"` (~20K tokens) | Redesign critique | Microservices split |
-| `"ultrathink"` (~32K tokens) | Transformation majeure | Self-hosted Ollama migration |
-
-**Prompts recommandés:**
-```bash
-"think hard about optimizing database queries for dashboard analytics"
-"think harder about refactoring Gemini service for multi-provider support"
-"ultrathink migrating from Bun to Node.js for ecosystem compatibility"
-```
-
-**Guide complet:** Voir `/docs/EXTENDED_THINKING.md` pour:
-- Quand utiliser chaque niveau
-- Examples TomIA spécifiques (RAG, auth, migrations)
-- Best practices et coûts
-
----
-
-## Documentation locale
-
-**Dossier `docs/`** (non versionné Git, local uniquement) :
-- `DATABASE_MIGRATIONS.md` - Guide complet migrations Drizzle ORM
-- `REDIS_TROUBLESHOOTING.md` - Résolution problèmes Redis
-- `OPTIMIZATIONS_2025.md` - Optimisations performance
-- Fichiers existants (audits, workflows, seeding)
-
-**Pratique** : Documentation de référence locale, ne PAS commiter (`.gitignore` exclut `docs/`)
-
-## Validation pré-commit
-
-```bash
-docker compose ps       # Services actifs
-bun run typecheck       # Zero erreur TypeScript strict
-bun run lint            # Zero warnings ESLint
-bun run build           # Build production successful
-```
-
-Checklist :
-- Documentation officielle vérifiée
-- Patterns Elysia.js respectés
-- Si schema.ts modifié : `bun run db:push` (dev local) OU `bun run db:generate` + commit SQL (prod)
-
-## Mission
-
-Ce backend sert de **VRAIES familles françaises**. Chaque API endpoint impacte l'éducation d'enfants réels.
-
-**Standards** : Bun + Elysia.js + TypeScript strict + Performance <200ms + Better Auth + Docker production-ready
+Consulter avant toute modification : [Elysia.js](https://elysiajs.com), [Drizzle ORM](https://orm.drizzle.team), [Better Auth](https://better-auth.com), [Gemini API](https://ai.google.dev)

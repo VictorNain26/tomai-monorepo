@@ -1,61 +1,54 @@
 # Tom Monorepo
 
-**Plateforme de tutorat IA adaptatif** pour eleves francais du CP a la Terminale. Pedagogie socratique, programmes Eduscol, integration Pronote.
+Plateforme de tutorat IA adaptatif pour eleves francais (CP-Terminale). Pedagogie socratique, programmes Eduscol, integration Pronote.
 
-## Demarrage Rapide
+## Quick Start
 
 ```bash
-# Installation
+# 1. Installation
 pnpm install
 
-# Developpement (lance toutes les apps)
+# 2. Backend (Docker requis pour PostgreSQL)
+cd apps/server && docker compose up -d && cd ../..
+
+# 3. Developpement
 pnpm dev
 # → Landing: http://localhost:3001
 # → Server: http://localhost:3000
+# → API docs: http://localhost:3000/swagger (dev only)
 
-# Mobile
+# Mobile (separement)
 pnpm dev:mobile
-
-# Validation
-pnpm validate
 ```
 
-**Backend** : Docker requis pour PostgreSQL
-```bash
-cd apps/server && docker compose up -d
-```
+## Prerequisites
+
+- **pnpm** 10.28+
+- **Node.js** 22+ (via Bun 1.3 pour le server)
+- **Docker** (PostgreSQL 16 + pgvector)
 
 ## Structure
 
 ```
-tomai-monorepo/
-├── apps/
-│   ├── landing/       # Next.js 16 - Landing page SEO (port 3001)
-│   ├── server/        # Bun + Elysia.js - Backend API (port 3000)
-│   └── mobile/        # Expo SDK 54 - App mobile (port 8081)
-├── packages/
-│   ├── api/           # @repo/api - Eden Treaty + TanStack Query
-│   ├── shared-types/  # @repo/shared-types - Types partages
-│   └── eslint-config/ # @repo/eslint-config - Configs ESLint
-└── turbo.json         # Configuration Turborepo
+apps/
+├── landing/       # Next.js 16 - Site vitrine SEO (port 3001)
+├── server/        # Bun + Elysia.js - Backend API (port 3000)
+└── mobile/        # Expo SDK 54 - App iOS/Android (port 8081)
+
+packages/
+├── api/           # @repo/api - Client Eden Treaty + TanStack Query
+├── shared-types/  # @repo/shared-types - Types partages
+└── eslint-config/ # @repo/eslint-config - Configs ESLint
 ```
 
-## Apps
-
-| App | Port | Tech | Description |
-|-----|------|------|-------------|
-| **landing** | 3001 | Next.js 16 | Site vitrine SEO |
-| **server** | 3000 | Bun + Elysia.js 1.4 | API backend |
-| **mobile** | 8081 | Expo SDK 54 | Application mobile iOS/Android |
-
-## Commandes
+## Commands
 
 ```bash
-# Developpement
-pnpm dev                # Toutes les apps (sauf mobile)
-pnpm dev:landing        # Landing seulement
-pnpm dev:server         # Server seulement
-pnpm dev:mobile         # Mobile Expo
+# Dev
+pnpm dev                # Landing + Server
+pnpm dev:landing        # Landing seul
+pnpm dev:server         # Server seul
+pnpm dev:mobile         # Expo mobile
 
 # Validation
 pnpm typecheck          # TypeScript strict
@@ -63,52 +56,54 @@ pnpm lint               # ESLint zero warnings
 pnpm validate           # typecheck + lint
 
 # Build
-pnpm build              # Build production
+pnpm build              # Production (toutes apps)
 
 # Database
-pnpm db:push            # Dev: sync schema → DB locale
+pnpm db:push            # Dev: sync schema → DB
 pnpm db:generate        # Prod: generer migration SQL
-pnpm db:studio          # Interface Drizzle Studio
+pnpm db:studio          # Drizzle Studio UI
 ```
 
 ## Stack
 
 | Couche | Technologies |
-|--------|--------------|
+|--------|-------------|
 | Monorepo | Turborepo 2.7, pnpm 10.28, TypeScript 5.9 strict |
-| Backend | Bun 1.3, Elysia.js 1.4, PostgreSQL 16 + pgvector, Drizzle ORM |
+| Backend | Bun 1.3, Elysia.js 1.4, PostgreSQL 16 pgvector, Drizzle ORM |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion |
 | Mobile | Expo SDK 54, React Native 0.81, NativeWind, React Native Reusables |
 | Auth | Better Auth + Google OAuth |
 | AI | Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Qdrant Cloud (RAG) |
 | Voix | Gladia (STT), ElevenLabs (TTS) |
-| Paiements | RevenueCat (mobile IAP) |
-| Stockage | Scaleway Object Storage (RGPD France) |
+| Paiements | Stripe (web) + RevenueCat (mobile IAP) |
+| Stockage | Scaleway Object Storage (RGPD France, fr-par) |
 
 ## Git Workflow
 
-| Branche | Environnement | Deploiement |
-|---------|---------------|-------------|
-| `staging` | Preview/Dev | Vercel preview + Koyeb staging (auto) |
-| `main` | Production | Vercel + Koyeb (auto) |
-
 ```
-staging (push direct OK)
+staging (push direct OK, CI auto)
     └──► PR (merge commit) ──► main (production)
 ```
 
-- **JAMAIS** de push direct sur `main`
-- **JAMAIS** de squash merge (desynchronise les branches)
+- JAMAIS de push direct sur `main`
+- JAMAIS de squash merge (desynchronise les branches)
 
 ## CI/CD
 
-| Workflow | Declencheur | Actions |
-|----------|------------|---------|
-| `ci.yml` | Push staging/main, PR main | typecheck, lint, test, build, migration sync |
-| `security.yml` | Push staging/main, PR main | Detection de secrets (gitleaks) |
-| `auto-merge.yml` | PR Dependabot | Auto-merge patch/minor |
+| Workflow | Actions |
+|----------|---------|
+| `ci.yml` | typecheck, lint, test, build, migration sync |
+| `security.yml` | Detection secrets (gitleaks) |
+| `auto-merge.yml` | Auto-merge Dependabot patch/minor |
+
+| App | Plateforme | Deploiement |
+|-----|-----------|-------------|
+| Landing | Vercel | Auto sur push |
+| Server | Koyeb | Auto sur push main |
+| Mobile | EAS Build | Workflows manuels |
 
 ## Documentation
 
-- **[apps/server/README.md](./apps/server/README.md)** - Backend API
-- **[apps/mobile/README.md](./apps/mobile/README.md)** - App mobile Expo
+- [apps/server/README.md](./apps/server/README.md) - Backend API
+- [apps/landing/README.md](./apps/landing/README.md) - Landing page
+- [apps/mobile/README.md](./apps/mobile/README.md) - App mobile Expo
