@@ -4,7 +4,7 @@
  * Source de vérité frontend pour l'affichage (emoji, color, description).
  * Le backend RAG retourne uniquement les clés des matières disponibles.
  *
- * Basé sur apps/app/src/constants/subjects.ts pour cohérence.
+ * Source unique des métadonnées matières pour l'app mobile.
  */
 
 // =============================================================================

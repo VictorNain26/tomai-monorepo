@@ -45,6 +45,7 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+lint_report.json
 
 # Claude Code local settings
 **/.claude/

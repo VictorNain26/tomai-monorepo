@@ -1,84 +1,62 @@
-# CLAUDE.md - Monorepo Tom
-
-Monorepo Turborepo pour la plateforme de tutorat Tom.
+# Monorepo Tom
 
 ## Commandes
 
 ```bash
-# Installation
-pnpm install
-
-# Développement (toutes les apps en parallèle)
-pnpm dev                 # Landing:3001 + Server:3000
-pnpm dev:mobile          # Expo mobile (port 8081)
-
-# Développement app individuelle
-pnpm dev:landing         # Next.js landing (port 3001)
-pnpm dev:server          # Backend Elysia (port 3000)
-
-# Validation (obligatoire avant commit)
-pnpm typecheck           # TypeScript strict
-pnpm lint                # ESLint
-pnpm validate            # typecheck + lint
-
-# Build production
-pnpm build               # Toutes les apps
-
-# Base de données (Docker requis)
-pnpm db:push             # Dev: sync direct schema → DB locale (JAMAIS en prod)
-pnpm db:generate         # Prod: génère fichier SQL de migration versionné
-pnpm db:migrate          # Prod: applique migrations (auto via docker-entrypoint)
-pnpm db:check            # Vérifie si schema et DB sont synchronisés
-pnpm db:studio           # Interface Drizzle Studio
+pnpm install                      # Installation
+pnpm dev                          # Landing:3001 + Server:3000
+pnpm dev:mobile                   # Expo mobile (8081)
+pnpm typecheck && pnpm lint       # Validation (obligatoire avant commit)
+pnpm build                        # Build production
 ```
 
-**Backend nécessite Docker** (PostgreSQL + Redis) :
+**Backend necessite Docker** (PostgreSQL 16 + pgvector) :
 ```bash
 cd apps/server && docker compose up -d
 ```
 
-## Architecture
-
-```
-tomai-monorepo/
-├── apps/
-│   ├── landing/       # Next.js 16 - Landing page SEO
-│   ├── mobile/        # Expo SDK 54 - Application mobile
-│   └── server/        # Bun + Elysia.js - Backend API
-├── packages/
-│   ├── api/           # Client API partagé (Eden Treaty)
-│   └── shared-types/  # Types TypeScript partagés
-└── tsconfig.base.json # Config TypeScript de base
-```
-
-## Stack technique
+## Stack
 
 | Couche | Technologies |
-|--------|--------------|
-| Backend | Bun, Elysia.js, PostgreSQL 16, Redis 7, Drizzle ORM |
+|--------|-------------|
+| Backend | Bun, Elysia.js 1.4, PostgreSQL 16 pgvector, MemoryCacheService (LRU in-memory), Drizzle ORM |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion |
-| Mobile | Expo SDK 54, React Native 0.81, NativeWind |
+| Mobile | Expo SDK 54, React Native 0.81, NativeWind, React Native Reusables |
 | Auth | Better Auth + Google OAuth |
-| AI | Gemini 2.5 Flash, Mistral embeddings, Qdrant Cloud |
+| AI | Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Gladia (STT), ElevenLabs (TTS) |
+| RAG | Qdrant Cloud + Mistral embeddings + BM25 reranking |
+| Paiement | Stripe (web) + RevenueCat (mobile) |
+| Storage | Scaleway Object Storage (S3-compatible, RGPD, fr-par) |
+| Monorepo | Turborepo, pnpm workspaces |
+| Deploy | Vercel (landing), Koyeb (server), EAS (mobile) |
 
-## Règles de développement
+## Apps
 
-1. **TypeScript strict** : Pas de `any`, gestion explicite des `null`
-2. **Zero warnings ESLint** en CI
-3. **400 lignes max** par fichier
-4. **shadcn/ui uniquement** pour les composants React (pas de CSS custom)
-5. **Evidence-based** : Lire les patterns existants avant modification
-6. **Pas de sur-engineering** : Supprimer le code inutilisé
+| App | Path | Port | Package name |
+|-----|------|------|-------------|
+| Landing | `apps/landing/` | 3001 | `landing` |
+| Server | `apps/server/` | 3000 | `tomai-server` |
+| Mobile | `apps/mobile/` | 8081 | `tom-mobile` |
 
-## Workflow Git (2026)
+## Packages partages
 
-- **main** → Production (Vercel + Koyeb auto-deploy)
-- **staging** → Staging/Preview
-- Workflow : `staging (push direct) → PR (merge commit) → main`
-- **JAMAIS squash merge** (désynchronise les branches)
+- `packages/api/` : Client API (Eden Treaty)
+- `packages/shared-types/` : Types TypeScript partages
 
-## Documentation par app
+## Git workflow
 
-- `apps/landing/CLAUDE.md` - Landing page Next.js
-- `apps/mobile/CLAUDE.md` - Application mobile Expo
-- `apps/server/CLAUDE.md` - Backend Bun + Elysia
+- **`staging`** : travail quotidien, push direct OK, CI automatique
+- **`main`** : production, JAMAIS de push direct, toujours via PR depuis staging
+- **Merge commit uniquement** : JAMAIS squash merge (desynchronise les branches)
+
+## CI/CD
+
+| App | Plateforme | Trigger |
+|-----|-----------|---------|
+| Landing | Vercel | Auto sur push |
+| Server | Koyeb | Auto sur push main |
+| Mobile | EAS Build | Manuel via workflows |
+
+## Regles detaillees
+
+Voir `.claude/rules/` pour : migrations DB, securite, workflow Git.

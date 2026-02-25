@@ -93,7 +93,7 @@ describe('Stripe Webhook - Idempotency', () => {
     const WEBHOOK_EVENT_KEY_PREFIX = 'stripe:webhook:processed:';
     const WEBHOOK_IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60;
 
-    it('devrait générer la bonne clé Redis', () => {
+    it('devrait générer la bonne clé idempotence', () => {
       const eventId = 'evt_1234567890';
       const key = `${WEBHOOK_EVENT_KEY_PREFIX}${eventId}`;
 

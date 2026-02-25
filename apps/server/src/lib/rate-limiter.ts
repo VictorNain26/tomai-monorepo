@@ -64,8 +64,7 @@ export const rateLimitConfigs = {
 } as const;
 
 /**
- * Store in-memory simple pour le rate limiting
- * En production, utiliser Redis pour une vraie scalabilité
+ * Store in-memory pour le rate limiting
  */
 class MemoryRateLimitStore {
   private store = new Map<string, { count: number; resetTime: number }>();
