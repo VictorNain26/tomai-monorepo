@@ -5,14 +5,12 @@
  * Intègre la dictée vocale avec transcription automatique.
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  KeyboardAvoidingView,
-  Platform,
+  Pressable,
   ScrollView,
   Image,
 } from 'react-native';
@@ -58,7 +56,6 @@ export function ChatInput({
   placeholder = 'Pose ta question...',
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
-  const inputRef = useRef<TextInput>(null);
   const iconColors = useIconColors();
   const toast = useToast();
 
@@ -194,10 +191,6 @@ export function ChatInput({
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
       <View className="border-t border-border bg-background px-4 pb-4 pt-2">
         {/* Pending Attachments */}
         {pendingAttachments.length > 0 && (
@@ -249,9 +242,11 @@ export function ChatInput({
 
         {/* Attachment Menu Overlay */}
         {showAttachmentMenu && (
-          <TouchableWithoutFeedback onPress={() => setShowAttachmentMenu(false)}>
-            <View className="absolute inset-0" style={{ zIndex: 9 }} />
-          </TouchableWithoutFeedback>
+          <Pressable
+            onPress={() => setShowAttachmentMenu(false)}
+            className="absolute inset-0"
+            style={{ zIndex: 9 }}
+          />
         )}
 
         {/* Input Row */}
@@ -358,7 +353,6 @@ export function ChatInput({
               </View>
             ) : (
               <TextInput
-                ref={inputRef}
                 value={message}
                 onChangeText={setMessage}
                 placeholder={placeholder}
@@ -421,6 +415,5 @@ export function ChatInput({
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
   );
 }

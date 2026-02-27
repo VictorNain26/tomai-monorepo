@@ -24,6 +24,7 @@ import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
 import { queryClient, persistOptions, initializeNetInfo } from '@/lib/query-client';
 import { initializeAppApi } from '@/lib/api';
 import { initializeDatabase } from '@/db';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { ThemeProvider, RevenueCatProvider } from '@/components/providers';
 import { ToastProvider } from '@/components/ui/toast';
 
@@ -36,11 +37,12 @@ SplashScreen.preventAutoHideAsync();
  * Provider order (outside to inside):
  * 1. GestureHandlerRootView (native)
  * 2. SafeAreaProvider (native)
- * 3. PersistQueryClientProvider (React context)
- * 4. ThemeProvider (React context)
- * 5. RevenueCatProvider (React context)
- * 6. ToastProvider (global — inline styles, no NativeWind dependency)
- * 7. Slot (expo-router — initializes NavigationContainer)
+ * 3. KeyboardProvider (native - keyboard controller)
+ * 4. PersistQueryClientProvider (React context)
+ * 5. ThemeProvider (React context)
+ * 6. RevenueCatProvider (React context)
+ * 7. ToastProvider (global — inline styles, no NativeWind dependency)
+ * 8. Slot (expo-router — initializes NavigationContainer)
  *
  * NativeWind className must NOT be used before Slot (css-interop needs NavigationContainer).
  * ToastProvider uses inline styles only, so it can safely live above Slot.
@@ -90,6 +92,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        <KeyboardProvider>
         <PersistQueryClientProvider
           client={queryClient}
           persistOptions={persistOptions}
@@ -106,6 +109,7 @@ export default function RootLayout() {
             </RevenueCatProvider>
           </ThemeProvider>
         </PersistQueryClientProvider>
+        </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
