@@ -1,13 +1,14 @@
 /**
  * Gemini Tool Declarations - Agent multi-tool TomAI
  *
- * 6 outils disponibles pour l'agent:
+ * 7 outils disponibles pour l'agent:
  * 1. search_educational_content - RAG Eduscol
  * 2. get_student_homework - Devoirs Pronote
  * 3. get_student_grades - Notes Pronote
  * 4. get_student_timetable - EDT Pronote
  * 5. generate_flashcards - Generation de cartes
  * 6. get_student_profile - Profil cognitif
+ * 7. get_app_help - Guide d'utilisation de l'app
  */
 
 import type { FunctionDeclaration } from '@google/genai';
@@ -184,6 +185,35 @@ QUAND NE PAS L'UTILISER:
   }
 };
 
+export const getAppHelpDeclaration: FunctionDeclaration = {
+  name: 'get_app_help',
+  description: `Consulte le guide d'utilisation de l'application Tom.
+Retourne des instructions adaptées au rôle (élève ou parent) sur un sujet donné.
+
+QUAND L'UTILISER:
+- Quand l'utilisateur pose une question sur l'application (comment ça marche, navigation, fonctionnalités).
+- Quand l'utilisateur demande comment connecter Pronote, voir ses notes, créer des flashcards, etc.
+- Quand l'utilisateur demande ce que Tom peut faire ou comment utiliser une fonctionnalité.
+
+QUAND NE PAS L'UTILISER:
+- Pour des questions scolaires (cours, exercices, devoirs) → utilise search_educational_content.
+- Pour des salutations ou discussions générales.`,
+  parametersJsonSchema: {
+    type: 'object',
+    properties: {
+      topic: {
+        type: 'string',
+        enum: [
+          'overview', 'navigation', 'chat', 'flashcards',
+          'pronote', 'files', 'subscription', 'profile'
+        ],
+        description: 'Le sujet de la question: overview (vue générale), navigation (onglets), chat (conversation), flashcards (révision), pronote (connexion/données), files (fichiers/photos), subscription (abonnement), profile (paramètres)'
+      }
+    },
+    required: ['topic']
+  }
+};
+
 /** All tool declarations for the Gemini agent */
 export const agentToolDeclarations: FunctionDeclaration[] = [
   searchEducationalContentDeclaration,
@@ -192,4 +222,5 @@ export const agentToolDeclarations: FunctionDeclaration[] = [
   getStudentTimetableDeclaration,
   generateFlashcardsDeclaration,
   getStudentProfileDeclaration,
+  getAppHelpDeclaration,
 ];

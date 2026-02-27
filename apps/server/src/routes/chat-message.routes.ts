@@ -257,6 +257,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
       firstName: firstName ?? user.firstName ?? undefined,
       sessionId: chatSessionId,
+      userRole: user.role === 'parent' ? 'parent' : 'student',
       cognitiveProfileSummary,
       learningContext,
       conversationSummary: sessionSummary?.conversationSummary,

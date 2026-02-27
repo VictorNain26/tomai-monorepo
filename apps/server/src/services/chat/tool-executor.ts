@@ -13,6 +13,7 @@ import { fsrsService } from '../fsrs.service.js';
 import { db } from '../../db/connection.js';
 import { learningDecks, learningCards } from '../../db/schema.js';
 import { getLevelConfig } from '../../config/learning-config.js';
+import { getAppHelpContent } from '../../config/app-guide/index.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 
@@ -20,6 +21,7 @@ export interface ToolExecutionContext {
   userId: string;
   schoolLevel: EducationLevelType;
   sessionId: string;
+  userRole: 'student' | 'parent';
 }
 
 /**
@@ -58,6 +60,9 @@ export async function executeTool(
 
       case 'get_student_profile':
         return await executeGetProfile(context);
+
+      case 'get_app_help':
+        return executeGetAppHelp(args, context);
 
       default:
         return { error: true, message: `Outil inconnu: ${toolName}` };
@@ -292,6 +297,28 @@ async function executeGenerateFlashcards(
     topic,
     subject,
     message: `${insertedCards.length} cartes de révision sur "${topic}" ont été créées et sauvegardées.`,
+  };
+}
+
+function executeGetAppHelp(
+  args: Record<string, unknown>,
+  context: ToolExecutionContext
+): object {
+  const topic = args.topic as string;
+  const content = getAppHelpContent(topic, context.userRole);
+
+  if (!content) {
+    return {
+      found: false,
+      message: `Sujet "${topic}" non reconnu. Sujets disponibles : overview, navigation, chat, flashcards, pronote, files, subscription, profile.`,
+    };
+  }
+
+  return {
+    found: true,
+    topic,
+    role: context.userRole,
+    guide: content,
   };
 }
 

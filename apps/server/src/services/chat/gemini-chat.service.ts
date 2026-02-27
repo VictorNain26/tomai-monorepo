@@ -2,7 +2,7 @@
  * Service de chat Gemini 3 Flash - Agent multi-tool
  *
  * Architecture agent avec boucle d'exécution:
- * - 6 outils: RAG, Pronote (devoirs/notes/EDT), flashcards, profil cognitif
+ * - 7 outils: RAG, Pronote (devoirs/notes/EDT), flashcards, profil cognitif, guide app
  * - Boucle while max 5 itérations (sécurité anti-boucle infinie)
  * - Support multi-tool par itération
  * - SSE streaming avec content/done/error chunks
@@ -44,6 +44,7 @@ function getToolStatusLabel(name: string): string {
     case 'get_student_timetable': return "Consultation de l'emploi du temps...";
     case 'generate_flashcards': return 'Création de flashcards...';
     case 'get_student_profile': return 'Analyse du profil...';
+    case 'get_app_help': return "Consultation du guide...";
     default: return 'Traitement en cours...';
   }
 }
@@ -153,6 +154,8 @@ export interface StreamGenerationParams {
   learningContext?: string | null;
   /** Résumé conversationnel (SummaryBuffer pattern) */
   conversationSummary?: string | null;
+  /** Role de l'utilisateur (eleve ou parent) */
+  userRole: 'student' | 'parent';
   /** Fichiers attachés au message courant (images, PDFs) */
   files?: AttachedFile[];
   conversationHistory: Array<{
@@ -428,7 +431,8 @@ class GeminiChatService {
             executeTool(call.name, call.args, {
               userId: params.userId,
               schoolLevel: params.schoolLevel,
-              sessionId: params.sessionId
+              sessionId: params.sessionId,
+              userRole: params.userRole,
             })
           )
         );
