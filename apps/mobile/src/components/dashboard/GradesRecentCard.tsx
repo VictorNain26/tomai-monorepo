@@ -41,7 +41,6 @@ interface GradesRecentCardProps {
   averageGrade: number | null;
   /** Trend compared to previous period */
   trend?: 'up' | 'down' | 'stable';
-  isConnected: boolean;
   isLoading?: boolean;
   /** Max items to show (default: 3) */
   maxItems?: number;
@@ -94,7 +93,6 @@ export function GradesRecentCard({
   grades,
   averageGrade,
   trend,
-  isConnected,
   isLoading = false,
   maxItems = 3,
   onViewAll,
@@ -136,28 +134,6 @@ export function GradesRecentCard({
         <View className="gap-3">
           <Skeleton className="h-14 w-full rounded-lg" />
           <Skeleton className="h-14 w-full rounded-lg" />
-        </View>
-      </View>
-    );
-  }
-
-  // Not connected state
-  if (!isConnected) {
-    return (
-      <View style={shadows.sm} className="rounded-xl bg-card p-5">
-        <View className="items-center py-4">
-          <View
-            className="mb-3 h-12 w-12 items-center justify-center rounded-xl"
-            style={{ backgroundColor: bgColors.muted[30] }}
-          >
-            <BarChart3 color={iconColors.muted} size={24} />
-          </View>
-          <Text variant="large" className="mb-1 text-center">
-            Notes non disponibles
-          </Text>
-          <Text variant="muted" className="text-center">
-            Connecte Pronote pour voir tes notes.
-          </Text>
         </View>
       </View>
     );

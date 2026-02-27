@@ -4,6 +4,12 @@
  * AI tutor chat - single multi-subject conversation per student.
  * The agent detects the subject dynamically and adapts.
  *
+ * Keyboard architecture (react-native-keyboard-controller):
+ * - KeyboardProvider in root layout sets SOFT_INPUT_ADJUST_NOTHING
+ * - KeyboardAvoidingView (from library) adds paddingBottom = keyboard height
+ * - keyboardVerticalOffset = tab bar height (keyboard is relative to screen bottom)
+ * - FlatList inverted: newest messages always visible at bottom
+ *
  * Context params:
  * - context: "homework:id" | "grade:id" | "test:id" | undefined
  * - prompt: Pre-filled question from dashboard
@@ -12,11 +18,12 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MoreVertical, ChevronRight, FileText, BarChart3, RefreshCw, FolderOpen } from 'lucide-react-native';
+import { ChevronRight, FileText, BarChart3, RefreshCw } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
-import { ChatMessage, ChatInput, DeckActionCard, FileLibraryPicker } from '@/components/chat';
+import { ChatMessage, ChatInput, ChatHeader, DeckActionCard, FileLibraryPicker } from '@/components/chat';
 import { TomAvatar } from '@/components/common';
 import {
   useChat,
@@ -72,9 +79,7 @@ function parseContext(contextParam?: string): ContextInfo {
 export default function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<Record<string, string>>();
-  const flatListRef = useRef<FlatList>(null);
   const iconColors = useIconColors();
-
   // Parse context from params
   const contextInfo = useMemo(() => parseContext(params.context), [params.context]);
 
@@ -219,18 +224,14 @@ export default function ChatScreen() {
     );
   }, [currentSessionId, resetSession, router]);
 
-  // Auto-scroll to bottom
-  const scrollToBottom = useCallback(() => {
-    if (messages.length > 0) {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }
-  }, [messages.length]);
+  // Inverted FlatList: reverse messages so newest appear at bottom
+  const invertedMessages = useMemo(() => [...messages].reverse(), [messages]);
 
-  // Render message
+  // Render message (inverted: index 0 = newest message)
   const renderMessage = useCallback(
     ({ item, index }: { item: ChatMessageType; index: number }) => {
       const isLastAssistant =
-        item.role === 'assistant' && index === messages.length - 1;
+        item.role === 'assistant' && index === 0;
       const showDecks = isLastAssistant && !isStreaming && createdDecks.length > 0;
       return (
         <View>
@@ -251,7 +252,7 @@ export default function ChatScreen() {
         </View>
       );
     },
-    [messages.length, isStreaming, createdDecks]
+    [isStreaming, createdDecks]
   );
 
   // Context badge info
@@ -270,57 +271,14 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-      {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
-        <View className="flex-1">
-          <View className="flex-row items-center gap-2">
-            <TomAvatar size="sm" />
-            <Text variant="large">Tom</Text>
-          </View>
-          {contextBadge && (
-            <View className="mt-0.5 flex-row items-center gap-1 ml-10">
-              <contextBadge.icon color={contextBadge.color} size={12} />
-              <Text variant="tiny" style={{ color: contextBadge.color }}>
-                {contextBadge.label}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {currentSessionId && (
-          <View className="flex-row items-center gap-2">
-            {/* Classeur badge */}
-            {sessionAttachedFiles.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setShowClasseur(true)}
-                className="flex-row items-center gap-1 rounded-full px-2.5 py-1.5"
-                style={{ backgroundColor: bgColors.primary[10] }}
-                accessibilityLabel={`${sessionAttachedFiles.length} fichier(s) attaché(s)`}
-              >
-                <FolderOpen color={colors.primary.DEFAULT} size={14} />
-                <Text variant="tiny" className="text-primary font-medium">
-                  {sessionAttachedFiles.length}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              onPress={() => {
-                Alert.alert('Options', undefined, [
-                  { text: 'Nouvelle conversation', onPress: handleReset },
-                  { text: 'Supprimer', onPress: handleDelete, style: 'destructive' },
-                  { text: 'Annuler', style: 'cancel' },
-                ]);
-              }}
-              className="h-10 w-10 items-center justify-center rounded-full bg-muted"
-              accessibilityLabel="Options de conversation"
-              accessibilityRole="button"
-            >
-              <MoreVertical color={iconColors.muted} size={18} />
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+      <ChatHeader
+        contextBadge={contextBadge}
+        currentSessionId={currentSessionId}
+        sessionFileCount={sessionAttachedFiles.length}
+        onOpenClasseur={() => setShowClasseur(true)}
+        onReset={handleReset}
+        onDelete={handleDelete}
+      />
 
       {/* Error Message with Retry */}
       {error && (
@@ -344,58 +302,64 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {/* Messages or Welcome */}
-      {messages.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <TomAvatar size="lg" className="mb-4" />
-          <Text variant="h3" className="text-center">
-            Salut ! Je suis Tom
-          </Text>
-          <Text variant="muted" className="mt-2 text-center">
-            Pose-moi une question sur tes cours !
-          </Text>
+      {/* KeyboardAvoidingView wraps messages + input */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior="padding"
+      >
+        {/* Messages or Welcome */}
+        {messages.length === 0 ? (
+          <View className="flex-1 items-center justify-center px-6">
+            <TomAvatar size="lg" className="mb-4" />
+            <Text variant="h3" className="text-center">
+              Salut ! Je suis Tom
+            </Text>
+            <Text variant="muted" className="mt-2 text-center">
+              Pose-moi une question sur tes cours !
+            </Text>
 
-          {suggestions.length > 0 && (
-            <View className="mt-6 w-full gap-2">
-              {suggestions.map((s, i) => (
-                <TouchableOpacity
-                  key={i}
-                  onPress={() => sendMessage(s.prompt)}
-                  className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3"
-                  activeOpacity={0.7}
-                >
-                  <Text className="text-lg">{s.emoji}</Text>
-                  <Text className="flex-1">{s.label}</Text>
-                  <ChevronRight color={iconColors.muted} size={16} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={{ padding: 16 }}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={scrollToBottom}
-          onLayout={scrollToBottom}
+            {suggestions.length > 0 && (
+              <View className="mt-6 w-full gap-2">
+                {suggestions.map((s, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => sendMessage(s.prompt)}
+                    className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3"
+                    activeOpacity={0.7}
+                  >
+                    <Text className="text-lg">{s.emoji}</Text>
+                    <Text className="flex-1">{s.label}</Text>
+                    <ChevronRight color={iconColors.muted} size={16} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        ) : (
+          <FlatList
+            data={invertedMessages}
+            inverted
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={{ padding: 16 }}
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+          />
+        )}
+
+        {/* Input */}
+        <ChatInput
+          onSendMessage={sendMessage}
+          onFileSelected={handleFileSelected}
+          onOpenClasseur={() => setShowClasseur(true)}
+          pendingAttachments={pendingAttachments}
+          onRemoveAttachment={removeAttachment}
+          isLoading={isLoading}
+          isUploading={isUploading}
+          placeholder="Pose ta question..."
         />
-      )}
-
-      {/* Input */}
-      <ChatInput
-        onSendMessage={sendMessage}
-        onFileSelected={handleFileSelected}
-        onOpenClasseur={() => setShowClasseur(true)}
-        pendingAttachments={pendingAttachments}
-        onRemoveAttachment={removeAttachment}
-        isLoading={isLoading}
-        isUploading={isUploading}
-        placeholder="Pose ta question..."
-      />
+      </KeyboardAvoidingView>
 
       {/* Classeur Picker */}
       <FileLibraryPicker

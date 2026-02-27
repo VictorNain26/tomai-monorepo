@@ -36,25 +36,12 @@ interface UsageResponse extends TokenUsage {
   userId: string;
 }
 
-export interface LatestSession {
-  id: string;
-  subject: string;
-  startedAt: string;
-  messagesCount: number;
-}
-
-interface LatestSessionResponse {
-  success: boolean;
-  session: LatestSession | null;
-}
-
 // ============================================================================
 // QUERY KEYS
 // ============================================================================
 
 const queryKeys = {
   usage: (userId: string) => ['subscription', 'usage', userId] as const,
-  latestSession: ['chat', 'latest'] as const,
 };
 
 // ============================================================================
@@ -71,13 +58,6 @@ async function fetchTokenUsage(userId: string): Promise<TokenUsage> {
     window: response.window,
     daily: response.daily,
   };
-}
-
-async function fetchLatestSession(): Promise<LatestSession | null> {
-  const response = await apiClient.get<LatestSessionResponse>(
-    '/api/chat/sessions/latest'
-  );
-  return response.session;
 }
 
 // ============================================================================
@@ -98,23 +78,11 @@ export function useStudentDashboard() {
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
   });
 
-  // Fetch latest session
-  const latestSessionQuery = useQuery({
-    queryKey: queryKeys.latestSession,
-    queryFn: fetchLatestSession,
-    enabled: !!user,
-    staleTime: 60 * 1000, // 1 minute
-  });
-
   return {
     // Token usage
     usage: usageQuery.data ?? null,
     isLoadingUsage: usageQuery.isLoading,
     usageError: usageQuery.error?.message ?? null,
-
-    // Latest session
-    latestSession: latestSessionQuery.data ?? null,
-    isLoadingSession: latestSessionQuery.isLoading,
 
     // User info
     userName: user?.name?.split(' ')[0] ?? 'Élève',

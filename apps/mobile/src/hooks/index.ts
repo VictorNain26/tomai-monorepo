@@ -9,7 +9,6 @@ export {
 export {
   useStudentDashboard,
   type TokenUsage,
-  type LatestSession,
 } from './useStudentDashboard';
 export {
   useLearning,

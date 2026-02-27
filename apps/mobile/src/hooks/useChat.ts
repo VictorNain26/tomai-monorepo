@@ -119,7 +119,11 @@ export function useChat({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      eventSourceRef.current?.close();
+      if (eventSourceRef.current) {
+        eventSourceRef.current.removeAllEventListeners();
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
@@ -140,8 +144,11 @@ export function useChat({
   /** Abort streaming with error message and clean up */
   const abortStream = useCallback(
     (assistantId: string, errorMessage: string) => {
-      eventSourceRef.current?.close();
-      eventSourceRef.current = null;
+      if (eventSourceRef.current) {
+        eventSourceRef.current.removeAllEventListeners();
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
@@ -237,7 +244,13 @@ export function useChat({
       setIsStreaming(true);
       setError(null);
 
-      eventSourceRef.current?.close();
+      // Clean up previous EventSource: remove listeners BEFORE close
+      // to prevent stale close/error events from racing with the new stream
+      if (eventSourceRef.current) {
+        eventSourceRef.current.removeAllEventListeners();
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
       const currentStreamId = ++streamIdRef.current;
@@ -329,15 +342,17 @@ export function useChat({
               queryClient.setQueryData(chatQueryKeys.session(), chunk.metadata.sessionId);
             }
           } else if (chunk.type === 'error') {
-            setError(chunk.error?.message ?? 'Erreur de streaming');
+            abortStream(assistantId, chunk.error?.message ?? 'Erreur de streaming');
           }
         });
 
         es.addEventListener('error', () => {
+          if (streamIdRef.current !== currentStreamId) return;
           abortStream(assistantId, 'Erreur de connexion au serveur');
         });
 
         es.addEventListener('close', () => {
+          if (streamIdRef.current !== currentStreamId) return;
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
           setIsLoading(false);
@@ -381,8 +396,11 @@ export function useChat({
 
   // Stop streaming
   const stop = useCallback(() => {
-    eventSourceRef.current?.close();
-    eventSourceRef.current = null;
+    if (eventSourceRef.current) {
+      eventSourceRef.current.removeAllEventListeners();
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = null;
     if (rafIdRef.current) {

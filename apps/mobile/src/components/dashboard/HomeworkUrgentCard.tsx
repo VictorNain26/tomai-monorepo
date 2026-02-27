@@ -34,7 +34,6 @@ export interface HomeworkItem {
 
 interface HomeworkUrgentCardProps {
   homework: HomeworkItem[];
-  isConnected: boolean;
   isLoading?: boolean;
   /** Max items to show (default: 3) */
   maxItems?: number;
@@ -64,7 +63,6 @@ function getDueUrgency(daysUntilDue: number): 'urgent' | 'soon' | 'normal' {
 
 export function HomeworkUrgentCard({
   homework,
-  isConnected,
   isLoading = false,
   maxItems = 3,
   onViewAll,
@@ -105,28 +103,6 @@ export function HomeworkUrgentCard({
         <View className="gap-3">
           <Skeleton className="h-16 w-full rounded-lg" />
           <Skeleton className="h-16 w-full rounded-lg" />
-        </View>
-      </View>
-    );
-  }
-
-  // Not connected state
-  if (!isConnected) {
-    return (
-      <View style={shadows.sm} className="rounded-xl bg-card p-5">
-        <View className="items-center py-4">
-          <View
-            className="mb-3 h-12 w-12 items-center justify-center rounded-xl"
-            style={{ backgroundColor: bgColors.muted[30] }}
-          >
-            <FileText color={iconColors.muted} size={24} />
-          </View>
-          <Text variant="large" className="mb-1 text-center">
-            Devoirs non disponibles
-          </Text>
-          <Text variant="muted" className="text-center">
-            Demande à ton parent de connecter Pronote pour voir tes devoirs.
-          </Text>
         </View>
       </View>
     );
