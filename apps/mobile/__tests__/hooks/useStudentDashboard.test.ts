@@ -58,17 +58,6 @@ describe('useStudentDashboard', () => {
           },
         });
       }
-      if (url === '/api/chat/sessions/latest') {
-        return Promise.resolve({
-          success: true,
-          session: {
-            id: 'session-1',
-            subject: 'mathematiques',
-            startedAt: '2025-01-10T09:00:00Z',
-            messagesCount: 5,
-          },
-        });
-      }
       return Promise.reject(new Error('Unknown endpoint'));
     });
   });
@@ -85,21 +74,6 @@ describe('useStudentDashboard', () => {
     expect(result.current.usage?.plan).toBe('free');
     expect(result.current.usage?.window.usagePercent).toBe(25);
     expect(result.current.usage?.daily.limit).toBe(10000);
-
-    queryClient.clear();
-  });
-
-  it('should fetch latest session', async () => {
-    const { wrapper, queryClient } = createTestWrapper();
-    const { result } = renderHook(() => useStudentDashboard(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.isLoadingSession).toBe(false);
-    });
-
-    expect(result.current.latestSession).not.toBeNull();
-    expect(result.current.latestSession?.subject).toBe('mathematiques');
-    expect(result.current.latestSession?.messagesCount).toBe(5);
 
     queryClient.clear();
   });

@@ -58,7 +58,7 @@ jobs:
   # =============================================
   # Job 2: Typecheck + Lint (parallel matrix)
   # =============================================
-  validate:
+  validate-tasks:
     name: ${{ matrix.task }}
     needs: changes
     if: needs.changes.outputs.any == 'true'
@@ -73,6 +73,21 @@ jobs:
         with:
           turbo-cache-key: ${{ matrix.task }}
       - run: pnpm run ${{ matrix.task }}
+
+  # =============================================
+  # Job 2b: Required status check gate
+  # =============================================
+  validate:
+    name: Validate
+    needs: [changes, validate-tasks]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [ "${{ needs.validate-tasks.result }}" = "failure" ]; then
+            exit 1
+          fi
 
   # =============================================
   # Job 3: Tests (parallel with validate)
@@ -96,7 +111,7 @@ jobs:
   # =============================================
   build:
     name: Build
-    needs: [changes, validate]
+    needs: [changes, validate-tasks]
     if: needs.changes.outputs.server == 'true' || needs.changes.outputs.landing == 'true' || needs.changes.outputs.packages == 'true'
     runs-on: ubuntu-latest
     steps:

@@ -125,6 +125,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     }
     activeSSEConnections.set(user.id, currentConns + 1);
 
+    try {
     // 4. Récupérer session existante ou en créer une nouvelle
     let chatSessionId: string;
     if (sessionId?.trim()) {
@@ -256,6 +257,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       schoolLevel: (schoolLevel ?? user.schoolLevel) as EducationLevelType,
       firstName: firstName ?? user.firstName ?? undefined,
       sessionId: chatSessionId,
+      userRole: user.role === 'parent' ? 'parent' : 'student',
       cognitiveProfileSummary,
       learningContext,
       conversationSummary: sessionSummary?.conversationSummary,
@@ -339,12 +341,14 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     // 11. Yield [DONE] marker (Chat Protocol standard)
     yield sse({ data: '[DONE]' });
 
-    // Release concurrent SSE slot
-    const connCount = activeSSEConnections.get(user.id) ?? 1;
-    if (connCount <= 1) activeSSEConnections.delete(user.id);
-    else activeSSEConnections.set(user.id, connCount - 1);
+    } finally {
+      // Release concurrent SSE slot — garanti même si le client déconnecte,
+      // le generator throw, ou une exception survient pendant le streaming
+      const connCount = activeSSEConnections.get(user.id) ?? 1;
+      if (connCount <= 1) activeSSEConnections.delete(user.id);
+      else activeSSEConnections.set(user.id, connCount - 1);
+    }
 
-    // Return explicite pour satisfaire TypeScript (generator terminé)
     return;
   }, {
     // Token-optimized format: { content, data }

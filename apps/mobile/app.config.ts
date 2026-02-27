@@ -50,6 +50,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
 
+  // Navigation bar: fully transparent, no contrast scrim (SDK 54+)
+  androidNavigationBar: {
+    enforceContrast: false,
+  },
+
   // Android configuration
   android: {
     package: 'fr.tomia.mobile',

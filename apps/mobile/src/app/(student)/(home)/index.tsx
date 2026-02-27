@@ -18,7 +18,6 @@ import { Text } from '@/components/ui/text';
 import {
   HomeworkUrgentCard,
   GradesRecentCard,
-  ResumeCard,
   type HomeworkItem,
   type GradeItem,
 } from '@/components/dashboard';
@@ -70,9 +69,9 @@ export default function StudentDashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Data hooks
-  const { userName, latestSession, isLoadingSession } = useStudentDashboard();
+  const { userName } = useStudentDashboard();
   const pronote = useStudentPronote();
-  const { data: dueSummary, isLoading: isLoadingDue } = useDueSummary();
+  const { data: dueSummary } = useDueSummary();
 
   // Refresh handler
   const onRefresh = useCallback(async () => {
@@ -171,35 +170,23 @@ export default function StudentDashboard() {
           <Text variant="muted" className="mt-0.5">{tomMessage}</Text>
         </View>
 
-        {/* Resume card - continuity */}
-        <ResumeCard
-          latestSession={latestSession}
-          totalDueCards={dueSummary?.totalDue ?? 0}
-          isLoading={isLoadingSession || isLoadingDue}
-        />
-
-        {/* 1. Homework - Primary engagement driver */}
-        <HomeworkUrgentCard
-          homework={homeworkItems}
-          isConnected={pronote.isConnected}
-          isLoading={pronote.isLoadingData}
-          maxItems={3}
-        />
-
-        {/* 2. Recent Grades - Diagnostic */}
-        {pronote.isConnected && (
-          <GradesRecentCard
-            grades={gradeItems}
-            averageGrade={pronote.averageGrade}
-            trend={gradeTrend}
-            isConnected={pronote.isConnected}
-            isLoading={pronote.isLoadingData}
-            maxItems={3}
-          />
-        )}
-
-        {/* Fallback: Pronote not connected */}
-        {!pronote.isConnected && (
+        {/* Pronote sections - only when connected */}
+        {pronote.isConnected ? (
+          <>
+            <HomeworkUrgentCard
+              homework={homeworkItems}
+              isLoading={pronote.isLoadingData}
+              maxItems={3}
+            />
+            <GradesRecentCard
+              grades={gradeItems}
+              averageGrade={pronote.averageGrade}
+              trend={gradeTrend}
+              isLoading={pronote.isLoadingData}
+              maxItems={3}
+            />
+          </>
+        ) : (
           <View className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-4">
             <View
               className="h-10 w-10 items-center justify-center rounded-lg"
