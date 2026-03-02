@@ -47,8 +47,11 @@ yarn-error.log*
 *.pem
 lint_report.json
 
-# Claude Code local settings
-**/.claude/
+# Claude Code - local files only
+**/.claude/settings.local.json
+**/.claude/projects/
+**/.claude/todos/
+**/.claude/credentials.json
 
 # Local documentation (apps/server/CLAUDE.md L220-226)
 apps/server/docs/
