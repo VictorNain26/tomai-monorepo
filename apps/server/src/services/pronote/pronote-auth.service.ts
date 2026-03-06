@@ -18,10 +18,9 @@ import { db } from '../../db/connection.js';
 import {
   pronoteConnections,
   pronoteChildMappings,
-  user,
 } from '../../db/schema.js';
 import type { PronoteResource } from '../../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { encrypt, decrypt } from '../../lib/encryption.js';
 import { logger } from '../../lib/observability.js';
 import { cacheService } from '../memory-cache.service.js';
@@ -81,7 +80,7 @@ class PronoteAuthService {
       }
 
       const parentUser = await db.query.user.findFirst({
-        where: eq(user.id, parentId),
+        where: { id: parentId },
       });
 
       if (!parentUser || parentUser.role !== 'parent') {
@@ -174,7 +173,7 @@ class PronoteAuthService {
       const tokenExpiresAt = new Date(Date.now() + TOKEN_EXPIRY_MS);
 
       const existingConnection = await db.query.pronoteConnections.findFirst({
-        where: eq(pronoteConnections.parentId, parentId),
+        where: { parentId },
       });
 
       if (existingConnection) {
@@ -232,7 +231,7 @@ class PronoteAuthService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const connection = await db.query.pronoteConnections.findFirst({
-        where: eq(pronoteConnections.parentId, parentId),
+        where: { parentId },
       });
 
       if (!connection) {
@@ -245,7 +244,7 @@ class PronoteAuthService {
 
       for (const mapping of mappings) {
         const child = await db.query.user.findFirst({
-          where: and(eq(user.id, mapping.childId), eq(user.parentId, parentId)),
+          where: { id: mapping.childId, parentId },
         });
 
         if (!child) {
@@ -289,12 +288,11 @@ class PronoteAuthService {
   async disconnectParent(parentId: string): Promise<boolean> {
     try {
       const connection = await db.query.pronoteConnections.findFirst({
-        where: eq(pronoteConnections.parentId, parentId),
+        where: { parentId },
         with: { childMappings: true },
       });
 
       if (connection) {
-        // Invalidate cache for all children
         for (const mapping of connection.childMappings ?? []) {
           this.invalidateChildCache(mapping.childId);
         }
@@ -331,7 +329,7 @@ class PronoteAuthService {
    */
   async getActiveParentSession(parentId: string): Promise<SessionHandle | null> {
     const connection = await db.query.pronoteConnections.findFirst({
-      where: eq(pronoteConnections.parentId, parentId),
+      where: { parentId },
     });
 
     if (!connection || connection.status !== 'active') {
@@ -341,14 +339,11 @@ class PronoteAuthService {
     return this.createSessionFromConnection(connection);
   }
 
-  /**
-   * Obtient une session Pronote pour un enfant spécifique (via son mapping)
-   */
   async getActiveSessionForChild(
     childId: string
   ): Promise<{ session: SessionHandle; resourceIndex: number } | null> {
     const mapping = await db.query.pronoteChildMappings.findFirst({
-      where: eq(pronoteChildMappings.childId, childId),
+      where: { childId },
       with: { connection: true },
     });
 
@@ -376,7 +371,7 @@ class PronoteAuthService {
     error?: string;
   }> {
     const connection = await db.query.pronoteConnections.findFirst({
-      where: eq(pronoteConnections.parentId, parentId),
+      where: { parentId },
       with: { childMappings: true },
     });
 
@@ -394,9 +389,6 @@ class PronoteAuthService {
     };
   }
 
-  /**
-   * Vérifie si un enfant a un mapping Pronote actif
-   */
   async getChildPronoteStatus(childId: string): Promise<{
     isConnected: boolean;
     establishmentName?: string;
@@ -404,7 +396,7 @@ class PronoteAuthService {
     className?: string;
   }> {
     const mapping = await db.query.pronoteChildMappings.findFirst({
-      where: eq(pronoteChildMappings.childId, childId),
+      where: { childId },
       with: { connection: true },
     });
 
@@ -433,7 +425,7 @@ class PronoteAuthService {
     }>
   > {
     const connection = await db.query.pronoteConnections.findFirst({
-      where: eq(pronoteConnections.parentId, parentId),
+      where: { parentId },
       with: {
         childMappings: {
           with: { child: true },

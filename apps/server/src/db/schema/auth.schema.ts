@@ -1,5 +1,5 @@
 import { pgTable, varchar, text, timestamp, boolean, integer, jsonb, pgEnum, index, foreignKey, uuid } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 // =============================================
 // ENUMS
@@ -185,24 +185,6 @@ export const parentRestoreToken = pgTable('parent_restore_token', {
     foreignColumns: [user.id],
     name: 'parent_restore_token_child_id_fkey'
   }).onDelete('cascade'),
-}));
-
-// =============================================
-// RELATIONS
-// =============================================
-
-export const sessionRelations = relations(session, ({ one }) => ({
-  user: one(user, {
-    fields: [session.userId],
-    references: [user.id]
-  }),
-}));
-
-export const accountRelations = relations(account, ({ one }) => ({
-  user: one(user, {
-    fields: [account.userId],
-    references: [user.id]
-  }),
 }));
 
 // =============================================

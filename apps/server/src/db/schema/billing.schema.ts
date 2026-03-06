@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, timestamp, boolean, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 
 // =============================================
@@ -208,32 +208,6 @@ export const waitlistEntries = pgTable('waitlist_entries', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   emailIdx: index('idx_waitlist_entries_email').on(table.email),
-}));
-
-// =============================================
-// RELATIONS
-// =============================================
-
-export const subscriptionPlansRelations = relations(subscriptionPlans, ({ many }) => ({
-  userSubscriptions: many(userSubscriptions),
-}));
-
-export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
-  user: one(user, {
-    fields: [userSubscriptions.userId],
-    references: [user.id]
-  }),
-  plan: one(subscriptionPlans, {
-    fields: [userSubscriptions.planId],
-    references: [subscriptionPlans.id]
-  }),
-}));
-
-export const familyBillingRelations = relations(familyBilling, ({ one }) => ({
-  parent: one(user, {
-    fields: [familyBilling.parentId],
-    references: [user.id]
-  }),
 }));
 
 // =============================================

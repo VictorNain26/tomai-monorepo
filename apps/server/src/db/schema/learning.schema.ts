@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum, index, foreignKey, unique } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 
 // =============================================
@@ -210,35 +210,6 @@ export const costTracking = pgTable('cost_tracking', {
 
   userIdIdx: index('idx_cost_tracking_user_id').on(table.userId),
   createdAtIdx: index('idx_cost_tracking_created_at').on(table.createdAt),
-}));
-
-// =============================================
-// RELATIONS
-// =============================================
-
-export const messagesRelations = relations(messages, ({ one }) => ({
-  session: one(studySessions, {
-    fields: [messages.sessionId],
-    references: [studySessions.id]
-  }),
-}));
-
-export const progressRelations = relations(progress, ({ one }) => ({
-  user: one(user, {
-    fields: [progress.userId],
-    references: [user.id]
-  }),
-}));
-
-export const costTrackingRelations = relations(costTracking, ({ one }) => ({
-  user: one(user, {
-    fields: [costTracking.userId],
-    references: [user.id]
-  }),
-  session: one(studySessions, {
-    fields: [costTracking.sessionId],
-    references: [studySessions.id]
-  }),
 }));
 
 // =============================================

@@ -1,5 +1,4 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, pgEnum, index, foreignKey, unique } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 
@@ -134,29 +133,6 @@ export const pronoteChildMappings = pgTable('pronote_child_mappings', {
   // Index pour queries fréquentes
   connectionIdx: index('idx_pronote_child_mappings_connection').on(table.connectionId),
   childIdx: index('idx_pronote_child_mappings_child').on(table.childId),
-}));
-
-// =============================================
-// RELATIONS
-// =============================================
-
-export const pronoteConnectionsRelations = relations(pronoteConnections, ({ one, many }) => ({
-  parent: one(user, {
-    fields: [pronoteConnections.parentId],
-    references: [user.id]
-  }),
-  childMappings: many(pronoteChildMappings),
-}));
-
-export const pronoteChildMappingsRelations = relations(pronoteChildMappings, ({ one }) => ({
-  connection: one(pronoteConnections, {
-    fields: [pronoteChildMappings.connectionId],
-    references: [pronoteConnections.id]
-  }),
-  child: one(user, {
-    fields: [pronoteChildMappings.childId],
-    references: [user.id]
-  }),
 }));
 
 // =============================================
