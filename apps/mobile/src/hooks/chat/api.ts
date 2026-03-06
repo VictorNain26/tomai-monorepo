@@ -2,9 +2,10 @@
  * Chat API Functions
  *
  * API functions for chat session management.
+ * Uses Eden Treaty for type-safe e2e API calls.
  */
 
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 import type { ChatMessage } from './types';
 
 /** Query keys for TanStack Query */
@@ -15,29 +16,32 @@ export const chatQueryKeys = {
 
 /** Fetch or create a chat session (multi-subject, no subject needed) */
 export async function fetchOrCreateSession(): Promise<string> {
-  const data = await apiClient.post<{ sessionId: string }>('/api/chat/session', {});
-  return data.sessionId;
+  const data = unwrap(await getTreaty().api.chat.session.post());
+  return (data as { sessionId: string }).sessionId;
 }
 
 /** Fetch chat history for a session */
 export async function fetchHistory(
   sessionId: string
 ): Promise<{ messages: ChatMessage[] }> {
-  return apiClient.get<{ messages: ChatMessage[] }>(`/api/chat/session/${sessionId}/history`);
+  return unwrap<{ messages: ChatMessage[] }>(
+    await getTreaty().api.chat.session({ id: sessionId }).history.get()
+  );
 }
 
 /** Reset a chat session */
 export async function resetChatSession(
   sessionId: string
 ): Promise<{ sessionId: string }> {
-  return apiClient.post<{ sessionId: string }>(
-    `/api/chat/session/${sessionId}/reset`
+  const data = unwrap(
+    await getTreaty().api.chat.session({ id: sessionId }).reset.post()
   );
+  return data as { sessionId: string };
 }
 
 /** Delete a chat session (permanent) */
 export async function deleteChatSession(
   sessionId: string
 ): Promise<void> {
-  await apiClient.delete(`/api/chat/session/${sessionId}`);
+  unwrap(await getTreaty().api.chat.session({ id: sessionId }).delete());
 }

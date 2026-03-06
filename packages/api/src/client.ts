@@ -1,33 +1,21 @@
 /**
- * @repo/api - Client HTTP platform-agnostic
+ * @repo/api - Eden Treaty Client (type-safe e2e)
  *
- * Client API utilisant fetch natif avec gestion d'erreurs uniforme.
+ * Type-safe API client using Eden Treaty + Elysia route inference.
  * Compatible Web (Vite) et Mobile (React Native/Expo).
  */
 
-import { getBaseUrl, getApiConfig, type ApiConfig } from './config';
+import { treaty } from '@elysiajs/eden';
+import type { App } from 'tomai-server/app';
+import { getApiConfig } from './config';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
-  /** Query parameters */
-  params?: Record<string, string | number | boolean>;
-  /** Timeout en ms (utilise defaultTimeout si non spécifié) */
-  timeout?: number;
-}
-
 export interface ApiError extends Error {
-  /** Type d'erreur du backend */
-  errorType: string;
-  /** Détails supplémentaires */
-  errorDetails: string;
-  /** Code HTTP */
   status: number;
-  /** Code d'erreur spécifique (ex: TOPIC_NOT_IN_CURRICULUM) */
   code?: string;
-  /** Suggestions du backend */
   suggestions?: string[];
 }
 
@@ -67,275 +55,106 @@ export const UPLOAD_CONFIG = {
 } as const;
 
 // ============================================================================
-// API CLIENT CLASS
+// UNAUTHORIZED HANDLER
 // ============================================================================
 
 let unauthorizedHandler: UnauthorizedHandler | null = null;
 
-/**
- * Configure le handler appelé sur erreur 401.
- * Permet à l'app de déconnecter l'utilisateur proprement.
- */
 export function setUnauthorizedHandler(handler: UnauthorizedHandler): void {
   unauthorizedHandler = handler;
 }
 
+// ============================================================================
+// EDEN TREATY CLIENT (type-safe e2e)
+// ============================================================================
+
+type TreatyClient = ReturnType<typeof treaty<App>>;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TreatyApi = { api: Record<string, any>; [key: string]: unknown };
+
+let treatyClient: TreatyClient | null = null;
+
 /**
- * Client API centralisé utilisant fetch natif.
+ * Get the Eden Treaty client with full type-safety from server routes.
+ * Lazily initialized on first call (requires initializeApi() to have been called).
+ *
+ * @example
+ * const { data, error } = await getTreaty().api.parent.dashboard.get();
+ * if (error) throw error;
+ * return data;
  */
-class ApiClient {
-  private defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+export function getTreaty(): TreatyApi {
+  if (treatyClient) return treatyClient;
 
-  private buildUrl(
-    endpoint: string,
-    params?: Record<string, string | number | boolean>
-  ): string {
-    const url = new URL(endpoint, getBaseUrl());
+  const config = getApiConfig();
 
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.append(key, String(value));
-      });
-    }
-
-    return url.toString();
-  }
-
-  private async fetchWithTimeout(
-    url: string,
-    options: RequestInit,
-    timeout: number
-  ): Promise<Response> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    const config = getApiConfig();
-
-    try {
-      // In React Native, we need to manually inject cookies
-      // In browsers, credentials: 'include' handles this automatically
-      const headers = { ...options.headers } as Record<string, string>;
-
+  treatyClient = treaty<App>(config.baseUrl, {
+    fetch: {
+      credentials: typeof config.cookieProvider === 'function' ? 'omit' : 'include',
+      mode: 'cors',
+    },
+    headers: () => {
+      const headers: Record<string, string> = {};
       if (config.cookieProvider) {
-        // React Native: manually inject cookie, use credentials: 'omit'
         const cookie = config.cookieProvider();
-        if (cookie) {
-          headers['Cookie'] = cookie;
-        }
+        if (cookie) headers['Cookie'] = cookie;
       }
-
-      const response = await fetch(url, {
-        ...options,
-        headers,
-        signal: controller.signal as RequestInit['signal'],
-        // Use 'omit' when we have a cookie provider (React Native)
-        // Use 'include' for browsers (automatic cookie handling)
-        credentials: typeof config.cookieProvider === 'function' ? 'omit' : 'include',
-        mode: 'cors',
-      });
-
-      clearTimeout(timeoutId);
-      return response;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      throw error;
-    }
-  }
-
-  private async processResponse<T>(response: Response): Promise<T> {
-    const contentType = response.headers.get('Content-Type');
-    const isJson = contentType?.includes('application/json');
-
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}`;
-      let errorType = 'GENERAL_ERROR';
-      let errorDetails = '';
-      let errorCode: string | undefined;
-      let errorSuggestions: string[] | undefined;
-
-      if (isJson) {
-        try {
-          const errorData = (await response.json()) as Record<string, unknown>;
-          errorMessage =
-            (errorData.message as string | undefined) ??
-            (errorData.error as string | undefined) ??
-            (errorData._error as string | undefined) ??
-            errorMessage;
-          errorType = (errorData.errorType as string) ?? 'GENERAL_ERROR';
-          errorDetails = (errorData.details as string) ?? '';
-          errorCode = errorData.code as string | undefined;
-          errorSuggestions = errorData.suggestions as string[] | undefined;
-        } catch {
-          errorMessage = `${errorMessage}: ${response.statusText}`;
-        }
-      }
-
-      // Handle 401 - Invalid session
+      return headers;
+    },
+    onResponse: (response) => {
       if (response.status === 401 && unauthorizedHandler) {
         unauthorizedHandler();
       }
+    },
+  });
 
-      const error = new Error(errorMessage) as ApiError;
-      error.errorType = errorType;
-      error.errorDetails = errorDetails;
-      error.status = response.status;
-      error.code = errorCode;
-      error.suggestions = errorSuggestions;
-      throw error;
-    }
-
-    if (isJson) {
-      return (await response.json()) as T;
-    }
-
-    return (await response.text()) as T;
-  }
-
-  async get<T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> {
-    const { params, timeout, ...fetchOptions } = options;
-    const url = this.buildUrl(endpoint, params);
-    const config = getApiConfig();
-
-    const response = await this.fetchWithTimeout(
-      url,
-      {
-        method: 'GET',
-        headers: { ...this.defaultHeaders, ...fetchOptions.headers },
-        ...fetchOptions,
-      },
-      timeout ?? config.defaultTimeout
-    );
-
-    return this.processResponse<T>(response);
-  }
-
-  async post<T>(
-    endpoint: string,
-    data?: unknown,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
-    const { params, timeout, ...fetchOptions } = options;
-    const url = this.buildUrl(endpoint, params);
-    const config = getApiConfig();
-
-    let body: string | FormData | undefined;
-    const headers = { ...this.defaultHeaders };
-
-    if (data instanceof FormData) {
-      body = data;
-      delete (headers as Record<string, string>)['Content-Type'];
-    } else if (data) {
-      body = JSON.stringify(data);
-    }
-
-    const response = await this.fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: { ...headers, ...fetchOptions.headers },
-        ...(body && { body: body as RequestInit['body'] }),
-        ...fetchOptions,
-      },
-      timeout ?? config.defaultTimeout
-    );
-
-    return this.processResponse<T>(response);
-  }
-
-  async put<T>(
-    endpoint: string,
-    data?: unknown,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
-    const { params, timeout, ...fetchOptions } = options;
-    const url = this.buildUrl(endpoint, params);
-    const config = getApiConfig();
-
-    const response = await this.fetchWithTimeout(
-      url,
-      {
-        method: 'PUT',
-        headers: { ...this.defaultHeaders, ...fetchOptions.headers },
-        ...(data ? { body: JSON.stringify(data) } : {}),
-        ...fetchOptions,
-      },
-      timeout ?? config.defaultTimeout
-    );
-
-    return this.processResponse<T>(response);
-  }
-
-  async patch<T>(
-    endpoint: string,
-    data?: unknown,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
-    const { params, timeout, ...fetchOptions } = options;
-    const url = this.buildUrl(endpoint, params);
-    const config = getApiConfig();
-
-    const response = await this.fetchWithTimeout(
-      url,
-      {
-        method: 'PATCH',
-        headers: { ...this.defaultHeaders, ...fetchOptions.headers },
-        ...(data ? { body: JSON.stringify(data) } : {}),
-        ...fetchOptions,
-      },
-      timeout ?? config.defaultTimeout
-    );
-
-    return this.processResponse<T>(response);
-  }
-
-  async delete<T>(
-    endpoint: string,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
-    const { params, timeout, ...fetchOptions } = options;
-    const url = this.buildUrl(endpoint, params);
-    const config = getApiConfig();
-
-    const response = await this.fetchWithTimeout(
-      url,
-      {
-        method: 'DELETE',
-        headers: { ...this.defaultHeaders, ...fetchOptions.headers },
-        ...fetchOptions,
-      },
-      timeout ?? config.defaultTimeout
-    );
-
-    return this.processResponse<T>(response);
-  }
-
-  async upload<T>(
-    endpoint: string,
-    formData: FormData,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
-    const config = getApiConfig();
-
-    return this.post<T>(endpoint, formData, {
-      ...options,
-      timeout: options.timeout ?? config.uploadTimeout,
-    });
-  }
-
-  async chat<T>(
-    endpoint: string,
-    data: unknown,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
-    const config = getApiConfig();
-
-    return this.post<T>(endpoint, data, {
-      ...options,
-      timeout: options.timeout ?? config.chatTimeout,
-    });
-  }
+  return treatyClient;
 }
 
-// Singleton instance
-export const apiClient = new ApiClient();
+/**
+ * Reset the treaty client (useful after re-initialization).
+ * @internal
+ */
+export function resetTreatyClient(): void {
+  treatyClient = null;
+}
+
+// ============================================================================
+// UNWRAP HELPER
+// ============================================================================
+
+function buildApiError(status: number, errorValue: unknown): ApiError {
+  let message = `HTTP ${status}`;
+  let code: string | undefined;
+  let suggestions: string[] | undefined;
+
+  if (errorValue && typeof errorValue === 'object') {
+    const ev = errorValue as Record<string, unknown>;
+    message =
+      (ev.message as string | undefined) ??
+      (ev.error as string | undefined) ??
+      (ev._error as string | undefined) ??
+      message;
+    code = ev.code as string | undefined;
+    suggestions = ev.suggestions as string[] | undefined;
+  } else if (typeof errorValue === 'string') {
+    message = errorValue;
+  }
+
+  const err = new Error(message) as ApiError;
+  err.status = status;
+  err.code = code;
+  err.suggestions = suggestions;
+  return err;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function unwrap<T = unknown>(response: any): T {
+  const res = response as { data?: unknown; error?: { status?: unknown; value?: unknown } | null };
+  if (res.error) {
+    const status = typeof res.error.status === 'number' ? res.error.status : 0;
+    throw buildApiError(status, res.error.value);
+  }
+  return res.data as T;
+}

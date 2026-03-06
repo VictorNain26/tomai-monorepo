@@ -5,7 +5,7 @@
  * Supports downloading from Scaleway Object Storage (S3-compatible, RGPD France)
  * via presigned URLs from backend.
  *
- * Flow: GET /api/upload/file/:fileId → presigned URL → fetch → local cache → share
+ * Flow: GET /api/upload/file/:fileId -> presigned URL -> fetch -> local cache -> share
  *
  * @see apps/server/src/routes/file-upload.routes.ts
  */
@@ -14,35 +14,17 @@ import { useState, useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { Paths, File } from 'expo-file-system';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export interface FileShareState {
-  /** Is currently downloading */
   isDownloading: boolean;
-  /** Is sharing dialog open */
   isSharing: boolean;
-  /** Download progress (0-100) */
   progress: number;
-  /** Error message if any */
   error: string | null;
-}
-
-/**
- * Response from GET /api/upload/file/:fileId
- * @see apps/server/src/routes/file-upload.routes.ts
- */
-interface DownloadUrlResponse {
-  success: boolean;
-  downloadUrl?: string;
-  expiresAt?: string;
-  fileName?: string;
-  mimeType?: string;
-  sizeBytes?: number;
-  error?: string;
 }
 
 // ============================================================================
@@ -57,17 +39,10 @@ export function useFileShare() {
     error: null,
   });
 
-  /**
-   * Check if sharing is available on this device
-   */
   const isSharingAvailable = useCallback(async (): Promise<boolean> => {
     return Sharing.isAvailableAsync();
   }, []);
 
-  /**
-   * Download file from Scaleway storage to local cache
-   * Uses backend presigned URL endpoint: GET /api/upload/file/:fileId
-   */
   const downloadFile = useCallback(
     async (
       fileId: string,
@@ -81,33 +56,32 @@ export function useFileShare() {
       }));
 
       try {
-        // Get presigned download URL from backend (Scaleway via /api/upload/file/:fileId)
-        const response = await apiClient.get<DownloadUrlResponse>(
-          `/api/upload/file/${fileId}`
+        const response = unwrap(
+          await getTreaty().api.upload.file({ fileId }).get()
         );
+        const data = response as {
+          success: boolean;
+          downloadUrl?: string;
+          error?: string;
+        };
 
-        if (!response.success || !response.downloadUrl) {
-          throw new Error(response.error ?? 'URL de téléchargement non disponible');
+        if (!data.success || !data.downloadUrl) {
+          throw new Error(data.error ?? 'URL de téléchargement non disponible');
         }
 
-        // Download to cache directory
         const cacheFile = new File(Paths.cache, fileName);
 
-        // Check if file already exists and delete it
         if (cacheFile.exists) {
           cacheFile.delete();
         }
 
-        // Download the file from Scaleway using presigned URL
-        const downloadResponse = await fetch(response.downloadUrl);
+        const downloadResponse = await fetch(data.downloadUrl);
         if (!downloadResponse.ok) {
           throw new Error('Échec du téléchargement');
         }
 
         setState((prev) => ({ ...prev, progress: 50 }));
 
-        // Convert response to blob and write to file
-        // React Native: use FileReader to convert Blob to ArrayBuffer
         const blob = await downloadResponse.blob();
         const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
           const reader = new FileReader();
@@ -134,15 +108,11 @@ export function useFileShare() {
     []
   );
 
-  /**
-   * Share a file using the native share sheet
-   */
   const shareFile = useCallback(
     async (localUri: string, mimeType?: string): Promise<boolean> => {
       setState((prev) => ({ ...prev, isSharing: true, error: null }));
 
       try {
-        // Check if sharing is available
         const available = await Sharing.isAvailableAsync();
         if (!available) {
           Alert.alert(
@@ -152,7 +122,6 @@ export function useFileShare() {
           return false;
         }
 
-        // Share the file
         await Sharing.shareAsync(localUri, {
           mimeType: mimeType ?? 'application/octet-stream',
           dialogTitle: 'Partager le fichier',
@@ -161,7 +130,6 @@ export function useFileShare() {
 
         return true;
       } catch (err) {
-        // User cancelled or error
         if (err instanceof Error && err.message.includes('cancelled')) {
           return false;
         }
@@ -176,30 +144,22 @@ export function useFileShare() {
     []
   );
 
-  /**
-   * Download and share a file in one operation
-   */
   const downloadAndShare = useCallback(
     async (
       fileId: string,
       fileName: string,
       mimeType?: string
     ): Promise<boolean> => {
-      // Download first
       const localUri = await downloadFile(fileId, fileName);
       if (!localUri) {
         return false;
       }
 
-      // Then share
       return shareFile(localUri, mimeType);
     },
     [downloadFile, shareFile]
   );
 
-  /**
-   * Clear error
-   */
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
@@ -218,9 +178,6 @@ export function useFileShare() {
 // HELPERS
 // ============================================================================
 
-/**
- * Convert MIME type to iOS UTI for better sharing experience
- */
 function getUTIFromMimeType(mimeType?: string): string | undefined {
   if (Platform.OS !== 'ios' || !mimeType) return undefined;
 

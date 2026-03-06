@@ -16,7 +16,7 @@ import {
   learningDecks,
   type PendingAction,
 } from './schema';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 
 // ============================================================================
 // TYPES
@@ -188,10 +188,18 @@ async function processAction(
 async function syncSendMessage(payload: Record<string, unknown>): Promise<void> {
   const { sessionId, content, subject, schoolLevel, firstName, fileIds } = payload;
 
-  await apiClient.post('/api/chat/stream', {
-    content,
-    data: { sessionId, subject, schoolLevel, firstName, fileIds },
-  });
+  unwrap(
+    await getTreaty().api.chat.stream.post({
+      content: content as string,
+      data: {
+        sessionId: sessionId as string | undefined,
+        subject: subject as string | undefined,
+        schoolLevel: schoolLevel as string | undefined,
+        firstName: firstName as string | undefined,
+        fileIds: fileIds as string[] | undefined,
+      },
+    })
+  );
 
   // Update local message sync status
   const localId = payload.localId as string;
@@ -204,21 +212,22 @@ async function syncSendMessage(payload: Record<string, unknown>): Promise<void> 
 }
 
 async function syncCreateDeck(payload: Record<string, unknown>): Promise<void> {
-  const { subject, topic, cards } = payload;
+  const { subject, topic } = payload;
 
-  const response = await apiClient.post<{ deckId: string }>('/api/learning/decks', {
-    subject,
-    topic,
-    cards,
-  });
+  const response = unwrap(
+    await getTreaty().api.learning.decks.post({
+      title: (topic as string) ?? 'Untitled',
+      subject: subject as string,
+      source: 'prompt' as const,
+    })
+  ) as { deck: { id: string } };
 
-  // Update local deck with server ID
   const localId = payload.localId as string;
-  if (localId && response.deckId) {
+  if (localId && response.deck.id) {
     await db
       .update(learningDecks)
       .set({
-        id: response.deckId,
+        id: response.deck.id,
         syncStatus: 'synced',
       })
       .where(eq(learningDecks.id, localId));
@@ -227,21 +236,24 @@ async function syncCreateDeck(payload: Record<string, unknown>): Promise<void> {
 
 async function syncDeleteDeck(payload: Record<string, unknown>): Promise<void> {
   const { deckId } = payload;
-  await apiClient.delete(`/api/learning/decks/${deckId}`);
+  unwrap(await getTreaty().api.learning.decks({ id: deckId as string }).delete());
 }
 
 async function syncUpdateFsrs(payload: Record<string, unknown>): Promise<void> {
-  const { cardId, deckId, state } = payload;
-  await apiClient.post('/api/learning/fsrs/update', {
-    cardId,
-    deckId,
-    state,
-  });
+  const { cardId, state } = payload;
+  unwrap(
+    await getTreaty().api.learning.review.post({
+      cardId: cardId as string,
+      rating: (state as Record<string, unknown>).rating as number,
+    })
+  );
 }
 
-async function syncCreateSession(payload: Record<string, unknown>): Promise<void> {
-  const { subject } = payload;
-  await apiClient.post('/api/chat/session', { subject });
+async function syncCreateSession(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  payload: Record<string, unknown>
+): Promise<void> {
+  unwrap(await getTreaty().api.chat.session.post());
 }
 
 // ============================================================================

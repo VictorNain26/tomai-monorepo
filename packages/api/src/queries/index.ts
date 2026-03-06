@@ -2,12 +2,14 @@
  * @repo/api - Query Factories TanStack Query 5
  *
  * Factories platform-agnostic pour Web et Mobile.
- * Pattern recommandé par la documentation officielle.
+ * Uses queryOptions() pattern (TQ5 best practice).
+ * Uses Eden Treaty for type-safe e2e API calls.
  *
  * @see https://tanstack.com/query/latest/docs/framework/react/guides/query-keys
  */
 
-import { apiClient } from '../client';
+import { queryOptions } from '@tanstack/react-query';
+import { getTreaty, unwrap } from '../client';
 import { queryKeys } from './keys';
 import type { QueryClient } from '@tanstack/react-query';
 import type {
@@ -40,38 +42,46 @@ export { queryKeys } from './keys';
 // ============================================================================
 
 export const parentQueries = {
-  dashboard: () => ({
-    queryKey: queryKeys.parent.dashboard(),
-    queryFn: (): Promise<IDashboardStats & { children?: IChild[] }> =>
-      apiClient.get('/api/parent/dashboard'),
-  }),
+  dashboard: () =>
+    queryOptions({
+      queryKey: queryKeys.parent.dashboard(),
+      queryFn: (): Promise<IDashboardStats & { children?: IChild[] }> =>
+        unwrap(getTreaty().api.parent.dashboard.get()) as Promise<IDashboardStats & { children?: IChild[] }>,
+    }),
 
-  children: () => ({
-    queryKey: queryKeys.parent.children(),
-    queryFn: (): Promise<IChild[]> => apiClient.get('/api/parent/children'),
-  }),
+  children: () =>
+    queryOptions({
+      queryKey: queryKeys.parent.children(),
+      queryFn: (): Promise<IChild[]> =>
+        unwrap(getTreaty().api.parent.children.get()) as Promise<IChild[]>,
+    }),
 
-  child: (childId: string) => ({
-    queryKey: queryKeys.parent.child(childId),
-    queryFn: (): Promise<IChild> =>
-      apiClient.get(`/api/parent/children/${childId}`),
-  }),
+  child: (childId: string) =>
+    queryOptions({
+      queryKey: queryKeys.parent.child(childId),
+      queryFn: async (): Promise<IChild> => {
+        const children = unwrap(await getTreaty().api.parent.children.get()) as IChild[];
+        const child = children.find((c: IChild) => c.id === childId);
+        if (!child) throw new Error('Child not found');
+        return child;
+      },
+    }),
 
-  childProgress: (childId: string, period?: 'week' | 'month' | 'year') => ({
-    queryKey: queryKeys.parent.childProgress(childId, period),
-    queryFn: () =>
-      apiClient.get(
-        `/api/parent/children/${childId}/progress`,
-        period ? { params: { period } } : {}
-      ),
-  }),
+  childProgress: (childId: string, _period?: 'week' | 'month' | 'year') =>
+    queryOptions({
+      queryKey: queryKeys.parent.childProgress(childId, _period),
+      queryFn: async () => {
+        const children = unwrap(await getTreaty().api.parent.children.get()) as IChild[];
+        return children.find((c: IChild) => c.id === childId);
+      },
+    }),
 };
 
 export const parentMutations = {
   createChild: () => ({
     mutationKey: ['parent', 'create-child'] as const,
     mutationFn: (childData: ICreateChildData) =>
-      apiClient.post('/api/parent/children', childData),
+      unwrap(getTreaty().api.parent.children.post(childData)),
   }),
 
   updateChild: () => ({
@@ -82,13 +92,13 @@ export const parentMutations = {
     }: {
       childId: string;
       data: Partial<IChild>;
-    }) => apiClient.patch(`/api/parent/children/${childId}`, data),
+    }) => unwrap(getTreaty().api.parent.children({ id: childId }).patch(data)),
   }),
 
   deleteChild: () => ({
     mutationKey: ['parent', 'delete-child'] as const,
     mutationFn: (childId: string) =>
-      apiClient.delete(`/api/parent/children/${childId}`),
+      unwrap(getTreaty().api.parent.children({ id: childId }).delete()),
   }),
 };
 
@@ -97,44 +107,47 @@ export const parentMutations = {
 // ============================================================================
 
 export const chatQueries = {
-  sessions: (limit = 20) => ({
-    queryKey: queryKeys.chat.sessions(limit),
-    queryFn: async (): Promise<IChatSession[]> => {
-      const response = await apiClient.get<{ sessions: IChatSession[] }>(
-        '/api/chat/sessions',
-        { params: { limit } }
-      );
-      return response.sessions ?? [];
-    },
-  }),
+  sessions: (_limit = 20) =>
+    queryOptions({
+      queryKey: queryKeys.chat.sessions(_limit),
+      queryFn: async (): Promise<IChatSession[]> => {
+        const response = unwrap(
+          await getTreaty().api.chat.sessions.latest.get()
+        ) as { session: IChatSession | null };
+        return response.session ? [response.session] : [];
+      },
+    }),
 
-  latestSession: () => ({
-    queryKey: queryKeys.chat.latest(),
-    queryFn: async (): Promise<IChatSession | null> => {
-      const response = await apiClient.get<{ session: IChatSession | null }>(
-        '/api/chat/sessions/latest'
-      );
-      return response.session;
-    },
-  }),
+  latestSession: () =>
+    queryOptions({
+      queryKey: queryKeys.chat.latest(),
+      queryFn: async (): Promise<IChatSession | null> => {
+        const response = unwrap(
+          await getTreaty().api.chat.sessions.latest.get()
+        ) as { session: IChatSession | null };
+        return response.session;
+      },
+    }),
 
-  session: (sessionId: string) => ({
-    queryKey: queryKeys.chat.session(sessionId),
-    queryFn: () => apiClient.get(`/api/chat/session/${sessionId}`),
-  }),
+  session: (sessionId: string) =>
+    queryOptions({
+      queryKey: queryKeys.chat.session(sessionId),
+      queryFn: () =>
+        unwrap(getTreaty().api.chat.session({ id: sessionId }).history.get()),
+    }),
 };
 
 export const chatMutations = {
   createSession: () => ({
     mutationKey: ['chat', 'create-session'] as const,
-    mutationFn: (data: { subject: string }) =>
-      apiClient.post('/api/chat/session', data),
+    mutationFn: () =>
+      unwrap(getTreaty().api.chat.session.post()),
   }),
 
   deleteSession: () => ({
     mutationKey: ['chat', 'delete-session'] as const,
     mutationFn: (sessionId: string) =>
-      apiClient.delete(`/api/chat/session/${sessionId}`),
+      unwrap(getTreaty().api.chat.session({ id: sessionId }).delete()),
   }),
 };
 
@@ -143,15 +156,10 @@ export const chatMutations = {
 // ============================================================================
 
 export const fileMutations = {
-  upload: () => ({
-    mutationKey: ['files', 'upload'] as const,
-    mutationFn: (formData: FormData) =>
-      apiClient.upload('/api/upload/file', formData),
-  }),
-
   delete: () => ({
     mutationKey: ['files', 'delete'] as const,
-    mutationFn: (fileId: string) => apiClient.delete(`/api/files/${fileId}`),
+    mutationFn: (fileId: string) =>
+      unwrap(getTreaty().api.upload.file({ fileId }).delete()),
   }),
 };
 
@@ -160,23 +168,26 @@ export const fileMutations = {
 // ============================================================================
 
 export const learningQueries = {
-  decks: () => ({
-    queryKey: queryKeys.learning.decks(),
-    queryFn: (): Promise<IDecksResponse> => apiClient.get('/api/learning/decks'),
-  }),
+  decks: () =>
+    queryOptions({
+      queryKey: queryKeys.learning.decks(),
+      queryFn: (): Promise<IDecksResponse> =>
+        unwrap(getTreaty().api.learning.decks.get()) as Promise<IDecksResponse>,
+    }),
 
-  deckWithCards: (deckId: string) => ({
-    queryKey: queryKeys.learning.deckWithCards(deckId),
-    queryFn: (): Promise<IDeckWithCardsResponse> =>
-      apiClient.get(`/api/learning/decks/${deckId}`),
-  }),
+  deckWithCards: (deckId: string) =>
+    queryOptions({
+      queryKey: queryKeys.learning.deckWithCards(deckId),
+      queryFn: (): Promise<IDeckWithCardsResponse> =>
+        unwrap(getTreaty().api.learning.decks({ id: deckId }).get()) as Promise<IDeckWithCardsResponse>,
+    }),
 };
 
 export const learningMutations = {
   createDeck: () => ({
     mutationKey: ['learning', 'create-deck'] as const,
     mutationFn: (data: ICreateDeckRequest): Promise<IDeckResponse> =>
-      apiClient.post('/api/learning/decks', data),
+      unwrap(getTreaty().api.learning.decks.post(data)) as Promise<IDeckResponse>,
   }),
 
   updateDeck: () => ({
@@ -188,13 +199,13 @@ export const learningMutations = {
       deckId: string;
       data: Partial<Pick<ILearningDeck, 'title' | 'description' | 'subject'>>;
     }): Promise<IDeckResponse> =>
-      apiClient.patch(`/api/learning/decks/${deckId}`, data),
+      unwrap(getTreaty().api.learning.decks({ id: deckId }).patch(data)) as Promise<IDeckResponse>,
   }),
 
   deleteDeck: () => ({
     mutationKey: ['learning', 'delete-deck'] as const,
     mutationFn: (deckId: string): Promise<{ success: boolean }> =>
-      apiClient.delete(`/api/learning/decks/${deckId}`),
+      unwrap(getTreaty().api.learning.decks({ id: deckId }).delete()) as Promise<{ success: boolean }>,
   }),
 
   addCards: () => ({
@@ -210,7 +221,7 @@ export const learningMutations = {
         position?: number;
       }>;
     }): Promise<ICardsResponse> =>
-      apiClient.post(`/api/learning/decks/${deckId}/cards`, { cards }),
+      unwrap(getTreaty().api.learning.decks({ id: deckId }).cards.post({ cards: cards as never })) as Promise<ICardsResponse>,
   }),
 
   updateCard: () => ({
@@ -226,19 +237,19 @@ export const learningMutations = {
         fsrsData?: Record<string, unknown>;
       };
     }): Promise<ICardResponse> =>
-      apiClient.patch(`/api/learning/cards/${cardId}`, data),
+      unwrap(getTreaty().api.learning.cards({ id: cardId }).patch(data as never)) as Promise<ICardResponse>,
   }),
 
   deleteCard: () => ({
     mutationKey: ['learning', 'delete-card'] as const,
     mutationFn: (cardId: string): Promise<{ success: boolean }> =>
-      apiClient.delete(`/api/learning/cards/${cardId}`),
+      unwrap(getTreaty().api.learning.cards({ id: cardId }).delete()) as Promise<{ success: boolean }>,
   }),
 
   generateDeck: () => ({
     mutationKey: ['learning', 'generate-deck'] as const,
     mutationFn: (data: IGenerateDeckRequest): Promise<IGenerateDeckResponse> =>
-      apiClient.post('/api/learning/generate', data),
+      unwrap(getTreaty().api.learning.generate.post(data)) as Promise<IGenerateDeckResponse>,
   }),
 };
 
@@ -249,24 +260,30 @@ export const learningMutations = {
 export const educationQueries = {
   subjectsForLevel: (
     level: EducationLevelType,
-    selectedLv2?: Lv2Option | null
-  ) => ({
-    queryKey: queryKeys.education.subjects(level, selectedLv2),
-    queryFn: async (): Promise<IEducationSubjectsResponse> => {
-      const params: Record<string, string> | undefined = selectedLv2
-        ? { selectedLv2 }
-        : undefined;
-      return apiClient.get(`/api/subjects/${level}`, { params });
-    },
-  }),
+    _selectedLv2?: Lv2Option | null
+  ) =>
+    queryOptions({
+      queryKey: queryKeys.education.subjects(level, _selectedLv2),
+      queryFn: async (): Promise<IEducationSubjectsResponse> => {
+        return unwrap(
+          await getTreaty().api.learning.subjects.get({
+            query: { niveau: level as 'cp' },
+          })
+        ) as IEducationSubjectsResponse;
+      },
+    }),
 
   topicsForSubject: (niveau: EducationLevelType, matiere: string) => ({
-    queryKey: queryKeys.education.topics(niveau, matiere),
-    queryFn: async (): Promise<ITopicsResponse> => {
-      return apiClient.get('/api/learning/topics', {
-        params: { niveau, matiere },
-      });
-    },
+    ...queryOptions({
+      queryKey: queryKeys.education.topics(niveau, matiere),
+      queryFn: async (): Promise<ITopicsResponse> => {
+        return unwrap(
+          await getTreaty().api.learning.topics.get({
+            query: { niveau: niveau as 'cp', matiere },
+          })
+        ) as ITopicsResponse;
+      },
+    }),
     enabled: !!matiere && !!niveau,
   }),
 };
@@ -283,10 +300,6 @@ type SessionData = {
 };
 
 export const invalidationHelpers = {
-  /**
-   * Invalidate all parent data (dashboard + children + education subjects).
-   * Used after child creation, update, or deletion.
-   */
   invalidateParentData: (queryClient: QueryClient) => {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.parent.dashboard(),
@@ -299,9 +312,6 @@ export const invalidationHelpers = {
     });
   },
 
-  /**
-   * Invalidate a specific child's data.
-   */
   invalidateChildData: (queryClient: QueryClient, childId: string) => {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.parent.child(childId),
@@ -311,10 +321,6 @@ export const invalidationHelpers = {
     });
   },
 
-  /**
-   * Invalidate student data (sessions).
-   * Uses refetchType: 'none' to prevent race conditions with optimistic updates.
-   */
   invalidateStudentData: (queryClient: QueryClient) => {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.chat.all,
@@ -330,10 +336,6 @@ export const invalidationHelpers = {
     });
   },
 
-  /**
-   * Optimistic session update for instant UX.
-   * Updates all session caches (limit: 5, 10) and latest session.
-   */
   optimisticSessionUpdate: (queryClient: QueryClient, newSession: SessionData) => {
     const updateSessionCache =
       (maxSessions: number) =>
@@ -360,16 +362,10 @@ export const invalidationHelpers = {
     queryClient.setQueryData(queryKeys.chat.latest(), newSession);
   },
 
-  /**
-   * Invalidate files data after upload.
-   */
   invalidateFileData: (queryClient: QueryClient) => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.files.all });
   },
 
-  /**
-   * Invalidate learning data (decks and cards).
-   */
   invalidateLearningData: (queryClient: QueryClient, deckId?: string) => {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.learning.decks(),
@@ -381,9 +377,6 @@ export const invalidationHelpers = {
     }
   },
 
-  /**
-   * Invalidate all data affected after real activity (message sent).
-   */
   invalidateAfterActivity: (queryClient: QueryClient) => {
     invalidationHelpers.invalidateStudentData(queryClient);
   },

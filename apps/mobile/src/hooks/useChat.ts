@@ -4,26 +4,19 @@
  * SSE streaming hook with error-first design.
  * No silent fallbacks: every failure is surfaced to the user.
  *
- * Performance: streaming updates are batched via requestAnimationFrame
- * to avoid per-token re-renders (500 → ~30-40 per response).
+ * Stream logic extracted to useStreamManager for maintainability.
  *
- * Resilience: retry mechanism preserves last request on failure.
- * Attachments/text are only cleared after server confirms receipt.
- *
- * @see https://github.com/binaryminds/react-native-sse
+ * @see ./chat/useStreamManager.ts
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getBaseUrl } from '@repo/api';
-import { authClient, useUser, type IAppUser } from '@/lib/auth';
-import EventSource from 'react-native-sse';
+import { useUser, type IAppUser } from '@/lib/auth';
 
 import type {
   ChatMessage,
   ChatFileAttachment,
   CreatedDeck,
-  StreamChunk,
   UseChatOptions,
   UseChatReturn,
 } from './chat/types';
@@ -33,17 +26,14 @@ import {
   fetchHistory,
   resetChatSession,
 } from './chat/api';
+import { useStreamManager } from './chat/useStreamManager';
 
 // Re-export types for consumers
 export type { ChatMessage, ChatFileAttachment, AttachedFileInfo, CreatedDeck } from './chat/types';
 
-/** Inactivity timeout: if no SSE event received for 45s, abort */
-const STREAM_INACTIVITY_TIMEOUT_MS = 45_000;
-
-/** Generate a unique message ID (no collision risk) */
-let messageCounter = 0;
+/** Generate a unique message ID using crypto for collision safety */
 function generateMessageId(role: 'user' | 'assistant'): string {
-  return `${role}-${Date.now()}-${++messageCounter}`;
+  return `${role}-${Date.now()}-${crypto.randomUUID()}`;
 }
 
 export function useChat({
@@ -63,15 +53,7 @@ export function useChat({
   // Refs for stable values
   const sessionIdRef = useRef<string | null>(initialSessionId ?? null);
   const pendingAttachmentsRef = useRef<ChatFileAttachment[]>([]);
-  const eventSourceRef = useRef<EventSource | null>(null);
   const historySyncedRef = useRef<string | null>(null);
-  const streamIdRef = useRef(0);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Debounce: accumulate stream content, flush via rAF
-  const streamContentRef = useRef('');
-  const streamAssistantIdRef = useRef<string | null>(null);
-  const rafIdRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
 
   // Retry: store last request for replay on failure
   const lastRequestRef = useRef<{ content: string; attachments: ChatFileAttachment[] } | null>(null);
@@ -83,6 +65,30 @@ export function useChat({
   useEffect(() => {
     pendingAttachmentsRef.current = pendingAttachments;
   }, [pendingAttachments]);
+
+  // Stream manager (SSE logic extracted)
+  const { startStream, stopStream, cleanup } = useStreamManager({
+    setMessages,
+    setCreatedDecks,
+    setIsLoading,
+    setIsStreaming,
+    setError,
+    setPendingAttachments,
+    pendingAttachmentsRef,
+    pendingClearRef,
+    sessionIdRef,
+    onStreamDone: (currentSessionId) => {
+      queryClient.invalidateQueries({
+        queryKey: chatQueryKeys.history(currentSessionId ?? ''),
+      });
+    },
+    onDeckCreated: () => {
+      queryClient.invalidateQueries({ queryKey: ['decks'] });
+    },
+    onSessionChanged: (newSessionId) => {
+      queryClient.setQueryData(chatQueryKeys.session(), newSessionId);
+    },
+  });
 
   // Session query (lazy creation)
   const sessionQuery = useQuery({
@@ -102,100 +108,27 @@ export function useChat({
     queryKey: chatQueryKeys.history(currentSessionId ?? '__none__'),
     queryFn: () => fetchHistory(currentSessionId!),
     enabled: !!currentSessionId,
-    staleTime: Infinity,
   });
 
-  // Sync history once
+  // Sync history into local state (one-time per session)
+  // Note: setState in effect is intentional — history is fetched once per session
+  // and merged into local messages state which is then mutated by streaming.
   useEffect(() => {
     if (!historyQuery.data) return;
     if (historySyncedRef.current === currentSessionId) return;
     if (historyQuery.data.messages.length === 0) return;
 
     historySyncedRef.current = currentSessionId;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time sync of server history into local streaming state
     setMessages(historyQuery.data.messages);
   }, [historyQuery.data, currentSessionId]);
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.removeAllEventListeners();
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-    };
-  }, []);
-
-  /** Flush accumulated stream content to state (called via rAF) */
-  const flushStreamContent = useCallback(() => {
-    rafIdRef.current = null;
-    const content = streamContentRef.current;
-    const assistantId = streamAssistantIdRef.current;
-    if (!assistantId) return;
-
-    setMessages((prev) =>
-      prev.map((m) => (m.id === assistantId ? { ...m, content } : m))
-    );
-  }, []);
-
-  /** Abort streaming with error message and clean up */
-  const abortStream = useCallback(
-    (assistantId: string, errorMessage: string) => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.removeAllEventListeners();
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-
-      // Flush any pending content before showing error
-      if (streamContentRef.current && streamAssistantIdRef.current === assistantId) {
-        flushStreamContent();
-      }
-
-      setIsLoading(false);
-      setIsStreaming(false);
-      setError(errorMessage);
-
-      // Remove empty assistant placeholder (keeps partial content)
-      setMessages((prev) =>
-        prev.filter((m) => !(m.id === assistantId && m.content.length === 0))
-      );
-
-      // Restore attachments if server never confirmed
-      if (pendingClearRef.current) {
-        setPendingAttachments(pendingClearRef.current);
-        pendingAttachmentsRef.current = pendingClearRef.current;
-        pendingClearRef.current = null;
-      }
-    },
-    [flushStreamContent]
-  );
-
-  /** Reset the inactivity timeout */
-  const resetInactivityTimeout = useCallback(
-    (assistantId: string) => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        abortStream(assistantId, 'Le serveur ne répond plus. Réessaie.');
-      }, STREAM_INACTIVITY_TIMEOUT_MS);
-    },
-    [abortStream]
-  );
+  useEffect(() => cleanup, [cleanup]);
 
   /** Core send logic (used by sendMessage and retry) */
   const executeSend = useCallback(
-    async (content: string, attachments: ChatFileAttachment[], addUserMessage: boolean) => {
+    (content: string, attachments: ChatFileAttachment[], addUserMessage: boolean) => {
       if (!user) return;
 
       // Store for retry
@@ -235,150 +168,24 @@ export function useChat({
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Reset debounce state and created decks
-      streamContentRef.current = '';
-      streamAssistantIdRef.current = assistantId;
-      setCreatedDecks([]);
-
-      setIsLoading(true);
-      setIsStreaming(true);
-      setError(null);
-
-      // Clean up previous EventSource: remove listeners BEFORE close
-      // to prevent stale close/error events from racing with the new stream
-      if (eventSourceRef.current) {
-        eventSourceRef.current.removeAllEventListeners();
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-      const currentStreamId = ++streamIdRef.current;
-
-      try {
-        const baseUrl = getBaseUrl();
-        const cookie = authClient.getCookie();
-
-        if (!cookie) {
-          abortStream(assistantId, 'Session expirée — reconnecte-toi.');
-          return;
-        }
-
-        const es = new EventSource(`${baseUrl}/api/chat/stream`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Cookie: cookie,
-          },
-          method: 'POST',
-          body: JSON.stringify({
-            content: content || 'Document',
-            data: {
-              sessionId: sessionIdRef.current,
-              schoolLevel: (user as IAppUser).schoolLevel,
-              firstName: (user as IAppUser).name?.split(' ')[0] ?? 'Eleve',
-              fileIds: attachments.map((a) => a.fileId),
-            },
-          }),
-          pollingInterval: 0,
-        });
-
-        eventSourceRef.current = es;
-        resetInactivityTimeout(assistantId);
-
-        es.addEventListener('message', (event) => {
-          if (!event.data) return;
-          if (streamIdRef.current !== currentStreamId) return;
-
-          resetInactivityTimeout(assistantId);
-
-          if (event.data === '[DONE]') {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-
-            // Final flush
-            if (rafIdRef.current) {
-              cancelAnimationFrame(rafIdRef.current);
-              rafIdRef.current = null;
-            }
-            flushStreamContent();
-
-            es.close();
-            setIsLoading(false);
-            setIsStreaming(false);
-            eventSourceRef.current = null;
-
-            // Server confirmed — clear attachments permanently
-            pendingClearRef.current = null;
-            return;
-          }
-
-          let chunk: StreamChunk;
-          try {
-            chunk = JSON.parse(event.data) as StreamChunk;
-          } catch {
-            console.error('[SSE] Malformed JSON:', event.data);
-            return;
-          }
-
-          if (chunk.type === 'content' && chunk.content) {
-            // Debounce: accumulate in ref, schedule rAF flush
-            streamContentRef.current = chunk.content;
-            if (!rafIdRef.current) {
-              rafIdRef.current = requestAnimationFrame(flushStreamContent);
-            }
-
-            // First content = server confirmed receipt → clear attachments
-            if (pendingClearRef.current) {
-              pendingClearRef.current = null;
-            }
-          } else if (chunk.type === 'status') {
-            // Heartbeat during tool calls — timeout already reset above
-          } else if (chunk.type === 'deck_created' && chunk.deck) {
-            setCreatedDecks(prev => [...prev, chunk.deck!]);
-            queryClient.invalidateQueries({ queryKey: ['decks'] });
-          } else if (chunk.type === 'done') {
-            if (chunk.metadata?.sessionId && chunk.metadata.sessionId !== sessionIdRef.current) {
-              sessionIdRef.current = chunk.metadata.sessionId;
-              queryClient.setQueryData(chatQueryKeys.session(), chunk.metadata.sessionId);
-            }
-          } else if (chunk.type === 'error') {
-            abortStream(assistantId, chunk.error?.message ?? 'Erreur de streaming');
-          }
-        });
-
-        es.addEventListener('error', () => {
-          if (streamIdRef.current !== currentStreamId) return;
-          abortStream(assistantId, 'Erreur de connexion au serveur');
-        });
-
-        es.addEventListener('close', () => {
-          if (streamIdRef.current !== currentStreamId) return;
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-          setIsLoading(false);
-          setIsStreaming(false);
-          eventSourceRef.current = null;
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Erreur de connexion';
-        abortStream(assistantId, message);
-      }
+      // Start SSE stream
+      startStream(assistantId, content, attachments, user as IAppUser);
     },
-    [user, queryClient, abortStream, resetInactivityTimeout, flushStreamContent]
+    [user, startStream]
   );
 
   // Public sendMessage
   const sendMessage = useCallback(
-    async (content: string) => {
+    (content: string) => {
       const trimmed = content.trim();
       if (!trimmed && pendingAttachmentsRef.current.length === 0) return;
-      await executeSend(trimmed, [...pendingAttachmentsRef.current], true);
+      executeSend(trimmed, [...pendingAttachmentsRef.current], true);
     },
     [executeSend]
   );
 
   // Retry last failed message
-  const retry = useCallback(async () => {
+  const retry = useCallback(() => {
     const last = lastRequestRef.current;
     if (!last) return;
 
@@ -390,28 +197,13 @@ export function useChat({
     });
 
     setError(null);
-    // Re-send without adding user message (already visible)
-    await executeSend(last.content, last.attachments, false);
+    executeSend(last.content, last.attachments, false);
   }, [executeSend]);
 
   // Stop streaming
   const stop = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.removeAllEventListeners();
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = null;
-    if (rafIdRef.current) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-    // Flush any pending content
-    flushStreamContent();
-    setIsStreaming(false);
-    setIsLoading(false);
-  }, [flushStreamContent]);
+    stopStream();
+  }, [stopStream]);
 
   // Attachment management
   const addAttachment = useCallback((attachment: ChatFileAttachment) => {

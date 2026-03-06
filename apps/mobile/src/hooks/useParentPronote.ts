@@ -8,79 +8,71 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 
 // ============================================================================
 // TYPES (aligned with backend apps/server/src/services/pronote.service.ts)
 // ============================================================================
 
-/** Pronote resource (child in parent account) - from DB schema PronoteResource */
 export interface PronoteResource {
   name: string;
   id: string;
   className?: string;
 }
 
-/** Parent connection status - from pronoteService.getParentConnectionStatus() */
 export interface ParentConnectionStatus {
   connected: boolean;
-  status?: string; // 'active' | 'expired' | 'error' | 'disconnected'
+  status?: string;
   establishmentName?: string;
   resources?: PronoteResource[];
-  lastSyncAt?: string; // ISO string (Date from backend)
+  lastSyncAt?: string;
   error?: string;
 }
 
-/** Child mapping (Pronote student → TomAI child) - from pronoteService.getChildMappings() */
 export interface ChildMapping {
   childId: string;
   childName: string;
   resourceIndex: number;
   pronoteChildName: string;
   pronoteClassName?: string;
-  // Note: backend doesn't return createdAt
 }
 
-/** Connect request - body for POST /api/pronote/connect */
 export interface PronoteConnectRequest {
   qrCodeJson: string;
   pin: string;
   establishmentName: string;
 }
 
-/** Homework item - from pronoteService.PronoteHomework */
 export interface PronoteHomework {
   id: string;
   subject: string;
   description: string;
-  dueDate: string; // ISO string (Date from backend)
+  dueDate: string;
   done: boolean;
   difficulty: number;
   estimatedMinutes?: number;
 }
 
-/** Grade item - from pronoteService.PronoteGrade */
 export interface PronoteGrade {
   id: string;
   subject: string;
-  value: number | null; // null when grade is absent/not applicable
+  value: number | null;
   outOf: number;
   coefficient: number;
-  date: string; // ISO string (Date from backend)
+  date: string;
   description: string;
   average?: number;
   max?: number;
   min?: number;
 }
 
-/** Timetable entry - from pronoteService.PronoteTimetableEntry */
 export interface PronoteTimetableEntry {
   id: string;
   subject?: string;
   teacherNames: string[];
   classrooms: string[];
-  startDate: string; // ISO string (Date from backend)
-  endDate: string; // ISO string (Date from backend)
+  startDate: string;
+  endDate: string;
   canceled: boolean;
   status?: string;
 }
@@ -105,27 +97,28 @@ const queryKeys = {
 // ============================================================================
 
 async function fetchStatus(): Promise<ParentConnectionStatus> {
-  return apiClient.get('/api/pronote/status');
+  return unwrap(await getTreaty().api.pronote.status.get()) as ParentConnectionStatus;
 }
 
 async function fetchMappings(): Promise<ChildMapping[]> {
-  const response = await apiClient.get<{ mappings: ChildMapping[] }>(
-    '/api/pronote/mappings'
-  );
-  return response.mappings;
+  const response = unwrap(await getTreaty().api.pronote.mappings.get());
+  return (response as { mappings: ChildMapping[] }).mappings;
 }
 
 async function connectPronote(
   data: PronoteConnectRequest
 ): Promise<{ success: boolean; message?: string; error?: string }> {
-  return apiClient.post('/api/pronote/connect', data, { timeout: 60000 });
+  return unwrap(
+    await getTreaty().api.pronote.connect.post(data)
+  ) as { success: boolean; message?: string; error?: string };
 }
 
 async function disconnectPronote(): Promise<{ success: boolean }> {
-  return apiClient.delete('/api/pronote/disconnect');
+  return unwrap(
+    await getTreaty().api.pronote.disconnect.delete()
+  ) as { success: boolean };
 }
 
-/** Create mapping request - single child mapping */
 export interface CreateMappingRequest {
   childId: string;
   resourceIndex: number;
@@ -136,52 +129,54 @@ export interface CreateMappingRequest {
 async function createMappings(
   mappings: CreateMappingRequest[]
 ): Promise<{ success: boolean; error?: string }> {
-  return apiClient.post('/api/pronote/mappings', { mappings });
+  return unwrap(
+    await getTreaty().api.pronote.mappings.post({ mappings })
+  ) as { success: boolean; error?: string };
 }
 
 async function fetchHomework(
   childId: string,
   weekOffset: number
 ): Promise<PronoteHomework[]> {
-  const response = await apiClient.get<{ homework: PronoteHomework[] }>(
-    `/api/pronote/child/${childId}/homework`,
-    { params: { weekOffset } }
+  const response = unwrap(
+    await getTreaty().api.pronote.child({ childId }).homework.get({
+      query: { weekOffset },
+    })
   );
-  return response.homework;
+  return (response as { homework: PronoteHomework[] }).homework;
 }
 
 async function fetchGrades(childId: string): Promise<PronoteGrade[]> {
-  const response = await apiClient.get<{ grades: PronoteGrade[] }>(
-    `/api/pronote/child/${childId}/grades`
+  const response = unwrap(
+    await getTreaty().api.pronote.child({ childId }).grades.get()
   );
-  return response.grades;
+  return (response as { grades: PronoteGrade[] }).grades;
 }
 
 async function fetchTimetable(
   childId: string,
   weekOffset: number
 ): Promise<PronoteTimetableEntry[]> {
-  const response = await apiClient.get<{ timetable: PronoteTimetableEntry[] }>(
-    `/api/pronote/child/${childId}/timetable`,
-    { params: { weekOffset } }
+  const response = unwrap(
+    await getTreaty().api.pronote.child({ childId }).timetable.get({
+      query: { weekOffset },
+    })
   );
-  return response.timetable;
+  return (response as { timetable: PronoteTimetableEntry[] }).timetable;
 }
 
 // ============================================================================
 // HOOKS
 // ============================================================================
 
-/** Get parent's Pronote connection status */
 export function useParentPronoteStatus() {
   return useQuery({
     queryKey: queryKeys.status,
     queryFn: fetchStatus,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }
 
-/** Get current child mappings */
 export function useChildMappings() {
   return useQuery({
     queryKey: queryKeys.mappings,
@@ -190,7 +185,6 @@ export function useChildMappings() {
   });
 }
 
-/** Connect parent Pronote account via QR code */
 export function useConnectPronote() {
   const queryClient = useQueryClient();
 
@@ -202,7 +196,6 @@ export function useConnectPronote() {
   });
 }
 
-/** Disconnect parent from Pronote */
 export function useDisconnectPronote() {
   const queryClient = useQueryClient();
 
@@ -214,7 +207,6 @@ export function useDisconnectPronote() {
   });
 }
 
-/** Create child mappings (Pronote student → TomAI child) */
 export function useCreateMappings() {
   const queryClient = useQueryClient();
 
@@ -226,7 +218,6 @@ export function useCreateMappings() {
   });
 }
 
-/** Get homework for a child */
 export function useChildHomework(childId?: string, weekOffset = 0) {
   return useQuery({
     queryKey: queryKeys.homework(childId ?? '', weekOffset),
@@ -236,7 +227,6 @@ export function useChildHomework(childId?: string, weekOffset = 0) {
   });
 }
 
-/** Get grades for a child */
 export function useChildGrades(childId?: string) {
   return useQuery({
     queryKey: queryKeys.grades(childId ?? ''),
@@ -246,7 +236,6 @@ export function useChildGrades(childId?: string) {
   });
 }
 
-/** Get timetable for a child */
 export function useChildTimetable(childId?: string, weekOffset = 0) {
   return useQuery({
     queryKey: queryKeys.timetable(childId ?? '', weekOffset),
@@ -256,12 +245,10 @@ export function useChildTimetable(childId?: string, weekOffset = 0) {
   });
 }
 
-/** Combined hook for child detail page */
 export function useChildPronote(childId?: string) {
   const statusQuery = useParentPronoteStatus();
   const mappingsQuery = useChildMappings();
 
-  // Find mapping for this specific child
   const childMapping =
     childId && mappingsQuery.data
       ? mappingsQuery.data.find((m) => m.childId === childId) ?? null
@@ -271,20 +258,16 @@ export function useChildPronote(childId?: string) {
   const isMapped = isConnected && childMapping !== null;
 
   return {
-    // Status
     isConnected,
     isMapped,
     establishmentName: statusQuery.data?.establishmentName,
     lastSyncAt: statusQuery.data?.lastSyncAt,
     resources: statusQuery.data?.resources ?? [],
 
-    // Child mapping
     childMapping,
 
-    // Loading
     isLoading: statusQuery.isLoading || mappingsQuery.isLoading,
 
-    // Refresh
     refresh: () => {
       void statusQuery.refetch();
       void mappingsQuery.refetch();

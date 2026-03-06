@@ -18,7 +18,7 @@ import { expoClient } from '@better-auth/expo/client';
 import { usernameClient, adminClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
 import * as Constants from 'expo-constants';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 
 // API URL from environment variable
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
@@ -64,6 +64,11 @@ export interface IAppUser {
   parentId?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Session with impersonation metadata from Better Auth admin plugin */
+interface ImpersonatedSession {
+  impersonatedBy?: string;
 }
 
 // ============================================================================
@@ -117,25 +122,6 @@ export function useUser(): IAppUser | null {
   return (session?.user as IAppUser | undefined) ?? null;
 }
 
-/**
- * Hook pour vérifier si l'utilisateur est authentifié.
- * Retourne false pendant le chargement.
- */
-export function useIsAuthenticated(): boolean {
-  const { data: session, isPending } = useSession();
-  if (isPending) {
-    return false;
-  }
-  return !!session?.user;
-}
-
-/**
- * Hook pour vérifier si la session est en cours de chargement.
- */
-export function useIsAuthLoading(): boolean {
-  const { isPending } = useSession();
-  return isPending;
-}
 
 /**
  * Hook pour vérifier si on est en mode impersonation (Quick Switch actif).
@@ -144,7 +130,7 @@ export function useIsAuthLoading(): boolean {
 export function useImpersonatedBy(): string | null {
   const { data: session } = useSession();
   // Better Auth admin plugin adds impersonatedBy to session
-  return (session?.session as { impersonatedBy?: string } | undefined)?.impersonatedBy ?? null;
+  return (session?.session as ImpersonatedSession | undefined)?.impersonatedBy ?? null;
 }
 
 // ============================================================================
@@ -226,7 +212,9 @@ export async function signInWithGoogle() {
  * Demande de réinitialisation de mot de passe.
  */
 export async function requestPasswordReset(email: string, redirectTo?: string) {
-  return apiClient.post('/api/auth/forget-password', { email, redirectTo });
+  return unwrap(
+    await getTreaty().api.auth['forget-password'].post({ email, redirectTo })
+  );
 }
 
 /**
@@ -256,7 +244,7 @@ export async function hasParentSessionBackup(): Promise<boolean> {
   try {
     const session = await authClient.getSession();
     // Check if session has impersonatedBy field (means we're impersonating)
-    return !!(session?.data?.session as { impersonatedBy?: string } | undefined)?.impersonatedBy;
+    return !!(session?.data?.session as ImpersonatedSession | undefined)?.impersonatedBy;
   } catch {
     return false;
   }
@@ -279,14 +267,6 @@ export async function restoreParentSession(): Promise<boolean> {
   }
 }
 
-/**
- * Nettoie la session d'impersonation (appelé si l'enfant se déconnecte).
- * Avec Better Auth, signOut suffit car il n'y a pas de token custom à nettoyer.
- */
-export async function clearParentSessionBackup(): Promise<void> {
-  // No-op with Better Auth admin plugin
-  // signOut() handles everything
-}
 
 /**
  * Lance une session enfant depuis le compte parent (Quick Switch).

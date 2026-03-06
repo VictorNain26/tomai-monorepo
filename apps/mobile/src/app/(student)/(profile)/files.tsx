@@ -5,8 +5,9 @@
  * Allows viewing, sharing, and deleting documents.
  */
 
-import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, TouchableOpacity, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -20,7 +21,7 @@ import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { useUserFiles, useIconColors, type LibraryFile } from '@/hooks';
 import { bgColors, colors, shadows } from '@/lib/styles';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { filesQueryKeys } from '@/hooks/useFiles';
 
@@ -80,7 +81,7 @@ export default function FilesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await apiClient.delete(`/api/files/${file.id}`);
+              unwrap(await getTreaty().api.upload.file({ fileId: file.id }).delete());
               void queryClient.invalidateQueries({ queryKey: filesQueryKeys.library() });
             } catch {
               Alert.alert('Erreur', 'Impossible de supprimer le fichier');
@@ -110,10 +111,10 @@ export default function FilesScreen() {
               {item.fileName}
             </Text>
             <View className="flex-row items-center gap-2 mt-0.5">
-              <Text variant="tiny" className="text-muted-foreground">
+              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                 {formatFileSize(item.sizeBytes)}
               </Text>
-              <Text variant="tiny" className="text-muted-foreground">
+              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                 {formatDate(item.createdAt)}
               </Text>
               {subjectLabel && (
@@ -121,7 +122,7 @@ export default function FilesScreen() {
                   className="rounded-full px-1.5 py-0.5"
                   style={{ backgroundColor: bgColors.primary[10] }}
                 >
-                  <Text variant="tiny" className="text-primary font-medium">
+                  <Text variant="tiny" className="text-blue-600 dark:text-blue-400 font-medium">
                     {subjectLabel}
                   </Text>
                 </View>
@@ -143,12 +144,12 @@ export default function FilesScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+          className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
           accessibilityLabel="Retour"
         >
           <ArrowLeft color={iconColors.foreground} size={20} />
@@ -177,7 +178,7 @@ export default function FilesScreen() {
           </Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={files}
           keyExtractor={(item) => item.id}
           renderItem={renderFile}
@@ -185,6 +186,7 @@ export default function FilesScreen() {
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
           refreshing={isLoading}
+
         />
       )}
     </SafeAreaView>

@@ -5,16 +5,14 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 
 // ============================================================================
 // TYPES (aligned with backend apps/server/src/db/schema.ts)
 // ============================================================================
 
-/** Backend deckSourceEnum */
 export type DeckSource = 'prompt' | 'conversation' | 'document' | 'rag_program';
 
-/** Backend LearningDeck from schema.ts (JSON serialized) */
 export interface LearningDeck {
   id: string;
   userId: string;
@@ -26,11 +24,10 @@ export interface LearningDeck {
   sourcePrompt: string | null;
   schoolLevel: string | null;
   cardCount: number;
-  createdAt: string; // ISO string (timestamp with timezone)
-  updatedAt: string; // ISO string (timestamp with timezone)
+  createdAt: string;
+  updatedAt: string;
 }
 
-/** Backend cardTypeEnum */
 export type CardType =
   | 'concept'
   | 'flashcard'
@@ -47,26 +44,15 @@ export type CardType =
   | 'process_order'
   | 'grammar_transform';
 
-/** Backend LearningCard from schema.ts (JSON serialized) */
 export interface LearningCard {
   id: string;
   deckId: string;
   cardType: CardType;
   content: Record<string, unknown>;
   position: number;
-  fsrsData: Record<string, unknown> | null; // FSRS algorithm data
-  createdAt: string; // ISO string
-  updatedAt: string; // ISO string
-}
-
-interface DecksResponse {
-  decks: LearningDeck[];
-  count: number;
-}
-
-interface DeckDetailResponse {
-  deck: LearningDeck;
-  cards: LearningCard[];
+  fsrsData: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ============================================================================
@@ -83,21 +69,22 @@ const queryKeys = {
 // ============================================================================
 
 async function fetchDecks(): Promise<LearningDeck[]> {
-  const response = await apiClient.get<DecksResponse>('/api/learning/decks');
-  return response.decks;
+  const response = unwrap(await getTreaty().api.learning.decks.get());
+  return (response as { decks: LearningDeck[] }).decks;
 }
 
 async function fetchDeck(
   id: string
 ): Promise<{ deck: LearningDeck; cards: LearningCard[] }> {
-  return apiClient.get<DeckDetailResponse>(`/api/learning/decks/${id}`);
+  return unwrap(
+    await getTreaty().api.learning.decks({ id }).get()
+  ) as { deck: LearningDeck; cards: LearningCard[] };
 }
 
 async function deleteDeck(id: string): Promise<void> {
-  await apiClient.delete(`/api/learning/decks/${id}`);
+  unwrap(await getTreaty().api.learning.decks({ id }).delete());
 }
 
-/** Create deck request - aligned with POST /api/learning/decks body */
 export interface CreateDeckRequest {
   title: string;
   description?: string;
@@ -109,53 +96,39 @@ export interface CreateDeckRequest {
 }
 
 async function createDeck(data: CreateDeckRequest): Promise<LearningDeck> {
-  const response = await apiClient.post<{ deck: LearningDeck }>(
-    '/api/learning/decks',
-    data
+  const response = unwrap(
+    await getTreaty().api.learning.decks.post(data)
   );
-  return response.deck;
+  return (response as { deck: LearningDeck }).deck;
 }
 
-/** Subject from /api/learning/subjects */
 export interface LearningSubject {
   id: string;
   label: string;
 }
 
-interface SubjectsResponse {
-  niveau: string;
-  subjects: LearningSubject[];
-}
-
 async function fetchSubjects(niveau: string): Promise<LearningSubject[]> {
-  const response = await apiClient.get<SubjectsResponse>(
-    '/api/learning/subjects',
-    { params: { niveau } }
+  const response = unwrap(
+    await getTreaty().api.learning.subjects.get({ query: { niveau: niveau as 'cp' } })
   );
-  return response.subjects;
+  return (response as { subjects: LearningSubject[] }).subjects;
 }
 
-/** Topic from /api/learning/topics */
 export interface LearningDomaine {
   domaine: string;
   themes: string[];
-}
-
-interface TopicsResponse {
-  matiere: string;
-  niveau: string;
-  domaines: LearningDomaine[];
-  totalTopics: number;
 }
 
 async function fetchTopics(
   matiere: string,
   niveau: string
 ): Promise<LearningDomaine[]> {
-  const response = await apiClient.get<TopicsResponse>('/api/learning/topics', {
-    params: { matiere, niveau },
-  });
-  return response.domaines;
+  const response = unwrap(
+    await getTreaty().api.learning.topics.get({
+      query: { matiere, niveau: niveau as 'cp' },
+    })
+  );
+  return (response as { domaines: LearningDomaine[] }).domaines;
 }
 
 // ============================================================================
@@ -206,7 +179,7 @@ export function useLearningSubjects(niveau: string) {
     queryKey: ['learning', 'subjects', niveau] as const,
     queryFn: () => fetchSubjects(niveau),
     enabled: !!niveau,
-    staleTime: 10 * 60 * 1000, // 10 minutes (rarely changes)
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -223,14 +196,12 @@ export function useLearningTopics(matiere: string, niveau: string) {
 // GENERATE DECK (AI)
 // ============================================================================
 
-/** Generate deck request - aligned with POST /api/learning/generate */
 export interface GenerateDeckRequest {
   subject: string;
   domaine: string;
   topic?: string;
 }
 
-/** Generate deck response */
 export interface GenerateDeckResponse {
   deck: LearningDeck;
   cards: LearningCard[];
@@ -241,7 +212,9 @@ export interface GenerateDeckResponse {
 }
 
 async function generateDeck(data: GenerateDeckRequest): Promise<GenerateDeckResponse> {
-  return apiClient.post<GenerateDeckResponse>('/api/learning/generate', data);
+  return unwrap(
+    await getTreaty().api.learning.generate.post(data)
+  ) as GenerateDeckResponse;
 }
 
 export function useGenerateDeck() {
