@@ -8,21 +8,11 @@
  * - Accessibilité pour les élèves dyslexiques
  */
 
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 import { handleAuthWithCookies } from '../middleware/auth.middleware.js';
 import { textToSpeechService, type TTSOptions } from '../services/text-to-speech.service.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/education.types.js';
-
-// ============================================
-// Types
-// ============================================
-
-interface TTSSynthesizeBody {
-  text: string;
-  language?: 'fr' | 'en' | 'es' | 'de';
-  schoolLevel?: EducationLevelType;
-}
 
 // ============================================
 // Routes
@@ -41,42 +31,12 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
       const startTime = Date.now();
 
       try {
-        const {
-          text,
-          language = 'fr',
-          schoolLevel,
-        } = body as TTSSynthesizeBody;
-
-        // Validation du texte
-        if (!text || typeof text !== 'string') {
-          set.status = 400;
-          return {
-            success: false,
-            error: 'Le texte est requis'
-          };
-        }
-
-        if (text.trim().length === 0) {
-          set.status = 400;
-          return {
-            success: false,
-            error: 'Le texte ne peut pas être vide'
-          };
-        }
-
-        // ElevenLabs limite à ~5000 caractères
-        if (text.length > 5000) {
-          set.status = 400;
-          return {
-            success: false,
-            error: 'Le texte est trop long (max 5000 caractères)'
-          };
-        }
+        const { text, language = 'fr', schoolLevel } = body;
 
         // Options TTS (voix auto-sélectionnée par niveau scolaire)
         const ttsOptions: TTSOptions = {
           language,
-          schoolLevel,
+          schoolLevel: schoolLevel as EducationLevelType | undefined,
         };
 
         // Synthèse audio via ElevenLabs
@@ -133,6 +93,14 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           error: 'Erreur interne lors de la synthèse vocale'
         };
       }
+    }, {
+      body: t.Object({
+        text: t.String({ minLength: 1, maxLength: 5000 }),
+        language: t.Optional(t.Union([
+          t.Literal('fr'), t.Literal('en'), t.Literal('es'), t.Literal('de'),
+        ])),
+        schoolLevel: t.Optional(t.String({ minLength: 2, maxLength: 20 })),
+      }),
     })
 
     // GET /api/tts/voices - Liste des voix disponibles (ElevenLabs)

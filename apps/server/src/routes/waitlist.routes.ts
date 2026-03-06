@@ -2,7 +2,7 @@
  * Waitlist Routes - Public endpoint for landing page email collection
  */
 
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 import { db } from '../db/connection.js';
 import { waitlistEntries } from '../db/schema.js';
 import { logger } from '../lib/observability.js';
@@ -11,9 +11,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const waitlistRoutes = new Elysia({ name: 'waitlist-routes' })
   .post('/api/waitlist', async ({ body, set }) => {
-    const { email, source } = body as { email?: string; source?: string };
+    const { email, source } = body;
 
-    if (!email || !EMAIL_REGEX.test(email)) {
+    if (!EMAIL_REGEX.test(email)) {
       set.status = 400;
       return { success: false, error: 'Email invalide' };
     }
@@ -45,4 +45,9 @@ export const waitlistRoutes = new Elysia({ name: 'waitlist-routes' })
       set.status = 500;
       return { success: false, error: 'Erreur serveur' };
     }
+  }, {
+    body: t.Object({
+      email: t.String({ minLength: 1, maxLength: 320, format: 'email' }),
+      source: t.Optional(t.String({ maxLength: 100 })),
+    }),
   });
