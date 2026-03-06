@@ -4,7 +4,8 @@
  * Consolidates duplicate code from student and parent screens.
  */
 
-import { bgColors, borderColors, colors } from '@/lib/styles';
+import { bgColors, borderColors } from '@/lib/styles';
+import type { ThemeColors } from '@/hooks/useThemeColors';
 
 // ============================================================================
 // TYPES
@@ -72,10 +73,10 @@ export function getDaysUntil(dateStr: string): number {
 /**
  * Get styling for a grade based on its value (inline styles)
  */
-export function getGradeStyle(value: number | null, outOf: number): GradeStyle {
+export function getGradeStyle(value: number | null, outOf: number, colors: ThemeColors): GradeStyle {
   if (value === null || outOf === 0) {
     return {
-      textColor: colors.muted.foreground,
+      textColor: colors.muted,
       bgColor: bgColors.muted[50],
       borderColor: borderColors.muted[20],
     };
@@ -83,27 +84,27 @@ export function getGradeStyle(value: number | null, outOf: number): GradeStyle {
   const percent = (value / outOf) * 100;
   if (percent >= 80) {
     return {
-      textColor: colors.success.DEFAULT,
+      textColor: colors.success,
       bgColor: bgColors.success[10],
       borderColor: borderColors.success[30],
     };
   }
   if (percent >= 60) {
     return {
-      textColor: colors.primary.DEFAULT,
+      textColor: colors.primary,
       bgColor: bgColors.primary[10],
       borderColor: borderColors.primary[30],
     };
   }
   if (percent >= 40) {
     return {
-      textColor: colors.warning.DEFAULT,
+      textColor: colors.warning,
       bgColor: bgColors.warning[10],
       borderColor: borderColors.warning[30],
     };
   }
   return {
-    textColor: colors.destructive.DEFAULT,
+    textColor: colors.destructive,
     bgColor: bgColors.destructive[10],
     borderColor: borderColors.destructive[30],
   };

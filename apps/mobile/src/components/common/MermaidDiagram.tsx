@@ -12,9 +12,11 @@
  */
 
 import { useState, useMemo } from 'react';
-import { View, useColorScheme, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Text } from '@/components/ui/text';
+import { useTheme } from '@/hooks/useTheme';
+import { useThemeColors, type ThemeColors } from '@/hooks/useThemeColors';
 
 // ============================================================================
 // TYPES
@@ -50,45 +52,44 @@ export function extractMermaidCode(text: string): string {
 // HTML GENERATOR
 // ============================================================================
 
-function generateMermaidHtml(chart: string, isDark: boolean): string {
-  // Escape for JavaScript template literal
+function generateMermaidHtml(chart: string, isDark: boolean, tc: ThemeColors): string {
   const escapedChart = chart
     .replace(/\\/g, '\\\\')
     .replace(/`/g, '\\`')
     .replace(/\$/g, '\\$');
 
-  const bgColor = isDark ? '#1a1a1a' : '#ffffff';
-  const textColor = isDark ? '#fafafa' : '#09090b';
+  const bgColor = tc.background;
+  const textColor = tc.foreground;
 
   const themeVars = isDark
     ? `{
-        primaryColor: '#6366f1',
-        primaryTextColor: '#fafafa',
-        primaryBorderColor: '#4f46e5',
-        lineColor: '#666',
-        secondaryColor: '#22c55e',
+        primaryColor: '${tc.primary}',
+        primaryTextColor: '${tc.foreground}',
+        primaryBorderColor: '${tc.primary}',
+        lineColor: '${tc.border}',
+        secondaryColor: '${tc.success}',
         tertiaryColor: '#a855f7',
-        background: '#1a1a1a',
-        mainBkg: '#262626',
-        textColor: '#fafafa',
-        nodeBorder: '#4f46e5',
-        clusterBkg: '#262626',
-        clusterBorder: '#444',
-        edgeLabelBackground: '#262626'
+        background: '${tc.background}',
+        mainBkg: '#1E293B',
+        textColor: '${tc.foreground}',
+        nodeBorder: '${tc.primary}',
+        clusterBkg: '#1E293B',
+        clusterBorder: '${tc.border}',
+        edgeLabelBackground: '#1E293B'
       }`
     : `{
-        primaryColor: '#6366f1',
-        primaryTextColor: '#fafafa',
-        primaryBorderColor: '#4f46e5',
+        primaryColor: '${tc.primary}',
+        primaryTextColor: '#FFFFFF',
+        primaryBorderColor: '${tc.primary}',
         lineColor: '#9ca3af',
-        secondaryColor: '#22c55e',
+        secondaryColor: '${tc.success}',
         tertiaryColor: '#a855f7',
         background: '#ffffff',
-        mainBkg: '#f8fafc',
-        textColor: '#09090b',
-        nodeBorder: '#4f46e5',
-        clusterBkg: '#f8fafc',
-        clusterBorder: '#e5e5e5',
+        mainBkg: '${tc.background}',
+        textColor: '${tc.foreground}',
+        nodeBorder: '${tc.primary}',
+        clusterBkg: '${tc.background}',
+        clusterBorder: '${tc.border}',
         edgeLabelBackground: '#ffffff'
       }`;
 
@@ -187,14 +188,14 @@ function generateMermaidHtml(chart: string, isDark: boolean): string {
 // ============================================================================
 
 export function MermaidDiagram({ chart, className }: MermaidDiagramProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { isDark } = useTheme();
+  const tc = useThemeColors();
   const [height, setHeight] = useState(200);
   const [error, setError] = useState<string | null>(null);
 
   const html = useMemo(
-    () => generateMermaidHtml(chart, isDark),
-    [chart, isDark]
+    () => generateMermaidHtml(chart, isDark, tc),
+    [chart, isDark, tc]
   );
 
   const handleMessage = (event: { nativeEvent: { data: string } }) => {
@@ -218,16 +219,16 @@ export function MermaidDiagram({ chart, className }: MermaidDiagramProps) {
   if (error) {
     return (
       <View style={styles.errorContainer} className={className}>
-        <Text className="text-sm font-semibold text-destructive">
+        <Text className="text-sm font-semibold text-red-600 dark:text-red-400">
           Erreur de diagramme
         </Text>
-        <Text className="mt-1 text-xs text-muted-foreground">{error}</Text>
+        <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">{error}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container} className={className}>
+    <View style={[styles.container, { borderColor: tc.border }]} className={className}>
       <WebView
         source={{ html }}
         style={[styles.webview, { height }]}
@@ -255,7 +256,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e5e5e5',
   },
   webview: {
     backgroundColor: 'transparent',

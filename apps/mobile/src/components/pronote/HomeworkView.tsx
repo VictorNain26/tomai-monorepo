@@ -17,8 +17,8 @@ import {
 import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useIconColors } from '@/hooks';
-import { bgColors, borderColors, colors, shadows } from '@/lib/styles';
+import { useIconColors, useThemeColors } from '@/hooks';
+import { bgColors, borderColors, shadows } from '@/lib/styles';
 import { formatDateWithDay, isOverdue, getDaysUntil } from '@/lib/pronote-helpers';
 
 // ============================================================================
@@ -48,6 +48,7 @@ interface HomeworkViewProps {
 
 export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProps) {
   const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   // Group homework by due date
   const groupedHomework = (homework ?? []).reduce(
@@ -93,7 +94,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
           className="mb-4 h-16 w-16 items-center justify-center rounded-full"
           style={{ backgroundColor: bgColors.success[10] }}
         >
-          <CheckCircle2 color={colors.success.DEFAULT} size={32} />
+          <CheckCircle2 color={colors.success} size={32} />
         </View>
         <Text variant="large" className="mb-1">
           Aucun devoir
@@ -114,7 +115,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
             className="flex-1 rounded-xl p-3"
             style={{ backgroundColor: bgColors.primary[10] }}
           >
-            <Text variant="tiny" className="text-muted-foreground">
+            <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
               Total
             </Text>
             <Text variant="large">{totalCount}</Text>
@@ -123,10 +124,10 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
             className="flex-1 rounded-xl p-3"
             style={{ backgroundColor: bgColors.success[10] }}
           >
-            <Text variant="tiny" className="text-muted-foreground">
+            <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
               Faits
             </Text>
-            <Text variant="large" className="text-success">
+            <Text variant="large" className="text-emerald-600 dark:text-emerald-400">
               {doneCount}
             </Text>
           </View>
@@ -135,10 +136,10 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
               className="flex-1 rounded-xl p-3"
               style={{ backgroundColor: bgColors.destructive[10] }}
             >
-              <Text variant="tiny" className="text-muted-foreground">
+              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                 En retard
               </Text>
-              <Text variant="large" className="text-destructive">
+              <Text variant="large" className="text-red-600 dark:text-red-400">
                 {overdueCount}
               </Text>
             </View>
@@ -163,7 +164,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
                     className="rounded-full px-2 py-0.5"
                     style={{ backgroundColor: bgColors.warning[10] }}
                   >
-                    <Text variant="tiny" style={{ color: colors.warning.DEFAULT }}>
+                    <Text variant="tiny" style={{ color: colors.warning }}>
                       {daysUntil === 0 ? "Aujourd'hui" : 'Demain'}
                     </Text>
                   </View>
@@ -198,15 +199,15 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
                       <View className="p-4">
                         <View className="flex-row items-start gap-3">
                           {hw.done ? (
-                            <CheckCircle2 color={colors.success.DEFAULT} size={20} />
+                            <CheckCircle2 color={colors.success} size={20} />
                           ) : overdue ? (
-                            <AlertCircle color={colors.destructive.DEFAULT} size={20} />
+                            <AlertCircle color={colors.destructive} size={20} />
                           ) : (
                             <Circle color={iconColors.muted} size={20} />
                           )}
                           <View className="flex-1">
                             <Text
-                              className={`font-medium ${hw.done ? 'text-success' : ''}`}
+                              className={`font-medium ${hw.done ? 'text-emerald-600 dark:text-emerald-400' : ''}`}
                             >
                               {hw.subject}
                             </Text>
@@ -218,7 +219,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
                               {hw.description}
                             </Text>
                             {overdue && (
-                              <Text variant="tiny" className="mt-1 text-destructive">
+                              <Text variant="tiny" className="mt-1 text-red-600 dark:text-red-400">
                                 En retard
                               </Text>
                             )}
@@ -232,8 +233,8 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
                             className="mt-3 flex-row items-center justify-center gap-2 rounded-lg py-2"
                             style={{ backgroundColor: bgColors.primary[10] }}
                           >
-                            <MessageCircle color={colors.primary.DEFAULT} size={16} />
-                            <Text variant="small" className="text-primary font-medium">
+                            <MessageCircle color={colors.primary} size={16} />
+                            <Text variant="small" className="text-blue-600 dark:text-blue-400 font-medium">
                               Demander de l'aide à Tom
                             </Text>
                           </TouchableOpacity>

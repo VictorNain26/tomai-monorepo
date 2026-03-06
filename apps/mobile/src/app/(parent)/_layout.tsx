@@ -9,52 +9,25 @@
  * - (profile)/ → Stack: Profile menu, Settings, Pricing, Pronote
  */
 
-import { useEffect, useMemo } from 'react';
+import { Suspense, useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, User } from 'lucide-react-native';
 import { useSession, useUser } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
-import { useTheme } from '@/hooks';
-import { colors } from '@/lib/styles';
-import { useTabScreenOptions } from '@/lib/navigation';
+import { useTheme, useThemeColors } from '@/hooks';
+import { useTabScreenOptions, useTabBarConfig } from '@/lib/navigation';
 import { setupPushNotifications } from '@/lib/notifications';
-
-// Base tab bar height (without safe area)
-const TAB_BAR_HEIGHT = 56;
-const TAB_BAR_PADDING_TOP = 8;
 
 export default function ParentLayout() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const user = useUser();
-  const { isDark } = useTheme();
-  const insets = useSafeAreaInsets();
+  useTheme();
+  const colors = useThemeColors();
 
-  // Compute tab colors based on theme
-  const tabColors = useMemo(
-    () => ({
-      active: colors.primary.DEFAULT,
-      inactive: colors.muted.foreground,
-      background: isDark ? colors.background.dark : colors.background.light,
-      border: isDark ? colors.border.dark : colors.border.light,
-    }),
-    [isDark]
-  );
-
-  // Compute tab bar style with safe area insets
-  const tabBarStyle = useMemo(
-    () => ({
-      backgroundColor: tabColors.background,
-      borderTopColor: tabColors.border,
-      borderTopWidth: 1,
-      paddingTop: TAB_BAR_PADDING_TOP,
-      paddingBottom: Math.max(insets.bottom, 8),
-      height: TAB_BAR_HEIGHT + Math.max(insets.bottom, 8),
-    }),
-    [tabColors, insets.bottom]
-  );
+  // Shared tab bar config (colors + style)
+  const { tabColors, tabBarStyle } = useTabBarConfig();
 
   // Shared tab animation/performance options (React Navigation 7)
   const tabOptions = useTabScreenOptions(tabColors.background);
@@ -83,23 +56,30 @@ export default function ParentLayout() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isDark ? colors.background.dark : colors.background.light,
+          backgroundColor: colors.background,
         }}
       >
-        <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
     <AppProviders>
+      <Suspense
+        fallback={
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        }
+      >
       <Tabs
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: tabColors.active,
           tabBarInactiveTintColor: tabColors.inactive,
           tabBarStyle,
-          tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+          tabBarShowLabel: false,
           popToTopOnBlur: true,
           ...tabOptions,
         }}
@@ -122,6 +102,7 @@ export default function ParentLayout() {
           }}
         />
       </Tabs>
+      </Suspense>
     </AppProviders>
   );
 }

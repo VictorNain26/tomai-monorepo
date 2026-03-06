@@ -9,9 +9,10 @@
  */
 
 import { useState, useMemo } from 'react';
-import { View, useColorScheme, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Text } from '@/components/ui/text';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 // ============================================================================
 // TYPES
@@ -232,9 +233,8 @@ export function MathText({
   textColor,
   fontSize = 16,
 }: MathTextProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const resolvedTextColor = textColor ?? (isDark ? '#fafafa' : '#09090b');
+  const themeColors = useThemeColors();
+  const resolvedTextColor = textColor ?? themeColors.foreground;
 
   const segments = useMemo(() => parseContent(children), [children]);
 

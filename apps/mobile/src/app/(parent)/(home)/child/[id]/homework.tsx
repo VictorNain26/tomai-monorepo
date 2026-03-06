@@ -6,19 +6,19 @@
 
 import { useState, useCallback } from 'react';
 import { View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { HomeworkView } from '@/components/pronote';
-import { useChildHomework, useParentDashboard, useIconColors } from '@/hooks';
-import { colors } from '@/lib/styles';
+import { useChildHomework, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
 import { getWeekLabel } from '@/lib/pronote-helpers';
 
 export default function ChildHomeworkScreen() {
   const router = useRouter();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [weekOffset, setWeekOffset] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,13 +35,13 @@ export default function ChildHomeworkScreen() {
   }, [refetch]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+      <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <View className="flex-row items-center gap-3">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+            className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
           >
             <ArrowLeft color={iconColors.foreground} size={20} />
           </TouchableOpacity>
@@ -59,7 +59,7 @@ export default function ChildHomeworkScreen() {
         <View className="flex-row items-center gap-2">
           <TouchableOpacity
             onPress={() => setWeekOffset((w) => w - 1)}
-            className="h-9 w-9 items-center justify-center rounded-lg bg-muted"
+            className="h-9 w-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800"
           >
             <ChevronLeft color={iconColors.foreground} size={18} />
           </TouchableOpacity>
@@ -68,7 +68,7 @@ export default function ChildHomeworkScreen() {
           </Text>
           <TouchableOpacity
             onPress={() => setWeekOffset((w) => w + 1)}
-            className="h-9 w-9 items-center justify-center rounded-lg bg-muted"
+            className="h-9 w-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800"
           >
             <ChevronRight color={iconColors.foreground} size={18} />
           </TouchableOpacity>
@@ -81,7 +81,7 @@ export default function ChildHomeworkScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.primary.DEFAULT}
+            tintColor={colors.primary}
           />
         }
       >

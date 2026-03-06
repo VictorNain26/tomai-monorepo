@@ -12,14 +12,15 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { X, User, Check, School } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { useIconColors } from '@/hooks/useIconColors';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import type { PronoteResource } from '@/hooks/useParentPronote';
-import { bgColors, colors } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -49,6 +50,7 @@ export function PronoteChildSelectorModal({
   isSubmitting,
 }: PronoteChildSelectorModalProps) {
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const handleSelect = useCallback(async () => {
@@ -71,9 +73,9 @@ export function PronoteChildSelectorModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+        <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
           <Text variant="h3">Associer un compte Pronote</Text>
           <TouchableOpacity
             onPress={handleClose}
@@ -91,8 +93,8 @@ export function PronoteChildSelectorModal({
               className="mb-6 flex-row items-center gap-3 rounded-xl p-4"
               style={{ backgroundColor: bgColors.success[10] }}
             >
-              <School color={colors.success.DEFAULT} size={20} />
-              <Text className="flex-1 font-medium text-success">
+              <School color={colors.success} size={20} />
+              <Text className="flex-1 font-medium text-emerald-600 dark:text-emerald-400">
                 {establishmentName}
               </Text>
             </View>
@@ -119,7 +121,7 @@ export function PronoteChildSelectorModal({
                   onPress={() => setSelectedIndex(index)}
                   disabled={isSubmitting}
                   className={`rounded-xl border-2 p-4 ${
-                    isSelected ? 'border-primary' : 'border-border'
+                    isSelected ? 'border-blue-600 dark:border-blue-400' : 'border-slate-200 dark:border-slate-700'
                   }`}
                   style={
                     isSelected ? { backgroundColor: bgColors.primary[5] } : undefined
@@ -136,7 +138,7 @@ export function PronoteChildSelectorModal({
                       }}
                     >
                       <User
-                        color={isSelected ? colors.primary.DEFAULT : iconColors.muted}
+                        color={isSelected ? colors.primary : iconColors.muted}
                         size={24}
                       />
                     </View>
@@ -151,9 +153,9 @@ export function PronoteChildSelectorModal({
                     {isSelected && (
                       <View
                         className="h-8 w-8 items-center justify-center rounded-full"
-                        style={{ backgroundColor: colors.primary.DEFAULT }}
+                        style={{ backgroundColor: colors.primary }}
                       >
-                        <Check color={colors.primary.foreground} size={18} />
+                        <Check color={colors.primaryForeground} size={18} />
                       </View>
                     )}
                   </View>
@@ -173,12 +175,12 @@ export function PronoteChildSelectorModal({
         </ScrollView>
 
         {/* Footer */}
-        <View className="border-t border-border p-4">
+        <View className="border-t border-slate-200 dark:border-slate-700 p-4">
           <Button
             onPress={handleSelect}
             disabled={selectedIndex === null || isSubmitting}
           >
-            <Text className="font-semibold text-primary-foreground">
+            <Text className="font-semibold text-white dark:text-slate-900">
               {isSubmitting ? 'Association en cours...' : 'Associer ce compte'}
             </Text>
           </Button>

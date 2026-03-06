@@ -4,7 +4,7 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
-import { colors } from '@/lib/styles';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 /**
  * TomAI Input Component - 2026
@@ -16,24 +16,17 @@ import { colors } from '@/lib/styles';
  * - Accessible labels and hints
  */
 
-// Semantic placeholder colors (matching new color palette)
-const PLACEHOLDER_COLORS = {
-  default: colors.muted.foreground, // #6B7280
-  error: colors.destructive.DEFAULT, // #DC2626
-  success: colors.success.DEFAULT, // #059669
-} as const;
-
 const inputVariants = cva(
-  'h-12 w-full rounded-lg border bg-background px-4 py-3 text-base text-foreground web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-offset-2',
+  'h-12 w-full rounded-lg border bg-slate-50 dark:bg-slate-900 px-4 py-3 text-base text-slate-800 dark:text-slate-100 web:ring-offset-slate-50 dark:web:ring-offset-slate-900 web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-offset-2',
   {
     variants: {
       variant: {
         default:
-          'border-input native:focus:border-primary web:focus-visible:ring-primary',
+          'border-slate-200 dark:border-slate-700 native:focus:border-blue-600 dark:native:focus:border-blue-400 web:focus-visible:ring-blue-600 dark:web:focus-visible:ring-blue-400',
         error:
-          'border-destructive native:focus:border-destructive web:focus-visible:ring-destructive',
+          'border-red-600 dark:border-red-400 native:focus:border-red-600 dark:native:focus:border-red-400 web:focus-visible:ring-red-600 dark:web:focus-visible:ring-red-400',
         success:
-          'border-success native:focus:border-success web:focus-visible:ring-success',
+          'border-emerald-600 dark:border-emerald-400 native:focus:border-emerald-600 dark:native:focus:border-emerald-400 web:focus-visible:ring-emerald-600 dark:web:focus-visible:ring-emerald-400',
       },
     },
     defaultVariants: {
@@ -78,23 +71,22 @@ const Input = forwardRef<TextInput, InputProps>(
     ref
   ) => {
     const [showPassword, setShowPassword] = useState(false);
+    const colors = useThemeColors();
     const isPasswordField = secureTextEntry === true;
 
-    // Determine variant based on error message
     const effectiveVariant = errorMessage ? 'error' : variant;
 
-    // Get placeholder color based on variant
     const defaultPlaceholderColor =
       effectiveVariant === 'error'
-        ? PLACEHOLDER_COLORS.error
+        ? colors.destructive
         : effectiveVariant === 'success'
-          ? PLACEHOLDER_COLORS.success
-          : PLACEHOLDER_COLORS.default;
+          ? colors.success
+          : colors.muted;
 
     return (
       <View className="w-full gap-1.5">
         {label && (
-          <Text variant="small" className="text-foreground">
+          <Text variant="small" className="text-slate-800 dark:text-slate-100">
             {label}
           </Text>
         )}
@@ -126,15 +118,15 @@ const Input = forwardRef<TextInput, InputProps>(
               hitSlop={8}
             >
               {showPassword ? (
-                <EyeOff size={20} color={colors.muted.foreground} />
+                <EyeOff size={20} color={colors.muted} />
               ) : (
-                <Eye size={20} color={colors.muted.foreground} />
+                <Eye size={20} color={colors.muted} />
               )}
             </Pressable>
           )}
         </View>
         {errorMessage && (
-          <Text variant="small" className="text-destructive">
+          <Text variant="small" className="text-red-600 dark:text-red-400">
             {errorMessage}
           </Text>
         )}

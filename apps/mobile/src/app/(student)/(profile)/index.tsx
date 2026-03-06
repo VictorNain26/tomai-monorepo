@@ -9,7 +9,7 @@
  */
 
 import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   User,
@@ -31,8 +31,8 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import { TokenUsageCard } from '@/components/dashboard';
 import { useUser, useSession, signOut, hasParentSessionBackup, restoreParentSession } from '@/lib/auth';
-import { useStudentDashboard, useStudentPronote, useIconColors } from '@/hooks';
-import { bgColors, borderColors, shadows, colors } from '@/lib/styles';
+import { useStudentDashboard, useStudentPronote, useIconColors, useThemeColors } from '@/hooks';
+import { bgColors, borderColors, shadows } from '@/lib/styles';
 import { useEffect, useState } from 'react';
 
 // ============================================================================
@@ -63,6 +63,7 @@ export default function StudentProfileScreen() {
   const user = useUser();
   const { refetch: refetchSession } = useSession();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const { usage, isLoadingUsage } = useStudentDashboard();
   const pronote = useStudentPronote();
 
@@ -192,7 +193,7 @@ export default function StudentProfileScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -208,7 +209,7 @@ export default function StudentProfileScreen() {
               className="h-14 w-14 items-center justify-center rounded-full"
               style={{ backgroundColor: bgColors.primary[10] }}
             >
-              <Text className="text-2xl font-bold text-primary">
+              <Text className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {user?.name ? user.name.charAt(0).toUpperCase() : '?'}
               </Text>
             </View>
@@ -226,7 +227,7 @@ export default function StudentProfileScreen() {
               style={{ backgroundColor: bgColors.primary[10] }}
             >
               <Crown color={iconColors.primary} size={14} />
-              <Text variant="tiny" className="text-primary font-medium">
+              <Text variant="tiny" className="text-blue-600 dark:text-blue-400 font-medium">
                 Gratuit
               </Text>
             </View>
@@ -239,7 +240,7 @@ export default function StudentProfileScreen() {
         {/* Menu Sections */}
         {sections.map((section) => (
           <View key={section.title}>
-            <Text variant="small" className="mb-2 px-1 text-muted-foreground">
+            <Text variant="small" className="mb-2 px-1 text-slate-500 dark:text-slate-400">
               {section.title}
             </Text>
             <Card style={shadows.sm}>
@@ -248,7 +249,7 @@ export default function StudentProfileScreen() {
                   key={item.label}
                   onPress={item.onPress}
                   className={`flex-row items-center justify-between px-4 py-3.5 ${
-                    index !== section.items.length - 1 ? 'border-b border-border' : ''
+                    index !== section.items.length - 1 ? 'border-b border-slate-200 dark:border-slate-700' : ''
                   }`}
                   activeOpacity={0.7}
                   accessibilityLabel={item.label}
@@ -289,8 +290,8 @@ export default function StudentProfileScreen() {
             accessibilityLabel="Retour au compte parent"
             accessibilityRole="button"
           >
-            <UserCircle color={colors.primary.DEFAULT} size={20} />
-            <Text className="font-semibold text-primary">
+            <UserCircle color={colors.primary} size={20} />
+            <Text className="font-semibold text-blue-600 dark:text-blue-400">
               {isRestoringParent ? 'Retour en cours...' : 'Retour au compte parent'}
             </Text>
           </TouchableOpacity>
@@ -308,8 +309,8 @@ export default function StudentProfileScreen() {
           accessibilityLabel="Se déconnecter"
           accessibilityRole="button"
         >
-          <LogOut color={colors.destructive.DEFAULT} size={20} />
-          <Text className="font-semibold text-destructive">Se déconnecter</Text>
+          <LogOut color={colors.destructive} size={20} />
+          <Text className="font-semibold text-red-600 dark:text-red-400">Se déconnecter</Text>
         </TouchableOpacity>
 
         {/* App Version */}

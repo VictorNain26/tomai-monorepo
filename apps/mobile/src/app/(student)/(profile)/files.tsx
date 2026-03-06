@@ -19,8 +19,8 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
-import { useUserFiles, useIconColors, type LibraryFile } from '@/hooks';
-import { bgColors, colors, shadows } from '@/lib/styles';
+import { useUserFiles, useIconColors, useThemeColors, type LibraryFile } from '@/hooks';
+import { bgColors, shadows } from '@/lib/styles';
 import { getTreaty, unwrap } from '@repo/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { filesQueryKeys } from '@/hooks/useFiles';
@@ -67,6 +67,7 @@ function getSubjectLabel(subject: string | null): string | null {
 export default function FilesScreen() {
   const router = useRouter();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const queryClient = useQueryClient();
   const { files, isLoading, refetch } = useUserFiles();
 
@@ -103,7 +104,7 @@ export default function FilesScreen() {
             className="h-10 w-10 items-center justify-center rounded-lg"
             style={{ backgroundColor: bgColors.primary[10] }}
           >
-            <Icon color={colors.primary.DEFAULT} size={20} />
+            <Icon color={colors.primary} size={20} />
           </View>
 
           <View className="flex-1">
@@ -136,7 +137,7 @@ export default function FilesScreen() {
             style={{ backgroundColor: bgColors.destructive[10] }}
             accessibilityLabel={`Supprimer ${item.fileName}`}
           >
-            <Trash2 color={colors.destructive.DEFAULT} size={16} />
+            <Trash2 color={colors.destructive} size={16} />
           </TouchableOpacity>
         </View>
       </Card>
@@ -168,7 +169,7 @@ export default function FilesScreen() {
             className="h-16 w-16 items-center justify-center rounded-full mb-4"
             style={{ backgroundColor: bgColors.primary[10] }}
           >
-            <FolderOpen color={colors.primary.DEFAULT} size={32} />
+            <FolderOpen color={colors.primary} size={32} />
           </View>
           <Text variant="h3" className="text-center">
             Classeur vide

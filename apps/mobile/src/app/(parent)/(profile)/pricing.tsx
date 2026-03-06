@@ -6,7 +6,7 @@
  */
 
 import { View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -21,9 +21,9 @@ import {
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks';
-import { useTheme } from '@/hooks';
+import { useTheme, useThemeColors } from '@/hooks';
 import { useIconColors } from '@/hooks/useIconColors';
-import { bgColors, borderColors, colors } from '@/lib/styles';
+import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
 // CONSTANTS
@@ -55,6 +55,7 @@ export default function PricingScreen() {
   const router = useRouter();
   useTheme(); // Trigger re-render on theme change
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const subscription = useSubscription();
 
   // Get first available package for purchase
@@ -71,9 +72,9 @@ export default function PricingScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
           <ArrowLeft color={iconColors.foreground} size={24} />
         </TouchableOpacity>
@@ -87,12 +88,12 @@ export default function PricingScreen() {
             className="mb-6 flex-row items-start gap-3 rounded-xl p-4"
             style={{ backgroundColor: bgColors.warning[10], borderWidth: 1, borderColor: borderColors.warning[20] }}
           >
-            <AlertCircle color={colors.warning.DEFAULT} size={20} />
+            <AlertCircle color={colors.warning} size={20} />
             <View className="flex-1">
-              <Text className="font-semibold" style={{ color: colors.warning.DEFAULT }}>
+              <Text className="font-semibold" style={{ color: colors.warning }}>
                 Mode Expo Go
               </Text>
-              <Text className="mt-1 text-sm" style={{ color: colors.warning.DEFAULT }}>
+              <Text className="mt-1 text-sm" style={{ color: colors.warning }}>
                 Les achats in-app ne sont pas disponibles dans Expo Go.
                 Utilisez un development build pour tester les achats.
               </Text>
@@ -106,13 +107,13 @@ export default function PricingScreen() {
             className="mb-6 flex-row items-start gap-3 rounded-xl p-4"
             style={{ backgroundColor: bgColors.success[10], borderWidth: 1, borderColor: borderColors.success[20] }}
           >
-            <Sparkles color={colors.success.DEFAULT} size={20} />
+            <Sparkles color={colors.success} size={20} />
             <View className="flex-1">
-              <Text className="font-semibold" style={{ color: colors.success.DEFAULT }}>
+              <Text className="font-semibold" style={{ color: colors.success }}>
                 Vous êtes Premium !
               </Text>
               {subscription.expirationDate && (
-                <Text className="mt-1 text-sm" style={{ color: colors.success.DEFAULT }}>
+                <Text className="mt-1 text-sm" style={{ color: colors.success }}>
                   {subscription.willRenew ? 'Renouvellement le' : 'Expire le'}{' '}
                   {subscription.expirationDate.toLocaleDateString('fr-FR')}
                 </Text>
@@ -168,12 +169,12 @@ export default function PricingScreen() {
               {subscription.isLoading ? (
                 <View className="flex-row items-center gap-2">
                   <ActivityIndicator size="small" color="white" />
-                  <Text className="font-semibold text-primary-foreground">
+                  <Text className="font-semibold text-white dark:text-slate-900">
                     Chargement...
                   </Text>
                 </View>
               ) : (
-                <Text className="font-semibold text-primary-foreground">
+                <Text className="font-semibold text-white dark:text-slate-900">
                   Passer Premium - {priceString}/mois
                 </Text>
               )}
@@ -261,8 +262,8 @@ function PlanCard({
     <View
       className={`rounded-xl border p-4 ${
         isPremium
-          ? 'border-primary'
-          : 'border-border bg-card'
+          ? 'border-blue-600 dark:border-blue-400'
+          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
       }`}
       style={isPremium ? { backgroundColor: bgColors.primary[5] } : undefined}
     >
@@ -274,7 +275,7 @@ function PlanCard({
         </View>
         {isCurrentPlan && (
           <View className="rounded-full px-3 py-1" style={{ backgroundColor: bgColors.primary[10] }}>
-            <Text className="text-xs font-semibold text-primary">
+            <Text className="text-xs font-semibold text-blue-600 dark:text-blue-400">
               Plan actuel
             </Text>
           </View>
@@ -298,12 +299,12 @@ function PlanCard({
                 <Check color={iconColors.success} size={12} />
               </View>
             ) : (
-              <View className="h-5 w-5 items-center justify-center rounded-full bg-muted">
+              <View className="h-5 w-5 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
                 <X color={iconColors.muted} size={12} />
               </View>
             )}
             <Text
-              className={feature.included ? '' : 'text-muted-foreground'}
+              className={feature.included ? '' : 'text-slate-500 dark:text-slate-400'}
             >
               {feature.text}
             </Text>
@@ -321,7 +322,7 @@ interface FAQItemProps {
 
 function FAQItem({ question, answer }: FAQItemProps) {
   return (
-    <View className="mb-4 rounded-xl border border-border bg-card p-4">
+    <View className="mb-4 rounded-xl bg-white dark:bg-slate-800 p-4">
       <Text className="mb-2 font-semibold">{question}</Text>
       <Text variant="muted" className="text-sm leading-relaxed">
         {answer}

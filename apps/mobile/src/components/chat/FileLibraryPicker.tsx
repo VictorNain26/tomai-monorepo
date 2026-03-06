@@ -5,7 +5,8 @@
  * attacher/détacher d'une session de chat.
  */
 
-import { View, FlatList, TouchableOpacity, Modal } from 'react-native';
+import { View, TouchableOpacity, Modal } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import {
   X,
   FileText,
@@ -21,9 +22,10 @@ import {
   useAttachFile,
   useDetachFile,
   useIconColors,
+  useThemeColors,
   type LibraryFile,
 } from '@/hooks';
-import { bgColors, colors } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -56,6 +58,7 @@ function getFileIcon(mimeType: string) {
 
 export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPickerProps) {
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const { files: libraryFiles, isLoading: isLoadingLibrary } = useUserFiles();
   const { files: sessionFilesList } = useSessionFiles(sessionId);
   const attachMutation = useAttachFile();
@@ -83,21 +86,21 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
       <TouchableOpacity
         onPress={() => handleToggle(item)}
         disabled={isDisabled}
-        className={`flex-row items-center gap-3 px-4 py-3 border-b border-border ${isDisabled ? 'opacity-40' : ''}`}
+        className={`flex-row items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700 ${isDisabled ? 'opacity-40' : ''}`}
         activeOpacity={0.7}
       >
         <View
           className="h-10 w-10 items-center justify-center rounded-lg"
           style={{ backgroundColor: isAttached ? bgColors.primary[15] : bgColors.primary[10] }}
         >
-          <Icon color={colors.primary.DEFAULT} size={20} />
+          <Icon color={colors.primary} size={20} />
         </View>
 
         <View className="flex-1">
           <Text numberOfLines={1} className="font-medium">
             {item.fileName}
           </Text>
-          <Text variant="tiny" className="text-muted-foreground">
+          <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
             {formatFileSize(item.sizeBytes)}
             {item.subject ? ` · ${item.subject}` : ''}
           </Text>
@@ -106,7 +109,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
         {isAttached && (
           <View
             className="h-6 w-6 items-center justify-center rounded-full"
-            style={{ backgroundColor: colors.primary.DEFAULT }}
+            style={{ backgroundColor: colors.primary }}
           >
             <Check color="#FFFFFF" size={14} />
           </View>
@@ -122,17 +125,17 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-background">
+      <View className="flex-1 bg-slate-50 dark:bg-slate-900">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-border px-4 py-3 pt-4">
+        <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3 pt-4">
           <Text variant="large">Mon Classeur</Text>
           <View className="flex-row items-center gap-3">
-            <Text variant="tiny" className="text-muted-foreground">
+            <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
               {sessionFilesList.length}/10
             </Text>
             <TouchableOpacity
               onPress={onClose}
-              className="h-8 w-8 items-center justify-center rounded-full bg-muted"
+              className="h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
               accessibilityLabel="Fermer"
             >
               <X color={iconColors.foreground} size={18} />
@@ -151,7 +154,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
               className="h-16 w-16 items-center justify-center rounded-full mb-4"
               style={{ backgroundColor: bgColors.primary[10] }}
             >
-              <FolderOpen color={colors.primary.DEFAULT} size={32} />
+              <FolderOpen color={colors.primary} size={32} />
             </View>
             <Text variant="h3" className="text-center">
               Classeur vide
@@ -161,11 +164,12 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
             </Text>
           </View>
         ) : (
-          <FlatList
+          <FlashList
             data={libraryFiles}
             keyExtractor={(item) => item.id}
             renderItem={renderFile}
             showsVerticalScrollIndicator={false}
+
           />
         )}
       </View>

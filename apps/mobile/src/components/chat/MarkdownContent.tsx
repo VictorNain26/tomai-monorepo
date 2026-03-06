@@ -7,9 +7,10 @@
  */
 
 import { useMemo } from 'react';
-import { Platform, useColorScheme } from 'react-native';
+import { Platform } from 'react-native';
 import Markdown from 'react-native-markdown-display';
-import { colors } from '@/lib/styles';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 
 // ============================================================================
 // TYPES
@@ -26,20 +27,16 @@ interface MarkdownContentProps {
 // ============================================================================
 
 export function MarkdownContent({ children, isUser = false }: MarkdownContentProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { isDark } = useTheme();
+  const colors = useThemeColors();
 
   const textColor = isUser
-    ? colors.primary.foreground
-    : isDark
-      ? colors.foreground.dark
-      : colors.foreground.light;
+    ? colors.primaryForeground
+    : colors.foreground;
 
   const mutedColor = isUser
     ? 'rgba(248, 250, 252, 0.7)'
-    : isDark
-      ? colors.muted.foregroundDark
-      : colors.muted.foreground;
+    : colors.muted;
 
   const codeBg = isUser
     ? 'rgba(255, 255, 255, 0.15)'
@@ -55,7 +52,7 @@ export function MarkdownContent({ children, isUser = false }: MarkdownContentPro
 
   const blockquoteBorder = isUser
     ? 'rgba(255, 255, 255, 0.3)'
-    : colors.primary.DEFAULT;
+    : colors.primary;
 
   const blockquoteBg = isUser
     ? 'rgba(255, 255, 255, 0.1)'
@@ -197,7 +194,7 @@ export function MarkdownContent({ children, isUser = false }: MarkdownContentPro
         flex: 1,
       },
       link: {
-        color: isUser ? '#93C5FD' : colors.primary.DEFAULT,
+        color: isUser ? '#93C5FD' : colors.primary,
         textDecorationLine: 'underline' as const,
       },
       hr: {
@@ -233,7 +230,7 @@ export function MarkdownContent({ children, isUser = false }: MarkdownContentPro
         textDecorationLine: 'line-through' as const,
       },
     }),
-    [textColor, mutedColor, codeBg, codeBorder, blockquoteBg, blockquoteBorder, isUser]
+    [textColor, mutedColor, codeBg, codeBorder, blockquoteBg, blockquoteBorder, isUser, colors.primary]
   );
 
   return (

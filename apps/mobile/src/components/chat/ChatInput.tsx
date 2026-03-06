@@ -2,18 +2,11 @@
  * ChatInput Component - TomAI 2026
  *
  * Input pour envoyer des messages avec support attachments et voice input.
- * Intègre la dictée vocale avec transcription automatique.
+ * Sub-components: AttachmentMenu, AttachmentPreview (extracted for maintainability).
  */
 
-import { useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Pressable,
-  ScrollView,
-  Image,
-} from 'react-native';
+import { memo, useState, useCallback, useEffect } from 'react';
+import { View, TextInput, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,17 +14,17 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
-import { Mic, Square, Send, ImageIcon, Plus, Camera, FileText, Loader2, FolderOpen } from 'lucide-react-native';
+import { Mic, Square, Send, Loader2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
-import { useVoiceInput, useIconColors } from '@/hooks';
+import { useVoiceInput, useIconColors, useThemeColors } from '@/hooks';
 import type { ChatFileAttachment } from '@/hooks';
-import { bgColors, colors, opacity, shadows } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
+import { AttachmentMenu } from './AttachmentMenu';
+import { AttachmentPreview } from './AttachmentPreview';
 
 interface ChatInputProps {
-  onSendMessage: (content: string) => Promise<void>;
+  onSendMessage: (content: string) => void;
   onFileSelected?: (
     uri: string,
     fileName: string,
@@ -45,7 +38,7 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
-export function ChatInput({
+export const ChatInput = memo(function ChatInput({
   onSendMessage,
   onFileSelected,
   onOpenClasseur,
@@ -57,12 +50,9 @@ export function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const toast = useToast();
-
-  // Voice input hook
   const voice = useVoiceInput();
-
-  // Attachment menu state
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
 
   // Recording pulse animation
@@ -90,19 +80,13 @@ export function ChatInput({
     !isLoading && !voice.isRecording && !voice.isProcessing &&
     (message.trim().length > 0 || pendingAttachments.length > 0);
 
-  // Handle voice recording toggle
   const handleVoiceToggle = useCallback(async () => {
     if (voice.isRecording) {
-      // Stop and get transcription
       const transcription = await voice.stopRecording();
       if (transcription) {
-        // Append transcription to message
-        setMessage((prev) =>
-          prev ? `${prev} ${transcription}` : transcription
-        );
+        setMessage((prev) => prev ? `${prev} ${transcription}` : transcription);
       }
     } else if (!voice.isProcessing) {
-      // Start recording
       const started = await voice.startRecording();
       if (!started && voice.error) {
         toast.error('Erreur microphone', voice.error);
@@ -111,309 +95,141 @@ export function ChatInput({
     }
   }, [voice, toast]);
 
-  // Cancel recording on long press
   const handleVoiceCancel = useCallback(async () => {
     if (voice.isRecording) {
       await voice.cancelRecording();
     }
   }, [voice]);
 
-  async function handleSend() {
+  const handleSend = useCallback(() => {
     if (!canSend) return;
-
     const content = message.trim();
     setMessage('');
-    await onSendMessage(content);
-  }
+    onSendMessage(content);
+  }, [canSend, message, onSendMessage]);
 
-  async function handlePickDocument() {
+  const handleToggleMenu = useCallback(() => {
+    setShowAttachmentMenu((prev) => !prev);
+  }, []);
+
+  const handleCloseMenu = useCallback(() => {
     setShowAttachmentMenu(false);
-    if (!onFileSelected) return;
-
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'text/plain'],
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled || !result.assets?.[0]) return;
-
-      const file = result.assets[0];
-      await onFileSelected(
-        file.uri,
-        file.name,
-        file.mimeType ?? 'application/octet-stream'
-      );
-    } catch {
-      // User cancelled or error
-    }
-  }
-
-  async function handlePickImage() {
-    setShowAttachmentMenu(false);
-    if (!onFileSelected) return;
-
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-      });
-
-      if (result.canceled || !result.assets?.[0]) return;
-
-      const asset = result.assets[0];
-      const fileName =
-        asset.fileName ?? `image_${Date.now()}.${asset.type ?? 'jpg'}`;
-      await onFileSelected(asset.uri, fileName, asset.mimeType ?? 'image/jpeg');
-    } catch {
-      // User cancelled or error
-    }
-  }
-
-  async function handlePickCamera() {
-    setShowAttachmentMenu(false);
-    if (!onFileSelected) return;
-
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-      });
-
-      if (result.canceled || !result.assets?.[0]) return;
-
-      const asset = result.assets[0];
-      const fileName = asset.fileName ?? `photo_${Date.now()}.jpg`;
-      await onFileSelected(asset.uri, fileName, asset.mimeType ?? 'image/jpeg');
-    } catch {
-      // User cancelled or error
-    }
-  }
+  }, []);
 
   return (
-      <View className="border-t border-border bg-background px-4 pb-4 pt-2">
-        {/* Pending Attachments */}
-        {pendingAttachments.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mb-2"
-          >
-            <View className="flex-row gap-2">
-              {pendingAttachments.map((attachment) => (
-                <View
-                  key={attachment.fileId}
-                  className="relative rounded-xl bg-muted p-2"
-                >
-                  {attachment.preview ? (
-                    <Image
-                      source={{ uri: attachment.preview }}
-                      className="h-16 w-16 rounded-lg"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View
-                      className="h-16 w-16 items-center justify-center rounded-lg"
-                      style={{ backgroundColor: bgColors.primary[10] }}
-                    >
-                      <Text className="text-2xl">📄</Text>
-                    </View>
-                  )}
-                  <Text
-                    variant="tiny"
-                    className="mt-1 max-w-[64px] text-muted-foreground"
-                    numberOfLines={1}
-                  >
-                    {attachment.fileName}
-                  </Text>
-                  {onRemoveAttachment && (
-                    <TouchableOpacity
-                      onPress={() => onRemoveAttachment(attachment.fileId)}
-                      className="absolute -right-1 -top-1 h-5 w-5 items-center justify-center rounded-full bg-destructive"
-                    >
-                      <Text className="text-xs text-white">✕</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-        )}
+    <View className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 pb-4 pt-2">
+      <AttachmentPreview
+        attachments={pendingAttachments}
+        onRemove={onRemoveAttachment}
+      />
 
-        {/* Attachment Menu Overlay */}
-        {showAttachmentMenu && (
-          <Pressable
-            onPress={() => setShowAttachmentMenu(false)}
-            className="absolute inset-0"
-            style={{ zIndex: 9 }}
+      {/* Input Row */}
+      <View className="flex-row items-center gap-2">
+        {/* Attachment Button */}
+        {onFileSelected && (
+          <AttachmentMenu
+            visible={showAttachmentMenu}
+            onToggle={handleToggleMenu}
+            onClose={handleCloseMenu}
+            onFileSelected={onFileSelected}
+            onOpenClasseur={onOpenClasseur}
+            isDisabled={isLoading || isUploading}
+            isUploading={isUploading}
           />
         )}
 
-        {/* Input Row */}
-        <View className="flex-row items-center gap-2">
-          {/* Attachment Button "+" */}
-          {onFileSelected && (
-            <View className="relative">
-              <TouchableOpacity
-                onPress={() => setShowAttachmentMenu((prev) => !prev)}
-                disabled={isLoading || isUploading}
-                className="h-10 w-10 items-center justify-center rounded-full"
+        {/* Text Input / Recording State */}
+        <View className="flex-1 flex-row items-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3">
+          {voice.isRecording ? (
+            <View className="flex-1 flex-row items-center gap-2 py-3">
+              <Animated.View
                 style={[
-                  { backgroundColor: showAttachmentMenu ? bgColors.primary[10] : bgColors.muted[50] },
-                  (isLoading || isUploading) ? { opacity: opacity.disabled } : undefined,
+                  {
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: colors.destructive,
+                  },
+                  pulseStyle,
                 ]}
-                accessibilityLabel="Ajouter un fichier"
-              >
-                {isUploading ? (
-                  <Loader2 color={iconColors.muted} size={18} />
-                ) : (
-                  <Plus
-                    color={showAttachmentMenu ? colors.primary.DEFAULT : iconColors.muted}
-                    size={20}
-                  />
-                )}
-              </TouchableOpacity>
-
-              {/* Attachment Popup Menu */}
-              {showAttachmentMenu && (
-                <View
-                  className="absolute bottom-full left-0 mb-2 rounded-xl border border-border bg-card py-1"
-                  style={[{ zIndex: 10, minWidth: 180 }, shadows.md]}
-                >
-                  <TouchableOpacity
-                    onPress={handlePickCamera}
-                    className="flex-row items-center gap-3 px-4 py-3"
-                    accessibilityLabel="Prendre une photo"
-                  >
-                    <Camera color={colors.primary.DEFAULT} size={18} />
-                    <Text className="text-sm text-foreground">Appareil photo</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handlePickImage}
-                    className="flex-row items-center gap-3 px-4 py-3"
-                    accessibilityLabel="Choisir depuis la galerie"
-                  >
-                    <ImageIcon color={colors.primary.DEFAULT} size={18} />
-                    <Text className="text-sm text-foreground">Galerie</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handlePickDocument}
-                    className="flex-row items-center gap-3 px-4 py-3"
-                    accessibilityLabel="Choisir un document"
-                  >
-                    <FileText color={colors.primary.DEFAULT} size={18} />
-                    <Text className="text-sm text-foreground">Document</Text>
-                  </TouchableOpacity>
-                  {onOpenClasseur && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        setShowAttachmentMenu(false);
-                        onOpenClasseur();
-                      }}
-                      className="flex-row items-center gap-3 px-4 py-3"
-                      accessibilityLabel="Mon Classeur"
-                    >
-                      <FolderOpen color={colors.primary.DEFAULT} size={18} />
-                      <Text className="text-sm text-foreground">Mon Classeur</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Text Input / Recording State */}
-          <View className="flex-1 flex-row items-center rounded-2xl border border-input bg-background px-3">
-            {voice.isRecording ? (
-              <View className="flex-1 flex-row items-center gap-2 py-3">
-                <Animated.View
-                  style={[
-                    {
-                      width: 10,
-                      height: 10,
-                      borderRadius: 5,
-                      backgroundColor: colors.destructive.DEFAULT,
-                    },
-                    pulseStyle,
-                  ]}
-                />
-                <Text className="text-base font-semibold text-destructive">
-                  {voice.duration}s
-                </Text>
-                <Text className="flex-1 text-sm text-muted-foreground">
-                  Appui long pour annuler
-                </Text>
-              </View>
-            ) : voice.isProcessing ? (
-              <View className="flex-1 flex-row items-center gap-2 py-3">
-                <Loader2 color={iconColors.muted} size={16} />
-                <Text className="text-base text-muted-foreground">
-                  Transcription...
-                </Text>
-              </View>
-            ) : (
-              <TextInput
-                value={message}
-                onChangeText={setMessage}
-                placeholder={placeholder}
-                placeholderTextColor={colors.muted.foreground}
-                multiline
-                maxLength={2000}
-                editable={!isLoading}
-                onSubmitEditing={handleSend}
-                blurOnSubmit={false}
-                className="max-h-24 flex-1 py-3 text-base text-foreground"
               />
-            )}
-          </View>
-
-          {/* Voice Button */}
-          <TouchableOpacity
-            onPress={handleVoiceToggle}
-            onLongPress={handleVoiceCancel}
-            disabled={isLoading || voice.isProcessing}
-            className="h-10 w-10 items-center justify-center rounded-full"
-            style={{
-              backgroundColor: voice.isRecording
-                ? colors.destructive.DEFAULT
-                : bgColors.muted[50],
-              opacity: isLoading || voice.isProcessing ? opacity.disabled : 1,
-            }}
-            accessibilityLabel={
-              voice.isRecording
-                ? "Arrêter l'enregistrement"
-                : 'Enregistrer un message vocal'
-            }
-            accessibilityHint="Appui long pour annuler"
-          >
-            {voice.isRecording ? (
-              <Square color={colors.primary.foreground} size={16} fill={colors.primary.foreground} />
-            ) : voice.isProcessing ? (
-              <Mic color={iconColors.muted} size={18} />
-            ) : (
-              <Mic color={iconColors.foreground} size={18} />
-            )}
-          </TouchableOpacity>
-
-          {/* Send Button */}
-          <TouchableOpacity
-            onPress={handleSend}
-            disabled={!canSend}
-            className="h-10 w-10 items-center justify-center rounded-full"
-            style={{
-              backgroundColor: canSend
-                ? colors.primary.DEFAULT
-                : bgColors.muted[50],
-            }}
-            accessibilityLabel="Envoyer le message"
-          >
-            <Send
-              color={canSend ? colors.primary.foreground : iconColors.muted}
-              size={18}
-              style={!canSend ? { opacity: opacity.disabled } : undefined}
+              <Text className="text-base font-semibold text-red-600 dark:text-red-400">
+                {voice.duration}s
+              </Text>
+              <Text className="flex-1 text-sm text-slate-500 dark:text-slate-400">
+                Appui long pour annuler
+              </Text>
+            </View>
+          ) : voice.isProcessing ? (
+            <View className="flex-1 flex-row items-center gap-2 py-3">
+              <Loader2 color={iconColors.muted} size={16} />
+              <Text className="text-base text-slate-500 dark:text-slate-400">
+                Transcription...
+              </Text>
+            </View>
+          ) : (
+            <TextInput
+              value={message}
+              onChangeText={setMessage}
+              placeholder={placeholder}
+              placeholderTextColor={colors.muted}
+              multiline
+              maxLength={2000}
+              editable={!isLoading}
+              onSubmitEditing={handleSend}
+              blurOnSubmit={false}
+              className="max-h-24 flex-1 py-3 text-base text-slate-800 dark:text-slate-100"
             />
-          </TouchableOpacity>
+          )}
         </View>
+
+        {/* Voice Button */}
+        <TouchableOpacity
+          onPress={handleVoiceToggle}
+          onLongPress={handleVoiceCancel}
+          disabled={isLoading || voice.isProcessing}
+          className="h-10 w-10 items-center justify-center rounded-full"
+          style={{
+            backgroundColor: voice.isRecording
+              ? colors.destructive
+              : bgColors.muted[50],
+            opacity: isLoading || voice.isProcessing ? 0.5 : 1,
+          }}
+          accessibilityLabel={
+            voice.isRecording
+              ? "Arreter l'enregistrement"
+              : 'Enregistrer un message vocal'
+          }
+          accessibilityHint="Appui long pour annuler"
+        >
+          {voice.isRecording ? (
+            <Square color={colors.primaryForeground} size={16} fill={colors.primaryForeground} />
+          ) : voice.isProcessing ? (
+            <Mic color={iconColors.muted} size={18} />
+          ) : (
+            <Mic color={iconColors.foreground} size={18} />
+          )}
+        </TouchableOpacity>
+
+        {/* Send Button */}
+        <TouchableOpacity
+          onPress={handleSend}
+          disabled={!canSend}
+          className="h-10 w-10 items-center justify-center rounded-full"
+          style={{
+            backgroundColor: canSend
+              ? colors.primary
+              : bgColors.muted[50],
+          }}
+          accessibilityLabel="Envoyer le message"
+        >
+          <Send
+            color={canSend ? colors.primaryForeground : iconColors.muted}
+            size={18}
+            style={!canSend ? { opacity: 0.5 } : undefined}
+          />
+        </TouchableOpacity>
       </View>
+    </View>
   );
-}
+});

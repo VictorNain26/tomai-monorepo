@@ -10,11 +10,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlashList } from '@shopify/flash-list';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -27,12 +27,12 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
-import { useParentDashboard, useIconColors } from '@/hooks';
+import { useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
 import {
   getLevelLabel,
   type EducationLevelType,
 } from '@/constants/levels';
-import { bgColors, colors } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // COMPONENT
@@ -42,6 +42,7 @@ export default function EditChildScreen() {
   const router = useRouter();
   const toast = useToast();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const {
@@ -96,8 +97,8 @@ export default function EditChildScreen() {
   // Loading state
   if (isLoadingChildren || isLoadingLevels || !id) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
-        <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+        <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-6 w-32 rounded" />
         </View>
@@ -112,11 +113,11 @@ export default function EditChildScreen() {
   // Child not found
   if (!child) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-destructive">Enfant non trouvé</Text>
+          <Text className="text-red-600 dark:text-red-400">Enfant non trouvé</Text>
           <Button onPress={() => router.back()} className="mt-4">
-            <Text className="text-primary-foreground">Retour</Text>
+            <Text className="text-white dark:text-slate-900">Retour</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -126,9 +127,9 @@ export default function EditChildScreen() {
   const fullName = `${child.firstName} ${child.lastName}`;
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+      <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <View className="flex-row items-center gap-3">
           <TouchableOpacity
             onPress={() => router.back()}
@@ -165,7 +166,7 @@ export default function EditChildScreen() {
             <Text className="mb-2 font-medium">Niveau scolaire</Text>
             <TouchableOpacity
               onPress={() => setShowLevelPicker(true)}
-              className="flex-row items-center justify-between rounded-xl border border-border bg-card px-4 py-4"
+              className="flex-row items-center justify-between rounded-xl bg-white dark:bg-slate-800 px-4 py-4"
               accessibilityLabel="Sélectionner le niveau scolaire"
               accessibilityHint={schoolLevel ? getLevelLabel(schoolLevel) : 'Non sélectionné'}
             >
@@ -185,7 +186,7 @@ export default function EditChildScreen() {
             disabled={!hasChanges || isUpdating}
             style={!hasChanges ? { opacity: 0.5 } : undefined}
           >
-            <Text className="font-semibold text-primary-foreground">
+            <Text className="font-semibold text-white dark:text-slate-900">
               {isUpdating ? 'Enregistrement...' : 'Enregistrer les modifications'}
             </Text>
           </Button>
@@ -200,27 +201,28 @@ export default function EditChildScreen() {
         onRequestClose={() => setShowLevelPicker(false)}
       >
         <View className="flex-1 justify-end" style={{ backgroundColor: bgColors.black[50] }}>
-          <View className="max-h-[70%] rounded-t-3xl bg-card">
-            <View className="flex-row items-center justify-between border-b border-border p-4">
+          <View className="max-h-[70%] rounded-t-3xl bg-white dark:bg-slate-800">
+            <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
               <Text className="font-semibold">Niveau scolaire</Text>
               <TouchableOpacity onPress={() => setShowLevelPicker(false)}>
-                <Text className="text-primary">Fermer</Text>
+                <Text className="text-blue-600 dark:text-blue-400">Fermer</Text>
               </TouchableOpacity>
             </View>
-            <FlatList
+            <FlashList
               data={levels}
               keyExtractor={(item) => item.key}
+
               renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() => {
                     setSchoolLevel(item.key);
                     setShowLevelPicker(false);
                   }}
-                  className="flex-row items-center justify-between border-b border-border px-4 py-4"
+                  className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-4"
                 >
                   <Text>{getLevelLabel(item.key)}</Text>
                   {schoolLevel === item.key && (
-                    <Check color={colors.success.DEFAULT} size={20} />
+                    <Check color={colors.success} size={20} />
                   )}
                 </TouchableOpacity>
               )}

@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
@@ -25,8 +25,8 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useChildTimetable, useParentDashboard, useIconColors } from '@/hooks';
-import { bgColors, borderColors, colors } from '@/lib/styles';
+import { useChildTimetable, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
 // HELPERS
@@ -92,6 +92,7 @@ function groupByDay(
 export default function ChildTimetableScreen() {
   const router = useRouter();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [weekOffset, setWeekOffset] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -124,9 +125,9 @@ export default function ChildTimetableScreen() {
   }, [timetable]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+      <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <View className="flex-row items-center gap-3">
           <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
             <ArrowLeft color={iconColors.foreground} size={20} />
@@ -145,7 +146,7 @@ export default function ChildTimetableScreen() {
         <View className="flex-row items-center gap-2">
           <TouchableOpacity
             onPress={() => setWeekOffset((w) => w - 1)}
-            className="rounded-lg bg-muted p-2"
+            className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2"
           >
             <ChevronLeft color={iconColors.foreground} size={20} />
           </TouchableOpacity>
@@ -160,7 +161,7 @@ export default function ChildTimetableScreen() {
           </Text>
           <TouchableOpacity
             onPress={() => setWeekOffset((w) => w + 1)}
-            className="rounded-lg bg-muted p-2"
+            className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2"
           >
             <ChevronRight color={iconColors.foreground} size={20} />
           </TouchableOpacity>
@@ -185,7 +186,7 @@ export default function ChildTimetableScreen() {
           </View>
         ) : dayData.length === 0 ? (
           <View className="items-center py-12">
-            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
               <Clock color={iconColors.muted} size={32} />
             </View>
             <Text className="mb-1 font-semibold">Aucun cours</Text>
@@ -214,7 +215,7 @@ export default function ChildTimetableScreen() {
                     return (
                       <View
                         key={entry.id}
-                        className="rounded-xl border border-border bg-card p-4"
+                        className="rounded-xl bg-white dark:bg-slate-800 p-4"
                         style={
                           isCancelled
                             ? { backgroundColor: bgColors.destructive[5], borderColor: borderColors.destructive[20] }
@@ -228,7 +229,7 @@ export default function ChildTimetableScreen() {
                             <Text className="text-sm font-medium">
                               {formatTime(entry.startDate)}
                             </Text>
-                            <View className="my-1 h-4 w-px bg-border" />
+                            <View className="my-1 h-4 w-px bg-slate-200 dark:bg-slate-700" />
                             <Text variant="muted" className="text-xs">
                               {formatTime(entry.endDate)}
                             </Text>
@@ -238,12 +239,12 @@ export default function ChildTimetableScreen() {
                             <View className="flex-row items-center gap-2">
                               <Text
                                 className="font-semibold"
-                                style={isCancelled ? { textDecorationLine: 'line-through', color: colors.destructive.DEFAULT } : undefined}
+                                style={isCancelled ? { textDecorationLine: 'line-through', color: colors.destructive } : undefined}
                               >
                                 {entry.subject ?? 'Cours'}
                               </Text>
                               {isCancelled && (
-                                <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: colors.destructive.DEFAULT }}>
+                                <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: colors.destructive }}>
                                   <Text className="text-xs font-medium text-white">
                                     Annulé
                                   </Text>
@@ -251,7 +252,7 @@ export default function ChildTimetableScreen() {
                               )}
                               {hasStatus && !isCancelled && (
                                 <AlertCircle
-                                  color={colors.warning.DEFAULT}
+                                  color={colors.warning}
                                   size={16}
                                 />
                               )}

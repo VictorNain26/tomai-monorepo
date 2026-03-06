@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { View, ScrollView, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   Users,
@@ -22,9 +22,9 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
 import { ChildCard, CreateChildModal } from '@/components/parent';
-import { useParentDashboard, useIconColors, type IChild, type ICreateChildData } from '@/hooks';
+import { useParentDashboard, useIconColors, useThemeColors, type IChild, type ICreateChildData } from '@/hooks';
 import { useChildMappings } from '@/hooks/useParentPronote';
-import { bgColors, colors, shadows } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // HELPERS
@@ -44,6 +44,7 @@ function formatStudyTime(minutes: number): string {
 export default function ParentDashboard() {
   const router = useRouter();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const toast = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -97,7 +98,7 @@ export default function ParentDashboard() {
   // Loading skeleton
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         <ScrollView className="flex-1" contentContainerClassName="px-4 py-5 gap-4">
           <Skeleton className="h-8 w-48 rounded" />
           <Skeleton className="h-4 w-64 rounded" />
@@ -113,7 +114,7 @@ export default function ParentDashboard() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -121,7 +122,7 @@ export default function ParentDashboard() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            tintColor={colors.primary.DEFAULT}
+            tintColor={colors.primary}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -136,31 +137,31 @@ export default function ParentDashboard() {
 
         {/* Stats Grid */}
         <View className="flex-row gap-3">
-          <Card style={[shadows.xs, { flex: 1 }]}>
+          <Card style={{ flex: 1 }}>
             <View className="p-4">
               <View
                 className="mb-2 h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: bgColors.primary[10] }}
               >
-                <Users color={colors.primary.DEFAULT} size={20} />
+                <Users color={colors.primary} size={20} />
               </View>
               <Text variant="h3">{childrenCount}</Text>
-              <Text variant="tiny" className="text-muted-foreground">
+              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                 {childrenCount === 1 ? 'Enfant' : 'Enfants'}
               </Text>
             </View>
           </Card>
 
-          <Card style={[shadows.xs, { flex: 1 }]}>
+          <Card style={{ flex: 1 }}>
             <View className="p-4">
               <View
                 className="mb-2 h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: bgColors.success[10] }}
               >
-                <TrendingUp color={colors.success.DEFAULT} size={20} />
+                <TrendingUp color={colors.success} size={20} />
               </View>
               <Text variant="h3">{activeChildren}</Text>
-              <Text variant="tiny" className="text-muted-foreground">
+              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                 Actifs cette semaine
               </Text>
             </View>
@@ -168,31 +169,31 @@ export default function ParentDashboard() {
         </View>
 
         <View className="flex-row gap-3">
-          <Card style={[shadows.xs, { flex: 1 }]}>
+          <Card style={{ flex: 1 }}>
             <View className="p-4">
               <View
                 className="mb-2 h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: bgColors.warning[10] }}
               >
-                <Clock color={colors.warning.DEFAULT} size={20} />
+                <Clock color={colors.warning} size={20} />
               </View>
               <Text variant="h3">{formatStudyTime(totalStudyTime)}</Text>
-              <Text variant="tiny" className="text-muted-foreground">
+              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                 Temps total
               </Text>
             </View>
           </Card>
 
-          <Card style={[shadows.xs, { flex: 1 }]}>
+          <Card style={{ flex: 1 }}>
             <View className="p-4">
               <View
                 className="mb-2 h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: bgColors.info[10] }}
               >
-                <BookOpen color={colors.info.DEFAULT} size={20} />
+                <BookOpen color={colors.info} size={20} />
               </View>
               <Text variant="h3">{totalSessions}</Text>
-              <Text variant="tiny" className="text-muted-foreground">
+              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                 Sessions
               </Text>
             </View>
@@ -210,8 +211,8 @@ export default function ParentDashboard() {
               className="flex-row items-center gap-1"
               accessibilityLabel="Ajouter un enfant"
             >
-              <Plus color={colors.primary.DEFAULT} size={16} />
-              <Text variant="small" className="text-primary">
+              <Plus color={colors.primary} size={16} />
+              <Text variant="small" className="text-blue-600 dark:text-blue-400">
                 Ajouter
               </Text>
             </Button>
@@ -229,7 +230,7 @@ export default function ParentDashboard() {
               ))}
             </View>
           ) : (
-            <Card style={shadows.sm}>
+            <Card>
               <View className="items-center p-6">
                 <View
                   className="mb-4 h-16 w-16 items-center justify-center rounded-full"
@@ -244,8 +245,8 @@ export default function ParentDashboard() {
                   Ajoutez votre premier enfant pour commencer
                 </Text>
                 <Button onPress={() => setShowCreateModal(true)}>
-                  <Plus color={colors.primary.foreground} size={18} />
-                  <Text className="ml-2 text-primary-foreground font-medium">
+                  <Plus color={colors.primaryForeground} size={18} />
+                  <Text className="ml-2 text-white dark:text-slate-900 font-medium">
                     Ajouter un enfant
                   </Text>
                 </Button>

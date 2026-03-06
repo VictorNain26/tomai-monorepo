@@ -21,8 +21,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { TomAvatar } from '@/components/common';
-import { useTheme } from '@/hooks';
-import { bgColors, colors, shadows } from '@/lib/styles';
+import { useTheme, useThemeColors } from '@/hooks';
+import { bgColors, shadows } from '@/lib/styles';
 
 // Card colors for segmented control
 const CARD_COLORS = {
@@ -36,6 +36,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const { data: session } = useSession();
   const { isDark } = useTheme();
+  const colors = useThemeColors();
   const [accountType, setAccountType] = useState<AccountType>('parent');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -126,7 +127,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-background"
+      className="flex-1 bg-slate-50 dark:bg-slate-900"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -136,7 +137,7 @@ export default function LoginScreen() {
           {/* Header */}
           <View className="mb-8 items-center">
             <TomAvatar size="lg" className="mb-4" />
-            <Text variant="h1" className="text-center text-primary">
+            <Text variant="h1" className="text-center text-blue-600 dark:text-blue-400">
               Tom
             </Text>
             <Text variant="muted" className="mt-2 text-center">
@@ -161,8 +162,8 @@ export default function LoginScreen() {
               <Text
                 className={`text-center font-medium ${
                   accountType === 'parent'
-                    ? 'text-foreground'
-                    : 'text-muted-foreground'
+                    ? 'text-slate-800 dark:text-slate-100'
+                    : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
                 Parent
@@ -180,8 +181,8 @@ export default function LoginScreen() {
               <Text
                 className={`text-center font-medium ${
                   accountType === 'student'
-                    ? 'text-foreground'
-                    : 'text-muted-foreground'
+                    ? 'text-slate-800 dark:text-slate-100'
+                    : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
                 Élève
@@ -197,7 +198,7 @@ export default function LoginScreen() {
               accessibilityRole="alert"
               accessibilityLiveRegion="polite"
             >
-              <Text className="text-center text-destructive">{error}</Text>
+              <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
             </View>
           )}
 
@@ -229,7 +230,7 @@ export default function LoginScreen() {
               {accountType === 'parent' && (
                 <Link href="/(auth)/forgot-password" asChild>
                   <TouchableOpacity accessibilityLabel="Mot de passe oublié">
-                    <Text variant="small" className="text-right text-primary">
+                    <Text variant="small" className="text-right text-blue-600 dark:text-blue-400">
                       Mot de passe oublié ?
                     </Text>
                   </TouchableOpacity>
@@ -237,7 +238,7 @@ export default function LoginScreen() {
               )}
 
               <Button onPress={handleLogin} disabled={isLoading} className="mt-2">
-                <Text className="font-semibold text-primary-foreground">
+                <Text className="font-semibold text-white dark:text-slate-900">
                   {isLoading ? 'Connexion...' : 'Se connecter'}
                 </Text>
               </Button>
@@ -248,11 +249,11 @@ export default function LoginScreen() {
           {accountType === 'parent' && (
             <>
               <View className="my-6 flex-row items-center">
-                <View className="h-px flex-1 bg-border" />
+                <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                 <Text variant="muted" className="px-4">
                   ou
                 </Text>
-                <View className="h-px flex-1 bg-border" />
+                <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
               </View>
 
               <Button variant="outline" onPress={handleGoogleLogin} disabled={isLoading}>
@@ -267,7 +268,7 @@ export default function LoginScreen() {
               <Text variant="muted">Pas encore de compte ? </Text>
               <Link href="/(auth)/register" asChild>
                 <TouchableOpacity accessibilityLabel="Créer un compte">
-                  <Text className="font-semibold text-primary">S'inscrire</Text>
+                  <Text className="font-semibold text-blue-600 dark:text-blue-400">S'inscrire</Text>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -282,7 +283,7 @@ export default function LoginScreen() {
               <Text
                 variant="small"
                 className="text-center"
-                style={{ color: colors.info.DEFAULT }}
+                style={{ color: colors.info }}
               >
                 Ton compte a été créé par tes parents.{'\n'}
                 Utilise ton nom d'utilisateur pour te connecter.

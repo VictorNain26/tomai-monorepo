@@ -20,8 +20,8 @@ import {
 import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useIconColors } from '@/hooks';
-import { bgColors, borderColors, colors, shadows } from '@/lib/styles';
+import { useIconColors, useThemeColors } from '@/hooks';
+import { bgColors, borderColors, shadows } from '@/lib/styles';
 import { formatDateShort, getGradeStyle, isLowGrade } from '@/lib/pronote-helpers';
 
 // ============================================================================
@@ -55,6 +55,7 @@ interface GradesViewProps {
 
 export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: GradesViewProps) {
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
 
   // Group grades by subject and calculate averages
@@ -158,7 +159,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                   className="h-12 w-12 items-center justify-center rounded-full"
                   style={{ backgroundColor: bgColors.primary[10] }}
                 >
-                  <BarChart3 color={colors.primary.DEFAULT} size={24} />
+                  <BarChart3 color={colors.primary} size={24} />
                 </View>
                 <View>
                   <Text variant="muted">
@@ -170,11 +171,11 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                 </View>
               </View>
               {overallAverage >= 12 ? (
-                <TrendingUp color={colors.success.DEFAULT} size={24} />
+                <TrendingUp color={colors.success} size={24} />
               ) : overallAverage >= 10 ? (
                 <Minus color={iconColors.muted} size={24} />
               ) : (
-                <TrendingDown color={colors.destructive.DEFAULT} size={24} />
+                <TrendingDown color={colors.destructive} size={24} />
               )}
             </View>
           </View>
@@ -185,7 +186,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
       <View className="gap-3 px-4 py-4">
         {subjectData.map((subject) => {
           const isExpanded = expandedSubject === subject.subject;
-          const avgStyle = getGradeStyle(subject.average, 20);
+          const avgStyle = getGradeStyle(subject.average, 20, colors);
 
           return (
             <View key={subject.subject}>
@@ -200,7 +201,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                   <View className="flex-row items-center justify-between p-4">
                     <View className="flex-1">
                       <Text className="font-semibold">{subject.subject}</Text>
-                      <Text variant="tiny" className="text-muted-foreground">
+                      <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                         {subject.grades.length} note
                         {subject.grades.length > 1 ? 's' : ''}
                       </Text>
@@ -213,7 +214,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                         >
                           {subject.average.toFixed(1)}
                         </Text>
-                        <Text variant="tiny" className="text-muted-foreground">
+                        <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                           /20
                         </Text>
                       </View>
@@ -236,7 +237,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                         new Date(b.date).getTime() - new Date(a.date).getTime()
                     )
                     .map((grade) => {
-                      const gradeStyle = getGradeStyle(grade.value, grade.outOf);
+                      const gradeStyle = getGradeStyle(grade.value, grade.outOf, colors);
                       const needsReview = isLowGrade(grade.value, grade.outOf);
 
                       return (
@@ -253,7 +254,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                               <Text className="font-medium">
                                 {grade.description || 'Évaluation'}
                               </Text>
-                              <Text variant="tiny" className="text-muted-foreground">
+                              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
                                 {formatDateShort(grade.date)} • Coef. {grade.coefficient}
                               </Text>
                             </View>
@@ -279,8 +280,8 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                               className="mt-2 flex-row items-center justify-center gap-2 rounded-lg py-2"
                               style={{ backgroundColor: bgColors.primary[15] }}
                             >
-                              <MessageCircle color={colors.primary.DEFAULT} size={14} />
-                              <Text variant="tiny" className="text-primary font-medium">
+                              <MessageCircle color={colors.primary} size={14} />
+                              <Text variant="tiny" className="text-blue-600 dark:text-blue-400 font-medium">
                                 Revoir avec Tom
                               </Text>
                             </TouchableOpacity>
