@@ -49,7 +49,7 @@
     "ios": "expo run:ios"
   },
   "dependencies": {
-    "@better-auth/expo": "^1.4.17",
+    "@better-auth/expo": "^1.5.4",
     "@better-auth/passkey": "^1.5.4",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
