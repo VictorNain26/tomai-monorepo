@@ -15,6 +15,7 @@
 
 import { createAuthClient } from 'better-auth/react';
 import { expoClient } from '@better-auth/expo/client';
+import { passkeyClient } from '@better-auth/passkey/client';
 import { usernameClient, adminClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
 import * as Constants from 'expo-constants';
@@ -94,6 +95,7 @@ export const authClient = createAuthClient({
     }),
     usernameClient(), // Username login for students
     adminClient(),    // Quick Switch: impersonation for parents
+    passkeyClient(), // Biometric authentication (WebAuthn/passkeys)
   ],
 });
 

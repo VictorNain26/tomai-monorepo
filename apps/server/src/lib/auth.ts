@@ -6,16 +6,18 @@
  * - admin: Parent impersonation (Quick Switch) with parent-child verification
  * - username: Student login with username
  * - expo: Mobile app support
+ * - passkey: Biometric authentication (WebAuthn/FIDO2)
  */
 
 import { betterAuth } from "better-auth";
 import { username, openAPI, mcp, admin } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
+import { passkey } from "@better-auth/passkey";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { eq } from "drizzle-orm";
 
 import { db } from "../db/connection";
-import { user, session, account, verification } from "../db/schema";
+import { user, session, account, verification, passkey as passkeyTable } from "../db/schema";
 import { env, envUtils } from "../config/environment.config";
 import { logger } from "./observability";
 
@@ -163,6 +165,7 @@ export const auth = betterAuth({
       session,
       account,
       verification,
+      passkey: passkeyTable,
     }
   }),
 
@@ -227,7 +230,8 @@ export const auth = betterAuth({
     mcp({
       loginPage: "/sign-in"
     }),
-    expo(),  // Mobile app support (deep links, secure storage)
+    expo(),     // Mobile app support (deep links, secure storage)
+    passkey(), // Biometric authentication (WebAuthn/passkeys)
 
     // Admin plugin for Quick Switch (parent impersonation)
     // Best Practice 2026: Built-in impersonation with custom authorization

@@ -187,9 +187,37 @@ export const parentRestoreToken = pgTable('parent_restore_token', {
   }).onDelete('cascade'),
 }));
 
+/**
+ * Table passkey - Better Auth Passkey plugin (WebAuthn/FIDO2 credentials)
+ */
+export const passkey = pgTable('passkey', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  name: varchar('name', { length: 255 }),
+  publicKey: text('public_key').notNull(),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  webauthnUserID: varchar('webauthn_user_id', { length: 255 }).notNull(),
+  credentialID: text('credential_id').notNull(),
+  counter: integer('counter').notNull().default(0),
+  deviceType: varchar('device_type', { length: 32 }),
+  backedUp: boolean('backed_up').default(false),
+  transports: varchar('transports', { length: 255 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [user.id],
+    name: 'passkey_user_id_fkey'
+  }).onDelete('cascade'),
+
+  userIdIdx: index('idx_passkey_user_id').on(table.userId),
+  credentialIdIdx: index('idx_passkey_credential_id').on(table.credentialID),
+}));
+
 // =============================================
 // TYPES
 // =============================================
+export type Passkey = typeof passkey.$inferSelect;
+export type NewPasskey = typeof passkey.$inferInsert;
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Session = typeof session.$inferSelect;
