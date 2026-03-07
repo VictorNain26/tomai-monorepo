@@ -234,7 +234,7 @@ export class GladiaTranscriptionService {
       headers: {
         'x-gladia-key': this.apiKey,
       },
-      body: formData as unknown as BodyInit,
+      body: formData as never,
     });
 
     if (!response.ok) {

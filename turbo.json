@@ -80,7 +80,8 @@
         "**/*.test.tsx"
       ],
       "outputs": ["coverage/**"],
-      "env": ["NODE_ENV", "CI"]
+      "env": ["NODE_ENV", "CI"],
+      "passThroughEnv": ["DATABASE_URL", "BETTER_AUTH_SECRET"]
     }
   }
 }
