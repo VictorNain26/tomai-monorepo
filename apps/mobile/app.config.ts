@@ -133,13 +133,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-background-task',
     'expo-updates',
     '@react-native-google-signin/google-signin',
-    [
-      '@sentry/react-native/expo',
-      {
-        organization: process.env.SENTRY_ORG ?? 'tomia',
-        project: process.env.SENTRY_PROJECT ?? 'tom-mobile',
-      },
-    ],
   ],
 
   // EAS Updates configuration

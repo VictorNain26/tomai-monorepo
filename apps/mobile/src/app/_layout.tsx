@@ -23,14 +23,10 @@ import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
 import { queryClient, persistOptions, initializeNetInfo } from '@/lib/query-client';
 import { initializeAppApi } from '@/lib/api';
 import { initializeDatabase } from '@/db';
-import { initializeSentry, Sentry } from '@/lib/sentry';
 import { startDevLogServer } from '@/lib/dev-logger';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { ThemeProvider, RevenueCatProvider } from '@/components/providers';
 import { ToastProvider } from '@/components/ui/toast';
-
-// Initialize Sentry before anything else
-initializeSentry();
 
 // Start dev debug server (port 8347) for remote error access
 startDevLogServer();
@@ -78,7 +74,6 @@ function RootLayout() {
         await initializeDatabase();
         setIsReady(true);
       } catch (error) {
-        Sentry.captureException(error);
         console.error('[App] Initialization error:', error);
         setIsReady(true);
       }
@@ -126,4 +121,4 @@ function RootLayout() {
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default RootLayout;
