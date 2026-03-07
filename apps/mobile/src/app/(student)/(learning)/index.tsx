@@ -5,7 +5,7 @@
  */
 
 import { View, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { BookOpen, Plus } from 'lucide-react-native';
@@ -37,7 +37,7 @@ export default function LearningScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScrollView
         className="flex-1 px-4 py-6"
         refreshControl={
@@ -47,7 +47,7 @@ export default function LearningScreen() {
         {/* Header */}
         <View className="mb-6 flex-row items-start justify-between">
           <View className="flex-1">
-            <Text variant="h2" className="text-primary">
+            <Text variant="h2" className="text-blue-600 dark:text-blue-400">
               Révisions
             </Text>
             <Text variant="muted" className="mt-1">
@@ -58,7 +58,7 @@ export default function LearningScreen() {
           </View>
           <TouchableOpacity
             onPress={() => router.push('/(student)/(learning)/create')}
-            className="h-10 w-10 items-center justify-center rounded-full bg-primary"
+            className="h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400"
             accessibilityLabel="Créer un deck"
             accessibilityRole="button"
           >
@@ -69,7 +69,7 @@ export default function LearningScreen() {
         {/* Error */}
         {error && (
           <View className="mb-4 rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
-            <Text className="text-center text-destructive">{error}</Text>
+            <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
           </View>
         )}
 
@@ -97,12 +97,12 @@ export default function LearningScreen() {
             </Text>
             <TouchableOpacity
               onPress={() => router.push('/(student)/(learning)/create')}
-              className="mt-6 flex-row items-center gap-2 rounded-xl bg-primary px-6 py-3"
+              className="mt-6 flex-row items-center gap-2 rounded-xl bg-blue-600 dark:bg-blue-400 px-6 py-3"
               accessibilityLabel="Créer un deck"
               accessibilityRole="button"
             >
               <Plus color="white" size={18} />
-              <Text className="font-semibold text-primary-foreground">
+              <Text className="font-semibold text-white dark:text-slate-900">
                 Créer un deck
               </Text>
             </TouchableOpacity>
@@ -125,7 +125,7 @@ export default function LearningScreen() {
 
         {/* Info */}
         {!isLoading && decks.length > 0 && (
-          <View className="mt-6 rounded-xl border border-border p-4" style={{ backgroundColor: bgColors.muted[50] }}>
+          <View className="mt-6 rounded-xl bg-white dark:bg-slate-800 p-4" style={{ backgroundColor: bgColors.muted[50] }}>
             <Text variant="muted" className="text-center text-sm">
               Appuie sur ▶️ pour jouer un deck ou 🗑️ pour le supprimer.
             </Text>

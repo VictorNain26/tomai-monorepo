@@ -21,7 +21,7 @@ cd apps/server && docker compose up -d
 |--------|-------------|
 | Backend | Bun, Elysia.js 1.4, PostgreSQL 16 pgvector, MemoryCacheService (LRU in-memory), Drizzle ORM |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion |
-| Mobile | Expo SDK 54, React Native 0.81, NativeWind, React Native Reusables |
+| Mobile | Expo SDK 55, React Native 0.83, NativeWind, React Native Reusables |
 | Auth | Better Auth + Google OAuth |
 | AI | Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Gladia (STT), ElevenLabs (TTS) |
 | RAG | Qdrant Cloud + Mistral embeddings + BM25 reranking |

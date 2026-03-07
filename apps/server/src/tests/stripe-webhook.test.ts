@@ -1,630 +1,465 @@
 /**
- * Tests unitaires - Stripe Webhook Handler
- *
- * Tests des handlers webhook Stripe pour le cycle de vie abonnement web.
- * Pattern: Event → Signature Verify → DB Update → Children Status Update
+ * Tests unitaires - Stripe Webhook Handler (routes/stripe-webhook.handler.ts)
+ * REWRITE — teste la vraie route Elysia via app.handle()
+ * Mock: Stripe SDK, DB, webhook-idempotence, logger
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { createMockLogger } from './_helpers/mock-logger';
+import { makeFamilyBilling } from './_helpers/fixtures';
 
 // ============================================
-// TYPES STRIPE (Simplified)
+// MOCKS
 // ============================================
 
-interface StripeSubscriptionItem {
-  id: string;
-  price: { id: string };
-  current_period_start?: number;
-  current_period_end?: number;
-}
-
-interface StripeSubscription {
-  id: string;
-  customer: string;
-  status: 'active' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | 'trialing';
-  cancel_at_period_end: boolean;
-  items: { data: StripeSubscriptionItem[] };
-  metadata?: Record<string, string>;
-}
-
-interface StripeCheckoutSession {
-  id: string;
-  customer: string | null;
-  subscription: string | null;
-  metadata?: Record<string, string>;
-}
-
-interface StripeInvoice {
-  id: string;
-  customer: string | null;
-  subscription?: string;
-}
-
-// ============================================
-// TESTS SECURITY - SIZE LIMITS
-// ============================================
-
-describe('Stripe Webhook - Security', () => {
-  describe('Body size limits', () => {
-    const MAX_WEBHOOK_BODY_SIZE = 256 * 1024; // 256KB
-
-    it('devrait avoir une limite de 256KB', () => {
-      expect(MAX_WEBHOOK_BODY_SIZE).toBe(262144);
-    });
-
-    it('devrait accepter un body de taille normale', () => {
-      const normalBodySize = 5000; // 5KB
-      const isAllowed = normalBodySize <= MAX_WEBHOOK_BODY_SIZE;
-
-      expect(isAllowed).toBe(true);
-    });
-
-    it('devrait rejeter un body trop grand', () => {
-      const oversizedBodySize = 300 * 1024; // 300KB
-      const isAllowed = oversizedBodySize <= MAX_WEBHOOK_BODY_SIZE;
-
-      expect(isAllowed).toBe(false);
-    });
-  });
-
-  describe('Signature verification', () => {
-    it('devrait rejeter si stripe-signature header manquant', () => {
-      const signature: string | null = null;
-      const isValid = signature !== null;
-
-      expect(isValid).toBe(false);
-    });
-
-    it('devrait accepter si signature présente', () => {
-      const signature = 't=1234567890,v1=abc123...';
-      const isValid = signature !== null;
-
-      expect(isValid).toBe(true);
-    });
-  });
-});
-
-// ============================================
-// TESTS IDEMPOTENCY
-// ============================================
-
-describe('Stripe Webhook - Idempotency', () => {
-  describe('Event ID tracking', () => {
-    const WEBHOOK_EVENT_KEY_PREFIX = 'stripe:webhook:processed:';
-    const WEBHOOK_IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60;
-
-    it('devrait générer la bonne clé idempotence', () => {
-      const eventId = 'evt_1234567890';
-      const key = `${WEBHOOK_EVENT_KEY_PREFIX}${eventId}`;
-
-      expect(key).toBe('stripe:webhook:processed:evt_1234567890');
-    });
-
-    it('devrait avoir un TTL de 24 heures', () => {
-      expect(WEBHOOK_IDEMPOTENCY_TTL_SECONDS).toBe(86400);
-    });
-  });
-
-  describe('Duplicate handling', () => {
-    it('devrait retourner duplicate: true pour événement déjà traité', () => {
-      const isAlreadyProcessed = true;
-      const response = isAlreadyProcessed
-        ? { received: true, duplicate: true }
-        : { received: true, event: 'checkout.session.completed' };
-
-      expect(response.duplicate).toBe(true);
-    });
-  });
-});
-
-// ============================================
-// TESTS EVENT HANDLERS - CHECKOUT
-// ============================================
-
-describe('Stripe Webhook - Checkout Completed', () => {
-  describe('Session validation', () => {
-    it('devrait ignorer les sessions sans subscription', () => {
-      const session: StripeCheckoutSession = {
-        id: 'cs_test_123',
-        customer: 'cus_123',
-        subscription: null,
-        metadata: { parentId: 'parent-123' }
-      };
-
-      const shouldProcess = session.subscription !== null;
-      expect(shouldProcess).toBe(false);
-    });
-
-    it('devrait traiter les sessions avec subscription', () => {
-      const session: StripeCheckoutSession = {
-        id: 'cs_test_123',
-        customer: 'cus_123',
-        subscription: 'sub_123',
-        metadata: { parentId: 'parent-123' }
-      };
-
-      const shouldProcess = session.subscription !== null;
-      expect(shouldProcess).toBe(true);
-    });
-
-    it('devrait rejeter si parentId manquant dans metadata', () => {
-      const session: StripeCheckoutSession = {
-        id: 'cs_test_123',
-        customer: 'cus_123',
-        subscription: 'sub_123',
-        metadata: {} // Pas de parentId
-      };
-
-      const hasParentId = session.metadata?.parentId !== undefined;
-      expect(hasParentId).toBe(false);
-    });
-  });
-
-  describe('Children IDs parsing', () => {
-    it('devrait parser les childrenIds JSON valides', () => {
-      const childrenIdsRaw = '["child-1", "child-2"]';
-      let parsed: string[] = [];
-
-      try {
-        const result = JSON.parse(childrenIdsRaw);
-        if (Array.isArray(result) && result.every(id => typeof id === 'string')) {
-          parsed = result;
-        }
-      } catch {
-        // Invalid
-      }
-
-      expect(parsed).toEqual(['child-1', 'child-2']);
-    });
-
-    it('devrait retourner tableau vide pour JSON invalide', () => {
-      const childrenIdsRaw = 'not-valid-json';
-      let parsed: string[] = [];
-
-      try {
-        const result = JSON.parse(childrenIdsRaw);
-        if (Array.isArray(result)) {
-          parsed = result;
-        }
-      } catch {
-        // Invalid
-      }
-
-      expect(parsed).toEqual([]);
-    });
-
-    it('devrait retourner tableau vide si undefined', () => {
-      const childrenIdsRaw: string | undefined = undefined;
-      let parsed: string[] = [];
-
-      if (childrenIdsRaw) {
-        try {
-          parsed = JSON.parse(childrenIdsRaw);
-        } catch {
-          // Invalid
-        }
-      }
-
-      expect(parsed).toEqual([]);
-    });
-  });
-
-  describe('Children count calculation', () => {
-    it('devrait utiliser childrenCount de metadata si présent', () => {
-      const metadata = { childrenCount: '3', childrenIds: '["a","b"]' };
-      const childrenIds = ['a', 'b'];
-
-      const childrenCount = parseInt(metadata.childrenCount ?? '0', 10) || childrenIds.length;
-      expect(childrenCount).toBe(3);
-    });
-
-    it('devrait fallback sur childrenIds.length', () => {
-      const metadata: Record<string, string> = {}; // Pas de childrenCount
-      const childrenIds = ['a', 'b', 'c'];
-
-      const childrenCount = parseInt(metadata.childrenCount ?? '0', 10) || childrenIds.length;
-      expect(childrenCount).toBe(3);
-    });
-  });
-});
-
-// ============================================
-// TESTS EVENT HANDLERS - INVOICE
-// ============================================
-
-describe('Stripe Webhook - Invoice Events', () => {
-  describe('Invoice paid', () => {
-    it('devrait ignorer les invoices sans customer', () => {
-      const invoice: StripeInvoice = {
-        id: 'in_123',
-        customer: null
-      };
-
-      const shouldProcess = invoice.customer !== null;
-      expect(shouldProcess).toBe(false);
-    });
-
-    it('devrait traiter les invoices avec customer', () => {
-      const invoice: StripeInvoice = {
-        id: 'in_123',
-        customer: 'cus_123',
-        subscription: 'sub_123'
-      };
-
-      const shouldProcess = invoice.customer !== null;
-      expect(shouldProcess).toBe(true);
-    });
-  });
-
-  describe('Invoice payment failed', () => {
-    it('devrait mettre le billing status en past_due', () => {
-      const newBillingStatus = 'past_due';
-      expect(newBillingStatus).toBe('past_due');
-    });
-
-    it('devrait pauser les subscriptions enfants', () => {
-      const childStatus = 'paused';
-      expect(childStatus).toBe('paused');
-    });
-  });
-
-  describe('Subscription ID extraction', () => {
-    it('devrait extraire subscription ID direct', () => {
-      const invoice = { subscription: 'sub_123' };
-      const subscriptionId = invoice.subscription;
-
-      expect(subscriptionId).toBe('sub_123');
-    });
-
-    it('devrait retourner null si pas de subscription', () => {
-      const invoice: StripeInvoice = {
-        id: 'in_123',
-        customer: 'cus_123'
-      };
-
-      const subscriptionId = invoice.subscription ?? null;
-      expect(subscriptionId).toBeNull();
-    });
-  });
-});
-
-// ============================================
-// TESTS EVENT HANDLERS - SUBSCRIPTION
-// ============================================
-
-describe('Stripe Webhook - Subscription Events', () => {
-  describe('Subscription status mapping', () => {
-    const mapSubscriptionStatus = (
-      status: string,
-      cancelAtPeriodEnd: boolean
-    ): string => {
-      switch (status) {
-        case 'active':
-          return cancelAtPeriodEnd ? 'canceled' : 'active';
-        case 'past_due':
-          return 'past_due';
-        case 'canceled':
-        case 'unpaid':
-          return 'expired';
-        default:
-          return 'active';
-      }
-    };
-
-    it('devrait mapper active sans cancel_at_period_end vers active', () => {
-      expect(mapSubscriptionStatus('active', false)).toBe('active');
-    });
-
-    it('devrait mapper active avec cancel_at_period_end vers canceled', () => {
-      expect(mapSubscriptionStatus('active', true)).toBe('canceled');
-    });
-
-    it('devrait mapper past_due vers past_due', () => {
-      expect(mapSubscriptionStatus('past_due', false)).toBe('past_due');
-    });
-
-    it('devrait mapper canceled vers expired', () => {
-      expect(mapSubscriptionStatus('canceled', false)).toBe('expired');
-    });
-
-    it('devrait mapper unpaid vers expired', () => {
-      expect(mapSubscriptionStatus('unpaid', false)).toBe('expired');
-    });
-  });
-
-  describe('Subscription updated', () => {
-    it('devrait mettre à jour les dates de période', () => {
-      const periodStart = 1704067200; // 2024-01-01
-      const periodEnd = 1706745600; // 2024-02-01
-
-      const startDate = new Date(periodStart * 1000);
-      const endDate = new Date(periodEnd * 1000);
-
-      expect(startDate.getUTCFullYear()).toBe(2024);
-      expect(endDate.getUTCMonth()).toBe(1); // February (0-indexed)
-    });
-  });
-
-  describe('Subscription deleted', () => {
-    it('devrait réinitialiser le compte enfants premium', () => {
-      const updates = {
-        billingStatus: 'expired',
-        premiumChildrenCount: 0,
-        monthlyAmountCents: 0,
-        stripeSubscriptionId: null
-      };
-
-      expect(updates.premiumChildrenCount).toBe(0);
-      expect(updates.billingStatus).toBe('expired');
-    });
-
-    it('devrait downgrader les enfants vers free', () => {
-      const childUpdates = {
-        planId: 'free-plan-id',
+const mockLogger = createMockLogger();
+mock.module('../lib/observability', () => ({ logger: mockLogger }));
+
+// Idempotency mock state
+let isProcessedResult = false;
+const mockMarkStripeProcessed = mock(async () => {});
+mock.module('../services/webhook-idempotence.service', () => ({
+  isStripeEventProcessed: mock(async () => isProcessedResult),
+  markStripeEventProcessed: mockMarkStripeProcessed,
+}));
+
+// DB mock — trackable per-operation
+const mockOnConflictDoUpdate = mock(() => Promise.resolve());
+const mockInsertValues = mock(() => ({ onConflictDoUpdate: mockOnConflictDoUpdate }));
+const mockInsert = mock(() => ({ values: mockInsertValues }));
+
+const mockUpdateWhere = mock(() => Promise.resolve());
+const mockUpdateSet = mock(() => ({ where: mockUpdateWhere }));
+const mockUpdate = mock(() => ({ set: mockUpdateSet }));
+
+let dbSelectResult: unknown[] = [];
+
+mock.module('../db/connection', () => ({
+  db: {
+    select: mock(() => ({
+      from: mock(() => ({
+        where: mock(() => ({
+          limit: mock(() => Promise.resolve(dbSelectResult)),
+        })),
+      })),
+    })),
+    insert: mockInsert,
+    update: mockUpdate,
+  },
+}));
+
+mock.module('../db/schema', () => ({
+  familyBilling: { parentId: 'parentId', stripeCustomerId: 'stripeCustomerId' },
+  userSubscriptions: { userId: 'userId' },
+}));
+
+mock.module('drizzle-orm', () => ({
+  eq: (...args: unknown[]) => ({ type: 'eq', args }),
+  inArray: (...args: unknown[]) => ({ type: 'inArray', args }),
+}));
+
+// Stripe SDK mock
+let constructEventResult: Record<string, unknown> | null = null;
+let constructEventShouldThrow: Error | null = null;
+
+mock.module('../lib/stripe', () => ({
+  requireStripe: mock(() => ({
+    subscriptions: {
+      retrieve: mock(async () => ({
+        items: { data: [{ current_period_start: 1718400000, current_period_end: 1721000000 }] },
+        metadata: { childrenIds: '["child-001"]' },
         status: 'active',
-        tokensUsedToday: 0
+        cancel_at_period_end: false,
+      })),
+    },
+  })),
+  stripeService: {
+    constructWebhookEventAsync: mock(async () => {
+      if (constructEventShouldThrow) throw constructEventShouldThrow;
+      return constructEventResult;
+    }),
+    getPremiumPlanConfig: mock(async () => ({ basePrice: 1500, extraChildPrice: 500 })),
+    calculateMonthlyPrice: mock((_count: number) => 1500),
+    getPremiumPlanId: mock(async () => 'plan-premium'),
+    getFreePlanId: mock(async () => 'plan-free'),
+  },
+  parseChildrenIdsFromMetadata: mock((s: string | undefined) => {
+    if (!s) return [];
+    try { return JSON.parse(s); } catch { return []; }
+  }),
+}));
+
+// Import after mocks
+const { createWebhookRoutes } = await import('../routes/stripe-webhook.handler');
+const { Elysia } = await import('elysia');
+
+function createTestApp() {
+  return new Elysia().use(createWebhookRoutes('whsec_test'));
+}
+
+function makeStripeRequest(body: string, headers?: Record<string, string>) {
+  return new Request('http://localhost/webhooks/stripe/', {
+    method: 'POST',
+    body,
+    headers: {
+      'content-type': 'application/json',
+      'stripe-signature': 'sig_test',
+      ...headers,
+    },
+  });
+}
+
+beforeEach(() => {
+  isProcessedResult = false;
+  constructEventShouldThrow = null;
+  dbSelectResult = [];
+  mockInsert.mockClear();
+  mockInsertValues.mockClear();
+  mockOnConflictDoUpdate.mockClear();
+  mockUpdate.mockClear();
+  mockUpdateSet.mockClear();
+  mockUpdateWhere.mockClear();
+  mockMarkStripeProcessed.mockClear();
+  constructEventResult = {
+    id: 'evt_test_001',
+    type: 'checkout.session.completed',
+    data: {
+      object: {
+        customer: 'cus_123',
+        subscription: 'sub_123',
+        metadata: { parentId: 'parent-001', childrenIds: '["child-001"]', childrenCount: '1' },
+      },
+    },
+  };
+});
+
+describe('Stripe Webhook Handler', () => {
+  describe('Security', () => {
+    it('should reject oversized Content-Length (413)', async () => {
+      const app = createTestApp();
+      const req = makeStripeRequest('{}', { 'content-length': '300000' });
+      const res = await app.handle(req);
+      expect(res.status).toBe(413);
+      const json = await res.json() as { error: string };
+      expect(json.error).toContain('too large');
+    });
+
+    it('should reject missing stripe-signature (400)', async () => {
+      const app = createTestApp();
+      const req = new Request('http://localhost/webhooks/stripe/', {
+        method: 'POST',
+        body: '{}',
+        headers: { 'content-type': 'application/json' },
+      });
+      const res = await app.handle(req);
+      expect(res.status).toBe(400);
+      const json = await res.json() as { error: string };
+      expect(json.error).toContain('Missing stripe-signature');
+    });
+
+    it('should reject invalid signature (400)', async () => {
+      constructEventShouldThrow = new Error('Invalid signature');
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(400);
+      const json = await res.json() as { error: string };
+      expect(json.error).toContain('Invalid signature');
+    });
+  });
+
+  describe('Idempotency', () => {
+    it('should skip duplicate events', async () => {
+      isProcessedResult = true;
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      const json = await res.json() as { received: boolean; duplicate: boolean };
+      expect(json.duplicate).toBe(true);
+      expect(json.received).toBe(true);
+    });
+  });
+
+  describe('checkout.session.completed', () => {
+    it('should insert familyBilling + userSubscriptions', async () => {
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      const json = await res.json() as { received: boolean; event: string };
+      expect(json.received).toBe(true);
+      expect(json.event).toBe('checkout.session.completed');
+      // Side-effects: insert familyBilling + insert userSubscriptions per child
+      expect(mockInsert).toHaveBeenCalled();
+      expect(mockInsertValues).toHaveBeenCalled();
+      expect(mockOnConflictDoUpdate).toHaveBeenCalled();
+    });
+
+    it('should handle checkout without subscription (early return)', async () => {
+      constructEventResult = {
+        id: 'evt_test_002',
+        type: 'checkout.session.completed',
+        data: { object: { customer: 'cus_123', subscription: null, metadata: {} } },
       };
-
-      expect(childUpdates.planId).toContain('free');
-      expect(childUpdates.tokensUsedToday).toBe(0);
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      // No DB writes when subscription is null
+      expect(mockInsert).not.toHaveBeenCalled();
     });
-  });
-});
 
-// ============================================
-// TESTS PERIOD EXTRACTION
-// ============================================
-
-describe('Stripe Webhook - Period Extraction', () => {
-  describe('extractPeriodFromItem', () => {
-    function extractPeriod(item: StripeSubscriptionItem | undefined): { start: number; end: number } {
-      if (!item) return { start: 0, end: 0 };
-
-      const itemWithPeriod = item as StripeSubscriptionItem & {
-        current_period_start?: number;
-        current_period_end?: number;
+    it('should handle checkout without parentId (early return)', async () => {
+      constructEventResult = {
+        id: 'evt_test_003',
+        type: 'checkout.session.completed',
+        data: { object: { customer: 'cus_123', subscription: 'sub_x', metadata: {} } },
       };
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      expect(mockInsert).not.toHaveBeenCalled();
+    });
+  });
 
-      return {
-        start: itemWithPeriod.current_period_start ?? 0,
-        end: itemWithPeriod.current_period_end ?? 0
+  describe('invoice.paid', () => {
+    it('should update billing period and reactivate children', async () => {
+      const billing = makeFamilyBilling();
+      dbSelectResult = [billing];
+      constructEventResult = {
+        id: 'evt_inv_001',
+        type: 'invoice.paid',
+        data: {
+          object: { customer: 'cus_test123', subscription: 'sub_test123' },
+        },
       };
-    }
-
-    it('devrait retourner {0, 0} si item undefined', () => {
-      const result = extractPeriod(undefined);
-      expect(result).toEqual({ start: 0, end: 0 });
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      // Side-effects: update familyBilling (period dates, active) + update userSubscriptions (active)
+      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ billingStatus: 'active' })
+      );
     });
 
-    it('devrait extraire les dates de période', () => {
-      const item: StripeSubscriptionItem = {
-        id: 'si_123',
-        price: { id: 'price_123' },
-        current_period_start: 1704067200,
-        current_period_end: 1706745600
+    it('should skip non-subscription invoice', async () => {
+      constructEventResult = {
+        id: 'evt_inv_002',
+        type: 'invoice.paid',
+        data: { object: { customer: 'cus_123' } },
       };
-
-      const result = extractPeriod(item);
-      expect(result.start).toBe(1704067200);
-      expect(result.end).toBe(1706745600);
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      expect(mockUpdate).not.toHaveBeenCalled();
     });
+  });
 
-    it('devrait retourner 0 pour les dates manquantes', () => {
-      const item: StripeSubscriptionItem = {
-        id: 'si_123',
-        price: { id: 'price_123' }
+  describe('invoice.payment_failed', () => {
+    it('should set billing to past_due and pause children', async () => {
+      const billing = makeFamilyBilling();
+      dbSelectResult = [billing];
+      constructEventResult = {
+        id: 'evt_fail_001',
+        type: 'invoice.payment_failed',
+        data: { object: { customer: 'cus_test123', subscription: 'sub_test123' } },
       };
-
-      const result = extractPeriod(item);
-      expect(result.start).toBe(0);
-      expect(result.end).toBe(0);
-    });
-  });
-});
-
-// ============================================
-// TESTS PRICE CALCULATION
-// ============================================
-
-describe('Stripe Webhook - Price Calculation', () => {
-  describe('Monthly amount calculation', () => {
-    it('devrait calculer le prix pour 1 enfant', () => {
-      const basePrice = 1500; // 15€ en centimes
-      const childrenCount = 1;
-      const monthlyAmount = childrenCount * basePrice;
-
-      expect(monthlyAmount).toBe(1500);
-    });
-
-    it('devrait calculer le prix pour plusieurs enfants', () => {
-      const basePrice = 1500;
-      const childrenCount = 3;
-      const monthlyAmount = childrenCount * basePrice;
-
-      expect(monthlyAmount).toBe(4500);
-    });
-  });
-});
-
-// ============================================
-// TESTS CHILD STATUS MAPPING
-// ============================================
-
-describe('Stripe Webhook - Child Status Mapping', () => {
-  describe('Billing to child status', () => {
-    function mapBillingToChildStatus(billingStatus: string): string {
-      if (billingStatus === 'active') return 'active';
-      if (billingStatus === 'canceled') return 'active'; // Still active until period end
-      return 'paused';
-    }
-
-    it('devrait mapper active vers active', () => {
-      expect(mapBillingToChildStatus('active')).toBe('active');
-    });
-
-    it('devrait mapper canceled vers active (jusqu\'à fin de période)', () => {
-      expect(mapBillingToChildStatus('canceled')).toBe('active');
-    });
-
-    it('devrait mapper past_due vers paused', () => {
-      expect(mapBillingToChildStatus('past_due')).toBe('paused');
-    });
-
-    it('devrait mapper expired vers paused', () => {
-      expect(mapBillingToChildStatus('expired')).toBe('paused');
-    });
-  });
-});
-
-// ============================================
-// TESTS SCHEDULE HANDLER
-// ============================================
-
-describe('Stripe Webhook - Schedule Handler', () => {
-  describe('Schedule metadata validation', () => {
-    it('devrait ignorer si pendingAction n\'est pas remove_children', () => {
-      const metadata = { pendingAction: 'something_else' };
-      const shouldProcess = metadata.pendingAction === 'remove_children';
-
-      expect(shouldProcess).toBe(false);
-    });
-
-    it('devrait traiter si pendingAction est remove_children', () => {
-      const metadata = { pendingAction: 'remove_children', parentId: 'parent-123' };
-      const shouldProcess = metadata.pendingAction === 'remove_children';
-
-      expect(shouldProcess).toBe(true);
-    });
-
-    it('devrait rejeter si parentId manquant', () => {
-      const metadata = { pendingAction: 'remove_children' };
-      const hasParentId = metadata.parentId !== undefined;
-
-      expect(hasParentId).toBe(false);
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      // Side-effects: update familyBilling past_due + update userSubscriptions paused
+      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ billingStatus: 'past_due' })
+      );
     });
   });
 
-  describe('Phase detection', () => {
-    it('devrait attendre la phase 1 (removal phase)', () => {
-      const currentPhaseIndex = 0;
-      const shouldProcess = currentPhaseIndex === 1;
-
-      expect(shouldProcess).toBe(false);
+  describe('customer.subscription.updated', () => {
+    it('should handle active subscription — billingStatus active', async () => {
+      const billing = makeFamilyBilling();
+      dbSelectResult = [billing];
+      constructEventResult = {
+        id: 'evt_sub_001',
+        type: 'customer.subscription.updated',
+        data: {
+          object: {
+            customer: 'cus_test123',
+            status: 'active',
+            cancel_at_period_end: false,
+            items: { data: [{ current_period_start: 1718400000, current_period_end: 1721000000 }] },
+            metadata: { childrenIds: '["child-001"]' },
+          },
+        },
+      };
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ billingStatus: 'active' })
+      );
     });
 
-    it('devrait traiter quand à la phase 1', () => {
-      const currentPhaseIndex = 1;
-      const shouldProcess = currentPhaseIndex === 1;
-
-      expect(shouldProcess).toBe(true);
-    });
-  });
-});
-
-// ============================================
-// TESTS ERROR HANDLING
-// ============================================
-
-describe('Stripe Webhook - Error Handling', () => {
-  describe('Response codes', () => {
-    it('devrait retourner 400 pour signature invalide', () => {
-      const signatureValid = false;
-      const statusCode = signatureValid ? 200 : 400;
-
-      expect(statusCode).toBe(400);
-    });
-
-    it('devrait retourner 413 pour body trop grand', () => {
-      const bodyTooLarge = true;
-      const statusCode = bodyTooLarge ? 413 : 200;
-
-      expect(statusCode).toBe(413);
+    it('should handle cancel_at_period_end — billingStatus canceled', async () => {
+      const billing = makeFamilyBilling();
+      dbSelectResult = [billing];
+      constructEventResult = {
+        id: 'evt_sub_002',
+        type: 'customer.subscription.updated',
+        data: {
+          object: {
+            customer: 'cus_test123',
+            status: 'active',
+            cancel_at_period_end: true,
+            items: { data: [] },
+            metadata: {},
+          },
+        },
+      };
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ billingStatus: 'canceled' })
+      );
     });
 
-    it('devrait retourner 500 pour erreur de traitement', () => {
-      const processingError = true;
-      const statusCode = processingError ? 500 : 200;
-
-      expect(statusCode).toBe(500);
+    it('should handle canceled subscription — billingStatus expired', async () => {
+      const billing = makeFamilyBilling();
+      dbSelectResult = [billing];
+      constructEventResult = {
+        id: 'evt_sub_003',
+        type: 'customer.subscription.updated',
+        data: {
+          object: {
+            customer: 'cus_test123',
+            status: 'canceled',
+            cancel_at_period_end: false,
+            items: { data: [] },
+            metadata: { childrenIds: '["child-001"]' },
+          },
+        },
+      };
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ billingStatus: 'expired' })
+      );
     });
   });
 
-  describe('Error responses', () => {
-    it('devrait formater l\'erreur de signature', () => {
-      const response = { error: 'Invalid signature' };
-      expect(response.error).toBe('Invalid signature');
+  describe('customer.subscription.deleted', () => {
+    it('should expire billing, reset counts, revert children to free', async () => {
+      const billing = makeFamilyBilling();
+      dbSelectResult = [billing];
+      constructEventResult = {
+        id: 'evt_del_001',
+        type: 'customer.subscription.deleted',
+        data: {
+          object: {
+            customer: 'cus_test123',
+            metadata: { childrenIds: '["child-001"]' },
+          },
+        },
+      };
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      // Side-effects: update familyBilling (expired, reset counts) + update children (free plan)
+      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          billingStatus: 'expired',
+          premiumChildrenCount: 0,
+          monthlyAmountCents: 0,
+          stripeSubscriptionId: null,
+        })
+      );
+    });
+  });
+
+  describe('subscription_schedule.updated', () => {
+    it('should handle remove_children action — updates billing + downgrades children', async () => {
+      constructEventResult = {
+        id: 'evt_sched_001',
+        type: 'subscription_schedule.updated',
+        data: {
+          object: {
+            metadata: {
+              pendingAction: 'remove_children',
+              parentId: 'parent-001',
+              removedChildrenIds: '["child-002"]',
+            },
+            current_phase: { start_date: 1000 },
+            phases: [
+              { start_date: 500 },
+              { start_date: 1000, metadata: { action: 'remove_children', childrenCount: '1' } },
+            ],
+          },
+        },
+      };
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      // Side-effects: update familyBilling (new childrenCount) + update removed children to free
+      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockUpdateSet).toHaveBeenCalled();
     });
 
-    it('devrait formater l\'erreur de taille', () => {
-      const response = { error: 'Request entity too large' };
-      expect(response.error).toBe('Request entity too large');
+    it('should skip non-remove_children action (no DB writes)', async () => {
+      constructEventResult = {
+        id: 'evt_sched_002',
+        type: 'subscription_schedule.updated',
+        data: { object: { metadata: {}, phases: [] } },
+      };
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Error containment', () => {
+    it('should return 500 when handler throws', async () => {
+      constructEventResult = {
+        id: 'evt_err_001',
+        type: 'checkout.session.completed',
+        data: { object: null },
+      };
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(500);
+      const json = await res.json() as { error: string };
+      expect(json.error).toContain('Webhook processing failed');
     });
 
-    it('devrait formater l\'erreur de traitement', () => {
-      const response = { error: 'Webhook processing failed' };
-      expect(response.error).toBe('Webhook processing failed');
+    it('should handle unhandled event types gracefully (200)', async () => {
+      constructEventResult = {
+        id: 'evt_unknown_001',
+        type: 'unknown.event.type',
+        data: { object: {} },
+      };
+      const app = createTestApp();
+      const req = makeStripeRequest('{}');
+      const res = await app.handle(req);
+      expect(res.status).toBe(200);
+      const json = await res.json() as { received: boolean };
+      expect(json.received).toBe(true);
     });
-  });
-});
-
-// ============================================
-// TESTS SUCCESS RESPONSES
-// ============================================
-
-describe('Stripe Webhook - Success Responses', () => {
-  it('devrait retourner received: true pour succès', () => {
-    const response = { received: true, event: 'checkout.session.completed' };
-    expect(response.received).toBe(true);
-  });
-
-  it('devrait inclure le type d\'événement', () => {
-    const eventType = 'customer.subscription.updated';
-    const response = { received: true, event: eventType };
-
-    expect(response.event).toBe(eventType);
-  });
-
-  it('devrait inclure duplicate: true pour duplicata', () => {
-    const response = { received: true, duplicate: true };
-    expect(response.duplicate).toBe(true);
-  });
-});
-
-// ============================================
-// TESTS HANDLED EVENT TYPES
-// ============================================
-
-describe('Stripe Webhook - Handled Events', () => {
-  const handledEvents = [
-    'checkout.session.completed',
-    'invoice.paid',
-    'invoice.payment_failed',
-    'customer.subscription.updated',
-    'customer.subscription.deleted',
-    'subscription_schedule.updated'
-  ];
-
-  it('devrait gérer checkout.session.completed', () => {
-    expect(handledEvents).toContain('checkout.session.completed');
-  });
-
-  it('devrait gérer invoice.paid', () => {
-    expect(handledEvents).toContain('invoice.paid');
-  });
-
-  it('devrait gérer invoice.payment_failed', () => {
-    expect(handledEvents).toContain('invoice.payment_failed');
-  });
-
-  it('devrait gérer customer.subscription.updated', () => {
-    expect(handledEvents).toContain('customer.subscription.updated');
-  });
-
-  it('devrait gérer customer.subscription.deleted', () => {
-    expect(handledEvents).toContain('customer.subscription.deleted');
-  });
-
-  it('devrait gérer subscription_schedule.updated', () => {
-    expect(handledEvents).toContain('subscription_schedule.updated');
   });
 });

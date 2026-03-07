@@ -92,6 +92,10 @@ export {
   type IconColors,
 } from './useIconColors';
 export {
+  useThemeColors,
+  type ThemeColors,
+} from './useThemeColors';
+export {
   useDueCards,
   useReviewCard,
   useDeckStats,

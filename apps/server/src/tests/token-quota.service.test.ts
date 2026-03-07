@@ -1,429 +1,292 @@
 /**
- * Tests unitaires - Token Quota Service
- *
- * Tests des fonctions de gestion de quotas tokens (rolling window + daily cap).
- * Architecture 2025 inspirée ChatGPT/Claude.
+ * Tests unitaires - Token Quota Service (services/token-quota.service.ts)
+ * REWRITE — behavioral tests for helpers via incrementTokenUsage
+ * Mock: DB + logger
  */
 
-import { describe, it, expect, beforeEach, mock, spyOn } from 'bun:test';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { createMockLogger } from './_helpers/mock-logger';
 
 // ============================================
-// MOCK DES DÉPENDANCES EXTERNES
+// MOCKS
 // ============================================
 
-// Mock database pour éviter les appels réels
-const mockDbSelect = mock(() => ({
-  from: mock(() => ({
-    innerJoin: mock(() => ({
-      where: mock(() => ({
-        limit: mock(() => Promise.resolve([]))
-      }))
-    })),
-    where: mock(() => ({
-      limit: mock(() => Promise.resolve([]))
-    }))
-  }))
-}));
+const mockLogger = createMockLogger();
+mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
-const mockDbInsert = mock(() => ({
-  values: mock(() => Promise.resolve())
-}));
+// DB mock state
+let dbSelectResult: unknown[] = [];
+let dbUpdateResult = { rowCount: 1 };
+let dbInsertShouldThrow = false;
 
-const mockDbUpdate = mock(() => ({
-  set: mock(() => ({
-    where: mock(() => Promise.resolve())
-  }))
-}));
+const mockUpdateWhere = mock(() => Promise.resolve(dbUpdateResult));
+const mockUpdateSet = mock(() => ({ where: mockUpdateWhere }));
+const mockDbUpdate = mock(() => ({ set: mockUpdateSet }));
 
 mock.module('../db/connection', () => ({
   db: {
-    select: mockDbSelect,
-    insert: mockDbInsert,
+    select: mock(() => ({
+      from: mock(() => ({
+        where: mock(() => ({
+          limit: mock(() => Promise.resolve(dbSelectResult)),
+        })),
+        innerJoin: mock(() => ({
+          where: mock(() => ({
+            limit: mock(() => Promise.resolve(dbSelectResult)),
+          })),
+        })),
+      })),
+    })),
+    insert: mock(() => ({
+      values: mock(() => {
+        if (dbInsertShouldThrow) throw new Error('Insert failed');
+        return Promise.resolve();
+      }),
+    })),
     update: mockDbUpdate,
-  }
+  },
 }));
 
-mock.module('../lib/observability', () => ({
-  logger: {
-    debug: mock(() => {}),
-    info: mock(() => {}),
-    warn: mock(() => {}),
-    error: mock(() => {}),
-  }
+mock.module('../db/schema', () => ({
+  userSubscriptions: {
+    userId: 'userId',
+    planId: 'planId',
+    windowTokensUsed: 'windowTokensUsed',
+    windowStartAt: 'windowStartAt',
+    tokensUsedToday: 'tokensUsedToday',
+    tokensUsedThisWeek: 'tokensUsedThisWeek',
+    totalTokensUsed: 'totalTokensUsed',
+    totalMessagesCount: 'totalMessagesCount',
+    lastResetAt: 'lastResetAt',
+    lastWeeklyResetAt: 'lastWeeklyResetAt',
+    lastMonthlyResetAt: 'lastMonthlyResetAt',
+    decksGeneratedToday: 'decksGeneratedToday',
+    decksGeneratedThisMonth: 'decksGeneratedThisMonth',
+    updatedAt: 'updatedAt',
+  },
+  subscriptionPlans: {
+    id: 'id',
+    name: 'name',
+    dailyTokenLimit: 'dailyTokenLimit',
+  },
 }));
 
-// Import après les mocks
-import { tokenQuotaService } from '../services/token-quota.service';
+mock.module('drizzle-orm', () => ({
+  eq: (...args: unknown[]) => ({ type: 'eq', args }),
+  sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ type: 'sql', strings, values }),
+}));
 
-// ============================================
-// TESTS CONFIGURATION
-// ============================================
+// Import after mocks
+const { tokenQuotaService } = await import('../services/token-quota.service');
 
-describe('Token Quota Service - Configuration', () => {
-  describe('QUOTA_CONFIG', () => {
-    it('devrait avoir une configuration FREE valide', () => {
-      const freeConfig = tokenQuotaService.QUOTA_CONFIG.free;
+// Helper to create a subscription DB row for incrementTokenUsage
+function makeDbSubscription(overrides?: Record<string, unknown>) {
+  return {
+    planId: 'plan-free',
+    planName: 'free',
+    dailyLimit: 15000,
+    windowTokensUsed: 0,
+    windowStartAt: new Date(),
+    tokensUsedToday: 0,
+    tokensUsedThisWeek: 0,
+    totalTokensUsed: 0,
+    totalMessagesCount: 0,
+    lastResetAt: new Date(),
+    lastWeeklyResetAt: new Date(),
+    ...overrides,
+  };
+}
 
-      expect(freeConfig.windowTokens).toBe(5_000);
-      expect(freeConfig.dailyMaxTokens).toBe(15_000);
-      expect(freeConfig.windowHours).toBe(5);
-    });
-
-    it('devrait avoir une configuration PREMIUM valide', () => {
-      const premiumConfig = tokenQuotaService.QUOTA_CONFIG.premium;
-
-      expect(premiumConfig.windowTokens).toBe(25_000);
-      expect(premiumConfig.dailyMaxTokens).toBe(75_000);
-      expect(premiumConfig.windowHours).toBe(5);
-      expect(premiumConfig.dailyDecks).toBe(5);
-      expect(premiumConfig.monthlyDecks).toBe(50);
-    });
-
-    it('devrait avoir un quota premium > free', () => {
-      const { free, premium } = tokenQuotaService.QUOTA_CONFIG;
-
-      expect(premium.windowTokens).toBeGreaterThan(free.windowTokens);
-      expect(premium.dailyMaxTokens).toBeGreaterThan(free.dailyMaxTokens);
-    });
-  });
-
-  describe('SOFT_LIMITS', () => {
-    it('devrait avoir des seuils progressifs', () => {
-      const limits = tokenQuotaService.SOFT_LIMITS;
-
-      expect(limits.NORMAL).toBe(0.70);
-      expect(limits.WARNING).toBe(0.85);
-      expect(limits.THROTTLE).toBe(0.95);
-      expect(limits.HARD_STOP).toBe(1.00);
-    });
-
-    it('devrait avoir des seuils ordonnés', () => {
-      const limits = tokenQuotaService.SOFT_LIMITS;
-
-      expect(limits.NORMAL).toBeLessThan(limits.WARNING);
-      expect(limits.WARNING).toBeLessThan(limits.THROTTLE);
-      expect(limits.THROTTLE).toBeLessThan(limits.HARD_STOP);
-    });
-  });
+beforeEach(() => {
+  dbSelectResult = [];
+  dbUpdateResult = { rowCount: 1 };
+  dbInsertShouldThrow = false;
+  mockDbUpdate.mockClear();
+  mockUpdateSet.mockClear();
+  mockUpdateWhere.mockClear();
 });
 
-// ============================================
-// TESTS PURE FUNCTIONS
-// ============================================
+describe('Token Quota Service', () => {
+  describe('checkQuota (currently disabled — returns unlimited)', () => {
+    it('should return allowed=true with normal mode', async () => {
+      const result = await tokenQuotaService.checkQuota('user-001');
+      expect(result.allowed).toBe(true);
+      expect(result.mode).toBe('normal');
+      expect(result.plan).toBe('premium');
+    });
+  });
 
-describe('Token Quota Service - Pure Functions', () => {
+  describe('incrementTokenUsage — behavioral window/reset tests', () => {
+    it('should increment counters when window is fresh (not expired)', async () => {
+      dbSelectResult = [makeDbSubscription({
+        windowStartAt: new Date(), // Just started → not expired
+        windowTokensUsed: 1000,
+        tokensUsedToday: 2000,
+      })];
+      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      expect(result.success).toBe(true);
+      expect(result.newWindowTokensUsed).toBe(1500); // 1000 + 500
+      expect(result.newDailyTokensUsed).toBe(2500); // 2000 + 500
+    });
+
+    it('should reset window tokens when window expired (>5h)', async () => {
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      dbSelectResult = [makeDbSubscription({
+        windowStartAt: sixHoursAgo,
+        windowTokensUsed: 4000, // Should be reset to 0 before adding
+        tokensUsedToday: 2000,
+      })];
+      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      expect(result.success).toBe(true);
+      // Window was reset → only the new 500 tokens
+      expect(result.newWindowTokensUsed).toBe(500);
+    });
+
+    it('should not reset window at exactly 4h59m (still valid)', async () => {
+      const fourHours59Min = new Date(Date.now() - (4 * 60 + 59) * 60 * 1000);
+      dbSelectResult = [makeDbSubscription({
+        windowStartAt: fourHours59Min,
+        windowTokensUsed: 3000,
+      })];
+      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      expect(result.success).toBe(true);
+      expect(result.newWindowTokensUsed).toBe(3500); // 3000 + 500, not reset
+    });
+
+    it('should return correct mode when near window limit (>= 95% → throttle)', async () => {
+      // Free windowTokens = 5000. 4750 used + 200 = 4950 → 99% → blocked
+      dbSelectResult = [makeDbSubscription({
+        windowTokensUsed: 4800,
+        tokensUsedToday: 0,
+      })];
+      const result = await tokenQuotaService.incrementTokenUsage('user-001', 200);
+      expect(result.success).toBe(true);
+      expect(result.newWindowTokensUsed).toBe(5000);
+      // 5000/5000 = 100% → blocked
+      expect(result.mode).toBe('blocked');
+    });
+
+    it('should return normal mode when well under limit', async () => {
+      dbSelectResult = [makeDbSubscription({
+        windowTokensUsed: 0,
+        tokensUsedToday: 0,
+      })];
+      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      expect(result.success).toBe(true);
+      // 500/5000 = 10% → normal
+      expect(result.mode).toBe('normal');
+    });
+
+    it('should return warning mode at ~85% usage', async () => {
+      // 4250/5000 = 85% → warning
+      dbSelectResult = [makeDbSubscription({
+        windowTokensUsed: 3750,
+        tokensUsedToday: 0,
+      })];
+      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      expect(result.success).toBe(true);
+      // 4250/5000 = 85% → exactly at WARNING threshold
+      expect(result.mode).toBe('warning');
+    });
+
+    it('should return throttle mode at ~95% usage', async () => {
+      // 4750/5000 = 95% → throttle
+      dbSelectResult = [makeDbSubscription({
+        windowTokensUsed: 4500,
+        tokensUsedToday: 0,
+      })];
+      const result = await tokenQuotaService.incrementTokenUsage('user-001', 250);
+      expect(result.success).toBe(true);
+      // 4750/5000 = 95% → throttle
+      expect(result.mode).toBe('throttle');
+    });
+
+    it('should return success=false on DB error', async () => {
+      dbSelectResult = [];
+      dbInsertShouldThrow = true;
+      const result = await tokenQuotaService.incrementTokenUsage('user-err', 100);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('getUsageStats', () => {
+    it('should combine quota and DB stats', async () => {
+      dbSelectResult = [{
+        tokensUsedThisWeek: 5000,
+        totalTokensUsed: 50000,
+        totalMessagesCount: 200,
+      }];
+      const stats = await tokenQuotaService.getUsageStats('user-001');
+      expect(stats.weeklyTokensUsed).toBe(5000);
+      expect(stats.totalTokensUsed).toBe(50000);
+      expect(stats.totalMessagesCount).toBe(200);
+      expect(stats.plan).toBe('premium'); // checkQuota returns premium when disabled
+    });
+
+    it('should handle missing subscription gracefully', async () => {
+      dbSelectResult = [];
+      const stats = await tokenQuotaService.getUsageStats('user-new');
+      expect(stats.weeklyTokensUsed).toBe(0);
+      expect(stats.totalTokensUsed).toBe(0);
+    });
+  });
+
+  describe('checkDeckQuota (currently disabled)', () => {
+    it('should return allowed=true with high limits', async () => {
+      const result = await tokenQuotaService.checkDeckQuota('user-001');
+      expect(result.allowed).toBe(true);
+      expect(result.decksRemainingToday).toBe(999);
+      expect(result.decksRemainingThisMonth).toBe(999);
+    });
+  });
+
+  describe('incrementDeckUsage', () => {
+    it('should increment deck counters from existing state', async () => {
+      dbSelectResult = [{
+        planId: 'plan-premium',
+        planName: 'premium',
+        dailyLimit: 75000,
+        decksGeneratedToday: 1,
+        decksGeneratedThisMonth: 10,
+        lastResetAt: new Date(),
+        lastMonthlyResetAt: new Date(),
+      }];
+      const result = await tokenQuotaService.incrementDeckUsage('user-001');
+      expect(result.success).toBe(true);
+      expect(result.newDecksGeneratedToday).toBe(2);
+      expect(result.newDecksGeneratedThisMonth).toBe(11);
+      // Remaining: daily 5-2=3, monthly 50-11=39
+      expect(result.decksRemainingToday).toBe(3);
+      expect(result.decksRemainingThisMonth).toBe(39);
+    });
+
+    it('should return success=false on error', async () => {
+      dbSelectResult = [];
+      dbInsertShouldThrow = true;
+      const result = await tokenQuotaService.incrementDeckUsage('user-err');
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('resetAllDailyTokens', () => {
+    it('should batch update and return affected count', async () => {
+      dbUpdateResult = { rowCount: 42 };
+      const result = await tokenQuotaService.resetAllDailyTokens();
+      expect(result.resetCount).toBe(42);
+    });
+
+    it('should return 0 when no rows affected', async () => {
+      dbUpdateResult = { rowCount: 0 };
+      const result = await tokenQuotaService.resetAllDailyTokens();
+      expect(result.resetCount).toBe(0);
+    });
+  });
+
   describe('getHoursUntilReset', () => {
-    it('devrait retourner une chaîne valide', () => {
+    it('should return a non-empty time string (Xh or Xmin)', () => {
       const result = tokenQuotaService.getHoursUntilReset();
-
       expect(typeof result).toBe('string');
-      // Format attendu : "Xh" ou "Xmin"
-      expect(result).toMatch(/^\d+h$|^\d+min$/);
+      expect(result).toMatch(/^\d+[hm]/); // matches "5h", "30min", etc.
     });
-  });
-});
-
-// ============================================
-// TESTS QUOTA MODE LOGIC
-// ============================================
-
-describe('Token Quota Service - Quota Mode Logic', () => {
-  describe('Mode determination based on usage', () => {
-    // Ces tests vérifient la logique de détermination du mode
-    // basée sur les seuils SOFT_LIMITS
-
-    it('devrait être NORMAL sous 70%', () => {
-      // 70% de 100 = 70, usage de 69 = 69/100 = 0.69
-      const usagePercent = 0.69;
-      const limits = tokenQuotaService.SOFT_LIMITS;
-
-      expect(usagePercent < limits.NORMAL).toBe(true);
-    });
-
-    it('devrait être WARNING entre 70% et 85%', () => {
-      const usagePercent = 0.80;
-      const limits = tokenQuotaService.SOFT_LIMITS;
-
-      expect(usagePercent >= limits.NORMAL).toBe(true);
-      expect(usagePercent < limits.WARNING).toBe(true);
-    });
-
-    it('devrait être THROTTLE entre 85% et 95%', () => {
-      const usagePercent = 0.90;
-      const limits = tokenQuotaService.SOFT_LIMITS;
-
-      expect(usagePercent >= limits.WARNING).toBe(true);
-      expect(usagePercent < limits.THROTTLE).toBe(true);
-    });
-
-    it('devrait être BLOCKED au-delà de 95%', () => {
-      const usagePercent = 0.98;
-      const limits = tokenQuotaService.SOFT_LIMITS;
-
-      expect(usagePercent >= limits.THROTTLE).toBe(true);
-    });
-  });
-});
-
-// ============================================
-// TESTS CALCUL QUOTAS
-// ============================================
-
-describe('Token Quota Service - Quota Calculations', () => {
-  describe('Window tokens calculation', () => {
-    it('devrait calculer les tokens restants correctement (FREE)', () => {
-      const windowLimit = tokenQuotaService.QUOTA_CONFIG.free.windowTokens;
-      const tokensUsed = 2000;
-      const tokensRemaining = windowLimit - tokensUsed;
-
-      expect(tokensRemaining).toBe(3000);
-    });
-
-    it('devrait calculer les tokens restants correctement (PREMIUM)', () => {
-      const windowLimit = tokenQuotaService.QUOTA_CONFIG.premium.windowTokens;
-      const tokensUsed = 10000;
-      const tokensRemaining = windowLimit - tokensUsed;
-
-      expect(tokensRemaining).toBe(15000);
-    });
-
-    it('devrait retourner 0 si tokens utilisés dépassent la limite', () => {
-      const windowLimit = tokenQuotaService.QUOTA_CONFIG.free.windowTokens;
-      const tokensUsed = 6000; // Dépasse 5000
-      const tokensRemaining = Math.max(0, windowLimit - tokensUsed);
-
-      expect(tokensRemaining).toBe(0);
-    });
-  });
-
-  describe('Daily tokens calculation', () => {
-    it('devrait calculer le cap journalier FREE', () => {
-      const dailyLimit = tokenQuotaService.QUOTA_CONFIG.free.dailyMaxTokens;
-      const tokensUsed = 5000;
-      const tokensRemaining = dailyLimit - tokensUsed;
-
-      expect(tokensRemaining).toBe(10000);
-    });
-
-    it('devrait calculer le cap journalier PREMIUM', () => {
-      const dailyLimit = tokenQuotaService.QUOTA_CONFIG.premium.dailyMaxTokens;
-      const tokensUsed = 25000;
-      const tokensRemaining = dailyLimit - tokensUsed;
-
-      expect(tokensRemaining).toBe(50000);
-    });
-  });
-
-  describe('Usage percentage calculation', () => {
-    it('devrait calculer le pourcentage usage window FREE', () => {
-      const windowLimit = tokenQuotaService.QUOTA_CONFIG.free.windowTokens;
-      const tokensUsed = 2500;
-      const usagePercent = Math.round((tokensUsed / windowLimit) * 100);
-
-      expect(usagePercent).toBe(50);
-    });
-
-    it('devrait calculer le pourcentage usage window PREMIUM', () => {
-      const windowLimit = tokenQuotaService.QUOTA_CONFIG.premium.windowTokens;
-      const tokensUsed = 12500;
-      const usagePercent = Math.round((tokensUsed / windowLimit) * 100);
-
-      expect(usagePercent).toBe(50);
-    });
-
-    it('devrait plafonner à 100%', () => {
-      const windowLimit = tokenQuotaService.QUOTA_CONFIG.free.windowTokens;
-      const tokensUsed = 10000; // Double de la limite
-      const usagePercent = Math.min(100, Math.round((tokensUsed / windowLimit) * 100));
-
-      expect(usagePercent).toBe(100);
-    });
-  });
-});
-
-// ============================================
-// TESTS DECK QUOTAS (Premium only)
-// ============================================
-
-describe('Token Quota Service - Deck Quotas', () => {
-  describe('Deck limits configuration', () => {
-    it('devrait avoir une limite quotidienne de 5 decks', () => {
-      expect(tokenQuotaService.QUOTA_CONFIG.premium.dailyDecks).toBe(5);
-    });
-
-    it('devrait avoir une limite mensuelle de 50 decks', () => {
-      expect(tokenQuotaService.QUOTA_CONFIG.premium.monthlyDecks).toBe(50);
-    });
-  });
-
-  describe('Deck remaining calculation', () => {
-    it('devrait calculer les decks restants aujourd\'hui', () => {
-      const dailyLimit = tokenQuotaService.QUOTA_CONFIG.premium.dailyDecks;
-      const decksUsed = 2;
-      const decksRemaining = Math.max(0, dailyLimit - decksUsed);
-
-      expect(decksRemaining).toBe(3);
-    });
-
-    it('devrait calculer les decks restants ce mois', () => {
-      const monthlyLimit = tokenQuotaService.QUOTA_CONFIG.premium.monthlyDecks;
-      const decksUsed = 20;
-      const decksRemaining = Math.max(0, monthlyLimit - decksUsed);
-
-      expect(decksRemaining).toBe(30);
-    });
-
-    it('devrait retourner 0 si limite quotidienne atteinte', () => {
-      const dailyLimit = tokenQuotaService.QUOTA_CONFIG.premium.dailyDecks;
-      const decksUsed = 6; // Dépasse 5
-      const decksRemaining = Math.max(0, dailyLimit - decksUsed);
-
-      expect(decksRemaining).toBe(0);
-    });
-  });
-});
-
-// ============================================
-// TESTS TIME-BASED LOGIC
-// ============================================
-
-describe('Token Quota Service - Time Logic', () => {
-  describe('Window duration', () => {
-    it('devrait avoir une fenêtre de 5 heures', () => {
-      expect(tokenQuotaService.QUOTA_CONFIG.free.windowHours).toBe(5);
-      expect(tokenQuotaService.QUOTA_CONFIG.premium.windowHours).toBe(5);
-    });
-
-    it('devrait calculer la durée de fenêtre en millisecondes', () => {
-      const windowHours = tokenQuotaService.QUOTA_CONFIG.free.windowHours;
-      const windowMs = windowHours * 60 * 60 * 1000;
-
-      expect(windowMs).toBe(5 * 60 * 60 * 1000); // 18,000,000 ms
-    });
-  });
-
-  describe('Window expiration logic', () => {
-    it('devrait détecter une fenêtre expirée (6h passées)', () => {
-      const windowStartAt = new Date(Date.now() - 6 * 60 * 60 * 1000); // 6h ago
-      const windowDurationMs = 5 * 60 * 60 * 1000; // 5h
-      const windowAgeMs = Date.now() - windowStartAt.getTime();
-
-      expect(windowAgeMs >= windowDurationMs).toBe(true);
-    });
-
-    it('devrait détecter une fenêtre active (2h passées)', () => {
-      const windowStartAt = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2h ago
-      const windowDurationMs = 5 * 60 * 60 * 1000; // 5h
-      const windowAgeMs = Date.now() - windowStartAt.getTime();
-
-      expect(windowAgeMs < windowDurationMs).toBe(true);
-    });
-  });
-
-  describe('Refresh time calculation', () => {
-    it('devrait calculer le temps restant avant refresh', () => {
-      const windowStartAt = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2h ago
-      const windowHours = 5;
-      const windowEndMs = windowStartAt.getTime() + (windowHours * 60 * 60 * 1000);
-      const remainingMs = Math.max(0, windowEndMs - Date.now());
-
-      // ~3 heures restantes
-      const remainingHours = Math.floor(remainingMs / (60 * 60 * 1000));
-      expect(remainingHours).toBeGreaterThanOrEqual(2);
-      expect(remainingHours).toBeLessThanOrEqual(3);
-    });
-  });
-});
-
-// ============================================
-// TESTS EFFECTIVE REMAINING LOGIC
-// ============================================
-
-describe('Token Quota Service - Effective Remaining', () => {
-  describe('Use most restrictive limit', () => {
-    it('devrait utiliser window si plus restrictif que daily', () => {
-      const windowRemaining = 1000;
-      const dailyRemaining = 5000;
-      const effectiveRemaining = Math.min(windowRemaining, dailyRemaining);
-
-      expect(effectiveRemaining).toBe(1000);
-    });
-
-    it('devrait utiliser daily si plus restrictif que window', () => {
-      const windowRemaining = 4000;
-      const dailyRemaining = 1500;
-      const effectiveRemaining = Math.min(windowRemaining, dailyRemaining);
-
-      expect(effectiveRemaining).toBe(1500);
-    });
-
-    it('devrait bloquer si l\'un des deux est à 0', () => {
-      const windowRemaining = 0;
-      const dailyRemaining = 5000;
-      const effectiveRemaining = Math.min(windowRemaining, dailyRemaining);
-
-      expect(effectiveRemaining).toBe(0);
-      expect(effectiveRemaining > 0).toBe(false); // allowed = false
-    });
-  });
-});
-
-// ============================================
-// TESTS MODE DETERMINATION
-// ============================================
-
-describe('Token Quota Service - Mode Determination', () => {
-  const SOFT_LIMITS = tokenQuotaService.SOFT_LIMITS;
-
-  describe('Max usage percentage logic', () => {
-    it('devrait utiliser le max entre window et daily pour le mode', () => {
-      const windowUsage = 0.50; // 50%
-      const dailyUsage = 0.90; // 90%
-      const maxUsage = Math.max(windowUsage, dailyUsage);
-
-      expect(maxUsage).toBe(0.90);
-      // Cela devrait donner mode = 'throttle' car 90% >= WARNING (85%)
-    });
-
-    it('devrait être normal si les deux sont bas', () => {
-      const windowUsage = 0.30;
-      const dailyUsage = 0.40;
-      const maxUsage = Math.max(windowUsage, dailyUsage);
-
-      expect(maxUsage < SOFT_LIMITS.NORMAL).toBe(true);
-    });
-
-    it('devrait être blocked si l\'un atteint 100%', () => {
-      const windowUsage = 1.00;
-      const dailyUsage = 0.50;
-      const maxUsage = Math.max(windowUsage, dailyUsage);
-
-      expect(maxUsage >= SOFT_LIMITS.HARD_STOP).toBe(true);
-    });
-  });
-});
-
-// ============================================
-// TESTS THROTTLE DELAY
-// ============================================
-
-describe('Token Quota Service - Throttle Delay', () => {
-  it('devrait avoir un délai de 2s en mode throttle', () => {
-    const throttleDelayMs = 2000;
-    expect(throttleDelayMs).toBe(2000);
-  });
-
-  it('ne devrait pas avoir de délai en mode normal', () => {
-    const mode = 'normal';
-    const throttleDelayMs = mode === 'throttle' ? 2000 : undefined;
-
-    expect(throttleDelayMs).toBeUndefined();
-  });
-
-  it('ne devrait pas avoir de délai en mode warning', () => {
-    const mode = 'warning';
-    const throttleDelayMs = mode === 'throttle' ? 2000 : undefined;
-
-    expect(throttleDelayMs).toBeUndefined();
   });
 });

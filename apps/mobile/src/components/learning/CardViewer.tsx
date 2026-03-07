@@ -89,7 +89,7 @@ export function CardViewer({ cardType, content }: CardViewerProps) {
 
     default:
       return (
-        <View className="flex-1 items-center justify-center rounded-xl border border-border bg-card p-6">
+        <View className="flex-1 items-center justify-center rounded-xl bg-white dark:bg-slate-800 p-6">
           <Text variant="muted" className="text-center">
             Type de carte non supporté : {cardType}
           </Text>

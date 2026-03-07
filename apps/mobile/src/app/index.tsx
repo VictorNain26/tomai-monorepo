@@ -9,14 +9,13 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSession, useUser } from '@/lib/auth';
-import { useTheme } from '@/hooks';
-import { colors } from '@/lib/styles';
+import { useThemeColors } from '@/hooks';
 
 export default function Index() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const user = useUser();
-  const { isDark } = useTheme();
+  const colors = useThemeColors();
 
   useEffect(() => {
     if (isPending) return;
@@ -41,10 +40,10 @@ export default function Index() {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: isDark ? colors.background.dark : colors.background.light,
+        backgroundColor: colors.background,
       }}
     >
-      <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
+      <ActivityIndicator size="large" color={colors.primary} />
     </View>
   );
 }

@@ -14,7 +14,7 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { X, UserPlus, RefreshCw, ChevronDown } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
@@ -150,13 +150,13 @@ export function CreateChildModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"
         >
           {/* Header */}
-          <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+          <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
             <TouchableOpacity
               onPress={handleClose}
               disabled={isSubmitting}
@@ -174,7 +174,7 @@ export function CreateChildModal({
 
           <ScrollView className="flex-1 px-4 py-4">
             {/* Personal Info Section */}
-            <Text className="mb-3 text-sm font-medium text-muted-foreground">
+            <Text className="mb-3 text-sm font-medium text-slate-500 dark:text-slate-400">
               INFORMATIONS PERSONNELLES
             </Text>
 
@@ -221,10 +221,10 @@ export function CreateChildModal({
                 <TouchableOpacity
                   onPress={() => setShowLevelPicker(true)}
                   disabled={isSubmitting}
-                  className="h-12 flex-row items-center justify-between rounded-md border border-input bg-background px-3"
+                  className="h-12 flex-row items-center justify-between rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3"
                 >
                   <Text
-                    className={selectedLevelLabel ? '' : 'text-muted-foreground'}
+                    className={selectedLevelLabel ? '' : 'text-slate-500 dark:text-slate-400'}
                   >
                     {selectedLevelLabel ?? 'Sélectionner le niveau'}
                   </Text>
@@ -235,9 +235,9 @@ export function CreateChildModal({
             </View>
 
             {/* Credentials Section */}
-            <View className="mb-4 mt-2 border-t border-border pt-4">
+            <View className="mb-4 mt-2 border-t border-slate-200 dark:border-slate-700 pt-4">
               <View className="mb-3 flex-row items-center justify-between">
-                <Text className="text-sm font-medium text-muted-foreground">
+                <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   IDENTIFIANTS DE CONNEXION
                 </Text>
                 <TouchableOpacity
@@ -247,7 +247,7 @@ export function CreateChildModal({
                   accessibilityLabel="Générer les identifiants"
                 >
                   <RefreshCw color={iconColors.foreground} size={14} />
-                  <Text className="text-sm font-medium text-primary">
+                  <Text className="text-sm font-medium text-blue-600 dark:text-blue-400">
                     Générer
                   </Text>
                 </TouchableOpacity>
@@ -287,7 +287,7 @@ export function CreateChildModal({
           </ScrollView>
 
           {/* Footer */}
-          <View className="border-t border-border px-4 py-4">
+          <View className="border-t border-slate-200 dark:border-slate-700 px-4 py-4">
             <Button
               onPress={handleSubmit}
               disabled={!isFormValid || isSubmitting}
@@ -298,7 +298,7 @@ export function CreateChildModal({
               ) : (
                 <UserPlus color="white" size={18} />
               )}
-              <Text className="font-semibold text-primary-foreground">
+              <Text className="font-semibold text-white dark:text-slate-900">
                 {isSubmitting ? 'Création...' : 'Créer le compte'}
               </Text>
             </Button>

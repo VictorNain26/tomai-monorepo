@@ -1,23 +1,19 @@
 import { View, type ViewProps } from 'react-native';
 import { cn } from '@/lib/utils';
 import { Text, type TextProps } from './text';
-import { shadows } from '@/lib/styles';
 
 /**
  * TomAI Card Component - 2026
  *
- * Design principles:
- * - Generous padding for comfortable reading
- * - Modern rounded corners (12px)
- * - Subtle elevation for depth
- * - Clean visual hierarchy
+ * Borderless design: depth via bg-white dark:bg-slate-800 contrast + subtle elevation.
+ * No visible borders — clean, modern look.
  */
 
 function Card({ className, style, ...props }: ViewProps) {
   return (
     <View
-      className={cn('rounded-lg border border-border bg-card', className)}
-      style={[shadows.sm, style]}
+      className={cn('rounded-2xl bg-white dark:bg-slate-800', className)}
+      style={style}
       {...props}
     />
   );
@@ -68,8 +64,8 @@ function CardFooter({ className, ...props }: ViewProps) {
 function CardCompact({ className, style, ...props }: ViewProps) {
   return (
     <View
-      className={cn('rounded-md border border-border bg-card', className)}
-      style={[shadows.xs, style]}
+      className={cn('rounded-xl bg-white dark:bg-slate-800', className)}
+      style={style}
       {...props}
     />
   );

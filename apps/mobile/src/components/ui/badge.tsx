@@ -8,12 +8,12 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary',
-        secondary: 'bg-secondary',
-        destructive: 'bg-destructive',
-        outline: 'border border-border bg-transparent',
-        success: 'bg-success',
-        warning: 'bg-warning',
+        default: 'bg-blue-600 dark:bg-blue-400',
+        secondary: 'bg-slate-100 dark:bg-slate-800',
+        destructive: 'bg-red-600 dark:bg-red-400',
+        outline: 'border border-slate-200 dark:border-slate-700 bg-transparent',
+        success: 'bg-emerald-600 dark:bg-emerald-400',
+        warning: 'bg-amber-600 dark:bg-amber-400',
         // Subject colors - aligned with SUBJECT_COLORS
         french: 'bg-violet-500',
         mathematics: 'bg-blue-500',
@@ -40,12 +40,12 @@ const badgeVariants = cva(
 const badgeTextVariants = cva('font-medium', {
   variants: {
     variant: {
-      default: 'text-primary-foreground',
-      secondary: 'text-secondary-foreground',
-      destructive: 'text-destructive-foreground',
-      outline: 'text-foreground',
-      success: 'text-success-foreground',
-      warning: 'text-warning-foreground',
+      default: 'text-white dark:text-slate-900',
+      secondary: 'text-slate-800 dark:text-slate-100',
+      destructive: 'text-white dark:text-slate-900',
+      outline: 'text-slate-800 dark:text-slate-100',
+      success: 'text-white dark:text-slate-900',
+      warning: 'text-white dark:text-slate-900',
       // Subject text colors
       french: 'text-white',
       mathematics: 'text-white',

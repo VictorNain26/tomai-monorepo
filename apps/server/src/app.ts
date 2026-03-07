@@ -13,7 +13,7 @@ import { appConfig } from './config/app.config.js';
 import { env, envUtils } from './config/environment.config.js';
 
 // Routes modulaires
-import { apiRoutes } from './routes/api.routes.js';
+import { apiRoutes } from './routes/api/index.js';
 import { chatMessageRoutes } from './routes/chat-message.routes.js';
 import { fileUploadRoutes } from './routes/file-upload.routes.js';
 import {
@@ -25,20 +25,17 @@ import {
 import { stripeWebhookRoutes } from './routes/stripe-webhook.routes.js';
 import { revenuecatWebhookRoutes } from './routes/revenuecat-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
-import { deckRoutes, cardRoutes, fsrsRoutes } from './routes/learning/index.js';
+import { deckRoutes, cardRoutes, fsrsRoutes, fsrsExtraRoutes } from './routes/learning/index.js';
 import { pronoteRoutes } from './routes/pronote.routes.js';
 import { waitlistRoutes } from './routes/waitlist.routes.js';
 
 // Services
 import { logger } from './lib/observability.js';
-import { memoryMonitor } from './middleware/memory-monitor.middleware.js';
 import { createRateLimitMiddleware, RateLimitPresets } from './middleware/rate-limit.middleware.js';
-import { tokenQuotaService } from './services/token-quota.service.js';
 
 // Database (pour health checks)
 import { db } from './db/connection.js';
 import { sql } from 'drizzle-orm';
-import { validateEncryptionSetup } from './lib/encryption.js';
 import { cacheService } from './services/memory-cache.service.js';
 
 const isDev = envUtils.isDevelopment;
@@ -281,6 +278,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(deckRoutes)          // Outils de révision - decks, subjects, topics
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation
   .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau
+  .use(fsrsExtraRoutes)     // FSRS: preview, reset, config
   .use(pronoteRoutes)       // Pronote integration - Parent-based architecture
   .use(waitlistRoutes)      // Waitlist - Landing page email collection
 
@@ -291,166 +289,5 @@ export { app };
 // Eden Treaty type export - Type-safety end-to-end frontend/backend
 export type App = typeof app;
 
-/**
- * Token quota reset cron job
- * Runs every hour and checks if it's 10:00 AM Paris time
- * If so, resets all users' daily token quotas
- */
-let tokenResetInterval: ReturnType<typeof setInterval> | null = null;
-
-function startTokenResetCron(): void {
-  // Run every hour
-  const ONE_HOUR = 60 * 60 * 1000;
-
-  // Clear any existing interval
-  if (tokenResetInterval) {
-    clearInterval(tokenResetInterval);
-  }
-
-  tokenResetInterval = setInterval(async () => {
-    try {
-      // Check if it's 10:00 AM Paris time (between 10:00 and 10:59)
-      const now = new Date();
-      const parisFormatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Europe/Paris',
-        hour: '2-digit',
-        hour12: false,
-      });
-      const parisHour = parseInt(parisFormatter.format(now));
-
-      if (parisHour === 10) {
-        logger.info('Token reset cron triggered at 10:00 AM Paris', {
-          operation: 'token-reset-cron',
-          parisTime: now.toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })
-        });
-
-        const result = await tokenQuotaService.resetAllDailyTokens();
-
-        logger.info('Token reset cron completed', {
-          operation: 'token-reset-cron:complete',
-          resetCount: result.resetCount
-        });
-      }
-    } catch (error) {
-      logger.error('Token reset cron failed', {
-        _error: error instanceof Error ? error.message : String(error),
-        severity: 'high' as const,
-        operation: 'token-reset-cron:error'
-      });
-    }
-  }, ONE_HOUR);
-
-  // Also run immediately on startup to catch any missed resets
-  void (async () => {
-    try {
-      const result = await tokenQuotaService.resetAllDailyTokens();
-      if (result.resetCount > 0) {
-        logger.info('Token reset on startup', {
-          operation: 'token-reset-startup',
-          resetCount: result.resetCount
-        });
-      }
-    } catch (error) {
-      logger.error('Token reset on startup failed', {
-        _error: error instanceof Error ? error.message : String(error),
-        severity: 'high' as const,
-        operation: 'token-reset-startup:error'
-      });
-    }
-  })();
-
-  logger.info('Token reset cron started', {
-    operation: 'token-reset-cron:init',
-    schedule: 'Every hour, resets at 10:00 AM Paris time'
-  });
-}
-
-/**
- * Fonction d'initialisation des services
- * Architecture 2026: PostgreSQL + In-memory cache (pas de Redis)
- */
-export async function initializeServices(): Promise<void> {
-  try {
-    logger.info('Initializing TomAI services...', {
-      operation: 'services:init',
-      environment: env.NODE_ENV
-    });
-
-    // 1. In-memory cache is always ready (no initialization needed)
-    logger.info('In-memory cache ready', {
-      operation: 'services:init:cache',
-      provider: 'memory-lru'
-    });
-
-    // 2. Validate Pronote encryption setup (SECURITY: fail fast if misconfigured)
-    const hasPronoteKey = !!Bun.env['PRONOTE_ENCRYPTION_KEY'];
-    if (hasPronoteKey) {
-      const encryptionValid = await validateEncryptionSetup();
-      if (!encryptionValid) {
-        logger.error('Pronote encryption validation failed', {
-          operation: 'services:init:encryption:failed',
-          _error: 'Encryption key validation failed - encrypt/decrypt cycle test failed',
-          severity: 'critical' as const,
-          impact: 'Pronote integration will not work'
-        });
-        throw new Error('PRONOTE_ENCRYPTION_KEY validation failed - check key format');
-      }
-      logger.info('Pronote encryption validated', {
-        operation: 'services:init:encryption',
-        status: 'ready'
-      });
-    } else {
-      logger.info('Pronote encryption not configured (optional feature)', {
-        operation: 'services:init:encryption:skipped'
-      });
-    }
-
-    // 3. Verify PostgreSQL connection (migrations run via docker-entrypoint.sh)
-    const dbStart = Date.now();
-    await db.execute(sql`SELECT 1 as health_check`);
-    const dbLatency = Date.now() - dbStart;
-
-    logger.info('PostgreSQL verified successfully', {
-      operation: 'services:init:database',
-      latency_ms: dbLatency,
-      pool: 'ready'
-    });
-
-    // 4. Verify migrations were applied
-    const migrations = await db.execute(sql`
-      SELECT COUNT(*) as count
-      FROM drizzle.__drizzle_migrations
-    `);
-
-    logger.info('Database migrations verified', {
-      operation: 'services:init:migrations',
-      count: Number(migrations[0]?.count ?? 0)
-    });
-
-    // 5. PRODUCTION: Démarrer le monitoring mémoire
-    memoryMonitor.startMonitoring(30000); // Check toutes les 30 secondes
-
-    // 6. Start token quota reset cron job (every hour, resets at 10:00 AM Paris)
-    startTokenResetCron();
-
-    logger.info('All services initialized successfully', {
-      operation: 'services:init:success',
-      services: {
-        database: 'ready',
-        cache: 'memory-lru',
-        rag: 'qdrant-cloud-gemini',
-        memory_monitor: 'active',
-        token_reset_cron: 'active'
-      },
-      environment: env.NODE_ENV
-    });
-
-  } catch (_error) {
-    logger.error('FATAL: Service initialization failed', {
-      operation: 'services:init:error',
-      _error: _error instanceof Error ? _error.message : String(_error),
-      severity: 'critical' as const
-    });
-    throw _error;
-  }
-}
+// Re-export initializeServices from server-lifecycle
+export { initializeServices } from './services/server-lifecycle.js';

@@ -3,7 +3,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     /* ===================================== */
-    /* SERVER BASE - BUN RUNTIME 2025       */
+    /* SERVER BASE - BUN RUNTIME 2026       */
     /* Extends monorepo base config         */
     /* ===================================== */
 

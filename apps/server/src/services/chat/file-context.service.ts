@@ -1,57 +1,12 @@
-/**
- * Service de gestion du contexte des fichiers pour le chat
- *
- * Architecture Scaleway + PostgreSQL (RGPD France):
- * - Métadonnées: PostgreSQL (table files)
- * - Contenu binaire: Scaleway Object Storage
- * - Analyse: DocumentAnalysisService + cache DB
- */
-
 import { filesRepository, sessionFilesRepository } from '../../db/repositories/index.js';
 import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
 import { documentAnalysisService, type DocumentAnalysisResult } from '../document/index.js';
-import { geminiFilesService } from '../gemini-files.service.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
+import type { AttachedFileInfo, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
+import { prepareMultimodalFiles, updateFileAnalysis } from './file-multimodal.service.js';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface AttachedFileInfo {
-  fileName: string;
-  fileId?: string;
-  geminiFileId?: string;
-  mimeType?: string;
-  fileSizeBytes?: number;
-}
-
-export interface FileAnalysisResult {
-  analysis: string;
-  extractedText?: string;
-  fileName: string;
-  documentType?: string;
-  subject?: string;
-  hadRAG?: boolean;
-}
-
-export interface FileAnalysisOptions {
-  content?: string;
-  schoolLevel: EducationLevelType;
-  userId: string;
-}
-
-export interface MultimodalFile {
-  fileUri?: string;
-  base64?: string;
-  mimeType: string;
-  contentType: 'image' | 'document';
-  fileName: string;
-}
-
-// ============================================================================
-// Service
-// ============================================================================
+export type { AttachedFileInfo, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
 
 class FileContextService {
   /**
@@ -251,8 +206,7 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       }
 
       if (analysisResult.success) {
-        // Sauvegarder l'analyse en DB
-        await this.updateFileAnalysis(file.id, analysisResult);
+        await updateFileAnalysis(file.id, analysisResult);
 
         return {
           analysis: analysisResult.analysis,
@@ -334,130 +288,8 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
     };
   }
 
-  /**
-   * Prépare les fichiers pour envoi multimodal à Gemini
-   */
   async prepareMultimodalFiles(fileIds: string[]): Promise<MultimodalFile[]> {
-    if (!fileIds || fileIds.length === 0) {
-      return [];
-    }
-
-    const files: MultimodalFile[] = [];
-
-    for (const fileId of fileIds) {
-      try {
-        const file = await filesRepository.findById(fileId);
-        if (!file) continue;
-
-        const isImage = file.mimeType.startsWith('image/');
-        const contentType: 'image' | 'document' = isImage ? 'image' : 'document';
-
-        // Vérifier si Gemini URI est valide
-        let fileUri = file.geminiFileUri ?? undefined;
-        const isExpired = fileUri && file.geminiExpiresAt && file.geminiExpiresAt <= new Date();
-        if (isExpired) {
-          fileUri = undefined;
-        }
-
-        const multimodalFile: MultimodalFile = {
-          mimeType: file.mimeType,
-          contentType,
-          fileName: file.fileName
-        };
-
-        if (fileUri) {
-          multimodalFile.fileUri = fileUri;
-        } else {
-          // Récupérer depuis Scaleway pour re-upload ou fallback base64
-          const content = await scalewayStorageService.getFileContent(file.storageKey);
-          if (!content) continue;
-
-          // Re-upload vers Gemini Files API
-          const uploadResult = await geminiFilesService.uploadFile(
-            content.content.buffer as ArrayBuffer,
-            file.mimeType,
-            file.fileName
-          );
-
-          if (uploadResult.success && uploadResult.fileUri && uploadResult.expiresAt) {
-            multimodalFile.fileUri = uploadResult.fileUri;
-            // Persister le nouveau URI en DB
-            await filesRepository.updateGeminiInfo(
-              file.id,
-              uploadResult.fileUri,
-              uploadResult.expiresAt
-            );
-            logger.info('Re-uploaded expired file to Gemini', {
-              fileId, fileName: file.fileName, operation: 'prepare-multimodal'
-            });
-          } else {
-            // Fallback base64 si re-upload échoue
-            multimodalFile.base64 = content.content.toString('base64');
-            logger.warn('Gemini re-upload failed, using base64 fallback', {
-              fileId, error: uploadResult.error, operation: 'prepare-multimodal'
-            });
-          }
-        }
-
-        files.push(multimodalFile);
-      } catch (error) {
-        logger.warn('Failed to prepare multimodal file', {
-          fileId,
-          error: error instanceof Error ? error.message : String(error),
-          operation: 'prepare-multimodal'
-        });
-      }
-    }
-
-    return files;
-  }
-
-  // ============================================================================
-  // Private Helpers
-  // ============================================================================
-
-  private async updateFileAnalysis(fileId: string, result: DocumentAnalysisResult): Promise<void> {
-    try {
-      const file = await filesRepository.findById(fileId);
-      if (!file) return;
-
-      const existingContext = (file.educationalContext ?? {}) as Record<string, unknown>;
-      const updatedContext = {
-        ...existingContext,
-        analysisContext: result.analysis,
-        extractedText: result.extraction.text,
-        documentType: result.classification.documentType,
-        subject: result.classification.subject,
-        hadRAG: !!result.rag?.found,
-        classification: result.classification,
-        ragContext: result.rag?.context,
-        metrics: result.metrics
-      };
-
-      // Update via raw query pour le jsonb
-      const { db, sql } = await import('../../db/repositories/index.js');
-      const { files } = await import('../../db/schema.js');
-      const { eq } = await import('drizzle-orm');
-
-      await db.update(files)
-        .set({
-          educationalContext: sql`${JSON.stringify(updatedContext)}::jsonb`,
-          updatedAt: new Date()
-        })
-        .where(eq(files.id, fileId));
-
-      logger.info('File analysis saved to DB', {
-        fileId,
-        documentType: result.classification.documentType,
-        operation: 'update-file-analysis'
-      });
-    } catch (error) {
-      logger.warn('Failed to update file analysis in DB', {
-        error: error instanceof Error ? error.message : String(error),
-        fileId,
-        operation: 'update-file-analysis'
-      });
-    }
+    return prepareMultimodalFiles(fileIds);
   }
 }
 

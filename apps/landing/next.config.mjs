@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 /** @type {import('next').NextConfig} */
 import path from 'path';
 
@@ -21,7 +20,7 @@ const nextConfig = {
 
   // Performance optimizations
   experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: ['lucide-react'],
   },
 
   // Vercel-specific optimizations

@@ -101,8 +101,8 @@ export function MatchingViewer({ content }: { content: MatchingContent }) {
                   isMatched
                     ? 'border-green-500 bg-green-50'
                     : isSelected
-                      ? 'border-primary'
-                      : 'border-border bg-card'
+                      ? 'border-blue-600 dark:border-blue-400'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
                 }`}
                 style={!isMatched && isSelected ? { backgroundColor: bgColors.primary[10] } : undefined}
               >
@@ -124,7 +124,7 @@ export function MatchingViewer({ content }: { content: MatchingContent }) {
                 className={`rounded-lg border p-3 ${
                   isUsed
                     ? 'border-green-500 bg-green-50'
-                    : 'border-border bg-card'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
                 }`}
                 style={!isUsed && selectedLeft !== null ? { borderColor: borderColors.primary[50] } : undefined}
               >
@@ -137,7 +137,7 @@ export function MatchingViewer({ content }: { content: MatchingContent }) {
 
       {allMatched && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-6">
-          <Text className="font-semibold text-primary-foreground">Valider</Text>
+          <Text className="font-semibold text-white dark:text-slate-900">Valider</Text>
         </Button>
       )}
 
@@ -168,7 +168,7 @@ export function FillBlankViewer({ content }: { content: FillBlankContent }) {
         </View>
       )}
 
-      <View className="mb-6 rounded-xl bg-muted p-4">
+      <View className="mb-6 rounded-xl bg-slate-100 dark:bg-slate-800 p-4">
         <Text className="text-center text-lg">{displaySentence}</Text>
       </View>
 
@@ -177,14 +177,14 @@ export function FillBlankViewer({ content }: { content: FillBlankContent }) {
           const isSelected = selected === index;
           const isCorrectOption = index === content.correctIndex;
 
-          let bgClass = 'bg-card border-border';
+          let bgClass = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700';
           let useInlineStyle = false;
           if (validated && isCorrectOption) {
             bgClass = 'bg-green-100 border-green-500';
           } else if (validated && isSelected && !isCorrectOption) {
             bgClass = 'bg-red-100 border-red-500';
           } else if (isSelected) {
-            bgClass = 'border-primary';
+            bgClass = 'border-blue-600 dark:border-blue-400';
             useInlineStyle = true;
           }
 
@@ -204,7 +204,7 @@ export function FillBlankViewer({ content }: { content: FillBlankContent }) {
 
       {!validated && selected !== null && (
         <Button onPress={() => setValidated(true)} className="mt-6">
-          <Text className="font-semibold text-primary-foreground">Valider</Text>
+          <Text className="font-semibold text-white dark:text-slate-900">Valider</Text>
         </Button>
       )}
 
@@ -245,14 +245,14 @@ export function WordOrderViewer({ content }: { content: WordOrderContent }) {
       <Text className="mb-4 text-center font-medium">{content.instruction}</Text>
 
       {content.translation && (
-        <View className="mb-4 rounded-lg bg-muted p-3">
+        <View className="mb-4 rounded-lg bg-slate-100 dark:bg-slate-800 p-3">
           <Text variant="muted" className="text-center text-sm">
             💡 {content.translation}
           </Text>
         </View>
       )}
 
-      <View className="mb-6 min-h-[60px] rounded-xl border border-border bg-card p-4">
+      <View className="mb-6 min-h-[60px] rounded-xl bg-white dark:bg-slate-800 p-4">
         {selectedWords.length === 0 ? (
           <Text variant="muted" className="text-center">
             Appuie sur les mots pour construire la phrase
@@ -263,9 +263,9 @@ export function WordOrderViewer({ content }: { content: WordOrderContent }) {
               <TouchableOpacity
                 key={index}
                 onPress={() => handleRemoveWord(index)}
-                className="rounded-lg bg-primary px-3 py-2"
+                className="rounded-lg bg-blue-600 dark:bg-blue-400 px-3 py-2"
               >
-                <Text className="text-primary-foreground">{word}</Text>
+                <Text className="text-white dark:text-slate-900">{word}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -278,7 +278,7 @@ export function WordOrderViewer({ content }: { content: WordOrderContent }) {
             key={index}
             onPress={() => handleWordPress(word)}
             disabled={validated}
-            className="rounded-lg border border-border bg-card px-3 py-2"
+            className="rounded-lg bg-white dark:bg-slate-800 px-3 py-2"
           >
             <Text>{word}</Text>
           </TouchableOpacity>
@@ -291,7 +291,7 @@ export function WordOrderViewer({ content }: { content: WordOrderContent }) {
             <Text>Réessayer</Text>
           </Button>
           <Button onPress={() => setValidated(true)} className="flex-1">
-            <Text className="font-semibold text-primary-foreground">Valider</Text>
+            <Text className="font-semibold text-white dark:text-slate-900">Valider</Text>
           </Button>
         </View>
       )}

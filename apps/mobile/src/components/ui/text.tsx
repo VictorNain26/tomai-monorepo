@@ -1,11 +1,20 @@
+import { createContext, useContext } from 'react';
 import {
   Text as RNText,
+  Platform,
   type TextProps as RNTextProps,
   type AccessibilityRole,
 } from 'react-native';
 import { Text as SlotText } from '@rn-primitives/slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
+
+/**
+ * TextClassContext - allows parent components (e.g. Button) to pass
+ * text styles to child Text components via React context.
+ * Follows the React Native Reusables pattern.
+ */
+const TextClassContext = createContext<string | undefined>(undefined);
 
 /**
  * TomAI Text Component - 2026
@@ -22,7 +31,9 @@ import { cn } from '@/lib/utils';
  * - tiny: 12px medium - Badges, timestamps
  */
 
-const textVariants = cva('text-base text-foreground web:select-text', {
+const textVariants = cva(
+  cn('text-base text-slate-800 dark:text-slate-100', Platform.select({ web: 'select-text' })),
+  {
   variants: {
     variant: {
       default: '',
@@ -35,15 +46,15 @@ const textVariants = cva('text-base text-foreground web:select-text', {
       heading: 'text-2xl font-bold tracking-tight',
       // Body variants
       large: 'text-lg font-semibold',
-      lead: 'text-lg text-muted-foreground',
+      lead: 'text-lg text-slate-500 dark:text-slate-400',
       small: 'text-sm font-medium',
-      muted: 'text-sm text-muted-foreground',
-      tiny: 'text-xs font-medium text-muted-foreground',
+      muted: 'text-sm text-slate-500 dark:text-slate-400',
+      tiny: 'text-xs font-medium text-slate-500 dark:text-slate-400',
       // Semantic variants
-      label: 'text-sm font-medium text-foreground',
-      caption: 'text-xs text-muted-foreground',
-      error: 'text-sm text-destructive',
-      success: 'text-sm text-success',
+      label: 'text-sm font-medium text-slate-800 dark:text-slate-100',
+      caption: 'text-xs text-slate-500 dark:text-slate-400',
+      error: 'text-sm text-red-600 dark:text-red-400',
+      success: 'text-sm text-emerald-600 dark:text-emerald-400',
     },
   },
   defaultVariants: {
@@ -75,6 +86,17 @@ type TextProps = RNTextProps &
     asChild?: boolean;
   };
 
+/**
+ * aria-level for heading hierarchy (WCAG 1.3.1)
+ * Follows the React Native Reusables pattern for proper heading semantics.
+ */
+const ARIA_LEVEL: Partial<Record<NonNullable<TextProps['variant']>, string>> = {
+  h1: '1',
+  h2: '2',
+  h3: '3',
+  h4: '4',
+};
+
 function Text({
   className,
   variant,
@@ -82,18 +104,20 @@ function Text({
   accessibilityRole,
   ...props
 }: TextProps) {
+  const textClass = useContext(TextClassContext);
   const Component = asChild ? SlotText : RNText;
   // Use provided accessibilityRole or derive from variant
   const derivedRole = accessibilityRole ?? getAccessibilityRole(variant);
 
   return (
     <Component
-      className={cn(textVariants({ variant }), className)}
+      className={cn(textVariants({ variant }), textClass, className)}
       accessibilityRole={derivedRole}
+      aria-level={variant ? ARIA_LEVEL[variant] : undefined}
       {...props}
     />
   );
 }
 
-export { Text, textVariants };
+export { Text, TextClassContext, textVariants };
 export type { TextProps };

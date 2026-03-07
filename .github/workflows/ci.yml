@@ -1,5 +1,5 @@
 # TomAI Monorepo - CI Pipeline
-# Path-filtered, parallelized, SHA-pinned (2026 best practices)
+# Turborepo --affected filtering, remote cache, parallelized, SHA-pinned
 
 name: CI
 
@@ -17,51 +17,17 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_SCM_BASE: origin/main
+
 jobs:
   # =============================================
-  # Job 1: Detect changed apps (< 10 seconds)
-  # =============================================
-  changes:
-    name: Detect Changes
-    runs-on: ubuntu-latest
-    outputs:
-      server: ${{ steps.filter.outputs.server }}
-      landing: ${{ steps.filter.outputs.landing }}
-      mobile: ${{ steps.filter.outputs.mobile }}
-      packages: ${{ steps.filter.outputs.packages }}
-      any: ${{ steps.filter.outputs.server == 'true' || steps.filter.outputs.landing == 'true' || steps.filter.outputs.mobile == 'true' || steps.filter.outputs.packages == 'true' || steps.filter.outputs.ci == 'true' }}
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-        id: filter
-        with:
-          filters: |
-            server:
-              - 'apps/server/**'
-              - 'packages/**'
-              - 'pnpm-lock.yaml'
-            landing:
-              - 'apps/landing/**'
-              - 'packages/**'
-              - 'pnpm-lock.yaml'
-            mobile:
-              - 'apps/mobile/**'
-              - 'packages/**'
-              - 'pnpm-lock.yaml'
-            packages:
-              - 'packages/**'
-            ci:
-              - '.github/**'
-              - 'turbo.json'
-              - 'tsconfig.base.json'
-
-  # =============================================
-  # Job 2: Typecheck + Lint (parallel matrix)
+  # Job 1: Typecheck + Lint (parallel matrix)
   # =============================================
   validate-tasks:
     name: ${{ matrix.task }}
-    needs: changes
-    if: needs.changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -69,17 +35,19 @@ jobs:
         task: [typecheck, lint]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/setup-monorepo
         with:
           turbo-cache-key: ${{ matrix.task }}
-      - run: pnpm run ${{ matrix.task }}
+      - run: pnpm turbo run ${{ matrix.task }} --affected
 
   # =============================================
-  # Job 2b: Required status check gate
+  # Job 1b: Required status check gate
   # =============================================
   validate:
     name: Validate
-    needs: [changes, validate-tasks]
+    needs: validate-tasks
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -90,51 +58,70 @@ jobs:
           fi
 
   # =============================================
-  # Job 3: Tests (parallel with validate)
+  # Job 2: Tests (parallel with validate)
   # =============================================
   test:
     name: Test
-    needs: changes
-    if: needs.changes.outputs.server == 'true' || needs.changes.outputs.packages == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/setup-monorepo
         with:
           turbo-cache-key: test
-      - run: pnpm run test
+      - run: pnpm turbo run test --affected
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
   # =============================================
-  # Job 4: Build (after validate passes)
+  # Job 3: Build (after validate passes)
   # =============================================
   build:
     name: Build
-    needs: [changes, validate-tasks]
-    if: needs.changes.outputs.server == 'true' || needs.changes.outputs.landing == 'true' || needs.changes.outputs.packages == 'true'
+    needs: validate-tasks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/setup-monorepo
         with:
           turbo-cache-key: build
-      - run: pnpm run build
+      - run: pnpm turbo run build --affected
 
   # =============================================
-  # Job 5: Migration sync (parallel, server only)
+  # Job 4: Migration sync (server DB schema only)
   # =============================================
   migrations:
     name: Migration Sync
-    needs: changes
-    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Check if server DB schema changed
+        id: check
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ]; then
+            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/server/src/db/' 'apps/server/drizzle.config.ts')
+          else
+            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'apps/server/src/db/' 'apps/server/drizzle.config.ts')
+          fi
+          if [ -n "$DIFF" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Schema files changed:"
+            echo "$DIFF"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No schema changes detected"
+          fi
       - uses: ./.github/actions/setup-monorepo
+        if: steps.check.outputs.changed == 'true'
         with:
           turbo-cache-key: migrations
       - name: Check migrations in sync with schema
+        if: steps.check.outputs.changed == 'true'
         working-directory: apps/server
         run: |
           bun run db:generate

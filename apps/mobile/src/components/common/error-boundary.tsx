@@ -4,6 +4,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { bgColors } from '@/lib/styles';
+import { logError } from '@/lib/dev-logger';
 
 interface Props {
   children: ReactNode;
@@ -14,21 +15,31 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to monitoring service
-    console.error('ErrorBoundary caught:', error, errorInfo);
+    this.setState({ errorInfo });
+    // Full structured log for debugging — includes component stack
+    console.error(
+      '[ErrorBoundary]',
+      JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+      }, null, 2),
+    );
+    logError(error, errorInfo.componentStack ?? undefined);
     this.props.onError?.(error, errorInfo);
   }
 
@@ -62,6 +73,11 @@ export class ErrorBoundary extends Component<Props, State> {
                 <Text variant="small" className="font-mono text-red-600 dark:text-red-400">
                   {this.state.error.message}
                 </Text>
+                {this.state.errorInfo?.componentStack && (
+                  <Text variant="small" className="font-mono text-red-500 dark:text-red-300 mt-2">
+                    {this.state.errorInfo.componentStack.slice(0, 500)}
+                  </Text>
+                )}
               </View>
             )}
 

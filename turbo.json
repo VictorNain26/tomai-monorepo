@@ -1,5 +1,5 @@
 {
-  "$schema": "https://turborepo.com/schema.json",
+  "$schema": "https://turborepo.dev/schema.v2.json",
   "ui": "tui",
   "globalDependencies": [
     "tsconfig.base.json"
@@ -11,7 +11,9 @@
   ],
   "globalPassThroughEnv": [
     "GITHUB_ACTIONS",
-    "VERCEL"
+    "VERCEL",
+    "SENTRY_ORG",
+    "SENTRY_PROJECT"
   ],
   "tasks": {
     "build": {
@@ -45,8 +47,7 @@
     "lint": {
       "inputs": [
         "$TURBO_DEFAULT$",
-        "eslint.config.*",
-        ".eslintrc.*"
+        "eslint.config.*"
       ],
       "outputs": []
     },
