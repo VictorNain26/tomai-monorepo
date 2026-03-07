@@ -21,6 +21,7 @@
       "channel": "development",
       "env": {
         "APP_ENV": "development",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
         "EXPO_PUBLIC_API_URL": "https://api-staging.tomia.fr",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "294154280388-4a5pnm5b4qpgh69btual0ld1ietvfakl.apps.googleusercontent.com"
       },
@@ -37,6 +38,7 @@
       },
       "env": {
         "APP_ENV": "preview",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
         "EXPO_PUBLIC_API_URL": "https://api-staging.tomia.fr",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "294154280388-4a5pnm5b4qpgh69btual0ld1ietvfakl.apps.googleusercontent.com"
       }
