@@ -10,7 +10,8 @@
  */
 
 import { memo } from 'react';
-import { View, Image } from 'react-native';
+import { View, TouchableOpacity, Image } from 'react-native';
+import { Volume2, VolumeX, Loader2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import {
   MathText,
@@ -22,8 +23,9 @@ import {
 import { MarkdownContent } from './MarkdownContent';
 import { FileAttachmentCard } from './FileAttachmentCard';
 import { cn } from '@/lib/utils';
-import { useThemeColors } from '@/hooks';
+import { useTextToSpeech, useIconColors, useThemeColors } from '@/hooks';
 import type { ChatMessage as ChatMessageType } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -33,6 +35,16 @@ interface ChatMessageProps {
 export const ChatMessage = memo(function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isThinking = !isUser && isStreaming && message.content.length === 0;
+  const tts = useTextToSpeech();
+  const iconColors = useIconColors();
+
+  // Can speak if assistant message with content and not streaming
+  const canSpeak = !isUser && message.content.length > 0 && !isStreaming;
+
+  const handleSpeakToggle = () => {
+    if (!canSpeak) return;
+    tts.toggle(message.content);
+  };
 
   return (
     <View
@@ -50,7 +62,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
         <TomAvatar size="sm" />
       )}
 
-      {/* Message Bubble */}
+      {/* Message Bubble + Actions */}
       <View className="max-w-[80%]">
         <View
           className={cn(
@@ -68,6 +80,44 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
             />
           )}
         </View>
+
+        {/* TTS Button - only for assistant messages */}
+        {canSpeak && (
+          <View className="mt-1 flex-row">
+            <TouchableOpacity
+              onPress={handleSpeakToggle}
+              disabled={tts.isLoading}
+              className="flex-row items-center gap-1 rounded-full px-2 py-1"
+              style={tts.isSpeaking ? { backgroundColor: bgColors.primary[15] } : undefined}
+              accessibilityLabel={tts.isSpeaking ? 'Arreter la lecture' : 'Ecouter la reponse'}
+              accessibilityHint="Active la lecture vocale du message"
+              accessibilityRole="button"
+            >
+              {tts.isLoading ? (
+                <Loader2 color={iconColors.muted} size={14} />
+              ) : tts.isSpeaking ? (
+                <VolumeX color={iconColors.foreground} size={14} />
+              ) : (
+                <Volume2 color={iconColors.muted} size={14} />
+              )}
+              <Text
+                variant="tiny"
+                className={tts.isSpeaking ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}
+              >
+                {tts.isLoading
+                  ? 'Chargement...'
+                  : tts.isSpeaking
+                    ? 'Arrêter'
+                    : 'Écouter'}
+              </Text>
+            </TouchableOpacity>
+            {tts.error && (
+              <Text variant="tiny" className="ml-1 self-center text-red-600 dark:text-red-400" numberOfLines={1}>
+                {tts.error}
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Image Preview */}
         {message.attachedFile?.preview && message.attachedFile.mimeType?.startsWith('image/') && (
