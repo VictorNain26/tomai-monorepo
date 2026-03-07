@@ -229,13 +229,14 @@ export class GladiaTranscriptionService {
 
     formData.append('audio', blob, `audio.${ext}`);
 
-    const response = await fetch(new Request(`${this.baseUrl}/upload`, {
+    const response = await fetch(`${this.baseUrl}/upload`, {
       method: 'POST',
       headers: {
         'x-gladia-key': this.apiKey,
       },
-      body: formData,
-    }));
+      // FormData body — Bun handles multipart encoding natively
+      body: formData as unknown as RequestInit['body'],
+    });
 
     if (!response.ok) {
       const errorText = await response.text();

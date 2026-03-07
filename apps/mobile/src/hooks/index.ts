@@ -70,15 +70,6 @@ export {
   type SubscriptionActions,
 } from './useSubscription';
 export {
-  useVoiceInput,
-  type VoiceInputState,
-} from './useVoiceInput';
-export {
-  useTextToSpeech,
-  type TextToSpeechState,
-  type TTSOptions,
-} from './useTextToSpeech';
-export {
   useFileShare,
   type FileShareState,
 } from './useFileShare';
