@@ -131,31 +131,46 @@ function parseEnvironment(): EnvironmentConfig {
 }
 
 /**
- * Configuration de l'environnement - instance singleton
+ * Configuration de l'environnement - lazy singleton
+ * Validated on first access, not at module import time.
+ * This allows tests to import modules that depend on env without
+ * needing all env vars to be set.
  */
-export const env = parseEnvironment();
+let _env: EnvironmentConfig | null = null;
+
+export function getEnv(): EnvironmentConfig {
+  _env ??= parseEnvironment();
+  return _env;
+}
+
+/** @deprecated Use getEnv() — kept for backward compatibility during migration */
+export const env: EnvironmentConfig = new Proxy({} as EnvironmentConfig, {
+  get(_target, prop: string) {
+    return getEnv()[prop as keyof EnvironmentConfig];
+  },
+});
 
 /**
  * Utilitaires pour l'environnement
  */
 export const envUtils = {
-  isDevelopment: env.NODE_ENV === 'development',
-  isProduction: env.NODE_ENV === 'production',
-  isTest: env.NODE_ENV === 'test',
-  isDocker: isRunningInDocker(),
+  get isDevelopment() { return getEnv().NODE_ENV === 'development'; },
+  get isProduction() { return getEnv().NODE_ENV === 'production'; },
+  get isTest() { return getEnv().NODE_ENV === 'test'; },
+  get isDocker() { return isRunningInDocker(); },
 
   /**
    * Vérifie si une variable d'environnement est définie
    */
   has(key: keyof EnvironmentConfig): boolean {
-    return env[key] !== undefined;
+    return getEnv()[key] !== undefined;
   },
 
   /**
    * Obtient une variable avec une valeur par défaut
    */
   get<K extends keyof EnvironmentConfig>(key: K, defaultValue: EnvironmentConfig[K]): EnvironmentConfig[K] {
-    return env[key] ?? defaultValue;
+    return getEnv()[key] ?? defaultValue;
   },
 
   /**

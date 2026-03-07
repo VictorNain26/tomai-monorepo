@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 import path from 'path';
-import process from 'process';
 
 const nextConfig = {
   // Optimize for production

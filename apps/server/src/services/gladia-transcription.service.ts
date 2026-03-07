@@ -229,13 +229,13 @@ export class GladiaTranscriptionService {
 
     formData.append('audio', blob, `audio.${ext}`);
 
-    const response = await fetch(`${this.baseUrl}/upload`, {
+    const response = await fetch(new Request(`${this.baseUrl}/upload`, {
       method: 'POST',
       headers: {
         'x-gladia-key': this.apiKey,
       },
-      body: formData as never,
-    });
+      body: formData,
+    }));
 
     if (!response.ok) {
       const errorText = await response.text();
