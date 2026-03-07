@@ -119,17 +119,6 @@ jest.mock('react-native-purchases', () => ({
   LOG_LEVEL: { DEBUG: 0 },
 }));
 
-// Mock @sentry/react-native
-jest.mock('@sentry/react-native', () => ({
-  init: jest.fn(),
-  wrap: jest.fn((component) => component),
-  captureException: jest.fn(),
-  captureMessage: jest.fn(),
-  setUser: jest.fn(),
-  addBreadcrumb: jest.fn(),
-  withScope: jest.fn((cb) => cb({ setExtra: jest.fn() })),
-}));
-
 // Mock @shopify/flash-list
 jest.mock('@shopify/flash-list', () => {
   const { FlatList } = require('react-native');

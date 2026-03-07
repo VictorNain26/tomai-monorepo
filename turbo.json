@@ -11,9 +11,7 @@
   ],
   "globalPassThroughEnv": [
     "GITHUB_ACTIONS",
-    "VERCEL",
-    "SENTRY_ORG",
-    "SENTRY_PROJECT"
+    "VERCEL"
   ],
   "tasks": {
     "build": {
