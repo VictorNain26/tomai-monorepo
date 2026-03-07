@@ -1,5 +1,5 @@
 import { pgTable, varchar, text, timestamp, boolean, integer, jsonb, pgEnum, index, foreignKey, uuid } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // =============================================
 // ENUMS
@@ -214,16 +214,34 @@ export const passkey = pgTable('passkey', {
 }));
 
 // =============================================
+// RELATIONS
+// =============================================
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id]
+  }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id]
+  }),
+}));
+
+// =============================================
 // TYPES
 // =============================================
-export type Passkey = typeof passkey.$inferSelect;
-export type NewPasskey = typeof passkey.$inferInsert;
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Session = typeof session.$inferSelect;
 export type NewSession = typeof session.$inferInsert;
 export type Account = typeof account.$inferSelect;
 export type NewAccount = typeof account.$inferInsert;
+export type Passkey = typeof passkey.$inferSelect;
+export type NewPasskey = typeof passkey.$inferInsert;
 
 export type UserRole = typeof userRoleEnum.enumValues[number];
 export type SchoolLevel = typeof schoolLevelEnum.enumValues[number];

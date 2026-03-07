@@ -1,4 +1,5 @@
 import { pgTable, uuid, varchar, timestamp, boolean, index, foreignKey } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { user } from './auth.schema';
 
 // =============================================
@@ -37,6 +38,17 @@ export const devicePushTokens = pgTable('device_push_tokens', {
   userIdIdx: index('idx_device_push_tokens_user_id').on(table.userId),
   tokenIdx: index('idx_device_push_tokens_token').on(table.token),
   activeIdx: index('idx_device_push_tokens_active').on(table.isActive),
+}));
+
+// =============================================
+// RELATIONS
+// =============================================
+
+export const devicePushTokensRelations = relations(devicePushTokens, ({ one }) => ({
+  user: one(user, {
+    fields: [devicePushTokens.userId],
+    references: [user.id]
+  }),
 }));
 
 // =============================================

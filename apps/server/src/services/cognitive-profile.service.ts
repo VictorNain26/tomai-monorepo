@@ -24,7 +24,7 @@ export const cognitiveProfileService = {
   async getProfile(userId: string): Promise<StudentCognitiveProfile | null> {
     try {
       const profile = await db.query.studentCognitiveProfiles.findFirst({
-        where: { userId },
+        where: eq(studentCognitiveProfiles.userId, userId),
       });
       return profile ?? null;
     } catch (error) {

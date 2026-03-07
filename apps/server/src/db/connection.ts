@@ -6,7 +6,6 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
 import * as schema from './schema';
-import { relations } from './relations';
 import { logger } from '../lib/observability';
 
 // ============================================================================
@@ -14,7 +13,7 @@ import { logger } from '../lib/observability';
 // ============================================================================
 
 let _sql: Sql | null = null;
-let _db: PostgresJsDatabase<typeof schema, typeof relations> | null = null;
+let _db: PostgresJsDatabase<typeof schema> | null = null;
 let _initialized = false;
 
 /**
@@ -83,10 +82,9 @@ function initializeConnection(): void {
     }
   });
 
-  _db = drizzle({
-    client: _sql,
+  // Create drizzle instance with full schema
+  _db = drizzle(_sql, {
     schema,
-    relations,
     logger: environment === 'development',
   });
 
@@ -117,7 +115,7 @@ export function getSql(): Sql {
 /**
  * Get drizzle database instance (lazy initialization)
  */
-export function getDb(): PostgresJsDatabase<typeof schema, typeof relations> {
+export function getDb(): PostgresJsDatabase<typeof schema> {
   initializeConnection();
   return _db!;
 }
@@ -135,14 +133,14 @@ export const sql = new Proxy({} as Sql, {
   }
 });
 
-export const db = new Proxy({} as PostgresJsDatabase<typeof schema, typeof relations>, {
+export const db = new Proxy({} as PostgresJsDatabase<typeof schema>, {
   get(_target, prop) {
     initializeConnection();
     return (_db as unknown as Record<string | symbol, unknown>)[prop];
   }
 });
 
-export type Database = PostgresJsDatabase<typeof schema, typeof relations>;
+export type Database = PostgresJsDatabase<typeof schema>;
 
 // ============================================================================
 // UTILITIES

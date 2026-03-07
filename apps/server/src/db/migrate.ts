@@ -44,7 +44,7 @@ export async function runMigrations(): Promise<void> {
     max: 1,
     ssl: needsSsl ? 'require' : false,
   });
-  const db = drizzle({ client: migrationClient });
+  const db = drizzle(migrationClient);
 
   try {
     await migrate(db, { migrationsFolder: './drizzle' });

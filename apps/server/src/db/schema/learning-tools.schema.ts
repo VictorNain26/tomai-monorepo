@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { user, schoolLevelEnum } from './auth.schema';
 
 // =============================================
@@ -134,6 +134,32 @@ export const studentCognitiveProfiles = pgTable('student_cognitive_profiles', {
   }).onDelete('cascade'),
 
   userIdIdx: index('idx_student_cognitive_profiles_user_id').on(table.userId),
+}));
+
+// =============================================
+// RELATIONS
+// =============================================
+
+export const learningDecksRelations = relations(learningDecks, ({ one, many }) => ({
+  user: one(user, {
+    fields: [learningDecks.userId],
+    references: [user.id]
+  }),
+  cards: many(learningCards),
+}));
+
+export const learningCardsRelations = relations(learningCards, ({ one }) => ({
+  deck: one(learningDecks, {
+    fields: [learningCards.deckId],
+    references: [learningDecks.id]
+  }),
+}));
+
+export const studentCognitiveProfilesRelations = relations(studentCognitiveProfiles, ({ one }) => ({
+  user: one(user, {
+    fields: [studentCognitiveProfiles.userId],
+    references: [user.id]
+  }),
 }));
 
 // =============================================

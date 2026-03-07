@@ -59,12 +59,19 @@ mock.module('../db/connection', () => ({
 }));
 
 mock.module('../db/schema', () => ({
+  user: { id: 'id', parentId: 'parentId', role: 'role' },
   pronoteConnections: { parentId: 'parentId', id: 'id' },
-  pronoteChildMappings: { connectionId: 'connectionId' },
+  pronoteChildMappings: { connectionId: 'connectionId', childId: 'childId' },
 }));
 
 mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
+  and: (...args: unknown[]) => ({ type: 'and', args }),
+  relations: () => ({}),
+  sql: Object.assign(
+    (...args: unknown[]) => ({ type: 'sql', args }),
+    { raw: (s: string) => s }
+  ),
 }));
 
 mock.module('../lib/encryption', () => ({

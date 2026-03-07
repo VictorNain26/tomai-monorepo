@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, timestamp, integer, jsonb, pgEnum, index, foreignKey, unique } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 import { studySessions } from './learning.schema';
 
@@ -102,6 +102,29 @@ export const sessionFiles = pgTable('session_files', {
 
   sessionIdx: index('idx_session_files_session').on(table.sessionId),
   fileIdx: index('idx_session_files_file').on(table.fileId),
+}));
+
+// =============================================
+// RELATIONS
+// =============================================
+
+export const filesRelations = relations(files, ({ one, many }) => ({
+  user: one(user, {
+    fields: [files.userId],
+    references: [user.id]
+  }),
+  sessionFiles: many(sessionFiles),
+}));
+
+export const sessionFilesRelations = relations(sessionFiles, ({ one }) => ({
+  session: one(studySessions, {
+    fields: [sessionFiles.sessionId],
+    references: [studySessions.id]
+  }),
+  file: one(files, {
+    fields: [sessionFiles.fileId],
+    references: [files.id]
+  }),
 }));
 
 // =============================================
