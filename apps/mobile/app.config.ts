@@ -143,10 +143,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ],
 
   // EAS Updates configuration
-  // fingerprint policy: auto-detects native changes, prevents incompatible OTA updates
-  runtimeVersion: {
-    policy: 'fingerprint',
-  },
+  // fingerprint policy for production (auto-detects native changes, prevents incompatible OTA updates)
+  // Static version for dev/preview to avoid Windows/Linux fingerprint divergence in pnpm monorepo
+  runtimeVersion:
+    process.env.APP_ENV === 'production'
+      ? { policy: 'fingerprint' as const }
+      : '1.0.0-dev',
   updates: {
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
   },

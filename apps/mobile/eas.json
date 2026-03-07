@@ -12,9 +12,6 @@
       },
       "ios": {
         "image": "latest"
-      },
-      "env": {
-        "EXPO_NO_FINGERPRINT_VALIDATION": "1"
       }
     },
     "development": {
