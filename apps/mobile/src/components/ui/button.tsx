@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback } from 'react';
+import { useContext, useCallback } from 'react';
 import {
   Pressable,
   ActivityIndicator,
@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
-import { Text } from './text';
-import { colors, opacity } from '@/lib/styles';
+import { Text, TextClassContext } from './text';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { haptics } from '@/lib/haptics';
 
 /**
@@ -23,18 +23,18 @@ import { haptics } from '@/lib/haptics';
  */
 
 const buttonVariants = cva(
-  'flex-row items-center justify-center gap-2 rounded-lg web:ring-offset-background web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2',
+  'flex-row items-center justify-center gap-2 rounded-lg web:ring-offset-slate-50 dark:web:ring-offset-slate-900 web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-blue-600 dark:web:focus-visible:ring-blue-400 web:focus-visible:ring-offset-2',
   {
     variants: {
       variant: {
-        default: 'bg-primary',
-        destructive: 'bg-destructive',
-        outline: 'border border-border bg-background active:bg-accent',
-        secondary: 'bg-secondary',
-        ghost: 'active:bg-accent',
+        default: 'bg-blue-600 dark:bg-blue-400',
+        destructive: 'bg-red-600 dark:bg-red-400',
+        outline: 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 active:bg-blue-50 dark:active:bg-blue-900',
+        secondary: 'bg-slate-100 dark:bg-slate-800',
+        ghost: 'active:bg-blue-50 dark:active:bg-blue-900',
         link: '',
         // New: Subtle variant for less prominent actions
-        subtle: 'bg-accent active:bg-secondary',
+        subtle: 'bg-blue-50 dark:bg-blue-900 active:bg-slate-100 dark:active:bg-slate-800',
       },
       size: {
         default: 'h-12 px-6 py-3',
@@ -55,13 +55,13 @@ const buttonVariants = cva(
 const buttonTextVariants = cva('font-semibold text-center', {
   variants: {
     variant: {
-      default: 'text-primary-foreground',
-      destructive: 'text-destructive-foreground',
-      outline: 'text-foreground',
-      secondary: 'text-secondary-foreground',
-      ghost: 'text-foreground',
-      link: 'text-primary underline',
-      subtle: 'text-accent-foreground',
+      default: 'text-white dark:text-slate-900',
+      destructive: 'text-white dark:text-slate-900',
+      outline: 'text-slate-800 dark:text-slate-100',
+      secondary: 'text-slate-800 dark:text-slate-100',
+      ghost: 'text-slate-800 dark:text-slate-100',
+      link: 'text-blue-600 dark:text-blue-400 underline',
+      subtle: 'text-blue-600 dark:text-blue-400',
     },
     size: {
       default: 'text-base',
@@ -78,9 +78,10 @@ const buttonTextVariants = cva('font-semibold text-center', {
   },
 });
 
-// Context for passing text styles to children
-const TextClassContext = createContext<string | undefined>(undefined);
-
+/**
+ * Hook to access button text class from TextClassContext.
+ * Use inside custom children of Button to get the correct text styling.
+ */
 export function useButtonTextClass() {
   return useContext(TextClassContext);
 }
@@ -122,6 +123,7 @@ function Button({
   onPress,
   ...props
 }: ButtonProps) {
+  const colors = useThemeColors();
   const textClass = buttonTextVariants({ variant, size });
   const isDisabled = disabled || isLoading;
 
@@ -162,19 +164,18 @@ function Button({
   const getSpinnerColor = () => {
     switch (variant) {
       case 'default':
-        return colors.primary.foreground;
+        return colors.primaryForeground;
       case 'destructive':
-        return colors.destructive.foreground;
+        return colors.destructiveForeground;
       case 'outline':
       case 'ghost':
       case 'subtle':
-        return colors.primary.DEFAULT;
       case 'link':
-        return colors.primary.DEFAULT;
+        return colors.primary;
       case 'secondary':
-        return colors.foreground.light;
+        return colors.foreground;
       default:
-        return colors.primary.foreground;
+        return colors.primaryForeground;
     }
   };
 
@@ -190,8 +191,8 @@ function Button({
       <Pressable
         className={cn(buttonVariants({ variant, size }), className)}
         style={({ pressed }) => [
-          isDisabled && { opacity: opacity.disabled },
-          pressed && needsActiveOpacity && { opacity: opacity.active },
+          isDisabled && { opacity: 0.5 },
+          pressed && needsActiveOpacity && { opacity: 0.9 },
           style,
         ]}
         disabled={isDisabled}

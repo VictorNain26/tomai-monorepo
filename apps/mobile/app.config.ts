@@ -1,12 +1,7 @@
 /**
  * Expo App Configuration (TypeScript)
  *
- * Best practices 2026:
- * - TypeScript for type safety
- * - expo-build-properties for SDK versions
- * - EAS Updates with runtimeVersion
- * - Edge-to-edge Android display
- * - Explicit permissions
+ * SDK 55 — React Native 0.83, React 19.2
  *
  * @see https://docs.expo.dev/workflow/configuration/
  */
@@ -24,14 +19,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/icon.png',
   scheme: 'tomia',
   userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
-
-  // Splash screen configuration
-  splash: {
-    image: './assets/splash-icon.png',
-    resizeMode: 'contain',
-    backgroundColor: '#ffffff',
-  },
 
   // iOS configuration
   ios: {
@@ -50,7 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
 
-  // Navigation bar: fully transparent, no contrast scrim (SDK 54+)
+  // Navigation bar: fully transparent, no contrast scrim
   androidNavigationBar: {
     enforceContrast: false,
   },
@@ -62,8 +49,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#ffffff',
     },
-    // Edge-to-edge display (Android 15+ best practice)
-    edgeToEdgeEnabled: true,
+    // Edge-to-edge is mandatory in SDK 55 (no opt-in needed)
     // Explicit permissions
     permissions: [
       'CAMERA',
@@ -136,13 +122,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-build-properties',
       {
         android: {
-          // SDK 54 defaults
           minSdkVersion: 24,
-          // HTTPS only (staging + production are both HTTPS)
           usesCleartextTraffic: false,
         },
         ios: {
-          // SDK 54 minimum iOS 15.1
           deploymentTarget: '15.1',
         },
       },
@@ -153,20 +136,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ],
 
   // EAS Updates configuration
-  // fingerprint policy: auto-detects native changes, prevents incompatible OTA updates
-  runtimeVersion: {
-    policy: 'fingerprint',
-  },
+  // fingerprint policy for production (auto-detects native changes, prevents incompatible OTA updates)
+  // Static version for dev/preview to avoid Windows/Linux fingerprint divergence in pnpm monorepo
+  runtimeVersion:
+    process.env.APP_ENV === 'production'
+      ? { policy: 'fingerprint' as const }
+      : '1.0.0-dev',
   updates: {
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
   },
 
-  // Experiments (SDK 54 best practices)
   experiments: {
     typedRoutes: true,
-    // Resolves react/react-dom to single version in monorepo
-    // Prevents mismatches between native modules and JS modules (SDK 54+)
-    autolinkingModuleResolution: true,
   },
 
   // Extra configuration

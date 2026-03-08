@@ -9,13 +9,13 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSession, type IAppUser } from '@/lib/auth';
-import { colors } from '@/lib/styles';
-
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { Text } from '@/components/ui/text';
 
 export default function OAuthCallbackScreen() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const colors = useThemeColors();
 
   useEffect(() => {
     // Wait for session to load
@@ -35,8 +35,8 @@ export default function OAuthCallbackScreen() {
   }, [session, isPending, router]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-background">
-      <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
+    <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <ActivityIndicator size="large" color={colors.primary} />
       <Text variant="muted" className="mt-4">
         Connexion en cours...
       </Text>

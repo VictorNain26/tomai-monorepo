@@ -6,7 +6,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 
 // ============================================================================
 // Types
@@ -45,35 +45,38 @@ export const filesQueryKeys = {
 // ============================================================================
 
 async function fetchUserFiles(): Promise<LibraryFile[]> {
-  const data = await apiClient.get<{ files: LibraryFile[] }>('/api/files');
-  return data.files;
+  const data = unwrap(await getTreaty().api.files.get());
+  return (data as { files: LibraryFile[] }).files;
 }
 
 async function fetchSessionFiles(sessionId: string): Promise<SessionFile[]> {
-  const data = await apiClient.get<{ files: SessionFile[] }>(
-    `/api/chat/session/${sessionId}/files`
+  const data = unwrap(
+    await getTreaty().api.chat.session({ id: sessionId }).files.get()
   );
-  return data.files;
+  return (data as { files: SessionFile[] }).files;
 }
 
 async function attachFileToSession(sessionId: string, fileId: string): Promise<void> {
-  await apiClient.post(`/api/chat/session/${sessionId}/files`, { fileId });
+  unwrap(
+    await getTreaty().api.chat.session({ id: sessionId }).files.post({ fileId })
+  );
 }
 
 async function detachFileFromSession(sessionId: string, fileId: string): Promise<void> {
-  await apiClient.delete(`/api/chat/session/${sessionId}/files/${fileId}`);
+  unwrap(
+    await getTreaty().api.chat.session({ id: sessionId }).files({ fileId }).delete()
+  );
 }
 
 // ============================================================================
 // Hooks
 // ============================================================================
 
-/** Liste des fichiers du classeur (profil) */
 export function useUserFiles() {
   const query = useQuery({
     queryKey: filesQueryKeys.library(),
     queryFn: fetchUserFiles,
-    staleTime: 2 * 60 * 1000, // 2 min
+    staleTime: 2 * 60 * 1000,
   });
 
   return {
@@ -84,13 +87,12 @@ export function useUserFiles() {
   };
 }
 
-/** Liste des fichiers attachés à une session */
 export function useSessionFiles(sessionId: string | null) {
   const query = useQuery({
     queryKey: filesQueryKeys.sessionFiles(sessionId ?? '__none__'),
     queryFn: () => fetchSessionFiles(sessionId!),
     enabled: !!sessionId,
-    staleTime: 30 * 1000, // 30s
+    staleTime: 30 * 1000,
   });
 
   return {
@@ -101,7 +103,6 @@ export function useSessionFiles(sessionId: string | null) {
   };
 }
 
-/** Attacher un fichier du classeur à une session */
 export function useAttachFile() {
   const queryClient = useQueryClient();
 
@@ -114,7 +115,6 @@ export function useAttachFile() {
   });
 }
 
-/** Détacher un fichier d'une session */
 export function useDetachFile() {
   const queryClient = useQueryClient();
 

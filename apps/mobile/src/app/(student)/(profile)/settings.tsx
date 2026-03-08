@@ -5,7 +5,7 @@
  */
 
 import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -19,8 +19,7 @@ import {
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
-import { useTheme, useIconColors, type ThemeMode } from '@/hooks';
-import { colors } from '@/lib/styles';
+import { useTheme, useIconColors, useThemeColors, type ThemeMode } from '@/hooks';
 
 // ============================================================================
 // CONSTANTS
@@ -40,11 +39,12 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { themeMode, setThemeMode } = useTheme();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
           <ArrowLeft color={iconColors.foreground} size={24} />
         </TouchableOpacity>
@@ -55,7 +55,7 @@ export default function SettingsScreen() {
         {/* Theme Section */}
         <View className="mb-6">
           <Text className="mb-3 font-semibold">Apparence</Text>
-          <View className="rounded-xl border border-border bg-card">
+          <View className="rounded-xl bg-white dark:bg-slate-800">
             {THEME_OPTIONS.map((option, index) => {
               const Icon = option.icon;
               const isSelected = themeMode === option.value;
@@ -65,7 +65,7 @@ export default function SettingsScreen() {
                   key={option.value}
                   onPress={() => setThemeMode(option.value)}
                   className={`flex-row items-center justify-between px-4 py-4 ${
-                    index !== THEME_OPTIONS.length - 1 ? 'border-b border-border' : ''
+                    index !== THEME_OPTIONS.length - 1 ? 'border-b border-slate-200 dark:border-slate-700' : ''
                   }`}
                   activeOpacity={0.7}
                 >
@@ -73,7 +73,7 @@ export default function SettingsScreen() {
                     <Icon color={iconColors.foreground} size={20} />
                     <Text>{option.label}</Text>
                   </View>
-                  {isSelected && <Check color={colors.success.DEFAULT} size={20} />}
+                  {isSelected && <Check color={colors.success} size={20} />}
                 </TouchableOpacity>
               );
             })}
@@ -83,9 +83,9 @@ export default function SettingsScreen() {
         {/* Other Settings (Placeholders) */}
         <View className="mb-6">
           <Text className="mb-3 font-semibold">Préférences</Text>
-          <View className="rounded-xl border border-border bg-card">
+          <View className="rounded-xl bg-white dark:bg-slate-800">
             <TouchableOpacity
-              className="flex-row items-center justify-between border-b border-border px-4 py-4"
+              className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-4"
               activeOpacity={0.7}
             >
               <View className="flex-row items-center gap-3">
@@ -119,7 +119,7 @@ export default function SettingsScreen() {
         {/* App Info */}
         <View className="mb-6">
           <Text className="mb-3 font-semibold">À propos</Text>
-          <View className="rounded-xl border border-border bg-card">
+          <View className="rounded-xl bg-white dark:bg-slate-800">
             <View className="flex-row items-center justify-between px-4 py-4">
               <View className="flex-row items-center gap-3">
                 <Info color={iconColors.muted} size={20} />

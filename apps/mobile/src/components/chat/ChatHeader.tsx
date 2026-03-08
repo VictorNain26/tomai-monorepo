@@ -2,8 +2,8 @@ import { View, TouchableOpacity, Alert } from 'react-native';
 import { MoreVertical, FolderOpen } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { TomAvatar } from '@/components/common';
-import { useIconColors } from '@/hooks';
-import { bgColors, colors } from '@/lib/styles';
+import { useIconColors, useThemeColors } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 interface ContextBadge {
   icon: React.ComponentType<{ color: string; size: number }>;
@@ -29,9 +29,10 @@ export function ChatHeader({
   onDelete,
 }: ChatHeaderProps) {
   const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   return (
-    <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+    <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
       <View className="flex-1">
         <View className="flex-row items-center gap-2">
           <TomAvatar size="sm" />
@@ -56,8 +57,8 @@ export function ChatHeader({
               style={{ backgroundColor: bgColors.primary[10] }}
               accessibilityLabel={`${sessionFileCount} fichier(s) attaché(s)`}
             >
-              <FolderOpen color={colors.primary.DEFAULT} size={14} />
-              <Text variant="tiny" className="text-primary font-medium">
+              <FolderOpen color={colors.primary} size={14} />
+              <Text variant="tiny" className="text-blue-600 dark:text-blue-400 font-medium">
                 {sessionFileCount}
               </Text>
             </TouchableOpacity>
@@ -71,7 +72,7 @@ export function ChatHeader({
                 { text: 'Annuler', style: 'cancel' },
               ]);
             }}
-            className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+            className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
             accessibilityLabel="Options de conversation"
             accessibilityRole="button"
           >

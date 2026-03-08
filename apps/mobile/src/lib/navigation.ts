@@ -1,31 +1,12 @@
-/**
- * Shared Navigation Config - TomAI 2026
- *
- * React Navigation 7 + Expo Router SDK 54 best practices.
- * Centralized to avoid duplication across 9+ layout files.
- *
- * @see https://reactnavigation.org/docs/native-stack-navigator
- * @see https://reactnavigation.org/docs/bottom-tab-navigator
- */
-
 import { useMemo } from 'react';
-import { Easing } from 'react-native';
+import { Easing, type ViewStyle } from 'react-native';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
-import { useTheme } from '@/hooks';
-import { colors } from '@/lib/styles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useThemeColors } from '@/hooks';
 
-/**
- * Shared Stack screenOptions for all Stack navigators.
- *
- * - `animation: 'default'` → platform-native transitions (iOS slide, Android material)
- * - `gestureEnabled: true` → swipe-back gesture
- * - `fullScreenGestureEnabled: true` → swipe from anywhere (iOS)
- * - `freezeOnBlur: true` → performance: freeze inactive screens
- * - `contentStyle` → theme-aware background to prevent white flash
- */
 export function useStackScreenOptions(): NativeStackNavigationOptions {
-  const { isDark } = useTheme();
+  const colors = useThemeColors();
 
   return useMemo(
     () => ({
@@ -35,24 +16,13 @@ export function useStackScreenOptions(): NativeStackNavigationOptions {
       fullScreenGestureEnabled: true,
       freezeOnBlur: true,
       contentStyle: {
-        backgroundColor: isDark ? colors.background.dark : colors.background.light,
+        backgroundColor: colors.background,
       },
     }),
-    [isDark]
+    [colors.background]
   );
 }
 
-/**
- * Shared Tab screenOptions additions for all Tab navigators.
- *
- * Merge these with each Tab layout's own color/style options.
- *
- * - `animation: 'fade'` → cross-fade between tabs (React Navigation 7)
- * - `transitionSpec` → snappy 150ms ease-in-out timing
- * - `freezeOnBlur: true` → performance: freeze inactive tab content
- * - `tabBarHideOnKeyboard: true` → hide tab bar when keyboard shows
- * - `sceneStyle` → theme-aware background to prevent white flash
- */
 export function useTabScreenOptions(tabBackground: string): Partial<BottomTabNavigationOptions> {
   return useMemo(
     () => ({
@@ -70,4 +40,46 @@ export function useTabScreenOptions(tabBackground: string): Partial<BottomTabNav
     }),
     [tabBackground]
   );
+}
+
+const TAB_BAR_HEIGHT = 48;
+const TAB_BAR_PADDING_TOP = 6;
+
+export interface TabBarConfig {
+  tabColors: {
+    active: string;
+    inactive: string;
+    background: string;
+    border: string;
+  };
+  tabBarStyle: ViewStyle;
+}
+
+export function useTabBarConfig(): TabBarConfig {
+  const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
+
+  const tabColors = useMemo(
+    () => ({
+      active: colors.primary,
+      inactive: colors.muted,
+      background: colors.background,
+      border: colors.border,
+    }),
+    [colors.primary, colors.muted, colors.background, colors.border]
+  );
+
+  const tabBarStyle = useMemo(
+    () => ({
+      backgroundColor: tabColors.background,
+      borderTopColor: tabColors.border,
+      borderTopWidth: 1,
+      paddingTop: TAB_BAR_PADDING_TOP,
+      paddingBottom: Math.max(insets.bottom, 8),
+      height: TAB_BAR_HEIGHT + Math.max(insets.bottom, 8),
+    }),
+    [tabColors, insets.bottom]
+  );
+
+  return { tabColors, tabBarStyle };
 }

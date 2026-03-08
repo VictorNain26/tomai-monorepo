@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -25,7 +25,7 @@ import {
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
-import { shadows, bgColors, colors } from '@/lib/styles';
+import { shadows, bgColors } from '@/lib/styles';
 import {
   useGenerateDeck,
   useLearningSubjects,
@@ -33,7 +33,7 @@ import {
   type LearningSubject,
 } from '@/hooks/useLearning';
 import { useUser } from '@/lib/auth';
-import { useIconColors } from '@/hooks';
+import { useIconColors, useThemeColors } from '@/hooks';
 
 // ============================================================================
 // TYPES
@@ -50,6 +50,7 @@ export default function CreateDeckScreen() {
   const toast = useToast();
   const user = useUser();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const niveau = user?.schoolLevel ?? 'sixieme';
 
   const [step, setStep] = useState<Step>('subject');
@@ -118,12 +119,12 @@ export default function CreateDeckScreen() {
   const stepNumber = step === 'subject' ? 1 : 2;
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Loading overlay during generation */}
       {generateMutation.isPending && (
         <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: bgColors.background[90] }}>
-          <View className="items-center gap-4 rounded-2xl bg-card p-8" style={shadows.lg}>
-            <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
+          <View className="items-center gap-4 rounded-2xl bg-white dark:bg-slate-800 p-8" style={shadows.lg}>
+            <ActivityIndicator size="large" color={colors.primary} />
             <View className="items-center gap-2">
               <Text className="text-lg font-semibold">Génération en cours...</Text>
               <Text variant="muted" className="text-center">
@@ -135,7 +136,7 @@ export default function CreateDeckScreen() {
       )}
 
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <TouchableOpacity
           onPress={handleBack}
           disabled={generateMutation.isPending}
@@ -161,7 +162,7 @@ export default function CreateDeckScreen() {
           {step === 'subject' && (
             <>
               <View className="mb-4 flex-row items-center gap-3">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
                   <Book color="white" size={20} />
                 </View>
                 <View>
@@ -182,7 +183,7 @@ export default function CreateDeckScreen() {
 
               {subjectsQuery.error && (
                 <View className="rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
-                  <Text className="text-center text-destructive">
+                  <Text className="text-center text-red-600 dark:text-red-400">
                     Erreur de chargement des matières
                   </Text>
                 </View>
@@ -194,7 +195,7 @@ export default function CreateDeckScreen() {
                     <TouchableOpacity
                       key={subject.id}
                       onPress={() => handleSelectSubject(subject)}
-                      className="flex-row items-center justify-between rounded-xl border border-border bg-card p-4"
+                      className="flex-row items-center justify-between rounded-xl bg-white dark:bg-slate-800 p-4"
                       activeOpacity={0.7}
                     >
                       <Text className="text-base font-medium">{subject.label}</Text>
@@ -210,7 +211,7 @@ export default function CreateDeckScreen() {
           {step === 'theme' && (
             <>
               <View className="mb-4 flex-row items-center gap-3">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
                   <FolderOpen color="white" size={20} />
                 </View>
                 <View className="flex-1">
@@ -231,7 +232,7 @@ export default function CreateDeckScreen() {
 
               {topicsQuery.error && (
                 <View className="rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
-                  <Text className="text-center text-destructive">
+                  <Text className="text-center text-red-600 dark:text-red-400">
                     Erreur de chargement des thèmes
                   </Text>
                 </View>
@@ -248,14 +249,14 @@ export default function CreateDeckScreen() {
                   {topicsQuery.data.map((domaine) => (
                     <View
                       key={domaine.domaine}
-                      className="rounded-xl border border-border bg-card"
+                      className="rounded-xl bg-white dark:bg-slate-800"
                       style={generateMutation.isPending ? { opacity: 0.5 } : undefined}
                     >
                       {/* Domaine header - clickable for whole domaine */}
                       <TouchableOpacity
                         onPress={() => handleSelectTheme(domaine.domaine)}
                         disabled={generateMutation.isPending}
-                        className="flex-row items-center justify-between border-b border-border p-4"
+                        className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4"
                         activeOpacity={0.7}
                       >
                         <Text className="flex-1 font-semibold">{domaine.domaine}</Text>
@@ -263,7 +264,7 @@ export default function CreateDeckScreen() {
                           <Text variant="muted" className="text-sm">
                             {domaine.themes.length} thèmes
                           </Text>
-                          <Sparkles color={colors.success.DEFAULT} size={16} />
+                          <Sparkles color={colors.success} size={16} />
                         </View>
                       </TouchableOpacity>
 
@@ -275,7 +276,7 @@ export default function CreateDeckScreen() {
                           disabled={generateMutation.isPending}
                           className={`flex-row items-center justify-between px-4 py-3 ${
                             index !== domaine.themes.length - 1
-                              ? 'border-b border-border'
+                              ? 'border-b border-slate-200 dark:border-slate-700'
                               : ''
                           }`}
                           activeOpacity={0.7}

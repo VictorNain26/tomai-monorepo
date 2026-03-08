@@ -80,7 +80,7 @@ export function EmptyState({
       style={style}
     >
       <View className="items-center max-w-xs">
-        <View className="h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
+        <View className="h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
           <Icon size={32} color={iconColors.muted} />
         </View>
 
@@ -96,7 +96,7 @@ export function EmptyState({
 
         {actionLabel && onAction && (
           <Button onPress={onAction}>
-            <Text className="text-primary-foreground font-semibold">
+            <Text className="text-white dark:text-slate-900 font-semibold">
               {actionLabel}
             </Text>
           </Button>

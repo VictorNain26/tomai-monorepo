@@ -10,7 +10,7 @@
  */
 
 import { View, ScrollView, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useState, useCallback, useMemo } from 'react';
 import { Link2 } from 'lucide-react-native';
 
@@ -152,7 +152,7 @@ export default function StudentDashboard() {
   const firstName = userName?.split(' ')[0] ?? 'Élève';
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -187,7 +187,7 @@ export default function StudentDashboard() {
             />
           </>
         ) : (
-          <View className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-4">
+          <View className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-4">
             <View
               className="h-10 w-10 items-center justify-center rounded-lg"
               style={{ backgroundColor: bgColors.primary[10] }}

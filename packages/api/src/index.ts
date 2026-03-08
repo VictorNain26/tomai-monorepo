@@ -9,14 +9,14 @@
  *
  * @example
  * // Initialize at app startup
- * import { initializeApi, apiClient } from '@repo/api';
+ * import { initializeApi, getTreaty, unwrap } from '@repo/api';
  *
  * initializeApi({
  *   baseUrl: 'https://api.tomia.fr',
  * });
  *
- * // Use queries with TanStack Query
- * import { parentQueries } from '@repo/api/queries';
+ * // Type-safe API calls
+ * const data = unwrap(await getTreaty().api.parent.dashboard.get());
  */
 
 // Configuration
@@ -28,12 +28,13 @@ export {
   type ApiConfig,
 } from './config';
 
-// HTTP Client
+// Eden Treaty Client
 export {
-  apiClient,
+  getTreaty,
+  unwrap,
+  resetTreatyClient,
   setUnauthorizedHandler,
   UPLOAD_CONFIG,
-  type ApiRequestOptions,
   type ApiError,
   type UnauthorizedHandler,
 } from './client';

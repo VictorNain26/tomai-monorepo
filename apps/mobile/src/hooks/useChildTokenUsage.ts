@@ -6,7 +6,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 
 // ============================================================================
 // TYPES
@@ -51,11 +51,9 @@ const queryKey = (childId: string) => ['subscription', 'usage', childId] as cons
 // ============================================================================
 
 async function fetchChildUsage(childId: string): Promise<ChildUsageResponse> {
-  const response = await apiClient.get<ChildUsageResponse>(
-    '/api/subscriptions/usage',
-    { params: { userId: childId } }
+  return unwrap<ChildUsageResponse>(
+    await getTreaty().api.subscriptions.usage.get({ query: { userId: childId } })
   );
-  return response;
 }
 
 // ============================================================================
@@ -72,8 +70,8 @@ export function useChildTokenUsage({ childId, enabled = true }: UseChildTokenUsa
     queryKey: queryKey(childId ?? ''),
     queryFn: () => fetchChildUsage(childId as string),
     enabled: enabled && !!childId,
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
   });
 
   return {

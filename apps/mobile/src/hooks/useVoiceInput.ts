@@ -2,20 +2,20 @@
  * useVoiceInput Hook
  *
  * Records audio and transcribes it using the backend Gladia service.
- * Uses expo-audio (SDK 54+) for recording.
+ * Uses expo-audio (SDK 55) for recording.
  *
- * Best Practice 2026: Uses expo-audio which replaces deprecated expo-av.
  * @see https://docs.expo.dev/versions/latest/sdk/audio/
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   useAudioRecorder,
+  useAudioRecorderState,
   RecordingPresets,
   AudioModule,
-  type RecordingStatus,
+  setAudioModeAsync,
 } from 'expo-audio';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 import { haptics } from '@/lib/haptics';
 
 // ============================================================================
@@ -33,10 +33,6 @@ export interface VoiceInputState {
   error: string | null;
 }
 
-/**
- * Response from POST /api/upload/presign
- * @see apps/server/src/routes/file-upload.routes.ts
- */
 interface PresignedUrlResponse {
   success: boolean;
   fileId?: string;
@@ -46,10 +42,6 @@ interface PresignedUrlResponse {
   error?: string;
 }
 
-/**
- * Response from POST /api/upload/confirm/:fileId
- * @see apps/server/src/routes/file-upload.routes.ts
- */
 interface ConfirmUploadResponse {
   success: boolean;
   fileId?: string;
@@ -81,27 +73,25 @@ export function useVoiceInput() {
   const startTimeRef = useRef<number>(0);
   const stopRecordingRef = useRef<() => Promise<string | null>>(() => Promise.resolve(null));
 
-  // expo-audio recorder hook with HIGH_QUALITY preset
-  // Note: RecordingStatus type varies by expo-audio version
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY, (status: RecordingStatus) => {
-    // Auto-stop at max duration - use type assertion for compatibility
-    const statusAny = status as { isRecording?: boolean; durationMillis?: number };
-    if (statusAny.isRecording && (statusAny.durationMillis ?? 0) >= MAX_DURATION_MS) {
+  // expo-audio recorder hook (SDK 55 pattern - no callback)
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
+
+  // Auto-stop at max duration
+  useEffect(() => {
+    if (recorderState.isRecording && recorderState.durationMillis >= MAX_DURATION_MS) {
       void stopRecordingRef.current();
     }
-  });
+  }, [recorderState.isRecording, recorderState.durationMillis]);
 
   // Sync isRecording state with recorder
   useEffect(() => {
     setState((prev) => ({
       ...prev,
-      isRecording: recorder.isRecording,
+      isRecording: recorderState.isRecording,
     }));
-  }, [recorder.isRecording]);
+  }, [recorderState.isRecording]);
 
-  /**
-   * Request audio permissions
-   */
   const requestPermissions = useCallback(async (): Promise<boolean> => {
     try {
       const status = await AudioModule.requestRecordingPermissionsAsync();
@@ -122,19 +112,18 @@ export function useVoiceInput() {
     }
   }, []);
 
-  /**
-   * Start recording audio
-   */
   const startRecording = useCallback(async (): Promise<boolean> => {
     try {
-      // Request permissions
       const hasPermission = await requestPermissions();
       if (!hasPermission) return false;
 
-      // Configure audio mode for recording
-      await AudioModule.setAudioModeAsync({
+      // Configure audio mode for recording (SDK 55 standalone function)
+      await setAudioModeAsync({
         allowsRecording: true,
         playsInSilentMode: true,
+        interruptionMode: 'doNotMix',
+        shouldPlayInBackground: false,
+        shouldRouteThroughEarpiece: false,
       });
 
       // Prepare and start recording
@@ -168,17 +157,13 @@ export function useVoiceInput() {
     }
   }, [requestPermissions, recorder]);
 
-  /**
-   * Stop recording and get transcription
-   */
   const stopRecording = useCallback(async (): Promise<string | null> => {
-    // Clear duration interval
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
       durationIntervalRef.current = null;
     }
 
-    if (!recorder.isRecording) {
+    if (!recorderState.isRecording) {
       setState((prev) => ({ ...prev, isRecording: false }));
       return null;
     }
@@ -190,7 +175,6 @@ export function useVoiceInput() {
         isProcessing: true,
       }));
 
-      // Stop recording - uri available at recorder.uri
       await recorder.stop();
       void haptics.success();
       const uri = recorder.uri;
@@ -200,9 +184,12 @@ export function useVoiceInput() {
       }
 
       // Reset audio mode
-      await AudioModule.setAudioModeAsync({
+      await setAudioModeAsync({
         allowsRecording: false,
         playsInSilentMode: true,
+        interruptionMode: 'mixWithOthers',
+        shouldPlayInBackground: false,
+        shouldRouteThroughEarpiece: false,
       });
 
       // Upload and transcribe
@@ -224,22 +211,18 @@ export function useVoiceInput() {
       }));
       return null;
     }
-  }, [recorder]);
+  }, [recorder, recorderState.isRecording]);
 
   // Keep ref updated for auto-stop timer
   stopRecordingRef.current = stopRecording;
 
-  /**
-   * Cancel recording without transcribing
-   */
   const cancelRecording = useCallback(async () => {
-    // Clear duration interval
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
       durationIntervalRef.current = null;
     }
 
-    if (recorder.isRecording) {
+    if (recorderState.isRecording) {
       try {
         await recorder.stop();
       } catch {
@@ -247,10 +230,12 @@ export function useVoiceInput() {
       }
     }
 
-    // Reset audio mode
-    await AudioModule.setAudioModeAsync({
+    await setAudioModeAsync({
       allowsRecording: false,
       playsInSilentMode: true,
+      interruptionMode: 'mixWithOthers',
+      shouldPlayInBackground: false,
+      shouldRouteThroughEarpiece: false,
     });
 
     void haptics.warning();
@@ -261,11 +246,8 @@ export function useVoiceInput() {
       duration: 0,
       error: null,
     });
-  }, [recorder]);
+  }, [recorder, recorderState.isRecording]);
 
-  /**
-   * Clear error
-   */
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
@@ -283,19 +265,14 @@ export function useVoiceInput() {
 // HELPERS
 // ============================================================================
 
-/**
- * Upload audio file and get transcription from backend
- */
 async function uploadAndTranscribe(uri: string): Promise<string | null> {
-  // Get presigned URL from backend (Scaleway via /api/upload/presign)
-  const presignedResponse = await apiClient.post<PresignedUrlResponse>(
-    '/api/upload/presign',
-    {
+  const presignedResponse = unwrap(
+    await getTreaty().api.upload.presign.post({
       fileName: 'voice-recording.m4a',
       mimeType: 'audio/mp4',
-      sizeBytes: 1, // Placeholder, backend will get actual size from storage
-    }
-  );
+      sizeBytes: 1,
+    })
+  ) as PresignedUrlResponse;
 
   if (!presignedResponse.success || !presignedResponse.uploadUrl || !presignedResponse.fileId) {
     throw new Error(presignedResponse.error ?? 'Impossible de préparer l\'upload');
@@ -303,27 +280,22 @@ async function uploadAndTranscribe(uri: string): Promise<string | null> {
 
   const { uploadUrl, fileId } = presignedResponse;
 
-  // Read file and upload to Scaleway
   const response = await fetch(uri);
   const blob = await response.blob();
 
   const uploadResponse = await fetch(uploadUrl, {
     method: 'PUT',
     body: blob,
-    headers: {
-      'Content-Type': 'audio/mp4',
-    },
+    headers: { 'Content-Type': 'audio/mp4' },
   });
 
   if (!uploadResponse.ok) {
     throw new Error('Erreur lors de l\'upload audio');
   }
 
-  // Confirm upload and get transcription (POST /api/upload/confirm/:fileId)
-  const confirmResponse = await apiClient.post<ConfirmUploadResponse>(
-    `/api/upload/confirm/${fileId}`,
-    {}
-  );
+  const confirmResponse = unwrap(
+    await getTreaty().api.upload.confirm({ fileId }).post()
+  ) as ConfirmUploadResponse;
 
   if (!confirmResponse.success) {
     throw new Error(confirmResponse.error ?? 'Erreur lors de la confirmation');

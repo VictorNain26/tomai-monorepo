@@ -123,9 +123,9 @@ export async function presentPaywallIfNeeded(): Promise<boolean> {
  */
 export function PaywallLoading() {
   return (
-    <View className="flex-1 items-center justify-center bg-background">
+    <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">
       <ActivityIndicator size="large" />
-      <Text className="mt-4 text-muted-foreground">
+      <Text className="mt-4 text-slate-500 dark:text-slate-400">
         Chargement des offres...
       </Text>
     </View>

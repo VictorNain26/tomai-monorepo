@@ -2,18 +2,17 @@
  * usePresignedUpload Hook - React Native
  *
  * Upload de fichiers vers Scaleway S3 via URLs présignées.
- * Flow: presign → upload direct → confirm
+ * Flow: presign -> upload direct -> confirm
  */
 
 import { useState, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { apiClient, UPLOAD_CONFIG } from '@repo/api';
+import { getTreaty, unwrap, UPLOAD_CONFIG } from '@repo/api';
 
 // ============================================================================
 // TYPES (aligned with backend apps/server/src/routes/file-upload.routes.ts)
 // ============================================================================
 
-/** Backend detectFileType return values */
 export type FileType = 'image' | 'pdf' | 'document' | 'audio' | 'unknown';
 
 export interface FileAttachment {
@@ -27,22 +26,20 @@ export interface FileAttachment {
   transcription?: string;
 }
 
-/** Backend PresignedUploadResponse */
 interface PresignResponse {
   success: boolean;
   fileId?: string;
   uploadUrl?: string;
   storageKey?: string;
-  expiresAt?: string; // ISO string (Date from backend)
+  expiresAt?: string;
   error?: string;
 }
 
-/** Backend ConfirmUploadResponse */
 interface ConfirmResponse {
   success: boolean;
   fileId?: string;
   fileUri?: string;
-  geminiExpiresAt?: string; // ISO string (Date from backend)
+  geminiExpiresAt?: string;
   transcription?: string;
   error?: string;
 }
@@ -55,7 +52,6 @@ interface UploadOptions {
 // HELPERS
 // ============================================================================
 
-/** Detect file type from MIME type (matches backend logic) */
 function detectFileType(mimeType: string): FileType {
   const cleanMimeType = mimeType.split(';')[0]?.trim() ?? '';
 
@@ -101,7 +97,6 @@ export function usePresignedUpload() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Step 1: Get presigned URL
   const presignMutation = useMutation({
     mutationFn: async (params: {
       fileName: string;
@@ -109,14 +104,13 @@ export function usePresignedUpload() {
       sizeBytes: number;
       context?: string;
     }): Promise<PresignResponse> => {
-      return apiClient.post('/api/upload/presign', params);
+      return unwrap(await getTreaty().api.upload.presign.post(params)) as PresignResponse;
     },
   });
 
-  // Step 3: Confirm upload
   const confirmMutation = useMutation({
     mutationFn: async (fileId: string): Promise<ConfirmResponse> => {
-      return apiClient.post(`/api/upload/confirm/${fileId}`, {});
+      return unwrap(await getTreaty().api.upload.confirm({ fileId }).post()) as ConfirmResponse;
     },
   });
 
@@ -131,7 +125,6 @@ export function usePresignedUpload() {
       setIsProcessing(true);
 
       try {
-        // Get file info from URI
         const response = await fetch(uri);
         if (!response.ok) {
           throw new Error('Impossible de lire le fichier');
@@ -139,14 +132,12 @@ export function usePresignedUpload() {
         const blob = await response.blob();
         const sizeBytes = blob.size;
 
-        // Validate
         const validation = validateFile(mimeType, sizeBytes);
         if (!validation.valid) {
           setError(validation.error ?? 'Fichier invalide');
           return null;
         }
 
-        // Step 1: Get presigned URL
         const presignResult = await presignMutation.mutateAsync({
           fileName,
           mimeType,
@@ -154,12 +145,10 @@ export function usePresignedUpload() {
           context: options.context,
         });
 
-        // Check presign response
         if (!presignResult.success || !presignResult.uploadUrl || !presignResult.fileId) {
           throw new Error(presignResult.error ?? 'Échec de la génération de l\'URL d\'upload');
         }
 
-        // Step 2: Upload directly to S3
         const uploadResponse = await fetch(presignResult.uploadUrl, {
           method: 'PUT',
           body: blob,
@@ -172,15 +161,12 @@ export function usePresignedUpload() {
           throw new Error('Upload vers le stockage échoué');
         }
 
-        // Step 3: Confirm upload
         const confirmResult = await confirmMutation.mutateAsync(presignResult.fileId);
 
-        // Check confirm response
         if (!confirmResult.success) {
           throw new Error(confirmResult.error ?? 'Échec de la confirmation de l\'upload');
         }
 
-        // Create attachment object
         const fileType = detectFileType(mimeType);
         const attachment: FileAttachment = {
           fileId: presignResult.fileId,

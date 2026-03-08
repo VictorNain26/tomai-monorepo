@@ -2,11 +2,11 @@
  * useParentDashboard Hook
  *
  * Fetches children list, dashboard stats, and handles CRUD operations.
- * Uses apiClient directly since @repo/api/queries isn't configured for mobile.
+ * Uses Eden Treaty for type-safe e2e API calls.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 import { useUser } from '@/lib/auth';
 import type { EducationLevelType } from '@/constants/levels';
 
@@ -17,13 +17,12 @@ export type { EducationLevelType } from '@/constants/levels';
 // TYPES (aligned with backend apps/server/src/types/index.ts)
 // ============================================================================
 
-/** Backend ChildInfo - includes role: 'student' */
 export interface IChild {
   id: string;
   firstName: string;
   lastName: string;
   username: string;
-  schoolLevel: string; // Backend returns string, not enum
+  schoolLevel: string;
   dateOfBirth?: string;
   isActive: boolean;
   parentId: string;
@@ -40,7 +39,6 @@ export interface ICreateChildData {
   dateOfBirth?: string;
 }
 
-/** Backend ParentDashboardMetrics - per-child metrics */
 export interface ChildMetrics {
   studentId: string;
   studentName: string;
@@ -52,10 +50,9 @@ export interface ChildMetrics {
   avgFrustration: number;
   subjectsStudied: number;
   totalStudyTime: number;
-  lastSessionDate: string | null; // Date serialized as ISO string
+  lastSessionDate: string | null;
 }
 
-/** Backend /api/parent/dashboard response */
 interface DashboardResponse {
   success: boolean;
   parent: { id: string; name: string };
@@ -63,7 +60,6 @@ interface DashboardResponse {
   metrics: ChildMetrics[];
 }
 
-/** Backend RagLevel - NO name/description */
 export interface SchoolLevel {
   key: EducationLevelType;
   ragAvailable: boolean;
@@ -94,21 +90,28 @@ const queryKeys = {
 // ============================================================================
 
 async function fetchDashboard(): Promise<DashboardResponse> {
-  return apiClient.get('/api/parent/dashboard');
+  return unwrap(
+    await getTreaty().api.parent.dashboard.get()
+  ) as DashboardResponse;
 }
 
 async function fetchChildren(): Promise<IChild[]> {
-  return apiClient.get('/api/parent/children');
+  return unwrap(
+    await getTreaty().api.parent.children.get()
+  ) as IChild[];
 }
 
 async function fetchLevels(): Promise<SchoolLevel[]> {
-  // Correct endpoint: /api/education/levels (NOT /api/subjects/levels)
-  const response = await apiClient.get<LevelsResponse>('/api/education/levels');
+  const response = unwrap(
+    await getTreaty().api.education.levels.get()
+  ) as LevelsResponse;
   return response.levels.filter((l) => l.ragAvailable);
 }
 
 async function createChildApi(data: ICreateChildData): Promise<IChild> {
-  return apiClient.post('/api/parent/children', data);
+  return unwrap(
+    await getTreaty().api.parent.children.post(data)
+  ) as IChild;
 }
 
 async function updateChildApi({
@@ -118,11 +121,15 @@ async function updateChildApi({
   childId: string;
   data: Partial<Omit<IChild, 'role'>>;
 }): Promise<IChild> {
-  return apiClient.patch(`/api/parent/children/${childId}`, data);
+  return unwrap(
+    await getTreaty().api.parent.children({ id: childId }).patch(data)
+  ) as IChild;
 }
 
 async function deleteChildApi(childId: string): Promise<{ success: boolean }> {
-  return apiClient.delete(`/api/parent/children/${childId}`);
+  return unwrap(
+    await getTreaty().api.parent.children({ id: childId }).delete()
+  ) as { success: boolean };
 }
 
 // ============================================================================
@@ -133,15 +140,13 @@ export function useParentDashboard() {
   const queryClient = useQueryClient();
   const user = useUser();
 
-  // Fetch dashboard (includes children + metrics in one call)
   const dashboardQuery = useQuery({
     queryKey: queryKeys.parent.dashboard,
     queryFn: fetchDashboard,
     enabled: !!user,
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 60 * 1000,
   });
 
-  // Fetch children list separately (for CRUD operations)
   const childrenQuery = useQuery({
     queryKey: queryKeys.parent.children,
     queryFn: fetchChildren,
@@ -150,85 +155,69 @@ export function useParentDashboard() {
     staleTime: 60 * 1000,
   });
 
-  // Fetch available school levels
   const levelsQuery = useQuery({
     queryKey: queryKeys.levels,
     queryFn: fetchLevels,
-    staleTime: 10 * 60 * 1000, // 10 minutes (rarely changes)
+    staleTime: 10 * 60 * 1000,
   });
 
-  // Invalidation helper
   const invalidateParentData = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.parent.dashboard });
     void queryClient.invalidateQueries({ queryKey: queryKeys.parent.children });
   };
 
-  // Create child mutation
   const createMutation = useMutation({
     mutationFn: createChildApi,
     onSuccess: invalidateParentData,
   });
 
-  // Update child mutation
   const updateMutation = useMutation({
     mutationFn: updateChildApi,
     onSuccess: invalidateParentData,
   });
 
-  // Delete child mutation
   const deleteMutation = useMutation({
     mutationFn: deleteChildApi,
     onSuccess: invalidateParentData,
   });
 
-  // Extract data from dashboard response
   const dashboardData = dashboardQuery.data;
   const children: IChild[] = dashboardData?.children ?? childrenQuery.data ?? [];
   const metrics: ChildMetrics[] = dashboardData?.metrics ?? [];
 
-  // Compute aggregated stats from per-child metrics
   const totalSessions = metrics.reduce((sum, m) => sum + m.totalSessions, 0);
   const totalStudyTime = metrics.reduce((sum, m) => sum + m.totalStudyTime, 0);
   const activeChildren = children.filter((c) => c.isActive).length;
 
   return {
-    // Children data
     children,
     childrenCount: children.length,
     isLoadingChildren: childrenQuery.isLoading || dashboardQuery.isLoading,
     childrenError: childrenQuery.error?.message ?? dashboardQuery.error?.message ?? null,
 
-    // Per-child metrics (for detailed views)
     metrics,
     isLoadingMetrics: dashboardQuery.isLoading,
 
-    // Aggregated stats (computed from metrics)
     totalSessions,
     totalStudyTime,
     activeChildren,
 
-    // School levels (for create/edit forms) - NO name/description, only key
     levels: levelsQuery.data ?? [],
     isLoadingLevels: levelsQuery.isLoading,
 
-    // Combined loading state
     isLoading: childrenQuery.isLoading || dashboardQuery.isLoading,
     isError: childrenQuery.isError || dashboardQuery.isError,
 
-    // Mutations
     createChild: createMutation.mutateAsync,
     updateChild: updateMutation.mutateAsync,
     deleteChild: deleteMutation.mutateAsync,
 
-    // Mutation states
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
 
-    // Actions
     refresh: invalidateParentData,
 
-    // User info (from dashboard response or fallback)
     userName: dashboardData?.parent?.name ?? user?.name?.split(' ')[0] ?? 'Parent',
   };
 }

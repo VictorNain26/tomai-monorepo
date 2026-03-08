@@ -74,6 +74,9 @@ jest.mock('react-native-gesture-handler', () => ({
   Directions: {},
 }));
 
+// Mock react-native-css (NativeWind v5)
+jest.mock('react-native-css', () => ({}));
+
 // @repo/api is mocked via __mocks__/@repo/api.ts
 
 // Mock @better-auth/expo
@@ -115,6 +118,12 @@ jest.mock('react-native-purchases', () => ({
   },
   LOG_LEVEL: { DEBUG: 0 },
 }));
+
+// Mock @shopify/flash-list
+jest.mock('@shopify/flash-list', () => {
+  const { FlatList } = require('react-native');
+  return { FlashList: FlatList };
+});
 
 // Mock lucide-react-native
 jest.mock('lucide-react-native', () => {

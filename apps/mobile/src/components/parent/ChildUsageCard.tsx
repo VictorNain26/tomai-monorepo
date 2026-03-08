@@ -40,7 +40,7 @@ export function ChildUsageCard({
 
   if (isLoading) {
     return (
-      <View className="rounded-xl border border-border bg-card p-4">
+      <View className="rounded-xl bg-white dark:bg-slate-800 p-4">
         <View className="mb-3 flex-row items-center gap-2">
           <Skeleton className="h-8 w-8 rounded-lg" />
           <View className="flex-1">
@@ -56,7 +56,7 @@ export function ChildUsageCard({
 
   if (!windowUsage) {
     return (
-      <View className="rounded-xl border border-border bg-card p-4">
+      <View className="rounded-xl bg-white dark:bg-slate-800 p-4">
         <Text variant="muted" className="text-center text-sm">
           Aucune donnée d'utilisation disponible
         </Text>
@@ -87,15 +87,15 @@ export function ChildUsageCard({
 
   // Get status text color (using semantic tokens)
   const getStatusColor = () => {
-    if (isExhausted) return 'text-destructive';
-    if (isNearLimit) return 'text-destructive';
-    if (isThrottle) return 'text-warning';
-    if (isWarning) return 'text-warning';
-    return 'text-foreground';
+    if (isExhausted) return 'text-red-600 dark:text-red-400';
+    if (isNearLimit) return 'text-red-600 dark:text-red-400';
+    if (isThrottle) return 'text-amber-600 dark:text-amber-400';
+    if (isWarning) return 'text-amber-600 dark:text-amber-400';
+    return 'text-slate-800 dark:text-slate-100';
   };
 
   return (
-    <View className="rounded-xl border border-border bg-card p-4">
+    <View className="rounded-xl bg-white dark:bg-slate-800 p-4">
       {/* Header */}
       <View className="mb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
@@ -154,7 +154,7 @@ export function ChildUsageCard({
 
       {/* Weekly stats */}
       {weekly && weekly.tokensUsed > 0 && (
-        <View className="mt-3 border-t border-border pt-3">
+        <View className="mt-3 border-t border-slate-200 dark:border-slate-700 pt-3">
           <Text variant="muted" className="text-center text-xs">
             Cette semaine: {(weekly.tokensUsed / 1000).toFixed(1)}K tokens utilisés
           </Text>
@@ -165,7 +165,7 @@ export function ChildUsageCard({
       {isExhausted && (
         <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
           <AlertTriangle color={iconColors.destructive} size={14} />
-          <Text className="text-xs text-destructive">
+          <Text className="text-xs text-red-600 dark:text-red-400">
             Limite atteinte
           </Text>
         </View>
@@ -173,14 +173,14 @@ export function ChildUsageCard({
       {isNearLimit && !isExhausted && (
         <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
           <AlertTriangle color={iconColors.destructive} size={14} />
-          <Text className="text-xs text-destructive">
+          <Text className="text-xs text-red-600 dark:text-red-400">
             Presque épuisé
           </Text>
         </View>
       )}
       {isThrottle && !isNearLimit && (
         <View className="mt-3 rounded-lg p-2" style={{ backgroundColor: bgColors.warning[10] }}>
-          <Text className="text-center text-xs text-warning">
+          <Text className="text-center text-xs text-amber-600 dark:text-amber-400">
             Quota faible
           </Text>
         </View>

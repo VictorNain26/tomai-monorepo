@@ -54,4 +54,12 @@ export const nextJsConfig = [
       "react/react-in-jsx-scope": "off",
     },
   },
+  {
+    files: ["*.config.{js,mjs,ts}", "*.config.{cjs,cts}"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
 ];

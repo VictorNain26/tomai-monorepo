@@ -13,30 +13,26 @@
  * Quick Switch: Shows "Return to Parent" banner when in impersonation mode.
  */
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { View, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, MessageCircle, BookOpen, User, ArrowLeft } from 'lucide-react-native';
 import { useSession, useUser, useImpersonatedBy, restoreParentSession } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
-import { useTheme, useDueSummary } from '@/hooks';
-import { colors } from '@/lib/styles';
-import { useTabScreenOptions } from '@/lib/navigation';
+import { useTheme, useThemeColors, useDueSummary } from '@/hooks';
+import { useTabScreenOptions, useTabBarConfig } from '@/lib/navigation';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { setupPushNotifications } from '@/lib/notifications';
-
-// Base tab bar height (without safe area)
-const TAB_BAR_HEIGHT = 56;
-const TAB_BAR_PADDING_TOP = 8;
 
 export default function StudentLayout() {
   const router = useRouter();
   const toast = useToast();
   const { data: session, isPending, refetch: refetchSession } = useSession();
   const user = useUser();
-  const { isDark } = useTheme();
+  useTheme();
+  const colors = useThemeColors();
   const insets = useSafeAreaInsets();
 
   // Due cards count for Learning tab badge
@@ -77,29 +73,8 @@ export default function StudentLayout() {
     );
   }, [router, toast, refetchSession]);
 
-  // Compute tab colors based on theme
-  const tabColors = useMemo(
-    () => ({
-      active: colors.primary.DEFAULT,
-      inactive: colors.muted.foreground,
-      background: isDark ? colors.background.dark : colors.background.light,
-      border: isDark ? colors.border.dark : colors.border.light,
-    }),
-    [isDark]
-  );
-
-  // Compute tab bar style with safe area insets
-  const tabBarStyle = useMemo(
-    () => ({
-      backgroundColor: tabColors.background,
-      borderTopColor: tabColors.border,
-      borderTopWidth: 1,
-      paddingTop: TAB_BAR_PADDING_TOP,
-      paddingBottom: Math.max(insets.bottom, 8),
-      height: TAB_BAR_HEIGHT + Math.max(insets.bottom, 8),
-    }),
-    [tabColors, insets.bottom]
-  );
+  // Shared tab bar config (colors + style)
+  const { tabColors, tabBarStyle } = useTabBarConfig();
 
   // Shared tab animation/performance options (React Navigation 7)
   const tabOptions = useTabScreenOptions(tabColors.background);
@@ -131,16 +106,23 @@ export default function StudentLayout() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isDark ? colors.background.dark : colors.background.light,
+          backgroundColor: colors.background,
         }}
       >
-        <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
     <AppProviders>
+      <Suspense
+        fallback={
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        }
+      >
       <View style={{ flex: 1 }}>
         {/* Quick Switch Banner - shown when parent is viewing as child */}
         {isImpersonating && (
@@ -148,7 +130,7 @@ export default function StudentLayout() {
             onPress={handleReturnToParent}
             disabled={isRestoring}
             style={{
-              backgroundColor: colors.primary.DEFAULT,
+              backgroundColor: colors.primary,
               paddingTop: insets.top + 4,
               paddingBottom: 8,
               paddingHorizontal: 16,
@@ -160,10 +142,10 @@ export default function StudentLayout() {
             accessibilityLabel="Retour au compte parent"
             accessibilityRole="button"
           >
-            <ArrowLeft color={colors.primary.foreground} size={16} />
+            <ArrowLeft color={colors.primaryForeground} size={16} />
             <Text
               style={{
-                color: colors.primary.foreground,
+                color: colors.primaryForeground,
                 fontWeight: '600',
                 fontSize: 14,
               }}
@@ -179,7 +161,7 @@ export default function StudentLayout() {
             tabBarActiveTintColor: tabColors.active,
             tabBarInactiveTintColor: tabColors.inactive,
             tabBarStyle,
-            tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+            tabBarShowLabel: false,
             popToTopOnBlur: true,
             ...tabOptions,
           }}
@@ -211,7 +193,7 @@ export default function StudentLayout() {
                 <BookOpen color={color} size={size} />
               ),
               tabBarBadge: dueCount > 0 ? (dueCount > 99 ? '99+' : dueCount) : undefined,
-              tabBarBadgeStyle: dueCount > 0 ? { backgroundColor: colors.warning.DEFAULT, fontSize: 10 } : undefined,
+              tabBarBadgeStyle: dueCount > 0 ? { backgroundColor: colors.warning, fontSize: 10 } : undefined,
             }}
           />
 
@@ -225,6 +207,7 @@ export default function StudentLayout() {
           />
         </Tabs>
       </View>
+      </Suspense>
     </AppProviders>
   );
 }

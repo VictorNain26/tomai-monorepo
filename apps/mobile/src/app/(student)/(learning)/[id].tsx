@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, Check } from 'lucide-react-native';
 
@@ -16,26 +16,30 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardViewer } from '@/components/learning';
-import { useDueCards, useReviewCard, useDeck, useIconColors } from '@/hooks';
+import { useDueCards, useReviewCard, useDeck, useIconColors, useThemeColors, type ThemeColors } from '@/hooks';
 import type { FSRSRating, ReviewResult, CardType } from '@/hooks';
-import { bgColors, colors } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
 import { haptics } from '@/lib/haptics';
 
 // ============================================================================
 // RATING CONFIG
 // ============================================================================
 
-const RATINGS: {
+interface RatingConfig {
   value: FSRSRating;
   label: string;
   color: string;
   bg: string;
-}[] = [
-  { value: 1, label: 'À revoir', color: colors.destructive.DEFAULT, bg: bgColors.destructive[10] },
-  { value: 2, label: 'Difficile', color: colors.warning.DEFAULT, bg: bgColors.warning[10] },
-  { value: 3, label: 'Bien', color: colors.success.DEFAULT, bg: bgColors.success[10] },
-  { value: 4, label: 'Facile', color: colors.primary.DEFAULT, bg: bgColors.primary[10] },
-];
+}
+
+function getRatings(colors: ThemeColors): RatingConfig[] {
+  return [
+    { value: 1, label: 'À revoir', color: colors.destructive, bg: bgColors.destructive[10] },
+    { value: 2, label: 'Difficile', color: colors.warning, bg: bgColors.warning[10] },
+    { value: 3, label: 'Bien', color: colors.success, bg: bgColors.success[10] },
+    { value: 4, label: 'Facile', color: colors.primary, bg: bgColors.primary[10] },
+  ];
+}
 
 // ============================================================================
 // COMPONENT
@@ -44,6 +48,7 @@ const RATINGS: {
 export default function DeckReviewScreen() {
   const router = useRouter();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<ReviewResult[]>([]);
@@ -99,7 +104,7 @@ export default function DeckReviewScreen() {
   // Loading
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         <View className="flex-1 items-center justify-center p-6">
           <Skeleton className="mb-4 h-8 w-48 rounded" />
           <Skeleton className="h-64 w-full rounded-xl" />
@@ -111,13 +116,13 @@ export default function DeckReviewScreen() {
   // Error
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="mb-4 text-destructive">
+          <Text className="mb-4 text-red-600 dark:text-red-400">
             {error.message ?? 'Erreur de chargement'}
           </Text>
           <Button onPress={handleClose}>
-            <Text className="text-primary-foreground">Retour</Text>
+            <Text className="text-white dark:text-slate-900">Retour</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -127,13 +132,13 @@ export default function DeckReviewScreen() {
   // No due cards
   if (totalCards === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         <View className="flex-1 items-center justify-center p-6">
           <View
             className="mb-4 h-20 w-20 items-center justify-center rounded-full"
             style={{ backgroundColor: bgColors.success[10] }}
           >
-            <Check color={colors.success.DEFAULT} size={40} />
+            <Check color={colors.success} size={40} />
           </View>
           <Text variant="h2" className="text-center">
             Tout est révisé !
@@ -142,7 +147,7 @@ export default function DeckReviewScreen() {
             Aucune carte à réviser pour le moment.{'\n'}Reviens plus tard !
           </Text>
           <Button onPress={handleClose} className="mt-8">
-            <Text className="font-semibold text-primary-foreground">
+            <Text className="font-semibold text-white dark:text-slate-900">
               Retour aux decks
             </Text>
           </Button>
@@ -166,9 +171,9 @@ export default function DeckReviewScreen() {
 
   // Main review UI
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+      <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <TouchableOpacity
           onPress={handleClose}
           className="h-10 w-10 items-center justify-center rounded-full"
@@ -199,7 +204,7 @@ export default function DeckReviewScreen() {
       </View>
 
       {/* Rating Buttons */}
-      <View className="border-t border-border px-4 py-4">
+      <View className="border-t border-slate-200 dark:border-slate-700 px-4 py-4">
         {reviewMutation.isPending ? (
           <View className="items-center py-3">
             <ActivityIndicator size="small" />
@@ -210,7 +215,7 @@ export default function DeckReviewScreen() {
               Comment c'était ?
             </Text>
             <View className="flex-row gap-2">
-              {RATINGS.map(({ value, label, color, bg }) => (
+              {getRatings(colors).map(({ value, label, color, bg }) => (
                 <TouchableOpacity
                   key={value}
                   onPress={() => handleRate(value)}
@@ -228,7 +233,7 @@ export default function DeckReviewScreen() {
           </>
         )}
         {reviewMutation.error && (
-          <Text className="mt-2 text-center text-xs text-destructive">
+          <Text className="mt-2 text-center text-xs text-red-600 dark:text-red-400">
             Erreur, réessaye
           </Text>
         )}
@@ -256,15 +261,16 @@ function SessionComplete({
   onClose,
   onAskTom,
 }: SessionCompleteProps) {
+  const colors = useThemeColors();
   const breakdown = [
-    { label: 'À revoir', count: results.filter((r) => r.rating === 1).length, color: colors.destructive.DEFAULT, bg: bgColors.destructive[10] },
-    { label: 'Difficile', count: results.filter((r) => r.rating === 2).length, color: colors.warning.DEFAULT, bg: bgColors.warning[10] },
-    { label: 'Bien', count: results.filter((r) => r.rating === 3).length, color: colors.success.DEFAULT, bg: bgColors.success[10] },
-    { label: 'Facile', count: results.filter((r) => r.rating === 4).length, color: colors.primary.DEFAULT, bg: bgColors.primary[10] },
+    { label: 'À revoir', count: results.filter((r) => r.rating === 1).length, color: colors.destructive, bg: bgColors.destructive[10] },
+    { label: 'Difficile', count: results.filter((r) => r.rating === 2).length, color: colors.warning, bg: bgColors.warning[10] },
+    { label: 'Bien', count: results.filter((r) => r.rating === 3).length, color: colors.success, bg: bgColors.success[10] },
+    { label: 'Facile', count: results.filter((r) => r.rating === 4).length, color: colors.primary, bg: bgColors.primary[10] },
   ].filter((b) => b.count > 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       <View className="flex-1 items-center justify-center p-6">
         <Text className="mb-2 text-6xl">🎉</Text>
         <Text variant="h2" className="text-center">
@@ -293,7 +299,7 @@ function SessionComplete({
 
         <View className="mt-8 w-full gap-3">
           <Button onPress={onContinue}>
-            <Text className="font-semibold text-primary-foreground">
+            <Text className="font-semibold text-white dark:text-slate-900">
               Continuer à réviser
             </Text>
           </Button>

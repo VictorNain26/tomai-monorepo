@@ -43,7 +43,7 @@ function Skeleton({
 
   return (
     <Animated.View
-      className={cn('bg-muted', className)}
+      className={cn('bg-slate-100 dark:bg-slate-800', className)}
       style={[
         {
           width,
@@ -94,7 +94,7 @@ function SkeletonCard({ className }: { className?: string }) {
   return (
     <View
       className={cn(
-        'rounded-xl border border-border bg-card p-4 gap-3',
+        'rounded-xl bg-white dark:bg-slate-800 p-4 gap-3',
         className
       )}
     >

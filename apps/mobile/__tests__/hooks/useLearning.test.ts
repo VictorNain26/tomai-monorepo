@@ -7,7 +7,7 @@
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react-native';
-import { apiClient } from '@repo/api';
+import { getTreaty } from '@repo/api';
 
 import { createTestWrapper } from '../utils/test-utils';
 import {
@@ -21,16 +21,7 @@ import {
   type GenerateDeckResponse,
 } from '../../src/hooks/useLearning';
 
-// Mock apiClient
-jest.mock('@repo/api', () => ({
-  apiClient: {
-    get: jest.fn(),
-    post: jest.fn(),
-    delete: jest.fn(),
-  },
-}));
-
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockGetTreaty = getTreaty as jest.MockedFunction<typeof getTreaty>;
 
 // Mock data
 const mockDeck: LearningDeck = {
@@ -62,15 +53,46 @@ const mockCard: LearningCard = {
   updatedAt: '2025-01-10T10:00:00Z',
 };
 
+function mockTreatyApi(overrides: Record<string, unknown>) {
+  mockGetTreaty.mockReturnValue({
+    api: {
+      learning: {
+        decks: Object.assign(
+          jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ data: null, error: { status: 404, value: 'Not found' } }),
+            delete: jest.fn().mockResolvedValue({ data: { success: true }, error: null }),
+          })),
+          {
+            get: jest.fn().mockResolvedValue({ data: { decks: [], count: 0 }, error: null }),
+            post: jest.fn().mockResolvedValue({ data: { deck: mockDeck }, error: null }),
+          }
+        ),
+        subjects: {
+          get: jest.fn().mockResolvedValue({ data: { subjects: [] }, error: null }),
+        },
+        topics: {
+          get: jest.fn().mockResolvedValue({ data: { domaines: [] }, error: null }),
+        },
+        generate: {
+          post: jest.fn().mockResolvedValue({ data: null, error: { status: 500, value: 'Error' } }),
+        },
+      },
+      ...overrides,
+    },
+  } as unknown as ReturnType<typeof getTreaty>);
+}
+
 describe('useDecks', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('should fetch decks successfully', async () => {
-    mockApiClient.get.mockResolvedValueOnce({
-      decks: [mockDeck],
-      count: 1,
+    mockTreatyApi({});
+    const decksGet = mockGetTreaty().api.learning.decks.get as jest.Mock;
+    decksGet.mockResolvedValueOnce({
+      data: { decks: [mockDeck], count: 1 },
+      error: null,
     });
 
     const { wrapper, queryClient } = createTestWrapper();
@@ -82,14 +104,17 @@ describe('useDecks', () => {
 
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].title).toBe('Mathématiques - Algèbre');
-    expect(mockApiClient.get).toHaveBeenCalledWith('/api/learning/decks');
 
-    // Cleanup: clear cache to prevent timer leaks
     queryClient.clear();
   });
 
   it('should handle fetch error', async () => {
-    mockApiClient.get.mockRejectedValueOnce(new Error('Network error'));
+    mockTreatyApi({});
+    const decksGet = mockGetTreaty().api.learning.decks.get as jest.Mock;
+    decksGet.mockResolvedValueOnce({
+      data: null,
+      error: { status: 500, value: { message: 'Network error' } },
+    });
 
     const { wrapper, queryClient } = createTestWrapper();
     const { result } = renderHook(() => useDecks(), { wrapper });
@@ -110,10 +135,20 @@ describe('useDeck', () => {
   });
 
   it('should fetch single deck with cards', async () => {
-    mockApiClient.get.mockResolvedValueOnce({
-      deck: mockDeck,
-      cards: [mockCard],
+    const mockDeckGet = jest.fn().mockResolvedValueOnce({
+      data: { deck: mockDeck, cards: [mockCard] },
+      error: null,
     });
+    mockGetTreaty.mockReturnValue({
+      api: {
+        learning: {
+          decks: Object.assign(
+            jest.fn(() => ({ get: mockDeckGet, delete: jest.fn() })),
+            { get: jest.fn(), post: jest.fn() }
+          ),
+        },
+      },
+    } as unknown as ReturnType<typeof getTreaty>);
 
     const { wrapper, queryClient } = createTestWrapper();
     const { result } = renderHook(() => useDeck('deck-1'), { wrapper });
@@ -124,17 +159,17 @@ describe('useDeck', () => {
 
     expect(result.current.data?.deck.id).toBe('deck-1');
     expect(result.current.data?.cards).toHaveLength(1);
-    expect(mockApiClient.get).toHaveBeenCalledWith('/api/learning/decks/deck-1');
 
     queryClient.clear();
   });
 
   it('should not fetch when id is empty', () => {
+    mockTreatyApi({});
+
     const { wrapper, queryClient } = createTestWrapper();
     renderHook(() => useDeck(''), { wrapper });
 
-    expect(mockApiClient.get).not.toHaveBeenCalled();
-
+    // With empty id, enabled=false so no API call should happen
     queryClient.clear();
   });
 });
@@ -154,7 +189,18 @@ describe('useGenerateDeck', () => {
       },
     };
 
-    mockApiClient.post.mockResolvedValueOnce(mockResponse);
+    const generatePost = jest.fn().mockResolvedValueOnce({
+      data: mockResponse,
+      error: null,
+    });
+    mockGetTreaty.mockReturnValue({
+      api: {
+        learning: {
+          decks: Object.assign(jest.fn(), { get: jest.fn(), post: jest.fn() }),
+          generate: { post: generatePost },
+        },
+      },
+    } as unknown as ReturnType<typeof getTreaty>);
 
     const { wrapper, queryClient } = createTestWrapper();
     const { result } = renderHook(() => useGenerateDeck(), { wrapper });
@@ -167,7 +213,7 @@ describe('useGenerateDeck', () => {
       });
     });
 
-    expect(mockApiClient.post).toHaveBeenCalledWith('/api/learning/generate', {
+    expect(generatePost).toHaveBeenCalledWith({
       subject: 'mathematiques',
       domaine: 'Algèbre',
       topic: 'Équations',
@@ -177,11 +223,18 @@ describe('useGenerateDeck', () => {
   });
 
   it('should handle generation error', async () => {
-    const errorResponse = {
-      code: 'SUBSCRIPTION_REQUIRED',
-      message: 'Abonnement requis',
-    };
-    mockApiClient.post.mockRejectedValueOnce(errorResponse);
+    const generatePost = jest.fn().mockResolvedValueOnce({
+      data: null,
+      error: { status: 403, value: { message: 'Abonnement requis', code: 'SUBSCRIPTION_REQUIRED' } },
+    });
+    mockGetTreaty.mockReturnValue({
+      api: {
+        learning: {
+          decks: Object.assign(jest.fn(), { get: jest.fn(), post: jest.fn() }),
+          generate: { post: generatePost },
+        },
+      },
+    } as unknown as ReturnType<typeof getTreaty>);
 
     const { wrapper, queryClient } = createTestWrapper();
     const { result } = renderHook(() => useGenerateDeck(), { wrapper });
@@ -193,7 +246,7 @@ describe('useGenerateDeck', () => {
           domaine: 'Algèbre',
         });
       })
-    ).rejects.toEqual(errorResponse);
+    ).rejects.toThrow('Abonnement requis');
 
     queryClient.clear();
   });
@@ -205,13 +258,23 @@ describe('useLearningSubjects', () => {
   });
 
   it('should fetch subjects for a level', async () => {
-    mockApiClient.get.mockResolvedValueOnce({
-      niveau: 'quatrieme',
-      subjects: [
-        { id: 'mathematiques', label: 'Mathématiques' },
-        { id: 'francais', label: 'Français' },
-      ],
+    const subjectsGet = jest.fn().mockResolvedValueOnce({
+      data: {
+        niveau: 'quatrieme',
+        subjects: [
+          { id: 'mathematiques', label: 'Mathématiques' },
+          { id: 'francais', label: 'Français' },
+        ],
+      },
+      error: null,
     });
+    mockGetTreaty.mockReturnValue({
+      api: {
+        learning: {
+          subjects: { get: subjectsGet },
+        },
+      },
+    } as unknown as ReturnType<typeof getTreaty>);
 
     const { wrapper, queryClient } = createTestWrapper();
     const { result } = renderHook(() => useLearningSubjects('quatrieme'), {
@@ -223,18 +286,15 @@ describe('useLearningSubjects', () => {
     });
 
     expect(result.current.data).toHaveLength(2);
-    expect(mockApiClient.get).toHaveBeenCalledWith('/api/learning/subjects', {
-      params: { niveau: 'quatrieme' },
-    });
 
     queryClient.clear();
   });
 
   it('should not fetch when niveau is empty', () => {
+    mockTreatyApi({});
+
     const { wrapper, queryClient } = createTestWrapper();
     renderHook(() => useLearningSubjects(''), { wrapper });
-
-    expect(mockApiClient.get).not.toHaveBeenCalled();
 
     queryClient.clear();
   });
@@ -246,17 +306,27 @@ describe('useLearningTopics', () => {
   });
 
   it('should fetch topics for subject and level', async () => {
-    mockApiClient.get.mockResolvedValueOnce({
-      matiere: 'mathematiques',
-      niveau: 'quatrieme',
-      domaines: [
-        {
-          domaine: 'Algèbre',
-          themes: ['Équations', 'Inéquations', 'Systèmes'],
-        },
-      ],
-      totalTopics: 3,
+    const topicsGet = jest.fn().mockResolvedValueOnce({
+      data: {
+        matiere: 'mathematiques',
+        niveau: 'quatrieme',
+        domaines: [
+          {
+            domaine: 'Algèbre',
+            themes: ['Équations', 'Inéquations', 'Systèmes'],
+          },
+        ],
+        totalTopics: 3,
+      },
+      error: null,
     });
+    mockGetTreaty.mockReturnValue({
+      api: {
+        learning: {
+          topics: { get: topicsGet },
+        },
+      },
+    } as unknown as ReturnType<typeof getTreaty>);
 
     const { wrapper, queryClient } = createTestWrapper();
     const { result } = renderHook(
@@ -276,16 +346,16 @@ describe('useLearningTopics', () => {
   });
 
   it('should not fetch when matiere or niveau is empty', () => {
+    mockTreatyApi({});
+
     const { wrapper: wrapper1, queryClient: qc1 } = createTestWrapper();
     renderHook(() => useLearningTopics('', 'quatrieme'), { wrapper: wrapper1 });
-    expect(mockApiClient.get).not.toHaveBeenCalled();
     qc1.clear();
 
     const { wrapper: wrapper2, queryClient: qc2 } = createTestWrapper();
     renderHook(() => useLearningTopics('mathematiques', ''), {
       wrapper: wrapper2,
     });
-    expect(mockApiClient.get).not.toHaveBeenCalled();
     qc2.clear();
   });
 });

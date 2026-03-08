@@ -31,14 +31,14 @@ export function ConceptViewer({ content }: { content: ConceptContent }) {
       <View className="mb-6 gap-2">
         {content.keyPoints.map((point, index) => (
           <View key={index} className="flex-row gap-2">
-            <Text className="text-primary">•</Text>
+            <Text className="text-blue-600 dark:text-blue-400">•</Text>
             <Text className="flex-1">{point}</Text>
           </View>
         ))}
       </View>
 
       {content.example && (
-        <View className="mb-4 rounded-xl bg-muted p-4">
+        <View className="mb-4 rounded-xl bg-slate-100 dark:bg-slate-800 p-4">
           <Text className="mb-2 font-semibold">Exemple :</Text>
           <Text>{content.example}</Text>
         </View>

@@ -3,7 +3,8 @@ import { View } from 'react-native';
 import { AlertTriangle, RefreshCw } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { bgColors, colors } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
+import { logError } from '@/lib/dev-logger';
 
 interface Props {
   children: ReactNode;
@@ -14,21 +15,31 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to monitoring service
-    console.error('ErrorBoundary caught:', error, errorInfo);
+    this.setState({ errorInfo });
+    // Full structured log for debugging — includes component stack
+    console.error(
+      '[ErrorBoundary]',
+      JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+      }, null, 2),
+    );
+    logError(error, errorInfo.componentStack ?? undefined);
     this.props.onError?.(error, errorInfo);
   }
 
@@ -43,10 +54,10 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <View className="flex-1 items-center justify-center bg-background p-6">
+        <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900 p-6">
           <View className="items-center max-w-sm">
             <View className="h-16 w-16 items-center justify-center rounded-full mb-4" style={{ backgroundColor: bgColors.destructive[10] }}>
-              <AlertTriangle size={32} color={colors.destructive.DEFAULT} />
+              <AlertTriangle size={32} color="#DC2626" />
             </View>
 
             <Text variant="h2" className="text-center mb-2">
@@ -58,16 +69,21 @@ export class ErrorBoundary extends Component<Props, State> {
             </Text>
 
             {__DEV__ && this.state.error && (
-              <View className="w-full mb-6 p-3 bg-muted rounded-lg">
-                <Text variant="small" className="font-mono text-destructive">
+              <View className="w-full mb-6 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                <Text variant="small" className="font-mono text-red-600 dark:text-red-400">
                   {this.state.error.message}
                 </Text>
+                {this.state.errorInfo?.componentStack && (
+                  <Text variant="small" className="font-mono text-red-500 dark:text-red-300 mt-2">
+                    {this.state.errorInfo.componentStack.slice(0, 500)}
+                  </Text>
+                )}
               </View>
             )}
 
             <Button onPress={this.handleRetry} className="flex-row gap-2">
-              <RefreshCw size={18} color={colors.primary.foreground} />
-              <Text className="text-primary-foreground font-semibold">
+              <RefreshCw size={18} color="#FFFFFF" />
+              <Text className="text-white dark:text-slate-900 font-semibold">
                 Réessayer
               </Text>
             </Button>

@@ -1,16 +1,18 @@
 # Mobile Tom
 
-App Expo SDK 54 + React Native 0.81. NativeWind + React Native Reusables.
+App Expo SDK 55 + React Native 0.83 + React 19.2. NativeWind + React Native Reusables.
 
 ## Commandes
 
 ```bash
-pnpm dev              # Expo Go (scan QR code)
+pnpm dev:client       # Dev Client (RECOMMANDE — necessite build EAS prealable)
+pnpm dev              # Expo Go (limite : pas de modules natifs custom)
 pnpm dev:tunnel       # Expo Go via tunnel (reseau different)
-pnpm dev:client       # Dev Client (necessite build EAS prealable)
 pnpm typecheck        # TypeScript strict
 pnpm lint             # ESLint zero warnings
 ```
+
+**Dev Client est l'environnement principal** : l'app utilise Google Sign-In, RevenueCat, expo-camera, expo-sqlite qui necessitent du code natif.
 
 ## Builds
 
@@ -34,7 +36,7 @@ pnpm update:prod                  # Channel production
 
 ## Architecture
 
-- **`src/app/`** : Expo Router (file-based routing) avec groupes `(auth)`, `(student)`, `(parent)`
+- **`src/app/`** : Expo Router v7 (file-based routing) avec groupes `(auth)`, `(student)`, `(parent)`
 - **`src/components/ui/`** : React Native Reusables uniquement
 - **`src/hooks/`** : React Query hooks (source de verite types)
 - **`src/services/`** : services metier (audio, pronote)

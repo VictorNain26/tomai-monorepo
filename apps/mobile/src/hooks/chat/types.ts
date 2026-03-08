@@ -88,8 +88,8 @@ export interface UseChatReturn {
   isLoading: boolean;
   isStreaming: boolean;
   error: string | null;
-  sendMessage: (content: string) => Promise<void>;
-  retry: () => Promise<void>;
+  sendMessage: (content: string) => void;
+  retry: () => void;
   addAttachment: (attachment: ChatFileAttachment) => void;
   removeAttachment: (fileId: string) => void;
   clearPendingAttachments: () => void;

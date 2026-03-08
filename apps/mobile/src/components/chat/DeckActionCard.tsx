@@ -10,8 +10,8 @@ import { BookOpen, ArrowRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 import { Text } from '@/components/ui/text';
-import { useIconColors } from '@/hooks';
-import { bgColors, shadows, colors } from '@/lib/styles';
+import { useIconColors, useThemeColors } from '@/hooks';
+import { bgColors, shadows } from '@/lib/styles';
 
 interface DeckActionCardProps {
   deckId: string;
@@ -23,13 +23,14 @@ interface DeckActionCardProps {
 export function DeckActionCard({ deckId, title, cardCount, subject }: DeckActionCardProps) {
   const router = useRouter();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   return (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={() => router.push(`/(student)/(learning)/${deckId}`)}
       style={shadows.sm}
-      className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3"
+      className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-3"
       accessibilityRole="button"
       accessibilityLabel={`Réviser ${title}`}
     >
@@ -48,8 +49,8 @@ export function DeckActionCard({ deckId, title, cardCount, subject }: DeckAction
       </View>
 
       <View className="flex-row items-center gap-1">
-        <Text className="text-sm font-medium text-primary">Réviser</Text>
-        <ArrowRight color={colors.primary.DEFAULT} size={16} />
+        <Text className="text-sm font-medium text-blue-600 dark:text-blue-400">Réviser</Text>
+        <ArrowRight color={colors.primary} size={16} />
       </View>
     </TouchableOpacity>
   );

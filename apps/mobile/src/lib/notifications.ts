@@ -14,7 +14,7 @@
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 
 /**
  * Setup Android notification channels.
@@ -113,11 +113,13 @@ async function registerForPushNotifications(
  */
 async function savePushTokenToBackend(token: string): Promise<boolean> {
   try {
-    await apiClient.post('/api/users/push-token', {
-      token,
-      platform: Platform.OS,
-      deviceName: Device.deviceName ?? 'Unknown',
-    });
+    unwrap(
+      await getTreaty().api.users['push-token'].post({
+        token,
+        platform: Platform.OS as 'ios' | 'android',
+        deviceName: Device.deviceName ?? 'Unknown',
+      })
+    );
     console.log('[Notifications] Token saved to backend');
     return true;
   } catch (error) {

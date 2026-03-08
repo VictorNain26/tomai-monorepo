@@ -1,17 +1,3 @@
-/**
- * Service FSRS (Free Spaced Repetition Scheduler)
- *
- * Implémentation serveur de l'algorithme FSRS avec adaptation par niveau scolaire.
- *
- * FSRS est un algorithme moderne de répétition espacée qui:
- * - Prédit le moment optimal de révision
- * - S'adapte aux performances de l'élève
- * - Maximise la rétention avec un minimum de révisions
- *
- * @see https://github.com/open-spaced-repetition/ts-fsrs
- * @see docs/AUDIT_LEARNING_FLASHCARDS.md
- */
-
 import {
   fsrs,
   createEmptyCard,
@@ -29,79 +15,11 @@ import { getLevelConfig } from '../config/learning-config.js';
 import type { EducationLevelType } from '../types/index.js';
 import { logger } from '../lib/observability.js';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════════════════
+import type { ReviewResult, CardForReview, DeckReviewStats, GetDueCardsOptions } from './fsrs-types.js';
 
-/**
- * Résultat de révision d'une carte
- */
-export interface ReviewResult {
-  cardId: string;
-  rating: Rating;
-  previousState: State;
-  newState: State;
-  nextDue: Date;
-  stability: number;
-  difficulty: number;
-  reps: number;
-  lapses: number;
-}
-
-/**
- * Carte avec données FSRS pour révision
- */
-export interface CardForReview {
-  id: string;
-  deckId: string;
-  cardType: string;
-  content: unknown;
-  position: number;
-  fsrsData: FSRSData;
-  /** Priorité de révision (plus bas = plus urgent) */
-  priority: number;
-  /** True si la carte est en retard */
-  overdue: boolean;
-}
-
-/**
- * Statistiques de révision pour un deck
- */
-export interface DeckReviewStats {
-  deckId: string;
-  totalCards: number;
-  newCards: number;
-  learningCards: number;
-  reviewCards: number;
-  relearningCards: number;
-  dueToday: number;
-  overdueCards: number;
-  averageDifficulty: number;
-  averageStability: number;
-}
-
-/**
- * Options pour récupérer les cartes dues
- */
-export interface GetDueCardsOptions {
-  deckId: string;
-  userId: string;
-  limit?: number;
-  includeNew?: boolean;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SERVICE FSRS
-// ═══════════════════════════════════════════════════════════════════════════
+export type { ReviewResult, CardForReview, DeckReviewStats, GetDueCardsOptions } from './fsrs-types.js';
 
 class FSRSService {
-  /**
-   * Crée un scheduler FSRS configuré pour un niveau scolaire
-   *
-   * Les paramètres sont adaptés selon l'âge:
-   * - Rétention cible plus basse pour les petits (moins de pression)
-   * - Intervalles max plus courts (consolidation fréquente)
-   */
   private getScheduler(level: EducationLevelType): ReturnType<typeof fsrs> {
     const config = getLevelConfig(level);
 
@@ -117,9 +35,6 @@ class FSRSService {
     return fsrs(params);
   }
 
-  /**
-   * Convertit FSRSData (DB) en Card (ts-fsrs)
-   */
   private fsrsDataToCard(data: FSRSData | null | undefined): FSRSCard {
     if (!data || Object.keys(data).length === 0) {
       return createEmptyCard();
@@ -139,9 +54,6 @@ class FSRSService {
     };
   }
 
-  /**
-   * Convertit Card (ts-fsrs) en FSRSData (DB)
-   */
   private cardToFsrsData(card: FSRSCard): FSRSData {
     return {
       due: card.due.toISOString(),
@@ -154,14 +66,6 @@ class FSRSService {
     };
   }
 
-  /**
-   * Enregistre une révision de carte
-   *
-   * @param cardId ID de la carte
-   * @param rating Note de l'élève (1=Again, 2=Hard, 3=Good, 4=Easy)
-   * @param level Niveau scolaire (pour paramètres FSRS)
-   * @returns Résultat de la révision avec nouvelle date
-   */
   async reviewCard(
     cardId: string,
     rating: Rating,
@@ -181,20 +85,12 @@ class FSRSService {
       throw new Error(`Card not found: ${cardId}`);
     }
 
-    // Convertir les données FSRS existantes
     const currentCard = this.fsrsDataToCard(card.fsrsData as FSRSData);
     const previousState = currentCard.state;
 
-    // Calculer le nouveau scheduling
-    // Note: RecordLog is indexed by Grade (1-4), not Rating (0-4)
-    // Rating.Manual (0) is not used for spaced repetition
     const recordLog: RecordLog = scheduler.repeat(currentCard, now);
     const newCard = recordLog[rating as Grade].card;
-
-    // Convertir pour stockage
     const newFsrsData = this.cardToFsrsData(newCard);
-
-    // Mettre à jour en DB
     await db
       .update(learningCards)
       .set({
@@ -227,20 +123,10 @@ class FSRSService {
     };
   }
 
-  /**
-   * Récupère les cartes dues pour révision
-   *
-   * Ordre de priorité:
-   * 1. Cartes en retard (overdue)
-   * 2. Cartes en apprentissage (learning/relearning)
-   * 3. Cartes à réviser (review)
-   * 4. Nouvelles cartes (new) - si includeNew=true
-   */
   async getDueCards(options: GetDueCardsOptions): Promise<CardForReview[]> {
     const { deckId, userId, limit = 20, includeNew = true } = options;
     const now = new Date();
 
-    // Vérifier que le deck appartient à l'utilisateur
     const [deck] = await db
       .select()
       .from(learningDecks)
@@ -251,21 +137,18 @@ class FSRSService {
       throw new Error(`Deck not found or access denied: ${deckId}`);
     }
 
-    // Récupérer les cartes avec données FSRS
     const cards = await db
       .select()
       .from(learningCards)
       .where(eq(learningCards.deckId, deckId))
       .orderBy(learningCards.position);
 
-    // Filtrer et trier les cartes dues
     const dueCards: CardForReview[] = [];
 
     for (const card of cards) {
       const fsrsData = card.fsrsData as FSRSData | null;
       const fsrsCard = this.fsrsDataToCard(fsrsData);
 
-      // Carte nouvelle (jamais révisée)
       if (fsrsCard.state === State.New) {
         if (includeNew) {
           dueCards.push({
@@ -282,26 +165,21 @@ class FSRSService {
         continue;
       }
 
-      // Cartes en apprentissage/révision - vérifier si dues
       const dueDate = fsrsCard.due;
       const isDue = dueDate <= now;
       const isOverdue = dueDate < new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
       if (isDue) {
-        // Priorité basée sur l'urgence et l'état
         let priority: number;
 
         if (isOverdue) {
-          // Cartes en retard: priorité maximale
           const daysOverdue = Math.floor(
             (now.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000)
           );
           priority = -daysOverdue * 10;
         } else if (fsrsCard.state === State.Learning || fsrsCard.state === State.Relearning) {
-          // Cartes en apprentissage: haute priorité
           priority = 100;
         } else {
-          // Cartes à réviser: priorité normale basée sur stabilité
           priority = 500 + Math.floor(fsrsCard.stability);
         }
 
@@ -318,20 +196,14 @@ class FSRSService {
       }
     }
 
-    // Trier par priorité (plus bas = plus urgent)
     dueCards.sort((a, b) => a.priority - b.priority);
 
-    // Limiter le nombre de cartes
     return dueCards.slice(0, limit);
   }
 
-  /**
-   * Récupère les statistiques de révision d'un deck
-   */
   async getDeckStats(deckId: string, userId: string): Promise<DeckReviewStats> {
     const now = new Date();
 
-    // Vérifier accès
     const [deck] = await db
       .select()
       .from(learningDecks)
@@ -342,13 +214,11 @@ class FSRSService {
       throw new Error(`Deck not found or access denied: ${deckId}`);
     }
 
-    // Récupérer toutes les cartes
     const cards = await db
       .select()
       .from(learningCards)
       .where(eq(learningCards.deckId, deckId));
 
-    // Calculer les statistiques
     let newCards = 0;
     let learningCardsCount = 0;
     let reviewCards = 0;
@@ -381,7 +251,6 @@ class FSRSService {
           break;
       }
 
-      // Cartes dues
       if (fsrsCard.state !== State.New) {
         if (fsrsCard.due <= todayEnd) {
           dueToday++;
@@ -410,23 +279,11 @@ class FSRSService {
     };
   }
 
-  /**
-   * Initialise les données FSRS pour une nouvelle carte
-   *
-   * Appelé lors de la création de cartes pour s'assurer
-   * qu'elles ont des données FSRS valides
-   */
   initializeCardFsrsData(): FSRSData {
     const emptyCard = createEmptyCard();
     return this.cardToFsrsData(emptyCard);
   }
 
-  /**
-   * Prédit les prochaines révisions pour simulation
-   *
-   * Utile pour afficher à l'élève le planning de révision prévu
-   * Returns scheduling preview for grades 1-4 (Again, Hard, Good, Easy)
-   */
   previewScheduling(
     level: EducationLevelType,
     currentFsrsData: FSRSData | null
@@ -437,7 +294,6 @@ class FSRSService {
 
     const recordLog = scheduler.repeat(currentCard, now);
 
-    // Grade enum: 1=Again, 2=Hard, 3=Good, 4=Easy (excludes Manual=0)
     return {
       [Rating.Again]: {
         due: recordLog[Rating.Again].card.due,
@@ -458,9 +314,6 @@ class FSRSService {
     } as Record<Grade, { due: Date; interval: number }>;
   }
 
-  /**
-   * Reset les données FSRS d'une carte (remet à neuf)
-   */
   async resetCard(cardId: string): Promise<void> {
     const emptyFsrsData = this.initializeCardFsrsData();
 
@@ -478,11 +331,7 @@ class FSRSService {
     });
   }
 
-  /**
-   * Reset toutes les cartes d'un deck
-   */
   async resetDeck(deckId: string, userId: string): Promise<number> {
-    // Vérifier accès
     const [deck] = await db
       .select()
       .from(learningDecks)
@@ -508,13 +357,9 @@ class FSRSService {
       operation: 'fsrs-reset-deck',
     });
 
-    // Retourner le nombre de cartes affectées
     return deck.cardCount;
   }
 }
 
-// Export singleton
 export const fsrsService = new FSRSService();
-
-// Export du type Rating pour usage externe
 export { Rating, State };

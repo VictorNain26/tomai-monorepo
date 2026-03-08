@@ -1,5 +1,5 @@
 {
-  "$schema": "https://turborepo.com/schema.json",
+  "$schema": "https://turborepo.dev/schema.v2.json",
   "ui": "tui",
   "globalDependencies": [
     "tsconfig.base.json"
@@ -45,8 +45,7 @@
     "lint": {
       "inputs": [
         "$TURBO_DEFAULT$",
-        "eslint.config.*",
-        ".eslintrc.*"
+        "eslint.config.*"
       ],
       "outputs": []
     },
@@ -81,7 +80,8 @@
         "**/*.test.tsx"
       ],
       "outputs": ["coverage/**"],
-      "env": ["NODE_ENV", "CI"]
+      "env": ["NODE_ENV", "CI"],
+      "passThroughEnv": ["DATABASE_URL", "BETTER_AUTH_SECRET"]
     }
   }
 }

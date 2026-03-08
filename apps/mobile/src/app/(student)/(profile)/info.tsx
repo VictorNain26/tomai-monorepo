@@ -6,7 +6,7 @@
  */
 
 import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -66,9 +66,9 @@ export default function ProfileInfoScreen() {
   const levelLabel = schoolLevel ? LEVEL_LABELS[schoolLevel] ?? schoolLevel : null;
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <TouchableOpacity
           onPress={() => router.back()}
           className="h-10 w-10 items-center justify-center rounded-full"
@@ -95,7 +95,7 @@ export default function ProfileInfoScreen() {
         {/* Profile Info */}
         <View className="mb-6">
           <Text className="mb-3 font-semibold">Informations scolaires</Text>
-          <View className="rounded-xl border border-border bg-card">
+          <View className="rounded-xl bg-white dark:bg-slate-800">
             {/* School Level */}
             <View className="flex-row items-center justify-between px-4 py-4">
               <View className="flex-row items-center gap-3">

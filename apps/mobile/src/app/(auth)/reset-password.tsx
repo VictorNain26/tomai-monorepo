@@ -21,8 +21,8 @@ import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
-import { useIconColors } from '@/hooks';
-import { bgColors, colors } from '@/lib/styles';
+import { useIconColors, useThemeColors } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -33,6 +33,7 @@ export default function ResetPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const [tokenValid, setTokenValid] = useState(true);
   const [resetSuccess, setResetSuccess] = useState(false);
 
@@ -86,10 +87,10 @@ export default function ResetPasswordScreen() {
   // Success state
   if (resetSuccess) {
     return (
-      <View className="flex-1 justify-center bg-background px-6">
+      <View className="flex-1 justify-center bg-slate-50 dark:bg-slate-900 px-6">
         <View className="items-center">
           <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.success[10] }}>
-            <CheckCircle color={colors.success.DEFAULT} size={32} />
+            <CheckCircle color={colors.success} size={32} />
           </View>
 
           <Text variant="h2" className="text-center">
@@ -105,7 +106,7 @@ export default function ResetPasswordScreen() {
             onPress={() => router.replace('/(auth)/login')}
             className="mt-8 w-full"
           >
-            <Text className="font-semibold text-primary-foreground">
+            <Text className="font-semibold text-white dark:text-slate-900">
               Se connecter
             </Text>
           </Button>
@@ -117,10 +118,10 @@ export default function ResetPasswordScreen() {
   // Invalid token state
   if (!tokenValid) {
     return (
-      <View className="flex-1 justify-center bg-background px-6">
+      <View className="flex-1 justify-center bg-slate-50 dark:bg-slate-900 px-6">
         <View className="items-center">
           <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.destructive[10] }}>
-            <AlertCircle color={colors.destructive.DEFAULT} size={32} />
+            <AlertCircle color={colors.destructive} size={32} />
           </View>
 
           <Text variant="h2" className="text-center">
@@ -136,14 +137,14 @@ export default function ResetPasswordScreen() {
             onPress={() => router.push('/(auth)/forgot-password')}
             className="mt-8 w-full"
           >
-            <Text className="font-semibold text-primary-foreground">
+            <Text className="font-semibold text-white dark:text-slate-900">
               Demander un nouveau lien
             </Text>
           </Button>
 
           <Link href="/(auth)/login" asChild>
             <TouchableOpacity className="mt-4" accessibilityLabel="Retour à la connexion">
-              <Text className="text-primary">Retour à la connexion</Text>
+              <Text className="text-blue-600 dark:text-blue-400">Retour à la connexion</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -155,7 +156,7 @@ export default function ResetPasswordScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-background"
+      className="flex-1 bg-slate-50 dark:bg-slate-900"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -171,7 +172,7 @@ export default function ResetPasswordScreen() {
             accessibilityRole="button"
           >
             <ArrowLeft color={iconColors.foreground} size={20} />
-            <Text className="ml-1 text-primary">Retour</Text>
+            <Text className="ml-1 text-blue-600 dark:text-blue-400">Retour</Text>
           </TouchableOpacity>
 
           {/* Header */}
@@ -227,7 +228,7 @@ export default function ResetPasswordScreen() {
               disabled={isLoading}
               className="mt-4"
             >
-              <Text className="font-semibold text-primary-foreground">
+              <Text className="font-semibold text-white dark:text-slate-900">
                 {isLoading ? 'Modification...' : 'Confirmer le mot de passe'}
               </Text>
             </Button>

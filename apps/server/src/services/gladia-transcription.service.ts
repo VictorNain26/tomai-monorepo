@@ -234,7 +234,8 @@ export class GladiaTranscriptionService {
       headers: {
         'x-gladia-key': this.apiKey,
       },
-      body: formData,
+      // FormData body — Bun handles multipart encoding natively
+      body: formData as unknown as RequestInit['body'],
     });
 
     if (!response.ok) {

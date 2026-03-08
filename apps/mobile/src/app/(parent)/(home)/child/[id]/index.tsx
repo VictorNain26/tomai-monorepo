@@ -6,7 +6,7 @@
  */
 
 import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState, useCallback } from 'react';
 import {
@@ -31,11 +31,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/toast';
 import { DeleteChildModal, ChildUsageCard } from '@/components/parent';
-import { useParentDashboard, useChildTokenUsage, useIconColors } from '@/hooks';
+import { useParentDashboard, useChildTokenUsage, useIconColors, useThemeColors } from '@/hooks';
 import { useChildPronote } from '@/hooks/useParentPronote';
 import { getLevelLabel } from '@/constants/levels';
 import { launchChildSession, useSession } from '@/lib/auth';
-import { bgColors, borderColors, colors } from '@/lib/styles';
+import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
 // COMPONENT
@@ -56,6 +56,7 @@ export default function ChildDetailScreen() {
   const pronote = useChildPronote(id);
   const tokenUsage = useChildTokenUsage({ childId: id });
   const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -105,8 +106,8 @@ export default function ChildDetailScreen() {
   // Loading state
   if (isLoadingChildren || !id) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
-        <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+        <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-6 w-32 rounded" />
         </View>
@@ -121,11 +122,11 @@ export default function ChildDetailScreen() {
   // Child not found
   if (!child) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-destructive">Enfant non trouvé</Text>
+          <Text className="text-red-600 dark:text-red-400">Enfant non trouvé</Text>
           <Button onPress={() => router.back()} className="mt-4">
-            <Text className="text-primary-foreground">Retour</Text>
+            <Text className="text-white dark:text-slate-900">Retour</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -152,9 +153,9 @@ export default function ChildDetailScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <TouchableOpacity
           onPress={() => router.back()}
           className="h-10 w-10 items-center justify-center rounded-full"
@@ -174,8 +175,8 @@ export default function ChildDetailScreen() {
 
       <ScrollView className="flex-1 px-4 py-6">
         {/* Child Info Card */}
-        <View className="mb-6 rounded-xl border border-border bg-card p-4">
-          <View className="flex-row items-center gap-3 border-b border-border pb-4">
+        <View className="mb-6 rounded-xl bg-white dark:bg-slate-800 p-4">
+          <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
             <View className="h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
               <User color={iconColors.foreground} size={24} />
             </View>
@@ -217,12 +218,12 @@ export default function ChildDetailScreen() {
           disabled={isLaunching}
           className="mb-6 flex-row items-center justify-center gap-2"
           style={{
-            backgroundColor: colors.success.DEFAULT,
+            backgroundColor: colors.success,
             opacity: isLaunching ? 0.6 : 1,
           }}
         >
-          <Play color={colors.primary.foreground} size={18} />
-          <Text className="font-semibold text-primary-foreground">
+          <Play color={colors.primaryForeground} size={18} />
+          <Text className="font-semibold text-white dark:text-slate-900">
             {isLaunching ? 'Lancement...' : `Lancer Tom pour ${child.firstName}`}
           </Text>
         </Button>
@@ -238,8 +239,8 @@ export default function ChildDetailScreen() {
         </View>
 
         {/* Pronote Section */}
-        <View className="rounded-xl border border-border bg-card">
-          <View className="flex-row items-center justify-between border-b border-border p-4">
+        <View className="rounded-xl bg-white dark:bg-slate-800">
+          <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
             <View className="flex-row items-center gap-3">
               <View className="h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: bgColors.primary[10] }}>
                 <School color={iconColors.foreground} size={20} />
@@ -274,18 +275,18 @@ export default function ChildDetailScreen() {
                   className="mb-4 flex-row items-center gap-3 rounded-xl p-4"
                   style={{ backgroundColor: bgColors.success[10], borderWidth: 1, borderColor: borderColors.success[20] }}
                 >
-                  <CheckCircle color={colors.success.DEFAULT} size={20} />
+                  <CheckCircle color={colors.success} size={20} />
                   <View className="flex-1">
-                    <Text className="font-semibold" style={{ color: colors.success.DEFAULT }}>
+                    <Text className="font-semibold" style={{ color: colors.success }}>
                       {pronote.establishmentName ?? 'Établissement Pronote'}
                     </Text>
-                    <Text className="text-sm" style={{ color: colors.success.DEFAULT }}>
+                    <Text className="text-sm" style={{ color: colors.success }}>
                       Élève: {pronote.childMapping.pronoteChildName}
                       {pronote.childMapping.pronoteClassName &&
                         ` (${pronote.childMapping.pronoteClassName})`}
                     </Text>
                     {pronote.lastSyncAt && (
-                      <Text className="mt-1 text-xs" style={{ color: colors.success.DEFAULT }}>
+                      <Text className="mt-1 text-xs" style={{ color: colors.success }}>
                         Synchronisé le{' '}
                         {new Date(pronote.lastSyncAt).toLocaleDateString('fr-FR')}
                       </Text>
@@ -343,7 +344,7 @@ export default function ChildDetailScreen() {
                     : `Connectez votre compte Pronote parent pour synchroniser les données.`}
                 </Text>
                 <Button onPress={handleConnectPronote}>
-                  <Text className="font-semibold text-primary-foreground">
+                  <Text className="font-semibold text-white dark:text-slate-900">
                     {pronote.isConnected ? 'Configurer le mapping' : 'Connecter Pronote'}
                   </Text>
                 </Button>

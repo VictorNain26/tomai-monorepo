@@ -37,9 +37,10 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "react": "catalog:",
+    "tomai-server": "workspace:*",
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "react": ">=18.0.0"
+    "react": ">=19.0.0"
   }
 }

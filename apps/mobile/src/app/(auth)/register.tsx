@@ -117,7 +117,7 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-background"
+      className="flex-1 bg-slate-50 dark:bg-slate-900"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -127,7 +127,7 @@ export default function RegisterScreen() {
           {/* Header */}
           <View className="mb-8 items-center">
             <TomAvatar size="lg" className="mb-4" />
-            <Text variant="h1" className="text-center text-primary">
+            <Text variant="h1" className="text-center text-blue-600 dark:text-blue-400">
               Inscription
             </Text>
             <Text variant="muted" className="mt-2 text-center px-4">
@@ -143,7 +143,7 @@ export default function RegisterScreen() {
               accessibilityRole="alert"
               accessibilityLiveRegion="polite"
             >
-              <Text className="text-center text-destructive">{error}</Text>
+              <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
             </View>
           )}
 
@@ -196,7 +196,7 @@ export default function RegisterScreen() {
                 disabled={isLoading}
                 className="mt-2"
               >
-                <Text className="font-semibold text-primary-foreground">
+                <Text className="font-semibold text-white dark:text-slate-900">
                   {isLoading ? 'Création...' : 'Créer mon compte'}
                 </Text>
               </Button>
@@ -205,11 +205,11 @@ export default function RegisterScreen() {
 
           {/* Google OAuth */}
           <View className="my-6 flex-row items-center">
-            <View className="h-px flex-1 bg-border" />
+            <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
             <Text variant="muted" className="px-4">
               ou
             </Text>
-            <View className="h-px flex-1 bg-border" />
+            <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
           </View>
 
           <Button variant="outline" onPress={handleGoogleRegister} disabled={isLoading}>
@@ -221,7 +221,7 @@ export default function RegisterScreen() {
             <Text variant="muted">Déjà un compte ? </Text>
             <Link href="/(auth)/login" asChild>
               <TouchableOpacity>
-                <Text className="font-semibold text-primary">Se connecter</Text>
+                <Text className="font-semibold text-blue-600 dark:text-blue-400">Se connecter</Text>
               </TouchableOpacity>
             </Link>
           </View>

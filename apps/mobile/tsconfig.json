@@ -4,8 +4,8 @@
   "compilerOptions": {
     /* React Native specific */
     "jsx": "react-native",
-    "lib": ["ES2022"],
-    "types": ["jest", "@testing-library/react-native"],
+    "lib": ["ES2024"],
+    "types": ["jest", "@testing-library/react-native", "node"],
 
     /* Path Mapping */
     "baseUrl": ".",

@@ -7,16 +7,9 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { apiClient } from '@repo/api';
+import { getTreaty } from '@repo/api';
 
 import { createTestWrapper } from '../utils/test-utils';
-
-// Mock dependencies BEFORE importing the hook
-jest.mock('@repo/api', () => ({
-  apiClient: {
-    get: jest.fn(),
-  },
-}));
 
 jest.mock('../../src/lib/auth', () => ({
   useUser: jest.fn(() => ({
@@ -30,36 +23,44 @@ jest.mock('../../src/lib/auth', () => ({
 // Import after mocks are set up
 import { useStudentDashboard } from '../../src/hooks/useStudentDashboard';
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockGetTreaty = getTreaty as jest.MockedFunction<typeof getTreaty>;
+
+function mockUsageGet(impl: jest.Mock) {
+  mockGetTreaty.mockReturnValue({
+    api: {
+      subscriptions: {
+        usage: { get: impl },
+      },
+    },
+  } as unknown as ReturnType<typeof getTreaty>);
+}
 
 describe('useStudentDashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Default mock responses
-    mockApiClient.get.mockImplementation((url: string) => {
-      if (url === '/api/subscriptions/usage') {
-        return Promise.resolve({
-          userId: 'user-1',
-          plan: 'free',
-          window: {
-            tokensUsed: 5000,
-            tokensRemaining: 15000,
-            limit: 20000,
-            usagePercent: 25,
-            refreshIn: '2h',
-          },
-          daily: {
-            tokensUsed: 2000,
-            tokensRemaining: 8000,
-            limit: 10000,
-            usagePercent: 20,
-            resetsIn: '12h',
-          },
-        });
-      }
-      return Promise.reject(new Error('Unknown endpoint'));
-    });
+    const usageData = {
+      userId: 'user-1',
+      plan: 'free',
+      window: {
+        tokensUsed: 5000,
+        tokensRemaining: 15000,
+        limit: 20000,
+        usagePercent: 25,
+        refreshIn: '2h',
+      },
+      daily: {
+        tokensUsed: 2000,
+        tokensRemaining: 8000,
+        limit: 10000,
+        usagePercent: 20,
+        resetsIn: '12h',
+      },
+    };
+
+    mockUsageGet(
+      jest.fn().mockResolvedValue({ data: usageData, error: null })
+    );
   });
 
   it('should fetch token usage', async () => {
@@ -89,7 +90,12 @@ describe('useStudentDashboard', () => {
   });
 
   it('should handle API errors gracefully', async () => {
-    mockApiClient.get.mockRejectedValue(new Error('API Error'));
+    mockUsageGet(
+      jest.fn().mockResolvedValue({
+        data: null,
+        error: { status: 500, value: { message: 'API Error' } },
+      })
+    );
 
     const { wrapper, queryClient } = createTestWrapper();
     const { result } = renderHook(() => useStudentDashboard(), { wrapper });

@@ -17,7 +17,7 @@
 
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronRight, FileText, BarChart3, RefreshCw } from 'lucide-react-native';
@@ -31,10 +31,11 @@ import {
   useIconColors,
   useStudentPronote,
   useSessionFiles,
+  useThemeColors,
   type ChatMessage as ChatMessageType,
 } from '@/hooks';
 import { deleteChatSession } from '@/hooks/chat/api';
-import { bgColors, colors } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -80,6 +81,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<Record<string, string>>();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   // Parse context from params
   const contextInfo = useMemo(() => parseContext(params.context), [params.context]);
 
@@ -259,18 +261,18 @@ export default function ChatScreen() {
   const contextBadge = useMemo(() => {
     switch (contextInfo.type) {
       case 'homework':
-        return { icon: FileText, label: 'Devoir', color: colors.warning.DEFAULT };
+        return { icon: FileText, label: 'Devoir', color: colors.warning };
       case 'grade':
-        return { icon: BarChart3, label: 'Révision note', color: colors.primary.DEFAULT };
+        return { icon: BarChart3, label: 'Révision note', color: colors.primary };
       case 'test':
-        return { icon: BarChart3, label: 'Préparation contrôle', color: colors.destructive.DEFAULT };
+        return { icon: BarChart3, label: 'Préparation contrôle', color: colors.destructive };
       default:
         return null;
     }
-  }, [contextInfo.type]);
+  }, [contextInfo.type, colors.warning, colors.primary, colors.destructive]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
       <ChatHeader
         contextBadge={contextBadge}
         currentSessionId={currentSessionId}
@@ -288,7 +290,7 @@ export default function ChatScreen() {
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
         >
-          <Text className="flex-1 text-destructive">{error}</Text>
+          <Text className="flex-1 text-red-600 dark:text-red-400">{error}</Text>
           <TouchableOpacity
             onPress={retry}
             className="flex-row items-center gap-1 rounded-full px-3 py-1.5"
@@ -296,8 +298,8 @@ export default function ChatScreen() {
             accessibilityLabel="Réessayer"
             accessibilityRole="button"
           >
-            <RefreshCw color={colors.destructive.DEFAULT} size={14} />
-            <Text className="text-sm font-semibold text-destructive">Réessayer</Text>
+            <RefreshCw color={colors.destructive} size={14} />
+            <Text className="text-sm font-semibold text-red-600 dark:text-red-400">Réessayer</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -324,8 +326,11 @@ export default function ChatScreen() {
                   <TouchableOpacity
                     key={i}
                     onPress={() => sendMessage(s.prompt)}
-                    className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3"
+                    className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-3"
                     activeOpacity={0.7}
+                    accessibilityLabel={s.label}
+                    accessibilityHint="Envoie cette question a Tom"
+                    accessibilityRole="button"
                   >
                     <Text className="text-lg">{s.emoji}</Text>
                     <Text className="flex-1">{s.label}</Text>

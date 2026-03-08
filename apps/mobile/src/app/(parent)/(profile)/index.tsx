@@ -8,7 +8,7 @@
  */
 
 import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   Settings,
@@ -24,8 +24,8 @@ import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUser, signOut } from '@/lib/auth';
-import { useIsPro, useIconColors } from '@/hooks';
-import { bgColors, borderColors, shadows, colors } from '@/lib/styles';
+import { useIsPro, useIconColors, useThemeColors } from '@/hooks';
+import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -52,6 +52,7 @@ export default function ParentProfileScreen() {
   const router = useRouter();
   const user = useUser();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const { isPro, isLoading: isLoadingPro } = useIsPro();
 
   async function handleLogout() {
@@ -118,7 +119,7 @@ export default function ParentProfileScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -128,13 +129,13 @@ export default function ParentProfileScreen() {
         <Text variant="h2">Profil</Text>
 
         {/* Profile Card */}
-        <Card style={shadows.sm}>
+        <Card>
           <View className="flex-row items-center gap-4 p-4">
             <View
               className="h-14 w-14 items-center justify-center rounded-full"
               style={{ backgroundColor: bgColors.primary[10] }}
             >
-              <Text className="text-2xl font-bold text-primary">
+              <Text className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {user?.name ? user.name.charAt(0).toUpperCase() : '?'}
               </Text>
             </View>
@@ -149,13 +150,13 @@ export default function ParentProfileScreen() {
               }}
             >
               {isPro ? (
-                <Sparkles color={colors.success.DEFAULT} size={14} />
+                <Sparkles color={colors.success} size={14} />
               ) : (
                 <Crown color={iconColors.primary} size={14} />
               )}
               <Text
                 variant="tiny"
-                className={isPro ? 'text-success font-medium' : 'text-primary font-medium'}
+                className={isPro ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-blue-600 dark:text-blue-400 font-medium'}
               >
                 {isPro ? 'Premium' : 'Gratuit'}
               </Text>
@@ -165,15 +166,13 @@ export default function ParentProfileScreen() {
 
         {/* Premium CTA (only for non-premium) */}
         {!isPro && !isLoadingPro && (
-          <Card
-            style={[
-              shadows.md,
-              { borderWidth: 1, borderColor: colors.primary.DEFAULT },
-            ]}
-          >
-            <View className="p-4">
+          <Card className="overflow-hidden">
+            <View
+              className="p-4"
+              style={{ backgroundColor: 'rgba(37, 99, 235, 0.06)' }}
+            >
               <View className="mb-2 flex-row items-center gap-2">
-                <Sparkles color={colors.primary.DEFAULT} size={20} />
+                <Sparkles color={colors.primary} size={20} />
                 <Text variant="large">Passez Premium</Text>
               </View>
               <Text variant="muted" className="mb-3">
@@ -189,16 +188,16 @@ export default function ParentProfileScreen() {
         {/* Menu Sections */}
         {sections.map((section) => (
           <View key={section.title}>
-            <Text variant="small" className="mb-2 px-1 text-muted-foreground">
+            <Text variant="small" className="mb-2 px-1 text-slate-500 dark:text-slate-400">
               {section.title}
             </Text>
-            <Card style={shadows.sm}>
+            <Card>
               {section.items.map((item, index) => (
                 <TouchableOpacity
                   key={item.label}
                   onPress={item.onPress}
                   className={`flex-row items-center justify-between px-4 py-3.5 ${
-                    index !== section.items.length - 1 ? 'border-b border-border' : ''
+                    index !== section.items.length - 1 ? 'border-b border-slate-200 dark:border-slate-700' : ''
                   }`}
                   activeOpacity={0.7}
                   accessibilityLabel={item.label}
@@ -234,8 +233,8 @@ export default function ParentProfileScreen() {
           accessibilityLabel="Se déconnecter"
           accessibilityRole="button"
         >
-          <LogOut color={colors.destructive.DEFAULT} size={20} />
-          <Text className="font-semibold text-destructive">Se déconnecter</Text>
+          <LogOut color={colors.destructive} size={20} />
+          <Text className="font-semibold text-red-600 dark:text-red-400">Se déconnecter</Text>
         </TouchableOpacity>
 
         {/* App Version */}

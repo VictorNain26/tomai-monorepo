@@ -2,10 +2,10 @@
  * ThemeProvider Component
  *
  * Provides theme context to the app.
- * NOTE: Dark mode class is applied in the layouts, not here,
- * to avoid NativeWind/css-interop issues with navigation context.
+ * Dark mode uses NativeWind v5 dark: variant + Appearance.setColorScheme().
  */
 
+import { View } from 'react-native';
 import { useThemeProvider, ThemeContext } from '@/hooks/useTheme';
 
 interface ThemeProviderProps {
@@ -17,7 +17,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   return (
     <ThemeContext.Provider value={theme}>
-      {children}
+      <View className="flex-1">
+        {children}
+      </View>
     </ThemeContext.Provider>
   );
 }

@@ -10,6 +10,7 @@
  * - 100%+: Exhausted (destructive)
  */
 
+import { memo } from 'react';
 import { View } from 'react-native';
 import { Zap, Crown, RefreshCw, AlertTriangle } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
@@ -24,28 +25,28 @@ interface TokenUsageCardProps {
   isLoading?: boolean;
 }
 
-export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps) {
+export const TokenUsageCard = memo(function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps) {
   const iconColors = useIconColors();
 
   if (isLoading) {
     return (
-      <View className="rounded-xl border border-border bg-card p-4">
+      <View className="rounded-xl bg-white dark:bg-slate-800 p-4">
         <View className="mb-3 flex-row items-center gap-2">
-          <View className="h-8 w-8 animate-pulse rounded-lg bg-muted" />
+          <View className="h-8 w-8 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
           <View className="flex-1">
-            <View className="mb-1 h-4 w-24 animate-pulse rounded bg-muted" />
-            <View className="h-3 w-16 animate-pulse rounded bg-muted" />
+            <View className="mb-1 h-4 w-24 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+            <View className="h-3 w-16 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
           </View>
         </View>
-        <View className="mb-2 h-2 w-full animate-pulse rounded-full bg-muted" />
-        <View className="h-3 w-32 animate-pulse rounded bg-muted" />
+        <View className="mb-2 h-2 w-full animate-pulse rounded-full bg-slate-100 dark:bg-slate-800" />
+        <View className="h-3 w-32 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
       </View>
     );
   }
 
   if (!usage) {
     return (
-      <View className="rounded-xl border border-border bg-card p-4">
+      <View className="rounded-xl bg-white dark:bg-slate-800 p-4">
         <Text variant="muted" className="text-center text-sm">
           Impossible de charger l'usage
         </Text>
@@ -63,29 +64,22 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
   const isNearLimit = usagePercent >= 95 && usagePercent < 100;
   const isExhausted = usagePercent >= 100;
 
-  // Remaining percentage
   const remainingPercent = Math.max(0, 100 - usagePercent);
 
-  // Get variant for Progress component
   const getProgressVariant = () => {
-    if (isExhausted) return 'destructive';
-    if (isNearLimit) return 'destructive';
-    if (isThrottle) return 'warning';
-    if (isWarning) return 'warning';
+    if (isExhausted || isNearLimit) return 'destructive';
+    if (isThrottle || isWarning) return 'warning';
     return 'default';
   };
 
-  // Get status text color (using semantic tokens)
   const getStatusColor = () => {
-    if (isExhausted) return 'text-destructive';
-    if (isNearLimit) return 'text-destructive';
-    if (isThrottle) return 'text-warning';
-    if (isWarning) return 'text-warning';
-    return 'text-foreground';
+    if (isExhausted || isNearLimit) return 'text-red-600 dark:text-red-400';
+    if (isThrottle || isWarning) return 'text-amber-600 dark:text-amber-400';
+    return 'text-slate-800 dark:text-slate-100';
   };
 
   return (
-    <View className="rounded-xl border border-border bg-card p-4">
+    <View className="rounded-xl bg-white dark:bg-slate-800 p-4" accessibilityRole="summary">
       {/* Header */}
       <View className="mb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
@@ -107,7 +101,6 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
           </View>
         </View>
 
-        {/* Refresh timer */}
         <View className="flex-row items-center gap-1">
           <RefreshCw color={iconColors.muted} size={12} />
           <Text variant="muted" className="text-xs">
@@ -141,11 +134,11 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
         </Text>
       </View>
 
-      {/* Warning messages based on soft limits */}
+      {/* Warning messages */}
       {isExhausted && (
         <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
           <AlertTriangle color={iconColors.destructive} size={14} />
-          <Text className="text-xs text-destructive">
+          <Text className="text-xs text-red-600 dark:text-red-400">
             Limite atteinte • Recharge dans {windowUsage.refreshIn}
           </Text>
         </View>
@@ -153,25 +146,25 @@ export function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps
       {isNearLimit && !isExhausted && (
         <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
           <AlertTriangle color={iconColors.destructive} size={14} />
-          <Text className="text-xs text-destructive">
-            Presque épuisé • Économise tes tokens !
+          <Text className="text-xs text-red-600 dark:text-red-400">
+            Presque epuise • Economise tes tokens !
           </Text>
         </View>
       )}
       {isThrottle && !isNearLimit && (
         <View className="mt-3 rounded-lg p-2" style={{ backgroundColor: bgColors.warning[10] }}>
-          <Text className="text-center text-xs text-warning">
-            Quota faible • Réponses ralenties
+          <Text className="text-center text-xs text-amber-600 dark:text-amber-400">
+            Quota faible • Reponses ralenties
           </Text>
         </View>
       )}
       {isWarning && !isThrottle && (
         <View className="mt-3 rounded-lg p-2" style={{ backgroundColor: bgColors.warning[10] }}>
-          <Text className="text-center text-xs text-warning">
-            Attention : quota limité
+          <Text className="text-center text-xs text-amber-600 dark:text-amber-400">
+            Attention : quota limite
           </Text>
         </View>
       )}
     </View>
   );
-}
+});

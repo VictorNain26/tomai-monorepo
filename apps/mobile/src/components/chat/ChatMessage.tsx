@@ -9,6 +9,7 @@
  * - File attachments
  */
 
+import { memo } from 'react';
 import { View, TouchableOpacity, Image } from 'react-native';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
@@ -22,16 +23,16 @@ import {
 import { MarkdownContent } from './MarkdownContent';
 import { FileAttachmentCard } from './FileAttachmentCard';
 import { cn } from '@/lib/utils';
-import { useTextToSpeech, useIconColors } from '@/hooks';
+import { useTextToSpeech, useIconColors, useThemeColors } from '@/hooks';
 import type { ChatMessage as ChatMessageType } from '@/hooks';
-import { bgColors, colors } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
 
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
 }
 
-export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isThinking = !isUser && isStreaming && message.content.length === 0;
   const tts = useTextToSpeech();
@@ -54,8 +55,8 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
     >
       {/* Avatar */}
       {isUser ? (
-        <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
-          <Text className="text-sm text-primary-foreground">👤</Text>
+        <View className="h-8 w-8 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
+          <Text className="text-sm text-white dark:text-slate-900">👤</Text>
         </View>
       ) : (
         <TomAvatar size="sm" />
@@ -66,7 +67,7 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
         <View
           className={cn(
             'rounded-2xl px-4 py-3',
-            isUser ? 'rounded-tr-sm bg-primary' : 'rounded-tl-sm bg-muted'
+            isUser ? 'rounded-tr-sm bg-blue-600 dark:bg-blue-400' : 'rounded-tl-sm bg-slate-100 dark:bg-slate-800'
           )}
         >
           {isThinking ? (
@@ -88,6 +89,9 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
               disabled={tts.isLoading}
               className="flex-row items-center gap-1 rounded-full px-2 py-1"
               style={tts.isSpeaking ? { backgroundColor: bgColors.primary[15] } : undefined}
+              accessibilityLabel={tts.isSpeaking ? 'Arreter la lecture' : 'Ecouter la reponse'}
+              accessibilityHint="Active la lecture vocale du message"
+              accessibilityRole="button"
             >
               {tts.isLoading ? (
                 <Loader2 color={iconColors.muted} size={14} />
@@ -98,7 +102,7 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
               )}
               <Text
                 variant="tiny"
-                className={tts.isSpeaking ? 'text-foreground' : 'text-muted-foreground'}
+                className={tts.isSpeaking ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}
               >
                 {tts.isLoading
                   ? 'Chargement...'
@@ -108,7 +112,7 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
               </Text>
             </TouchableOpacity>
             {tts.error && (
-              <Text variant="tiny" className="ml-1 self-center text-destructive" numberOfLines={1}>
+              <Text variant="tiny" className="ml-1 self-center text-red-600 dark:text-red-400" numberOfLines={1}>
                 {tts.error}
               </Text>
             )}
@@ -140,28 +144,29 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
       </View>
     </View>
   );
-}
+});
 
 // ============================================================================
 // THINKING INDICATOR
 // ============================================================================
 
 function ThinkingIndicator() {
+  const colors = useThemeColors();
   return (
     <View className="flex-row items-center gap-2">
-      <Text className="text-muted-foreground">Tom réfléchit</Text>
+      <Text className="text-slate-500 dark:text-slate-400">Tom réfléchit</Text>
       <View className="flex-row gap-1">
         <View
           className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ backgroundColor: colors.primary.DEFAULT }}
+          style={{ backgroundColor: colors.primary }}
         />
         <View
           className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ backgroundColor: colors.primary.DEFAULT }}
+          style={{ backgroundColor: colors.primary }}
         />
         <View
           className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ backgroundColor: colors.primary.DEFAULT }}
+          style={{ backgroundColor: colors.primary }}
         />
       </View>
     </View>
@@ -206,6 +211,7 @@ function parseMermaidContent(text: string): ContentSegment[] {
 }
 
 function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
+  const colors = useThemeColors();
   const hasMath = !isUser && containsMath(content);
   const hasMermaid = !isUser && containsMermaid(content);
 
@@ -215,7 +221,7 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
       <View>
         <MarkdownContent isUser={isUser}>{content}</MarkdownContent>
         {isStreaming && (
-          <Text style={{ color: colors.primary.DEFAULT }}>▋</Text>
+          <Text style={{ color: colors.primary }}>▋</Text>
         )}
       </View>
     );
@@ -247,7 +253,7 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
           );
         })}
         {isStreaming && (
-          <Text style={{ color: colors.primary.DEFAULT }}>▋</Text>
+          <Text style={{ color: colors.primary }}>▋</Text>
         )}
       </View>
     );
@@ -256,11 +262,11 @@ function MessageContent({ content, isUser, isStreaming }: MessageContentProps) {
   // Assistant messages with only math
   return (
     <View>
-      <MathText fontSize={16} textColor={isUser ? colors.primary.foreground : undefined}>
+      <MathText fontSize={16} textColor={isUser ? colors.primaryForeground : undefined}>
         {content}
       </MathText>
       {isStreaming && (
-        <Text style={{ color: colors.primary.DEFAULT }}>▋</Text>
+        <Text style={{ color: colors.primary }}>▋</Text>
       )}
     </View>
   );

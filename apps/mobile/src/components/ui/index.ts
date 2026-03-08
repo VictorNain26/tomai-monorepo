@@ -7,3 +7,4 @@ export * from './progress';
 export * from './skeleton';
 export * from './text';
 export * from './toast';
+export * from './safe-area-view';

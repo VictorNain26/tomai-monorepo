@@ -7,7 +7,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 import { useUser } from '@/lib/auth';
 
 // ============================================================================
@@ -32,10 +32,6 @@ export interface TokenUsage {
   };
 }
 
-interface UsageResponse extends TokenUsage {
-  userId: string;
-}
-
 // ============================================================================
 // QUERY KEYS
 // ============================================================================
@@ -49,14 +45,14 @@ const queryKeys = {
 // ============================================================================
 
 async function fetchTokenUsage(userId: string): Promise<TokenUsage> {
-  const response = await apiClient.get<UsageResponse>(
-    '/api/subscriptions/usage',
-    { params: { userId } }
+  const response = unwrap(
+    await getTreaty().api.subscriptions.usage.get({ query: { userId } })
   );
+  const data = response as { plan: string; window: TokenUsage['window']; daily: TokenUsage['daily'] };
   return {
-    plan: response.plan,
-    window: response.window,
-    daily: response.daily,
+    plan: data.plan as 'free' | 'premium',
+    window: data.window,
+    daily: data.daily,
   };
 }
 
@@ -69,22 +65,19 @@ export function useStudentDashboard() {
   const userId = user?.id ?? '';
   const schoolLevel = user?.schoolLevel ?? 'sixieme';
 
-  // Fetch token usage
   const usageQuery = useQuery({
     queryKey: queryKeys.usage(userId),
     queryFn: () => fetchTokenUsage(userId),
     enabled: !!userId,
-    staleTime: 60 * 1000, // 1 minute
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    staleTime: 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   return {
-    // Token usage
     usage: usageQuery.data ?? null,
     isLoadingUsage: usageQuery.isLoading,
     usageError: usageQuery.error?.message ?? null,
 
-    // User info
     userName: user?.name?.split(' ')[0] ?? 'Élève',
     schoolLevel,
   };

@@ -2,13 +2,14 @@
  * useTheme Hook
  *
  * Manages theme preference (light/dark/system) with AsyncStorage persistence.
- * Uses NativeWind's useColorScheme to properly toggle dark mode.
+ * Uses React Native's Appearance API (NativeWind v5 compatible).
  *
- * @see https://www.nativewind.dev/v4/api/use-color-scheme
+ * NativeWind v5: useColorScheme from nativewind is DEPRECATED.
+ * Use useColorScheme from react-native + Appearance.setColorScheme().
  */
 
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { useColorScheme } from 'nativewind';
+import { useColorScheme, Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ============================================================================
@@ -62,15 +63,15 @@ export function useTheme(): ThemeContextValue {
 // ============================================================================
 
 export function useThemeProvider(): ThemeContextValue {
-  // NativeWind's useColorScheme provides both current scheme AND setColorScheme
-  const { colorScheme: nwColorScheme, setColorScheme } = useColorScheme();
+  // React Native's useColorScheme reacts to Appearance changes
+  const rnColorScheme = useColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Normalize NativeWind's colorScheme (can be undefined)
-  const colorScheme: ColorScheme = nwColorScheme === 'dark' ? 'dark' : 'light';
+  // Normalize (can be null)
+  const colorScheme: ColorScheme = rnColorScheme === 'dark' ? 'dark' : 'light';
 
-  // Load saved preference on mount and apply to NativeWind
+  // Load saved preference on mount and apply via Appearance API
   useEffect(() => {
     async function loadTheme() {
       try {
@@ -78,8 +79,8 @@ export function useThemeProvider(): ThemeContextValue {
         if (saved && ['light', 'dark', 'system'].includes(saved)) {
           const mode = saved as ThemeMode;
           setThemeModeState(mode);
-          // Apply to NativeWind immediately
-          setColorScheme(mode);
+          // 'unspecified' = follow system preference
+          Appearance.setColorScheme(mode === 'system' ? 'unspecified' : mode);
         }
       } catch {
         // Ignore errors, use default
@@ -88,19 +89,19 @@ export function useThemeProvider(): ThemeContextValue {
       }
     }
     void loadTheme();
-  }, [setColorScheme]);
+  }, []);
 
-  // Set and persist theme mode, notify NativeWind
+  // Set and persist theme mode via Appearance API
   const setThemeMode = useCallback(async (mode: ThemeMode) => {
     setThemeModeState(mode);
-    // KEY: Tell NativeWind to switch color scheme
-    setColorScheme(mode);
+    // null = follow system preference
+    Appearance.setColorScheme(mode === 'system' ? 'unspecified' : mode);
     try {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
     } catch {
       // Ignore storage errors
     }
-  }, [setColorScheme]);
+  }, []);
 
   // Toggle between light and dark
   const toggleTheme = useCallback(() => {

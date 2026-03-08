@@ -6,16 +6,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@repo/api';
+import { getTreaty, unwrap } from '@repo/api';
 
 // ============================================================================
 // TYPES
 // ============================================================================
-
-/**
- * Types matching backend pronote.service.ts exactly
- * Date fields are serialized as ISO strings in JSON
- */
 
 export interface StudentPronoteStatus {
   isConnected: boolean;
@@ -28,7 +23,7 @@ export interface PronoteHomework {
   id: string;
   subject: string;
   description: string;
-  dueDate: string; // Date serialized as ISO string
+  dueDate: string;
   done: boolean;
   difficulty: number;
   estimatedMinutes?: number;
@@ -37,10 +32,10 @@ export interface PronoteHomework {
 export interface PronoteGrade {
   id: string;
   subject: string;
-  value: number | null; // Can be null for ungraded
+  value: number | null;
   outOf: number;
   coefficient: number;
-  date: string; // Date serialized as ISO string
+  date: string;
   description: string;
   average?: number;
   max?: number;
@@ -52,8 +47,8 @@ export interface PronoteTimetableEntry {
   subject?: string;
   teacherNames: string[];
   classrooms: string[];
-  startDate: string; // Date serialized as ISO string
-  endDate: string; // Date serialized as ISO string
+  startDate: string;
+  endDate: string;
   canceled: boolean;
   status?: string;
 }
@@ -73,66 +68,65 @@ const queryKeys = {
 // HOOKS
 // ============================================================================
 
-/** Get Pronote connection status for current student */
 export function useStudentPronoteStatus(enabled = true) {
   return useQuery({
     queryKey: queryKeys.status,
     queryFn: async (): Promise<StudentPronoteStatus> => {
-      return apiClient.get('/api/pronote/student/status');
+      return unwrap(
+        await getTreaty().api.pronote.student.status.get()
+      ) as StudentPronoteStatus;
     },
     enabled,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-/** Get homework for current student */
 export function useStudentHomework(weekOffset = 0, enabled = true) {
   return useQuery({
     queryKey: queryKeys.homework(weekOffset),
     queryFn: async (): Promise<PronoteHomework[]> => {
-      const response = await apiClient.get<{ homework: PronoteHomework[] }>(
-        '/api/pronote/student/homework',
-        { params: { weekOffset } }
+      const response = unwrap(
+        await getTreaty().api.pronote.student.homework.get({
+          query: { weekOffset },
+        })
       );
-      return response.homework;
+      return (response as { homework: PronoteHomework[] }).homework;
     },
     enabled,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-/** Get grades for current student */
 export function useStudentGrades(enabled = true) {
   return useQuery({
     queryKey: queryKeys.grades,
     queryFn: async (): Promise<PronoteGrade[]> => {
-      const response = await apiClient.get<{ grades: PronoteGrade[] }>(
-        '/api/pronote/student/grades'
+      const response = unwrap(
+        await getTreaty().api.pronote.student.grades.get()
       );
-      return response.grades;
+      return (response as { grades: PronoteGrade[] }).grades;
     },
     enabled,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-/** Get timetable for current student */
 export function useStudentTimetable(weekOffset = 0, enabled = true) {
   return useQuery({
     queryKey: queryKeys.timetable(weekOffset),
     queryFn: async (): Promise<PronoteTimetableEntry[]> => {
-      const response = await apiClient.get<{ timetable: PronoteTimetableEntry[] }>(
-        '/api/pronote/student/timetable',
-        { params: { weekOffset } }
+      const response = unwrap(
+        await getTreaty().api.pronote.student.timetable.get({
+          query: { weekOffset },
+        })
       );
-      return response.timetable;
+      return (response as { timetable: PronoteTimetableEntry[] }).timetable;
     },
     enabled,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-/** Combined hook for student Pronote section */
 export function useStudentPronote() {
   const statusQuery = useStudentPronoteStatus();
   const isConnected = statusQuery.data?.isConnected ?? false;
@@ -140,11 +134,9 @@ export function useStudentPronote() {
   const homeworkQuery = useStudentHomework(0, isConnected);
   const gradesQuery = useStudentGrades(isConnected);
 
-  // Calculate stats
   const upcomingHomework =
     homeworkQuery.data?.filter((h) => !h.done).length ?? 0;
 
-  // Filter out null values for average calculation
   const validGrades = gradesQuery.data?.filter((g) => g.value !== null) ?? [];
   const averageGrade =
     validGrades.length > 0
@@ -153,21 +145,17 @@ export function useStudentPronote() {
       : null;
 
   return {
-    // Status
     isConnected,
     establishmentName: statusQuery.data?.establishmentName,
     studentName: statusQuery.data?.pronoteChildName,
     className: statusQuery.data?.className,
 
-    // Data
     homework: homeworkQuery.data ?? [],
     grades: gradesQuery.data ?? [],
 
-    // Stats
     upcomingHomework,
     averageGrade,
 
-    // Loading
     isLoading: statusQuery.isLoading,
     isLoadingData: homeworkQuery.isLoading || gradesQuery.isLoading,
   };

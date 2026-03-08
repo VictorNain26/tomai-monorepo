@@ -89,7 +89,7 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
           Ta chronologie :
         </Text>
         {userOrder.length === 0 ? (
-          <View className="rounded-xl border border-dashed border-border p-4">
+          <View className="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-4">
             <Text variant="muted" className="text-center">
               Appuie sur les événements pour les ordonner
             </Text>
@@ -102,11 +102,11 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
                 <TouchableOpacity
                   key={position}
                   onPress={() => handleRemove(position)}
-                  className="flex-row items-center gap-3 rounded-lg border border-primary p-3"
+                  className="flex-row items-center gap-3 rounded-lg border border-blue-600 dark:border-blue-400 p-3"
                   style={{ backgroundColor: bgColors.primary[10] }}
                 >
-                  <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
-                    <Text className="text-xs text-primary-foreground">{position + 1}</Text>
+                  <View className="h-6 w-6 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
+                    <Text className="text-xs text-white dark:text-slate-900">{position + 1}</Text>
                   </View>
                   <View className="flex-1">
                     <Text>{event.event}</Text>
@@ -128,7 +128,7 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
               key={event.originalIndex}
               onPress={() => handleEventPress(event.originalIndex)}
               disabled={validated}
-              className="rounded-lg border border-border bg-card p-3"
+              className="rounded-lg bg-white dark:bg-slate-800 p-3"
             >
               <Text>{event.event}</Text>
               {event.hint && (
@@ -143,7 +143,7 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
 
       {remainingEvents.length === 0 && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-primary-foreground">Valider</Text>
+          <Text className="font-semibold text-white dark:text-slate-900">Valider</Text>
         </Button>
       )}
 
@@ -188,7 +188,7 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
             onPress={() => handleEraPress(index)}
             disabled={validated || selectedItem === null}
             className={`rounded-lg border p-2 ${
-              selectedItem !== null ? 'border-primary' : 'border-border bg-muted'
+              selectedItem !== null ? 'border-blue-600 dark:border-blue-400' : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800'
             }`}
             style={selectedItem !== null ? { backgroundColor: bgColors.primary[10] } : undefined}
           >
@@ -211,8 +211,8 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
                 assignedEra !== undefined
                   ? 'border-green-500 bg-green-50'
                   : isSelected
-                    ? 'border-primary'
-                    : 'border-border bg-card'
+                    ? 'border-blue-600 dark:border-blue-400'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
               }`}
               style={assignedEra === undefined && isSelected ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
@@ -229,7 +229,7 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
 
       {allAssigned && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-primary-foreground">Valider</Text>
+          <Text className="font-semibold text-white dark:text-slate-900">Valider</Text>
         </Button>
       )}
 
@@ -250,7 +250,7 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
   return (
     <ScrollView className="flex-1">
       {content.context && (
-        <View className="mb-4 rounded-lg bg-muted p-3">
+        <View className="mb-4 rounded-lg bg-slate-100 dark:bg-slate-800 p-3">
           <Text variant="muted" className="text-sm">
             {content.context}
           </Text>
@@ -269,14 +269,14 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
           const isSelected = selected === index;
           const isCorrectOption = index === content.correctIndex;
 
-          let bgClass = 'bg-card border-border';
+          let bgClass = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700';
           let useInlineStyle = false;
           if (validated && isCorrectOption) {
             bgClass = 'bg-green-100 border-green-500';
           } else if (validated && isSelected && !isCorrectOption) {
             bgClass = 'bg-red-100 border-red-500';
           } else if (isSelected) {
-            bgClass = 'border-primary';
+            bgClass = 'border-blue-600 dark:border-blue-400';
             useInlineStyle = true;
           }
 
@@ -296,7 +296,7 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
 
       {!validated && selected !== null && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-primary-foreground">Valider</Text>
+          <Text className="font-semibold text-white dark:text-slate-900">Valider</Text>
         </Button>
       )}
 

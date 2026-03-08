@@ -66,7 +66,7 @@ export function GrammarTransformViewer({ content }: { content: GrammarTransformC
 
       <Text className="mb-4">{content.instruction}</Text>
 
-      <View className="mb-6 rounded-xl bg-muted p-4">
+      <View className="mb-6 rounded-xl bg-slate-100 dark:bg-slate-800 p-4">
         <Text className="text-center text-lg font-medium">{content.originalSentence}</Text>
       </View>
 
@@ -75,14 +75,14 @@ export function GrammarTransformViewer({ content }: { content: GrammarTransformC
         onChangeText={setUserAnswer}
         placeholder="Ta réponse..."
         editable={!validated}
-        className="mb-4 rounded-xl border border-border bg-card p-4 text-base"
+        className="mb-4 rounded-xl bg-white dark:bg-slate-800 p-4 text-base"
         autoCapitalize="none"
         autoCorrect={false}
       />
 
       {!validated && userAnswer.trim() !== '' && (
         <Button onPress={() => setValidated(true)}>
-          <Text className="font-semibold text-primary-foreground">Valider</Text>
+          <Text className="font-semibold text-white dark:text-slate-900">Valider</Text>
         </Button>
       )}
 
