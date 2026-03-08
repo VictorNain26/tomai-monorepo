@@ -74,7 +74,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.1",
     "expo": "~55.0.4",
-    "expo-audio": "~55.0.8",
+    "expo-audio": "55.0.6",
     "expo-background-task": "^55.0.9",
     "expo-build-properties": "^55.0.9",
     "expo-camera": "^55.0.9",
