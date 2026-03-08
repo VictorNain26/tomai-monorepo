@@ -67,7 +67,7 @@ WORKDIR /app/apps/server
 # Validate + Build
 RUN bun run typecheck:strict && \
     bun run lint:ci && \
-    bun build src/index.ts --outdir dist --target bun --minify --sourcemap=linked --format esm && \
+    bun build src/index.ts --outdir dist --target bun --minify --sourcemap=linked --format esm --packages external && \
     test -f dist/index.js || (echo "ERREUR: dist/index.js manquant" && exit 1)
 
 # Stage 4: DEVELOPMENT
