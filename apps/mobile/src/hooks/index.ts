@@ -1,6 +1,9 @@
 // Hooks - Export central
 
 export { useChat, type ChatMessage, type ChatFileAttachment, type CreatedDeck } from './useChat';
+export { useConversations, type Conversation } from './useConversations';
+export { useNetworkStatus } from './useNetworkStatus';
+export { useOfflineCache } from './useOfflineCache';
 export {
   usePresignedUpload,
   type FileAttachment,

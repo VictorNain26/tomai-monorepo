@@ -19,8 +19,10 @@ import type {
   StreamChunk,
 } from './types';
 
-/** Inactivity timeout: if no SSE event received for 45s, abort */
-const STREAM_INACTIVITY_TIMEOUT_MS = 45_000;
+/** Inactivity timeout: if no SSE event received for 90s, abort.
+ * Tool calls (RAG + Pronote + flashcards) can chain and take 20s+ each,
+ * plus server retries on failure. 45s was too aggressive. */
+const STREAM_INACTIVITY_TIMEOUT_MS = 90_000;
 
 export interface StreamCallbacks {
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
@@ -28,6 +30,7 @@ export interface StreamCallbacks {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   setIsStreaming: React.Dispatch<React.SetStateAction<boolean>>;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
+  setStreamStatus: React.Dispatch<React.SetStateAction<string | null>>;
   setPendingAttachments: React.Dispatch<React.SetStateAction<ChatFileAttachment[]>>;
   pendingAttachmentsRef: React.MutableRefObject<ChatFileAttachment[]>;
   pendingClearRef: React.MutableRefObject<ChatFileAttachment[] | null>;
@@ -53,6 +56,7 @@ export function useStreamManager(callbacks: StreamCallbacks) {
     setIsLoading,
     setIsStreaming,
     setError,
+    setStreamStatus,
     setPendingAttachments,
     pendingAttachmentsRef,
     pendingClearRef,
@@ -98,6 +102,7 @@ export function useStreamManager(callbacks: StreamCallbacks) {
 
       setIsLoading(false);
       setIsStreaming(false);
+      setStreamStatus(null);
       setError(errorMessage);
 
       // Remove empty assistant placeholder (keeps partial content)
@@ -112,7 +117,7 @@ export function useStreamManager(callbacks: StreamCallbacks) {
         pendingClearRef.current = null;
       }
     },
-    [flushStreamContent, setIsLoading, setIsStreaming, setError, setMessages, setPendingAttachments, pendingAttachmentsRef, pendingClearRef]
+    [flushStreamContent, setIsLoading, setIsStreaming, setStreamStatus, setError, setMessages, setPendingAttachments, pendingAttachmentsRef, pendingClearRef]
   );
 
   /** Reset the inactivity timeout */
@@ -198,6 +203,7 @@ export function useStreamManager(callbacks: StreamCallbacks) {
             es.close();
             setIsLoading(false);
             setIsStreaming(false);
+            setStreamStatus(null);
             eventSourceRef.current = null;
 
             // Server confirmed — clear attachments permanently
@@ -217,6 +223,7 @@ export function useStreamManager(callbacks: StreamCallbacks) {
 
           if (chunk.type === 'content' && chunk.content) {
             streamContentRef.current = chunk.content;
+            setStreamStatus(null);
             if (!rafIdRef.current) {
               rafIdRef.current = requestAnimationFrame(flushStreamContent);
             }
@@ -225,7 +232,7 @@ export function useStreamManager(callbacks: StreamCallbacks) {
               pendingClearRef.current = null;
             }
           } else if (chunk.type === 'status') {
-            // Heartbeat during tool calls
+            setStreamStatus(chunk.status ?? null);
           } else if (chunk.type === 'deck_created' && chunk.deck) {
             setCreatedDecks(prev => [...prev, chunk.deck!]);
             onDeckCreated();
@@ -259,7 +266,7 @@ export function useStreamManager(callbacks: StreamCallbacks) {
     },
     [
       abortStream, resetInactivityTimeout, flushStreamContent,
-      setCreatedDecks, setIsLoading, setIsStreaming, setError,
+      setCreatedDecks, setIsLoading, setIsStreaming, setError, setStreamStatus,
       sessionIdRef, pendingClearRef, onStreamDone, onDeckCreated, onSessionChanged,
     ]
   );
@@ -277,10 +284,11 @@ export function useStreamManager(callbacks: StreamCallbacks) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
     }
+    setStreamStatus(null);
     flushStreamContent();
     setIsStreaming(false);
     setIsLoading(false);
-  }, [flushStreamContent, setIsStreaming, setIsLoading]);
+  }, [flushStreamContent, setIsStreaming, setIsLoading, setStreamStatus]);
 
   /** Cleanup (call in useEffect cleanup) */
   const cleanup = useCallback(() => {

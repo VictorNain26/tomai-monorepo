@@ -6,10 +6,10 @@
 import { ChatSessionService } from './chat/chat-session.service';
 import { ChatMessageService } from './chat/chat-message.service';
 import type { Message as DbMessage, SchoolLevel } from '../db/schema';
-import type { SessionDetails, MessageDetails, UserSession } from './chat/chat-types';
+import type { SessionDetails, MessageDetails, UserSession, ConversationListItem } from './chat/chat-types';
 
 // Re-export types
-export type { SessionDetails, MessageDetails, ProgressUpdate, UserSession } from './chat/chat-types';
+export type { SessionDetails, MessageDetails, ProgressUpdate, UserSession, ConversationListItem } from './chat/chat-types';
 
 export class ChatService {
   private readonly sessions = new ChatSessionService();
@@ -99,6 +99,10 @@ export class ChatService {
 
   async getUserById(userId: string): Promise<{ id: string; schoolLevel: SchoolLevel; firstName?: string } | null> {
     return this.sessions.getUserById(userId);
+  }
+
+  async listConversations(userId: string, options?: { limit?: number; offset?: number }): Promise<ConversationListItem[]> {
+    return this.sessions.listConversations(userId, options);
   }
 }
 

@@ -49,3 +49,15 @@ export interface UserSession {
   lastActivity: Date;
   frustrationAvg: number;
 }
+
+export interface ConversationListItem {
+  id: string;
+  title: string | null;
+  subject: string;
+  status: string;
+  messageCount: number;
+  lastMessagePreview: string | null;
+  lastMessageRole: 'user' | 'assistant' | null;
+  lastActivityAt: Date;
+  startedAt: Date;
+}

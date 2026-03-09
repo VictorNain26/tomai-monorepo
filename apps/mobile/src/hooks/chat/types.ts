@@ -76,6 +76,19 @@ export interface CreatedDeck {
   subject: string;
 }
 
+/** Conversation list item (GET /api/chat/conversations) */
+export interface Conversation {
+  id: string;
+  title: string | null;
+  subject: string;
+  status: string;
+  messageCount: number;
+  lastMessagePreview: string | null;
+  lastMessageRole: 'user' | 'assistant' | null;
+  lastActivityAt: string;
+  startedAt: string;
+}
+
 export interface UseChatOptions {
   initialSessionId?: string | null;
 }
@@ -87,6 +100,8 @@ export interface UseChatReturn {
   currentSessionId: string | null;
   isLoading: boolean;
   isStreaming: boolean;
+  isOnline: boolean;
+  streamStatus: string | null;
   error: string | null;
   sendMessage: (content: string) => void;
   retry: () => void;

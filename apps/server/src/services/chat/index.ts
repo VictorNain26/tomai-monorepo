@@ -28,6 +28,12 @@ export { summarizationService } from './summarization.service.js';
 // Token Budget Service - Estimation et allocation
 export { estimateTokens, truncateToTokenBudget, calculateBudget, type TokenBudget, type TokenEstimate } from './token-budget.service.js';
 
+// Chat Orchestration Service - Pipeline complet
+export { chatOrchestrationService, ChatOrchestrationError, type ChatStreamRequest } from './chat-orchestration.service.js';
+
+// Auto-Title Service - Generate conversation titles
+export { autoTitleService } from './auto-title.service.js';
+
 // Tool Declarations & Executor
 export { agentToolDeclarations } from './tool-declarations.js';
 export { executeTool, type ToolExecutionContext } from './tool-executor.js';

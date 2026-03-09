@@ -6,7 +6,7 @@ import type { SchoolLevel } from '../../db/schema';
 import { safeUUID } from '../../utils/uuid';
 import { logger } from '../../lib/observability';
 import { deleteFile as deleteScalewayFile } from '../storage/scaleway-storage.service.js';
-import type { SessionDetails, UserSession } from './chat-types';
+import type { SessionDetails, UserSession, ConversationListItem } from './chat-types';
 
 export class ChatSessionService {
   async getOrCreateActiveSession(userId: string): Promise<string> {
@@ -247,17 +247,43 @@ export class ChatSessionService {
         frustrationAvg: parseFloat(session.frustrationAvg ?? '0')
       }));
 
-      logger.info('User sessions retrieved', {
-        userId,
-        sessionCount: result.length,
-        limit: limit ?? 'all',
-        operation: 'getUserSessions'
-      });
       return result;
 
     } catch (_error) {
       logger.error('Error getting user sessions', { operation: 'chat:sessions:list', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
       throw new Error('Failed to get user sessions');
+    }
+  }
+
+  /**
+   * List sessions for conversation list UI.
+   * Returns sessions with last message preview, ordered by recent activity.
+   */
+  async listConversations(userId: string, options: { limit?: number; offset?: number } = {}): Promise<ConversationListItem[]> {
+    try {
+      const sessions = await studySessionsRepository.findByUserIdWithLastMessage(userId, options);
+
+      return sessions.map(session => ({
+        id: session.id,
+        title: session.topic ?? null,
+        subject: session.subject,
+        status: session.status,
+        messageCount: session.messageCount,
+        lastMessagePreview: session.lastMessageContent
+          ? session.lastMessageContent.slice(0, 120) + (session.lastMessageContent.length > 120 ? '...' : '')
+          : null,
+        lastMessageRole: session.lastMessageRole as 'user' | 'assistant' | null,
+        lastActivityAt: session.lastMessageAt ?? session.startedAt,
+        startedAt: session.startedAt,
+      }));
+    } catch (_error) {
+      logger.error('Error listing conversations', {
+        operation: 'chat:conversations:list',
+        _error: _error instanceof Error ? _error.message : String(_error),
+        userId,
+        severity: 'medium' as const,
+      });
+      throw new Error('Failed to list conversations');
     }
   }
 

@@ -122,6 +122,51 @@ export class StudySessionsRepository {
       .orderBy(desc(studySessions.startedAt));
   }
 
+  /**
+   * Find sessions for conversation list with last message preview.
+   * Returns sessions ordered by most recent activity.
+   * Uses correlated subqueries (no JOIN/GROUP BY) for reliability.
+   */
+  async findByUserIdWithLastMessage(
+    userId: string,
+    options: { limit?: number; offset?: number } = {}
+  ): Promise<Array<StudySession & {
+    messageCount: number;
+    lastMessageContent: string | null;
+    lastMessageRole: string | null;
+    lastMessageAt: Date | null;
+  }>> {
+    const { limit = 20, offset = 0 } = options;
+
+    return await db
+      .select({
+        ...getTableColumns(studySessions),
+        messageCount: sql<number>`(
+          SELECT count(*)::int FROM messages WHERE session_id = ${studySessions.id}
+        )`,
+        lastMessageContent: sql<string | null>`(
+          SELECT content FROM messages WHERE session_id = ${studySessions.id}
+          ORDER BY created_at DESC LIMIT 1
+        )`,
+        lastMessageRole: sql<string | null>`(
+          SELECT role FROM messages WHERE session_id = ${studySessions.id}
+          ORDER BY created_at DESC LIMIT 1
+        )`,
+        lastMessageAt: sql<Date | null>`(
+          SELECT created_at FROM messages WHERE session_id = ${studySessions.id}
+          ORDER BY created_at DESC LIMIT 1
+        )`,
+      })
+      .from(studySessions)
+      .where(eq(studySessions.userId, userId))
+      .orderBy(sql`COALESCE((
+        SELECT created_at FROM messages WHERE session_id = ${studySessions.id}
+        ORDER BY created_at DESC LIMIT 1
+      ), ${studySessions.startedAt}) DESC`)
+      .limit(limit)
+      .offset(offset);
+  }
+
   async update(id: string, input: UpdateStudySessionInput): Promise<StudySession | undefined> {
     const [session] = await db
       .update(studySessions)

@@ -185,8 +185,8 @@ export default function StudentProfileScreen() {
           icon: <HelpCircle color={iconColors.foreground} size={20} />,
           label: 'Aide et support',
           sublabel: 'Bientôt disponible',
-          onPress: () => {},
-          showChevron: false,
+          onPress: () => Alert.alert('Aide', 'Pour toute question, contacte-nous à support@tomai.fr'),
+          showChevron: true,
         },
       ],
     },
@@ -209,7 +209,7 @@ export default function StudentProfileScreen() {
               className="h-14 w-14 items-center justify-center rounded-full"
               style={{ backgroundColor: bgColors.primary[10] }}
             >
-              <Text className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <Text className="text-2xl font-bold" style={{ color: colors.primary }}>
                 {user?.name ? user.name.charAt(0).toUpperCase() : '?'}
               </Text>
             </View>
@@ -227,7 +227,7 @@ export default function StudentProfileScreen() {
               style={{ backgroundColor: bgColors.primary[10] }}
             >
               <Crown color={iconColors.primary} size={14} />
-              <Text variant="tiny" className="text-blue-600 dark:text-blue-400 font-medium">
+              <Text variant="tiny" className="font-medium" style={{ color: colors.primary }}>
                 Gratuit
               </Text>
             </View>
@@ -291,7 +291,7 @@ export default function StudentProfileScreen() {
             accessibilityRole="button"
           >
             <UserCircle color={colors.primary} size={20} />
-            <Text className="font-semibold text-blue-600 dark:text-blue-400">
+            <Text className="font-semibold" style={{ color: colors.primary }}>
               {isRestoringParent ? 'Retour en cours...' : 'Retour au compte parent'}
             </Text>
           </TouchableOpacity>
@@ -310,7 +310,7 @@ export default function StudentProfileScreen() {
           accessibilityRole="button"
         >
           <LogOut color={colors.destructive} size={20} />
-          <Text className="font-semibold text-red-600 dark:text-red-400">Se déconnecter</Text>
+          <Text className="font-semibold" style={{ color: colors.destructive }}>Se déconnecter</Text>
         </TouchableOpacity>
 
         {/* App Version */}

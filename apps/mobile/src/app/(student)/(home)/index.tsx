@@ -9,10 +9,12 @@
  * 2. Recent grades → diagnostic and review
  */
 
-import { View, ScrollView, RefreshControl } from 'react-native';
+import { View, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useState, useCallback, useMemo } from 'react';
-import { Link2 } from 'lucide-react-native';
+import { Link2, Brain } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Text } from '@/components/ui/text';
 import {
@@ -66,6 +68,8 @@ function daysUntil(dateStr: string): number {
 
 export default function StudentDashboard() {
   const iconColors = useIconColors();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
 
   // Data hooks
@@ -76,9 +80,15 @@ export default function StudentDashboard() {
   // Refresh handler
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // Queries will refetch automatically due to staleTime
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    try {
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['studentPronote'] }),
+        queryClient.refetchQueries({ queryKey: ['learning', 'due-summary'] }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
 
   // Transform homework data
   const homeworkItems: HomeworkItem[] = useMemo(() => {
@@ -169,6 +179,27 @@ export default function StudentDashboard() {
           )}
           <Text variant="muted" className="mt-0.5">{tomMessage}</Text>
         </View>
+
+        {/* Due Cards */}
+        {(dueSummary?.totalDue ?? 0) > 0 && (
+          <Pressable
+            onPress={() => router.push('/(student)/(learning)')}
+            className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-4 active:opacity-80"
+          >
+            <View
+              className="h-10 w-10 items-center justify-center rounded-lg"
+              style={{ backgroundColor: bgColors.primary[10] }}
+            >
+              <Brain color={iconColors.primary} size={20} />
+            </View>
+            <View className="flex-1">
+              <Text className="font-semibold">
+                {dueSummary?.totalDue} carte{(dueSummary?.totalDue ?? 0) > 1 ? 's' : ''} a reviser
+              </Text>
+              <Text variant="muted">Appuie pour commencer</Text>
+            </View>
+          </Pressable>
+        )}
 
         {/* Pronote sections - only when connected */}
         {pronote.isConnected ? (

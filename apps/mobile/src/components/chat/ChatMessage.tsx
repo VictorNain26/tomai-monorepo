@@ -9,8 +9,17 @@
  * - File attachments
  */
 
-import { memo } from 'react';
-import { View, TouchableOpacity, Image } from 'react-native';
+import { memo, useCallback, useEffect } from 'react';
+import { View, TouchableOpacity, Image, Alert, Pressable } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+} from 'react-native-reanimated';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import {
@@ -27,12 +36,47 @@ import { useTextToSpeech, useIconColors, useThemeColors } from '@/hooks';
 import type { ChatMessage as ChatMessageType } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
+/** Strip markdown syntax for clean TTS playback */
+function stripMarkdownForTTS(text: string): string {
+  let result = text;
+  // Remove mermaid diagrams
+  result = result.replace(/```mermaid[\s\S]*?```/g, '');
+  // Remove code blocks
+  result = result.replace(/```[\s\S]*?```/g, '');
+  // Remove inline code
+  result = result.replace(/`[^`]+`/g, '');
+  // Remove URLs
+  result = result.replace(/https?:\/\/[^\s)]+/g, '');
+  // Remove markdown links, keep label
+  result = result.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  // Remove images
+  result = result.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1');
+  // Remove headings markers
+  result = result.replace(/^#{1,6}\s+/gm, '');
+  // Remove bold/italic markers
+  result = result.replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1');
+  result = result.replace(/_{1,3}([^_]+)_{1,3}/g, '$1');
+  // Remove strikethrough
+  result = result.replace(/~~([^~]+)~~/g, '$1');
+  // Remove blockquotes
+  result = result.replace(/^>\s+/gm, '');
+  // Remove horizontal rules
+  result = result.replace(/^[-*_]{3,}\s*$/gm, '');
+  // Remove list markers
+  result = result.replace(/^[\s]*[-*+]\s+/gm, '');
+  result = result.replace(/^[\s]*\d+\.\s+/gm, '');
+  // Collapse multiple newlines
+  result = result.replace(/\n{3,}/g, '\n\n');
+  return result.trim();
+}
+
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
+  streamStatus?: string | null;
 }
 
-export const ChatMessage = memo(function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ message, isStreaming = false, streamStatus }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isThinking = !isUser && isStreaming && message.content.length === 0;
   const tts = useTextToSpeech();
@@ -43,8 +87,23 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
 
   const handleSpeakToggle = () => {
     if (!canSpeak) return;
-    tts.toggle(message.content);
+    tts.toggle(stripMarkdownForTTS(message.content));
   };
+
+  const handleLongPress = useCallback(() => {
+    if (message.content.length === 0) return;
+    Alert.alert(
+      'Message',
+      undefined,
+      [
+        {
+          text: 'Copier',
+          onPress: () => { void Clipboard.setStringAsync(message.content); },
+        },
+        { text: 'Annuler', style: 'cancel' },
+      ]
+    );
+  }, [message.content]);
 
   return (
     <View
@@ -64,14 +123,15 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
 
       {/* Message Bubble + Actions */}
       <View className="max-w-[80%]">
-        <View
+        <Pressable
+          onLongPress={handleLongPress}
           className={cn(
             'rounded-2xl px-4 py-3',
             isUser ? 'rounded-tr-sm bg-blue-600 dark:bg-blue-400' : 'rounded-tl-sm bg-slate-100 dark:bg-slate-800'
           )}
         >
           {isThinking ? (
-            <ThinkingIndicator />
+            <ThinkingIndicator status={streamStatus} />
           ) : (
             <MessageContent
               content={message.content}
@@ -79,7 +139,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
               isStreaming={isStreaming}
             />
           )}
-        </View>
+        </Pressable>
 
         {/* TTS Button - only for assistant messages */}
         {canSpeak && (
@@ -150,24 +210,45 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
 // THINKING INDICATOR
 // ============================================================================
 
-function ThinkingIndicator() {
+function StaggeredDot({ delay, color }: { delay: number; color: string }) {
+  const opacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 400 }),
+          withTiming(0.3, { duration: 400 }),
+        ),
+        -1,
+      ),
+    );
+  }, [delay, opacity]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: color,
+  }));
+
+  return <Animated.View style={style} />;
+}
+
+function ThinkingIndicator({ status }: { status?: string | null }) {
   const colors = useThemeColors();
+  const label = status ?? 'Tom réfléchit';
   return (
-    <View className="flex-row items-center gap-2">
-      <Text className="text-slate-500 dark:text-slate-400">Tom réfléchit</Text>
-      <View className="flex-row gap-1">
-        <View
-          className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ backgroundColor: colors.primary }}
-        />
-        <View
-          className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ backgroundColor: colors.primary }}
-        />
-        <View
-          className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ backgroundColor: colors.primary }}
-        />
+    <View className="gap-1">
+      <View className="flex-row items-center gap-2">
+        <Text className="text-slate-500 dark:text-slate-400">{label}</Text>
+        <View className="flex-row gap-1">
+          <StaggeredDot delay={0} color={colors.primary} />
+          <StaggeredDot delay={150} color={colors.primary} />
+          <StaggeredDot delay={300} color={colors.primary} />
+        </View>
       </View>
     </View>
   );

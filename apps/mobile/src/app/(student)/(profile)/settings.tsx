@@ -86,7 +86,9 @@ export default function SettingsScreen() {
           <View className="rounded-xl bg-white dark:bg-slate-800">
             <TouchableOpacity
               className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-4"
-              activeOpacity={0.7}
+              activeOpacity={1}
+              disabled={true}
+              style={{ opacity: 0.5 }}
             >
               <View className="flex-row items-center gap-3">
                 <Bell color={iconColors.foreground} size={20} />
@@ -101,7 +103,9 @@ export default function SettingsScreen() {
 
             <TouchableOpacity
               className="flex-row items-center justify-between px-4 py-4"
-              activeOpacity={0.7}
+              activeOpacity={1}
+              disabled={true}
+              style={{ opacity: 0.5 }}
             >
               <View className="flex-row items-center gap-3">
                 <Shield color={iconColors.foreground} size={20} />

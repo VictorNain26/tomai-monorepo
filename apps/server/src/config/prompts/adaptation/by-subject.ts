@@ -96,13 +96,15 @@ export function generateSubjectSpecifics(subject: string): string | null {
 /**
  * Génère le bloc matière pour le system prompt
  * - Si subject fourni : retourne les spécificités de cette matière
- * - Sinon : retourne TOUTES les spécificités (chat multi-matière, ~571 tokens)
+ * - Sinon : retourne un fallback court (économise ~600 tokens vs ALL)
  */
 export function generateSubjectBlock(subject?: string): string | null {
   if (subject) {
     return generateSubjectSpecifics(subject);
   }
-  return Object.values(SUBJECT_SPECIFICS).join('\n\n');
+  return `<subject_specifics matiere="multi">
+Adapte ta méthode à la matière abordée: Chain-of-Thought en maths, analyse textuelle en français, démarche IBL en sciences, analyse de sources en histoire-géo.
+</subject_specifics>`;
 }
 
 /**

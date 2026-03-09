@@ -161,7 +161,7 @@ export default function StudentLayout() {
             tabBarActiveTintColor: tabColors.active,
             tabBarInactiveTintColor: tabColors.inactive,
             tabBarStyle,
-            tabBarShowLabel: false,
+            tabBarShowLabel: true,
             popToTopOnBlur: true,
             ...tabOptions,
           }}

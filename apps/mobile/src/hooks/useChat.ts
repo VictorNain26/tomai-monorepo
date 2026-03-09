@@ -27,13 +27,16 @@ import {
   resetChatSession,
 } from './chat/api';
 import { useStreamManager } from './chat/useStreamManager';
+import { useOfflineCache } from './useOfflineCache';
+import { useNetworkStatus } from './useNetworkStatus';
 
 // Re-export types for consumers
 export type { ChatMessage, ChatFileAttachment, AttachedFileInfo, CreatedDeck } from './chat/types';
 
-/** Generate a unique message ID using crypto for collision safety */
+/** Generate a unique message ID (Hermes-safe, no crypto global) */
 function generateMessageId(role: 'user' | 'assistant'): string {
-  return `${role}-${Date.now()}-${crypto.randomUUID()}`;
+  const hex = () => Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0');
+  return `${role}-${Date.now()}-${hex()}${hex()}-${hex()}`;
 }
 
 export function useChat({
@@ -48,6 +51,7 @@ export function useChat({
   const [createdDecks, setCreatedDecks] = useState<CreatedDeck[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [streamStatus, setStreamStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Refs for stable values
@@ -61,6 +65,10 @@ export function useChat({
   // Attachment clearing: defer until server confirms receipt
   const pendingClearRef = useRef<ChatFileAttachment[] | null>(null);
 
+  // Offline support
+  const { isOnline } = useNetworkStatus();
+  const { cacheMessages, getCachedMessages } = useOfflineCache();
+
   // Keep refs in sync
   useEffect(() => {
     pendingAttachmentsRef.current = pendingAttachments;
@@ -73,6 +81,7 @@ export function useChat({
     setIsLoading,
     setIsStreaming,
     setError,
+    setStreamStatus,
     setPendingAttachments,
     pendingAttachmentsRef,
     pendingClearRef,
@@ -110,7 +119,19 @@ export function useChat({
     enabled: !!currentSessionId,
   });
 
-  // Sync history into local state (one-time per session)
+  // Load cached messages immediately while server fetch is in progress
+  useEffect(() => {
+    if (!currentSessionId) return;
+    if (historySyncedRef.current === currentSessionId) return;
+
+    getCachedMessages(currentSessionId).then(cached => {
+      if (cached && cached.length > 0 && historySyncedRef.current !== currentSessionId) {
+        setMessages(cached);
+      }
+    });
+  }, [currentSessionId, getCachedMessages]);
+
+  // Sync server history into local state (one-time per session)
   // Note: setState in effect is intentional — history is fetched once per session
   // and merged into local messages state which is then mutated by streaming.
   useEffect(() => {
@@ -121,7 +142,21 @@ export function useChat({
     historySyncedRef.current = currentSessionId;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time sync of server history into local streaming state
     setMessages(historyQuery.data.messages);
-  }, [historyQuery.data, currentSessionId]);
+
+    // Cache messages in SQLite for offline access
+    if (currentSessionId) {
+      cacheMessages(currentSessionId, historyQuery.data.messages);
+    }
+
+    // Detect orphan message: last user message had no assistant reply (server crash recovery)
+    if (historyQuery.data.hasOrphanMessage) {
+      const lastMsg = historyQuery.data.messages[historyQuery.data.messages.length - 1];
+      if (lastMsg) {
+        lastRequestRef.current = { content: lastMsg.content, attachments: [] };
+        setError('La réponse précédente a été interrompue. Appuie sur Réessayer.');
+      }
+    }
+  }, [historyQuery.data, currentSessionId, cacheMessages]);
 
   // Cleanup on unmount
   useEffect(() => cleanup, [cleanup]);
@@ -253,6 +288,8 @@ export function useChat({
     currentSessionId,
     isLoading: isLoading || sessionQuery.isLoading,
     isStreaming,
+    isOnline,
+    streamStatus,
     error: error ?? historyQuery.error?.message ?? sessionQuery.error?.message ?? null,
     sendMessage,
     retry,
