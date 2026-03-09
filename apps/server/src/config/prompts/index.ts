@@ -15,7 +15,6 @@ export {
   generateIdentityPrompt,
   generateSafetyGuardrails,
   generateRAGSourceOfTruth,
-  generateToolInstructions,
   type IdentityParams
 } from './core/index.js';
 

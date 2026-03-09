@@ -15,26 +15,7 @@ import type { FunctionDeclaration } from '@google/genai';
 
 export const searchEducationalContentDeclaration: FunctionDeclaration = {
   name: 'search_educational_content',
-  description: `OBLIGATOIRE pour toute question scolaire. Recherche dans les programmes officiels français (Éduscol).
-Tu DOIS appeler cet outil AVANT de répondre à toute question liée au programme scolaire.
-Retourne des extraits des programmes officiels avec leur source et pertinence.
-
-QUAND L'UTILISER (OBLIGATOIRE):
-- Dès qu'un élève pose une question sur un cours, un exercice, ou un concept scolaire.
-- Pour vérifier qu'une explication est conforme au programme officiel de son niveau.
-- Pour trouver des définitions, théorèmes ou méthodes du programme.
-- Pour toute demande d'aide sur un devoir ou exercice.
-- Pour toute révision ou explication de notion.
-
-QUAND NE PAS L'UTILISER:
-- Salutations, questions personnelles, demandes hors-scolaire.
-- Questions purement sur Pronote (emploi du temps, notes) sans contenu pédagogique.
-- Si tu as déjà le contexte nécessaire d'un appel précédent dans cette conversation.
-
-COMMENT INTÉGRER LES RÉSULTATS:
-- Utilise les informations pour structurer ta réponse pédagogique.
-- Ne cite jamais la source (Éduscol, programme officiel) à l'élève.
-- Adapte le contenu officiel au niveau de l'élève.`,
+  description: `Recherche dans les programmes officiels français (Éduscol). Retourne des extraits avec source et pertinence. Intègre les résultats dans ta réponse sans citer Éduscol. Ne l'utilise pas pour salutations, Pronote, ou si tu as déjà le contexte d'un appel précédent.`,
   parametersJsonSchema: {
     type: 'object',
     properties: {
@@ -66,17 +47,7 @@ COMMENT INTÉGRER LES RÉSULTATS:
 
 export const getStudentHomeworkDeclaration: FunctionDeclaration = {
   name: 'get_student_homework',
-  description: `Consulte les devoirs de l'élève depuis Pronote.
-Retourne la liste des devoirs avec matière, description, date limite, et statut (fait/pas fait).
-
-QUAND L'UTILISER:
-- Quand l'élève demande ses devoirs, son travail à faire, ou mentionne un devoir.
-- Quand l'élève dit "qu'est-ce que j'ai à faire ?" ou "quels sont mes devoirs ?".
-- Pour contextualiser une aide sur un exercice spécifique mentionné dans ses devoirs.
-
-QUAND NE PAS L'UTILISER:
-- Pour des questions générales sur un cours sans mention de devoirs.
-- Si l'élève n'a pas Pronote connecté (tu le sais si l'outil retourne une erreur).`,
+  description: `Consulte les devoirs de l'élève depuis Pronote. Retourne matière, description, date limite, statut (fait/pas fait).`,
   parametersJsonSchema: {
     type: 'object',
     properties: {
@@ -91,17 +62,7 @@ QUAND NE PAS L'UTILISER:
 
 export const getStudentGradesDeclaration: FunctionDeclaration = {
   name: 'get_student_grades',
-  description: `Consulte les notes de l'élève depuis Pronote.
-Retourne les notes avec matière, valeur, barème, coefficient, moyenne de classe, et commentaire.
-
-QUAND L'UTILISER:
-- Quand l'élève parle de ses notes, d'un contrôle, d'une évaluation.
-- Quand l'élève dit "comment j'ai eu ?" ou "quelles sont mes notes ?".
-- Pour identifier les matières où l'élève a besoin d'aide (notes basses).
-
-QUAND NE PAS L'UTILISER:
-- Pour des questions générales sans mention de notes ou évaluations.
-- Si l'élève n'a pas Pronote connecté.`,
+  description: `Consulte les notes de l'élève depuis Pronote. Retourne matière, valeur, barème, coefficient, moyenne de classe, commentaire.`,
   parametersJsonSchema: {
     type: 'object',
     properties: {},
@@ -111,16 +72,7 @@ QUAND NE PAS L'UTILISER:
 
 export const getStudentTimetableDeclaration: FunctionDeclaration = {
   name: 'get_student_timetable',
-  description: `Consulte l'emploi du temps de l'élève depuis Pronote.
-Retourne les cours avec matière, horaires, salle, professeur, et statut (annulé ou non).
-
-QUAND L'UTILISER:
-- Quand l'élève demande son emploi du temps, ses cours de demain, ou un horaire.
-- Quand l'élève dit "j'ai quoi demain ?" ou "à quelle heure est mon cours de maths ?".
-
-QUAND NE PAS L'UTILISER:
-- Pour des questions sur le contenu d'un cours (utilise search_educational_content).
-- Si l'élève n'a pas Pronote connecté.`,
+  description: `Consulte l'emploi du temps de l'élève depuis Pronote. Retourne matière, horaires, salle, professeur, statut (annulé ou non).`,
   parametersJsonSchema: {
     type: 'object',
     properties: {
@@ -135,17 +87,7 @@ QUAND NE PAS L'UTILISER:
 
 export const generateFlashcardsDeclaration: FunctionDeclaration = {
   name: 'generate_flashcards',
-  description: `Génère des cartes de révision (flashcards, QCM, vrai/faux, etc.) sur un sujet donné.
-Les cartes sont créées dans un deck et sauvegardées pour révision ultérieure.
-
-QUAND L'UTILISER:
-- Quand l'élève demande de réviser, de s'entraîner, ou de créer des flashcards.
-- Quand l'élève dit "fais-moi des cartes sur..." ou "je veux m'entraîner sur...".
-- Après avoir identifié une faiblesse dans les notes Pronote.
-
-QUAND NE PAS L'UTILISER:
-- Pour expliquer un concept (réponds directement avec search_educational_content).
-- Si l'élève veut juste comprendre, pas s'entraîner.`,
+  description: `Génère des cartes de révision (flashcards, QCM, vrai/faux) sur un sujet. TOUJOURS demander confirmation avant de générer ("Veux-tu que je crée des cartes ?").`,
   parametersJsonSchema: {
     type: 'object',
     properties: {
@@ -168,16 +110,7 @@ QUAND NE PAS L'UTILISER:
 
 export const getStudentProfileDeclaration: FunctionDeclaration = {
   name: 'get_student_profile',
-  description: `Consulte le profil cognitif de l'élève (forces, faiblesses, style d'apprentissage préféré).
-Le profil est mis à jour au fil des conversations.
-
-QUAND L'UTILISER:
-- En début de conversation pour adapter ton approche pédagogique.
-- Quand tu veux personnaliser tes explications selon les forces/faiblesses connues.
-
-QUAND NE PAS L'UTILISER:
-- Si tu as déjà consulté le profil dans cette conversation.
-- Pour des questions simples ou hors-scolaire.`,
+  description: `Consulte le profil cognitif de l'élève (forces, faiblesses, style d'apprentissage). Appelle-le en début de conversation pour personnaliser ton approche.`,
   parametersJsonSchema: {
     type: 'object',
     properties: {},
@@ -187,17 +120,7 @@ QUAND NE PAS L'UTILISER:
 
 export const getAppHelpDeclaration: FunctionDeclaration = {
   name: 'get_app_help',
-  description: `Consulte le guide d'utilisation de l'application Tom.
-Retourne des instructions adaptées au rôle (élève ou parent) sur un sujet donné.
-
-QUAND L'UTILISER:
-- Quand l'utilisateur pose une question sur l'application (comment ça marche, navigation, fonctionnalités).
-- Quand l'utilisateur demande comment connecter Pronote, voir ses notes, créer des flashcards, etc.
-- Quand l'utilisateur demande ce que Tom peut faire ou comment utiliser une fonctionnalité.
-
-QUAND NE PAS L'UTILISER:
-- Pour des questions scolaires (cours, exercices, devoirs) → utilise search_educational_content.
-- Pour des salutations ou discussions générales.`,
+  description: `Guide d'utilisation de l'application Tom. OBLIGATOIRE pour toute question sur l'app (navigation, fonctionnalités, Pronote, abonnement). Ne réponds JAMAIS aux questions sur l'app sans consulter cet outil.`,
   parametersJsonSchema: {
     type: 'object',
     properties: {

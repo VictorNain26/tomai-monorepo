@@ -48,6 +48,7 @@ function createMockCallbacks(): StreamCallbacks {
     setIsLoading: jest.fn(),
     setIsStreaming: jest.fn(),
     setError: jest.fn(),
+    setStreamStatus: jest.fn(),
     setPendingAttachments: jest.fn(),
     pendingAttachmentsRef: { current: [] },
     pendingClearRef: { current: null },
@@ -443,7 +444,7 @@ describe('useStreamManager', () => {
       expect(callbacks.setPendingAttachments).toHaveBeenCalledWith(savedAttachments);
     });
 
-    it('handles inactivity timeout: aborts stream after 45s', () => {
+    it('handles inactivity timeout: aborts stream after 90s', () => {
       const callbacks = createMockCallbacks();
       const { result } = renderHook(() => useStreamManager(callbacks));
 
@@ -451,9 +452,9 @@ describe('useStreamManager', () => {
         result.current.startStream('assistant-1', 'Hello', [], mockUser);
       });
 
-      // Advance fake timers past the 45s inactivity threshold
+      // Advance fake timers past the 90s inactivity threshold
       act(() => {
-        jest.advanceTimersByTime(45_000);
+        jest.advanceTimersByTime(90_000);
       });
 
       expect(callbacks.setError).toHaveBeenCalledWith(

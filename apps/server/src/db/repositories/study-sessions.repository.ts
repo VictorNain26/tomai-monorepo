@@ -122,6 +122,54 @@ export class StudySessionsRepository {
       .orderBy(desc(studySessions.startedAt));
   }
 
+  /**
+   * Find sessions for conversation list with last message preview.
+   * Returns sessions ordered by most recent activity.
+   */
+  async findByUserIdWithLastMessage(
+    userId: string,
+    options: { limit?: number; offset?: number } = {}
+  ): Promise<Array<StudySession & {
+    messageCount: number;
+    lastMessageContent: string | null;
+    lastMessageRole: string | null;
+    lastMessageAt: Date | null;
+  }>> {
+    const { limit = 20, offset = 0 } = options;
+
+    return await db
+      .select({
+        ...getTableColumns(studySessions),
+        messageCount: count(messages.id),
+        lastMessageContent: sql<string | null>`(
+          SELECT content FROM messages m2
+          WHERE m2.session_id = ${studySessions.id}
+          ORDER BY m2.created_at DESC LIMIT 1
+        )`,
+        lastMessageRole: sql<string | null>`(
+          SELECT role FROM messages m3
+          WHERE m3.session_id = ${studySessions.id}
+          ORDER BY m3.created_at DESC LIMIT 1
+        )`,
+        lastMessageAt: sql<Date | null>`(
+          SELECT created_at FROM messages m4
+          WHERE m4.session_id = ${studySessions.id}
+          ORDER BY m4.created_at DESC LIMIT 1
+        )`,
+      })
+      .from(studySessions)
+      .leftJoin(messages, eq(messages.sessionId, studySessions.id))
+      .where(eq(studySessions.userId, userId))
+      .groupBy(studySessions.id)
+      .orderBy(sql`COALESCE((
+        SELECT created_at FROM messages m5
+        WHERE m5.session_id = ${studySessions.id}
+        ORDER BY m5.created_at DESC LIMIT 1
+      ), ${studySessions.startedAt}) DESC`)
+      .limit(limit)
+      .offset(offset);
+  }
+
   async update(id: string, input: UpdateStudySessionInput): Promise<StudySession | undefined> {
     const [session] = await db
       .update(studySessions)

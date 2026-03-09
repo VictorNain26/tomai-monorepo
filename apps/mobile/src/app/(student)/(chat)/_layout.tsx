@@ -1,7 +1,9 @@
 /**
  * Student Chat Stack - TomAI 2026
  *
- * Screens: Chat (Tom AI tutor)
+ * Screens:
+ * - conversations: List of all conversations
+ * - index: Chat screen (receives sessionId param)
  */
 
 import { Stack } from 'expo-router';
@@ -12,6 +14,7 @@ export default function ChatLayout() {
 
   return (
     <Stack screenOptions={screenOptions}>
+      <Stack.Screen name="conversations" options={{ title: 'Conversations' }} />
       <Stack.Screen name="index" />
     </Stack>
   );

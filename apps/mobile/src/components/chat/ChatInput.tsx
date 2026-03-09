@@ -14,7 +14,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { Mic, Square, Send, Loader2 } from 'lucide-react-native';
+import { Mic, Square, Send, Loader2, StopCircle } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useVoiceInput, useIconColors, useThemeColors } from '@/hooks';
@@ -31,9 +31,11 @@ interface ChatInputProps {
     mimeType: string
   ) => Promise<void>;
   onOpenClasseur?: () => void;
+  onStop?: () => void;
   pendingAttachments: ChatFileAttachment[];
   onRemoveAttachment?: (fileId: string) => void;
   isLoading?: boolean;
+  isStreaming?: boolean;
   isUploading?: boolean;
   placeholder?: string;
 }
@@ -42,9 +44,11 @@ export const ChatInput = memo(function ChatInput({
   onSendMessage,
   onFileSelected,
   onOpenClasseur,
+  onStop,
   pendingAttachments,
   onRemoveAttachment,
   isLoading = false,
+  isStreaming = false,
   isUploading = false,
   placeholder = 'Pose ta question...',
 }: ChatInputProps) {
@@ -211,24 +215,35 @@ export const ChatInput = memo(function ChatInput({
           )}
         </TouchableOpacity>
 
-        {/* Send Button */}
-        <TouchableOpacity
-          onPress={handleSend}
-          disabled={!canSend}
-          className="h-10 w-10 items-center justify-center rounded-full"
-          style={{
-            backgroundColor: canSend
-              ? colors.primary
-              : bgColors.muted[50],
-          }}
-          accessibilityLabel="Envoyer le message"
-        >
-          <Send
-            color={canSend ? colors.primaryForeground : iconColors.muted}
-            size={18}
-            style={!canSend ? { opacity: 0.5 } : undefined}
-          />
-        </TouchableOpacity>
+        {/* Send / Stop Button */}
+        {isStreaming && onStop ? (
+          <TouchableOpacity
+            onPress={onStop}
+            className="h-10 w-10 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors.destructive }}
+            accessibilityLabel="Arrêter la génération"
+          >
+            <StopCircle color={colors.primaryForeground} size={18} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={handleSend}
+            disabled={!canSend}
+            className="h-10 w-10 items-center justify-center rounded-full"
+            style={{
+              backgroundColor: canSend
+                ? colors.primary
+                : bgColors.muted[50],
+            }}
+            accessibilityLabel="Envoyer le message"
+          >
+            <Send
+              color={canSend ? colors.primaryForeground : iconColors.muted}
+              size={18}
+              style={!canSend ? { opacity: 0.5 } : undefined}
+            />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

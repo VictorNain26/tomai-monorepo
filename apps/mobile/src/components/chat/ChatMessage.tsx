@@ -9,8 +9,16 @@
  * - File attachments
  */
 
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { View, TouchableOpacity, Image } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+} from 'react-native-reanimated';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import {
@@ -30,9 +38,10 @@ import { bgColors } from '@/lib/styles';
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
+  streamStatus?: string | null;
 }
 
-export const ChatMessage = memo(function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ message, isStreaming = false, streamStatus }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isThinking = !isUser && isStreaming && message.content.length === 0;
   const tts = useTextToSpeech();
@@ -71,7 +80,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
           )}
         >
           {isThinking ? (
-            <ThinkingIndicator />
+            <ThinkingIndicator status={streamStatus} />
           ) : (
             <MessageContent
               content={message.content}
@@ -150,24 +159,45 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
 // THINKING INDICATOR
 // ============================================================================
 
-function ThinkingIndicator() {
+function StaggeredDot({ delay, color }: { delay: number; color: string }) {
+  const opacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 400 }),
+          withTiming(0.3, { duration: 400 }),
+        ),
+        -1,
+      ),
+    );
+  }, [delay, opacity]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: color,
+  }));
+
+  return <Animated.View style={style} />;
+}
+
+function ThinkingIndicator({ status }: { status?: string | null }) {
   const colors = useThemeColors();
+  const label = status ?? 'Tom réfléchit';
   return (
-    <View className="flex-row items-center gap-2">
-      <Text className="text-slate-500 dark:text-slate-400">Tom réfléchit</Text>
-      <View className="flex-row gap-1">
-        <View
-          className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ backgroundColor: colors.primary }}
-        />
-        <View
-          className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ backgroundColor: colors.primary }}
-        />
-        <View
-          className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ backgroundColor: colors.primary }}
-        />
+    <View className="gap-1">
+      <View className="flex-row items-center gap-2">
+        <Text className="text-slate-500 dark:text-slate-400">{label}</Text>
+        <View className="flex-row gap-1">
+          <StaggeredDot delay={0} color={colors.primary} />
+          <StaggeredDot delay={150} color={colors.primary} />
+          <StaggeredDot delay={300} color={colors.primary} />
+        </View>
       </View>
     </View>
   );

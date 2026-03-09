@@ -20,7 +20,7 @@ import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronRight, FileText, BarChart3, RefreshCw } from 'lucide-react-native';
+import { ChevronRight, FileText, BarChart3, RefreshCw, ChevronDown } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { ChatMessage, ChatInput, ChatHeader, DeckActionCard, FileLibraryPicker } from '@/components/chat';
@@ -93,12 +93,14 @@ export default function ChatScreen() {
     currentSessionId,
     isLoading,
     isStreaming,
+    streamStatus,
     error,
     sendMessage,
     retry,
     addAttachment,
     removeAttachment,
     resetSession,
+    stop,
   } = useChat({
     initialSessionId: params.sessionId,
   });
@@ -106,6 +108,19 @@ export default function ChatScreen() {
   // Session files (classeur)
   const { files: sessionAttachedFiles } = useSessionFiles(currentSessionId);
   const [showClasseur, setShowClasseur] = useState(false);
+
+  // Smart scroll: track if user has scrolled away from bottom
+  const flatListRef = useRef<FlatList>(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+
+  const handleScroll = useCallback((e: { nativeEvent: { contentOffset: { y: number } } }) => {
+    // Inverted FlatList: y=0 is bottom, y>0 is scrolled up
+    setIsNearBottom(e.nativeEvent.contentOffset.y < 100);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, []);
 
   // Pronote data for suggestions
   const pronote = useStudentPronote();
@@ -237,7 +252,11 @@ export default function ChatScreen() {
       const showDecks = isLastAssistant && !isStreaming && createdDecks.length > 0;
       return (
         <View>
-          <ChatMessage message={item} isStreaming={isLastAssistant && isStreaming} />
+          <ChatMessage
+            message={item}
+            isStreaming={isLastAssistant && isStreaming}
+            streamStatus={isLastAssistant ? streamStatus : undefined}
+          />
           {showDecks && (
             <View className="mt-2 gap-2 ml-10">
               {createdDecks.map((deck) => (
@@ -254,7 +273,7 @@ export default function ChatScreen() {
         </View>
       );
     },
-    [isStreaming, createdDecks]
+    [isStreaming, streamStatus, createdDecks]
   );
 
   // Context badge info
@@ -341,16 +360,33 @@ export default function ChatScreen() {
             )}
           </View>
         ) : (
-          <FlatList
-            data={invertedMessages}
-            inverted
-            keyExtractor={(item) => item.id}
-            renderItem={renderMessage}
-            contentContainerStyle={{ padding: 16 }}
-            showsVerticalScrollIndicator={false}
-            keyboardDismissMode="interactive"
-            keyboardShouldPersistTaps="handled"
-          />
+          <View className="flex-1">
+            <FlatList
+              ref={flatListRef}
+              data={invertedMessages}
+              inverted
+              keyExtractor={(item) => item.id}
+              renderItem={renderMessage}
+              contentContainerStyle={{ padding: 16 }}
+              showsVerticalScrollIndicator={false}
+              keyboardDismissMode="interactive"
+              keyboardShouldPersistTaps="handled"
+              onScroll={handleScroll}
+              scrollEventThrottle={100}
+            />
+
+            {/* Scroll to bottom FAB */}
+            {!isNearBottom && (
+              <TouchableOpacity
+                onPress={scrollToBottom}
+                className="absolute bottom-3 right-3 h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm"
+                style={{ elevation: 3 }}
+                accessibilityLabel="Retour en bas"
+              >
+                <ChevronDown color={iconColors.foreground} size={20} />
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {/* Input */}
@@ -358,9 +394,11 @@ export default function ChatScreen() {
           onSendMessage={sendMessage}
           onFileSelected={handleFileSelected}
           onOpenClasseur={() => setShowClasseur(true)}
+          onStop={stop}
           pendingAttachments={pendingAttachments}
           onRemoveAttachment={removeAttachment}
           isLoading={isLoading}
+          isStreaming={isStreaming}
           isUploading={isUploading}
           placeholder="Pose ta question..."
         />

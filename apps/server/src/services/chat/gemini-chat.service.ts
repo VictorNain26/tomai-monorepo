@@ -1,6 +1,6 @@
 import { GoogleGenAI, ThinkingLevel, type Part, type Content } from '@google/genai';
 import { appConfig } from '../../config/app.config.js';
-import { buildSystemPrompt, generateToolInstructions } from '../../config/prompts/index.js';
+import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory, type OptimizationContext } from '../../utils/conversation/index.js';
 import { agentToolDeclarations } from './tool-declarations.js';
@@ -38,8 +38,6 @@ class GeminiChatService {
       firstName: params.firstName
     });
 
-    const toolSection = `\n\n${generateToolInstructions()}`;
-
     const profileSection = params.cognitiveProfileSummary
       ? `\n\n## PROFIL DE L'ÉLÈVE\n${params.cognitiveProfileSummary}`
       : '';
@@ -48,7 +46,7 @@ class GeminiChatService {
       ? `\n\n${params.learningContext}`
       : '';
 
-    return basePrompt + toolSection + profileSection + learningSection;
+    return basePrompt + profileSection + learningSection;
   }
 
   private buildFileParts(files?: AttachedFile[]): Part[] {

@@ -1,9 +1,51 @@
 import { Elysia } from 'elysia';
 import { handleAuthWithCookies } from '../../middleware/auth.middleware';
 import { chatService } from '../../services/chat.service';
+import { AppError } from '../../lib/errors';
 import { logger } from '../../lib/observability';
 
 export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
+
+  /**
+   * GET /chat/conversations - List all conversations for the user
+   * Ordered by most recent activity. Supports pagination.
+   */
+  .get('/chat/conversations', async ({ request: { headers }, query, set }) => {
+    const authContext = await handleAuthWithCookies(headers, set);
+    if (!authContext.success) {
+      return authContext.error;
+    }
+
+    try {
+      const limit = Math.min(Number(query?.limit) || 20, 50);
+      const offset = Math.max(Number(query?.offset) || 0, 0);
+
+      const conversations = await chatService.listConversations(authContext.user.id, { limit, offset });
+
+      return {
+        success: true,
+        conversations: conversations.map(c => ({
+          id: c.id,
+          title: c.title,
+          subject: c.subject,
+          status: c.status,
+          messageCount: c.messageCount,
+          lastMessagePreview: c.lastMessagePreview,
+          lastMessageRole: c.lastMessageRole,
+          lastActivityAt: c.lastActivityAt.toISOString(),
+          startedAt: c.startedAt.toISOString(),
+        })),
+      };
+    } catch (_error) {
+      logger.error('Conversations list failed', {
+        operation: 'api:chat:conversations:list',
+        userId: authContext.user.id,
+        _error: _error instanceof Error ? _error.message : String(_error),
+        severity: 'medium' as const,
+      });
+      throw new AppError('INTERNAL_ERROR', 'Conversations list failed');
+    }
+  })
 
   .get('/chat/sessions/latest', async ({ request: { headers }, set }) => {
     const authContext = await handleAuthWithCookies(headers, set);
@@ -30,10 +72,9 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
         operation: 'api:chat:sessions:latest',
         userId: authContext.user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
-      set.status = 500;
-      return { _error: 'Latest session retrieval failed' };
+      throw new AppError('INTERNAL_ERROR', 'Latest session retrieval failed');
     }
   })
 
@@ -51,10 +92,9 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
         operation: 'api:chat:session:getOrCreate',
         userId: authContext.user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
-      set.status = 500;
-      return { _error: 'Session retrieval failed' };
+      throw new AppError('INTERNAL_ERROR', 'Session retrieval failed');
     }
   })
 
@@ -73,10 +113,9 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
         userId: authContext.user.id,
         sessionId: params.id,
         _error: _error instanceof Error ? _error.message : String(_error),
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
-      set.status = 500;
-      return { _error: 'Session reset failed' };
+      throw new AppError('INTERNAL_ERROR', 'Session reset failed');
     }
   })
 
@@ -94,10 +133,9 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
         operation: 'api:chat:session:delete',
         userId: authContext.user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
-      set.status = 500;
-      return { _error: 'Session deletion failed' };
+      throw new AppError('INTERNAL_ERROR', 'Session deletion failed');
     }
   })
 
@@ -109,8 +147,14 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
 
     try {
       const messages = await chatService.getSessionHistory(params.id);
+
+      // Detect orphan: last message is user with no assistant reply (crash recovery)
+      const lastMessage = messages[messages.length - 1];
+      const hasOrphanMessage = lastMessage?.role === 'user';
+
       return {
         success: true,
+        hasOrphanMessage,
         messages: messages.map(m => ({
           id: m.id,
           role: m.role,
@@ -142,8 +186,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       const message = await chatService.getMessageById(params.id, authContext.user.id);
 
       if (!message) {
-        set.status = 404;
-        return { _error: 'Message not found' };
+        throw new AppError('SESSION_NOT_FOUND', 'Message not found');
       }
 
       return {
@@ -157,13 +200,13 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
         attachedFile: message.attachedFile ?? null
       };
     } catch (_error) {
+      if (_error instanceof AppError) throw _error;
       logger.error('Message retrieval failed', {
         operation: 'api:chat:message',
         userId: authContext.user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
-      set.status = 500;
-      return { _error: 'Message retrieval failed' };
+      throw new AppError('INTERNAL_ERROR', 'Message retrieval failed');
     }
   });

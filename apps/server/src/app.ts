@@ -29,8 +29,10 @@ import { deckRoutes, cardRoutes, fsrsRoutes, fsrsExtraRoutes } from './routes/le
 import { pronoteRoutes } from './routes/pronote.routes.js';
 import { waitlistRoutes } from './routes/waitlist.routes.js';
 
-// Services
+// Middleware
 import { logger } from './lib/observability.js';
+import { requestIdMiddleware } from './middleware/request-id.middleware.js';
+import { errorHandlerMiddleware } from './middleware/error-handler.middleware.js';
 import { createRateLimitMiddleware, RateLimitPresets } from './middleware/rate-limit.middleware.js';
 
 // Database (pour health checks)
@@ -43,6 +45,9 @@ const isDev = envUtils.isDevelopment;
 // Application Elysia avec architecture modulaire
 const app = new Elysia({ name: 'tomai-server' })
 
+  // Request ID + Global Error Handler (avant tout le reste)
+  .use(requestIdMiddleware)
+  .use(errorHandlerMiddleware)
 
   // CORS Configuration DÉFINITIVE - Cross-Origin pour frontend/backend séparés
   .use(cors({

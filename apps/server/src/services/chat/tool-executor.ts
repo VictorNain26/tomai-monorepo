@@ -24,9 +24,20 @@ export interface ToolExecutionContext {
   userRole: 'student' | 'parent';
 }
 
+/** Tools that make network calls and benefit from a single retry */
+const RETRYABLE_TOOLS = new Set([
+  'search_educational_content',
+  'get_student_homework',
+  'get_student_grades',
+  'get_student_timetable',
+]);
+
+const RETRY_DELAY_MS = 1500;
+
 /**
- * Execute un outil et retourne le résultat JSON
- * Ne throw jamais - les erreurs sont encapsulées dans la réponse
+ * Execute un outil et retourne le résultat JSON.
+ * Ne throw jamais — les erreurs sont encapsulées dans la réponse.
+ * Les outils réseau (RAG, Pronote) bénéficient d'1 retry automatique.
  */
 export async function executeTool(
   toolName: string,
@@ -42,44 +53,79 @@ export async function executeTool(
   });
 
   try {
-    switch (toolName) {
-      case 'search_educational_content':
-        return await executeRagSearch(args);
-
-      case 'get_student_homework':
-        return await executeGetHomework(args, context);
-
-      case 'get_student_grades':
-        return await executeGetGrades(context);
-
-      case 'get_student_timetable':
-        return await executeGetTimetable(args, context);
-
-      case 'generate_flashcards':
-        return await executeGenerateFlashcards(args, context);
-
-      case 'get_student_profile':
-        return await executeGetProfile(context);
-
-      case 'get_app_help':
-        return executeGetAppHelp(args, context);
-
-      default:
-        return { error: true, message: `Outil inconnu: ${toolName}` };
-    }
+    return await executeToolOnce(toolName, args, context);
   } catch (error) {
-    logger.error('Tool execution failed', {
-      operation: 'tool-executor:error',
-      toolName,
-      userId: context.userId,
-      _error: error instanceof Error ? error.message : String(error),
-      durationMs: Date.now() - startTime,
-      severity: 'high' as const,
-    });
+    // Retry once for network-dependent tools
+    if (RETRYABLE_TOOLS.has(toolName)) {
+      logger.warn('Tool execution failed, retrying once', {
+        operation: 'tool-executor:retry',
+        toolName,
+        userId: context.userId,
+        _error: error instanceof Error ? error.message : String(error),
+      });
+
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+
+      try {
+        return await executeToolOnce(toolName, args, context);
+      } catch (retryError) {
+        logger.error('Tool execution failed after retry', {
+          operation: 'tool-executor:retry-failed',
+          toolName,
+          userId: context.userId,
+          _error: retryError instanceof Error ? retryError.message : String(retryError),
+          durationMs: Date.now() - startTime,
+          severity: 'high' as const,
+        });
+      }
+    } else {
+      logger.error('Tool execution failed', {
+        operation: 'tool-executor:error',
+        toolName,
+        userId: context.userId,
+        _error: error instanceof Error ? error.message : String(error),
+        durationMs: Date.now() - startTime,
+        severity: 'high' as const,
+      });
+    }
+
     return {
       error: true,
       message: `Erreur lors de l'exécution de ${toolName}. Indique à l'élève que tu n'as pas pu vérifier dans les programmes officiels.`,
     };
+  }
+}
+
+/** Single execution attempt for a tool */
+async function executeToolOnce(
+  toolName: string,
+  args: Record<string, unknown>,
+  context: ToolExecutionContext
+): Promise<object> {
+  switch (toolName) {
+    case 'search_educational_content':
+      return await executeRagSearch(args);
+
+    case 'get_student_homework':
+      return await executeGetHomework(args, context);
+
+    case 'get_student_grades':
+      return await executeGetGrades(context);
+
+    case 'get_student_timetable':
+      return await executeGetTimetable(args, context);
+
+    case 'generate_flashcards':
+      return await executeGenerateFlashcards(args, context);
+
+    case 'get_student_profile':
+      return await executeGetProfile(context);
+
+    case 'get_app_help':
+      return executeGetAppHelp(args, context);
+
+    default:
+      return { error: true, message: `Outil inconnu: ${toolName}` };
   }
 }
 

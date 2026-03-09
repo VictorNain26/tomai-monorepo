@@ -12,8 +12,8 @@
 /** Budget total cible envoyé à Gemini (input tokens) */
 const TARGET_BUDGET_TOKENS = 30_000;
 
-/** Overhead fixe: system prompt + tool declarations */
-const FIXED_OVERHEAD_TOKENS = 4_000;
+/** Overhead fixe: system prompt + tool declarations (optimisé Phase 5) */
+const FIXED_OVERHEAD_TOKENS = 2_500;
 
 /** Réserve pour la réponse générée */
 const OUTPUT_RESERVE_TOKENS = 16_384;
