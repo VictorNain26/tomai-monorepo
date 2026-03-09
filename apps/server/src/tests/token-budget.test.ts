@@ -96,28 +96,28 @@ describe('Token Budget Service', () => {
   describe('calculateBudget', () => {
     it('should return correct available tokens', () => {
       const budget = calculateBudget();
-      // 30000 - 4000 - 16384 = 9616
-      expect(budget.availableTokens).toBe(9616);
+      // 30000 - 2500 - 16384 = 11116
+      expect(budget.availableTokens).toBe(11116);
     });
 
     it('should allocate 15% to summary', () => {
       const budget = calculateBudget();
-      expect(budget.summaryMaxTokens).toBe(Math.floor(9616 * 0.15));
+      expect(budget.summaryMaxTokens).toBe(Math.floor(11116 * 0.15));
     });
 
     it('should allocate 55% to history', () => {
       const budget = calculateBudget();
-      expect(budget.historyMaxTokens).toBe(Math.floor(9616 * 0.55));
+      expect(budget.historyMaxTokens).toBe(Math.floor(11116 * 0.55));
     });
 
     it('should allocate 20% to RAG', () => {
       const budget = calculateBudget();
-      expect(budget.ragMaxTokens).toBe(Math.floor(9616 * 0.20));
+      expect(budget.ragMaxTokens).toBe(Math.floor(11116 * 0.20));
     });
 
     it('should allocate 10% to current message', () => {
       const budget = calculateBudget();
-      expect(budget.currentMessageMaxTokens).toBe(Math.floor(9616 * 0.10));
+      expect(budget.currentMessageMaxTokens).toBe(Math.floor(11116 * 0.10));
     });
 
     it('should have allocations that sum close to total', () => {

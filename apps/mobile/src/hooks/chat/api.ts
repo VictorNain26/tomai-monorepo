@@ -55,8 +55,8 @@ export async function createNewSession(): Promise<string> {
 
 /** Fetch conversations list */
 export async function fetchConversations(): Promise<Conversation[]> {
-  const response = await getTreaty().api.chat.conversations.get();
-  if (__DEV__) console.log('[conversations] raw response:', JSON.stringify(response.data ?? response.error, null, 2));
-  const data = unwrap<{ conversations: Conversation[] }>(response);
+  const data = unwrap<{ conversations: Conversation[] }>(
+    await getTreaty().api.chat.conversations.get()
+  );
   return data.conversations;
 }

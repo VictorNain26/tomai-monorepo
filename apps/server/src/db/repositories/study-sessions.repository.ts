@@ -125,6 +125,7 @@ export class StudySessionsRepository {
   /**
    * Find sessions for conversation list with last message preview.
    * Returns sessions ordered by most recent activity.
+   * Uses correlated subqueries (no JOIN/GROUP BY) for reliability.
    */
   async findByUserIdWithLastMessage(
     userId: string,
@@ -140,31 +141,27 @@ export class StudySessionsRepository {
     return await db
       .select({
         ...getTableColumns(studySessions),
-        messageCount: count(messages.id),
+        messageCount: sql<number>`(
+          SELECT count(*)::int FROM messages WHERE session_id = ${studySessions.id}
+        )`,
         lastMessageContent: sql<string | null>`(
-          SELECT content FROM messages m2
-          WHERE m2.session_id = ${studySessions.id}
-          ORDER BY m2.created_at DESC LIMIT 1
+          SELECT content FROM messages WHERE session_id = ${studySessions.id}
+          ORDER BY created_at DESC LIMIT 1
         )`,
         lastMessageRole: sql<string | null>`(
-          SELECT role FROM messages m3
-          WHERE m3.session_id = ${studySessions.id}
-          ORDER BY m3.created_at DESC LIMIT 1
+          SELECT role FROM messages WHERE session_id = ${studySessions.id}
+          ORDER BY created_at DESC LIMIT 1
         )`,
         lastMessageAt: sql<Date | null>`(
-          SELECT created_at FROM messages m4
-          WHERE m4.session_id = ${studySessions.id}
-          ORDER BY m4.created_at DESC LIMIT 1
+          SELECT created_at FROM messages WHERE session_id = ${studySessions.id}
+          ORDER BY created_at DESC LIMIT 1
         )`,
       })
       .from(studySessions)
-      .leftJoin(messages, eq(messages.sessionId, studySessions.id))
       .where(eq(studySessions.userId, userId))
-      .groupBy(studySessions.id)
       .orderBy(sql`COALESCE((
-        SELECT created_at FROM messages m5
-        WHERE m5.session_id = ${studySessions.id}
-        ORDER BY m5.created_at DESC LIMIT 1
+        SELECT created_at FROM messages WHERE session_id = ${studySessions.id}
+        ORDER BY created_at DESC LIMIT 1
       ), ${studySessions.startedAt}) DESC`)
       .limit(limit)
       .offset(offset);
