@@ -33,9 +33,10 @@ import { useNetworkStatus } from './useNetworkStatus';
 // Re-export types for consumers
 export type { ChatMessage, ChatFileAttachment, AttachedFileInfo, CreatedDeck } from './chat/types';
 
-/** Generate a unique message ID using crypto for collision safety */
+/** Generate a unique message ID (Hermes-safe, no crypto global) */
 function generateMessageId(role: 'user' | 'assistant'): string {
-  return `${role}-${Date.now()}-${crypto.randomUUID()}`;
+  const hex = () => Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0');
+  return `${role}-${Date.now()}-${hex()}${hex()}-${hex()}`;
 }
 
 export function useChat({

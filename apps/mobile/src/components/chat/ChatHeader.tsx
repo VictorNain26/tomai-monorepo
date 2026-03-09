@@ -1,5 +1,5 @@
 import { View, TouchableOpacity, Alert } from 'react-native';
-import { MoreVertical, FolderOpen } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, FolderOpen } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { TomAvatar } from '@/components/common';
 import { useIconColors, useThemeColors } from '@/hooks';
@@ -15,6 +15,7 @@ interface ChatHeaderProps {
   contextBadge: ContextBadge | null;
   currentSessionId: string | null;
   sessionFileCount: number;
+  onBack: () => void;
   onOpenClasseur: () => void;
   onReset: () => void;
   onDelete: () => void;
@@ -24,6 +25,7 @@ export function ChatHeader({
   contextBadge,
   currentSessionId,
   sessionFileCount,
+  onBack,
   onOpenClasseur,
   onReset,
   onDelete,
@@ -32,7 +34,17 @@ export function ChatHeader({
   const colors = useThemeColors();
 
   return (
-    <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+    <View className="flex-row items-center gap-2 border-b border-slate-200 dark:border-slate-700 px-2 py-3">
+      {/* Back button */}
+      <TouchableOpacity
+        onPress={onBack}
+        className="h-10 w-10 items-center justify-center rounded-full"
+        accessibilityLabel="Retour aux conversations"
+        accessibilityRole="button"
+      >
+        <ChevronLeft color={iconColors.foreground} size={22} />
+      </TouchableOpacity>
+
       <View className="flex-1">
         <View className="flex-row items-center gap-2">
           <TomAvatar size="sm" />

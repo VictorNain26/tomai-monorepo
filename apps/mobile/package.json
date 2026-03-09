@@ -78,6 +78,7 @@
     "expo-background-task": "^55.0.9",
     "expo-build-properties": "^55.0.9",
     "expo-camera": "^55.0.9",
+    "expo-clipboard": "~55.0.8",
     "expo-constants": "^55.0.7",
     "expo-dev-client": "^55.0.11",
     "expo-device": "^55.0.9",

@@ -47,10 +47,16 @@ export async function deleteChatSession(
   unwrap(await getTreaty().api.chat.session({ id: sessionId }).delete());
 }
 
+/** Always create a new conversation session */
+export async function createNewSession(): Promise<string> {
+  const data = unwrap(await getTreaty().api.chat.session.new.post());
+  return (data as { sessionId: string }).sessionId;
+}
+
 /** Fetch conversations list */
 export async function fetchConversations(): Promise<Conversation[]> {
-  const data = unwrap<{ conversations: Conversation[] }>(
-    await getTreaty().api.chat.conversations.get()
-  );
+  const response = await getTreaty().api.chat.conversations.get();
+  if (__DEV__) console.log('[conversations] raw response:', JSON.stringify(response.data ?? response.error, null, 2));
+  const data = unwrap<{ conversations: Conversation[] }>(response);
   return data.conversations;
 }

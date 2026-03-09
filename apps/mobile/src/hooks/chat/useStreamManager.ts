@@ -284,10 +284,11 @@ export function useStreamManager(callbacks: StreamCallbacks) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
     }
+    setStreamStatus(null);
     flushStreamContent();
     setIsStreaming(false);
     setIsLoading(false);
-  }, [flushStreamContent, setIsStreaming, setIsLoading]);
+  }, [flushStreamContent, setIsStreaming, setIsLoading, setStreamStatus]);
 
   /** Cleanup (call in useEffect cleanup) */
   const cleanup = useCallback(() => {

@@ -13,7 +13,7 @@ import type { Conversation } from './chat/types';
 import {
   chatQueryKeys,
   fetchConversations,
-  fetchOrCreateSession,
+  createNewSession,
   deleteChatSession,
 } from './chat/api';
 
@@ -27,11 +27,12 @@ export function useConversations() {
     queryKey: chatQueryKeys.conversations(),
     queryFn: fetchConversations,
     enabled: !!user,
-    staleTime: 30_000,
+    staleTime: 5_000,
+    refetchOnMount: 'always',
   });
 
   const createMutation = useMutation({
-    mutationFn: fetchOrCreateSession,
+    mutationFn: createNewSession,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations() });
     },
@@ -60,6 +61,7 @@ export function useConversations() {
     isLoading: conversationsQuery.isLoading,
     error: conversationsQuery.error?.message ?? null,
     refetch: conversationsQuery.refetch,
+    isRefetching: conversationsQuery.isRefetching,
     createConversation,
     deleteConversation,
     isCreating: createMutation.isPending,

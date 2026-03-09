@@ -98,6 +98,30 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
+  /**
+   * POST /chat/session/new - Always create a new conversation
+   * Used by the FAB button on conversations list.
+   */
+  .post('/chat/session/new', async ({ request: { headers }, set }) => {
+    const authContext = await handleAuthWithCookies(headers, set);
+    if (!authContext.success) {
+      return authContext.error;
+    }
+
+    try {
+      const sessionId = await chatService.createSession(authContext.user.id, 'général');
+      return { success: true, sessionId };
+    } catch (_error) {
+      logger.error('Session creation failed', {
+        operation: 'api:chat:session:new',
+        userId: authContext.user.id,
+        _error: _error instanceof Error ? _error.message : String(_error),
+        severity: 'medium' as const,
+      });
+      throw new AppError('INTERNAL_ERROR', 'Session creation failed');
+    }
+  })
+
   .post('/chat/session/:id/reset', async ({ params, request: { headers }, set }) => {
     const authContext = await handleAuthWithCookies(headers, set);
     if (!authContext.success) {

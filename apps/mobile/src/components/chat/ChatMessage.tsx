@@ -9,8 +9,9 @@
  * - File attachments
  */
 
-import { memo, useEffect } from 'react';
-import { View, TouchableOpacity, Image } from 'react-native';
+import { memo, useCallback, useEffect } from 'react';
+import { View, TouchableOpacity, Image, Alert, Pressable } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -35,6 +36,40 @@ import { useTextToSpeech, useIconColors, useThemeColors } from '@/hooks';
 import type { ChatMessage as ChatMessageType } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
+/** Strip markdown syntax for clean TTS playback */
+function stripMarkdownForTTS(text: string): string {
+  let result = text;
+  // Remove mermaid diagrams
+  result = result.replace(/```mermaid[\s\S]*?```/g, '');
+  // Remove code blocks
+  result = result.replace(/```[\s\S]*?```/g, '');
+  // Remove inline code
+  result = result.replace(/`[^`]+`/g, '');
+  // Remove URLs
+  result = result.replace(/https?:\/\/[^\s)]+/g, '');
+  // Remove markdown links, keep label
+  result = result.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  // Remove images
+  result = result.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1');
+  // Remove headings markers
+  result = result.replace(/^#{1,6}\s+/gm, '');
+  // Remove bold/italic markers
+  result = result.replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1');
+  result = result.replace(/_{1,3}([^_]+)_{1,3}/g, '$1');
+  // Remove strikethrough
+  result = result.replace(/~~([^~]+)~~/g, '$1');
+  // Remove blockquotes
+  result = result.replace(/^>\s+/gm, '');
+  // Remove horizontal rules
+  result = result.replace(/^[-*_]{3,}\s*$/gm, '');
+  // Remove list markers
+  result = result.replace(/^[\s]*[-*+]\s+/gm, '');
+  result = result.replace(/^[\s]*\d+\.\s+/gm, '');
+  // Collapse multiple newlines
+  result = result.replace(/\n{3,}/g, '\n\n');
+  return result.trim();
+}
+
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
@@ -52,8 +87,23 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
 
   const handleSpeakToggle = () => {
     if (!canSpeak) return;
-    tts.toggle(message.content);
+    tts.toggle(stripMarkdownForTTS(message.content));
   };
+
+  const handleLongPress = useCallback(() => {
+    if (message.content.length === 0) return;
+    Alert.alert(
+      'Message',
+      undefined,
+      [
+        {
+          text: 'Copier',
+          onPress: () => { void Clipboard.setStringAsync(message.content); },
+        },
+        { text: 'Annuler', style: 'cancel' },
+      ]
+    );
+  }, [message.content]);
 
   return (
     <View
@@ -73,7 +123,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
 
       {/* Message Bubble + Actions */}
       <View className="max-w-[80%]">
-        <View
+        <Pressable
+          onLongPress={handleLongPress}
           className={cn(
             'rounded-2xl px-4 py-3',
             isUser ? 'rounded-tr-sm bg-blue-600 dark:bg-blue-400' : 'rounded-tl-sm bg-slate-100 dark:bg-slate-800'
@@ -88,7 +139,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
               isStreaming={isStreaming}
             />
           )}
-        </View>
+        </Pressable>
 
         {/* TTS Button - only for assistant messages */}
         {canSpeak && (
