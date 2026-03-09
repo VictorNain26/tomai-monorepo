@@ -108,7 +108,7 @@ class ChatOrchestrationService {
       id: `ack_${Date.now()}`,
       model: 'gemini-3-flash-preview',
       timestamp: Date.now(),
-      status: 'thinking',
+      status: 'Tom réfléchit…',
     };
 
     // Phase 5: Stream from Gemini

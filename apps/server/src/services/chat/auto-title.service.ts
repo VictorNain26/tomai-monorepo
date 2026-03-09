@@ -10,13 +10,15 @@ import { appConfig } from '../../config/app.config.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { logger } from '../../lib/observability.js';
 
-const TITLE_PROMPT = `Génère un titre COURT (max 50 caractères) pour cette conversation de tutorat scolaire.
+const TITLE_PROMPT = `Génère un titre COURT (10-50 caractères) pour cette conversation de tutorat scolaire.
 
 RÈGLES:
-- Max 50 caractères
-- Pas de guillemets
+- Entre 10 et 50 caractères obligatoirement
+- Pas de guillemets ni ponctuation finale
+- Titre COMPLET, jamais tronqué (ex: "Aide" seul est interdit)
 - Décris le SUJET principal (ex: "Équations du 2nd degré", "Conjugaison imparfait", "Guerre de 14-18")
 - Si c'est un devoir, mentionne-le (ex: "Devoir maths - Pythagore")
+- Si le sujet est vague, utilise la matière (ex: "Révision cours de maths")
 - Langue: français
 
 MESSAGE DE L'ÉLÈVE:
@@ -25,7 +27,7 @@ MESSAGE DE L'ÉLÈVE:
 RÉPONSE DU TUTEUR (début):
 {assistantPreview}
 
-TITRE:`;
+Réponds UNIQUEMENT avec le titre, rien d'autre.`;
 
 class AutoTitleService {
   private readonly ai: GoogleGenAI;
@@ -74,6 +76,12 @@ class AutoTitleService {
       title = title.replace(/^["'«]|["'»]$/g, '').trim();
       if (title.length > 50) {
         title = title.slice(0, 47) + '...';
+      }
+
+      // Reject titles that are too short (likely incomplete generation)
+      if (title.length < 8) {
+        logger.warn('Auto-title too short, skipping', { sessionId, title, operation: 'auto-title:rejected' });
+        return;
       }
 
       await studySessionsRepository.update(sessionId, { topic: title });
