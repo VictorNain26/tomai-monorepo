@@ -35,32 +35,7 @@ export {
   type SchoolLevel,
   type EducationLevelType,
 } from './useParentDashboard';
-export {
-  useParentPronoteStatus,
-  useChildMappings,
-  useConnectPronote,
-  useDisconnectPronote,
-  useChildHomework,
-  useChildGrades,
-  useChildTimetable,
-  useChildPronote,
-  type ParentConnectionStatus,
-  type ChildMapping,
-  type PronoteHomework,
-  type PronoteGrade,
-  type PronoteTimetableEntry,
-} from './useParentPronote';
-export {
-  useStudentPronoteStatus,
-  useStudentHomework,
-  useStudentGrades,
-  useStudentTimetable,
-  useStudentPronote,
-  type StudentPronoteStatus,
-  type PronoteHomework as StudentPronoteHomework,
-  type PronoteGrade as StudentPronoteGrade,
-  type PronoteTimetableEntry as StudentPronoteTimetableEntry,
-} from './useStudentPronote';
+export { usePronote } from './usePronote';
 export {
   useTheme,
   type ThemeMode,
