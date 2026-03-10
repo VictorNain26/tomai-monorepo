@@ -20,7 +20,7 @@ import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { GeminiStreamChunk } from './gemini-types.js';
+import type { GeminiStreamChunk, PronoteContext } from './gemini-types.js';
 
 export interface ChatStreamRequest {
   userId: string;
@@ -31,6 +31,7 @@ export interface ChatStreamRequest {
   firstName?: string;
   fileIds: string[];
   userRole: 'student' | 'parent';
+  pronoteContext?: PronoteContext;
 }
 
 interface SessionContext {
@@ -119,6 +120,7 @@ class ChatOrchestrationService {
       firstName: request.firstName,
       sessionId: sessionCtx.sessionId,
       userRole: request.userRole,
+      pronoteContext: request.pronoteContext,
       cognitiveProfileSummary,
       learningContext,
       conversationSummary: sessionCtx.conversationSummary,

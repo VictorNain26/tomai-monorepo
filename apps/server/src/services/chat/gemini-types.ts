@@ -12,6 +12,12 @@ export interface HistoricalFileRef {
   mimeType?: string;
 }
 
+export interface PronoteContext {
+  homework?: Array<{ subject: string; description: string; dueDate: string; done: boolean }>;
+  recentGrades?: Array<{ subject: string; value: number | null; outOf: number; date: string }>;
+  todayTimetable?: Array<{ subject: string; startDate: string; endDate: string; canceled: boolean }>;
+}
+
 export interface StreamGenerationParams {
   userId: string;
   content: string;
@@ -23,6 +29,7 @@ export interface StreamGenerationParams {
   learningContext?: string | null;
   conversationSummary?: string | null;
   userRole: 'student' | 'parent';
+  pronoteContext?: PronoteContext;
   files?: AttachedFile[];
   conversationHistory: Array<{
     role: 'user' | 'assistant';
