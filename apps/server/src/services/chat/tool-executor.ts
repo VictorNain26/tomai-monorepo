@@ -33,7 +33,7 @@ const RETRY_DELAY_MS = 1500;
 /**
  * Execute un outil et retourne le résultat JSON.
  * Ne throw jamais — les erreurs sont encapsulées dans la réponse.
- * Les outils réseau (RAG, Pronote) bénéficient d'1 retry automatique.
+ * Les outils réseau (RAG) bénéficient d'1 retry automatique.
  */
 export async function executeTool(
   toolName: string,
