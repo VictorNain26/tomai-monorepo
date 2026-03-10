@@ -8,7 +8,7 @@ jest.mock('pawnote', () => ({
   loginQrCode: mockLoginQrCode,
   loginToken: mockLoginToken,
   createSessionHandle: mockCreateSessionHandle,
-  AccountKind: { PARENT: 2, STUDENT: 1 },
+  AccountKind: { PARENT: 7, STUDENT: 6 },
 }));
 
 const mockSetItemAsync = jest.fn();
@@ -26,24 +26,45 @@ beforeEach(() => jest.clearAllMocks());
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { pronoteSessionService: service } = require('@/services/pronote/pronote-session');
 
+type SessionService = {
+  connectWithQrCode: (
+    userId: string,
+    qrData: { jeton: string; login: string; url: string },
+    pin: string,
+    deviceUuid: string,
+  ) => Promise<{ success: boolean; error?: string; resources?: { name: string; id: string; className?: string }[] }>;
+  refreshSession: (
+    userId: string,
+    metadata: { instanceUrl: string; username: string; deviceUuid: string; accountKind: number },
+  ) => Promise<unknown>;
+  disconnect: (userId: string) => Promise<void>;
+};
+
+const typedService = service as SessionService;
+
 describe('PronoteSessionService', () => {
   describe('connectWithQrCode', () => {
     it('should login and store token in SecureStore', async () => {
-      const mockSession = {
-        instance: { url: 'https://demo.pronote.fr' },
+      const mockHandle = {
         user: {
           resources: [
             { name: 'Jean Dupont', id: '12345', className: '3eA' },
           ],
         },
-        getNextToken: jest.fn().mockReturnValue('next-token-abc'),
+        instance: { url: 'https://demo.pronote.fr' },
       };
-      const mockHandle = { id: 'handle-1' };
+      const mockRefreshInfo = {
+        token: 'next-token-abc',
+        url: 'https://demo.pronote.fr',
+        username: 'jean',
+        kind: 6,
+        navigatorIdentifier: 'mobile',
+      };
 
       mockCreateSessionHandle.mockReturnValue(mockHandle);
-      mockLoginQrCode.mockResolvedValue(mockSession);
+      mockLoginQrCode.mockResolvedValue(mockRefreshInfo);
 
-      const result = await (service as { connectWithQrCode: (...args: unknown[]) => Promise<{ success: boolean; resources?: { name: string; id: string; className?: string }[] }> }).connectWithQrCode(
+      const result = await typedService.connectWithQrCode(
         'user-1',
         { jeton: 'qr-jeton', login: 'qr-login', url: 'https://demo.pronote.fr' },
         '1234',
@@ -63,10 +84,12 @@ describe('PronoteSessionService', () => {
     });
 
     it('should handle BadCredentials error', async () => {
-      mockCreateSessionHandle.mockReturnValue({ id: 'handle' });
-      mockLoginQrCode.mockRejectedValue(new Error('BadCredentials'));
+      mockCreateSessionHandle.mockReturnValue({ user: { resources: [] }, instance: {} });
+      const error = new Error('BadCredentials');
+      error.name = 'BadCredentialsError';
+      mockLoginQrCode.mockRejectedValue(error);
 
-      const result = await (service as { connectWithQrCode: (...args: unknown[]) => Promise<{ success: boolean; error?: string }> }).connectWithQrCode(
+      const result = await typedService.connectWithQrCode(
         'user-1',
         { jeton: 'j', login: 'l', url: 'https://x.fr' },
         '0000',
@@ -78,10 +101,12 @@ describe('PronoteSessionService', () => {
     });
 
     it('should handle SessionExpired error', async () => {
-      mockCreateSessionHandle.mockReturnValue({ id: 'handle' });
-      mockLoginQrCode.mockRejectedValue(new Error('SessionExpired'));
+      mockCreateSessionHandle.mockReturnValue({ user: { resources: [] }, instance: {} });
+      const error = new Error('SessionExpired');
+      error.name = 'SessionExpiredError';
+      mockLoginQrCode.mockRejectedValue(error);
 
-      const result = await (service as { connectWithQrCode: (...args: unknown[]) => Promise<{ success: boolean; error?: string }> }).connectWithQrCode(
+      const result = await typedService.connectWithQrCode(
         'user-1',
         { jeton: 'j', login: 'l', url: 'https://x.fr' },
         '0000',
@@ -96,20 +121,26 @@ describe('PronoteSessionService', () => {
   describe('refreshSession', () => {
     it('should restore session from SecureStore token', async () => {
       mockGetItemAsync.mockResolvedValue('stored-token');
-      const mockSession = {
-        instance: { url: 'https://demo.pronote.fr' },
-        getNextToken: jest.fn().mockReturnValue('refreshed-token'),
+      const mockRefreshInfo = {
+        token: 'refreshed-token',
+        url: 'https://demo.pronote.fr',
+        username: 'jean',
+        kind: 6,
+        navigatorIdentifier: 'mobile',
       };
-      const mockHandle = { id: 'handle-2' };
+      const mockHandle = {
+        user: { resources: [] },
+        instance: { url: 'https://demo.pronote.fr' },
+      };
 
       mockCreateSessionHandle.mockReturnValue(mockHandle);
-      mockLoginToken.mockResolvedValue(mockSession);
+      mockLoginToken.mockResolvedValue(mockRefreshInfo);
 
-      const session = await (service as { refreshSession: (...args: unknown[]) => Promise<unknown> }).refreshSession('user-1', {
+      const session = await typedService.refreshSession('user-1', {
         instanceUrl: 'https://demo.pronote.fr',
         username: 'jean',
         deviceUuid: 'dev-1',
-        accountKind: 1,
+        accountKind: 6,
       });
 
       expect(session).not.toBeNull();
@@ -124,11 +155,11 @@ describe('PronoteSessionService', () => {
     it('should return null when no stored token', async () => {
       mockGetItemAsync.mockResolvedValue(null);
 
-      const session = await (service as { refreshSession: (...args: unknown[]) => Promise<unknown> }).refreshSession('user-1', {
+      const session = await typedService.refreshSession('user-1', {
         instanceUrl: 'https://demo.pronote.fr',
         username: 'jean',
         deviceUuid: 'dev-1',
-        accountKind: 1,
+        accountKind: 6,
       });
 
       expect(session).toBeNull();
@@ -137,7 +168,7 @@ describe('PronoteSessionService', () => {
 
   describe('disconnect', () => {
     it('should clear SecureStore token', async () => {
-      await (service as { disconnect: (userId: string) => Promise<void> }).disconnect('user-1');
+      await typedService.disconnect('user-1');
 
       expect(mockDeleteItemAsync).toHaveBeenCalledWith('pronote_token_user-1');
     });
