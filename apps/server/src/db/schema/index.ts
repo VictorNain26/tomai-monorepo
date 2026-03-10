@@ -2,7 +2,7 @@ import { relations } from 'drizzle-orm';
 import { user, session, account } from './auth.schema';
 import { studySessions, messages, costTracking, progress } from './learning.schema';
 import { learningDecks, studentCognitiveProfiles } from './learning-tools.schema';
-import { pronoteConnections, pronoteChildMappings } from './pronote.schema';
+import { pronoteCredentials } from './pronote.schema';
 import { files, sessionFiles } from './files.schema';
 
 // =============================================
@@ -35,14 +35,11 @@ export const userRelations = relations(user, ({ one, many }) => ({
   // Learning Tools (Flashcards, QCM, Vrai/Faux)
   learningDecks: many(learningDecks),
 
-  // Pronote Integration (parent-based architecture)
-  // Parent has the connection
-  pronoteConnection: one(pronoteConnections, {
+  // Pronote Integration (device-first, server = credential sync only)
+  pronoteCredentials: one(pronoteCredentials, {
     fields: [user.id],
-    references: [pronoteConnections.parentId],
+    references: [pronoteCredentials.userId],
   }),
-  // Child has mappings to parent's connection
-  pronoteChildMappings: many(pronoteChildMappings),
 
   // Cognitive Profile (agent-updated)
   cognitiveProfile: one(studentCognitiveProfiles, {
