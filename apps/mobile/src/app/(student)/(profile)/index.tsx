@@ -8,7 +8,7 @@
  * - Help
  */
 
-import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
@@ -24,6 +24,7 @@ import {
   School,
   UserCircle,
   FolderOpen,
+  Link2,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
@@ -31,7 +32,8 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import { TokenUsageCard } from '@/components/dashboard';
 import { useUser, useSession, signOut, hasParentSessionBackup, restoreParentSession } from '@/lib/auth';
-import { useStudentDashboard, useStudentPronote, useIconColors, useThemeColors } from '@/hooks';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { useStudentDashboard, usePronote, useIconColors, useThemeColors } from '@/hooks';
 import { bgColors, borderColors, shadows } from '@/lib/styles';
 import { useEffect, useState } from 'react';
 
@@ -62,10 +64,17 @@ export default function StudentProfileScreen() {
   const toast = useToast();
   const user = useUser();
   const { refetch: refetchSession } = useSession();
+  const { confirm, info } = useConfirm();
   const iconColors = useIconColors();
   const colors = useThemeColors();
   const { usage, isLoadingUsage } = useStudentDashboard();
-  const pronote = useStudentPronote();
+  const pronote = usePronote(user?.id ?? '');
+
+  // Age gating: students in seconde/premiere/terminale (typically >= 15) can self-connect
+  const LYCEE_LEVELS = ['seconde', 'premiere', 'terminale'];
+  const canSelfConnect = user?.schoolLevel
+    ? LYCEE_LEVELS.includes(user.schoolLevel)
+    : false;
 
   // Check if parent session is available (launched from parent account)
   const [hasParentBackup, setHasParentBackup] = useState(false);
@@ -78,47 +87,40 @@ export default function StudentProfileScreen() {
   // Uses refetch() to sync React state after stopping impersonation
   // @see https://github.com/better-auth/better-auth/discussions/3860
   async function handleReturnToParent() {
-    Alert.alert(
-      'Retour au compte parent',
-      'Voulez-vous revenir au compte parent ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Retour parent',
-          onPress: async () => {
-            setIsRestoringParent(true);
-            const restored = await restoreParentSession();
-            if (restored) {
-              // Refresh session state before navigation
-              await refetchSession();
-              router.replace('/(parent)/');
-            } else {
-              toast.error('Erreur', 'Impossible de restaurer la session parent');
-            }
-            setIsRestoringParent(false);
-          },
-        },
-      ]
-    );
+    const confirmed = await confirm({
+      title: 'Retour au compte parent',
+      message: 'Voulez-vous revenir au compte parent ?',
+      confirmLabel: 'Retour parent',
+    });
+    if (confirmed) {
+      setIsRestoringParent(true);
+      const restored = await restoreParentSession();
+      if (restored) {
+        await refetchSession();
+        router.replace('/(parent)/');
+      } else {
+        toast.error('Erreur', 'Impossible de restaurer la session parent');
+      }
+      setIsRestoringParent(false);
+    }
   }
 
   async function handleLogout() {
-    Alert.alert('Déconnexion', 'Voulez-vous vraiment vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Déconnexion',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          router.replace('/(auth)/login');
-        },
-      },
-    ]);
+    const confirmed = await confirm({
+      title: 'Déconnexion',
+      message: 'Voulez-vous vraiment vous déconnecter ?',
+      confirmLabel: 'Déconnexion',
+      variant: 'destructive',
+    });
+    if (confirmed) {
+      await signOut();
+      router.replace('/(auth)/login');
+    }
   }
 
   // Menu sections - updated paths for new structure
   const sections: MenuSection[] = [
-    // Pronote section (only if connected)
+    // Pronote section
     ...(pronote.isConnected
       ? [
           {
@@ -149,7 +151,22 @@ export default function StudentProfileScreen() {
             ],
           },
         ]
-      : []),
+      : canSelfConnect
+        ? [
+            {
+              title: 'Pronote',
+              items: [
+                {
+                  icon: <Link2 color={iconColors.primary} size={20} />,
+                  label: 'Connecter Pronote',
+                  sublabel: 'Scanne le QR code depuis Pronote',
+                  onPress: () => router.push('/(student)/(profile)/pronote-connect' as never),
+                  showChevron: true,
+                },
+              ],
+            },
+          ]
+        : []),
 
     // Account section
     {
@@ -185,7 +202,7 @@ export default function StudentProfileScreen() {
           icon: <HelpCircle color={iconColors.foreground} size={20} />,
           label: 'Aide et support',
           sublabel: 'Bientôt disponible',
-          onPress: () => Alert.alert('Aide', 'Pour toute question, contacte-nous à support@tomai.fr'),
+          onPress: () => info('Aide', 'Pour toute question, contacte-nous à support@tomai.fr'),
           showChevron: true,
         },
       ],
@@ -215,10 +232,10 @@ export default function StudentProfileScreen() {
             </View>
             <View className="flex-1">
               <Text variant="large">{user?.name ?? 'Élève'}</Text>
-              {pronote.isConnected && pronote.className && (
+              {pronote.isConnected && pronote.resources[0]?.className && (
                 <View className="mt-1 flex-row items-center gap-1">
                   <School color={iconColors.muted} size={14} />
-                  <Text variant="muted">{pronote.className}</Text>
+                  <Text variant="muted">{pronote.resources[0].className}</Text>
                 </View>
               )}
             </View>

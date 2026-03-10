@@ -22,8 +22,8 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
 import { ChildCard, CreateChildModal } from '@/components/parent';
-import { useParentDashboard, useIconColors, useThemeColors, type IChild, type ICreateChildData } from '@/hooks';
-import { useChildMappings } from '@/hooks/useParentPronote';
+import { useParentDashboard, useIconColors, useThemeColors, usePronote, type IChild, type ICreateChildData } from '@/hooks';
+import { useUser } from '@/lib/auth';
 import { bgColors } from '@/lib/styles';
 
 // ============================================================================
@@ -63,11 +63,12 @@ export default function ParentDashboard() {
     refresh,
   } = useParentDashboard();
 
-  // Fetch Pronote mappings to show status on child cards
-  const { data: pronoteMappings } = useChildMappings();
+  // Check Pronote mappings from device store
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
   const hasPronoteFor = useCallback(
-    (childId: string) => pronoteMappings?.some((m) => m.childId === childId) ?? false,
-    [pronoteMappings]
+    (childId: string) => pronote.resourceMappings[childId] !== undefined,
+    [pronote.resourceMappings]
   );
 
   const handleRefresh = useCallback(async () => {

@@ -16,7 +16,7 @@
  */
 
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -29,13 +29,15 @@ import {
   useChat,
   usePresignedUpload,
   useIconColors,
-  useStudentPronote,
+  usePronote,
   useSessionFiles,
   useThemeColors,
   type ChatMessage as ChatMessageType,
 } from '@/hooks';
+import { useUser } from '@/lib/auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { deleteChatSession, chatQueryKeys } from '@/hooks/chat/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { bgColors } from '@/lib/styles';
 
 // ============================================================================
@@ -81,6 +83,7 @@ function parseContext(contextParam?: string): ContextInfo {
 export default function ChatScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { confirm, info } = useConfirm();
   const params = useLocalSearchParams<Record<string, string>>();
   const iconColors = useIconColors();
   const colors = useThemeColors();
@@ -131,8 +134,9 @@ export default function ChatScreen() {
     }
   }, [isStreaming, isNearBottom, scrollToBottom]);
 
-  // Pronote data for suggestions
-  const pronote = useStudentPronote();
+  // Pronote data for suggestions and chat context
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
 
   // Compute contextual suggestions from Pronote homework
   const suggestions = useMemo(() => {
@@ -188,62 +192,51 @@ export default function ChatScreen() {
           preview: attachment.preview,
         });
       } else {
-        Alert.alert('Erreur', `Impossible d'envoyer le fichier "${fileName}". Verifie ta connexion et reessaie.`);
+        info('Erreur', `Impossible d'envoyer le fichier "${fileName}". Vérifie ta connexion et réessaie.`);
       }
     },
-    [uploadFile, addAttachment]
+    [uploadFile, addAttachment, info]
   );
 
   // Handle reset conversation
   const handleReset = useCallback(async () => {
-    Alert.alert(
-      'Nouvelle conversation',
-      'Commencer une nouvelle conversation ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Confirmer',
-          onPress: async () => {
-            const newSessionId = await resetSession();
-            if (newSessionId) {
-              queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations() });
-              router.setParams({
-                sessionId: newSessionId,
-                context: undefined,
-                prompt: undefined,
-              });
-            }
-          },
-        },
-      ]
-    );
-  }, [resetSession, router, queryClient]);
+    const confirmed = await confirm({
+      title: 'Nouvelle conversation',
+      message: 'Commencer une nouvelle conversation ?',
+    });
+    if (confirmed) {
+      const newSessionId = await resetSession();
+      if (newSessionId) {
+        queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations() });
+        router.setParams({
+          sessionId: newSessionId,
+          context: undefined,
+          prompt: undefined,
+        });
+      }
+    }
+  }, [resetSession, router, queryClient, confirm]);
 
   // Handle delete conversation
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!currentSessionId) return;
 
-    Alert.alert(
-      'Supprimer la conversation',
-      'Cette action est irréversible. Tous les messages et fichiers seront supprimés.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteChatSession(currentSessionId);
-              queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations() });
-              router.back();
-            } catch {
-              Alert.alert('Erreur', 'Impossible de supprimer la conversation');
-            }
-          },
-        },
-      ]
-    );
-  }, [currentSessionId, router, queryClient]);
+    const confirmed = await confirm({
+      title: 'Supprimer la conversation',
+      message: 'Cette action est irréversible. Tous les messages et fichiers seront supprimés.',
+      confirmLabel: 'Supprimer',
+      variant: 'destructive',
+    });
+    if (confirmed) {
+      try {
+        await deleteChatSession(currentSessionId);
+        queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations() });
+        router.back();
+      } catch {
+        info('Erreur', 'Impossible de supprimer la conversation');
+      }
+    }
+  }, [currentSessionId, router, queryClient, confirm, info]);
 
   // Inverted FlatList: reverse messages so newest appear at bottom
   const invertedMessages = useMemo(() => [...messages].reverse(), [messages]);

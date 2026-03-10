@@ -31,8 +31,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/toast';
 import { DeleteChildModal, ChildUsageCard } from '@/components/parent';
-import { useParentDashboard, useChildTokenUsage, useIconColors, useThemeColors } from '@/hooks';
-import { useChildPronote } from '@/hooks/useParentPronote';
+import { useParentDashboard, useChildTokenUsage, useIconColors, useThemeColors, usePronote } from '@/hooks';
+import { useUser } from '@/lib/auth';
 import { getLevelLabel } from '@/constants/levels';
 import { launchChildSession, useSession } from '@/lib/auth';
 import { bgColors, borderColors } from '@/lib/styles';
@@ -53,8 +53,28 @@ export default function ChildDetailScreen() {
     deleteChild,
     isDeleting,
   } = useParentDashboard();
-  const pronote = useChildPronote(id);
+  const user = useUser();
+  const pronoteHook = usePronote(user?.id ?? '');
   const tokenUsage = useChildTokenUsage({ childId: id });
+
+  // Derive child-specific pronote state from the unified hook
+  const isMapped = id ? pronoteHook.resourceMappings[id] !== undefined : false;
+  const childMapping = id && isMapped
+    ? {
+        pronoteChildName: pronoteHook.resources[pronoteHook.resourceMappings[id] ?? 0]?.name ?? '',
+        pronoteClassName: pronoteHook.resources[pronoteHook.resourceMappings[id] ?? 0]?.className,
+      }
+    : null;
+  const pronote = {
+    isConnected: pronoteHook.isConnected,
+    isMapped,
+    childMapping,
+    establishmentName: undefined as string | undefined,
+    lastSyncAt: undefined as string | undefined,
+    isLoading: false,
+    refresh: () => { /* no-op: device-first, no server refresh */ },
+    resources: pronoteHook.resources,
+  };
   const iconColors = useIconColors();
   const colors = useThemeColors();
 
