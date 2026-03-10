@@ -72,7 +72,6 @@
     "glob": "^11.0.3",
     "mammoth": "^1.11.0",
     "p-limit": "^7.1.1",
-    "pawnote": "^1.6.2",
     "pgvector": "^0.2.1",
     "postgres": "^3.4.7",
     "stripe": "^20.0.0",

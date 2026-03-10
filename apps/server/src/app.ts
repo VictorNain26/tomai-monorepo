@@ -26,7 +26,6 @@ import { stripeWebhookRoutes } from './routes/stripe-webhook.routes.js';
 import { revenuecatWebhookRoutes } from './routes/revenuecat-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { deckRoutes, cardRoutes, fsrsRoutes, fsrsExtraRoutes } from './routes/learning/index.js';
-import { pronoteRoutes } from './routes/pronote.routes.js';
 import { waitlistRoutes } from './routes/waitlist.routes.js';
 
 // Middleware
@@ -284,7 +283,6 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation
   .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau
   .use(fsrsExtraRoutes)     // FSRS: preview, reset, config
-  .use(pronoteRoutes)       // Pronote integration - Parent-based architecture
   .use(waitlistRoutes)      // Waitlist - Landing page email collection
 
 

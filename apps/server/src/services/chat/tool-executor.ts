@@ -6,7 +6,6 @@
  */
 
 import { ragService } from '../rag.service.js';
-import { pronoteService } from '../pronote.service.js';
 import { generateCards, type CardGenerationResult } from '../learning/card-generator.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { fsrsService } from '../fsrs.service.js';
@@ -27,9 +26,6 @@ export interface ToolExecutionContext {
 /** Tools that make network calls and benefit from a single retry */
 const RETRYABLE_TOOLS = new Set([
   'search_educational_content',
-  'get_student_homework',
-  'get_student_grades',
-  'get_student_timetable',
 ]);
 
 const RETRY_DELAY_MS = 1500;
@@ -107,13 +103,12 @@ async function executeToolOnce(
       return await executeRagSearch(args);
 
     case 'get_student_homework':
-      return await executeGetHomework(args, context);
-
     case 'get_student_grades':
-      return await executeGetGrades(context);
-
     case 'get_student_timetable':
-      return await executeGetTimetable(args, context);
+      return {
+        error: true,
+        message: "Les donnees Pronote sont fournies dans le contexte de la conversation, pas via un outil.",
+      };
 
     case 'generate_flashcards':
       return await executeGenerateFlashcards(args, context);
@@ -170,69 +165,6 @@ async function executeRagSearch(args: Record<string, unknown>): Promise<object> 
     bestMatchDomaine: result.bestMatchDomaine,
     chunks: result.semanticChunks,
     searchTimeMs: Date.now() - startTime,
-  };
-}
-
-async function executeGetHomework(
-  args: Record<string, unknown>,
-  context: ToolExecutionContext
-): Promise<object> {
-  const weekOffset = (args.weekOffset as number) ?? 0;
-
-  const homework = await pronoteService.getHomeworkForChild(context.userId, weekOffset);
-
-  if (homework === null) {
-    return {
-      error: true,
-      connected: false,
-      message: "L'élève n'a pas Pronote connecté. Tu ne peux pas accéder à ses devoirs.",
-    };
-  }
-
-  return {
-    homework,
-    count: homework.length,
-    weekOffset,
-  };
-}
-
-async function executeGetGrades(context: ToolExecutionContext): Promise<object> {
-  const grades = await pronoteService.getGradesForChild(context.userId);
-
-  if (grades === null) {
-    return {
-      error: true,
-      connected: false,
-      message: "L'élève n'a pas Pronote connecté. Tu ne peux pas accéder à ses notes.",
-    };
-  }
-
-  return {
-    grades,
-    count: grades.length,
-  };
-}
-
-async function executeGetTimetable(
-  args: Record<string, unknown>,
-  context: ToolExecutionContext
-): Promise<object> {
-  const weekOffset = (args.weekOffset as number) ?? 0;
-
-  const timetable = await pronoteService.getTimetableForChild(context.userId, weekOffset);
-
-  if (timetable === null) {
-    return {
-      error: true,
-      connected: false,
-      message: "L'élève n'a pas Pronote connecté. Tu ne peux pas accéder à son emploi du temps.",
-    };
-  }
-
-  return {
-    timetable,
-    count: timetable.length,
-    weekOffset,
   };
 }
 
