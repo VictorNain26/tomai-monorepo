@@ -27,6 +27,7 @@ import { revenuecatWebhookRoutes } from './routes/revenuecat-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { deckRoutes, cardRoutes, fsrsRoutes, fsrsExtraRoutes } from './routes/learning/index.js';
 import { waitlistRoutes } from './routes/waitlist.routes.js';
+import { pronoteSyncRoutes } from './routes/pronote-sync.routes.js';
 
 // Middleware
 import { logger } from './lib/observability.js';
@@ -284,6 +285,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau
   .use(fsrsExtraRoutes)     // FSRS: preview, reset, config
   .use(waitlistRoutes)      // Waitlist - Landing page email collection
+  .use(pronoteSyncRoutes)   // Pronote credential sync (device-first)
 
 
 // Export pour utilisation dans index.ts
