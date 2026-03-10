@@ -1,22 +1,44 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { getTreaty } from '@repo/api';
 
+const mockGetTreaty = getTreaty as jest.Mock;
+
 beforeEach(() => jest.clearAllMocks());
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { pronoteCredentialsSync: credentialsSync } = require('@/services/pronote/pronote-credentials');
 
+type CredSync = {
+  pushToServer: (input: {
+    token: string;
+    metadata: { instanceUrl: string; username: string; deviceUuid: string; accountKind: number };
+    tokenExpiresAt: string;
+  }) => Promise<boolean>;
+  pullFromServer: () => Promise<{
+    token: string;
+    metadata: { instanceUrl: string };
+    tokenExpiresAt: string;
+  } | null>;
+  removeFromServer: () => Promise<boolean>;
+};
+
+const typed = credentialsSync as CredSync;
+
+function setupMock(method: string, returnValue: unknown) {
+  const mockFn = jest.fn().mockResolvedValue(returnValue);
+  const credentials = { [method]: mockFn };
+  const pronote = { credentials };
+  const api = { pronote };
+  mockGetTreaty.mockReturnValue({ api });
+  return mockFn;
+}
+
 describe('PronoteCredentialsSync', () => {
   describe('pushToServer', () => {
     it('should call PUT with credentials', async () => {
-      const mockPut = jest.fn().mockResolvedValue({ data: { success: true }, error: null });
-      const treaty = getTreaty() as Record<string, unknown>;
-      const api = treaty.api as Record<string, unknown>;
-      const pronote = api.pronote as Record<string, unknown>;
-      const credentials = pronote.credentials as Record<string, unknown>;
-      (credentials.put as jest.Mock) = mockPut;
+      const mockPut = setupMock('put', { data: { success: true }, error: null });
 
-      const result = await (credentialsSync as { pushToServer: (input: Record<string, unknown>) => Promise<boolean> }).pushToServer({
+      const result = await typed.pushToServer({
         token: 'my-token',
         metadata: {
           instanceUrl: 'https://demo.pronote.fr',
@@ -40,7 +62,7 @@ describe('PronoteCredentialsSync', () => {
 
   describe('pullFromServer', () => {
     it('should return credentials from GET', async () => {
-      const mockGet = jest.fn().mockResolvedValue({
+      setupMock('get', {
         data: {
           token: 'server-token',
           metadata: '{"instanceUrl":"https://demo.pronote.fr","username":"jean","deviceUuid":"dev-1","accountKind":1}',
@@ -48,13 +70,8 @@ describe('PronoteCredentialsSync', () => {
         },
         error: null,
       });
-      const treaty = getTreaty() as Record<string, unknown>;
-      const api = treaty.api as Record<string, unknown>;
-      const pronote = api.pronote as Record<string, unknown>;
-      const credentials = pronote.credentials as Record<string, unknown>;
-      (credentials.get as jest.Mock) = mockGet;
 
-      const result = await (credentialsSync as { pullFromServer: () => Promise<{ token: string; metadata: { instanceUrl: string }; tokenExpiresAt: string } | null> }).pullFromServer();
+      const result = await typed.pullFromServer();
 
       expect(result).not.toBeNull();
       expect(result?.token).toBe('server-token');
@@ -62,17 +79,12 @@ describe('PronoteCredentialsSync', () => {
     });
 
     it('should return null on error', async () => {
-      const mockGet = jest.fn().mockResolvedValue({
+      setupMock('get', {
         data: null,
         error: { status: 404, value: { message: 'Not found' } },
       });
-      const treaty = getTreaty() as Record<string, unknown>;
-      const api = treaty.api as Record<string, unknown>;
-      const pronote = api.pronote as Record<string, unknown>;
-      const credentials = pronote.credentials as Record<string, unknown>;
-      (credentials.get as jest.Mock) = mockGet;
 
-      const result = await (credentialsSync as { pullFromServer: () => Promise<unknown> }).pullFromServer();
+      const result = await typed.pullFromServer();
 
       expect(result).toBeNull();
     });
@@ -80,14 +92,9 @@ describe('PronoteCredentialsSync', () => {
 
   describe('removeFromServer', () => {
     it('should call DELETE', async () => {
-      const mockDelete = jest.fn().mockResolvedValue({ data: { success: true }, error: null });
-      const treaty = getTreaty() as Record<string, unknown>;
-      const api = treaty.api as Record<string, unknown>;
-      const pronote = api.pronote as Record<string, unknown>;
-      const credentials = pronote.credentials as Record<string, unknown>;
-      (credentials.delete as jest.Mock) = mockDelete;
+      const mockDelete = setupMock('delete', { data: { success: true }, error: null });
 
-      const result = await (credentialsSync as { removeFromServer: () => Promise<boolean> }).removeFromServer();
+      const result = await typed.removeFromServer();
 
       expect(result).toBe(true);
       expect(mockDelete).toHaveBeenCalled();
