@@ -10,7 +10,7 @@
  */
 
 import { memo, useCallback, useEffect } from 'react';
-import { View, TouchableOpacity, Image, Alert, Pressable } from 'react-native';
+import { View, TouchableOpacity, Image, Pressable } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import Animated, {
   useSharedValue,
@@ -32,6 +32,7 @@ import {
 import { MarkdownContent } from './MarkdownContent';
 import { FileAttachmentCard } from './FileAttachmentCard';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useTextToSpeech, useIconColors, useThemeColors } from '@/hooks';
 import type { ChatMessage as ChatMessageType } from '@/hooks';
 import { bgColors } from '@/lib/styles';
@@ -81,6 +82,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
   const isThinking = !isUser && isStreaming && message.content.length === 0;
   const tts = useTextToSpeech();
   const iconColors = useIconColors();
+  const { confirm } = useConfirm();
 
   // Can speak if assistant message with content and not streaming
   const canSpeak = !isUser && message.content.length > 0 && !isStreaming;
@@ -90,20 +92,20 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
     tts.toggle(stripMarkdownForTTS(message.content));
   };
 
-  const handleLongPress = useCallback(() => {
+  const handleLongPress = useCallback(async () => {
     if (message.content.length === 0) return;
-    Alert.alert(
-      'Message',
-      undefined,
-      [
+    const confirmed = await confirm({
+      title: 'Message',
+      actions: [
         {
-          text: 'Copier',
+          label: 'Copier',
+          variant: 'default',
           onPress: () => { void Clipboard.setStringAsync(message.content); },
         },
-        { text: 'Annuler', style: 'cancel' },
-      ]
-    );
-  }, [message.content]);
+      ],
+    });
+    void confirmed;
+  }, [message.content, confirm]);
 
   return (
     <View

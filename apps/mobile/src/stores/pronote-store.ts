@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { MMKV } from 'react-native-mmkv';
+import { createMMKV } from 'react-native-mmkv';
 import type {
   PronoteMetadata,
   PronoteResource,
@@ -9,12 +9,12 @@ import type {
   PronoteTimetableEntry,
 } from '@/services/pronote/pronote-types';
 
-const mmkv = new MMKV({ id: 'pronote-store' });
+const mmkv = createMMKV({ id: 'pronote-store' });
 
 const mmkvStorage: StateStorage = {
   getItem: (name: string) => mmkv.getString(name) ?? null,
   setItem: (name: string, value: string) => mmkv.set(name, value),
-  removeItem: (name: string) => mmkv.delete(name),
+  removeItem: (name: string) => { mmkv.remove(name); },
 };
 
 interface PronoteState {

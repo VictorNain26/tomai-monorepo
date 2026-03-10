@@ -3,9 +3,8 @@ import { getTreaty } from '@repo/api';
 
 const mockGetTreaty = getTreaty as jest.Mock;
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => { jest.clearAllMocks(); });
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { pronoteCredentialsSync: credentialsSync } = require('@/services/pronote/pronote-credentials');
 
 type CredSync = {
@@ -25,7 +24,7 @@ type CredSync = {
 const typed = credentialsSync as CredSync;
 
 function setupMock(method: string, returnValue: unknown) {
-  const mockFn = jest.fn().mockResolvedValue(returnValue);
+  const mockFn = jest.fn<() => Promise<unknown>>().mockResolvedValue(returnValue);
   const credentials = { [method]: mockFn };
   const pronote = { credentials };
   const api = { pronote };

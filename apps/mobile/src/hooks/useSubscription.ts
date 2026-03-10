@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import {
   getCustomerInfo,
   getCurrentOffering,
@@ -84,6 +84,7 @@ export interface SubscriptionActions {
  * ```
  */
 export function useSubscription(): SubscriptionState & SubscriptionActions {
+  const { info: showInfo } = useConfirm();
   const [isLoading, setIsLoading] = useState(true);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [offering, setOffering] = useState<Offering | null>(null);
@@ -134,20 +135,17 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
   const purchase = useCallback(async (pkg: Package): Promise<boolean> => {
     // Purchases not available in Expo Go
     if (isExpoGo) {
-      Alert.alert(
-        'Non disponible',
-        'Les achats in-app ne sont pas disponibles dans Expo Go. Utilisez un development build pour tester.'
-      );
+      showInfo('Non disponible', 'Les achats in-app ne sont pas disponibles dans Expo Go. Utilisez un development build pour tester.');
       return false;
     }
 
     try {
       setIsLoading(true);
-      const info = await purchasePackage(pkg);
+      const result = await purchasePackage(pkg);
 
-      if (info) {
-        setCustomerInfo(info as CustomerInfo);
-        return info.entitlements.active[ENTITLEMENT_ID] !== undefined;
+      if (result) {
+        setCustomerInfo(result as CustomerInfo);
+        return result.entitlements.active[ENTITLEMENT_ID] !== undefined;
       }
 
       return false; // User cancelled
@@ -155,38 +153,32 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
       if (__DEV__) {
         console.error('[useSubscription] Purchase failed:', error);
       }
-      Alert.alert(
-        'Erreur',
-        "L'achat a échoué. Veuillez réessayer."
-      );
+      showInfo('Erreur', "L'achat a échoué. Veuillez réessayer.");
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [isExpoGo]);
+  }, [isExpoGo, showInfo]);
 
   // Restore purchases
   const restore = useCallback(async (): Promise<boolean> => {
     // Restore not available in Expo Go
     if (isExpoGo) {
-      Alert.alert(
-        'Non disponible',
-        'La restauration des achats n\'est pas disponible dans Expo Go.'
-      );
+      showInfo('Non disponible', 'La restauration des achats n\'est pas disponible dans Expo Go.');
       return false;
     }
 
     try {
       setIsLoading(true);
-      const info = await restorePurchases();
-      setCustomerInfo(info as CustomerInfo);
+      const result = await restorePurchases();
+      setCustomerInfo(result as CustomerInfo);
 
-      const restored = info.entitlements.active[ENTITLEMENT_ID] !== undefined;
+      const restored = result.entitlements.active[ENTITLEMENT_ID] !== undefined;
 
       if (restored) {
-        Alert.alert('Succès', 'Vos achats ont été restaurés.');
+        showInfo('Succès', 'Vos achats ont été restaurés.');
       } else {
-        Alert.alert('Info', 'Aucun achat à restaurer.');
+        showInfo('Info', 'Aucun achat à restaurer.');
       }
 
       return restored;
@@ -194,15 +186,12 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
       if (__DEV__) {
         console.error('[useSubscription] Restore failed:', error);
       }
-      Alert.alert(
-        'Erreur',
-        'La restauration a échoué. Veuillez réessayer.'
-      );
+      showInfo('Erreur', 'La restauration a échoué. Veuillez réessayer.');
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [isExpoGo]);
+  }, [isExpoGo, showInfo]);
 
   return {
     isLoading,

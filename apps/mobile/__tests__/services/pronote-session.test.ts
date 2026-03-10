@@ -1,8 +1,11 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
-const mockLoginQrCode = jest.fn();
-const mockLoginToken = jest.fn();
-const mockCreateSessionHandle = jest.fn();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockLoginQrCode = jest.fn<(...args: any[]) => any>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockLoginToken = jest.fn<(...args: any[]) => any>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockCreateSessionHandle = jest.fn<(...args: any[]) => any>();
 
 jest.mock('pawnote', () => ({
   loginQrCode: mockLoginQrCode,
@@ -11,9 +14,12 @@ jest.mock('pawnote', () => ({
   AccountKind: { PARENT: 7, STUDENT: 6 },
 }));
 
-const mockSetItemAsync = jest.fn();
-const mockGetItemAsync = jest.fn();
-const mockDeleteItemAsync = jest.fn();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockSetItemAsync = jest.fn<(...args: any[]) => any>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockGetItemAsync = jest.fn<(...args: any[]) => any>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockDeleteItemAsync = jest.fn<(...args: any[]) => any>();
 
 jest.mock('expo-secure-store', () => ({
   setItemAsync: mockSetItemAsync,
@@ -21,9 +27,8 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: mockDeleteItemAsync,
 }));
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => { jest.clearAllMocks(); });
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { pronoteSessionService: service } = require('@/services/pronote/pronote-session');
 
 type SessionService = {

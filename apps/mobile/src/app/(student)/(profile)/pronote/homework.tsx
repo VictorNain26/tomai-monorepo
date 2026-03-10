@@ -12,23 +12,24 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { HomeworkView } from '@/components/pronote';
-import { useStudentHomework, useIconColors, useThemeColors } from '@/hooks';
+import { usePronote, useIconColors, useThemeColors } from '@/hooks';
+import { useUser } from '@/lib/auth';
 import { getWeekLabel } from '@/lib/pronote-helpers';
 
 export default function HomeworkScreen() {
   const router = useRouter();
   const iconColors = useIconColors();
   const colors = useThemeColors();
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
   const [weekOffset, setWeekOffset] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data: homework, isLoading, refetch } = useStudentHomework(weekOffset);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await pronote.fetchHomework();
     setRefreshing(false);
-  }, [refetch]);
+  }, [pronote]);
 
   // Navigate to Tom chat with homework context
   const handleAskTom = (subject: string, description: string, homeworkId: string) => {
@@ -86,8 +87,8 @@ export default function HomeworkScreen() {
         }
       >
         <HomeworkView
-          homework={homework}
-          isLoading={isLoading}
+          homework={pronote.homework}
+          isLoading={false}
           onAskTom={handleAskTom}
         />
       </ScrollView>

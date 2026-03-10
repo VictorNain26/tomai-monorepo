@@ -4,17 +4,16 @@ import { act } from '@testing-library/react-native';
 jest.mock('react-native-mmkv', () => {
   const store = new Map<string, string>();
   return {
-    MMKV: jest.fn().mockImplementation(() => ({
+    createMMKV: () => ({
       set: (key: string, val: string) => store.set(key, val),
       getString: (key: string) => store.get(key),
-      delete: (key: string) => store.delete(key),
+      remove: (key: string) => store.delete(key),
       contains: (key: string) => store.has(key),
       clearAll: () => store.clear(),
-    })),
+    }),
   };
 });
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { usePronoteStore } = require('@/stores/pronote-store');
 
 type StoreType = {

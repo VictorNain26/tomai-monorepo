@@ -37,11 +37,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
 
-  // Navigation bar: fully transparent, no contrast scrim
-  androidNavigationBar: {
-    enforceContrast: false,
-  },
-
   // Android configuration
   android: {
     package: 'fr.tomia.mobile',

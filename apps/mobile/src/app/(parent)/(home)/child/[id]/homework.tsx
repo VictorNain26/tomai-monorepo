@@ -12,7 +12,8 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { HomeworkView } from '@/components/pronote';
-import { useChildHomework, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { usePronote, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { useUser } from '@/lib/auth';
 import { getWeekLabel } from '@/lib/pronote-helpers';
 
 export default function ChildHomeworkScreen() {
@@ -23,16 +24,16 @@ export default function ChildHomeworkScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
   const { children } = useParentDashboard();
   const child = children.find((c) => c.id === id);
 
-  const { data: homework, isLoading, refetch } = useChildHomework(id, weekOffset);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await pronote.fetchHomework();
     setRefreshing(false);
-  }, [refetch]);
+  }, [pronote]);
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
@@ -85,7 +86,7 @@ export default function ChildHomeworkScreen() {
           />
         }
       >
-        <HomeworkView homework={homework} isLoading={isLoading} />
+        <HomeworkView homework={pronote.homework} isLoading={false} />
       </ScrollView>
     </SafeAreaView>
   );

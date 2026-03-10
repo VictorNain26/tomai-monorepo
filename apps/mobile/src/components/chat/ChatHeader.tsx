@@ -1,7 +1,8 @@
-import { View, TouchableOpacity, Alert } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { ChevronLeft, MoreVertical, FolderOpen } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { TomAvatar } from '@/components/common';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useIconColors, useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
@@ -32,6 +33,7 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const iconColors = useIconColors();
   const colors = useThemeColors();
+  const { confirm } = useConfirm();
 
   return (
     <View className="flex-row items-center gap-2 border-b border-slate-200 dark:border-slate-700 px-2 py-3">
@@ -78,11 +80,13 @@ export function ChatHeader({
 
           <TouchableOpacity
             onPress={() => {
-              Alert.alert('Options', undefined, [
-                { text: 'Nouvelle conversation', onPress: onReset },
-                { text: 'Supprimer', onPress: onDelete, style: 'destructive' },
-                { text: 'Annuler', style: 'cancel' },
-              ]);
+              void confirm({
+                title: 'Options',
+                actions: [
+                  { label: 'Nouvelle conversation', variant: 'outline', onPress: onReset },
+                  { label: 'Supprimer', variant: 'destructive', onPress: onDelete },
+                ],
+              });
             }}
             className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
             accessibilityLabel="Options de conversation"

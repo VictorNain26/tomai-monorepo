@@ -5,12 +5,21 @@
  * All data lives on-device (Zustand/MMKV); server only stores credentials backup.
  *
  * Data flow:
- * 1. QR scan → pawnote login → token stored in SecureStore
- * 2. Refresh: token → pawnote session → fetch homework/grades/timetable → store
+ * 1. QR scan -> pawnote login -> token stored in SecureStore
+ * 2. Refresh: token -> pawnote session -> fetch homework/grades/timetable -> store
  * 3. Credentials synced to server as encrypted backup
  */
 
 import { useCallback, useMemo } from 'react';
+import {
+  AccountKind,
+  GradeKind,
+  assignmentsFromIntervals,
+  gradesOverview,
+  timetableFromIntervals,
+  TabLocation,
+  type SessionHandle,
+} from 'pawnote';
 import { usePronoteStore } from '@/stores/pronote-store';
 import { pronoteSessionService } from '@/services/pronote/pronote-session';
 import { pronoteCredentialsSync } from '@/services/pronote/pronote-credentials';
@@ -32,6 +41,14 @@ function isCacheStale(lastFetch: string | null, ttl: number): boolean {
   return Date.now() - new Date(lastFetch).getTime() > ttl;
 }
 
+/** Get the current period from session handle (defaults to first available period) */
+function getCurrentPeriod(handle: SessionHandle) {
+  const gradesTab = handle.userResource.tabs.get(TabLocation.Grades);
+  if (gradesTab?.defaultPeriod) return gradesTab.defaultPeriod;
+  if (gradesTab?.periods && gradesTab.periods.length > 0) return gradesTab.periods[0];
+  return null;
+}
+
 export function usePronote(userId: string) {
   const store = usePronoteStore();
 
@@ -50,7 +67,7 @@ export function usePronote(userId: string) {
           instanceUrl: qrData.url,
           username: qrData.login,
           deviceUuid,
-          accountKind: 3, // parent account type in pawnote
+          accountKind: AccountKind.PARENT,
         });
         store.setResources(result.resources);
 
@@ -61,7 +78,7 @@ export function usePronote(userId: string) {
             instanceUrl: qrData.url,
             username: qrData.login,
             deviceUuid,
-            accountKind: 3,
+            accountKind: AccountKind.PARENT,
           },
           tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         });
@@ -79,7 +96,7 @@ export function usePronote(userId: string) {
   }, [userId, store]);
 
   const fetchHomework = useCallback(
-    async (_weekOffset?: number) => {
+    async () => {
       if (!store.metadata) return;
       if (!isCacheStale(store.lastHomeworkFetch, HOMEWORK_TTL)) return;
 
@@ -87,19 +104,18 @@ export function usePronote(userId: string) {
       if (!handle) return;
 
       try {
-        const { assignmentsFromIntervals, use } = await import('pawnote');
         const now = new Date();
         const from = new Date(now);
         from.setDate(from.getDate() - 7);
         const to = new Date(now);
         to.setDate(to.getDate() + 14);
 
-        const assignments = await use(handle, assignmentsFromIntervals, { from, to });
+        const assignments = await assignmentsFromIntervals(handle, from, to);
         const homework: PronoteHomework[] = assignments.map((a) => ({
-          id: String(a.id ?? `hw-${a.subject}-${a.dueDate.getTime()}`),
-          subject: a.subject,
+          id: a.id,
+          subject: a.subject.name,
           description: a.description,
-          dueDate: a.dueDate.toISOString(),
+          dueDate: a.deadline.toISOString(),
           done: a.done,
           difficulty: a.difficulty ?? 0,
         }));
@@ -120,20 +136,22 @@ export function usePronote(userId: string) {
     if (!handle) return;
 
     try {
-      const { gradesOverview, use } = await import('pawnote');
-      const overview = await use(handle, gradesOverview);
+      const period = getCurrentPeriod(handle);
+      if (!period) return;
+
+      const overview = await gradesOverview(handle, period);
 
       const grades: PronoteGrade[] = overview.grades.map((g) => ({
-        id: String(g.id ?? `gr-${g.subject}-${g.date.getTime()}`),
-        subject: g.subject,
-        value: g.value ?? null,
-        outOf: g.outOf,
+        id: g.id,
+        subject: g.subject.name,
+        value: g.value.kind === GradeKind.Grade ? g.value.points : null,
+        outOf: g.outOf.points,
         coefficient: g.coefficient,
         date: g.date.toISOString(),
-        description: g.comment ?? '',
-        average: g.average,
-        max: g.max,
-        min: g.min,
+        description: g.comment,
+        average: g.average ? g.average.points : undefined,
+        max: g.max ? g.max.points : undefined,
+        min: g.min ? g.min.points : undefined,
       }));
 
       store.setGrades(grades);
@@ -143,7 +161,7 @@ export function usePronote(userId: string) {
   }, [userId, store]);
 
   const fetchTimetable = useCallback(
-    async (_weekOffset?: number) => {
+    async () => {
       if (!store.metadata) return;
       if (!isCacheStale(store.lastTimetableFetch, TIMETABLE_TTL)) return;
 
@@ -151,24 +169,25 @@ export function usePronote(userId: string) {
       if (!handle) return;
 
       try {
-        const { timetableFromIntervals, use } = await import('pawnote');
         const now = new Date();
         const from = new Date(now);
         from.setHours(0, 0, 0, 0);
         const to = new Date(now);
         to.setDate(to.getDate() + 7);
 
-        const entries = await use(handle, timetableFromIntervals, { from, to });
-        const timetable: PronoteTimetableEntry[] = entries.map((e) => ({
-          id: String(e.id ?? `tt-${e.startDate.getTime()}`),
-          subject: e.subject,
-          teacherNames: e.teacherNames ?? [],
-          classrooms: e.classrooms ?? [],
-          startDate: e.startDate.toISOString(),
-          endDate: e.endDate.toISOString(),
-          canceled: e.canceled ?? false,
-          status: e.status,
-        }));
+        const result = await timetableFromIntervals(handle, from, to);
+        const timetable: PronoteTimetableEntry[] = result.classes
+          .filter((c): c is typeof c & { is: 'lesson' } => c.is === 'lesson')
+          .map((e) => ({
+            id: e.id,
+            subject: e.subject?.name,
+            teacherNames: e.teacherNames,
+            classrooms: e.classrooms,
+            startDate: e.startDate.toISOString(),
+            endDate: e.endDate.toISOString(),
+            canceled: e.canceled,
+            status: e.status,
+          }));
 
         store.setTimetable(timetable);
       } catch {

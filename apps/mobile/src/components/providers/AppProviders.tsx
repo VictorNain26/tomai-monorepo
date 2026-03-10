@@ -10,7 +10,6 @@
  */
 
 import { type ReactNode } from 'react';
-import { View } from 'react-native';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 
 interface AppProvidersProps {
@@ -19,8 +18,8 @@ interface AppProvidersProps {
 
 export function AppProviders({ children }: AppProvidersProps) {
   return (
-    <View className="flex-1">
-      <ErrorBoundary>{children}</ErrorBoundary>
-    </View>
+    <ErrorBoundary>
+      {children}
+    </ErrorBoundary>
   );
 }

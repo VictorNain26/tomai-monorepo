@@ -7,7 +7,7 @@
  * - Help
  */
 
-import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
@@ -24,6 +24,7 @@ import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUser, signOut } from '@/lib/auth';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useIsPro, useIconColors, useThemeColors } from '@/hooks';
 import { bgColors, borderColors } from '@/lib/styles';
 
@@ -51,22 +52,22 @@ interface MenuItem {
 export default function ParentProfileScreen() {
   const router = useRouter();
   const user = useUser();
+  const { confirm } = useConfirm();
   const iconColors = useIconColors();
   const colors = useThemeColors();
   const { isPro, isLoading: isLoadingPro } = useIsPro();
 
   async function handleLogout() {
-    Alert.alert('Déconnexion', 'Voulez-vous vraiment vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Déconnexion',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          router.replace('/(auth)/login');
-        },
-      },
-    ]);
+    const confirmed = await confirm({
+      title: 'Déconnexion',
+      message: 'Voulez-vous vraiment vous déconnecter ?',
+      confirmLabel: 'Déconnexion',
+      variant: 'destructive',
+    });
+    if (confirmed) {
+      await signOut();
+      router.replace('/(auth)/login');
+    }
   }
 
   // Menu sections

@@ -25,7 +25,8 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useChildTimetable, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { usePronote, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { useUser } from '@/lib/auth';
 import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
@@ -97,20 +98,21 @@ export default function ChildTimetableScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
   const { children } = useParentDashboard();
   const child = children.find((c) => c.id === id);
 
-  const { data: timetable, isLoading, refetch } = useChildTimetable(id, weekOffset);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await pronote.fetchTimetable();
     setRefreshing(false);
-  }, [refetch]);
+  }, [pronote]);
 
   // Group by day and sort
+  const timetable = pronote.timetable;
   const dayData = useMemo(() => {
-    if (!timetable) return [];
+    if (timetable.length === 0) return [];
 
     const grouped = groupByDay(timetable);
     return Object.entries(grouped)
@@ -174,7 +176,7 @@ export default function ChildTimetableScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {isLoading ? (
+        {timetable.length === 0 && !pronote.isConnected ? (
           <View className="gap-4 p-4">
             {[1, 2, 3].map((i) => (
               <View key={i}>

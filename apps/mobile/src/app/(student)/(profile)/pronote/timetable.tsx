@@ -25,7 +25,8 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useStudentTimetable, useIconColors, useThemeColors } from '@/hooks';
+import { usePronote, useIconColors, useThemeColors } from '@/hooks';
+import { useUser } from '@/lib/auth';
 import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
@@ -94,19 +95,21 @@ export default function TimetableScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
   const iconColors = useIconColors();
   const colors = useThemeColors();
-  const { data: timetable, isLoading, refetch } = useStudentTimetable(weekOffset);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await pronote.fetchTimetable();
     setRefreshing(false);
-  }, [refetch]);
+  }, [pronote]);
 
   // Group by day and sort
+  const timetable = pronote.timetable;
   const dayData = useMemo(() => {
-    if (!timetable) return [];
+    if (timetable.length === 0) return [];
 
     const grouped = groupByDay(timetable);
     return Object.entries(grouped)
@@ -163,7 +166,7 @@ export default function TimetableScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {isLoading ? (
+        {timetable.length === 0 && !pronote.isConnected ? (
           // Loading skeleton
           <View className="gap-4 p-4">
             {[1, 2, 3].map((i) => (

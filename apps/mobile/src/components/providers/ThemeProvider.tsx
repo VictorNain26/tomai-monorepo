@@ -5,7 +5,6 @@
  * Dark mode uses NativeWind v5 dark: variant + Appearance.setColorScheme().
  */
 
-import { View } from 'react-native';
 import { useThemeProvider, ThemeContext } from '@/hooks/useTheme';
 
 interface ThemeProviderProps {
@@ -17,9 +16,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   return (
     <ThemeContext.Provider value={theme}>
-      <View className="flex-1">
-        {children}
-      </View>
+      {children}
     </ThemeContext.Provider>
   );
 }

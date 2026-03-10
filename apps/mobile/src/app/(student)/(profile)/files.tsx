@@ -5,7 +5,7 @@
  * Allows viewing, sharing, and deleting documents.
  */
 
-import { View, TouchableOpacity, Alert } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
@@ -19,6 +19,7 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useUserFiles, useIconColors, useThemeColors, type LibraryFile } from '@/hooks';
 import { bgColors, shadows } from '@/lib/styles';
 import { getTreaty, unwrap } from '@repo/api';
@@ -66,31 +67,27 @@ function getSubjectLabel(subject: string | null): string | null {
 
 export default function FilesScreen() {
   const router = useRouter();
+  const { confirm, info } = useConfirm();
   const iconColors = useIconColors();
   const colors = useThemeColors();
   const queryClient = useQueryClient();
   const { files, isLoading, refetch } = useUserFiles();
 
   async function handleDelete(file: LibraryFile) {
-    Alert.alert(
-      'Supprimer le fichier',
-      `Supprimer "${file.fileName}" ? Cette action est irréversible.`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              unwrap(await getTreaty().api.upload.file({ fileId: file.id }).delete());
-              void queryClient.invalidateQueries({ queryKey: filesQueryKeys.library() });
-            } catch {
-              Alert.alert('Erreur', 'Impossible de supprimer le fichier');
-            }
-          },
-        },
-      ]
-    );
+    const confirmed = await confirm({
+      title: 'Supprimer le fichier',
+      message: `Supprimer "${file.fileName}" ? Cette action est irréversible.`,
+      confirmLabel: 'Supprimer',
+      variant: 'destructive',
+    });
+    if (confirmed) {
+      try {
+        unwrap(await getTreaty().api.upload.file({ fileId: file.id }).delete());
+        void queryClient.invalidateQueries({ queryKey: filesQueryKeys.library() });
+      } catch {
+        info('Erreur', 'Impossible de supprimer le fichier');
+      }
+    }
   }
 
   function renderFile({ item }: { item: LibraryFile }) {

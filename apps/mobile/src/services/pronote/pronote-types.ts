@@ -8,7 +8,7 @@ export interface PronoteMetadata {
   instanceUrl: string;
   username: string;
   deviceUuid: string;
-  accountKind: number;
+  accountKind: 6 | 7 | 8; // pawnote AccountKind: STUDENT=6, PARENT=7, TEACHER=8
 }
 
 export interface PronoteResource {

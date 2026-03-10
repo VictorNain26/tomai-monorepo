@@ -6,13 +6,14 @@
  */
 
 import { useCallback } from 'react';
-import { View, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { Plus, MessageCircle, Trash2 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useConversations, useIconColors, useThemeColors, type Conversation } from '@/hooks';
 import { shadows } from '@/lib/styles';
 
@@ -112,6 +113,7 @@ function ConversationItem({
 
 export default function ConversationsScreen() {
   const router = useRouter();
+  const { confirm } = useConfirm();
   const colors = useThemeColors();
   const iconColors = useIconColors();
   const {
@@ -145,22 +147,19 @@ export default function ConversationsScreen() {
   }, [createConversation, router]);
 
   const handleDelete = useCallback(
-    (conversation: Conversation) => {
+    async (conversation: Conversation) => {
       const title = conversation.title ?? 'cette conversation';
-      Alert.alert(
-        'Supprimer',
-        `Supprimer "${title}" ? Cette action est irreversible.`,
-        [
-          { text: 'Annuler', style: 'cancel' },
-          {
-            text: 'Supprimer',
-            style: 'destructive',
-            onPress: () => deleteConversation(conversation.id),
-          },
-        ],
-      );
+      const confirmed = await confirm({
+        title: 'Supprimer',
+        message: `Supprimer "${title}" ? Cette action est irréversible.`,
+        confirmLabel: 'Supprimer',
+        variant: 'destructive',
+      });
+      if (confirmed) {
+        deleteConversation(conversation.id);
+      }
     },
-    [deleteConversation],
+    [deleteConversation, confirm],
   );
 
   const renderItem = useCallback(

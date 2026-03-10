@@ -8,7 +8,7 @@
 import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   School,
@@ -89,7 +89,7 @@ export default function ChildDetailScreen() {
   );
 
   // Delete child handler - must be defined before early returns
-  const handleDeleteChild = useCallback(async () => {
+  const handleDeleteChild = async () => {
     if (!id) return;
     try {
       await deleteChild(id);
@@ -102,12 +102,12 @@ export default function ChildDetailScreen() {
         error instanceof Error ? error.message : 'Impossible de supprimer le compte'
       );
     }
-  }, [id, deleteChild, router, toast]);
+  };
 
   // Launch child session handler - direct launch without confirmation
   // Uses refetch() to sync React state after impersonation
   // @see https://github.com/better-auth/better-auth/discussions/3860
-  const handleLaunchSession = useCallback(async () => {
+  const handleLaunchSession = async () => {
     if (!id || !child) return;
 
     setIsLaunching(true);
@@ -121,7 +121,7 @@ export default function ChildDetailScreen() {
       toast.error('Erreur', result.error ?? 'Impossible de lancer la session');
     }
     setIsLaunching(false);
-  }, [id, child, router, toast, refetchSession]);
+  };
 
   // Loading state
   if (isLoadingChildren || !id) {
