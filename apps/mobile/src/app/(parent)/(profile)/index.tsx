@@ -12,7 +12,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   Settings,
-  HelpCircle,
+  School,
   LogOut,
   ChevronRight,
   Crown,
@@ -25,7 +25,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUser, signOut } from '@/lib/auth';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { useIsPro, useIconColors, useThemeColors } from '@/hooks';
+import { useIsPro, useIconColors, useThemeColors, usePronote } from '@/hooks';
 import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
@@ -56,6 +56,7 @@ export default function ParentProfileScreen() {
   const iconColors = useIconColors();
   const colors = useThemeColors();
   const { isPro, isLoading: isLoadingPro } = useIsPro();
+  const pronote = usePronote(user?.id ?? '');
 
   async function handleLogout() {
     const confirmed = await confirm({
@@ -90,30 +91,30 @@ export default function ParentProfileScreen() {
       ],
     },
 
-    // Preferences section
+    // Pronote section
     {
-      title: 'Préférences',
+      title: 'Pronote',
       items: [
         {
-          icon: <Settings color={iconColors.foreground} size={20} />,
-          label: 'Paramètres',
-          sublabel: 'Apparence, notifications',
-          onPress: () => router.push('/(parent)/(profile)/settings'),
+          icon: <School color={iconColors.foreground} size={20} />,
+          label: 'Pronote',
+          sublabel: pronote.isConnected ? 'Connecte' : 'Non connecte',
+          onPress: () => router.push('/(parent)/(profile)/pronote-connect'),
           showChevron: true,
         },
       ],
     },
 
-    // Support section
+    // Preferences section
     {
-      title: 'Support',
+      title: 'Preferences',
       items: [
         {
-          icon: <HelpCircle color={iconColors.foreground} size={20} />,
-          label: 'Aide et support',
-          sublabel: 'Bientôt disponible',
-          onPress: () => {},
-          showChevron: false,
+          icon: <Settings color={iconColors.foreground} size={20} />,
+          label: 'Parametres',
+          sublabel: 'Apparence',
+          onPress: () => router.push('/(parent)/(profile)/settings'),
+          showChevron: true,
         },
       ],
     },
