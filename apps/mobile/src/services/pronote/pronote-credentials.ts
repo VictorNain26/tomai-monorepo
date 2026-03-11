@@ -2,13 +2,12 @@ import { getTreaty, unwrap } from '@repo/api';
 import type { PronoteMetadata } from './pronote-types';
 
 interface PushInput {
-  token: string;
   metadata: PronoteMetadata;
+  token: string;
   tokenExpiresAt: string;
 }
 
 interface PullResult {
-  token: string;
   metadata: PronoteMetadata;
   tokenExpiresAt: string;
 }
@@ -24,7 +23,8 @@ class PronoteCredentialsSync {
       });
       unwrap(response);
       return true;
-    } catch {
+    } catch (error) {
+      console.error('[PronoteCredentials] pushToServer failed:', error);
       return false;
     }
   }
@@ -34,7 +34,6 @@ class PronoteCredentialsSync {
       const api = getTreaty();
       const response = await api.api.pronote.credentials.get();
       const data = unwrap<{
-        token: string;
         metadata: string;
         tokenExpiresAt: string;
       }>(response);
@@ -42,11 +41,11 @@ class PronoteCredentialsSync {
       if (!data) return null;
 
       return {
-        token: data.token,
         metadata: JSON.parse(data.metadata) as PronoteMetadata,
         tokenExpiresAt: data.tokenExpiresAt,
       };
-    } catch {
+    } catch (error) {
+      console.error('[PronoteCredentials] pullFromServer failed:', error);
       return null;
     }
   }
@@ -57,7 +56,8 @@ class PronoteCredentialsSync {
       const response = await api.api.pronote.credentials.delete();
       unwrap(response);
       return true;
-    } catch {
+    } catch (error) {
+      console.error('[PronoteCredentials] removeFromServer failed:', error);
       return false;
     }
   }

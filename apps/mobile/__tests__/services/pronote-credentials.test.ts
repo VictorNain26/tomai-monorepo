@@ -9,12 +9,11 @@ const { pronoteCredentialsSync: credentialsSync } = require('@/services/pronote/
 
 type CredSync = {
   pushToServer: (input: {
-    token: string;
     metadata: { instanceUrl: string; username: string; deviceUuid: string; accountKind: number };
+    token: string;
     tokenExpiresAt: string;
   }) => Promise<boolean>;
   pullFromServer: () => Promise<{
-    token: string;
     metadata: { instanceUrl: string };
     tokenExpiresAt: string;
   } | null>;
@@ -38,20 +37,20 @@ describe('PronoteCredentialsSync', () => {
       const mockPut = setupMock('put', { data: { success: true }, error: null });
 
       const result = await typed.pushToServer({
-        token: 'my-token',
         metadata: {
           instanceUrl: 'https://demo.pronote.fr',
           username: 'jean',
           deviceUuid: 'dev-1',
           accountKind: 1,
         },
+        token: 'refresh-token-abc',
         tokenExpiresAt: '2026-04-01T00:00:00Z',
       });
 
       expect(result).toBe(true);
       expect(mockPut).toHaveBeenCalledWith(
         expect.objectContaining({
-          token: 'my-token',
+          token: 'refresh-token-abc',
           metadata: expect.any(String),
           tokenExpiresAt: '2026-04-01T00:00:00Z',
         }),
@@ -63,7 +62,6 @@ describe('PronoteCredentialsSync', () => {
     it('should return credentials from GET', async () => {
       setupMock('get', {
         data: {
-          token: 'server-token',
           metadata: '{"instanceUrl":"https://demo.pronote.fr","username":"jean","deviceUuid":"dev-1","accountKind":1}',
           tokenExpiresAt: '2026-04-01T00:00:00Z',
         },
@@ -73,7 +71,6 @@ describe('PronoteCredentialsSync', () => {
       const result = await typed.pullFromServer();
 
       expect(result).not.toBeNull();
-      expect(result?.token).toBe('server-token');
       expect(result?.metadata.instanceUrl).toBe('https://demo.pronote.fr');
     });
 

@@ -20,6 +20,7 @@ import {
   TabLocation,
   type SessionHandle,
 } from 'pawnote';
+import * as SecureStore from 'expo-secure-store';
 import { usePronoteStore } from '@/stores/pronote-store';
 import { pronoteSessionService } from '@/services/pronote/pronote-session';
 import { pronoteCredentialsSync } from '@/services/pronote/pronote-credentials';
@@ -63,25 +64,25 @@ export function usePronote(userId: string) {
       );
 
       if (result.success && result.resources) {
-        store.setConnected({
+        const metadata = {
           instanceUrl: qrData.url,
           username: qrData.login,
           deviceUuid,
-          accountKind: AccountKind.PARENT,
-        });
+          accountKind: result.accountKind ?? AccountKind.PARENT,
+        };
+
+        store.setConnected(metadata);
         store.setResources(result.resources);
 
-        // Sync credentials to server (best-effort)
-        void pronoteCredentialsSync.pushToServer({
-          token: '', // Token is in SecureStore, not exposed here
-          metadata: {
-            instanceUrl: qrData.url,
-            username: qrData.login,
-            deviceUuid,
-            accountKind: AccountKind.PARENT,
-          },
-          tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        });
+        // Sync credentials to server (best-effort, log failures)
+        const token = await SecureStore.getItemAsync(`pronote_token_${userId}`);
+        if (token) {
+          pronoteCredentialsSync.pushToServer({
+            metadata,
+            token,
+            tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          }).catch((err) => console.error('[Pronote] Failed to sync credentials to server:', err));
+        }
       }
 
       return result;
@@ -92,7 +93,8 @@ export function usePronote(userId: string) {
   const disconnect = useCallback(async () => {
     await pronoteSessionService.disconnect(userId);
     store.reset();
-    void pronoteCredentialsSync.removeFromServer();
+    pronoteCredentialsSync.removeFromServer()
+      .catch((err) => console.error('[Pronote] Failed to remove credentials from server:', err));
   }, [userId, store]);
 
   const fetchHomework = useCallback(
@@ -121,8 +123,8 @@ export function usePronote(userId: string) {
         }));
 
         store.setHomework(homework);
-      } catch {
-        // Session may have expired; data remains from cache
+      } catch (err) {
+        console.error('[Pronote] fetchHomework failed:', err);
       }
     },
     [userId, store],
@@ -155,8 +157,8 @@ export function usePronote(userId: string) {
       }));
 
       store.setGrades(grades);
-    } catch {
-      // Session may have expired; data remains from cache
+    } catch (err) {
+      console.error('[Pronote] fetchGrades failed:', err);
     }
   }, [userId, store]);
 
@@ -190,8 +192,8 @@ export function usePronote(userId: string) {
           }));
 
         store.setTimetable(timetable);
-      } catch {
-        // Session may have expired; data remains from cache
+      } catch (err) {
+        console.error('[Pronote] fetchTimetable failed:', err);
       }
     },
     [userId, store],

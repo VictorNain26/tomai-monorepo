@@ -117,7 +117,7 @@ export async function registerBackgroundSync(): Promise<boolean> {
     // Store current version
     await import('@react-native-async-storage/async-storage')
       .then((m) => m.default.setItem('TOMIA_BG_TASK_VERSION', String(TASK_VERSION)))
-      .catch(() => {});
+      .catch((err) => console.warn('[BackgroundSync] Failed to store task version:', err));
 
     console.log('[BackgroundSync] Registered successfully (v' + TASK_VERSION + ')');
     return true;
@@ -153,7 +153,8 @@ export async function unregisterBackgroundSync(): Promise<void> {
 export async function isBackgroundSyncRegistered(): Promise<boolean> {
   try {
     return TaskManager.isTaskRegisteredAsync(BACKGROUND_SYNC_TASK);
-  } catch {
+  } catch (err) {
+    console.warn('[BackgroundSync] Failed to check registration status:', err);
     return false;
   }
 }

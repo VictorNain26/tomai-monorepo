@@ -8,31 +8,27 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSession, type IAppUser } from '@/lib/auth';
+import { useUser, useSession } from '@/lib/auth';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { Text } from '@/components/ui/text';
 
 export default function OAuthCallbackScreen() {
   const router = useRouter();
+  const user = useUser();
   const { data: session, isPending } = useSession();
   const colors = useThemeColors();
 
   useEffect(() => {
-    // Wait for session to load
     if (isPending) return;
 
-    // If session exists, redirect based on role
-    if (session?.user) {
-      // TomIA backend adds role to user, cast safely
-      const user = session.user as unknown as IAppUser;
+    if (user) {
       const redirectPath = user.role === 'parent' ? '/(parent)' : '/(student)';
       router.replace(redirectPath);
       return;
     }
 
-    // No session after loading = back to login
     router.replace('/(auth)/login');
-  }, [session, isPending, router]);
+  }, [session, isPending, router, user]);
 
   return (
     <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">

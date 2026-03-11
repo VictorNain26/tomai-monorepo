@@ -84,7 +84,7 @@ class PronoteSessionService {
         className: r.className,
       }));
 
-      return { success: true, resources };
+      return { success: true, resources, accountKind: handle.user.kind as 6 | 7 | 8 };
     } catch (error: unknown) {
       return { success: false, error: this.mapError(error) };
     }
@@ -111,7 +111,8 @@ class PronoteSessionService {
       await SecureStore.setItemAsync(tokenKey(userId), refreshInfo.token);
 
       return handle;
-    } catch {
+    } catch (error) {
+      console.error('[PronoteSession] refreshSession failed:', error);
       return null;
     }
   }

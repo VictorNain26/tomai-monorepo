@@ -55,6 +55,7 @@ export interface PronoteConnectionResult {
   success: boolean;
   error?: string;
   resources?: PronoteResource[];
+  accountKind?: 6 | 7 | 8;
 }
 
 export interface PronoteChatContext {

@@ -8,7 +8,7 @@
  */
 
 import { eq } from 'drizzle-orm';
-import { db } from './client';
+import { getDatabase } from './client';
 import {
   pendingActions,
   syncMetadata,
@@ -44,7 +44,7 @@ export async function queueAction(
 ): Promise<string> {
   const id = `action-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  await db.insert(pendingActions).values({
+  await getDatabase().insert(pendingActions).values({
     id,
     type,
     payload: JSON.stringify(payload),
@@ -61,14 +61,14 @@ export async function queueAction(
  * Get all pending actions sorted by creation time.
  */
 export async function getPendingActions(): Promise<PendingAction[]> {
-  return db.select().from(pendingActions).orderBy(pendingActions.createdAt);
+  return getDatabase().select().from(pendingActions).orderBy(pendingActions.createdAt);
 }
 
 /**
  * Get count of pending actions.
  */
 export async function getPendingActionsCount(): Promise<number> {
-  const result = await db.select().from(pendingActions);
+  const result = await getDatabase().select().from(pendingActions);
   return result.length;
 }
 
@@ -76,7 +76,7 @@ export async function getPendingActionsCount(): Promise<number> {
  * Remove a pending action after successful sync.
  */
 export async function removePendingAction(id: string): Promise<void> {
-  await db.delete(pendingActions).where(eq(pendingActions.id, id));
+  await getDatabase().delete(pendingActions).where(eq(pendingActions.id, id));
 }
 
 /**
@@ -86,6 +86,7 @@ export async function markActionFailed(
   id: string,
   error: string
 ): Promise<void> {
+  const db = getDatabase();
   const action = await db.select().from(pendingActions).where(eq(pendingActions.id, id)).get();
 
   if (!action) return;
@@ -93,7 +94,6 @@ export async function markActionFailed(
   const newRetryCount = action.retryCount + 1;
 
   if (newRetryCount >= action.maxRetries) {
-    // Max retries reached - mark as permanently failed
     console.warn(`[Sync] Action ${id} failed permanently after ${newRetryCount} attempts`);
     await db.delete(pendingActions).where(eq(pendingActions.id, id));
   } else {
@@ -204,7 +204,7 @@ async function syncSendMessage(payload: Record<string, unknown>): Promise<void> 
   // Update local message sync status
   const localId = payload.localId as string;
   if (localId) {
-    await db
+    await getDatabase()
       .update(chatMessages)
       .set({ syncStatus: 'synced' })
       .where(eq(chatMessages.id, localId));
@@ -224,7 +224,7 @@ async function syncCreateDeck(payload: Record<string, unknown>): Promise<void> {
 
   const localId = payload.localId as string;
   if (localId && response.deck.id) {
-    await db
+    await getDatabase()
       .update(learningDecks)
       .set({
         id: response.deck.id,
@@ -266,7 +266,7 @@ async function syncCreateSession(
 export async function getLastSyncTime(
   resourceType: 'chat_messages' | 'chat_sessions' | 'learning_decks' | 'fsrs_state'
 ): Promise<Date | null> {
-  const result = await db
+  const result = await getDatabase()
     .select()
     .from(syncMetadata)
     .where(eq(syncMetadata.resourceType, resourceType))
@@ -281,7 +281,7 @@ export async function getLastSyncTime(
 export async function updateLastSyncTime(
   resourceType: 'chat_messages' | 'chat_sessions' | 'learning_decks' | 'fsrs_state'
 ): Promise<void> {
-  await db
+  await getDatabase()
     .insert(syncMetadata)
     .values({
       resourceType,
@@ -304,6 +304,8 @@ export async function getConflicts(): Promise<{
   messages: typeof chatMessages.$inferSelect[];
   decks: typeof learningDecks.$inferSelect[];
 }> {
+  const db = getDatabase();
+
   const messages = await db
     .select()
     .from(chatMessages)
@@ -325,8 +327,9 @@ export async function resolveConflict(
   id: string,
   resolution: 'local' | 'remote'
 ): Promise<void> {
+  const db = getDatabase();
+
   if (resolution === 'local') {
-    // Keep local, mark for re-sync
     if (table === 'chat_messages') {
       await db
         .update(chatMessages)
@@ -339,7 +342,6 @@ export async function resolveConflict(
         .where(eq(learningDecks.id, id));
     }
   } else {
-    // Delete local, will be re-fetched
     if (table === 'chat_messages') {
       await db.delete(chatMessages).where(eq(chatMessages.id, id));
     } else {

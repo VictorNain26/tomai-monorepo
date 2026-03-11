@@ -10,3 +10,7 @@ expo-env.d.ts
 .env.local
 .env.production
 .env.*.local
+
+# Signing keys
+*.jks
+*.keystore

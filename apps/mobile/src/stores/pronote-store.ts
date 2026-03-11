@@ -9,12 +9,19 @@ import type {
   PronoteTimetableEntry,
 } from '@/services/pronote/pronote-types';
 
-const mmkv = createMMKV({ id: 'pronote-store' });
+let mmkvInstance: ReturnType<typeof createMMKV> | null = null;
+
+function getMMKV() {
+  if (!mmkvInstance) {
+    mmkvInstance = createMMKV({ id: 'pronote-store' });
+  }
+  return mmkvInstance;
+}
 
 const mmkvStorage: StateStorage = {
-  getItem: (name: string) => mmkv.getString(name) ?? null,
-  setItem: (name: string, value: string) => mmkv.set(name, value),
-  removeItem: (name: string) => { mmkv.remove(name); },
+  getItem: (name: string) => getMMKV().getString(name) ?? null,
+  setItem: (name: string, value: string) => getMMKV().set(name, value),
+  removeItem: (name: string) => { getMMKV().remove(name); },
 };
 
 interface PronoteState {

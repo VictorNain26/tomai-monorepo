@@ -22,7 +22,7 @@
       "env": {
         "APP_ENV": "development",
         "EXPO_PUBLIC_API_URL": "https://api-staging.tomia.fr",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "294154280388-4a5pnm5b4qpgh69btual0ld1ietvfakl.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "857727789545-8h6ui558ku9k86gqs701o4pbgr1hnb4s.apps.googleusercontent.com"
       },
       "ios": {
         "simulator": true
@@ -38,7 +38,7 @@
       "env": {
         "APP_ENV": "preview",
         "EXPO_PUBLIC_API_URL": "https://api-staging.tomia.fr",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "294154280388-4a5pnm5b4qpgh69btual0ld1ietvfakl.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "857727789545-8h6ui558ku9k86gqs701o4pbgr1hnb4s.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -48,7 +48,7 @@
       "env": {
         "APP_ENV": "production",
         "EXPO_PUBLIC_API_URL": "https://api.tomia.fr",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "294154280388-4a5pnm5b4qpgh69btual0ld1ietvfakl.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "857727789545-8h6ui558ku9k86gqs701o4pbgr1hnb4s.apps.googleusercontent.com"
       }
     }
   },

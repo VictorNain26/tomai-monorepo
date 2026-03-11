@@ -7,6 +7,9 @@
 
 import '@testing-library/react-native';
 
+// Set required env vars for tests
+process.env.EXPO_PUBLIC_REVENUECAT_API_KEY = 'test_key';
+
 // Mock expo-router
 jest.mock('expo-router', () => ({
   useRouter: () => ({
@@ -84,6 +87,35 @@ jest.mock('@better-auth/expo', () => ({
   expoClient: jest.fn(() => ({})),
 }));
 
+// Mock @react-native-google-signin/google-signin
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: {
+    configure: jest.fn(),
+    hasPlayServices: jest.fn(() => Promise.resolve(true)),
+    signIn: jest.fn(() => Promise.resolve({ type: 'cancelled' })),
+    signOut: jest.fn(() => Promise.resolve()),
+  },
+  isSuccessResponse: jest.fn((res) => res?.type === 'success'),
+  isCancelledResponse: jest.fn((res) => res?.type === 'cancelled'),
+}));
+
+// Mock @react-native-community/netinfo
+jest.mock('@react-native-community/netinfo', () => ({
+  addEventListener: jest.fn(() => jest.fn()),
+  fetch: jest.fn(() => Promise.resolve({ isConnected: true, isInternetReachable: true })),
+}));
+
+// Mock expo-notifications
+jest.mock('expo-notifications', () => ({
+  setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn(() => Promise.resolve()),
+  getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  getExpoPushTokenAsync: jest.fn(() => Promise.resolve({ data: 'ExponentPushToken[test]' })),
+  AndroidImportance: { HIGH: 4, DEFAULT: 3 },
+  AndroidNotificationPriority: { HIGH: 'high' },
+}));
+
 // Mock expo-camera
 jest.mock('expo-camera', () => ({
   CameraView: 'CameraView',
@@ -96,26 +128,30 @@ jest.mock('expo-camera', () => ({
 }));
 
 // Mock react-native-purchases
+const mockPurchases = {
+  configure: jest.fn(() => Promise.resolve()),
+  setLogLevel: jest.fn(),
+  getCustomerInfo: jest.fn(() =>
+    Promise.resolve({
+      originalAppUserId: 'test-user',
+      entitlements: { active: {} },
+      activeSubscriptions: [],
+    })
+  ),
+  logIn: jest.fn(() => Promise.resolve({ customerInfo: { entitlements: { active: {} } }, created: false })),
+  logOut: jest.fn(() => Promise.resolve({ entitlements: { active: {} } })),
+  isAnonymous: jest.fn(() => Promise.resolve(true)),
+  purchasePackage: jest.fn(),
+  restorePurchases: jest.fn(() => Promise.resolve({ entitlements: { active: {} } })),
+  getOfferings: jest.fn(() => Promise.resolve({ current: null, all: {} })),
+  addCustomerInfoUpdateListener: jest.fn(),
+  removeCustomerInfoUpdateListener: jest.fn(),
+  setAttributes: jest.fn(() => Promise.resolve()),
+  getAppUserID: jest.fn(() => Promise.resolve('test-user')),
+};
 jest.mock('react-native-purchases', () => ({
-  Purchases: {
-    configure: jest.fn(),
-    getCustomerInfo: jest.fn(() =>
-      Promise.resolve({
-        entitlements: { active: {} },
-        activeSubscriptions: [],
-      })
-    ),
-    logIn: jest.fn(),
-    logOut: jest.fn(),
-    purchasePackage: jest.fn(),
-    restorePurchases: jest.fn(),
-    getOfferings: jest.fn(() =>
-      Promise.resolve({
-        current: null,
-        all: {},
-      })
-    ),
-  },
+  __esModule: true,
+  default: mockPurchases,
   LOG_LEVEL: { DEBUG: 0 },
 }));
 
