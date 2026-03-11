@@ -1,6 +1,6 @@
 # TomAI Mobile
 
-Application mobile Expo SDK 54 pour la plateforme de tutorat IA francaise. iOS et Android.
+Application mobile Expo SDK 55 pour la plateforme de tutorat IA francaise. iOS et Android.
 
 ## Quick Start
 
@@ -8,30 +8,32 @@ Application mobile Expo SDK 54 pour la plateforme de tutorat IA francaise. iOS e
 # Installation (depuis la racine du monorepo)
 pnpm install
 
-# Developpement avec Expo Go
-pnpm dev              # Scanner le QR code avec l'app Expo Go
-pnpm dev:tunnel       # Si sur un reseau different
+# Developpement (Dev Client sur telephone physique)
+pnpm dev              # Lance Metro + Dev Client
+pnpm build:dev        # Rebuild dev client Android (smart fingerprint)
 
 # Validation
 pnpm typecheck
 pnpm lint
+pnpm test
 ```
 
 ## Stack
 
 | Composant | Version |
 |-----------|---------|
-| Expo | SDK 54 |
-| React Native | 0.81 (New Architecture) |
-| React | 19.1 |
+| Expo | SDK 55 |
+| React Native | 0.83 (New Architecture) |
+| React | 19.2 |
 | TypeScript | 5.9 strict |
-| Styling | NativeWind 4 (TailwindCSS) |
+| Styling | NativeWind 5 (TailwindCSS 4) |
 | UI | React Native Reusables |
-| State | TanStack Query 5 |
+| State | TanStack Query 5 (serveur) + Zustand (local) |
 | Auth | Better Auth + Google OAuth |
 | Paiements | RevenueCat |
-| Navigation | Expo Router 6 (file-based) |
+| Navigation | Expo Router 7 (file-based) |
 | DB locale | expo-sqlite + Drizzle ORM |
+| Push | Firebase Cloud Messaging (FCM) |
 
 ## Configuration
 
@@ -58,54 +60,24 @@ src/app/
     └── (profile)/            # Profil, abonnement RevenueCat
 ```
 
-## Hooks
-
-| Hook | Description |
-|------|-------------|
-| `useChat` | Chat SSE streaming + attachments + deck creation |
-| `usePresignedUpload` | Upload fichiers via Scaleway presigned URLs |
-| `useUserFiles` / `useSessionFiles` | Classeur : fichiers utilisateur et session |
-| `useDecks` / `useDeck` | CRUD decks de revision |
-| `useDueCards` / `useReviewCard` | Revision FSRS (cartes dues, soumettre reponse) |
-| `useStudentPronote` / `useParentPronote` | Notes, devoirs, emploi du temps Pronote |
-| `useStudentDashboard` / `useParentDashboard` | Stats et gestion enfants |
-| `useSubscription` / `useIsPro` | Etat abonnement RevenueCat |
-| `useVoiceInput` / `useTextToSpeech` | Dictee vocale + synthese ElevenLabs |
-
-## Local Database (SQLite)
-
-Cache offline via `expo-sqlite` + Drizzle ORM :
-
-| Table | Usage |
-|-------|-------|
-| `chat_messages` / `chat_sessions` | Cache messages et sessions |
-| `learning_decks` / `fsrs_state` | Cache decks et etat FSRS |
-| `pending_actions` | File d'attente actions offline |
-| `sync_metadata` | Timestamps de derniere sync |
-| `user_preferences` | Preferences locales |
-
 ## Builds (EAS)
 
 ```bash
-# Smart builds (recommande - fingerprint evite rebuilds inutiles)
+pnpm build:dev                    # Dev client Android (quotidien)
 pnpm workflow:preview:android     # Preview Android
 pnpm workflow:preview:ios         # Preview iOS
 pnpm workflow:prod:android        # Production Android + submit
 pnpm workflow:prod:ios            # Production iOS + submit
-
-# OTA Updates (JS uniquement, pas de rebuild)
-pnpm update:preview               # Channel preview
-pnpm update:prod                  # Channel production
 ```
 
-| Changement | Commande | Rebuild ? |
-|------------|----------|-----------|
-| Code JS/TS uniquement | `pnpm update:preview` | Non (OTA) |
-| Nouvelle dep native | `pnpm workflow:preview:android` | Oui si fingerprint change |
-| Permissions Android/iOS | `pnpm workflow:preview:android` | Oui |
+| Changement | Action |
+|------------|--------|
+| Code JS/TS uniquement | Rien, hot-reload auto |
+| Nouvelle dep native | `pnpm build:dev` |
+| Config app.config.ts | `pnpm build:dev` |
 
 ## Troubleshooting
 
-- **QR code ne s'ouvre pas** : utiliser `pnpm dev` (pas `dev:client`) ou `pnpm dev:tunnel`
-- **Cache corrompu** : `npx expo start --clear`
+- **Metro ne demarre pas** : `npx expo start --dev-client --clear`
 - **Port 8081 occupe** : `npx kill-port 8081`
+- **Telephone ne se connecte pas** : verifier meme reseau Wi-Fi
