@@ -23,8 +23,8 @@ import {
   usePronote,
   type IChild,
   type ICreateChildData,
-  type ChildMetrics,
 } from '@/hooks';
+import type { ChildMetrics } from '@/hooks/useParentDashboard';
 import { useUser } from '@/lib/auth';
 import { bgColors } from '@/lib/styles';
 import type { PronoteGrade, PronoteHomework } from '@/services/pronote/pronote-types';
@@ -35,7 +35,7 @@ import type { PronoteGrade, PronoteHomework } from '@/services/pronote/pronote-t
 
 function computeAverageGrade(grades: PronoteGrade[]): number | null {
   if (grades.length === 0) return null;
-  const validGrades = grades.filter((g) => typeof g.value === 'number' && typeof g.outOf === 'number' && g.outOf > 0);
+  const validGrades = grades.filter((g): g is PronoteGrade & { value: number } => g.value !== null && g.outOf > 0);
   if (validGrades.length === 0) return null;
   const normalized = validGrades.map((g) => (g.value / g.outOf) * 20);
   return normalized.reduce((sum, v) => sum + v, 0) / normalized.length;

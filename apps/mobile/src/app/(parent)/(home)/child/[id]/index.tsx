@@ -33,14 +33,14 @@ import { useUser } from '@/lib/auth';
 import { getLevelLabel } from '@/constants/levels';
 import { launchChildSession, useSession } from '@/lib/auth';
 import { bgColors } from '@/lib/styles';
-import type { PronoteGrade, PronoteHomework } from '@/services/pronote/pronote-types';
+import type { PronoteGrade } from '@/services/pronote/pronote-types';
 
 // ============================================================================
 // HELPERS
 // ============================================================================
 
 function computeAverage(grades: PronoteGrade[]): number | null {
-  const valid = grades.filter((g) => typeof g.value === 'number' && typeof g.outOf === 'number' && g.outOf > 0);
+  const valid = grades.filter((g): g is PronoteGrade & { value: number } => g.value !== null && g.outOf > 0);
   if (valid.length === 0) return null;
   const normalized = valid.map((g) => (g.value / g.outOf) * 20);
   return normalized.reduce((sum, v) => sum + v, 0) / normalized.length;
@@ -266,7 +266,7 @@ export default function ChildDetailScreen() {
                 >
                   <View className="flex-row items-center justify-between">
                     <Text className="text-sm font-medium">{hw.subject}</Text>
-                    <Text variant="muted" className="text-xs">{formatDate(hw.date)}</Text>
+                    <Text variant="muted" className="text-xs">{formatDate(hw.dueDate)}</Text>
                   </View>
                   <Text variant="muted" className="text-xs mt-0.5" numberOfLines={1}>
                     {hw.description}
