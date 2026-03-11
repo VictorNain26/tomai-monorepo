@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, MessageCircle, BookOpen, User, ArrowLeft } from 'lucide-react-native';
 import { useSession, useUser, useImpersonatedBy, restoreParentSession } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
-import { useTheme, useThemeColors, useDueSummary } from '@/hooks';
+import { useThemeColors, useDueSummary } from '@/hooks';
 import { useTabScreenOptions, useTabBarConfig } from '@/lib/navigation';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
@@ -33,7 +33,6 @@ export default function StudentLayout() {
   const { confirm } = useConfirm();
   const { data: session, isPending, refetch: refetchSession } = useSession();
   const user = useUser();
-  useTheme();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
 

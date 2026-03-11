@@ -19,7 +19,7 @@ import {
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks';
-import { useTheme, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { useIconColors } from '@/hooks/useIconColors';
 import { bgColors, borderColors } from '@/lib/styles';
 
@@ -51,7 +51,6 @@ const PREMIUM_FEATURES = [
 
 export default function PricingScreen() {
   const router = useRouter();
-  useTheme(); // Trigger re-render on theme change
   const iconColors = useIconColors();
   const colors = useThemeColors();
   const subscription = useSubscription();
