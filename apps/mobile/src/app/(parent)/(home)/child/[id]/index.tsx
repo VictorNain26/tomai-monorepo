@@ -1,8 +1,7 @@
 /**
- * Child Detail Screen
+ * Child Detail Screen - TomAI 2026
  *
- * Displays child profile and Pronote integration status.
- * Parent can connect Pronote and view homework/grades/timetable.
+ * Weekly summary + recent grades + upcoming homework + activity.
  */
 
 import { View, ScrollView, TouchableOpacity } from 'react-native';
@@ -11,31 +10,54 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ArrowLeft,
-  School,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Calendar,
-  FileText,
-  BarChart3,
-  GraduationCap,
-  User,
   Edit3,
   Trash2,
   Play,
+  BarChart3,
+  BookOpen,
+  Clock,
+  Flame,
+  ChevronRight,
+  School,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/toast';
-import { DeleteChildModal, ChildUsageCard } from '@/components/parent';
-import { useParentDashboard, useChildTokenUsage, useIconColors, useThemeColors, usePronote } from '@/hooks';
+import { DeleteChildModal } from '@/components/parent';
+import { useParentDashboard, useIconColors, useThemeColors, usePronote } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { getLevelLabel } from '@/constants/levels';
 import { launchChildSession, useSession } from '@/lib/auth';
-import { bgColors, borderColors } from '@/lib/styles';
+import { bgColors } from '@/lib/styles';
+import type { PronoteGrade, PronoteHomework } from '@/services/pronote/pronote-types';
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+function computeAverage(grades: PronoteGrade[]): number | null {
+  const valid = grades.filter((g) => typeof g.value === 'number' && typeof g.outOf === 'number' && g.outOf > 0);
+  if (valid.length === 0) return null;
+  const normalized = valid.map((g) => (g.value / g.outOf) * 20);
+  return normalized.reduce((sum, v) => sum + v, 0) / normalized.length;
+}
+
+function formatStudyTime(minutes: number): string {
+  if (minutes === 0) return '0min';
+  if (minutes < 60) return `${minutes}min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h${String(mins).padStart(2, '0')}` : `${hours}h`;
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
 // ============================================================================
 // COMPONENT
@@ -46,75 +68,53 @@ export default function ChildDetailScreen() {
   const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { refetch: refetchSession } = useSession();
+  const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   const {
     children,
+    metrics,
     isLoading: isLoadingChildren,
     deleteChild,
     isDeleting,
   } = useParentDashboard();
+
   const user = useUser();
   const pronoteHook = usePronote(user?.id ?? '');
-  const tokenUsage = useChildTokenUsage({ childId: id });
 
-  // Derive child-specific pronote state from the unified hook
-  const isMapped = id ? pronoteHook.resourceMappings[id] !== undefined : false;
-  const childMapping = id && isMapped
-    ? {
-        pronoteChildName: pronoteHook.resources[pronoteHook.resourceMappings[id] ?? 0]?.name ?? '',
-        pronoteClassName: pronoteHook.resources[pronoteHook.resourceMappings[id] ?? 0]?.className,
-      }
-    : null;
-  const pronote = {
-    isConnected: pronoteHook.isConnected,
-    isMapped,
-    childMapping,
-    establishmentName: undefined as string | undefined,
-    lastSyncAt: undefined as string | undefined,
-    isLoading: false,
-    refresh: () => { /* no-op: device-first, no server refresh */ },
-    resources: pronoteHook.resources,
-  };
-  const iconColors = useIconColors();
-  const colors = useThemeColors();
-
-  // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
 
-  // Find child by ID
-  const child = useMemo(
-    () => children.find((c) => c.id === id),
-    [children, id]
-  );
+  const child = useMemo(() => children.find((c) => c.id === id), [children, id]);
+  const childMetrics = useMemo(() => metrics.find((m) => m.studentId === id), [metrics, id]);
+  const isMapped = id ? pronoteHook.resourceMappings[id] !== undefined : false;
 
-  // Delete child handler - must be defined before early returns
+  // Pronote data
+  const average = useMemo(() => isMapped ? computeAverage(pronoteHook.grades) : null, [isMapped, pronoteHook.grades]);
+  const recentGrades = useMemo(() => pronoteHook.grades.slice(0, 3), [pronoteHook.grades]);
+  const upcomingHomework = useMemo(
+    () => pronoteHook.homework.filter((h) => !h.done).slice(0, 3),
+    [pronoteHook.homework]
+  );
+  const homeworkCount = useMemo(() => pronoteHook.homework.filter((h) => !h.done).length, [pronoteHook.homework]);
+
   const handleDeleteChild = async () => {
     if (!id) return;
     try {
       await deleteChild(id);
       setShowDeleteModal(false);
-      toast.success('Succès', 'Le compte a été supprimé');
+      toast.success('Succes', 'Le compte a ete supprime');
       router.replace('/(parent)/(home)');
     } catch (error) {
-      toast.error(
-        'Erreur',
-        error instanceof Error ? error.message : 'Impossible de supprimer le compte'
-      );
+      toast.error('Erreur', error instanceof Error ? error.message : 'Impossible de supprimer');
     }
   };
 
-  // Launch child session handler - direct launch without confirmation
-  // Uses refetch() to sync React state after impersonation
-  // @see https://github.com/better-auth/better-auth/discussions/3860
   const handleLaunchSession = async () => {
     if (!id || !child) return;
-
     setIsLaunching(true);
     const result = await launchChildSession(id);
-
     if (result.success) {
-      // Refresh session state before navigation
       await refetchSession();
       router.replace('/(student)/');
     } else {
@@ -123,11 +123,11 @@ export default function ChildDetailScreen() {
     setIsLaunching(false);
   };
 
-  // Loading state
+  // Loading
   if (isLoadingChildren || !id) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+        <View className="flex-row items-center gap-3 px-4 py-3">
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-6 w-32 rounded" />
         </View>
@@ -139,12 +139,11 @@ export default function ChildDetailScreen() {
     );
   }
 
-  // Child not found
   if (!child) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-red-600 dark:text-red-400">Enfant non trouvé</Text>
+          <Text className="text-red-600 dark:text-red-400">Enfant non trouve</Text>
           <Button onPress={() => router.back()} className="mt-4">
             <Text className="text-white dark:text-slate-900">Retour</Text>
           </Button>
@@ -156,225 +155,181 @@ export default function ChildDetailScreen() {
   const fullName = `${child.firstName} ${child.lastName}`;
   const levelLabel = getLevelLabel(child.schoolLevel);
 
-  const handleConnectPronote = () => {
-    // Navigate with childId to auto-show mapping selector after connection
-    router.push(`/(parent)/(home)/pronote-connect?childId=${id}`);
-  };
-
-  const handleNavigatePronote = (section: 'grades' | 'homework' | 'timetable') => {
-    if (!pronote.isMapped) {
-      toast.warning(
-        'Pronote non configuré',
-        'Connectez d\'abord votre compte Pronote pour accéder aux données.'
-      );
-      return;
-    }
-    router.push(`/(parent)/(home)/child/${id}/${section}`);
-  };
-
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="h-10 w-10 items-center justify-center rounded-full"
-          accessibilityLabel="Retour"
-          accessibilityRole="button"
-        >
+        <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
           <ArrowLeft color={iconColors.foreground} size={20} />
         </TouchableOpacity>
         <Avatar fallback={fullName} size="md" />
         <View className="flex-1">
           <Text className="font-semibold">{fullName}</Text>
-          <Text variant="muted" className="text-sm">
-            @{child.username}
-          </Text>
+          <Text variant="muted" className="text-sm">{levelLabel}</Text>
         </View>
+        <TouchableOpacity onPress={() => router.push(`/(parent)/(home)/child/${id}/edit`)} className="p-2">
+          <Edit3 color={iconColors.foreground} size={20} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView className="flex-1 px-4 py-6">
-        {/* Child Info Card */}
-        <View className="mb-6 rounded-xl bg-white dark:bg-slate-800 p-4">
-          <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
-            <View className="h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
-              <User color={iconColors.foreground} size={24} />
+      <ScrollView className="flex-1" contentContainerClassName="px-4 py-5 gap-4" showsVerticalScrollIndicator={false}>
+        {/* Weekly Summary Band */}
+        <View className="flex-row gap-2">
+          <Card style={{ flex: 1 }}>
+            <View className="items-center p-3">
+              <BarChart3 color={colors.primary} size={18} />
+              <Text className="mt-1 text-lg font-bold">{average !== null ? average.toFixed(1) : '—'}</Text>
+              <Text variant="muted" className="text-[10px]">Moyenne</Text>
             </View>
-            <View className="flex-1">
-              <Text className="text-lg font-semibold">{fullName}</Text>
-              <Text variant="muted">@{child.username}</Text>
+          </Card>
+          <Card style={{ flex: 1 }}>
+            <View className="items-center p-3">
+              <BookOpen color={colors.warning} size={18} />
+              <Text className="mt-1 text-lg font-bold">{homeworkCount}</Text>
+              <Text variant="muted" className="text-[10px]">Devoirs</Text>
             </View>
-            <View className="flex-row items-center gap-2">
-              <TouchableOpacity
-                onPress={() => router.push(`/(parent)/(home)/child/${id}/edit`)}
-                className="p-2"
-                accessibilityLabel="Modifier le profil"
-                accessibilityRole="button"
-              >
-                <Edit3 color={iconColors.foreground} size={20} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setShowDeleteModal(true)}
-                className="p-2"
-                accessibilityLabel="Supprimer le compte"
-                accessibilityRole="button"
-              >
-                <Trash2 color={iconColors.destructive} size={20} />
-              </TouchableOpacity>
+          </Card>
+          <Card style={{ flex: 1 }}>
+            <View className="items-center p-3">
+              <Clock color={colors.success} size={18} />
+              <Text className="mt-1 text-lg font-bold">{formatStudyTime(childMetrics?.totalStudyTime ?? 0)}</Text>
+              <Text variant="muted" className="text-[10px]">Cette sem.</Text>
             </View>
-          </View>
-
-          <View className="mt-4 flex-row gap-4">
-            <View className="flex-row items-center gap-2">
-              <GraduationCap color={iconColors.muted} size={16} />
-              <Text variant="muted">{levelLabel}</Text>
-            </View>
-          </View>
+          </Card>
         </View>
 
-        {/* Launch Tom Button */}
+        {/* Pronote not connected CTA */}
+        {!pronoteHook.isConnected && (
+          <Card>
+            <View className="items-center p-5">
+              <View className="mb-3 h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
+                <School color={colors.primary} size={24} />
+              </View>
+              <Text className="mb-1 font-semibold">Connecter Pronote</Text>
+              <Text variant="muted" className="mb-3 text-center text-sm">
+                Synchronisez les notes et devoirs de {child.firstName}
+              </Text>
+              <Button onPress={() => router.push(`/(parent)/(home)/pronote-connect?childId=${id}`)}>
+                <Text className="font-medium text-white dark:text-slate-900">Connecter</Text>
+              </Button>
+            </View>
+          </Card>
+        )}
+
+        {/* Recent Grades */}
+        {isMapped && recentGrades.length > 0 && (
+          <Card>
+            <View className="p-4">
+              <View className="mb-3 flex-row items-center justify-between">
+                <Text className="font-semibold">Dernieres notes</Text>
+                <TouchableOpacity
+                  onPress={() => router.push(`/(parent)/(home)/child/${id}/grades`)}
+                  className="flex-row items-center gap-1"
+                >
+                  <Text className="text-xs text-blue-600 dark:text-blue-400">Voir toutes</Text>
+                  <ChevronRight color={colors.primary} size={14} />
+                </TouchableOpacity>
+              </View>
+              {recentGrades.map((grade, i) => (
+                <View
+                  key={`grade-${i}`}
+                  className={`flex-row items-center justify-between py-2 ${i < recentGrades.length - 1 ? 'border-b border-slate-100 dark:border-slate-700' : ''}`}
+                >
+                  <Text className="text-sm flex-1" numberOfLines={1}>{grade.subject}</Text>
+                  <Text className="font-semibold text-sm">
+                    {grade.value}/{grade.outOf}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </Card>
+        )}
+
+        {/* Upcoming Homework */}
+        {isMapped && upcomingHomework.length > 0 && (
+          <Card>
+            <View className="p-4">
+              <View className="mb-3 flex-row items-center justify-between">
+                <Text className="font-semibold">Devoirs a venir</Text>
+                <TouchableOpacity
+                  onPress={() => router.push(`/(parent)/(home)/child/${id}/homework`)}
+                  className="flex-row items-center gap-1"
+                >
+                  <Text className="text-xs text-blue-600 dark:text-blue-400">Voir tous</Text>
+                  <ChevronRight color={colors.primary} size={14} />
+                </TouchableOpacity>
+              </View>
+              {upcomingHomework.map((hw, i) => (
+                <View
+                  key={`hw-${i}`}
+                  className={`py-2 ${i < upcomingHomework.length - 1 ? 'border-b border-slate-100 dark:border-slate-700' : ''}`}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-sm font-medium">{hw.subject}</Text>
+                    <Text variant="muted" className="text-xs">{formatDate(hw.date)}</Text>
+                  </View>
+                  <Text variant="muted" className="text-xs mt-0.5" numberOfLines={1}>
+                    {hw.description}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </Card>
+        )}
+
+        {/* Activity */}
+        <Card>
+          <View className="p-4">
+            <Text className="mb-3 font-semibold">Activite Tom</Text>
+            <View className="flex-row gap-4">
+              <View className="flex-1 items-center">
+                <View className="mb-1 h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.success[10] }}>
+                  <Clock color={colors.success} size={18} />
+                </View>
+                <Text className="font-bold">{formatStudyTime(childMetrics?.totalStudyTime ?? 0)}</Text>
+                <Text variant="muted" className="text-[10px]">Temps</Text>
+              </View>
+              <View className="flex-1 items-center">
+                <View className="mb-1 h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
+                  <BookOpen color={colors.primary} size={18} />
+                </View>
+                <Text className="font-bold">{childMetrics?.totalSessions ?? 0}</Text>
+                <Text variant="muted" className="text-[10px]">Sessions</Text>
+              </View>
+              <View className="flex-1 items-center">
+                <View className="mb-1 h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.destructive[10] }}>
+                  <Flame color={colors.destructive} size={18} />
+                </View>
+                <Text className="font-bold">{childMetrics?.studyDays ?? 0}j</Text>
+                <Text variant="muted" className="text-[10px]">Serie</Text>
+              </View>
+            </View>
+          </View>
+        </Card>
+
+        {/* Launch Tom */}
         <Button
           onPress={handleLaunchSession}
           disabled={isLaunching}
-          className="mb-6 flex-row items-center justify-center gap-2"
-          style={{
-            backgroundColor: colors.success,
-            opacity: isLaunching ? 0.6 : 1,
-          }}
+          className="flex-row items-center justify-center gap-2"
+          style={{ backgroundColor: colors.success, opacity: isLaunching ? 0.6 : 1 }}
         >
-          <Play color={colors.primaryForeground} size={18} />
-          <Text className="font-semibold text-white dark:text-slate-900">
+          <Play color="#fff" size={18} />
+          <Text className="font-semibold text-white">
             {isLaunching ? 'Lancement...' : `Lancer Tom pour ${child.firstName}`}
           </Text>
         </Button>
 
-        {/* Token Usage Section */}
-        <View className="mb-6">
-          <ChildUsageCard
-            window={tokenUsage.window}
-            weekly={tokenUsage.weekly}
-            plan={tokenUsage.plan}
-            isLoading={tokenUsage.isLoading}
-          />
-        </View>
-
-        {/* Pronote Section */}
-        <View className="rounded-xl bg-white dark:bg-slate-800">
-          <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
-            <View className="flex-row items-center gap-3">
-              <View className="h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: bgColors.primary[10] }}>
-                <School color={iconColors.foreground} size={20} />
-              </View>
-              <View>
-                <Text className="font-semibold">Pronote</Text>
-                <Text variant="muted" className="text-sm">
-                  Données scolaires officielles
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              onPress={pronote.refresh}
-              disabled={pronote.isLoading}
-              className="p-2"
-              accessibilityLabel="Rafraîchir Pronote"
-              accessibilityRole="button"
-            >
-              <RefreshCw
-                color={iconColors.foreground}
-                size={18}
-                className={pronote.isLoading ? 'animate-spin' : ''}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <View className="p-4">
-            {pronote.isMapped && pronote.childMapping ? (
-              <>
-                {/* Connected state */}
-                <View
-                  className="mb-4 flex-row items-center gap-3 rounded-xl p-4"
-                  style={{ backgroundColor: bgColors.success[10], borderWidth: 1, borderColor: borderColors.success[20] }}
-                >
-                  <CheckCircle color={colors.success} size={20} />
-                  <View className="flex-1">
-                    <Text className="font-semibold" style={{ color: colors.success }}>
-                      {pronote.establishmentName ?? 'Établissement Pronote'}
-                    </Text>
-                    <Text className="text-sm" style={{ color: colors.success }}>
-                      Élève: {pronote.childMapping.pronoteChildName}
-                      {pronote.childMapping.pronoteClassName &&
-                        ` (${pronote.childMapping.pronoteClassName})`}
-                    </Text>
-                    {pronote.lastSyncAt && (
-                      <Text className="mt-1 text-xs" style={{ color: colors.success }}>
-                        Synchronisé le{' '}
-                        {new Date(pronote.lastSyncAt).toLocaleDateString('fr-FR')}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-
-                {/* Quick actions */}
-                <View className="flex-row gap-3">
-                  <TouchableOpacity
-                    onPress={() => handleNavigatePronote('grades')}
-                    className="flex-1 items-center rounded-xl border p-4"
-                    style={{ borderColor: borderColors.primary[30] }}
-                    accessibilityLabel="Voir les notes"
-                  >
-                    <BarChart3 color={iconColors.foreground} size={20} />
-                    <Text className="mt-2 text-sm font-medium">Notes</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => handleNavigatePronote('timetable')}
-                    className="flex-1 items-center rounded-xl border p-4"
-                    style={{ borderColor: borderColors.primary[30] }}
-                    accessibilityLabel="Voir l'emploi du temps"
-                  >
-                    <Calendar color={iconColors.foreground} size={20} />
-                    <Text className="mt-2 text-sm font-medium">EDT</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => handleNavigatePronote('homework')}
-                    className="flex-1 items-center rounded-xl border p-4"
-                    style={{ borderColor: borderColors.primary[30] }}
-                    accessibilityLabel="Voir les devoirs"
-                  >
-                    <FileText color={iconColors.foreground} size={20} />
-                    <Text className="mt-2 text-sm font-medium">Devoirs</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            ) : (
-              /* Not connected state */
-              <View className="items-center py-4">
-                <View className="mb-4 h-16 w-16 items-center justify-center rounded-xl" style={{ backgroundColor: bgColors.primary[10] }}>
-                  <XCircle color={iconColors.foreground} size={32} />
-                </View>
-                <Text className="mb-2 text-center font-semibold">
-                  {pronote.isConnected
-                    ? 'Enfant non mappé à Pronote'
-                    : 'Connexion Pronote requise'}
-                </Text>
-                <Text variant="muted" className="mb-4 text-center">
-                  {pronote.isConnected
-                    ? `Associez ${child.firstName} à un élève de votre compte Pronote.`
-                    : `Connectez votre compte Pronote parent pour synchroniser les données.`}
-                </Text>
-                <Button onPress={handleConnectPronote}>
-                  <Text className="font-semibold text-white dark:text-slate-900">
-                    {pronote.isConnected ? 'Configurer le mapping' : 'Connecter Pronote'}
-                  </Text>
-                </Button>
-              </View>
-            )}
-          </View>
-        </View>
+        {/* Delete (subtle) */}
+        <TouchableOpacity
+          onPress={() => setShowDeleteModal(true)}
+          className="flex-row items-center justify-center gap-2 py-3"
+        >
+          <Trash2 color={iconColors.destructive} size={16} />
+          <Text className="text-sm text-red-500 dark:text-red-400">Supprimer le compte</Text>
+        </TouchableOpacity>
       </ScrollView>
 
-      {/* Delete Child Modal */}
       <DeleteChildModal
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
