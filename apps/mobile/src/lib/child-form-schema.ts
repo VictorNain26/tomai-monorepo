@@ -25,8 +25,9 @@ export function formatDateInput(raw: string, previous: string): string {
 
 /** Convert DD/MM/YYYY → YYYY-MM-DD for backend */
 export function toIsoDate(display: string): string {
-  const [day, month, year] = display.split('/');
-  return `${year}-${month}-${day}`;
+  const match = display.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return '';
+  return `${match[3]}-${match[2]}-${match[1]}`;
 }
 
 /** Convert YYYY-MM-DD → DD/MM/YYYY for display */
@@ -37,11 +38,18 @@ export function toDisplayDate(iso: string | undefined): string {
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
+/** Get a cryptographically random integer in [0, max) */
+function secureRandomInt(max: number): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] % max;
+}
+
 /** Generate a child-friendly username from name */
 export function generateUsername(firstName: string, lastName: string): string {
   const clean = (s: string) =>
     s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
-  const num = Math.floor(Math.random() * 900) + 100;
+  const num = secureRandomInt(900) + 100;
   return `${clean(firstName)}${clean(lastName).charAt(0)}${num}`;
 }
 
@@ -49,9 +57,9 @@ export function generateUsername(firstName: string, lastName: string): string {
 export function generatePassword(): string {
   const adjectives = ['Super', 'Cool', 'Brave', 'Smart', 'Happy', 'Magic'];
   const nouns = ['Lion', 'Chat', 'Ours', 'Etoile', 'Soleil', 'Lune'];
-  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const num = Math.floor(Math.random() * 89) + 10;
+  const adj = adjectives[secureRandomInt(adjectives.length)];
+  const noun = nouns[secureRandomInt(nouns.length)];
+  const num = secureRandomInt(89) + 10;
   return `${adj}${noun}${num}!`;
 }
 

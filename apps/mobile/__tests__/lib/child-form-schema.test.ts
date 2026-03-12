@@ -43,6 +43,12 @@ describe('toIsoDate', () => {
     expect(toIsoDate('25/03/2015')).toBe('2015-03-25');
     expect(toIsoDate('01/12/2010')).toBe('2010-12-01');
   });
+
+  it('returns empty string for invalid format', () => {
+    expect(toIsoDate('2015-03-25')).toBe('');
+    expect(toIsoDate('invalid')).toBe('');
+    expect(toIsoDate('')).toBe('');
+  });
 });
 
 describe('toDisplayDate', () => {

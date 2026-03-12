@@ -17,6 +17,7 @@ on:
       - 'docs/**/*.md'
       - 'README.md'
       - '.vscode/**'
+      - 'LICENSE'
 
 permissions:
   contents: read

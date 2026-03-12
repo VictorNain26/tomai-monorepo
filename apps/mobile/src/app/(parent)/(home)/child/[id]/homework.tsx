@@ -4,7 +4,7 @@
  * Uses shared HomeworkView component in read-only mode (no "Ask Tom").
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -14,7 +14,7 @@ import { Text } from '@/components/ui/text';
 import { HomeworkView } from '@/components/pronote';
 import { usePronote, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
 import { useUser } from '@/lib/auth';
-import { getWeekLabel } from '@/lib/pronote-helpers';
+import { getWeekLabel, getWeekBounds } from '@/lib/pronote-helpers';
 
 export default function ChildHomeworkScreen() {
   const router = useRouter();
@@ -28,6 +28,14 @@ export default function ChildHomeworkScreen() {
   const pronote = usePronote(user?.id ?? '');
   const { children } = useParentDashboard();
   const child = children.find((c) => c.id === id);
+
+  const filteredHomework = useMemo(() => {
+    const { start, end } = getWeekBounds(weekOffset);
+    return pronote.homework.filter((h) => {
+      const due = new Date(h.dueDate);
+      return due >= start && due <= end;
+    });
+  }, [pronote.homework, weekOffset]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -86,7 +94,7 @@ export default function ChildHomeworkScreen() {
           />
         }
       >
-        <HomeworkView homework={pronote.homework} isLoading={false} />
+        <HomeworkView homework={filteredHomework} isLoading={refreshing} />
       </ScrollView>
     </SafeAreaView>
   );

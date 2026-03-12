@@ -12,7 +12,7 @@ pnpm lint             # ESLint zero warnings
 pnpm test             # Tests jest-expo
 ```
 
-**Dev Client sur telephone physique Android** : l'app utilise Google Sign-In, RevenueCat, expo-camera, expo-sqlite qui necessitent du code natif.
+**Dev Client sur téléphone physique Android** : l'app utilise Google Sign-In, RevenueCat, expo-camera, expo-sqlite qui nécessitent du code natif.
 
 ### Quand rebuilder ?
 
@@ -48,6 +48,6 @@ pnpm workflow:prod:ios            # Production iOS + submit App Store
 
 ## Troubleshooting
 
-- Metro ne demarre pas → `npx expo start --dev-client --clear`
-- Port 8081 occupe → `npx kill-port 8081`
-- Telephone ne se connecte pas → verifier meme reseau Wi-Fi
+- Metro ne démarre pas → `npx expo start --dev-client --clear`
+- Port 8081 occupé → `npx kill-port 8081`
+- Téléphone ne se connecte pas → vérifier même réseau Wi-Fi

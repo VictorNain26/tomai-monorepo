@@ -20,9 +20,17 @@ import Purchases, {
 // CONFIGURATION
 // ============================================================================
 
-const REVENUECAT_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? (() => {
-  throw new Error('[RevenueCat] EXPO_PUBLIC_REVENUECAT_API_KEY is missing. Add it to your .env file.');
-})();
+let _revenueCatApiKey: string | undefined;
+
+function getRevenueCatApiKey(): string {
+  if (!_revenueCatApiKey) {
+    _revenueCatApiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
+    if (!_revenueCatApiKey) {
+      throw new Error('[RevenueCat] EXPO_PUBLIC_REVENUECAT_API_KEY is missing. Add it to your .env file.');
+    }
+  }
+  return _revenueCatApiKey;
+}
 
 export const ENTITLEMENT_ID = 'TomIA Pro';
 
@@ -55,7 +63,7 @@ export async function initializeRevenueCat(): Promise<void> {
     Purchases.setLogLevel(LOG_LEVEL.DEBUG);
   }
 
-  await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+  await Purchases.configure({ apiKey: getRevenueCatApiKey() });
   isInitialized = true;
 
   if (__DEV__) {

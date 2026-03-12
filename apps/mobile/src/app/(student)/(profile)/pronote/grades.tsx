@@ -65,7 +65,7 @@ export default function GradesScreen() {
       >
         <GradesView
           grades={pronote.grades}
-          isLoading={false}
+          isLoading={refreshing}
           onReviewWithTom={handleReviewWithTom}
         />
       </ScrollView>

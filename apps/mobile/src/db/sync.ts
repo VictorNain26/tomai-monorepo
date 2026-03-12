@@ -7,7 +7,7 @@
  * Best Practice 2026: Queue pending actions and sync when online.
  */
 
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 import { getDatabase } from './client';
 import {
   pendingActions,
@@ -68,8 +68,8 @@ export async function getPendingActions(): Promise<PendingAction[]> {
  * Get count of pending actions.
  */
 export async function getPendingActionsCount(): Promise<number> {
-  const result = await getDatabase().select().from(pendingActions);
-  return result.length;
+  const result = await getDatabase().select({ value: count() }).from(pendingActions);
+  return result[0]?.value ?? 0;
 }
 
 /**
