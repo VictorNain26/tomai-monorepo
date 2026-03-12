@@ -64,8 +64,10 @@ Toute feature/bugfix suit le cycle Red-Green-Refactor :
 2. Implémenter le minimum pour passer (GREEN)
 3. Refactorer (REFACTOR) — tests doivent rester verts
 4. Valider : `pnpm typecheck && pnpm lint && pnpm test`
+5. **Review** : relire tous les changements (`git diff`) avant commit — sécurité, dead code, tests manquants
+6. Commit
 
-Utiliser `/dev <description>` pour lancer le workflow TDD automatiquement.
+Utiliser `/dev <description>` pour lancer le workflow complet automatiquement.
 
 ## Git hooks (lefthook)
 
