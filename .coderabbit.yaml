@@ -2,6 +2,10 @@
 language: fr
 reviews:
   profile: assertive
+  auto_review:
+    base_branches:
+      - main
+      - staging
   path_instructions:
     - path: "apps/server/**"
       instructions: "TypeScript strict, Elysia.js patterns, Drizzle ORM, never any"

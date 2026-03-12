@@ -13,10 +13,11 @@
     ],
     "Stop": [
       {
+        "matcher": "",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before stopping, verify: 1) Were code files modified in this session? 2) If yes, have the relevant tests been run and do they pass? 3) Does typecheck pass? If tests or typecheck should have been run but were not, respond with 'BLOCK' and explain what needs to be verified. If everything looks good or no code changes were made, respond with 'ALLOW'."
+            "prompt": "Before stopping, verify: 1) Were code files modified in this session? 2) If yes, have the relevant tests been run and do they pass? 3) Does typecheck pass? If tests or typecheck should have been run but were not, respond with {\"ok\": false, \"reason\": \"Explain what needs to be verified\"}. If everything looks good or no code changes were made, respond with {\"ok\": true}."
           }
         ]
       }
