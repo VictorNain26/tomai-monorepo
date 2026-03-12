@@ -33,7 +33,7 @@ jobs:
     name: SAST
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep:latest
+      image: semgrep/semgrep@sha256:9fb6f44dc162b1e0aada85f072a95141844c61e3bfcedf40b8a46fecf208e986
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Run Semgrep
