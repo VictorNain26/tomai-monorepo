@@ -16,8 +16,8 @@
         "matcher": "",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "Before stopping, verify: 1) Were code files modified in this session? 2) If yes, have the relevant tests been run and do they pass? 3) Does typecheck pass? 4) Were the changes reviewed (git diff checked for security, dead code, missing tests, TypeScript strict)? If any of these should have been done but were not, respond with {\"ok\": false, \"reason\": \"Explain what needs to be verified\"}. If everything looks good or no code changes were made, respond with {\"ok\": true}."
+            "type": "command",
+            "command": "git diff --name-only --diff-filter=M -- '*.ts' '*.tsx' | head -1 | grep -q '.' && echo 'BLOCKED: uncommitted code changes detected. Run tests, review, and commit before stopping.' && exit 1 || exit 0"
           }
         ]
       }
