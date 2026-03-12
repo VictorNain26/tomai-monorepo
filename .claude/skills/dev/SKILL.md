@@ -8,7 +8,7 @@ Feature/fix: $ARGUMENTS
 Follow this TDD workflow strictly.
 
 **Test file conventions** (see `.claude/rules/tdd.md`):
-- Server: `apps/server/src/tests/<service>.test.ts` (runner: `bun test`)
+- Server: `apps/server/src/tests/<service>.test.ts` (runner: `bun run test`)
 - Mobile: `apps/mobile/__tests__/<path>/<name>.test.ts` (runner: `pnpm test`)
 
 ## Phase 1: Understand

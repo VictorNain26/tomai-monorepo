@@ -4,16 +4,23 @@
  * Replaces the bash-only `for f in ...; do bun test "$f"; done` loop.
  */
 import { Glob } from "bun";
+import { fileURLToPath } from "node:url";
+import { resolve, dirname } from "node:path";
 
 const args = process.argv.slice(2);
 const withCoverage = args.includes("--coverage");
 
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const serverRoot = resolve(scriptDir, "..");
+const testDir = resolve(serverRoot, "src/tests");
+
 const glob = new Glob("*.test.ts");
-const testDir = new URL("../src/tests/", import.meta.url).pathname.replace(
-  /^\//,
-  ""
-);
 const testFiles = [...glob.scanSync(testDir)].sort();
+
+if (testFiles.length === 0) {
+  console.error("No test files found in src/tests/");
+  process.exit(1);
+}
 
 let failed = 0;
 let passed = 0;
@@ -26,7 +33,7 @@ for (const file of testFiles) {
   const proc = Bun.spawn(cmd, {
     stdout: "inherit",
     stderr: "inherit",
-    cwd: new URL("..", import.meta.url).pathname.replace(/^\//, ""),
+    cwd: serverRoot,
   });
   const exitCode = await proc.exited;
 

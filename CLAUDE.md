@@ -60,8 +60,8 @@ cd apps/server && docker compose up -d
 ## Workflow TDD
 
 Toute feature/bugfix suit le cycle Red-Green-Refactor :
-1. Ecrire les tests d'abord (RED) — ils doivent echouer
-2. Implementer le minimum pour passer (GREEN)
+1. Écrire les tests d'abord (RED) — ils doivent échouer
+2. Implémenter le minimum pour passer (GREEN)
 3. Refactorer (REFACTOR) — tests doivent rester verts
 4. Valider : `pnpm typecheck && pnpm lint && pnpm test`
 
@@ -69,17 +69,17 @@ Utiliser `/dev <description>` pour lancer le workflow TDD automatiquement.
 
 ## Git hooks (lefthook)
 
-lefthook verifie automatiquement :
-- Pre-commit : lint (fichiers modifies par app) + typecheck (affected)
+lefthook vérifie automatiquement :
+- Pre-commit : lint (fichiers modifiés par app) + typecheck (affected)
 - Pre-push : test (affected) + build (affected)
 
-Bypass exceptionnel : `git commit --no-verify` (a eviter)
+Bypass exceptionnel : `git commit --no-verify` (à éviter)
 
 ## Review IA
 
 - PR staging→main : review automatique par CodeRabbit Free
 - `/review` localement : review avant push (Claude Code Max, gratuit)
-- @claude dans un commentaire PR : Claude repond (opt-in, cle API)
+- @claude dans un commentaire PR : Claude répond (opt-in, clé API)
 
 ## Regles detaillees
 

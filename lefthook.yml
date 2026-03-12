@@ -11,17 +11,17 @@ pre-commit:
   jobs:
     - name: lint-server
       root: "apps/server/"
-      glob: "*.ts"
+      glob: "**/*.ts"
       run: npx eslint {staged_files}
 
     - name: lint-mobile
       root: "apps/mobile/"
-      glob: "*.{ts,tsx}"
+      glob: "**/*.{ts,tsx}"
       run: npx eslint --max-warnings 0 {staged_files}
 
     - name: lint-landing
       root: "apps/landing/"
-      glob: "*.{ts,tsx}"
+      glob: "**/*.{ts,tsx}"
       run: npx eslint --max-warnings 0 {staged_files}
 
     - name: typecheck
