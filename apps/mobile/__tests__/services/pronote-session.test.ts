@@ -1,11 +1,8 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockLoginQrCode = jest.fn<(...args: any[]) => any>();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockLoginToken = jest.fn<(...args: any[]) => any>();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockCreateSessionHandle = jest.fn<(...args: any[]) => any>();
+const mockLoginQrCode = jest.fn<() => Promise<unknown>>();
+const mockLoginToken = jest.fn<() => Promise<unknown>>();
+const mockCreateSessionHandle = jest.fn<() => unknown>();
 
 jest.mock('pawnote', () => ({
   loginQrCode: mockLoginQrCode,
@@ -14,12 +11,9 @@ jest.mock('pawnote', () => ({
   AccountKind: { PARENT: 7, STUDENT: 6 },
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockSetItemAsync = jest.fn<(...args: any[]) => any>();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockGetItemAsync = jest.fn<(...args: any[]) => any>();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockDeleteItemAsync = jest.fn<(...args: any[]) => any>();
+const mockSetItemAsync = jest.fn<() => Promise<void>>();
+const mockGetItemAsync = jest.fn<() => Promise<string | null>>();
+const mockDeleteItemAsync = jest.fn<() => Promise<void>>();
 
 jest.mock('expo-secure-store', () => ({
   setItemAsync: mockSetItemAsync,

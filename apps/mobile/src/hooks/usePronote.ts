@@ -51,7 +51,24 @@ function getCurrentPeriod(handle: SessionHandle) {
 }
 
 export function usePronote(userId: string) {
-  const store = usePronoteStore();
+  // Select individual fields to avoid re-renders on unrelated state changes
+  const isConnected = usePronoteStore((s) => s.isConnected);
+  const metadata = usePronoteStore((s) => s.metadata);
+  const resources = usePronoteStore((s) => s.resources);
+  const resourceMappings = usePronoteStore((s) => s.resourceMappings);
+  const homework = usePronoteStore((s) => s.homework);
+  const grades = usePronoteStore((s) => s.grades);
+  const timetable = usePronoteStore((s) => s.timetable);
+  const lastHomeworkFetch = usePronoteStore((s) => s.lastHomeworkFetch);
+  const lastGradesFetch = usePronoteStore((s) => s.lastGradesFetch);
+  const lastTimetableFetch = usePronoteStore((s) => s.lastTimetableFetch);
+  const storeSetConnected = usePronoteStore((s) => s.setConnected);
+  const storeSetResources = usePronoteStore((s) => s.setResources);
+  const storeSetResourceMapping = usePronoteStore((s) => s.setResourceMapping);
+  const storeSetHomework = usePronoteStore((s) => s.setHomework);
+  const storeSetGrades = usePronoteStore((s) => s.setGrades);
+  const storeSetTimetable = usePronoteStore((s) => s.setTimetable);
+  const storeReset = usePronoteStore((s) => s.reset);
 
   const connect = useCallback(
     async (qrData: QrCodeData, pin: string) => {
@@ -64,21 +81,21 @@ export function usePronote(userId: string) {
       );
 
       if (result.success && result.resources) {
-        const metadata = {
+        const meta = {
           instanceUrl: qrData.url,
           username: qrData.login,
           deviceUuid,
           accountKind: result.accountKind ?? AccountKind.PARENT,
         };
 
-        store.setConnected(metadata);
-        store.setResources(result.resources);
+        storeSetConnected(meta);
+        storeSetResources(result.resources);
 
         // Sync credentials to server (best-effort, log failures)
         const token = await SecureStore.getItemAsync(`pronote_token_${userId}`);
         if (token) {
           pronoteCredentialsSync.pushToServer({
-            metadata,
+            metadata: meta,
             token,
             tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           }).catch((err) => console.error('[Pronote] Failed to sync credentials to server:', err));
@@ -87,22 +104,22 @@ export function usePronote(userId: string) {
 
       return result;
     },
-    [userId, store],
+    [userId, storeSetConnected, storeSetResources],
   );
 
   const disconnect = useCallback(async () => {
     await pronoteSessionService.disconnect(userId);
-    store.reset();
+    storeReset();
     pronoteCredentialsSync.removeFromServer()
       .catch((err) => console.error('[Pronote] Failed to remove credentials from server:', err));
-  }, [userId, store]);
+  }, [userId, storeReset]);
 
   const fetchHomework = useCallback(
     async () => {
-      if (!store.metadata) return;
-      if (!isCacheStale(store.lastHomeworkFetch, HOMEWORK_TTL)) return;
+      if (!metadata) return;
+      if (!isCacheStale(lastHomeworkFetch, HOMEWORK_TTL)) return;
 
-      const handle = await pronoteSessionService.refreshSession(userId, store.metadata);
+      const handle = await pronoteSessionService.refreshSession(userId, metadata);
       if (!handle) return;
 
       try {
@@ -113,7 +130,7 @@ export function usePronote(userId: string) {
         to.setDate(to.getDate() + 14);
 
         const assignments = await assignmentsFromIntervals(handle, from, to);
-        const homework: PronoteHomework[] = assignments.map((a) => ({
+        const hw: PronoteHomework[] = assignments.map((a) => ({
           id: a.id,
           subject: a.subject.name,
           description: a.description,
@@ -122,19 +139,19 @@ export function usePronote(userId: string) {
           difficulty: a.difficulty ?? 0,
         }));
 
-        store.setHomework(homework);
+        storeSetHomework(hw);
       } catch (err) {
         console.error('[Pronote] fetchHomework failed:', err);
       }
     },
-    [userId, store],
+    [userId, metadata, lastHomeworkFetch, storeSetHomework],
   );
 
   const fetchGrades = useCallback(async () => {
-    if (!store.metadata) return;
-    if (!isCacheStale(store.lastGradesFetch, GRADES_TTL)) return;
+    if (!metadata) return;
+    if (!isCacheStale(lastGradesFetch, GRADES_TTL)) return;
 
-    const handle = await pronoteSessionService.refreshSession(userId, store.metadata);
+    const handle = await pronoteSessionService.refreshSession(userId, metadata);
     if (!handle) return;
 
     try {
@@ -143,31 +160,31 @@ export function usePronote(userId: string) {
 
       const overview = await gradesOverview(handle, period);
 
-      const grades: PronoteGrade[] = overview.grades.map((g) => ({
-        id: g.id,
-        subject: g.subject.name,
-        value: g.value.kind === GradeKind.Grade ? g.value.points : null,
-        outOf: g.outOf.points,
-        coefficient: g.coefficient,
-        date: g.date.toISOString(),
-        description: g.comment,
-        average: g.average ? g.average.points : undefined,
-        max: g.max ? g.max.points : undefined,
-        min: g.min ? g.min.points : undefined,
+      const g: PronoteGrade[] = overview.grades.map((gr) => ({
+        id: gr.id,
+        subject: gr.subject.name,
+        value: gr.value.kind === GradeKind.Grade ? gr.value.points : null,
+        outOf: gr.outOf.points,
+        coefficient: gr.coefficient,
+        date: gr.date.toISOString(),
+        description: gr.comment,
+        average: gr.average ? gr.average.points : undefined,
+        max: gr.max ? gr.max.points : undefined,
+        min: gr.min ? gr.min.points : undefined,
       }));
 
-      store.setGrades(grades);
+      storeSetGrades(g);
     } catch (err) {
       console.error('[Pronote] fetchGrades failed:', err);
     }
-  }, [userId, store]);
+  }, [userId, metadata, lastGradesFetch, storeSetGrades]);
 
   const fetchTimetable = useCallback(
     async () => {
-      if (!store.metadata) return;
-      if (!isCacheStale(store.lastTimetableFetch, TIMETABLE_TTL)) return;
+      if (!metadata) return;
+      if (!isCacheStale(lastTimetableFetch, TIMETABLE_TTL)) return;
 
-      const handle = await pronoteSessionService.refreshSession(userId, store.metadata);
+      const handle = await pronoteSessionService.refreshSession(userId, metadata);
       if (!handle) return;
 
       try {
@@ -178,7 +195,7 @@ export function usePronote(userId: string) {
         to.setDate(to.getDate() + 7);
 
         const result = await timetableFromIntervals(handle, from, to);
-        const timetable: PronoteTimetableEntry[] = result.classes
+        const tt: PronoteTimetableEntry[] = result.classes
           .filter((c): c is typeof c & { is: 'lesson' } => c.is === 'lesson')
           .map((e) => ({
             id: e.id,
@@ -191,23 +208,23 @@ export function usePronote(userId: string) {
             status: e.status,
           }));
 
-        store.setTimetable(timetable);
+        storeSetTimetable(tt);
       } catch (err) {
         console.error('[Pronote] fetchTimetable failed:', err);
       }
     },
-    [userId, store],
+    [userId, metadata, lastTimetableFetch, storeSetTimetable],
   );
 
   const setResourceMapping = useCallback(
     (childId: string, resourceIndex: number) => {
-      store.setResourceMapping(childId, resourceIndex);
+      storeSetResourceMapping(childId, resourceIndex);
     },
-    [store],
+    [storeSetResourceMapping],
   );
 
   const getChatContext = useCallback((): PronoteChatContext | undefined => {
-    if (!store.isConnected) return undefined;
+    if (!isConnected) return undefined;
 
     const now = new Date();
     const todayStart = new Date(now);
@@ -215,46 +232,46 @@ export function usePronote(userId: string) {
     const todayEnd = new Date(now);
     todayEnd.setHours(23, 59, 59, 999);
 
-    const todayTimetable = store.timetable.filter((e) => {
+    const todayTimetable = timetable.filter((e) => {
       const start = new Date(e.startDate);
       return start >= todayStart && start <= todayEnd;
     });
 
     // Recent grades: last 10
-    const recentGrades = [...store.grades]
+    const recentGrades = [...grades]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 10);
 
     return {
-      homework: store.homework.length > 0 ? store.homework : undefined,
+      homework: homework.length > 0 ? homework : undefined,
       recentGrades: recentGrades.length > 0 ? recentGrades : undefined,
       todayTimetable: todayTimetable.length > 0 ? todayTimetable : undefined,
     };
-  }, [store.isConnected, store.homework, store.grades, store.timetable]);
+  }, [isConnected, homework, grades, timetable]);
 
   // Computed values (matching old useStudentPronote API)
   const upcomingHomework = useMemo(
-    () => store.homework.filter((h) => !h.done).length,
-    [store.homework],
+    () => homework.filter((h) => !h.done).length,
+    [homework],
   );
 
   const averageGrade = useMemo(() => {
-    const valid = store.grades.filter((g) => g.value !== null);
+    const valid = grades.filter((g) => g.value !== null);
     if (valid.length === 0) return null;
     return (
       valid.reduce((sum, g) => sum + ((g.value as number) / g.outOf) * 20, 0) /
       valid.length
     );
-  }, [store.grades]);
+  }, [grades]);
 
   return {
     // State
-    isConnected: store.isConnected,
-    resources: store.resources,
-    resourceMappings: store.resourceMappings,
-    homework: store.homework,
-    grades: store.grades,
-    timetable: store.timetable,
+    isConnected,
+    resources,
+    resourceMappings,
+    homework,
+    grades,
+    timetable,
 
     // Computed
     upcomingHomework,

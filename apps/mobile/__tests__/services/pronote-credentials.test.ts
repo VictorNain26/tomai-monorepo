@@ -1,4 +1,10 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+
+jest.mock('@repo/api', () => ({
+  getTreaty: jest.fn(),
+  unwrap: jest.fn((r: { data?: unknown }) => r?.data),
+}));
+
 import { getTreaty } from '@repo/api';
 
 const mockGetTreaty = getTreaty as jest.Mock;

@@ -6,6 +6,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { View, ScrollView, RefreshControl } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import { Plus, Users } from 'lucide-react-native';
@@ -73,7 +74,6 @@ export default function ParentDashboard() {
     isCreating,
     userName,
     createChild,
-    refresh,
   } = useParentDashboard();
 
   const user = useUser();
@@ -93,11 +93,15 @@ export default function ParentDashboard() {
     return data;
   }, [children, pronote.resourceMappings, pronote.grades, pronote.homework]);
 
+  const queryClient = useQueryClient();
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    refresh();
-    setTimeout(() => setIsRefreshing(false), 500);
-  }, [refresh]);
+    try {
+      await queryClient.refetchQueries({ queryKey: ['parent'] });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [queryClient]);
 
   const handleChildPress = (child: IChild) => {
     router.push(`/(parent)/(home)/child/${child.id}`);

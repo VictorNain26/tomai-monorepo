@@ -158,27 +158,11 @@ describe('Tool Executor', () => {
     });
   });
 
-  describe('get_student_homework (deprecated - returns context message)', () => {
-    it('should return error indicating data is in context', async () => {
+  describe('unknown tool', () => {
+    it('should return error for unknown tool name', async () => {
       const result = await executeTool('get_student_homework', {}, baseContext) as Record<string, unknown>;
       expect(result.error).toBe(true);
-      expect(result.message).toContain('contexte');
-    });
-  });
-
-  describe('get_student_grades (deprecated - returns context message)', () => {
-    it('should return error indicating data is in context', async () => {
-      const result = await executeTool('get_student_grades', {}, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
-      expect(result.message).toContain('contexte');
-    });
-  });
-
-  describe('get_student_timetable (deprecated - returns context message)', () => {
-    it('should return error indicating data is in context', async () => {
-      const result = await executeTool('get_student_timetable', {}, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
-      expect(result.message).toContain('contexte');
+      expect(result.message).toContain('Outil inconnu');
     });
   });
 

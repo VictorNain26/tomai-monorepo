@@ -24,23 +24,20 @@ mock.module('../lib/encryption', () => ({
 
 // DB mock state
 let findResult: Record<string, unknown> | undefined = undefined;
-let insertCalled = false;
-let updateCalled = false;
+let upsertCalled = false;
 let deleteCalled = false;
 
 const mockWhere = mock(() => {
   return findResult ? [findResult] : [];
 });
 
-const mockSet = mock(() => ({
-  where: mock(async () => {
-    updateCalled = true;
-  }),
-}));
-
-const mockValues = mock(async () => {
-  insertCalled = true;
+const mockOnConflictDoUpdate = mock(async () => {
+  upsertCalled = true;
 });
+
+const mockValues = mock(() => ({
+  onConflictDoUpdate: mockOnConflictDoUpdate,
+}));
 
 const mockDeleteWhere = mock(async () => {
   deleteCalled = true;
@@ -55,9 +52,6 @@ mock.module('../db/connection', () => ({
     })),
     insert: mock(() => ({
       values: mockValues,
-    })),
-    update: mock(() => ({
-      set: mockSet,
     })),
     delete: mock(() => ({
       where: mockDeleteWhere,
@@ -102,8 +96,7 @@ const VALID_EXPIRES = '2026-04-10T12:00:00Z';
 describe('PronoteSyncService', () => {
   beforeEach(() => {
     findResult = undefined;
-    insertCalled = false;
-    updateCalled = false;
+    upsertCalled = false;
     deleteCalled = false;
     mockEncrypt.mockClear();
     mockDecrypt.mockClear();
@@ -117,9 +110,7 @@ describe('PronoteSyncService', () => {
   // ============================================
 
   describe('upsertCredentials', () => {
-    it('should create new credentials when none exist', async () => {
-      findResult = undefined;
-
+    it('should upsert credentials (atomic insert or update)', async () => {
       const result = await pronoteSyncService.upsertCredentials(VALID_USER_ID, {
         token: VALID_TOKEN,
         metadata: VALID_METADATA,
@@ -127,29 +118,7 @@ describe('PronoteSyncService', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(insertCalled).toBe(true);
-      expect(updateCalled).toBe(false);
-      expect(mockEncrypt).toHaveBeenCalledTimes(2);
-    });
-
-    it('should update existing credentials', async () => {
-      findResult = {
-        id: 'cred-001',
-        userId: VALID_USER_ID,
-        encryptedToken: 'encrypted:old-token',
-        encryptedMetadata: 'encrypted:old-meta',
-        tokenExpiresAt: new Date('2026-03-01'),
-      };
-
-      const result = await pronoteSyncService.upsertCredentials(VALID_USER_ID, {
-        token: VALID_TOKEN,
-        metadata: VALID_METADATA,
-        tokenExpiresAt: VALID_EXPIRES,
-      });
-
-      expect(result.success).toBe(true);
-      expect(updateCalled).toBe(true);
-      expect(insertCalled).toBe(false);
+      expect(upsertCalled).toBe(true);
       expect(mockEncrypt).toHaveBeenCalledTimes(2);
     });
 
@@ -162,8 +131,19 @@ describe('PronoteSyncService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
-      expect(insertCalled).toBe(false);
-      expect(updateCalled).toBe(false);
+      expect(upsertCalled).toBe(false);
+    });
+
+    it('should reject invalid tokenExpiresAt date', async () => {
+      const result = await pronoteSyncService.upsertCredentials(VALID_USER_ID, {
+        token: VALID_TOKEN,
+        metadata: VALID_METADATA,
+        tokenExpiresAt: 'not-a-date',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('valid ISO date');
+      expect(upsertCalled).toBe(false);
     });
 
     it('should reject invalid metadata JSON', async () => {
@@ -175,8 +155,7 @@ describe('PronoteSyncService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
-      expect(insertCalled).toBe(false);
-      expect(updateCalled).toBe(false);
+      expect(upsertCalled).toBe(false);
     });
   });
 

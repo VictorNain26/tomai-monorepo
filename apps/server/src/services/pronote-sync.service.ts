@@ -50,47 +50,39 @@ class PronoteSyncService {
       return { success: false, error: 'Metadata must be valid JSON' };
     }
 
+    // Validate tokenExpiresAt is a valid date
+    const tokenExpiresAt = new Date(input.tokenExpiresAt);
+    if (isNaN(tokenExpiresAt.getTime())) {
+      return { success: false, error: 'tokenExpiresAt must be a valid ISO date string' };
+    }
+
     // Encrypt sensitive data
     const encryptedToken = await encrypt(input.token);
     const encryptedMetadata = await encrypt(input.metadata);
-    const tokenExpiresAt = new Date(input.tokenExpiresAt);
 
-    // Check if credentials already exist for this user
-    const existing = await db
-      .select()
-      .from(pronoteCredentials)
-      .where(eq(pronoteCredentials.userId, userId));
-
-    if (existing.length > 0) {
-      // Update existing
-      await db
-        .update(pronoteCredentials)
-        .set({
-          encryptedToken,
-          encryptedMetadata,
-          tokenExpiresAt,
-          updatedAt: new Date(),
-        })
-        .where(eq(pronoteCredentials.userId, userId));
-
-      logger.info('Pronote credentials updated', {
-        operation: 'pronote-sync:upsert:update',
-        userId,
-      });
-    } else {
-      // Insert new
-      await db.insert(pronoteCredentials).values({
+    // Atomic upsert — eliminates race condition on concurrent requests
+    await db
+      .insert(pronoteCredentials)
+      .values({
         userId,
         encryptedToken,
         encryptedMetadata,
         tokenExpiresAt,
+      })
+      .onConflictDoUpdate({
+        target: pronoteCredentials.userId,
+        set: {
+          encryptedToken,
+          encryptedMetadata,
+          tokenExpiresAt,
+          updatedAt: new Date(),
+        },
       });
 
-      logger.info('Pronote credentials created', {
-        operation: 'pronote-sync:upsert:create',
-        userId,
-      });
-    }
+    logger.info('Pronote credentials upserted', {
+      operation: 'pronote-sync:upsert',
+      userId,
+    });
 
     return { success: true };
   }

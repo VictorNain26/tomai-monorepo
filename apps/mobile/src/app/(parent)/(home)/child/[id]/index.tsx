@@ -116,7 +116,7 @@ export default function ChildDetailScreen() {
     const result = await launchChildSession(id);
     if (result.success) {
       await refetchSession();
-      router.replace('/(student)/');
+      router.replace('/(student)');
     } else {
       toast.error('Erreur', result.error ?? 'Impossible de lancer la session');
     }

@@ -102,14 +102,6 @@ async function executeToolOnce(
     case 'search_educational_content':
       return await executeRagSearch(args);
 
-    case 'get_student_homework':
-    case 'get_student_grades':
-    case 'get_student_timetable':
-      return {
-        error: true,
-        message: "Les donnees Pronote sont fournies dans le contexte de la conversation, pas via un outil.",
-      };
-
     case 'generate_flashcards':
       return await executeGenerateFlashcards(args, context);
 
@@ -130,10 +122,10 @@ async function executeToolOnce(
 
 async function executeRagSearch(args: Record<string, unknown>): Promise<object> {
   const startTime = Date.now();
-  const query = args.query as string;
-  const niveau = args.niveau as EducationLevelType;
-  const matiere = args.matiere as string;
-  const limit = (args.limit as number) ?? 5;
+  const query = typeof args.query === 'string' ? args.query : '';
+  const niveau = (typeof args.niveau === 'string' ? args.niveau : '6eme') as EducationLevelType;
+  const matiere = typeof args.matiere === 'string' ? args.matiere : 'general';
+  const limit = typeof args.limit === 'number' ? args.limit : 5;
 
   const isAvailable = await ragService.isAvailable();
   if (!isAvailable) {
@@ -172,13 +164,13 @@ async function executeGenerateFlashcards(
   args: Record<string, unknown>,
   context: ToolExecutionContext
 ): Promise<object> {
-  const topic = args.topic as string;
-  const subject = args.subject as string;
+  const topic = typeof args.topic === 'string' ? args.topic : '';
+  const subject = typeof args.subject === 'string' ? args.subject : '';
 
   // Adapt card count to school level (half of cardsPerSession, capped at 10 for chat)
   const levelConfig = getLevelConfig(context.schoolLevel);
   const maxChatCards = Math.min(Math.floor(levelConfig.cardsPerSession / 2), 10);
-  const requestedCount = (args.cardCount as number) ?? 5;
+  const requestedCount = typeof args.cardCount === 'number' ? args.cardCount : 5;
   const cardCount = Math.min(Math.max(requestedCount, 3), maxChatCards);
 
   // Fetch RAG context for the flashcard topic
@@ -282,7 +274,7 @@ function executeGetAppHelp(
   args: Record<string, unknown>,
   context: ToolExecutionContext
 ): object {
-  const topic = args.topic as string;
+  const topic = typeof args.topic === 'string' ? args.topic : '';
   const content = getAppHelpContent(topic, context.userRole);
 
   if (!content) {
