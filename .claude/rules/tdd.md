@@ -9,7 +9,7 @@ Le workflow TDD (Red-Green-Refactor) est enforce par :
 
 | App | Runner | Commande |
 |-----|--------|----------|
-| Server | Bun natif | `cd apps/server && bun test` |
+| Server | Runner isole Bun | `cd apps/server && bun run test` |
 | Mobile | jest-expo | `cd apps/mobile && pnpm test` |
 | Landing | — | Pas de tests (site statique) |
 
@@ -30,7 +30,7 @@ Utiliser `/dev <description>` pour lancer le workflow automatiquement.
 
 ## Validation obligatoire avant commit
 
-- Server : `cd apps/server && bun run typecheck && bun run lint && bun test`
+- Server : `cd apps/server && bun run typecheck && bun run lint && bun run test`
 - Mobile : `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
 - Landing : `cd apps/landing && pnpm typecheck && pnpm lint`
 

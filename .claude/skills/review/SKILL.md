@@ -6,8 +6,8 @@ description: Review current branch changes against staging
 Review all changes on the current branch:
 
 1. Detect context:
-   - If on staging: run `git diff HEAD~5...HEAD` to see recent commits
-   - If on a feature branch: run `git diff staging...HEAD` to see all branch commits
+   - If on staging: run `git log --oneline -10` then `git diff HEAD~5...HEAD`
+   - If on a feature branch: compute merge base with `git merge-base staging HEAD`, then `git diff <merge-base>...HEAD`
 2. Run `git diff` to see uncommitted changes
 3. For each changed file, check:
    - Security vulnerabilities (OWASP top 10)

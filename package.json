@@ -24,7 +24,7 @@
     "db:generate": "turbo run db:generate --filter=tomai-server",
     "db:push": "turbo run db:push --filter=tomai-server",
     "db:studio": "turbo run db:studio --filter=tomai-server",
-    "postinstall": "lefthook install"
+    "postinstall": "lefthook install || true"
   },
   "devDependencies": {
     "@evilmartians/lefthook": "^2.1.4",

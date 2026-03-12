@@ -8,7 +8,7 @@ Feature/fix: $ARGUMENTS
 Follow this TDD workflow strictly.
 
 **Test file conventions** (see `.claude/rules/tdd.md`):
-- Server: `apps/server/src/tests/<service>.test.ts` (runner: `bun test`)
+- Server: `apps/server/src/tests/<service>.test.ts` (runner: `bun run test`)
 - Mobile: `apps/mobile/__tests__/<path>/<name>.test.ts` (runner: `pnpm test`)
 
 ## Phase 1: Understand
@@ -33,6 +33,16 @@ Follow this TDD workflow strictly.
 11. Run full validation: typecheck + lint + test for the affected app
 12. Fix any issues found
 
-## Phase 6: Commit
-13. Stage only relevant files
-14. Commit with descriptive message
+## Phase 6: Review
+13. Review ALL changes before committing:
+    - Run `git diff` to see all uncommitted changes
+    - Check for security vulnerabilities (OWASP top 10)
+    - Check TypeScript strict compliance (no `any`, null handling)
+    - Check for dead code, unused imports
+    - Check consistency with existing codebase patterns
+    - Check for missing or inadequate tests
+14. Fix any issues found, re-run validation
+
+## Phase 7: Commit
+15. Stage only relevant files
+16. Commit with descriptive message

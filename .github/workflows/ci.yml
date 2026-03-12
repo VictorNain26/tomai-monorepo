@@ -12,7 +12,7 @@ on:
       - '.vscode/**'
       - 'LICENSE'
   pull_request:
-    branches: [main]
+    branches: [main, staging]
     paths-ignore:
       - 'docs/**/*.md'
       - 'README.md'
