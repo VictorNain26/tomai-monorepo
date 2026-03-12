@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "857727789545",
+    "project_id": "tomia-489912",
+    "storage_bucket": "tomia-489912.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857727789545:android:4bc3a2f8e1f969a8168378",
+        "android_client_info": {
+          "package_name": "fr.tomia.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "857727789545-8h6ui558ku9k86gqs701o4pbgr1hnb4s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_6dgXb2SET5I6c5Kyr884VufQ5gB_VDo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "857727789545-8h6ui558ku9k86gqs701o4pbgr1hnb4s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -27,6 +27,7 @@ import { startDevLogServer } from '@/lib/dev-logger';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { ThemeProvider, RevenueCatProvider } from '@/components/providers';
 import { ToastProvider } from '@/components/ui/toast';
+import { ConfirmDialogProvider } from '@/components/ui/confirm-dialog';
 
 // Start dev debug server (port 8347) for remote error access
 startDevLogServer();
@@ -100,17 +101,17 @@ function RootLayout() {
             client={queryClient}
             persistOptions={persistOptions}
             onSuccess={() => {
-              void queryClient.resumePausedMutations().then(() => {
-                void queryClient.invalidateQueries();
-              });
+              void queryClient.resumePausedMutations();
             }}
           >
             <ThemeProvider>
               <RevenueCatProvider>
                 <ToastProvider>
-                  <Slot />
-                  <StatusBar style="auto" />
-                  <PortalHost />
+                  <ConfirmDialogProvider>
+                    <Slot />
+                    <StatusBar style="auto" />
+                    <PortalHost />
+                  </ConfirmDialogProvider>
                 </ToastProvider>
               </RevenueCatProvider>
             </ThemeProvider>

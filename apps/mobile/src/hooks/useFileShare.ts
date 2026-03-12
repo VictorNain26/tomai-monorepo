@@ -11,7 +11,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import * as Sharing from 'expo-sharing';
 import { Paths, File } from 'expo-file-system';
 import { getTreaty, unwrap } from '@repo/api';
@@ -32,6 +33,7 @@ export interface FileShareState {
 // ============================================================================
 
 export function useFileShare() {
+  const { info } = useConfirm();
   const [state, setState] = useState<FileShareState>({
     isDownloading: false,
     isSharing: false,
@@ -115,10 +117,7 @@ export function useFileShare() {
       try {
         const available = await Sharing.isAvailableAsync();
         if (!available) {
-          Alert.alert(
-            'Partage non disponible',
-            'Le partage de fichiers n\'est pas disponible sur cet appareil.'
-          );
+          info('Partage non disponible', 'Le partage de fichiers n\'est pas disponible sur cet appareil.');
           return false;
         }
 
@@ -141,7 +140,7 @@ export function useFileShare() {
         setState((prev) => ({ ...prev, isSharing: false }));
       }
     },
-    []
+    [info]
   );
 
   const downloadAndShare = useCallback(

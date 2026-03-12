@@ -15,7 +15,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { Home, User } from 'lucide-react-native';
 import { useSession, useUser } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
-import { useTheme, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { useTabScreenOptions, useTabBarConfig } from '@/lib/navigation';
 import { setupPushNotifications } from '@/lib/notifications';
 
@@ -23,7 +23,6 @@ export default function ParentLayout() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const user = useUser();
-  useTheme();
   const colors = useThemeColors();
 
   // Shared tab bar config (colors + style)

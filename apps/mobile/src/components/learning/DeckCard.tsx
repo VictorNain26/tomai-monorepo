@@ -5,10 +5,11 @@
  */
 
 import { memo, useCallback } from 'react';
-import { View, TouchableOpacity, Alert } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Play, Trash2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { LearningDeck } from '@/hooks/useLearning';
 import { useDeckStats, useIconColors, useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
@@ -42,6 +43,7 @@ function getSubjectEmoji(subject: string): string {
 
 export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: DeckCardProps) {
   const router = useRouter();
+  const { confirm } = useConfirm();
   const iconColors = useIconColors();
   const colors = useThemeColors();
   const { data: stats } = useDeckStats(deck.id);
@@ -55,22 +57,19 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
     });
   }, [router, deck.id]);
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!onDelete) return;
 
-    Alert.alert(
-      'Supprimer le deck',
-      `Supprimer "${deck.title}" ? Cette action est irreversible.`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: () => onDelete(deck.id),
-        },
-      ]
-    );
-  }, [onDelete, deck.id, deck.title]);
+    const confirmed = await confirm({
+      title: 'Supprimer le deck',
+      message: `Supprimer "${deck.title}" ? Cette action est irréversible.`,
+      confirmLabel: 'Supprimer',
+      variant: 'destructive',
+    });
+    if (confirmed) {
+      onDelete(deck.id);
+    }
+  }, [onDelete, deck.id, deck.title, confirm]);
 
   const emoji = getSubjectEmoji(deck.subject);
   const dateStr = new Date(deck.createdAt).toLocaleDateString('fr-FR', {

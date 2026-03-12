@@ -19,7 +19,7 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { useIconColors } from '@/hooks/useIconColors';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import type { PronoteResource } from '@/hooks/useParentPronote';
+import type { PronoteResource } from '@/services/pronote/pronote-types';
 import { bgColors } from '@/lib/styles';
 
 // ============================================================================

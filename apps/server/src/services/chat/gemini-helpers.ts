@@ -16,9 +16,6 @@ export const THINKING_LEVEL_MAP: Record<string, ThinkingLevel> = {
 export function getToolStatusLabel(name: string): string {
   switch (name) {
     case 'search_educational_content': return 'Recherche dans les programmes...';
-    case 'get_student_homework': return 'Consultation des devoirs...';
-    case 'get_student_grades': return 'Consultation des notes...';
-    case 'get_student_timetable': return "Consultation de l'emploi du temps...";
     case 'generate_flashcards': return 'Création de flashcards...';
     case 'get_student_profile': return 'Analyse du profil...';
     case 'get_app_help': return "Consultation du guide...";

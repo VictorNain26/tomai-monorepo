@@ -7,7 +7,7 @@ import { agentToolDeclarations } from './tool-declarations.js';
 import { executeTool } from './tool-executor.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { StreamGenerationParams, GeminiStreamChunk, AttachedFile } from './gemini-types.js';
+import type { StreamGenerationParams, GeminiStreamChunk, AttachedFile, PronoteContext } from './gemini-types.js';
 import { MAX_TOOL_ITERATIONS, THINKING_LEVEL_MAP, getToolStatusLabel } from './gemini-helpers.js';
 
 // Re-export types and helpers for backward compatibility
@@ -29,6 +29,7 @@ class GeminiChatService {
     firstName?: string;
     cognitiveProfileSummary?: string | null;
     learningContext?: string | null;
+    pronoteContext?: PronoteContext;
   }): string {
     const levelText = getLevelText(params.level);
     const basePrompt = buildSystemPrompt({
@@ -46,7 +47,27 @@ class GeminiChatService {
       ? `\n\n${params.learningContext}`
       : '';
 
-    return basePrompt + profileSection + learningSection;
+    const pronoteSection = this.buildPronoteSection(params.pronoteContext);
+
+    return basePrompt + profileSection + learningSection + pronoteSection;
+  }
+
+  private buildPronoteSection(pronoteContext?: PronoteContext): string {
+    if (!pronoteContext) return '';
+
+    const parts: string[] = [];
+    if (pronoteContext.homework?.length) {
+      parts.push(`DEVOIRS DE LA SEMAINE:\n${JSON.stringify(pronoteContext.homework)}`);
+    }
+    if (pronoteContext.recentGrades?.length) {
+      parts.push(`DERNIERES NOTES:\n${JSON.stringify(pronoteContext.recentGrades)}`);
+    }
+    if (pronoteContext.todayTimetable?.length) {
+      parts.push(`EDT DU JOUR:\n${JSON.stringify(pronoteContext.todayTimetable)}`);
+    }
+
+    if (parts.length === 0) return '';
+    return `\n\n## DONNEES PRONOTE (contexte eleve)\n${parts.join('\n\n')}`;
   }
 
   private buildFileParts(files?: AttachedFile[]): Part[] {
@@ -89,7 +110,8 @@ class GeminiChatService {
         subject: params.subject,
         firstName: params.firstName,
         cognitiveProfileSummary: params.cognitiveProfileSummary,
-        learningContext: params.learningContext
+        learningContext: params.learningContext,
+        pronoteContext: params.pronoteContext,
       });
 
       const history = this.buildConversationHistory(params.conversationHistory, params.conversationSummary);

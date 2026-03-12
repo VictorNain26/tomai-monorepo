@@ -25,12 +25,10 @@ import { ArrowLeft, Camera } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { PronoteChildSelectorModal, PronoteQrScanner, PronotePinEntry } from '@/components/parent';
-import {
-  useConnectPronote,
-  useCreateMappings,
-  type PronoteResource,
-} from '@/hooks/useParentPronote';
+import type { PronoteResource } from '@/services/pronote/pronote-types';
+import { usePronote } from '@/hooks/usePronote';
 import { useParentDashboard, useIconColors } from '@/hooks';
+import { useUser } from '@/lib/auth';
 import { useToast } from '@/components/ui/toast';
 
 // ============================================================================
@@ -59,8 +57,8 @@ export default function PronoteConnectScreen() {
   const iconColors = useIconColors();
   const { childId } = useLocalSearchParams<{ childId?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
-  const connectMutation = useConnectPronote();
-  const createMappingsMutation = useCreateMappings();
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
   const { children } = useParentDashboard();
 
   const [step, setStep] = useState<Step>('scan');
@@ -69,6 +67,8 @@ export default function PronoteConnectScreen() {
   const [error, setError] = useState<string | null>(null);
   const [connectResult, setConnectResult] = useState<ConnectResult | null>(null);
   const [showSelector, setShowSelector] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isMapping, setIsMapping] = useState(false);
 
   const currentChild = childId ? children.find((c) => c.id === childId) : null;
   const childName = currentChild ? `${currentChild.firstName} ${currentChild.lastName}` : '';
@@ -112,24 +112,25 @@ export default function PronoteConnectScreen() {
     }
 
     setError(null);
+    setIsConnecting(true);
 
     try {
-      const result = await connectMutation.mutateAsync({
-        qrCodeJson: qrData.json,
-        pin: pin,
-        establishmentName: qrData.establishment,
-      });
+      const parsed = JSON.parse(qrData.json) as { jeton: string; login: string; url: string };
+      const result = await pronote.connect(
+        { jeton: parsed.jeton, login: parsed.login, url: parsed.url },
+        pin,
+      );
 
       if (result.error) {
         setError(result.error);
+        setIsConnecting(false);
         return;
       }
 
-      const resources = (result as { resources?: PronoteResource[] }).resources ?? [];
-      const establishment = (result as { establishmentName?: string }).establishmentName ?? qrData.establishment;
+      const resources = result.resources ?? [];
 
       if (childId && resources.length > 0) {
-        setConnectResult({ resources, establishmentName: establishment });
+        setConnectResult({ resources, establishmentName: qrData.establishment });
         setStep('select');
         setShowSelector(true);
       } else if (resources.length === 0) {
@@ -141,6 +142,8 @@ export default function PronoteConnectScreen() {
       }
     } catch {
       setError('Erreur de connexion. Verifiez le code PIN.');
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -148,29 +151,19 @@ export default function PronoteConnectScreen() {
     async (resourceIndex: number, resource: PronoteResource) => {
       if (!childId) return;
 
+      setIsMapping(true);
       try {
-        const result = await createMappingsMutation.mutateAsync([
-          {
-            childId,
-            resourceIndex,
-            pronoteChildName: resource.name,
-            pronoteClassName: resource.className,
-          },
-        ]);
-
-        if (result.error) {
-          toast.error('Erreur', result.error);
-          return;
-        }
-
+        pronote.setResourceMapping(childId, resourceIndex);
         setShowSelector(false);
         toast.success('Association reussie', `${resource.name} est maintenant lie a ${childName}.`);
         router.back();
       } catch {
         toast.error('Erreur', 'Impossible de creer l\'association.');
+      } finally {
+        setIsMapping(false);
       }
     },
-    [childId, childName, createMappingsMutation, router, toast]
+    [childId, childName, pronote, router, toast]
   );
 
   const handleReset = () => {
@@ -249,7 +242,7 @@ export default function PronoteConnectScreen() {
               onSubmit={handleSubmit}
               onReset={handleReset}
               error={error}
-              isPending={connectMutation.isPending}
+              isPending={isConnecting}
             />
           )}
         </ScrollView>
@@ -267,7 +260,7 @@ export default function PronoteConnectScreen() {
           resources={connectResult.resources}
           childName={childName}
           establishmentName={connectResult.establishmentName}
-          isSubmitting={createMappingsMutation.isPending}
+          isSubmitting={isMapping}
         />
       )}
     </SafeAreaView>

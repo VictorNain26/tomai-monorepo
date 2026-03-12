@@ -12,7 +12,8 @@ import { ArrowLeft } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { GradesView } from '@/components/pronote';
-import { useChildGrades, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { usePronote, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { useUser } from '@/lib/auth';
 
 export default function ChildGradesScreen() {
   const router = useRouter();
@@ -21,16 +22,16 @@ export default function ChildGradesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [refreshing, setRefreshing] = useState(false);
 
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
   const { children } = useParentDashboard();
   const child = children.find((c) => c.id === id);
 
-  const { data: grades, isLoading, refetch } = useChildGrades(id);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await pronote.fetchGrades();
     setRefreshing(false);
-  }, [refetch]);
+  }, [pronote]);
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
@@ -63,8 +64,8 @@ export default function ChildGradesScreen() {
         }
       >
         <GradesView
-          grades={grades}
-          isLoading={isLoading}
+          grades={pronote.grades}
+          isLoading={false}
           subtitle={child?.firstName}
         />
       </ScrollView>

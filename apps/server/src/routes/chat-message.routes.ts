@@ -47,7 +47,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     }
 
     const user = authResult.user;
-    const { content, data } = body as {
+    const { content, data, pronoteContext } = body as {
       content: string;
       data: {
         subject?: string;
@@ -56,6 +56,11 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         firstName?: string;
         fileId?: string;
         fileIds?: string[];
+      };
+      pronoteContext?: {
+        homework?: Array<{ subject: string; description: string; dueDate: string; done: boolean }>;
+        recentGrades?: Array<{ subject: string; value: number | null; outOf: number; date: string }>;
+        todayTimetable?: Array<{ subject: string; startDate: string; endDate: string; canceled: boolean }>;
       };
     };
 
@@ -106,6 +111,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         firstName: data.firstName ?? user.firstName ?? undefined,
         fileIds,
         userRole: user.role === 'parent' ? 'parent' : 'student',
+        pronoteContext,
       });
 
       for await (const chunk of stream) {
@@ -183,6 +189,26 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           maxItems: 5,
           description: 'File IDs for multimodal messages'
         }))
-      })
+      }),
+      pronoteContext: t.Optional(t.Object({
+        homework: t.Optional(t.Array(t.Object({
+          subject: t.String(),
+          description: t.String(),
+          dueDate: t.String(),
+          done: t.Boolean()
+        }))),
+        recentGrades: t.Optional(t.Array(t.Object({
+          subject: t.String(),
+          value: t.Union([t.Number(), t.Null()]),
+          outOf: t.Number(),
+          date: t.String()
+        }))),
+        todayTimetable: t.Optional(t.Array(t.Object({
+          subject: t.String(),
+          startDate: t.String(),
+          endDate: t.String(),
+          canceled: t.Boolean()
+        })))
+      }, { description: 'Ephemeral Pronote context from device (never persisted)' }))
     })
   });

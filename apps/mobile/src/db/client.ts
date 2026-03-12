@@ -55,21 +55,6 @@ export function getDatabase() {
   return _db;
 }
 
-/**
- * @deprecated Use getDatabase() instead. Kept for backward compatibility.
- * Will throw if accessed before initializeDatabase() is called.
- */
-export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
-  get(_, prop) {
-    const database = getDatabase();
-    const value = database[prop as keyof typeof database];
-    if (typeof value === 'function') {
-      return value.bind(database);
-    }
-    return value;
-  },
-});
-
 // ============================================================================
 // MIGRATIONS
 // ============================================================================

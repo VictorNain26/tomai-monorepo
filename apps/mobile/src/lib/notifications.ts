@@ -3,16 +3,12 @@
  *
  * Handles Expo Push Notifications registration and token sync.
  *
- * ARCHITECTURE: expo-notifications is loaded via dynamic import() AFTER the
- * Expo Go guard. This prevents the native module from loading in Expo Go,
- * which avoids the WARN + ERROR that appear since SDK 53 removed push
- * notification support from Expo Go on Android.
- *
  * @see https://docs.expo.dev/push-notifications/overview/
  */
 
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { getTreaty, unwrap } from '@repo/api';
 
@@ -20,9 +16,7 @@ import { getTreaty, unwrap } from '@repo/api';
  * Setup Android notification channels.
  * On Android 13+, channels MUST be created BEFORE getting push token.
  */
-async function setupAndroidChannels(
-  Notifications: typeof import('expo-notifications')
-): Promise<void> {
+async function setupAndroidChannels(): Promise<void> {
   if (Platform.OS !== 'android') return;
 
   await Notifications.setNotificationChannelAsync('default', {
@@ -31,7 +25,7 @@ async function setupAndroidChannels(
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#4f46e5',
-    sound: 'default',
+    sound: null,
     enableVibrate: true,
     enableLights: true,
   });
@@ -40,7 +34,7 @@ async function setupAndroidChannels(
     name: 'Rappels devoirs',
     description: 'Rappels pour les devoirs à rendre',
     importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
+    sound: null,
     enableVibrate: true,
   });
 
@@ -55,7 +49,7 @@ async function setupAndroidChannels(
     name: 'Messages parents',
     description: 'Messages de tes parents',
     importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
+    sound: null,
     enableVibrate: true,
   });
 
@@ -65,16 +59,14 @@ async function setupAndroidChannels(
 /**
  * Register for push notifications and get Expo push token.
  */
-async function registerForPushNotifications(
-  Notifications: typeof import('expo-notifications')
-): Promise<{ token: string | null; error: string | null }> {
+async function registerForPushNotifications(): Promise<{ token: string | null; error: string | null }> {
   if (!Device.isDevice) {
     console.log('[Notifications] Not a physical device, skipping registration');
     return { token: null, error: 'Appareil physique requis' };
   }
 
   try {
-    await setupAndroidChannels(Notifications);
+    await setupAndroidChannels();
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -130,18 +122,8 @@ async function savePushTokenToBackend(token: string): Promise<boolean> {
 
 /**
  * Full push notification setup: configure handler, register, save token.
- *
- * expo-notifications is dynamically imported here, AFTER the Expo Go guard,
- * so the native module never loads in Expo Go (no WARN/ERROR).
  */
 export async function setupPushNotifications(): Promise<boolean> {
-  if (Constants.appOwnership === 'expo') {
-    console.log('[Notifications] Skipping push setup in Expo Go');
-    return false;
-  }
-
-  const Notifications = await import('expo-notifications');
-
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -153,7 +135,7 @@ export async function setupPushNotifications(): Promise<boolean> {
     }),
   });
 
-  const result = await registerForPushNotifications(Notifications);
+  const result = await registerForPushNotifications();
 
   if (!result.token) {
     console.warn('[Notifications] Setup failed:', result.error);

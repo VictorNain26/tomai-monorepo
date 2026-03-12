@@ -12,21 +12,22 @@ import { ArrowLeft } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { GradesView } from '@/components/pronote';
-import { useStudentGrades, useIconColors, useThemeColors } from '@/hooks';
+import { usePronote, useIconColors, useThemeColors } from '@/hooks';
+import { useUser } from '@/lib/auth';
 
 export default function GradesScreen() {
   const router = useRouter();
   const iconColors = useIconColors();
   const colors = useThemeColors();
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
   const [refreshing, setRefreshing] = useState(false);
-
-  const { data: grades, isLoading, refetch } = useStudentGrades();
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await pronote.fetchGrades();
     setRefreshing(false);
-  }, [refetch]);
+  }, [pronote]);
 
   // Navigate to Tom chat for revision
   const handleReviewWithTom = (subject: string, gradeId: string, description?: string) => {
@@ -63,8 +64,8 @@ export default function GradesScreen() {
         }
       >
         <GradesView
-          grades={grades}
-          isLoading={isLoading}
+          grades={pronote.grades}
+          isLoading={refreshing}
           onReviewWithTom={handleReviewWithTom}
         />
       </ScrollView>

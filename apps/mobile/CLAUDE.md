@@ -2,36 +2,33 @@
 
 App Expo SDK 55 + React Native 0.83 + React 19.2. NativeWind + React Native Reusables.
 
-## Commandes
+## Workflow dev
 
 ```bash
-pnpm dev:client       # Dev Client (RECOMMANDE — necessite build EAS prealable)
-pnpm dev              # Expo Go (limite : pas de modules natifs custom)
-pnpm dev:tunnel       # Expo Go via tunnel (reseau different)
+pnpm dev              # Lance Metro + Dev Client (quotidien)
+pnpm build:dev        # Rebuild dev client Android (smart : skip si fingerprint identique)
 pnpm typecheck        # TypeScript strict
 pnpm lint             # ESLint zero warnings
+pnpm test             # Tests jest-expo
 ```
 
-**Dev Client est l'environnement principal** : l'app utilise Google Sign-In, RevenueCat, expo-camera, expo-sqlite qui necessitent du code natif.
+**Dev Client sur téléphone physique Android** : l'app utilise Google Sign-In, RevenueCat, expo-camera, expo-sqlite qui nécessitent du code natif.
 
-## Builds
+### Quand rebuilder ?
 
-| Changement | Commande | Rebuild ? |
-|------------|----------|-----------|
-| Code JS/TS uniquement | `pnpm update:preview` | Non (OTA) |
-| Nouvelle dep native | `pnpm workflow:preview:android` | Oui si fingerprint change |
-| Config app.config.ts | `pnpm workflow:preview:android` | Oui si fingerprint change |
+| Changement | Commande |
+|------------|----------|
+| Code JS/TS uniquement | Rien, hot-reload auto |
+| Nouvelle dep native | `pnpm build:dev` |
+| Config app.config.ts | `pnpm build:dev` |
+
+## CI/CD (workflows EAS)
 
 ```bash
-# Smart builds (RECOMMANDE - evite rebuilds inutiles)
-pnpm workflow:preview:android     # Preview Android
+pnpm workflow:preview:android     # Preview Android (auto sur push staging)
 pnpm workflow:preview:ios         # Preview iOS
-pnpm workflow:prod:android        # Production Android + submit
-pnpm workflow:prod:ios            # Production iOS + submit
-
-# OTA Updates (JS uniquement, sans rebuild)
-pnpm update:preview               # Channel preview
-pnpm update:prod                  # Channel production
+pnpm workflow:prod:android        # Production Android + submit Play Store
+pnpm workflow:prod:ios            # Production iOS + submit App Store
 ```
 
 ## Architecture
@@ -51,6 +48,6 @@ pnpm update:prod                  # Channel production
 
 ## Troubleshooting
 
-- QR code ne marche pas → `pnpm dev` (pas `dev:client`) ou `pnpm dev:tunnel`
-- Cache corrompu → `npx expo start --clear`
-- Port 8081 occupe → `npx kill-port 8081`
+- Metro ne démarre pas → `npx expo start --dev-client --clear`
+- Port 8081 occupé → `npx kill-port 8081`
+- Téléphone ne se connecte pas → vérifier même réseau Wi-Fi

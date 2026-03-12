@@ -10,16 +10,11 @@ export type {
   ChatFileAttachment,
 } from '@/hooks/useChat';
 
-// Pronote types - re-exported from hooks (source of truth)
+// Pronote types - re-exported from services (source of truth)
 export type {
   PronoteHomework,
   PronoteGrade,
   PronoteTimetableEntry,
-  ParentConnectionStatus,
-  ChildMapping,
   PronoteResource,
-} from '@/hooks/useParentPronote';
-
-export type {
-  StudentPronoteStatus,
-} from '@/hooks/useStudentPronote';
+  PronoteChatContext,
+} from '@/services/pronote/pronote-types';

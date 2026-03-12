@@ -1,6 +1,6 @@
 /**
  * Tests unitaires - Tool Executor (services/chat/tool-executor.ts)
- * Mock: RAG, Pronote, learning, DB, logger
+ * Mock: RAG, learning, DB, logger
  *
  * Note: mock.module paths resolve from the test file location (src/tests/)
  */
@@ -30,21 +30,6 @@ mock.module('../services/rag.service', () => ({
   ragService: {
     isAvailable: mock(async () => ragAvailable),
     hybridSearch: mock(async () => ragResult),
-  },
-}));
-
-// Pronote service — src/services/pronote.service.ts
-// PronoteService imports internal modules that try to use DB,
-// so we need to mock pronote.service + any sub-imports
-let pronoteHomework: unknown[] | null = [{ subject: 'Maths', content: 'Ex 1-5' }];
-let pronoteGrades: unknown[] | null = [{ subject: 'Maths', grade: 15 }];
-let pronoteTimetable: unknown[] | null = [{ day: 'Monday', subject: 'Maths' }];
-
-mock.module('../services/pronote.service', () => ({
-  pronoteService: {
-    getHomeworkForChild: mock(async () => pronoteHomework),
-    getGradesForChild: mock(async () => pronoteGrades),
-    getTimetableForChild: mock(async () => pronoteTimetable),
   },
 }));
 
@@ -136,9 +121,6 @@ beforeEach(() => {
     bestMatchTitle: 'Programme mathématiques',
     bestMatchDomaine: 'Nombres et calculs',
   };
-  pronoteHomework = [{ subject: 'Maths', content: 'Ex 1-5' }];
-  pronoteGrades = [{ subject: 'Maths', grade: 15 }];
-  pronoteTimetable = [{ day: 'Monday', subject: 'Maths' }];
   profileResult = {
     strengths: ['calcul'],
     weaknesses: ['fractions'],
@@ -176,46 +158,11 @@ describe('Tool Executor', () => {
     });
   });
 
-  describe('get_student_homework', () => {
-    it('should return homework when Pronote connected', async () => {
-      const result = await executeTool('get_student_homework', {}, baseContext) as Record<string, unknown>;
-      expect(result.homework).toBeDefined();
-      expect(result.count).toBe(1);
-    });
-
-    it('should return error when Pronote not connected', async () => {
-      pronoteHomework = null;
+  describe('unknown tool', () => {
+    it('should return error for unknown tool name', async () => {
       const result = await executeTool('get_student_homework', {}, baseContext) as Record<string, unknown>;
       expect(result.error).toBe(true);
-      expect(result.connected).toBe(false);
-    });
-  });
-
-  describe('get_student_grades', () => {
-    it('should return grades when Pronote connected', async () => {
-      const result = await executeTool('get_student_grades', {}, baseContext) as Record<string, unknown>;
-      expect(result.grades).toBeDefined();
-      expect(result.count).toBe(1);
-    });
-
-    it('should return error when Pronote not connected', async () => {
-      pronoteGrades = null;
-      const result = await executeTool('get_student_grades', {}, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
-    });
-  });
-
-  describe('get_student_timetable', () => {
-    it('should return timetable when Pronote connected', async () => {
-      const result = await executeTool('get_student_timetable', {}, baseContext) as Record<string, unknown>;
-      expect(result.timetable).toBeDefined();
-      expect(result.count).toBe(1);
-    });
-
-    it('should return error when Pronote not connected', async () => {
-      pronoteTimetable = null;
-      const result = await executeTool('get_student_timetable', {}, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.message).toContain('Outil inconnu');
     });
   });
 

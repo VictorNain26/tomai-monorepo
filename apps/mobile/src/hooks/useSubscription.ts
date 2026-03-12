@@ -4,13 +4,12 @@
  * React hook for managing RevenueCat subscriptions.
  * Provides subscription status, offerings, and purchase methods.
  *
- * Works in both Expo Go (mock mode) and development builds (real mode).
- *
  * @see https://www.revenuecat.com/docs
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import type { CustomerInfo, PurchasesPackage, PurchasesOffering } from '@/lib/revenuecat';
 import {
   getCustomerInfo,
   getCurrentOffering,
@@ -18,80 +17,30 @@ import {
   restorePurchases,
   addCustomerInfoUpdateListener,
   hasProEntitlement,
-  isRunningInExpoGo,
   ENTITLEMENT_ID,
 } from '@/lib/revenuecat';
 
-// ============================================================================
-// TYPES (compatible with both mock and real RevenueCat)
-// ============================================================================
-
-interface CustomerInfo {
-  originalAppUserId: string;
-  entitlements: {
-    active: Record<string, { expirationDate?: string; willRenew?: boolean }>;
-  };
-}
-
-interface Package {
-  identifier: string;
-  packageType: string;
-  product: { priceString: string };
-}
-
-interface Offering {
-  availablePackages: Package[];
-}
-
 export interface SubscriptionState {
-  /** Whether subscription data is loading */
   isLoading: boolean;
-  /** Whether user has active TomIA Pro entitlement */
   isPro: boolean;
-  /** Current customer info from RevenueCat */
   customerInfo: CustomerInfo | null;
-  /** Current offering with available packages */
-  offering: Offering | null;
-  /** Subscription expiration date (null if no subscription) */
+  offering: PurchasesOffering | null;
   expirationDate: Date | null;
-  /** Whether subscription will renew */
   willRenew: boolean;
-  /** Whether running in Expo Go (no real purchases) */
-  isExpoGo: boolean;
 }
 
 export interface SubscriptionActions {
-  /** Purchase a package */
-  purchase: (pkg: Package) => Promise<boolean>;
-  /** Restore previous purchases */
+  purchase: (pkg: PurchasesPackage) => Promise<boolean>;
   restore: () => Promise<boolean>;
-  /** Refresh subscription status */
   refresh: () => Promise<void>;
 }
 
-/**
- * Hook for managing RevenueCat subscriptions.
- *
- * @example
- * ```tsx
- * const { isPro, offering, purchase, isExpoGo } = useSubscription();
- *
- * if (isExpoGo) {
- *   // Show message that purchases require development build
- * } else if (!isPro && offering) {
- *   // Show paywall with offering.availablePackages
- * }
- * ```
- */
 export function useSubscription(): SubscriptionState & SubscriptionActions {
+  const { info: showInfo } = useConfirm();
   const [isLoading, setIsLoading] = useState(true);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
-  const [offering, setOffering] = useState<Offering | null>(null);
+  const [offering, setOffering] = useState<PurchasesOffering | null>(null);
 
-  // Check if running in Expo Go
-  const isExpoGo = isRunningInExpoGo();
-
-  // Derived state
   const isPro = customerInfo?.entitlements.active[ENTITLEMENT_ID] !== undefined;
   const entitlement = customerInfo?.entitlements.active[ENTITLEMENT_ID];
   const expirationDate = entitlement?.expirationDate
@@ -99,7 +48,6 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
     : null;
   const willRenew = entitlement?.willRenew ?? false;
 
-  // Fetch subscription data
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -107,8 +55,8 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
         getCustomerInfo(),
         getCurrentOffering(),
       ]);
-      setCustomerInfo(info as CustomerInfo);
-      setOffering(currentOffering as Offering | null);
+      setCustomerInfo(info);
+      setOffering(currentOffering);
     } catch (error) {
       if (__DEV__) {
         console.error('[useSubscription] Failed to fetch data:', error);
@@ -118,36 +66,24 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
     }
   }, []);
 
-  // Initial fetch and listener setup
   useEffect(() => {
     fetchData();
 
-    // Listen for customer info updates
     const unsubscribe = addCustomerInfoUpdateListener((info) => {
-      setCustomerInfo(info as CustomerInfo);
+      setCustomerInfo(info);
     });
 
     return unsubscribe;
   }, [fetchData]);
 
-  // Purchase a package
-  const purchase = useCallback(async (pkg: Package): Promise<boolean> => {
-    // Purchases not available in Expo Go
-    if (isExpoGo) {
-      Alert.alert(
-        'Non disponible',
-        'Les achats in-app ne sont pas disponibles dans Expo Go. Utilisez un development build pour tester.'
-      );
-      return false;
-    }
-
+  const purchase = useCallback(async (pkg: PurchasesPackage): Promise<boolean> => {
     try {
       setIsLoading(true);
-      const info = await purchasePackage(pkg);
+      const result = await purchasePackage(pkg);
 
-      if (info) {
-        setCustomerInfo(info as CustomerInfo);
-        return info.entitlements.active[ENTITLEMENT_ID] !== undefined;
+      if (result) {
+        setCustomerInfo(result);
+        return result.entitlements.active[ENTITLEMENT_ID] !== undefined;
       }
 
       return false; // User cancelled
@@ -155,38 +91,25 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
       if (__DEV__) {
         console.error('[useSubscription] Purchase failed:', error);
       }
-      Alert.alert(
-        'Erreur',
-        "L'achat a échoué. Veuillez réessayer."
-      );
+      showInfo('Erreur', "L'achat a échoué. Veuillez réessayer.");
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [isExpoGo]);
+  }, [showInfo]);
 
-  // Restore purchases
   const restore = useCallback(async (): Promise<boolean> => {
-    // Restore not available in Expo Go
-    if (isExpoGo) {
-      Alert.alert(
-        'Non disponible',
-        'La restauration des achats n\'est pas disponible dans Expo Go.'
-      );
-      return false;
-    }
-
     try {
       setIsLoading(true);
-      const info = await restorePurchases();
-      setCustomerInfo(info as CustomerInfo);
+      const result = await restorePurchases();
+      setCustomerInfo(result);
 
-      const restored = info.entitlements.active[ENTITLEMENT_ID] !== undefined;
+      const restored = result.entitlements.active[ENTITLEMENT_ID] !== undefined;
 
       if (restored) {
-        Alert.alert('Succès', 'Vos achats ont été restaurés.');
+        showInfo('Succès', 'Vos achats ont été restaurés.');
       } else {
-        Alert.alert('Info', 'Aucun achat à restaurer.');
+        showInfo('Info', 'Aucun achat à restaurer.');
       }
 
       return restored;
@@ -194,15 +117,12 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
       if (__DEV__) {
         console.error('[useSubscription] Restore failed:', error);
       }
-      Alert.alert(
-        'Erreur',
-        'La restauration a échoué. Veuillez réessayer.'
-      );
+      showInfo('Erreur', 'La restauration a échoué. Veuillez réessayer.');
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [isExpoGo]);
+  }, [showInfo]);
 
   return {
     isLoading,
@@ -211,7 +131,6 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
     offering,
     expirationDate,
     willRenew,
-    isExpoGo,
     purchase,
     restore,
     refresh: fetchData,
@@ -220,12 +139,10 @@ export function useSubscription(): SubscriptionState & SubscriptionActions {
 
 /**
  * Simple hook to check if user has Pro entitlement.
- * Use when you only need to check access without full subscription data.
  */
-export function useIsPro(): { isPro: boolean; isLoading: boolean; isExpoGo: boolean } {
+export function useIsPro(): { isPro: boolean; isLoading: boolean } {
   const [isPro, setIsPro] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const isExpoGo = isRunningInExpoGo();
 
   useEffect(() => {
     let mounted = true;
@@ -244,7 +161,6 @@ export function useIsPro(): { isPro: boolean; isLoading: boolean; isExpoGo: bool
         }
       });
 
-    // Listen for updates (no-op in Expo Go)
     const unsubscribe = addCustomerInfoUpdateListener((info) => {
       if (mounted) {
         setIsPro(info.entitlements.active[ENTITLEMENT_ID] !== undefined);
@@ -257,5 +173,5 @@ export function useIsPro(): { isPro: boolean; isLoading: boolean; isExpoGo: bool
     };
   }, []);
 
-  return { isPro, isLoading, isExpoGo };
+  return { isPro, isLoading };
 }

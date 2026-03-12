@@ -4,7 +4,7 @@
  * Uses shared HomeworkView component in read-only mode (no "Ask Tom").
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -12,8 +12,9 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { HomeworkView } from '@/components/pronote';
-import { useChildHomework, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
-import { getWeekLabel } from '@/lib/pronote-helpers';
+import { usePronote, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { useUser } from '@/lib/auth';
+import { getWeekLabel, getWeekBounds } from '@/lib/pronote-helpers';
 
 export default function ChildHomeworkScreen() {
   const router = useRouter();
@@ -23,16 +24,24 @@ export default function ChildHomeworkScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
+  const user = useUser();
+  const pronote = usePronote(user?.id ?? '');
   const { children } = useParentDashboard();
   const child = children.find((c) => c.id === id);
 
-  const { data: homework, isLoading, refetch } = useChildHomework(id, weekOffset);
+  const filteredHomework = useMemo(() => {
+    const { start, end } = getWeekBounds(weekOffset);
+    return pronote.homework.filter((h) => {
+      const due = new Date(h.dueDate);
+      return due >= start && due <= end;
+    });
+  }, [pronote.homework, weekOffset]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await pronote.fetchHomework();
     setRefreshing(false);
-  }, [refetch]);
+  }, [pronote]);
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
@@ -85,7 +94,7 @@ export default function ChildHomeworkScreen() {
           />
         }
       >
-        <HomeworkView homework={homework} isLoading={isLoading} />
+        <HomeworkView homework={filteredHomework} isLoading={refreshing} />
       </ScrollView>
     </SafeAreaView>
   );

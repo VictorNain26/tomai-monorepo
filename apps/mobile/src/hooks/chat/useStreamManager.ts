@@ -10,6 +10,7 @@
 import { useCallback, useRef } from 'react';
 import { getBaseUrl } from '@repo/api';
 import { authClient, type IAppUser } from '@/lib/auth';
+import { usePronoteStore } from '@/stores/pronote-store';
 import EventSource from 'react-native-sse';
 
 import type {
@@ -18,6 +19,44 @@ import type {
   CreatedDeck,
   StreamChunk,
 } from './types';
+import type {
+  PronoteHomework,
+  PronoteGrade,
+  PronoteTimetableEntry,
+  PronoteChatContext,
+} from '@/services/pronote/pronote-types';
+
+/** Build chat context from Pronote store state (snapshot read) */
+function buildPronoteChatContext(state: {
+  homework: PronoteHomework[];
+  grades: PronoteGrade[];
+  timetable: PronoteTimetableEntry[];
+}): PronoteChatContext | undefined {
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(now);
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const todayTimetable = state.timetable.filter((e) => {
+    const start = new Date(e.startDate);
+    return start >= todayStart && start <= todayEnd;
+  });
+
+  const recentGrades = [...state.grades]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10);
+
+  const ctx: PronoteChatContext = {
+    homework: state.homework.length > 0 ? state.homework : undefined,
+    recentGrades: recentGrades.length > 0 ? recentGrades : undefined,
+    todayTimetable: todayTimetable.length > 0 ? todayTimetable : undefined,
+  };
+
+  // Return undefined if nothing to send
+  if (!ctx.homework && !ctx.recentGrades && !ctx.todayTimetable) return undefined;
+  return ctx;
+}
 
 /** Inactivity timeout: if no SSE event received for 90s, abort.
  * Tool calls (RAG + Pronote + flashcards) can chain and take 20s+ each,
@@ -162,6 +201,12 @@ export function useStreamManager(callbacks: StreamCallbacks) {
           return;
         }
 
+        // Build pronote context from device store (non-reactive read)
+        const pronoteState = usePronoteStore.getState();
+        const pronoteContext = pronoteState.isConnected
+          ? buildPronoteChatContext(pronoteState)
+          : undefined;
+
         const es = new EventSource(`${baseUrl}/api/chat/stream`, {
           headers: {
             'Content-Type': 'application/json',
@@ -176,6 +221,7 @@ export function useStreamManager(callbacks: StreamCallbacks) {
               firstName: user.name?.split(' ')[0] ?? 'Eleve',
               fileIds: attachments.map((a) => a.fileId),
             },
+            pronoteContext,
           }),
           pollingInterval: 0,
         });

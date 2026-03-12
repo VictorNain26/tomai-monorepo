@@ -14,24 +14,25 @@
  */
 
 import { Suspense, useEffect, useState, useCallback } from 'react';
-import { View, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, MessageCircle, BookOpen, User, ArrowLeft } from 'lucide-react-native';
 import { useSession, useUser, useImpersonatedBy, restoreParentSession } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
-import { useTheme, useThemeColors, useDueSummary } from '@/hooks';
+import { useThemeColors, useDueSummary } from '@/hooks';
 import { useTabScreenOptions, useTabBarConfig } from '@/lib/navigation';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { setupPushNotifications } from '@/lib/notifications';
 
 export default function StudentLayout() {
   const router = useRouter();
   const toast = useToast();
+  const { confirm } = useConfirm();
   const { data: session, isPending, refetch: refetchSession } = useSession();
   const user = useUser();
-  useTheme();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
 
@@ -48,30 +49,23 @@ export default function StudentLayout() {
   // Uses refetch() to sync React state after stopping impersonation
   // @see https://github.com/better-auth/better-auth/discussions/3860
   const handleReturnToParent = useCallback(async () => {
-    Alert.alert(
-      'Retour au compte parent',
-      'Voulez-vous quitter la session élève ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Confirmer',
-          onPress: async () => {
-            setIsRestoring(true);
-            const success = await restoreParentSession();
+    const confirmed = await confirm({
+      title: 'Retour au compte parent',
+      message: 'Voulez-vous quitter la session élève ?',
+    });
+    if (confirmed) {
+      setIsRestoring(true);
+      const success = await restoreParentSession();
 
-            if (success) {
-              // Refresh session state before navigation
-              await refetchSession();
-              router.replace('/(parent)/');
-            } else {
-              toast.error('Erreur', 'Impossible de restaurer la session parent');
-            }
-            setIsRestoring(false);
-          },
-        },
-      ]
-    );
-  }, [router, toast, refetchSession]);
+      if (success) {
+        await refetchSession();
+        router.replace('/(parent)/');
+      } else {
+        toast.error('Erreur', 'Impossible de restaurer la session parent');
+      }
+      setIsRestoring(false);
+    }
+  }, [router, toast, refetchSession, confirm]);
 
   // Shared tab bar config (colors + style)
   const { tabColors, tabBarStyle } = useTabBarConfig();
@@ -161,7 +155,7 @@ export default function StudentLayout() {
             tabBarActiveTintColor: tabColors.active,
             tabBarInactiveTintColor: tabColors.inactive,
             tabBarStyle,
-            tabBarShowLabel: true,
+            tabBarShowLabel: false,
             popToTopOnBlur: true,
             ...tabOptions,
           }}

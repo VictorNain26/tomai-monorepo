@@ -2,7 +2,6 @@
  * Mobile Pricing Screen
  *
  * Displays Free vs Premium plans using RevenueCat for in-app purchases.
- * Handles Expo Go mode where purchases are unavailable.
  */
 
 import { View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
@@ -15,13 +14,12 @@ import {
   Shield,
   Sparkles,
   Clock,
-  AlertCircle,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks';
-import { useTheme, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { useIconColors } from '@/hooks/useIconColors';
 import { bgColors, borderColors } from '@/lib/styles';
 
@@ -53,7 +51,6 @@ const PREMIUM_FEATURES = [
 
 export default function PricingScreen() {
   const router = useRouter();
-  useTheme(); // Trigger re-render on theme change
   const iconColors = useIconColors();
   const colors = useThemeColors();
   const subscription = useSubscription();
@@ -82,25 +79,6 @@ export default function PricingScreen() {
       </View>
 
       <ScrollView className="flex-1 px-4 py-6">
-        {/* Expo Go Warning */}
-        {subscription.isExpoGo && (
-          <View
-            className="mb-6 flex-row items-start gap-3 rounded-xl p-4"
-            style={{ backgroundColor: bgColors.warning[10], borderWidth: 1, borderColor: borderColors.warning[20] }}
-          >
-            <AlertCircle color={colors.warning} size={20} />
-            <View className="flex-1">
-              <Text className="font-semibold" style={{ color: colors.warning }}>
-                Mode Expo Go
-              </Text>
-              <Text className="mt-1 text-sm" style={{ color: colors.warning }}>
-                Les achats in-app ne sont pas disponibles dans Expo Go.
-                Utilisez un development build pour tester les achats.
-              </Text>
-            </View>
-          </View>
-        )}
-
         {/* Already Premium Banner */}
         {subscription.isPro && (
           <View
@@ -161,7 +139,6 @@ export default function PricingScreen() {
               onPress={handlePurchase}
               disabled={
                 subscription.isLoading ||
-                subscription.isExpoGo ||
                 !availablePackage
               }
               className="w-full"
@@ -183,7 +160,7 @@ export default function PricingScreen() {
             {/* Restore Button */}
             <TouchableOpacity
               onPress={handleRestore}
-              disabled={subscription.isLoading || subscription.isExpoGo}
+              disabled={subscription.isLoading}
               className="mt-3 items-center py-2"
             >
               <Text variant="muted" className="text-sm underline">
@@ -198,7 +175,7 @@ export default function PricingScreen() {
           <View className="flex-row items-center justify-center gap-2">
             <Shield color={iconColors.success} size={16} />
             <Text variant="muted" className="text-sm">
-              Paiement sécurisé via {subscription.isExpoGo ? 'App Store / Play Store' : 'votre store'}
+              Paiement sécurisé via votre store
             </Text>
           </View>
           <View className="flex-row items-center justify-center gap-2">

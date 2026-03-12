@@ -13,6 +13,19 @@ import { renderHook, act } from '@testing-library/react-native';
 // MOCKS
 // ============================================================================
 
+jest.mock('react-native-mmkv', () => {
+  const store = new Map<string, string>();
+  return {
+    createMMKV: () => ({
+      set: (key: string, val: string) => store.set(key, val),
+      getString: (key: string) => store.get(key),
+      remove: (key: string) => store.delete(key),
+      contains: (key: string) => store.has(key),
+      clearAll: () => store.clear(),
+    }),
+  };
+});
+
 const mockEventSourceInstance = {
   addEventListener: jest.fn(),
   removeAllEventListeners: jest.fn(),

@@ -18,9 +18,10 @@ import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
+import { appConfig } from '../../config/app.config.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { GeminiStreamChunk } from './gemini-types.js';
+import type { GeminiStreamChunk, PronoteContext } from './gemini-types.js';
 
 export interface ChatStreamRequest {
   userId: string;
@@ -31,6 +32,7 @@ export interface ChatStreamRequest {
   firstName?: string;
   fileIds: string[];
   userRole: 'student' | 'parent';
+  pronoteContext?: PronoteContext;
 }
 
 interface SessionContext {
@@ -106,7 +108,7 @@ class ChatOrchestrationService {
     yield {
       type: 'status' as const,
       id: `ack_${Date.now()}`,
-      model: 'gemini-3-flash-preview',
+      model: appConfig.ai.gemini.model,
       timestamp: Date.now(),
       status: 'Tom réfléchit…',
     };
@@ -119,6 +121,7 @@ class ChatOrchestrationService {
       firstName: request.firstName,
       sessionId: sessionCtx.sessionId,
       userRole: request.userRole,
+      pronoteContext: request.pronoteContext,
       cognitiveProfileSummary,
       learningContext,
       conversationSummary: sessionCtx.conversationSummary,

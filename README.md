@@ -33,7 +33,7 @@ pnpm dev:mobile
 apps/
 ├── landing/       # Next.js 16 - Site vitrine SEO (port 3001)
 ├── server/        # Bun + Elysia.js - Backend API (port 3000)
-└── mobile/        # Expo SDK 54 - App iOS/Android (port 8081)
+└── mobile/        # Expo SDK 55 - App iOS/Android (port 8081)
 
 packages/
 ├── api/           # @repo/api - Client Eden Treaty + TanStack Query
@@ -71,7 +71,7 @@ pnpm db:studio          # Drizzle Studio UI
 | Monorepo | Turborepo 2.7, pnpm 10.28, TypeScript 5.9 strict |
 | Backend | Bun 1.3, Elysia.js 1.4, PostgreSQL 16 pgvector, Drizzle ORM |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion |
-| Mobile | Expo SDK 54, React Native 0.81, NativeWind, React Native Reusables |
+| Mobile | Expo SDK 55, React Native 0.83, NativeWind 5, React Native Reusables |
 | Auth | Better Auth + Google OAuth |
 | AI | Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Qdrant Cloud (RAG) |
 | Voix | Gladia (STT), ElevenLabs (TTS) |

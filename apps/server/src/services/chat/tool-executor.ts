@@ -6,7 +6,6 @@
  */
 
 import { ragService } from '../rag.service.js';
-import { pronoteService } from '../pronote.service.js';
 import { generateCards, type CardGenerationResult } from '../learning/card-generator.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { fsrsService } from '../fsrs.service.js';
@@ -27,9 +26,6 @@ export interface ToolExecutionContext {
 /** Tools that make network calls and benefit from a single retry */
 const RETRYABLE_TOOLS = new Set([
   'search_educational_content',
-  'get_student_homework',
-  'get_student_grades',
-  'get_student_timetable',
 ]);
 
 const RETRY_DELAY_MS = 1500;
@@ -37,7 +33,7 @@ const RETRY_DELAY_MS = 1500;
 /**
  * Execute un outil et retourne le résultat JSON.
  * Ne throw jamais — les erreurs sont encapsulées dans la réponse.
- * Les outils réseau (RAG, Pronote) bénéficient d'1 retry automatique.
+ * Les outils réseau (RAG) bénéficient d'1 retry automatique.
  */
 export async function executeTool(
   toolName: string,
@@ -106,15 +102,6 @@ async function executeToolOnce(
     case 'search_educational_content':
       return await executeRagSearch(args);
 
-    case 'get_student_homework':
-      return await executeGetHomework(args, context);
-
-    case 'get_student_grades':
-      return await executeGetGrades(context);
-
-    case 'get_student_timetable':
-      return await executeGetTimetable(args, context);
-
     case 'generate_flashcards':
       return await executeGenerateFlashcards(args, context);
 
@@ -135,10 +122,10 @@ async function executeToolOnce(
 
 async function executeRagSearch(args: Record<string, unknown>): Promise<object> {
   const startTime = Date.now();
-  const query = args.query as string;
-  const niveau = args.niveau as EducationLevelType;
-  const matiere = args.matiere as string;
-  const limit = (args.limit as number) ?? 5;
+  const query = typeof args.query === 'string' ? args.query : '';
+  const niveau = (typeof args.niveau === 'string' ? args.niveau : '6eme') as EducationLevelType;
+  const matiere = typeof args.matiere === 'string' ? args.matiere : 'general';
+  const limit = typeof args.limit === 'number' ? args.limit : 5;
 
   const isAvailable = await ragService.isAvailable();
   if (!isAvailable) {
@@ -173,80 +160,17 @@ async function executeRagSearch(args: Record<string, unknown>): Promise<object> 
   };
 }
 
-async function executeGetHomework(
-  args: Record<string, unknown>,
-  context: ToolExecutionContext
-): Promise<object> {
-  const weekOffset = (args.weekOffset as number) ?? 0;
-
-  const homework = await pronoteService.getHomeworkForChild(context.userId, weekOffset);
-
-  if (homework === null) {
-    return {
-      error: true,
-      connected: false,
-      message: "L'élève n'a pas Pronote connecté. Tu ne peux pas accéder à ses devoirs.",
-    };
-  }
-
-  return {
-    homework,
-    count: homework.length,
-    weekOffset,
-  };
-}
-
-async function executeGetGrades(context: ToolExecutionContext): Promise<object> {
-  const grades = await pronoteService.getGradesForChild(context.userId);
-
-  if (grades === null) {
-    return {
-      error: true,
-      connected: false,
-      message: "L'élève n'a pas Pronote connecté. Tu ne peux pas accéder à ses notes.",
-    };
-  }
-
-  return {
-    grades,
-    count: grades.length,
-  };
-}
-
-async function executeGetTimetable(
-  args: Record<string, unknown>,
-  context: ToolExecutionContext
-): Promise<object> {
-  const weekOffset = (args.weekOffset as number) ?? 0;
-
-  const timetable = await pronoteService.getTimetableForChild(context.userId, weekOffset);
-
-  if (timetable === null) {
-    return {
-      error: true,
-      connected: false,
-      message: "L'élève n'a pas Pronote connecté. Tu ne peux pas accéder à son emploi du temps.",
-    };
-  }
-
-  return {
-    timetable,
-    count: timetable.length,
-    weekOffset,
-  };
-}
-
 async function executeGenerateFlashcards(
   args: Record<string, unknown>,
   context: ToolExecutionContext
 ): Promise<object> {
-  const topic = args.topic as string;
-  const subject = args.subject as string;
+  const topic = typeof args.topic === 'string' ? args.topic : '';
+  const subject = typeof args.subject === 'string' ? args.subject : '';
 
   // Adapt card count to school level (half of cardsPerSession, capped at 10 for chat)
   const levelConfig = getLevelConfig(context.schoolLevel);
   const maxChatCards = Math.min(Math.floor(levelConfig.cardsPerSession / 2), 10);
-  const requestedCount = (args.cardCount as number) ?? 5;
+  const requestedCount = typeof args.cardCount === 'number' ? args.cardCount : 5;
   const cardCount = Math.min(Math.max(requestedCount, 3), maxChatCards);
 
   // Fetch RAG context for the flashcard topic
@@ -350,7 +274,7 @@ function executeGetAppHelp(
   args: Record<string, unknown>,
   context: ToolExecutionContext
 ): object {
-  const topic = args.topic as string;
+  const topic = typeof args.topic === 'string' ? args.topic : '';
   const content = getAppHelpContent(topic, context.userRole);
 
   if (!content) {

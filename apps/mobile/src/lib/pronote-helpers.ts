@@ -123,6 +123,22 @@ export function isLowGrade(value: number | null, outOf: number): boolean {
 // ============================================================================
 
 /**
+ * Get start/end bounds (Mon-Sun) for a given week offset from current week.
+ */
+export function getWeekBounds(weekOffset: number): { start: Date; end: Date } {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(now.getDate() + diffToMonday + weekOffset * 7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { start: monday, end: sunday };
+}
+
+/**
  * Get label for week offset
  */
 export function getWeekLabel(weekOffset: number): string {

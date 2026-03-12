@@ -6,8 +6,18 @@ name: CI
 on:
   push:
     branches: [main, staging]
+    paths-ignore:
+      - 'docs/**/*.md'
+      - 'README.md'
+      - '.vscode/**'
+      - 'LICENSE'
   pull_request:
-    branches: [main]
+    branches: [main, staging]
+    paths-ignore:
+      - 'docs/**/*.md'
+      - 'README.md'
+      - '.vscode/**'
+      - 'LICENSE'
 
 permissions:
   contents: read
@@ -40,7 +50,13 @@ jobs:
       - uses: ./.github/actions/setup-monorepo
         with:
           turbo-cache-key: ${{ matrix.task }}
-      - run: pnpm turbo run ${{ matrix.task }} --affected
+      - name: Run ${{ matrix.task }}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            pnpm turbo run ${{ matrix.task }}
+          else
+            pnpm turbo run ${{ matrix.task }} --affected
+          fi
 
   # =============================================
   # Job 1b: Required status check gate
@@ -70,7 +86,13 @@ jobs:
       - uses: ./.github/actions/setup-monorepo
         with:
           turbo-cache-key: test
-      - run: pnpm turbo run test --affected
+      - name: Run tests
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            pnpm turbo run test
+          else
+            pnpm turbo run test --affected
+          fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://localhost:5432/test' }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
@@ -89,7 +111,13 @@ jobs:
       - uses: ./.github/actions/setup-monorepo
         with:
           turbo-cache-key: build
-      - run: pnpm turbo run build --affected
+      - name: Run build
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            pnpm turbo run build
+          else
+            pnpm turbo run build --affected
+          fi
 
   # =============================================
   # Job 4: Migration sync (server DB schema only)

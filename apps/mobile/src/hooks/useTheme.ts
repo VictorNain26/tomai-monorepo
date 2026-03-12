@@ -9,8 +9,9 @@
  */
 
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { useColorScheme, Appearance } from 'react-native';
+import { useColorScheme, Appearance, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as NavigationBar from 'expo-navigation-bar';
 
 // ============================================================================
 // TYPES
@@ -70,6 +71,14 @@ export function useThemeProvider(): ThemeContextValue {
 
   // Normalize (can be null)
   const colorScheme: ColorScheme = rnColorScheme === 'dark' ? 'dark' : 'light';
+
+  // Sync Android navigation bar style with current theme
+  // @see https://docs.expo.dev/develop/user-interface/system-bars
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setStyle(colorScheme === 'dark' ? 'light' : 'dark');
+    }
+  }, [colorScheme]);
 
   // Load saved preference on mount and apply via Appearance API
   useEffect(() => {

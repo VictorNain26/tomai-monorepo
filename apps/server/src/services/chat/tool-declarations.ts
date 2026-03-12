@@ -1,14 +1,11 @@
 /**
  * Gemini Tool Declarations - Agent multi-tool TomAI
  *
- * 7 outils disponibles pour l'agent:
+ * 4 outils disponibles pour l'agent:
  * 1. search_educational_content - RAG Eduscol
- * 2. get_student_homework - Devoirs Pronote
- * 3. get_student_grades - Notes Pronote
- * 4. get_student_timetable - EDT Pronote
- * 5. generate_flashcards - Generation de cartes
- * 6. get_student_profile - Profil cognitif
- * 7. get_app_help - Guide d'utilisation de l'app
+ * 2. generate_flashcards - Generation de cartes
+ * 3. get_student_profile - Profil cognitif
+ * 4. get_app_help - Guide d'utilisation de l'app
  */
 
 import type { FunctionDeclaration } from '@google/genai';
@@ -42,46 +39,6 @@ export const searchEducationalContentDeclaration: FunctionDeclaration = {
       }
     },
     required: ['query', 'niveau', 'matiere']
-  }
-};
-
-export const getStudentHomeworkDeclaration: FunctionDeclaration = {
-  name: 'get_student_homework',
-  description: `Consulte les devoirs de l'élève depuis Pronote. Retourne matière, description, date limite, statut (fait/pas fait).`,
-  parametersJsonSchema: {
-    type: 'object',
-    properties: {
-      weekOffset: {
-        type: 'number',
-        description: 'Décalage de semaine: 0 = semaine courante, 1 = semaine prochaine, -1 = semaine dernière. Défaut: 0.'
-      }
-    },
-    required: []
-  }
-};
-
-export const getStudentGradesDeclaration: FunctionDeclaration = {
-  name: 'get_student_grades',
-  description: `Consulte les notes de l'élève depuis Pronote. Retourne matière, valeur, barème, coefficient, moyenne de classe, commentaire.`,
-  parametersJsonSchema: {
-    type: 'object',
-    properties: {},
-    required: []
-  }
-};
-
-export const getStudentTimetableDeclaration: FunctionDeclaration = {
-  name: 'get_student_timetable',
-  description: `Consulte l'emploi du temps de l'élève depuis Pronote. Retourne matière, horaires, salle, professeur, statut (annulé ou non).`,
-  parametersJsonSchema: {
-    type: 'object',
-    properties: {
-      weekOffset: {
-        type: 'number',
-        description: 'Décalage de semaine: 0 = semaine courante, 1 = semaine prochaine, -1 = semaine dernière. Défaut: 0.'
-      }
-    },
-    required: []
   }
 };
 
@@ -140,9 +97,6 @@ export const getAppHelpDeclaration: FunctionDeclaration = {
 /** All tool declarations for the Gemini agent */
 export const agentToolDeclarations: FunctionDeclaration[] = [
   searchEducationalContentDeclaration,
-  getStudentHomeworkDeclaration,
-  getStudentGradesDeclaration,
-  getStudentTimetableDeclaration,
   generateFlashcardsDeclaration,
   getStudentProfileDeclaration,
   getAppHelpDeclaration,

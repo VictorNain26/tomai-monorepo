@@ -23,7 +23,8 @@ import {
   type HomeworkItem,
   type GradeItem,
 } from '@/components/dashboard';
-import { useStudentDashboard, useStudentPronote, useIconColors, useDueSummary } from '@/hooks';
+import { useStudentDashboard, usePronote, useIconColors, useDueSummary } from '@/hooks';
+import { useUser } from '@/lib/auth';
 import { bgColors } from '@/lib/styles';
 
 // ============================================================================
@@ -73,8 +74,9 @@ export default function StudentDashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Data hooks
+  const user = useUser();
   const { userName } = useStudentDashboard();
-  const pronote = useStudentPronote();
+  const pronote = usePronote(user?.id ?? '');
   const { data: dueSummary } = useDueSummary();
 
   // Refresh handler
@@ -82,13 +84,14 @@ export default function StudentDashboard() {
     setRefreshing(true);
     try {
       await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['studentPronote'] }),
+        pronote.fetchHomework(),
+        pronote.fetchGrades(),
         queryClient.refetchQueries({ queryKey: ['learning', 'due-summary'] }),
       ]);
     } finally {
       setRefreshing(false);
     }
-  }, [queryClient]);
+  }, [pronote, queryClient]);
 
   // Transform homework data
   const homeworkItems: HomeworkItem[] = useMemo(() => {
@@ -174,8 +177,8 @@ export default function StudentDashboard() {
         {/* Header */}
         <View>
           <Text variant="h2">Bonjour {firstName}</Text>
-          {pronote.isConnected && pronote.className && (
-            <Text variant="muted">{pronote.className}</Text>
+          {pronote.isConnected && pronote.resources[0]?.className && (
+            <Text variant="muted">{pronote.resources[0].className}</Text>
           )}
           <Text variant="muted" className="mt-0.5">{tomMessage}</Text>
         </View>
@@ -206,14 +209,14 @@ export default function StudentDashboard() {
           <>
             <HomeworkUrgentCard
               homework={homeworkItems}
-              isLoading={pronote.isLoadingData}
+              isLoading={false}
               maxItems={3}
             />
             <GradesRecentCard
               grades={gradeItems}
               averageGrade={pronote.averageGrade}
               trend={gradeTrend}
-              isLoading={pronote.isLoadingData}
+              isLoading={false}
               maxItems={3}
             />
           </>

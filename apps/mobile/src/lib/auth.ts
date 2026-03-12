@@ -18,38 +18,18 @@ import { expoClient } from '@better-auth/expo/client';
 import { passkeyClient } from '@better-auth/passkey/client';
 import { usernameClient, adminClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
-import * as Constants from 'expo-constants';
 import { getTreaty, unwrap } from '@repo/api';
+import {
+  GoogleSignin,
+  isSuccessResponse,
+  isCancelledResponse,
+} from '@react-native-google-signin/google-signin';
 
-// API URL from environment variable
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
-/**
- * Detect if running in Expo Go (no native modules available).
- * In Expo Go, executionEnvironment is 'storeClient'.
- * In dev builds / production, it's 'standalone' or 'bare'.
- */
-const isExpoGo = Constants.default.executionEnvironment === 'storeClient';
-
-// Lazy-load native Google Sign-In SDK (only available in dev builds / production)
-let GoogleSignin: typeof import('@react-native-google-signin/google-signin').GoogleSignin | null = null;
-let isSuccessResponse: typeof import('@react-native-google-signin/google-signin').isSuccessResponse;
-let isCancelledResponse: typeof import('@react-native-google-signin/google-signin').isCancelledResponse;
-
-if (!isExpoGo) {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('@react-native-google-signin/google-signin');
-    GoogleSignin = mod.GoogleSignin;
-    isSuccessResponse = mod.isSuccessResponse;
-    isCancelledResponse = mod.isCancelledResponse;
-    GoogleSignin?.configure({
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    });
-  } catch (err) {
-    console.warn('[Auth] Google native SDK not available, falling back to web OAuth:', err);
-  }
-}
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+});
 
 // ============================================================================
 // TYPES
@@ -166,12 +146,10 @@ export async function signUp(data: { email: string; password: string; name: stri
  */
 export async function signOut() {
   await authClient.signOut();
-  if (GoogleSignin) {
-    try {
-      await GoogleSignin.signOut();
-    } catch {
-      // Best-effort: user is already signed out of Better Auth
-    }
+  try {
+    await GoogleSignin.signOut();
+  } catch {
+    // Best-effort: user is already signed out of Better Auth
   }
 }
 
@@ -183,31 +161,21 @@ export async function signOut() {
  * Returns null if the user cancelled the sign-in flow.
  */
 export async function signInWithGoogle() {
-  if (GoogleSignin) {
-    await GoogleSignin.hasPlayServices();
-    const response = await GoogleSignin.signIn();
+  await GoogleSignin.hasPlayServices();
+  const response = await GoogleSignin.signIn();
 
-    // User cancelled — not an error
-    if (isCancelledResponse(response)) {
-      return null;
-    }
-
-    // Success — extract idToken
-    if (isSuccessResponse(response) && response.data.idToken) {
-      return authClient.signIn.social({
-        provider: 'google',
-        idToken: { token: response.data.idToken },
-      });
-    }
-
-    throw new Error('Google Sign-In: aucun idToken reçu');
+  if (isCancelledResponse(response)) {
+    return null;
   }
 
-  // Fallback: web OAuth via browser (Expo Go)
-  return authClient.signIn.social({
-    provider: 'google',
-    callbackURL: '/',
-  });
+  if (isSuccessResponse(response) && response.data.idToken) {
+    return authClient.signIn.social({
+      provider: 'google',
+      idToken: { token: response.data.idToken },
+    });
+  }
+
+  throw new Error('Google Sign-In: aucun idToken reçu');
 }
 
 /**

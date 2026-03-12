@@ -7,12 +7,12 @@
  * - Help
  */
 
-import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   Settings,
-  HelpCircle,
+  School,
   LogOut,
   ChevronRight,
   Crown,
@@ -24,7 +24,8 @@ import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUser, signOut } from '@/lib/auth';
-import { useIsPro, useIconColors, useThemeColors } from '@/hooks';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { useIsPro, useIconColors, useThemeColors, usePronote } from '@/hooks';
 import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
@@ -51,22 +52,23 @@ interface MenuItem {
 export default function ParentProfileScreen() {
   const router = useRouter();
   const user = useUser();
+  const { confirm } = useConfirm();
   const iconColors = useIconColors();
   const colors = useThemeColors();
   const { isPro, isLoading: isLoadingPro } = useIsPro();
+  const pronote = usePronote(user?.id ?? '');
 
   async function handleLogout() {
-    Alert.alert('Déconnexion', 'Voulez-vous vraiment vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Déconnexion',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          router.replace('/(auth)/login');
-        },
-      },
-    ]);
+    const confirmed = await confirm({
+      title: 'Déconnexion',
+      message: 'Voulez-vous vraiment vous déconnecter ?',
+      confirmLabel: 'Déconnexion',
+      variant: 'destructive',
+    });
+    if (confirmed) {
+      await signOut();
+      router.replace('/(auth)/login');
+    }
   }
 
   // Menu sections
@@ -89,30 +91,30 @@ export default function ParentProfileScreen() {
       ],
     },
 
-    // Preferences section
+    // Pronote section
     {
-      title: 'Préférences',
+      title: 'Pronote',
       items: [
         {
-          icon: <Settings color={iconColors.foreground} size={20} />,
-          label: 'Paramètres',
-          sublabel: 'Apparence, notifications',
-          onPress: () => router.push('/(parent)/(profile)/settings'),
+          icon: <School color={iconColors.foreground} size={20} />,
+          label: 'Pronote',
+          sublabel: pronote.isConnected ? 'Connecte' : 'Non connecte',
+          onPress: () => router.push('/(parent)/(profile)/pronote-connect'),
           showChevron: true,
         },
       ],
     },
 
-    // Support section
+    // Preferences section
     {
-      title: 'Support',
+      title: 'Preferences',
       items: [
         {
-          icon: <HelpCircle color={iconColors.foreground} size={20} />,
-          label: 'Aide et support',
-          sublabel: 'Bientôt disponible',
-          onPress: () => {},
-          showChevron: false,
+          icon: <Settings color={iconColors.foreground} size={20} />,
+          label: 'Parametres',
+          sublabel: 'Apparence',
+          onPress: () => router.push('/(parent)/(profile)/settings'),
+          showChevron: true,
         },
       ],
     },
