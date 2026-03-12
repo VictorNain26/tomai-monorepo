@@ -23,9 +23,11 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "turbo run db:generate --filter=tomai-server",
     "db:push": "turbo run db:push --filter=tomai-server",
-    "db:studio": "turbo run db:studio --filter=tomai-server"
+    "db:studio": "turbo run db:studio --filter=tomai-server",
+    "postinstall": "lefthook install"
   },
   "devDependencies": {
+    "@evilmartians/lefthook": "^2.1.4",
     "prettier": "^3.8.1",
     "turbo": "^2.8.13",
     "typescript": "5.9.3"

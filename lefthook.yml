@@ -1,0 +1,37 @@
+# lefthook.yml
+#
+# Note: les scripts lint de chaque app utilisent ESLint avec un scope fixe
+# (ex: "eslint .", "eslint src"). On invoque ESLint directement avec les
+# fichiers staged pour eviter ce probleme.
+# Note Windows: lefthook est un binaire Go, {staged_files} utilise des
+# forward slashes — compatible avec ESLint/Node sur Windows.
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: lint-server
+      root: "apps/server/"
+      glob: "*.ts"
+      run: npx eslint {staged_files}
+
+    - name: lint-mobile
+      root: "apps/mobile/"
+      glob: "*.{ts,tsx}"
+      run: npx eslint --max-warnings 0 {staged_files}
+
+    - name: lint-landing
+      root: "apps/landing/"
+      glob: "*.{ts,tsx}"
+      run: npx eslint --max-warnings 0 {staged_files}
+
+    - name: typecheck
+      run: pnpm turbo run typecheck --affected --output-logs=errors-only
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: test
+      run: pnpm turbo run test --affected --output-logs=errors-only
+
+    - name: build
+      run: pnpm turbo run build --affected --output-logs=errors-only
