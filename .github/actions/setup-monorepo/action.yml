@@ -29,6 +29,7 @@ runs:
         path: .turbo
         key: turbo-${{ runner.os }}-${{ inputs.turbo-cache-key }}-${{ github.sha }}
         restore-keys: turbo-${{ runner.os }}-${{ inputs.turbo-cache-key }}-
+        save-always: true
 
     - run: pnpm install --frozen-lockfile
       shell: bash
