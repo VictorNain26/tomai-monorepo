@@ -1,13 +1,12 @@
 /**
  * Parent Dashboard Screen - TomAI 2026
  *
- * Instagram-style swipeable tabs: one full page per child.
- * Header with "+" button always visible. Tab bar with child names.
+ * Vertical scrollable list of compact child cards.
+ * Parent sees all children at a glance. Tap card → detail.
  */
 
-import { useState, useCallback, useMemo, useRef } from 'react';
-import { View, FlatList, useWindowDimensions } from 'react-native';
-import type { ViewToken } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import { View, ScrollView } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import { Plus, Users } from 'lucide-react-native';
@@ -15,11 +14,9 @@ import { Plus, Users } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChildTabBar } from '@/components/parent';
-import { ChildPage } from '@/components/parent/ChildPage';
+import { ChildSummaryCard } from '@/components/parent/ChildSummaryCard';
 import {
   useParentDashboard,
-  useIconColors,
   useThemeColors,
   usePronote,
   type IChild,
@@ -49,12 +46,7 @@ function getChildMetrics(metrics: ChildMetrics[], childId: string) {
 
 export default function ParentDashboard() {
   const router = useRouter();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
-  const { width: screenWidth } = useWindowDimensions();
-
-  const [activeIndex, setActiveIndex] = useState(0);
-  const flatListRef = useRef<FlatList<IChild>>(null);
 
   const { children, metrics, isLoading, userName } = useParentDashboard();
   const user = useUser();
@@ -87,32 +79,14 @@ export default function ParentDashboard() {
     [router]
   );
 
-  const handleTabPress = useCallback((index: number) => {
-    flatListRef.current?.scrollToIndex({ index, animated: true });
-    setActiveIndex(index);
-  }, []);
-
-  const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-        setActiveIndex(viewableItems[0].index);
-      }
-    },
-    []
-  );
-
-  const viewabilityConfig = useMemo(
-    () => ({ viewAreaCoveragePercentThreshold: 50 }),
-    []
-  );
-
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
         <View className="px-5 py-5 gap-4">
           <Skeleton className="h-8 w-48 rounded" />
           <Skeleton className="h-4 w-32 rounded" />
-          <Skeleton className="h-56 w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
         </View>
       </SafeAreaView>
     );
@@ -130,7 +104,7 @@ export default function ParentDashboard() {
             className="mb-4 h-20 w-20 items-center justify-center rounded-full"
             style={{ backgroundColor: bgColors.muted[50] }}
           >
-            <Users color={iconColors.muted} size={40} />
+            <Users color={colors.foreground} size={40} style={{ opacity: 0.4 }} />
           </View>
           <Text variant="large" className="mb-2 text-center">
             Commencez par ajouter votre premier enfant
@@ -147,7 +121,7 @@ export default function ParentDashboard() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
-      {/* Header with + button */}
+      {/* Header */}
       <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
         <View>
           <Text variant="h2">Bonjour, {userName}</Text>
@@ -165,41 +139,29 @@ export default function ParentDashboard() {
         </Button>
       </View>
 
-      {/* Tab bar with child names */}
-      <ChildTabBar
-        items={children}
-        activeIndex={activeIndex}
-        onTabPress={handleTabPress}
-      />
-
-      {/* Swipeable full-page content */}
-      <FlatList
-        ref={flatListRef}
-        data={children}
-        keyExtractor={(child) => child.id}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        renderItem={({ item: child }) => {
+      {/* Child cards list */}
+      <ScrollView
+        className="flex-1 px-4"
+        contentContainerClassName="gap-3 pb-6 pt-2"
+        showsVerticalScrollIndicator={false}
+      >
+        {children.map((child) => {
           const pd = childPronoteData[child.id];
           const cm = getChildMetrics(metrics, child.id);
           return (
-            <ChildPage
+            <ChildSummaryCard
+              key={child.id}
               child={child}
               hasPronote={pd?.hasPronote ?? false}
-              isConnected={pronote.isConnected}
               averageGrade={pd?.averageGrade ?? null}
               homeworkCount={pd?.homeworkCount ?? 0}
               studyTimeMinutes={cm.studyTimeMinutes}
               streak={cm.streak}
-              width={screenWidth}
-              onViewDetail={handleViewDetail}
+              onPress={handleViewDetail}
             />
           );
-        }}
-      />
+        })}
+      </ScrollView>
     </SafeAreaView>
   );
 }
