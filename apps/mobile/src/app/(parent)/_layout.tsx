@@ -1,8 +1,13 @@
 /**
  * Parent Layout - TomAI 2026
  *
- * Optimized navigation structure with proper Stack navigators inside each tab.
- * Uses popToTopOnBlur to reset stacks when switching tabs (standard UX).
+ * Swipeable tab navigation (Material Top Tabs at bottom position).
+ * Parent can swipe between Accueil and Profil like Instagram.
+ *
+ * Uses withLayoutContext to integrate @react-navigation/material-top-tabs
+ * with Expo Router file-based routing.
+ *
+ * @see https://docs.expo.dev/versions/latest/sdk/router/#withlayoutcontext
  *
  * Structure:
  * - (home)/    → Stack: Dashboard, Child screens
@@ -11,25 +16,36 @@
 
 import { Suspense, useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { Tabs, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { withLayoutContext } from 'expo-router';
 import { Home, User } from 'lucide-react-native';
+import type { ParamListBase, TabNavigationState } from '@react-navigation/native';
+import {
+  createMaterialTopTabNavigator,
+  type MaterialTopTabNavigationOptions,
+  type MaterialTopTabNavigationEventMap,
+} from '@react-navigation/material-top-tabs';
 import { useSession, useUser } from '@/lib/auth';
 import { AppProviders } from '@/components/providers';
 import { useThemeColors } from '@/hooks';
-import { useTabScreenOptions, useTabBarConfig } from '@/lib/navigation';
+import { useSwipeableTabConfig } from '@/lib/navigation';
 import { setupPushNotifications } from '@/lib/notifications';
+
+const { Navigator } = createMaterialTopTabNavigator();
+
+const MaterialTopTabs = withLayoutContext<
+  MaterialTopTabNavigationOptions,
+  typeof Navigator,
+  TabNavigationState<ParamListBase>,
+  MaterialTopTabNavigationEventMap
+>(Navigator);
 
 export default function ParentLayout() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const user = useUser();
   const colors = useThemeColors();
-
-  // Shared tab bar config (colors + style)
-  const { tabColors, tabBarStyle } = useTabBarConfig();
-
-  // Shared tab animation/performance options (React Navigation 7)
-  const tabOptions = useTabScreenOptions(tabColors.background);
+  const swipeableOptions = useSwipeableTabConfig();
 
   // Push notification registration (once, non-blocking)
   useEffect(() => {
@@ -72,35 +88,25 @@ export default function ParentLayout() {
           </View>
         }
       >
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: tabColors.active,
-          tabBarInactiveTintColor: tabColors.inactive,
-          tabBarStyle,
-          tabBarShowLabel: false,
-          popToTopOnBlur: true,
-          ...tabOptions,
-        }}
-      >
-        {/* Tab 1: Home (Dashboard + Child screens) */}
-        <Tabs.Screen
-          name="(home)"
-          options={{
-            title: 'Accueil',
-            tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
-          }}
-        />
-
-        {/* Tab 2: Profile (Settings, Pricing, Pronote) */}
-        <Tabs.Screen
-          name="(profile)"
-          options={{
-            title: 'Profil',
-            tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
-          }}
-        />
-      </Tabs>
+        <MaterialTopTabs
+          tabBarPosition="bottom"
+          screenOptions={swipeableOptions}
+        >
+          <MaterialTopTabs.Screen
+            name="(home)"
+            options={{
+              title: 'Accueil',
+              tabBarIcon: ({ color }) => <Home color={color} size={22} />,
+            }}
+          />
+          <MaterialTopTabs.Screen
+            name="(profile)"
+            options={{
+              title: 'Profil',
+              tabBarIcon: ({ color }) => <User color={color} size={22} />,
+            }}
+          />
+        </MaterialTopTabs>
       </Suspense>
     </AppProviders>
   );
