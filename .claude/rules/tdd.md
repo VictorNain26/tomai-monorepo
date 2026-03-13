@@ -1,8 +1,8 @@
 # TDD — Conventions TomAI
 
-Le workflow TDD (Red-Green-Refactor) est **OBLIGATOIRE** et s'applique automatiquement a toute tache de developpement via `/dev`. Il est enforce par :
-- **CLAUDE.md** : directive obligatoire — l'agent invoque `/dev` automatiquement sur chaque tache de code
-- **Claude Code Stop hook** : bloque si du code modifie n'est pas commite (force validation + commit)
+Le workflow TDD (Red-Green-Refactor) est **OBLIGATOIRE** et s'applique automatiquement à toute tâche de développement via `/dev`. Il est renforcé par :
+- **CLAUDE.md** : directive obligatoire — l'agent invoque `/dev` automatiquement sur chaque tâche de code.
+- **Claude Code Stop hook** : bloque si du code modifié n'est pas commité (force validation + commit).
 - **lefthook pre-commit** : lint + typecheck automatiques
 - **lefthook pre-push** : tests + build automatiques
 
@@ -27,7 +27,7 @@ Le workflow TDD (Red-Green-Refactor) est **OBLIGATOIRE** et s'applique automatiq
 2. **GREEN** : implementer le minimum pour passer
 3. **REFACTOR** : ameliorer sans casser les tests
 
-L'agent invoque `/dev <description>` automatiquement sur toute tache de code (voir CLAUDE.md).
+L'agent invoque `/dev <description>` automatiquement sur toute tâche de code (voir CLAUDE.md).
 
 ## Validation obligatoire avant commit
 
