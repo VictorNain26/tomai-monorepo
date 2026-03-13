@@ -1,6 +1,8 @@
 // Parent Components
 
 export { ChildCard } from './ChildCard';
+export { ChildTabBar } from './ChildTabBar';
+export { ChildPage } from './ChildPage';
 export { AddChildCard } from './AddChildCard';
 export { PaginationDots } from './PaginationDots';
 export { LevelPickerSheet } from './LevelPickerSheet';

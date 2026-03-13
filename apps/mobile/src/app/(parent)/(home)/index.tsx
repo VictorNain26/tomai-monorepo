@@ -1,23 +1,26 @@
 /**
  * Parent Dashboard Screen - TomAI 2026
  *
- * Horizontal carousel of child cards + add-child CTA.
+ * Instagram-style swipeable tabs: one full page per child.
+ * Header with "+" button always visible. Tab bar with child names.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { View, FlatList, useWindowDimensions } from 'react-native';
 import type { ViewToken } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
-import { Users } from 'lucide-react-native';
+import { Plus, Users } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChildCard, AddChildCard, PaginationDots } from '@/components/parent';
+import { ChildTabBar } from '@/components/parent';
+import { ChildPage } from '@/components/parent/ChildPage';
 import {
   useParentDashboard,
   useIconColors,
+  useThemeColors,
   usePronote,
   type IChild,
 } from '@/hooks';
@@ -32,7 +35,9 @@ import type { PronoteGrade, PronoteHomework } from '@/services/pronote/pronote-t
 
 function computeAverageGrade(grades: PronoteGrade[]): number | null {
   if (grades.length === 0) return null;
-  const validGrades = grades.filter((g): g is PronoteGrade & { value: number } => g.value !== null && g.outOf > 0);
+  const validGrades = grades.filter(
+    (g): g is PronoteGrade & { value: number } => g.value !== null && g.outOf > 0
+  );
   if (validGrades.length === 0) return null;
   const normalized = validGrades.map((g) => (g.value / g.outOf) * 20);
   return normalized.reduce((sum, v) => sum + v, 0) / normalized.length;
@@ -44,17 +49,8 @@ function countUpcomingHomework(homework: PronoteHomework[]): number {
 
 function getChildMetrics(metrics: ChildMetrics[], childId: string) {
   const m = metrics.find((metric) => metric.studentId === childId);
-  return {
-    studyTimeMinutes: m?.totalStudyTime ?? 0,
-    streak: m?.studyDays ?? 0,
-  };
+  return { studyTimeMinutes: m?.totalStudyTime ?? 0, streak: m?.studyDays ?? 0 };
 }
-
-// ============================================================================
-// CAROUSEL ITEM TYPE
-// ============================================================================
-
-type CarouselItem = { type: 'child'; child: IChild } | { type: 'add' };
 
 // ============================================================================
 // COMPONENT
@@ -63,23 +59,21 @@ type CarouselItem = { type: 'child'; child: IChild } | { type: 'add' };
 export default function ParentDashboard() {
   const router = useRouter();
   const iconColors = useIconColors();
+  const colors = useThemeColors();
   const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = screenWidth * 0.85;
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const flatListRef = useRef<FlatList<IChild>>(null);
 
-  const {
-    children,
-    metrics,
-    isLoading,
-    userName,
-  } = useParentDashboard();
-
+  const { children, metrics, isLoading, userName } = useParentDashboard();
   const user = useUser();
   const pronote = usePronote(user?.id ?? '');
 
   const childPronoteData = useMemo(() => {
-    const data: Record<string, { hasPronote: boolean; averageGrade: number | null; homeworkCount: number }> = {};
+    const data: Record<
+      string,
+      { hasPronote: boolean; averageGrade: number | null; homeworkCount: number }
+    > = {};
     for (const child of children) {
       const isMapped = pronote.resourceMappings[child.id] !== undefined;
       data[child.id] = {
@@ -91,28 +85,37 @@ export default function ParentDashboard() {
     return data;
   }, [children, pronote.resourceMappings, pronote.grades, pronote.homework]);
 
-  const handleChildPress = useCallback((child: IChild) => {
-    router.push(`/(parent)/(home)/child/${child.id}`);
-  }, [router]);
-
   const handleAddChild = useCallback(() => {
     router.push('/(parent)/(home)/add-child');
   }, [router]);
 
-  // Build carousel data: children cards + add card
-  const carouselData: CarouselItem[] = useMemo(() => {
-    const items: CarouselItem[] = children.map((child) => ({ type: 'child' as const, child }));
-    items.push({ type: 'add' as const });
-    return items;
-  }, [children]);
+  const handleViewDetail = useCallback(
+    (child: IChild) => {
+      router.push(`/(parent)/(home)/child/${child.id}`);
+    },
+    [router]
+  );
 
-  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-      setActiveIndex(viewableItems[0].index);
-    }
+  // Tab press → scroll FlatList to that page
+  const handleTabPress = useCallback((index: number) => {
+    flatListRef.current?.scrollToIndex({ index, animated: true });
+    setActiveIndex(index);
   }, []);
 
-  const viewabilityConfig = useMemo(() => ({ viewAreaCoveragePercentThreshold: 50 }), []);
+  // Sync activeIndex when user swipes
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+        setActiveIndex(viewableItems[0].index);
+      }
+    },
+    []
+  );
+
+  const viewabilityConfig = useMemo(
+    () => ({ viewAreaCoveragePercentThreshold: 50 }),
+    []
+  );
 
   // Loading
   if (isLoading) {
@@ -146,7 +149,9 @@ export default function ParentDashboard() {
             Commencez par ajouter votre premier enfant
           </Text>
           <Button onPress={handleAddChild} className="mt-4">
-            <Text className="font-medium text-white dark:text-slate-900">Ajouter un enfant</Text>
+            <Text className="font-medium text-white dark:text-slate-900">
+              Ajouter un enfant
+            </Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -155,47 +160,58 @@ export default function ParentDashboard() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
-      {/* Header */}
-      <View className="px-5 py-5">
-        <Text variant="h2">Bonjour, {userName}</Text>
-        <Text variant="muted" className="mt-1">
-          {children.length} enfant{children.length > 1 ? 's' : ''}
-        </Text>
+      {/* Header with + button */}
+      <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
+        <View>
+          <Text variant="h2">Bonjour, {userName}</Text>
+          <Text variant="muted" className="mt-0.5">
+            {children.length} enfant{children.length > 1 ? 's' : ''}
+          </Text>
+        </View>
+        <Button
+          variant="ghost"
+          size="icon"
+          onPress={handleAddChild}
+          accessibilityLabel="Ajouter un enfant"
+        >
+          <Plus color={colors.primary} size={22} />
+        </Button>
       </View>
 
-      {/* Carousel */}
-      <FlatList
-        data={carouselData}
-        keyExtractor={(item, index) => item.type === 'child' ? item.child.id : `add-${index}`}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={cardWidth + 12}
-        decelerationRate="fast"
-        contentContainerStyle={{ paddingHorizontal: (screenWidth - cardWidth) / 2 }}
-        ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        renderItem={({ item }) => (
-          <View style={{ width: cardWidth }}>
-            {item.type === 'child' ? (
-              <ChildCard
-                child={item.child}
-                hasPronote={childPronoteData[item.child.id]?.hasPronote ?? false}
-                averageGrade={childPronoteData[item.child.id]?.averageGrade ?? null}
-                homeworkCount={childPronoteData[item.child.id]?.homeworkCount ?? 0}
-                studyTimeMinutes={getChildMetrics(metrics, item.child.id).studyTimeMinutes}
-                streak={getChildMetrics(metrics, item.child.id).streak}
-                onPress={handleChildPress}
-              />
-            ) : (
-              <AddChildCard onPress={handleAddChild} />
-            )}
-          </View>
-        )}
+      {/* Tab bar with child names */}
+      <ChildTabBar
+        items={children}
+        activeIndex={activeIndex}
+        onTabPress={handleTabPress}
       />
 
-      {/* Pagination dots */}
-      <PaginationDots total={carouselData.length} activeIndex={activeIndex} />
+      {/* Swipeable full-page content */}
+      <FlatList
+        ref={flatListRef}
+        data={children}
+        keyExtractor={(child) => child.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        renderItem={({ item: child }) => {
+          const pd = childPronoteData[child.id];
+          const cm = getChildMetrics(metrics, child.id);
+          return (
+            <ChildPage
+              child={child}
+              hasPronote={pd?.hasPronote ?? false}
+              averageGrade={pd?.averageGrade ?? null}
+              homeworkCount={pd?.homeworkCount ?? 0}
+              studyTimeMinutes={cm.studyTimeMinutes}
+              streak={cm.streak}
+              width={screenWidth}
+              onViewDetail={handleViewDetail}
+            />
+          );
+        }}
+      />
     </SafeAreaView>
   );
 }
