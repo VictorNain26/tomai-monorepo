@@ -57,17 +57,14 @@ cd apps/server && docker compose up -d
 | Server | Koyeb | Auto sur push main |
 | Mobile | EAS Build | Manuel via workflows |
 
-## Workflow TDD
+## Workflow de développement (OBLIGATOIRE)
 
-Toute feature/bugfix suit le cycle Red-Green-Refactor :
-1. Écrire les tests d'abord (RED) — ils doivent échouer
-2. Implémenter le minimum pour passer (GREEN)
-3. Refactorer (REFACTOR) — tests doivent rester verts
-4. Valider : `pnpm typecheck && pnpm lint && pnpm test`
-5. **Review** : relire tous les changements (`git diff`) avant commit — sécurité, dead code, tests manquants
-6. Commit
+**DIRECTIVE : Toute tâche qui modifie du code (feature, bugfix, refactoring) DOIT invoquer `/dev <description>` AVANT d'écrire la moindre ligne de code. C'est automatique — l'agent n'attend pas que l'utilisateur le demande.**
 
-Utiliser `/dev <description>` pour lancer le workflow complet automatiquement.
+Exceptions (pas besoin de `/dev`) :
+- Modifications de config uniquement (CLAUDE.md, .env, CI, lefthook)
+- Mise à jour de dépendances (package.json, lockfile)
+- Documentation pure (README, commentaires)
 
 ## Git hooks (lefthook)
 
