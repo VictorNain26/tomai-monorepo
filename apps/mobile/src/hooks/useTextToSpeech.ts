@@ -65,14 +65,17 @@ export function useTextToSpeech() {
 
   const currentTextRef = useRef<string | null>(null);
   const tempFileRef = useRef<File | null>(null);
+  const isMountedRef = useRef(false);
 
   // expo-audio player hook (SDK 55 pattern)
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
 
-  // Cleanup temp file on unmount
+  // Track mount state + cleanup temp file on unmount
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       if (tempFileRef.current) {
         try {
           void tempFileRef.current.delete();
@@ -126,20 +129,22 @@ export function useTextToSpeech() {
       await stop();
 
       if (!text || text.trim().length === 0) {
-        setState((prev) => ({ ...prev, error: 'Texte vide' }));
+        if (isMountedRef.current) setState((prev) => ({ ...prev, error: 'Texte vide' }));
         return false;
       }
 
       if (text.length > MAX_TEXT_LENGTH) {
-        setState((prev) => ({
-          ...prev,
-          error: `Texte trop long (max ${MAX_TEXT_LENGTH} caractères)`,
-        }));
+        if (isMountedRef.current) {
+          setState((prev) => ({
+            ...prev,
+            error: `Texte trop long (max ${MAX_TEXT_LENGTH} caractères)`,
+          }));
+        }
         return false;
       }
 
       try {
-        setState({ isSpeaking: false, isLoading: true, error: null });
+        if (isMountedRef.current) setState({ isSpeaking: false, isLoading: true, error: null });
         currentTextRef.current = text;
 
         // Configure audio mode for playback (SDK 55 standalone function)
@@ -188,14 +193,16 @@ export function useTextToSpeech() {
         player.seekTo(0);
         player.play();
 
-        setState({ isSpeaking: true, isLoading: false, error: null });
+        if (isMountedRef.current) setState({ isSpeaking: true, isLoading: false, error: null });
         return true;
       } catch (err) {
-        setState({
-          isSpeaking: false,
-          isLoading: false,
-          error: err instanceof Error ? err.message : 'Erreur lors de la synthèse',
-        });
+        if (isMountedRef.current) {
+          setState({
+            isSpeaking: false,
+            isLoading: false,
+            error: err instanceof Error ? err.message : 'Erreur lors de la synthèse',
+          });
+        }
         return false;
       }
     },
