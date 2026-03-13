@@ -32,8 +32,9 @@ Le dashboard parent utilise actuellement une modal plein ecran (322 lignes) avec
 
 ### Carrousel enfants
 
-- `FlatList` horizontal avec `snapToInterval` et `pagingEnabled`
-- Chaque card prend ~85% de la largeur ecran (la suivante depasse legerement pour inviter au swipe)
+- `FlatList` horizontal avec `snapToInterval={cardWidth}` et `decelerationRate="fast"` (PAS `pagingEnabled` — incompatible avec sub-full-width cards sur Android)
+- `cardWidth = useWindowDimensions().width * 0.85` — applique a chaque card et a `snapToInterval`
+- Chaque card prend 85% de la largeur ecran (la suivante depasse legerement pour inviter au swipe)
 - Indicateur de pagination (dots) sous le carrousel
 
 ### Contenu d'une ChildCard
@@ -82,7 +83,7 @@ Le dashboard parent utilise actuellement une modal plein ecran (322 lignes) avec
 
 ### Level picker bottom sheet
 
-- Bottom sheet leger (Gorhom ou equivalent)
+- Bottom sheet construit avec les primitives React Native Reusables (pas de `@gorhom/bottom-sheet` — respect contrainte "React Native Reusables uniquement")
 - Liste de niveaux groupes par cycle avec headers de section
 - Selection = ferme le sheet, affiche le niveau choisi dans le champ
 - Pas de modal imbriquee
@@ -94,7 +95,14 @@ Le dashboard parent utilise actuellement une modal plein ecran (322 lignes) avec
   - Au tap : remplit username + password, animation fade-in
 - Username : input texte, pre-rempli si genere, editable
 - Mot de passe : input texte + toggle show/hide, pre-rempli si genere
-- Hint sous password : "Min. 8 caracteres, 1 majuscule, 1 chiffre"
+- Hint sous password : "Min. 8 caracteres, 1 majuscule, 1 minuscule, 1 chiffre"
+
+### Notes d'implementation
+
+- Utiliser `react-hook-form` + `zodResolver(createChildFormSchema)` de `@/lib/child-form-schema`
+- Date mask : utiliser `formatDateInput` de `@/lib/child-form-schema`
+- Generation credentials : utiliser `generateUsername` / `generatePassword` de `@/lib/child-form-schema` (base sur `secureRandomInt`, pas `Math.random`)
+- `add-child.tsx` appelle `useParentDashboard()` directement pour `createChild`, `isCreating`, et `levels`
 
 ### Bouton de validation
 
@@ -180,6 +188,8 @@ Le dashboard parent utilise actuellement une modal plein ecran (322 lignes) avec
 | `src/app/(parent)/(home)/index.tsx` | Refonte dashboard : header + carrousel + empty state |
 | `src/components/parent/ChildCard.tsx` | Nouveau design card (avatar, stats grid, bouton ouvrir) |
 | `src/app/(parent)/(home)/child/[id]/index.tsx` | Refonte detail : hero header, stats, sections, sticky CTA |
+| `src/app/(parent)/(home)/_layout.tsx` | Ajouter `<Stack.Screen name="add-child" options={{ title: 'Nouvel enfant' }} />` |
+| `src/components/parent/index.ts` | Supprimer exports CreateChildModal/LevelPickerModal, ajouter AddChildCard/PaginationDots/LevelPickerSheet |
 
 ### Supprimes
 
@@ -193,7 +203,7 @@ Le dashboard parent utilise actuellement une modal plein ecran (322 lignes) avec
 | Fichier | Raison |
 |---------|--------|
 | `src/components/parent/DeleteChildModal.tsx` | Fonctionne bien, pas de refonte |
-| `src/hooks/useParentDashboard.ts` | API layer inchange, ajout possible d'un hook dedie |
+| `src/hooks/useParentDashboard.ts` | API layer inchange — `add-child.tsx` l'appelle directement pour `createChild`, `isCreating`, `levels` |
 | `src/lib/child-form-schema.ts` | Validation Zod reutilisee telle quelle |
 | `apps/server/src/routes/api/parent.routes.ts` | Pas de changement backend |
 | `apps/server/src/services/parent.service.ts` | Pas de changement backend |
