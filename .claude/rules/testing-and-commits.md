@@ -1,6 +1,6 @@
-# TDD — Conventions TomAI
+# Tests et commits — Conventions monorepo
 
-Le workflow TDD est géré par **superpowers:test-driven-development** (Red-Green-Refactor strict, anti-patterns, Iron Law). Cette règle définit les conventions **spécifiques au monorepo**.
+Le workflow TDD (Red-Green-Refactor) est géré par **superpowers:test-driven-development**. Ce fichier définit les conventions **spécifiques au monorepo** : runners, paths, validation, scopes.
 
 ## Enforcement
 

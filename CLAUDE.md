@@ -34,7 +34,7 @@ Backend necessite Docker : `cd apps/server && docker compose up -d`
 
 ## Enforcement
 
-Le workflow (TDD, review, validation) est geré par **superpowers skills** (auto-invoqués). Les conventions monorepo sont dans @.claude/rules/tdd.md et @.claude/rules/database-migrations.md.
+Le workflow (TDD, review, validation) est geré par **superpowers skills** (auto-invoqués). Les conventions monorepo sont dans @.claude/rules/testing-and-commits.md et @.claude/rules/database-migrations.md.
 
 Garde-fous déterministes :
 - **Stop hook** (exit 2) : force validation + commit avant de quitter
