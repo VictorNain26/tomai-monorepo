@@ -26,22 +26,13 @@ import {
 } from '@/hooks';
 import type { ChildMetrics } from '@/hooks/useParentDashboard';
 import { useUser } from '@/lib/auth';
+import { computeAverageGrade } from '@/lib/formatters';
 import { bgColors } from '@/lib/styles';
-import type { PronoteGrade, PronoteHomework } from '@/services/pronote/pronote-types';
+import type { PronoteHomework } from '@/services/pronote/pronote-types';
 
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-function computeAverageGrade(grades: PronoteGrade[]): number | null {
-  if (grades.length === 0) return null;
-  const validGrades = grades.filter(
-    (g): g is PronoteGrade & { value: number } => g.value !== null && g.outOf > 0
-  );
-  if (validGrades.length === 0) return null;
-  const normalized = validGrades.map((g) => (g.value / g.outOf) * 20);
-  return normalized.reduce((sum, v) => sum + v, 0) / normalized.length;
-}
 
 function countUpcomingHomework(homework: PronoteHomework[]): number {
   return homework.filter((h) => !h.done).length;
@@ -96,13 +87,11 @@ export default function ParentDashboard() {
     [router]
   );
 
-  // Tab press → scroll FlatList to that page
   const handleTabPress = useCallback((index: number) => {
     flatListRef.current?.scrollToIndex({ index, animated: true });
     setActiveIndex(index);
   }, []);
 
-  // Sync activeIndex when user swipes
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && viewableItems[0].index !== null) {
@@ -117,7 +106,6 @@ export default function ParentDashboard() {
     []
   );
 
-  // Loading
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
@@ -130,7 +118,6 @@ export default function ParentDashboard() {
     );
   }
 
-  // Empty state
   if (children.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
@@ -202,6 +189,7 @@ export default function ParentDashboard() {
             <ChildPage
               child={child}
               hasPronote={pd?.hasPronote ?? false}
+              isConnected={pronote.isConnected}
               averageGrade={pd?.averageGrade ?? null}
               homeworkCount={pd?.homeworkCount ?? 0}
               studyTimeMinutes={cm.studyTimeMinutes}

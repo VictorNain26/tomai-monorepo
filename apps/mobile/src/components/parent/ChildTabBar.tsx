@@ -1,11 +1,12 @@
 /**
  * ChildTabBar - Instagram-style scrollable tab bar with child names.
  *
- * Horizontal scroll, active indicator animates under selected tab.
+ * Horizontal scroll, active indicator under selected tab.
+ * Uses onLayout to measure real tab widths for accurate auto-scroll.
  */
 
-import { useRef, useEffect } from 'react';
-import { View, TouchableOpacity, ScrollView } from 'react-native';
+import { useRef, useEffect, useCallback, useState } from 'react';
+import { View, TouchableOpacity, ScrollView, type LayoutChangeEvent } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useThemeColors } from '@/hooks';
 import type { IChild } from '@/hooks/useParentDashboard';
@@ -19,15 +20,27 @@ interface ChildTabBarProps {
 export function ChildTabBar({ items, activeIndex, onTabPress }: ChildTabBarProps) {
   const colors = useThemeColors();
   const scrollRef = useRef<ScrollView>(null);
+  const [tabOffsets, setTabOffsets] = useState<number[]>([]);
 
-  // Auto-scroll to keep active tab visible
+  const handleTabLayout = useCallback(
+    (index: number) => (e: LayoutChangeEvent) => {
+      const { x } = e.nativeEvent.layout;
+      setTabOffsets((prev) => {
+        const next = [...prev];
+        next[index] = x;
+        return next;
+      });
+    },
+    []
+  );
+
+  // Auto-scroll to keep active tab centered
   useEffect(() => {
-    if (scrollRef.current && items.length > 0) {
-      // Rough estimate: each tab ~100px, scroll to center it
-      const x = Math.max(0, activeIndex * 100 - 100);
+    if (scrollRef.current && tabOffsets[activeIndex] !== undefined) {
+      const x = Math.max(0, tabOffsets[activeIndex] - 60);
       scrollRef.current.scrollTo({ x, animated: true });
     }
-  }, [activeIndex, items.length]);
+  }, [activeIndex, tabOffsets]);
 
   if (items.length <= 1) return null;
 
@@ -37,7 +50,7 @@ export function ChildTabBar({ items, activeIndex, onTabPress }: ChildTabBarProps
         ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="px-4"
+        contentContainerClassName="px-5"
       >
         {items.map((child, index) => {
           const isActive = index === activeIndex;
@@ -45,10 +58,14 @@ export function ChildTabBar({ items, activeIndex, onTabPress }: ChildTabBarProps
             <TouchableOpacity
               key={child.id}
               onPress={() => onTabPress(index)}
+              onLayout={handleTabLayout(index)}
               className="mr-6 pb-3 pt-2"
+              accessibilityLabel={`Onglet ${child.firstName}`}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
             >
               <Text
-                className={`text-sm font-semibold ${isActive ? '' : 'opacity-50'}`}
+                className={`text-sm font-semibold ${isActive ? '' : 'opacity-40'}`}
                 style={isActive ? { color: colors.primary } : undefined}
               >
                 {child.firstName}
