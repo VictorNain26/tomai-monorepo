@@ -33,8 +33,9 @@ Le dashboard parent utilise actuellement une modal plein ecran (322 lignes) avec
 ### Carrousel enfants
 
 - `FlatList` horizontal avec `snapToInterval={cardWidth}` et `decelerationRate="fast"` (PAS `pagingEnabled` — incompatible avec sub-full-width cards sur Android)
-- `cardWidth = useWindowDimensions().width * 0.85` — applique a chaque card et a `snapToInterval`
+- `cardWidth = useWindowDimensions().width * 0.85` — applique a `snapToInterval` et au wrapper de chaque item
 - Chaque card prend 85% de la largeur ecran (la suivante depasse legerement pour inviter au swipe)
+- `renderItem` wrappe `ChildCard` dans un `View` avec `width={cardWidth}` — `ChildCard` reste agnostique de la taille (reutilisable)
 - Indicateur de pagination (dots) sous le carrousel
 
 ### Contenu d'une ChildCard
@@ -102,6 +103,7 @@ Le dashboard parent utilise actuellement une modal plein ecran (322 lignes) avec
 - Utiliser `react-hook-form` + `zodResolver(createChildFormSchema)` de `@/lib/child-form-schema`
 - Date mask : utiliser `formatDateInput` de `@/lib/child-form-schema`
 - Generation credentials : utiliser `generateUsername` / `generatePassword` de `@/lib/child-form-schema` (base sur `secureRandomInt`, pas `Math.random`)
+- Conversion date : appeler `toIsoDate(data.dateOfBirth)` avant de passer a `createChild` (API attend YYYY-MM-DD, formulaire affiche DD/MM/YYYY)
 - `add-child.tsx` appelle `useParentDashboard()` directement pour `createChild`, `isCreating`, et `levels`
 
 ### Bouton de validation
