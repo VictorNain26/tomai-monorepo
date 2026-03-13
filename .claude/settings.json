@@ -1,12 +1,23 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./apps/server/.env)",
+      "Read(./apps/server/.env.*)"
+    ]
+  },
+
   "hooks": {
-    "PostToolUse": [
+    "PreToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "echo '[hook] File modified - remember to run tests'"
+            "command": "INPUT=$(cat); CMD=$(echo \"$INPUT\" | grep -o '\"command\":\"[^\"]*\"' | head -1 | sed 's/\"command\":\"//;s/\"//'); echo \"$CMD\" | grep -qE '(rm -rf /|DROP DATABASE|db:push.*(prod|staging))' && echo 'Blocked: destructive command detected' >&2 && exit 2 || exit 0"
           }
         ]
       }
@@ -17,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{ git diff --name-only -- '*.ts' '*.tsx'; git diff --cached --name-only -- '*.ts' '*.tsx'; } | head -1 | grep -q '.' && echo 'Uncommitted .ts/.tsx changes detected. Run validation, review, and commit before stopping.' >&2 && exit 2 || exit 0"
+            "command": "{ git diff --name-only -- '*.ts' '*.tsx'; git diff --cached --name-only -- '*.ts' '*.tsx'; git ls-files --others --exclude-standard -- '*.ts' '*.tsx'; } | head -1 | grep -q '.' && echo 'Uncommitted .ts/.tsx changes detected. Run validation, review, and commit before stopping.' >&2 && exit 2 || exit 0"
           }
         ]
       }

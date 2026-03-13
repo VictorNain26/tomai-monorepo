@@ -10,73 +10,39 @@ pnpm typecheck && pnpm lint       # Validation (obligatoire avant commit)
 pnpm build                        # Build production
 ```
 
-**Backend necessite Docker** (PostgreSQL 16 + pgvector) :
-```bash
-cd apps/server && docker compose up -d
-```
+Backend necessite Docker : `cd apps/server && docker compose up -d`
 
 ## Stack
 
+@apps/server/CLAUDE.md pour le detail backend.
+
 | Couche | Technologies |
 |--------|-------------|
-| Backend | Bun, Elysia.js 1.4, PostgreSQL 16 pgvector, MemoryCacheService (LRU in-memory), Drizzle ORM |
+| Backend | Bun, Elysia.js 1.4, PostgreSQL 16 pgvector, Drizzle ORM |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion |
 | Mobile | Expo SDK 55, React Native 0.83, NativeWind, React Native Reusables |
 | Auth | Better Auth + Google OAuth |
-| AI | Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Gladia (STT), ElevenLabs (TTS) |
-| RAG | Qdrant Cloud + Mistral embeddings + BM25 reranking |
-| Paiement | Stripe (web) + RevenueCat (mobile) |
-| Storage | Scaleway Object Storage (S3-compatible, RGPD, fr-par) |
+| AI | Gemini 2.5 Flash (chat), Mistral (embeddings), Gladia (STT), ElevenLabs (TTS) |
 | Monorepo | Turborepo, pnpm workspaces |
 | Deploy | Vercel (landing), Koyeb (server), EAS (mobile) |
 
-## Apps
-
-| App | Path | Port | Package name |
-|-----|------|------|-------------|
-| Landing | `apps/landing/` | 3001 | `landing` |
-| Server | `apps/server/` | 3000 | `tomai-server` |
-| Mobile | `apps/mobile/` | 8081 | `tom-mobile` |
-
-## Packages partages
-
-- `packages/api/` : Client API (Eden Treaty)
-- `packages/shared-types/` : Types TypeScript partages
-
 ## Git workflow
 
-- **`staging`** : travail quotidien, push direct OK, CI automatique
-- **`main`** : production, JAMAIS de push direct, toujours via PR depuis staging
+- **`staging`** : travail quotidien, push direct OK
+- **`main`** : production, JAMAIS de push direct, toujours PR depuis staging
 - **Merge commit uniquement** : JAMAIS squash merge (desynchronise les branches)
 
-## CI/CD
+## Enforcement
 
-| App | Plateforme | Trigger |
-|-----|-----------|---------|
-| Landing | Vercel | Auto sur push |
-| Server | Koyeb | Auto sur push main |
-| Mobile | EAS Build | Manuel via workflows |
+Le workflow (TDD, review, validation) est geré par **superpowers skills** (auto-invoqués). Les conventions monorepo sont dans @.claude/rules/tdd.md et @.claude/rules/database-migrations.md.
 
-## Workflow de développement
-
-Le workflow est géré par les **superpowers skills** (brainstorming → planning → TDD → review → completion). Ils s'invoquent automatiquement selon la tâche. Les conventions spécifiques au monorepo sont dans `.claude/rules/tdd.md`.
-
-Le **Stop hook** (exit 2) force la validation et le commit avant de quitter — c'est le seul enforcement déterministe.
-
-## Git hooks (lefthook)
-
-lefthook vérifie automatiquement :
-- Pre-commit : lint (fichiers modifiés par app) + typecheck (affected)
-- Pre-push : test (affected) + build (affected)
-
-Bypass exceptionnel : `git commit --no-verify` (à éviter)
+Garde-fous déterministes :
+- **Stop hook** (exit 2) : force validation + commit avant de quitter
+- **PreToolUse hook** : bloque commandes destructives (`rm -rf /`, `DROP DATABASE`, `db:push` en prod)
+- **Permission deny** : interdit la lecture de `.env` et secrets
+- **lefthook** : lint + typecheck (pre-commit), tests + build (pre-push)
 
 ## Review IA
 
-- PR staging→main : review automatique par CodeRabbit Free
-- `/review` localement : review avant push (Claude Code Max, gratuit)
-- @claude dans un commentaire PR : Claude répond (opt-in, clé API)
-
-## Regles detaillees
-
-Voir `.claude/rules/` pour : migrations DB, securite, workflow Git.
+- PR staging→main : CodeRabbit Free (automatique)
+- `/review` localement avant push
