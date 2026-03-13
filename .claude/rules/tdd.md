@@ -1,16 +1,21 @@
 # TDD — Conventions TomAI
 
-Le workflow TDD (Red-Green-Refactor) est **OBLIGATOIRE** et s'applique automatiquement à toute tâche de développement via `/dev`. Il est renforcé par :
-- **CLAUDE.md** : directive obligatoire — l'agent invoque `/dev` automatiquement sur chaque tâche de code.
-- **Claude Code Stop hook** : bloque si du code modifié n'est pas commité (force validation + commit).
-- **lefthook pre-commit** : lint + typecheck automatiques
-- **lefthook pre-push** : tests + build automatiques
+Le workflow TDD est géré par **superpowers:test-driven-development** (Red-Green-Refactor strict, anti-patterns, Iron Law). Cette règle définit les conventions **spécifiques au monorepo**.
+
+## Enforcement
+
+| Mécanisme | Fiabilité | Ce qu'il fait |
+|---|---|---|
+| **Stop hook** (exit 2) | Déterministe | Force validation + commit avant de quitter |
+| **lefthook pre-commit** | Déterministe | lint + typecheck automatiques |
+| **lefthook pre-push** | Déterministe | tests + build automatiques |
+| **superpowers skills** | Auto-invoqués | brainstorming → planning → TDD → review → completion |
 
 ## Test runners par app
 
 | App | Runner | Commande |
 |-----|--------|----------|
-| Server | Runner isole Bun | `cd apps/server && bun run test` |
+| Server | Bun test runner | `cd apps/server && bun run test` |
 | Mobile | jest-expo | `cd apps/mobile && pnpm test` |
 | Landing | — | Pas de tests (site statique) |
 
@@ -21,18 +26,12 @@ Le workflow TDD (Red-Green-Refactor) est **OBLIGATOIRE** et s'applique automatiq
 | Server | `src/tests/<service>.test.ts` | `src/tests/encryption.test.ts` |
 | Mobile | `__tests__/<path>/<name>.test.ts` | `__tests__/lib/pronote-helpers.test.ts` |
 
-## Cycle TDD
-
-1. **RED** : ecrire le test d'abord, verifier qu'il echoue
-2. **GREEN** : implementer le minimum pour passer
-3. **REFACTOR** : ameliorer sans casser les tests
-
-L'agent invoque `/dev <description>` automatiquement sur toute tâche de code (voir CLAUDE.md).
-
 ## Validation obligatoire avant commit
 
 - Server : `cd apps/server && bun run typecheck && bun run lint && bun run test`
 - Mobile : `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
 - Landing : `cd apps/landing && pnpm typecheck && pnpm lint`
 
-lefthook execute automatiquement : lint pre-commit, test+build pre-push.
+## Scopes de commit conventionnels
+
+`chat`, `server`, `landing`, `mobile`, `ci`, `db`, `auth`, `rag`. Toujours stager les fichiers explicitement (jamais `git add .`).

@@ -57,14 +57,11 @@ cd apps/server && docker compose up -d
 | Server | Koyeb | Auto sur push main |
 | Mobile | EAS Build | Manuel via workflows |
 
-## Workflow de développement (OBLIGATOIRE)
+## Workflow de développement
 
-**DIRECTIVE : Toute tâche qui modifie du code (feature, bugfix, refactoring) DOIT invoquer `/dev <description>` AVANT d'écrire la moindre ligne de code. C'est automatique — l'agent n'attend pas que l'utilisateur le demande.**
+Le workflow est géré par les **superpowers skills** (brainstorming → planning → TDD → review → completion). Ils s'invoquent automatiquement selon la tâche. Les conventions spécifiques au monorepo sont dans `.claude/rules/tdd.md`.
 
-Exceptions (pas besoin de `/dev`) :
-- Modifications de config uniquement (CLAUDE.md, .env, CI, lefthook)
-- Mise à jour de dépendances (package.json, lockfile)
-- Documentation pure (README, commentaires)
+Le **Stop hook** (exit 2) force la validation et le commit avant de quitter — c'est le seul enforcement déterministe.
 
 ## Git hooks (lefthook)
 
