@@ -12,6 +12,11 @@
  */
 
 @theme {
+  /* Fonts */
+  --font-sans: 'NunitoSans';
+  --font-heading: 'Poppins';
+  --font-mono: 'JetBrainsMono';
+
   /* Border Radius */
   --radius-2xl: 16px;
   --radius-xl: 14px;
