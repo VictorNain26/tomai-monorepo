@@ -256,7 +256,7 @@ export function GradesRecentCard({
                   {needsReview && (
                     <Button
                       size="sm"
-                      variant="subtle"
+                      variant="ghost"
                       onPress={() => handleReviewWithTom(item)}
                       accessibilityLabel={`Revoir ${item.subject} avec Tom`}
                     >

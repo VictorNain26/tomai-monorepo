@@ -220,7 +220,7 @@ export function HomeworkUrgentCard({
                   {/* Action button */}
                   <Button
                     size="sm"
-                    variant="subtle"
+                    variant="ghost"
                     onPress={() => handleStudyWithTom(item)}
                     accessibilityLabel={`Réviser ${item.subject} avec Tom`}
                   >

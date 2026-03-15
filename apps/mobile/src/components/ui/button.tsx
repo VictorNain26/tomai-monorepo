@@ -1,4 +1,4 @@
-import { useContext, useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   Pressable,
   ActivityIndicator,
@@ -23,26 +23,20 @@ import { haptics } from '@/lib/haptics';
  */
 
 const buttonVariants = cva(
-  'flex-row items-center justify-center gap-2 rounded-lg web:ring-offset-slate-50 dark:web:ring-offset-slate-900 web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-blue-600 dark:web:focus-visible:ring-blue-400 web:focus-visible:ring-offset-2',
+  'flex-row items-center justify-center gap-2 rounded-lg web:ring-offset-stone-50 dark:web:ring-offset-stone-900 web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-blue-600 dark:web:focus-visible:ring-blue-400 web:focus-visible:ring-offset-2',
   {
     variants: {
       variant: {
         default: 'bg-blue-600 dark:bg-blue-400',
         destructive: 'bg-red-600 dark:bg-red-400',
-        outline: 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 active:bg-blue-50 dark:active:bg-blue-900',
-        secondary: 'bg-slate-100 dark:bg-slate-800',
+        outline: 'border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 active:bg-blue-50 dark:active:bg-blue-900',
         ghost: 'active:bg-blue-50 dark:active:bg-blue-900',
-        link: '',
-        // New: Subtle variant for less prominent actions
-        subtle: 'bg-blue-50 dark:bg-blue-900 active:bg-slate-100 dark:active:bg-slate-800',
       },
       size: {
         default: 'h-12 px-6 py-3',
         sm: 'h-11 px-4 py-2', // 44px minimum touch target (WCAG 2.1)
-        lg: 'h-14 px-8 py-4',
         icon: 'h-12 w-12',
         'icon-sm': 'h-11 w-11', // 44px minimum touch target (was 40px)
-        'icon-lg': 'h-14 w-14',
       },
     },
     defaultVariants: {
@@ -55,21 +49,16 @@ const buttonVariants = cva(
 const buttonTextVariants = cva('font-semibold text-center', {
   variants: {
     variant: {
-      default: 'text-white dark:text-slate-900',
-      destructive: 'text-white dark:text-slate-900',
-      outline: 'text-slate-800 dark:text-slate-100',
-      secondary: 'text-slate-800 dark:text-slate-100',
-      ghost: 'text-slate-800 dark:text-slate-100',
-      link: 'text-blue-600 dark:text-blue-400 underline',
-      subtle: 'text-blue-600 dark:text-blue-400',
+      default: 'text-white dark:text-stone-900',
+      destructive: 'text-white dark:text-stone-900',
+      outline: 'text-stone-800 dark:text-stone-100',
+      ghost: 'text-stone-800 dark:text-stone-100',
     },
     size: {
       default: 'text-base',
       sm: 'text-sm',
-      lg: 'text-lg',
       icon: 'text-base',
       'icon-sm': 'text-sm',
-      'icon-lg': 'text-lg',
     },
   },
   defaultVariants: {
@@ -78,15 +67,7 @@ const buttonTextVariants = cva('font-semibold text-center', {
   },
 });
 
-/**
- * Hook to access button text class from TextClassContext.
- * Use inside custom children of Button to get the correct text styling.
- */
-export function useButtonTextClass() {
-  return useContext(TextClassContext);
-}
-
-type HapticFeedback = 'none' | 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning';
+type HapticFeedback = 'none' | 'light' | 'heavy';
 
 interface ButtonProps
   extends Omit<PressableProps, 'style'>,
@@ -133,58 +114,29 @@ function Button({
   // Wrap onPress to include haptic feedback
   const handlePress = useCallback(
     (e: Parameters<NonNullable<PressableProps['onPress']>>[0]) => {
-      if (hapticType !== 'none') {
-        switch (hapticType) {
-          case 'light':
-            haptics.light();
-            break;
-          case 'medium':
-            haptics.medium();
-            break;
-          case 'heavy':
-            haptics.heavy();
-            break;
-          case 'success':
-            haptics.success();
-            break;
-          case 'error':
-            haptics.error();
-            break;
-          case 'warning':
-            haptics.warning();
-            break;
-        }
+      if (hapticType === 'light') {
+        haptics.light();
+      } else if (hapticType === 'heavy') {
+        haptics.heavy();
       }
       onPress?.(e);
     },
     [hapticType, onPress]
   );
 
-  // Determine spinner color based on variant (using new color palette)
+  // Determine spinner color based on variant
   const getSpinnerColor = () => {
     switch (variant) {
-      case 'default':
-        return colors.primaryForeground;
-      case 'destructive':
-        return colors.destructiveForeground;
+      case 'default': return colors.primaryForeground;
+      case 'destructive': return colors.destructiveForeground;
       case 'outline':
-      case 'ghost':
-      case 'subtle':
-      case 'link':
-        return colors.primary;
-      case 'secondary':
-        return colors.foreground;
-      default:
-        return colors.primaryForeground;
+      case 'ghost': return colors.primary;
+      default: return colors.primaryForeground;
     }
   };
 
   // Variants that need active opacity feedback
-  const needsActiveOpacity =
-    variant === 'default' ||
-    variant === 'destructive' ||
-    variant === 'secondary' ||
-    variant === 'subtle';
+  const needsActiveOpacity = variant === 'default' || variant === 'destructive';
 
   return (
     <TextClassContext.Provider value={textClass}>
@@ -218,19 +170,5 @@ function Button({
   );
 }
 
-// ButtonText for use inside Button
-function ButtonText({
-  className,
-  children,
-  ...props
-}: { className?: string; children: React.ReactNode }) {
-  const textClass = useButtonTextClass();
-  return (
-    <Text className={cn(textClass, className)} {...props}>
-      {children}
-    </Text>
-  );
-}
-
-export { Button, ButtonText, buttonVariants, buttonTextVariants };
+export { Button, buttonVariants, buttonTextVariants };
 export type { ButtonProps, HapticFeedback };
