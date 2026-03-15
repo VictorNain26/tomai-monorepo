@@ -66,7 +66,7 @@ export function useTheme(): ThemeContextValue {
 export function useThemeProvider(): ThemeContextValue {
   // React Native's useColorScheme reacts to Appearance changes
   const rnColorScheme = useColorScheme();
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
   const [isLoading, setIsLoading] = useState(true);
 
   // Normalize (can be null)
@@ -90,9 +90,13 @@ export function useThemeProvider(): ThemeContextValue {
           setThemeModeState(mode);
           // 'unspecified' = follow system preference
           Appearance.setColorScheme(mode === 'system' ? 'unspecified' : mode);
+        } else {
+          // No saved preference — apply dark default
+          Appearance.setColorScheme('dark');
         }
       } catch {
-        // Ignore errors, use default
+        // Ignore errors, apply dark default
+        Appearance.setColorScheme('dark');
       } finally {
         setIsLoading(false);
       }

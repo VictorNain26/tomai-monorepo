@@ -32,7 +32,6 @@ const mockColors: ThemeColors = {
   background: '#F8FAFC',
   border: '#E2E8F0',
   card: '#FFFFFF',
-  white: '#FFFFFF',
 };
 
 // ============================================================================

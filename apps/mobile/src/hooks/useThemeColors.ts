@@ -17,11 +17,10 @@ export interface ThemeColors {
   background: string;
   border: string;
   card: string;
-  white: string;
 }
 
 const LIGHT: ThemeColors = {
-  primary: '#2563EB',
+  primary: '#3B82F6',
   primaryForeground: '#FFFFFF',
   success: '#059669',
   successForeground: '#FFFFFF',
@@ -31,31 +30,29 @@ const LIGHT: ThemeColors = {
   destructiveForeground: '#FFFFFF',
   info: '#0EA5E9',
   infoForeground: '#FFFFFF',
-  foreground: '#1E293B',
-  muted: '#64748B',
-  background: '#F8FAFC',
-  border: '#E2E8F0',
+  foreground: '#1C1917',
+  muted: '#78716C',
+  background: '#FAFAF9',
+  border: '#E7E5E4',
   card: '#FFFFFF',
-  white: '#FFFFFF',
 };
 
 const DARK: ThemeColors = {
   primary: '#60A5FA',
-  primaryForeground: '#1E293B',
+  primaryForeground: '#1C1917',
   success: '#34D399',
-  successForeground: '#1E293B',
+  successForeground: '#1C1917',
   warning: '#FBBF24',
-  warningForeground: '#1E293B',
+  warningForeground: '#1C1917',
   destructive: '#F87171',
-  destructiveForeground: '#1E293B',
+  destructiveForeground: '#1C1917',
   info: '#38BDF8',
-  infoForeground: '#1E293B',
-  foreground: '#F1F5F9',
-  muted: '#94A3B8',
-  background: '#0F172A',
-  border: '#334155',
-  card: '#374151',
-  white: '#FFFFFF',
+  infoForeground: '#1C1917',
+  foreground: '#F5F5F4',
+  muted: '#A8A29E',
+  background: '#1C1917',
+  border: '#44403C',
+  card: '#292524',
 };
 
 export function useThemeColors(): ThemeColors {
