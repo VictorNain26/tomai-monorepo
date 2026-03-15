@@ -1,4 +1,4 @@
-import { View, type ViewStyle, type DimensionValue } from 'react-native';
+import { type ViewStyle, type DimensionValue } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withRepeat,
@@ -43,7 +43,7 @@ function Skeleton({
 
   return (
     <Animated.View
-      className={cn('bg-slate-100 dark:bg-slate-800', className)}
+      className={cn('bg-stone-100 dark:bg-stone-800', className)}
       style={[
         {
           width,
@@ -57,68 +57,5 @@ function Skeleton({
   );
 }
 
-// Preset skeletons for common use cases
-function SkeletonText({ lines = 1, className }: { lines?: number; className?: string }) {
-  return (
-    <View className={cn('gap-2', className)}>
-      {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton
-          key={i}
-          height={16}
-          width={i === lines - 1 ? '70%' : '100%'}
-          borderRadius={4}
-        />
-      ))}
-    </View>
-  );
-}
-
-function SkeletonAvatar({
-  size = 40,
-  className,
-}: {
-  size?: number;
-  className?: string;
-}) {
-  return (
-    <Skeleton
-      width={size}
-      height={size}
-      borderRadius={size / 2}
-      className={className}
-    />
-  );
-}
-
-function SkeletonCard({ className }: { className?: string }) {
-  return (
-    <View
-      className={cn(
-        'rounded-xl bg-white dark:bg-slate-800 p-4 gap-3',
-        className
-      )}
-    >
-      <View className="flex-row items-center gap-3">
-        <SkeletonAvatar size={40} />
-        <View className="flex-1 gap-2">
-          <Skeleton height={16} width="60%" borderRadius={4} />
-          <Skeleton height={12} width="40%" borderRadius={4} />
-        </View>
-      </View>
-      <SkeletonText lines={2} />
-    </View>
-  );
-}
-
-function SkeletonButton({ className }: { className?: string }) {
-  return <Skeleton height={48} width="100%" borderRadius={8} className={className} />;
-}
-
-export {
-  Skeleton,
-  SkeletonText,
-  SkeletonAvatar,
-  SkeletonCard,
-  SkeletonButton,
-};
+export { Skeleton };
 export type { SkeletonProps };
