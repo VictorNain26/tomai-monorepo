@@ -81,7 +81,7 @@ export default function ParentDashboard() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
         <View className="px-5 py-5 gap-4">
           <Skeleton className="h-8 w-48 rounded" />
           <Skeleton className="h-4 w-32 rounded" />
@@ -94,7 +94,7 @@ export default function ParentDashboard() {
 
   if (children.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
         <View className="px-5 py-5">
           <Text variant="h2">Bonjour, {userName}</Text>
           <Text variant="muted" className="mt-1">0 enfant</Text>
@@ -110,7 +110,7 @@ export default function ParentDashboard() {
             Commencez par ajouter votre premier enfant
           </Text>
           <Button onPress={handleAddChild} className="mt-4">
-            <Text className="font-medium text-white dark:text-slate-900">
+            <Text className="font-medium text-white dark:text-stone-900">
               Ajouter un enfant
             </Text>
           </Button>
@@ -120,7 +120,7 @@ export default function ParentDashboard() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
         <View>

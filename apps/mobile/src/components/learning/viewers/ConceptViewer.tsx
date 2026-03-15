@@ -38,7 +38,7 @@ export function ConceptViewer({ content }: { content: ConceptContent }) {
       </View>
 
       {content.example && (
-        <View className="mb-4 rounded-xl bg-slate-100 dark:bg-slate-800 p-4">
+        <View className="mb-4 rounded-xl bg-stone-100 dark:bg-stone-800 p-4">
           <Text className="mb-2 font-semibold">Exemple :</Text>
           <Text>{content.example}</Text>
         </View>

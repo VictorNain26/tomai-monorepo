@@ -103,13 +103,13 @@ export function PronotePinEntry({
         disabled={pin.length !== 4 || isPending}
         className="mt-auto"
       >
-        <Text className="font-semibold text-white dark:text-slate-900">
+        <Text className="font-semibold text-white dark:text-stone-900">
           {isPending ? 'Connexion...' : 'Connecter Pronote'}
         </Text>
       </Button>
 
       {/* Help Text */}
-      <View className="mt-6 rounded-xl bg-white dark:bg-slate-800 p-4" style={{ backgroundColor: bgColors.muted[50] }}>
+      <View className="mt-6 rounded-xl bg-white dark:bg-stone-800 p-4" style={{ backgroundColor: bgColors.muted[50] }}>
         <Text variant="muted" className="text-center text-sm">
           Le code PIN est affiche sur l'ecran Pronote apres le QR code.
           {'\n'}Il expire apres quelques minutes.

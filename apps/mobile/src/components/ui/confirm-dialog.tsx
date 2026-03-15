@@ -78,7 +78,7 @@ function ActionItem({
         className={`text-base font-medium ${
           isDestructive
             ? 'text-red-500 dark:text-red-400'
-            : 'text-slate-800 dark:text-slate-100'
+            : 'text-stone-800 dark:text-stone-100'
         }`}
       >
         {isLoading ? '...' : action.label}
@@ -175,7 +175,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
         >
           {/* Main card */}
           <View
-            className="rounded-2xl bg-white dark:bg-slate-800 overflow-hidden"
+            className="rounded-2xl bg-white dark:bg-stone-800 overflow-hidden"
             style={shadows.md}
           >
             {/* Header */}
@@ -212,7 +212,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
 
           {/* Cancel button — separate card */}
           <View
-            className="mt-2 rounded-2xl bg-white dark:bg-slate-800 overflow-hidden"
+            className="mt-2 rounded-2xl bg-white dark:bg-stone-800 overflow-hidden"
             style={shadows.md}
           >
             <TouchableOpacity

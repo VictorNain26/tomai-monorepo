@@ -80,9 +80,9 @@ export function DeleteChildModal({
       >
         <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: bgColors.black[60] }}>
           <SafeAreaView className="w-full max-w-sm">
-            <View className="rounded-2xl bg-white dark:bg-slate-800">
+            <View className="rounded-2xl bg-white dark:bg-stone-800">
               {/* Header */}
-              <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
+              <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 p-4">
                 <View className="flex-row items-center gap-3">
                   <View className="h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.destructive[10] }}>
                     <AlertTriangle color={iconColors.destructive} size={20} />
@@ -102,9 +102,9 @@ export function DeleteChildModal({
 
               {/* Content */}
               <View className="p-4">
-                <Text className="mb-4 leading-relaxed text-slate-500 dark:text-slate-400">
+                <Text className="mb-4 leading-relaxed text-stone-500 dark:text-stone-400">
                   Vous allez supprimer le compte de{' '}
-                  <Text className="font-semibold text-slate-800 dark:text-slate-100">
+                  <Text className="font-semibold text-stone-800 dark:text-stone-100">
                     {childName}
                   </Text>{' '}
                   (@{childUsername}).

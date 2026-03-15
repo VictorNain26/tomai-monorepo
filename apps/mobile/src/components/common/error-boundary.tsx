@@ -54,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900 p-6">
+        <View className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-900 p-6">
           <View className="items-center max-w-sm">
             <View className="h-16 w-16 items-center justify-center rounded-full mb-4" style={{ backgroundColor: bgColors.destructive[10] }}>
               <AlertTriangle size={32} color="#DC2626" />
@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </Text>
 
             {__DEV__ && this.state.error && (
-              <View className="w-full mb-6 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+              <View className="w-full mb-6 p-3 bg-stone-100 dark:bg-stone-800 rounded-lg">
                 <Text variant="small" className="font-mono text-red-600 dark:text-red-400">
                   {this.state.error.message}
                 </Text>
@@ -83,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <Button onPress={this.handleRetry} className="flex-row gap-2">
               <RefreshCw size={18} color="#FFFFFF" />
-              <Text className="text-white dark:text-slate-900 font-semibold">
+              <Text className="text-white dark:text-stone-900 font-semibold">
                 Réessayer
               </Text>
             </Button>

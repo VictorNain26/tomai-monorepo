@@ -30,7 +30,7 @@ export function DeckActionCard({ deckId, title, cardCount, subject }: DeckAction
       activeOpacity={0.7}
       onPress={() => router.push(`/(student)/(learning)/${deckId}`)}
       style={shadows.sm}
-      className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-3"
+      className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-3"
       accessibilityRole="button"
       accessibilityLabel={`Réviser ${title}`}
     >

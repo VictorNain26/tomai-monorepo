@@ -78,7 +78,7 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
   });
 
   return (
-    <View className="rounded-xl bg-white dark:bg-slate-800 p-4">
+    <View className="rounded-xl bg-white dark:bg-stone-800 p-4">
       <View className="flex-row items-start gap-3">
         {/* Emoji */}
         <View className="h-12 w-12 items-center justify-center rounded-lg" style={{ backgroundColor: bgColors.primary[10] }}>

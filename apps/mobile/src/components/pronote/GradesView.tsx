@@ -201,7 +201,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                   <View className="flex-row items-center justify-between p-4">
                     <View className="flex-1">
                       <Text className="font-semibold">{subject.subject}</Text>
-                      <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+                      <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
                         {subject.grades.length} note
                         {subject.grades.length > 1 ? 's' : ''}
                       </Text>
@@ -214,7 +214,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                         >
                           {subject.average.toFixed(1)}
                         </Text>
-                        <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+                        <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
                           /20
                         </Text>
                       </View>
@@ -254,7 +254,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                               <Text className="font-medium">
                                 {grade.description || 'Évaluation'}
                               </Text>
-                              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+                              <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
                                 {formatDateShort(grade.date)} • Coef. {grade.coefficient}
                               </Text>
                             </View>

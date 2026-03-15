@@ -115,7 +115,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
             className="flex-1 rounded-xl p-3"
             style={{ backgroundColor: bgColors.primary[10] }}
           >
-            <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+            <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
               Total
             </Text>
             <Text variant="large">{totalCount}</Text>
@@ -124,7 +124,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
             className="flex-1 rounded-xl p-3"
             style={{ backgroundColor: bgColors.success[10] }}
           >
-            <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+            <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
               Faits
             </Text>
             <Text variant="large" className="text-emerald-600 dark:text-emerald-400">
@@ -136,7 +136,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
               className="flex-1 rounded-xl p-3"
               style={{ backgroundColor: bgColors.destructive[10] }}
             >
-              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+              <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
                 En retard
               </Text>
               <Text variant="large" className="text-red-600 dark:text-red-400">

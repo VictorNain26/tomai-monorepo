@@ -165,7 +165,7 @@ export default function StudentDashboard() {
   const firstName = userName?.split(' ')[0] ?? 'Élève';
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -187,7 +187,7 @@ export default function StudentDashboard() {
         {(dueSummary?.totalDue ?? 0) > 0 && (
           <Pressable
             onPress={() => router.push('/(student)/(learning)')}
-            className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-4 active:opacity-80"
+            className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-4 active:opacity-80"
           >
             <View
               className="h-10 w-10 items-center justify-center rounded-lg"
@@ -221,7 +221,7 @@ export default function StudentDashboard() {
             />
           </>
         ) : (
-          <View className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-4">
+          <View className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-4">
             <View
               className="h-10 w-10 items-center justify-center rounded-lg"
               style={{ backgroundColor: bgColors.primary[10] }}

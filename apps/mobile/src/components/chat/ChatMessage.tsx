@@ -117,7 +117,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
       {/* Avatar */}
       {isUser ? (
         <View className="h-8 w-8 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
-          <Text className="text-sm text-white dark:text-slate-900">👤</Text>
+          <Text className="text-sm text-white dark:text-stone-900">👤</Text>
         </View>
       ) : (
         <TomAvatar size="sm" />
@@ -129,7 +129,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
           onLongPress={handleLongPress}
           className={cn(
             'rounded-2xl px-4 py-3',
-            isUser ? 'rounded-tr-sm bg-blue-600 dark:bg-blue-400' : 'rounded-tl-sm bg-slate-100 dark:bg-slate-800'
+            isUser ? 'rounded-tr-sm bg-blue-600 dark:bg-blue-400' : 'rounded-tl-sm bg-stone-100 dark:bg-stone-800'
           )}
         >
           {isThinking ? (
@@ -164,7 +164,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
               )}
               <Text
                 variant="tiny"
-                className={tts.isSpeaking ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}
+                className={tts.isSpeaking ? 'text-stone-800 dark:text-stone-100' : 'text-stone-500 dark:text-stone-400'}
               >
                 {tts.isLoading
                   ? 'Chargement...'
@@ -245,7 +245,7 @@ function ThinkingIndicator({ status }: { status?: string | null }) {
   return (
     <View className="gap-1">
       <View className="flex-row items-center gap-2">
-        <Text className="text-slate-500 dark:text-slate-400">{label}</Text>
+        <Text className="text-stone-500 dark:text-stone-400">{label}</Text>
         <View className="flex-row gap-1">
           <StaggeredDot delay={0} color={colors.primary} />
           <StaggeredDot delay={150} color={colors.primary} />

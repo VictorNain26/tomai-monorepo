@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Text } from './text';
 
 const avatarVariants = cva(
-  'relative flex items-center justify-center overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800',
+  'relative flex items-center justify-center overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800',
   {
     variants: {
       size: {
@@ -21,7 +21,7 @@ const avatarVariants = cva(
   }
 );
 
-const avatarTextVariants = cva('font-semibold text-slate-500 dark:text-slate-400', {
+const avatarTextVariants = cva('font-semibold text-stone-500 dark:text-stone-400', {
   variants: {
     size: {
       sm: 'text-xs',

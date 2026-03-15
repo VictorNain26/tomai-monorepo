@@ -37,7 +37,7 @@ export default function LearningScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       <ScrollView
         className="flex-1 px-4 py-6"
         refreshControl={
@@ -102,7 +102,7 @@ export default function LearningScreen() {
               accessibilityRole="button"
             >
               <Plus color="white" size={18} />
-              <Text className="font-semibold text-white dark:text-slate-900">
+              <Text className="font-semibold text-white dark:text-stone-900">
                 Créer un deck
               </Text>
             </TouchableOpacity>
@@ -125,7 +125,7 @@ export default function LearningScreen() {
 
         {/* Info */}
         {!isLoading && decks.length > 0 && (
-          <View className="mt-6 rounded-xl bg-white dark:bg-slate-800 p-4" style={{ backgroundColor: bgColors.muted[50] }}>
+          <View className="mt-6 rounded-xl bg-white dark:bg-stone-800 p-4" style={{ backgroundColor: bgColors.muted[50] }}>
             <Text variant="muted" className="text-center text-sm">
               Appuie sur ▶️ pour jouer un deck ou 🗑️ pour le supprimer.
             </Text>

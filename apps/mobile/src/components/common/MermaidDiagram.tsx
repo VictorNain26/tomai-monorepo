@@ -222,7 +222,7 @@ export function MermaidDiagram({ chart, className }: MermaidDiagramProps) {
         <Text className="text-sm font-semibold text-red-600 dark:text-red-400">
           Erreur de diagramme
         </Text>
-        <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">{error}</Text>
+        <Text className="mt-1 text-xs text-stone-500 dark:text-stone-400">{error}</Text>
       </View>
     );
   }

@@ -288,7 +288,7 @@ export default function ChatScreen() {
   }, [contextInfo.type, colors.warning, colors.primary, colors.destructive]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900" edges={['top']}>
       <ChatHeader
         contextBadge={contextBadge}
         currentSessionId={currentSessionId}
@@ -343,7 +343,7 @@ export default function ChatScreen() {
                   <TouchableOpacity
                     key={i}
                     onPress={() => sendMessage(s.prompt)}
-                    className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-3"
+                    className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-3"
                     activeOpacity={0.7}
                     accessibilityLabel={s.label}
                     accessibilityHint="Envoie cette question a Tom"
@@ -377,7 +377,7 @@ export default function ChatScreen() {
             {!isNearBottom && (
               <TouchableOpacity
                 onPress={scrollToBottom}
-                className="absolute bottom-3 right-3 h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm"
+                className="absolute bottom-3 right-3 h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-stone-800 shadow-sm"
                 style={{ elevation: 3 }}
                 accessibilityLabel="Retour en bas"
               >

@@ -90,7 +90,7 @@ export default function AddChildScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900" edges={['bottom']}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -104,7 +104,7 @@ export default function AddChildScreen() {
         >
           {/* Section: Identite */}
           <View>
-            <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               Identite
             </Text>
 
@@ -122,7 +122,7 @@ export default function AddChildScreen() {
                     placeholder="Prenom de l'enfant"
                     autoFocus
                     autoCapitalize="words"
-                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-base text-slate-900 dark:text-slate-100"
+                    className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-4 py-3 text-base text-stone-900 dark:text-stone-100"
                     placeholderTextColor="#9ca3af"
                   />
                 )}
@@ -143,7 +143,7 @@ export default function AddChildScreen() {
                     onBlur={onBlur}
                     placeholder="Nom de famille"
                     autoCapitalize="words"
-                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-base text-slate-900 dark:text-slate-100"
+                    className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-4 py-3 text-base text-stone-900 dark:text-stone-100"
                     placeholderTextColor="#9ca3af"
                   />
                 )}
@@ -164,7 +164,7 @@ export default function AddChildScreen() {
                     placeholder="JJ/MM/AAAA"
                     keyboardType="number-pad"
                     maxLength={10}
-                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-base text-slate-900 dark:text-slate-100"
+                    className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-4 py-3 text-base text-stone-900 dark:text-stone-100"
                     placeholderTextColor="#9ca3af"
                   />
                 )}
@@ -177,9 +177,9 @@ export default function AddChildScreen() {
               <Text className="mb-1 text-sm font-medium">Niveau scolaire</Text>
               <TouchableOpacity
                 onPress={() => setShowLevelPicker(true)}
-                className="flex-row items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3"
+                className="flex-row items-center justify-between rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-4 py-3"
               >
-                <Text className={selectedLevel ? 'text-base text-slate-900 dark:text-slate-100' : 'text-base text-slate-400'}>
+                <Text className={selectedLevel ? 'text-base text-stone-900 dark:text-stone-100' : 'text-base text-stone-400'}>
                   {selectedLevel ? getLevelLabel(selectedLevel) : 'Selectionner le niveau'}
                 </Text>
                 <ChevronDown color={iconColors.muted} size={18} />
@@ -190,7 +190,7 @@ export default function AddChildScreen() {
 
           {/* Section: Identifiants */}
           <View>
-            <Text className="mb-1 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <Text className="mb-1 text-sm font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               Identifiants de connexion
             </Text>
             <Text variant="muted" className="mb-3 text-xs">
@@ -200,7 +200,7 @@ export default function AddChildScreen() {
             {/* Generate button */}
             <TouchableOpacity
               onPress={handleGenerate}
-              className="mb-3 flex-row items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-slate-600 py-2.5"
+              className="mb-3 flex-row items-center justify-center gap-2 rounded-xl border border-stone-300 dark:border-stone-600 py-2.5"
             >
               <Wand2 color={colors.primary} size={16} />
               <Text className="font-medium text-sm" style={{ color: colors.primary }}>
@@ -222,7 +222,7 @@ export default function AddChildScreen() {
                     placeholder="Nom d'utilisateur"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-base text-slate-900 dark:text-slate-100"
+                    className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-4 py-3 text-base text-stone-900 dark:text-stone-100"
                     placeholderTextColor="#9ca3af"
                   />
                 )}
@@ -233,7 +233,7 @@ export default function AddChildScreen() {
             {/* Password */}
             <View className="mb-1">
               <Text className="mb-1 text-sm font-medium">Mot de passe</Text>
-              <View className="flex-row items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+              <View className="flex-row items-center rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800">
                 <Controller
                   control={control}
                   name="password"
@@ -246,7 +246,7 @@ export default function AddChildScreen() {
                       secureTextEntry={!showPassword}
                       autoCapitalize="none"
                       autoCorrect={false}
-                      className="flex-1 px-4 py-3 text-base text-slate-900 dark:text-slate-100"
+                      className="flex-1 px-4 py-3 text-base text-stone-900 dark:text-stone-100"
                       placeholderTextColor="#9ca3af"
                     />
                   )}
@@ -268,13 +268,13 @@ export default function AddChildScreen() {
         </ScrollView>
 
         {/* Sticky submit button */}
-        <View className="border-t border-slate-200 dark:border-slate-700 px-5 py-4">
+        <View className="border-t border-stone-200 dark:border-stone-700 px-5 py-4">
           <Button
             onPress={handleSubmit(onSubmit)}
             disabled={!isValid || isCreating}
             style={{ opacity: !isValid || isCreating ? 0.5 : 1 }}
           >
-            <Text className="font-semibold text-white dark:text-slate-900">
+            <Text className="font-semibold text-white dark:text-stone-900">
               {isCreating ? 'Creation en cours...' : 'Creer le compte'}
             </Text>
           </Button>

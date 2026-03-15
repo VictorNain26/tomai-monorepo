@@ -43,9 +43,9 @@ export function CalculationViewer({ content }: { content: CalculationContent }) 
           <Text className="mb-3 font-semibold">Étapes :</Text>
           <View className="gap-2">
             {content.steps.map((step, index) => (
-              <View key={index} className="flex-row gap-3 rounded-lg bg-slate-100 dark:bg-slate-800 p-3">
+              <View key={index} className="flex-row gap-3 rounded-lg bg-stone-100 dark:bg-stone-800 p-3">
                 <View className="h-6 w-6 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
-                  <Text className="text-xs text-white dark:text-slate-900">{index + 1}</Text>
+                  <Text className="text-xs text-white dark:text-stone-900">{index + 1}</Text>
                 </View>
                 <Text className="flex-1">{step}</Text>
               </View>
@@ -56,7 +56,7 @@ export function CalculationViewer({ content }: { content: CalculationContent }) 
 
       {showSteps && !showAnswer && (
         <Button onPress={() => setShowAnswer(true)}>
-          <Text className="font-semibold text-white dark:text-slate-900">Voir la réponse</Text>
+          <Text className="font-semibold text-white dark:text-stone-900">Voir la réponse</Text>
         </Button>
       )}
 

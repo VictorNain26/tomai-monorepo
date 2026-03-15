@@ -88,7 +88,7 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
             onPress={() => handleCategoryPress(category)}
             disabled={validated || selectedItem === null}
             className={`rounded-lg border p-2 ${
-              selectedItem !== null ? 'border-blue-600 dark:border-blue-400' : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800'
+              selectedItem !== null ? 'border-blue-600 dark:border-blue-400' : 'border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800'
             }`}
             style={selectedItem !== null ? { backgroundColor: bgColors.primary[10] } : undefined}
           >
@@ -112,7 +112,7 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
                   ? 'border-green-500 bg-green-50'
                   : isSelected
                     ? 'border-blue-600 dark:border-blue-400'
-                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                    : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800'
               }`}
               style={assignedCategory === undefined && isSelected ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
@@ -129,7 +129,7 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
 
       {allClassified && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-white dark:text-slate-900">Valider</Text>
+          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
         </Button>
       )}
 
@@ -173,7 +173,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
 
       <View className="mb-6">
         {userOrder.length === 0 ? (
-          <View className="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-4">
+          <View className="rounded-xl border border-dashed border-stone-200 dark:border-stone-700 p-4">
             <Text variant="muted" className="text-center">
               Appuie sur les étapes dans l'ordre correct
             </Text>
@@ -188,7 +188,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
                 style={{ backgroundColor: bgColors.primary[10] }}
               >
                 <View className="h-6 w-6 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
-                  <Text className="text-xs text-white dark:text-slate-900">{position + 1}</Text>
+                  <Text className="text-xs text-white dark:text-stone-900">{position + 1}</Text>
                 </View>
                 <Text className="flex-1">{content.steps[originalIndex]}</Text>
               </TouchableOpacity>
@@ -204,7 +204,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
               key={item.originalIndex}
               onPress={() => handleStepPress(item.originalIndex)}
               disabled={validated}
-              className="rounded-lg bg-white dark:bg-slate-800 p-3"
+              className="rounded-lg bg-white dark:bg-stone-800 p-3"
             >
               <Text>{item.step}</Text>
             </TouchableOpacity>
@@ -214,7 +214,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
 
       {remainingSteps.length === 0 && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-white dark:text-slate-900">Valider</Text>
+          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
         </Button>
       )}
 

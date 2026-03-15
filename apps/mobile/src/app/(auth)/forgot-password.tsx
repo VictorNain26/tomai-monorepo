@@ -83,7 +83,7 @@ export default function ForgotPasswordScreen() {
   // Success state
   if (emailSent) {
     return (
-      <View className="flex-1 justify-center bg-slate-50 dark:bg-slate-900 px-6">
+      <View className="flex-1 justify-center bg-stone-50 dark:bg-stone-900 px-6">
         <View className="items-center">
           <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.success[10] }}>
             <CheckCircle color={colors.success} size={32} />
@@ -111,7 +111,7 @@ export default function ForgotPasswordScreen() {
             onPress={() => router.replace('/(auth)/login')}
             className="mt-8 w-full"
           >
-            <Text className="font-semibold text-white dark:text-slate-900">
+            <Text className="font-semibold text-white dark:text-stone-900">
               Retour à la connexion
             </Text>
           </Button>
@@ -124,7 +124,7 @@ export default function ForgotPasswordScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-slate-50 dark:bg-slate-900"
+      className="flex-1 bg-stone-50 dark:bg-stone-900"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -180,7 +180,7 @@ export default function ForgotPasswordScreen() {
               disabled={isLoading}
               className="mt-4"
             >
-              <Text className="font-semibold text-white dark:text-slate-900">
+              <Text className="font-semibold text-white dark:text-stone-900">
                 {isLoading ? 'Envoi en cours...' : 'Envoyer le lien'}
               </Text>
             </Button>

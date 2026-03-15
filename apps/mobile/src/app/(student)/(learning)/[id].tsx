@@ -104,7 +104,7 @@ export default function DeckReviewScreen() {
   // Loading
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
         <View className="flex-1 items-center justify-center p-6">
           <Skeleton className="mb-4 h-8 w-48 rounded" />
           <Skeleton className="h-64 w-full rounded-xl" />
@@ -116,13 +116,13 @@ export default function DeckReviewScreen() {
   // Error
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
         <View className="flex-1 items-center justify-center p-6">
           <Text className="mb-4 text-red-600 dark:text-red-400">
             {error.message ?? 'Erreur de chargement'}
           </Text>
           <Button onPress={handleClose}>
-            <Text className="text-white dark:text-slate-900">Retour</Text>
+            <Text className="text-white dark:text-stone-900">Retour</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -132,7 +132,7 @@ export default function DeckReviewScreen() {
   // No due cards
   if (totalCards === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
         <View className="flex-1 items-center justify-center p-6">
           <View
             className="mb-4 h-20 w-20 items-center justify-center rounded-full"
@@ -147,7 +147,7 @@ export default function DeckReviewScreen() {
             Aucune carte à réviser pour le moment.{'\n'}Reviens plus tard !
           </Text>
           <Button onPress={handleClose} className="mt-8">
-            <Text className="font-semibold text-white dark:text-slate-900">
+            <Text className="font-semibold text-white dark:text-stone-900">
               Retour aux decks
             </Text>
           </Button>
@@ -171,9 +171,9 @@ export default function DeckReviewScreen() {
 
   // Main review UI
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <TouchableOpacity
           onPress={handleClose}
           className="h-10 w-10 items-center justify-center rounded-full"
@@ -204,7 +204,7 @@ export default function DeckReviewScreen() {
       </View>
 
       {/* Rating Buttons */}
-      <View className="border-t border-slate-200 dark:border-slate-700 px-4 py-4">
+      <View className="border-t border-stone-200 dark:border-stone-700 px-4 py-4">
         {reviewMutation.isPending ? (
           <View className="items-center py-3">
             <ActivityIndicator size="small" />
@@ -270,7 +270,7 @@ function SessionComplete({
   ].filter((b) => b.count > 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       <View className="flex-1 items-center justify-center p-6">
         <Text className="mb-2 text-6xl">🎉</Text>
         <Text variant="h2" className="text-center">
@@ -299,7 +299,7 @@ function SessionComplete({
 
         <View className="mt-8 w-full gap-3">
           <Button onPress={onContinue}>
-            <Text className="font-semibold text-white dark:text-slate-900">
+            <Text className="font-semibold text-white dark:text-stone-900">
               Continuer à réviser
             </Text>
           </Button>

@@ -30,23 +30,23 @@ export const TokenUsageCard = memo(function TokenUsageCard({ usage, isLoading = 
 
   if (isLoading) {
     return (
-      <View className="rounded-xl bg-white dark:bg-slate-800 p-4">
+      <View className="rounded-xl bg-white dark:bg-stone-800 p-4">
         <View className="mb-3 flex-row items-center gap-2">
-          <View className="h-8 w-8 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+          <View className="h-8 w-8 animate-pulse rounded-lg bg-stone-100 dark:bg-stone-800" />
           <View className="flex-1">
-            <View className="mb-1 h-4 w-24 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
-            <View className="h-3 w-16 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+            <View className="mb-1 h-4 w-24 animate-pulse rounded bg-stone-100 dark:bg-stone-800" />
+            <View className="h-3 w-16 animate-pulse rounded bg-stone-100 dark:bg-stone-800" />
           </View>
         </View>
-        <View className="mb-2 h-2 w-full animate-pulse rounded-full bg-slate-100 dark:bg-slate-800" />
-        <View className="h-3 w-32 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+        <View className="mb-2 h-2 w-full animate-pulse rounded-full bg-stone-100 dark:bg-stone-800" />
+        <View className="h-3 w-32 animate-pulse rounded bg-stone-100 dark:bg-stone-800" />
       </View>
     );
   }
 
   if (!usage) {
     return (
-      <View className="rounded-xl bg-white dark:bg-slate-800 p-4">
+      <View className="rounded-xl bg-white dark:bg-stone-800 p-4">
         <Text variant="muted" className="text-center text-sm">
           Impossible de charger l'usage
         </Text>
@@ -75,11 +75,11 @@ export const TokenUsageCard = memo(function TokenUsageCard({ usage, isLoading = 
   const getStatusColor = () => {
     if (isExhausted || isNearLimit) return 'text-red-600 dark:text-red-400';
     if (isThrottle || isWarning) return 'text-amber-600 dark:text-amber-400';
-    return 'text-slate-800 dark:text-slate-100';
+    return 'text-stone-800 dark:text-stone-100';
   };
 
   return (
-    <View className="rounded-xl bg-white dark:bg-slate-800 p-4" accessibilityRole="summary">
+    <View className="rounded-xl bg-white dark:bg-stone-800 p-4" accessibilityRole="summary">
       {/* Header */}
       <View className="mb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">

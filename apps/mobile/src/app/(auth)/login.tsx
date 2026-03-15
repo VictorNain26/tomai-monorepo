@@ -127,7 +127,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-slate-50 dark:bg-slate-900"
+      className="flex-1 bg-stone-50 dark:bg-stone-900"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -162,8 +162,8 @@ export default function LoginScreen() {
               <Text
                 className={`text-center font-medium ${
                   accountType === 'parent'
-                    ? 'text-slate-800 dark:text-slate-100'
-                    : 'text-slate-500 dark:text-slate-400'
+                    ? 'text-stone-800 dark:text-stone-100'
+                    : 'text-stone-500 dark:text-stone-400'
                 }`}
               >
                 Parent
@@ -181,8 +181,8 @@ export default function LoginScreen() {
               <Text
                 className={`text-center font-medium ${
                   accountType === 'student'
-                    ? 'text-slate-800 dark:text-slate-100'
-                    : 'text-slate-500 dark:text-slate-400'
+                    ? 'text-stone-800 dark:text-stone-100'
+                    : 'text-stone-500 dark:text-stone-400'
                 }`}
               >
                 Élève
@@ -238,7 +238,7 @@ export default function LoginScreen() {
               )}
 
               <Button onPress={handleLogin} disabled={isLoading} className="mt-2">
-                <Text className="font-semibold text-white dark:text-slate-900">
+                <Text className="font-semibold text-white dark:text-stone-900">
                   {isLoading ? 'Connexion...' : 'Se connecter'}
                 </Text>
               </Button>
@@ -249,11 +249,11 @@ export default function LoginScreen() {
           {accountType === 'parent' && (
             <>
               <View className="my-6 flex-row items-center">
-                <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
                 <Text variant="muted" className="px-4">
                   ou
                 </Text>
-                <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
               </View>
 
               <Button variant="outline" onPress={handleGoogleLogin} disabled={isLoading}>
