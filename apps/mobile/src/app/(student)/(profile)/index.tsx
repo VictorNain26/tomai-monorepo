@@ -331,7 +331,7 @@ export default function StudentProfileScreen() {
         </TouchableOpacity>
 
         {/* App Version */}
-        <Text variant="caption" className="text-center">
+        <Text variant="muted" className="text-center">
           TomIA v1.0.0
         </Text>
       </ScrollView>
