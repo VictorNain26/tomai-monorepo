@@ -1,26 +1,40 @@
 /**
  * Register Screen - TomAI 2026
  *
- * Parent registration screen.
+ * Parent registration screen with progressive password validation.
  */
 
 import { useState, useEffect } from 'react';
-import {
-  View,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Pressable } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import { Check, Circle } from 'lucide-react-native';
 import { signUp, signInWithGoogle, useSession } from '@/lib/auth';
 
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { TomAvatar } from '@/components/common';
-import { bgColors, shadows } from '@/lib/styles';
+import { GoogleIcon } from '@/components/icons/google-icon';
+import { AuthScreen } from '@/components/auth/auth-screen';
+import { bgColors } from '@/lib/styles';
+
+function PasswordCriterion({ met, label }: { met: boolean; label: string }) {
+  return (
+    <View className="flex-row items-center gap-2">
+      {met ? (
+        <Check size={14} color="#059669" />
+      ) : (
+        <Circle size={14} color="#A8A29E" />
+      )}
+      <Text
+        variant="tiny"
+        className={met ? 'text-emerald-600 dark:text-emerald-400' : 'text-stone-400'}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -115,118 +129,111 @@ export default function RegisterScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-stone-50 dark:bg-stone-900"
-    >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View className="flex-1 justify-center px-6 py-12">
-          {/* Header */}
-          <View className="mb-8 items-center">
-            <TomAvatar size="lg" className="mb-4" />
-            <Text variant="h1" className="text-center text-blue-600 dark:text-blue-400">
-              Inscription
-            </Text>
-            <Text variant="muted" className="mt-2 text-center px-4">
-              Créez votre compte pour suivre la scolarité de vos enfants
-            </Text>
-          </View>
+    <AuthScreen>
+      {/* Header */}
+      <View className="mb-8 items-center">
+        <TomAvatar size="lg" className="mb-4" />
+        <Text variant="h1" className="text-center text-blue-600 dark:text-blue-400">
+          Inscription
+        </Text>
+        <Text variant="muted" className="mt-2 text-center px-4">
+          Créez votre compte pour suivre la scolarité de vos enfants
+        </Text>
+      </View>
 
-          {/* Error message */}
-          {error && (
-            <View
-              className="mb-4 rounded-xl p-3"
-              style={{ backgroundColor: bgColors.destructive[10] }}
-              accessibilityRole="alert"
-              accessibilityLiveRegion="polite"
-            >
-              <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
-            </View>
-          )}
-
-          {/* Form */}
-          <Card style={shadows.sm}>
-            <View className="gap-4 p-4">
-              <Input
-                label="Nom complet"
-                placeholder="Marie Dupont"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-                autoComplete="name"
-                disabled={isLoading}
-              />
-
-              <Input
-                label="Email"
-                placeholder="marie.dupont@exemple.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                disabled={isLoading}
-              />
-
-              <Input
-                label="Mot de passe"
-                placeholder="8 caractères, majuscule, chiffre"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                disabled={isLoading}
-              />
-
-              <Input
-                label="Confirmer le mot de passe"
-                placeholder="Confirmez votre mot de passe"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                disabled={isLoading}
-              />
-
-              <Button
-                onPress={handleRegister}
-                disabled={isLoading}
-                className="mt-2"
-              >
-                <Text className="font-semibold text-white dark:text-stone-900">
-                  {isLoading ? 'Création...' : 'Créer mon compte'}
-                </Text>
-              </Button>
-            </View>
-          </Card>
-
-          {/* Google OAuth */}
-          <View className="my-6 flex-row items-center">
-            <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
-            <Text variant="muted" className="px-4">
-              ou
-            </Text>
-            <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
-          </View>
-
-          <Button variant="outline" onPress={handleGoogleRegister} disabled={isLoading}>
-            <Text className="font-semibold">Continuer avec Google</Text>
-          </Button>
-
-          {/* Login link */}
-          <View className="mt-8 flex-row justify-center">
-            <Text variant="muted">Déjà un compte ? </Text>
-            <Link href="/(auth)/login" asChild>
-              <TouchableOpacity>
-                <Text className="font-semibold text-blue-600 dark:text-blue-400">Se connecter</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
+      {/* Error message */}
+      {error && (
+        <View
+          className="mb-4 rounded-xl p-3"
+          style={{ backgroundColor: bgColors.destructive[10] }}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      )}
+
+      {/* Form */}
+      <View className="gap-4">
+        <Input
+          label="Nom complet"
+          placeholder="Marie Dupont"
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+          autoComplete="name"
+          disabled={isLoading}
+        />
+
+        <Input
+          label="Email"
+          placeholder="marie.dupont@exemple.com"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          disabled={isLoading}
+        />
+
+        <Input
+          label="Mot de passe"
+          placeholder="8 caractères, majuscule, chiffre"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          disabled={isLoading}
+        />
+
+        {/* Password strength indicator */}
+        {password.length > 0 && (
+          <View className="gap-1.5">
+            <PasswordCriterion met={password.length >= 8} label="8 caractères minimum" />
+            <PasswordCriterion met={/[A-Z]/.test(password)} label="Une majuscule" />
+            <PasswordCriterion met={/[a-z]/.test(password)} label="Une minuscule" />
+            <PasswordCriterion met={/[0-9]/.test(password)} label="Un chiffre" />
+          </View>
+        )}
+
+        <Input
+          label="Confirmer le mot de passe"
+          placeholder="Confirmez votre mot de passe"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          disabled={isLoading}
+        />
+
+        <Button onPress={handleRegister} isLoading={isLoading} className="mt-2">
+          Créer mon compte
+        </Button>
+      </View>
+
+      {/* Google OAuth */}
+      <View className="my-6 flex-row items-center">
+        <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+        <Text variant="muted" className="px-4">
+          ou
+        </Text>
+        <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+      </View>
+
+      <Button variant="outline" onPress={handleGoogleRegister} disabled={isLoading}>
+        <GoogleIcon size={20} />
+        <Text className="font-semibold">Continuer avec Google</Text>
+      </Button>
+
+      {/* Login link */}
+      <View className="mt-8 flex-row justify-center">
+        <Text variant="muted">Déjà un compte ? </Text>
+        <Link href="/(auth)/login" asChild>
+          <Pressable>
+            <Text className="font-semibold text-blue-600 dark:text-blue-400">Se connecter</Text>
+          </Pressable>
+        </Link>
+      </View>
+    </AuthScreen>
   );
 }

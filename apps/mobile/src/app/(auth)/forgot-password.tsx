@@ -6,13 +6,7 @@
  */
 
 import { useState } from 'react';
-import {
-  View,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Pressable } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Mail, CheckCircle, ArrowLeft } from 'lucide-react-native';
 import { requestPasswordReset } from '@/lib/auth';
@@ -22,6 +16,7 @@ import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
+import { AuthScreen } from '@/components/auth/auth-screen';
 import { useIconColors, useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
@@ -111,9 +106,7 @@ export default function ForgotPasswordScreen() {
             onPress={() => router.replace('/(auth)/login')}
             className="mt-8 w-full"
           >
-            <Text className="font-semibold text-white dark:text-stone-900">
-              Retour à la connexion
-            </Text>
+            Retour à la connexion
           </Button>
         </View>
       </View>
@@ -122,81 +115,65 @@ export default function ForgotPasswordScreen() {
 
   // Form state
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-stone-50 dark:bg-stone-900"
-    >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
+    <AuthScreen>
+      {/* Back button */}
+      <Pressable
+        onPress={() => router.back()}
+        className="absolute left-6 top-16 flex-row items-center"
+        style={{ minHeight: 44 }}
+        accessibilityLabel="Retour"
+        accessibilityRole="button"
       >
-        <View className="flex-1 justify-center px-6 py-12">
-          {/* Back button */}
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="absolute left-6 top-16 flex-row items-center"
-            style={{ minHeight: 44 }}
-            accessibilityLabel="Retour"
-            accessibilityRole="button"
-          >
-            <ArrowLeft color={iconColors.foreground} size={20} />
-            <Text className="ml-1 text-blue-600 dark:text-blue-400">Retour</Text>
-          </TouchableOpacity>
+        <ArrowLeft color={iconColors.foreground} size={20} />
+        <Text className="ml-1 text-blue-600 dark:text-blue-400">Retour</Text>
+      </Pressable>
 
-          {/* Header */}
-          <View className="mb-8 items-center">
-            <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
-              <Mail color={iconColors.foreground} size={32} />
-            </View>
-
-            <Text variant="h2" className="text-center">
-              Mot de passe oublié ?
-            </Text>
-
-            <Text variant="muted" className="mt-2 text-center">
-              Saisissez votre email pour recevoir un lien de réinitialisation
-            </Text>
-          </View>
-
-          {/* Form */}
-          <View className="gap-4">
-            <View>
-              <Text variant="small" className="mb-2 font-medium">
-                Adresse email
-              </Text>
-              <Input
-                placeholder="marie.dupont@exemple.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                disabled={isLoading}
-              />
-            </View>
-
-            <Button
-              onPress={handleSendResetEmail}
-              disabled={isLoading}
-              className="mt-4"
-            >
-              <Text className="font-semibold text-white dark:text-stone-900">
-                {isLoading ? 'Envoi en cours...' : 'Envoyer le lien'}
-              </Text>
-            </Button>
-          </View>
-
-          {/* Login link */}
-          <View className="mt-8 flex-row justify-center">
-            <Text variant="muted">Vous vous souvenez ? </Text>
-            <Link href="/(auth)/login" asChild>
-              <TouchableOpacity accessibilityLabel="Se connecter">
-                <Text className="font-semibold text-blue-600 dark:text-blue-400">Se connecter</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
+      {/* Header */}
+      <View className="mb-8 items-center">
+        <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
+          <Mail color={iconColors.foreground} size={32} />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        <Text variant="h2" className="text-center">
+          Mot de passe oublié ?
+        </Text>
+
+        <Text variant="muted" className="mt-2 text-center">
+          Saisissez votre email pour recevoir un lien de réinitialisation
+        </Text>
+      </View>
+
+      {/* Form */}
+      <View className="gap-4">
+        <View>
+          <Text variant="small" className="mb-2 font-medium">
+            Adresse email
+          </Text>
+          <Input
+            placeholder="marie.dupont@exemple.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            disabled={isLoading}
+          />
+        </View>
+
+        <Button onPress={handleSendResetEmail} isLoading={isLoading} className="mt-4">
+          Envoyer le lien
+        </Button>
+      </View>
+
+      {/* Login link */}
+      <View className="mt-8 flex-row justify-center">
+        <Text variant="muted">Vous vous souvenez ? </Text>
+        <Link href="/(auth)/login" asChild>
+          <Pressable accessibilityLabel="Se connecter">
+            <Text className="font-semibold text-blue-600 dark:text-blue-400">Se connecter</Text>
+          </Pressable>
+        </Link>
+      </View>
+    </AuthScreen>
   );
 }
