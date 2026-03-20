@@ -136,7 +136,7 @@ export default function LoginScreen() {
             className={`text-center ${
               accountType === 'parent'
                 ? 'font-semibold text-stone-800 dark:text-stone-100'
-                : 'text-stone-500 dark:text-stone-400'
+                : 'text-stone-600 dark:text-stone-400'
             }`}
           >
             Parent
@@ -152,7 +152,7 @@ export default function LoginScreen() {
             className={`text-center ${
               accountType === 'student'
                 ? 'font-semibold text-stone-800 dark:text-stone-100'
-                : 'text-stone-500 dark:text-stone-400'
+                : 'text-stone-600 dark:text-stone-400'
             }`}
           >
             Élève

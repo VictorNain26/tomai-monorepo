@@ -125,7 +125,7 @@ export function PaywallLoading() {
   return (
     <View className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-900">
       <ActivityIndicator size="large" />
-      <Text className="mt-4 text-stone-500 dark:text-stone-400">
+      <Text className="mt-4 text-stone-600 dark:text-stone-400">
         Chargement des offres...
       </Text>
     </View>

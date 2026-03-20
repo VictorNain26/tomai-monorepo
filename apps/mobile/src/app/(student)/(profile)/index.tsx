@@ -257,7 +257,7 @@ export default function StudentProfileScreen() {
         {/* Menu Sections */}
         {sections.map((section) => (
           <View key={section.title}>
-            <Text variant="small" className="mb-2 px-1 text-stone-500 dark:text-stone-400">
+            <Text variant="small" className="mb-2 px-1 text-stone-600 dark:text-stone-400">
               {section.title}
             </Text>
             <Card style={shadows.sm}>

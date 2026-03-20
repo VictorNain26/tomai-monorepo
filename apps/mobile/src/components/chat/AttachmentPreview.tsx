@@ -46,7 +46,7 @@ export function AttachmentPreview({ attachments, onRemove }: AttachmentPreviewPr
             )}
             <Text
               variant="tiny"
-              className="mt-1 max-w-[64px] text-stone-500 dark:text-stone-400"
+              className="mt-1 max-w-[64px] text-stone-600 dark:text-stone-400"
               numberOfLines={1}
             >
               {attachment.fileName}

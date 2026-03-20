@@ -100,7 +100,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
           <Text numberOfLines={1} className="font-medium">
             {item.fileName}
           </Text>
-          <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
+          <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
             {formatFileSize(item.sizeBytes)}
             {item.subject ? ` · ${item.subject}` : ''}
           </Text>
@@ -130,7 +130,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
         <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3 pt-4">
           <Text variant="large">Mon Classeur</Text>
           <View className="flex-row items-center gap-3">
-            <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
+            <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
               {sessionFilesList.length}/10
             </Text>
             <TouchableOpacity

@@ -102,7 +102,7 @@ export function DeleteChildModal({
 
               {/* Content */}
               <View className="p-4">
-                <Text className="mb-4 leading-relaxed text-stone-500 dark:text-stone-400">
+                <Text className="mb-4 leading-relaxed text-stone-600 dark:text-stone-400">
                   Vous allez supprimer le compte de{' '}
                   <Text className="font-semibold text-stone-800 dark:text-stone-100">
                     {childName}

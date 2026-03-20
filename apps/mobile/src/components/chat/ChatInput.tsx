@@ -160,14 +160,14 @@ export const ChatInput = memo(function ChatInput({
               <Text className="text-base font-semibold text-red-600 dark:text-red-400">
                 {voice.duration}s
               </Text>
-              <Text className="flex-1 text-sm text-stone-500 dark:text-stone-400">
+              <Text className="flex-1 text-sm text-stone-600 dark:text-stone-400">
                 Appui long pour annuler
               </Text>
             </View>
           ) : voice.isProcessing ? (
             <View className="flex-1 flex-row items-center gap-2 py-3">
               <Loader2 color={iconColors.muted} size={16} />
-              <Text className="text-base text-stone-500 dark:text-stone-400">
+              <Text className="text-base text-stone-600 dark:text-stone-400">
                 Transcription...
               </Text>
             </View>

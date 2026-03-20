@@ -164,7 +164,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
               )}
               <Text
                 variant="tiny"
-                className={tts.isSpeaking ? 'text-stone-800 dark:text-stone-100' : 'text-stone-500 dark:text-stone-400'}
+                className={tts.isSpeaking ? 'text-stone-800 dark:text-stone-100' : 'text-stone-600 dark:text-stone-400'}
               >
                 {tts.isLoading
                   ? 'Chargement...'
@@ -245,7 +245,7 @@ function ThinkingIndicator({ status }: { status?: string | null }) {
   return (
     <View className="gap-1">
       <View className="flex-row items-center gap-2">
-        <Text className="text-stone-500 dark:text-stone-400">{label}</Text>
+        <Text className="text-stone-600 dark:text-stone-400">{label}</Text>
         <View className="flex-row gap-1">
           <StaggeredDot delay={0} color={colors.primary} />
           <StaggeredDot delay={150} color={colors.primary} />

@@ -31,7 +31,7 @@ const LIGHT: ThemeColors = {
   info: '#0EA5E9',
   infoForeground: '#FFFFFF',
   foreground: '#1C1917',
-  muted: '#78716C',
+  muted: '#57534E',
   background: '#FAFAF9',
   border: '#E7E5E4',
   card: '#FFFFFF',

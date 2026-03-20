@@ -109,10 +109,10 @@ export default function FilesScreen() {
               {item.fileName}
             </Text>
             <View className="flex-row items-center gap-2 mt-0.5">
-              <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
+              <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
                 {formatFileSize(item.sizeBytes)}
               </Text>
-              <Text variant="tiny" className="text-stone-500 dark:text-stone-400">
+              <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
                 {formatDate(item.createdAt)}
               </Text>
               {subjectLabel && (

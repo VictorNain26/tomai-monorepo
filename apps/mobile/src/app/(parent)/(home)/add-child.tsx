@@ -104,7 +104,7 @@ export default function AddChildScreen() {
         >
           {/* Section: Identite */}
           <View>
-            <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+            <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-600 dark:text-stone-400">
               Identite
             </Text>
 
@@ -190,7 +190,7 @@ export default function AddChildScreen() {
 
           {/* Section: Identifiants */}
           <View>
-            <Text className="mb-1 text-sm font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+            <Text className="mb-1 text-sm font-semibold uppercase tracking-wider text-stone-600 dark:text-stone-400">
               Identifiants de connexion
             </Text>
             <Text variant="muted" className="mb-3 text-xs">

@@ -39,8 +39,8 @@ const textVariants = cva(
         // Body variants
         large: 'text-lg font-semibold',
         small: 'text-sm font-medium',
-        muted: 'text-sm text-stone-500 dark:text-stone-400',
-        tiny: 'text-xs font-medium text-stone-500 dark:text-stone-400',
+        muted: 'text-sm text-stone-600 dark:text-stone-400',
+        tiny: 'text-xs font-medium text-stone-600 dark:text-stone-400',
         // Semantic variants
         error: 'text-sm text-red-600 dark:text-red-400',
         success: 'text-sm text-emerald-600 dark:text-emerald-400',

@@ -281,7 +281,7 @@ function PlanCard({
               </View>
             )}
             <Text
-              className={feature.included ? '' : 'text-stone-500 dark:text-stone-400'}
+              className={feature.included ? '' : 'text-stone-600 dark:text-stone-400'}
             >
               {feature.text}
             </Text>

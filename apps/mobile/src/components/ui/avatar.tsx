@@ -21,7 +21,7 @@ const avatarVariants = cva(
   }
 );
 
-const avatarTextVariants = cva('font-semibold text-stone-500 dark:text-stone-400', {
+const avatarTextVariants = cva('font-semibold text-stone-600 dark:text-stone-400', {
   variants: {
     size: {
       sm: 'text-xs',

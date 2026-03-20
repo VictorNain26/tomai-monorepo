@@ -188,7 +188,7 @@ export function HomeworkUrgentCard({
 
                   {/* Content */}
                   <View className="flex-1">
-                    <Text variant="small" className="text-stone-500 dark:text-stone-400">
+                    <Text variant="small" className="text-stone-600 dark:text-stone-400">
                       {item.subject}
                     </Text>
                     <Text className="font-medium" numberOfLines={2}>
