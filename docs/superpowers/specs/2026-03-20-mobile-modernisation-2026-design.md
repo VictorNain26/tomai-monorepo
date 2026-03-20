@@ -108,9 +108,17 @@ En React 19, `<Context>` peut etre utilise directement comme provider (plus beso
 **Action** : Ajouter `react-native-ssl-pinning` pour securiser les appels API contre les attaques MITM.
 **Contrainte** : Planifier la rotation des certificats (expiry 1-2 ans).
 
-### 3.4 Audit bundle size
+### 3.4 Audit bundle size — FAIT (quick wins appliques)
 
-**Action** : `npx expo-doctor` + analyse des barrel exports et dependances surdimensionnees. Convertir images en WebP.
+**Realise** :
+- Supprime `@expo/vector-icons` (inutilise, ~50KB) — commit `998a8ee`
+- Mis a jour 27 packages Expo vers les derniers patchs
+
+**A faire (session future, ~400-500KB de savings potentiels)** :
+- Lazy-load des 13 card viewers dans `CardViewer.tsx` via `React.lazy()` (~150-200KB)
+- Lazy-load `MathText.tsx` et `MermaidDiagram.tsx` (WebView, ~50-80KB)
+- Refactorer les barrel exports (`export *`) en imports directs (~30-60KB)
+- Evaluer remplacement de `lucide-react-native` (250KB full, seuls 53 icons utilises)
 
 ### 3.5 Spike `useOptimistic` + SSE chat
 
