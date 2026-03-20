@@ -95,14 +95,7 @@ export default function StudentLayout() {
   // Show loading while checking auth
   if (isPending || !session?.user || user?.role !== 'student') {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.background,
-        }}
-      >
+      <View className="flex-1 items-center justify-center bg-background dark:bg-stone-900">
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -112,38 +105,24 @@ export default function StudentLayout() {
     <AppProviders>
       <Suspense
         fallback={
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         }
       >
-      <View style={{ flex: 1 }}>
+      <View className="flex-1">
         {/* Quick Switch Banner - shown when parent is viewing as child */}
         {isImpersonating && (
           <TouchableOpacity
             onPress={handleReturnToParent}
             disabled={isRestoring}
-            style={{
-              backgroundColor: colors.primary,
-              paddingTop: insets.top + 4,
-              paddingBottom: 8,
-              paddingHorizontal: 16,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
+            className="flex-row items-center justify-center gap-2 bg-primary dark:bg-blue-400 px-4 pb-2"
+            style={{ paddingTop: insets.top + 4 }}
             accessibilityLabel="Retour au compte parent"
             accessibilityRole="button"
           >
             <ArrowLeft color={colors.primaryForeground} size={16} />
-            <Text
-              style={{
-                color: colors.primaryForeground,
-                fontWeight: '600',
-                fontSize: 14,
-              }}
-            >
+            <Text className="text-sm font-semibold text-white dark:text-stone-900">
               {isRestoring ? 'Retour en cours...' : 'Retour au compte parent'}
             </Text>
           </TouchableOpacity>

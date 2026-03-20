@@ -66,14 +66,7 @@ export default function ParentLayout() {
   // Show loading while checking auth
   if (isPending || !session?.user || user?.role !== 'parent') {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.background,
-        }}
-      >
+      <View className="flex-1 items-center justify-center bg-background dark:bg-stone-900">
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -83,7 +76,7 @@ export default function ParentLayout() {
     <AppProviders>
       <Suspense
         fallback={
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         }
