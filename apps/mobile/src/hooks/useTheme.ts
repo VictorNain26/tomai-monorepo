@@ -8,7 +8,7 @@
  * Use useColorScheme from react-native + Appearance.setColorScheme().
  */
 
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, createContext, use } from 'react';
 import { useColorScheme, Appearance, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -52,7 +52,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 // ============================================================================
 
 export function useTheme(): ThemeContextValue {
-  const context = useContext(ThemeContext);
+  const context = use(ThemeContext);
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
