@@ -15,8 +15,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const theme = useThemeProvider();
 
   return (
-    <ThemeContext.Provider value={theme}>
+    <ThemeContext value={theme}>
       {children}
-    </ThemeContext.Provider>
+    </ThemeContext>
   );
 }

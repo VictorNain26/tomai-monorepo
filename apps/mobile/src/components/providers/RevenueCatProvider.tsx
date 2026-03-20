@@ -52,9 +52,9 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   }, [isInitialized, session?.user?.id]);
 
   return (
-    <RevenueCatContext.Provider value={{ isInitialized, error }}>
+    <RevenueCatContext value={{ isInitialized, error }}>
       {children}
-    </RevenueCatContext.Provider>
+    </RevenueCatContext>
   );
 }
 

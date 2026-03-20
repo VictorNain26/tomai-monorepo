@@ -139,7 +139,7 @@ function Button({
   const needsActiveOpacity = variant === 'default' || variant === 'destructive';
 
   return (
-    <TextClassContext.Provider value={textClass}>
+    <TextClassContext value={textClass}>
       <Pressable
         className={cn(buttonVariants({ variant, size }), className)}
         style={({ pressed }) => [
@@ -166,7 +166,7 @@ function Button({
           children
         )}
       </Pressable>
-    </TextClassContext.Provider>
+    </TextClassContext>
   );
 }
 

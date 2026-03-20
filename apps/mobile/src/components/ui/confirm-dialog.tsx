@@ -150,7 +150,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <ConfirmContext.Provider value={{ confirm, info }}>
+    <ConfirmContext value={{ confirm, info }}>
       {children}
       <Modal
         visible={dialog.visible}
@@ -227,6 +227,6 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
           </View>
         </View>
       </Modal>
-    </ConfirmContext.Provider>
+    </ConfirmContext>
   );
 }

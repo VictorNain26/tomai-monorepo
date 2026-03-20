@@ -237,7 +237,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
   }, []);
 
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+    <ToastContext value={{ toasts, addToast, removeToast }}>
       {children}
       <View
         style={{
@@ -257,7 +257,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
           />
         ))}
       </View>
-    </ToastContext.Provider>
+    </ToastContext>
   );
 }
 
