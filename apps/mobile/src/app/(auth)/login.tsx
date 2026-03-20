@@ -128,6 +128,7 @@ export default function LoginScreen() {
       <View className="mb-6 flex-row rounded-xl bg-stone-200/50 dark:bg-stone-800/50 p-1">
         <Pressable
           onPress={() => handleAccountTypeChange('parent')}
+          testID="login-toggle-parent"
           className={`flex-1 rounded-lg py-3 ${
             accountType === 'parent' ? 'bg-white dark:bg-stone-700' : ''
           }`}
@@ -144,6 +145,7 @@ export default function LoginScreen() {
         </Pressable>
         <Pressable
           onPress={() => handleAccountTypeChange('student')}
+          testID="login-toggle-student"
           className={`flex-1 rounded-lg py-3 ${
             accountType === 'student' ? 'bg-white dark:bg-stone-700' : ''
           }`}
@@ -163,6 +165,7 @@ export default function LoginScreen() {
       {/* Error message */}
       {error && (
         <View
+          testID="login-error-message"
           className="mb-4 rounded-xl p-3"
           style={{ backgroundColor: bgColors.destructive[10] }}
           accessibilityRole="alert"
@@ -175,6 +178,7 @@ export default function LoginScreen() {
       {/* Form */}
       <View className="gap-4">
         <Input
+          testID="login-identifier-input"
           label={currentConfig.label}
           placeholder={currentConfig.placeholder}
           value={identifier}
@@ -186,6 +190,7 @@ export default function LoginScreen() {
         />
 
         <Input
+          testID="login-password-input"
           label="Mot de passe"
           placeholder="Votre mot de passe"
           value={password}
@@ -206,7 +211,7 @@ export default function LoginScreen() {
           </Link>
         )}
 
-        <Button onPress={handleLogin} isLoading={isLoading} className="mt-2">
+        <Button testID="login-submit-button" onPress={handleLogin} isLoading={isLoading} className="mt-2">
           Se connecter
         </Button>
       </View>
