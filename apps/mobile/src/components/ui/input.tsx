@@ -1,4 +1,5 @@
-import { forwardRef, useState } from 'react';
+import { useState } from 'react';
+import type React from 'react';
 import { TextInput, View, Pressable, type TextInputProps } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -53,23 +54,20 @@ export interface InputProps
   accessibilityHint?: string;
 }
 
-const Input = forwardRef<TextInput, InputProps>(
-  (
-    {
-      className,
-      variant,
-      disabled,
-      errorMessage,
-      label,
-      helperText,
-      placeholderTextColor,
-      accessibilityLabel,
-      accessibilityHint,
-      secureTextEntry,
-      ...props
-    },
-    ref
-  ) => {
+function Input({
+  className,
+  variant,
+  disabled,
+  errorMessage,
+  label,
+  helperText,
+  placeholderTextColor,
+  accessibilityLabel,
+  accessibilityHint,
+  secureTextEntry,
+  ref,
+  ...props
+}: InputProps & { ref?: React.Ref<TextInput> }) {
     const [showPassword, setShowPassword] = useState(false);
     const colors = useThemeColors();
     const isPasswordField = secureTextEntry === true;
@@ -135,9 +133,6 @@ const Input = forwardRef<TextInput, InputProps>(
         )}
       </View>
     );
-  }
-);
-
-Input.displayName = 'Input';
+}
 
 export { Input, inputVariants };
