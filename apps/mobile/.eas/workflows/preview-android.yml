@@ -52,7 +52,7 @@ jobs:
   e2e:
     name: Run E2E Tests (Maestro)
     after: [repack, build]
-    type: maestro-test
+    type: maestro
     params:
       build_id: ${{ needs.build.outputs.build_id || needs.repack.outputs.build_id }}
       flow_path: e2e/
