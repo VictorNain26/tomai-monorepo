@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, use } from 'react';
 import {
   Text as RNText,
   Platform,
@@ -94,7 +94,7 @@ function Text({
   accessibilityRole,
   ...props
 }: TextProps) {
-  const textClass = useContext(TextClassContext);
+  const textClass = use(TextClassContext);
   const Component = asChild ? SlotText : RNText;
   // Use provided accessibilityRole or derive from variant
   const derivedRole = accessibilityRole ?? getAccessibilityRole(variant);

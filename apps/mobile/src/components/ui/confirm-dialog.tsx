@@ -5,7 +5,7 @@
  * Uses native Modal slide animation for Expo Go compatibility.
  */
 
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, use, useState, useCallback, useRef, type ReactNode } from 'react';
 import { View, Modal, Pressable, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from './text';
@@ -44,7 +44,7 @@ interface ConfirmContextValue {
 const ConfirmContext = createContext<ConfirmContextValue | undefined>(undefined);
 
 export function useConfirm(): ConfirmContextValue {
-  const ctx = useContext(ConfirmContext);
+  const ctx = use(ConfirmContext);
   if (!ctx) throw new Error('useConfirm must be used within ConfirmDialogProvider');
   return ctx;
 }
