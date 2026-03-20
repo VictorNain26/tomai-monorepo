@@ -120,7 +120,7 @@ export default function ParentDashboard() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView testID="parent-dashboard" className="flex-1 bg-stone-50 dark:bg-stone-900">
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
         <View>

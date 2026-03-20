@@ -143,7 +143,7 @@ export default function StudentDashboard() {
   const firstName = userName?.split(' ')[0] ?? 'Élève';
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView testID="student-dashboard" className="flex-1 bg-stone-50 dark:bg-stone-900">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"

@@ -173,6 +173,7 @@ export const ChatInput = memo(function ChatInput({
             </View>
           ) : (
             <TextInput
+              testID="chat-input"
               value={message}
               onChangeText={setMessage}
               placeholder={placeholder}
@@ -227,6 +228,7 @@ export const ChatInput = memo(function ChatInput({
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
+            testID="chat-send-button"
             onPress={handleSend}
             disabled={!canSend}
             className="h-10 w-10 items-center justify-center rounded-full"

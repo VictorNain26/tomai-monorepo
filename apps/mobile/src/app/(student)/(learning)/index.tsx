@@ -39,6 +39,7 @@ export default function LearningScreen() {
   return (
     <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       <ScrollView
+        testID="deck-list"
         className="flex-1 px-4 py-6"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
