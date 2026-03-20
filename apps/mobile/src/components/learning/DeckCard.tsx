@@ -10,6 +10,9 @@ import { useRouter } from 'expo-router';
 import { Play, Trash2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { SubjectIcon } from '@/components/common/SubjectIcon';
+import { enrichSubjectKey, getSubjectStyles } from '@/constants/subjects';
+import { cn } from '@/lib/utils';
 import type { LearningDeck } from '@/hooks/useLearning';
 import { useDeckStats, useIconColors, useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
@@ -20,26 +23,6 @@ interface DeckCardProps {
   isDeleting?: boolean;
 }
 
-// Emoji mapping for subjects
-const SUBJECT_EMOJIS: Record<string, string> = {
-  mathematiques: '🔢',
-  maths: '🔢',
-  francais: '📚',
-  'histoire-geo': '🌍',
-  sciences: '🔬',
-  svt: '🌱',
-  physique: '⚛️',
-  chimie: '🧪',
-  anglais: '🇬🇧',
-  espagnol: '🇪🇸',
-  allemand: '🇩🇪',
-  philosophie: '🤔',
-};
-
-function getSubjectEmoji(subject: string): string {
-  const normalized = subject.toLowerCase().replace(/[^a-z-]/g, '');
-  return SUBJECT_EMOJIS[normalized] ?? '📖';
-}
 
 export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: DeckCardProps) {
   const router = useRouter();
@@ -71,7 +54,8 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
     }
   }, [onDelete, deck.id, deck.title, confirm]);
 
-  const emoji = getSubjectEmoji(deck.subject);
+  const subjectMeta = enrichSubjectKey(deck.subject);
+  const subjectStyles = getSubjectStyles(subjectMeta.color);
   const dateStr = new Date(deck.createdAt).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'short',
@@ -80,9 +64,9 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
   return (
     <View className="rounded-xl bg-white dark:bg-stone-800 p-4">
       <View className="flex-row items-start gap-3">
-        {/* Emoji */}
-        <View className="h-12 w-12 items-center justify-center rounded-lg" style={{ backgroundColor: bgColors.primary[10] }}>
-          <Text className="text-2xl">{emoji}</Text>
+        {/* Subject icon */}
+        <View className={cn('h-12 w-12 items-center justify-center rounded-lg', subjectStyles.bgSubtle)}>
+          <SubjectIcon subject={deck.subject} size={24} />
         </View>
 
         {/* Content */}
@@ -90,8 +74,8 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
           <Text className="font-semibold" numberOfLines={1}>
             {deck.title}
           </Text>
-          <Text variant="muted" className="text-sm capitalize">
-            {deck.subject.replace('-', ' ')}
+          <Text variant="muted" className="text-sm">
+            {subjectMeta.name}
           </Text>
           <View className="mt-1 flex-row items-center gap-2">
             <Text variant="muted" className="text-xs">
