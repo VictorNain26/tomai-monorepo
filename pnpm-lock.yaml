@@ -393,6 +393,9 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
+      babel-plugin-react-compiler:
+        specifier: ^1.0.0
+        version: 1.0.0
       babel-plugin-transform-remove-console:
         specifier: ^6.9.4
         version: 6.9.4
