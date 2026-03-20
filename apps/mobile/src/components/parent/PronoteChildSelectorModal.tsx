@@ -73,9 +73,9 @@ export function PronoteChildSelectorModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+        <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3">
           <Text variant="h3">Associer un compte Pronote</Text>
           <TouchableOpacity
             onPress={handleClose}
@@ -121,7 +121,7 @@ export function PronoteChildSelectorModal({
                   onPress={() => setSelectedIndex(index)}
                   disabled={isSubmitting}
                   className={`rounded-xl border-2 p-4 ${
-                    isSelected ? 'border-blue-600 dark:border-blue-400' : 'border-slate-200 dark:border-slate-700'
+                    isSelected ? 'border-blue-600 dark:border-blue-400' : 'border-stone-200 dark:border-stone-700'
                   }`}
                   style={
                     isSelected ? { backgroundColor: bgColors.primary[5] } : undefined
@@ -175,12 +175,12 @@ export function PronoteChildSelectorModal({
         </ScrollView>
 
         {/* Footer */}
-        <View className="border-t border-slate-200 dark:border-slate-700 p-4">
+        <View className="border-t border-stone-200 dark:border-stone-700 p-4">
           <Button
             onPress={handleSelect}
             disabled={selectedIndex === null || isSubmitting}
           >
-            <Text className="font-semibold text-white dark:text-slate-900">
+            <Text className="font-semibold text-white dark:text-stone-900">
               {isSubmitting ? 'Association en cours...' : 'Associer ce compte'}
             </Text>
           </Button>

@@ -5,7 +5,7 @@
  * Uses native Modal slide animation for Expo Go compatibility.
  */
 
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, use, useState, useCallback, useRef, type ReactNode } from 'react';
 import { View, Modal, Pressable, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from './text';
@@ -44,7 +44,7 @@ interface ConfirmContextValue {
 const ConfirmContext = createContext<ConfirmContextValue | undefined>(undefined);
 
 export function useConfirm(): ConfirmContextValue {
-  const ctx = useContext(ConfirmContext);
+  const ctx = use(ConfirmContext);
   if (!ctx) throw new Error('useConfirm must be used within ConfirmDialogProvider');
   return ctx;
 }
@@ -78,7 +78,7 @@ function ActionItem({
         className={`text-base font-medium ${
           isDestructive
             ? 'text-red-500 dark:text-red-400'
-            : 'text-slate-800 dark:text-slate-100'
+            : 'text-stone-800 dark:text-stone-100'
         }`}
       >
         {isLoading ? '...' : action.label}
@@ -150,7 +150,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <ConfirmContext.Provider value={{ confirm, info }}>
+    <ConfirmContext value={{ confirm, info }}>
       {children}
       <Modal
         visible={dialog.visible}
@@ -175,7 +175,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
         >
           {/* Main card */}
           <View
-            className="rounded-2xl bg-white dark:bg-slate-800 overflow-hidden"
+            className="rounded-2xl bg-white dark:bg-stone-800 overflow-hidden"
             style={shadows.md}
           >
             {/* Header */}
@@ -212,7 +212,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
 
           {/* Cancel button — separate card */}
           <View
-            className="mt-2 rounded-2xl bg-white dark:bg-slate-800 overflow-hidden"
+            className="mt-2 rounded-2xl bg-white dark:bg-stone-800 overflow-hidden"
             style={shadows.md}
           >
             <TouchableOpacity
@@ -227,6 +227,6 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
           </View>
         </View>
       </Modal>
-    </ConfirmContext.Provider>
+    </ConfirmContext>
   );
 }

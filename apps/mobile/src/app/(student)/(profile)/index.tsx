@@ -210,7 +210,7 @@ export default function StudentProfileScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -257,7 +257,7 @@ export default function StudentProfileScreen() {
         {/* Menu Sections */}
         {sections.map((section) => (
           <View key={section.title}>
-            <Text variant="small" className="mb-2 px-1 text-slate-500 dark:text-slate-400">
+            <Text variant="small" className="mb-2 px-1 text-stone-600 dark:text-stone-400">
               {section.title}
             </Text>
             <Card style={shadows.sm}>
@@ -266,7 +266,7 @@ export default function StudentProfileScreen() {
                   key={item.label}
                   onPress={item.onPress}
                   className={`flex-row items-center justify-between px-4 py-3.5 ${
-                    index !== section.items.length - 1 ? 'border-b border-slate-200 dark:border-slate-700' : ''
+                    index !== section.items.length - 1 ? 'border-b border-stone-200 dark:border-stone-700' : ''
                   }`}
                   activeOpacity={0.7}
                   accessibilityLabel={item.label}
@@ -331,7 +331,7 @@ export default function StudentProfileScreen() {
         </TouchableOpacity>
 
         {/* App Version */}
-        <Text variant="caption" className="text-center">
+        <Text variant="muted" className="text-center">
           TomIA v1.0.0
         </Text>
       </ScrollView>

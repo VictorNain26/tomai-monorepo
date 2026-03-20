@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, use } from 'react';
 import {
   Text as RNText,
   Platform,
@@ -20,47 +20,38 @@ const TextClassContext = createContext<string | undefined>(undefined);
  * TomAI Text Component - 2026
  *
  * Typography scale:
- * - h1: 32px bold - Page titles
- * - h2: 24px bold - Section headers
- * - h3: 20px semibold - Card titles
- * - h4: 18px semibold - Subsection titles
- * - large: 18px semibold - Emphasis
- * - default: 16px regular - Body text
- * - small: 14px medium - Labels, captions
- * - muted: 14px regular - Secondary text
- * - tiny: 12px medium - Badges, timestamps
+ * - h1-h4: Poppins (font-heading token) — page/section/card titles
+ * - default/large/small/muted/tiny: Nunito Sans (font-sans token) — body text
+ * - error/success: semantic feedback variants
  */
 
 const textVariants = cva(
-  cn('text-base text-slate-800 dark:text-slate-100', Platform.select({ web: 'select-text' })),
+  cn('text-base text-stone-800 dark:text-stone-100 font-sans', Platform.select({ web: 'select-text' })),
   {
-  variants: {
-    variant: {
-      default: '',
-      // Headings - Plus Jakarta Sans style (simulated with font weight)
-      h1: 'text-3xl font-bold tracking-tight',
-      h2: 'text-2xl font-bold tracking-tight',
-      h3: 'text-xl font-semibold tracking-tight',
-      h4: 'text-lg font-semibold tracking-tight',
-      // Legacy heading alias
-      heading: 'text-2xl font-bold tracking-tight',
-      // Body variants
-      large: 'text-lg font-semibold',
-      lead: 'text-lg text-slate-500 dark:text-slate-400',
-      small: 'text-sm font-medium',
-      muted: 'text-sm text-slate-500 dark:text-slate-400',
-      tiny: 'text-xs font-medium text-slate-500 dark:text-slate-400',
-      // Semantic variants
-      label: 'text-sm font-medium text-slate-800 dark:text-slate-100',
-      caption: 'text-xs text-slate-500 dark:text-slate-400',
-      error: 'text-sm text-red-600 dark:text-red-400',
-      success: 'text-sm text-emerald-600 dark:text-emerald-400',
+    variants: {
+      variant: {
+        default: '',
+        // Headings - Poppins via font-heading token
+        h1: 'text-3xl font-bold tracking-tight font-heading',
+        h2: 'text-2xl font-bold tracking-tight font-heading',
+        h3: 'text-xl font-semibold tracking-tight font-heading',
+        h4: 'text-lg font-semibold tracking-tight font-heading',
+        // Body variants
+        large: 'text-lg font-semibold',
+        small: 'text-sm font-medium',
+        muted: 'text-sm text-stone-600 dark:text-stone-400',
+        reading: 'text-lg font-sans leading-relaxed',
+        tiny: 'text-xs font-medium text-stone-600 dark:text-stone-400',
+        // Semantic variants
+        error: 'text-sm text-red-600 dark:text-red-400',
+        success: 'text-sm text-emerald-600 dark:text-emerald-400',
+      },
     },
-  },
-  defaultVariants: {
-    variant: 'default',
-  },
-});
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+);
 
 /**
  * Get accessibility role based on text variant
@@ -70,7 +61,6 @@ function getAccessibilityRole(
   variant: TextProps['variant']
 ): AccessibilityRole | undefined {
   if (
-    variant === 'heading' ||
     variant === 'h1' ||
     variant === 'h2' ||
     variant === 'h3' ||
@@ -104,7 +94,7 @@ function Text({
   accessibilityRole,
   ...props
 }: TextProps) {
-  const textClass = useContext(TextClassContext);
+  const textClass = use(TextClassContext);
   const Component = asChild ? SlotText : RNText;
   // Use provided accessibilityRole or derive from variant
   const derivedRole = accessibilityRole ?? getAccessibilityRole(variant);

@@ -5,37 +5,24 @@
  */
 
 import { useState, useEffect } from 'react';
-import {
-  View,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-  Pressable,
-} from 'react-native';
+import { View, Pressable } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { signIn, signInWithUsername, signInWithGoogle, useSession } from '@/lib/auth';
 
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { TomAvatar } from '@/components/common';
-import { useTheme, useThemeColors } from '@/hooks';
-import { bgColors, shadows } from '@/lib/styles';
-
-// Card colors for segmented control
-const CARD_COLORS = {
-  light: '#FFFFFF',
-  dark: '#374151', // colors.card dark
-};
+import { GoogleIcon } from '@/components/icons/google-icon';
+import { AuthScreen } from '@/components/auth/auth-screen';
+import { useThemeColors } from '@/hooks';
+import { bgColors } from '@/lib/styles';
 
 type AccountType = 'parent' | 'student';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { isDark } = useTheme();
   const colors = useThemeColors();
   const [accountType, setAccountType] = useState<AccountType>('parent');
   const [identifier, setIdentifier] = useState('');
@@ -125,173 +112,156 @@ export default function LoginScreen() {
   const currentConfig = config[accountType];
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-slate-50 dark:bg-slate-900"
-    >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View className="flex-1 justify-center px-6 py-12">
-          {/* Header */}
-          <View className="mb-8 items-center">
-            <TomAvatar size="lg" className="mb-4" />
-            <Text variant="h1" className="text-center text-blue-600 dark:text-blue-400">
-              Tom
-            </Text>
-            <Text variant="muted" className="mt-2 text-center">
-              Connectez-vous pour continuer
-            </Text>
-          </View>
+    <AuthScreen>
+      {/* Header */}
+      <View className="mb-8 items-center">
+        <TomAvatar size="lg" className="mb-4" />
+        <Text variant="h1" className="text-center text-blue-600 dark:text-blue-400">
+          Tom
+        </Text>
+        <Text variant="muted" className="mt-2 text-center">
+          Connectez-vous pour continuer
+        </Text>
+      </View>
 
-          {/* Account type toggle */}
-          <View
-            className="mb-6 flex-row rounded-xl p-1"
-            style={{ backgroundColor: bgColors.muted[50] }}
+      {/* Account type toggle */}
+      <View className="mb-6 flex-row rounded-xl bg-stone-200/50 dark:bg-stone-800/50 p-1">
+        <Pressable
+          onPress={() => handleAccountTypeChange('parent')}
+          testID="login-toggle-parent"
+          className={`flex-1 rounded-lg py-3 ${
+            accountType === 'parent' ? 'bg-white dark:bg-stone-700' : ''
+          }`}
+        >
+          <Text
+            className={`text-center ${
+              accountType === 'parent'
+                ? 'font-semibold text-stone-800 dark:text-stone-100'
+                : 'text-stone-600 dark:text-stone-400'
+            }`}
           >
-            <Pressable
-              onPress={() => handleAccountTypeChange('parent')}
-              className="flex-1 rounded-lg py-3"
-              style={
-                accountType === 'parent'
-                  ? [shadows.xs, { backgroundColor: isDark ? CARD_COLORS.dark : CARD_COLORS.light }]
-                  : undefined
-              }
-            >
-              <Text
-                className={`text-center font-medium ${
-                  accountType === 'parent'
-                    ? 'text-slate-800 dark:text-slate-100'
-                    : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                Parent
+            Parent
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => handleAccountTypeChange('student')}
+          testID="login-toggle-student"
+          className={`flex-1 rounded-lg py-3 ${
+            accountType === 'student' ? 'bg-white dark:bg-stone-700' : ''
+          }`}
+        >
+          <Text
+            className={`text-center ${
+              accountType === 'student'
+                ? 'font-semibold text-stone-800 dark:text-stone-100'
+                : 'text-stone-600 dark:text-stone-400'
+            }`}
+          >
+            Élève
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Error message */}
+      {error && (
+        <View
+          testID="login-error-message"
+          className="mb-4 rounded-xl p-3"
+          style={{ backgroundColor: bgColors.destructive[10] }}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
+        </View>
+      )}
+
+      {/* Form */}
+      <View className="gap-4">
+        <Input
+          testID="login-identifier-input"
+          label={currentConfig.label}
+          placeholder={currentConfig.placeholder}
+          value={identifier}
+          onChangeText={setIdentifier}
+          keyboardType={currentConfig.keyboardType}
+          autoCapitalize="none"
+          autoComplete={currentConfig.autoComplete}
+          disabled={isLoading}
+        />
+
+        <Input
+          testID="login-password-input"
+          label="Mot de passe"
+          placeholder="Votre mot de passe"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoComplete="password"
+          disabled={isLoading}
+        />
+
+        {accountType === 'parent' && (
+          <Link href="/(auth)/forgot-password" asChild>
+            <Pressable accessibilityLabel="Mot de passe oublié">
+              <Text variant="small" className="text-right text-blue-600 dark:text-blue-400">
+                Mot de passe oublié ?
               </Text>
             </Pressable>
-            <Pressable
-              onPress={() => handleAccountTypeChange('student')}
-              className="flex-1 rounded-lg py-3"
-              style={
-                accountType === 'student'
-                  ? [shadows.xs, { backgroundColor: isDark ? CARD_COLORS.dark : CARD_COLORS.light }]
-                  : undefined
-              }
-            >
-              <Text
-                className={`text-center font-medium ${
-                  accountType === 'student'
-                    ? 'text-slate-800 dark:text-slate-100'
-                    : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                Élève
-              </Text>
-            </Pressable>
+          </Link>
+        )}
+
+        <Button testID="login-submit-button" onPress={handleLogin} isLoading={isLoading} className="mt-2">
+          Se connecter
+        </Button>
+      </View>
+
+      {/* Google OAuth - Parent only */}
+      {accountType === 'parent' && (
+        <>
+          <View className="my-6 flex-row items-center">
+            <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+            <Text variant="muted" className="px-4">
+              ou
+            </Text>
+            <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
           </View>
 
-          {/* Error message */}
-          {error && (
-            <View
-              className="mb-4 rounded-xl p-3"
-              style={{ backgroundColor: bgColors.destructive[10] }}
-              accessibilityRole="alert"
-              accessibilityLiveRegion="polite"
-            >
-              <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
-            </View>
-          )}
+          <Button variant="outline" onPress={handleGoogleLogin} disabled={isLoading}>
+            <GoogleIcon size={20} />
+            <Text className="font-semibold">Continuer avec Google</Text>
+          </Button>
+        </>
+      )}
 
-          {/* Form */}
-          <Card style={shadows.sm}>
-            <View className="gap-4 p-4">
-              <Input
-                label={currentConfig.label}
-                placeholder={currentConfig.placeholder}
-                value={identifier}
-                onChangeText={setIdentifier}
-                keyboardType={currentConfig.keyboardType}
-                autoCapitalize="none"
-                autoComplete={currentConfig.autoComplete}
-                disabled={isLoading}
-              />
-
-              <Input
-                label="Mot de passe"
-                placeholder="Votre mot de passe"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoComplete="password"
-                disabled={isLoading}
-              />
-
-              {accountType === 'parent' && (
-                <Link href="/(auth)/forgot-password" asChild>
-                  <TouchableOpacity accessibilityLabel="Mot de passe oublié">
-                    <Text variant="small" className="text-right text-blue-600 dark:text-blue-400">
-                      Mot de passe oublié ?
-                    </Text>
-                  </TouchableOpacity>
-                </Link>
-              )}
-
-              <Button onPress={handleLogin} disabled={isLoading} className="mt-2">
-                <Text className="font-semibold text-white dark:text-slate-900">
-                  {isLoading ? 'Connexion...' : 'Se connecter'}
-                </Text>
-              </Button>
-            </View>
-          </Card>
-
-          {/* Google OAuth - Parent only */}
-          {accountType === 'parent' && (
-            <>
-              <View className="my-6 flex-row items-center">
-                <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-                <Text variant="muted" className="px-4">
-                  ou
-                </Text>
-                <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-              </View>
-
-              <Button variant="outline" onPress={handleGoogleLogin} disabled={isLoading}>
-                <Text className="font-semibold">Continuer avec Google</Text>
-              </Button>
-            </>
-          )}
-
-          {/* Register link - Parent only */}
-          {accountType === 'parent' && (
-            <View className="mt-8 flex-row justify-center">
-              <Text variant="muted">Pas encore de compte ? </Text>
-              <Link href="/(auth)/register" asChild>
-                <TouchableOpacity accessibilityLabel="Créer un compte">
-                  <Text className="font-semibold text-blue-600 dark:text-blue-400">S'inscrire</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
-          )}
-
-          {/* Info for students */}
-          {accountType === 'student' && (
-            <View
-              className="mt-6 rounded-xl p-4"
-              style={{ backgroundColor: bgColors.info[10] }}
-            >
-              <Text
-                variant="small"
-                className="text-center"
-                style={{ color: colors.info }}
-              >
-                Ton compte a été créé par tes parents.{'\n'}
-                Utilise ton nom d'utilisateur pour te connecter.
-              </Text>
-            </View>
-          )}
+      {/* Register link - Parent only */}
+      {accountType === 'parent' && (
+        <View className="mt-8 flex-row justify-center">
+          <Text variant="muted">Pas encore de compte ? </Text>
+          <Link href="/(auth)/register" asChild>
+            <Pressable accessibilityLabel="Créer un compte">
+              <Text className="font-semibold text-blue-600 dark:text-blue-400">S'inscrire</Text>
+            </Pressable>
+          </Link>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      )}
+
+      {/* Info for students */}
+      {accountType === 'student' && (
+        <View
+          className="mt-6 rounded-xl p-4"
+          style={{ backgroundColor: bgColors.info[10] }}
+        >
+          <Text
+            variant="small"
+            className="text-center"
+            style={{ color: colors.info }}
+          >
+            Ton compte a été créé par tes parents.{'\n'}
+            Utilise ton nom d'utilisateur pour te connecter.
+          </Text>
+        </View>
+      )}
+    </AuthScreen>
   );
 }

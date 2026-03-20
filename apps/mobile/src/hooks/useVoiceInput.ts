@@ -72,10 +72,23 @@ export function useVoiceInput() {
   const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
   const stopRecordingRef = useRef<() => Promise<string | null>>(() => Promise.resolve(null));
+  const isMountedRef = useRef(false);
 
   // expo-audio recorder hook (SDK 55 pattern - no callback)
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
+
+  // Track mount state + cleanup interval on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+        durationIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   // Auto-stop at max duration
   useEffect(() => {
@@ -96,18 +109,22 @@ export function useVoiceInput() {
     try {
       const status = await AudioModule.requestRecordingPermissionsAsync();
       if (!status.granted) {
-        setState((prev) => ({
-          ...prev,
-          error: 'Permission microphone refusée',
-        }));
+        if (isMountedRef.current) {
+          setState((prev) => ({
+            ...prev,
+            error: 'Permission microphone refusée',
+          }));
+        }
         return false;
       }
       return true;
     } catch {
-      setState((prev) => ({
-        ...prev,
-        error: 'Erreur lors de la demande de permission',
-      }));
+      if (isMountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          error: 'Erreur lors de la demande de permission',
+        }));
+      }
       return false;
     }
   }, []);
@@ -135,24 +152,30 @@ export function useVoiceInput() {
 
       // Start duration timer
       durationIntervalRef.current = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
-        setState((prev) => ({ ...prev, duration: elapsed }));
+        if (isMountedRef.current) {
+          const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+          setState((prev) => ({ ...prev, duration: elapsed }));
+        }
       }, 500);
 
-      setState({
-        isRecording: true,
-        isProcessing: false,
-        duration: 0,
-        error: null,
-      });
+      if (isMountedRef.current) {
+        setState({
+          isRecording: true,
+          isProcessing: false,
+          duration: 0,
+          error: null,
+        });
+      }
 
       return true;
     } catch (err) {
-      setState((prev) => ({
-        ...prev,
-        isRecording: false,
-        error: err instanceof Error ? err.message : 'Erreur lors du démarrage',
-      }));
+      if (isMountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          isRecording: false,
+          error: err instanceof Error ? err.message : 'Erreur lors du démarrage',
+        }));
+      }
       return false;
     }
   }, [requestPermissions, recorder]);
@@ -164,16 +187,18 @@ export function useVoiceInput() {
     }
 
     if (!recorderState.isRecording) {
-      setState((prev) => ({ ...prev, isRecording: false }));
+      if (isMountedRef.current) setState((prev) => ({ ...prev, isRecording: false }));
       return null;
     }
 
     try {
-      setState((prev) => ({
-        ...prev,
-        isRecording: false,
-        isProcessing: true,
-      }));
+      if (isMountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          isRecording: false,
+          isProcessing: true,
+        }));
+      }
 
       await recorder.stop();
       void haptics.success();
@@ -195,20 +220,24 @@ export function useVoiceInput() {
       // Upload and transcribe
       const transcription = await uploadAndTranscribe(uri);
 
-      setState((prev) => ({
-        ...prev,
-        isProcessing: false,
-        duration: 0,
-      }));
+      if (isMountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          isProcessing: false,
+          duration: 0,
+        }));
+      }
 
       return transcription;
     } catch (err) {
-      setState((prev) => ({
-        ...prev,
-        isRecording: false,
-        isProcessing: false,
-        error: err instanceof Error ? err.message : 'Erreur lors de la transcription',
-      }));
+      if (isMountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          isRecording: false,
+          isProcessing: false,
+          error: err instanceof Error ? err.message : 'Erreur lors de la transcription',
+        }));
+      }
       return null;
     }
   }, [recorder, recorderState.isRecording]);
@@ -240,12 +269,14 @@ export function useVoiceInput() {
 
     void haptics.warning();
 
-    setState({
-      isRecording: false,
-      isProcessing: false,
-      duration: 0,
-      error: null,
-    });
+    if (isMountedRef.current) {
+      setState({
+        isRecording: false,
+        isProcessing: false,
+        duration: 0,
+        error: null,
+      });
+    }
   }, [recorder, recorderState.isRecording]);
 
   const clearError = useCallback(() => {

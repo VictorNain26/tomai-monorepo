@@ -31,7 +31,7 @@ export default function OAuthCallbackScreen() {
   }, [session, isPending, router, user]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">
+    <View className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-900">
       <ActivityIndicator size="large" color={colors.primary} />
       <Text variant="muted" className="mt-4">
         Connexion en cours...

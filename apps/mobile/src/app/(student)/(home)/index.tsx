@@ -26,33 +26,11 @@ import {
 import { useStudentDashboard, usePronote, useIconColors, useDueSummary } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { bgColors } from '@/lib/styles';
+import { enrichSubjectKey } from '@/constants/subjects';
 
 // ============================================================================
 // HELPERS - Transform Pronote data to component interfaces
 // ============================================================================
-
-/** Map subject name to emoji */
-function getSubjectEmoji(subject: string): string {
-  const subjectLower = subject.toLowerCase();
-
-  if (subjectLower.includes('math')) return '📐';
-  if (subjectLower.includes('français') || subjectLower.includes('francais')) return '📖';
-  if (subjectLower.includes('anglais')) return '🇬🇧';
-  if (subjectLower.includes('espagnol')) return '🇪🇸';
-  if (subjectLower.includes('allemand')) return '🇩🇪';
-  if (subjectLower.includes('histoire') || subjectLower.includes('géo')) return '🌍';
-  if (subjectLower.includes('physique') || subjectLower.includes('chimie')) return '⚗️';
-  if (subjectLower.includes('svt') || subjectLower.includes('biologie')) return '🧬';
-  if (subjectLower.includes('techno')) return '⚙️';
-  if (subjectLower.includes('sport') || subjectLower.includes('eps')) return '🏃';
-  if (subjectLower.includes('musique')) return '🎵';
-  if (subjectLower.includes('arts') || subjectLower.includes('plastiques')) return '🎨';
-  if (subjectLower.includes('philo')) return '🤔';
-  if (subjectLower.includes('ses') || subjectLower.includes('économie')) return '📊';
-  if (subjectLower.includes('info') || subjectLower.includes('nsi')) return '💻';
-
-  return '📚';
-}
 
 /** Calculate days until a date */
 function daysUntil(dateStr: string): number {
@@ -98,7 +76,7 @@ export default function StudentDashboard() {
     return pronote.homework.map((h) => ({
       id: h.id,
       subject: h.subject,
-      subjectEmoji: getSubjectEmoji(h.subject),
+      subjectEmoji: enrichSubjectKey(h.subject).name,
       title: h.description,
       dueDate: new Date(h.dueDate),
       daysUntilDue: daysUntil(h.dueDate),
@@ -113,7 +91,7 @@ export default function StudentDashboard() {
       .map((g) => ({
         id: g.id,
         subject: g.subject,
-        subjectEmoji: getSubjectEmoji(g.subject),
+        subjectEmoji: enrichSubjectKey(g.subject).name,
         title: g.description,
         grade: g.value as number,
         maxGrade: g.outOf,
@@ -165,7 +143,7 @@ export default function StudentDashboard() {
   const firstName = userName?.split(' ')[0] ?? 'Élève';
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView testID="student-dashboard" className="flex-1 bg-stone-50 dark:bg-stone-900">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -187,7 +165,7 @@ export default function StudentDashboard() {
         {(dueSummary?.totalDue ?? 0) > 0 && (
           <Pressable
             onPress={() => router.push('/(student)/(learning)')}
-            className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-4 active:opacity-80"
+            className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-4 active:opacity-80"
           >
             <View
               className="h-10 w-10 items-center justify-center rounded-lg"
@@ -221,7 +199,7 @@ export default function StudentDashboard() {
             />
           </>
         ) : (
-          <View className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-4">
+          <View className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-4">
             <View
               className="h-10 w-10 items-center justify-center rounded-lg"
               style={{ backgroundColor: bgColors.primary[10] }}

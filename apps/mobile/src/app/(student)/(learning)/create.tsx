@@ -119,11 +119,11 @@ export default function CreateDeckScreen() {
   const stepNumber = step === 'subject' ? 1 : 2;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       {/* Loading overlay during generation */}
       {generateMutation.isPending && (
         <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: bgColors.background[90] }}>
-          <View className="items-center gap-4 rounded-2xl bg-white dark:bg-slate-800 p-8" style={shadows.lg}>
+          <View className="items-center gap-4 rounded-2xl bg-white dark:bg-stone-800 p-8" style={shadows.lg}>
             <ActivityIndicator size="large" color={colors.primary} />
             <View className="items-center gap-2">
               <Text className="text-lg font-semibold">Génération en cours...</Text>
@@ -136,7 +136,7 @@ export default function CreateDeckScreen() {
       )}
 
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <TouchableOpacity
           onPress={handleBack}
           disabled={generateMutation.isPending}
@@ -195,7 +195,7 @@ export default function CreateDeckScreen() {
                     <TouchableOpacity
                       key={subject.id}
                       onPress={() => handleSelectSubject(subject)}
-                      className="flex-row items-center justify-between rounded-xl bg-white dark:bg-slate-800 p-4"
+                      className="flex-row items-center justify-between rounded-xl bg-white dark:bg-stone-800 p-4"
                       activeOpacity={0.7}
                     >
                       <Text className="text-base font-medium">{subject.label}</Text>
@@ -249,14 +249,14 @@ export default function CreateDeckScreen() {
                   {topicsQuery.data.map((domaine) => (
                     <View
                       key={domaine.domaine}
-                      className="rounded-xl bg-white dark:bg-slate-800"
+                      className="rounded-xl bg-white dark:bg-stone-800"
                       style={generateMutation.isPending ? { opacity: 0.5 } : undefined}
                     >
                       {/* Domaine header - clickable for whole domaine */}
                       <TouchableOpacity
                         onPress={() => handleSelectTheme(domaine.domaine)}
                         disabled={generateMutation.isPending}
-                        className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4"
+                        className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 p-4"
                         activeOpacity={0.7}
                       >
                         <Text className="flex-1 font-semibold">{domaine.domaine}</Text>
@@ -276,7 +276,7 @@ export default function CreateDeckScreen() {
                           disabled={generateMutation.isPending}
                           className={`flex-row items-center justify-between px-4 py-3 ${
                             index !== domaine.themes.length - 1
-                              ? 'border-b border-slate-200 dark:border-slate-700'
+                              ? 'border-b border-stone-200 dark:border-stone-700'
                               : ''
                           }`}
                           activeOpacity={0.7}

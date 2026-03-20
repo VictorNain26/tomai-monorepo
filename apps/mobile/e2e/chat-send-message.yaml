@@ -1,0 +1,34 @@
+appId: fr.tomia.mobile
+---
+# Login as student
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "login-toggle-student"
+- tapOn:
+    id: "login-identifier-input"
+- inputText: "${E2E_STUDENT_USERNAME}"
+- tapOn:
+    id: "login-password-input"
+- inputText: "${E2E_STUDENT_PASSWORD}"
+- tapOn:
+    id: "login-submit-button"
+- extendedWaitUntil:
+    visible:
+      id: "student-dashboard"
+    timeout: 10000
+
+# Navigate to chat (tab label = "Tom")
+- tapOn: "Tom"
+
+# Send message
+- tapOn:
+    id: "chat-input"
+- inputText: "Bonjour, explique-moi le theoreme de Pythagore"
+- tapOn:
+    id: "chat-send-button"
+
+# Wait for AI response (SSE streaming, generous timeout)
+- extendedWaitUntil:
+    visible: "triangle"
+    timeout: 30000

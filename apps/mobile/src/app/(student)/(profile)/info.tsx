@@ -66,9 +66,9 @@ export default function ProfileInfoScreen() {
   const levelLabel = schoolLevel ? LEVEL_LABELS[schoolLevel] ?? schoolLevel : null;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <TouchableOpacity
           onPress={() => router.back()}
           className="h-10 w-10 items-center justify-center rounded-full"
@@ -95,7 +95,7 @@ export default function ProfileInfoScreen() {
         {/* Profile Info */}
         <View className="mb-6">
           <Text className="mb-3 font-semibold">Informations scolaires</Text>
-          <View className="rounded-xl bg-white dark:bg-slate-800">
+          <View className="rounded-xl bg-white dark:bg-stone-800">
             {/* School Level */}
             <View className="flex-row items-center justify-between px-4 py-4">
               <View className="flex-row items-center gap-3">

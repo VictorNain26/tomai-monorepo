@@ -7,7 +7,7 @@ import Animated, {
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-const progressVariants = cva('w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800', {
+const progressVariants = cva('w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800', {
   variants: {
     size: {
       sm: 'h-1',
@@ -24,7 +24,6 @@ const progressIndicatorVariants = cva('h-full rounded-full', {
   variants: {
     variant: {
       default: 'bg-blue-600 dark:bg-blue-400',
-      success: 'bg-emerald-600 dark:bg-emerald-400',
       warning: 'bg-amber-600 dark:bg-amber-400',
       destructive: 'bg-red-600 dark:bg-red-400',
     },

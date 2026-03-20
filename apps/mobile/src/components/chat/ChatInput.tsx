@@ -121,7 +121,7 @@ export const ChatInput = memo(function ChatInput({
   }, []);
 
   return (
-    <View className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 pb-4 pt-2">
+    <View className="border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 px-4 pb-4 pt-2">
       <AttachmentPreview
         attachments={pendingAttachments}
         onRemove={onRemoveAttachment}
@@ -143,7 +143,7 @@ export const ChatInput = memo(function ChatInput({
         )}
 
         {/* Text Input / Recording State */}
-        <View className="flex-1 flex-row items-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3">
+        <View className="flex-1 flex-row items-center rounded-2xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 px-3">
           {voice.isRecording ? (
             <View className="flex-1 flex-row items-center gap-2 py-3">
               <Animated.View
@@ -160,19 +160,20 @@ export const ChatInput = memo(function ChatInput({
               <Text className="text-base font-semibold text-red-600 dark:text-red-400">
                 {voice.duration}s
               </Text>
-              <Text className="flex-1 text-sm text-slate-500 dark:text-slate-400">
+              <Text className="flex-1 text-sm text-stone-600 dark:text-stone-400">
                 Appui long pour annuler
               </Text>
             </View>
           ) : voice.isProcessing ? (
             <View className="flex-1 flex-row items-center gap-2 py-3">
               <Loader2 color={iconColors.muted} size={16} />
-              <Text className="text-base text-slate-500 dark:text-slate-400">
+              <Text className="text-base text-stone-600 dark:text-stone-400">
                 Transcription...
               </Text>
             </View>
           ) : (
             <TextInput
+              testID="chat-input"
               value={message}
               onChangeText={setMessage}
               placeholder={placeholder}
@@ -182,7 +183,7 @@ export const ChatInput = memo(function ChatInput({
               editable={!isLoading}
               onSubmitEditing={handleSend}
               blurOnSubmit={false}
-              className="max-h-24 flex-1 py-3 text-base text-slate-800 dark:text-slate-100"
+              className="max-h-24 flex-1 py-3 text-base text-stone-800 dark:text-stone-100"
             />
           )}
         </View>
@@ -227,6 +228,7 @@ export const ChatInput = memo(function ChatInput({
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
+            testID="chat-send-button"
             onPress={handleSend}
             disabled={!canSend}
             className="h-10 w-10 items-center justify-center rounded-full"

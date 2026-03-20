@@ -1,0 +1,19 @@
+appId: fr.tomia.mobile
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Tom"
+- tapOn:
+    id: "login-toggle-parent"
+- tapOn:
+    id: "login-identifier-input"
+- inputText: "${E2E_PARENT_EMAIL}"
+- tapOn:
+    id: "login-password-input"
+- inputText: "${E2E_PARENT_PASSWORD}"
+- tapOn:
+    id: "login-submit-button"
+- extendedWaitUntil:
+    visible:
+      id: "parent-dashboard"
+    timeout: 10000

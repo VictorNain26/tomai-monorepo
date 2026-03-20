@@ -44,7 +44,7 @@ export function FileAttachmentCard({
   const isLoading = fileShare.isDownloading || fileShare.isSharing;
 
   return (
-    <View className="mt-2 flex-row items-center gap-3 rounded-lg bg-white dark:bg-slate-800 p-3">
+    <View className="mt-2 flex-row items-center gap-3 rounded-lg bg-white dark:bg-stone-800 p-3">
       {/* File Icon */}
       <View className="h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: bgColors.primary[10] }}>
         <FileIconView mimeType={mimeType} color={iconColor} size={20} />

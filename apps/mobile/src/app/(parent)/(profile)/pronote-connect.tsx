@@ -176,7 +176,7 @@ export default function PronoteConnectScreen() {
   // Permission states
   if (!permission) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <SafeAreaView className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-900">
         <Text variant="muted">Chargement...</Text>
       </SafeAreaView>
     );
@@ -184,8 +184,8 @@ export default function PronoteConnectScreen() {
 
   if (!permission.granted) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+        <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
           <TouchableOpacity onPress={() => router.back()} className="p-1" accessibilityLabel="Retour" accessibilityRole="button">
             <ArrowLeft color={iconColors.foreground} size={24} />
           </TouchableOpacity>
@@ -198,7 +198,7 @@ export default function PronoteConnectScreen() {
             Pour scanner le QR code Pronote, autorisez l'acces a la camera.
           </Text>
           <Button onPress={requestPermission} className="mt-6">
-            <Text className="font-semibold text-white dark:text-slate-900">Autoriser la camera</Text>
+            <Text className="font-semibold text-white dark:text-stone-900">Autoriser la camera</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -206,9 +206,9 @@ export default function PronoteConnectScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <TouchableOpacity
           onPress={() => router.back()}
           className="h-10 w-10 items-center justify-center rounded-full"

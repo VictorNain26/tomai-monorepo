@@ -36,7 +36,7 @@ export function ChatHeader({
   const { confirm } = useConfirm();
 
   return (
-    <View className="flex-row items-center gap-2 border-b border-slate-200 dark:border-slate-700 px-2 py-3">
+    <View className="flex-row items-center gap-2 border-b border-stone-200 dark:border-stone-700 px-2 py-3">
       {/* Back button */}
       <TouchableOpacity
         onPress={onBack}
@@ -88,7 +88,7 @@ export function ChatHeader({
                 ],
               });
             }}
-            className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
+            className="h-10 w-10 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
             accessibilityLabel="Options de conversation"
             accessibilityRole="button"
           >

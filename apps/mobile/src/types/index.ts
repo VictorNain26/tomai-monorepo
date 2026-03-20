@@ -1,7 +1,7 @@
 // Types locaux mobile
 
 export type { EducationLevelType } from '@/constants/levels';
-export type { SubjectMetadata } from '@/constants/subjects';
+export type { SubjectMetadata, SubjectColor } from '@/constants/subjects';
 
 // Chat types - re-exported from useChat hook (source of truth)
 export type {

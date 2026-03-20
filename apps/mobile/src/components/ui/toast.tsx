@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
+import { createContext, use, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { View, Pressable, Text as RNText, type ViewStyle, type TextStyle } from 'react-native';
 import Animated, {
   FadeInUp,
@@ -39,7 +39,7 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
  *   toast.info('Mise a jour disponible');
  */
 export function useToast() {
-  const context = useContext(ToastContext);
+  const context = use(ToastContext);
   if (!context) {
     throw new Error('useToast must be used within ToastProvider');
   }
@@ -237,7 +237,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
   }, []);
 
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+    <ToastContext value={{ toasts, addToast, removeToast }}>
       {children}
       <View
         style={{
@@ -257,7 +257,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
           />
         ))}
       </View>
-    </ToastContext.Provider>
+    </ToastContext>
   );
 }
 

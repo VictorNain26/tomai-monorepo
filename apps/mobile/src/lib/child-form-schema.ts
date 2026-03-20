@@ -38,18 +38,16 @@ export function toDisplayDate(iso: string | undefined): string {
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
-/** Get a cryptographically random integer in [0, max) */
-function secureRandomInt(max: number): number {
-  const array = new Uint32Array(1);
-  crypto.getRandomValues(array);
-  return array[0] % max;
+/** Get a random integer in [0, max) — not crypto-grade, used for username/password generation */
+function randomInt(max: number): number {
+  return Math.floor(Math.random() * max);
 }
 
 /** Generate a child-friendly username from name */
 export function generateUsername(firstName: string, lastName: string): string {
   const clean = (s: string) =>
     s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
-  const num = secureRandomInt(900) + 100;
+  const num = randomInt(900) + 100;
   return `${clean(firstName)}${clean(lastName).charAt(0)}${num}`;
 }
 
@@ -57,9 +55,9 @@ export function generateUsername(firstName: string, lastName: string): string {
 export function generatePassword(): string {
   const adjectives = ['Super', 'Cool', 'Brave', 'Smart', 'Happy', 'Magic'];
   const nouns = ['Lion', 'Chat', 'Ours', 'Etoile', 'Soleil', 'Lune'];
-  const adj = adjectives[secureRandomInt(adjectives.length)];
-  const noun = nouns[secureRandomInt(nouns.length)];
-  const num = secureRandomInt(89) + 10;
+  const adj = adjectives[randomInt(adjectives.length)];
+  const noun = nouns[randomInt(nouns.length)];
+  const num = randomInt(89) + 10;
   return `${adj}${noun}${num}!`;
 }
 

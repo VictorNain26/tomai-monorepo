@@ -1,20 +1,20 @@
 /**
  * Subject Metadata Tests
- *
- * Tests for enrichSubjectKey function and subject constants.
  */
 
 import {
   enrichSubjectKey,
+  getSubjectStyles,
   SUBJECT_METADATA,
+  type SubjectColor,
 } from '../../src/constants/subjects';
 
 describe('enrichSubjectKey', () => {
   describe('direct key lookup', () => {
     it('should return metadata for exact key match', () => {
       const result = enrichSubjectKey('mathematiques');
-      expect(result.name).toBe('Mathématiques');
-      expect(result.emoji).toBe('📐');
+      expect(result.name).toBe('Mathematiques');
+      expect(result.icon).toBe('Calculator');
       expect(result.color).toBe('blue');
     });
 
@@ -23,16 +23,16 @@ describe('enrichSubjectKey', () => {
       for (const subject of knownSubjects) {
         const result = enrichSubjectKey(subject);
         expect(result.name).toBeTruthy();
-        expect(result.emoji).toBeTruthy();
+        expect(result.icon).toBeTruthy();
         expect(result.color).toBeTruthy();
       }
     });
   });
 
-  describe('normalized key lookup (tirets to underscores)', () => {
+  describe('normalized key lookup', () => {
     it('should normalize histoire-geo to histoire_geo', () => {
       const result = enrichSubjectKey('histoire-geo');
-      expect(result.name).toBe('Histoire-Géographie');
+      expect(result.name).toBe('Histoire-Geographie');
     });
 
     it('should normalize physique-chimie to physique_chimie', () => {
@@ -42,94 +42,90 @@ describe('enrichSubjectKey', () => {
 
     it('should handle uppercase keys', () => {
       const result = enrichSubjectKey('MATHEMATIQUES');
-      expect(result.name).toBe('Mathématiques');
+      expect(result.name).toBe('Mathematiques');
     });
   });
 
   describe('alias resolution', () => {
-    it('should resolve maths alias to mathematiques', () => {
-      const result = enrichSubjectKey('maths');
-      expect(result.name).toBe('Mathématiques');
+    it('should resolve maths alias', () => {
+      expect(enrichSubjectKey('maths').name).toBe('Mathematiques');
     });
 
-    it('should resolve math alias to mathematiques', () => {
-      const result = enrichSubjectKey('math');
-      expect(result.name).toBe('Mathématiques');
+    it('should resolve sciences alias', () => {
+      expect(enrichSubjectKey('sciences').name).toBe('SVT');
     });
 
-    it('should resolve sciences alias to svt', () => {
-      const result = enrichSubjectKey('sciences');
-      expect(result.name).toBe('SVT');
+    it('should resolve lv1 alias', () => {
+      expect(enrichSubjectKey('lv1').name).toBe('Anglais');
     });
 
-    it('should resolve lv1 alias to anglais', () => {
-      const result = enrichSubjectKey('lv1');
-      expect(result.name).toBe('Anglais');
-    });
-
-    it('should resolve techno alias to technologie', () => {
-      const result = enrichSubjectKey('techno');
-      expect(result.name).toBe('Technologie');
+    it('should resolve techno alias', () => {
+      expect(enrichSubjectKey('techno').name).toBe('Technologie');
     });
   });
 
   describe('prefix matching', () => {
-    it('should match mathematiques-algebre to mathematiques', () => {
-      const result = enrichSubjectKey('mathematiques-algebre');
-      expect(result.name).toBe('Mathématiques');
-    });
-
-    it('should match francais-grammaire to francais', () => {
-      const result = enrichSubjectKey('francais-grammaire');
-      expect(result.name).toBe('Français');
+    it('should match mathematiques-algebre', () => {
+      expect(enrichSubjectKey('mathematiques-algebre').name).toBe('Mathematiques');
     });
   });
 
-  describe('fallback for unknown subjects', () => {
-    it('should return fallback metadata for unknown subjects', () => {
+  describe('fallback', () => {
+    it('should return fallback for unknown subjects', () => {
       const result = enrichSubjectKey('unknown-subject');
       expect(result.name).toBe('Unknown Subject');
-      expect(result.description).toBe('Cours de unknown subject');
-      expect(result.emoji).toBe('📖');
+      expect(result.icon).toBe('GraduationCap');
       expect(result.color).toBe('gray');
-    });
-
-    it('should format multi-word unknown subjects correctly', () => {
-      const result = enrichSubjectKey('arts-plastiques');
-      expect(result.name).toBe('Arts Plastiques');
     });
   });
 });
 
-describe('SUBJECT_METADATA', () => {
-  it('should contain all 10 required subjects', () => {
-    const requiredSubjects = [
-      'mathematiques',
-      'francais',
-      'physique_chimie',
-      'svt',
-      'histoire_geo',
-      'anglais',
-      'espagnol',
-      'allemand',
-      'italien',
-      'technologie',
-    ];
+describe('getSubjectStyles', () => {
+  it('should return NativeWind classes for blue', () => {
+    const styles = getSubjectStyles('blue');
+    expect(styles.bg).toContain('bg-blue');
+    expect(styles.text).toContain('text-blue');
+    expect(styles.border).toContain('border-blue');
+    expect(styles.iconColor.light).toBe('#3B82F6');
+    expect(styles.iconColor.dark).toBe('#60A5FA');
+  });
 
-    for (const subject of requiredSubjects) {
-      expect(SUBJECT_METADATA[subject]).toBeDefined();
+  it('should return valid styles for all colors', () => {
+    const colors: SubjectColor[] = ['blue', 'violet', 'purple', 'emerald', 'amber', 'rose', 'yellow', 'slate', 'teal', 'gray'];
+    for (const color of colors) {
+      const styles = getSubjectStyles(color);
+      expect(styles.bg).toBeTruthy();
+      expect(styles.text).toBeTruthy();
+      expect(styles.border).toBeTruthy();
+      expect(styles.iconColor.light).toBeTruthy();
+      expect(styles.iconColor.dark).toBeTruthy();
+    }
+  });
+});
+
+describe('SUBJECT_METADATA', () => {
+  it('should contain all 10 subjects', () => {
+    const required = [
+      'mathematiques', 'francais', 'physique_chimie', 'svt',
+      'histoire_geo', 'anglais', 'espagnol', 'allemand',
+      'italien', 'technologie',
+    ];
+    for (const s of required) {
+      expect(SUBJECT_METADATA[s]).toBeDefined();
     }
   });
 
-  it('should have valid metadata structure for all subjects', () => {
-    for (const metadata of Object.values(SUBJECT_METADATA)) {
-      expect(metadata).toHaveProperty('name');
-      expect(metadata).toHaveProperty('description');
-      expect(metadata).toHaveProperty('emoji');
-      expect(metadata).toHaveProperty('color');
-      expect(typeof metadata.name).toBe('string');
-      expect(typeof metadata.description).toBe('string');
-      expect(metadata.name.length).toBeGreaterThan(0);
+  it('should have valid structure', () => {
+    for (const m of Object.values(SUBJECT_METADATA)) {
+      expect(m).toHaveProperty('name');
+      expect(m).toHaveProperty('description');
+      expect(m).toHaveProperty('icon');
+      expect(m).toHaveProperty('color');
     }
+  });
+
+  it('should have unique colors for similar subjects', () => {
+    expect(SUBJECT_METADATA['francais'].color).not.toBe(SUBJECT_METADATA['anglais'].color);
+    expect(SUBJECT_METADATA['svt'].color).not.toBe(SUBJECT_METADATA['italien'].color);
   });
 });

@@ -109,10 +109,10 @@ export default function FilesScreen() {
               {item.fileName}
             </Text>
             <View className="flex-row items-center gap-2 mt-0.5">
-              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+              <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
                 {formatFileSize(item.sizeBytes)}
               </Text>
-              <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+              <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
                 {formatDate(item.createdAt)}
               </Text>
               {subjectLabel && (
@@ -142,12 +142,12 @@ export default function FilesScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900" edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
+          className="h-10 w-10 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
           accessibilityLabel="Retour"
         >
           <ArrowLeft color={iconColors.foreground} size={20} />

@@ -97,8 +97,8 @@ export default function EditChildScreen() {
   // Loading state
   if (isLoadingChildren || isLoadingLevels || !id) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <View className="flex-row items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+        <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-6 w-32 rounded" />
         </View>
@@ -113,11 +113,11 @@ export default function EditChildScreen() {
   // Child not found
   if (!child) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
         <View className="flex-1 items-center justify-center p-6">
           <Text className="text-red-600 dark:text-red-400">Enfant non trouvé</Text>
           <Button onPress={() => router.back()} className="mt-4">
-            <Text className="text-white dark:text-slate-900">Retour</Text>
+            <Text className="text-white dark:text-stone-900">Retour</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -127,9 +127,9 @@ export default function EditChildScreen() {
   const fullName = `${child.firstName} ${child.lastName}`;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <View className="flex-row items-center gap-3">
           <TouchableOpacity
             onPress={() => router.back()}
@@ -166,7 +166,7 @@ export default function EditChildScreen() {
             <Text className="mb-2 font-medium">Niveau scolaire</Text>
             <TouchableOpacity
               onPress={() => setShowLevelPicker(true)}
-              className="flex-row items-center justify-between rounded-xl bg-white dark:bg-slate-800 px-4 py-4"
+              className="flex-row items-center justify-between rounded-xl bg-white dark:bg-stone-800 px-4 py-4"
               accessibilityLabel="Sélectionner le niveau scolaire"
               accessibilityHint={schoolLevel ? getLevelLabel(schoolLevel) : 'Non sélectionné'}
             >
@@ -186,7 +186,7 @@ export default function EditChildScreen() {
             disabled={!hasChanges || isUpdating}
             style={!hasChanges ? { opacity: 0.5 } : undefined}
           >
-            <Text className="font-semibold text-white dark:text-slate-900">
+            <Text className="font-semibold text-white dark:text-stone-900">
               {isUpdating ? 'Enregistrement...' : 'Enregistrer les modifications'}
             </Text>
           </Button>
@@ -201,8 +201,8 @@ export default function EditChildScreen() {
         onRequestClose={() => setShowLevelPicker(false)}
       >
         <View className="flex-1 justify-end" style={{ backgroundColor: bgColors.black[50] }}>
-          <View className="max-h-[70%] rounded-t-3xl bg-white dark:bg-slate-800">
-            <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
+          <View className="max-h-[70%] rounded-t-3xl bg-white dark:bg-stone-800">
+            <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 p-4">
               <Text className="font-semibold">Niveau scolaire</Text>
               <TouchableOpacity onPress={() => setShowLevelPicker(false)}>
                 <Text className="text-blue-600 dark:text-blue-400">Fermer</Text>
@@ -218,7 +218,7 @@ export default function EditChildScreen() {
                     setSchoolLevel(item.key);
                     setShowLevelPicker(false);
                   }}
-                  className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-4"
+                  className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-4"
                 >
                   <Text>{getLevelLabel(item.key)}</Text>
                   {schoolLevel === item.key && (

@@ -27,7 +27,7 @@ export function AttachmentPreview({ attachments, onRemove }: AttachmentPreviewPr
         {attachments.map((attachment) => (
           <View
             key={attachment.fileId}
-            className="relative rounded-xl bg-slate-100 dark:bg-slate-800 p-2"
+            className="relative rounded-xl bg-stone-100 dark:bg-stone-800 p-2"
           >
             {attachment.preview ? (
               <Image
@@ -46,7 +46,7 @@ export function AttachmentPreview({ attachments, onRemove }: AttachmentPreviewPr
             )}
             <Text
               variant="tiny"
-              className="mt-1 max-w-[64px] text-slate-500 dark:text-slate-400"
+              className="mt-1 max-w-[64px] text-stone-600 dark:text-stone-400"
               numberOfLines={1}
             >
               {attachment.fileName}

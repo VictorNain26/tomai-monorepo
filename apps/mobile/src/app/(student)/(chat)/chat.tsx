@@ -24,7 +24,7 @@ import { ChevronRight, FileText, BarChart3, RefreshCw, ChevronDown } from 'lucid
 
 import { Text } from '@/components/ui/text';
 import { ChatMessage, ChatInput, ChatHeader, DeckActionCard, FileLibraryPicker } from '@/components/chat';
-import { TomAvatar } from '@/components/common';
+import { TomAvatar, SubjectIcon } from '@/components/common';
 import {
   useChat,
   usePresignedUpload,
@@ -54,17 +54,6 @@ interface ContextInfo {
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-function getSubjectEmoji(subject: string): string {
-  const s = subject.toLowerCase();
-  if (s.includes('math')) return '📐';
-  if (s.includes('français') || s.includes('francais')) return '📖';
-  if (s.includes('anglais')) return '🇬🇧';
-  if (s.includes('histoire') || s.includes('géo')) return '🌍';
-  if (s.includes('physique') || s.includes('chimie')) return '⚗️';
-  if (s.includes('svt') || s.includes('biologie')) return '🧬';
-  return '📚';
-}
 
 function parseContext(contextParam?: string): ContextInfo {
   if (!contextParam) return { type: 'general' };
@@ -140,7 +129,7 @@ export default function ChatScreen() {
 
   // Compute contextual suggestions from Pronote homework
   const suggestions = useMemo(() => {
-    const items: { emoji: string; label: string; prompt: string }[] = [];
+    const items: { subject: string; label: string; prompt: string }[] = [];
 
     // Undone homework (max 2)
     const undone = pronote.homework
@@ -150,7 +139,7 @@ export default function ChatScreen() {
 
     for (const h of undone) {
       items.push({
-        emoji: getSubjectEmoji(h.subject),
+        subject: h.subject,
         label: `Aide : ${h.subject}`,
         prompt: `Aide-moi avec mon devoir de ${h.subject} : ${h.description}`,
       });
@@ -159,7 +148,7 @@ export default function ChatScreen() {
     // Fill up to 3 with generic suggestion
     if (items.length < 2) {
       items.push({
-        emoji: '📖',
+        subject: 'general',
         label: 'Explique mon dernier cours',
         prompt: 'Explique-moi mon dernier cours de maniere simple',
       });
@@ -288,7 +277,7 @@ export default function ChatScreen() {
   }, [contextInfo.type, colors.warning, colors.primary, colors.destructive]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900" edges={['top']}>
       <ChatHeader
         contextBadge={contextBadge}
         currentSessionId={currentSessionId}
@@ -343,13 +332,13 @@ export default function ChatScreen() {
                   <TouchableOpacity
                     key={i}
                     onPress={() => sendMessage(s.prompt)}
-                    className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-slate-800 p-3"
+                    className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-3"
                     activeOpacity={0.7}
                     accessibilityLabel={s.label}
                     accessibilityHint="Envoie cette question a Tom"
                     accessibilityRole="button"
                   >
-                    <Text className="text-lg">{s.emoji}</Text>
+                    <SubjectIcon subject={s.subject} size={20} />
                     <Text className="flex-1">{s.label}</Text>
                     <ChevronRight color={iconColors.muted} size={16} />
                   </TouchableOpacity>
@@ -377,7 +366,7 @@ export default function ChatScreen() {
             {!isNearBottom && (
               <TouchableOpacity
                 onPress={scrollToBottom}
-                className="absolute bottom-3 right-3 h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm"
+                className="absolute bottom-3 right-3 h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-stone-800 shadow-sm"
                 style={{ elevation: 3 }}
                 accessibilityLabel="Retour en bas"
               >

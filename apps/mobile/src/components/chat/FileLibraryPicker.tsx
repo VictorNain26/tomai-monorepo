@@ -86,7 +86,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
       <TouchableOpacity
         onPress={() => handleToggle(item)}
         disabled={isDisabled}
-        className={`flex-row items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700 ${isDisabled ? 'opacity-40' : ''}`}
+        className={`flex-row items-center gap-3 px-4 py-3 border-b border-stone-200 dark:border-stone-700 ${isDisabled ? 'opacity-40' : ''}`}
         activeOpacity={0.7}
       >
         <View
@@ -100,7 +100,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
           <Text numberOfLines={1} className="font-medium">
             {item.fileName}
           </Text>
-          <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+          <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
             {formatFileSize(item.sizeBytes)}
             {item.subject ? ` · ${item.subject}` : ''}
           </Text>
@@ -125,17 +125,17 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <View className="flex-1 bg-stone-50 dark:bg-stone-900">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3 pt-4">
+        <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3 pt-4">
           <Text variant="large">Mon Classeur</Text>
           <View className="flex-row items-center gap-3">
-            <Text variant="tiny" className="text-slate-500 dark:text-slate-400">
+            <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
               {sessionFilesList.length}/10
             </Text>
             <TouchableOpacity
               onPress={onClose}
-              className="h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
+              className="h-8 w-8 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
               accessibilityLabel="Fermer"
             >
               <X color={iconColors.foreground} size={18} />

@@ -1,7 +1,8 @@
 // Parent Components
 
-export { ChildCard } from './ChildCard';
-export { CreateChildModal } from './CreateChildModal';
+export { ChildSummaryCard } from './ChildSummaryCard';
+export { PronoteBadge } from './PronoteBadge';
+export { LevelPickerSheet } from './LevelPickerSheet';
 export { DeleteChildModal } from './DeleteChildModal';
 export { PronoteChildSelectorModal } from './PronoteChildSelectorModal';
 export { PronoteQrScanner } from './PronoteQrScanner';

@@ -14,6 +14,7 @@ import { Plus, MessageCircle, Trash2 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { SubjectIcon } from '@/components/common/SubjectIcon';
 import { useConversations, useIconColors, useThemeColors, type Conversation } from '@/hooks';
 import { shadows } from '@/lib/styles';
 
@@ -32,16 +33,6 @@ function formatRelativeDate(isoDate: string): string {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
-function getSubjectEmoji(subject: string): string {
-  const s = subject.toLowerCase();
-  if (s.includes('math')) return '\u{1F4D0}';
-  if (s.includes('fran')) return '\u{1F4D6}';
-  if (s.includes('anglais')) return '\u{1F1EC}\u{1F1E7}';
-  if (s.includes('histoire') || s.includes('geo')) return '\u{1F30D}';
-  if (s.includes('physique') || s.includes('chimie')) return '\u{2697}\u{FE0F}';
-  if (s.includes('svt') || s.includes('bio')) return '\u{1F9EC}';
-  return '\u{1F4DA}';
-}
 
 function ConversationItem({
   conversation,
@@ -55,7 +46,6 @@ function ConversationItem({
   iconColors: ReturnType<typeof useIconColors>;
 }) {
   const title = conversation.title ?? 'Nouvelle conversation';
-  const emoji = getSubjectEmoji(conversation.subject);
 
   return (
     <TouchableOpacity
@@ -67,7 +57,7 @@ function ConversationItem({
       <View className="flex-row items-start justify-between">
         <View className="mr-3 flex-1">
           <View className="mb-1 flex-row items-center gap-2">
-            <Text className="text-base">{emoji}</Text>
+            <SubjectIcon subject={conversation.subject} size={18} />
             <Text className="flex-1 text-base font-semibold text-foreground" numberOfLines={1}>
               {title}
             </Text>

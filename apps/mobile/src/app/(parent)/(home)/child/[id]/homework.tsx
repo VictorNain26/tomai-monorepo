@@ -44,13 +44,13 @@ export default function ChildHomeworkScreen() {
   }, [pronote]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <View className="flex-row items-center gap-3">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
+            className="h-10 w-10 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
           >
             <ArrowLeft color={iconColors.foreground} size={20} />
           </TouchableOpacity>
@@ -68,7 +68,7 @@ export default function ChildHomeworkScreen() {
         <View className="flex-row items-center gap-2">
           <TouchableOpacity
             onPress={() => setWeekOffset((w) => w - 1)}
-            className="h-9 w-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800"
+            className="h-9 w-9 items-center justify-center rounded-lg bg-stone-100 dark:bg-stone-800"
           >
             <ChevronLeft color={iconColors.foreground} size={18} />
           </TouchableOpacity>
@@ -77,7 +77,7 @@ export default function ChildHomeworkScreen() {
           </Text>
           <TouchableOpacity
             onPress={() => setWeekOffset((w) => w + 1)}
-            className="h-9 w-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800"
+            className="h-9 w-9 items-center justify-center rounded-lg bg-stone-100 dark:bg-stone-800"
           >
             <ChevronRight color={iconColors.foreground} size={18} />
           </TouchableOpacity>

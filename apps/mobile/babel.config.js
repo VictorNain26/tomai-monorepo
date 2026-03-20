@@ -2,6 +2,7 @@ module.exports = function (api) {
   api.cache(true);
 
   const plugins = [
+    'babel-plugin-react-compiler',
     ['react-native-reanimated/plugin', {}, 'react-native-reanimated'],
   ];
 

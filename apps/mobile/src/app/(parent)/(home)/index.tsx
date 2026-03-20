@@ -1,46 +1,35 @@
 /**
  * Parent Dashboard Screen - TomAI 2026
  *
- * Enriched child cards with Pronote data + activity stats.
+ * Vertical scrollable list of compact child cards.
+ * Parent sees all children at a glance. Tap card → detail.
  */
 
-import { useState, useCallback, useMemo } from 'react';
-import { View, ScrollView, RefreshControl } from 'react-native';
-import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
+import { View, ScrollView } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import { Plus, Users } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/toast';
-import { ChildCard, CreateChildModal } from '@/components/parent';
+import { ChildSummaryCard } from '@/components/parent/ChildSummaryCard';
 import {
   useParentDashboard,
-  useIconColors,
   useThemeColors,
   usePronote,
   type IChild,
-  type ICreateChildData,
 } from '@/hooks';
 import type { ChildMetrics } from '@/hooks/useParentDashboard';
 import { useUser } from '@/lib/auth';
+import { computeAverageGrade } from '@/lib/formatters';
 import { bgColors } from '@/lib/styles';
-import type { PronoteGrade, PronoteHomework } from '@/services/pronote/pronote-types';
+import type { PronoteHomework } from '@/services/pronote/pronote-types';
 
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-function computeAverageGrade(grades: PronoteGrade[]): number | null {
-  if (grades.length === 0) return null;
-  const validGrades = grades.filter((g): g is PronoteGrade & { value: number } => g.value !== null && g.outOf > 0);
-  if (validGrades.length === 0) return null;
-  const normalized = validGrades.map((g) => (g.value / g.outOf) * 20);
-  return normalized.reduce((sum, v) => sum + v, 0) / normalized.length;
-}
 
 function countUpcomingHomework(homework: PronoteHomework[]): number {
   return homework.filter((h) => !h.done).length;
@@ -48,10 +37,7 @@ function countUpcomingHomework(homework: PronoteHomework[]): number {
 
 function getChildMetrics(metrics: ChildMetrics[], childId: string) {
   const m = metrics.find((metric) => metric.studentId === childId);
-  return {
-    studyTimeMinutes: m?.totalStudyTime ?? 0,
-    streak: m?.studyDays ?? 0,
-  };
+  return { studyTimeMinutes: m?.totalStudyTime ?? 0, streak: m?.studyDays ?? 0 };
 }
 
 // ============================================================================
@@ -60,28 +46,17 @@ function getChildMetrics(metrics: ChildMetrics[], childId: string) {
 
 export default function ParentDashboard() {
   const router = useRouter();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
-  const toast = useToast();
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const {
-    children,
-    metrics,
-    levels,
-    isLoading,
-    isCreating,
-    userName,
-    createChild,
-  } = useParentDashboard();
-
+  const { children, metrics, isLoading, userName } = useParentDashboard();
   const user = useUser();
   const pronote = usePronote(user?.id ?? '');
 
-  // Compute per-child Pronote data
   const childPronoteData = useMemo(() => {
-    const data: Record<string, { hasPronote: boolean; averageGrade: number | null; homeworkCount: number }> = {};
+    const data: Record<
+      string,
+      { hasPronote: boolean; averageGrade: number | null; homeworkCount: number }
+    > = {};
     for (const child of children) {
       const isMapped = pronote.resourceMappings[child.id] !== undefined;
       data[child.id] = {
@@ -93,135 +68,100 @@ export default function ParentDashboard() {
     return data;
   }, [children, pronote.resourceMappings, pronote.grades, pronote.homework]);
 
-  const queryClient = useQueryClient();
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      await queryClient.refetchQueries({ queryKey: ['parent'] });
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [queryClient]);
+  const handleAddChild = useCallback(() => {
+    router.push('/(parent)/(home)/add-child');
+  }, [router]);
 
-  const handleChildPress = (child: IChild) => {
-    router.push(`/(parent)/(home)/child/${child.id}`);
-  };
-
-  const handleCreateChild = useCallback(
-    async (data: ICreateChildData) => {
-      try {
-        await createChild(data);
-        setShowCreateModal(false);
-        toast.success('Enfant cree', `${data.firstName} peut maintenant utiliser Tom !`);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Erreur lors de la creation';
-        toast.error('Erreur', message);
-      }
+  const handleViewDetail = useCallback(
+    (child: IChild) => {
+      router.push(`/(parent)/(home)/child/${child.id}`);
     },
-    [createChild, toast]
+    [router]
   );
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <ScrollView className="flex-1" contentContainerClassName="px-4 py-5 gap-4">
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+        <View className="px-5 py-5 gap-4">
           <Skeleton className="h-8 w-48 rounded" />
-          <Skeleton className="h-4 w-64 rounded" />
-          <Skeleton className="h-36 w-full rounded-xl" />
-          <Skeleton className="h-36 w-full rounded-xl" />
-        </ScrollView>
+          <Skeleton className="h-4 w-32 rounded" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (children.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+        <View className="px-5 py-5">
+          <Text variant="h2">Bonjour, {userName}</Text>
+          <Text variant="muted" className="mt-1">0 enfant</Text>
+        </View>
+        <View className="flex-1 items-center justify-center px-8">
+          <View
+            className="mb-4 h-20 w-20 items-center justify-center rounded-full"
+            style={{ backgroundColor: bgColors.muted[50] }}
+          >
+            <Users color={colors.foreground} size={40} style={{ opacity: 0.4 }} />
+          </View>
+          <Text variant="large" className="mb-2 text-center">
+            Commencez par ajouter votre premier enfant
+          </Text>
+          <Button onPress={handleAddChild} className="mt-4">
+            <Text className="font-medium text-white dark:text-stone-900">
+              Ajouter un enfant
+            </Text>
+          </Button>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView testID="parent-dashboard" className="flex-1 bg-stone-50 dark:bg-stone-900">
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
+        <View>
+          <Text variant="h2">Bonjour, {userName}</Text>
+          <Text variant="muted" className="mt-0.5">
+            {children.length} enfant{children.length > 1 ? 's' : ''}
+          </Text>
+        </View>
+        <Button
+          variant="ghost"
+          size="icon"
+          onPress={handleAddChild}
+          accessibilityLabel="Ajouter un enfant"
+        >
+          <Plus color={colors.primary} size={22} />
+        </Button>
+      </View>
+
+      {/* Child cards list */}
       <ScrollView
-        className="flex-1"
-        contentContainerClassName="px-4 py-5 gap-5"
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-          />
-        }
+        className="flex-1 px-4"
+        contentContainerClassName="gap-3 pb-6 pt-2"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text variant="h2">Bonjour, {userName}</Text>
-            <Text variant="muted" className="mt-1">
-              Suivez la progression de vos enfants
-            </Text>
-          </View>
-          {children.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={() => setShowCreateModal(true)}
-              accessibilityLabel="Ajouter un enfant"
-            >
-              <Plus color={colors.primary} size={22} />
-            </Button>
-          )}
-        </View>
-
-        {/* Children Cards */}
-        {children.length > 0 ? (
-          <View className="gap-3">
-            {children.map((child) => {
-              const pd = childPronoteData[child.id];
-              const cm = getChildMetrics(metrics, child.id);
-              return (
-                <ChildCard
-                  key={child.id}
-                  child={child}
-                  hasPronote={pd?.hasPronote ?? false}
-                  averageGrade={pd?.averageGrade ?? null}
-                  homeworkCount={pd?.homeworkCount ?? 0}
-                  studyTimeMinutes={cm.studyTimeMinutes}
-                  streak={cm.streak}
-                  onPress={handleChildPress}
-                />
-              );
-            })}
-          </View>
-        ) : (
-          <Card>
-            <View className="items-center p-6">
-              <View
-                className="mb-4 h-16 w-16 items-center justify-center rounded-full"
-                style={{ backgroundColor: bgColors.muted[50] }}
-              >
-                <Users color={iconColors.muted} size={32} />
-              </View>
-              <Text variant="large" className="mb-1">
-                Aucun enfant
-              </Text>
-              <Text variant="muted" className="mb-4 text-center">
-                Ajoutez votre premier enfant pour commencer
-              </Text>
-              <Button onPress={() => setShowCreateModal(true)}>
-                <Plus color={colors.primaryForeground} size={18} />
-                <Text className="ml-2 text-white dark:text-slate-900 font-medium">
-                  Ajouter un enfant
-                </Text>
-              </Button>
-            </View>
-          </Card>
-        )}
+        {children.map((child) => {
+          const pd = childPronoteData[child.id];
+          const cm = getChildMetrics(metrics, child.id);
+          return (
+            <ChildSummaryCard
+              key={child.id}
+              child={child}
+              hasPronote={pd?.hasPronote ?? false}
+              averageGrade={pd?.averageGrade ?? null}
+              homeworkCount={pd?.homeworkCount ?? 0}
+              studyTimeMinutes={cm.studyTimeMinutes}
+              streak={cm.streak}
+              onPress={handleViewDetail}
+            />
+          );
+        })}
       </ScrollView>
-
-      <CreateChildModal
-        visible={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateChild}
-        isSubmitting={isCreating}
-        levels={levels}
-      />
     </SafeAreaView>
   );
 }

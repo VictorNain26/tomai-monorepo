@@ -140,6 +140,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       : '1.0.0-dev',
   updates: {
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+    // Enable bsdiff patch support for smaller OTA updates (Hermes bytecode diffing)
+    // @see https://docs.expo.dev/eas-update/bundle-diffing/
+    enableBsdiffPatchSupport: true,
   },
 
   experiments: {

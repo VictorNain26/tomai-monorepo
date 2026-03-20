@@ -92,7 +92,7 @@ export function HomeworkUrgentCard({
   // Loading state
   if (isLoading) {
     return (
-      <View style={shadows.sm} className="rounded-xl bg-white dark:bg-slate-800 p-4">
+      <View style={shadows.sm} className="rounded-xl bg-white dark:bg-stone-800 p-4">
         <View className="mb-4 flex-row items-center gap-3">
           <Skeleton className="h-10 w-10 rounded-lg" />
           <View className="flex-1">
@@ -111,7 +111,7 @@ export function HomeworkUrgentCard({
   // Empty state
   if (urgentHomework.length === 0) {
     return (
-      <View style={shadows.sm} className="rounded-xl bg-white dark:bg-slate-800 p-5">
+      <View style={shadows.sm} className="rounded-xl bg-white dark:bg-stone-800 p-5">
         <View className="flex-row items-center gap-3 mb-3">
           <View
             className="h-10 w-10 items-center justify-center rounded-lg"
@@ -132,7 +132,7 @@ export function HomeworkUrgentCard({
   }
 
   return (
-    <View style={shadows.sm} className="rounded-xl bg-white dark:bg-slate-800">
+    <View style={shadows.sm} className="rounded-xl bg-white dark:bg-stone-800">
       {/* Header */}
       <View className="flex-row items-center justify-between p-4 pb-2">
         <View className="flex-row items-center gap-3">
@@ -188,7 +188,7 @@ export function HomeworkUrgentCard({
 
                   {/* Content */}
                   <View className="flex-1">
-                    <Text variant="small" className="text-slate-500 dark:text-slate-400">
+                    <Text variant="small" className="text-stone-600 dark:text-stone-400">
                       {item.subject}
                     </Text>
                     <Text className="font-medium" numberOfLines={2}>
@@ -220,7 +220,7 @@ export function HomeworkUrgentCard({
                   {/* Action button */}
                   <Button
                     size="sm"
-                    variant="subtle"
+                    variant="ghost"
                     onPress={() => handleStudyWithTom(item)}
                     accessibilityLabel={`Réviser ${item.subject} avec Tom`}
                   >
