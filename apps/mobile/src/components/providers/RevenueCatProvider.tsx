@@ -24,17 +24,26 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     initializeRevenueCat()
-      .then(() => setIsInitialized(true))
+      .then(() => {
+        if (isMounted) setIsInitialized(true);
+      })
       .catch((err: unknown) => {
         console.error('[RevenueCatProvider] Init failed:', err);
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setIsInitialized(true);
+        if (isMounted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+          setIsInitialized(true);
+        }
       });
+
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
     if (!isInitialized) return;
+    let isMounted = true;
 
     const syncUser = async () => {
       try {
@@ -44,11 +53,14 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
           await logoutUser();
         }
       } catch (err) {
-        console.error('[RevenueCatProvider] User sync failed:', err);
+        if (isMounted) {
+          console.error('[RevenueCatProvider] User sync failed:', err);
+        }
       }
     };
 
     syncUser();
+    return () => { isMounted = false; };
   }, [isInitialized, session?.user?.id]);
 
   return (
