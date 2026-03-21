@@ -147,7 +147,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   experiments: {
     typedRoutes: true,
-    reactCompiler: true,
+    // reactCompiler disabled — incompatible with Expo Router (expo#35100)
   },
 
   // Extra configuration
