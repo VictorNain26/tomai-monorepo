@@ -1,7 +1,7 @@
 import { View, TouchableOpacity, Modal, ScrollView, Pressable } from 'react-native';
 import { X, Check } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
-import { useIconColors, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { LEVEL_LABELS, type EducationLevelType } from '@/constants/levels';
 
 interface LevelPickerSheetProps {
@@ -18,7 +18,6 @@ const LEVEL_GROUPS: { title: string; levels: EducationLevelType[] }[] = [
 ];
 
 export function LevelPickerSheet({ visible, onClose, onSelect, selectedLevel }: LevelPickerSheetProps) {
-  const iconColors = useIconColors();
   const colors = useThemeColors();
 
   return (
@@ -37,7 +36,7 @@ export function LevelPickerSheet({ visible, onClose, onSelect, selectedLevel }: 
           <View className="flex-row items-center justify-between px-5 pb-3">
             <Text className="text-lg font-semibold">Niveau scolaire</Text>
             <TouchableOpacity onPress={onClose} className="p-1">
-              <X color={iconColors.muted} size={20} />
+              <X color={colors.muted} size={20} />
             </TouchableOpacity>
           </View>
 

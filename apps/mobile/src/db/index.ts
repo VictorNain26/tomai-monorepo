@@ -5,20 +5,7 @@
  */
 
 // Client and initialization
-export { getDatabase, initializeDatabase, clearDatabase, getDatabaseStats } from './client';
+export { getDatabase, initializeDatabase } from './client';
 
 // Schema and types
 export * from './schema';
-
-// Sync operations
-export {
-  queueAction,
-  getPendingActions,
-  getPendingActionsCount,
-  removePendingAction,
-  syncPendingActions,
-  getLastSyncTime,
-  updateLastSyncTime,
-  getConflicts,
-  resolveConflict,
-} from './sync';

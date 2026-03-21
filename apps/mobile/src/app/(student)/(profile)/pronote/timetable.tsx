@@ -25,7 +25,7 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usePronote, useIconColors, useThemeColors } from '@/hooks';
+import { usePronote, useThemeColors } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { bgColors, borderColors } from '@/lib/styles';
 
@@ -97,7 +97,6 @@ export default function TimetableScreen() {
 
   const user = useUser();
   const pronote = usePronote(user?.id ?? '');
-  const iconColors = useIconColors();
   const colors = useThemeColors();
 
   const onRefresh = useCallback(async () => {
@@ -129,7 +128,7 @@ export default function TimetableScreen() {
       <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <View className="flex-row items-center gap-3">
           <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
-            <ArrowLeft color={iconColors.foreground} size={24} />
+            <ArrowLeft color={colors.foreground} size={24} />
           </TouchableOpacity>
           <Text variant="h3">Emploi du temps</Text>
         </View>
@@ -140,7 +139,7 @@ export default function TimetableScreen() {
             onPress={() => setWeekOffset((w) => w - 1)}
             className="rounded-lg bg-stone-100 dark:bg-stone-800 p-2"
           >
-            <ChevronLeft color={iconColors.foreground} size={20} />
+            <ChevronLeft color={colors.foreground} size={20} />
           </TouchableOpacity>
           <Text className="min-w-[80px] text-center text-sm">
             {weekOffset === 0
@@ -155,7 +154,7 @@ export default function TimetableScreen() {
             onPress={() => setWeekOffset((w) => w + 1)}
             className="rounded-lg bg-stone-100 dark:bg-stone-800 p-2"
           >
-            <ChevronRight color={iconColors.foreground} size={20} />
+            <ChevronRight color={colors.foreground} size={20} />
           </TouchableOpacity>
         </View>
       </View>
@@ -181,7 +180,7 @@ export default function TimetableScreen() {
           // Empty state
           <View className="items-center py-12">
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800">
-              <Clock color={iconColors.muted} size={32} />
+              <Clock color={colors.muted} size={32} />
             </View>
             <Text className="mb-1 font-semibold">Aucun cours</Text>
             <Text variant="muted" className="text-center">
@@ -261,7 +260,7 @@ export default function TimetableScreen() {
                               {teacher && (
                                 <View className="flex-row items-center gap-1">
                                   <User
-                                    color={iconColors.muted}
+                                    color={colors.muted}
                                     size={14}
                                   />
                                   <Text variant="muted" className="text-sm">
@@ -272,7 +271,7 @@ export default function TimetableScreen() {
                               {room && (
                                 <View className="flex-row items-center gap-1">
                                   <MapPin
-                                    color={iconColors.muted}
+                                    color={colors.muted}
                                     size={14}
                                   />
                                   <Text variant="muted" className="text-sm">

@@ -25,7 +25,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUser, signOut } from '@/lib/auth';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { useIsPro, useIconColors, useThemeColors, usePronote } from '@/hooks';
+import { useIsPro, useThemeColors, usePronote } from '@/hooks';
 import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
@@ -53,7 +53,6 @@ export default function ParentProfileScreen() {
   const router = useRouter();
   const user = useUser();
   const { confirm } = useConfirm();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { isPro, isLoading: isLoadingPro } = useIsPro();
   const pronote = usePronote(user?.id ?? '');
@@ -78,7 +77,7 @@ export default function ParentProfileScreen() {
       title: 'Abonnement',
       items: [
         {
-          icon: <CreditCard color={iconColors.primary} size={20} />,
+          icon: <CreditCard color={colors.primary} size={20} />,
           label: 'Gérer l\'abonnement',
           sublabel: isLoadingPro
             ? 'Chargement...'
@@ -96,7 +95,7 @@ export default function ParentProfileScreen() {
       title: 'Pronote',
       items: [
         {
-          icon: <School color={iconColors.foreground} size={20} />,
+          icon: <School color={colors.foreground} size={20} />,
           label: 'Pronote',
           sublabel: pronote.isConnected ? 'Connecte' : 'Non connecte',
           onPress: () => router.push('/(parent)/(profile)/pronote-connect'),
@@ -110,7 +109,7 @@ export default function ParentProfileScreen() {
       title: 'Preferences',
       items: [
         {
-          icon: <Settings color={iconColors.foreground} size={20} />,
+          icon: <Settings color={colors.foreground} size={20} />,
           label: 'Parametres',
           sublabel: 'Apparence',
           onPress: () => router.push('/(parent)/(profile)/settings'),
@@ -154,7 +153,7 @@ export default function ParentProfileScreen() {
               {isPro ? (
                 <Sparkles color={colors.success} size={14} />
               ) : (
-                <Crown color={iconColors.primary} size={14} />
+                <Crown color={colors.primary} size={14} />
               )}
               <Text
                 variant="tiny"
@@ -215,7 +214,7 @@ export default function ParentProfileScreen() {
                     </View>
                   </View>
                   {item.showChevron && (
-                    <ChevronRight color={iconColors.muted} size={20} />
+                    <ChevronRight color={colors.muted} size={20} />
                   )}
                 </TouchableOpacity>
               ))}

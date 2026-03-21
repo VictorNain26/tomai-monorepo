@@ -19,7 +19,7 @@ import {
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
-import { useTheme, useIconColors, useThemeColors, type ThemeMode } from '@/hooks';
+import { useTheme, useThemeColors, type ThemeMode } from '@/hooks';
 
 // ============================================================================
 // CONSTANTS
@@ -37,7 +37,6 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
 
 export default function ParentSettingsScreen() {
   const router = useRouter();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { themeMode, setThemeMode } = useTheme();
 
@@ -46,7 +45,7 @@ export default function ParentSettingsScreen() {
       {/* Header */}
       <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
-          <ArrowLeft color={iconColors.foreground} size={24} />
+          <ArrowLeft color={colors.foreground} size={24} />
         </TouchableOpacity>
         <Text variant="h3">Paramètres</Text>
       </View>
@@ -70,7 +69,7 @@ export default function ParentSettingsScreen() {
                   activeOpacity={0.7}
                 >
                   <View className="flex-row items-center gap-3">
-                    <Icon color={iconColors.foreground} size={20} />
+                    <Icon color={colors.foreground} size={20} />
                     <Text>{option.label}</Text>
                   </View>
                   {isSelected && <Check color={colors.success} size={20} />}
@@ -89,7 +88,7 @@ export default function ParentSettingsScreen() {
               activeOpacity={0.7}
             >
               <View className="flex-row items-center gap-3">
-                <Bell color={iconColors.foreground} size={20} />
+                <Bell color={colors.foreground} size={20} />
                 <View>
                   <Text>Notifications</Text>
                   <Text variant="muted" className="text-sm">
@@ -104,7 +103,7 @@ export default function ParentSettingsScreen() {
               activeOpacity={0.7}
             >
               <View className="flex-row items-center gap-3">
-                <Shield color={iconColors.foreground} size={20} />
+                <Shield color={colors.foreground} size={20} />
                 <View>
                   <Text>Confidentialité</Text>
                   <Text variant="muted" className="text-sm">
@@ -122,7 +121,7 @@ export default function ParentSettingsScreen() {
           <View className="rounded-xl bg-white dark:bg-stone-800">
             <View className="flex-row items-center justify-between px-4 py-4">
               <View className="flex-row items-center gap-3">
-                <Info color={iconColors.muted} size={20} />
+                <Info color={colors.muted} size={20} />
                 <Text>Version</Text>
               </View>
               <Text variant="muted">1.0.0</Text>

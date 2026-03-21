@@ -17,7 +17,6 @@ import { X, User, Check, School } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { useIconColors } from '@/hooks/useIconColors';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { PronoteResource } from '@/services/pronote/pronote-types';
 import { bgColors } from '@/lib/styles';
@@ -49,7 +48,6 @@ export function PronoteChildSelectorModal({
   establishmentName,
   isSubmitting,
 }: PronoteChildSelectorModalProps) {
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -82,7 +80,7 @@ export function PronoteChildSelectorModal({
             disabled={isSubmitting}
             className="p-2"
           >
-            <X color={iconColors.muted} size={24} />
+            <X color={colors.muted} size={24} />
           </TouchableOpacity>
         </View>
 
@@ -138,7 +136,7 @@ export function PronoteChildSelectorModal({
                       }}
                     >
                       <User
-                        color={isSelected ? colors.primary : iconColors.muted}
+                        color={isSelected ? colors.primary : colors.muted}
                         size={24}
                       />
                     </View>

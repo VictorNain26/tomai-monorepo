@@ -10,7 +10,7 @@ import { BookOpen, ArrowRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 import { Text } from '@/components/ui/text';
-import { useIconColors, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors, shadows } from '@/lib/styles';
 
 interface DeckActionCardProps {
@@ -22,7 +22,6 @@ interface DeckActionCardProps {
 
 export function DeckActionCard({ deckId, title, cardCount, subject }: DeckActionCardProps) {
   const router = useRouter();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
 
   return (
@@ -38,7 +37,7 @@ export function DeckActionCard({ deckId, title, cardCount, subject }: DeckAction
         className="h-9 w-9 items-center justify-center rounded-lg"
         style={{ backgroundColor: bgColors.primary[10] }}
       >
-        <BookOpen color={iconColors.primary} size={18} />
+        <BookOpen color={colors.primary} size={18} />
       </View>
 
       <View className="flex-1">

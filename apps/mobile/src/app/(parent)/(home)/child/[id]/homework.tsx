@@ -12,13 +12,12 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { HomeworkView } from '@/components/pronote';
-import { usePronote, useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { usePronote, useParentDashboard, useThemeColors } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { getWeekLabel, getWeekBounds } from '@/lib/pronote-helpers';
 
 export default function ChildHomeworkScreen() {
   const router = useRouter();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [weekOffset, setWeekOffset] = useState(0);
@@ -52,7 +51,7 @@ export default function ChildHomeworkScreen() {
             onPress={() => router.back()}
             className="h-10 w-10 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
           >
-            <ArrowLeft color={iconColors.foreground} size={20} />
+            <ArrowLeft color={colors.foreground} size={20} />
           </TouchableOpacity>
           <View>
             <Text variant="h3">Devoirs</Text>
@@ -70,7 +69,7 @@ export default function ChildHomeworkScreen() {
             onPress={() => setWeekOffset((w) => w - 1)}
             className="h-9 w-9 items-center justify-center rounded-lg bg-stone-100 dark:bg-stone-800"
           >
-            <ChevronLeft color={iconColors.foreground} size={18} />
+            <ChevronLeft color={colors.foreground} size={18} />
           </TouchableOpacity>
           <Text variant="small" className="min-w-[90px] text-center">
             {getWeekLabel(weekOffset)}
@@ -79,7 +78,7 @@ export default function ChildHomeworkScreen() {
             onPress={() => setWeekOffset((w) => w + 1)}
             className="h-9 w-9 items-center justify-center rounded-lg bg-stone-100 dark:bg-stone-800"
           >
-            <ChevronRight color={iconColors.foreground} size={18} />
+            <ChevronRight color={colors.foreground} size={18} />
           </TouchableOpacity>
         </View>
       </View>

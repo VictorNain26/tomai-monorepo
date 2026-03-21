@@ -20,7 +20,7 @@ import {
 import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { useUserFiles, useIconColors, useThemeColors, type LibraryFile } from '@/hooks';
+import { useUserFiles, useThemeColors, type LibraryFile } from '@/hooks';
 import { bgColors, shadows } from '@/lib/styles';
 import { getTreaty, unwrap } from '@repo/api';
 import { useQueryClient } from '@tanstack/react-query';
@@ -68,7 +68,6 @@ function getSubjectLabel(subject: string | null): string | null {
 export default function FilesScreen() {
   const router = useRouter();
   const { confirm, info } = useConfirm();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const queryClient = useQueryClient();
   const { files, isLoading, refetch } = useUserFiles();
@@ -150,7 +149,7 @@ export default function FilesScreen() {
           className="h-10 w-10 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
           accessibilityLabel="Retour"
         >
-          <ArrowLeft color={iconColors.foreground} size={20} />
+          <ArrowLeft color={colors.foreground} size={20} />
         </TouchableOpacity>
         <Text variant="large">Mon Classeur</Text>
       </View>

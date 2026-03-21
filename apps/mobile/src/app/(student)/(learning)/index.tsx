@@ -13,12 +13,12 @@ import { BookOpen, Plus } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DeckCard } from '@/components/learning';
-import { useLearning, useIconColors } from '@/hooks';
+import { useLearning, useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
 export default function LearningScreen() {
   const router = useRouter();
-  const iconColors = useIconColors();
+  const colors = useThemeColors();
   const [refreshing, setRefreshing] = useState(false);
   const { decks, isLoading, error, refetch, deleteDeck, isDeleting } =
     useLearning();
@@ -87,7 +87,7 @@ export default function LearningScreen() {
         {!isLoading && decks.length === 0 && (
           <View className="items-center py-12">
             <View className="mb-4 h-20 w-20 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
-              <BookOpen color={iconColors.foreground} size={40} />
+              <BookOpen color={colors.foreground} size={40} />
             </View>
             <Text variant="h3" className="text-center">
               Pas encore de decks

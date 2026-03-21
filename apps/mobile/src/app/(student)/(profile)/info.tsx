@@ -16,7 +16,7 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { useUser } from '@/lib/auth';
-import { useIconColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
 // ============================================================================
@@ -58,7 +58,7 @@ const LEVEL_LABELS: Record<string, string> = {
 export default function ProfileInfoScreen() {
   const router = useRouter();
   const user = useUser();
-  const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   // Extract user data with type safety
   const schoolLevel = (user as { schoolLevel?: string })?.schoolLevel;
@@ -75,7 +75,7 @@ export default function ProfileInfoScreen() {
           accessibilityLabel="Retour"
           accessibilityRole="button"
         >
-          <ArrowLeft color={iconColors.foreground} size={24} />
+          <ArrowLeft color={colors.foreground} size={24} />
         </TouchableOpacity>
         <Text variant="h3">Mon profil</Text>
       </View>
@@ -99,7 +99,7 @@ export default function ProfileInfoScreen() {
             {/* School Level */}
             <View className="flex-row items-center justify-between px-4 py-4">
               <View className="flex-row items-center gap-3">
-                <GraduationCap color={iconColors.foreground} size={20} />
+                <GraduationCap color={colors.foreground} size={20} />
                 <Text>Niveau scolaire</Text>
               </View>
               <Text variant="muted">{levelLabel ?? 'Non défini'}</Text>
@@ -110,7 +110,7 @@ export default function ProfileInfoScreen() {
         {/* Info Notice */}
         <View className="rounded-xl p-4" style={{ backgroundColor: bgColors.muted[50] }}>
           <View className="flex-row items-start gap-3">
-            <Info color={iconColors.muted} size={20} />
+            <Info color={colors.muted} size={20} />
             <View className="flex-1">
               <Text variant="muted" className="text-sm">
                 Ces informations sont gérées par ton parent. Si tu as besoin de

@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { PronoteChildSelectorModal, PronoteQrScanner, PronotePinEntry } from '@/components/parent';
 import type { PronoteResource } from '@/services/pronote/pronote-types';
 import { usePronote } from '@/hooks/usePronote';
-import { useParentDashboard, useIconColors } from '@/hooks';
+import { useParentDashboard, useThemeColors } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { useToast } from '@/components/ui/toast';
 
@@ -54,7 +54,7 @@ interface ConnectResult {
 export default function PronoteConnectScreen() {
   const router = useRouter();
   const toast = useToast();
-  const iconColors = useIconColors();
+  const colors = useThemeColors();
   const { childId } = useLocalSearchParams<{ childId?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const user = useUser();
@@ -187,12 +187,12 @@ export default function PronoteConnectScreen() {
       <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
         <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
           <TouchableOpacity onPress={() => router.back()} className="p-1" accessibilityLabel="Retour" accessibilityRole="button">
-            <ArrowLeft color={iconColors.foreground} size={24} />
+            <ArrowLeft color={colors.foreground} size={24} />
           </TouchableOpacity>
           <Text variant="h3">Connexion Pronote</Text>
         </View>
         <View className="flex-1 items-center justify-center px-6">
-          <Camera color={iconColors.foreground} size={48} />
+          <Camera color={colors.foreground} size={48} />
           <Text className="mt-4 text-center text-lg font-semibold">Acces camera requis</Text>
           <Text variant="muted" className="mt-2 text-center">
             Pour scanner le QR code Pronote, autorisez l'acces a la camera.
@@ -215,7 +215,7 @@ export default function PronoteConnectScreen() {
           accessibilityLabel="Retour"
           accessibilityRole="button"
         >
-          <ArrowLeft color={iconColors.foreground} size={24} />
+          <ArrowLeft color={colors.foreground} size={24} />
         </TouchableOpacity>
         <Text variant="h3">Connexion Pronote</Text>
       </View>

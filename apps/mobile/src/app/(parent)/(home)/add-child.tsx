@@ -17,7 +17,7 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { LevelPickerSheet } from '@/components/parent';
-import { useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { useParentDashboard, useThemeColors } from '@/hooks';
 import {
   createChildFormSchema,
   type CreateChildFormData,
@@ -34,7 +34,6 @@ import type { EducationLevelType } from '@/constants/levels';
 export default function AddChildScreen() {
   const router = useRouter();
   const toast = useToast();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { createChild, isCreating } = useParentDashboard();
 
@@ -182,7 +181,7 @@ export default function AddChildScreen() {
                 <Text className={selectedLevel ? 'text-base text-stone-900 dark:text-stone-100' : 'text-base text-stone-400'}>
                   {selectedLevel ? getLevelLabel(selectedLevel) : 'Selectionner le niveau'}
                 </Text>
-                <ChevronDown color={iconColors.muted} size={18} />
+                <ChevronDown color={colors.muted} size={18} />
               </TouchableOpacity>
               {errors.schoolLevel && <Text className="mt-1 text-xs text-red-500">{errors.schoolLevel.message}</Text>}
             </View>
@@ -253,9 +252,9 @@ export default function AddChildScreen() {
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} className="px-3">
                   {showPassword ? (
-                    <EyeOff color={iconColors.muted} size={20} />
+                    <EyeOff color={colors.muted} size={20} />
                   ) : (
-                    <Eye color={iconColors.muted} size={20} />
+                    <Eye color={colors.muted} size={20} />
                   )}
                 </TouchableOpacity>
               </View>

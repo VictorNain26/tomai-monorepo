@@ -5,15 +5,15 @@
  */
 
 import { Stack } from 'expo-router';
-import { AppProviders } from '@/components/providers';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import { useStackScreenOptions } from '@/lib/navigation';
 
 export default function AuthLayout() {
   const screenOptions = useStackScreenOptions();
 
   return (
-    <AppProviders>
+    <ErrorBoundary>
       <Stack screenOptions={screenOptions} />
-    </AppProviders>
+    </ErrorBoundary>
   );
 }

@@ -27,7 +27,7 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
-import { useParentDashboard, useIconColors, useThemeColors } from '@/hooks';
+import { useParentDashboard, useThemeColors } from '@/hooks';
 import {
   getLevelLabel,
   type EducationLevelType,
@@ -41,7 +41,6 @@ import { bgColors } from '@/lib/styles';
 export default function EditChildScreen() {
   const router = useRouter();
   const toast = useToast();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -137,7 +136,7 @@ export default function EditChildScreen() {
             accessibilityLabel="Retour"
             accessibilityRole="button"
           >
-            <ArrowLeft color={iconColors.foreground} size={20} />
+            <ArrowLeft color={colors.foreground} size={20} />
           </TouchableOpacity>
           <Text variant="h3">Modifier {child.firstName}</Text>
         </View>
@@ -171,12 +170,12 @@ export default function EditChildScreen() {
               accessibilityHint={schoolLevel ? getLevelLabel(schoolLevel) : 'Non sélectionné'}
             >
               <View className="flex-row items-center gap-3">
-                <GraduationCap color={iconColors.foreground} size={20} />
+                <GraduationCap color={colors.foreground} size={20} />
                 <Text>
                   {schoolLevel ? getLevelLabel(schoolLevel) : 'Sélectionner'}
                 </Text>
               </View>
-              <ChevronDown color={iconColors.muted} size={20} />
+              <ChevronDown color={colors.muted} size={20} />
             </TouchableOpacity>
           </View>
 

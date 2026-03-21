@@ -28,7 +28,6 @@ import { TomAvatar, SubjectIcon } from '@/components/common';
 import {
   useChat,
   usePresignedUpload,
-  useIconColors,
   usePronote,
   useSessionFiles,
   useThemeColors,
@@ -74,7 +73,6 @@ export default function ChatScreen() {
   const queryClient = useQueryClient();
   const { confirm, info } = useConfirm();
   const params = useLocalSearchParams<Record<string, string>>();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   // Parse context from params
   const contextInfo = useMemo(() => parseContext(params.context), [params.context]);
@@ -340,7 +338,7 @@ export default function ChatScreen() {
                   >
                     <SubjectIcon subject={s.subject} size={20} />
                     <Text className="flex-1">{s.label}</Text>
-                    <ChevronRight color={iconColors.muted} size={16} />
+                    <ChevronRight color={colors.muted} size={16} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -370,7 +368,7 @@ export default function ChatScreen() {
                 style={{ elevation: 3 }}
                 accessibilityLabel="Retour en bas"
               >
-                <ChevronDown color={iconColors.foreground} size={20} />
+                <ChevronDown color={colors.foreground} size={20} />
               </TouchableOpacity>
             )}
           </View>

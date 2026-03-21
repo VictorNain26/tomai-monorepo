@@ -23,7 +23,7 @@ import {
   type HomeworkItem,
   type GradeItem,
 } from '@/components/dashboard';
-import { useStudentDashboard, usePronote, useIconColors, useDueSummary } from '@/hooks';
+import { useStudentDashboard, usePronote, useThemeColors, useDueSummary } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { bgColors } from '@/lib/styles';
 import { enrichSubjectKey } from '@/constants/subjects';
@@ -46,7 +46,7 @@ function daysUntil(dateStr: string): number {
 // ============================================================================
 
 export default function StudentDashboard() {
-  const iconColors = useIconColors();
+  const colors = useThemeColors();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
@@ -171,7 +171,7 @@ export default function StudentDashboard() {
               className="h-10 w-10 items-center justify-center rounded-lg"
               style={{ backgroundColor: bgColors.primary[10] }}
             >
-              <Brain color={iconColors.primary} size={20} />
+              <Brain color={colors.primary} size={20} />
             </View>
             <View className="flex-1">
               <Text className="font-semibold">
@@ -204,7 +204,7 @@ export default function StudentDashboard() {
               className="h-10 w-10 items-center justify-center rounded-lg"
               style={{ backgroundColor: bgColors.primary[10] }}
             >
-              <Link2 color={iconColors.primary} size={20} />
+              <Link2 color={colors.primary} size={20} />
             </View>
             <View className="flex-1">
               <Text className="font-semibold">Pronote non connecte</Text>

@@ -33,7 +33,7 @@ import { MarkdownContent } from './MarkdownContent';
 import { FileAttachmentCard } from './FileAttachmentCard';
 import { cn } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { useTextToSpeech, useIconColors, useThemeColors } from '@/hooks';
+import { useTextToSpeech, useThemeColors } from '@/hooks';
 import type { ChatMessage as ChatMessageType } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
@@ -80,8 +80,8 @@ interface ChatMessageProps {
 export const ChatMessage = memo(function ChatMessage({ message, isStreaming = false, streamStatus }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isThinking = !isUser && isStreaming && message.content.length === 0;
+  const colors = useThemeColors();
   const tts = useTextToSpeech();
-  const iconColors = useIconColors();
   const { confirm } = useConfirm();
 
   // Can speak if assistant message with content and not streaming
@@ -156,11 +156,11 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
               accessibilityRole="button"
             >
               {tts.isLoading ? (
-                <Loader2 color={iconColors.muted} size={14} />
+                <Loader2 color={colors.muted} size={14} />
               ) : tts.isSpeaking ? (
-                <VolumeX color={iconColors.foreground} size={14} />
+                <VolumeX color={colors.foreground} size={14} />
               ) : (
-                <Volume2 color={iconColors.muted} size={14} />
+                <Volume2 color={colors.muted} size={14} />
               )}
               <Text
                 variant="tiny"

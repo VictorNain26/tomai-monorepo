@@ -3,7 +3,7 @@ import { ChevronLeft, MoreVertical, FolderOpen } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { TomAvatar } from '@/components/common';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { useIconColors, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
 interface ContextBadge {
@@ -31,7 +31,6 @@ export function ChatHeader({
   onReset,
   onDelete,
 }: ChatHeaderProps) {
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { confirm } = useConfirm();
 
@@ -44,7 +43,7 @@ export function ChatHeader({
         accessibilityLabel="Retour aux conversations"
         accessibilityRole="button"
       >
-        <ChevronLeft color={iconColors.foreground} size={22} />
+        <ChevronLeft color={colors.foreground} size={22} />
       </TouchableOpacity>
 
       <View className="flex-1">
@@ -92,7 +91,7 @@ export function ChatHeader({
             accessibilityLabel="Options de conversation"
             accessibilityRole="button"
           >
-            <MoreVertical color={iconColors.muted} size={18} />
+            <MoreVertical color={colors.muted} size={18} />
           </TouchableOpacity>
         </View>
       )}

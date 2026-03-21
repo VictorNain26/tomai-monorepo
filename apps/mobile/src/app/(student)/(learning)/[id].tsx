@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardViewer } from '@/components/learning';
-import { useDueCards, useReviewCard, useDeck, useIconColors, useThemeColors, type ThemeColors } from '@/hooks';
+import { useDueCards, useReviewCard, useDeck, useThemeColors, type ThemeColors } from '@/hooks';
 import type { FSRSRating, ReviewResult, CardType } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 import { haptics } from '@/lib/haptics';
@@ -47,7 +47,6 @@ function getRatings(colors: ThemeColors): RatingConfig[] {
 
 export default function DeckReviewScreen() {
   const router = useRouter();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -178,7 +177,7 @@ export default function DeckReviewScreen() {
           onPress={handleClose}
           className="h-10 w-10 items-center justify-center rounded-full"
         >
-          <X color={iconColors.muted} size={24} />
+          <X color={colors.muted} size={24} />
         </TouchableOpacity>
         <View className="flex-1 items-center">
           <Text className="font-semibold" numberOfLines={1}>

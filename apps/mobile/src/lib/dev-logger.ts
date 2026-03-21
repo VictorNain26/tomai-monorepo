@@ -36,14 +36,6 @@ export function logError(error: Error, componentStack?: string): void {
   }
 }
 
-export function getErrors(): LogEntry[] {
-  return errors;
-}
-
-export function clearErrors(): void {
-  errors.length = 0;
-}
-
 function writeErrorLog(): void {
   try {
     const file = new File(Paths.cache, 'debug-errors.json');

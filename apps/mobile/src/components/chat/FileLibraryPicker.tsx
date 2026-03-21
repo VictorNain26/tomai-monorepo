@@ -21,7 +21,6 @@ import {
   useSessionFiles,
   useAttachFile,
   useDetachFile,
-  useIconColors,
   useThemeColors,
   type LibraryFile,
 } from '@/hooks';
@@ -57,7 +56,6 @@ function getFileIcon(mimeType: string) {
 // ============================================================================
 
 export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPickerProps) {
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { files: libraryFiles, isLoading: isLoadingLibrary } = useUserFiles();
   const { files: sessionFilesList } = useSessionFiles(sessionId);
@@ -138,7 +136,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
               className="h-8 w-8 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
               accessibilityLabel="Fermer"
             >
-              <X color={iconColors.foreground} size={18} />
+              <X color={colors.foreground} size={18} />
             </TouchableOpacity>
           </View>
         </View>
