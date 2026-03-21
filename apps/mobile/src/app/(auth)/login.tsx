@@ -4,10 +4,10 @@
  * Authentication screen for parents (email) and students (username).
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Pressable } from 'react-native';
-import { Link, useRouter } from 'expo-router';
-import { signIn, signInWithUsername, signInWithGoogle, useSession } from '@/lib/auth';
+import { Link } from 'expo-router';
+import { signIn, signInWithUsername, signInWithGoogle } from '@/lib/auth';
 
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
@@ -21,21 +21,13 @@ import { bgColors } from '@/lib/styles';
 type AccountType = 'parent' | 'student';
 
 export default function LoginScreen() {
-  const router = useRouter();
-  const { data: session } = useSession();
+  // Auth redirect handled by Stack.Protected in root _layout.tsx
   const colors = useThemeColors();
   const [accountType, setAccountType] = useState<AccountType>('parent');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Redirect when session becomes available (handles OAuth callback and email login)
-  useEffect(() => {
-    if (session?.user) {
-      router.replace('/');
-    }
-  }, [session, router]);
 
   const config = {
     parent: {
@@ -75,8 +67,7 @@ export default function LoginScreen() {
           return;
         }
       }
-      // Login successful - redirect to home which handles role-based routing
-      router.replace('/');
+      // Stack.Protected auto-redirects when session becomes available
     } catch (err) {
       console.error('[Login] Login failed:', err);
       setError('Erreur de connexion. Veuillez réessayer.');
