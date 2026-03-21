@@ -30,7 +30,7 @@ export function ConceptViewer({ content }: { content: ConceptContent }) {
       <Text className="mb-3 font-semibold">Points clés :</Text>
       <View className="mb-6 gap-2">
         {content.keyPoints.map((point, index) => (
-          <View key={index} className="flex-row gap-2">
+          <View key={`${index}-${point}`} className="flex-row gap-2">
             <Text className="text-blue-600 dark:text-blue-400">•</Text>
             <Text className="flex-1">{point}</Text>
           </View>

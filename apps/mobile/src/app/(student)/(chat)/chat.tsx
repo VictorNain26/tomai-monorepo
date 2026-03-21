@@ -326,9 +326,9 @@ export default function ChatScreen() {
 
             {suggestions.length > 0 && (
               <View className="mt-6 w-full gap-2">
-                {suggestions.map((s, i) => (
+                {suggestions.map((s) => (
                   <TouchableOpacity
-                    key={i}
+                    key={s.prompt}
                     onPress={() => sendMessage(s.prompt)}
                     className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-3"
                     activeOpacity={0.7}

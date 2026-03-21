@@ -15,6 +15,7 @@ import {
   AudioModule,
   setAudioModeAsync,
 } from 'expo-audio';
+import * as FileSystem from 'expo-file-system';
 import { getTreaty, unwrap } from '@repo/api';
 import { haptics } from '@/lib/haptics';
 
@@ -297,11 +298,14 @@ export function useVoiceInput() {
 // ============================================================================
 
 async function uploadAndTranscribe(uri: string): Promise<string | null> {
+  const fileInfo = await FileSystem.getInfoAsync(uri);
+  const sizeBytes = fileInfo.exists ? fileInfo.size ?? 0 : 0;
+
   const presignedResponse = unwrap(
     await getTreaty().api.upload.presign.post({
       fileName: 'voice-recording.m4a',
       mimeType: 'audio/mp4',
-      sizeBytes: 1,
+      sizeBytes,
     })
   ) as PresignedUrlResponse;
 

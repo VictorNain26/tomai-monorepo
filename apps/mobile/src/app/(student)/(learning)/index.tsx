@@ -126,7 +126,7 @@ export default function LearningScreen() {
 
         {/* Info */}
         {!isLoading && decks.length > 0 && (
-          <View className="mt-6 rounded-xl bg-white dark:bg-stone-800 p-4" style={{ backgroundColor: bgColors.muted[50] }}>
+          <View className="mt-6 rounded-xl bg-white dark:bg-stone-800 p-4">
             <Text variant="muted" className="text-center text-sm">
               Appuie sur ▶️ pour jouer un deck ou 🗑️ pour le supprimer.
             </Text>

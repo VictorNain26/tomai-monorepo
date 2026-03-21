@@ -33,7 +33,7 @@ import {
   type LearningSubject,
 } from '@/hooks/useLearning';
 import { useUser } from '@/lib/auth';
-import { useThemeColors } from '@/hooks';
+import { useTheme, useThemeColors } from '@/hooks';
 
 // ============================================================================
 // TYPES
@@ -50,6 +50,7 @@ export default function CreateDeckScreen() {
   const toast = useToast();
   const user = useUser();
   const colors = useThemeColors();
+  const { isDark } = useTheme();
   const niveau = user?.schoolLevel ?? 'sixieme';
 
   const [step, setStep] = useState<Step>('subject');
@@ -121,7 +122,7 @@ export default function CreateDeckScreen() {
     <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
       {/* Loading overlay during generation */}
       {generateMutation.isPending && (
-        <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: bgColors.background[90] }}>
+        <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: isDark ? 'rgba(28, 25, 23, 0.9)' : 'rgba(250, 250, 249, 0.9)' }}>
           <View className="items-center gap-4 rounded-2xl bg-white dark:bg-stone-800 p-8" style={shadows.lg}>
             <ActivityIndicator size="large" color={colors.primary} />
             <View className="items-center gap-2">
