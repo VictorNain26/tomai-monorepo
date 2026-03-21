@@ -19,7 +19,6 @@ import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, MessageCircle, BookOpen, User, ArrowLeft } from 'lucide-react-native';
 import { useSession, useUser, useImpersonatedBy, restoreParentSession } from '@/lib/auth';
-import { ErrorBoundary } from '@/components/common/error-boundary';
 import { useThemeColors, useDueSummary } from '@/hooks';
 import { useTabScreenOptions, useTabBarConfig } from '@/lib/navigation';
 import { Text } from '@/components/ui/text';
@@ -102,7 +101,6 @@ export default function StudentLayout() {
   }
 
   return (
-    <ErrorBoundary>
       <View className="flex-1">
         {/* Quick Switch Banner - shown when parent is viewing as child */}
         {isImpersonating && (
@@ -173,6 +171,5 @@ export default function StudentLayout() {
           />
         </Tabs>
       </View>
-    </ErrorBoundary>
   );
 }

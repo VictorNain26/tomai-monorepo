@@ -2,18 +2,16 @@
  * Auth Stack - TomAI 2026
  *
  * Screens: Login, Register, Forgot password, Reset password, Callback
+ *
+ * Error handling: Use per-route `export function ErrorBoundary` in individual
+ * screen files instead of wrapping the navigator (Expo Router best practice).
  */
 
 import { Stack } from 'expo-router';
-import { ErrorBoundary } from '@/components/common/error-boundary';
 import { useStackScreenOptions } from '@/lib/navigation';
 
 export default function AuthLayout() {
   const screenOptions = useStackScreenOptions();
 
-  return (
-    <ErrorBoundary>
-      <Stack screenOptions={screenOptions} />
-    </ErrorBoundary>
-  );
+  return <Stack screenOptions={screenOptions} />;
 }

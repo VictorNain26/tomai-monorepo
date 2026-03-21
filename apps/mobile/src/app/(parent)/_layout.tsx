@@ -26,7 +26,6 @@ import {
   type MaterialTopTabNavigationEventMap,
 } from '@react-navigation/material-top-tabs';
 import { useSession, useUser } from '@/lib/auth';
-import { ErrorBoundary } from '@/components/common/error-boundary';
 import { useThemeColors } from '@/hooks';
 import { useSwipeableTabConfig } from '@/lib/navigation';
 import { setupPushNotifications } from '@/lib/notifications';
@@ -73,7 +72,6 @@ export default function ParentLayout() {
   }
 
   return (
-    <ErrorBoundary>
         <MaterialTopTabs
           tabBarPosition="bottom"
           screenOptions={swipeableOptions}
@@ -93,6 +91,5 @@ export default function ParentLayout() {
             }}
           />
         </MaterialTopTabs>
-    </ErrorBoundary>
   );
 }
