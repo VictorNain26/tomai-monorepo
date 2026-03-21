@@ -14,7 +14,7 @@
  * - (profile)/ → Stack: Profile menu, Settings, Pricing, Pronote
  */
 
-import { Suspense, useEffect } from 'react';
+import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { withLayoutContext } from 'expo-router';
@@ -74,13 +74,6 @@ export default function ParentLayout() {
 
   return (
     <AppProviders>
-      <Suspense
-        fallback={
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        }
-      >
         <MaterialTopTabs
           tabBarPosition="bottom"
           screenOptions={swipeableOptions}
@@ -100,7 +93,6 @@ export default function ParentLayout() {
             }}
           />
         </MaterialTopTabs>
-      </Suspense>
     </AppProviders>
   );
 }

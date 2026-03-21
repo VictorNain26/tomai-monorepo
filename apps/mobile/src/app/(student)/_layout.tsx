@@ -13,7 +13,7 @@
  * Quick Switch: Shows "Return to Parent" banner when in impersonation mode.
  */
 
-import { Suspense, useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -103,13 +103,6 @@ export default function StudentLayout() {
 
   return (
     <AppProviders>
-      <Suspense
-        fallback={
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        }
-      >
       <View className="flex-1">
         {/* Quick Switch Banner - shown when parent is viewing as child */}
         {isImpersonating && (
@@ -180,7 +173,6 @@ export default function StudentLayout() {
           />
         </Tabs>
       </View>
-      </Suspense>
     </AppProviders>
   );
 }
