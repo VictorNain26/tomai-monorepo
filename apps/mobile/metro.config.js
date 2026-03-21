@@ -20,4 +20,13 @@ config.server.enhanceMiddleware = (middleware) => {
   };
 };
 
+// Enable inlineRequires for faster startup + fix React Compiler circular deps
+// @see https://github.com/expo/expo/issues/35100
+config.transformer.getTransformOptions = async () => ({
+  transform: {
+    experimentalImportSupport: true,
+    inlineRequires: true,
+  },
+});
+
 module.exports = withNativewind(config);

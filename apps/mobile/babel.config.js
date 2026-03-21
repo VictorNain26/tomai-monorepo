@@ -1,17 +1,25 @@
 module.exports = function (api) {
   api.cache(true);
 
-  const plugins = [
-    'babel-plugin-react-compiler',
-    ['react-native-reanimated/plugin', {}, 'react-native-reanimated'],
-  ];
-
-  if (process.env.NODE_ENV === 'production') {
-    plugins.push(['transform-remove-console', { exclude: ['error', 'warn'] }]);
-  }
-
   return {
-    presets: ['babel-preset-expo'],
-    plugins,
+    presets: [
+      [
+        'babel-preset-expo',
+        {
+          // React Compiler — configured via preset (NOT as a standalone plugin)
+          // @see https://docs.expo.dev/guides/react-compiler/
+          'react-compiler': {
+            compilationMode: 'infer',
+            // 'none' = skip components that fail compilation (try/finally, etc.)
+            // This is the recommended default for production apps
+            panicThreshold: 'none',
+          },
+        },
+      ],
+    ],
+    plugins: [
+      // Note: react-native-reanimated/plugin is auto-included by babel-preset-expo
+      // Note: transform-remove-console is handled by babel-preset-expo in production
+    ],
   };
 };
