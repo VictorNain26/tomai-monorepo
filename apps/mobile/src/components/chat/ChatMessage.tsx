@@ -94,7 +94,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
 
   const handleLongPress = useCallback(async () => {
     if (message.content.length === 0) return;
-    const confirmed = await confirm({
+    await confirm({
       title: 'Message',
       actions: [
         {
@@ -104,7 +104,6 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
         },
       ],
     });
-    void confirmed;
   }, [message.content, confirm]);
 
   return (

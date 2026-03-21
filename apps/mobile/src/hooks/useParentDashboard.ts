@@ -5,6 +5,7 @@
  * Uses Eden Treaty for type-safe e2e API calls.
  */
 
+import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTreaty, unwrap } from '@repo/api';
 import { useUser } from '@/lib/auth';
@@ -161,10 +162,10 @@ export function useParentDashboard() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const invalidateParentData = () => {
+  const invalidateParentData = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.parent.dashboard });
     void queryClient.invalidateQueries({ queryKey: queryKeys.parent.children });
-  };
+  }, [queryClient]);
 
   const createMutation = useMutation({
     mutationFn: createChildApi,

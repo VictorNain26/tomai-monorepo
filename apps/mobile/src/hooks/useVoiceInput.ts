@@ -244,7 +244,7 @@ export function useVoiceInput() {
   }, [recorder, recorderState.isRecording]);
 
   // Keep ref updated for auto-stop timer
-  stopRecordingRef.current = stopRecording;
+  useEffect(() => { stopRecordingRef.current = stopRecording; }, [stopRecording]);
 
   const cancelRecording = useCallback(async () => {
     if (durationIntervalRef.current) {

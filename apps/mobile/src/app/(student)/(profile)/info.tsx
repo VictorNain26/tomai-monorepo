@@ -18,38 +18,7 @@ import { Text } from '@/components/ui/text';
 import { useUser } from '@/lib/auth';
 import { useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-const LEVEL_LABELS: Record<string, string> = {
-  cp: 'CP',
-  ce1: 'CE1',
-  ce2: 'CE2',
-  cm1: 'CM1',
-  cm2: 'CM2',
-  sixieme: '6ème',
-  cinquieme: '5ème',
-  quatrieme: '4ème',
-  troisieme: '3ème',
-  seconde: 'Seconde',
-  premiere: 'Première',
-  terminale: 'Terminale',
-  // Legacy format support
-  'primaire-cp': 'CP',
-  'primaire-ce1': 'CE1',
-  'primaire-ce2': 'CE2',
-  'primaire-cm1': 'CM1',
-  'primaire-cm2': 'CM2',
-  'college-6': '6ème',
-  'college-5': '5ème',
-  'college-4': '4ème',
-  'college-3': '3ème',
-  'lycee-2nde': 'Seconde',
-  'lycee-1ere': 'Première',
-  'lycee-tle': 'Terminale',
-};
+import { getLevelLabel } from '@/constants/levels';
 
 // ============================================================================
 // COMPONENT
@@ -63,7 +32,7 @@ export default function ProfileInfoScreen() {
   // Extract user data with type safety
   const schoolLevel = (user as { schoolLevel?: string })?.schoolLevel;
 
-  const levelLabel = schoolLevel ? LEVEL_LABELS[schoolLevel] ?? schoolLevel : null;
+  const levelLabel = schoolLevel ? getLevelLabel(schoolLevel) : null;
 
   return (
     <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
