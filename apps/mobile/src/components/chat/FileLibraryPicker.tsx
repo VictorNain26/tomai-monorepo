@@ -167,7 +167,6 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
             keyExtractor={(item) => item.id}
             renderItem={renderFile}
             showsVerticalScrollIndicator={false}
-
           />
         )}
       </View>

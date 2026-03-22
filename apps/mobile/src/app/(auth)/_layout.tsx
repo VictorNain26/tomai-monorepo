@@ -10,8 +10,20 @@
 import { Stack } from 'expo-router';
 import { useStackScreenOptions } from '@/lib/navigation';
 
+export const unstable_settings = {
+  initialRouteName: 'login',
+};
+
 export default function AuthLayout() {
   const screenOptions = useStackScreenOptions();
 
-  return <Stack screenOptions={screenOptions} />;
+  return (
+    <Stack screenOptions={screenOptions}>
+      <Stack.Screen name="login" />
+      <Stack.Screen name="register" />
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="reset-password" />
+      <Stack.Screen name="callback" />
+    </Stack>
+  );
 }

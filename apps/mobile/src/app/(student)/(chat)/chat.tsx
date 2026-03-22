@@ -16,7 +16,7 @@
  */
 
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { View, FlatList, TouchableOpacity } from 'react-native';
+import { View, FlatList, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -311,7 +311,7 @@ export default function ChatScreen() {
       {/* KeyboardAvoidingView wraps messages + input */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior="padding"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Messages or Welcome */}
         {messages.length === 0 ? (
@@ -358,6 +358,10 @@ export default function ChatScreen() {
               keyboardShouldPersistTaps="handled"
               onScroll={handleScroll}
               scrollEventThrottle={100}
+              initialNumToRender={15}
+              maxToRenderPerBatch={10}
+              windowSize={10}
+              removeClippedSubviews={Platform.OS === 'android'}
             />
 
             {/* Scroll to bottom FAB */}

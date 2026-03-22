@@ -183,7 +183,6 @@ export default function FilesScreen() {
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
           refreshing={isLoading}
-
         />
       )}
     </SafeAreaView>

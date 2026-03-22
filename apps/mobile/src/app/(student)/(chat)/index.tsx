@@ -9,7 +9,7 @@ import { useCallback } from 'react';
 import { View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { Plus, MessageCircle, Trash2 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
@@ -195,6 +195,10 @@ export default function ConversationsScreen() {
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
           }
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          removeClippedSubviews
         />
       )}
 

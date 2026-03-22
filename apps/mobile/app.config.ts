@@ -59,13 +59,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
   },
 
-  // Web configuration
-  web: {
-    bundler: 'metro',
-    output: 'static',
-    favicon: './assets/favicon.png',
-  },
-
   // Plugins configuration
   plugins: [
     'expo-router',

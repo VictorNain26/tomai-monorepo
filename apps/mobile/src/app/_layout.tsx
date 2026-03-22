@@ -51,7 +51,7 @@ function RootLayout() {
   const apiInitialized = useRef(false);
   const [isReady, setIsReady] = useState(false);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontsError] = useFonts({
     NunitoSans_400Regular,
     NunitoSans_500Medium,
     NunitoSans_600SemiBold,
@@ -80,12 +80,12 @@ function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && isReady) {
+    if ((fontsLoaded || fontsError) && isReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, isReady]);
+  }, [fontsLoaded, fontsError, isReady]);
 
-  if (!fontsLoaded || !isReady) {
+  if ((!fontsLoaded && !fontsError) || !isReady) {
     return null;
   }
 
@@ -129,29 +129,24 @@ function RootNavigator() {
   const { data: session, isPending } = useSession();
   const user = useUser();
 
-  const isAuthenticated = !isPending && !!session?.user;
-  const isParent = isAuthenticated && user?.role === 'parent';
-  const isStudent = isAuthenticated && !isParent;
+  const isLoggedIn = !isPending && !!session?.user;
+  const isParent = isLoggedIn && user?.role === 'parent';
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {/* Unauthenticated: show auth screens */}
-      <Stack.Protected guard={!isAuthenticated}>
+      <Stack.Protected guard={!isLoggedIn}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
 
-      {/* Authenticated student: show student screens */}
-      <Stack.Protected guard={isStudent}>
-        <Stack.Screen name="(student)" />
-      </Stack.Protected>
+      <Stack.Protected guard={isLoggedIn}>
+        <Stack.Protected guard={!isParent}>
+          <Stack.Screen name="(student)" />
+        </Stack.Protected>
 
-      {/* Authenticated parent: show parent screens */}
-      <Stack.Protected guard={isParent}>
-        <Stack.Screen name="(parent)" />
+        <Stack.Protected guard={isParent}>
+          <Stack.Screen name="(parent)" />
+        </Stack.Protected>
       </Stack.Protected>
-
-      {/* Loading screen while auth is pending */}
-      <Stack.Screen name="index" />
     </Stack>
   );
 }

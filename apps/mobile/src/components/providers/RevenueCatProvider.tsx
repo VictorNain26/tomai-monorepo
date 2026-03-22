@@ -4,7 +4,7 @@
  * Initializes RevenueCat SDK and syncs user ID with Better Auth.
  */
 
-import { createContext, use, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useEffect, useState, type ReactNode } from 'react';
 import { useSession } from '@/lib/auth';
 import { initializeRevenueCat, loginUser, logoutUser } from '@/lib/revenuecat';
 
@@ -70,6 +70,3 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useRevenueCatStatus(): RevenueCatContextValue {
-  return use(RevenueCatContext);
-}

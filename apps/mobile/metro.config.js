@@ -5,9 +5,9 @@ const { withNativewind } = require('nativewind/metro');
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-// Enable package exports for better-auth compatibility
-// @see https://www.better-auth.com/docs/integrations/expo
-config.resolver.unstable_enablePackageExports = true;
+// Package exports enabled by default since Expo SDK 53+
+// No manual unstable_enablePackageExports needed
+// @see https://github.com/better-auth/better-auth/issues/8186
 
 // expo-sqlite web support (alpha)
 // @see https://docs.expo.dev/versions/latest/sdk/sqlite/#web-setup

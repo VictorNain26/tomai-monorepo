@@ -44,7 +44,7 @@ export interface ChildUsageResponse {
 // QUERY KEY
 // ============================================================================
 
-const queryKey = (childId: string) => ['subscription', 'usage', childId] as const;
+const queryKey = (childId: string) => ['subscription', 'usage', 'child', childId] as const;
 
 // ============================================================================
 // API FUNCTION
