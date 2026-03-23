@@ -132,6 +132,9 @@ function RootNavigator() {
   const isLoggedIn = !isPending && !!session?.user;
   const isParent = isLoggedIn && user?.role === 'parent';
 
+  // DEBUG: remove after fix
+  console.log('[RootNavigator]', { isPending, isLoggedIn, isParent, role: user?.role, hasSession: !!session?.user });
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!isLoggedIn}>
