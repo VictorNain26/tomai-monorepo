@@ -52,7 +52,6 @@ export default function LoginScreen() {
     setError(null);
     try {
       const result = await signInWithGoogle();
-      console.log('[Login] Google result:', JSON.stringify(result, null, 2));
       if (result === null) return; // User cancelled
       if (result?.error) {
         setError(result.error.message ?? 'Impossible de se connecter avec Google');
