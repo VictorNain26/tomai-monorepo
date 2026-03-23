@@ -54,6 +54,11 @@ export const user = pgTable('user', {
   subscriptionStatus: varchar('subscription_status', { length: 50 }).default('inactive'), // active, past_due, canceled, etc.
   subscriptionPlan: varchar('subscription_plan', { length: 50 }).default('free'), // free, student, family
 
+  // ===== BETTER AUTH ADMIN PLUGIN FIELDS =====
+  banned: boolean('banned').default(false),
+  banReason: text('ban_reason'),
+  banExpires: timestamp('ban_expires', { withTimezone: true }),
+
   // ===== LOCALISATION =====
   countryCode: varchar('country_code', { length: 2 }).default('FR'),
   timezone: varchar('timezone', { length: 50 }).default('Europe/Paris'),
