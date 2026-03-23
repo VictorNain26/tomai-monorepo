@@ -5,8 +5,8 @@
  * Optionally accepts childId to auto-show mapping selector after connection.
  *
  * Usage:
- * - From profile tab: /(parent)/(profile)/pronote-connect
- * - From child detail: /(parent)/(home)/pronote-connect?childId=xxx (re-exported)
+ * - From profile tab: /(parent)/tabs/(profile)/pronote-connect
+ * - From child detail: /(parent)/tabs/(home)/pronote-connect?childId=xxx (re-exported)
  */
 
 import { useState, useCallback } from 'react';

@@ -70,7 +70,7 @@ export default function ParentDashboard() {
 
   const handleViewDetail = useCallback(
     (child: IChild) => {
-      router.push(`/(parent)/(home)/child/${child.id}`);
+      router.push(`/(parent)/tabs/(home)/child/${child.id}`);
     },
     [router]
   );
@@ -105,7 +105,7 @@ export default function ParentDashboard() {
           <Text variant="large" className="mb-2 text-center">
             Connectez Pronote pour ajouter vos enfants
           </Text>
-          <Button onPress={() => router.push('/(parent)/(home)/pronote-connect')} className="mt-4">
+          <Button onPress={() => router.push('/(parent)/tabs/(home)/pronote-connect')} className="mt-4">
             <Text className="font-medium text-white dark:text-stone-900">
               Connecter Pronote
             </Text>

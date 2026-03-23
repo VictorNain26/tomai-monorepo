@@ -84,7 +84,7 @@ export default function ParentProfileScreen() {
             : isPro
               ? 'Plan Premium actif'
               : 'Plan Gratuit',
-          onPress: () => router.push('/(parent)/(profile)/pricing'),
+          onPress: () => router.push('/(parent)/tabs/(profile)/pricing'),
           showChevron: true,
         },
       ],
@@ -98,7 +98,7 @@ export default function ParentProfileScreen() {
           icon: <School color={colors.foreground} size={20} />,
           label: 'Pronote',
           sublabel: pronote.isConnected ? 'Connecte' : 'Non connecte',
-          onPress: () => router.push('/(parent)/(profile)/pronote-connect'),
+          onPress: () => router.push('/(parent)/tabs/(profile)/pronote-connect'),
           showChevron: true,
         },
       ],
@@ -112,7 +112,7 @@ export default function ParentProfileScreen() {
           icon: <Settings color={colors.foreground} size={20} />,
           label: 'Parametres',
           sublabel: 'Apparence',
-          onPress: () => router.push('/(parent)/(profile)/settings'),
+          onPress: () => router.push('/(parent)/tabs/(profile)/settings'),
           showChevron: true,
         },
       ],
@@ -179,7 +179,7 @@ export default function ParentProfileScreen() {
               <Text variant="muted" className="mb-3">
                 Accès illimité pour vos enfants, flashcards avancées et plus encore.
               </Text>
-              <Button onPress={() => router.push('/(parent)/(profile)/pricing')}>
+              <Button onPress={() => router.push('/(parent)/tabs/(profile)/pricing')}>
                 Voir les offres
               </Button>
             </View>

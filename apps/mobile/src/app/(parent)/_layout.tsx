@@ -1,39 +1,21 @@
 /**
  * Parent Layout - TomAI 2026
  *
- * Swipeable tab navigation (Material Top Tabs at bottom position).
- * Parent can swipe between Accueil and Profil like Instagram.
- *
- * Auth guards handled by Stack.Protected in root _layout.tsx.
- *
- * @see https://docs.expo.dev/versions/latest/sdk/router/#withlayoutcontext
+ * Stack navigator wrapping:
+ * - profile-select: Netflix-like profile grid (initial)
+ * - onboarding-pronote: forced Pronote setup (0 children)
+ * - tabs: MaterialTopTabs shell (home + profile)
  */
 
 import { useEffect } from 'react';
-import { withLayoutContext } from 'expo-router';
-import { Home, User } from 'lucide-react-native';
-import type { ParamListBase, TabNavigationState } from '@react-navigation/native';
-import {
-  createMaterialTopTabNavigator,
-  type MaterialTopTabNavigationOptions,
-  type MaterialTopTabNavigationEventMap,
-} from '@react-navigation/material-top-tabs';
+import { Stack } from 'expo-router';
+import { useStackScreenOptions } from '@/lib/navigation';
 import { useSession } from '@/lib/auth';
-import { useSwipeableTabConfig } from '@/lib/navigation';
 import { setupPushNotifications } from '@/lib/notifications';
 
-const { Navigator } = createMaterialTopTabNavigator();
-
-const MaterialTopTabs = withLayoutContext<
-  MaterialTopTabNavigationOptions,
-  typeof Navigator,
-  TabNavigationState<ParamListBase>,
-  MaterialTopTabNavigationEventMap
->(Navigator);
-
 export default function ParentLayout() {
+  const screenOptions = useStackScreenOptions();
   const { data: session } = useSession();
-  const swipeableOptions = useSwipeableTabConfig();
 
   // Push notification registration (once, non-blocking)
   useEffect(() => {
@@ -42,24 +24,10 @@ export default function ParentLayout() {
   }, [session?.user]);
 
   return (
-    <MaterialTopTabs
-      tabBarPosition="bottom"
-      screenOptions={swipeableOptions}
-    >
-      <MaterialTopTabs.Screen
-        name="(home)"
-        options={{
-          title: 'Accueil',
-          tabBarIcon: ({ color }) => <Home color={color} size={22} />,
-        }}
-      />
-      <MaterialTopTabs.Screen
-        name="(profile)"
-        options={{
-          title: 'Profil',
-          tabBarIcon: ({ color }) => <User color={color} size={22} />,
-        }}
-      />
-    </MaterialTopTabs>
+    <Stack screenOptions={screenOptions}>
+      <Stack.Screen name="profile-select" />
+      <Stack.Screen name="onboarding-pronote" />
+      <Stack.Screen name="tabs" />
+    </Stack>
   );
 }

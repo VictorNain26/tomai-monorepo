@@ -86,7 +86,7 @@ export default function ChildDetailScreen() {
       await deleteChild(id);
       setShowDeleteModal(false);
       toast.success('Succes', 'Le compte a ete supprime');
-      router.replace('/(parent)/(home)');
+      router.replace('/(parent)/tabs/(home)');
     } catch (error) {
       toast.error('Erreur', error instanceof Error ? error.message : 'Impossible de supprimer');
     }
@@ -202,7 +202,7 @@ export default function ChildDetailScreen() {
                   Synchronisez les notes et devoirs de {child.firstName}
                 </Text>
                 <Button
-                  onPress={() => router.push(`/(parent)/(home)/pronote-connect?childId=${id}`)}
+                  onPress={() => router.push(`/(parent)/tabs/(home)/pronote-connect?childId=${id}`)}
                 >
                   <Text className="font-medium text-white dark:text-stone-900">Connecter</Text>
                 </Button>
@@ -217,7 +217,7 @@ export default function ChildDetailScreen() {
                 <View className="mb-3 flex-row items-center justify-between">
                   <Text className="font-semibold">Dernieres notes</Text>
                   <TouchableOpacity
-                    onPress={() => router.push(`/(parent)/(home)/child/${id}/grades`)}
+                    onPress={() => router.push(`/(parent)/tabs/(home)/child/${id}/grades`)}
                     className="flex-row items-center gap-1"
                     accessibilityLabel="Voir toutes les notes"
                   >
@@ -247,7 +247,7 @@ export default function ChildDetailScreen() {
                 <View className="mb-3 flex-row items-center justify-between">
                   <Text className="font-semibold">Devoirs a venir</Text>
                   <TouchableOpacity
-                    onPress={() => router.push(`/(parent)/(home)/child/${id}/homework`)}
+                    onPress={() => router.push(`/(parent)/tabs/(home)/child/${id}/homework`)}
                     className="flex-row items-center gap-1"
                     accessibilityLabel="Voir tous les devoirs"
                   >
