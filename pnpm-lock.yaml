@@ -9,7 +9,19 @@ catalogs:
     '@types/react':
       specifier: ~19.2.10
       version: 19.2.14
+    '@types/react-dom':
+      specifier: ~19.2.3
+      version: 19.2.3
+    eslint:
+      specifier: ^9.39.2
+      version: 9.39.2
+    lucide-react:
+      specifier: ^0.562.0
+      version: 0.562.0
     react:
+      specifier: 19.2.0
+      version: 19.2.0
+    react-dom:
       specifier: 19.2.0
       version: 19.2.0
     tailwindcss:
@@ -209,6 +221,9 @@ importers:
       expo-constants:
         specifier: ^55.0.9
         version: 55.0.9(expo@55.0.5)(react-native@0.83.2(@babel/core@7.28.6)(@types/react@19.2.14)(react@19.2.0))(typescript@5.9.3)
+      expo-crypto:
+        specifier: ^55.0.10
+        version: 55.0.10(expo@55.0.5)
       expo-dev-client:
         specifier: ^55.0.18
         version: 55.0.18(expo@55.0.5)(typescript@5.9.3)
@@ -4562,6 +4577,11 @@ packages:
     peerDependencies:
       expo: '*'
       react-native: '*'
+
+  expo-crypto@55.0.10:
+    resolution: {integrity: sha512-3emt67pWch07F7DPQutn7CUpaiCJI8OOFxCGiwmzeSqSjuWP9upGOXkLQNVWf+29KZQRTVgf88LhDC2GFshMNA==}
+    peerDependencies:
+      expo: '*'
 
   expo-dev-client@55.0.18:
     resolution: {integrity: sha512-zQeCGk+doTMIKwPe9lNlGcUiBlMpJQNyrrsYc5eRdxuMwBrDVAU7zshARmamSw8zlAIHCsThJH2zeJg/lgQrKA==}
@@ -13880,6 +13900,10 @@ snapshots:
       - supports-color
       - typescript
     optional: true
+
+  expo-crypto@55.0.10(expo@55.0.5):
+    dependencies:
+      expo: 55.0.5(@babel/core@7.28.6)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.7)(react-dom@19.2.0(react@19.2.0))(react-native-webview@13.16.0(react-native@0.83.2(@babel/core@7.28.6)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.28.6)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
 
   expo-dev-client@55.0.18(expo@55.0.5)(typescript@5.9.3):
     dependencies:
