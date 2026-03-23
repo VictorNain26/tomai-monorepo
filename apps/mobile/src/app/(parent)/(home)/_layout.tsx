@@ -13,7 +13,6 @@ export default function HomeLayout() {
   return (
     <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="add-child" options={{ title: 'Nouvel enfant' }} />
       <Stack.Screen name="child" />
       <Stack.Screen name="pronote-connect" />
     </Stack>

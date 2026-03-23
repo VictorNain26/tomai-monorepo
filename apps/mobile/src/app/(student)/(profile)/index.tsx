@@ -24,7 +24,6 @@ import {
   School,
   UserCircle,
   FolderOpen,
-  Link2,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
@@ -68,12 +67,6 @@ export default function StudentProfileScreen() {
   const colors = useThemeColors();
   const { usage, isLoadingUsage } = useStudentDashboard();
   const pronote = usePronote(user?.id ?? '');
-
-  // Age gating: students in seconde/premiere/terminale (typically >= 15) can self-connect
-  const LYCEE_LEVELS = ['seconde', 'premiere', 'terminale'];
-  const canSelfConnect = user?.schoolLevel
-    ? LYCEE_LEVELS.includes(user.schoolLevel)
-    : false;
 
   // Check if parent session is available (launched from parent account)
   const [hasParentBackup, setHasParentBackup] = useState(false);
@@ -150,22 +143,7 @@ export default function StudentProfileScreen() {
             ],
           },
         ]
-      : canSelfConnect
-        ? [
-            {
-              title: 'Pronote',
-              items: [
-                {
-                  icon: <Link2 color={colors.primary} size={20} />,
-                  label: 'Connecter Pronote',
-                  sublabel: 'Scanne le QR code depuis Pronote',
-                  onPress: () => router.push('/(student)/(profile)/pronote-connect' as never),
-                  showChevron: true,
-                },
-              ],
-            },
-          ]
-        : []),
+      : []),
 
     // Account section
     {

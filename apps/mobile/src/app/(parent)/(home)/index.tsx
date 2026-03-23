@@ -9,7 +9,7 @@ import { useCallback, useMemo } from 'react';
 import { View, ScrollView } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
-import { Plus, Users } from 'lucide-react-native';
+import { Users } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -68,10 +68,6 @@ export default function ParentDashboard() {
     return data;
   }, [children, pronote.resourceMappings, pronote.grades, pronote.homework]);
 
-  const handleAddChild = useCallback(() => {
-    router.push('/(parent)/(home)/add-child');
-  }, [router]);
-
   const handleViewDetail = useCallback(
     (child: IChild) => {
       router.push(`/(parent)/(home)/child/${child.id}`);
@@ -107,11 +103,11 @@ export default function ParentDashboard() {
             <Users color={colors.foreground} size={40} style={{ opacity: 0.4 }} />
           </View>
           <Text variant="large" className="mb-2 text-center">
-            Commencez par ajouter votre premier enfant
+            Connectez Pronote pour ajouter vos enfants
           </Text>
-          <Button onPress={handleAddChild} className="mt-4">
+          <Button onPress={() => router.push('/(parent)/(home)/pronote-connect')} className="mt-4">
             <Text className="font-medium text-white dark:text-stone-900">
-              Ajouter un enfant
+              Connecter Pronote
             </Text>
           </Button>
         </View>
@@ -129,14 +125,6 @@ export default function ParentDashboard() {
             {children.length} enfant{children.length > 1 ? 's' : ''}
           </Text>
         </View>
-        <Button
-          variant="ghost"
-          size="icon"
-          onPress={handleAddChild}
-          accessibilityLabel="Ajouter un enfant"
-        >
-          <Plus color={colors.primary} size={22} />
-        </Button>
       </View>
 
       {/* Child cards list */}

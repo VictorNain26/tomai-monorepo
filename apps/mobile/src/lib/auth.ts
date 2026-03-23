@@ -15,8 +15,7 @@
 
 import { createAuthClient } from 'better-auth/react';
 import { expoClient } from '@better-auth/expo/client';
-import { passkeyClient } from '@better-auth/passkey/client';
-import { usernameClient, adminClient } from 'better-auth/client/plugins';
+import { adminClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
 import { getTreaty, unwrap } from '@repo/api';
 import {
@@ -62,7 +61,6 @@ interface ImpersonatedSession {
  *
  * Plugins:
  * - expoClient: Secure storage + deep links for mobile
- * - usernameClient: Username login for students
  * - adminClient: Quick Switch impersonation (parent → child)
  */
 export const authClient = createAuthClient({
@@ -73,9 +71,7 @@ export const authClient = createAuthClient({
       storagePrefix: 'tomia',
       storage: SecureStore,
     }),
-    usernameClient(), // Username login for students
-    adminClient(),    // Quick Switch: impersonation for parents
-    passkeyClient(), // Biometric authentication (WebAuthn/passkeys)
+    adminClient(), // Quick Switch: impersonation for parents
   ],
 });
 
@@ -124,13 +120,6 @@ export function useImpersonatedBy(): string | null {
  */
 export async function signIn(email: string, password: string) {
   return authClient.signIn.email({ email, password });
-}
-
-/**
- * Connexion avec username/password (élèves).
- */
-export async function signInWithUsername(username: string, password: string) {
-  return authClient.signIn.username({ username, password });
 }
 
 /**
