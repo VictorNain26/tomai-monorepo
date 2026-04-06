@@ -172,11 +172,22 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
 
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+    },
+  },
+
   socialProviders: env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? {
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
-      // Better Auth gère automatiquement les callbacks
+      prompt: "select_account",
+      mapProfileToUser: (profile) => ({
+        firstName: profile.given_name ?? null,
+        lastName: profile.family_name ?? null,
+      }),
     },
   } : {},
 
