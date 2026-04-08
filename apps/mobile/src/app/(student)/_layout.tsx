@@ -13,13 +13,12 @@
  * Quick Switch: Shows "Return to Parent" banner when in impersonation mode.
  */
 
-import { Suspense, useEffect, useState, useCallback } from 'react';
-import { View, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, TouchableOpacity } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, MessageCircle, BookOpen, User, ArrowLeft } from 'lucide-react-native';
-import { useSession, useUser, useImpersonatedBy, restoreParentSession } from '@/lib/auth';
-import { AppProviders } from '@/components/providers';
+import { useSession, useImpersonatedBy, restoreParentSession } from '@/lib/auth';
 import { useThemeColors, useDueSummary } from '@/hooks';
 import { useTabScreenOptions, useTabBarConfig } from '@/lib/navigation';
 import { Text } from '@/components/ui/text';
@@ -31,8 +30,7 @@ export default function StudentLayout() {
   const router = useRouter();
   const toast = useToast();
   const { confirm } = useConfirm();
-  const { data: session, isPending, refetch: refetchSession } = useSession();
-  const user = useUser();
+  const { data: session, refetch: refetchSession } = useSession();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
 
@@ -79,37 +77,10 @@ export default function StudentLayout() {
     void setupPushNotifications();
   }, [session?.user, isImpersonating]);
 
-  useEffect(() => {
-    if (isPending) return;
-
-    if (!session?.user) {
-      router.replace('/(auth)/login');
-    } else if (user?.role !== 'student') {
-      // Don't redirect if impersonating - parent viewing as student
-      if (!isImpersonating) {
-        router.replace('/(parent)/');
-      }
-    }
-  }, [isPending, session, user, router, isImpersonating]);
-
-  // Show loading while checking auth
-  if (isPending || !session?.user || user?.role !== 'student') {
-    return (
-      <View className="flex-1 items-center justify-center bg-background dark:bg-stone-900">
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
+  // Auth guards handled by Stack.Protected in root _layout.tsx
+  // No useEffect redirects needed here
 
   return (
-    <AppProviders>
-      <Suspense
-        fallback={
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        }
-      >
       <View className="flex-1">
         {/* Quick Switch Banner - shown when parent is viewing as child */}
         {isImpersonating && (
@@ -180,7 +151,5 @@ export default function StudentLayout() {
           />
         </Tabs>
       </View>
-      </Suspense>
-    </AppProviders>
   );
 }

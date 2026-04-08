@@ -13,7 +13,7 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { CardCompact, CardCompactContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useIconColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors, shadows } from '@/lib/styles';
 
 // ============================================================================
@@ -98,7 +98,7 @@ export function GradesRecentCard({
   onViewAll,
 }: GradesRecentCardProps) {
   const router = useRouter();
-  const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   const recentGrades = grades
     .sort((a, b) => b.date.getTime() - a.date.getTime())
@@ -148,7 +148,7 @@ export function GradesRecentCard({
             className="h-10 w-10 items-center justify-center rounded-lg"
             style={{ backgroundColor: bgColors.primary[10] }}
           >
-            <BarChart3 color={iconColors.primary} size={20} />
+            <BarChart3 color={colors.primary} size={20} />
           </View>
           <View>
             <Text variant="large">Notes</Text>
@@ -161,7 +161,7 @@ export function GradesRecentCard({
 
   // Trend icon
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
-  const trendColor = trend === 'up' ? iconColors.success : trend === 'down' ? iconColors.destructive : iconColors.muted;
+  const trendColor = trend === 'up' ? colors.success : trend === 'down' ? colors.destructive : colors.muted;
 
   return (
     <View style={shadows.sm} className="rounded-xl bg-white dark:bg-stone-800">
@@ -172,7 +172,7 @@ export function GradesRecentCard({
             className="h-10 w-10 items-center justify-center rounded-lg"
             style={{ backgroundColor: bgColors.primary[10] }}
           >
-            <BarChart3 color={iconColors.primary} size={20} />
+            <BarChart3 color={colors.primary} size={20} />
           </View>
           <View>
             <Text variant="large">Notes récentes</Text>
@@ -196,7 +196,7 @@ export function GradesRecentCard({
             <Text variant="small" className="text-blue-600 dark:text-blue-400">
               Tout voir
             </Text>
-            <ChevronRight color={iconColors.primary} size={16} />
+            <ChevronRight color={colors.primary} size={16} />
           </TouchableOpacity>
         )}
       </View>

@@ -40,14 +40,6 @@ export function containsMermaid(text: string): boolean {
   return /```mermaid[\s\S]*?```/.test(text);
 }
 
-/**
- * Extract Mermaid code from markdown code block
- */
-export function extractMermaidCode(text: string): string {
-  const match = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
-  return match?.[1]?.trim() ?? '';
-}
-
 // ============================================================================
 // HTML GENERATOR
 // ============================================================================

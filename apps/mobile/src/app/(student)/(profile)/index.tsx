@@ -24,7 +24,6 @@ import {
   School,
   UserCircle,
   FolderOpen,
-  Link2,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
@@ -33,7 +32,7 @@ import { useToast } from '@/components/ui/toast';
 import { TokenUsageCard } from '@/components/dashboard';
 import { useUser, useSession, signOut, hasParentSessionBackup, restoreParentSession } from '@/lib/auth';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { useStudentDashboard, usePronote, useIconColors, useThemeColors } from '@/hooks';
+import { useStudentDashboard, usePronote, useThemeColors } from '@/hooks';
 import { bgColors, borderColors, shadows } from '@/lib/styles';
 import { useEffect, useState } from 'react';
 
@@ -65,16 +64,9 @@ export default function StudentProfileScreen() {
   const user = useUser();
   const { refetch: refetchSession } = useSession();
   const { confirm, info } = useConfirm();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { usage, isLoadingUsage } = useStudentDashboard();
   const pronote = usePronote(user?.id ?? '');
-
-  // Age gating: students in seconde/premiere/terminale (typically >= 15) can self-connect
-  const LYCEE_LEVELS = ['seconde', 'premiere', 'terminale'];
-  const canSelfConnect = user?.schoolLevel
-    ? LYCEE_LEVELS.includes(user.schoolLevel)
-    : false;
 
   // Check if parent session is available (launched from parent account)
   const [hasParentBackup, setHasParentBackup] = useState(false);
@@ -127,14 +119,14 @@ export default function StudentProfileScreen() {
             title: 'Pronote',
             items: [
               {
-                icon: <FileText color={iconColors.primary} size={20} />,
+                icon: <FileText color={colors.primary} size={20} />,
                 label: 'Devoirs',
                 sublabel: `${pronote.upcomingHomework} en attente`,
                 onPress: () => router.push('/(student)/(profile)/pronote/homework'),
                 showChevron: true,
               },
               {
-                icon: <BarChart3 color={iconColors.primary} size={20} />,
+                icon: <BarChart3 color={colors.primary} size={20} />,
                 label: 'Notes',
                 sublabel: pronote.averageGrade
                   ? `Moyenne: ${pronote.averageGrade.toFixed(1)}/20`
@@ -143,7 +135,7 @@ export default function StudentProfileScreen() {
                 showChevron: true,
               },
               {
-                icon: <Calendar color={iconColors.primary} size={20} />,
+                icon: <Calendar color={colors.primary} size={20} />,
                 label: 'Emploi du temps',
                 onPress: () => router.push('/(student)/(profile)/pronote/timetable'),
                 showChevron: true,
@@ -151,35 +143,20 @@ export default function StudentProfileScreen() {
             ],
           },
         ]
-      : canSelfConnect
-        ? [
-            {
-              title: 'Pronote',
-              items: [
-                {
-                  icon: <Link2 color={iconColors.primary} size={20} />,
-                  label: 'Connecter Pronote',
-                  sublabel: 'Scanne le QR code depuis Pronote',
-                  onPress: () => router.push('/(student)/(profile)/pronote-connect' as never),
-                  showChevron: true,
-                },
-              ],
-            },
-          ]
-        : []),
+      : []),
 
     // Account section
     {
       title: 'Compte',
       items: [
         {
-          icon: <User color={iconColors.foreground} size={20} />,
+          icon: <User color={colors.foreground} size={20} />,
           label: 'Mon profil',
           onPress: () => router.push('/(student)/(profile)/info'),
           showChevron: true,
         },
         {
-          icon: <FolderOpen color={iconColors.foreground} size={20} />,
+          icon: <FolderOpen color={colors.foreground} size={20} />,
           label: 'Mon Classeur',
           sublabel: 'Documents et fichiers',
           onPress: () => router.push('/(student)/(profile)/files'),
@@ -193,13 +170,13 @@ export default function StudentProfileScreen() {
       title: 'Support',
       items: [
         {
-          icon: <Settings color={iconColors.foreground} size={20} />,
+          icon: <Settings color={colors.foreground} size={20} />,
           label: 'Paramètres',
           onPress: () => router.push('/(student)/(profile)/settings'),
           showChevron: true,
         },
         {
-          icon: <HelpCircle color={iconColors.foreground} size={20} />,
+          icon: <HelpCircle color={colors.foreground} size={20} />,
           label: 'Aide et support',
           sublabel: 'Bientôt disponible',
           onPress: () => info('Aide', 'Pour toute question, contacte-nous à support@tomai.fr'),
@@ -234,7 +211,7 @@ export default function StudentProfileScreen() {
               <Text variant="large">{user?.name ?? 'Élève'}</Text>
               {pronote.isConnected && pronote.resources[0]?.className && (
                 <View className="mt-1 flex-row items-center gap-1">
-                  <School color={iconColors.muted} size={14} />
+                  <School color={colors.muted} size={14} />
                   <Text variant="muted">{pronote.resources[0].className}</Text>
                 </View>
               )}
@@ -243,7 +220,7 @@ export default function StudentProfileScreen() {
               className="flex-row items-center gap-1 rounded-full px-2.5 py-1"
               style={{ backgroundColor: bgColors.primary[10] }}
             >
-              <Crown color={iconColors.primary} size={14} />
+              <Crown color={colors.primary} size={14} />
               <Text variant="tiny" className="font-medium" style={{ color: colors.primary }}>
                 Gratuit
               </Text>
@@ -283,7 +260,7 @@ export default function StudentProfileScreen() {
                   </View>
                   {item.rightElement ?? (
                     item.showChevron && (
-                      <ChevronRight color={iconColors.muted} size={20} />
+                      <ChevronRight color={colors.muted} size={20} />
                     )
                   )}
                 </TouchableOpacity>

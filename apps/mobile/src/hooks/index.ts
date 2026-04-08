@@ -66,10 +66,6 @@ export {
   type ChildWeeklyUsage,
 } from './useChildTokenUsage';
 export {
-  useIconColors,
-  type IconColors,
-} from './useIconColors';
-export {
   useThemeColors,
   type ThemeColors,
 } from './useThemeColors';

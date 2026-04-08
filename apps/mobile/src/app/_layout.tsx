@@ -1,7 +1,7 @@
 import '../global.css';
 
 import { useEffect, useRef, useState } from 'react';
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -28,6 +28,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { ThemeProvider, RevenueCatProvider } from '@/components/providers';
 import { ToastProvider } from '@/components/ui/toast';
 import { ConfirmDialogProvider } from '@/components/ui/confirm-dialog';
+import { useSession, useUser } from '@/lib/auth';
 
 // Start dev debug server (port 8347) for remote error access
 startDevLogServer();
@@ -36,26 +37,21 @@ startDevLogServer();
 SplashScreen.preventAutoHideAsync();
 
 /**
- * Root Layout - Expo Router Best Practice 2026
+ * Root Layout - Expo Router SDK 55 Best Practice
  *
- * Provider order (outside to inside):
- * 1. GestureHandlerRootView (native)
- * 2. SafeAreaProvider (native)
- * 3. KeyboardProvider (native - keyboard controller)
- * 4. PersistQueryClientProvider (React context)
- * 5. ThemeProvider (React context)
- * 6. RevenueCatProvider (React context)
- * 7. ToastProvider (global — inline styles, no NativeWind dependency)
- * 8. Slot (expo-router — initializes NavigationContainer)
+ * Auth routing uses Stack.Protected (SDK 53+ pattern):
+ * - No useEffect redirects, no race conditions
+ * - Routes are declaratively guarded by session state
+ * - History is auto-cleaned when guard changes
  *
- * NativeWind className must NOT be used before Slot (css-interop needs NavigationContainer).
- * ToastProvider uses inline styles only, so it can safely live above Slot.
+ * @see https://docs.expo.dev/router/advanced/protected/
+ * @see https://docs.expo.dev/router/advanced/authentication/
  */
 function RootLayout() {
   const apiInitialized = useRef(false);
   const [isReady, setIsReady] = useState(false);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontsError] = useFonts({
     NunitoSans_400Regular,
     NunitoSans_500Medium,
     NunitoSans_600SemiBold,
@@ -84,12 +80,12 @@ function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && isReady) {
+    if ((fontsLoaded || fontsError) && isReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, isReady]);
+  }, [fontsLoaded, fontsError, isReady]);
 
-  if (!fontsLoaded || !isReady) {
+  if ((!fontsLoaded && !fontsError) || !isReady) {
     return null;
   }
 
@@ -108,7 +104,7 @@ function RootLayout() {
               <RevenueCatProvider>
                 <ToastProvider>
                   <ConfirmDialogProvider>
-                    <Slot />
+                    <RootNavigator />
                     <StatusBar style="auto" />
                     <PortalHost />
                   </ConfirmDialogProvider>
@@ -119,6 +115,39 @@ function RootLayout() {
         </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+/**
+ * Root Navigator - Stack.Protected auth guards
+ *
+ * Replaces the old index.tsx useEffect redirect pattern.
+ * Expo Router auto-redirects to the first available screen
+ * when a guard changes from true to false.
+ */
+function RootNavigator() {
+  const { data: session, isPending } = useSession();
+  const user = useUser();
+
+  const isLoggedIn = !isPending && !!session?.user;
+  const isParent = isLoggedIn && user?.role === 'parent';
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={!isLoggedIn}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={isLoggedIn}>
+        <Stack.Protected guard={!isParent}>
+          <Stack.Screen name="(student)" />
+        </Stack.Protected>
+
+        <Stack.Protected guard={isParent}>
+          <Stack.Screen name="(parent)" />
+        </Stack.Protected>
+      </Stack.Protected>
+    </Stack>
   );
 }
 

@@ -4,11 +4,11 @@
  * Parent registration screen with progressive password validation.
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Pressable } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import { Check, Circle } from 'lucide-react-native';
-import { signUp, signInWithGoogle, useSession } from '@/lib/auth';
+import { signUp, signInWithGoogle } from '@/lib/auth';
 
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
@@ -37,21 +37,13 @@ function PasswordCriterion({ met, label }: { met: boolean; label: string }) {
 }
 
 export default function RegisterScreen() {
-  const router = useRouter();
-  const { data: session } = useSession();
+  // Auth redirect handled by Stack.Protected in root _layout.tsx
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Redirect when session becomes available (handles OAuth callback)
-  useEffect(() => {
-    if (session?.user) {
-      router.replace('/');
-    }
-  }, [session, router]);
 
   async function handleGoogleRegister() {
     setIsLoading(true);
@@ -118,8 +110,7 @@ export default function RegisterScreen() {
         return;
       }
 
-      // Registration successful - redirect to home which handles role-based routing
-      router.replace('/');
+      // Stack.Protected auto-redirects when session becomes available
     } catch (err) {
       console.error('[Register] Registration failed:', err);
       setError("Erreur lors de l'inscription. Veuillez réessayer.");

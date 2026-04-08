@@ -11,9 +11,8 @@
 import { useCallback } from 'react';
 import { eq } from 'drizzle-orm';
 import { getDatabase } from '@/db/client';
-import { chatMessages, chatSessions } from '@/db/schema';
+import { chatMessages } from '@/db/schema';
 import type { ChatMessage } from './chat/types';
-import type { Conversation } from './chat/types';
 
 export function useOfflineCache() {
   /**
@@ -77,35 +76,8 @@ export function useOfflineCache() {
     }
   }, []);
 
-  /**
-   * Cache conversations list from server into SQLite.
-   */
-  const cacheConversations = useCallback(async (conversations: Conversation[]) => {
-    try {
-      const db = getDatabase();
-
-      // Clear existing cache
-      await db.delete(chatSessions);
-
-      if (conversations.length === 0) return;
-
-      await db.insert(chatSessions).values(
-        conversations.map(c => ({
-          id: c.id,
-          subject: c.subject,
-          status: c.status,
-          createdAt: new Date(c.startedAt),
-          updatedAt: new Date(c.lastActivityAt),
-        })),
-      );
-    } catch (err) {
-      console.warn('[OfflineCache] Failed to cache conversations:', err);
-    }
-  }, []);
-
   return {
     cacheMessages,
     getCachedMessages,
-    cacheConversations,
   };
 }

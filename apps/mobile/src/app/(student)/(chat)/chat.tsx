@@ -16,7 +16,7 @@
  */
 
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { View, FlatList, TouchableOpacity } from 'react-native';
+import { View, FlatList, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -28,7 +28,6 @@ import { TomAvatar, SubjectIcon } from '@/components/common';
 import {
   useChat,
   usePresignedUpload,
-  useIconColors,
   usePronote,
   useSessionFiles,
   useThemeColors,
@@ -74,7 +73,6 @@ export default function ChatScreen() {
   const queryClient = useQueryClient();
   const { confirm, info } = useConfirm();
   const params = useLocalSearchParams<Record<string, string>>();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   // Parse context from params
   const contextInfo = useMemo(() => parseContext(params.context), [params.context]);
@@ -313,7 +311,7 @@ export default function ChatScreen() {
       {/* KeyboardAvoidingView wraps messages + input */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior="padding"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Messages or Welcome */}
         {messages.length === 0 ? (
@@ -328,9 +326,9 @@ export default function ChatScreen() {
 
             {suggestions.length > 0 && (
               <View className="mt-6 w-full gap-2">
-                {suggestions.map((s, i) => (
+                {suggestions.map((s) => (
                   <TouchableOpacity
-                    key={i}
+                    key={s.prompt}
                     onPress={() => sendMessage(s.prompt)}
                     className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-3"
                     activeOpacity={0.7}
@@ -340,7 +338,7 @@ export default function ChatScreen() {
                   >
                     <SubjectIcon subject={s.subject} size={20} />
                     <Text className="flex-1">{s.label}</Text>
-                    <ChevronRight color={iconColors.muted} size={16} />
+                    <ChevronRight color={colors.muted} size={16} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -360,6 +358,10 @@ export default function ChatScreen() {
               keyboardShouldPersistTaps="handled"
               onScroll={handleScroll}
               scrollEventThrottle={100}
+              initialNumToRender={15}
+              maxToRenderPerBatch={10}
+              windowSize={10}
+              removeClippedSubviews={Platform.OS === 'android'}
             />
 
             {/* Scroll to bottom FAB */}
@@ -370,7 +372,7 @@ export default function ChatScreen() {
                 style={{ elevation: 3 }}
                 accessibilityLabel="Retour en bas"
               >
-                <ChevronDown color={iconColors.foreground} size={20} />
+                <ChevronDown color={colors.foreground} size={20} />
               </TouchableOpacity>
             )}
           </View>

@@ -15,7 +15,7 @@ import { View } from 'react-native';
 import { Zap, Crown, RefreshCw, AlertTriangle } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Progress } from '@/components/ui/progress';
-import { useIconColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { cn } from '@/lib/utils';
 import type { TokenUsage } from '@/hooks/useStudentDashboard';
 import { bgColors } from '@/lib/styles';
@@ -26,7 +26,7 @@ interface TokenUsageCardProps {
 }
 
 export const TokenUsageCard = memo(function TokenUsageCard({ usage, isLoading = false }: TokenUsageCardProps) {
-  const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   if (isLoading) {
     return (
@@ -88,9 +88,9 @@ export const TokenUsageCard = memo(function TokenUsageCard({ usage, isLoading = 
             style={{ backgroundColor: isPremium ? bgColors.warning[10] : bgColors.primary[10] }}
           >
             {isPremium ? (
-              <Crown color={iconColors.warning} size={18} />
+              <Crown color={colors.warning} size={18} />
             ) : (
-              <Zap color={iconColors.foreground} size={18} />
+              <Zap color={colors.foreground} size={18} />
             )}
           </View>
           <View>
@@ -102,7 +102,7 @@ export const TokenUsageCard = memo(function TokenUsageCard({ usage, isLoading = 
         </View>
 
         <View className="flex-row items-center gap-1">
-          <RefreshCw color={iconColors.muted} size={12} />
+          <RefreshCw color={colors.muted} size={12} />
           <Text variant="muted" className="text-xs">
             {windowUsage.refreshIn}
           </Text>
@@ -137,7 +137,7 @@ export const TokenUsageCard = memo(function TokenUsageCard({ usage, isLoading = 
       {/* Warning messages */}
       {isExhausted && (
         <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
-          <AlertTriangle color={iconColors.destructive} size={14} />
+          <AlertTriangle color={colors.destructive} size={14} />
           <Text className="text-xs text-red-600 dark:text-red-400">
             Limite atteinte • Recharge dans {windowUsage.refreshIn}
           </Text>
@@ -145,7 +145,7 @@ export const TokenUsageCard = memo(function TokenUsageCard({ usage, isLoading = 
       )}
       {isNearLimit && !isExhausted && (
         <View className="mt-3 flex-row items-center justify-center gap-2 rounded-lg p-2" style={{ backgroundColor: bgColors.destructive[10] }}>
-          <AlertTriangle color={iconColors.destructive} size={14} />
+          <AlertTriangle color={colors.destructive} size={14} />
           <Text className="text-xs text-red-600 dark:text-red-400">
             Presque epuise • Economise tes tokens !
           </Text>

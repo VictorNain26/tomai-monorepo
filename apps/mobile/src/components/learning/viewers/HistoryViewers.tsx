@@ -100,7 +100,7 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
               const event = content.events[originalIndex];
               return (
                 <TouchableOpacity
-                  key={position}
+                  key={`${position}-${originalIndex}`}
                   onPress={() => handleRemove(position)}
                   className="flex-row items-center gap-3 rounded-lg border border-blue-600 dark:border-blue-400 p-3"
                   style={{ backgroundColor: bgColors.primary[10] }}
@@ -184,7 +184,7 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
       <View className="mb-4 flex-row flex-wrap gap-2">
         {content.eras.map((era, index) => (
           <TouchableOpacity
-            key={index}
+            key={era}
             onPress={() => handleEraPress(index)}
             disabled={validated || selectedItem === null}
             className={`rounded-lg border p-2 ${
@@ -204,7 +204,7 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
 
           return (
             <TouchableOpacity
-              key={index}
+              key={`${index}-${item}`}
               onPress={() => handleItemPress(index)}
               disabled={validated || assignedEra !== undefined}
               className={`flex-row items-center justify-between rounded-lg border p-3 ${
@@ -282,7 +282,7 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
 
           return (
             <TouchableOpacity
-              key={index}
+              key={`${index}-${effect}`}
               onPress={() => !validated && setSelected(index)}
               disabled={validated}
               className={`rounded-lg border p-3 ${bgClass}`}

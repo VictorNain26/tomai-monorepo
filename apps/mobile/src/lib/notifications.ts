@@ -126,7 +126,6 @@ async function savePushTokenToBackend(token: string): Promise<boolean> {
 export async function setupPushNotifications(): Promise<boolean> {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
       shouldShowBanner: true,

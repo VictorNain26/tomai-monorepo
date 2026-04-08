@@ -9,7 +9,7 @@ import { KeyRound, School, Check, X } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useIconColors, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors, borderColors } from '@/lib/styles';
 
 interface PronotePinEntryProps {
@@ -31,7 +31,6 @@ export function PronotePinEntry({
   error,
   isPending,
 }: PronotePinEntryProps) {
-  const iconColors = useIconColors();
   const colors = useThemeColors();
 
   return (
@@ -72,7 +71,7 @@ export function PronotePinEntry({
           style={{ backgroundColor: bgColors.muted[30] }}
           accessibilityLabel="Rescanner le QR code"
         >
-          <X color={iconColors.foreground} size={16} />
+          <X color={colors.foreground} size={16} />
         </TouchableOpacity>
       </View>
 

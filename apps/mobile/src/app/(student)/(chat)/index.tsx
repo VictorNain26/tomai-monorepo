@@ -9,13 +9,13 @@ import { useCallback } from 'react';
 import { View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { Plus, MessageCircle, Trash2 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { SubjectIcon } from '@/components/common/SubjectIcon';
-import { useConversations, useIconColors, useThemeColors, type Conversation } from '@/hooks';
+import { useConversations, useThemeColors, type Conversation } from '@/hooks';
 import { shadows } from '@/lib/styles';
 
 function formatRelativeDate(isoDate: string): string {
@@ -38,13 +38,12 @@ function ConversationItem({
   conversation,
   onPress,
   onDelete,
-  iconColors,
 }: {
   conversation: Conversation;
   onPress: () => void;
   onDelete: () => void;
-  iconColors: ReturnType<typeof useIconColors>;
 }) {
+  const colors = useThemeColors();
   const title = conversation.title ?? 'Nouvelle conversation';
 
   return (
@@ -94,7 +93,7 @@ function ConversationItem({
           hitSlop={12}
           className="mt-1 rounded-lg p-2"
         >
-          <Trash2 size={16} color={iconColors.muted} />
+          <Trash2 size={16} color={colors.muted} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -105,7 +104,6 @@ export default function ConversationsScreen() {
   const router = useRouter();
   const { confirm } = useConfirm();
   const colors = useThemeColors();
-  const iconColors = useIconColors();
   const {
     conversations,
     isLoading,
@@ -158,10 +156,9 @@ export default function ConversationsScreen() {
         conversation={item}
         onPress={() => handleOpenConversation(item.id)}
         onDelete={() => handleDelete(item)}
-        iconColors={iconColors}
       />
     ),
-    [handleOpenConversation, handleDelete, iconColors],
+    [handleOpenConversation, handleDelete],
   );
 
   return (
@@ -180,7 +177,7 @@ export default function ConversationsScreen() {
         </View>
       ) : conversations.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
-          <MessageCircle size={48} color={iconColors.muted} />
+          <MessageCircle size={48} color={colors.muted} />
           <Text className="mt-4 text-center text-lg font-medium text-foreground">
             Aucune conversation
           </Text>
@@ -198,6 +195,10 @@ export default function ConversationsScreen() {
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
           }
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          removeClippedSubviews
         />
       )}
 

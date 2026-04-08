@@ -57,7 +57,9 @@ export function useChat({
   // Refs for stable values
   const sessionIdRef = useRef<string | null>(initialSessionId ?? null);
   const pendingAttachmentsRef = useRef<ChatFileAttachment[]>([]);
-  const historySyncedRef = useRef<string | null>(null);
+
+  // Track which session has been synced (state for render-time conditional, not ref)
+  const [syncedSessionId, setSyncedSessionId] = useState<string | null>(null);
 
   // Retry: store last request for replay on failure
   const lastRequestRef = useRef<{ content: string; attachments: ChatFileAttachment[] } | null>(null);
@@ -69,7 +71,7 @@ export function useChat({
   const { isOnline } = useNetworkStatus();
   const { cacheMessages, getCachedMessages } = useOfflineCache();
 
-  // Keep refs in sync
+  // Keep ref in sync with state for use in callbacks
   useEffect(() => {
     pendingAttachmentsRef.current = pendingAttachments;
   }, [pendingAttachments]);
@@ -92,7 +94,7 @@ export function useChat({
       });
     },
     onDeckCreated: () => {
-      queryClient.invalidateQueries({ queryKey: ['decks'] });
+      queryClient.invalidateQueries({ queryKey: ['learning', 'decks'] });
     },
     onSessionChanged: (newSessionId) => {
       queryClient.setQueryData(chatQueryKeys.session(), newSessionId);
@@ -119,44 +121,50 @@ export function useChat({
     enabled: !!currentSessionId,
   });
 
-  // Load cached messages immediately while server fetch is in progress
+  // Load cached messages while waiting for server (offline-first)
   useEffect(() => {
     if (!currentSessionId) return;
-    if (historySyncedRef.current === currentSessionId) return;
+    if (syncedSessionId === currentSessionId) return;
+    if (historyQuery.data) return; // Server data available, no need for cache
 
     getCachedMessages(currentSessionId).then(cached => {
-      if (cached && cached.length > 0 && historySyncedRef.current !== currentSessionId) {
-        setMessages(cached);
+      if (cached && cached.length > 0) {
+        setMessages(prev => prev.length === 0 ? cached : prev);
       }
     });
-  }, [currentSessionId, getCachedMessages]);
+  }, [currentSessionId, syncedSessionId, historyQuery.data, getCachedMessages]);
 
-  // Sync server history into local state (one-time per session)
-  // Note: setState in effect is intentional — history is fetched once per session
-  // and merged into local messages state which is then mutated by streaming.
-  useEffect(() => {
-    if (!historyQuery.data) return;
-    if (historySyncedRef.current === currentSessionId) return;
-    if (historyQuery.data.messages.length === 0) return;
-
-    historySyncedRef.current = currentSessionId;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time sync of server history into local streaming state
-    setMessages(historyQuery.data.messages);
-
-    // Cache messages in SQLite for offline access
-    if (currentSessionId) {
-      cacheMessages(currentSessionId, historyQuery.data.messages);
-    }
-
-    // Detect orphan message: last user message had no assistant reply (server crash recovery)
-    if (historyQuery.data.hasOrphanMessage) {
-      const lastMsg = historyQuery.data.messages[historyQuery.data.messages.length - 1];
-      if (lastMsg) {
-        lastRequestRef.current = { content: lastMsg.content, attachments: [] };
+  // React 19 "storing information from previous renders" pattern:
+  // Sync server history into local state during render (not in useEffect).
+  // This avoids the set-state-in-effect anti-pattern while ensuring
+  // messages are available on the first render after data arrives.
+  if (
+    historyQuery.data &&
+    syncedSessionId !== currentSessionId &&
+    currentSessionId
+  ) {
+    setSyncedSessionId(currentSessionId);
+    if (historyQuery.data.messages.length > 0) {
+      setMessages(historyQuery.data.messages);
+      if (historyQuery.data.hasOrphanMessage) {
         setError('La réponse précédente a été interrompue. Appuie sur Réessayer.');
       }
     }
-  }, [historyQuery.data, currentSessionId, cacheMessages]);
+  }
+
+  // Side effects after history sync (SQLite caching, retry ref update)
+  useEffect(() => {
+    if (!syncedSessionId || !historyQuery.data) return;
+
+    cacheMessages(syncedSessionId, historyQuery.data.messages);
+
+    if (historyQuery.data.hasOrphanMessage) {
+      const lastMsg = historyQuery.data.messages.at(-1);
+      if (lastMsg) {
+        lastRequestRef.current = { content: lastMsg.content, attachments: [] };
+      }
+    }
+  }, [syncedSessionId, historyQuery.data, cacheMessages]);
 
   // Cleanup on unmount
   useEffect(() => cleanup, [cleanup]);
@@ -235,10 +243,8 @@ export function useChat({
     executeSend(last.content, last.attachments, false);
   }, [executeSend]);
 
-  // Stop streaming
-  const stop = useCallback(() => {
-    stopStream();
-  }, [stopStream]);
+  // Stop streaming (stopStream is already stable via useCallback in useStreamManager)
+  const stop = stopStream;
 
   // Attachment management
   const addAttachment = useCallback((attachment: ChatFileAttachment) => {
@@ -264,7 +270,7 @@ export function useChat({
     try {
       const data = await resetChatSession(sessionIdRef.current);
       sessionIdRef.current = data.sessionId;
-      historySyncedRef.current = null;
+      setSyncedSessionId(null);
       lastRequestRef.current = null;
       setMessages([]);
       setError(null);

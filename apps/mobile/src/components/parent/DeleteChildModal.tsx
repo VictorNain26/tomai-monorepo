@@ -22,7 +22,7 @@ import { X, AlertTriangle, Trash2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useIconColors } from '@/hooks/useIconColors';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { bgColors } from '@/lib/styles';
 
 // ============================================================================
@@ -51,7 +51,7 @@ export function DeleteChildModal({
   isDeleting,
 }: DeleteChildModalProps) {
   const [confirmText, setConfirmText] = useState('');
-  const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   // Must type the child's first name exactly to confirm
   const isConfirmValid = confirmText.toLowerCase() === childName.toLowerCase();
@@ -85,7 +85,7 @@ export function DeleteChildModal({
               <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 p-4">
                 <View className="flex-row items-center gap-3">
                   <View className="h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.destructive[10] }}>
-                    <AlertTriangle color={iconColors.destructive} size={20} />
+                    <AlertTriangle color={colors.destructive} size={20} />
                   </View>
                   <Text className="text-lg font-semibold">
                     Supprimer le compte
@@ -96,7 +96,7 @@ export function DeleteChildModal({
                   disabled={isDeleting}
                   className="p-2"
                 >
-                  <X color={iconColors.muted} size={20} />
+                  <X color={colors.muted} size={20} />
                 </TouchableOpacity>
               </View>
 

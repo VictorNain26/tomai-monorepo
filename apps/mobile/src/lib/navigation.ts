@@ -92,7 +92,6 @@ export function useSwipeableTabConfig(): MaterialTopTabNavigationOptions {
 
   return useMemo(
     () => ({
-      tabBarPosition: 'bottom' as const,
       tabBarShowIcon: true,
       tabBarShowLabel: false,
       tabBarActiveTintColor: colors.primary,

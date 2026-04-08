@@ -94,7 +94,7 @@ export function MatchingViewer({ content }: { content: MatchingContent }) {
 
             return (
               <TouchableOpacity
-                key={`left-${index}`}
+                key={`left-${pair.left}`}
                 onPress={() => handleLeftPress(index)}
                 disabled={validated || isMatched}
                 className={`rounded-lg border p-3 ${
@@ -118,7 +118,7 @@ export function MatchingViewer({ content }: { content: MatchingContent }) {
 
             return (
               <TouchableOpacity
-                key={`right-${index}`}
+                key={`right-${pair.right}`}
                 onPress={() => handleRightPress(index)}
                 disabled={validated || isUsed || selectedLeft === null}
                 className={`rounded-lg border p-3 ${
@@ -190,7 +190,7 @@ export function FillBlankViewer({ content }: { content: FillBlankContent }) {
 
           return (
             <TouchableOpacity
-              key={index}
+              key={`${index}-${option}`}
               onPress={() => !validated && setSelected(index)}
               disabled={validated}
               className={`rounded-lg border p-3 ${bgClass}`}
@@ -261,7 +261,7 @@ export function WordOrderViewer({ content }: { content: WordOrderContent }) {
           <View className="flex-row flex-wrap gap-2">
             {selectedWords.map((word, index) => (
               <TouchableOpacity
-                key={index}
+                key={`${index}-${word}`}
                 onPress={() => handleRemoveWord(index)}
                 className="rounded-lg bg-blue-600 dark:bg-blue-400 px-3 py-2"
               >
@@ -275,7 +275,7 @@ export function WordOrderViewer({ content }: { content: WordOrderContent }) {
       <View className="flex-row flex-wrap gap-2">
         {remainingWords.map((word, index) => (
           <TouchableOpacity
-            key={index}
+            key={`${index}-${word}`}
             onPress={() => handleWordPress(word)}
             disabled={validated}
             className="rounded-lg bg-white dark:bg-stone-800 px-3 py-2"

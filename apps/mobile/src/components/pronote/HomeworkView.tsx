@@ -17,7 +17,7 @@ import {
 import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useIconColors, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors, borderColors, shadows } from '@/lib/styles';
 import { formatDateWithDay, isOverdue, getDaysUntil } from '@/lib/pronote-helpers';
 
@@ -47,7 +47,6 @@ interface HomeworkViewProps {
 // ============================================================================
 
 export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProps) {
-  const iconColors = useIconColors();
   const colors = useThemeColors();
 
   // Group homework by due date
@@ -157,7 +156,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
             <View key={dateKey}>
               {/* Date header */}
               <View className="mb-2 flex-row items-center gap-2">
-                <Calendar color={iconColors.muted} size={16} />
+                <Calendar color={colors.muted} size={16} />
                 <Text className="font-semibold">{formatDateWithDay(dateKey)}</Text>
                 {isUrgent && (
                   <View
@@ -203,7 +202,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
                           ) : overdue ? (
                             <AlertCircle color={colors.destructive} size={20} />
                           ) : (
-                            <Circle color={iconColors.muted} size={20} />
+                            <Circle color={colors.muted} size={20} />
                           )}
                           <View className="flex-1">
                             <Text

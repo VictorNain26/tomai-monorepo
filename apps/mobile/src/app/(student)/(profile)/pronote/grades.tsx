@@ -12,12 +12,11 @@ import { ArrowLeft } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { GradesView } from '@/components/pronote';
-import { usePronote, useIconColors, useThemeColors } from '@/hooks';
+import { usePronote, useThemeColors } from '@/hooks';
 import { useUser } from '@/lib/auth';
 
 export default function GradesScreen() {
   const router = useRouter();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const user = useUser();
   const pronote = usePronote(user?.id ?? '');
@@ -48,7 +47,7 @@ export default function GradesScreen() {
           onPress={() => router.back()}
           className="h-10 w-10 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
         >
-          <ArrowLeft color={iconColors.foreground} size={20} />
+          <ArrowLeft color={colors.foreground} size={20} />
         </TouchableOpacity>
         <Text variant="h3">Notes</Text>
       </View>

@@ -104,7 +104,7 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
 
           return (
             <TouchableOpacity
-              key={index}
+              key={`${index}-${item}`}
               onPress={() => handleItemPress(index)}
               disabled={validated || assignedCategory !== undefined}
               className={`flex-row items-center justify-between rounded-lg border p-3 ${
@@ -182,7 +182,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
           <View className="gap-2">
             {userOrder.map((originalIndex, position) => (
               <TouchableOpacity
-                key={position}
+                key={`${position}-${originalIndex}`}
                 onPress={() => handleRemove(position)}
                 className="flex-row items-center gap-3 rounded-lg border border-blue-600 dark:border-blue-400 p-3"
                 style={{ backgroundColor: bgColors.primary[10] }}

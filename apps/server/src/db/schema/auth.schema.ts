@@ -18,7 +18,7 @@ export const userRoleEnum = pgEnum('user_role', ['student', 'parent', 'admin']);
 
 /**
  * Table user - Better Auth standard + extensions TomAI
- * Configuration alignée avec Better Auth v1.3.7 + plugin username
+ * Configuration alignée avec Better Auth v1.5 + plugins admin/expo
  */
 export const user = pgTable('user', {
   // ===== BETTER AUTH CORE FIELDS (REQUIS) =====
@@ -31,8 +31,8 @@ export const user = pgTable('user', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 
   // ===== BETTER AUTH USERNAME PLUGIN FIELDS =====
-  username: varchar('username', { length: 50 }).unique(), // Plugin username pour élèves
-  displayUsername: varchar('display_username', { length: 50 }).unique(), // Plugin username normalisé
+  username: varchar('username', { length: 50 }).unique(), // Identifiant unique élèves (géré par parent.service)
+  displayUsername: varchar('display_username', { length: 50 }).unique(), // Affichage normalisé du username
 
   // ===== TOMAI ADDITIONAL FIELDS (alignés avec auth.ts) =====
   firstName: varchar('first_name', { length: 100 }), // Prénom séparé du 'name'
@@ -53,6 +53,11 @@ export const user = pgTable('user', {
   stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }), // Stripe Subscription ID
   subscriptionStatus: varchar('subscription_status', { length: 50 }).default('inactive'), // active, past_due, canceled, etc.
   subscriptionPlan: varchar('subscription_plan', { length: 50 }).default('free'), // free, student, family
+
+  // ===== BETTER AUTH ADMIN PLUGIN FIELDS =====
+  banned: boolean('banned').default(false),
+  banReason: text('ban_reason'),
+  banExpires: timestamp('ban_expires', { withTimezone: true }),
 
   // ===== LOCALISATION =====
   countryCode: varchar('country_code', { length: 2 }).default('FR'),
@@ -187,32 +192,6 @@ export const parentRestoreToken = pgTable('parent_restore_token', {
   }).onDelete('cascade'),
 }));
 
-/**
- * Table passkey - Better Auth Passkey plugin (WebAuthn/FIDO2 credentials)
- */
-export const passkey = pgTable('passkey', {
-  id: varchar('id', { length: 255 }).primaryKey(),
-  name: varchar('name', { length: 255 }),
-  publicKey: text('public_key').notNull(),
-  userId: varchar('user_id', { length: 255 }).notNull(),
-  webauthnUserID: varchar('webauthn_user_id', { length: 255 }).notNull(),
-  credentialID: text('credential_id').notNull(),
-  counter: integer('counter').notNull().default(0),
-  deviceType: varchar('device_type', { length: 32 }),
-  backedUp: boolean('backed_up').default(false),
-  transports: varchar('transports', { length: 255 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
-    columns: [table.userId],
-    foreignColumns: [user.id],
-    name: 'passkey_user_id_fkey'
-  }).onDelete('cascade'),
-
-  userIdIdx: index('idx_passkey_user_id').on(table.userId),
-  credentialIdIdx: index('idx_passkey_credential_id').on(table.credentialID),
-}));
-
 // =============================================
 // RELATIONS
 // =============================================
@@ -240,8 +219,6 @@ export type Session = typeof session.$inferSelect;
 export type NewSession = typeof session.$inferInsert;
 export type Account = typeof account.$inferSelect;
 export type NewAccount = typeof account.$inferInsert;
-export type Passkey = typeof passkey.$inferSelect;
-export type NewPasskey = typeof passkey.$inferInsert;
 
 export type UserRole = typeof userRoleEnum.enumValues[number];
 export type SchoolLevel = typeof schoolLevelEnum.enumValues[number];

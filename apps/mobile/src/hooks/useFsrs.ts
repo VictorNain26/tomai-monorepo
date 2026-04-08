@@ -118,6 +118,7 @@ export function useReviewCard() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['fsrs', 'due'] });
       void queryClient.invalidateQueries({ queryKey: ['fsrs', 'stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['learning', 'due-summary'] });
     },
   });
 }

@@ -15,8 +15,7 @@
 
 import { createAuthClient } from 'better-auth/react';
 import { expoClient } from '@better-auth/expo/client';
-import { passkeyClient } from '@better-auth/passkey/client';
-import { usernameClient, adminClient } from 'better-auth/client/plugins';
+import { adminClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
 import { getTreaty, unwrap } from '@repo/api';
 import {
@@ -62,7 +61,6 @@ interface ImpersonatedSession {
  *
  * Plugins:
  * - expoClient: Secure storage + deep links for mobile
- * - usernameClient: Username login for students
  * - adminClient: Quick Switch impersonation (parent → child)
  */
 export const authClient = createAuthClient({
@@ -73,9 +71,7 @@ export const authClient = createAuthClient({
       storagePrefix: 'tomia',
       storage: SecureStore,
     }),
-    usernameClient(), // Username login for students
-    adminClient(),    // Quick Switch: impersonation for parents
-    passkeyClient(), // Biometric authentication (WebAuthn/passkeys)
+    adminClient(), // Quick Switch: impersonation for parents
   ],
 });
 
@@ -127,13 +123,6 @@ export async function signIn(email: string, password: string) {
 }
 
 /**
- * Connexion avec username/password (élèves).
- */
-export async function signInWithUsername(username: string, password: string) {
-  return authClient.signIn.username({ username, password });
-}
-
-/**
  * Inscription avec email/password.
  */
 export async function signUp(data: { email: string; password: string; name: string }) {
@@ -154,6 +143,23 @@ export async function signOut() {
 }
 
 /**
+ * Traduit les codes d'erreur Better Auth en messages utilisateur.
+ */
+function translateAuthError(errorMessage: string): string {
+  const map: Record<string, string> = {
+    'Unable to create user': 'Impossible de creer le compte. Verifiez votre connexion ou essayez avec un autre compte Google.',
+    'User already exists': 'Un compte existe deja avec cet email. Connectez-vous plutot.',
+    'UNABLE_TO_CREATE_USER': 'Impossible de creer le compte. Verifiez votre connexion ou essayez avec un autre compte Google.',
+    'USER_ALREADY_EXISTS': 'Un compte existe deja avec cet email. Connectez-vous plutot.',
+  };
+
+  for (const [key, value] of Object.entries(map)) {
+    if (errorMessage.includes(key)) return value;
+  }
+  return errorMessage;
+}
+
+/**
  * Connexion avec Google OAuth.
  * - Dev build / production : SDK natif → idToken → Better Auth
  * - Expo Go : flux web OAuth via navigateur (fallback)
@@ -169,13 +175,25 @@ export async function signInWithGoogle() {
   }
 
   if (isSuccessResponse(response) && response.data.idToken) {
-    return authClient.signIn.social({
+    const result = await authClient.signIn.social({
       provider: 'google',
       idToken: { token: response.data.idToken },
     });
+
+    if (result.error) {
+      return {
+        ...result,
+        error: {
+          ...result.error,
+          message: translateAuthError(result.error.message ?? ''),
+        },
+      };
+    }
+
+    return result;
   }
 
-  throw new Error('Google Sign-In: aucun idToken reçu');
+  throw new Error('Google Sign-In: aucun idToken recu');
 }
 
 /**

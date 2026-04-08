@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { AuthScreen } from '@/components/auth/auth-screen';
-import { useIconColors, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
 export default function ResetPasswordScreen() {
@@ -27,7 +27,6 @@ export default function ResetPasswordScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const [tokenValid, setTokenValid] = useState(true);
   const [resetSuccess, setResetSuccess] = useState(false);
@@ -154,14 +153,14 @@ export default function ResetPasswordScreen() {
         accessibilityLabel="Retour"
         accessibilityRole="button"
       >
-        <ArrowLeft color={iconColors.foreground} size={20} />
+        <ArrowLeft color={colors.foreground} size={20} />
         <Text className="ml-1 text-blue-600 dark:text-blue-400">Retour</Text>
       </Pressable>
 
       {/* Header */}
       <View className="mb-8 items-center">
         <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
-          <Lock color={iconColors.foreground} size={32} />
+          <Lock color={colors.foreground} size={32} />
         </View>
 
         <Text variant="h2" className="text-center">

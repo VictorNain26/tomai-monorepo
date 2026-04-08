@@ -17,7 +17,7 @@ import Animated, {
 import { Mic, Square, Send, Loader2, StopCircle } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
-import { useVoiceInput, useIconColors, useThemeColors } from '@/hooks';
+import { useVoiceInput, useThemeColors } from '@/hooks';
 import type { ChatFileAttachment } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 import { AttachmentMenu } from './AttachmentMenu';
@@ -53,7 +53,6 @@ export const ChatInput = memo(function ChatInput({
   placeholder = 'Pose ta question...',
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const toast = useToast();
   const voice = useVoiceInput();
@@ -166,7 +165,7 @@ export const ChatInput = memo(function ChatInput({
             </View>
           ) : voice.isProcessing ? (
             <View className="flex-1 flex-row items-center gap-2 py-3">
-              <Loader2 color={iconColors.muted} size={16} />
+              <Loader2 color={colors.muted} size={16} />
               <Text className="text-base text-stone-600 dark:text-stone-400">
                 Transcription...
               </Text>
@@ -210,9 +209,9 @@ export const ChatInput = memo(function ChatInput({
           {voice.isRecording ? (
             <Square color={colors.primaryForeground} size={16} fill={colors.primaryForeground} />
           ) : voice.isProcessing ? (
-            <Mic color={iconColors.muted} size={18} />
+            <Mic color={colors.muted} size={18} />
           ) : (
-            <Mic color={iconColors.foreground} size={18} />
+            <Mic color={colors.foreground} size={18} />
           )}
         </TouchableOpacity>
 
@@ -240,7 +239,7 @@ export const ChatInput = memo(function ChatInput({
             accessibilityLabel="Envoyer le message"
           >
             <Send
-              color={canSend ? colors.primaryForeground : iconColors.muted}
+              color={canSend ? colors.primaryForeground : colors.muted}
               size={18}
               style={!canSend ? { opacity: 0.5 } : undefined}
             />

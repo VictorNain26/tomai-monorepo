@@ -2,22 +2,21 @@
  * Better Auth Configuration - Production Ready
  * Configuration propre et flexible basée sur la configuration centralisée
  *
- * Plugins 2026:
+ * Plugins:
  * - admin: Parent impersonation (Quick Switch) with parent-child verification
- * - username: Student login with username
- * - expo: Mobile app support
- * - passkey: Biometric authentication (WebAuthn/FIDO2)
+ * - expo: Mobile app support (deep links, secure storage)
+ * - openAPI: API documentation
+ * - mcp: Model Context Protocol
  */
 
 import { betterAuth } from "better-auth";
-import { username, openAPI, mcp, admin } from "better-auth/plugins";
+import { openAPI, mcp, admin } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
-import { passkey } from "@better-auth/passkey";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { eq } from "drizzle-orm";
 
 import { db } from "../db/connection";
-import { user, session, account, verification, passkey as passkeyTable } from "../db/schema";
+import { user, session, account, verification } from "../db/schema";
 import { env, envUtils } from "../config/environment.config";
 import { logger } from "./observability";
 
@@ -165,7 +164,6 @@ export const auth = betterAuth({
       session,
       account,
       verification,
-      passkey: passkeyTable,
     }
   }),
 
@@ -174,11 +172,22 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
 
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+    },
+  },
+
   socialProviders: env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? {
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
-      // Better Auth gère automatiquement les callbacks
+      prompt: "select_account",
+      mapProfileToUser: (profile) => ({
+        firstName: profile.given_name ?? null,
+        lastName: profile.family_name ?? null,
+      }),
     },
   } : {},
 
@@ -225,13 +234,11 @@ export const auth = betterAuth({
   },
 
   plugins: [
-    username(),
     openAPI(),
     mcp({
       loginPage: "/sign-in"
     }),
     expo(),     // Mobile app support (deep links, secure storage)
-    passkey(), // Biometric authentication (WebAuthn/passkeys)
 
     // Admin plugin for Quick Switch (parent impersonation)
     // Best Practice 2026: Built-in impersonation with custom authorization

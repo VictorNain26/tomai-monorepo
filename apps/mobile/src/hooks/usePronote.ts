@@ -20,10 +20,8 @@ import {
   TabLocation,
   type SessionHandle,
 } from 'pawnote';
-import * as SecureStore from 'expo-secure-store';
 import { usePronoteStore } from '@/stores/pronote-store';
 import { pronoteSessionService } from '@/services/pronote/pronote-session';
-import { pronoteCredentialsSync } from '@/services/pronote/pronote-credentials';
 import type {
   QrCodeData,
   PronoteHomework,
@@ -91,15 +89,6 @@ export function usePronote(userId: string) {
         storeSetConnected(meta);
         storeSetResources(result.resources);
 
-        // Sync credentials to server (best-effort, log failures)
-        const token = await SecureStore.getItemAsync(`pronote_token_${userId}`);
-        if (token) {
-          pronoteCredentialsSync.pushToServer({
-            metadata: meta,
-            token,
-            tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          }).catch((err) => console.error('[Pronote] Failed to sync credentials to server:', err));
-        }
       }
 
       return result;
@@ -110,8 +99,6 @@ export function usePronote(userId: string) {
   const disconnect = useCallback(async () => {
     await pronoteSessionService.disconnect(userId);
     storeReset();
-    pronoteCredentialsSync.removeFromServer()
-      .catch((err) => console.error('[Pronote] Failed to remove credentials from server:', err));
   }, [userId, storeReset]);
 
   const fetchHomework = useCallback(

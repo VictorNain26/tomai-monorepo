@@ -10,7 +10,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Plus, Camera, ImageIcon, FileText, FolderOpen, Loader2 } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
-import { useIconColors, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors, shadows } from '@/lib/styles';
 
 interface AttachmentMenuProps {
@@ -32,7 +32,6 @@ export function AttachmentMenu({
   isDisabled,
   isUploading,
 }: AttachmentMenuProps) {
-  const iconColors = useIconColors();
   const colors = useThemeColors();
 
   const handlePickCamera = useCallback(async () => {
@@ -111,10 +110,10 @@ export function AttachmentMenu({
           accessibilityHint="Ouvre le menu pour ajouter une photo, un document ou un fichier"
         >
           {isUploading ? (
-            <Loader2 color={iconColors.muted} size={18} />
+            <Loader2 color={colors.muted} size={18} />
           ) : (
             <Plus
-              color={visible ? colors.primary : iconColors.muted}
+              color={visible ? colors.primary : colors.muted}
               size={20}
             />
           )}

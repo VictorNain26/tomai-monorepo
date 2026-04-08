@@ -43,7 +43,7 @@ export function CalculationViewer({ content }: { content: CalculationContent }) 
           <Text className="mb-3 font-semibold">Étapes :</Text>
           <View className="gap-2">
             {content.steps.map((step, index) => (
-              <View key={index} className="flex-row gap-3 rounded-lg bg-stone-100 dark:bg-stone-800 p-3">
+              <View key={`${index}-${step}`} className="flex-row gap-3 rounded-lg bg-stone-100 dark:bg-stone-800 p-3">
                 <View className="h-6 w-6 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
                   <Text className="text-xs text-white dark:text-stone-900">{index + 1}</Text>
                 </View>

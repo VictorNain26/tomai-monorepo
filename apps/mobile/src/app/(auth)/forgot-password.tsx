@@ -17,13 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { AuthScreen } from '@/components/auth/auth-screen';
-import { useIconColors, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const toast = useToast();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -124,14 +123,14 @@ export default function ForgotPasswordScreen() {
         accessibilityLabel="Retour"
         accessibilityRole="button"
       >
-        <ArrowLeft color={iconColors.foreground} size={20} />
+        <ArrowLeft color={colors.foreground} size={20} />
         <Text className="ml-1 text-blue-600 dark:text-blue-400">Retour</Text>
       </Pressable>
 
       {/* Header */}
       <View className="mb-8 items-center">
         <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.primary[10] }}>
-          <Mail color={iconColors.foreground} size={32} />
+          <Mail color={colors.foreground} size={32} />
         </View>
 
         <Text variant="h2" className="text-center">

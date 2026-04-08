@@ -14,7 +14,7 @@ import { SubjectIcon } from '@/components/common/SubjectIcon';
 import { enrichSubjectKey, getSubjectStyles } from '@/constants/subjects';
 import { cn } from '@/lib/utils';
 import type { LearningDeck } from '@/hooks/useLearning';
-import { useDeckStats, useIconColors, useThemeColors } from '@/hooks';
+import { useDeckStats, useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
 interface DeckCardProps {
@@ -27,7 +27,6 @@ interface DeckCardProps {
 export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: DeckCardProps) {
   const router = useRouter();
   const { confirm } = useConfirm();
-  const iconColors = useIconColors();
   const colors = useThemeColors();
   const { data: stats } = useDeckStats(deck.id);
 
@@ -120,7 +119,7 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
               accessibilityLabel={`Supprimer ${deck.title}`}
               accessibilityRole="button"
             >
-              <Trash2 color={iconColors.destructive} size={18} />
+              <Trash2 color={colors.destructive} size={18} />
             </TouchableOpacity>
           )}
         </View>

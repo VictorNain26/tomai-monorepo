@@ -13,7 +13,7 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { CardCompact, CardCompactContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useIconColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 import { bgColors, shadows } from '@/lib/styles';
 
 // ============================================================================
@@ -68,7 +68,7 @@ export function HomeworkUrgentCard({
   onViewAll,
 }: HomeworkUrgentCardProps) {
   const router = useRouter();
-  const iconColors = useIconColors();
+  const colors = useThemeColors();
 
   // Filter to show only undone homework, sorted by due date
   const urgentHomework = homework
@@ -117,7 +117,7 @@ export function HomeworkUrgentCard({
             className="h-10 w-10 items-center justify-center rounded-lg"
             style={{ backgroundColor: bgColors.success[10] }}
           >
-            <FileText color={iconColors.success} size={20} />
+            <FileText color={colors.success} size={20} />
           </View>
           <View>
             <Text variant="large">Devoirs</Text>
@@ -140,7 +140,7 @@ export function HomeworkUrgentCard({
             className="h-10 w-10 items-center justify-center rounded-lg"
             style={{ backgroundColor: bgColors.warning[10] }}
           >
-            <FileText color={iconColors.warning} size={20} />
+            <FileText color={colors.warning} size={20} />
           </View>
           <View>
             <Text variant="large">À faire</Text>
@@ -159,7 +159,7 @@ export function HomeworkUrgentCard({
             <Text variant="small" className="text-blue-600 dark:text-blue-400">
               Tout voir
             </Text>
-            <ChevronRight color={iconColors.primary} size={16} />
+            <ChevronRight color={colors.primary} size={16} />
           </TouchableOpacity>
         )}
       </View>
@@ -198,9 +198,9 @@ export function HomeworkUrgentCard({
                     {/* Due date badge */}
                     <View className="mt-2 flex-row items-center gap-1">
                       {urgency === 'urgent' ? (
-                        <AlertCircle color={iconColors.destructive} size={12} />
+                        <AlertCircle color={colors.destructive} size={12} />
                       ) : (
-                        <Clock color={iconColors.muted} size={12} />
+                        <Clock color={colors.muted} size={12} />
                       )}
                       <Text
                         variant="tiny"

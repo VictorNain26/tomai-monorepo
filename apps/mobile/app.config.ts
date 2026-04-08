@@ -59,13 +59,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
   },
 
-  // Web configuration
-  web: {
-    bundler: 'metro',
-    output: 'static',
-    favicon: './assets/favicon.png',
-  },
-
   // Plugins configuration
   plugins: [
     'expo-router',
@@ -126,7 +119,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         },
       },
     ],
-    'expo-background-task',
     'expo-updates',
     '@react-native-google-signin/google-signin',
   ],
@@ -147,6 +139,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   experiments: {
     typedRoutes: true,
+    // reactCompiler disabled — incompatible with Expo Router (expo#35100)
   },
 
   // Extra configuration
