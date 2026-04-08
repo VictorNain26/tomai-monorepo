@@ -18,7 +18,7 @@ JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `
 - **Framework** : Elysia.js 1.4 (type-safe API)
 - **Database** : PostgreSQL 16 pgvector + Drizzle ORM 0.45
 - **Cache** : MemoryCacheService (LRU in-memory avec TTL) - PAS de Redis
-- **Auth** : Better Auth 1.4 + Google OAuth
+- **Auth** : Better Auth 1.5 + Google OAuth + account linking
 - **AI** : Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Gladia (STT), ElevenLabs (TTS)
 - **RAG** : Qdrant Cloud + Mistral embeddings + BM25 reranking
 - **Paiement** : Stripe (webhooks) + RevenueCat (mobile webhooks)
