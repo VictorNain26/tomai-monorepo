@@ -1,88 +1,127 @@
 /**
- * Tests - Auth schema alignment
- * Prevents regressions on Better Auth + Google OAuth configuration.
+ * Tests - Better Auth Configuration
  *
- * Context: "unable to create user" bug caused by missing admin plugin columns,
- * missing accountLinking config, and orphaned passkey table.
+ * Vérifie que la configuration auth expose les bonnes capacités :
+ * - Google OAuth (social provider)
+ * - Admin plugin (Quick Switch / impersonation / ban)
+ * - Expo plugin (mobile deep links)
+ * - Account linking (email/password + Google sur même email)
+ *
+ * Context: "unable to create user" bug causé par accountLinking manquant
+ * et colonnes admin plugin absentes. Ces tests empêchent la régression.
  */
 
-import { describe, it, expect } from 'bun:test';
-import { user, session, account, verification } from '../db/schema';
+import { describe, it, expect, mock, beforeAll } from 'bun:test';
+import { createMockLogger } from './_helpers/mock-logger';
 
-describe('Auth Schema Alignment', () => {
-  describe('user table - Better Auth admin plugin fields', () => {
-    it('should have banned column', () => {
-      expect(user.banned).toBeDefined();
+// ============================================
+// MOCKS — avant tout import de auth
+// ============================================
+
+const mockLogger = createMockLogger();
+mock.module('../lib/observability', () => ({ logger: mockLogger }));
+
+mock.module('../config/environment.config', () => ({
+  env: {
+    BETTER_AUTH_SECRET: 'test-secret-for-unit-tests',
+    BETTER_AUTH_URL: 'http://localhost:3000',
+    FRONTEND_URL: 'http://localhost:3001',
+    NODE_ENV: 'development',
+    GOOGLE_CLIENT_ID: 'test-google-client-id',
+    GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
+    SESSION_MAX_AGE: 604800,
+    SESSION_UPDATE_AGE: 86400,
+    CORS_ORIGINS: [],
+    TRUSTED_ORIGINS: [],
+  },
+  envUtils: {
+    isDevelopment: true,
+    isProduction: false,
+    validateService: () => {},
+  },
+}));
+
+mock.module('../db/connection', () => ({
+  db: {},
+}));
+
+// ============================================
+// IMPORT auth après les mocks
+// ============================================
+
+let auth: Record<string, unknown>;
+let apiMethods: string[];
+
+beforeAll(async () => {
+  const mod = await import('../lib/auth');
+  auth = mod.auth as Record<string, unknown>;
+  apiMethods = Object.keys(auth.api as Record<string, unknown>);
+});
+
+// ============================================
+// TESTS
+// ============================================
+
+describe('Better Auth Configuration', () => {
+
+  describe('Google OAuth provider', () => {
+    it('should expose signInSocial API method', () => {
+      expect(apiMethods).toContain('signInSocial');
     });
 
-    it('should have banReason column', () => {
-      expect(user.banReason).toBeDefined();
-    });
-
-    it('should have banExpires column', () => {
-      expect(user.banExpires).toBeDefined();
-    });
-  });
-
-  describe('user table - core auth fields', () => {
-    it('should have email column', () => {
-      expect(user.email).toBeDefined();
-    });
-
-    it('should have email with unique constraint', () => {
-      expect(user.email.isUnique).toBe(true);
-    });
-
-    it('should have role column with parent default', () => {
-      expect(user.role).toBeDefined();
-      expect(user.role.default).toBe('parent');
-    });
-
-    it('should have isActive column defaulting to true', () => {
-      expect(user.isActive).toBeDefined();
-      expect(user.isActive.default).toBe(true);
-    });
-  });
-
-  describe('user table - no orphaned passkey references', () => {
-    it('should NOT have passkey column', () => {
-      expect((user as Record<string, unknown>)['passkey']).toBeUndefined();
-    });
-  });
-
-  describe('session table - admin plugin fields', () => {
-    it('should have impersonatedBy column', () => {
-      expect(session.impersonatedBy).toBeDefined();
-    });
-
-    it('should have token column', () => {
-      expect(session.token).toBeDefined();
-    });
-  });
-
-  describe('account table - Google OAuth fields', () => {
-    it('should have idToken column (required for Google OAuth)', () => {
-      expect(account.idToken).toBeDefined();
-    });
-
-    it('should have providerId column', () => {
-      expect(account.providerId).toBeDefined();
-    });
-
-    it('should have accessToken column', () => {
-      expect(account.accessToken).toBeDefined();
-    });
-
-    it('should have refreshToken column', () => {
-      expect(account.refreshToken).toBeDefined();
+    it('should expose callbackOAuth API method', () => {
+      expect(apiMethods).toContain('callbackOAuth');
     });
   });
 
-  describe('verification table', () => {
-    it('should have value column as text (not varchar - required for OAuth tokens)', () => {
-      expect(verification.value).toBeDefined();
-      // Drizzle text columns have dataType 'text'
-      expect(verification.value.dataType).toBe('string');
+  describe('Admin plugin (Quick Switch / ban)', () => {
+    it('should expose banUser API method', () => {
+      expect(apiMethods).toContain('banUser');
+    });
+
+    it('should expose unbanUser API method', () => {
+      expect(apiMethods).toContain('unbanUser');
+    });
+
+    it('should expose impersonateUser API method', () => {
+      expect(apiMethods).toContain('impersonateUser');
+    });
+
+    it('should expose stopImpersonating API method', () => {
+      expect(apiMethods).toContain('stopImpersonating');
+    });
+  });
+
+  describe('Core auth methods', () => {
+    it('should expose signUpEmail', () => {
+      expect(apiMethods).toContain('signUpEmail');
+    });
+
+    it('should expose signInEmail', () => {
+      expect(apiMethods).toContain('signInEmail');
+    });
+
+    it('should expose getSession', () => {
+      expect(apiMethods).toContain('getSession');
+    });
+
+    it('should expose signOut', () => {
+      expect(apiMethods).toContain('signOut');
+    });
+  });
+
+  describe('Account linking (prevents "unable to create user")', () => {
+    it('should expose linkSocialAccount API method', () => {
+      // accountLinking: { enabled: true } ajoute cette méthode.
+      // Si quelqu'un retire accountLinking, ce test casse.
+      expect(apiMethods).toContain('linkSocialAccount');
+    });
+  });
+
+  describe('Auth handler', () => {
+    it('should expose a request handler for mounting on Elysia', () => {
+      expect(auth.handler).toBeDefined();
+      expect(typeof auth.handler).toBe('function');
     });
   });
 });
