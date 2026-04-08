@@ -18,7 +18,7 @@ export const userRoleEnum = pgEnum('user_role', ['student', 'parent', 'admin']);
 
 /**
  * Table user - Better Auth standard + extensions TomAI
- * Configuration alignée avec Better Auth v1.3.7 + plugin username
+ * Configuration alignée avec Better Auth v1.5 + plugins admin/expo
  */
 export const user = pgTable('user', {
   // ===== BETTER AUTH CORE FIELDS (REQUIS) =====
