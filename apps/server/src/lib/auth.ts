@@ -243,6 +243,10 @@ export const auth = betterAuth({
     // Admin plugin for Quick Switch (parent impersonation)
     // Best Practice 2026: Built-in impersonation with custom authorization
     admin({
+      // Default role for new users — must match user_role enum ('student' | 'parent' | 'admin')
+      // Without this, admin plugin defaults to "user" which violates the PostgreSQL enum
+      defaultRole: "parent",
+
       // Session duration: 7 days (same as normal sessions)
       impersonationSessionDuration: 7 * 24 * 60 * 60,
 
