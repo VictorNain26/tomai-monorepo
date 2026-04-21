@@ -7,11 +7,13 @@
 
 import { Mistral } from '@mistralai/mistralai';
 import { logger } from '../lib/observability.js';
+import { withTimeout } from '../lib/retry.js';
 
 // Configuration
 const MISTRAL_API_KEY = Bun.env['MISTRAL_API_KEY'] ?? '';
 const EMBEDDING_MODEL = 'mistral-embed';
 const EMBEDDING_DIM = 1024;
+const MISTRAL_TIMEOUT_MS = 30_000;
 
 // =============================================================================
 // Service
@@ -49,10 +51,14 @@ class MistralEmbeddingsService {
     const client = this.getClient();
     const startTime = Date.now();
 
-    const response = await client.embeddings.create({
-      model: EMBEDDING_MODEL,
-      inputs: [text],
-    });
+    const response = await withTimeout(
+      client.embeddings.create({
+        model: EMBEDDING_MODEL,
+        inputs: [text],
+      }),
+      MISTRAL_TIMEOUT_MS,
+      'mistral:embed',
+    );
 
     const embedding = response.data[0]?.embedding;
     if (!embedding) {
@@ -85,10 +91,14 @@ class MistralEmbeddingsService {
     const client = this.getClient();
     const startTime = Date.now();
 
-    const response = await client.embeddings.create({
-      model: EMBEDDING_MODEL,
-      inputs: texts,
-    });
+    const response = await withTimeout(
+      client.embeddings.create({
+        model: EMBEDDING_MODEL,
+        inputs: texts,
+      }),
+      MISTRAL_TIMEOUT_MS,
+      'mistral:embed-batch',
+    );
 
     const embeddings = response.data.map((item) => {
       if (!item.embedding) {

@@ -13,6 +13,7 @@ import { appConfig } from '../../config/app.config.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { messagesRepository } from '../../db/repositories/messages.repository.js';
 import { logger } from '../../lib/observability.js';
+import { withTimeout } from '../../lib/retry.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -103,14 +104,14 @@ class SummarizationService {
    */
   async summarizeIfNeeded(sessionId: string): Promise<void> {
     try {
+      // Cheap count first: avoid loading all message bodies when nothing to summarize.
+      const totalMessages = await messagesRepository.countBySessionId(sessionId);
+      if (totalMessages < SUMMARIZE_THRESHOLD) return;
+
       const session = await studySessionsRepository.findById(sessionId);
       if (!session) return;
 
       const allMessages = await messagesRepository.findBySessionId(sessionId);
-      const totalMessages = allMessages.length;
-
-      // Pas assez de messages pour résumer
-      if (totalMessages < SUMMARIZE_THRESHOLD) return;
 
       // Vérifier si un résumé incrémental est nécessaire
       if (session.conversationSummary && session.summaryUpToMessageId) {
@@ -213,14 +214,18 @@ class SummarizationService {
       prompt = `${SUMMARIZATION_PROMPT}\n\n## CONVERSATION\n${messagesText}`;
     }
 
-    const response = await this.ai.models.generateContent({
-      model: this.model,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: {
-        temperature: 0.3,
-        maxOutputTokens: 2048,
-      },
-    });
+    const response = await withTimeout(
+      this.ai.models.generateContent({
+        model: this.model,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: {
+          temperature: 0.3,
+          maxOutputTokens: 2048,
+        },
+      }),
+      45_000,
+      'gemini:summarization',
+    );
 
     const text = response.text?.trim();
     if (!text) return null;

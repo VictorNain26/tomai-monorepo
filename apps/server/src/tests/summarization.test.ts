@@ -35,6 +35,7 @@ let messagesResult: Array<Record<string, unknown>> = [];
 mock.module('../db/repositories/messages.repository', () => ({
   messagesRepository: {
     findBySessionId: mock(async () => messagesResult),
+    countBySessionId: mock(async () => messagesResult.length),
   },
 }));
 

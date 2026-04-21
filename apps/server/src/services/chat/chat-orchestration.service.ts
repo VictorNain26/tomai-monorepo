@@ -90,12 +90,14 @@ class ChatOrchestrationService {
       operation: 'chat-orchestration:context-ready',
     });
 
-    // Phase 3: Persist user message BEFORE streaming
+    // Phase 3: Persist user message BEFORE streaming.
+    // Skip session re-check: resolveSession above already verified ownership.
     await chatService.saveMessage(
       sessionCtx.sessionId,
       'user',
       request.content,
       attachedFileInfo ? { attachedFile: attachedFileInfo } : {},
+      { verifySessionExists: false },
     );
 
     if (request.fileIds.length > 0) {
@@ -236,7 +238,7 @@ class ChatOrchestrationService {
       tokensUsed,
       responseTimeMs: Date.now() - startTime,
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
-    });
+    }, { verifySessionExists: false });
 
     if (tokensUsed > 0) {
       await tokenQuotaService.incrementTokenUsage(userId, tokensUsed);

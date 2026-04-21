@@ -80,9 +80,10 @@ export class ChatService {
         mimeType?: string;
         fileSizeBytes?: number;
       };
-    }
+    },
+    options?: { verifySessionExists?: boolean }
   ): Promise<{ messageId: string; realSessionId: string }> {
-    return this.messages.saveMessage(sessionId, role, content, metadata);
+    return this.messages.saveMessage(sessionId, role, content, metadata, options);
   }
 
   async deleteSession(sessionId: string, userId?: string): Promise<void> {

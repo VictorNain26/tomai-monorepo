@@ -9,6 +9,7 @@ import { GoogleGenAI } from '@google/genai';
 import { appConfig } from '../../config/app.config.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { logger } from '../../lib/observability.js';
+import { withTimeout } from '../../lib/retry.js';
 
 const TITLE_PROMPT = `Génère un titre COURT (10-50 caractères) pour cette conversation de tutorat scolaire.
 
@@ -60,14 +61,18 @@ class AutoTitleService {
         .replace('{userMessage}', userMessage.slice(0, 500))
         .replace('{assistantPreview}', assistantPreview);
 
-      const response = await this.ai.models.generateContent({
-        model: this.model,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
-          temperature: 0.3,
-          maxOutputTokens: 64,
-        },
-      });
+      const response = await withTimeout(
+        this.ai.models.generateContent({
+          model: this.model,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config: {
+            temperature: 0.3,
+            maxOutputTokens: 64,
+          },
+        }),
+        20_000,
+        'gemini:auto-title',
+      );
 
       let title = response.text?.trim();
       if (!title) return;

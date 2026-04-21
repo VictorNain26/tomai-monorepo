@@ -3,7 +3,7 @@
  * Gère l'attachement de fichiers du classeur aux sessions de chat
  */
 
-import { eq, and } from 'drizzle-orm';
+import { eq, and, count } from 'drizzle-orm';
 import { db } from '../connection.js';
 import { sessionFiles, files } from '../schema.js';
 
@@ -111,12 +111,12 @@ export class SessionFilesRepository {
    * Compter les fichiers attachés à une session
    */
   async countBySession(sessionId: string): Promise<number> {
-    const rows = await db
-      .select({ id: sessionFiles.id })
+    const [row] = await db
+      .select({ value: count() })
       .from(sessionFiles)
       .where(eq(sessionFiles.sessionId, sessionId));
 
-    return rows.length;
+    return row?.value ?? 0;
   }
 }
 

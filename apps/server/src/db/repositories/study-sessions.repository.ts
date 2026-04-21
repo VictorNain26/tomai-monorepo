@@ -186,23 +186,35 @@ export class StudySessionsRepository {
     averageFrustration: number;
     subjectBreakdown: Record<string, number>;
   }> {
-    const sessions = await this.findByUserId(userId, 1000);
+    // Aggregated in SQL: single scan of study_sessions filtered by userId.
+    // Previous implementation loaded up to 1000 full rows to compute sums/averages in JS.
+    const [aggregate] = await db
+      .select({
+        totalSessions: sql<number>`COUNT(*)::int`,
+        totalMinutes: sql<number>`COALESCE(SUM(${studySessions.durationMinutes}), 0)::int`,
+        averageFrustration: sql<number>`COALESCE(AVG(${studySessions.frustrationAvg}), 0)::float`,
+      })
+      .from(studySessions)
+      .where(eq(studySessions.userId, userId));
 
-    const totalSessions = sessions.length;
-    const totalMinutes = sessions.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
-    const avgFrustration = sessions
-      .filter(s => s.frustrationAvg)
-      .reduce((sum, s, _, arr) => sum + (parseFloat(s.frustrationAvg!) / arr.length), 0);
+    const perSubject = await db
+      .select({
+        subject: studySessions.subject,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(studySessions)
+      .where(eq(studySessions.userId, userId))
+      .groupBy(studySessions.subject);
 
-    const subjectBreakdown = sessions.reduce((acc, s) => {
-      acc[s.subject] = (acc[s.subject] ?? 0) + 1;
+    const subjectBreakdown = perSubject.reduce((acc, row) => {
+      acc[row.subject] = row.count;
       return acc;
     }, {} as Record<string, number>);
 
     return {
-      totalSessions,
-      totalMinutes,
-      averageFrustration: Math.round(avgFrustration * 10) / 10,
+      totalSessions: aggregate?.totalSessions ?? 0,
+      totalMinutes: aggregate?.totalMinutes ?? 0,
+      averageFrustration: Math.round((aggregate?.averageFrustration ?? 0) * 10) / 10,
       subjectBreakdown,
     };
   }

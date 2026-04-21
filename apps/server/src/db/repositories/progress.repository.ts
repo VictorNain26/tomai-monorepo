@@ -61,42 +61,37 @@ export class ProgressRepository {
     practiceTimeMinutes?: number,
     successRate?: number
   ): Promise<Progress> {
-    // Try to find existing progress
-    const existing = await this.findByUserSubjectConcept(userId, subject, concept);
+    const deltaMinutes = practiceTimeMinutes ?? 0;
+    const successRateStr = successRate?.toString();
 
-    if (existing) {
-      // Update existing record
-      const [updated] = await db
-        .update(progress)
-        .set({
-          masteryLevel,
-          totalPracticeTime: practiceTimeMinutes
-            ? (existing.totalPracticeTime ?? 0) + practiceTimeMinutes
-            : existing.totalPracticeTime,
-          successRate: successRate?.toString() ?? existing.successRate,
-          lastPracticed: sql`NOW()`, // Best practice Drizzle ORM: DB-level timestamp
-          updatedAt: sql`NOW()`, // Best practice Drizzle ORM: DB-level timestamp
-        })
-        .where(eq(progress.id, existing.id))
-        .returning();
-
-      if (!updated) {
-        throw new Error('Failed to update progress record');
-      }
-
-      return updated;
-    } else {
-      // Create new record
-      return await this.create({
+    const [row] = await db
+      .insert(progress)
+      .values({
         userId,
         subject,
         concept,
         masteryLevel,
-        totalPracticeTime: practiceTimeMinutes ?? 0,
-        successRate: successRate?.toString() ?? '0',
-        // lastPracticed omis → defaultNow() du schema s'applique
-      });
+        totalPracticeTime: deltaMinutes,
+        successRate: successRateStr ?? '0',
+      })
+      .onConflictDoUpdate({
+        target: [progress.userId, progress.subject, progress.concept],
+        set: {
+          masteryLevel,
+          totalPracticeTime: sql`COALESCE(${progress.totalPracticeTime}, 0) + ${deltaMinutes}`,
+          successRate: successRateStr
+            ? sql`${successRateStr}`
+            : sql`${progress.successRate}`,
+          lastPracticed: sql`NOW()`,
+          updatedAt: sql`NOW()`,
+        },
+      })
+      .returning();
+
+    if (!row) {
+      throw new Error('Failed to upsert progress record');
     }
+    return row;
   }
 
   async getProgressSummary(userId: string): Promise<{

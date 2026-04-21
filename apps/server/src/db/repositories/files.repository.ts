@@ -3,7 +3,7 @@
  * Gestion des métadonnées fichiers stockés sur Scaleway Object Storage
  */
 
-import { eq, and, sql, lt, desc } from 'drizzle-orm';
+import { eq, and, sql, lt, desc, inArray } from 'drizzle-orm';
 import { db } from '../connection.js';
 import { files, type FileStatus } from '../schema.js';
 
@@ -39,6 +39,17 @@ export class FilesRepository {
       .limit(1);
 
     return file;
+  }
+
+  /**
+   * Trouver plusieurs fichiers par leurs IDs (un seul SELECT)
+   */
+  async findByIds(ids: string[]): Promise<File[]> {
+    if (ids.length === 0) return [];
+    return await db
+      .select()
+      .from(files)
+      .where(inArray(files.id, ids));
   }
 
   /**

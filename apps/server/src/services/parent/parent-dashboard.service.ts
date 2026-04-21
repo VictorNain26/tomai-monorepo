@@ -17,60 +17,61 @@ export class ParentDashboardService {
         return [];
       }
 
-      const metrics: ParentDashboardMetrics[] = [];
+      // Parallelize across all children (previously sequential boucle for: ~N× slower).
+      // Pool limiter throttles the actual DB calls so we don't exhaust the connection pool.
+      const metrics = await Promise.all(
+        children.map(async (child): Promise<ParentDashboardMetrics> => {
+          try {
+            const [sessionStats, subjectsResult, lastSessionResult, studyDaysResult] = await Promise.all([
+              studySessionsRepository.getSessionStats(child.id),
+              withPoolLimit(
+                () => db
+                  .selectDistinct({ subject: studySessions.subject })
+                  .from(studySessions)
+                  .where(eq(studySessions.userId, child.id)),
+                `subjects-${child.id}`
+              ),
+              withPoolLimit(
+                () => db
+                  .select({ startedAt: studySessions.startedAt })
+                  .from(studySessions)
+                  .where(eq(studySessions.userId, child.id))
+                  .orderBy(desc(studySessions.startedAt))
+                  .limit(1),
+                `last-session-${child.id}`
+              ),
+              withPoolLimit(
+                () => db
+                  .select({
+                    studyDays: sql<number>`COUNT(DISTINCT DATE(${studySessions.startedAt}))::int`
+                  })
+                  .from(studySessions)
+                  .where(eq(studySessions.userId, child.id)),
+                `study-days-${child.id}`
+              ),
+            ]);
 
-      for (const child of children) {
-        try {
-          const sessionStats = await studySessionsRepository.getSessionStats(child.id);
-
-          const [subjectsResult, lastSessionResult, studyDaysResult] = await Promise.all([
-            withPoolLimit(
-              () => db
-                .selectDistinct({ subject: studySessions.subject })
-                .from(studySessions)
-                .where(eq(studySessions.userId, child.id)),
-              `subjects-${child.id}`
-            ),
-            withPoolLimit(
-              () => db
-                .select({ startedAt: studySessions.startedAt })
-                .from(studySessions)
-                .where(eq(studySessions.userId, child.id))
-                .orderBy(desc(studySessions.startedAt))
-                .limit(1),
-              `last-session-${child.id}`
-            ),
-            withPoolLimit(
-              () => db
-                .select({
-                  studyDays: sql<number>`COUNT(DISTINCT DATE(${studySessions.startedAt}))::int`
-                })
-                .from(studySessions)
-                .where(eq(studySessions.userId, child.id)),
-              `study-days-${child.id}`
-            )
-          ]);
-
-          metrics.push({
-            studentId: child.id,
-            studentName: `${child.firstName} ${child.lastName}`,
-            schoolLevel: child.schoolLevel ?? 'Not defined',
-            age: child.dateOfBirth ? this.calculateAge(new Date(child.dateOfBirth)) : 0,
-            totalSessions: sessionStats.totalSessions,
-            studyDays: studyDaysResult[0]?.studyDays ?? 0,
-            avgSessionDuration: sessionStats.totalSessions > 0
-              ? sessionStats.totalMinutes / sessionStats.totalSessions
-              : 0,
-            avgFrustration: sessionStats.averageFrustration,
-            subjectsStudied: subjectsResult.length,
-            totalStudyTime: sessionStats.totalMinutes,
-            lastSessionDate: lastSessionResult[0]?.startedAt ?? null,
-          });
-        } catch (childError) {
-          logger.error('Critical error fetching child metrics', { operation: 'parent:dashboard:child', _error: (childError as Error).message, childId: child.id, parentId, severity: 'high' as const });
-          throw new Error(`Impossible de récupérer les métriques pour l'enfant ${child.id}: ${(childError as Error).message}`);
-        }
-      }
+            return {
+              studentId: child.id,
+              studentName: `${child.firstName} ${child.lastName}`,
+              schoolLevel: child.schoolLevel ?? 'Not defined',
+              age: child.dateOfBirth ? this.calculateAge(new Date(child.dateOfBirth)) : 0,
+              totalSessions: sessionStats.totalSessions,
+              studyDays: studyDaysResult[0]?.studyDays ?? 0,
+              avgSessionDuration: sessionStats.totalSessions > 0
+                ? sessionStats.totalMinutes / sessionStats.totalSessions
+                : 0,
+              avgFrustration: sessionStats.averageFrustration,
+              subjectsStudied: subjectsResult.length,
+              totalStudyTime: sessionStats.totalMinutes,
+              lastSessionDate: lastSessionResult[0]?.startedAt ?? null,
+            };
+          } catch (childError) {
+            logger.error('Critical error fetching child metrics', { operation: 'parent:dashboard:child', _error: (childError as Error).message, childId: child.id, parentId, severity: 'high' as const });
+            throw new Error(`Impossible de récupérer les métriques pour l'enfant ${child.id}: ${(childError as Error).message}`);
+          }
+        }),
+      );
 
       return metrics;
     } catch (_error) {

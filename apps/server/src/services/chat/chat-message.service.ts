@@ -74,7 +74,8 @@ export class ChatMessageService {
         mimeType?: string;
         fileSizeBytes?: number;
       };
-    }
+    },
+    options: { verifySessionExists?: boolean } = {}
   ): Promise<{ messageId: string; realSessionId: string }> {
     try {
       const validSessionId = safeUUID(sessionId);
@@ -89,16 +90,21 @@ export class ChatMessageService {
         throw new Error('Invalid session ID provided');
       }
 
-      const session = await studySessionsRepository.findById(validSessionId);
-
-      if (!session) {
-        logger.error('Session not found', {
-          _error: `Session ${validSessionId} not found`,
-          operation: 'saveMessage',
-          sessionId: validSessionId,
-          severity: 'high' as const
-        });
-        throw new Error(`Session ${validSessionId} not found. Create session explicitly first.`);
+      // Session verification is optional: orchestration layer already resolves + owner-checks
+      // the session right before calling saveMessage, so re-selecting here is wasted I/O.
+      // Callers without prior verification should pass { verifySessionExists: true }.
+      const shouldVerify = options.verifySessionExists ?? true;
+      if (shouldVerify) {
+        const session = await studySessionsRepository.findById(validSessionId);
+        if (!session) {
+          logger.error('Session not found', {
+            _error: `Session ${validSessionId} not found`,
+            operation: 'saveMessage',
+            sessionId: validSessionId,
+            severity: 'high' as const
+          });
+          throw new Error(`Session ${validSessionId} not found. Create session explicitly first.`);
+        }
       }
 
       const message = await messagesRepository.create({

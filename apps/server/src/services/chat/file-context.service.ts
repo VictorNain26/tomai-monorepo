@@ -1,4 +1,5 @@
 import { filesRepository, sessionFilesRepository } from '../../db/repositories/index.js';
+import type { File as FileRecord } from '../../db/repositories/files.repository.js';
 import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
 import { documentAnalysisService, type DocumentAnalysisResult } from '../document/index.js';
 import { logger } from '../../lib/observability.js';
@@ -111,15 +112,19 @@ class FileContextService {
 
   /**
    * Analyse un fichier avec le pipeline complet
+   *
+   * Accepte optionnellement un FileRecord pré-chargé pour éviter un SELECT
+   * redondant quand l'appelant a déjà récupéré le fichier (ex: prepareFileContext).
    */
   async analyzeFileWithCache(
     fileId: string,
-    options: FileAnalysisOptions
+    options: FileAnalysisOptions,
+    preloadedFile?: FileRecord
   ): Promise<FileAnalysisResult | null> {
     try {
       const { content: userQuestion, schoolLevel, userId } = options;
 
-      const file = await filesRepository.findById(fileId);
+      const file = preloadedFile ?? await filesRepository.findById(fileId);
       if (!file) {
         logger.warn('File not found in DB', { fileId, operation: 'analyze-file' });
         return null;
@@ -246,19 +251,33 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
   }> {
     const { fileIds, content, schoolLevel, userId, sessionId } = params;
 
-    const [fileMetadatas, sessionFilesContext] = await Promise.all([
-      Promise.all(fileIds.map(id => this.retrieveFileMetadata(id))),
+    // Batch-fetch all attached files once (1 SELECT) in parallel with session context.
+    // Previous implementation did N SELECTs in retrieveFileMetadata + N more in analyzeFileWithCache.
+    const [fileRecords, sessionFilesContext] = await Promise.all([
+      filesRepository.findByIds(fileIds),
       this.getSessionFilesContext(sessionId)
     ]);
 
-    const attachedFileInfos = fileMetadatas.filter(
-      (info): info is AttachedFileInfo => info !== null
-    );
+    // Preserve input order and build attached metadata from preloaded records (no extra SELECT).
+    const orderedFiles = fileIds
+      .map(id => fileRecords.find(f => f.id === id))
+      .filter((f): f is NonNullable<typeof f> => f !== undefined);
 
-    // Analyze all files (sequentially to avoid rate limits)
+    const attachedFileInfos: AttachedFileInfo[] = orderedFiles.map(file => {
+      const geminiExpired = file.geminiExpiresAt && file.geminiExpiresAt <= new Date();
+      return {
+        fileName: file.fileName,
+        fileId: file.id,
+        geminiFileId: geminiExpired ? undefined : (file.geminiFileUri ?? undefined),
+        mimeType: file.mimeType,
+        fileSizeBytes: file.sizeBytes
+      };
+    });
+
+    // Analyze files (sequentially to respect Gemini rate limits) using preloaded records.
     const analysisResults: (FileAnalysisResult | null)[] = [];
-    for (const fileId of fileIds) {
-      const result = await this.analyzeFileWithCache(fileId, { content, schoolLevel, userId });
+    for (const file of orderedFiles) {
+      const result = await this.analyzeFileWithCache(file.id, { content, schoolLevel, userId }, file);
       analysisResults.push(result);
     }
 

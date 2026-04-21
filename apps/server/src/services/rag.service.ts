@@ -57,7 +57,14 @@ export interface HybridSearchResult {
 // Service
 // =============================================================================
 
+// isAvailable() result cache: Qdrant getCollection + Mistral embed('test')
+// are both real network calls. Caching avoids doubling them per flashcard generation
+// (audit P0-7: tool-executor calls isAvailable then hybridSearch which re-checks).
+const AVAILABILITY_CACHE_TTL_MS = 30_000;
+
 class RAGService {
+  private availabilityCache: { value: boolean; expiresAt: number } | null = null;
+
   /**
    * Recherche sémantique avec reranking BM25+RRF
    */
@@ -159,17 +166,33 @@ class RAGService {
 
   /**
    * Vérifie si le service RAG est disponible
+   * Résultat mis en cache 30s pour éviter des appels répétés à Qdrant + Mistral
+   * sur le chemin chaud (tool-executor → isAvailable → hybridSearch → isAvailable).
    */
   async isAvailable(): Promise<boolean> {
+    const now = Date.now();
+    if (this.availabilityCache && this.availabilityCache.expiresAt > now) {
+      return this.availabilityCache.value;
+    }
     try {
       const [qdrantOk, mistralOk] = await Promise.all([
         qdrantService.isAvailable(),
         mistralEmbeddingsService.isAvailable(),
       ]);
-      return qdrantOk && mistralOk;
+      const available = qdrantOk && mistralOk;
+      this.availabilityCache = { value: available, expiresAt: now + AVAILABILITY_CACHE_TTL_MS };
+      return available;
     } catch {
+      this.availabilityCache = { value: false, expiresAt: now + AVAILABILITY_CACHE_TTL_MS };
       return false;
     }
+  }
+
+  /**
+   * Invalide le cache d'availability. Utile pour les tests ou après reconfiguration.
+   */
+  invalidateAvailabilityCache(): void {
+    this.availabilityCache = null;
   }
 
   /**

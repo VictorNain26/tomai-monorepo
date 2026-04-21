@@ -139,15 +139,21 @@ class QdrantService {
       'sixieme', 'cinquieme', 'quatrieme', 'troisieme',
       'seconde', 'premiere', 'terminale',
     ];
+    // Parallel fan-out (previously 12 sequential HTTP calls to Qdrant Cloud on cache-miss).
+    const [niveauResults, by_matiere] = await Promise.all([
+      Promise.all(
+        niveaux.map(niveau =>
+          client.count(COLLECTION_NAME, {
+            filter: { must: [{ key: 'niveau', match: { value: niveau } }] },
+          }).then(count => [niveau, count.count] as const)
+        ),
+      ),
+      this.getUniqueMatieres(),
+    ]);
     const by_niveau: Record<string, number> = {};
-    for (const niveau of niveaux) {
-      const count = await client.count(COLLECTION_NAME, {
-        filter: { must: [{ key: 'niveau', match: { value: niveau } }] },
-      });
-      if (count.count > 0) by_niveau[niveau] = count.count;
+    for (const [niveau, count] of niveauResults) {
+      if (count > 0) by_niveau[niveau] = count;
     }
-
-    const by_matiere = await this.getUniqueMatieres();
     const stats: CollectionStats = { total_points, by_niveau, by_matiere };
 
     this.statsCache = { data: stats, timestamp: Date.now() };
@@ -181,11 +187,16 @@ class QdrantService {
       if (!offset) break;
     }
 
-    for (const matiere of seenMatieres) {
-      const count = await client.count(COLLECTION_NAME, {
-        filter: { must: [{ key: 'matiere', match: { value: matiere } }] },
-      });
-      if (count.count > 0) by_matiere[matiere] = count.count;
+    // Parallel count per matière instead of sequential HTTP roundtrips.
+    const matiereResults = await Promise.all(
+      Array.from(seenMatieres).map(matiere =>
+        client.count(COLLECTION_NAME, {
+          filter: { must: [{ key: 'matiere', match: { value: matiere } }] },
+        }).then(count => [matiere, count.count] as const)
+      ),
+    );
+    for (const [matiere, count] of matiereResults) {
+      if (count > 0) by_matiere[matiere] = count;
     }
 
     return by_matiere;
