@@ -116,11 +116,19 @@ export function needsDailyReset(lastResetAt: Date): boolean {
   const now = new Date();
   const parisHour = getParisHour();
 
+  // Derive the current Paris-UTC offset dynamically so the reset boundary is
+  // correct across DST transitions (CET = UTC+1 in winter, CEST = UTC+2 in
+  // summer). Using a fixed offset silently drifts the reset by 1h for ~7 months
+  // of the year.
+  const nowUtcHour = now.getUTCHours();
+  const parisOffsetHours = ((parisHour - nowUtcHour) + 24) % 24;
+  const utcResetHour = ((RESET_HOUR_PARIS - parisOffsetHours) + 24) % 24;
+
   const todayReset = new Date(now);
-  todayReset.setUTCHours(RESET_HOUR_PARIS - 1, 0, 0, 0);
+  todayReset.setUTCHours(utcResetHour, 0, 0, 0);
 
   if (parisHour < RESET_HOUR_PARIS) {
-    todayReset.setDate(todayReset.getDate() - 1);
+    todayReset.setUTCDate(todayReset.getUTCDate() - 1);
   }
 
   return lastResetAt < todayReset;

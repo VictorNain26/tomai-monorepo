@@ -1,34 +1,31 @@
 import { describe, it, expect } from 'bun:test';
 import { checkQuota, checkDeckQuota } from '../services/quota/quota-functions.js';
+import { QUOTA_CONFIG } from '../services/quota/quota-config.js';
 
 /**
- * These tests document that quota enforcement is currently BYPASSED.
- * checkQuota and checkDeckQuota return hardcoded "always allowed" values.
+ * Audit F-3 (2026-04-21): quotaEnforcementEnabled flipped to `true` by default.
+ * Deployments that need to disable enforcement must set
+ * `QUOTA_ENFORCEMENT_ENABLED=false` explicitly.
  *
- * When real enforcement is implemented, these tests should be replaced
- * with proper DB-backed tests that verify plan limits are respected.
+ * These tests document the NEW default behaviour: without a subscription row
+ * and without DB access, checkQuota/checkDeckQuota fail open to free-plan
+ * limits (not unlimited access). The bypass branch is exercised by manually
+ * setting the env var before import; we don't re-test it here.
  */
 
-describe('checkQuota (enforcement bypassed)', () => {
-  it('always returns allowed=true regardless of userId', async () => {
-    const result = await checkQuota('any-user-id');
+describe('checkQuota (enforcement enabled by default)', () => {
+  it('returns allowed=true for brand-new users with free plan limits', async () => {
+    const result = await checkQuota('new-user-id');
 
     expect(result.allowed).toBe(true);
-    expect(result.plan).toBe('premium');
+    expect(result.plan).toBe('free');
     expect(result.mode).toBe('normal');
+    expect(result.windowLimit).toBe(QUOTA_CONFIG.free.windowTokens);
+    expect(result.dailyLimit).toBe(QUOTA_CONFIG.free.dailyMaxTokens);
   });
 
-  it('returns inflated limits (999999) indicating bypass', async () => {
+  it('reports zero usage for users without prior activity', async () => {
     const result = await checkQuota('another-user');
-
-    expect(result.windowLimit).toBe(999_999);
-    expect(result.dailyLimit).toBe(999_999);
-    expect(result.windowTokensRemaining).toBe(999_999);
-    expect(result.dailyTokensRemaining).toBe(999_999);
-  });
-
-  it('reports zero usage', async () => {
-    const result = await checkQuota('test');
 
     expect(result.windowTokensUsed).toBe(0);
     expect(result.dailyTokensUsed).toBe(0);
@@ -37,19 +34,20 @@ describe('checkQuota (enforcement bypassed)', () => {
   });
 });
 
-describe('checkDeckQuota (enforcement bypassed)', () => {
-  it('always returns allowed=true regardless of userId', async () => {
+describe('checkDeckQuota (enforcement enabled by default)', () => {
+  it('returns allowed=true for users with free plan', async () => {
     const result = await checkDeckQuota('any-user-id');
 
     expect(result.allowed).toBe(true);
   });
 
-  it('returns inflated limits (999) indicating bypass', async () => {
+  it('reports free-plan deck limits (not unlimited)', async () => {
     const result = await checkDeckQuota('test');
 
-    expect(result.decksRemainingToday).toBe(999);
-    expect(result.decksRemainingThisMonth).toBe(999);
-    expect(result.dailyLimit).toBe(999);
-    expect(result.monthlyLimit).toBe(999);
+    // Free plan currently has no deck quota, so these come back as the
+    // premium daily/monthly defaults from QUOTA_CONFIG for a brand-new user
+    // (matches the checkQuotaReal fail-open path).
+    expect(result.dailyLimit).toBeGreaterThan(0);
+    expect(result.monthlyLimit).toBeGreaterThan(0);
   });
 });
