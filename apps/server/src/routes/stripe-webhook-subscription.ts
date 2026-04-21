@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { stripeService, parseChildrenIdsFromMetadata } from '../lib/stripe';
+import { billingService } from '../services/billing';
 import { db } from '../db/connection';
 import { familyBilling, userSubscriptions } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
@@ -58,7 +59,15 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   const childrenIds = parseChildrenIdsFromMetadata(subscription.metadata?.childrenIds);
 
   if (childrenIds.length > 0) {
-    const childStatus = billingStatus === 'active' ? 'active' : billingStatus === 'canceled' ? 'active' : 'paused';
+    // Children retain premium access while the parent's subscription is
+    // 'active' OR 'canceled'. The 'canceled' billing state here refers to
+    // "cancel_at_period_end=true while Stripe status is still active" (set
+    // above on line 35) — the parent already paid for the current period,
+    // so children keep access until handleSubscriptionDeleted fires at the
+    // true end of the period and downgrades them to 'free'. Any other
+    // billingStatus (past_due, expired) pauses the children immediately.
+    const childKeepsAccess = billingStatus === 'active' || billingStatus === 'canceled';
+    const childStatus = childKeepsAccess ? 'active' : 'paused';
     await db
       .update(userSubscriptions)
       .set({
@@ -87,32 +96,11 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
 
   if (!billing) return;
 
-  await db
-    .update(familyBilling)
-    .set({
-      billingStatus: 'expired',
-      premiumChildrenCount: 0,
-      monthlyAmountCents: 0,
-      stripeSubscriptionId: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(familyBilling.parentId, billing.parentId));
-
   const childrenIds = parseChildrenIdsFromMetadata(subscription.metadata?.childrenIds);
 
-  const freePlanId = await stripeService.getFreePlanId();
-
-  if (freePlanId && childrenIds.length > 0) {
-    await db
-      .update(userSubscriptions)
-      .set({
-        planId: freePlanId,
-        status: 'active',
-        tokensUsedToday: 0,
-        updatedAt: new Date(),
-      })
-      .where(inArray(userSubscriptions.userId, childrenIds));
-  }
+  await billingService.expireAndDowngrade(billing.parentId, childrenIds, {
+    clearStripeSubscriptionId: true,
+  });
 
   logger.info(`[Stripe Webhook] Subscription deleted for parent ${billing.parentId} - ${childrenIds.length} children reverted to free`, {
     operation: 'stripe:webhook:subscription:deleted',
