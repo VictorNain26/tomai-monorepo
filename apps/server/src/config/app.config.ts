@@ -62,6 +62,15 @@ export interface AppConfig {
     tokenCostPerMessage: number;
     warningThreshold: number;
   };
+  features: {
+    /**
+     * When true, checkQuota/checkDeckQuota evaluate real per-user counters
+     * and can return `allowed: false`. When false (default), they return
+     * unlimited access — used while the enforcement rollout is pending.
+     * Counters are still written to DB in both modes.
+     */
+    quotaEnforcementEnabled: boolean;
+  };
   cache: {
     ttlMs: number;
     maxSize: number;
@@ -357,6 +366,9 @@ export function createAppConfig(): AppConfig {
       maxRequestsChat: Bun.env['NODE_ENV'] === 'development' ? 500 : 10,
     },
     usage: createUsageConfig(),
+    features: {
+      quotaEnforcementEnabled: Bun.env['QUOTA_ENFORCEMENT_ENABLED'] === 'true',
+    },
     cache: createCacheConfig(),
     rag: createRagConfig(),
     textToSpeech: createTextToSpeechConfig(),

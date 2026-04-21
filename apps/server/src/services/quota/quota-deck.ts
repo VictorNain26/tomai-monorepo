@@ -8,6 +8,7 @@ import { db } from '../../db/connection.js';
 import { userSubscriptions } from '../../db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { logger } from '../../lib/observability.js';
+import { appConfig } from '../../config/app.config.js';
 import {
   QUOTA_CONFIG,
   needsDailyReset,
@@ -18,14 +19,72 @@ import {
 import { ensureUserSubscription } from './quota-functions.js';
 
 export async function checkDeckQuota(userId: string): Promise<DeckQuotaResult> {
-  void userId;
-  return {
-    allowed: true,
-    decksRemainingToday: 999,
-    decksRemainingThisMonth: 999,
-    dailyLimit: 999,
-    monthlyLimit: 999,
-  };
+  // Feature flag: unlimited access when enforcement is off. Counters still
+  // increment in DB for analytics.
+  if (!appConfig.features.quotaEnforcementEnabled) {
+    return {
+      allowed: true,
+      decksRemainingToday: 999,
+      decksRemainingThisMonth: 999,
+      dailyLimit: 999,
+      monthlyLimit: 999,
+    };
+  }
+  return checkDeckQuotaReal(userId);
+}
+
+async function checkDeckQuotaReal(userId: string): Promise<DeckQuotaResult> {
+  const { dailyDecks, monthlyDecks } = QUOTA_CONFIG.premium;
+
+  try {
+    const [row] = await db
+      .select({
+        decksGeneratedToday: userSubscriptions.decksGeneratedToday,
+        decksGeneratedThisMonth: userSubscriptions.decksGeneratedThisMonth,
+        lastResetAt: userSubscriptions.lastResetAt,
+        lastMonthlyResetAt: userSubscriptions.lastMonthlyResetAt,
+      })
+      .from(userSubscriptions)
+      .where(eq(userSubscriptions.userId, userId))
+      .limit(1);
+
+    if (!row) {
+      return {
+        allowed: true,
+        decksRemainingToday: dailyDecks,
+        decksRemainingThisMonth: monthlyDecks,
+        dailyLimit: dailyDecks,
+        monthlyLimit: monthlyDecks,
+      };
+    }
+
+    const effectiveToday = needsDailyReset(row.lastResetAt) ? 0 : row.decksGeneratedToday;
+    const effectiveMonth = needsMonthlyReset(row.lastMonthlyResetAt) ? 0 : row.decksGeneratedThisMonth;
+    const remainingToday = Math.max(0, dailyDecks - effectiveToday);
+    const remainingMonth = Math.max(0, monthlyDecks - effectiveMonth);
+
+    return {
+      allowed: remainingToday > 0 && remainingMonth > 0,
+      decksRemainingToday: remainingToday,
+      decksRemainingThisMonth: remainingMonth,
+      dailyLimit: dailyDecks,
+      monthlyLimit: monthlyDecks,
+    };
+  } catch (error) {
+    logger.error('checkDeckQuota failed, falling back to allowed', {
+      operation: 'quota:deck:check:error',
+      _error: error instanceof Error ? error.message : String(error),
+      severity: 'medium' as const,
+      userId,
+    });
+    return {
+      allowed: true,
+      decksRemainingToday: dailyDecks,
+      decksRemainingThisMonth: monthlyDecks,
+      dailyLimit: dailyDecks,
+      monthlyLimit: monthlyDecks,
+    };
+  }
 }
 
 export async function incrementDeckUsage(userId: string): Promise<DeckUsageResult> {

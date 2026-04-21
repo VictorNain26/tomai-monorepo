@@ -2,6 +2,7 @@ import { db } from '../../db/connection.js';
 import { userSubscriptions, subscriptionPlans } from '../../db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { logger } from '../../lib/observability.js';
+import { appConfig } from '../../config/app.config.js';
 import {
   QUOTA_CONFIG,
   getDailyResetTime,
@@ -108,8 +109,86 @@ function createDefaultQuotaResult(
 }
 
 export async function checkQuota(userId: string): Promise<QuotaCheckResult> {
-  void userId;
-  return createDefaultQuotaResult(999_999, 999_999, 'premium');
+  // Feature flag: when enforcement is off, every caller gets unlimited access.
+  // Counters are still incremented (see incrementTokenUsage) so usage data is
+  // collected for product analytics and can be verified before flipping the flag.
+  if (!appConfig.features.quotaEnforcementEnabled) {
+    return createDefaultQuotaResult(999_999, 999_999, 'premium');
+  }
+  return checkQuotaReal(userId);
+}
+
+async function checkQuotaReal(userId: string): Promise<QuotaCheckResult> {
+  try {
+    const [row] = await db
+      .select({
+        planName: subscriptionPlans.name,
+        windowTokensUsed: userSubscriptions.windowTokensUsed,
+        windowStartAt: userSubscriptions.windowStartAt,
+        tokensUsedToday: userSubscriptions.tokensUsedToday,
+        lastResetAt: userSubscriptions.lastResetAt,
+      })
+      .from(userSubscriptions)
+      .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
+      .where(eq(userSubscriptions.userId, userId))
+      .limit(1);
+
+    // No subscription yet: treat as free plan at zero usage (the next
+    // incrementTokenUsage will create the row via ensureUserSubscription).
+    if (!row) {
+      return createDefaultQuotaResult(
+        QUOTA_CONFIG.free.windowTokens,
+        QUOTA_CONFIG.free.dailyMaxTokens,
+        'free',
+      );
+    }
+
+    const planName: 'free' | 'premium' = row.planName === 'premium' ? 'premium' : 'free';
+    const config = QUOTA_CONFIG[planName];
+
+    // Effective counters apply reset boundaries client-side so the quota
+    // response is consistent with what incrementTokenUsage will persist.
+    const effectiveWindow = isWindowExpired(row.windowStartAt, config.windowHours)
+      ? 0
+      : row.windowTokensUsed;
+    const effectiveDaily = needsDailyReset(row.lastResetAt) ? 0 : row.tokensUsedToday;
+
+    const windowRemaining = Math.max(0, config.windowTokens - effectiveWindow);
+    const dailyRemaining = Math.max(0, config.dailyMaxTokens - effectiveDaily);
+    const windowUsage = config.windowTokens > 0 ? effectiveWindow / config.windowTokens : 0;
+    const dailyUsage = config.dailyMaxTokens > 0 ? effectiveDaily / config.dailyMaxTokens : 0;
+    const maxUsage = Math.max(windowUsage, dailyUsage);
+
+    return {
+      allowed: maxUsage < 1,
+      mode: getQuotaMode(maxUsage),
+      windowTokensUsed: effectiveWindow,
+      windowTokensRemaining: windowRemaining,
+      windowLimit: config.windowTokens,
+      windowUsagePercent: Math.round(windowUsage * 100),
+      windowRefreshIn: `${config.windowHours}h`,
+      dailyTokensUsed: effectiveDaily,
+      dailyTokensRemaining: dailyRemaining,
+      dailyLimit: config.dailyMaxTokens,
+      dailyUsagePercent: Math.round(dailyUsage * 100),
+      dailyResetsIn: getDailyResetTime(),
+      plan: planName,
+    };
+  } catch (error) {
+    logger.error('checkQuota failed, falling back to allowed', {
+      operation: 'quota:check:error',
+      _error: error instanceof Error ? error.message : String(error),
+      severity: 'high' as const,
+      userId,
+    });
+    // Fail-open: a DB blip should not block legitimate traffic. The counters
+    // still hold the truth at the next UPDATE and will converge.
+    return createDefaultQuotaResult(
+      QUOTA_CONFIG.free.windowTokens,
+      QUOTA_CONFIG.free.dailyMaxTokens,
+      'free',
+    );
+  }
 }
 
 export async function incrementTokenUsage(
