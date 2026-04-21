@@ -77,3 +77,45 @@ Chaque sous-projet produit :
 4. Une update de ce README si l'état change
 
 À la fin de SP5 : une PR récap `staging → main` avec note de release.
+
+## État d'exécution (mis à jour 2026-04-21)
+
+### SP0 — CLAUDE.md modernisés ✅ TERMINÉ
+
+Commit `dfd3f04`. 4 CLAUDE.md refresh (root parent, monorepo, server, mobile) + index specs.
+
+### SP1 — Durcissement server-mobile ✅ TERMINÉ (pré-existant)
+
+Vérifié : les 3 items étaient déjà implémentés dans des commits antérieurs.
+- Item 1 (ternaire `canceled`) : `stripe-webhook-subscription.ts:69` — logique `childKeepsAccess` avec commentaire explicite
+- Item 3 (reset combiné) : `token-quota.service.test.ts:169` — test "should reset window AND daily when both expire simultaneously"
+- Item 5 (salt aléatoire) : `encryption.ts:82` — `crypto.getRandomValues(new Uint8Array(SALT_LENGTH))` préfixé au ciphertext
+
+Commit `33dc8bc` : salvage de 3 améliorations supplémentaires d'un stash obsolète (profile mounted flag, parent password via Better Auth admin API, headers forward).
+
+### SP2 — Modernisation Expo + React 19 ✅ LARGEMENT TERMINÉ
+
+Vérifié : la majorité des items était déjà implémentée.
+- ✅ `experiments.typedRoutes: true` actif
+- ✅ `enableBsdiffPatchSupport: true` (Hermes bytecode diffing)
+- ✅ Pas de `forwardRef`, pas de `useContext()`, pas de `<Ctx.Provider>` (React 19 patterns)
+- ✅ `Stack.Protected` adopté dans 6 fichiers (auth gating déclaratif)
+- ✅ `FlashList v2` (`@shopify/flash-list@2.0.2`)
+
+**Reporté (non bloquant)** :
+- 🚫 **React Compiler** : bloqué par expo#35100 (incompatibilité Expo Router). Documenté dans `app.config.ts`.
+- ⏳ **`expo-image`** : seulement 1 fichier l'utilise, 5 fichiers utilisent encore `Image` de react-native. Ajout de dep native (`pnpm build:dev` requis). À faire dans une session dédiée.
+- ⏳ **`useSuspenseQuery`** : pas adopté. Nécessite wrapping `<Suspense>` boundaries — refactor non trivial.
+- ⏳ **`useLoaderData`** : pas adopté. Pattern Expo Router v7 encore jeune sur RN (stabilité à valider).
+
+### SP3 — Observabilité 🚧 EN COURS
+
+Plan détaillé dans `plans/2026-04-21-mobile-audit/03-observability.md`.
+
+### SP4 — Sécurité & conformité ⏳ À FAIRE
+
+Plan détaillé dans `plans/2026-04-21-mobile-audit/04-security.md`.
+
+### SP5 — Refactor dette ⏳ À FAIRE
+
+Plan détaillé dans `plans/2026-04-21-mobile-audit/05-refactor.md`.

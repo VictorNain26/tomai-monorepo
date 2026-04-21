@@ -23,6 +23,17 @@ module.exports = {
     '!src/app/**/_layout.tsx',
     '!**/node_modules/**',
   ],
+  // Anti-regression floor. Baseline 2026-04-21: 8.78% stmts / 8.91% lines.
+  // Raise progressively as SP3-SP5 add tests for hooks, services, and stores.
+  // Target 2026-Q3: 40% global / 70% on src/stores and src/lib.
+  coverageThreshold: {
+    global: {
+      statements: 8,
+      branches: 4,
+      functions: 8,
+      lines: 8,
+    },
+  },
   testMatch: [
     '**/__tests__/**/*.(spec|test).[jt]s?(x)',
   ],
