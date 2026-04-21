@@ -6,7 +6,7 @@ module.exports = {
     enableGlobally: true,
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@rn-primitives/.*|@tanstack/.*|@repo/api|@shopify/flash-list|nativewind|tailwind-merge|clsx|class-variance-authority|lucide-react-native)',
+    'node_modules/(?!(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@rn-primitives/.*|@tanstack/.*|@repo/api|@shopify/flash-list|nativewind|tailwind-merge|clsx|class-variance-authority|lucide-react-native|@stablelib/.*)',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
