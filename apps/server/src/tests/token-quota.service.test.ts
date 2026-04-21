@@ -166,6 +166,23 @@ describe('Token Quota Service', () => {
       expect(result.newDailyTokensUsed).toBe(2500); // 2000 + 500
     });
 
+    it('should reset window AND daily when both expire simultaneously', async () => {
+      // Edge case flagged in audit review O-2: window 5h rolls over at the same
+      // time as the Paris daily reset. Both resets must apply atomically.
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const yesterdayMorning = new Date(Date.now() - 25 * 60 * 60 * 1000);
+      dbSelectResult = [makeDbSubscription({
+        windowStartAt: sixHoursAgo,
+        windowTokensUsed: 4000,
+        lastResetAt: yesterdayMorning,
+        tokensUsedToday: 10000,
+      })];
+      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      expect(result.success).toBe(true);
+      expect(result.newWindowTokensUsed).toBe(500);
+      expect(result.newDailyTokensUsed).toBe(500);
+    });
+
     it('should reset window tokens when window expired (>5h)', async () => {
       const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
       dbSelectResult = [makeDbSubscription({
