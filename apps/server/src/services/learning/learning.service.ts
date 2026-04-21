@@ -1,23 +1,32 @@
 /**
- * LearningService — data-access + transactional orchestration for decks/cards.
+ * LearningService - Domain service for decks & cards.
+ *
+ * Responsibilities:
+ *  - Enforce ownership (IDOR protection) before any deck-scoped mutation
+ *  - Orchestrate multi-table writes atomically via `db.transaction(...)`
+ *  - Delegate every SQL call to the repository layer (no `db.insert/update/
+ *    delete/select` in this file, except the transaction envelope itself)
  *
  * Consolidates the deck+cards creation transaction previously duplicated in
- * card-generate.routes.ts and tool-executor.ts, and centralizes ownership
- * checks so route handlers stop hitting the DB directly.
+ * `card-generate.routes.ts` (transactional) and `chat/tool-executor.ts`
+ * (non-transactional — the subtle bug this extraction fixes).
  */
 
-import { and, asc, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import {
-  learningDecks,
-  learningCards,
-  type LearningDeck,
-  type NewLearningDeck,
-  type LearningCard,
-  type CardType,
+  learningDecksRepository,
+  type ListDecksOptions,
+} from '../../db/repositories/learning-decks.repository.js';
+import { learningCardsRepository } from '../../db/repositories/learning-cards.repository.js';
+import type {
+  LearningDeck,
+  NewLearningDeck,
+  LearningCard,
+  CardType,
 } from '../../db/schema.js';
 import { logger } from '../../lib/observability.js';
 import { fsrsService } from '../fsrs.service.js';
+import { DeckNotFoundError, DeckOwnershipError } from './learning-errors.js';
 
 export interface CreateDeckWithCardsInput {
   userId: string;
@@ -36,12 +45,13 @@ export interface UpdateDeckInput {
 
 class LearningService {
   /**
-   * Atomic creation of a deck plus its cards. Used by:
-   * - the manual generation endpoint (POST /api/learning/generate)
-   * - the Gemini tool-executor when the chat asks to create flashcards
+   * Atomically create a deck and its cards in a single transaction.
+   * Callers: `POST /api/learning/decks`, `POST /api/learning/generate`,
+   * and the Gemini tool-executor.
    *
-   * Rolls back both inserts on any failure (previously the two sites had
-   * their own separate, subtly different copies of this code).
+   * If the card insert fails, the deck insert is rolled back — previously
+   * the tool-executor performed the two writes separately, leaving orphan
+   * decks behind whenever cards failed to persist.
    */
   async createDeckWithCards(
     input: CreateDeckWithCardsInput,
@@ -49,17 +59,13 @@ class LearningService {
     const { userId, deck: deckData, cards: cardsInput } = input;
 
     return db.transaction(async (tx) => {
-      const [createdDeck] = await tx
-        .insert(learningDecks)
-        .values({
-          ...deckData,
-          userId,
-          cardCount: cardsInput.length,
-        })
-        .returning();
+      const createdDeck = await learningDecksRepository.insert(
+        { ...deckData, userId, cardCount: cardsInput.length },
+        tx,
+      );
 
-      if (!createdDeck) {
-        throw new Error('Failed to create deck');
+      if (cardsInput.length === 0) {
+        return { deck: createdDeck, cards: [] };
       }
 
       const cardsToInsert = cardsInput.map((card, index) => ({
@@ -70,11 +76,14 @@ class LearningService {
         fsrsData: fsrsService.initializeCardFsrsData(),
       }));
 
-      const createdCards = cardsToInsert.length > 0
-        ? await tx.insert(learningCards).values(cardsToInsert).returning()
-        : [];
+      const createdCards = await learningCardsRepository.insertMany(
+        cardsToInsert,
+        tx,
+      );
 
-      if (cardsInput.length > 0 && createdCards.length === 0) {
+      if (createdCards.length === 0) {
+        // Drizzle + postgres-js returns [] silently on some failure modes;
+        // throwing here ensures the outer transaction rolls back the deck.
         throw new Error('Failed to insert cards');
       }
 
@@ -83,81 +92,80 @@ class LearningService {
   }
 
   /**
-   * Fetch decks owned by the given user, most-recently-updated first.
+   * List decks owned by the given user, most-recently-updated first.
+   * Thin pass-through to the repository; kept on the service to preserve
+   * the "routes talk to services, not repositories" convention.
    */
-  async listUserDecks(userId: string): Promise<LearningDeck[]> {
-    return db
-      .select()
-      .from(learningDecks)
-      .where(eq(learningDecks.userId, userId))
-      .orderBy(desc(learningDecks.updatedAt));
+  async listUserDecks(
+    userId: string,
+    opts?: ListDecksOptions,
+  ): Promise<LearningDeck[]> {
+    return learningDecksRepository.listByUser(userId, opts);
   }
 
   /**
-   * Fetch one deck with its cards, scoped to the user (IDOR protection).
-   * Returns null if the deck does not exist or belongs to someone else.
+   * Fetch a deck (+ cards) scoped to the user.
+   * Returns null if the deck does not exist or is not owned by the user.
+   *
+   * Kept return-null for backward compatibility with existing route handlers
+   * that surface a 404. `getDeckWithCardsOrThrow` below is the throw-based
+   * variant that routes will migrate to in phase 2.
    */
   async getDeckWithCards(
     userId: string,
     deckId: string,
   ): Promise<{ deck: LearningDeck; cards: LearningCard[] } | null> {
-    const [deck] = await db
-      .select()
-      .from(learningDecks)
-      .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, userId)))
-      .limit(1);
-
+    const deck = await learningDecksRepository.findByUserAndId(userId, deckId);
     if (!deck) return null;
 
-    const cards = await db
-      .select()
-      .from(learningCards)
-      .where(eq(learningCards.deckId, deckId))
-      .orderBy(asc(learningCards.position));
-
+    const cards = await learningCardsRepository.listByDeck(deckId);
     return { deck, cards };
   }
 
   /**
-   * Update a deck with a partial payload. Returns null if the deck does not
-   * exist or is not owned by the caller.
+   * Throw-based counterpart to `getDeckWithCards`. Distinguishes between:
+   *   - deck missing entirely → DeckNotFoundError
+   *   - deck exists but owned by another user → DeckOwnershipError
+   */
+  async getDeckWithCardsOrThrow(
+    userId: string,
+    deckId: string,
+  ): Promise<{ deck: LearningDeck; cards: LearningCard[] }> {
+    const existing = await learningDecksRepository.findById(deckId);
+    if (!existing) {
+      throw new DeckNotFoundError(deckId);
+    }
+    if (existing.userId !== userId) {
+      throw new DeckOwnershipError(userId, deckId);
+    }
+
+    const cards = await learningCardsRepository.listByDeck(deckId);
+    return { deck: existing, cards };
+  }
+
+  /**
+   * Update a deck if the caller owns it. Returns null otherwise.
    */
   async updateDeck(
     userId: string,
     deckId: string,
     fields: UpdateDeckInput,
   ): Promise<LearningDeck | null> {
-    const [owned] = await db
-      .select({ id: learningDecks.id })
-      .from(learningDecks)
-      .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, userId)))
-      .limit(1);
-
+    const owned = await learningDecksRepository.findByUserAndId(userId, deckId);
     if (!owned) return null;
 
-    const [updated] = await db
-      .update(learningDecks)
-      .set({ ...fields, updatedAt: new Date() })
-      .where(eq(learningDecks.id, deckId))
-      .returning();
-
-    return updated ?? null;
+    return learningDecksRepository.updateById(deckId, fields);
   }
 
   /**
-   * Delete a deck (cards cascade via the FK). Returns false if the deck
-   * does not exist or does not belong to the user.
+   * Delete a deck if the caller owns it (cards cascade via FK).
+   * Returns false if the deck does not exist or is owned by someone else.
    */
   async deleteDeck(userId: string, deckId: string): Promise<boolean> {
-    const [owned] = await db
-      .select({ id: learningDecks.id })
-      .from(learningDecks)
-      .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, userId)))
-      .limit(1);
-
+    const owned = await learningDecksRepository.findByUserAndId(userId, deckId);
     if (!owned) return false;
 
-    await db.delete(learningDecks).where(eq(learningDecks.id, deckId));
+    await learningDecksRepository.deleteById(deckId);
 
     logger.info('Deck deleted', {
       operation: 'learning:service:delete-deck',
@@ -167,6 +175,31 @@ class LearningService {
 
     return true;
   }
+
+  /**
+   * Throw-based counterpart to `deleteDeck`. Mirrors the error taxonomy of
+   * `getDeckWithCardsOrThrow`.
+   */
+  async deleteDeckOrThrow(userId: string, deckId: string): Promise<void> {
+    const existing = await learningDecksRepository.findById(deckId);
+    if (!existing) {
+      throw new DeckNotFoundError(deckId);
+    }
+    if (existing.userId !== userId) {
+      throw new DeckOwnershipError(userId, deckId);
+    }
+
+    await learningDecksRepository.deleteById(deckId);
+
+    logger.info('Deck deleted', {
+      operation: 'learning:service:delete-deck',
+      userId,
+      deckId,
+    });
+  }
 }
 
 export const learningService = new LearningService();
+
+// Re-export errors so route handlers can narrow without a second import.
+export { DeckNotFoundError, DeckOwnershipError } from './learning-errors.js';
