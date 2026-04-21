@@ -62,6 +62,12 @@ mock.module('drizzle-orm', () => ({
   inArray: (...args: unknown[]) => ({ type: 'inArray', args }),
 }));
 
+// Plan lookup is now delegated to lib/stripe/config; mock returns fixed IDs
+mock.module('../lib/stripe/config', () => ({
+  getPremiumPlanId: mock(async () => 'plan-premium-001'),
+  getFreePlanId: mock(async () => 'plan-free-001'),
+}));
+
 // Import AFTER env + mocks are set (critical for WEBHOOK_AUTH_HEADER)
 const { createRevenueCatWebhookRoutes } = await import('../routes/revenuecat-webhook.handler');
 const { Elysia } = await import('elysia');

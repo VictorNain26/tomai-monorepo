@@ -80,7 +80,21 @@ export async function getSubscriptionStatus(parentId: string): Promise<Subscript
       scheduledMonthlyAmountCents: scheduleInfo.scheduledMonthlyAmountCents,
       hasScheduledChanges: scheduleInfo.hasScheduledChanges,
     };
-  } catch {
+  } catch (err) {
+    // Distinguish "no subscription" (expected) from real errors (Stripe API down, DB down, etc.)
+    if (
+      err instanceof NoPlanConfiguredError ||
+      err instanceof NoSubscriptionError ||
+      err instanceof NoCustomerError
+    ) {
+      return null;
+    }
+    logger.error('[Stripe] getSubscriptionStatus failed unexpectedly', {
+      operation: 'stripe:status:get',
+      _error: err instanceof Error ? err.message : String(err),
+      parentId,
+      severity: 'high' as const,
+    });
     return null;
   }
 }

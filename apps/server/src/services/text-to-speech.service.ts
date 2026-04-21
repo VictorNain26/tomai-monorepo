@@ -123,12 +123,4 @@ export class TextToSpeechService {
 }
 
 // Singleton
-let _textToSpeechService: TextToSpeechService | null = null;
-
-export function getTextToSpeechService(): TextToSpeechService {
-  _textToSpeechService ??= new TextToSpeechService();
-  return _textToSpeechService;
-}
-
-// Export pour compatibilité
 export const textToSpeechService = new TextToSpeechService();

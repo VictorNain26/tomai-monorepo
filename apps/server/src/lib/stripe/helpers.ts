@@ -15,6 +15,9 @@ const childrenIdsSchema = z.array(z.string());
 /** Default period duration in seconds (30 days) */
 export const DEFAULT_PERIOD_SECONDS = 30 * 24 * 60 * 60;
 
+/** Default period duration in milliseconds (30 days) */
+export const DEFAULT_PERIOD_MS = DEFAULT_PERIOD_SECONDS * 1000;
+
 /** Billing statuses */
 export const BILLING_STATUS = {
   ACTIVE: 'active',

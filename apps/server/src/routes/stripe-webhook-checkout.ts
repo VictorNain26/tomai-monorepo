@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { requireStripe, stripeService, parseChildrenIdsFromMetadata } from '../lib/stripe';
+import { DEFAULT_PERIOD_MS } from '../lib/stripe/helpers';
 import { db } from '../db/connection';
 import { familyBilling, userSubscriptions } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
@@ -78,7 +79,7 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session):
   const periodStart = period.start ? new Date(period.start * 1000) : new Date();
   const periodEnd = period.end
     ? new Date(period.end * 1000)
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    : new Date(Date.now() + DEFAULT_PERIOD_MS);
 
   await db
     .insert(familyBilling)
@@ -189,7 +190,7 @@ export async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> 
   const periodStart = period.start ? new Date(period.start * 1000) : new Date();
   const periodEnd = period.end
     ? new Date(period.end * 1000)
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    : new Date(Date.now() + DEFAULT_PERIOD_MS);
 
   await db
     .update(familyBilling)

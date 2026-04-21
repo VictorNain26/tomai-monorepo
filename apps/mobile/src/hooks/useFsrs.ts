@@ -84,17 +84,18 @@ async function reviewCard(data: {
   cardId: string;
   rating: FSRSRating;
 }): Promise<ReviewResult> {
-  const response = unwrap(
+  // Server returns { success: true, result: {...} }
+  const response = unwrap<{ success: boolean; result: ReviewResult }>(
     await getTreaty().api.learning.review.post(data)
   );
-  return (response as unknown as { result: ReviewResult }).result;
+  return response.result;
 }
 
 async function fetchDeckStats(deckId: string): Promise<DeckStats> {
-  const response = unwrap(
+  const response = unwrap<{ stats: DeckStats }>(
     await getTreaty().api.learning.decks({ id: deckId }).stats.get()
   );
-  return (response as { stats: DeckStats }).stats;
+  return response.stats;
 }
 
 // ============================================================================

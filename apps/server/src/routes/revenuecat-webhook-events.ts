@@ -1,7 +1,9 @@
 import { db } from '../db/connection';
-import { familyBilling, userSubscriptions, subscriptionPlans } from '../db/schema';
+import { familyBilling, userSubscriptions } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { logger } from '../lib/observability';
+import { DEFAULT_PERIOD_MS } from '../lib/stripe/helpers';
+import { getFreePlanId, getPremiumPlanId } from '../lib/stripe/config';
 
 // ============================================
 // Types
@@ -68,24 +70,6 @@ function parseChildrenIds(attributes?: Record<string, { value: string }>): strin
   return [];
 }
 
-async function getPremiumPlanId(): Promise<string | null> {
-  const [plan] = await db
-    .select({ id: subscriptionPlans.id })
-    .from(subscriptionPlans)
-    .where(eq(subscriptionPlans.name, 'premium'))
-    .limit(1);
-  return plan?.id ?? null;
-}
-
-async function getFreePlanId(): Promise<string | null> {
-  const [plan] = await db
-    .select({ id: subscriptionPlans.id })
-    .from(subscriptionPlans)
-    .where(eq(subscriptionPlans.name, 'free'))
-    .limit(1);
-  return plan?.id ?? null;
-}
-
 // ============================================
 // Event Handlers
 // ============================================
@@ -96,7 +80,7 @@ export async function handleInitialPurchase(event: RevenueCatEvent['event']): Pr
 
   const expirationAt = event.expiration_at_ms
     ? new Date(event.expiration_at_ms)
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    : new Date(Date.now() + DEFAULT_PERIOD_MS);
 
   await db
     .insert(familyBilling)
@@ -159,7 +143,7 @@ export async function handleRenewal(event: RevenueCatEvent['event']): Promise<vo
 
   const expirationAt = event.expiration_at_ms
     ? new Date(event.expiration_at_ms)
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    : new Date(Date.now() + DEFAULT_PERIOD_MS);
 
   await db
     .update(familyBilling)
