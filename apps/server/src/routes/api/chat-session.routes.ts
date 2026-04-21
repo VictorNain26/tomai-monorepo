@@ -170,6 +170,12 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
 
     try {
+      const session = await chatService.getSession(params.id);
+      if (!session || session.userId !== authContext.user.id) {
+        set.status = 403;
+        return { _error: 'Session not found or access denied' };
+      }
+
       const messages = await chatService.getSessionHistory(params.id);
 
       // Detect orphan: last message is user with no assistant reply (crash recovery)

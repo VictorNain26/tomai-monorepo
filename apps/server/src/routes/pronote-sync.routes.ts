@@ -12,10 +12,16 @@
 
 import { Elysia, t } from 'elysia';
 import { handleAuthWithCookies } from '../middleware/auth.middleware.js';
+import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 import { pronoteSyncService } from '../services/pronote-sync.service.js';
 import { logger } from '../lib/observability.js';
 
+// Pronote credential endpoints trigger PBKDF2 (600K iterations) on decrypt,
+// so we apply a stricter rate-limit than the global API preset.
+const pronoteRateLimit = createRateLimitMiddleware(RateLimitPresets.pronote);
+
 export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
+  .onBeforeHandle(pronoteRateLimit)
   .group('/api/pronote', (app) => app
 
     // PUT /api/pronote/credentials — Upsert
