@@ -18,6 +18,7 @@ import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { intentClassifierService, type ClassifiedIntent } from './intent-classifier.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
+import { costTrackingService } from '../cost-tracking.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
 import { appConfig } from '../../config/app.config.js';
 import { logger } from '../../lib/observability.js';
@@ -275,6 +276,20 @@ class ChatOrchestrationService {
 
     if (tokensUsed > 0) {
       await tokenQuotaService.incrementTokenUsage(userId, tokensUsed);
+
+      // Cost accounting: compute cents from model pricing and persist a
+      // cost_tracking row. This populates the table that
+      // progress.service.getCostTracking already reads for dashboards.
+      if (chunk.usage) {
+        await costTrackingService.record({
+          userId,
+          sessionId,
+          aiModel: chunk.model,
+          operation: 'chat',
+          tokensInput: chunk.usage.promptTokens,
+          tokensOutput: chunk.usage.completionTokens,
+        });
+      }
     }
 
     logger.info('Streaming message saved', {
