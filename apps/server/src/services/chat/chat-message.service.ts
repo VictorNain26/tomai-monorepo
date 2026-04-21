@@ -74,6 +74,16 @@ export class ChatMessageService {
         mimeType?: string;
         fileSizeBytes?: number;
       };
+      // Full list of files when the message has >1 attachment. The primary
+      // (first) file stays in attachedFile for backward compatibility with
+      // existing readers; the rest is persisted here in the JSONB metadata.
+      attachedFiles?: Array<{
+        fileName: string;
+        fileId?: string;
+        geminiFileId?: string;
+        mimeType?: string;
+        fileSizeBytes?: number;
+      }>;
     },
     options: { verifySessionExists?: boolean } = {}
   ): Promise<{ messageId: string; realSessionId: string }> {
@@ -107,6 +117,11 @@ export class ChatMessageService {
         }
       }
 
+      const messageMetadata: Record<string, unknown> = {};
+      if (metadata.attachedFiles && metadata.attachedFiles.length > 1) {
+        messageMetadata.attachedFiles = metadata.attachedFiles;
+      }
+
       const message = await messagesRepository.create({
         sessionId: validSessionId,
         role,
@@ -117,7 +132,7 @@ export class ChatMessageService {
         tokensUsed: metadata.tokensUsed ?? null,
         responseTimeMs: metadata.responseTimeMs ?? null,
         attachedFile: metadata.attachedFile ?? null,
-        messageMetadata: {},
+        messageMetadata,
         createdAt: new Date()
       });
 

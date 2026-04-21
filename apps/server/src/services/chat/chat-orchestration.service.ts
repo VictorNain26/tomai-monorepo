@@ -74,7 +74,11 @@ class ChatOrchestrationService {
     ]);
 
     const { attachedFileInfos, enrichedContent: rawEnrichedContent } = fileContext;
+    // Primary file stays in the dedicated column for backward-compat readers;
+    // the full list is persisted separately in messageMetadata via saveMessage
+    // below (audit F-8: previously files 2..N were silently dropped).
     const attachedFileInfo = attachedFileInfos[0] ?? null;
+    const hasMultipleFiles = attachedFileInfos.length > 1;
 
     const enrichedContent = rawEnrichedContent.length > MAX_ENRICHED_CONTENT_CHARS
       ? rawEnrichedContent.slice(0, MAX_ENRICHED_CONTENT_CHARS) + '\n\n[Contenu tronqué]'
@@ -96,7 +100,12 @@ class ChatOrchestrationService {
       sessionCtx.sessionId,
       'user',
       request.content,
-      attachedFileInfo ? { attachedFile: attachedFileInfo } : {},
+      attachedFileInfo
+        ? {
+            attachedFile: attachedFileInfo,
+            ...(hasMultipleFiles && { attachedFiles: attachedFileInfos }),
+          }
+        : {},
       { verifySessionExists: false },
     );
 
@@ -152,6 +161,7 @@ class ChatOrchestrationService {
           chunk,
           startTime,
           attachedFileInfo,
+          attachedFileInfos: hasMultipleFiles ? attachedFileInfos : undefined,
         });
         yield chunk;
       } else {
@@ -229,8 +239,15 @@ class ChatOrchestrationService {
       mimeType?: string;
       fileSizeBytes?: number;
     } | null;
+    attachedFileInfos?: Array<{
+      fileName: string;
+      fileId?: string;
+      geminiFileId?: string;
+      mimeType?: string;
+      fileSizeBytes?: number;
+    }>;
   }): Promise<void> {
-    const { sessionId, userId, userContent, fullContent, chunk, startTime, attachedFileInfo } = params;
+    const { sessionId, userId, userContent, fullContent, chunk, startTime, attachedFileInfo, attachedFileInfos } = params;
     const tokensUsed = chunk.usage?.totalTokens ?? 0;
 
     await chatService.saveMessage(sessionId, 'assistant', fullContent, {
@@ -238,6 +255,7 @@ class ChatOrchestrationService {
       tokensUsed,
       responseTimeMs: Date.now() - startTime,
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
+      ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
     }, { verifySessionExists: false });
 
     if (tokensUsed > 0) {

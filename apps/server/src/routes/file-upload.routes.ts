@@ -204,6 +204,15 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
 
             if (transcriptionResult.success && transcriptionResult.transcription) {
               transcription = transcriptionResult.transcription;
+
+              // Persist transcription on the file record so subsequent chat
+              // turns (or page refreshes) don't lose it. Returned inline above
+              // for the immediate client response and stored here for history.
+              await filesRepository.mergeEducationalContext(fileId, {
+                transcription: transcriptionResult.transcription,
+                detectedLanguage: transcriptionResult.detectedLanguage,
+                transcribedAt: new Date().toISOString(),
+              });
             }
           }
         } catch (err) {

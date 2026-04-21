@@ -80,6 +80,13 @@ export class ChatService {
         mimeType?: string;
         fileSizeBytes?: number;
       };
+      attachedFiles?: Array<{
+        fileName: string;
+        fileId?: string;
+        geminiFileId?: string;
+        mimeType?: string;
+        fileSizeBytes?: number;
+      }>;
     },
     options?: { verifySessionExists?: boolean }
   ): Promise<{ messageId: string; realSessionId: string }> {
