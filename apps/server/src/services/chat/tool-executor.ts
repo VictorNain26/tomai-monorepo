@@ -7,10 +7,8 @@
 
 import { ragService } from '../rag.service.js';
 import { generateCards, type CardGenerationResult } from '../learning/card-generator.service.js';
+import { learningService } from '../learning/learning.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
-import { fsrsService } from '../fsrs.service.js';
-import { db } from '../../db/connection.js';
-import { learningDecks, learningCards } from '../../db/schema.js';
 import { getLevelConfig } from '../../config/learning-config.js';
 import { getAppHelpContent } from '../../config/app-guide/index.js';
 import { logger } from '../../lib/observability.js';
@@ -211,44 +209,19 @@ async function executeGenerateFlashcards(
 
   const successResult = result as CardGenerationResult;
 
-  // Persist deck + cards in DB via atomic transaction
-  const { newDeck, insertedCards } = await db.transaction(async (tx) => {
-    const [createdDeck] = await tx
-      .insert(learningDecks)
-      .values({
-        userId: context.userId,
-        title: topic,
-        description: `Cartes créées depuis la conversation`,
-        subject,
-        source: 'conversation',
-        sourceId: context.sessionId,
-        schoolLevel: context.schoolLevel,
-        cardCount: successResult.count,
-      })
-      .returning();
-
-    if (!createdDeck) {
-      throw new Error('Échec de la création du deck');
-    }
-
-    const cardsToInsert = successResult.cards.map((card, index) => ({
-      deckId: createdDeck.id,
-      cardType: card.cardType,
-      content: card.content,
-      position: index,
-      fsrsData: fsrsService.initializeCardFsrsData(),
-    }));
-
-    const createdCards = await tx
-      .insert(learningCards)
-      .values(cardsToInsert)
-      .returning();
-
-    if (createdCards.length === 0) {
-      throw new Error("Échec de l'insertion des cartes");
-    }
-
-    return { newDeck: createdDeck, insertedCards: createdCards };
+  // Persist deck + cards via the shared LearningService transaction
+  // (same code path as POST /api/learning/generate).
+  const { deck: newDeck, cards: insertedCards } = await learningService.createDeckWithCards({
+    userId: context.userId,
+    deck: {
+      title: topic,
+      description: `Cartes créées depuis la conversation`,
+      subject,
+      source: 'conversation',
+      sourceId: context.sessionId,
+      schoolLevel: context.schoolLevel,
+    },
+    cards: successResult.cards,
   });
 
   logger.info('Flashcards persisted from chat', {
