@@ -3,6 +3,7 @@ import type { SchoolLevel } from '../../db/schema';
 import { safeUUID } from '../../utils/uuid';
 import { logger } from '../../lib/observability';
 import { deleteSessionCascade } from './session-cleanup';
+import { episodicMemoryService } from '../episodic-memory.service.js';
 import type { SessionDetails, UserSession, ConversationListItem } from './chat-types';
 
 export class ChatSessionService {
@@ -303,6 +304,19 @@ export class ChatSessionService {
       await studySessionsRepository.update(validSessionId, {
         status: 'completed',
         endedAt: new Date(),
+      });
+
+      // Fire-and-forget episodic extraction on the session we just archived.
+      // A session reached here only if the student chose to wrap it up — that
+      // is a meaningful pedagogical boundary worth persisting into long-term
+      // memory. GDPR note: deletion cascade removes the episode alongside
+      // the parent session (see session_episodes.session_id_fkey).
+      episodicMemoryService.extractAndStore(validSessionId, userId).catch(err => {
+        logger.warn('Episodic extraction (reset) failed in background', {
+          operation: 'chat:session:reset:episodic-bg',
+          _error: err instanceof Error ? err.message : String(err),
+          sessionId: validSessionId,
+        });
       });
 
       const newSessionId = await this.createSession(userId, session.subject);

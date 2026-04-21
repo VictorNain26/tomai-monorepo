@@ -19,6 +19,7 @@ import { autoTitleService } from './auto-title.service.js';
 import { intentClassifierService, type ClassifiedIntent } from './intent-classifier.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { costTrackingService } from '../cost-tracking.service.js';
+import { episodicMemoryService } from '../episodic-memory.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
 import { appConfig } from '../../config/app.config.js';
 import { logger } from '../../lib/observability.js';
@@ -66,7 +67,18 @@ class ChatOrchestrationService {
     // adds no end-to-end latency on the critical path. Max ~8s (its own
     // timeout) bounded; classification failures fall back to intent='unknown'
     // (logged at high severity — not a silent fallback).
-    const [fileContext, multimodalFiles, cognitiveProfileSummary, learningContext, classifiedIntent] = await Promise.all([
+    //
+    // Episodic memory retrieval is also parallelized. It queries pgvector
+    // for past sessions (TTL-aware, cosine similarity) and returns [] on
+    // miss/error with its own logging.
+    const [
+      fileContext,
+      multimodalFiles,
+      cognitiveProfileSummary,
+      learningContext,
+      classifiedIntent,
+      relevantEpisodes,
+    ] = await Promise.all([
       fileContextService.prepareFileContext({
         fileIds: request.fileIds,
         content: request.content,
@@ -78,9 +90,11 @@ class ChatOrchestrationService {
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
       intentClassifierService.classify(request.content, request.schoolLevel),
+      episodicMemoryService.retrieveRelevant(request.userId, request.content, 3),
     ]);
 
     const intentReinforcement = intentClassifierService.buildReinforcement(classifiedIntent);
+    const episodicContext = episodicMemoryService.formatEpisodesForPrompt(relevantEpisodes);
 
     const { attachedFileInfos, enrichedContent: rawEnrichedContent } = fileContext;
     // Primary file stays in the dedicated column for backward-compat readers;
@@ -103,6 +117,7 @@ class ChatOrchestrationService {
       intent: classifiedIntent.intent,
       intentConfidence: classifiedIntent.confidence,
       intentReinforced: intentReinforcement !== null,
+      episodesRetrieved: relevantEpisodes.length,
       operation: 'chat-orchestration:context-ready',
     });
 
@@ -137,6 +152,14 @@ class ChatOrchestrationService {
     };
 
     // Phase 5: Stream from Gemini
+    // Merge episodic context into learning context so geminiChatService
+    // only has one "prior knowledge" section to reason about. Learning
+    // context (FSRS due cards) + episodes (past sessions) are complementary
+    // pedagogical memory signals.
+    const mergedLearningContext = [learningContext, episodicContext]
+      .filter((x): x is string => Boolean(x))
+      .join('\n\n') || null;
+
     const streamGenerator = geminiChatService.generateStreamChunks({
       userId: request.userId,
       content: enrichedContent,
@@ -146,7 +169,7 @@ class ChatOrchestrationService {
       userRole: request.userRole,
       pronoteContext: request.pronoteContext,
       cognitiveProfileSummary,
-      learningContext,
+      learningContext: mergedLearningContext,
       conversationSummary: sessionCtx.conversationSummary,
       conversationHistory: sessionCtx.formattedHistory,
       intentReinforcement,

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum, index, foreignKey, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum, index, foreignKey, unique, vector } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 
@@ -212,6 +212,59 @@ export const costTracking = pgTable('cost_tracking', {
   createdAtIdx: index('idx_cost_tracking_created_at').on(table.createdAt),
 }));
 
+/**
+ * Table session_episodes - Mémoire épisodique long-terme
+ *
+ * Une ligne par session close, avec un résumé compressé + l'embedding 1024D
+ * de ce résumé (Mistral Embed, même espace vectoriel que Qdrant). Permet de
+ * retrouver les sessions passées pertinentes pour le tour courant via
+ * similarité cosinus côté Postgres (pgvector).
+ *
+ * Extraction : fire-and-forget à chaque session archivée (resetSession +
+ * deleteSession). Retrieval : top-3 épisodes les plus similaires injectés
+ * dans le system prompt au début d'une nouvelle conversation.
+ *
+ * GDPR-K : ttlUntil permet la purge automatique des épisodes >90 jours sauf
+ * opt-in parent. Suppression cascade via userId FK.
+ */
+export const sessionEpisodes = pgTable('session_episodes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  sessionId: uuid('session_id').notNull(),
+
+  // Contenu pédagogique
+  subject: varchar('subject', { length: 100 }).notNull(),
+  summaryText: text('summary_text').notNull(),
+  summaryEmbedding: vector('summary_embedding', { dimensions: 1024 }).notNull(),
+  conceptsCovered: jsonb('concepts_covered').notNull().default(sql`'[]'::jsonb`),
+
+  // Métriques
+  messageCount: integer('message_count').notNull().default(0),
+  durationSeconds: integer('duration_seconds'),
+  outcome: varchar('outcome', { length: 32 }).notNull().default('completed'),
+
+  // Audit + purge
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  ttlUntil: timestamp('ttl_until', { withTimezone: true }),
+}, (table) => ({
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [user.id],
+    name: 'session_episodes_user_id_fkey'
+  }).onDelete('cascade'),
+  sessionIdFk: foreignKey({
+    columns: [table.sessionId],
+    foreignColumns: [studySessions.id],
+    name: 'session_episodes_session_id_fkey'
+  }).onDelete('cascade'),
+
+  userIdIdx: index('idx_session_episodes_user_id').on(table.userId),
+  createdAtIdx: index('idx_session_episodes_created_at').on(table.createdAt),
+  ttlIdx: index('idx_session_episodes_ttl').on(table.ttlUntil),
+  embeddingIdx: index('idx_session_episodes_embedding')
+    .using('hnsw', table.summaryEmbedding.op('vector_cosine_ops')),
+}));
+
 // =============================================
 // RELATIONS
 // =============================================
@@ -219,6 +272,17 @@ export const costTracking = pgTable('cost_tracking', {
 export const messagesRelations = relations(messages, ({ one }) => ({
   session: one(studySessions, {
     fields: [messages.sessionId],
+    references: [studySessions.id]
+  }),
+}));
+
+export const sessionEpisodesRelations = relations(sessionEpisodes, ({ one }) => ({
+  user: one(user, {
+    fields: [sessionEpisodes.userId],
+    references: [user.id]
+  }),
+  session: one(studySessions, {
+    fields: [sessionEpisodes.sessionId],
     references: [studySessions.id]
   }),
 }));
@@ -250,6 +314,8 @@ export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
 export type Progress = typeof progress.$inferSelect;
 export type NewProgress = typeof progress.$inferInsert;
+export type SessionEpisode = typeof sessionEpisodes.$inferSelect;
+export type NewSessionEpisode = typeof sessionEpisodes.$inferInsert;
 export type SessionStatus = typeof sessionStatusEnum.enumValues[number];
 export type MessageRole = typeof messageRoleEnum.enumValues[number];
 

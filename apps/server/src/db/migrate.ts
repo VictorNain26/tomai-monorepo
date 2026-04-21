@@ -47,6 +47,12 @@ export async function runMigrations(): Promise<void> {
   const db = drizzle(migrationClient);
 
   try {
+    // Ensure required Postgres extensions exist before running migrations
+    // that reference them (pgvector for session_episodes.summary_embedding).
+    // Idempotent: IF NOT EXISTS means this is safe on every boot.
+    await migrationClient.unsafe('CREATE EXTENSION IF NOT EXISTS vector;');
+    console.log('Postgres extensions verified (vector)');
+
     await migrate(db, { migrationsFolder: './drizzle' });
     console.log('Migrations completed successfully');
   } catch (error) {
