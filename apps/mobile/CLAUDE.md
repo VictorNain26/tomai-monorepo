@@ -71,7 +71,7 @@ Backend Elysia à `apps/server`. **Eden Treaty** via `@repo/api` (workspace pack
 - UI via React Native Reusables uniquement (`@/components/ui/`)
 - State : TanStack Query (server state) + Zustand (client state) — jamais mixer
 - TypeScript strict, zéro `any` (vérifié en CI)
-- **400 lignes max** par fichier (3 exceptions actuelles à splitter : `(auth)/login.tsx`, `(parent)/onboarding-pronote.tsx`, `(parent)/profile/pronote-connect.tsx`)
+- **400 lignes max** par fichier (tous les écrans respectent la règle — vérifié 2026-04-21)
 
 ## Testing
 
