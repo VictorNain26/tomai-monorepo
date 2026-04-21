@@ -6,7 +6,7 @@
 
 import { db } from '../../db/connection.js';
 import { userSubscriptions } from '../../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { logger } from '../../lib/observability.js';
 import {
   QUOTA_CONFIG,
@@ -50,26 +50,38 @@ export async function incrementDeckUsage(userId: string): Promise<DeckUsageResul
     }
 
     const shouldDailyReset = needsDailyReset(current.lastResetAt);
-    const baseDecksToday = shouldDailyReset ? 0 : current.decksGeneratedToday;
-    const newDecksToday = baseDecksToday + 1;
-    const decksRemainingToday = Math.max(0, dailyDecks - newDecksToday);
-
     const shouldMonthlyReset = needsMonthlyReset(current.lastMonthlyResetAt);
-    const baseDecksMonth = shouldMonthlyReset ? 0 : current.decksGeneratedThisMonth;
-    const newDecksMonth = baseDecksMonth + 1;
-    const decksRemainingThisMonth = Math.max(0, monthlyDecks - newDecksMonth);
 
-    await db
+    // Atomic increment (same pattern as incrementTokenUsage) — prevents
+    // lost-write races between concurrent deck generations for the same user.
+    const [updated] = await db
       .update(userSubscriptions)
       .set({
-        decksGeneratedToday: newDecksToday,
-        decksGeneratedThisMonth: newDecksMonth,
+        decksGeneratedToday: shouldDailyReset
+          ? 1
+          : sql`${userSubscriptions.decksGeneratedToday} + ${1}`,
+        decksGeneratedThisMonth: shouldMonthlyReset
+          ? 1
+          : sql`${userSubscriptions.decksGeneratedThisMonth} + ${1}`,
         ...(shouldDailyReset && { tokensUsedToday: 0, windowTokensUsed: 0, windowStartAt: new Date() }),
         lastResetAt: shouldDailyReset ? new Date() : current.lastResetAt,
         lastMonthlyResetAt: shouldMonthlyReset ? new Date() : current.lastMonthlyResetAt,
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.userId, userId));
+      .where(eq(userSubscriptions.userId, userId))
+      .returning({
+        decksGeneratedToday: userSubscriptions.decksGeneratedToday,
+        decksGeneratedThisMonth: userSubscriptions.decksGeneratedThisMonth,
+      });
+
+    if (!updated) {
+      throw new Error('Failed to update deck usage');
+    }
+
+    const newDecksToday = updated.decksGeneratedToday;
+    const newDecksMonth = updated.decksGeneratedThisMonth;
+    const decksRemainingToday = Math.max(0, dailyDecks - newDecksToday);
+    const decksRemainingThisMonth = Math.max(0, monthlyDecks - newDecksMonth);
 
     logger.info('Deck usage incremented', {
       userId,

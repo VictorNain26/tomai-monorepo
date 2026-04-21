@@ -184,7 +184,7 @@ export async function incrementTokenUsage(
           : sql`${userSubscriptions.tokensUsedThisWeek} + ${tokensUsed}`,
         lastWeeklyResetAt: shouldResetWeekly ? new Date() : current.lastWeeklyResetAt,
         totalTokensUsed: sql`${userSubscriptions.totalTokensUsed} + ${tokensUsed}`,
-        totalMessagesCount: sql`${userSubscriptions.totalMessagesCount} + 1`,
+        totalMessagesCount: sql`${userSubscriptions.totalMessagesCount} + ${1}`,
         updatedAt: new Date(),
       })
       .where(eq(userSubscriptions.userId, userId))

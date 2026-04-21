@@ -39,10 +39,11 @@ function resolveSqlOrLiteral(value: unknown, currentRow: Record<string, unknown>
 const mockUpdateReturning = mock(() => {
   const row = (dbSelectResult[0] as Record<string, unknown> | undefined) ?? {};
   const set = lastSetPayload ?? {};
-  return Promise.resolve([{
-    windowTokensUsed: resolveSqlOrLiteral(set.windowTokensUsed, row),
-    tokensUsedToday: resolveSqlOrLiteral(set.tokensUsedToday, row),
-  }]);
+  const resolved: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(set)) {
+    resolved[key] = resolveSqlOrLiteral(value, row);
+  }
+  return Promise.resolve([resolved]);
 });
 const mockUpdateWhere = mock(() => {
   const promise = Promise.resolve(dbUpdateResult) as Promise<typeof dbUpdateResult> & {
