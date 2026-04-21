@@ -84,6 +84,16 @@ export class ChatMessageService {
         mimeType?: string;
         fileSizeBytes?: number;
       }>;
+      /**
+       * Pre-generation intent classification for this assistant turn. Not
+       * rendered to the client — retained for evals, cohort analysis, and
+       * offline quality reviews.
+       */
+      classifiedIntent?: {
+        intent: string;
+        confidence: 'low' | 'medium' | 'high';
+        error?: string;
+      };
     },
     options: { verifySessionExists?: boolean } = {}
   ): Promise<{ messageId: string; realSessionId: string }> {
@@ -120,6 +130,9 @@ export class ChatMessageService {
       const messageMetadata: Record<string, unknown> = {};
       if (metadata.attachedFiles && metadata.attachedFiles.length > 1) {
         messageMetadata.attachedFiles = metadata.attachedFiles;
+      }
+      if (metadata.classifiedIntent) {
+        messageMetadata.classifiedIntent = metadata.classifiedIntent;
       }
 
       const message = await messagesRepository.create({

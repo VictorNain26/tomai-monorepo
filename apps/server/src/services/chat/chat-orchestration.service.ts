@@ -16,6 +16,7 @@ import { geminiChatService } from './gemini-chat.service.js';
 import { getLearningContext } from './gemini-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
+import { intentClassifierService, type ClassifiedIntent } from './intent-classifier.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
 import { appConfig } from '../../config/app.config.js';
@@ -60,7 +61,11 @@ class ChatOrchestrationService {
     const sessionCtx = await this.resolveSession(request);
 
     // Phase 2: Context assembly (parallel)
-    const [fileContext, multimodalFiles, cognitiveProfileSummary, learningContext] = await Promise.all([
+    // Intent classification runs in parallel with context assembly so it
+    // adds no end-to-end latency on the critical path. Max ~8s (its own
+    // timeout) bounded; classification failures fall back to intent='unknown'
+    // (logged at high severity — not a silent fallback).
+    const [fileContext, multimodalFiles, cognitiveProfileSummary, learningContext, classifiedIntent] = await Promise.all([
       fileContextService.prepareFileContext({
         fileIds: request.fileIds,
         content: request.content,
@@ -71,7 +76,10 @@ class ChatOrchestrationService {
       fileContextService.prepareMultimodalFiles(request.fileIds),
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
+      intentClassifierService.classify(request.content, request.schoolLevel),
     ]);
+
+    const intentReinforcement = intentClassifierService.buildReinforcement(classifiedIntent);
 
     const { attachedFileInfos, enrichedContent: rawEnrichedContent } = fileContext;
     // Primary file stays in the dedicated column for backward-compat readers;
@@ -91,6 +99,9 @@ class ChatOrchestrationService {
       level: request.schoolLevel,
       filesCount: request.fileIds.length,
       multimodalFilesCount: multimodalFiles.length,
+      intent: classifiedIntent.intent,
+      intentConfidence: classifiedIntent.confidence,
+      intentReinforced: intentReinforcement !== null,
       operation: 'chat-orchestration:context-ready',
     });
 
@@ -137,6 +148,7 @@ class ChatOrchestrationService {
       learningContext,
       conversationSummary: sessionCtx.conversationSummary,
       conversationHistory: sessionCtx.formattedHistory,
+      intentReinforcement,
       files: multimodalFiles.map(f => ({
         fileUri: f.fileUri,
         base64: f.base64,
@@ -162,6 +174,7 @@ class ChatOrchestrationService {
           startTime,
           attachedFileInfo,
           attachedFileInfos: hasMultipleFiles ? attachedFileInfos : undefined,
+          classifiedIntent,
         });
         yield chunk;
       } else {
@@ -246,8 +259,9 @@ class ChatOrchestrationService {
       mimeType?: string;
       fileSizeBytes?: number;
     }>;
+    classifiedIntent?: ClassifiedIntent;
   }): Promise<void> {
-    const { sessionId, userId, userContent, fullContent, chunk, startTime, attachedFileInfo, attachedFileInfos } = params;
+    const { sessionId, userId, userContent, fullContent, chunk, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
     const tokensUsed = chunk.usage?.totalTokens ?? 0;
 
     await chatService.saveMessage(sessionId, 'assistant', fullContent, {
@@ -256,6 +270,7 @@ class ChatOrchestrationService {
       responseTimeMs: Date.now() - startTime,
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
       ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
+      ...(classifiedIntent && { classifiedIntent }),
     }, { verifySessionExists: false });
 
     if (tokensUsed > 0) {

@@ -87,6 +87,11 @@ export class ChatService {
         mimeType?: string;
         fileSizeBytes?: number;
       }>;
+      classifiedIntent?: {
+        intent: string;
+        confidence: 'low' | 'medium' | 'high';
+        error?: string;
+      };
     },
     options?: { verifySessionExists?: boolean }
   ): Promise<{ messageId: string; realSessionId: string }> {

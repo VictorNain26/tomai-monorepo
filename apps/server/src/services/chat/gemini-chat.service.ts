@@ -40,6 +40,7 @@ class GeminiChatService {
     cognitiveProfileSummary?: string | null;
     learningContext?: string | null;
     pronoteContext?: PronoteContext;
+    intentReinforcement?: string | null;
   }): string {
     const levelText = getLevelText(params.level);
     const basePrompt = buildSystemPrompt({
@@ -59,7 +60,13 @@ class GeminiChatService {
 
     const pronoteSection = this.buildPronoteSection(params.pronoteContext);
 
-    return basePrompt + profileSection + learningSection + pronoteSection;
+    // Turn-specific reinforcement goes LAST so it takes precedence over
+    // the more general safety guidance (recency bias in instruction-following).
+    const intentSection = params.intentReinforcement
+      ? `\n\n${params.intentReinforcement}`
+      : '';
+
+    return basePrompt + profileSection + learningSection + pronoteSection + intentSection;
   }
 
   private buildPronoteSection(pronoteContext?: PronoteContext): string {
@@ -122,6 +129,7 @@ class GeminiChatService {
         cognitiveProfileSummary: params.cognitiveProfileSummary,
         learningContext: params.learningContext,
         pronoteContext: params.pronoteContext,
+        intentReinforcement: params.intentReinforcement,
       });
 
       const history = this.buildConversationHistory(params.conversationHistory, params.conversationSummary);
