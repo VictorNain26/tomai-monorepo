@@ -65,6 +65,20 @@ describe('Encryption Service', () => {
       expect(await decrypt(encrypted1)).toBe(plaintext);
       expect(await decrypt(encrypted2)).toBe(plaintext);
     });
+
+    it('should produce different salt prefixes for the same plaintext', async () => {
+      // With a per-record random salt, the first 16 bytes of the ciphertext
+      // (the salt) must differ between two encryptions of the same plaintext.
+      const plaintext = 'same input';
+      const enc1 = await encrypt(plaintext);
+      const enc2 = await encrypt(plaintext);
+
+      const bytes1 = Uint8Array.from(atob(enc1), c => c.charCodeAt(0));
+      const bytes2 = Uint8Array.from(atob(enc2), c => c.charCodeAt(0));
+      const salt1 = Array.from(bytes1.slice(0, 16)).join(',');
+      const salt2 = Array.from(bytes2.slice(0, 16)).join(',');
+      expect(salt1).not.toBe(salt2);
+    });
   });
 
   describe('Corrupted/tampered data', () => {
