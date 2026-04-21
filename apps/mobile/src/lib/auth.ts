@@ -131,7 +131,8 @@ export async function signUp(data: { email: string; password: string; name: stri
 
 /**
  * Déconnexion.
- * Also clears Google native session so the user can pick a different account next time.
+ * Also clears Google native session, query cache, and SQLite offline data so
+ * a different user on the same device cannot read leftover data.
  */
 export async function signOut() {
   await authClient.signOut();
@@ -139,6 +140,18 @@ export async function signOut() {
     await GoogleSignin.signOut();
   } catch {
     // Best-effort: user is already signed out of Better Auth
+  }
+  try {
+    const { clearQueryCache } = await import('./query-client');
+    await clearQueryCache();
+  } catch (err) {
+    console.warn('[Auth] clearQueryCache on signOut failed:', err);
+  }
+  try {
+    const { clearLocalData } = await import('@/db/client');
+    await clearLocalData();
+  } catch (err) {
+    console.warn('[Auth] clearLocalData on signOut failed:', err);
   }
 }
 
