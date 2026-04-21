@@ -1,3 +1,6 @@
+import { eq, sql } from 'drizzle-orm';
+import { db } from '../../db/connection.js';
+import { files } from '../../db/schema.js';
 import { filesRepository } from '../../db/repositories/index.js';
 import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
 import { geminiFilesService } from '../gemini-files.service.js';
@@ -92,10 +95,6 @@ export async function updateFileAnalysis(fileId: string, result: DocumentAnalysi
       ragContext: result.rag?.context,
       metrics: result.metrics
     };
-
-    const { db, sql } = await import('../../db/repositories/index.js');
-    const { files } = await import('../../db/schema.js');
-    const { eq } = await import('drizzle-orm');
 
     await db.update(files)
       .set({

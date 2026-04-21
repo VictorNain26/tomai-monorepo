@@ -8,12 +8,13 @@
  * - Gemini Flash non-streaming, temperature 0.3 pour cohérence
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { type GoogleGenAI } from '@google/genai';
 import { appConfig } from '../../config/app.config.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { messagesRepository } from '../../db/repositories/messages.repository.js';
 import { logger } from '../../lib/observability.js';
 import { withTimeout } from '../../lib/retry.js';
+import { getGeminiClient } from '../../lib/gemini-client.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -87,12 +88,14 @@ Un résumé précédent existe déjà. Tu dois le FUSIONNER avec les nouveaux é
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════
 
+export const SUMMARIZATION_PROMPT_VERSION = '2026-04-21';
+
 class SummarizationService {
   private readonly ai: GoogleGenAI;
   private readonly model: string;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
+    this.ai = getGeminiClient();
     this.model = appConfig.ai.gemini.model;
   }
 

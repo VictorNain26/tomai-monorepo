@@ -27,7 +27,8 @@ const RAG_THRESHOLDS = {
 export interface HybridSearchOptions {
   query: string;
   niveau: EducationLevelType;
-  matiere: string;
+  /** Filtrer sur une matière. Omettre pour chercher toutes matières confondues. */
+  matiere?: string;
   competence?: string | null;
   limit?: number;
   minSimilarity?: number;

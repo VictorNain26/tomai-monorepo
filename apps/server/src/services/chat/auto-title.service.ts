@@ -5,11 +5,14 @@
  * Uses Gemini Flash to generate a short, descriptive title.
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { type GoogleGenAI } from '@google/genai';
 import { appConfig } from '../../config/app.config.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { logger } from '../../lib/observability.js';
 import { withTimeout } from '../../lib/retry.js';
+import { getGeminiClient } from '../../lib/gemini-client.js';
+
+export const AUTO_TITLE_PROMPT_VERSION = '2026-04-21';
 
 const TITLE_PROMPT = `Génère un titre COURT (10-50 caractères) pour cette conversation de tutorat scolaire.
 
@@ -35,7 +38,7 @@ class AutoTitleService {
   private readonly model: string;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
+    this.ai = getGeminiClient();
     this.model = appConfig.ai.gemini.model;
   }
 

@@ -111,15 +111,6 @@ export class TextToSpeechService {
     }
   }
 
-  /**
-   * Synthétise en WAV (conversion depuis MP3 si nécessaire)
-   * Note: ElevenLabs retourne du MP3, pas besoin de conversion WAV
-   */
-  async synthesizeToWav(text: string, options: TTSOptions = {}): Promise<TTSResult> {
-    // ElevenLabs retourne déjà du MP3 haute qualité
-    // Pas de conversion nécessaire pour les navigateurs modernes
-    return this.synthesize(text, options);
-  }
 }
 
 // Singleton

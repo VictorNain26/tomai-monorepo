@@ -1,6 +1,7 @@
-import { GoogleGenAI, type Part } from '@google/genai';
+import { type GoogleGenAI, type Part } from '@google/genai';
 import { appConfig } from '../../config/app.config.js';
 import { logger } from '../../lib/observability.js';
+import { getGeminiClient } from '../../lib/gemini-client.js';
 import { documentExtractionService } from './document-extraction.service.js';
 import { ragService } from '../rag.service.js';
 import type { EducationLevelType } from '../../types/education.types.js';
@@ -20,7 +21,7 @@ class DocumentAnalysisService {
   private readonly model: string;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
+    this.ai = getGeminiClient();
     this.model = appConfig.ai.gemini.model;
 
     logger.info('DocumentAnalysisService initialized with @google/genai', {
@@ -115,7 +116,11 @@ class DocumentAnalysisService {
 
     try {
       const analysisStart = Date.now();
-      const ragResult = await this.queryRAG('document scolaire image', schoolLevel);
+      // For images we do not have extracted text before Gemini's vision pass.
+      // Use the student's question as the RAG query if provided (targeted
+      // retrieval), otherwise skip RAG entirely. The previous hardcoded
+      // "document scolaire image" string returned irrelevant top-k.
+      const ragResult = await this.queryRAG(userQuestion ?? null, schoolLevel);
 
       const { classification, analysis, extractedText, tokensUsed } = await this.analyzeImageWithGoogleGenAI(
         base64Data, mimeType, ragResult.context, schoolLevel, userQuestion
@@ -213,9 +218,17 @@ class DocumentAnalysisService {
   }
 
   private async queryRAG(
-    documentText: string,
-    schoolLevel: EducationLevelType
+    queryText: string | null,
+    schoolLevel: EducationLevelType,
   ): Promise<RAGQueryResult> {
+    // Skip RAG when we have no meaningful query text (typically the image
+    // analysis path before OCR). Hitting Qdrant with "document scolaire image"
+    // used to return irrelevant top-k that biased downstream pedagogical
+    // framing. Better to pass no RAG context than misleading context.
+    if (!queryText || queryText.trim().length < 10) {
+      return { found: false, chunksCount: 0, context: '' };
+    }
+
     try {
       const isAvailable = await ragService.isAvailable();
       if (!isAvailable) {
@@ -225,14 +238,15 @@ class DocumentAnalysisService {
         return { found: false, chunksCount: 0, context: '' };
       }
 
-      const queryText = documentText.length > 500
-        ? documentText.substring(0, 500)
-        : documentText;
+      const truncated = queryText.length > 500
+        ? queryText.substring(0, 500)
+        : queryText;
 
+      // Matière omise volontairement : le document peut être en histoire,
+      // français, sciences… On laisse la similarité vectorielle filtrer.
       const response = await ragService.hybridSearch({
-        query: queryText,
+        query: truncated,
         niveau: schoolLevel,
-        matiere: 'mathematiques',
         limit: 5,
         minSimilarity: 0.6,
       });
