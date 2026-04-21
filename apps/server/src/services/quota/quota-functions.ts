@@ -8,20 +8,17 @@ import {
   isWindowExpired,
   needsDailyReset,
   needsWeeklyReset,
-  needsMonthlyReset,
   getQuotaMode,
   type QuotaCheckResult,
   type TokenUsageResult,
   type UsageStats,
-  type DeckQuotaResult,
-  type DeckUsageResult,
 } from './quota-config.js';
 
 // =============================================
 // ENSURE USER SUBSCRIPTION
 // =============================================
 
-async function ensureUserSubscription(userId: string): Promise<{
+export async function ensureUserSubscription(userId: string): Promise<{
   planId: string;
   windowLimit: number;
   dailyLimit: number;
@@ -120,49 +117,88 @@ export async function incrementTokenUsage(
   tokensUsed: number
 ): Promise<TokenUsageResult> {
   try {
-    const { windowLimit, dailyLimit, planName } = await ensureUserSubscription(userId);
-    const windowHours = QUOTA_CONFIG[planName].windowHours;
-
-    const [current] = await db
+    // Read current state (needed for plan config + reset decisions).
+    const [currentWithPlan] = await db
       .select({
-        windowTokensUsed: userSubscriptions.windowTokensUsed,
+        planName: subscriptionPlans.name,
         windowStartAt: userSubscriptions.windowStartAt,
-        tokensUsedToday: userSubscriptions.tokensUsedToday,
-        tokensUsedThisWeek: userSubscriptions.tokensUsedThisWeek,
-        totalTokensUsed: userSubscriptions.totalTokensUsed,
-        totalMessagesCount: userSubscriptions.totalMessagesCount,
         lastResetAt: userSubscriptions.lastResetAt,
         lastWeeklyResetAt: userSubscriptions.lastWeeklyResetAt,
       })
       .from(userSubscriptions)
+      .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
       .where(eq(userSubscriptions.userId, userId))
       .limit(1);
 
+    // Brand-new user path: create subscription row, then retry
+    let current = currentWithPlan;
+    let planName: 'free' | 'premium';
     if (!current) {
-      throw new Error('Subscription not found after ensure');
+      const ensured = await ensureUserSubscription(userId);
+      planName = ensured.planName;
+      const [refetched] = await db
+        .select({
+          planName: subscriptionPlans.name,
+          windowStartAt: userSubscriptions.windowStartAt,
+          lastResetAt: userSubscriptions.lastResetAt,
+          lastWeeklyResetAt: userSubscriptions.lastWeeklyResetAt,
+        })
+        .from(userSubscriptions)
+        .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
+        .where(eq(userSubscriptions.userId, userId))
+        .limit(1);
+      if (!refetched) {
+        throw new Error('Subscription not found after ensure');
+      }
+      current = refetched;
+    } else {
+      planName = current.planName === 'premium' ? 'premium' : 'free';
     }
 
-    let newWindowTokens = current.windowTokensUsed;
-    let newDailyTokens = current.tokensUsedToday;
-    let newWeeklyTokens = current.tokensUsedThisWeek;
-    let windowStart = current.windowStartAt;
+    const windowHours = QUOTA_CONFIG[planName].windowHours;
+    const windowLimit = QUOTA_CONFIG[planName].windowTokens;
+    const dailyLimit = QUOTA_CONFIG[planName].dailyMaxTokens;
 
-    if (isWindowExpired(current.windowStartAt, windowHours)) {
-      newWindowTokens = 0;
-      windowStart = new Date();
+    // Decide resets from the snapshot we just read. Worst case: a concurrent writer
+    // also crosses the same boundary simultaneously — the CASE WHEN below still produces
+    // a correct "reset + delta" outcome atomically.
+    const shouldResetWindow = isWindowExpired(current.windowStartAt, windowHours);
+    const shouldResetDaily = needsDailyReset(current.lastResetAt);
+    const shouldResetWeekly = needsWeeklyReset(current.lastWeeklyResetAt);
+
+    // Atomic increment in a single UPDATE ... RETURNING. Eliminates the lost-write
+    // race between two concurrent streams for the same user (billing-critical).
+    const [updated] = await db
+      .update(userSubscriptions)
+      .set({
+        windowTokensUsed: shouldResetWindow
+          ? tokensUsed
+          : sql`${userSubscriptions.windowTokensUsed} + ${tokensUsed}`,
+        windowStartAt: shouldResetWindow ? new Date() : current.windowStartAt,
+        tokensUsedToday: shouldResetDaily
+          ? tokensUsed
+          : sql`${userSubscriptions.tokensUsedToday} + ${tokensUsed}`,
+        lastResetAt: shouldResetDaily ? new Date() : current.lastResetAt,
+        tokensUsedThisWeek: shouldResetWeekly
+          ? tokensUsed
+          : sql`${userSubscriptions.tokensUsedThisWeek} + ${tokensUsed}`,
+        lastWeeklyResetAt: shouldResetWeekly ? new Date() : current.lastWeeklyResetAt,
+        totalTokensUsed: sql`${userSubscriptions.totalTokensUsed} + ${tokensUsed}`,
+        totalMessagesCount: sql`${userSubscriptions.totalMessagesCount} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(userSubscriptions.userId, userId))
+      .returning({
+        windowTokensUsed: userSubscriptions.windowTokensUsed,
+        tokensUsedToday: userSubscriptions.tokensUsedToday,
+      });
+
+    if (!updated) {
+      throw new Error('Failed to update token usage');
     }
 
-    if (needsDailyReset(current.lastResetAt)) {
-      newDailyTokens = 0;
-    }
-
-    if (needsWeeklyReset(current.lastWeeklyResetAt)) {
-      newWeeklyTokens = 0;
-    }
-
-    newWindowTokens += tokensUsed;
-    newDailyTokens += tokensUsed;
-    newWeeklyTokens += tokensUsed;
+    const newWindowTokens = updated.windowTokensUsed;
+    const newDailyTokens = updated.tokensUsedToday;
 
     const windowTokensRemaining = Math.max(0, windowLimit - newWindowTokens);
     const dailyTokensRemaining = Math.max(0, dailyLimit - newDailyTokens);
@@ -171,21 +207,6 @@ export async function incrementTokenUsage(
     const dailyUsage = newDailyTokens / dailyLimit;
     const maxUsage = Math.max(windowUsage, dailyUsage);
     const mode = getQuotaMode(maxUsage);
-
-    await db
-      .update(userSubscriptions)
-      .set({
-        windowTokensUsed: newWindowTokens,
-        windowStartAt: windowStart,
-        tokensUsedToday: newDailyTokens,
-        tokensUsedThisWeek: newWeeklyTokens,
-        totalTokensUsed: current.totalTokensUsed + tokensUsed,
-        totalMessagesCount: current.totalMessagesCount + 1,
-        lastResetAt: needsDailyReset(current.lastResetAt) ? new Date() : current.lastResetAt,
-        lastWeeklyResetAt: needsWeeklyReset(current.lastWeeklyResetAt) ? new Date() : current.lastWeeklyResetAt,
-        updatedAt: new Date(),
-      })
-      .where(eq(userSubscriptions.userId, userId));
 
     logger.debug('Token usage incremented', {
       userId,
@@ -259,126 +280,7 @@ export function getHoursUntilReset(): string {
   return getDailyResetTime();
 }
 
-// =============================================
-// DECK QUOTA FUNCTIONS
-// =============================================
-
-export async function checkDeckQuota(userId: string): Promise<DeckQuotaResult> {
-  void userId;
-  return {
-    allowed: true,
-    decksRemainingToday: 999,
-    decksRemainingThisMonth: 999,
-    dailyLimit: 999,
-    monthlyLimit: 999,
-  };
-}
-
-export async function incrementDeckUsage(userId: string): Promise<DeckUsageResult> {
-  const { dailyDecks, monthlyDecks } = QUOTA_CONFIG.premium;
-
-  try {
-    await ensureUserSubscription(userId);
-
-    const [current] = await db
-      .select({
-        decksGeneratedToday: userSubscriptions.decksGeneratedToday,
-        decksGeneratedThisMonth: userSubscriptions.decksGeneratedThisMonth,
-        lastResetAt: userSubscriptions.lastResetAt,
-        lastMonthlyResetAt: userSubscriptions.lastMonthlyResetAt,
-      })
-      .from(userSubscriptions)
-      .where(eq(userSubscriptions.userId, userId))
-      .limit(1);
-
-    if (!current) {
-      throw new Error('Subscription not found');
-    }
-
-    const shouldDailyReset = needsDailyReset(current.lastResetAt);
-    const baseDecksToday = shouldDailyReset ? 0 : current.decksGeneratedToday;
-    const newDecksToday = baseDecksToday + 1;
-    const decksRemainingToday = Math.max(0, dailyDecks - newDecksToday);
-
-    const shouldMonthlyReset = needsMonthlyReset(current.lastMonthlyResetAt);
-    const baseDecksMonth = shouldMonthlyReset ? 0 : current.decksGeneratedThisMonth;
-    const newDecksMonth = baseDecksMonth + 1;
-    const decksRemainingThisMonth = Math.max(0, monthlyDecks - newDecksMonth);
-
-    await db
-      .update(userSubscriptions)
-      .set({
-        decksGeneratedToday: newDecksToday,
-        decksGeneratedThisMonth: newDecksMonth,
-        ...(shouldDailyReset && { tokensUsedToday: 0, windowTokensUsed: 0, windowStartAt: new Date() }),
-        lastResetAt: shouldDailyReset ? new Date() : current.lastResetAt,
-        lastMonthlyResetAt: shouldMonthlyReset ? new Date() : current.lastMonthlyResetAt,
-        updatedAt: new Date(),
-      })
-      .where(eq(userSubscriptions.userId, userId));
-
-    logger.info('Deck usage incremented', {
-      userId,
-      newDecksToday,
-      newDecksMonth,
-      decksRemainingToday,
-      decksRemainingThisMonth,
-    });
-
-    return {
-      success: true,
-      newDecksGeneratedToday: newDecksToday,
-      newDecksGeneratedThisMonth: newDecksMonth,
-      decksRemainingToday,
-      decksRemainingThisMonth,
-    };
-
-  } catch (error) {
-    logger.error('Error incrementing deck usage', {
-      _error: error instanceof Error ? error.message : String(error),
-      severity: 'medium' as const,
-      userId,
-    });
-
-    return {
-      success: false,
-      newDecksGeneratedToday: 0,
-      newDecksGeneratedThisMonth: 0,
-      decksRemainingToday: 0,
-      decksRemainingThisMonth: 0,
-    };
-  }
-}
-
-export async function resetAllDailyTokens(): Promise<{ resetCount: number }> {
-  try {
-    const result = await db
-      .update(userSubscriptions)
-      .set({
-        tokensUsedToday: 0,
-        decksGeneratedToday: 0,
-        lastResetAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(sql`${userSubscriptions.lastResetAt} < NOW() - INTERVAL '20 hours'`);
-
-    const resetCount = (result as unknown as { rowCount?: number }).rowCount ?? 0;
-
-    if (resetCount > 0) {
-      logger.info('Daily quota reset completed', {
-        resetCount,
-        resetTime: new Date().toISOString(),
-      });
-    }
-
-    return { resetCount };
-
-  } catch (error) {
-    logger.error('Error during daily token reset', {
-      _error: error instanceof Error ? error.message : String(error),
-      severity: 'high' as const,
-    });
-
-    return { resetCount: 0 };
-  }
-}
+// Deck quota functions are now in ./quota-deck.ts
+// Scheduled reset sweep is now in ./quota-reset.ts
+export { checkDeckQuota, incrementDeckUsage } from './quota-deck.js';
+export { resetAllDailyTokens } from './quota-reset.js';

@@ -18,9 +18,43 @@ mock.module('../lib/observability', () => ({ logger: mockLogger }));
 let dbSelectResult: unknown[] = [];
 let dbUpdateResult = { rowCount: 1 };
 let dbInsertShouldThrow = false;
+// Capture the last .set() payload so the returning() mock can simulate a realistic
+// post-update row based on the current select snapshot + the set expressions.
+let lastSetPayload: Record<string, unknown> | null = null;
 
-const mockUpdateWhere = mock(() => Promise.resolve(dbUpdateResult));
-const mockUpdateSet = mock(() => ({ where: mockUpdateWhere }));
+function resolveSqlOrLiteral(value: unknown, currentRow: Record<string, unknown>): unknown {
+  if (value && typeof value === 'object' && (value as { type?: string }).type === 'sql') {
+    // sql`${col} + ${delta}` shape — we only model this specific pattern
+    const values = (value as { values: unknown[] }).values;
+    const [colKey, delta] = values;
+    if (typeof colKey === 'string' && typeof delta === 'number') {
+      const base = (currentRow[colKey] as number) ?? 0;
+      return base + delta;
+    }
+    return value;
+  }
+  return value;
+}
+
+const mockUpdateReturning = mock(() => {
+  const row = (dbSelectResult[0] as Record<string, unknown> | undefined) ?? {};
+  const set = lastSetPayload ?? {};
+  return Promise.resolve([{
+    windowTokensUsed: resolveSqlOrLiteral(set.windowTokensUsed, row),
+    tokensUsedToday: resolveSqlOrLiteral(set.tokensUsedToday, row),
+  }]);
+});
+const mockUpdateWhere = mock(() => {
+  const promise = Promise.resolve(dbUpdateResult) as Promise<typeof dbUpdateResult> & {
+    returning: typeof mockUpdateReturning;
+  };
+  promise.returning = mockUpdateReturning;
+  return promise;
+});
+const mockUpdateSet = mock((payload: Record<string, unknown>) => {
+  lastSetPayload = payload;
+  return { where: mockUpdateWhere };
+});
 const mockDbUpdate = mock(() => ({ set: mockUpdateSet }));
 
 mock.module('../db/connection', () => ({
@@ -101,9 +135,11 @@ beforeEach(() => {
   dbSelectResult = [];
   dbUpdateResult = { rowCount: 1 };
   dbInsertShouldThrow = false;
+  lastSetPayload = null;
   mockDbUpdate.mockClear();
   mockUpdateSet.mockClear();
   mockUpdateWhere.mockClear();
+  mockUpdateReturning.mockClear();
 });
 
 describe('Token Quota Service', () => {
