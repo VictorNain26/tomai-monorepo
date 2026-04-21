@@ -21,6 +21,30 @@ export interface ToolExecutionContext {
   userRole: 'student' | 'parent';
 }
 
+/**
+ * Structured result returned when `generate_flashcards` successfully creates a
+ * deck. Consumers (e.g. gemini-chat stream emitter) should narrow on
+ * `kind: 'deck_created'` rather than duck-typing `deckId && generated`.
+ */
+export interface DeckCreatedToolResult {
+  kind: 'deck_created';
+  generated: true;
+  deckId: string;
+  deckTitle: string;
+  cardCount: number;
+  topic: string;
+  subject: string;
+  message: string;
+}
+
+export function isDeckCreatedResult(value: unknown): value is DeckCreatedToolResult {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { kind?: unknown }).kind === 'deck_created'
+  );
+}
+
 /** Tools that make network calls and benefit from a single retry */
 const RETRYABLE_TOOLS = new Set([
   'search_educational_content',
@@ -105,6 +129,9 @@ async function executeToolOnce(
 
     case 'get_student_profile':
       return await executeGetProfile(context);
+
+    case 'update_student_profile':
+      return await executeUpdateProfile(args, context);
 
     case 'get_app_help':
       return executeGetAppHelp(args, context);
@@ -232,7 +259,8 @@ async function executeGenerateFlashcards(
     cardCount: insertedCards.length,
   });
 
-  return {
+  const deckResult: DeckCreatedToolResult = {
+    kind: 'deck_created',
     generated: true,
     deckId: newDeck.id,
     deckTitle: newDeck.title,
@@ -241,6 +269,7 @@ async function executeGenerateFlashcards(
     subject,
     message: `${insertedCards.length} cartes de révision sur "${topic}" ont été créées et sauvegardées.`,
   };
+  return deckResult;
 }
 
 function executeGetAppHelp(
@@ -284,5 +313,63 @@ async function executeGetProfile(context: ToolExecutionContext): Promise<object>
       .slice(-5)
       .map((o) => o.observation),
     lastUpdated: profile.lastUpdatedByAgent?.toISOString() ?? null,
+  };
+}
+
+async function executeUpdateProfile(
+  args: Record<string, unknown>,
+  context: ToolExecutionContext,
+): Promise<object> {
+  const observation = typeof args.observation === 'string' ? args.observation.trim().slice(0, 250) : '';
+  const subject = typeof args.subject === 'string' ? args.subject.trim() : '';
+
+  // Observation + subject required: reject empty calls so the agent doesn't
+  // silently burn a tool slot without writing anything.
+  if (!observation || !subject) {
+    return {
+      error: true,
+      message: "Observation ou matière manquante — le profil n'a pas été mis à jour.",
+    };
+  }
+
+  const strengthRaw = typeof args.strength === 'string' ? args.strength.trim().slice(0, 100) : undefined;
+  const weaknessRaw = typeof args.weakness === 'string' ? args.weakness.trim().slice(0, 100) : undefined;
+  const preferredStyle = typeof args.preferredStyle === 'string' ? args.preferredStyle : undefined;
+
+  // Merge new strength/weakness into the existing lists (dedupe, keep most
+  // recent 10 of each). Without the merge step, a single call would overwrite
+  // everything the agent previously recorded.
+  const existing = await cognitiveProfileService.getProfile(context.userId);
+  const existingStrengths = (existing?.strengths as string[] | null) ?? [];
+  const existingWeaknesses = (existing?.weaknesses as string[] | null) ?? [];
+
+  const mergedStrengths = strengthRaw
+    ? Array.from(new Set([...existingStrengths, strengthRaw])).slice(-10)
+    : undefined;
+  const mergedWeaknesses = weaknessRaw
+    ? Array.from(new Set([...existingWeaknesses, weaknessRaw])).slice(-10)
+    : undefined;
+
+  await cognitiveProfileService.updateProfile(context.userId, {
+    observation,
+    subject,
+    ...(mergedStrengths && { strengths: mergedStrengths }),
+    ...(mergedWeaknesses && { weaknesses: mergedWeaknesses }),
+    ...(preferredStyle && { preferredStyle }),
+  });
+
+  logger.info('Student profile updated by agent', {
+    operation: 'tool-executor:profile-updated',
+    userId: context.userId,
+    sessionId: context.sessionId,
+    subject,
+    hasStrength: !!strengthRaw,
+    hasWeakness: !!weaknessRaw,
+    hasStyle: !!preferredStyle,
+  });
+
+  return {
+    updated: true,
+    message: "Profil mis à jour. Continue l'échange sans le mentionner à l'élève.",
   };
 }
