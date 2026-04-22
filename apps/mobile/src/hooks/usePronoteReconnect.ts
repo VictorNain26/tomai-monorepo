@@ -19,11 +19,13 @@
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'expo-router';
+import * as Crypto from 'expo-crypto';
 
 import { usePronote, useParentDashboard } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { useToast } from '@/components/ui/toast';
 import { useChildAccessStore } from '@/stores/child-access-store';
+import { splitPronoteName, toPronoteDedupeKey } from '@/lib/pronote-helpers';
 import type {
   PronoteResource,
   QrCodeData,
@@ -102,15 +104,13 @@ function toUsername(name: string): string {
     .replace(/[^a-z0-9.]/g, '');
 }
 
-function splitName(fullName: string): { firstName: string; lastName: string } {
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length === 1) {
-    return { firstName: parts[0] ?? fullName, lastName: '' };
-  }
-  // Pronote name format is typically "LASTNAME Firstname"
-  const lastName = parts[0] ?? '';
-  const firstName = parts.slice(1).join(' ');
-  return { firstName, lastName };
+// Bytes of temporary password entropy. 16 bytes → 128 bits, well above the
+// server's password policy floor. Encoded as hex (32 chars) for safe transit.
+const TEMP_PASSWORD_BYTES = 16;
+
+async function generateTempPassword(): Promise<string> {
+  const bytes = await Crypto.getRandomBytesAsync(TEMP_PASSWORD_BYTES);
+  return `tmp-${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
 }
 
 // ============================================================================
@@ -145,9 +145,7 @@ export function usePronoteReconnect(): UsePronoteReconnectResult {
     Record<string, string>
   >({});
 
-  const existingChildNames = children.map(
-    (c) => `${c.lastName} ${c.firstName}`.trim(),
-  );
+  const existingChildNames = children.map(toPronoteDedupeKey);
 
   // ---- Actions ----
 
@@ -228,12 +226,15 @@ export function usePronoteReconnect(): UsePronoteReconnectResult {
         const newChildIds: Record<string, string> = {};
 
         for (const resource of selected) {
-          const { firstName, lastName } = splitName(resource.name);
+          const { firstName, lastName } = splitPronoteName(resource.name);
           const baseUsername = toUsername(resource.name);
           const username = `${baseUsername}.${Date.now() % 10000}`;
 
-          // Temporary password — will be overwritten by PIN setup
-          const tempPassword = `tmp-${Math.random().toString(36).slice(2)}`;
+          // Cryptographically-random temporary password (128 bits of entropy).
+          // Overwritten by the child's chosen PIN during the pin-setup step,
+          // but must still be unguessable in case the parent abandons the flow
+          // post-account-creation.
+          const tempPassword = await generateTempPassword();
 
           const child = await createChild({
             firstName,

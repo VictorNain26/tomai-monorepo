@@ -25,6 +25,7 @@ import type {
 } from '@/services/pronote/pronote-types';
 import type { EducationLevelType } from '@/constants/levels';
 import type { ICreateChildData } from '@/hooks/useParentDashboard';
+import { splitPronoteName, toPronoteDedupeKey } from '@/lib/pronote-helpers';
 
 // ============================================================================
 // TYPES
@@ -156,9 +157,7 @@ export function usePronoteOnboarding(): UsePronoteOnboardingResult {
   const [parentPinConfirm, setParentPinConfirm] = useState('');
   const [isSavingParentPin, setIsSavingParentPin] = useState(false);
 
-  const existingChildNames = children.map(
-    (c) => `${c.firstName} ${c.lastName}`,
-  );
+  const existingChildNames = children.map(toPronoteDedupeKey);
 
   // ---- Actions ----
 
@@ -250,9 +249,7 @@ export function usePronoteOnboarding(): UsePronoteOnboardingResult {
 
       try {
         for (const child of updatedData) {
-          const nameParts = child.resource.name.split(' ');
-          const firstName = nameParts[0] || child.resource.name;
-          const lastName = nameParts.slice(1).join(' ') || '';
+          const { firstName, lastName } = splitPronoteName(child.resource.name);
 
           const childData: ICreateChildData = {
             firstName,
