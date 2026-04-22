@@ -62,8 +62,8 @@ mock.module('drizzle-orm', () => ({
   inArray: (...args: unknown[]) => ({ type: 'inArray', args }),
 }));
 
-// Plan lookup is now delegated to lib/stripe/config; mock returns fixed IDs
-mock.module('../lib/stripe/config', () => ({
+// Plan lookup delegated to lib/plan-cache; mock returns fixed IDs
+mock.module('../lib/plan-cache', () => ({
   getPremiumPlanId: mock(async () => 'plan-premium-001'),
   getFreePlanId: mock(async () => 'plan-free-001'),
 }));

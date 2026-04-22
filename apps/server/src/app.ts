@@ -16,13 +16,7 @@ import { env, envUtils } from './config/environment.config.js';
 import { apiRoutes } from './routes/api/index.js';
 import { chatMessageRoutes } from './routes/chat-message.routes.js';
 import { fileUploadRoutes } from './routes/file-upload.routes.js';
-import {
-  checkoutRoutes,
-  childrenRoutes,
-  statusRoutes,
-  lifecycleRoutes
-} from './routes/subscription/index.js';
-import { stripeWebhookRoutes } from './routes/stripe-webhook.routes.js';
+import { statusRoutes } from './routes/subscription/index.js';
 import { revenuecatWebhookRoutes } from './routes/revenuecat-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { deckRoutes, cardRoutes, fsrsRoutes, fsrsExtraRoutes } from './routes/learning/index.js';
@@ -124,7 +118,7 @@ const app = new Elysia({ name: 'tomai-server' })
           api: '/api',
           auth: '/api/auth',
           subscriptions: '/api/subscriptions',
-          webhooks: '/webhooks/stripe',
+          webhooks: '/webhooks/revenuecat',
           swagger: '/swagger'
         }
       };
@@ -288,12 +282,8 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(apiRoutes)
   .use(chatMessageRoutes)   // Messages chat HTTP simple
   .use(fileUploadRoutes)  // Upload: Scaleway + PostgreSQL (RGPD France)
-  .use(checkoutRoutes)      // Subscription checkout
-  .use(childrenRoutes)      // Children management
-  .use(statusRoutes)        // Subscription status, portal, usage
-  .use(lifecycleRoutes)     // Cancel, resume, preview
-  .use(stripeWebhookRoutes) // Webhooks Stripe (raw body)
-  .use(revenuecatWebhookRoutes) // Webhooks RevenueCat (mobile IAP)
+  .use(statusRoutes)        // Subscription status + token usage (DB-driven)
+  .use(revenuecatWebhookRoutes) // Webhooks RevenueCat (single source of subscription truth)
   .use(ttsRoutes)           // Text-to-Speech (Gemini 2.5 Flash TTS - 3.0 pending)
   .use(deckRoutes)          // Outils de révision - decks, subjects, topics
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation

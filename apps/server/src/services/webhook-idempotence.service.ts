@@ -1,7 +1,7 @@
 /**
  * Webhook Idempotence Service - PostgreSQL
  *
- * Remplace Redis pour la déduplication des webhooks Stripe/RevenueCat.
+ * Déduplication des webhooks RevenueCat (source unique de facturation).
  * Stocke les event IDs en base pour éviter le double-traitement.
  */
 
@@ -135,22 +135,8 @@ class WebhookIdempotenceService {
 export const webhookIdempotenceService = new WebhookIdempotenceService();
 
 // =============================================
-// Helper Functions (compatibilité avec ancien code)
+// Helper Functions
 // =============================================
-
-/**
- * Vérifie si événement Stripe déjà traité
- */
-export async function isStripeEventProcessed(eventId: string): Promise<boolean> {
-  return webhookIdempotenceService.isProcessed(eventId);
-}
-
-/**
- * Marque événement Stripe comme traité
- */
-export async function markStripeEventProcessed(eventId: string, eventType: string): Promise<void> {
-  await webhookIdempotenceService.markProcessed(eventId, 'stripe', eventType);
-}
 
 /**
  * Vérifie si événement RevenueCat déjà traité

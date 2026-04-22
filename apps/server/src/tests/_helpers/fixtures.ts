@@ -154,8 +154,6 @@ export function makeSubscription(overrides?: Partial<SubscriptionData>): Subscri
 interface FamilyBillingData {
   id: string;
   parentId: string;
-  stripeCustomerId: string;
-  stripeSubscriptionId: string;
   revenuecatCustomerId: string | null;
   revenuecatSubscriptionId: string | null;
   billingStatus: string;
@@ -171,10 +169,8 @@ export function makeFamilyBilling(overrides?: Partial<FamilyBillingData>): Famil
   return {
     id: 'billing-001',
     parentId: 'parent-001',
-    stripeCustomerId: 'cus_test123',
-    stripeSubscriptionId: 'sub_test123',
-    revenuecatCustomerId: null,
-    revenuecatSubscriptionId: null,
+    revenuecatCustomerId: 'rc_test_parent_001',
+    revenuecatSubscriptionId: 'tom_premium_monthly',
     billingStatus: 'active',
     currentPeriodStart: BASE_DATE,
     currentPeriodEnd: new Date('2025-07-15T10:00:00.000Z'),
@@ -183,21 +179,6 @@ export function makeFamilyBilling(overrides?: Partial<FamilyBillingData>): Famil
     createdAt: BASE_DATE,
     updatedAt: BASE_DATE,
     ...overrides,
-  };
-}
-
-export function makeStripeEvent(
-  type: string,
-  data: Record<string, unknown>,
-  overrides?: Partial<{ id: string }>
-) {
-  return {
-    id: overrides?.id ?? `evt_test_${Date.now()}`,
-    type,
-    data: { object: data },
-    created: Math.floor(BASE_DATE.getTime() / 1000),
-    api_version: '2024-12-18',
-    livemode: false,
   };
 }
 

@@ -36,7 +36,7 @@ mock.module('drizzle-orm', () => ({
   inArray: (...args: unknown[]) => ({ type: 'inArray', args }),
 }));
 
-mock.module('../lib/stripe/config', () => ({
+mock.module('../lib/plan-cache', () => ({
   getPremiumPlanId: mock(async () => 'plan-premium'),
   getFreePlanId: mock(async () => 'plan-free'),
 }));
@@ -55,31 +55,19 @@ beforeEach(() => {
 
 describe('BillingService', () => {
   describe('activatePremium', () => {
-    it('upserts family_billing with Stripe provider columns', async () => {
+    it('upserts family_billing with RevenueCat provider columns', async () => {
       await billingService.activatePremium({
         parentId: 'parent-001',
         childrenIds: [],
         period: { start: new Date('2026-01-01'), end: new Date('2026-02-01') },
         monthlyAmountCents: 1500,
-        source: { provider: 'stripe', customerId: 'cus_1', subscriptionId: 'sub_1' },
+        source: { provider: 'revenuecat', customerId: 'rc-user-1', productId: 'prod_monthly' },
       });
       expect(mockInsert).toHaveBeenCalledTimes(1);
       const values = (mockInsertValues.mock.calls[0]?.[0] ?? {}) as Record<string, unknown>;
-      expect(values.stripeCustomerId).toBe('cus_1');
-      expect(values.stripeSubscriptionId).toBe('sub_1');
-      expect(values.billingStatus).toBe('active');
-    });
-
-    it('upserts family_billing with RevenueCat provider columns', async () => {
-      await billingService.activatePremium({
-        parentId: 'parent-002',
-        childrenIds: [],
-        period: { start: new Date(), end: new Date() },
-        source: { provider: 'revenuecat', customerId: 'rc-user-1', productId: 'prod_monthly' },
-      });
-      const values = (mockInsertValues.mock.calls[0]?.[0] ?? {}) as Record<string, unknown>;
       expect(values.revenuecatCustomerId).toBe('rc-user-1');
       expect(values.revenuecatSubscriptionId).toBe('prod_monthly');
+      expect(values.billingStatus).toBe('active');
     });
 
     it('promotes each child to premium plan via upsert', async () => {
@@ -87,7 +75,7 @@ describe('BillingService', () => {
         parentId: 'parent-003',
         childrenIds: ['child-a', 'child-b'],
         period: { start: new Date(), end: new Date() },
-        source: { provider: 'stripe', customerId: 'cus_1', subscriptionId: 'sub_1' },
+        source: { provider: 'revenuecat', customerId: 'rc-user-1', productId: 'prod_monthly' },
       });
       // 1 family_billing insert + 2 child upserts = 3 inserts
       expect(mockInsert).toHaveBeenCalledTimes(3);
@@ -147,12 +135,11 @@ describe('BillingService', () => {
       expect(mockUpdate).toHaveBeenCalledTimes(2);
     });
 
-    it('also clears stripe_subscription_id when flag is set', async () => {
-      await billingService.expireAndDowngrade('parent-009', [], {
-        clearStripeSubscriptionId: true,
-      });
+    it('zeroes monthlyAmountCents and resets premiumChildrenCount to 0', async () => {
+      await billingService.expireAndDowngrade('parent-009', []);
       const payload = (mockUpdateSet.mock.calls[0]?.[0] ?? {}) as Record<string, unknown>;
-      expect(payload.stripeSubscriptionId).toBeNull();
+      expect(payload.billingStatus).toBe('expired');
+      expect(payload.premiumChildrenCount).toBe(0);
       expect(payload.monthlyAmountCents).toBe(0);
     });
   });
