@@ -123,11 +123,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
     }
 
     try {
-      const updateData = {
-        ...validation.data,
-        dateOfBirth: validation.data.dateOfBirth ? new Date(validation.data.dateOfBirth) : undefined
-      };
-      const child = await parentService.updateChild(authContext.user.id, params.id, updateData);
+      const child = await parentService.updateChild(authContext.user.id, params.id, validation.data, headers);
       return { success: true, child };
     } catch (_error) {
       logger.error('Child update failed', {

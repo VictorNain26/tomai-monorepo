@@ -1,6 +1,8 @@
 import { Elysia, t } from 'elysia';
+import { and, eq } from 'drizzle-orm';
 import { handleAuthWithCookies } from '../../middleware/auth.middleware';
 import { db } from '../../db/connection';
+import { devicePushTokens } from '../../db/schema';
 import { logger } from '../../lib/observability';
 
 export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
@@ -18,8 +20,6 @@ export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
         set.status = 400;
         return { error: 'Invalid Expo push token format' };
       }
-
-      const { devicePushTokens } = await import('../../db/schema');
 
       await db
         .insert(devicePushTokens)
@@ -78,9 +78,6 @@ export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
 
     try {
       const { token } = body;
-
-      const { devicePushTokens } = await import('../../db/schema');
-      const { eq, and } = await import('drizzle-orm');
 
       await db
         .delete(devicePushTokens)

@@ -31,6 +31,12 @@ export interface StreamGenerationParams {
   userRole: 'student' | 'parent';
   pronoteContext?: PronoteContext;
   files?: AttachedFile[];
+  /**
+   * Turn-specific reinforcement block injected by the intent classifier.
+   * When non-null, prepended to the system prompt to force a stricter
+   * socratic stance (e.g. on "solve this for me" requests).
+   */
+  intentReinforcement?: string | null;
   conversationHistory: Array<{
     role: 'user' | 'assistant';
     content: string;

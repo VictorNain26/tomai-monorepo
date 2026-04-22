@@ -55,7 +55,9 @@ export function AttachmentPreview({ attachments, onRemove }: AttachmentPreviewPr
               <TouchableOpacity
                 onPress={() => onRemove(attachment.fileId)}
                 className="absolute -right-1 -top-1 h-5 w-5 items-center justify-center rounded-full bg-red-600 dark:bg-red-400"
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 accessibilityLabel={`Supprimer ${attachment.fileName}`}
+                accessibilityRole="button"
               >
                 <Text className="text-xs text-white">✕</Text>
               </TouchableOpacity>

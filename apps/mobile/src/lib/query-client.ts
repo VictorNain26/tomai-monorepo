@@ -12,6 +12,8 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
+import { createEncryptedStorage } from './encrypted-storage';
+
 // ============================================================================
 // ONLINE MANAGER
 // ============================================================================
@@ -78,11 +80,19 @@ export const queryClient = new QueryClient({
 // ============================================================================
 
 /**
+ * Encrypted AsyncStorage wrapper: values are sealed with ChaCha20-Poly1305
+ * under a per-device key pinned in expo-secure-store. GDPR-sensitive data
+ * (student conversations, grades, progression) must not sit at rest in
+ * plaintext AsyncStorage.
+ */
+const encryptedStorage = createEncryptedStorage();
+
+/**
  * AsyncStorage persister for query cache.
- * Stores query cache in AsyncStorage for offline access.
+ * Stores query cache in AsyncStorage for offline access, encrypted at rest.
  */
 export const asyncStoragePersister = createAsyncStoragePersister({
-  storage: AsyncStorage,
+  storage: encryptedStorage,
   key: 'TOMIA_QUERY_CACHE',
   // Throttle writes to avoid excessive storage operations
   throttleTime: 1000,

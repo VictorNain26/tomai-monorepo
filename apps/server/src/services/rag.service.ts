@@ -10,6 +10,7 @@
 import { qdrantService } from './qdrant.service.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
 import { rerankWithBm25Rrf, type RerankedResult } from './rerank.service.js';
+import { isCohereRerankConfigured, rerankWithCohere } from './rerank-cohere.service.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
 
@@ -27,7 +28,8 @@ const RAG_THRESHOLDS = {
 export interface HybridSearchOptions {
   query: string;
   niveau: EducationLevelType;
-  matiere: string;
+  /** Filtrer sur une matière. Omettre pour chercher toutes matières confondues. */
+  matiere?: string;
   competence?: string | null;
   limit?: number;
   minSimilarity?: number;
@@ -57,7 +59,14 @@ export interface HybridSearchResult {
 // Service
 // =============================================================================
 
+// isAvailable() result cache: Qdrant getCollection + Mistral embed('test')
+// are both real network calls. Caching avoids doubling them per flashcard generation
+// (audit P0-7: tool-executor calls isAvailable then hybridSearch which re-checks).
+const AVAILABILITY_CACHE_TTL_MS = 30_000;
+
 class RAGService {
+  private availabilityCache: { value: boolean; expiresAt: number } | null = null;
+
   /**
    * Recherche sémantique avec reranking BM25+RRF
    */
@@ -89,12 +98,22 @@ class RAGService {
         return this.emptyResult(Date.now() - startTime);
       }
 
-      // 3. Reranking BM25 + RRF
+      // 3. Reranking stage 1: BM25 + RRF fusion. We keep more than the
+      // final topK here so stage 2 (Cohere) can re-order a larger pool.
       const topK = options.limit ?? 5;
-      const rerankedResults = rerankWithBm25Rrf(options.query, rawResults, topK);
+      const stage2PoolSize = Math.min(Math.max(topK * 3, 10), rawResults.length);
+      const stage1Results = rerankWithBm25Rrf(options.query, rawResults, stage2PoolSize);
 
-      // 4. Résultats (déjà filtrés côté serveur par score_threshold)
-      const filteredResults = rerankedResults;
+      // 4. Reranking stage 2 (optional): Cohere Rerank 3.5 cross-encoder.
+      // Enabled only when COHERE_API_KEY is set. If the Cohere call fails,
+      // we surface the error — no silent fallback to stage 1 output. The
+      // caller's outer try/catch below will log and propagate.
+      let filteredResults: RerankedResult[];
+      if (isCohereRerankConfigured()) {
+        filteredResults = await rerankWithCohere(options.query, stage1Results, topK);
+      } else {
+        filteredResults = stage1Results.slice(0, topK);
+      }
 
       // 5. Convertir au format interne
       const semanticChunks = this.toSemanticChunks(filteredResults);
@@ -159,17 +178,33 @@ class RAGService {
 
   /**
    * Vérifie si le service RAG est disponible
+   * Résultat mis en cache 30s pour éviter des appels répétés à Qdrant + Mistral
+   * sur le chemin chaud (tool-executor → isAvailable → hybridSearch → isAvailable).
    */
   async isAvailable(): Promise<boolean> {
+    const now = Date.now();
+    if (this.availabilityCache && this.availabilityCache.expiresAt > now) {
+      return this.availabilityCache.value;
+    }
     try {
       const [qdrantOk, mistralOk] = await Promise.all([
         qdrantService.isAvailable(),
         mistralEmbeddingsService.isAvailable(),
       ]);
-      return qdrantOk && mistralOk;
+      const available = qdrantOk && mistralOk;
+      this.availabilityCache = { value: available, expiresAt: now + AVAILABILITY_CACHE_TTL_MS };
+      return available;
     } catch {
+      this.availabilityCache = { value: false, expiresAt: now + AVAILABILITY_CACHE_TTL_MS };
       return false;
     }
+  }
+
+  /**
+   * Invalide le cache d'availability. Utile pour les tests ou après reconfiguration.
+   */
+  invalidateAvailabilityCache(): void {
+    this.availabilityCache = null;
   }
 
   /**

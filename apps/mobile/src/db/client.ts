@@ -210,6 +210,29 @@ export async function initializeDatabase(): Promise<void> {
 }
 
 // ============================================================================
+// DATA RESET
+// ============================================================================
+
+/**
+ * Wipe all user-specific local data from SQLite.
+ * Call on logout to prevent a different user on the same device from reading leftover data.
+ */
+export async function clearLocalData(): Promise<void> {
+  try {
+    const db = getDatabase();
+    await db.delete(schema.chatMessages);
+    await db.delete(schema.chatSessions);
+    await db.delete(schema.learningDecks);
+    await db.delete(schema.fsrsState);
+    await db.delete(schema.pendingActions);
+    await db.delete(schema.syncMetadata);
+    await db.delete(schema.userPreferences);
+  } catch (err) {
+    console.warn('[DB] clearLocalData failed:', err);
+  }
+}
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 

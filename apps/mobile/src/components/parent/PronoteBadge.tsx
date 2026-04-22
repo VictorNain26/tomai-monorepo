@@ -20,6 +20,8 @@ export function PronoteBadge({ connected }: { connected: boolean }) {
       style={{
         backgroundColor: connected ? bgColors.success[10] : bgColors.warning[10],
       }}
+      accessibilityRole="text"
+      accessibilityLabel={connected ? 'Pronote connecté' : 'Pronote non connecté'}
     >
       {connected ? (
         <>

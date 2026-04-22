@@ -1,12 +1,11 @@
 import { Elysia, t } from 'elysia';
-import { auth } from '../lib/auth.js';
+import { handleAuthWithCookies } from '../middleware/auth.middleware.js';
 import { logger } from '../lib/observability.js';
 import { scalewayStorageService } from '../services/storage/scaleway-storage.service.js';
 import { geminiFilesService } from '../services/gemini-files.service.js';
 import { audioTranscriptionService } from '../services/audio-transcription.service.js';
 import { filesRepository } from '../db/repositories/index.js';
 import { env } from '../config/environment.config.js';
-import type { User } from '../types/auth.types.js';
 import type { EducationLevelType } from '../types/education.types.js';
 import {
   MAX_FILE_SIZE,
@@ -39,14 +38,13 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
    */
   .post('/presign', async ({ body, request, set }) => {
     try {
-      // Auth check
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session?.user) {
-        set.status = 401;
+      // Auth with strict DB validation (prevents orphan session reuse)
+      const authContext = await handleAuthWithCookies(request.headers, set);
+      if (!authContext.success) {
         return { success: false, error: 'Authentication required' } as PresignedUploadResponse;
       }
 
-      const user = session.user as User;
+      const user = authContext.user;
       const { fileName, mimeType, sizeBytes, context } = body;
 
       // Validate file type
@@ -142,14 +140,13 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
    */
   .post('/confirm/:fileId', async ({ params: { fileId }, request, set }) => {
     try {
-      // Auth check
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session?.user) {
-        set.status = 401;
+      // Auth with strict DB validation (prevents orphan session reuse)
+      const authContext = await handleAuthWithCookies(request.headers, set);
+      if (!authContext.success) {
         return { success: false, error: 'Authentication required' } as ConfirmUploadResponse;
       }
 
-      const user = session.user as User;
+      const user = authContext.user;
 
       // Get file record
       const fileRecord = await filesRepository.findById(fileId);
@@ -207,6 +204,15 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
 
             if (transcriptionResult.success && transcriptionResult.transcription) {
               transcription = transcriptionResult.transcription;
+
+              // Persist transcription on the file record so subsequent chat
+              // turns (or page refreshes) don't lose it. Returned inline above
+              // for the immediate client response and stored here for history.
+              await filesRepository.mergeEducationalContext(fileId, {
+                transcription: transcriptionResult.transcription,
+                detectedLanguage: transcriptionResult.detectedLanguage,
+                transcribedAt: new Date().toISOString(),
+              });
             }
           }
         } catch (err) {
@@ -288,13 +294,12 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
    */
   .get('/file/:fileId', async ({ params: { fileId }, request, set }) => {
     try {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session?.user) {
-        set.status = 401;
+      const authContext = await handleAuthWithCookies(request.headers, set);
+      if (!authContext.success) {
         return { success: false, error: 'Authentication required' };
       }
 
-      const user = session.user as User;
+      const user = authContext.user;
       const fileRecord = await filesRepository.findById(fileId);
 
       if (!fileRecord) {
@@ -341,13 +346,12 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
    */
   .delete('/file/:fileId', async ({ params: { fileId }, request, set }) => {
     try {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session?.user) {
-        set.status = 401;
+      const authContext = await handleAuthWithCookies(request.headers, set);
+      if (!authContext.success) {
         return { success: false, error: 'Authentication required' };
       }
 
-      const user = session.user as User;
+      const user = authContext.user;
       const fileRecord = await filesRepository.findById(fileId);
 
       if (!fileRecord) {

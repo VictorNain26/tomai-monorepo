@@ -105,3 +105,36 @@ export async function withRetry<T>(
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/**
+ * Wrap a promise with a timeout. Rejects with a TimeoutError if the inner promise
+ * doesn't settle within `timeoutMs`. Prevents AI SDK calls from hanging indefinitely
+ * and holding DB connections open.
+ *
+ * @example
+ * const result = await withTimeout(client.embeddings.create(...), 30_000, 'mistral:embed');
+ */
+export class TimeoutError extends Error {
+  constructor(operation: string, timeoutMs: number) {
+    super(`Operation "${operation}" timed out after ${timeoutMs}ms`);
+    this.name = 'TimeoutError';
+  }
+}
+
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  operationName = 'operation'
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new TimeoutError(operationName, timeoutMs)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}

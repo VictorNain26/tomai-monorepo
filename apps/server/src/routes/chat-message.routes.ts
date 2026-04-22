@@ -13,6 +13,7 @@ import { chatOrchestrationService, ChatOrchestrationError } from '../services/ch
 import { tokenQuotaService } from '../services/token-quota.service.js';
 import { AppError, toErrorResponse } from '../lib/errors.js';
 import { logger } from '../lib/observability.js';
+import { appConfig } from '../config/app.config.js';
 import type { EducationLevelType } from '../types/index.js';
 
 // Track active SSE connections per user
@@ -47,22 +48,8 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     }
 
     const user = authResult.user;
-    const { content, data, pronoteContext } = body as {
-      content: string;
-      data: {
-        subject?: string;
-        sessionId?: string;
-        schoolLevel?: string;
-        firstName?: string;
-        fileId?: string;
-        fileIds?: string[];
-      };
-      pronoteContext?: {
-        homework?: Array<{ subject: string; description: string; dueDate: string; done: boolean }>;
-        recentGrades?: Array<{ subject: string; value: number | null; outOf: number; date: string }>;
-        todayTimetable?: Array<{ subject: string; startDate: string; endDate: string; canceled: boolean }>;
-      };
-    };
+    // body is already validated and typed by Elysia's t.Object schema below — no cast needed.
+    const { content, data, pronoteContext } = body;
 
     const fileIds = data.fileIds ?? (data.fileId ? [data.fileId] : []);
     const safeContent = sanitizePrompt(content ?? '');
@@ -138,7 +125,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       yield sse({ data: {
         type: 'error',
         id: `err_${Date.now()}`,
-        model: 'gemini-3-flash-preview',
+        model: appConfig.ai.gemini.model,
         timestamp: Date.now(),
         error: { message: 'Erreur inattendue. Réessaie.', code: 'INTERNAL_ERROR' },
       } });

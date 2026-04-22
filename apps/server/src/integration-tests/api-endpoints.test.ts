@@ -87,7 +87,11 @@ mock.module('../services/memory-cache.service', () => ({
 }));
 
 // Infrastructure mocks
-mock.module('../lib/encryption', () => ({ validateEncryptionSetup: mock(async () => true) }));
+mock.module('../lib/encryption', () => ({
+  validateEncryptionSetup: mock(async () => true),
+  encrypt: mock(async (v: string) => `enc:${v}`),
+  decrypt: mock(async (v: string) => v.replace(/^enc:/, '')),
+}));
 mock.module('../middleware/memory-monitor.middleware', () => ({
   memoryMonitor: { startMonitoring: mock(() => {}) },
 }));
@@ -130,7 +134,17 @@ mock.module('../services/chat.service', () => ({
     ]),
     deleteSession: mock(async () => {}),
     getUserSessions: mock(async () => []),
-    getSession: mock(async () => null),
+    getSession: mock(async (sessionId: string) => ({
+      id: sessionId,
+      userId: 'user-001',
+      subject: 'test',
+      startedAt: new Date(),
+      endedAt: null,
+      durationMinutes: null,
+      frustrationAvg: null,
+      questionLevelsAvg: null,
+      conceptsCovered: null,
+    })),
     getMessageById: mock(async () => null),
     resetSession: mock(async () => 'session-new'),
   },
@@ -170,6 +184,9 @@ mock.module('../routes/learning/index', () => ({
   deckRoutes: new Elysia(), cardRoutes: new Elysia(), fsrsRoutes: new Elysia(), fsrsExtraRoutes: new Elysia(),
 }));
 mock.module('../routes/waitlist.routes', () => ({ waitlistRoutes: new Elysia() }));
+mock.module('../routes/pronote-sync.routes', () => ({ pronoteSyncRoutes: new Elysia() }));
+mock.module('../routes/revenuecat-webhook.routes', () => ({ revenuecatWebhookRoutes: new Elysia() }));
+mock.module('../routes/stripe-webhook.routes', () => ({ stripeWebhookRoutes: new Elysia() }));
 
 // DB schema + repositories (dynamic imports in apiRoutes)
 mock.module('../db/schema', () => ({
@@ -278,7 +295,7 @@ describe('API Endpoints', () => {
       expect(res.status).toBe(401);
     });
 
-    it('should return messages when authenticated', async () => {
+    it('should return messages when authenticated and session is owned', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
       const res = await app.handle(new Request('http://localhost/api/chat/session/s1/history'));
       expect(res.status).toBe(200);
@@ -286,6 +303,15 @@ describe('API Endpoints', () => {
       expect(data.success).toBe(true);
       expect(data.messages.length).toBe(1);
       expect(data.messages[0].role).toBe('user');
+    });
+
+    it('should return 403 when session belongs to another user (IDOR regression)', async () => {
+      authUser = { id: 'user-002', firstName: 'Alice', role: 'student' };
+      // chatService.getSession mock returns session owned by 'user-001'
+      const res = await app.handle(new Request('http://localhost/api/chat/session/s1/history'));
+      expect(res.status).toBe(403);
+      const data = await res.json();
+      expect(data._error).toBe('Session not found or access denied');
     });
   });
 

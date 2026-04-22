@@ -40,6 +40,7 @@ export const UPLOAD_CONFIG = {
     'audio/x-wav',
     'audio/mpeg',
     'audio/mp3',
+    'audio/mp4',
     'audio/aac',
     'audio/ogg',
     'audio/webm',

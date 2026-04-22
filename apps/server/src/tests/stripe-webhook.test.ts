@@ -51,6 +51,30 @@ mock.module('../db/connection', () => ({
 mock.module('../db/schema', () => ({
   familyBilling: { parentId: 'parentId', stripeCustomerId: 'stripeCustomerId' },
   userSubscriptions: { userId: 'userId' },
+  subscriptionPlans: { id: 'id', name: 'name' },
+}));
+
+// BillingService now centralizes the webhook DB mutations (commit Item 6).
+// Stub it so the handler tests only observe "was X called" without touching DB.
+const mockActivatePremium = mock(async () => {});
+const mockExtendActivePeriod = mock(async () => {});
+const mockMarkPastDue = mock(async () => {});
+const mockExpireAndDowngrade = mock(async () => {});
+mock.module('../services/billing', () => ({
+  billingService: {
+    activatePremium: mockActivatePremium,
+    extendActivePeriod: mockExtendActivePeriod,
+    markPastDue: mockMarkPastDue,
+    expireAndDowngrade: mockExpireAndDowngrade,
+    markCanceled: mock(async () => {}),
+    markUncanceled: mock(async () => {}),
+  },
+}));
+
+// lib/stripe/config is now imported directly (no longer via stripeService)
+mock.module('../lib/stripe/config', () => ({
+  getPremiumPlanId: mock(async () => 'plan-premium'),
+  getFreePlanId: mock(async () => 'plan-free'),
 }));
 
 mock.module('drizzle-orm', () => ({
@@ -120,6 +144,10 @@ beforeEach(() => {
   mockUpdateSet.mockClear();
   mockUpdateWhere.mockClear();
   mockMarkStripeProcessed.mockClear();
+  mockActivatePremium.mockClear();
+  mockExtendActivePeriod.mockClear();
+  mockMarkPastDue.mockClear();
+  mockExpireAndDowngrade.mockClear();
   constructEventResult = {
     id: 'evt_test_001',
     type: 'checkout.session.completed',
@@ -182,7 +210,7 @@ describe('Stripe Webhook Handler', () => {
   });
 
   describe('checkout.session.completed', () => {
-    it('should insert familyBilling + userSubscriptions', async () => {
+    it('should activate premium via BillingService', async () => {
       const app = createTestApp();
       const req = makeStripeRequest('{}');
       const res = await app.handle(req);
@@ -190,10 +218,13 @@ describe('Stripe Webhook Handler', () => {
       const json = await res.json() as { received: boolean; event: string };
       expect(json.received).toBe(true);
       expect(json.event).toBe('checkout.session.completed');
-      // Side-effects: insert familyBilling + insert userSubscriptions per child
-      expect(mockInsert).toHaveBeenCalled();
-      expect(mockInsertValues).toHaveBeenCalled();
-      expect(mockOnConflictDoUpdate).toHaveBeenCalled();
+      expect(mockActivatePremium).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parentId: 'parent-001',
+          childrenIds: ['child-001'],
+          source: expect.objectContaining({ provider: 'stripe' }),
+        }),
+      );
     });
 
     it('should handle checkout without subscription (early return)', async () => {
@@ -206,8 +237,7 @@ describe('Stripe Webhook Handler', () => {
       const req = makeStripeRequest('{}');
       const res = await app.handle(req);
       expect(res.status).toBe(200);
-      // No DB writes when subscription is null
-      expect(mockInsert).not.toHaveBeenCalled();
+      expect(mockActivatePremium).not.toHaveBeenCalled();
     });
 
     it('should handle checkout without parentId (early return)', async () => {
@@ -220,12 +250,12 @@ describe('Stripe Webhook Handler', () => {
       const req = makeStripeRequest('{}');
       const res = await app.handle(req);
       expect(res.status).toBe(200);
-      expect(mockInsert).not.toHaveBeenCalled();
+      expect(mockActivatePremium).not.toHaveBeenCalled();
     });
   });
 
   describe('invoice.paid', () => {
-    it('should update billing period and reactivate children', async () => {
+    it('should extend active period via BillingService', async () => {
       const billing = makeFamilyBilling();
       dbSelectResult = [billing];
       constructEventResult = {
@@ -239,10 +269,11 @@ describe('Stripe Webhook Handler', () => {
       const req = makeStripeRequest('{}');
       const res = await app.handle(req);
       expect(res.status).toBe(200);
-      // Side-effects: update familyBilling (period dates, active) + update userSubscriptions (active)
-      expect(mockUpdate).toHaveBeenCalled();
-      expect(mockUpdateSet).toHaveBeenCalledWith(
-        expect.objectContaining({ billingStatus: 'active' })
+      expect(mockExtendActivePeriod).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parentId: billing.parentId,
+          resetChildCounters: true,
+        }),
       );
     });
 
@@ -261,7 +292,7 @@ describe('Stripe Webhook Handler', () => {
   });
 
   describe('invoice.payment_failed', () => {
-    it('should set billing to past_due and pause children', async () => {
+    it('should mark past_due via BillingService', async () => {
       const billing = makeFamilyBilling();
       dbSelectResult = [billing];
       constructEventResult = {
@@ -273,11 +304,7 @@ describe('Stripe Webhook Handler', () => {
       const req = makeStripeRequest('{}');
       const res = await app.handle(req);
       expect(res.status).toBe(200);
-      // Side-effects: update familyBilling past_due + update userSubscriptions paused
-      expect(mockUpdate).toHaveBeenCalled();
-      expect(mockUpdateSet).toHaveBeenCalledWith(
-        expect.objectContaining({ billingStatus: 'past_due' })
-      );
+      expect(mockMarkPastDue).toHaveBeenCalledWith(billing.parentId, expect.any(Array));
     });
   });
 
@@ -360,7 +387,7 @@ describe('Stripe Webhook Handler', () => {
   });
 
   describe('customer.subscription.deleted', () => {
-    it('should expire billing, reset counts, revert children to free', async () => {
+    it('should expire via BillingService (stripe flag clears subscription id)', async () => {
       const billing = makeFamilyBilling();
       dbSelectResult = [billing];
       constructEventResult = {
@@ -377,15 +404,10 @@ describe('Stripe Webhook Handler', () => {
       const req = makeStripeRequest('{}');
       const res = await app.handle(req);
       expect(res.status).toBe(200);
-      // Side-effects: update familyBilling (expired, reset counts) + update children (free plan)
-      expect(mockUpdate).toHaveBeenCalled();
-      expect(mockUpdateSet).toHaveBeenCalledWith(
-        expect.objectContaining({
-          billingStatus: 'expired',
-          premiumChildrenCount: 0,
-          monthlyAmountCents: 0,
-          stripeSubscriptionId: null,
-        })
+      expect(mockExpireAndDowngrade).toHaveBeenCalledWith(
+        billing.parentId,
+        ['child-001'],
+        { clearStripeSubscriptionId: true },
       );
     });
   });

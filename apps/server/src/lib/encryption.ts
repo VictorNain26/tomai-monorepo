@@ -4,19 +4,24 @@
  * Uses native Web Crypto API (supported by Bun)
  * - AES-256-GCM for authenticated encryption
  * - Random IV per encryption (prevents pattern detection)
+ * - Random salt per encryption so PBKDF2-derived keys differ per record.
+ *   If PRONOTE_ENCRYPTION_KEY ever leaks, an attacker still needs to run
+ *   PBKDF2 (600K iterations) per record rather than bulk-deriving once.
  * - Base64 encoding for storage
  */
 
 const ALGORITHM = 'AES-GCM';
 const KEY_LENGTH = 256;
 const IV_LENGTH = 12; // 96 bits recommended for GCM
+const SALT_LENGTH = 16; // 128 bits of entropy per record
 const TAG_LENGTH = 128; // Authentication tag bits
+const PBKDF2_ITERATIONS = 600000; // OWASP 2023 recommendation for SHA-256
 
 /**
- * Derives a CryptoKey from the environment secret
- * Uses PBKDF2 for key derivation from passphrase
+ * Reads the Pronote encryption secret from env and imports it as PBKDF2 key material.
+ * Fails fast if the secret is missing or too short.
  */
-async function deriveKey(): Promise<CryptoKey> {
+async function importSecretKeyMaterial(): Promise<CryptoKey> {
   const secret = process.env['PRONOTE_ENCRYPTION_KEY'];
 
   if (!secret || secret.length < 32) {
@@ -26,26 +31,31 @@ async function deriveKey(): Promise<CryptoKey> {
     );
   }
 
-  // Import the secret as a raw key material
   const encoder = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
+  return crypto.subtle.importKey(
     'raw',
     encoder.encode(secret),
     { name: 'PBKDF2' },
     false,
-    ['deriveBits', 'deriveKey']
+    ['deriveKey']
   );
+}
 
-  // Derive AES-256 key using PBKDF2
-  // Salt is fixed (derived from app name) - acceptable since secret is high-entropy
-  // OWASP 2023: 600,000 iterations minimum for SHA-256
-  const salt = encoder.encode('tomai-pronote-v2'); // v2 for new iteration count
+/**
+ * Derives a unique AES-256 key from the env secret + a per-record salt.
+ *
+ * The caller passes a raw byte buffer (ArrayBuffer) so this module stays
+ * lib-agnostic (the `@repo/api` Eden Treaty pulls types from this file into
+ * the mobile project, whose tsconfig uses Node types instead of DOM types).
+ */
+async function deriveKey(saltBuffer: ArrayBuffer): Promise<CryptoKey> {
+  const keyMaterial = await importSecretKeyMaterial();
 
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt,
-      iterations: 600000, // OWASP 2023 recommendation
+      salt: saltBuffer,
+      iterations: PBKDF2_ITERATIONS,
       hash: 'SHA-256'
     },
     keyMaterial,
@@ -55,65 +65,59 @@ async function deriveKey(): Promise<CryptoKey> {
   );
 }
 
+function toArrayBuffer(view: Uint8Array): ArrayBuffer {
+  // Copy into a fresh ArrayBuffer to avoid SharedArrayBuffer typing ambiguity
+  // surfaced by downstream consumers (mobile tsc pulls Node types).
+  const out = new ArrayBuffer(view.byteLength);
+  new Uint8Array(out).set(view);
+  return out;
+}
+
 /**
- * Encrypts plaintext using AES-256-GCM
+ * Encrypts plaintext using AES-256-GCM with a per-record random salt.
  *
- * @param plaintext - The data to encrypt
- * @returns Base64 encoded string: IV + ciphertext + tag
+ * Output layout (base64-encoded): salt(16) || iv(12) || ciphertext+tag
  */
 export async function encrypt(plaintext: string): Promise<string> {
-  const key = await deriveKey();
-  const encoder = new TextEncoder();
-
-  // Generate random IV
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const key = await deriveKey(toArrayBuffer(salt));
 
-  // Encrypt
   const ciphertext = await crypto.subtle.encrypt(
-    {
-      name: ALGORITHM,
-      iv,
-      tagLength: TAG_LENGTH
-    },
+    { name: ALGORITHM, iv: toArrayBuffer(iv), tagLength: TAG_LENGTH },
     key,
-    encoder.encode(plaintext)
+    new TextEncoder().encode(plaintext)
   );
 
-  // Combine IV + ciphertext (tag is appended by GCM)
-  const combined = new Uint8Array(IV_LENGTH + ciphertext.byteLength);
-  combined.set(iv, 0);
-  combined.set(new Uint8Array(ciphertext), IV_LENGTH);
+  const combined = new Uint8Array(SALT_LENGTH + IV_LENGTH + ciphertext.byteLength);
+  combined.set(salt, 0);
+  combined.set(iv, SALT_LENGTH);
+  combined.set(new Uint8Array(ciphertext), SALT_LENGTH + IV_LENGTH);
 
-  // Base64 encode for storage
   return btoa(String.fromCharCode(...combined));
 }
 
 /**
- * Decrypts AES-256-GCM encrypted data
+ * Decrypts AES-256-GCM payloads produced by encrypt().
  *
- * @param encryptedData - Base64 encoded string from encrypt()
- * @returns Original plaintext
- * @throws Error if decryption fails (tampered data, wrong key)
+ * @throws Error if decryption fails (tampered data, wrong key, legacy format)
  */
 export async function decrypt(encryptedData: string): Promise<string> {
-  const key = await deriveKey();
-
-  // Base64 decode
   const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
 
-  // Extract IV and ciphertext
-  const iv = combined.slice(0, IV_LENGTH);
-  const ciphertext = combined.slice(IV_LENGTH);
+  if (combined.byteLength < SALT_LENGTH + IV_LENGTH + 1) {
+    throw new Error('Ciphertext too short — possibly corrupted or legacy format');
+  }
 
-  // Decrypt
+  const salt = combined.slice(0, SALT_LENGTH);
+  const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+  const ciphertext = combined.slice(SALT_LENGTH + IV_LENGTH);
+
+  const key = await deriveKey(toArrayBuffer(salt));
   const plaintext = await crypto.subtle.decrypt(
-    {
-      name: ALGORITHM,
-      iv,
-      tagLength: TAG_LENGTH
-    },
+    { name: ALGORITHM, iv: toArrayBuffer(iv), tagLength: TAG_LENGTH },
     key,
-    ciphertext
+    toArrayBuffer(ciphertext)
   );
 
   return new TextDecoder().decode(plaintext);

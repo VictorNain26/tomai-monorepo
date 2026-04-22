@@ -80,9 +80,22 @@ export class ChatService {
         mimeType?: string;
         fileSizeBytes?: number;
       };
-    }
+      attachedFiles?: Array<{
+        fileName: string;
+        fileId?: string;
+        geminiFileId?: string;
+        mimeType?: string;
+        fileSizeBytes?: number;
+      }>;
+      classifiedIntent?: {
+        intent: string;
+        confidence: 'low' | 'medium' | 'high';
+        error?: string;
+      };
+    },
+    options?: { verifySessionExists?: boolean }
   ): Promise<{ messageId: string; realSessionId: string }> {
-    return this.messages.saveMessage(sessionId, role, content, metadata);
+    return this.messages.saveMessage(sessionId, role, content, metadata, options);
   }
 
   async deleteSession(sessionId: string, userId?: string): Promise<void> {

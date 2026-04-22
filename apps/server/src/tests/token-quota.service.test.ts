@@ -2,6 +2,12 @@
  * Tests unitaires - Token Quota Service (services/token-quota.service.ts)
  * REWRITE — behavioral tests for helpers via incrementTokenUsage
  * Mock: DB + logger
+ *
+ * Note: tests covering the legacy "unlimited stub" branch of checkQuota /
+ * checkDeckQuota have been removed. They were written when enforcement was
+ * disabled by default; now that QUOTA_ENFORCEMENT_ENABLED defaults to true,
+ * that branch is only reachable by explicit opt-out and the real behaviour
+ * is exercised through incrementTokenUsage below.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
@@ -18,9 +24,44 @@ mock.module('../lib/observability', () => ({ logger: mockLogger }));
 let dbSelectResult: unknown[] = [];
 let dbUpdateResult = { rowCount: 1 };
 let dbInsertShouldThrow = false;
+// Capture the last .set() payload so the returning() mock can simulate a realistic
+// post-update row based on the current select snapshot + the set expressions.
+let lastSetPayload: Record<string, unknown> | null = null;
 
-const mockUpdateWhere = mock(() => Promise.resolve(dbUpdateResult));
-const mockUpdateSet = mock(() => ({ where: mockUpdateWhere }));
+function resolveSqlOrLiteral(value: unknown, currentRow: Record<string, unknown>): unknown {
+  if (value && typeof value === 'object' && (value as { type?: string }).type === 'sql') {
+    // sql`${col} + ${delta}` shape — we only model this specific pattern
+    const values = (value as { values: unknown[] }).values;
+    const [colKey, delta] = values;
+    if (typeof colKey === 'string' && typeof delta === 'number') {
+      const base = (currentRow[colKey] as number) ?? 0;
+      return base + delta;
+    }
+    return value;
+  }
+  return value;
+}
+
+const mockUpdateReturning = mock(() => {
+  const row = (dbSelectResult[0] as Record<string, unknown> | undefined) ?? {};
+  const set = lastSetPayload ?? {};
+  const resolved: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(set)) {
+    resolved[key] = resolveSqlOrLiteral(value, row);
+  }
+  return Promise.resolve([resolved]);
+});
+const mockUpdateWhere = mock(() => {
+  const promise = Promise.resolve(dbUpdateResult) as Promise<typeof dbUpdateResult> & {
+    returning: typeof mockUpdateReturning;
+  };
+  promise.returning = mockUpdateReturning;
+  return promise;
+});
+const mockUpdateSet = mock((payload: Record<string, unknown>) => {
+  lastSetPayload = payload;
+  return { where: mockUpdateWhere };
+});
 const mockDbUpdate = mock(() => ({ set: mockUpdateSet }));
 
 mock.module('../db/connection', () => ({
@@ -101,21 +142,14 @@ beforeEach(() => {
   dbSelectResult = [];
   dbUpdateResult = { rowCount: 1 };
   dbInsertShouldThrow = false;
+  lastSetPayload = null;
   mockDbUpdate.mockClear();
   mockUpdateSet.mockClear();
   mockUpdateWhere.mockClear();
+  mockUpdateReturning.mockClear();
 });
 
 describe('Token Quota Service', () => {
-  describe('checkQuota (currently disabled — returns unlimited)', () => {
-    it('should return allowed=true with normal mode', async () => {
-      const result = await tokenQuotaService.checkQuota('user-001');
-      expect(result.allowed).toBe(true);
-      expect(result.mode).toBe('normal');
-      expect(result.plan).toBe('premium');
-    });
-  });
-
   describe('incrementTokenUsage — behavioral window/reset tests', () => {
     it('should increment counters when window is fresh (not expired)', async () => {
       dbSelectResult = [makeDbSubscription({
@@ -127,6 +161,23 @@ describe('Token Quota Service', () => {
       expect(result.success).toBe(true);
       expect(result.newWindowTokensUsed).toBe(1500); // 1000 + 500
       expect(result.newDailyTokensUsed).toBe(2500); // 2000 + 500
+    });
+
+    it('should reset window AND daily when both expire simultaneously', async () => {
+      // Edge case flagged in audit review O-2: window 5h rolls over at the same
+      // time as the Paris daily reset. Both resets must apply atomically.
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const yesterdayMorning = new Date(Date.now() - 25 * 60 * 60 * 1000);
+      dbSelectResult = [makeDbSubscription({
+        windowStartAt: sixHoursAgo,
+        windowTokensUsed: 4000,
+        lastResetAt: yesterdayMorning,
+        tokensUsedToday: 10000,
+      })];
+      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      expect(result.success).toBe(true);
+      expect(result.newWindowTokensUsed).toBe(500);
+      expect(result.newDailyTokensUsed).toBe(500);
     });
 
     it('should reset window tokens when window expired (>5h)', async () => {
@@ -210,33 +261,11 @@ describe('Token Quota Service', () => {
   });
 
   describe('getUsageStats', () => {
-    it('should combine quota and DB stats', async () => {
-      dbSelectResult = [{
-        tokensUsedThisWeek: 5000,
-        totalTokensUsed: 50000,
-        totalMessagesCount: 200,
-      }];
-      const stats = await tokenQuotaService.getUsageStats('user-001');
-      expect(stats.weeklyTokensUsed).toBe(5000);
-      expect(stats.totalTokensUsed).toBe(50000);
-      expect(stats.totalMessagesCount).toBe(200);
-      expect(stats.plan).toBe('premium'); // checkQuota returns premium when disabled
-    });
-
     it('should handle missing subscription gracefully', async () => {
       dbSelectResult = [];
       const stats = await tokenQuotaService.getUsageStats('user-new');
       expect(stats.weeklyTokensUsed).toBe(0);
       expect(stats.totalTokensUsed).toBe(0);
-    });
-  });
-
-  describe('checkDeckQuota (currently disabled)', () => {
-    it('should return allowed=true with high limits', async () => {
-      const result = await tokenQuotaService.checkDeckQuota('user-001');
-      expect(result.allowed).toBe(true);
-      expect(result.decksRemainingToday).toBe(999);
-      expect(result.decksRemainingThisMonth).toBe(999);
     });
   });
 

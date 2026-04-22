@@ -1,16 +1,14 @@
 import { Elysia, t } from 'elysia';
-import { db } from '../../db/connection';
-import { learningDecks, learningCards } from '../../db/schema';
 import { handleAuthWithCookies } from '../../middleware/auth.middleware';
 import { logger } from '../../lib/observability';
 import { ragService } from '../../services/rag.service';
 import { checkQuota, checkDeckQuota, incrementDeckUsage } from '../../services/token-quota.service';
-import { fsrsService } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config.js';
 import {
   generateCards,
   isGenerationError,
 } from '../../services/learning/index';
+import { learningService } from '../../services/learning/learning.service';
 import { getUserLevel } from './helpers';
 
 export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
@@ -174,43 +172,17 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           ? `Révision complète du domaine "${domaine}" - ${generatedCards.length} cartes`
           : `Cartes sur "${topic}" (${domaine})`;
 
-        const { newDeck, insertedCards } = await db.transaction(async (tx) => {
-          const [createdDeck] = await tx
-            .insert(learningDecks)
-            .values({
-              userId: authUser.id,
-              title: deckTitle,
-              description: deckDescription,
-              subject,
-              source: 'rag_program',
-              sourcePrompt: isFullDomaineMode ? domaine : topic,
-              schoolLevel: level,
-              cardCount: generatedCards.length,
-            })
-            .returning();
-
-          if (!createdDeck) {
-            throw new Error('Échec de la création du deck');
-          }
-
-          const cardsToInsert = generatedCards.map((card, index) => ({
-            deckId: createdDeck.id,
-            cardType: card.cardType,
-            content: card.content,
-            position: index,
-            fsrsData: fsrsService.initializeCardFsrsData(),
-          }));
-
-          const createdCards = await tx
-            .insert(learningCards)
-            .values(cardsToInsert)
-            .returning();
-
-          if (createdCards.length === 0) {
-            throw new Error('Échec de l\'insertion des cartes');
-          }
-
-          return { newDeck: createdDeck, insertedCards: createdCards };
+        const { deck: newDeck, cards: insertedCards } = await learningService.createDeckWithCards({
+          userId: authUser.id,
+          deck: {
+            title: deckTitle,
+            description: deckDescription,
+            subject,
+            source: 'rag_program',
+            sourcePrompt: isFullDomaineMode ? domaine : topic,
+            schoolLevel: level,
+          },
+          cards: generatedCards,
         });
 
         const deckUsage = await incrementDeckUsage(authUser.id);

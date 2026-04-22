@@ -62,6 +62,15 @@ export interface AppConfig {
     tokenCostPerMessage: number;
     warningThreshold: number;
   };
+  features: {
+    /**
+     * When true (default), checkQuota/checkDeckQuota evaluate real per-user
+     * counters and can return `allowed: false`. Set QUOTA_ENFORCEMENT_ENABLED=false
+     * to disable enforcement (for incidents or rollouts). Counters are still
+     * written to DB in both modes so usage data remains available.
+     */
+    quotaEnforcementEnabled: boolean;
+  };
   cache: {
     ttlMs: number;
     maxSize: number;
@@ -219,8 +228,10 @@ function createAiConfig(): AppConfig['ai'] {
     gemini: {
       apiKey: Bun.env['GEMINI_API_KEY'],
       // Modèles spécialisés pour usage optimal
-      model: Bun.env['GEMINI_MODEL'] ?? 'gemini-3-flash-preview',           // Chat principal - Gemini 3 Flash (Dec 2025)
-      audioModel: Bun.env['GEMINI_AUDIO_MODEL'] ?? 'gemini-3-flash-preview',    // Analyse prononciation (multimodal)
+      // Fallback sur un modèle GA stable pour éviter une panne si la var d'env
+      // disparaît ou pointe vers un preview retiré. La prod surcharge via env.
+      model: Bun.env['GEMINI_MODEL'] ?? 'gemini-2.5-flash',
+      audioModel: Bun.env['GEMINI_AUDIO_MODEL'] ?? 'gemini-2.5-flash',
       ttsModel: Bun.env['GEMINI_TTS_MODEL'] ?? 'gemini-2.5-flash-preview-tts', // Text-to-Speech natif (pas encore 3.0)
       maxTokens: parseInt(Bun.env['GEMINI_MAX_TOKENS'] ?? '16384', 10), // Gemini 3 Flash supports 1M context
       temperature: parseFloat(Bun.env['GEMINI_TEMPERATURE'] ?? '0.7'),    // Optimal pour éducation
@@ -357,6 +368,11 @@ export function createAppConfig(): AppConfig {
       maxRequestsChat: Bun.env['NODE_ENV'] === 'development' ? 500 : 10,
     },
     usage: createUsageConfig(),
+    features: {
+      // Opt-out: set QUOTA_ENFORCEMENT_ENABLED=false to disable. Any other value
+      // (unset, "true", anything) enables enforcement.
+      quotaEnforcementEnabled: Bun.env['QUOTA_ENFORCEMENT_ENABLED'] !== 'false',
+    },
     cache: createCacheConfig(),
     rag: createRagConfig(),
     textToSpeech: createTextToSpeechConfig(),

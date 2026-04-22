@@ -1,5 +1,7 @@
 import type { EducationLevelType } from '../../types/education.types.js';
 
+export const DOCUMENT_PROMPT_VERSION = '2026-04-21';
+
 const LEVEL_NAMES: Record<EducationLevelType, string> = {
   cp: 'CP', ce1: 'CE1', ce2: 'CE2', cm1: 'CM1', cm2: 'CM2',
   sixieme: '6ème', cinquieme: '5ème', quatrieme: '4ème', troisieme: '3ème',

@@ -9,7 +9,7 @@ import { db } from '../../db/connection.js';
 import { user } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import type { SubscriptionInfo } from '../../lib/stripe/index.js';
-import { auth } from '../../lib/auth.js';
+import { requireAuth } from '../../middleware/auth.middleware.js';
 
 // User type from Better Auth session
 interface AuthenticatedUser {
@@ -20,17 +20,23 @@ interface AuthenticatedUser {
 }
 
 /**
- * Get authenticated user from request headers
- * Returns null if not authenticated
+ * Get authenticated user from request headers with strict DB validation.
+ * Delegates to requireAuth so orphan sessions (user deleted) are rejected and cleaned up.
+ * Returns null if not authenticated.
  */
 export async function getAuthenticatedUser(
   headers: Headers
 ): Promise<AuthenticatedUser | null> {
-  const session = await auth.api.getSession({ headers });
-  if (!session?.user) {
+  const authResult = await requireAuth(headers);
+  if (!authResult.success) {
     return null;
   }
-  return session.user as AuthenticatedUser;
+  return {
+    id: authResult.user.id,
+    email: authResult.user.email ?? '',
+    name: authResult.user.name ?? '',
+    role: authResult.user.role,
+  };
 }
 
 /**

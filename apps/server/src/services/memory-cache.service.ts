@@ -73,6 +73,12 @@ class MemoryCacheService {
       return null;
     }
 
+    // Restore true LRU semantics: Map preserves insertion order, so deleting
+    // and re-inserting the entry on each read moves it to the end. Without
+    // this, evictOldest() would drop hot entries ahead of cold ones.
+    this.cache.delete(cacheKey);
+    this.cache.set(cacheKey, entry);
+
     this.metrics.hits++;
     return entry.data;
   }

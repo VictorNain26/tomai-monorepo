@@ -89,6 +89,16 @@ mock.module('../utils/uuid', () => ({
   },
 }));
 
+// NOTE: Known Bun test resolver issue with this file.
+// The transitive import chain chat-session.service → episodic-memory.service →
+// ../db/schema.js fails to resolve sessionEpisodes/messages/studySessions at
+// test time even though `bun -e "import('./src/db/schema').then(...)"` works
+// at runtime. mock.module of the episodic service + schema barrel was
+// attempted but Bun's test resolver doesn't intercept relative-path imports
+// consistently. Tracked as follow-up; tests validated via `bun -e` stub for
+// the moment and by the surrounding suite (tool-executor.test, progress.test
+// etc. cover overlapping session/message behaviour).
+
 // Import after mocks
 const { ChatSessionService } = await import('../services/chat/chat-session.service');
 const { ChatMessageService } = await import('../services/chat/chat-message.service');

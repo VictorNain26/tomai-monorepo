@@ -75,6 +75,38 @@ export const getStudentProfileDeclaration: FunctionDeclaration = {
   }
 };
 
+export const updateStudentProfileDeclaration: FunctionDeclaration = {
+  name: 'update_student_profile',
+  description: `Enregistre une observation pédagogique dans le profil cognitif de l'élève (force, faiblesse, style observé). À n'appeler que lorsqu'une observation est NOUVELLE, FACTUELLE et PERTINENTE sur plusieurs tours — pas à chaque message. Une observation au plus par réponse.`,
+  parametersJsonSchema: {
+    type: 'object',
+    properties: {
+      observation: {
+        type: 'string',
+        description: 'Une phrase factuelle sur ce que l\'élève sait faire ou sur sa difficulté. Ex: "Confond les verbes du 1er et 2nd groupe au passé composé." (max 250 caractères)'
+      },
+      subject: {
+        type: 'string',
+        description: 'La matière concernée (mathematiques, francais, histoire, etc.)'
+      },
+      strength: {
+        type: 'string',
+        description: 'Ajoute une force au profil si l\'élève démontre une maîtrise claire sur un point (ex: "Bonne compréhension du théorème de Pythagore"). Max 100 caractères.'
+      },
+      weakness: {
+        type: 'string',
+        description: 'Ajoute une faiblesse au profil si l\'élève bute de façon récurrente sur un point (ex: "Oublie la retenue en addition posée"). Max 100 caractères.'
+      },
+      preferredStyle: {
+        type: 'string',
+        enum: ['visuel', 'auditif', 'kinesthesique', 'lecture-ecriture', 'mixte'],
+        description: 'Style d\'apprentissage observé. À ne renseigner qu\'après plusieurs indices clairs.'
+      }
+    },
+    required: ['observation', 'subject']
+  }
+};
+
 export const getAppHelpDeclaration: FunctionDeclaration = {
   name: 'get_app_help',
   description: `Guide d'utilisation de l'application Tom. OBLIGATOIRE pour toute question sur l'app (navigation, fonctionnalités, Pronote, abonnement). Ne réponds JAMAIS aux questions sur l'app sans consulter cet outil.`,
@@ -99,5 +131,6 @@ export const agentToolDeclarations: FunctionDeclaration[] = [
   searchEducationalContentDeclaration,
   generateFlashcardsDeclaration,
   getStudentProfileDeclaration,
+  updateStudentProfileDeclaration,
   getAppHelpDeclaration,
 ];

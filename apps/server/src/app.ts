@@ -66,12 +66,27 @@ const app = new Elysia({ name: 'tomai-server' })
     ],
     exposeHeaders: [
       'X-Response-Time',
-      'X-Start-Time', 
+      'X-Start-Time',
       'Content-Type',
-      'Set-Cookie' // PRODUCTION: Expose Set-Cookie pour debug
+      // Set-Cookie intentionally NOT exposed: JavaScript must not be able to read
+      // session cookies cross-origin (mobile uses authClient.getCookie from SecureStore).
     ],
     maxAge: 86400 // 24h pour les preflight requests (optimisation)
   }))
+
+  // Security headers — applied BEFORE the handler so SSE/streaming endpoints
+  // include them in the initial response flush (onAfterHandle runs after the
+  // response has already started for async generators).
+  // HSTS is gated on production so local http://localhost dev keeps working.
+  .onBeforeHandle(({ set }) => {
+    set.headers['X-Content-Type-Options'] = 'nosniff';
+    set.headers['X-Frame-Options'] = 'DENY';
+    set.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin';
+    set.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()';
+    if (!isDev) {
+      set.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
+    }
+  })
 
   // Swagger pour développement uniquement
   .use(isDev ? swagger({

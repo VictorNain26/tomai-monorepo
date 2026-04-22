@@ -12,7 +12,7 @@ import { Elysia } from 'elysia';
 import { stripeService } from '../../lib/stripe/index.js';
 import { db } from '../../db/connection.js';
 import { user, familyBilling, userSubscriptions, subscriptionPlans } from '../../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { getAuthenticatedParent, getAuthenticatedUser, verifyParentIdMatch } from './helpers.js';
 
 export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
@@ -108,36 +108,32 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
       .from(user)
       .where(eq(user.parentId, parentId));
 
-    // Get children's subscription status
-    const childrenWithStatus = await Promise.all(
-      children.map(async (child) => {
-        const [childSub] = await db
+    // Single JOIN query for all children (was 2 queries per child → N+1 pattern).
+    const childIds = children.map((c) => c.id);
+    const childSubscriptions = childIds.length > 0
+      ? await db
           .select({
-            planId: userSubscriptions.planId,
+            userId: userSubscriptions.userId,
             status: userSubscriptions.status,
+            planName: subscriptionPlans.name,
           })
           .from(userSubscriptions)
-          .where(eq(userSubscriptions.userId, child.id))
-          .limit(1);
+          .leftJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
+          .where(inArray(userSubscriptions.userId, childIds))
+      : [];
 
-        // Get plan name
-        let planName = 'free';
-        if (childSub?.planId) {
-          const [plan] = await db
-            .select({ name: subscriptionPlans.name })
-            .from(subscriptionPlans)
-            .where(eq(subscriptionPlans.id, childSub.planId))
-            .limit(1);
-          planName = plan?.name ?? 'free';
-        }
-
-        return {
-          ...child,
-          plan: planName,
-          status: childSub?.status ?? 'inactive',
-        };
-      })
+    const subByUserId = new Map(
+      childSubscriptions.map((row) => [row.userId, row]),
     );
+
+    const childrenWithStatus = children.map((child) => {
+      const sub = subByUserId.get(child.id);
+      return {
+        ...child,
+        plan: sub?.planName ?? 'free',
+        status: sub?.status ?? 'inactive',
+      };
+    });
 
     const hasPremium = billing?.premiumChildrenCount && billing.premiumChildrenCount > 0;
 

@@ -63,19 +63,17 @@ class EducationService {
     const stats = await qdrantService.getStats();
     const qdrantLevels = Object.keys(stats.by_niveau);
 
-    const levels: RagLevel[] = ALL_LEVELS.map((levelKey) => ({
-      key: levelKey,
-      ragAvailable: qdrantLevels.includes(levelKey),
-      subjectsCount: 0,
-    }));
-
-    // Enrichir avec nombre de matières
-    for (const level of levels) {
-      if (level.ragAvailable) {
-        const subjects = await this.getSubjectsForLevel(level.key, true);
-        level.subjectsCount = subjects.length;
-      }
-    }
+    // Parallel fan-out: enrich all available levels with their subject counts
+    // in one batch of concurrent Qdrant calls instead of 12 sequential awaits.
+    const levels: RagLevel[] = await Promise.all(
+      ALL_LEVELS.map(async (levelKey) => {
+        const ragAvailable = qdrantLevels.includes(levelKey);
+        const subjectsCount = ragAvailable
+          ? (await this.getSubjectsForLevel(levelKey, true)).length
+          : 0;
+        return { key: levelKey, ragAvailable, subjectsCount };
+      }),
+    );
 
     cacheService.set('education:', cacheKey, levels, this.CACHE_TTL);
 

@@ -1,14 +1,24 @@
-import { GoogleGenAI, ThinkingLevel, type Part, type Content } from '@google/genai';
+import { ThinkingLevel, type Part, type Content, type GoogleGenAI } from '@google/genai';
 import { appConfig } from '../../config/app.config.js';
+import { getGeminiClient } from '../../lib/gemini-client.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory, type OptimizationContext } from '../../utils/conversation/index.js';
 import { agentToolDeclarations } from './tool-declarations.js';
-import { executeTool } from './tool-executor.js';
+import { executeTool, isDeckCreatedResult } from './tool-executor.js';
 import { logger } from '../../lib/observability.js';
+import { withTimeout } from '../../lib/retry.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { StreamGenerationParams, GeminiStreamChunk, AttachedFile, PronoteContext } from './gemini-types.js';
-import { MAX_TOOL_ITERATIONS, THINKING_LEVEL_MAP, getToolStatusLabel } from './gemini-helpers.js';
+import {
+  MAX_TOOL_ITERATIONS,
+  GEMINI_STREAM_SETUP_TIMEOUT_MS,
+  GEMINI_STREAM_CHUNK_TIMEOUT_MS,
+  THINKING_LEVEL_MAP,
+  buildSafetySettings,
+  wrapUserMessage,
+  getToolStatusLabel,
+} from './gemini-helpers.js';
 
 // Re-export types and helpers for backward compatibility
 export type { AttachedFile, HistoricalFileRef, StreamGenerationParams, GeminiStreamChunk } from './gemini-types.js';
@@ -19,7 +29,7 @@ class GeminiChatService {
   private readonly model: string;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
+    this.ai = getGeminiClient();
     this.model = appConfig.ai.gemini.model;
   }
 
@@ -30,6 +40,7 @@ class GeminiChatService {
     cognitiveProfileSummary?: string | null;
     learningContext?: string | null;
     pronoteContext?: PronoteContext;
+    intentReinforcement?: string | null;
   }): string {
     const levelText = getLevelText(params.level);
     const basePrompt = buildSystemPrompt({
@@ -49,7 +60,13 @@ class GeminiChatService {
 
     const pronoteSection = this.buildPronoteSection(params.pronoteContext);
 
-    return basePrompt + profileSection + learningSection + pronoteSection;
+    // Turn-specific reinforcement goes LAST so it takes precedence over
+    // the more general safety guidance (recency bias in instruction-following).
+    const intentSection = params.intentReinforcement
+      ? `\n\n${params.intentReinforcement}`
+      : '';
+
+    return basePrompt + profileSection + learningSection + pronoteSection + intentSection;
   }
 
   private buildPronoteSection(pronoteContext?: PronoteContext): string {
@@ -112,11 +129,16 @@ class GeminiChatService {
         cognitiveProfileSummary: params.cognitiveProfileSummary,
         learningContext: params.learningContext,
         pronoteContext: params.pronoteContext,
+        intentReinforcement: params.intentReinforcement,
       });
 
       const history = this.buildConversationHistory(params.conversationHistory, params.conversationSummary);
 
-      const userParts: Part[] = [{ text: params.content }];
+      // Wrap the raw student message so any instruction-looking text inside is
+      // treated as content to analyse, not as an order. Defense-in-depth
+      // against prompt injection; paired with INSTRUCTION_HIERARCHY in the
+      // system prompt.
+      const userParts: Part[] = [{ text: wrapUserMessage(params.content) }];
       const fileParts = this.buildFileParts(params.files);
       userParts.push(...fileParts);
 
@@ -134,7 +156,11 @@ class GeminiChatService {
           tools: [{ functionDeclarations: agentToolDeclarations }],
           thinkingConfig: {
             thinkingLevel: THINKING_LEVEL_MAP[appConfig.ai.gemini.thinkingLevel] ?? ThinkingLevel.LOW,
-          }
+          },
+          // Enforce safety thresholds for a K-12 audience. Previously unset:
+          // Gemini applied provider-defaults which could let through content
+          // inappropriate for minors.
+          safetySettings: buildSafetySettings(appConfig.ai.gemini.safetySettings),
         },
         history
       });
@@ -149,11 +175,27 @@ class GeminiChatService {
       let nextMessage: Part[] | Part[][] = userParts;
 
       while (iteration < MAX_TOOL_ITERATIONS) {
-        const stream = await chat.sendMessageStream({ message: nextMessage });
+        // Setup timeout guards the initial API handshake; chunk timeout catches
+        // streams that stall mid-response. Without these a hung upstream would
+        // hold the SSE connection open indefinitely.
+        const stream = await withTimeout(
+          chat.sendMessageStream({ message: nextMessage }),
+          GEMINI_STREAM_SETUP_TIMEOUT_MS,
+          `gemini:stream-setup (iter ${iteration})`,
+        );
 
         const pendingCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+        const iterator = stream[Symbol.asyncIterator]();
 
-        for await (const chunk of stream) {
+        while (true) {
+          const step = await withTimeout(
+            iterator.next(),
+            GEMINI_STREAM_CHUNK_TIMEOUT_MS,
+            `gemini:stream-chunk (iter ${iteration})`,
+          );
+          if (step.done) break;
+          const chunk = step.value;
+
           if (chunk.functionCalls && chunk.functionCalls.length > 0) {
             for (const fc of chunk.functionCalls) {
               pendingCalls.push({
@@ -211,14 +253,13 @@ class GeminiChatService {
         );
 
         for (const result of results) {
-          const r = result as Record<string, unknown>;
-          if (r.deckId && r.generated) {
+          if (isDeckCreatedResult(result)) {
             yield {
               type: 'deck_created' as const, id: messageId, model: this.model,
               timestamp: Date.now(),
               deck: {
-                deckId: r.deckId as string, title: r.deckTitle as string,
-                cardCount: r.cardCount as number, subject: r.subject as string,
+                deckId: result.deckId, title: result.deckTitle,
+                cardCount: result.cardCount, subject: result.subject,
               },
             };
           }
@@ -260,6 +301,7 @@ class GeminiChatService {
       const isRateLimit = errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit');
       const isApiKey = errorMessage.toLowerCase().includes('api key') || errorMessage.includes('401');
       const isQuota = errorMessage.toLowerCase().includes('quota');
+      const isTimeout = errorMessage.includes('timed out') || errorMessage.includes('TimeoutError');
 
       logger.error('Agent streaming error', {
         _error: errorMessage,
@@ -281,6 +323,9 @@ class GeminiChatService {
       } else if (isQuota) {
         userMessage = 'Quota API dépassé. Réessayez plus tard.';
         errorCode = 'quota_exceeded';
+      } else if (isTimeout) {
+        userMessage = 'Le service met trop de temps à répondre. Réessayez.';
+        errorCode = 'stream_timeout';
       }
 
       yield {

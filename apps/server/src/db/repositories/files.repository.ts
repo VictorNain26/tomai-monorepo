@@ -3,7 +3,7 @@
  * Gestion des métadonnées fichiers stockés sur Scaleway Object Storage
  */
 
-import { eq, and, sql, lt, desc } from 'drizzle-orm';
+import { eq, and, sql, lt, desc, inArray } from 'drizzle-orm';
 import { db } from '../connection.js';
 import { files, type FileStatus } from '../schema.js';
 
@@ -39,6 +39,17 @@ export class FilesRepository {
       .limit(1);
 
     return file;
+  }
+
+  /**
+   * Trouver plusieurs fichiers par leurs IDs (un seul SELECT)
+   */
+  async findByIds(ids: string[]): Promise<File[]> {
+    if (ids.length === 0) return [];
+    return await db
+      .select()
+      .from(files)
+      .where(inArray(files.id, ids));
   }
 
   /**
@@ -156,6 +167,21 @@ export class FilesRepository {
       .returning();
 
     return updatedFile;
+  }
+
+  /**
+   * Merge arbitrary keys into the JSONB educationalContext column (SQL-level merge
+   * to avoid read-modify-write races). Used to persist STT transcription, OCR
+   * extraction snippets, and document analysis caches on the file record.
+   */
+  async mergeEducationalContext(id: string, patch: Record<string, unknown>): Promise<void> {
+    await db
+      .update(files)
+      .set({
+        educationalContext: sql`COALESCE(${files.educationalContext}, '{}'::jsonb) || ${JSON.stringify(patch)}::jsonb`,
+        updatedAt: sql`NOW()`,
+      })
+      .where(eq(files.id, id));
   }
 }
 

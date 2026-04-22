@@ -211,12 +211,7 @@ export const childrenRoutes = new Elysia({ prefix: '/api/subscriptions' })
    * Security: Verifies authenticated user === body.parentId (IDOR protection)
    */
   .post('/cancel-pending-removal', async ({ body, set, request }) => {
-    const { parentId, childId } = body as { parentId?: string; childId?: string };
-
-    if (!parentId) {
-      set.status = 400;
-      return { error: 'parentId is required' };
-    }
+    const { parentId, childId } = body;
 
     // SECURITY: Get authenticated parent and verify identity match
     const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
@@ -288,4 +283,9 @@ export const childrenRoutes = new Elysia({ prefix: '/api/subscriptions' })
       set.status = 400;
       return { error: err instanceof Error ? err.message : 'Failed to cancel pending removal' };
     }
+  }, {
+    body: t.Object({
+      parentId: t.String({ minLength: 1 }),
+      childId: t.Optional(t.String({ minLength: 1 })),
+    }),
   });

@@ -16,7 +16,10 @@ import { geminiChatService } from './gemini-chat.service.js';
 import { getLearningContext } from './gemini-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
+import { intentClassifierService, type ClassifiedIntent } from './intent-classifier.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
+import { costTrackingService } from '../cost-tracking.service.js';
+import { episodicMemoryService } from '../episodic-memory.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
 import { appConfig } from '../../config/app.config.js';
 import { logger } from '../../lib/observability.js';
@@ -60,7 +63,22 @@ class ChatOrchestrationService {
     const sessionCtx = await this.resolveSession(request);
 
     // Phase 2: Context assembly (parallel)
-    const [fileContext, multimodalFiles, cognitiveProfileSummary, learningContext] = await Promise.all([
+    // Intent classification runs in parallel with context assembly so it
+    // adds no end-to-end latency on the critical path. Max ~8s (its own
+    // timeout) bounded; classification failures fall back to intent='unknown'
+    // (logged at high severity — not a silent fallback).
+    //
+    // Episodic memory retrieval is also parallelized. It queries pgvector
+    // for past sessions (TTL-aware, cosine similarity) and returns [] on
+    // miss/error with its own logging.
+    const [
+      fileContext,
+      multimodalFiles,
+      cognitiveProfileSummary,
+      learningContext,
+      classifiedIntent,
+      relevantEpisodes,
+    ] = await Promise.all([
       fileContextService.prepareFileContext({
         fileIds: request.fileIds,
         content: request.content,
@@ -71,10 +89,19 @@ class ChatOrchestrationService {
       fileContextService.prepareMultimodalFiles(request.fileIds),
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
+      intentClassifierService.classify(request.content, request.schoolLevel),
+      episodicMemoryService.retrieveRelevant(request.userId, request.content, 3),
     ]);
 
+    const intentReinforcement = intentClassifierService.buildReinforcement(classifiedIntent);
+    const episodicContext = episodicMemoryService.formatEpisodesForPrompt(relevantEpisodes);
+
     const { attachedFileInfos, enrichedContent: rawEnrichedContent } = fileContext;
+    // Primary file stays in the dedicated column for backward-compat readers;
+    // the full list is persisted separately in messageMetadata via saveMessage
+    // below (audit F-8: previously files 2..N were silently dropped).
     const attachedFileInfo = attachedFileInfos[0] ?? null;
+    const hasMultipleFiles = attachedFileInfos.length > 1;
 
     const enrichedContent = rawEnrichedContent.length > MAX_ENRICHED_CONTENT_CHARS
       ? rawEnrichedContent.slice(0, MAX_ENRICHED_CONTENT_CHARS) + '\n\n[Contenu tronqué]'
@@ -87,15 +114,26 @@ class ChatOrchestrationService {
       level: request.schoolLevel,
       filesCount: request.fileIds.length,
       multimodalFilesCount: multimodalFiles.length,
+      intent: classifiedIntent.intent,
+      intentConfidence: classifiedIntent.confidence,
+      intentReinforced: intentReinforcement !== null,
+      episodesRetrieved: relevantEpisodes.length,
       operation: 'chat-orchestration:context-ready',
     });
 
-    // Phase 3: Persist user message BEFORE streaming
+    // Phase 3: Persist user message BEFORE streaming.
+    // Skip session re-check: resolveSession above already verified ownership.
     await chatService.saveMessage(
       sessionCtx.sessionId,
       'user',
       request.content,
-      attachedFileInfo ? { attachedFile: attachedFileInfo } : {},
+      attachedFileInfo
+        ? {
+            attachedFile: attachedFileInfo,
+            ...(hasMultipleFiles && { attachedFiles: attachedFileInfos }),
+          }
+        : {},
+      { verifySessionExists: false },
     );
 
     if (request.fileIds.length > 0) {
@@ -114,6 +152,14 @@ class ChatOrchestrationService {
     };
 
     // Phase 5: Stream from Gemini
+    // Merge episodic context into learning context so geminiChatService
+    // only has one "prior knowledge" section to reason about. Learning
+    // context (FSRS due cards) + episodes (past sessions) are complementary
+    // pedagogical memory signals.
+    const mergedLearningContext = [learningContext, episodicContext]
+      .filter((x): x is string => Boolean(x))
+      .join('\n\n') || null;
+
     const streamGenerator = geminiChatService.generateStreamChunks({
       userId: request.userId,
       content: enrichedContent,
@@ -123,9 +169,10 @@ class ChatOrchestrationService {
       userRole: request.userRole,
       pronoteContext: request.pronoteContext,
       cognitiveProfileSummary,
-      learningContext,
+      learningContext: mergedLearningContext,
       conversationSummary: sessionCtx.conversationSummary,
       conversationHistory: sessionCtx.formattedHistory,
+      intentReinforcement,
       files: multimodalFiles.map(f => ({
         fileUri: f.fileUri,
         base64: f.base64,
@@ -150,6 +197,8 @@ class ChatOrchestrationService {
           chunk,
           startTime,
           attachedFileInfo,
+          attachedFileInfos: hasMultipleFiles ? attachedFileInfos : undefined,
+          classifiedIntent,
         });
         yield chunk;
       } else {
@@ -227,8 +276,16 @@ class ChatOrchestrationService {
       mimeType?: string;
       fileSizeBytes?: number;
     } | null;
+    attachedFileInfos?: Array<{
+      fileName: string;
+      fileId?: string;
+      geminiFileId?: string;
+      mimeType?: string;
+      fileSizeBytes?: number;
+    }>;
+    classifiedIntent?: ClassifiedIntent;
   }): Promise<void> {
-    const { sessionId, userId, userContent, fullContent, chunk, startTime, attachedFileInfo } = params;
+    const { sessionId, userId, userContent, fullContent, chunk, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
     const tokensUsed = chunk.usage?.totalTokens ?? 0;
 
     await chatService.saveMessage(sessionId, 'assistant', fullContent, {
@@ -236,10 +293,26 @@ class ChatOrchestrationService {
       tokensUsed,
       responseTimeMs: Date.now() - startTime,
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
-    });
+      ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
+      ...(classifiedIntent && { classifiedIntent }),
+    }, { verifySessionExists: false });
 
     if (tokensUsed > 0) {
       await tokenQuotaService.incrementTokenUsage(userId, tokensUsed);
+
+      // Cost accounting: compute cents from model pricing and persist a
+      // cost_tracking row. This populates the table that
+      // progress.service.getCostTracking already reads for dashboards.
+      if (chunk.usage) {
+        await costTrackingService.record({
+          userId,
+          sessionId,
+          aiModel: chunk.model,
+          operation: 'chat',
+          tokensInput: chunk.usage.promptTokens,
+          tokensOutput: chunk.usage.completionTokens,
+        });
+      }
     }
 
     logger.info('Streaming message saved', {

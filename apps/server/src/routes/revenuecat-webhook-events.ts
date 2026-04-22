@@ -1,7 +1,6 @@
-import { db } from '../db/connection';
-import { familyBilling, userSubscriptions, subscriptionPlans } from '../db/schema';
-import { eq, inArray } from 'drizzle-orm';
 import { logger } from '../lib/observability';
+import { DEFAULT_PERIOD_MS } from '../lib/stripe/helpers';
+import { billingService } from '../services/billing';
 
 // ============================================
 // Types
@@ -68,24 +67,6 @@ function parseChildrenIds(attributes?: Record<string, { value: string }>): strin
   return [];
 }
 
-async function getPremiumPlanId(): Promise<string | null> {
-  const [plan] = await db
-    .select({ id: subscriptionPlans.id })
-    .from(subscriptionPlans)
-    .where(eq(subscriptionPlans.name, 'premium'))
-    .limit(1);
-  return plan?.id ?? null;
-}
-
-async function getFreePlanId(): Promise<string | null> {
-  const [plan] = await db
-    .select({ id: subscriptionPlans.id })
-    .from(subscriptionPlans)
-    .where(eq(subscriptionPlans.name, 'free'))
-    .limit(1);
-  return plan?.id ?? null;
-}
-
 // ============================================
 // Event Handlers
 // ============================================
@@ -96,55 +77,22 @@ export async function handleInitialPurchase(event: RevenueCatEvent['event']): Pr
 
   const expirationAt = event.expiration_at_ms
     ? new Date(event.expiration_at_ms)
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    : new Date(Date.now() + DEFAULT_PERIOD_MS);
 
-  await db
-    .insert(familyBilling)
-    .values({
-      parentId,
-      revenuecatCustomerId: event.original_app_user_id,
-      revenuecatSubscriptionId: event.product_id,
-      billingStatus: 'active',
-      currentPeriodStart: new Date(event.purchased_at_ms ?? Date.now()),
-      currentPeriodEnd: expirationAt,
-      premiumChildrenCount: childrenIds.length || 1,
-    })
-    .onConflictDoUpdate({
-      target: familyBilling.parentId,
-      set: {
-        revenuecatCustomerId: event.original_app_user_id,
-        revenuecatSubscriptionId: event.product_id,
-        billingStatus: 'active',
-        currentPeriodStart: new Date(event.purchased_at_ms ?? Date.now()),
-        currentPeriodEnd: expirationAt,
-        premiumChildrenCount: childrenIds.length || 1,
-        updatedAt: new Date(),
-      },
-    });
-
-  if (childrenIds.length > 0) {
-    const premiumPlanId = await getPremiumPlanId();
-    if (premiumPlanId) {
-      for (const childId of childrenIds) {
-        await db
-          .insert(userSubscriptions)
-          .values({
-            userId: childId,
-            planId: premiumPlanId,
-            status: 'active',
-            tokensUsedToday: 0,
-          })
-          .onConflictDoUpdate({
-            target: userSubscriptions.userId,
-            set: {
-              planId: premiumPlanId,
-              status: 'active',
-              updatedAt: new Date(),
-            },
-          });
-      }
-    }
-  }
+  await billingService.activatePremium({
+    parentId,
+    childrenIds,
+    period: {
+      start: new Date(event.purchased_at_ms ?? Date.now()),
+      end: expirationAt,
+    },
+    premiumChildrenCount: childrenIds.length || 1,
+    source: {
+      provider: 'revenuecat',
+      customerId: event.original_app_user_id,
+      productId: event.product_id,
+    },
+  });
 
   logger.info(`[RevenueCat Webhook] Initial purchase for parent ${parentId}`, {
     operation: 'revenuecat:webhook:initial_purchase',
@@ -156,32 +104,21 @@ export async function handleInitialPurchase(event: RevenueCatEvent['event']): Pr
 
 export async function handleRenewal(event: RevenueCatEvent['event']): Promise<void> {
   const parentId = event.app_user_id;
+  const childrenIds = parseChildrenIds(event.subscriber_attributes);
 
   const expirationAt = event.expiration_at_ms
     ? new Date(event.expiration_at_ms)
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    : new Date(Date.now() + DEFAULT_PERIOD_MS);
 
-  await db
-    .update(familyBilling)
-    .set({
-      billingStatus: 'active',
-      currentPeriodEnd: expirationAt,
-      updatedAt: new Date(),
-    })
-    .where(eq(familyBilling.parentId, parentId));
-
-  const childrenIds = parseChildrenIds(event.subscriber_attributes);
-  if (childrenIds.length > 0) {
-    await db
-      .update(userSubscriptions)
-      .set({
-        status: 'active',
-        lastResetAt: new Date(),
-        tokensUsedToday: 0,
-        updatedAt: new Date(),
-      })
-      .where(inArray(userSubscriptions.userId, childrenIds));
-  }
+  await billingService.extendActivePeriod({
+    parentId,
+    childrenIds,
+    period: {
+      start: new Date(event.purchased_at_ms ?? Date.now()),
+      end: expirationAt,
+    },
+    resetChildCounters: true,
+  });
 
   logger.info(`[RevenueCat Webhook] Renewal for parent ${parentId}`, {
     operation: 'revenuecat:webhook:renewal',
@@ -191,15 +128,7 @@ export async function handleRenewal(event: RevenueCatEvent['event']): Promise<vo
 
 export async function handleCancellation(event: RevenueCatEvent['event']): Promise<void> {
   const parentId = event.app_user_id;
-
-  await db
-    .update(familyBilling)
-    .set({
-      billingStatus: 'canceled',
-      updatedAt: new Date(),
-    })
-    .where(eq(familyBilling.parentId, parentId));
-
+  await billingService.markCanceled(parentId);
   logger.info(`[RevenueCat Webhook] Cancellation for parent ${parentId}`, {
     operation: 'revenuecat:webhook:cancellation',
     parentId,
@@ -211,27 +140,7 @@ export async function handleExpiration(event: RevenueCatEvent['event']): Promise
   const parentId = event.app_user_id;
   const childrenIds = parseChildrenIds(event.subscriber_attributes);
 
-  await db
-    .update(familyBilling)
-    .set({
-      billingStatus: 'expired',
-      premiumChildrenCount: 0,
-      updatedAt: new Date(),
-    })
-    .where(eq(familyBilling.parentId, parentId));
-
-  const freePlanId = await getFreePlanId();
-  if (freePlanId && childrenIds.length > 0) {
-    await db
-      .update(userSubscriptions)
-      .set({
-        planId: freePlanId,
-        status: 'active',
-        tokensUsedToday: 0,
-        updatedAt: new Date(),
-      })
-      .where(inArray(userSubscriptions.userId, childrenIds));
-  }
+  await billingService.expireAndDowngrade(parentId, childrenIds);
 
   logger.info(`[RevenueCat Webhook] Expiration for parent ${parentId}`, {
     operation: 'revenuecat:webhook:expiration',
@@ -243,15 +152,10 @@ export async function handleExpiration(event: RevenueCatEvent['event']): Promise
 
 export async function handleBillingIssue(event: RevenueCatEvent['event']): Promise<void> {
   const parentId = event.app_user_id;
-
-  await db
-    .update(familyBilling)
-    .set({
-      billingStatus: 'past_due',
-      updatedAt: new Date(),
-    })
-    .where(eq(familyBilling.parentId, parentId));
-
+  // RevenueCat's BILLING_ISSUE event does not carry children attributes;
+  // children remain on their current plan and will be reconciled on the next
+  // RENEWAL or EXPIRATION event.
+  await billingService.markPastDue(parentId, []);
   logger.warn(`[RevenueCat Webhook] Billing issue for parent ${parentId}`, {
     operation: 'revenuecat:webhook:billing_issue',
     parentId,
@@ -261,15 +165,7 @@ export async function handleBillingIssue(event: RevenueCatEvent['event']): Promi
 
 export async function handleUncancellation(event: RevenueCatEvent['event']): Promise<void> {
   const parentId = event.app_user_id;
-
-  await db
-    .update(familyBilling)
-    .set({
-      billingStatus: 'active',
-      updatedAt: new Date(),
-    })
-    .where(eq(familyBilling.parentId, parentId));
-
+  await billingService.markUncanceled(parentId);
   logger.info(`[RevenueCat Webhook] Uncancellation for parent ${parentId}`, {
     operation: 'revenuecat:webhook:uncancellation',
     parentId,

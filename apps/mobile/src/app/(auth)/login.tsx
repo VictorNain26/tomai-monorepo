@@ -1,7 +1,7 @@
 /**
  * Login Screen - TomAI 2026
  *
- * Parent-only authentication (email/password + Google OAuth).
+ * Parent + Eleve authentication (email/password + Google OAuth).
  * Children access the app via profile selection after parent connects Pronote.
  */
 
@@ -11,21 +11,24 @@ import { Link } from 'expo-router';
 import { signIn, signInWithGoogle } from '@/lib/auth';
 
 import { Text } from '@/components/ui/text';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { TomAvatar } from '@/components/common';
-import { GoogleIcon } from '@/components/icons/google-icon';
 import { AuthScreen } from '@/components/auth/auth-screen';
-import { bgColors } from '@/lib/styles';
+import {
+  AccountTypeToggle,
+  type AccountType,
+} from '@/components/auth/AccountTypeToggle';
+import { LoginForm } from '@/components/auth/LoginForm';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+  const [accountType, setAccountType] = useState<AccountType>('parent');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleLogin() {
-    if (!email || !password) {
+    if (!identifier || !password) {
       setError('Veuillez remplir tous les champs');
       return;
     }
@@ -34,7 +37,7 @@ export default function LoginScreen() {
     setError(null);
 
     try {
-      const result = await signIn(email, password);
+      const result = await signIn(identifier, password);
       if (result.error) {
         setError('Identifiants incorrects');
       }
@@ -64,9 +67,13 @@ export default function LoginScreen() {
     }
   }
 
+  function handleAccountTypeChange(type: AccountType) {
+    setAccountType(type);
+    setError(null);
+  }
+
   return (
     <AuthScreen>
-      {/* Header */}
       <View className="mb-8 items-center">
         <TomAvatar size="lg" className="mb-4" />
         <Text variant="h1" className="text-center text-blue-600 dark:text-blue-400">
@@ -77,76 +84,32 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      {/* Error message */}
-      {error && (
-        <View
-          testID="login-error-message"
-          className="mb-4 rounded-xl p-3"
-          style={{ backgroundColor: bgColors.destructive[10] }}
-          accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
-        >
-          <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
-        </View>
-      )}
+      <AccountTypeToggle
+        accountType={accountType}
+        onChange={handleAccountTypeChange}
+        disabled={isLoading}
+      />
 
-      {/* Form */}
-      <View className="gap-4">
-        <Input
-          testID="login-identifier-input"
-          label="Email"
-          placeholder="marie.dupont@exemple.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          disabled={isLoading}
-        />
+      <LoginForm
+        accountType={accountType}
+        identifier={identifier}
+        onIdentifierChange={setIdentifier}
+        password={password}
+        onPasswordChange={setPassword}
+        onSubmit={handleLogin}
+        isLoading={isLoading}
+        errorMessage={error}
+      />
 
-        <Input
-          testID="login-password-input"
-          label="Mot de passe"
-          placeholder="Votre mot de passe"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoComplete="password"
-          disabled={isLoading}
-        />
+      <GoogleSignInButton onPress={handleGoogleLogin} isLoading={isLoading} />
 
-        <Link href="/(auth)/forgot-password" asChild>
-          <Pressable accessibilityLabel="Mot de passe oublié">
-            <Text variant="small" className="text-right text-blue-600 dark:text-blue-400">
-              Mot de passe oublié ?
-            </Text>
-          </Pressable>
-        </Link>
-
-        <Button testID="login-submit-button" onPress={handleLogin} isLoading={isLoading} className="mt-2">
-          Se connecter
-        </Button>
-      </View>
-
-      {/* Google OAuth */}
-      <View className="my-6 flex-row items-center">
-        <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
-        <Text variant="muted" className="px-4">ou</Text>
-        <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
-      </View>
-
-      <Button variant="outline" onPress={handleGoogleLogin} disabled={isLoading}>
-        <GoogleIcon size={20} />
-        <Text className="font-semibold">Continuer avec Google</Text>
-      </Button>
-
-      {/* Register link */}
       <View className="mt-8 flex-row justify-center">
         <Text variant="muted">Pas encore de compte ? </Text>
         <Link href="/(auth)/register" asChild>
           <Pressable accessibilityLabel="Créer un compte">
-            <Text className="font-semibold text-blue-600 dark:text-blue-400">S'inscrire</Text>
+            <Text className="font-semibold text-blue-600 dark:text-blue-400">
+              S'inscrire
+            </Text>
           </Pressable>
         </Link>
       </View>

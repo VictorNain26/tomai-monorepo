@@ -27,7 +27,7 @@
  * @see prompts/pedagogy.ts pour documentation détaillée des sources
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { getGeminiClient } from '../../lib/gemini-client.js';
 import { CardGenerationOutputSchema } from '../../lib/ai/index.js';
 import {
   getSubjectInstructions,
@@ -64,10 +64,14 @@ export interface CardGenerationError {
 }
 
 // ============================================================================
-// GEMINI CLIENT
+// GEMINI CLIENT — shared singleton for DI-friendly tests
 // ============================================================================
 
-const genai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
+export const CARD_GENERATOR_PROMPT_VERSION = '2026-04-21';
+
+function genai() {
+  return getGeminiClient();
+}
 
 // ============================================================================
 // JSON SCHEMA SIMPLIFIÉ - Respecte limite 4 niveaux Gemini
@@ -222,7 +226,7 @@ export async function generateCards(
 
     const { text, tokensUsed } = await withRetry(
       async () => {
-        const response = await genai.models.generateContent({
+        const response = await genai().models.generateContent({
           model: appConfig.ai.gemini.model,
           contents: prompt,
           config: {

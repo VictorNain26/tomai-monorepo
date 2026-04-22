@@ -73,7 +73,9 @@ export default function StudentProfileScreen() {
   const [isRestoringParent, setIsRestoringParent] = useState(false);
 
   useEffect(() => {
-    hasParentSessionBackup().then(setHasParentBackup);
+    let mounted = true;
+    hasParentSessionBackup().then((v) => { if (mounted) setHasParentBackup(v); });
+    return () => { mounted = false; };
   }, []);
 
   // Uses refetch() to sync React state after stopping impersonation

@@ -39,7 +39,7 @@ export function ChatHeader({
       {/* Back button */}
       <TouchableOpacity
         onPress={onBack}
-        className="h-10 w-10 items-center justify-center rounded-full"
+        className="h-11 w-11 items-center justify-center rounded-full"
         accessibilityLabel="Retour aux conversations"
         accessibilityRole="button"
       >
@@ -87,8 +87,9 @@ export function ChatHeader({
                 ],
               });
             }}
-            className="h-10 w-10 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
+            className="h-11 w-11 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
             accessibilityLabel="Options de conversation"
+            accessibilityHint="Ouvre les options de conversation"
             accessibilityRole="button"
           >
             <MoreVertical color={colors.muted} size={18} />

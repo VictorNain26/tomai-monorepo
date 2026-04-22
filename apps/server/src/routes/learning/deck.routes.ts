@@ -1,10 +1,44 @@
 import { Elysia, t } from 'elysia';
-import { db } from '../../db/connection';
-import { learningDecks, learningCards } from '../../db/schema';
-import { eq, and, desc, asc } from 'drizzle-orm';
 import { handleAuthWithCookies } from '../../middleware/auth.middleware';
 import { logger } from '../../lib/observability';
+import {
+  learningService,
+  DeckNotFoundError,
+  DeckOwnershipError,
+} from '../../services/learning/learning.service';
 import { deckDiscoveryRoutes } from './deck-discovery.routes.js';
+
+/**
+ * Map a LearningService domain error to an Elysia HTTP response.
+ *
+ * Per the service contract (see learning-errors.ts), both "not found" and
+ * "ownership mismatch" surface as HTTP 404 so the API does not leak the
+ * existence of another user's deck. The distinct error *code* in the body
+ * lets internal callers and tests disambiguate without exposing resource
+ * existence externally.
+ *
+ * Returns the response body when the error was handled, or `null` when the
+ * error was not a known domain error (caller must rethrow).
+ *
+ * `set` is typed loosely (`status?: unknown`) because Elysia's own `set`
+ * carries more than just `status` (headers, redirect, cookies) and typing
+ * it strictly fights the framework. We only *assign* to `status`, so the
+ * unknown input type is safe.
+ */
+function handleDeckDomainError(
+  err: unknown,
+  set: { status?: unknown },
+): { success: false; error: 'DECK_NOT_FOUND' | 'DECK_FORBIDDEN' } | null {
+  if (err instanceof DeckNotFoundError) {
+    set.status = 404;
+    return { success: false, error: 'DECK_NOT_FOUND' };
+  }
+  if (err instanceof DeckOwnershipError) {
+    set.status = 404;
+    return { success: false, error: 'DECK_FORBIDDEN' };
+  }
+  return null;
+}
 
 export const deckRoutes = new Elysia({ prefix: '/api/learning' })
 
@@ -17,12 +51,7 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     const { user: authUser } = authContext;
 
     try {
-      const decks = await db
-        .select()
-        .from(learningDecks)
-        .where(eq(learningDecks.userId, authUser.id))
-        .orderBy(desc(learningDecks.updatedAt));
-
+      const decks = await learningService.listUserDecks(authUser.id);
       return { decks, count: decks.length };
     } catch (error) {
       logger.error('Failed to fetch decks', {
@@ -45,26 +74,19 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
       }
 
       const { user: authUser } = authContext;
-      const { title, description, subject, source, sourceId, sourcePrompt, schoolLevel } = body;
 
       try {
-        const [newDeck] = await db
-          .insert(learningDecks)
-          .values({
-            userId: authUser.id,
-            title, description, subject, source,
-            sourceId, sourcePrompt, schoolLevel, cardCount: 0,
-          })
-          .returning();
-
-        if (!newDeck) {
-          set.status = 500;
-          return { error: 'Failed to create deck' };
-        }
+        // Empty deck creation — caller will populate cards via other endpoints.
+        const { deck: newDeck } = await learningService.createDeckWithCards({
+          userId: authUser.id,
+          deck: body,
+          cards: [],
+        });
 
         logger.info('Deck created', {
           operation: 'learning:decks:create',
-          userId: authUser.id, deckId: newDeck.id, subject, source,
+          userId: authUser.id, deckId: newDeck.id,
+          subject: body.subject, source: body.source,
         });
 
         return { deck: newDeck };
@@ -111,25 +133,10 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     const { id: deckId } = params;
 
     try {
-      const [deck] = await db
-        .select()
-        .from(learningDecks)
-        .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, authUser.id)))
-        .limit(1);
-
-      if (!deck) {
-        set.status = 404;
-        return { error: 'Deck not found' };
-      }
-
-      const cards = await db
-        .select()
-        .from(learningCards)
-        .where(eq(learningCards.deckId, deckId))
-        .orderBy(asc(learningCards.position));
-
-      return { deck, cards };
+      return await learningService.getDeckWithCardsOrThrow(authUser.id, deckId);
     } catch (error) {
+      const domain = handleDeckDomainError(error, set);
+      if (domain) return domain;
       logger.error('Failed to fetch deck', {
         operation: 'learning:decks:get',
         userId: authUser.id, deckId,
@@ -153,25 +160,11 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
       const { id: deckId } = params;
 
       try {
-        const [existingDeck] = await db
-          .select({ id: learningDecks.id })
-          .from(learningDecks)
-          .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, authUser.id)))
-          .limit(1);
-
-        if (!existingDeck) {
-          set.status = 404;
-          return { error: 'Deck not found' };
-        }
-
-        const [updatedDeck] = await db
-          .update(learningDecks)
-          .set({ ...body, updatedAt: new Date() })
-          .where(eq(learningDecks.id, deckId))
-          .returning();
-
+        const updatedDeck = await learningService.updateDeckOrThrow(authUser.id, deckId, body);
         return { deck: updatedDeck };
       } catch (error) {
+        const domain = handleDeckDomainError(error, set);
+        if (domain) return domain;
         logger.error('Failed to update deck', {
           operation: 'learning:decks:update',
           userId: authUser.id, deckId,
@@ -201,26 +194,11 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     const { id: deckId } = params;
 
     try {
-      const [existingDeck] = await db
-        .select({ id: learningDecks.id })
-        .from(learningDecks)
-        .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, authUser.id)))
-        .limit(1);
-
-      if (!existingDeck) {
-        set.status = 404;
-        return { error: 'Deck not found' };
-      }
-
-      await db.delete(learningDecks).where(eq(learningDecks.id, deckId));
-
-      logger.info('Deck deleted', {
-        operation: 'learning:decks:delete',
-        userId: authUser.id, deckId,
-      });
-
+      await learningService.deleteDeckOrThrow(authUser.id, deckId);
       return { success: true };
     } catch (error) {
+      const domain = handleDeckDomainError(error, set);
+      if (domain) return domain;
       logger.error('Failed to delete deck', {
         operation: 'learning:decks:delete',
         userId: authUser.id, deckId,

@@ -1,5 +1,13 @@
 /**
  * Identité Tom - Tuteur pédagogique
+ *
+ * Scindé en deux blocs pour tirer parti du caching implicite de Gemini 2.5+:
+ * - generateIdentityCore : stable entre tous les utilisateurs (rôle, ton,
+ *   politique de transparence). C'est cette portion qui se retrouve dans le
+ *   cache-prefix et se facture ~10% du tarif standard à chaque réutilisation.
+ * - generateStudentContext : spécifique à l'élève courant (nom, niveau,
+ *   matière). Placé après les gros blocs stables (pedagogy/RAG/safety) pour
+ *   ne pas casser le préfixe partagé.
  */
 
 export interface IdentityParams {
@@ -9,18 +17,12 @@ export interface IdentityParams {
 }
 
 /**
- * Génère l'identité Tom
+ * Portion stable de l'identité, identique à chaque appel et tous élèves
+ * confondus. Participe au préfixe cachable.
  */
-export function generateIdentityPrompt(params: IdentityParams): string {
-  const { studentName, levelText, subject } = params;
-
-  const contextLine = subject
-    ? `Élève: ${studentName} | Niveau: ${levelText} | Matière: ${subject}`
-    : `Élève: ${studentName} | Niveau: ${levelText}`;
-
+export function generateIdentityCore(): string {
   return `<role>
-Tu es Tom, tuteur pour élèves français.
-${contextLine}
+Tu es Tom, tuteur pour élèves français (CP → Terminale).
 </role>
 
 <tone>
@@ -32,4 +34,28 @@ Réponds comme un professeur qui connaît son sujet.
 Ne mentionne jamais: tes sources, Éduscol, ton fonctionnement.
 Si tu ne comprends pas: "Peux-tu reformuler?"
 </transparency>`;
+}
+
+/**
+ * Contexte dynamique élève (nom, niveau, matière). À injecter APRÈS les
+ * blocs stables pour préserver le cache-prefix.
+ */
+export function generateStudentContext(params: IdentityParams): string {
+  const { studentName, levelText, subject } = params;
+
+  const contextLine = subject
+    ? `Élève: ${studentName} | Niveau: ${levelText} | Matière: ${subject}`
+    : `Élève: ${studentName} | Niveau: ${levelText}`;
+
+  return `<student>
+${contextLine}
+</student>`;
+}
+
+/**
+ * @deprecated Utiliser generateIdentityCore + generateStudentContext.
+ * Conservé pour compatibilité ascendante si d'autres appelants existent.
+ */
+export function generateIdentityPrompt(params: IdentityParams): string {
+  return `${generateIdentityCore()}\n\n${generateStudentContext(params)}`;
 }

@@ -48,11 +48,9 @@ export const user = pgTable('user', {
   preferences: jsonb('preferences').default(sql`'{"theme": "light", "language": "fr", "notifications": true, "adaptive_difficulty": true}'::jsonb`),
   metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
 
-  // ===== STRIPE SUBSCRIPTION FIELDS =====
-  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }), // Stripe Customer ID
-  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }), // Stripe Subscription ID
-  subscriptionStatus: varchar('subscription_status', { length: 50 }).default('inactive'), // active, past_due, canceled, etc.
-  subscriptionPlan: varchar('subscription_plan', { length: 50 }).default('free'), // free, student, family
+  // Stripe subscription fields live on family_billing (single source of truth).
+  // Previously duplicated here but never read — removed to avoid accidental
+  // reads of stale data.
 
   // ===== BETTER AUTH ADMIN PLUGIN FIELDS =====
   banned: boolean('banned').default(false),
@@ -70,7 +68,6 @@ export const user = pgTable('user', {
   parentIdIdx: index('idx_user_parent_id').on(table.parentId),
   roleIdx: index('idx_user_role').on(table.role),
   schoolLevelIdx: index('idx_user_school_level').on(table.schoolLevel),
-  stripeCustomerIdx: index('idx_user_stripe_customer_id').on(table.stripeCustomerId),
 
   // Self-referencing foreign key pour parent-child
   parentIdFk: foreignKey({

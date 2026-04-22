@@ -59,7 +59,7 @@ export default function LearningScreen() {
           </View>
           <TouchableOpacity
             onPress={() => router.push('/(student)/(learning)/create')}
-            className="h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400"
+            className="h-11 w-11 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400"
             accessibilityLabel="Créer un deck"
             accessibilityRole="button"
           >
@@ -128,7 +128,7 @@ export default function LearningScreen() {
         {!isLoading && decks.length > 0 && (
           <View className="mt-6 rounded-xl bg-white dark:bg-stone-800 p-4">
             <Text variant="muted" className="text-center text-sm">
-              Appuie sur ▶️ pour jouer un deck ou 🗑️ pour le supprimer.
+              Appuie sur le bouton Jouer pour démarrer un deck, ou sur Supprimer pour l'effacer.
             </Text>
           </View>
         )}

@@ -232,7 +232,15 @@ export function GradesRecentCard({
                   </View>
 
                   {/* Grade display */}
-                  <View className="items-end">
+                  <View
+                    className="items-end"
+                    accessible
+                    accessibilityLabel={
+                      item.classAverage !== undefined
+                        ? `Note ${formatGrade(item.grade, item.maxGrade)} sur ${item.maxGrade}, moyenne classe ${item.classAverage.toFixed(1)}`
+                        : `Note ${formatGrade(item.grade, item.maxGrade)} sur ${item.maxGrade}`
+                    }
+                  >
                     <Text
                       variant="large"
                       className={

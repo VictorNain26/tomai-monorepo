@@ -1,4 +1,5 @@
 import { Elysia } from 'elysia';
+import { timingSafeEqual } from 'node:crypto';
 import { logger } from '../lib/observability';
 import {
   isRevenueCatEventProcessed,
@@ -15,6 +16,39 @@ import {
 } from './revenuecat-webhook-events';
 
 const WEBHOOK_AUTH_HEADER = process.env.REVENUECAT_WEBHOOK_AUTH;
+const MIN_SECRET_LENGTH = 32; // ≥256 bits of entropy recommended for shared tokens
+
+// Fail fast in production when the shared secret is missing or weak.
+// RevenueCat does not sign webhooks cryptographically, so the shared token
+// IS the security boundary — a weak or absent secret exposes the endpoint
+// to forged IAP events (premium granted without payment).
+if (process.env.NODE_ENV === 'production') {
+  if (!WEBHOOK_AUTH_HEADER) {
+    throw new Error(
+      'REVENUECAT_WEBHOOK_AUTH must be set in production. Generate with: ' +
+      '`openssl rand -base64 48` and configure the RevenueCat dashboard ' +
+      'to send this value in the Authorization header.'
+    );
+  }
+  if (WEBHOOK_AUTH_HEADER.length < MIN_SECRET_LENGTH) {
+    throw new Error(
+      `REVENUECAT_WEBHOOK_AUTH is too short (${WEBHOOK_AUTH_HEADER.length} chars). ` +
+      `Minimum ${MIN_SECRET_LENGTH} for ≥256 bits of entropy. Generate via openssl rand -base64 48.`
+    );
+  }
+}
+
+/**
+ * Constant-time comparison of the Authorization header vs the configured secret.
+ * Returns false for any length mismatch without leaking the comparison time.
+ */
+function authHeaderIsValid(provided: string | null, expected: string): boolean {
+  if (!provided) return false;
+  const providedBuf = Buffer.from(provided);
+  const expectedBuf = Buffer.from(expected);
+  if (providedBuf.length !== expectedBuf.length) return false;
+  return timingSafeEqual(providedBuf, expectedBuf);
+}
 
 export function createRevenueCatWebhookRoutes() {
   return new Elysia({ prefix: '/webhooks/revenuecat' }).post(
@@ -22,7 +56,7 @@ export function createRevenueCatWebhookRoutes() {
     async ({ request, body, set }) => {
       if (WEBHOOK_AUTH_HEADER) {
         const authHeader = request.headers.get('authorization');
-        if (authHeader !== WEBHOOK_AUTH_HEADER) {
+        if (!authHeaderIsValid(authHeader, WEBHOOK_AUTH_HEADER)) {
           logger.warn('[RevenueCat Webhook] Invalid authorization', {
             operation: 'revenuecat:webhook:auth',
             severity: 'high' as const,

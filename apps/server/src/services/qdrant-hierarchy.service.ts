@@ -41,16 +41,23 @@ export class QdrantHierarchyService {
       if (!offset) break;
     }
 
-    for (const matiere of seenMatieres) {
-      const count = await client.count(this.collectionName, {
-        filter: {
-          must: [
-            { key: 'niveau', match: { value: niveau } },
-            { key: 'matiere', match: { value: matiere } },
-          ],
-        },
-      });
-      if (count.count > 0) by_matiere[matiere] = count.count;
+    // Parallel fan-out: one count query per matiere. Sequential was 10-13×
+    // serial RTTs for a niveau with many subjects.
+    const countEntries = await Promise.all(
+      Array.from(seenMatieres).map(async matiere => {
+        const count = await client.count(this.collectionName, {
+          filter: {
+            must: [
+              { key: 'niveau', match: { value: niveau } },
+              { key: 'matiere', match: { value: matiere } },
+            ],
+          },
+        });
+        return [matiere, count.count] as const;
+      }),
+    );
+    for (const [matiere, count] of countEntries) {
+      if (count > 0) by_matiere[matiere] = count;
     }
 
     cacheService.set(CACHE_PREFIX, cacheKey, by_matiere, CACHE_TTL_DEFAULT);

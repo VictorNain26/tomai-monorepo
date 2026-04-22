@@ -135,11 +135,10 @@ export class ParentService {
   async updateChild(parentId: string, childId: string, updateData: {
     firstName?: string;
     lastName?: string;
-    dateOfBirth?: Date;
+    dateOfBirth?: string;
     schoolLevel?: string;
     password?: string;
-    username?: string;
-  }): Promise<ChildInfo> {
+  }, requestHeaders?: Headers): Promise<ChildInfo> {
     try {
       const children = await this.getParentChildren(parentId);
       const child = children.find(c => c.id === childId);
@@ -154,16 +153,22 @@ export class ParentService {
         schoolLevel: SchoolLevel;
         dateOfBirth: string;
         updatedAt: Date;
-        name: string;
       }> = {
         updatedAt: new Date()
       };
 
       if (updateData.firstName !== undefined) updateObject.firstName = updateData.firstName;
       if (updateData.lastName !== undefined) updateObject.lastName = updateData.lastName;
-      if (updateData.dateOfBirth !== undefined) updateObject.dateOfBirth = updateData.dateOfBirth.toISOString().split('T')[0];
+      if (updateData.dateOfBirth !== undefined) updateObject.dateOfBirth = updateData.dateOfBirth;
       if (updateData.schoolLevel !== undefined) updateObject.schoolLevel = updateData.schoolLevel as SchoolLevel;
-      if (updateData.username !== undefined) updateObject.name = updateData.username;
+
+      // Update password via Better Auth admin API (bcrypt hashing handled internally)
+      if (updateData.password && requestHeaders) {
+        await auth.api.setUserPassword({
+          body: { newPassword: updateData.password, userId: childId },
+          headers: requestHeaders,
+        });
+      }
 
       const updatedChild = await usersRepository.update(childId, updateObject);
 
@@ -185,7 +190,7 @@ export class ParentService {
       };
     } catch (_error) {
       logger.error('Error updating child', { operation: 'parent:child:update', _error: _error instanceof Error ? _error.message : String(_error), parentId, childId, severity: 'medium' as const });
-      throw new Error('Failed to update child');
+      throw _error instanceof Error ? _error : new Error('Failed to update child');
     }
   }
 

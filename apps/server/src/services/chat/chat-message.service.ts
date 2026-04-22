@@ -74,7 +74,28 @@ export class ChatMessageService {
         mimeType?: string;
         fileSizeBytes?: number;
       };
-    }
+      // Full list of files when the message has >1 attachment. The primary
+      // (first) file stays in attachedFile for backward compatibility with
+      // existing readers; the rest is persisted here in the JSONB metadata.
+      attachedFiles?: Array<{
+        fileName: string;
+        fileId?: string;
+        geminiFileId?: string;
+        mimeType?: string;
+        fileSizeBytes?: number;
+      }>;
+      /**
+       * Pre-generation intent classification for this assistant turn. Not
+       * rendered to the client — retained for evals, cohort analysis, and
+       * offline quality reviews.
+       */
+      classifiedIntent?: {
+        intent: string;
+        confidence: 'low' | 'medium' | 'high';
+        error?: string;
+      };
+    },
+    options: { verifySessionExists?: boolean } = {}
   ): Promise<{ messageId: string; realSessionId: string }> {
     try {
       const validSessionId = safeUUID(sessionId);
@@ -89,16 +110,29 @@ export class ChatMessageService {
         throw new Error('Invalid session ID provided');
       }
 
-      const session = await studySessionsRepository.findById(validSessionId);
+      // Session verification is optional: orchestration layer already resolves + owner-checks
+      // the session right before calling saveMessage, so re-selecting here is wasted I/O.
+      // Callers without prior verification should pass { verifySessionExists: true }.
+      const shouldVerify = options.verifySessionExists ?? true;
+      if (shouldVerify) {
+        const session = await studySessionsRepository.findById(validSessionId);
+        if (!session) {
+          logger.error('Session not found', {
+            _error: `Session ${validSessionId} not found`,
+            operation: 'saveMessage',
+            sessionId: validSessionId,
+            severity: 'high' as const
+          });
+          throw new Error(`Session ${validSessionId} not found. Create session explicitly first.`);
+        }
+      }
 
-      if (!session) {
-        logger.error('Session not found', {
-          _error: `Session ${validSessionId} not found`,
-          operation: 'saveMessage',
-          sessionId: validSessionId,
-          severity: 'high' as const
-        });
-        throw new Error(`Session ${validSessionId} not found. Create session explicitly first.`);
+      const messageMetadata: Record<string, unknown> = {};
+      if (metadata.attachedFiles && metadata.attachedFiles.length > 1) {
+        messageMetadata.attachedFiles = metadata.attachedFiles;
+      }
+      if (metadata.classifiedIntent) {
+        messageMetadata.classifiedIntent = metadata.classifiedIntent;
       }
 
       const message = await messagesRepository.create({
@@ -111,7 +145,7 @@ export class ChatMessageService {
         tokensUsed: metadata.tokensUsed ?? null,
         responseTimeMs: metadata.responseTimeMs ?? null,
         attachedFile: metadata.attachedFile ?? null,
-        messageMetadata: {},
+        messageMetadata,
         createdAt: new Date()
       });
 

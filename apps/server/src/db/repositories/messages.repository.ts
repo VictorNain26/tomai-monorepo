@@ -1,4 +1,4 @@
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, count } from 'drizzle-orm';
 import { db } from '../connection';
 import { messages, type Message, type NewMessage } from '../schema';
 
@@ -22,6 +22,18 @@ export class MessagesRepository {
       .from(messages)
       .where(eq(messages.sessionId, sessionId))
       .orderBy(asc(messages.createdAt));
+  }
+
+  /**
+   * Lightweight count for threshold checks (used by summarization).
+   * Avoids loading every message when only the total matters.
+   */
+  async countBySessionId(sessionId: string): Promise<number> {
+    const [row] = await db
+      .select({ value: count() })
+      .from(messages)
+      .where(eq(messages.sessionId, sessionId));
+    return row?.value ?? 0;
   }
 
   async findById(id: string): Promise<Message | undefined> {

@@ -1,8 +1,10 @@
 import Stripe from 'stripe';
 import { requireStripe, stripeService, parseChildrenIdsFromMetadata } from '../lib/stripe';
+import { DEFAULT_PERIOD_MS } from '../lib/stripe/helpers';
+import { billingService } from '../services/billing';
 import { db } from '../db/connection';
-import { familyBilling, userSubscriptions } from '../db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { familyBilling } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { logger } from '../lib/observability';
 
 function getSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
@@ -78,58 +80,29 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session):
   const periodStart = period.start ? new Date(period.start * 1000) : new Date();
   const periodEnd = period.end
     ? new Date(period.end * 1000)
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    : new Date(Date.now() + DEFAULT_PERIOD_MS);
 
-  await db
-    .insert(familyBilling)
-    .values({
-      parentId,
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscriptionId,
-      billingStatus: 'active',
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-      monthlyAmountCents: monthlyAmount,
-      premiumChildrenCount: childrenCount,
-    })
-    .onConflictDoUpdate({
-      target: familyBilling.parentId,
-      set: {
-        stripeCustomerId: customerId,
-        stripeSubscriptionId: subscriptionId,
-        billingStatus: 'active',
-        currentPeriodStart: periodStart,
-        currentPeriodEnd: periodEnd,
-        monthlyAmountCents: monthlyAmount,
-        premiumChildrenCount: childrenCount,
-        updatedAt: new Date(),
-      },
+  if (!customerId) {
+    logger.error('[Stripe Webhook] Checkout session missing customer id', {
+      operation: 'stripe:webhook:checkout',
+      _error: 'customerId is null',
+      severity: 'medium' as const,
     });
-
-  if (childrenIds.length > 0) {
-    const premiumPlanId = await stripeService.getPremiumPlanId();
-
-    if (premiumPlanId) {
-      for (const childId of childrenIds) {
-        await db
-          .insert(userSubscriptions)
-          .values({
-            userId: childId,
-            planId: premiumPlanId,
-            status: 'active',
-            tokensUsedToday: 0,
-          })
-          .onConflictDoUpdate({
-            target: userSubscriptions.userId,
-            set: {
-              planId: premiumPlanId,
-              status: 'active',
-              updatedAt: new Date(),
-            },
-          });
-      }
-    }
+    return;
   }
+
+  await billingService.activatePremium({
+    parentId,
+    childrenIds,
+    period: { start: periodStart, end: periodEnd },
+    monthlyAmountCents: monthlyAmount,
+    premiumChildrenCount: childrenCount,
+    source: {
+      provider: 'stripe',
+      customerId,
+      subscriptionId,
+    },
+  });
 
   logger.info(`[Stripe Webhook] Subscription activated for parent ${parentId} with ${childrenCount} children`, {
     operation: 'stripe:webhook:checkout:complete',
@@ -189,31 +162,16 @@ export async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> 
   const periodStart = period.start ? new Date(period.start * 1000) : new Date();
   const periodEnd = period.end
     ? new Date(period.end * 1000)
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-  await db
-    .update(familyBilling)
-    .set({
-      billingStatus: 'active',
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-      updatedAt: new Date(),
-    })
-    .where(eq(familyBilling.parentId, billing.parentId));
+    : new Date(Date.now() + DEFAULT_PERIOD_MS);
 
   const childrenIds = parseChildrenIdsFromMetadata(subscription.metadata?.childrenIds);
 
-  if (childrenIds.length > 0) {
-    await db
-      .update(userSubscriptions)
-      .set({
-        status: 'active',
-        lastResetAt: new Date(),
-        tokensUsedToday: 0,
-        updatedAt: new Date(),
-      })
-      .where(inArray(userSubscriptions.userId, childrenIds));
-  }
+  await billingService.extendActivePeriod({
+    parentId: billing.parentId,
+    childrenIds,
+    period: { start: periodStart, end: periodEnd },
+    resetChildCounters: true,
+  });
 
   logger.info(`[Stripe Webhook] Invoice paid for parent ${billing.parentId}, ${childrenIds.length} children activated`, {
     operation: 'stripe:webhook:invoice:paid',
@@ -237,29 +195,13 @@ export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promi
 
   if (!billing) return;
 
-  await db
-    .update(familyBilling)
-    .set({
-      billingStatus: 'past_due',
-      updatedAt: new Date(),
-    })
-    .where(eq(familyBilling.parentId, billing.parentId));
-
   let childrenIds: string[] = [];
   if (subscriptionId) {
     const subscription = await getStripeSubscription(subscriptionId);
     childrenIds = parseChildrenIdsFromMetadata(subscription?.metadata?.childrenIds);
   }
 
-  if (childrenIds.length > 0) {
-    await db
-      .update(userSubscriptions)
-      .set({
-        status: 'paused',
-        updatedAt: new Date(),
-      })
-      .where(inArray(userSubscriptions.userId, childrenIds));
-  }
+  await billingService.markPastDue(billing.parentId, childrenIds);
 
   logger.warn(`[Stripe Webhook] Payment failed for parent ${billing.parentId}, ${childrenIds.length} children paused`, {
     operation: 'stripe:webhook:invoice:failed',
