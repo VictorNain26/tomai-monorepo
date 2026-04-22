@@ -101,7 +101,7 @@ export function AttachmentMenu({
         <TouchableOpacity
           onPress={onToggle}
           disabled={isDisabled}
-          className="h-10 w-10 items-center justify-center rounded-full"
+          className="h-11 w-11 items-center justify-center rounded-full"
           style={[
             { backgroundColor: visible ? bgColors.primary[10] : bgColors.muted[50] },
             isDisabled ? { opacity: 0.5 } : undefined,

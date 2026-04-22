@@ -16,15 +16,23 @@
  */
 
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { View, FlatList, Platform, TouchableOpacity } from 'react-native';
+import { View, FlatList, Platform } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronRight, FileText, BarChart3, RefreshCw, ChevronDown } from 'lucide-react-native';
+import { FileText, BarChart3 } from 'lucide-react-native';
 
-import { Text } from '@/components/ui/text';
-import { ChatMessage, ChatInput, ChatHeader, DeckActionCard, FileLibraryPicker } from '@/components/chat';
-import { TomAvatar, SubjectIcon } from '@/components/common';
+import {
+  ChatMessage,
+  ChatInput,
+  ChatHeader,
+  ChatErrorBanner,
+  ChatEmptyState,
+  ScrollToBottomFab,
+  DeckActionCard,
+  FileLibraryPicker,
+} from '@/components/chat';
+import type { ChatSuggestion } from '@/components/chat/ChatEmptyState';
 import {
   useChat,
   usePresignedUpload,
@@ -37,7 +45,6 @@ import { useUser } from '@/lib/auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { deleteChatSession, chatQueryKeys } from '@/hooks/chat/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { bgColors } from '@/lib/styles';
 
 // ============================================================================
 // TYPES
@@ -126,8 +133,8 @@ export default function ChatScreen() {
   const pronote = usePronote(user?.id ?? '');
 
   // Compute contextual suggestions from Pronote homework
-  const suggestions = useMemo(() => {
-    const items: { subject: string; label: string; prompt: string }[] = [];
+  const suggestions = useMemo<ChatSuggestion[]>(() => {
+    const items: ChatSuggestion[] = [];
 
     // Undone homework (max 2)
     const undone = pronote.homework
@@ -287,26 +294,7 @@ export default function ChatScreen() {
       />
 
       {/* Error Message with Retry */}
-      {error && (
-        <View
-          className="mx-4 mt-2 flex-row items-center gap-3 rounded-lg p-3"
-          style={{ backgroundColor: bgColors.destructive[10] }}
-          accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
-        >
-          <Text className="flex-1 text-red-600 dark:text-red-400">{error}</Text>
-          <TouchableOpacity
-            onPress={retry}
-            className="flex-row items-center gap-1 rounded-full px-3 py-1.5"
-            style={{ backgroundColor: bgColors.destructive[20] }}
-            accessibilityLabel="Réessayer"
-            accessibilityRole="button"
-          >
-            <RefreshCw color={colors.destructive} size={14} />
-            <Text className="text-sm font-semibold text-red-600 dark:text-red-400">Réessayer</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {error && <ChatErrorBanner error={error} onRetry={retry} />}
 
       {/* KeyboardAvoidingView wraps messages + input */}
       <KeyboardAvoidingView
@@ -315,35 +303,7 @@ export default function ChatScreen() {
       >
         {/* Messages or Welcome */}
         {messages.length === 0 ? (
-          <View className="flex-1 items-center justify-center px-6">
-            <TomAvatar size="lg" className="mb-4" />
-            <Text variant="h3" className="text-center">
-              Salut ! Je suis Tom
-            </Text>
-            <Text variant="muted" className="mt-2 text-center">
-              Pose-moi une question sur tes cours !
-            </Text>
-
-            {suggestions.length > 0 && (
-              <View className="mt-6 w-full gap-2">
-                {suggestions.map((s) => (
-                  <TouchableOpacity
-                    key={s.prompt}
-                    onPress={() => sendMessage(s.prompt)}
-                    className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-3"
-                    activeOpacity={0.7}
-                    accessibilityLabel={s.label}
-                    accessibilityHint="Envoie cette question a Tom"
-                    accessibilityRole="button"
-                  >
-                    <SubjectIcon subject={s.subject} size={20} />
-                    <Text className="flex-1">{s.label}</Text>
-                    <ChevronRight color={colors.muted} size={16} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
+          <ChatEmptyState suggestions={suggestions} onSendSuggestion={sendMessage} />
         ) : (
           <View className="flex-1">
             <FlatList
@@ -365,16 +325,7 @@ export default function ChatScreen() {
             />
 
             {/* Scroll to bottom FAB */}
-            {!isNearBottom && (
-              <TouchableOpacity
-                onPress={scrollToBottom}
-                className="absolute bottom-3 right-3 h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-stone-800 shadow-sm"
-                style={{ elevation: 3 }}
-                accessibilityLabel="Retour en bas"
-              >
-                <ChevronDown color={colors.foreground} size={20} />
-              </TouchableOpacity>
-            )}
+            {!isNearBottom && <ScrollToBottomFab onPress={scrollToBottom} />}
           </View>
         )}
 

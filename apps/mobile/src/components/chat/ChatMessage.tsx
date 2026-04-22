@@ -115,7 +115,11 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
     >
       {/* Avatar */}
       {isUser ? (
-        <View className="h-8 w-8 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
+        <View
+          className="h-8 w-8 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400"
+          accessibilityElementsHidden={true}
+          importantForAccessibility="no-hide-descendants"
+        >
           <Text className="text-sm text-white dark:text-stone-900">👤</Text>
         </View>
       ) : (
@@ -126,6 +130,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
       <View className="max-w-[80%]">
         <Pressable
           onLongPress={handleLongPress}
+          accessibilityRole="text"
+          accessibilityHint="Appui long pour copier le message"
           className={cn(
             'rounded-2xl px-4 py-3',
             isUser ? 'rounded-tr-sm bg-blue-600 dark:bg-blue-400' : 'rounded-tl-sm bg-stone-100 dark:bg-stone-800'

@@ -64,6 +64,8 @@ export function TomAvatar({ size = 'md', className }: TomAvatarProps) {
         height: sizeConfig.container,
         backgroundColor: bgColors.primary[15],
       }}
+      accessibilityElementsHidden={true}
+      importantForAccessibility="no-hide-descendants"
     >
       {TOM_IMAGE_URL ? (
         <Image

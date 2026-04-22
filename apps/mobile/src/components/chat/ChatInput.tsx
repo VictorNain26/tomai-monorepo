@@ -156,9 +156,11 @@ export const ChatInput = memo(function ChatInput({
                   pulseStyle,
                 ]}
               />
-              <Text className="text-base font-semibold text-red-600 dark:text-red-400">
-                {voice.duration}s
-              </Text>
+              <View accessibilityLiveRegion="polite">
+                <Text className="text-base font-semibold text-red-600 dark:text-red-400">
+                  {voice.duration}s
+                </Text>
+              </View>
               <Text className="flex-1 text-sm text-stone-600 dark:text-stone-400">
                 Appui long pour annuler
               </Text>
@@ -192,7 +194,7 @@ export const ChatInput = memo(function ChatInput({
           onPress={handleVoiceToggle}
           onLongPress={handleVoiceCancel}
           disabled={isLoading || voice.isProcessing}
-          className="h-10 w-10 items-center justify-center rounded-full"
+          className="h-11 w-11 items-center justify-center rounded-full"
           style={{
             backgroundColor: voice.isRecording
               ? colors.destructive
@@ -205,6 +207,7 @@ export const ChatInput = memo(function ChatInput({
               : 'Enregistrer un message vocal'
           }
           accessibilityHint="Appui long pour annuler"
+          accessibilityState={{ busy: voice.isRecording }}
         >
           {voice.isRecording ? (
             <Square color={colors.primaryForeground} size={16} fill={colors.primaryForeground} />
@@ -219,7 +222,7 @@ export const ChatInput = memo(function ChatInput({
         {isStreaming && onStop ? (
           <TouchableOpacity
             onPress={onStop}
-            className="h-10 w-10 items-center justify-center rounded-full"
+            className="h-11 w-11 items-center justify-center rounded-full"
             style={{ backgroundColor: colors.destructive }}
             accessibilityLabel="Arrêter la génération"
           >
@@ -230,7 +233,7 @@ export const ChatInput = memo(function ChatInput({
             testID="chat-send-button"
             onPress={handleSend}
             disabled={!canSend}
-            className="h-10 w-10 items-center justify-center rounded-full"
+            className="h-11 w-11 items-center justify-center rounded-full"
             style={{
               backgroundColor: canSend
                 ? colors.primary
