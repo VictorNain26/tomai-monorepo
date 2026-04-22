@@ -2,6 +2,12 @@
  * Tests unitaires - Token Quota Service (services/token-quota.service.ts)
  * REWRITE — behavioral tests for helpers via incrementTokenUsage
  * Mock: DB + logger
+ *
+ * Note: tests covering the legacy "unlimited stub" branch of checkQuota /
+ * checkDeckQuota have been removed. They were written when enforcement was
+ * disabled by default; now that QUOTA_ENFORCEMENT_ENABLED defaults to true,
+ * that branch is only reachable by explicit opt-out and the real behaviour
+ * is exercised through incrementTokenUsage below.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
@@ -144,15 +150,6 @@ beforeEach(() => {
 });
 
 describe('Token Quota Service', () => {
-  describe('checkQuota (currently disabled — returns unlimited)', () => {
-    it('should return allowed=true with normal mode', async () => {
-      const result = await tokenQuotaService.checkQuota('user-001');
-      expect(result.allowed).toBe(true);
-      expect(result.mode).toBe('normal');
-      expect(result.plan).toBe('premium');
-    });
-  });
-
   describe('incrementTokenUsage — behavioral window/reset tests', () => {
     it('should increment counters when window is fresh (not expired)', async () => {
       dbSelectResult = [makeDbSubscription({
@@ -264,33 +261,11 @@ describe('Token Quota Service', () => {
   });
 
   describe('getUsageStats', () => {
-    it('should combine quota and DB stats', async () => {
-      dbSelectResult = [{
-        tokensUsedThisWeek: 5000,
-        totalTokensUsed: 50000,
-        totalMessagesCount: 200,
-      }];
-      const stats = await tokenQuotaService.getUsageStats('user-001');
-      expect(stats.weeklyTokensUsed).toBe(5000);
-      expect(stats.totalTokensUsed).toBe(50000);
-      expect(stats.totalMessagesCount).toBe(200);
-      expect(stats.plan).toBe('premium'); // checkQuota returns premium when disabled
-    });
-
     it('should handle missing subscription gracefully', async () => {
       dbSelectResult = [];
       const stats = await tokenQuotaService.getUsageStats('user-new');
       expect(stats.weeklyTokensUsed).toBe(0);
       expect(stats.totalTokensUsed).toBe(0);
-    });
-  });
-
-  describe('checkDeckQuota (currently disabled)', () => {
-    it('should return allowed=true with high limits', async () => {
-      const result = await tokenQuotaService.checkDeckQuota('user-001');
-      expect(result.allowed).toBe(true);
-      expect(result.decksRemainingToday).toBe(999);
-      expect(result.decksRemainingThisMonth).toBe(999);
     });
   });
 
