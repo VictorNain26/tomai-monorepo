@@ -175,7 +175,9 @@ export default function DeckReviewScreen() {
       <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3">
         <TouchableOpacity
           onPress={handleClose}
-          className="h-10 w-10 items-center justify-center rounded-full"
+          className="h-11 w-11 items-center justify-center rounded-full"
+          accessibilityRole="button"
+          accessibilityLabel="Quitter la révision"
         >
           <X color={colors.muted} size={24} />
         </TouchableOpacity>
@@ -187,7 +189,7 @@ export default function DeckReviewScreen() {
             {currentIndex + 1} / {totalCards}
           </Text>
         </View>
-        <View className="w-10" />
+        <View className="w-11" />
       </View>
 
       {/* Progress */}

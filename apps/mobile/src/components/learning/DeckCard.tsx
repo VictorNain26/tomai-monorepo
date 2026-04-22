@@ -103,7 +103,7 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
         <View className="flex-row gap-2">
           <TouchableOpacity
             onPress={handlePlay}
-            className="h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400"
+            className="h-11 w-11 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400"
             accessibilityLabel={`Reviser ${deck.title}`}
             accessibilityRole="button"
           >
@@ -114,7 +114,7 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
             <TouchableOpacity
               onPress={handleDelete}
               disabled={isDeleting}
-              className="h-10 w-10 items-center justify-center rounded-full"
+              className="h-11 w-11 items-center justify-center rounded-full"
               style={{ backgroundColor: bgColors.destructive[10] }}
               accessibilityLabel={`Supprimer ${deck.title}`}
               accessibilityRole="button"

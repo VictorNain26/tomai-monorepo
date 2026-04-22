@@ -132,7 +132,7 @@ export default function EditChildScreen() {
         <View className="flex-row items-center gap-3">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full"
+            className="h-11 w-11 items-center justify-center rounded-full"
             accessibilityLabel="Retour"
             accessibilityRole="button"
           >
@@ -166,6 +166,7 @@ export default function EditChildScreen() {
             <TouchableOpacity
               onPress={() => setShowLevelPicker(true)}
               className="flex-row items-center justify-between rounded-xl bg-white dark:bg-stone-800 px-4 py-4"
+              accessibilityRole="button"
               accessibilityLabel="Sélectionner le niveau scolaire"
               accessibilityHint={schoolLevel ? getLevelLabel(schoolLevel) : 'Non sélectionné'}
             >
@@ -203,7 +204,11 @@ export default function EditChildScreen() {
           <View className="max-h-[70%] rounded-t-3xl bg-white dark:bg-stone-800">
             <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 p-4">
               <Text className="font-semibold">Niveau scolaire</Text>
-              <TouchableOpacity onPress={() => setShowLevelPicker(false)}>
+              <TouchableOpacity
+                onPress={() => setShowLevelPicker(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Fermer le sélecteur de niveau"
+              >
                 <Text className="text-blue-600 dark:text-blue-400">Fermer</Text>
               </TouchableOpacity>
             </View>
@@ -218,6 +223,9 @@ export default function EditChildScreen() {
                     setShowLevelPicker(false);
                   }}
                   className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-4"
+                  accessibilityRole="button"
+                  accessibilityLabel={getLevelLabel(item.key)}
+                  accessibilityState={{ selected: schoolLevel === item.key }}
                 >
                   <Text>{getLevelLabel(item.key)}</Text>
                   {schoolLevel === item.key && (

@@ -196,7 +196,15 @@ export function HomeworkUrgentCard({
                     </Text>
 
                     {/* Due date badge */}
-                    <View className="mt-2 flex-row items-center gap-1">
+                    <View
+                      className="mt-2 flex-row items-center gap-1"
+                      accessible
+                      accessibilityLabel={
+                        urgency === 'urgent'
+                          ? `En retard ou dû aujourd'hui: ${dueLabel}`
+                          : dueLabel
+                      }
+                    >
                       {urgency === 'urgent' ? (
                         <AlertCircle color={colors.destructive} size={12} />
                       ) : (

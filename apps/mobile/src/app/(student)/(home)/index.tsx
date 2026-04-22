@@ -166,6 +166,8 @@ export default function StudentDashboard() {
           <Pressable
             onPress={() => router.push('/(student)/(learning)')}
             className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-4 active:opacity-80"
+            accessibilityRole="button"
+            accessibilityLabel={`${dueSummary?.totalDue ?? 0} cartes à réviser, appuyez pour commencer`}
           >
             <View
               className="h-10 w-10 items-center justify-center rounded-lg"
