@@ -1,8 +1,44 @@
 import { Elysia, t } from 'elysia';
 import { handleAuthWithCookies } from '../../middleware/auth.middleware';
 import { logger } from '../../lib/observability';
-import { learningService } from '../../services/learning/learning.service';
+import {
+  learningService,
+  DeckNotFoundError,
+  DeckOwnershipError,
+} from '../../services/learning/learning.service';
 import { deckDiscoveryRoutes } from './deck-discovery.routes.js';
+
+/**
+ * Map a LearningService domain error to an Elysia HTTP response.
+ *
+ * Per the service contract (see learning-errors.ts), both "not found" and
+ * "ownership mismatch" surface as HTTP 404 so the API does not leak the
+ * existence of another user's deck. The distinct error *code* in the body
+ * lets internal callers and tests disambiguate without exposing resource
+ * existence externally.
+ *
+ * Returns the response body when the error was handled, or `null` when the
+ * error was not a known domain error (caller must rethrow).
+ *
+ * `set` is typed loosely (`status?: unknown`) because Elysia's own `set`
+ * carries more than just `status` (headers, redirect, cookies) and typing
+ * it strictly fights the framework. We only *assign* to `status`, so the
+ * unknown input type is safe.
+ */
+function handleDeckDomainError(
+  err: unknown,
+  set: { status?: unknown },
+): { success: false; error: 'DECK_NOT_FOUND' | 'DECK_FORBIDDEN' } | null {
+  if (err instanceof DeckNotFoundError) {
+    set.status = 404;
+    return { success: false, error: 'DECK_NOT_FOUND' };
+  }
+  if (err instanceof DeckOwnershipError) {
+    set.status = 404;
+    return { success: false, error: 'DECK_FORBIDDEN' };
+  }
+  return null;
+}
 
 export const deckRoutes = new Elysia({ prefix: '/api/learning' })
 
@@ -97,13 +133,10 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     const { id: deckId } = params;
 
     try {
-      const result = await learningService.getDeckWithCards(authUser.id, deckId);
-      if (!result) {
-        set.status = 404;
-        return { error: 'Deck not found' };
-      }
-      return result;
+      return await learningService.getDeckWithCardsOrThrow(authUser.id, deckId);
     } catch (error) {
+      const domain = handleDeckDomainError(error, set);
+      if (domain) return domain;
       logger.error('Failed to fetch deck', {
         operation: 'learning:decks:get',
         userId: authUser.id, deckId,
@@ -127,13 +160,11 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
       const { id: deckId } = params;
 
       try {
-        const updatedDeck = await learningService.updateDeck(authUser.id, deckId, body);
-        if (!updatedDeck) {
-          set.status = 404;
-          return { error: 'Deck not found' };
-        }
+        const updatedDeck = await learningService.updateDeckOrThrow(authUser.id, deckId, body);
         return { deck: updatedDeck };
       } catch (error) {
+        const domain = handleDeckDomainError(error, set);
+        if (domain) return domain;
         logger.error('Failed to update deck', {
           operation: 'learning:decks:update',
           userId: authUser.id, deckId,
@@ -163,13 +194,11 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     const { id: deckId } = params;
 
     try {
-      const deleted = await learningService.deleteDeck(authUser.id, deckId);
-      if (!deleted) {
-        set.status = 404;
-        return { error: 'Deck not found' };
-      }
+      await learningService.deleteDeckOrThrow(authUser.id, deckId);
       return { success: true };
     } catch (error) {
+      const domain = handleDeckDomainError(error, set);
+      if (domain) return domain;
       logger.error('Failed to delete deck', {
         operation: 'learning:decks:delete',
         userId: authUser.id, deckId,

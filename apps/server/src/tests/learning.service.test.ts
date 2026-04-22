@@ -37,7 +37,6 @@ mock.module('../db/connection', () => ({
 // --- Repository mocks -------------------------------------------------------
 const mockDeckInsert = mock(async () => ({ id: 'deck-1', userId: 'user-1', cardCount: 0 }));
 const mockDeckFindById = mock(async (_id: string) => null as unknown);
-const mockDeckFindByUserAndId = mock(async (_u: string, _d: string) => null as unknown);
 const mockDeckListByUser = mock(async () => [] as unknown[]);
 const mockDeckUpdateById = mock(async () => ({ id: 'deck-1', title: 'updated' }));
 const mockDeckDeleteById = mock(async () => {});
@@ -46,7 +45,10 @@ mock.module('../db/repositories/learning-decks.repository', () => ({
   learningDecksRepository: {
     insert: mockDeckInsert,
     findById: mockDeckFindById,
-    findByUserAndId: mockDeckFindByUserAndId,
+    // `findByUserAndId` is still exposed by the real repository but is no
+    // longer reached by LearningService after Phase 2 (all ownership lookups
+    // route through `findById` to distinguish NotFound vs Ownership errors).
+    // Not mocked here — any stray call would surface as a test failure.
     listByUser: mockDeckListByUser,
     updateById: mockDeckUpdateById,
     deleteById: mockDeckDeleteById,
@@ -78,7 +80,6 @@ beforeEach(() => {
   mockTransaction.mockClear();
   mockDeckInsert.mockClear();
   mockDeckFindById.mockClear();
-  mockDeckFindByUserAndId.mockClear();
   mockDeckListByUser.mockClear();
   mockDeckUpdateById.mockClear();
   mockDeckDeleteById.mockClear();
@@ -186,29 +187,6 @@ describe('LearningService', () => {
     });
   });
 
-  describe('getDeckWithCards', () => {
-    it('returns deck + cards when ownership matches', async () => {
-      const deck = { id: 'deck-1', userId: 'user-1' };
-      const cards = [{ id: 'c1' }];
-      mockDeckFindByUserAndId.mockImplementationOnce(async () => deck);
-      mockCardListByDeck.mockImplementationOnce(async () => cards);
-
-      const result = await learningService.getDeckWithCards('user-1', 'deck-1');
-
-      expect(result).toEqual({ deck, cards });
-      expect(mockCardListByDeck).toHaveBeenCalledWith('deck-1');
-    });
-
-    it('returns null (route will surface 404) when the deck is not owned by the user', async () => {
-      mockDeckFindByUserAndId.mockImplementationOnce(async () => null);
-
-      const result = await learningService.getDeckWithCards('user-1', 'deck-1');
-
-      expect(result).toBeNull();
-      expect(mockCardListByDeck).not.toHaveBeenCalled();
-    });
-  });
-
   describe('getDeckWithCardsOrThrow', () => {
     it('returns deck + cards on ownership match', async () => {
       const deck = { id: 'deck-1', userId: 'user-1' };
@@ -243,44 +221,56 @@ describe('LearningService', () => {
     });
   });
 
-  describe('updateDeck', () => {
-    it('returns null (no update issued) when the deck is not owned by the user', async () => {
-      mockDeckFindByUserAndId.mockImplementationOnce(async () => null);
+  describe('updateDeckOrThrow', () => {
+    it('throws DeckNotFoundError when the deck does not exist', async () => {
+      mockDeckFindById.mockImplementationOnce(async () => null);
 
-      const result = await learningService.updateDeck('user-1', 'deck-1', { title: 'new' });
+      await expect(
+        learningService.updateDeckOrThrow('user-1', 'missing', { title: 'new' }),
+      ).rejects.toBeInstanceOf(DeckNotFoundError);
+      expect(mockDeckUpdateById).not.toHaveBeenCalled();
+    });
 
-      expect(result).toBeNull();
+    it('throws DeckOwnershipError when the caller is not the owner', async () => {
+      mockDeckFindById.mockImplementationOnce(async () => ({
+        id: 'deck-1',
+        userId: 'other-user',
+      }));
+
+      await expect(
+        learningService.updateDeckOrThrow('user-1', 'deck-1', { title: 'new' }),
+      ).rejects.toBeInstanceOf(DeckOwnershipError);
       expect(mockDeckUpdateById).not.toHaveBeenCalled();
     });
 
     it('delegates the update to the repository when ownership matches', async () => {
-      mockDeckFindByUserAndId.mockImplementationOnce(async () => ({ id: 'deck-1' }));
-      mockDeckUpdateById.mockImplementationOnce(async () => ({ id: 'deck-1', title: 'new' }));
+      mockDeckFindById.mockImplementationOnce(async () => ({
+        id: 'deck-1',
+        userId: 'user-1',
+      }));
+      mockDeckUpdateById.mockImplementationOnce(async () => ({
+        id: 'deck-1',
+        title: 'new',
+      }));
 
-      const result = await learningService.updateDeck('user-1', 'deck-1', { title: 'new' });
+      const result = await learningService.updateDeckOrThrow('user-1', 'deck-1', {
+        title: 'new',
+      });
 
       expect(mockDeckUpdateById).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ id: 'deck-1', title: 'new' });
     });
-  });
 
-  describe('deleteDeck', () => {
-    it('returns false without deleting when the deck is not owned by the user', async () => {
-      mockDeckFindByUserAndId.mockImplementationOnce(async () => null);
+    it('rethrows DeckNotFoundError on concurrent-delete race (update returns null)', async () => {
+      mockDeckFindById.mockImplementationOnce(async () => ({
+        id: 'deck-1',
+        userId: 'user-1',
+      }));
+      mockDeckUpdateById.mockImplementationOnce(async () => null);
 
-      const deleted = await learningService.deleteDeck('user-1', 'deck-1');
-
-      expect(deleted).toBe(false);
-      expect(mockDeckDeleteById).not.toHaveBeenCalled();
-    });
-
-    it('deletes and returns true when ownership matches', async () => {
-      mockDeckFindByUserAndId.mockImplementationOnce(async () => ({ id: 'deck-1' }));
-
-      const deleted = await learningService.deleteDeck('user-1', 'deck-1');
-
-      expect(deleted).toBe(true);
-      expect(mockDeckDeleteById).toHaveBeenCalledWith('deck-1');
+      await expect(
+        learningService.updateDeckOrThrow('user-1', 'deck-1', { title: 'new' }),
+      ).rejects.toBeInstanceOf(DeckNotFoundError);
     });
   });
 

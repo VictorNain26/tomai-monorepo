@@ -104,26 +104,9 @@ class LearningService {
   }
 
   /**
-   * Fetch a deck (+ cards) scoped to the user.
-   * Returns null if the deck does not exist or is not owned by the user.
-   *
-   * Kept return-null for backward compatibility with existing route handlers
-   * that surface a 404. `getDeckWithCardsOrThrow` below is the throw-based
-   * variant that routes will migrate to in phase 2.
-   */
-  async getDeckWithCards(
-    userId: string,
-    deckId: string,
-  ): Promise<{ deck: LearningDeck; cards: LearningCard[] } | null> {
-    const deck = await learningDecksRepository.findByUserAndId(userId, deckId);
-    if (!deck) return null;
-
-    const cards = await learningCardsRepository.listByDeck(deckId);
-    return { deck, cards };
-  }
-
-  /**
-   * Throw-based counterpart to `getDeckWithCards`. Distinguishes between:
+   * Fetch a deck (+ cards) scoped to the user. Throws on missing/unauthorized
+   * so the route layer maps domain errors to HTTP in a single place.
+   * Distinguishes between:
    *   - deck missing entirely → DeckNotFoundError
    *   - deck exists but owned by another user → DeckOwnershipError
    */
@@ -144,41 +127,37 @@ class LearningService {
   }
 
   /**
-   * Update a deck if the caller owns it. Returns null otherwise.
+   * Throw-based deck update. Distinguishes between "deck missing" and "deck
+   * owned by someone else" (same taxonomy as `getDeckWithCardsOrThrow`) so the
+   * route layer can surface a consistent response shape without a second
+   * ownership lookup.
    */
-  async updateDeck(
+  async updateDeckOrThrow(
     userId: string,
     deckId: string,
     fields: UpdateDeckInput,
-  ): Promise<LearningDeck | null> {
-    const owned = await learningDecksRepository.findByUserAndId(userId, deckId);
-    if (!owned) return null;
+  ): Promise<LearningDeck> {
+    const existing = await learningDecksRepository.findById(deckId);
+    if (!existing) {
+      throw new DeckNotFoundError(deckId);
+    }
+    if (existing.userId !== userId) {
+      throw new DeckOwnershipError(userId, deckId);
+    }
 
-    return learningDecksRepository.updateById(deckId, fields);
+    const updated = await learningDecksRepository.updateById(deckId, fields);
+    if (!updated) {
+      // Should never happen because we just confirmed the row exists — treat
+      // the concurrent-delete race as "not found" so the route returns 404.
+      throw new DeckNotFoundError(deckId);
+    }
+    return updated;
   }
 
   /**
-   * Delete a deck if the caller owns it (cards cascade via FK).
-   * Returns false if the deck does not exist or is owned by someone else.
-   */
-  async deleteDeck(userId: string, deckId: string): Promise<boolean> {
-    const owned = await learningDecksRepository.findByUserAndId(userId, deckId);
-    if (!owned) return false;
-
-    await learningDecksRepository.deleteById(deckId);
-
-    logger.info('Deck deleted', {
-      operation: 'learning:service:delete-deck',
-      userId,
-      deckId,
-    });
-
-    return true;
-  }
-
-  /**
-   * Throw-based counterpart to `deleteDeck`. Mirrors the error taxonomy of
-   * `getDeckWithCardsOrThrow`.
+   * Throw-based deck deletion. Mirrors the error taxonomy of
+   * `getDeckWithCardsOrThrow` / `updateDeckOrThrow`.
+   * Cards are removed via the FK cascade on `learning_cards.deck_id`.
    */
   async deleteDeckOrThrow(userId: string, deckId: string): Promise<void> {
     const existing = await learningDecksRepository.findById(deckId);
