@@ -37,7 +37,9 @@ export async function runMigrations(): Promise<void> {
 
   console.log('Running database migrations...');
 
-  const environment = process.env.NODE_ENV ?? 'development';
+  // Use Bun.env — `bun build --target bun` replaces `process.env.NODE_ENV`
+  // at build time, which would freeze this to the build-stage value.
+  const environment = Bun.env['NODE_ENV'] ?? 'development';
   const needsSsl = environment === 'production' || isSupabaseHost(databaseUrl);
 
   const migrationClient = postgres(databaseUrl, {

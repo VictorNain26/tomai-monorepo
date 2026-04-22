@@ -9,8 +9,14 @@ import { logPoolWarning } from './connection.js';
 
 /**
  * PostgreSQL Pool Configuration
+ *
+ * Reads via Bun.env instead of process.env — `bun build --target bun`
+ * replaces `process.env.NODE_ENV` literals at build time, so the bundled
+ * prod dist/index.js was silently running with MAX_POOL_SIZE=5 (dev
+ * default) until this was fixed. Koyeb eco-nano instance was thus
+ * heavily under-pooled for real Supabase traffic.
  */
-const MAX_POOL_SIZE = process.env.NODE_ENV === 'production' ? 20 : 5;
+const MAX_POOL_SIZE = Bun.env['NODE_ENV'] === 'production' ? 20 : 5;
 
 /**
  * Concurrency Limit: 75% of max pool size

@@ -19,9 +19,13 @@ import { logger } from '../lib/observability';
 // Configuration
 // ============================================
 
-const WEBHOOK_AUTH = process.env.REVENUECAT_WEBHOOK_AUTH ?? '';
+// Bun's `bun build --target bun` replaces `process.env.NODE_ENV` literals at
+// build time (the bundled dist/index.js freezes the value from when the image
+// was built, where NODE_ENV is not yet "production"). Reading through Bun.env
+// bypasses the replacement and gives the true runtime value.
+const WEBHOOK_AUTH = Bun.env['REVENUECAT_WEBHOOK_AUTH'] ?? '';
 const isWebhookEnabled = !!WEBHOOK_AUTH;
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = Bun.env['NODE_ENV'] === 'production';
 
 // Fail-fast in production — a missing REVENUECAT_WEBHOOK_AUTH in prod means
 // every IAP event (INITIAL_PURCHASE, RENEWAL, CANCELLATION, …) would 404 and

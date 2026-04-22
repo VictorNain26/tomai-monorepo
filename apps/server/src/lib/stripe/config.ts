@@ -14,9 +14,12 @@ import { eq } from 'drizzle-orm';
 import type { PremiumPlanConfig } from './types';
 import { logger } from '../observability';
 
-// Environment detection
-const isProduction = process.env.NODE_ENV === 'production';
-const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
+// Environment detection — use Bun.env, not process.env: `bun build --target
+// bun` replaces `process.env.NODE_ENV` literals at build time, so reads from
+// process.env in the bundled dist/index.js return the build-time value, not
+// the runtime one. Bun.env is always runtime.
+const isProduction = Bun.env['NODE_ENV'] === 'production';
+const hasStripeKey = !!Bun.env['STRIPE_SECRET_KEY'];
 
 // Production: Stripe is REQUIRED
 if (isProduction && !hasStripeKey) {
@@ -27,7 +30,7 @@ if (isProduction && !hasStripeKey) {
 if (!hasStripeKey) {
   logger.warn('Stripe not configured - payment features disabled', {
     operation: 'stripe:config:skip',
-    environment: process.env.NODE_ENV ?? 'development',
+    environment: Bun.env['NODE_ENV'] ?? 'development',
     impact: 'Checkout, subscriptions, and webhooks will not work'
   });
 }
@@ -36,7 +39,7 @@ if (!hasStripeKey) {
  * Stripe SDK instance (null if not configured in development)
  */
 export const stripe: Stripe | null = hasStripeKey
-  ? new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  ? new Stripe(Bun.env['STRIPE_SECRET_KEY']!, {
       appInfo: {
         name: 'TomAI Server',
         version: '2.0.0',
