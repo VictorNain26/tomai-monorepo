@@ -15,14 +15,17 @@ import {
   type RevenueCatEvent,
 } from './revenuecat-webhook-events';
 
-const WEBHOOK_AUTH_HEADER = process.env.REVENUECAT_WEBHOOK_AUTH;
+// Use Bun.env instead of process.env because `bun build --target bun`
+// replaces `process.env.NODE_ENV` literals at build time (see notes in
+// revenuecat-webhook.routes.ts). `Bun.env` always reflects runtime values.
+const WEBHOOK_AUTH_HEADER = Bun.env['REVENUECAT_WEBHOOK_AUTH'];
 const MIN_SECRET_LENGTH = 32; // ≥256 bits of entropy recommended for shared tokens
 
 // Fail fast in production when the shared secret is missing or weak.
 // RevenueCat does not sign webhooks cryptographically, so the shared token
 // IS the security boundary — a weak or absent secret exposes the endpoint
 // to forged IAP events (premium granted without payment).
-if (process.env.NODE_ENV === 'production') {
+if (Bun.env['NODE_ENV'] === 'production') {
   if (!WEBHOOK_AUTH_HEADER) {
     throw new Error(
       'REVENUECAT_WEBHOOK_AUTH must be set in production. Generate with: ' +
@@ -69,7 +72,7 @@ export function createRevenueCatWebhookRoutes() {
       const payload = body as RevenueCatEvent;
       const event = payload.event;
 
-      if (process.env.NODE_ENV === 'production' && event.environment === 'SANDBOX') {
+      if (Bun.env['NODE_ENV'] === 'production' && event.environment === 'SANDBOX') {
         return { received: true, skipped: 'sandbox' };
       }
 
