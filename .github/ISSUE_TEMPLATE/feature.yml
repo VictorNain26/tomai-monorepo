@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a new feature or improvement.
+title: "[FEAT] "
+labels: ["feature", "chore:triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What user pain or business need does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Rough sketch of what should be built.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - server
+        - mobile
+        - landing
+        - db
+        - ci
+        - auth
+        - chat
+        - rag
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What's the Done definition?

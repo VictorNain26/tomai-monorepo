@@ -1,0 +1,59 @@
+name: Bug report
+description: Something is broken or behaving incorrectly.
+title: "[BUG] "
+labels: ["bug", "chore:triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One sentence describing the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Step-by-step reproduction. Include exact commands if CLI bug.
+      placeholder: |
+        1. Open app
+        2. Click X
+        3. See Y
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - server
+        - mobile
+        - landing
+        - db
+        - ci
+        - auth
+        - chat
+        - rag
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, app version, server version, etc.
+      placeholder: |
+        - Mobile: iOS 18.5, Tom 1.2.3
+        - Server: Koyeb prod, commit abc123

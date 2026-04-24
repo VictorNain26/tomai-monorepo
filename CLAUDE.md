@@ -33,6 +33,8 @@ Backend nécessite Docker : `cd apps/server && docker compose up -d`
 - **`main`** : production, JAMAIS de push direct, toujours PR depuis staging
 - **Merge commit uniquement** : JAMAIS squash merge (désynchronise les branches)
 
+Ces contraintes sont codifiées dans @./constitution.md — source de vérité inviolable pour les agents IA et les contributeurs humains.
+
 ## Enforcement
 
 Le workflow (TDD, review, validation) est géré par **superpowers skills** (auto-invoqués). Les conventions monorepo sont dans @.claude/rules/testing-and-commits.md et @.claude/rules/database-migrations.md.

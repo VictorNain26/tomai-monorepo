@@ -1,0 +1,75 @@
+name: Agent task
+description: Structured task for an AI agent to execute (Claude Code, Routine, or GH Action).
+title: "[AGENT] "
+labels: ["agent:review-needed", "chore:triage"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should the agent accomplish? One sentence.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this task? Link to spec / parent issue / user report.
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files in scope
+      description: Absolute paths the agent should touch or read. Empty = free scope (approve with caution).
+      placeholder: |
+        - apps/server/src/services/billing/billing.service.ts
+        - apps/server/src/tests/billing.test.ts
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Any must-not-touch files, patterns, or operations.
+      placeholder: |
+        - Do not modify RevenueCat webhook handlers
+        - Do not downgrade dependencies
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Concrete, testable. Checkbox list preferred.
+      placeholder: |
+        - [ ] Unit test X passes
+        - [ ] Endpoint returns 200 on valid input, 400 on malformed
+        - [ ] No regression in bun run test
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation command
+      description: Exact command to run to verify Done state.
+      placeholder: |
+        cd apps/server && bun run test src/tests/billing.test.ts
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Target agent
+      options:
+        - claude (Claude Code local or GH Action)
+        - routine (Claude Code Routine, scheduled)
+        - manual (human only)
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk level
+      options:
+        - low (read-only or trivial edit)
+        - med (single-file change with tests)
+        - high (multi-file, infra, or security-adjacent)
+    validations:
+      required: true
