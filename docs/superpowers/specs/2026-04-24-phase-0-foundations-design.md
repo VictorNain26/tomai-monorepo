@@ -60,7 +60,7 @@ Chaque phase suit le cycle spec → plan → implémentation → validation avan
 1. **Sécuriser** l'autonomie maximale des agents en garantissant qu'aucun agent ne puisse atteindre la production sans approbation explicite de Victor
 2. **Migrer auth** du workflow Claude Code vers OAuth subscription Max 5x (zéro coût API)
 3. **Instrumenter** les 3 apps avec Sentry + PostHog (free tier) pour fournir aux agents de Phase 2 des données actionnables
-4. **Restaurer** un environnement staging fiable sur free tier (migration Supabase → Neon)
+4. **Restaurer** un environnement staging fiable sur free tier (recréer projet Supabase `tomai-staging` + cron keepalive)
 5. **Codifier** les conventions monorepo (constitution + specs + labels + templates) pour que les agents travaillent de manière prévisible
 6. **Poser la baseline métriques** (time-to-ship, MTTR, bug rate) avant que les phases 1-5 introduisent du changement mesurable
 
