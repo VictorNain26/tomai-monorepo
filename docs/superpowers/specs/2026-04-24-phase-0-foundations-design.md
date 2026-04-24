@@ -154,13 +154,13 @@ Migration `ANTHROPIC_API_KEY` → `CLAUDE_CODE_OAUTH_TOKEN` pour claude-code-act
 
 ### 5.4 Couche Infrastructure & métriques
 
-- **Staging** : migration Supabase → Neon (free tier offre 100 CU-h, branches illimitées, 10 projets, 5GB). Schema pushé via `drizzle-kit push`. Koyeb `tomai-staging` reconfiguré sur Neon connstring. Cron keepalive GitHub Actions pour éviter scale-to-zero pendant les heures de travail (~30 min/mois).
+- **Staging** : recréer projet Supabase free `tomai-staging` (l'ancien a été dropped). Schema pushé via `drizzle-kit push`. Koyeb `tomai-staging` reconfiguré sur la nouvelle connstring (pooler transaction mode pour cohérence avec le code existant qui détecte Supabase). Cron keepalive GitHub Actions 3×/semaine pour éviter la pause 1 semaine du free tier (~30 min/mois).
 - **EAS preview** wired sur staging URL via profile `preview` (15 builds/plateforme/mois suffisent).
 - **Claude Code Routines** (lancé 14 avril 2026, Max 5x = 15 runs/jour, tourne dans cloud Anthropic, consomme pas les minutes GH Actions) : 3 routines initiales (daily triage 09h Paris, weekly dep audit lundi 09h, weekly unused flag sweep lundi 09h).
-- **Quotas & alertes** : seuils doc dans `docs/metrics/quotas.md` : GH Actions minutes (80% de 2000), Claude Max weekly (notifier), Sentry errors (80% de 5K), PostHog events (80% de 1M).
+- **Quotas & alertes** : seuils doc dans `docs/metrics/quotas.md` : GH Actions minutes (80% de 2000), Claude Max weekly (notifier), Sentry errors (80% de 5K), PostHog events (80% de 1M), Supabase free (80% de 500MB DB, pause detection).
 - **Baseline métriques** : fichier `docs/metrics/baseline-2026-04.md` avec valeurs actuelles de time-to-ship, MTTR, bug rate, agent PR merge rate, tests coverage.
 
-**Rationale :** Neon > Supabase Free pour l'agentique (pas de pause 1 semaine, branching gratuit). Routines cloud Anthropic débarrassent les tâches scheduled de la contrainte minutes GH Actions. Baseline métriques permet d'évaluer l'impact des phases 1-5.
+**Rationale Supabase (décision révisée 2026-04-24) :** le code serveur a des optimisations Supabase-spécifiques (`isSupabaseHost()` dans `connection.ts` + `migrate.ts`, `prepare: false` pour le pooler transaction, `connect_timeout: 20`, SSL forcé). Migrer vers Neon exigerait un refactor de ces deux modules + divergence prod/staging. Le free tier (500 MB DB, 2 projets, pause 1 semaine sans activité) est suffisant pour la taille actuelle de Tom, et le cron keepalive neutralise le risque de pause. Branching Supabase payant ($25/mo Pro) reste différé à Phase 2+ si besoin d'ephemeral PR envs.
 
 ---
 
@@ -175,7 +175,7 @@ Les livrables sont ordonnés par dépendance. Chaque ligne est atomique (peut ê
 | **0.3** | Extension `.claude/settings.json` PreToolUse hooks (patterns : push main, force push, reset --hard main, gh pr merge --admin, prod deploys Vercel/Koyeb/EAS, curl\|bash, env dumps) + suffix anti-prompt-injection dans `.github/workflows/claude-code.yml` + `step-security/harden-runner` egress allowlist sur workflows agent | — | Chaque pattern testé via commande bash déclenchant le hook, exit code 2 vérifié |
 | **0.4** | Sentry install (3 SDKs) + PostHog install (2 SDKs) + MCP Sentry config + MCP PostHog config + smoke event envoyé depuis chaque app | 0.1, 0.2, 0.3 | Event test visible dans dashboards Sentry et PostHog, MCP accessible dans Claude Code (`sentry list issues`) |
 | **0.5** | `constitution.md` racine repo + structure `specs/` + issue templates YAML + labels créés via `gh label create` + Project v2 "Tom Agents" avec 4 custom fields | — | Ouvrir issue test via template agent-task → apparaît dans Project avec champs remplis |
-| **0.6** | Neon project `tomai-staging` créé + schema pushé + Koyeb `tomai-staging` reconfigure sur Neon connstring + EAS profile `preview` pointant URL Koyeb + cron keepalive GH Actions | 0.1, 0.2 | `curl https://<koyeb-staging>/health` retourne 200 après 2h idle |
+| **0.6** | Nouveau projet Supabase free `tomai-staging` (ancien dropped) + schema pushé via `drizzle-kit push` + Koyeb `tomai-staging` reconfigure sur nouvelle connstring (pooler transaction) + EAS profile `preview` pointant URL Koyeb + cron keepalive GH Actions 3×/semaine | 0.1, 0.2 | `curl https://<koyeb-staging>/health` retourne 200 après 2h idle |
 | **0.7** | 3 Claude Code Routines configurées (daily triage, weekly dep audit, weekly flag sweep) | 0.1, 0.3, 0.5 | Chaque routine tourne une fois manuellement + poste résultat en commentaire GitHub |
 | **0.8** | `docs/metrics/quotas.md` avec seuils + script `scripts/check-quotas.sh` qui inspecte via API (GH, Sentry, PostHog) et sort un rapport markdown | 0.4 | Script exécuté localement produit rapport sans erreur |
 | **0.9** | `docs/metrics/baseline-2026-04.md` avec valeurs : time-to-ship (median merge→deploy sur 30j), MTTR (dernières 3 incidents), bug rate (issues `bug` / semaine), test coverage (server + mobile), agent PR merge rate (0 à ce stade, baseline) | 0.4, 0.5 | Fichier committé, chiffres sourcés (lien commits / issues / workflow runs) |
@@ -210,7 +210,7 @@ Phase 0 est considérée **terminée** quand tous les éléments suivants sont v
 | Risque | Impact | Mitigation |
 |---|---|---|
 | Claude Code Routines lancé très récemment (14 avril 2026), API/setup instables | Moyen — Routines sont "bonus", pas critiques | Livrable 0.7 isolé en fin d'ordre, fallback cron GitHub Actions si Routines cassent |
-| Migration staging Supabase → Neon casse des données existantes | Faible (staging déjà cassé, DB dropped) | Schema pushé via Drizzle = source de vérité, pas de migration de données |
+| Supabase free `tomai-staging` pausé après 1 semaine d'inactivité → agents échouent silencieusement | Moyen | Cron keepalive GH Actions 3×/semaine (curl /health) + alerte dans `check-quotas.sh` si pause détectée |
 | "Comment and Control" prompt injection attack sur workflows agent | Élevé (exfil credentials) | Egress allowlist `step-security/harden-runner` + prompt boundary + retrait permissions `actions: write`/`workflows: write` (livrable 0.3) |
 | Quota Max 5x dépassé par Routines + Action + usage local | Moyen | Quota monitoring livrable 0.8 + offload vers models moins chers (Sonnet 4.6) pour bulk work dans Action |
 | CODEOWNERS + self-approve permet quand même merge (edge case si agent tourne en PAT Victor) | Élevé (contourne garde-fou) | GitHub bloque natifement self-approve si auteur = reviewer. Ruleset "Require review from Code Owners" + "Dismiss stale reviews" double le verrou |
@@ -225,6 +225,7 @@ Phase 0 est considérée **terminée** quand tous les éléments suivants sont v
 - **Devin / cloud agents payants** : skip pour l'instant. Claude Code Routines + Claude Code GH Action devraient couvrir. Re-évaluer Phase 3 si besoin de longue autonomie async.
 - **GitHub App custom vs PAT fine-grained** : PAT fine-grained pour Phase 0 (plus simple solo), migrer vers GitHub App si besoin cross-repo.
 - **Migration `docs/plans/` vers `specs/`** : garder `docs/plans/` pour l'existant, utiliser `specs/` pour les nouveaux. Pas de migration rétroactive.
+- **Ephemeral PR envs (Supabase branching ou Neon)** : skip Phase 0, staging canonique Supabase suffit. Re-évaluer Phase 2 si un agent QA en a vraiment besoin pour tests isolés. Coût si adopté : soit Supabase Pro $25/mo (branching inclus), soit Neon Free en plus de Supabase (refactor connection.ts nécessaire).
 
 ---
 
@@ -254,8 +255,7 @@ Phase 0 est considérée **terminée** quand tous les éléments suivants sont v
 - GH : [github-mcp-server](https://github.com/github/github-mcp-server)
 - [GitHub Spec Kit](https://github.com/github/spec-kit)
 - [Claude Code Routines (April 2026)](https://blog.laozhang.ai/en/posts/routines-in-claude-code)
-- [Neon plans (April 2026)](https://neon.com/docs/introduction/plans)
-- [Neon + Koyeb integration](https://neon.com/docs/guides/koyeb)
+- [Supabase pricing & free tier limits](https://supabase.com/pricing)
 - [Koyeb scale-to-zero](https://www.koyeb.com/docs/run-and-scale/scale-to-zero)
 
 ### 10.2 Documents internes
