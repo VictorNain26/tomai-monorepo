@@ -6,7 +6,11 @@
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./apps/server/.env)",
-      "Read(./apps/server/.env.*)"
+      "Read(./apps/server/.env.*)",
+      "Read(./apps/mobile/.env)",
+      "Read(./apps/mobile/.env.*)",
+      "Read(./apps/landing/.env)",
+      "Read(./apps/landing/.env.*)"
     ]
   },
 
@@ -17,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "INPUT=$(cat); CMD=$(echo \"$INPUT\" | grep -o '\"command\":\"[^\"]*\"' | head -1 | sed 's/\"command\":\"//;s/\"//'); echo \"$CMD\" | grep -qE '(rm -rf /|DROP DATABASE|db:push.*(prod|staging))' && echo 'Blocked: destructive command detected' >&2 && exit 2 || exit 0"
+            "command": "INPUT=$(cat); CMD=$(echo \"$INPUT\" | jq -r '.tool_input.command // empty'); if [ -z \"$CMD\" ]; then exit 0; fi; if echo \"$CMD\" | grep -qE '(rm -rf /|DROP DATABASE|db:push.*(prod|staging)|git\\s+push.*\\b(origin\\s+)?(main|master|production)\\b|git\\s+push.*-f(orce)?(-with-lease)?.*\\b(main|master|production)\\b|git\\s+reset\\s+--hard\\s+(origin/)?(main|master)|gh\\s+pr\\s+merge.*--admin|(vercel|koyeb|eas)\\s+(deploy|build|submit).*--?prod|pnpm\\s+workflow:prod|curl[^|]*\\|\\s*(bash|sh)\\b|^\\s*(printenv|env)\\s*($|\\|))'; then echo 'Blocked: destructive or sensitive command pattern detected. See .claude/settings.json for the list.' >&2; exit 2; fi; exit 0"
           }
         ]
       }
