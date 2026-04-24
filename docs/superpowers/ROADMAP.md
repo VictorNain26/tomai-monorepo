@@ -132,6 +132,7 @@ Légende : 🟢 completed · 🟡 in progress · ⚪ not started · 🔴 blocked
 | Ephemeral PR envs (Supabase branching Pro ou Neon) | Skip (staging canonique suffit) | Agent QA Phase 2 en a vraiment besoin |
 | CodeRabbit Free → Pro (12$/user) | Skip (Free suffit) | Review Free trop limité sur gros PRs en Phase 1 |
 | Sentry Team plan (26$/mo, 50K errors) | Skip | >5K errors/mois en Phase 2 |
+| GitHub Free → Pro (4$/mo) pour `required reviewers` sur Environment | Skip | Si Phase 2 agent déploie en prod et veut double verrou. Alt : rendre repo public (non souhaitable pour code pré-launch) |
 
 ---
 
