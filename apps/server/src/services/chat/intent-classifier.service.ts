@@ -1,28 +1,28 @@
 /**
  * Intent classifier — pre-generation pedagogical intent detection.
  *
- * Runs a lightweight Gemini Flash pass (thinking disabled, 80 output tokens
- * max) BEFORE the main chat generation to detect high-risk pedagogical
- * patterns and inject a reinforcing instruction into the system prompt.
+ * Lightweight Mistral Small 4 pass (reasoning_effort none, ~80 output tokens)
+ * BEFORE the main chat generation. Detects high-risk pedagogical patterns and
+ * injects a reinforcing instruction into the system prompt.
  *
  * Primary use case: the "solve this for me" request. Without a classifier,
  * the agent relies entirely on its base safety block. With a classifier we
  * can add a turn-specific <critical_instruction> block that forces socratic
- * decomposition — measurably reducing answer-leaks in internal tests.
+ * decomposition.
  *
  * Failure mode: if the classifier errors out, we log at high severity and
- * return `intent: 'unknown'` so the agent runs with its default prompt. This
- * is not a silent fallback — callers can observe `intent.error` on the
- * returned object and the log line is monitored.
+ * return `intent: 'unknown'` so the agent runs with its default prompt. Not
+ * a silent fallback — callers can observe `intent.error` and the log line is
+ * monitored.
  */
 
 import { appConfig } from '../../config/app.config.js';
-import { getGeminiClient } from '../../lib/gemini-client.js';
+import { getMistralClient } from '../../lib/mistral-client.js';
 import { logger } from '../../lib/observability.js';
 import { withTimeout } from '../../lib/retry.js';
 import type { EducationLevelType } from '../../types/index.js';
 
-export const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-04-21';
+export const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-05-06';
 
 export type StudentIntent =
   | 'solve-this-for-me'   // student asks the agent to complete an exercise
@@ -48,20 +48,13 @@ const ALLOWED_INTENTS: StudentIntent[] = [
   'unknown',
 ];
 
-const RESPONSE_SCHEMA = {
-  type: 'object',
-  properties: {
-    intent: {
-      type: 'string',
-      enum: ALLOWED_INTENTS,
-    },
-    confidence: {
-      type: 'string',
-      enum: ['low', 'medium', 'high'],
-    },
-  },
-  required: ['intent', 'confidence'],
-} as const;
+function isStudentIntent(v: unknown): v is StudentIntent {
+  return typeof v === 'string' && (ALLOWED_INTENTS as string[]).includes(v);
+}
+
+function isConfidence(v: unknown): v is ClassifiedIntent['confidence'] {
+  return v === 'low' || v === 'medium' || v === 'high';
+}
 
 function buildPrompt(userMessage: string, levelLabel: string): string {
   const truncated = userMessage.length > 800 ? `${userMessage.slice(0, 800)}…` : userMessage;
@@ -75,7 +68,8 @@ Choisis UNE étiquette :
 - "chit-chat" : salutation, remerciement, question hors sujet scolaire
 - "unknown" : ambigu ou ne rentre dans aucune autre catégorie
 
-Attribue une confiance (low/medium/high). Réponds en JSON strict.
+Attribue une confiance (low/medium/high). Réponds UNIQUEMENT en JSON strict de la forme :
+{"intent": "<étiquette>", "confidence": "<low|medium|high>"}
 
 MESSAGE :
 ${truncated}`;
@@ -85,7 +79,7 @@ class IntentClassifierService {
   private readonly model: string;
 
   constructor() {
-    this.model = appConfig.ai.gemini.model;
+    this.model = appConfig.ai.mistral?.auxModel ?? 'mistral-small-latest';
   }
 
   async classify(userMessage: string, schoolLevel: EducationLevelType): Promise<ClassifiedIntent> {
@@ -102,32 +96,55 @@ class IntentClassifierService {
 
     const startTime = Date.now();
     try {
+      const client = getMistralClient();
       const response = await withTimeout(
-        getGeminiClient().models.generateContent({
+        client.chat.complete({
           model: this.model,
-          contents: [{ role: 'user', parts: [{ text: buildPrompt(trimmed, schoolLevel) }] }],
-          config: {
-            temperature: 0,
-            maxOutputTokens: 80,
-            responseMimeType: 'application/json',
-            responseJsonSchema: RESPONSE_SCHEMA,
-            // thinkingBudget:0 is the cheapest path — intent classification
-            // doesn't need reasoning depth and we need a sub-second return.
-            thinkingConfig: { thinkingBudget: 0 },
+          messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
+          temperature: 0,
+          maxTokens: 80,
+          // json_schema strict: Mistral guarantees the response matches the
+          // schema bit-for-bit (CCA D4 §4 retry-with-feedback prerequisite).
+          // Eliminates malformed-JSON retries seen with json_object mode.
+          responseFormat: {
+            type: 'json_schema',
+            jsonSchema: {
+              name: 'student_intent_classification',
+              description: 'Classified pedagogical intent of a student message.',
+              strict: true,
+              schemaDefinition: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['intent', 'confidence'],
+                properties: {
+                  intent: {
+                    type: 'string',
+                    enum: ALLOWED_INTENTS,
+                    description: 'One of the predefined intent labels.',
+                  },
+                  confidence: {
+                    type: 'string',
+                    enum: ['low', 'medium', 'high'],
+                    description: 'Classifier confidence in the chosen label.',
+                  },
+                },
+              },
+            },
           },
         }),
         8_000,
-        'gemini:intent-classify',
+        'mistral:intent-classify',
       );
 
-      const text = response.text?.trim() ?? '';
-      const parsed = JSON.parse(text) as { intent?: string; confidence?: string };
-      const intent = ALLOWED_INTENTS.includes(parsed.intent as StudentIntent)
-        ? (parsed.intent as StudentIntent)
-        : 'unknown';
-      const confidence = parsed.confidence === 'high' || parsed.confidence === 'medium' || parsed.confidence === 'low'
-        ? parsed.confidence
-        : 'low';
+      const rawContent = response.choices?.[0]?.message?.content;
+      const text = typeof rawContent === 'string' ? rawContent.trim() : '';
+      if (text.length === 0) {
+        return { intent: 'unknown', confidence: 'low', error: 'empty response' };
+      }
+
+      const parsed = JSON.parse(text) as Record<string, unknown>;
+      const intent = isStudentIntent(parsed['intent']) ? parsed['intent'] : 'unknown';
+      const confidence = isConfidence(parsed['confidence']) ? parsed['confidence'] : 'low';
 
       logger.debug('Intent classified', {
         operation: 'intent-classifier:classified',

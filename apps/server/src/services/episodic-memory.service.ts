@@ -25,13 +25,13 @@
 import { and, desc, eq, sql, type SQL } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { sessionEpisodes, studySessions, messages } from '../db/schema.js';
-import { getGeminiClient } from '../lib/gemini-client.js';
+import { getMistralClient } from '../lib/mistral-client.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
 import { appConfig } from '../config/app.config.js';
 import { logger } from '../lib/observability.js';
 import { withTimeout } from '../lib/retry.js';
 
-export const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-04-21';
+export const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-05-06';
 
 interface ExtractedEpisode {
   summary: string;
@@ -57,20 +57,32 @@ ${messagesText}
 Réponds UNIQUEMENT en JSON strict.`;
 }
 
-const EXTRACTION_SCHEMA = {
+// Mistral validates JSON via responseFormat: 'json_schema' (strict mode) so
+// the response is guaranteed to match the schema. Defense-in-depth: we still
+// validate field types in the parse below, but malformed-JSON retries are
+// eliminated.
+const EPISODE_JSON_SCHEMA = {
   type: 'object',
+  additionalProperties: false,
+  required: ['summary', 'conceptsCovered', 'outcome'],
   properties: {
-    summary: { type: 'string' },
+    summary: {
+      type: 'string',
+      description: 'Narrative pedagogical summary (200-400 words).',
+    },
     conceptsCovered: {
       type: 'array',
       items: { type: 'string' },
+      minItems: 1,
+      maxItems: 8,
+      description: 'Key concepts worked on during the session (2-6 expected).',
     },
     outcome: {
       type: 'string',
       enum: ['completed', 'abandoned', 'succeeded'],
+      description: 'How the session ended pedagogically.',
     },
   },
-  required: ['summary', 'conceptsCovered', 'outcome'],
 } as const;
 
 class EpisodicMemoryService {
@@ -118,22 +130,27 @@ class EpisodicMemoryService {
       const prompt = buildExtractionPrompt(session.subject, messagesText);
 
       const response = await withTimeout(
-        getGeminiClient().models.generateContent({
-          model: appConfig.ai.gemini.model,
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          config: {
-            temperature: 0.2,
-            maxOutputTokens: 1200,
-            responseMimeType: 'application/json',
-            responseJsonSchema: EXTRACTION_SCHEMA,
-            thinkingConfig: { thinkingBudget: 0 },
+        getMistralClient().chat.complete({
+          model: appConfig.ai.mistral?.auxModel ?? 'mistral-small-latest',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.2,
+          maxTokens: 1200,
+          responseFormat: {
+            type: 'json_schema',
+            jsonSchema: {
+              name: 'session_episode_extraction',
+              description: 'Structured pedagogical summary of a tutoring session.',
+              strict: true,
+              schemaDefinition: EPISODE_JSON_SCHEMA,
+            },
           },
         }),
         30_000,
-        'gemini:episodic-extract',
+        'mistral:episodic-extract',
       );
 
-      const text = response.text?.trim() ?? '';
+      const raw = response.choices?.[0]?.message?.content;
+      const text = typeof raw === 'string' ? raw.trim() : '';
       if (!text) {
         throw new Error('Empty extraction response');
       }
