@@ -24,6 +24,18 @@ export interface RAGQueryResult {
   context: string;
 }
 
+export interface ExtractionResult {
+  success: boolean;
+  text: string;
+  metadata: {
+    pageCount?: number;
+    wordCount: number;
+    extractionMethod: 'unpdf' | 'mammoth' | 'text' | 'mistral-vision' | 'mistral-ocr';
+    extractionTimeMs: number;
+  };
+  error?: string;
+}
+
 export interface DocumentAnalysisResult {
   success: boolean;
 

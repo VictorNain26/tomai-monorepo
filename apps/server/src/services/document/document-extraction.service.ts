@@ -3,9 +3,11 @@
  *
  * Responsabilités:
  * - Extraction PDF via unpdf (pure JS, serverless-compatible)
+ * - Fallback Mistral OCR pour PDFs scannés (manuels, devoirs photographiés)
+ *   quand unpdf ne récupère pas de texte natif
  * - Extraction DOCX via mammoth
  * - Extraction texte brut
- * - OCR images via Gemini Vision (délégué)
+ * - OCR images via Mistral Vision (délégué à document-analysis)
  *
  * Architecture 2025: Separation of concerns
  * - Ce service extrait le TEXTE uniquement
@@ -15,18 +17,13 @@
 import { extractText, getDocumentProxy } from 'unpdf';
 import mammoth from 'mammoth';
 import { logger } from '../../lib/observability.js';
+import { extractPdfWithMistralOCR } from './mistral-ocr.js';
+import type { ExtractionResult } from './document-types.js';
 
-export interface ExtractionResult {
-  success: boolean;
-  text: string;
-  metadata: {
-    pageCount?: number;
-    wordCount: number;
-    extractionMethod: 'unpdf' | 'mammoth' | 'text' | 'gemini-vision';
-    extractionTimeMs: number;
-  };
-  error?: string;
-}
+export type { ExtractionResult } from './document-types.js';
+
+/** Threshold below which unpdf output is considered a scanned-PDF miss. */
+const NATIVE_TEXT_MIN_CHARS = 10;
 
 /**
  * Service d'extraction de texte depuis documents
@@ -70,12 +67,12 @@ class DocumentExtractionService {
         return await this.extractFromText(buffer, startTime);
       }
 
-      // Images - retourne un marqueur pour traitement Gemini Vision
+      // Images : marqueur pour traitement Mistral Vision côté analyse
       if (cleanMimeType.startsWith('image/')) {
         return this.createResult(
           true,
           '[IMAGE_REQUIRES_VISION_API]',
-          'gemini-vision',
+          'mistral-vision',
           startTime
         );
       }
@@ -109,64 +106,56 @@ class DocumentExtractionService {
   }
 
   /**
-   * Extraction PDF via unpdf (pure JS, serverless-compatible)
+   * Extraction PDF via unpdf (pure JS, serverless-compatible).
+   * Falls back to `mistral-ocr-latest` when unpdf produces empty output —
+   * typical case: scanned manuals or devoirs photographed by students.
    * @see https://github.com/unjs/unpdf
    */
   private async extractFromPDF(
     buffer: ArrayBuffer,
     startTime: number
   ): Promise<ExtractionResult> {
+    let unpdfPageCount: number | undefined;
     try {
       // unpdf API: getDocumentProxy + extractText
       const pdf = await getDocumentProxy(new Uint8Array(buffer));
       const { totalPages, text } = await extractText(pdf, { mergePages: true });
+      unpdfPageCount = totalPages;
 
       const extractedText = (text as string)?.trim() ?? '';
       const wordCount = this.countWords(extractedText);
 
-      logger.info('PDF extraction completed', {
-        pageCount: totalPages,
-        wordCount,
-        textLength: extractedText.length,
-        operation: 'pdf-extraction'
-      });
-
-      if (!extractedText || extractedText.length < 10) {
-        return this.createResult(
-          false,
-          '',
-          'unpdf',
-          startTime,
-          'PDF sans contenu texte extractible (peut nécessiter OCR)'
-        );
-      }
-
-      return {
-        success: true,
-        text: extractedText,
-        metadata: {
+      if (extractedText.length >= NATIVE_TEXT_MIN_CHARS) {
+        logger.info('PDF extraction completed (native text)', {
           pageCount: totalPages,
           wordCount,
-          extractionMethod: 'unpdf',
-          extractionTimeMs: Date.now() - startTime
-        }
-      };
+          textLength: extractedText.length,
+          operation: 'pdf-extraction'
+        });
+        return {
+          success: true,
+          text: extractedText,
+          metadata: {
+            pageCount: totalPages,
+            wordCount,
+            extractionMethod: 'unpdf',
+            extractionTimeMs: Date.now() - startTime
+          }
+        };
+      }
 
-    } catch (error) {
-      logger.error('PDF extraction error', {
-        _error: error instanceof Error ? error.message : String(error),
-        operation: 'pdf-extraction',
-        severity: 'medium' as const
+      logger.info('PDF has no native text, falling back to Mistral OCR', {
+        pageCount: totalPages,
+        operation: 'pdf-extraction:ocr-fallback'
       });
-
-      return this.createResult(
-        false,
-        '',
-        'unpdf',
-        startTime,
-        'Erreur lors de l\'extraction du PDF'
-      );
+    } catch (error) {
+      logger.warn('unpdf failed, falling back to Mistral OCR', {
+        _error: error instanceof Error ? error.message : String(error),
+        operation: 'pdf-extraction:unpdf-error'
+      });
     }
+
+    return extractPdfWithMistralOCR(buffer, startTime, unpdfPageCount);
   }
 
   /**
