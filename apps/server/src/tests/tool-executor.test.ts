@@ -148,20 +148,22 @@ describe('Tool Executor', () => {
       expect(result.resultsCount).toBe(1);
     });
 
-    it('should return serviceUnavailable when RAG is down', async () => {
+    it('should return transient error when RAG is down', async () => {
       ragAvailable = false;
       const result = await executeTool('search_educational_content', {
         query: 'fractions', niveau: 'troisieme', matiere: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.serviceUnavailable).toBe(true);
-      expect(result.found).toBe(false);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('transient');
+      expect(result.isRetryable).toBe(true);
     });
   });
 
   describe('unknown tool', () => {
-    it('should return error for unknown tool name', async () => {
+    it('should return validation error for unknown tool name', async () => {
       const result = await executeTool('get_student_homework', {}, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('validation');
       expect(result.message).toContain('Outil inconnu');
     });
   });
@@ -205,28 +207,33 @@ describe('Tool Executor', () => {
       expect(result.guide).toBeDefined();
     });
 
-    it('should return not found for invalid topic', async () => {
+    it('should return validation error for invalid topic', async () => {
       const result = await executeTool('get_app_help', { topic: 'nonexistent' }, baseContext) as Record<string, unknown>;
-      expect(result.found).toBe(false);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('validation');
+      expect(result.message).toContain('non reconnu');
     });
   });
 
   describe('Unknown tool', () => {
-    it('should return error message for unknown tool', async () => {
+    it('should return validation error for unknown tool', async () => {
       const result = await executeTool('unknown_tool', {}, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('validation');
       expect(result.message).toContain('Outil inconnu');
     });
   });
 
   describe('Error encapsulation', () => {
-    it('should never throw - encapsulates errors in return value', async () => {
+    it('should never throw - encapsulates transient errors in return value', async () => {
       ragAvailable = true;
       ragResult = null; // Force error in hybridSearch
       const result = await executeTool('search_educational_content', {
         query: 'test', niveau: 'troisieme', matiere: 'maths',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('transient');
+      expect(result.isRetryable).toBe(true);
     });
   });
 });

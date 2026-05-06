@@ -1,8 +1,9 @@
 /**
- * Tool Executor - Dispatch des appels d'outils Gemini
+ * Tool Executor — dispatch des appels d'outils Mistral.
  *
- * Chaque outil retourne un objet JSON sérialisable pour functionResponse.
- * Les erreurs sont encapsulées (jamais throw).
+ * Chaque outil retourne un objet JSON sérialisable, transformé en `role: tool`
+ * message côté chat pour la prochaine itération du modèle. Les erreurs sont
+ * encapsulées (jamais throw) pour éviter d'interrompre le streaming.
  */
 
 import { ragService } from '../rag.service.js';
@@ -23,7 +24,7 @@ export interface ToolExecutionContext {
 
 /**
  * Structured result returned when `generate_flashcards` successfully creates a
- * deck. Consumers (e.g. gemini-chat stream emitter) should narrow on
+ * deck. Consumers (e.g. mistral-chat stream emitter) narrow on
  * `kind: 'deck_created'` rather than duck-typing `deckId && generated`.
  */
 export interface DeckCreatedToolResult {
@@ -42,6 +43,55 @@ export function isDeckCreatedResult(value: unknown): value is DeckCreatedToolRes
     typeof value === 'object' &&
     value !== null &&
     (value as { kind?: unknown }).kind === 'deck_created'
+  );
+}
+
+/**
+ * Structured tool error — CCA D2 §2 / Anthropic tool error pattern.
+ *
+ * Lets the model decide between retry / reformulate / escalate based on the
+ * `errorCategory` and `isRetryable` flags. Replaces the legacy ad-hoc
+ * `{error: true, message: '…'}` shape which was the #1 anti-pattern flagged
+ * in the audit.
+ *
+ * - transient   : timeout, 5xx, rate-limit. Safe to retry.
+ * - validation  : bad arguments, schema mismatch. Retry only after fixing input.
+ * - business    : valid call, unexpected domain state (e.g. missing profile).
+ * - permission  : 401/403, RLS denial. Never retry, escalate.
+ */
+export type ToolErrorCategory = 'transient' | 'validation' | 'business' | 'permission';
+
+export interface StructuredToolError {
+  isError: true;
+  errorCategory: ToolErrorCategory;
+  isRetryable: boolean;
+  message: string;
+  partialResults?: unknown;
+}
+
+export function makeToolError(
+  category: ToolErrorCategory,
+  message: string,
+  partialResults?: unknown,
+): StructuredToolError {
+  const error: StructuredToolError = {
+    isError: true,
+    errorCategory: category,
+    isRetryable: category === 'transient',
+    message,
+  };
+  if (partialResults !== undefined) {
+    error.partialResults = partialResults;
+  }
+  return error;
+}
+
+export function isStructuredToolError(value: unknown): value is StructuredToolError {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { isError?: unknown }).isError === true &&
+    typeof (value as { errorCategory?: unknown }).errorCategory === 'string'
   );
 }
 
@@ -107,10 +157,13 @@ export async function executeTool(
       });
     }
 
-    return {
-      error: true,
-      message: `Erreur lors de l'exécution de ${toolName}. Indique à l'élève que tu n'as pas pu vérifier dans les programmes officiels.`,
-    };
+    // Network/runtime exception thrown by the tool itself = transient by default.
+    // Permission and business errors are surfaced from inside the tool body via
+    // makeToolError() with the right category before they ever reach this catch.
+    return makeToolError(
+      'transient',
+      `Erreur lors de l'exécution de ${toolName}. Indique à l'élève que tu n'as pas pu vérifier dans les programmes officiels.`,
+    );
   }
 }
 
@@ -137,7 +190,7 @@ async function executeToolOnce(
       return executeGetAppHelp(args, context);
 
     default:
-      return { error: true, message: `Outil inconnu: ${toolName}` };
+      return makeToolError('validation', `Outil inconnu: ${toolName}`);
   }
 }
 
@@ -154,16 +207,15 @@ async function executeRagSearch(args: Record<string, unknown>): Promise<object> 
 
   const isAvailable = await ragService.isAvailable();
   if (!isAvailable) {
-    return {
-      found: false,
-      context: '',
-      resultsCount: 0,
-      averageScore: 0,
-      chunks: [],
-      searchTimeMs: Date.now() - startTime,
-      serviceUnavailable: true,
-      message: 'Le service de recherche est temporairement indisponible. Indique à l\'élève que tu ne peux pas vérifier dans les programmes officiels actuellement.',
-    };
+    // Service down vs zero results: distinct outcomes per CCA D5 §3.
+    // We surface a transient error instead of pretending we got an empty
+    // search result — the model otherwise believes the curriculum simply
+    // does not cover the topic.
+    return makeToolError(
+      'transient',
+      'Le service de recherche est temporairement indisponible. Indique à l\'élève que tu ne peux pas vérifier dans les programmes officiels actuellement.',
+      { searchTimeMs: Date.now() - startTime },
+    );
   }
 
   const result = await ragService.hybridSearch({
@@ -228,10 +280,14 @@ async function executeGenerateFlashcards(
   });
 
   if ('success' in result && result.success === false) {
-    return {
-      error: true,
-      message: `Erreur lors de la génération des cartes: ${result.error}`,
-    };
+    // Card generator already classifies errors via its `code` field —
+    // SERVICE_UNAVAILABLE / GENERATION_FAILED → transient (Mistral retryable),
+    // INVALID_OUTPUT → validation (model produced bad JSON, retry won't help
+    // without prompt feedback).
+    const category: ToolErrorCategory = result.code === 'INVALID_OUTPUT'
+      ? 'validation'
+      : 'transient';
+    return makeToolError(category, `Erreur lors de la génération des cartes: ${result.error}`);
   }
 
   const successResult = result as CardGenerationResult;
@@ -280,10 +336,10 @@ function executeGetAppHelp(
   const content = getAppHelpContent(topic, context.userRole);
 
   if (!content) {
-    return {
-      found: false,
-      message: `Sujet "${topic}" non reconnu. Sujets disponibles : overview, navigation, chat, flashcards, pronote, files, subscription, profile.`,
-    };
+    return makeToolError(
+      'validation',
+      `Sujet "${topic}" non reconnu. Sujets disponibles : overview, navigation, chat, flashcards, pronote, files, subscription, profile.`,
+    );
   }
 
   return {
@@ -326,10 +382,10 @@ async function executeUpdateProfile(
   // Observation + subject required: reject empty calls so the agent doesn't
   // silently burn a tool slot without writing anything.
   if (!observation || !subject) {
-    return {
-      error: true,
-      message: "Observation ou matière manquante — le profil n'a pas été mis à jour.",
-    };
+    return makeToolError(
+      'validation',
+      "Observation ou matière manquante — le profil n'a pas été mis à jour.",
+    );
   }
 
   const strengthRaw = typeof args.strength === 'string' ? args.strength.trim().slice(0, 100) : undefined;

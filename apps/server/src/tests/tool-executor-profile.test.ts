@@ -109,39 +109,44 @@ beforeEach(() => {
 
 describe('executeUpdateProfile()', () => {
   describe('validation', () => {
-    it('should return error=true when observation is empty', async () => {
+    it('should return validation error when observation is empty', async () => {
       const result = await executeTool('update_student_profile', {
         observation: '',
         subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('validation');
+      expect(result.isRetryable).toBe(false);
       expect(result.message).toContain("Observation ou matière manquante");
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
 
-    it('should return error=true when observation is whitespace-only', async () => {
+    it('should return validation error when observation is whitespace-only', async () => {
       const result = await executeTool('update_student_profile', {
         observation: '   ',
         subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('validation');
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
 
-    it('should return error=true when subject is empty', async () => {
+    it('should return validation error when subject is empty', async () => {
       const result = await executeTool('update_student_profile', {
         observation: 'Bonne progression',
         subject: '',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('validation');
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
 
-    it('should return error=true when subject is missing', async () => {
+    it('should return validation error when subject is missing', async () => {
       const result = await executeTool('update_student_profile', {
         observation: 'Bonne progression',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('validation');
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
   });
@@ -237,7 +242,7 @@ describe('isDeckCreatedResult()', () => {
   it('should return false for wrong/missing discriminator', () => {
     expect(isDeckCreatedResult({ generated: true, deckId: 'd' })).toBe(false);
     expect(isDeckCreatedResult({ kind: 'other_kind', deckId: 'd' })).toBe(false);
-    expect(isDeckCreatedResult({ error: true, message: 'nope' })).toBe(false);
+    expect(isDeckCreatedResult({ isError: true, errorCategory: 'validation', message: 'nope' })).toBe(false);
   });
 
   it('should return false for null / undefined / primitives / arrays', () => {
