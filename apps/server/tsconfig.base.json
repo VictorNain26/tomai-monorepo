@@ -12,16 +12,15 @@
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
 
-    /* Path Mapping */
-    "baseUrl": ".",
+    /* Path Mapping (TS 6+: paths resolve relative to this tsconfig, no baseUrl needed) */
     "paths": {
-      "@/*": ["src/*"],
-      "@/routes/*": ["src/routes/*"],
-      "@/services/*": ["src/services/*"],
-      "@/middleware/*": ["src/middleware/*"],
-      "@/types/*": ["src/types/*"],
-      "@/config/*": ["src/config/*"],
-      "@/utils/*": ["src/utils/*"]
+      "@/*": ["./src/*"],
+      "@/routes/*": ["./src/routes/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/middleware/*": ["./src/middleware/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/config/*": ["./src/config/*"],
+      "@/utils/*": ["./src/utils/*"]
     }
   }
 }

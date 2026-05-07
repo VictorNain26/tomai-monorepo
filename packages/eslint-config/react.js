@@ -28,7 +28,10 @@ export default [
     plugins: {
       "react-hooks": pluginReactHooks,
     },
-    settings: { react: { version: "detect" } },
+    // Explicit react version: ESLint 10 removed `context.getFilename()`, which
+    // eslint-plugin-react@7.37.5 still calls inside its `version: "detect"` codepath.
+    // Pinning a concrete version skips the detection helper entirely.
+    settings: { react: { version: "19.2.0" } },
     rules: {
       ...pluginReactHooks.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
