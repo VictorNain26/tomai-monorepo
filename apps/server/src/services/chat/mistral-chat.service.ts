@@ -38,6 +38,7 @@ import {
   MISTRAL_STREAM_CHUNK_TIMEOUT_MS,
   wrapUserMessage,
   getToolStatusLabel,
+  detectSystemPromptLeak,
 } from './mistral-helpers.js';
 
 // Re-export types so callers can import either from this service or from
@@ -304,6 +305,34 @@ class MistralChatService {
           const deltaContent = choice.delta?.content;
           if (typeof deltaContent === 'string' && deltaContent.length > 0) {
             fullContent += deltaContent;
+            // Layer-3 prompt-injection defense: catch a leak of the system
+            // prompt structural tags before it reaches the student. We
+            // surface a generic safety_block error and break out of the
+            // stream — same UX as a guardrail trip — rather than silently
+            // letting the leaked content render. High-severity log so
+            // monitoring catches the (rare) hit and we can audit prompts.
+            const leak = detectSystemPromptLeak(fullContent);
+            if (leak) {
+              logger.error('System prompt leak detected in stream output', {
+                _error: `Leaked marker: ${leak}`,
+                userId: params.userId,
+                sessionId: params.sessionId,
+                contentLength: fullContent.length,
+                operation: 'mistral-chat:prompt-leak',
+                severity: 'high' as const,
+              });
+              yield {
+                type: 'error' as const,
+                id: messageId,
+                model: this.model,
+                timestamp: Date.now(),
+                error: {
+                  message: "Je ne peux pas répondre à ce message. Reformule en restant sur ton travail scolaire.",
+                  code: 'safety_block',
+                },
+              };
+              return;
+            }
             yield {
               type: 'content' as const,
               id: messageId,
