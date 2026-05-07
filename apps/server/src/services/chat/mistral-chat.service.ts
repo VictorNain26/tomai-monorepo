@@ -1,19 +1,21 @@
 /**
  * Mistral chat service — Tom's primary tutoring stream.
  *
- * Backed by Mistral Small 4
- * (`mistral-small-latest`) with optional `reasoning_effort: "high"` for
- * problem-solving turns. The agent loop drives up to MAX_TOOL_ITERATIONS
- * rounds of tool calls before yielding the final answer to the client.
+ * Backed by Mistral Small 4 (`mistral-small-latest`) with optional
+ * `reasoning_effort: "high"` for problem-solving turns. The streaming surface
+ * is provider-agnostic (`ChatStreamChunk`) so the orchestration layer doesn't
+ * need to know we're talking to Mistral.
  *
- * The streaming surface is provider-agnostic (`ChatStreamChunk`) so the
- * orchestration layer doesn't need to know we're talking to Mistral.
+ * The agent loop itself (per-iteration streaming + tool dispatch) lives in
+ * `./mistral-agent-loop.ts` to keep this file under the 400-line cap. This
+ * module is the thin orchestrator: it builds the system prompt + history +
+ * user content, delegates to `runAgentLoop`, and translates SDK errors into
+ * typed error chunks.
  */
 
 import type { Mistral } from '@mistralai/mistralai';
 import { appConfig } from '../../config/app.config.js';
 import { getMistralClient } from '../../lib/mistral-client.js';
-import { studentChatGuardrails } from '../../lib/mistral-guardrails.js';
 import { routeReasoningEffort } from '../../lib/mistral-reasoning.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
@@ -21,10 +23,7 @@ import {
   optimizeConversationHistory,
   type OptimizationContext,
 } from '../../utils/conversation/index.js';
-import { agentTools } from './mistral-tool-declarations.js';
-import { executeTool, isDeckCreatedResult } from './tool-executor.js';
 import { logger } from '../../lib/observability.js';
-import { withTimeout } from '../../lib/retry.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type {
   AttachedFile,
@@ -32,14 +31,8 @@ import type {
   PronoteContext,
   StreamGenerationParams,
 } from './mistral-types.js';
-import {
-  MAX_TOOL_ITERATIONS,
-  MISTRAL_STREAM_SETUP_TIMEOUT_MS,
-  MISTRAL_STREAM_CHUNK_TIMEOUT_MS,
-  wrapUserMessage,
-  getToolStatusLabel,
-  detectSystemPromptLeak,
-} from './mistral-helpers.js';
+import { wrapUserMessage } from './mistral-helpers.js';
+import { runAgentLoop, type MistralMessage } from './mistral-agent-loop.js';
 
 // Re-export types so callers can import either from this service or from
 // mistral-types.ts directly.
@@ -52,34 +45,12 @@ export type {
 } from './mistral-types.js';
 export { getLearningContext } from './mistral-helpers.js';
 
-// Mistral SDK message shape (camelCase per the official TS client).
-type MistralRole = 'system' | 'user' | 'assistant' | 'tool';
-
-interface MistralTextPart {
-  type: 'text';
-  text: string;
-}
-
 interface MistralImagePart {
   type: 'image_url';
   imageUrl: string;
 }
 
-type MistralContent = string | Array<MistralTextPart | MistralImagePart>;
-
-interface MistralToolCallShape {
-  id: string;
-  type: 'function';
-  function: { name: string; arguments: string };
-}
-
-interface MistralMessage {
-  role: MistralRole;
-  content: MistralContent;
-  toolCalls?: MistralToolCallShape[];
-  toolCallId?: string;
-  name?: string;
-}
+type MistralUserContent = MistralMessage['content'];
 
 class MistralChatService {
   private readonly client: Mistral;
@@ -141,7 +112,7 @@ class MistralChatService {
   private buildUserContentParts(
     text: string,
     files?: AttachedFile[],
-  ): MistralContent {
+  ): MistralUserContent {
     const wrapped = wrapUserMessage(text);
     const visionParts: MistralImagePart[] = [];
 
@@ -217,13 +188,6 @@ class MistralChatService {
         operation: 'mistral-chat:agent-start',
       });
 
-      let fullContent = '';
-      let promptTokens = 0;
-      let completionTokens = 0;
-      const toolsUsed: string[] = [];
-      let toolCallsCount = 0;
-      let iteration = 0;
-
       // Decide once at turn start: a turn that asks the tutor to actually
       // reason about a STEM problem in collège/lycée gets the heavier
       // thinking mode; everything else stays on `none` for conversational
@@ -235,240 +199,25 @@ class MistralChatService {
         intent: params.classifiedIntent?.intent,
       });
 
-      // HITL approval gate (CCA D1 §6c): when the classifier says the
-      // student is asking for a complete solution with non-low confidence,
-      // we drop `generate_flashcards` from the offered tool set entirely.
-      // Otherwise the model could route a "solve this for me" turn into a
-      // freshly-generated card deck that *contains* the answer — the soft
-      // system-prompt reinforcement isn't a hard guarantee. This makes the
-      // bypass structurally impossible.
-      const isHardSolveIntent =
-        params.classifiedIntent?.intent === 'solve-this-for-me' &&
-        params.classifiedIntent.confidence !== 'low';
-      const offeredTools = isHardSolveIntent
-        ? agentTools.filter((t) => t.function.name !== 'generate_flashcards')
-        : agentTools;
-      if (isHardSolveIntent) {
-        logger.info('HITL gate: dropping generate_flashcards for solve-intent', {
-          userId: params.userId,
-          sessionId: params.sessionId,
-          confidence: params.classifiedIntent?.confidence,
-          operation: 'mistral-chat:hitl-gate',
-        });
-      }
+      const outcome = yield* runAgentLoop({
+        client: this.client,
+        model: this.model,
+        messages,
+        messageId,
+        reasoningEffort,
+        classifiedIntent: params.classifiedIntent,
+        userId: params.userId,
+        sessionId: params.sessionId,
+        schoolLevel: params.schoolLevel,
+        userRole: params.userRole,
+      });
 
-      while (iteration < MAX_TOOL_ITERATIONS) {
-        const stream = await withTimeout(
-          this.client.chat.stream({
-            model: this.model,
-            messages: messages as Parameters<typeof this.client.chat.stream>[0]['messages'],
-            tools: offeredTools as Parameters<typeof this.client.chat.stream>[0]['tools'],
-            toolChoice: 'auto',
-            temperature: appConfig.ai.mistral?.temperature ?? 0.7,
-            maxTokens: appConfig.ai.mistral?.maxTokens ?? 16384,
-            reasoningEffort,
-            // Force one tool call per turn. Mistral parallelises by default,
-            // which is fine for back-office pipelines but breaks the socratic
-            // discipline of the tutor: parallel calls produce a single fused
-            // assistant turn that mixes "search programs" + "create cards" +
-            // "update profile" without giving the student a chance to react
-            // between steps. Sequential keeps each act observable in the
-            // stream and lets the agent loop re-plan after each result.
-            parallelToolCalls: false,
-            // Mistral's officially recommended moderation pattern. The
-            // thresholds are tuned for a CP–Terminale audience: any sexual,
-            // self-harm, violence, hate, dangerous, criminal, or PII signal
-            // above 0.1 blocks the response (HTTP 403 with category detail).
-            guardrails: studentChatGuardrails(),
-          }),
-          MISTRAL_STREAM_SETUP_TIMEOUT_MS,
-          `mistral:stream-setup (iter ${iteration})`,
-        );
+      // The leak detector inside the loop already emitted the safety_block
+      // chunk; suppress the terminal `done` so we don't double-up the SSE
+      // stream.
+      if (outcome.aborted) return;
 
-        // Per-iteration accumulators. Mistral streams tool calls as deltas
-        // (id + name on first chunk, arguments built up across subsequent
-        // chunks), so we coalesce by index before dispatching.
-        const toolCallAccum = new Map<number, MistralToolCallShape>();
-        const iterator = stream[Symbol.asyncIterator]();
-
-        while (true) {
-          const step = await withTimeout(
-            iterator.next(),
-            MISTRAL_STREAM_CHUNK_TIMEOUT_MS,
-            `mistral:stream-chunk (iter ${iteration})`,
-          );
-          if (step.done) break;
-          const event = step.value;
-          const data = event.data;
-          const choice = data?.choices?.[0];
-          if (!choice) continue;
-
-          const deltaContent = choice.delta?.content;
-          if (typeof deltaContent === 'string' && deltaContent.length > 0) {
-            fullContent += deltaContent;
-            // Layer-3 prompt-injection defense: catch a leak of the system
-            // prompt structural tags before it reaches the student. We
-            // surface a generic safety_block error and break out of the
-            // stream — same UX as a guardrail trip — rather than silently
-            // letting the leaked content render. High-severity log so
-            // monitoring catches the (rare) hit and we can audit prompts.
-            const leak = detectSystemPromptLeak(fullContent);
-            if (leak) {
-              logger.error('System prompt leak detected in stream output', {
-                _error: `Leaked marker: ${leak}`,
-                userId: params.userId,
-                sessionId: params.sessionId,
-                contentLength: fullContent.length,
-                operation: 'mistral-chat:prompt-leak',
-                severity: 'high' as const,
-              });
-              yield {
-                type: 'error' as const,
-                id: messageId,
-                model: this.model,
-                timestamp: Date.now(),
-                error: {
-                  message: "Je ne peux pas répondre à ce message. Reformule en restant sur ton travail scolaire.",
-                  code: 'safety_block',
-                },
-              };
-              return;
-            }
-            yield {
-              type: 'content' as const,
-              id: messageId,
-              model: this.model,
-              timestamp: Date.now(),
-              delta: deltaContent,
-              content: fullContent,
-              role: 'assistant' as const,
-            };
-          }
-
-          const deltaToolCalls = choice.delta?.toolCalls;
-          if (deltaToolCalls && deltaToolCalls.length > 0) {
-            for (let i = 0; i < deltaToolCalls.length; i += 1) {
-              const tc = deltaToolCalls[i];
-              if (!tc) continue;
-              const idx = i;
-              const rawArgs = tc.function?.arguments;
-              const argsStr =
-                typeof rawArgs === 'string' ? rawArgs : rawArgs ? JSON.stringify(rawArgs) : '';
-              const existing = toolCallAccum.get(idx);
-              if (existing) {
-                if (argsStr.length > 0) {
-                  existing.function.arguments += argsStr;
-                }
-              } else {
-                toolCallAccum.set(idx, {
-                  id: tc.id ?? `call_${Date.now()}_${idx}`,
-                  type: 'function',
-                  function: {
-                    name: tc.function?.name ?? '',
-                    arguments: argsStr,
-                  },
-                });
-              }
-            }
-          }
-
-          if (data?.usage) {
-            promptTokens = data.usage.promptTokens ?? promptTokens;
-            completionTokens = data.usage.completionTokens ?? completionTokens;
-          }
-        }
-
-        const pendingCalls = Array.from(toolCallAccum.values()).filter(
-          (tc) => tc.function.name.length > 0,
-        );
-
-        if (pendingCalls.length === 0) break;
-
-        toolCallsCount += pendingCalls.length;
-        for (const call of pendingCalls) {
-          if (!toolsUsed.includes(call.function.name)) {
-            toolsUsed.push(call.function.name);
-          }
-        }
-
-        logger.info('Agent tool calls', {
-          userId: params.userId,
-          sessionId: params.sessionId,
-          iteration,
-          toolNames: pendingCalls.map((c) => c.function.name),
-          operation: 'mistral-chat:tool-calls',
-        });
-
-        yield {
-          type: 'status' as const,
-          id: messageId,
-          model: this.model,
-          timestamp: Date.now(),
-          status: pendingCalls.map((c) => getToolStatusLabel(c.function.name)).join(' · '),
-        };
-
-        // Append the assistant turn that requested the tools, then dispatch.
-        messages.push({
-          role: 'assistant',
-          content: '',
-          toolCalls: pendingCalls,
-        });
-
-        const results = await Promise.all(
-          pendingCalls.map((call) => {
-            let parsedArgs: Record<string, unknown> = {};
-            try {
-              parsedArgs = JSON.parse(call.function.arguments) as Record<string, unknown>;
-            } catch (err) {
-              logger.warn('Tool call arguments parse failed', {
-                operation: 'mistral-chat:tool-args-parse',
-                toolName: call.function.name,
-                _error: err instanceof Error ? err.message : String(err),
-              });
-            }
-            return executeTool(call.function.name, parsedArgs, {
-              userId: params.userId,
-              schoolLevel: params.schoolLevel,
-              sessionId: params.sessionId,
-              userRole: params.userRole,
-            });
-          }),
-        );
-
-        for (const result of results) {
-          if (isDeckCreatedResult(result)) {
-            yield {
-              type: 'deck_created' as const,
-              id: messageId,
-              model: this.model,
-              timestamp: Date.now(),
-              deck: {
-                deckId: result.deckId,
-                title: result.deckTitle,
-                cardCount: result.cardCount,
-                subject: result.subject,
-              },
-            };
-          }
-        }
-
-        // Push tool results back into the conversation as `role: tool` messages
-        // tied to the originating call id.
-        for (let i = 0; i < pendingCalls.length; i += 1) {
-          const call = pendingCalls[i];
-          if (!call) continue;
-          messages.push({
-            role: 'tool',
-            name: call.function.name,
-            toolCallId: call.id,
-            content: JSON.stringify(results[i] ?? {}),
-          });
-        }
-
-        iteration += 1;
-      }
-
-      const totalTokens = promptTokens + completionTokens;
+      const totalTokens = outcome.promptTokens + outcome.completionTokens;
 
       yield {
         type: 'done' as const,
@@ -476,12 +225,16 @@ class MistralChatService {
         model: this.model,
         timestamp: Date.now(),
         finishReason: 'stop' as const,
-        usage: { promptTokens, completionTokens, totalTokens },
+        usage: {
+          promptTokens: outcome.promptTokens,
+          completionTokens: outcome.completionTokens,
+          totalTokens,
+        },
         metadata: {
           sessionId: params.sessionId,
-          usedRAG: toolsUsed.includes('search_educational_content'),
-          toolsUsed,
-          toolCallsCount,
+          usedRAG: outcome.toolsUsed.includes('search_educational_content'),
+          toolsUsed: outcome.toolsUsed,
+          toolCallsCount: outcome.toolCallsCount,
         },
       };
 
@@ -489,13 +242,13 @@ class MistralChatService {
         userId: params.userId,
         sessionId: params.sessionId,
         messageId,
-        contentLength: fullContent.length,
-        promptTokens,
-        completionTokens,
+        contentLength: outcome.fullContent.length,
+        promptTokens: outcome.promptTokens,
+        completionTokens: outcome.completionTokens,
         totalTokens,
-        toolCallsCount,
-        toolsUsed,
-        iterations: iteration,
+        toolCallsCount: outcome.toolCallsCount,
+        toolsUsed: outcome.toolsUsed,
+        iterations: outcome.iterations,
         durationMs: Date.now() - startTime,
         operation: 'mistral-chat:agent-complete',
       });
