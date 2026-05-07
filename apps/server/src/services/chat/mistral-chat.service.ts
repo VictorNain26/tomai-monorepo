@@ -243,6 +243,14 @@ class MistralChatService {
             temperature: appConfig.ai.mistral?.temperature ?? 0.7,
             maxTokens: appConfig.ai.mistral?.maxTokens ?? 16384,
             reasoningEffort,
+            // Force one tool call per turn. Mistral parallelises by default,
+            // which is fine for back-office pipelines but breaks the socratic
+            // discipline of the tutor: parallel calls produce a single fused
+            // assistant turn that mixes "search programs" + "create cards" +
+            // "update profile" without giving the student a chance to react
+            // between steps. Sequential keeps each act observable in the
+            // stream and lets the agent loop re-plan after each result.
+            parallelToolCalls: false,
             // Mistral's officially recommended moderation pattern. The
             // thresholds are tuned for a CP–Terminale audience: any sexual,
             // self-harm, violence, hate, dangerous, criminal, or PII signal
