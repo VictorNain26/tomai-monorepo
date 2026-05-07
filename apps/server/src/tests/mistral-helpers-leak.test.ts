@@ -108,15 +108,29 @@ describe('detectSystemPromptLeak()', () => {
       expect(detectSystemPromptLeak('Considérons <foobar> et </foobar>.')).toBeNull();
     });
 
-    it('returns null for tags NOT in the protected list (level_adaptation)', () => {
-      // Documents the current contract scope. If <level_adaptation> ever
-      // becomes part of the prompt template, both regex and test must be
-      // updated in the same PR.
-      expect(detectSystemPromptLeak('<level_adaptation>cm2</level_adaptation>')).toBeNull();
+    it('returns null for an unknown XML-like tag (foobar)', () => {
+      expect(detectSystemPromptLeak('Considérons <foobar> et </foobar>.')).toBeNull();
     });
 
-    it('returns null for tags NOT in the protected list (subject_specifics)', () => {
-      expect(detectSystemPromptLeak('<subject_specifics>math</subject_specifics>')).toBeNull();
+    it('returns null for unrelated XML (item, section)', () => {
+      expect(detectSystemPromptLeak('<item>a</item><section>b</section>')).toBeNull();
+    });
+  });
+
+  describe('covers all prompt-template markers', () => {
+    // If a new XML tag is introduced in apps/server/src/config/prompts/**,
+    // it MUST be added to the regex AND to this test in the same PR. Each
+    // case here pins the contract scope.
+    it('flags <level_adaptation> (emitted by adaptation/by-level.ts)', () => {
+      expect(detectSystemPromptLeak('<level_adaptation>cm2</level_adaptation>')).toBe(
+        '<level_adaptation>',
+      );
+    });
+
+    it('flags <subject_specifics> (emitted by adaptation/by-subject.ts)', () => {
+      expect(detectSystemPromptLeak('<subject_specifics>math</subject_specifics>')).toBe(
+        '<subject_specifics>',
+      );
     });
   });
 });

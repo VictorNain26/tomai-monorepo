@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { routeReasoningEffort } from '../lib/mistral-reasoning';
+import { routeReasoningEffort, routeCardReasoningEffort } from '../lib/mistral-reasoning';
 
 describe('routeReasoningEffort — chat turns', () => {
   describe('primary school never gets high reasoning', () => {
@@ -110,25 +110,18 @@ describe('routeReasoningEffort — chat turns', () => {
       expect(effort).toBe('none');
     });
 
-    it('CURRENT BEHAVIOR: returns "high" for quatrieme + mathematiques + intent undefined', () => {
-      // Documents a gap in the gate. The implementation reads:
-      //   if (intent && !HARD_INTENTS.has(intent)) return 'none';
-      // so an undefined intent skips the guard and falls through to 'high'.
-      // This is desired for the card-generation caller (which never sets
-      // intent), but it means a chat-turn caller that fails to classify
-      // intent (or simply omits it, as mistral-chat.service.ts currently
-      // does — see CCA review I3 finding) silently gets 'high' for every
-      // STEM collège+ turn, including a "bonjour".
-      //
-      // If the gate is later tightened to fail closed (return 'none' when
-      // intent is missing for chat turns), flip this assertion. Until then,
-      // it pins the current observable behavior.
+    it('returns "none" for quatrieme + mathematiques + intent undefined (fail-closed)', () => {
+      // Regression for bug C2: a missing/unclassified intent must NOT escalate.
+      // The chat path always provides an intent from the classifier; if for any
+      // reason it doesn't (classifier failure, classifier output 'unknown'),
+      // we want to default to the cheap mode rather than burn 3-5× latency on
+      // every STEM collège+ turn including a "bonjour".
       const effort = routeReasoningEffort({
         schoolLevel: 'quatrieme',
         subject: 'mathematiques',
         intent: undefined,
       });
-      expect(effort).toBe('high');
+      expect(effort).toBe('none');
     });
   });
 
@@ -172,15 +165,15 @@ describe('routeReasoningEffort — chat turns', () => {
   });
 });
 
-describe('routeReasoningEffort — card generation (intent omitted)', () => {
-  // The card generator calls routeReasoningEffort without `intent`. With no
-  // intent set, the gate "intent && !HARD_INTENTS.has(intent)" is bypassed,
-  // so STEM + collège-and-up returns 'high' as designed.
+describe('routeCardReasoningEffort — deck generation (no student intent)', () => {
+  // The card generator has no student "intent" to classify (the user just
+  // asked for a deck on a topic). This dedicated helper routes on
+  // STEM-subject + college+ only, distinct from the chat helper which
+  // requires a known hard intent.
 
   it('returns "none" for STEM + cinquieme (lower collège excluded from COLLEGE_AND_UP)', () => {
-    // cinquieme is collège but NOT in COLLEGE_AND_UP (the set starts at
-    // quatrieme: see lib/mistral-reasoning.ts). Documents that decision.
-    const effort = routeReasoningEffort({
+    // cinquieme is collège but NOT in COLLEGE_AND_UP (set starts at quatrieme).
+    const effort = routeCardReasoningEffort({
       schoolLevel: 'cinquieme',
       subject: 'mathematiques',
     });
@@ -188,7 +181,7 @@ describe('routeReasoningEffort — card generation (intent omitted)', () => {
   });
 
   it('returns "high" for STEM + quatrieme card generation', () => {
-    const effort = routeReasoningEffort({
+    const effort = routeCardReasoningEffort({
       schoolLevel: 'quatrieme',
       subject: 'mathematiques',
     });
@@ -196,7 +189,7 @@ describe('routeReasoningEffort — card generation (intent omitted)', () => {
   });
 
   it('returns "high" for STEM + terminale card generation', () => {
-    const effort = routeReasoningEffort({
+    const effort = routeCardReasoningEffort({
       schoolLevel: 'terminale',
       subject: 'physique-chimie',
     });
@@ -204,7 +197,7 @@ describe('routeReasoningEffort — card generation (intent omitted)', () => {
   });
 
   it('returns "none" for non-STEM + terminale card generation', () => {
-    const effort = routeReasoningEffort({
+    const effort = routeCardReasoningEffort({
       schoolLevel: 'terminale',
       subject: 'francais',
     });
@@ -212,7 +205,7 @@ describe('routeReasoningEffort — card generation (intent omitted)', () => {
   });
 
   it('returns "none" for STEM + primary card generation', () => {
-    const effort = routeReasoningEffort({
+    const effort = routeCardReasoningEffort({
       schoolLevel: 'cm2',
       subject: 'mathematiques',
     });
@@ -220,7 +213,7 @@ describe('routeReasoningEffort — card generation (intent omitted)', () => {
   });
 
   it('returns "none" when subject is undefined for card generation', () => {
-    const effort = routeReasoningEffort({
+    const effort = routeCardReasoningEffort({
       schoolLevel: 'terminale',
       subject: undefined,
     });
