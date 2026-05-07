@@ -302,7 +302,7 @@ class ChatOrchestrationService {
       mimeType?: string;
       fileSizeBytes?: number;
     }>;
-    classifiedIntent?: ClassifiedIntent;
+    classifiedIntent: ClassifiedIntent;
   }): Promise<void> {
     const { sessionId, userId, userContent, fullContent, chunk, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
     const tokensUsed = chunk.usage?.totalTokens ?? 0;

@@ -232,6 +232,7 @@ class MistralChatService {
       const reasoningEffort = routeReasoningEffort({
         schoolLevel: params.schoolLevel,
         subject: params.subject,
+        intent: params.classifiedIntent?.intent,
       });
 
       // HITL approval gate (CCA D1 §6c): when the classifier says the

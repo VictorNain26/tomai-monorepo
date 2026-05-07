@@ -44,7 +44,7 @@ export function wrapUserMessage(content: string): string {
  * over a reasonably small string — runs once per delta in the stream loop.
  */
 const SYSTEM_PROMPT_LEAK_PATTERN =
-  /<\/?(?:role|safety|rag_policy|pedagogy|student_message|student|past_sessions|critical_instruction|transparency|tone)>/i;
+  /<\/?(?:role|safety|rag_policy|pedagogy|student_message|student|past_sessions|critical_instruction|transparency|tone|level_adaptation|subject_specifics)>/i;
 
 export function detectSystemPromptLeak(content: string): string | null {
   const m = content.match(SYSTEM_PROMPT_LEAK_PATTERN);

@@ -41,12 +41,14 @@
   "minor": {
     "automerge": true,
     "automergeType": "pr",
-    "automergeStrategy": "merge-commit"
+    "automergeStrategy": "merge-commit",
+    "minimumReleaseAge": "3 days"
   },
   "patch": {
     "automerge": true,
     "automergeType": "pr",
-    "automergeStrategy": "merge-commit"
+    "automergeStrategy": "merge-commit",
+    "minimumReleaseAge": "3 days"
   },
   "lockFileMaintenance": {
     "enabled": true,
@@ -74,12 +76,13 @@
       "enabled": false
     },
     {
-      "description": "Auto-merge minor + patch on staging once CI is green.",
+      "description": "Auto-merge minor + patch on staging once CI is green. 3-day minimumReleaseAge gives the community time to flag a freshly-published bug or supply-chain compromise (cf. node-ipc, polyfill.io incidents) before we automerge to staging.",
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true,
       "automergeType": "pr",
       "automergeStrategy": "merge-commit",
-      "platformAutomerge": true
+      "platformAutomerge": true,
+      "minimumReleaseAge": "3 days"
     },
     {
       "description": "Majors always need a human reviewer.",

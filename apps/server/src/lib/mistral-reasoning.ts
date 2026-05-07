@@ -60,15 +60,34 @@ export interface ReasoningRouteParams {
 /**
  * Decide whether the next chat turn warrants `reasoning_effort: "high"`.
  *
- * The rule: STEM subject AND college level or higher AND a student intent
- * that signals real problem-solving. Any axis missing → "none". Keeps
- * primary-school turns fast and reserves the expensive mode for the cases
- * where a structured chain-of-thought actually changes the answer.
+ * Rule: STEM subject AND college+ level AND a *known* hard student intent
+ * (solve / check / explain). All three axes must be present; missing any
+ * one falls back to "none". Critically, intent missing or "unknown" also
+ * falls back — we only escalate when the classifier explicitly signalled
+ * problem-solving, otherwise every "bonjour" in 4ᵉ math would trigger the
+ * 3–5× latency mode.
  */
 export function routeReasoningEffort(params: ReasoningRouteParams): ReasoningEffort {
   const { schoolLevel, subject, intent } = params;
   if (!COLLEGE_AND_UP.has(schoolLevel)) return 'none';
   if (!subject || !STEM_SUBJECTS.has(subject)) return 'none';
-  if (intent && !HARD_INTENTS.has(intent)) return 'none';
+  if (!intent || !HARD_INTENTS.has(intent)) return 'none';
+  return 'high';
+}
+
+/**
+ * Reasoning routing for card-generation calls — distinct from chat because
+ * there is no "student intent" to classify (the user asked for a deck on a
+ * specific topic). Use STEM-subject + college-level only: a Terminale
+ * physique deck warrants the chain-of-thought for coherent distractors,
+ * a CE1 français deck does not.
+ */
+export function routeCardReasoningEffort(params: {
+  schoolLevel: EducationLevelType;
+  subject?: string;
+}): ReasoningEffort {
+  const { schoolLevel, subject } = params;
+  if (!COLLEGE_AND_UP.has(schoolLevel)) return 'none';
+  if (!subject || !STEM_SUBJECTS.has(subject)) return 'none';
   return 'high';
 }

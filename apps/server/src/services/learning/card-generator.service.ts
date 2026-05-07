@@ -19,7 +19,7 @@
  */
 
 import { getMistralClient } from '../../lib/mistral-client.js';
-import { routeReasoningEffort } from '../../lib/mistral-reasoning.js';
+import { routeCardReasoningEffort } from '../../lib/mistral-reasoning.js';
 import { CardGenerationOutputSchema } from '../../lib/ai/index.js';
 import {
   getSubjectInstructions,
@@ -178,7 +178,8 @@ export async function generateCards(
     // Card generation for STEM subjects in collège/lycée benefits from
     // chain-of-thought (coherent QCM distractors, formula correctness).
     // Primary school + non-STEM stay on 'none' for snappier deck creation.
-    const reasoningEffort = routeReasoningEffort({
+    // Uses the card-specific router (no student intent to classify here).
+    const reasoningEffort = routeCardReasoningEffort({
       schoolLevel: params.level,
       subject: params.subject,
     });
