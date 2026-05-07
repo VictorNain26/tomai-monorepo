@@ -14,6 +14,7 @@
     "build:server": "turbo run build --filter=tomai-server",
     "build:mobile": "turbo run build --filter=tom-mobile",
     "lint": "turbo run lint",
+    "lint:renovate": "npx -y --package=renovate -- renovate-config-validator --strict .github/renovate.json",
     "typecheck": "turbo run typecheck",
     "validate": "pnpm run typecheck && pnpm run lint",
     "test": "turbo run test",

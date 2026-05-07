@@ -1,0 +1,208 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(deps)",
+    ":dependencyDashboard",
+    ":maintainLockFilesMonthly",
+    "group:monorepos",
+    "group:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "Europe/Paris",
+  "schedule": ["before 9am on monday"],
+  "baseBranchPatterns": ["staging"],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "rebaseWhen": "conflicted",
+  "prHourlyLimit": 4,
+  "prConcurrentLimit": 8,
+  "branchConcurrentLimit": 8,
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.next/**",
+    "**/.expo/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/.turbo/**"
+  ],
+  "ignoreDeps": [],
+  "major": {
+    "dependencyDashboardApproval": true,
+    "automerge": false,
+    "labels": ["dependencies", "major"],
+    "commitMessagePrefix": "chore(deps)!",
+    "prBodyNotes": [
+      ":warning: **Major upgrade — human review required.** Renovate has linked release notes and migration guides above when available. Verify breaking changes locally before merging."
+    ]
+  },
+  "minor": {
+    "automerge": true,
+    "automergeType": "pr",
+    "automergeStrategy": "merge-commit"
+  },
+  "patch": {
+    "automerge": true,
+    "automergeType": "pr",
+    "automergeStrategy": "merge-commit"
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 9am on the first day of the month"],
+    "automerge": true,
+    "automergeType": "pr",
+    "automergeStrategy": "merge-commit",
+    "commitMessageAction": "Refresh",
+    "commitMessageTopic": "pnpm-lock.yaml"
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "labels": ["dependencies", "security"],
+    "prCreation": "immediate",
+    "automerge": false,
+    "minimumReleaseAge": null,
+    "commitMessagePrefix": "fix(security)"
+  },
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Workspace internal packages have no external version — never update.",
+      "matchPackageNames": ["@repo/**"],
+      "enabled": false
+    },
+    {
+      "description": "Auto-merge minor + patch on staging once CI is green.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "merge-commit",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Majors always need a human reviewer.",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "dependencyDashboardApproval": true,
+      "addLabels": ["major"],
+      "prBodyColumns": ["Package", "Type", "Update", "Change", "Pending", "References"]
+    },
+    {
+      "description": "Group all Expo packages together.",
+      "matchPackageNames": ["expo", "expo-**", "@expo/**", "babel-preset-expo", "jest-expo"],
+      "groupName": "expo",
+      "commitMessageTopic": "Expo packages"
+    },
+    {
+      "description": "Group React Navigation packages together.",
+      "matchPackageNames": ["@react-navigation/**"],
+      "groupName": "react-navigation"
+    },
+    {
+      "description": "Group React Native core + community shims together.",
+      "matchPackageNames": [
+        "react-native",
+        "react-native-**",
+        "@react-native-async-storage/**",
+        "@react-native-community/**",
+        "@react-native-google-signin/**"
+      ],
+      "groupName": "react-native"
+    },
+    {
+      "description": "Group RN Reusables primitives.",
+      "matchPackageNames": ["@rn-primitives/**"],
+      "groupName": "rn-primitives"
+    },
+    {
+      "description": "Group AWS SDK v3 packages together (one bump cycle covers all).",
+      "matchPackageNames": ["@aws-sdk/**"],
+      "groupName": "aws-sdk"
+    },
+    {
+      "description": "Group TanStack Query packages.",
+      "matchPackageNames": ["@tanstack/**"],
+      "groupName": "tanstack"
+    },
+    {
+      "description": "Group Better Auth packages.",
+      "matchPackageNames": ["better-auth", "@better-auth/**"],
+      "groupName": "better-auth"
+    },
+    {
+      "description": "Group Drizzle ORM toolchain.",
+      "matchPackageNames": ["drizzle-orm", "drizzle-kit"],
+      "groupName": "drizzle"
+    },
+    {
+      "description": "Group Elysia + plugins.",
+      "matchPackageNames": ["elysia", "@elysiajs/**"],
+      "groupName": "elysia"
+    },
+    {
+      "description": "Group TypeScript-ESLint toolchain.",
+      "matchPackageNames": ["@typescript-eslint/**", "eslint", "@eslint/**"],
+      "groupName": "eslint"
+    },
+    {
+      "description": "Group Radix UI primitives (landing).",
+      "matchPackageNames": ["@radix-ui/**"],
+      "groupName": "radix-ui"
+    },
+    {
+      "description": "Group Tailwind toolchain.",
+      "matchPackageNames": ["tailwindcss", "tailwind-merge", "@tailwindcss/**"],
+      "groupName": "tailwind"
+    },
+    {
+      "description": "Group all DefinitelyTyped @types/* packages — devDeps only, low risk.",
+      "matchPackageNames": ["@types/**"],
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "types",
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "merge-commit"
+    },
+    {
+      "description": "Mistral SDK is critical (souverainete EU). Isolate so bumps stay reviewable.",
+      "matchPackageNames": ["@mistralai/mistralai"],
+      "groupName": "mistral",
+      "commitMessageTopic": "Mistral SDK",
+      "labels": ["dependencies", "ai-stack"],
+      "reviewers": ["VictorNain26"]
+    },
+    {
+      "description": "RevenueCat SDK touches billing — never auto-merge majors and tag billing label.",
+      "matchPackageNames": ["react-native-purchases", "@revenuecat/**"],
+      "groupName": "revenuecat",
+      "labels": ["dependencies", "billing"],
+      "reviewers": ["VictorNain26"]
+    },
+    {
+      "description": "Qdrant client is the RAG vector store — isolate for visibility.",
+      "matchPackageNames": ["@qdrant/**"],
+      "groupName": "qdrant",
+      "labels": ["dependencies", "rag"]
+    },
+    {
+      "description": "GitHub Actions: pin to digest, group together.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "pinDigests": true,
+      "commitMessagePrefix": "chore(ci)"
+    },
+    {
+      "description": "Docker base images for the server.",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "groupName": "docker",
+      "commitMessagePrefix": "chore(docker)"
+    },
+    {
+      "description": "Pin React + React DOM together (catalog-managed) and never auto-merge majors.",
+      "matchPackageNames": ["react", "react-dom"],
+      "groupName": "react"
+    }
+  ]
+}
