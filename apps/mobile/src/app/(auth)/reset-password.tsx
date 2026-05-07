@@ -5,7 +5,7 @@
  * Can be accessed via deep link: tomia://auth/reset-password?token=xxx
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { Lock, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react-native';
@@ -28,14 +28,9 @@ export default function ResetPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const colors = useThemeColors();
-  const [tokenValid, setTokenValid] = useState(true);
   const [resetSuccess, setResetSuccess] = useState(false);
-
-  useEffect(() => {
-    if (!token) {
-      setTokenValid(false);
-    }
-  }, [token]);
+  // Derived from URL param — no need for state + effect (react-hooks/set-state-in-effect).
+  const tokenValid = Boolean(token);
 
   function validatePassword(value: string): string | null {
     if (!value) return 'Mot de passe requis';
