@@ -103,6 +103,10 @@ class IntentClassifierService {
           messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
           temperature: 0,
           maxTokens: 80,
+          // No thinking chunk on a 80-token classification — reasoning_effort
+          // 'none' is explicit so latency stays in the 1–2s range even if
+          // the model defaults change in a future Mistral release.
+          reasoningEffort: 'none',
           // json_schema strict: Mistral guarantees the response matches the
           // schema bit-for-bit (CCA D4 §4 retry-with-feedback prerequisite).
           // Eliminates malformed-JSON retries seen with json_object mode.

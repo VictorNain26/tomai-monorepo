@@ -135,6 +135,8 @@ class EpisodicMemoryService {
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.2,
           maxTokens: 1200,
+          // Pure extractive summarization — no reasoning required.
+          reasoningEffort: 'none',
           responseFormat: {
             type: 'json_schema',
             jsonSchema: {

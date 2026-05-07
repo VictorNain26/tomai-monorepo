@@ -14,6 +14,7 @@ import type { Mistral } from '@mistralai/mistralai';
 import { appConfig } from '../../config/app.config.js';
 import { getMistralClient } from '../../lib/mistral-client.js';
 import { studentChatGuardrails } from '../../lib/mistral-guardrails.js';
+import { routeReasoningEffort } from '../../lib/mistral-reasoning.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import {
@@ -222,6 +223,16 @@ class MistralChatService {
       let toolCallsCount = 0;
       let iteration = 0;
 
+      // Decide once at turn start: a turn that asks the tutor to actually
+      // reason about a STEM problem in collège/lycée gets the heavier
+      // thinking mode; everything else stays on `none` for conversational
+      // latency. Recomputed per-turn (not per-iteration) since the routing
+      // criteria don't change inside a single agent loop.
+      const reasoningEffort = routeReasoningEffort({
+        schoolLevel: params.schoolLevel,
+        subject: params.subject,
+      });
+
       while (iteration < MAX_TOOL_ITERATIONS) {
         const stream = await withTimeout(
           this.client.chat.stream({
@@ -231,6 +242,7 @@ class MistralChatService {
             toolChoice: 'auto',
             temperature: appConfig.ai.mistral?.temperature ?? 0.7,
             maxTokens: appConfig.ai.mistral?.maxTokens ?? 16384,
+            reasoningEffort,
             // Mistral's officially recommended moderation pattern. The
             // thresholds are tuned for a CP–Terminale audience: any sexual,
             // self-harm, violence, hate, dangerous, criminal, or PII signal

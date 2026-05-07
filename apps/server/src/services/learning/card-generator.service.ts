@@ -1,19 +1,12 @@
 /**
- * Card Generator Service - Architecture Simplifiée 2025
+ * Card Generator Service — Mistral Small 4
  *
- * Génération de cartes en UN SEUL appel Gemini avec schema simplifié.
- *
- * Architecture Evidence-Based (Google recommandé):
- * - Schema simplifié (cardType enum + content object) → respecte limite 4 niveaux
- * - Prompt détaillé guide la structure de chaque type
- * - Validation Zod stricte après parsing (discriminatedUnion)
- *
- * @see https://ai.google.dev/gemini-api/docs/structured-output
- * @see https://discuss.ai.google.dev/t/maximum-tool-nesting-depth-update-this-morning/104341
+ * Génération de cartes en UN SEUL appel Mistral avec response_format json_object.
+ * Le prompt guide la structure attendue, Zod valide en sortie.
  *
  * ## Fondements Scientifiques
  *
- * ### CSEN (Conseil Scientifique de l'Éducation Nationale) - SOURCES OFFICIELLES
+ * ### CSEN (Conseil Scientifique de l'Éducation Nationale) — SOURCES OFFICIELLES
  * Les 4 piliers de l'apprentissage de Stanislas Dehaene (président CSEN) :
  * 1. Attention - Focalisation sur une notion par carte
  * 2. Engagement actif - Testing effect / récupération en mémoire
@@ -23,11 +16,10 @@
  * Sources :
  * - Dehaene, S. (2018). Apprendre ! Les talents du cerveau, le défi des machines.
  * - CSEN / Académie Paris: https://pia.ac-paris.fr/portail/jcms/p1_3354981
- *
- * @see prompts/pedagogy.ts pour documentation détaillée des sources
  */
 
-import { getGeminiClient } from '../../lib/gemini-client.js';
+import { getMistralClient } from '../../lib/mistral-client.js';
+import { routeReasoningEffort } from '../../lib/mistral-reasoning.js';
 import { CardGenerationOutputSchema } from '../../lib/ai/index.js';
 import {
   getSubjectInstructions,
@@ -37,7 +29,7 @@ import {
   getCycleAdaptationInstructions,
   getPedagogyPromptBlock,
   getTemplatesForTypes,
-  KATEX_INSTRUCTIONS
+  KATEX_INSTRUCTIONS,
 } from './prompts/index.js';
 import { logger } from '../../lib/observability.js';
 import { withRetry } from '../../lib/retry.js';
@@ -64,59 +56,18 @@ export interface CardGenerationError {
 }
 
 // ============================================================================
-// GEMINI CLIENT — shared singleton for DI-friendly tests
+// MISTRAL CLIENT — shared singleton for DI-friendly tests
 // ============================================================================
 
-export const CARD_GENERATOR_PROMPT_VERSION = '2026-04-21';
+export const CARD_GENERATOR_PROMPT_VERSION = '2026-05-06';
 
-function genai() {
-  return getGeminiClient();
+function client() {
+  return getMistralClient();
 }
 
-// ============================================================================
-// JSON SCHEMA SIMPLIFIÉ - Respecte limite 4 niveaux Gemini
-// ============================================================================
-
-/**
- * Schema minimal pour Gemini - Architecture Evidence-Based
- *
- * Problème: discriminatedUnion avec 15 types + nested objects dépasse
- * la limite de nesting (4 niveaux) de Gemini → INVALID_ARGUMENT
- *
- * Solution Google recommandée:
- * "Simplify your schema by reducing nesting, rely on prompt to guide structure"
- * @see https://ai.google.dev/gemini-api/docs/structured-output
- * @see https://discuss.ai.google.dev/t/maximum-tool-nesting-depth-update-this-morning/104341
- *
- * Architecture:
- * - Phase 1: Schema simple (cardType enum + content object non typé)
- * - Phase 2: Validation Zod stricte après parsing (discriminatedUnion)
- *
- * Niveaux: cards[] → {cardType, content} → content fields = 3 niveaux ✅
- */
-const simplifiedCardSchema = {
-  type: 'array',
-  items: {
-    type: 'object',
-    properties: {
-      cardType: {
-        type: 'string',
-        enum: [
-          'concept', 'flashcard', 'qcm', 'vrai_faux',
-          'matching', 'fill_blank', 'word_order',
-          'calculation', 'timeline', 'matching_era', 'cause_effect',
-          'classification', 'process_order', 'grammar_transform', 'reformulation'
-        ],
-        description: 'Type de carte (snake_case obligatoire)'
-      },
-      content: {
-        type: 'object',
-        description: 'Contenu de la carte selon le type (voir prompt pour structure)'
-      }
-    },
-    required: ['cardType', 'content']
-  }
-} as const;
+function modelId(): string {
+  return appConfig.ai.mistral?.chatModel ?? 'mistral-small-latest';
+}
 
 // ============================================================================
 // PROMPT BUILDER
@@ -126,7 +77,7 @@ const simplifiedCardSchema = {
  * Construit le prompt optimisé pour la génération de cartes
  * Architecture modulaire utilisant les fichiers prompts/*.ts
  *
- * Tokens estimés: ~1000-1200 (optimisé pour quotas Gemini)
+ * Tokens estimés: ~1000-1200 (optimisé pour quotas Mistral)
  */
 function buildPrompt(params: CardGenerationParams): string {
   const { topic, subject, level, cardCount, ragContext, domaine } = params;
@@ -211,7 +162,7 @@ export async function generateCards(
   params: CardGenerationParams
 ): Promise<CardGenerationResult | CardGenerationError> {
   const startTime = Date.now();
-  const provider = 'Google Gemini';
+  const provider = 'Mistral AI';
 
   try {
     logger.info('Starting card generation', {
@@ -219,38 +170,43 @@ export async function generateCards(
       topic: params.topic,
       subject: params.subject,
       level: params.level,
-      requestedCards: params.cardCount
+      requestedCards: params.cardCount,
     });
 
     const prompt = buildPrompt(params);
 
+    // Card generation for STEM subjects in collège/lycée benefits from
+    // chain-of-thought (coherent QCM distractors, formula correctness).
+    // Primary school + non-STEM stay on 'none' for snappier deck creation.
+    const reasoningEffort = routeReasoningEffort({
+      schoolLevel: params.level,
+      subject: params.subject,
+    });
+
     const { text, tokensUsed } = await withRetry(
       async () => {
-        const response = await genai().models.generateContent({
-          model: appConfig.ai.gemini.model,
-          contents: prompt,
-          config: {
-            // Schema simplifié pour respecter limite 4 niveaux Gemini
-            // Le prompt guide la structure, Zod valide après parsing
-            responseMimeType: 'application/json',
-            responseJsonSchema: simplifiedCardSchema,
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95
-          }
+        const response = await client().chat.complete({
+          model: modelId(),
+          messages: [{ role: 'user', content: prompt }],
+          responseFormat: { type: 'json_object' },
+          temperature: 0.7,
+          topP: 0.95,
+          reasoningEffort,
         });
 
+        const raw = response.choices?.[0]?.message?.content;
+        const text = typeof raw === 'string' ? raw : '';
         return {
-          text: response.text ?? '',
-          tokensUsed: response.usageMetadata?.totalTokenCount ?? 0
+          text,
+          tokensUsed: response.usage?.totalTokens ?? 0,
         };
       },
       {
         operationName: 'card-generation',
         maxAttempts: 3,
         initialDelayMs: 1000,
-        nonRetryableErrors: ['INVALID_']
-      }
+        nonRetryableErrors: ['INVALID_'],
+      },
     );
 
     // Parse JSON
