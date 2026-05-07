@@ -51,9 +51,9 @@ export class ChatMessageService {
       }
 
       return sessionMessages;
-    } catch (_error) {
-      logger.error('Error getting session history', { operation: 'chat:history:get', _error: _error instanceof Error ? _error.message : String(_error), sessionId, severity: 'medium' as const });
-      throw new Error('Failed to get session history');
+    } catch (error) {
+      logger.error('Error getting session history', { operation: 'chat:history:get', _error: error instanceof Error ? error.message : String(error), sessionId, severity: 'medium' as const });
+      throw new Error('Failed to get session history', { cause: error });
     }
   }
 
@@ -70,7 +70,7 @@ export class ChatMessageService {
       attachedFile?: {
         fileName: string;
         fileId?: string;
-        geminiFileId?: string;
+        fileUrl?: string;
         mimeType?: string;
         fileSizeBytes?: number;
       };
@@ -80,7 +80,7 @@ export class ChatMessageService {
       attachedFiles?: Array<{
         fileName: string;
         fileId?: string;
-        geminiFileId?: string;
+        fileUrl?: string;
         mimeType?: string;
         fileSizeBytes?: number;
       }>;
@@ -150,9 +150,9 @@ export class ChatMessageService {
       });
 
       return { messageId: message.id, realSessionId: validSessionId };
-    } catch (_error) {
-      logger.error('Error saving message', { operation: 'chat:message:save', _error: _error instanceof Error ? _error.message : String(_error), sessionId, role, severity: 'high' as const });
-      throw new Error('Failed to save message');
+    } catch (error) {
+      logger.error('Error saving message', { operation: 'chat:message:save', _error: error instanceof Error ? error.message : String(error), sessionId, role, severity: 'high' as const });
+      throw new Error('Failed to save message', { cause: error });
     }
   }
 
@@ -200,12 +200,12 @@ export class ChatMessageService {
           typeof message.attachedFile === 'object' &&
           'fileName' in message.attachedFile &&
           message.attachedFile.fileName
-            ? message.attachedFile as { fileName: string; fileId?: string; geminiFileId?: string; mimeType?: string; fileSizeBytes?: number; }
+            ? message.attachedFile as { fileName: string; fileId?: string; fileUrl?: string; mimeType?: string; fileSizeBytes?: number; }
             : null
       };
-    } catch (_error) {
-      logger.error('Error getting message by ID', { operation: 'chat:message:get', _error: _error instanceof Error ? _error.message : String(_error), messageId, userId, severity: 'medium' as const });
-      throw new Error('Failed to get message');
+    } catch (error) {
+      logger.error('Error getting message by ID', { operation: 'chat:message:get', _error: error instanceof Error ? error.message : String(error), messageId, userId, severity: 'medium' as const });
+      throw new Error('Failed to get message', { cause: error });
     }
   }
 

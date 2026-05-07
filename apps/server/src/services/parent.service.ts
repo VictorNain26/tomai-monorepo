@@ -44,14 +44,14 @@ export class ParentService {
         operation: 'parent:getChildren'
       });
       return result;
-    } catch (_error) {
+    } catch (error) {
       logger.error('Failed to get parent children', {
-        _error: _error instanceof Error ? _error.message : String(_error),
+        _error: error instanceof Error ? error.message : String(error),
         parentId,
         operation: 'parent:getChildren',
         severity: 'high' as const
       });
-      throw new Error('Failed to get parent children');
+      throw new Error('Failed to get parent children', { cause: error });
     }
   }
 
@@ -213,9 +213,9 @@ export class ParentService {
         logger.error('CRITICAL: Child still exists after deletion', { operation: 'parent:child:delete:verify', _error: 'Child persists after delete query', childId, parentId, severity: 'critical' as const });
         throw new Error('Deletion failed: User still exists in database');
       }
-    } catch (_error) {
-      logger.error('Error deleting child', { operation: 'parent:child:delete', _error: _error instanceof Error ? _error.message : String(_error), parentId, childId, severity: 'high' as const });
-      throw new Error('Failed to delete child');
+    } catch (error) {
+      logger.error('Error deleting child', { operation: 'parent:child:delete', _error: error instanceof Error ? error.message : String(error), parentId, childId, severity: 'high' as const });
+      throw new Error('Failed to delete child', { cause: error });
     }
   }
 

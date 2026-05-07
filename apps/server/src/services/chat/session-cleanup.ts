@@ -66,13 +66,13 @@ export async function deleteSessionCascade(sessionId: string, userId?: string): 
       sessionId: validSessionId,
       filesDeleted: fileIds.length,
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error('Error deleting session', {
       operation: 'chat:session:delete',
-      _error: _error instanceof Error ? _error.message : String(_error),
+      _error: error instanceof Error ? error.message : String(error),
       sessionId,
       severity: 'medium' as const,
     });
-    throw new Error('Failed to delete session');
+    throw new Error('Failed to delete session', { cause: error });
   }
 }
