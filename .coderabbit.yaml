@@ -1,15 +1,94 @@
 # .coderabbit.yaml
+# Configuration optimisée mai 2026 — first-pass automatique pour Tom.
+# Profil "chill" pour réduire le nitpick stylistique ; les bugs réels et la
+# sécurité (public mineur) restent prioritaires via path_instructions.
+# Couplé avec /ultrareview manuel sur les PRs critiques (auth, billing,
+# données mineurs) et Claude Code /review en local avant push.
 language: fr
+
 reviews:
-  profile: assertive
+  profile: chill
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+
   auto_review:
+    enabled: true
+    drafts: false
     base_branches:
       - main
       - staging
+    # Renovate / Dependabot PRs sont déjà filtrées par leur propre processus
+    # (3-day stability window + lockfile only) ; pas besoin du first-pass IA.
+    # Idem pour les commits "chore(deps)" et les WIP/draft titles.
+    ignore_title_keywords:
+      - "WIP"
+      - "DRAFT"
+      - "chore(deps)"
+      - "[skip review]"
+
+  path_filters:
+    - "!**/pnpm-lock.yaml"
+    - "!**/package-lock.json"
+    - "!**/yarn.lock"
+    - "!**/dist/**"
+    - "!**/.next/**"
+    - "!**/.expo/**"
+    - "!**/build/**"
+    - "!**/coverage/**"
+    - "!**/.turbo/**"
+    - "!apps/server/drizzle/*.sql"
+    - "!apps/server/drizzle/meta/**"
+    - "!**/*.snap"
+    - "!**/__snapshots__/**"
+
   path_instructions:
     - path: "apps/server/**"
-      instructions: "TypeScript strict, Elysia.js patterns, Drizzle ORM, never any"
+      instructions: |
+        TypeScript strict (no any, noUncheckedIndexedAccess), 400-line cap per file.
+        Stack: Bun + Elysia.js + Drizzle ORM + Mistral SDK v2.
+        Public mineur: signaler tout path qui touche au chat/document/voxtral
+        et qui contournerait les Mistral guardrails (lib/mistral-guardrails.ts)
+        ou le HITL gate (mistral-chat.service.ts on solve-this-for-me intent).
+        Erreurs des outils via StructuredToolError (tool-errors.ts), jamais le
+        legacy {error: true, message}. Toute capture d'erreur qui re-throw
+        doit propager { cause: error } (ESLint preserve-caught-error).
     - path: "apps/mobile/**"
-      instructions: "Expo SDK 55, NativeWind, React Native Reusables only"
+      instructions: |
+        Expo SDK 55 + React Native 0.83 + React 19.2.
+        UI uniquement via React Native Reusables (@/components/ui/), jamais de
+        StyleSheet custom si NativeWind suffit. Pas de StyleSheet sauf cas
+        documenté. WCAG 2.1 AA obligatoire (EAA juin 2025): accessibilityLabel,
+        accessibilityRole, contrast 4.5:1, targets >= 44x44pt. Subscriptions
+        externes via useSyncExternalStore (cf. useSubscription, useTextToSpeech).
     - path: "apps/landing/**"
-      instructions: "Next.js 16, shadcn/ui only, no custom CSS"
+      instructions: |
+        Next.js 16, shadcn/ui exclusif, TailwindCSS 4 only, jamais de CSS custom.
+        Pas de "use client" gratuit; rester server-component par défaut.
+    - path: "**/*.test.{ts,tsx}"
+      instructions: |
+        Tests safety-critical (mistral-guardrails, mistral-reasoning, leak
+        detector, tool-executor) doivent rester verts à 100%. Si un changement
+        casse un test existant sans bug fix derriere, signaler.
+    - path: ".github/**"
+      instructions: |
+        Workflows: jamais bypasser hooks (--no-verify, --no-gpg-sign).
+        Renovate config: automerge minor/patch uniquement, jamais major.
+        Constitution Tom: pas de push direct sur main, jamais de squash merge.
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: auto
+  issues:
+    scope: auto
+
+# Notes:
+# - "chill" reduces stylistic nitpicks. Real bugs / security still surface.
+# - poem disabled saves ~10 lines per review summary.
+# - drafts: false avoids burning quota on unfinished work.
+# - path_filters excludes generated/lock files where review adds zero value.
