@@ -1,19 +1,19 @@
 /**
- * ChatOrchestrationService - Pipeline complet du chat streaming
+ * ChatOrchestrationService — Pipeline complet du chat streaming.
  *
- * Responsabilites:
+ * Responsabilités :
  * 1. Assembler le contexte (fichiers, profil cognitif, learning)
- * 2. Gerer la session + historique
- * 3. Persister les messages (user avant stream, assistant apres)
- * 4. Orchestrer le streaming Gemini
+ * 2. Gérer la session + historique
+ * 3. Persister les messages (user avant stream, assistant après)
+ * 4. Orchestrer le streaming Mistral
  * 5. Post-processing (tokens, summarization)
  */
 
 import { chatService } from '../chat.service.js';
 import { sessionFilesRepository } from '../../db/repositories/index.js';
 import { fileContextService } from './file-context.service.js';
-import { geminiChatService } from './gemini-chat.service.js';
-import { getLearningContext } from './gemini-helpers.js';
+import { mistralChatService } from './mistral-chat.service.js';
+import { getLearningContext } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { intentClassifierService, type ClassifiedIntent } from './intent-classifier.service.js';
@@ -21,10 +21,11 @@ import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { costTrackingService } from '../cost-tracking.service.js';
 import { episodicMemoryService } from '../episodic-memory.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
+import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 import { appConfig } from '../../config/app.config.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { GeminiStreamChunk, PronoteContext } from './gemini-types.js';
+import type { ChatStreamChunk, PronoteContext } from './mistral-types.js';
 
 export interface ChatStreamRequest {
   userId: string;
@@ -45,18 +46,16 @@ interface SessionContext {
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
-    attachedFile: { geminiFileId: string; mimeType?: string } | null;
+    attachedFile: { fileUrl?: string; mimeType?: string } | null;
   }>;
 }
-
-const MAX_ENRICHED_CONTENT_CHARS = 50_000;
 
 class ChatOrchestrationService {
   /**
    * Pipeline principal : assemble le contexte, persiste, stream, post-process.
-   * Retourne un AsyncGenerator de GeminiStreamChunk.
+   * Retourne un AsyncGenerator de ChatStreamChunk.
    */
-  async *orchestrateStream(request: ChatStreamRequest): AsyncGenerator<GeminiStreamChunk> {
+  async *orchestrateStream(request: ChatStreamRequest): AsyncGenerator<ChatStreamChunk> {
     const startTime = Date.now();
 
     // Phase 1: Session
@@ -103,9 +102,20 @@ class ChatOrchestrationService {
     const attachedFileInfo = attachedFileInfos[0] ?? null;
     const hasMultipleFiles = attachedFileInfos.length > 1;
 
-    const enrichedContent = rawEnrichedContent.length > MAX_ENRICHED_CONTENT_CHARS
-      ? rawEnrichedContent.slice(0, MAX_ENRICHED_CONTENT_CHARS) + '\n\n[Contenu tronqué]'
-      : rawEnrichedContent;
+    // Truncate the enriched content (RAG context + file extracts + user
+    // message) to the RAG slice of the shared token budget, instead of the
+    // previous hard 50_000-char cap. Keeps the full input within model
+    // limits when files are large, and stays consistent with the budget
+    // already applied to the conversation history in the optimizer.
+    const budget = calculateBudget();
+    const ragMaxTokens = budget.ragMaxTokens + budget.currentMessageMaxTokens;
+    const { text: truncatedContent, wasTruncated } = truncateToTokenBudget(
+      rawEnrichedContent,
+      ragMaxTokens,
+    );
+    const enrichedContent = wasTruncated
+      ? truncatedContent + '\n\n[Contenu tronqué]'
+      : truncatedContent;
 
     logger.info('Chat context assembled', {
       userId: request.userId,
@@ -146,13 +156,13 @@ class ChatOrchestrationService {
     yield {
       type: 'status' as const,
       id: `ack_${Date.now()}`,
-      model: appConfig.ai.gemini.model,
+      model: appConfig.ai.mistral?.chatModel ?? 'mistral-small-latest',
       timestamp: Date.now(),
       status: 'Tom réfléchit…',
     };
 
-    // Phase 5: Stream from Gemini
-    // Merge episodic context into learning context so geminiChatService
+    // Phase 5: Stream from Mistral
+    // Merge episodic context into learning context so mistralChatService
     // only has one "prior knowledge" section to reason about. Learning
     // context (FSRS due cards) + episodes (past sessions) are complementary
     // pedagogical memory signals.
@@ -160,7 +170,10 @@ class ChatOrchestrationService {
       .filter((x): x is string => Boolean(x))
       .join('\n\n') || null;
 
-    const streamGenerator = geminiChatService.generateStreamChunks({
+    // Multimodal mapping: Mistral expects a public image URL (preferred,
+    // smaller payload, fetched directly) or a data URI fallback when no public
+    // URL is available. `prepareMultimodalFiles` resolves both variants.
+    const streamGenerator = mistralChatService.generateStreamChunks({
       userId: request.userId,
       content: enrichedContent,
       schoolLevel: request.schoolLevel,
@@ -173,8 +186,7 @@ class ChatOrchestrationService {
       conversationSummary: sessionCtx.conversationSummary,
       conversationHistory: sessionCtx.formattedHistory,
       intentReinforcement,
-      files: multimodalFiles.map(f => ({
-        fileUri: f.fileUri,
+      files: multimodalFiles.map((f) => ({
         base64: f.base64,
         mimeType: f.mimeType,
         contentType: f.contentType,
@@ -232,12 +244,15 @@ class ChatOrchestrationService {
     });
 
     const formattedHistory = sessionHistory
-      .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-      .map(msg => {
+      .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+      .map((msg) => {
+        // Mistral chat fetches images via the public Scaleway URL stored in
+        // `fileUrl`. Payloads either carry the URL directly or fall back to
+        // inline base64 (resolved by `prepareMultimodalFiles`).
         const attachedFile = msg.attachedFile as {
           fileName?: string;
           fileId?: string;
-          geminiFileId?: string;
+          fileUrl?: string;
           mimeType?: string;
           fileSizeBytes?: number;
         } | null;
@@ -246,8 +261,8 @@ class ChatOrchestrationService {
           role: msg.role as 'user' | 'assistant',
           content: msg.content,
           timestamp: msg.createdAt.toISOString(),
-          attachedFile: attachedFile?.geminiFileId
-            ? { geminiFileId: attachedFile.geminiFileId, mimeType: attachedFile.mimeType }
+          attachedFile: attachedFile?.fileUrl
+            ? { fileUrl: attachedFile.fileUrl, mimeType: attachedFile.mimeType }
             : null,
         };
       });
@@ -267,19 +282,19 @@ class ChatOrchestrationService {
     userId: string;
     userContent: string;
     fullContent: string;
-    chunk: GeminiStreamChunk;
+    chunk: ChatStreamChunk;
     startTime: number;
     attachedFileInfo: {
       fileName: string;
       fileId?: string;
-      geminiFileId?: string;
+      fileUrl?: string;
       mimeType?: string;
       fileSizeBytes?: number;
     } | null;
     attachedFileInfos?: Array<{
       fileName: string;
       fileId?: string;
-      geminiFileId?: string;
+      fileUrl?: string;
       mimeType?: string;
       fileSizeBytes?: number;
     }>;
