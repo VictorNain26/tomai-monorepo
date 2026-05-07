@@ -1,9 +1,9 @@
 /**
- * AI Schemas - Exports centralisés
+ * AI Schemas — exports centralisés.
  *
- * Schemas Zod pour structured output avec Gemini
+ * Schemas Zod pour structured output (réponses JSON Mistral validées).
  *
- * Usage:
+ * Usage :
  * ```typescript
  * import { CardGenerationOutputSchema, ParsedCardSchema } from '@/lib/ai/schemas';
  * ```

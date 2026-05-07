@@ -21,10 +21,10 @@ export interface SystemPromptParams {
 /**
  * Construit le prompt système complet.
  *
- * Ordre : [BLOCS STABLES] puis [BLOCS DYNAMIQUES]. Gemini 2.5+ applique
- * automatiquement un cache implicite (-90% sur les tokens d'input) sur les
- * préfixes >=1024 tokens partagés entre appels. Placer identityCore +
- * pedagogy + RAG policy + safety EN PREMIER maximise la portion cachable.
+ * Ordre : [BLOCS STABLES] puis [BLOCS DYNAMIQUES]. Mistral applique un cache
+ * implicite (réduction tarifaire input) sur les préfixes partagés entre
+ * appels. Placer identityCore + pedagogy + RAG policy + safety EN PREMIER
+ * maximise la portion cachable.
  * Le contexte élève et les adaptations niveau/matière arrivent après — ils
  * changent d'un appel à l'autre mais ne cassent pas le préfixe stable.
  */

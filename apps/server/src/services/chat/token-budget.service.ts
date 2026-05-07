@@ -9,7 +9,7 @@
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Budget total cible envoyé à Gemini (input tokens) */
+/** Budget total cible envoyé à Mistral (input tokens) */
 const TARGET_BUDGET_TOKENS = 30_000;
 
 /** Overhead fixe: system prompt + tool declarations (optimisé Phase 5) */

@@ -1,15 +1,11 @@
 /**
- * Tests unitaires - Summarization Service (services/chat/summarization.service.ts)
- * Mock: DB repos + Gemini + logger
+ * Tests unitaires — Summarization Service (Mistral aux model).
+ * Mock : DB repos + Mistral SDK + logger.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import { makeStudySession, makeMessage } from './_helpers/fixtures';
-
-// ============================================
-// MOCKS
-// ============================================
 
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
@@ -39,32 +35,31 @@ mock.module('../db/repositories/messages.repository', () => ({
   },
 }));
 
-// Gemini mock
-let geminiResponse = 'Mocked summary text';
+// Mistral SDK mock — captured by the service via getMistralClient → @mistralai/mistralai.
+let mistralResponse: string | null = 'Mocked summary text';
 
-mock.module('@google/genai', () => ({
-  GoogleGenAI: class {
-    models = {
-      generateContent: mock(async () => ({
-        text: geminiResponse,
+mock.module('@mistralai/mistralai', () => ({
+  Mistral: class {
+    chat = {
+      complete: mock(async () => ({
+        choices: [{ message: { role: 'assistant', content: mistralResponse } }],
       })),
     };
   },
 }));
 
-// App config mock
 mock.module('../config/app.config', () => ({
   appConfig: {
     ai: {
-      gemini: {
+      mistral: {
         apiKey: 'test-key',
-        model: 'gemini-2.5-flash',
+        chatModel: 'mistral-small-latest',
+        auxModel: 'mistral-small-latest',
       },
     },
   },
 }));
 
-// Import after mocks
 const { summarizationService } = await import('../services/chat/summarization.service');
 
 function makeMessages(count: number) {
@@ -82,25 +77,25 @@ beforeEach(() => {
   messagesResult = [];
   sessionUpdateCalled = false;
   sessionUpdateArgs = {};
-  geminiResponse = 'Mocked summary text';
+  mistralResponse = 'Mocked summary text';
 });
 
 describe('Summarization Service', () => {
   describe('summarizeIfNeeded', () => {
-    it('should do nothing when session not found', async () => {
+    it('does nothing when session not found', async () => {
       sessionResult = null;
       await summarizationService.summarizeIfNeeded('session-missing');
       expect(sessionUpdateCalled).toBe(false);
     });
 
-    it('should do nothing with < 20 messages', async () => {
+    it('does nothing with < 20 messages', async () => {
       sessionResult = makeStudySession();
       messagesResult = makeMessages(15);
       await summarizationService.summarizeIfNeeded('session-001');
       expect(sessionUpdateCalled).toBe(false);
     });
 
-    it('should generate first summary at 20+ messages', async () => {
+    it('generates the first summary at 20+ messages', async () => {
       sessionResult = makeStudySession({ conversationSummary: null, summaryUpToMessageId: null });
       messagesResult = makeMessages(25);
       await summarizationService.summarizeIfNeeded('session-001');
@@ -109,30 +104,30 @@ describe('Summarization Service', () => {
       expect(sessionUpdateArgs.summaryUpToMessageId).toBeDefined();
     });
 
-    it('should generate incremental summary when 10+ new messages', async () => {
+    it('generates an incremental summary when 10+ new messages arrive', async () => {
       const messages = makeMessages(35);
       sessionResult = makeStudySession({
         conversationSummary: 'Previous summary',
-        summaryUpToMessageId: messages[19]?.id ?? null, // Summary covers first 20
+        summaryUpToMessageId: messages[19]?.id ?? null,
       });
       messagesResult = messages;
       await summarizationService.summarizeIfNeeded('session-001');
       expect(sessionUpdateCalled).toBe(true);
     });
 
-    it('should NOT re-summarize with < 10 new messages', async () => {
+    it('does NOT re-summarize with < 10 new messages', async () => {
       const messages = makeMessages(25);
       sessionResult = makeStudySession({
         conversationSummary: 'Previous summary',
-        summaryUpToMessageId: messages[19]?.id ?? null, // Summary covers first 20
+        summaryUpToMessageId: messages[19]?.id ?? null,
       });
-      messagesResult = messages; // Only 4 new messages (25 - 20 - 1)
+      messagesResult = messages;
       await summarizationService.summarizeIfNeeded('session-001');
       expect(sessionUpdateCalled).toBe(false);
     });
 
-    it('should truncate summary exceeding 6000 chars', async () => {
-      geminiResponse = 'x'.repeat(7000);
+    it('truncates summaries exceeding 6000 chars', async () => {
+      mistralResponse = 'x'.repeat(7000);
       sessionResult = makeStudySession({ conversationSummary: null, summaryUpToMessageId: null });
       messagesResult = makeMessages(25);
       await summarizationService.summarizeIfNeeded('session-001');
@@ -141,22 +136,19 @@ describe('Summarization Service', () => {
       expect(summary.length).toBeLessThanOrEqual(6000);
     });
 
-    it('should handle null Gemini response without throwing', async () => {
-      geminiResponse = null as unknown as string;
+    it('handles null Mistral response without throwing', async () => {
+      mistralResponse = null;
       sessionResult = makeStudySession({ conversationSummary: null, summaryUpToMessageId: null });
       messagesResult = makeMessages(25);
-      // Should not throw — null response means no summary generated
       await summarizationService.summarizeIfNeeded('session-001');
-      // No summary stored when Gemini returns null
       expect(sessionUpdateCalled).toBe(false);
     });
 
-    it('should keep last 10 messages verbatim (not summarized)', async () => {
+    it('keeps the last 10 messages verbatim (not summarized)', async () => {
       sessionResult = makeStudySession({ conversationSummary: null, summaryUpToMessageId: null });
       const messages = makeMessages(25);
       messagesResult = messages;
       await summarizationService.summarizeIfNeeded('session-001');
-      // The summaryUpToMessageId should be message at index length-10-1 = 14
       expect(sessionUpdateArgs.summaryUpToMessageId).toBe(messages[14]?.id);
     });
   });

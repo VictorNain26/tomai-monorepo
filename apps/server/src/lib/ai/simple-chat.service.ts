@@ -1,11 +1,11 @@
 /**
- * Simple Chat Service - @google/genai Non-Streaming
+ * Simple Chat Service — Mistral Small 4 non-streaming
  *
- * Provides a simple interface for generating single responses
- * without streaming. Used for test routes and simple generation tasks.
+ * Provides a simple interface for generating single responses without
+ * streaming. Used for test routes and simple generation tasks.
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { getMistralClient } from '../mistral-client.js';
 import { appConfig } from '../../config/app.config.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
@@ -24,47 +24,42 @@ export interface SimpleChatResult {
   tokensUsed: number;
 }
 
-// Singleton GoogleGenAI instance
-const ai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey ?? '' });
-
-/**
- * Generate a simple non-streaming response using @google/genai
- */
 export async function generateSimpleResponse(
-  params: SimpleChatParams
+  params: SimpleChatParams,
 ): Promise<SimpleChatResult> {
-  const provider = '@google/genai';
+  const provider = '@mistralai/mistralai';
   const levelText = getLevelText(params.level);
 
-  // Build system prompt (without ragContext — injected in user content)
   const systemPrompt = buildSystemPrompt({
     level: params.level,
     levelText,
     subject: params.subject,
   });
 
-  // Inject educational context directly in user content
   const userContent = params.educationalContext
     ? `<context source="curriculum">\n${params.educationalContext}\n</context>\n\n${params.userQuery}`
     : params.userQuery;
 
-  // Generate with @google/genai
-  const response = await ai.models.generateContent({
-    model: appConfig.ai.gemini.model,
-    contents: userContent,
-    config: {
-      systemInstruction: systemPrompt,
-      topK: 40
-    }
+  const client = getMistralClient();
+  const model = appConfig.ai.mistral?.chatModel ?? 'mistral-small-latest';
+
+  const response = await client.chat.complete({
+    model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userContent },
+    ],
+    temperature: appConfig.ai.mistral?.temperature ?? 0.7,
+    maxTokens: appConfig.ai.mistral?.maxTokens ?? 4096,
   });
 
-  const tokensUsed = response.usageMetadata
-    ? (response.usageMetadata.promptTokenCount ?? 0) + (response.usageMetadata.candidatesTokenCount ?? 0)
-    : 0;
+  const raw = response.choices?.[0]?.message?.content;
+  const text = typeof raw === 'string' ? raw : '';
+  const tokensUsed = response.usage?.totalTokens ?? 0;
 
   return {
-    content: response.text ?? '',
+    content: text,
     provider,
-    tokensUsed
+    tokensUsed,
   };
 }

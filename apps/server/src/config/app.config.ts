@@ -28,28 +28,21 @@ export interface AppConfig {
     connectionTimeoutMs: number;
   };
   ai: {
-    gemini: {
-      apiKey: string | undefined;
-      model: string;           // Modèle principal (chat) - Gemini 3 Flash
-      audioModel: string;      // Modèle audio (analyse prononciation) - Gemini 3 Flash
-      ttsModel: string;        // Modèle TTS - Gemini 2.5 Flash TTS (pas encore 3.0)
-      maxTokens: number;
-      temperature: number;
-      topP: number;
-      requestTimeout: number;
-      retryAttempts: number;
-      retryDelay: number;
-      safetySettings: 'none' | 'low' | 'medium' | 'high';
-      thinkingLevel: 'minimal' | 'low' | 'medium' | 'high';
-    };
     mistral?: {
       apiKey: string | undefined;
-    };
-    gladia?: {
-      apiKey: string | undefined;
-    };
-    elevenlabs?: {
-      apiKey: string | undefined;
+      /** Primary chat model (Mistral Small 4 by default, fluent FR + native vision + reasoning toggle). */
+      chatModel: string;
+      /** High-intelligence reasoning model for hard problems / Terminale spé. */
+      reasoningModel: string;
+      /** Auxiliary model for short tasks (intent classification, auto-title) — same as chatModel by default. */
+      auxModel: string;
+      /** Voxtral STT model for audio transcription (élève parle à Tom). */
+      transcribeModel: string;
+      /** Voxtral TTS model for synthesizing Tom's spoken responses. */
+      ttsModel: string;
+      temperature: number;
+      maxTokens: number;
+      requestTimeout: number;
     };
   };
   rateLimit: {
@@ -111,29 +104,6 @@ export interface AppConfig {
     collectionName: string;
     enabled: boolean;
   };
-  textToSpeech: {
-    provider: 'google';
-    googleCloud: {
-      credentials: string | undefined;
-      projectId: string;
-      defaultVoice: {
-        primary: { name: string; languageCode: string; };
-        college: { name: string; languageCode: string; };
-        lycee: { name: string; languageCode: string; };
-      };
-      audioConfig: {
-        audioEncoding: string;
-        sampleRateHertz: number;
-        speakingRate: number;
-        pitch: number;
-        volumeGainDb: number;
-      };
-      enableSsml: boolean;
-      requestTimeout: number;
-      retryAttempts: number;
-      retryDelay: number;
-    };
-  };
 }
 
 /**
@@ -144,12 +114,16 @@ function validateRequiredConfig(): void {
   // Better Auth gère BETTER_AUTH_SECRET automatiquement
   // Pas besoin de validation ici
 
-  // Vérifier qu'au moins une clé API IA est présente (sauf en mode test)
+  // Mistral est désormais le provider AI principal (souveraineté EU).
+  // En prod on fail-fast sans MISTRAL_API_KEY ; en dev/staging on warn.
   if (Bun.env['NODE_ENV'] !== 'test') {
-    const hasGemini = Boolean(Bun.env['GEMINI_API_KEY']);
-
-    if (!hasGemini) {
-      logger.warn('Clé API Gemini requise - certaines fonctionnalités seront limitées', { operation: 'config:validate', missing: 'GEMINI_API_KEY' });
+    const hasMistral = Boolean(Bun.env['MISTRAL_API_KEY']);
+    if (!hasMistral) {
+      const missing = { operation: 'config:validate', missing: 'MISTRAL_API_KEY' };
+      if (Bun.env['NODE_ENV'] === 'production') {
+        throw new Error('MISTRAL_API_KEY is required in production');
+      }
+      logger.warn('Clé API Mistral requise - chat / classifier / summarization seront indisponibles', missing);
     }
   }
 }
@@ -225,34 +199,24 @@ function createDatabaseConfig(): AppConfig['database'] {
 
 function createAiConfig(): AppConfig['ai'] {
   return {
-    gemini: {
-      apiKey: Bun.env['GEMINI_API_KEY'],
-      // Modèles spécialisés pour usage optimal
-      // Fallback sur un modèle GA stable pour éviter une panne si la var d'env
-      // disparaît ou pointe vers un preview retiré. La prod surcharge via env.
-      model: Bun.env['GEMINI_MODEL'] ?? 'gemini-2.5-flash',
-      audioModel: Bun.env['GEMINI_AUDIO_MODEL'] ?? 'gemini-2.5-flash',
-      ttsModel: Bun.env['GEMINI_TTS_MODEL'] ?? 'gemini-2.5-flash-preview-tts', // Text-to-Speech natif (pas encore 3.0)
-      maxTokens: parseInt(Bun.env['GEMINI_MAX_TOKENS'] ?? '16384', 10), // Gemini 3 Flash supports 1M context
-      temperature: parseFloat(Bun.env['GEMINI_TEMPERATURE'] ?? '0.7'),    // Optimal pour éducation
-      topP: parseFloat(Bun.env['GEMINI_TOP_P'] ?? '0.95'),                // Créativité contrôlée
-      requestTimeout: parseInt(Bun.env['GEMINI_TIMEOUT'] ?? '60000', 10), // Timeout 60s
-      retryAttempts: parseInt(Bun.env['GEMINI_RETRY_ATTEMPTS'] ?? '3', 10),
-      retryDelay: parseInt(Bun.env['GEMINI_RETRY_DELAY'] ?? '1000', 10),
-      safetySettings: (Bun.env['GEMINI_SAFETY'] as 'none' | 'low' | 'medium' | 'high') ?? 'medium',
-      thinkingLevel: (Bun.env['GEMINI_THINKING_LEVEL'] as 'minimal' | 'low' | 'medium' | 'high') ?? 'low',
-    },
-    // Mistral AI - Embeddings 1024D (migration Gemini → Mistral Jan 2025)
+    // Mistral AI — sole AI provider (chat + embeddings + reasoning + STT + TTS + OCR).
+    // EU-sovereign by default: Mistral Compute infra, GDPR / AI Act compliance native.
     mistral: Bun.env['MISTRAL_API_KEY'] ? {
       apiKey: Bun.env['MISTRAL_API_KEY'],
-    } : undefined,
-    // Gladia - Speech-to-Text (migration Gemini → Gladia Jan 2025)
-    gladia: Bun.env['GLADIA_API_KEY'] ? {
-      apiKey: Bun.env['GLADIA_API_KEY'],
-    } : undefined,
-    // ElevenLabs - Text-to-Speech (migration Gemini → ElevenLabs Jan 2025)
-    elevenlabs: Bun.env['ELEVENLABS_API_KEY'] ? {
-      apiKey: Bun.env['ELEVENLABS_API_KEY'],
+      chatModel: Bun.env['MISTRAL_CHAT_MODEL'] ?? 'mistral-small-latest',
+      reasoningModel: Bun.env['MISTRAL_REASONING_MODEL'] ?? 'magistral-medium-latest',
+      auxModel: Bun.env['MISTRAL_AUX_MODEL'] ?? 'mistral-small-latest',
+      // Voxtral Mini Transcribe V2 (alias `voxtral-mini-transcribe-latest`,
+      // version datée `voxtral-mini-transcribe-2602`). Diarisation, word
+      // timestamps, 13 langues (FR inclus), audios jusqu'à 3h.
+      transcribeModel: Bun.env['MISTRAL_TRANSCRIBE_MODEL'] ?? 'voxtral-mini-transcribe-latest',
+      // Voxtral TTS (alias `voxtral-tts-latest`, version datée `voxtral-tts-2603`).
+      // Voice cloning depuis sample audio — pas de voix pré-définies. Voir
+      // `scripts/voxtral-create-voices.ts` pour créer les 3 voix maîtres.
+      ttsModel: Bun.env['MISTRAL_TTS_MODEL'] ?? 'voxtral-tts-latest',
+      temperature: parseFloat(Bun.env['MISTRAL_TEMPERATURE'] ?? '0.7'),
+      maxTokens: parseInt(Bun.env['MISTRAL_MAX_TOKENS'] ?? '16384', 10),
+      requestTimeout: parseInt(Bun.env['MISTRAL_TIMEOUT'] ?? '60000', 10),
     } : undefined,
   };
 }
@@ -315,42 +279,6 @@ function createQdrantConfig(): AppConfig['qdrant'] {
   };
 }
 
-function createTextToSpeechConfig(): AppConfig['textToSpeech'] {
-  return {
-    provider: 'google',
-    googleCloud: {
-      credentials: Bun.env['GOOGLE_CLOUD_CREDENTIALS'], // JSON credentials as string
-      projectId: Bun.env['GOOGLE_CLOUD_PROJECT_ID'] ?? 'tomai-production',
-      defaultVoice: {
-        // Voix adaptées par âge - Neural2 pour qualité optimale
-        primary: {
-          name: 'fr-FR-Neural2-C', // Voix féminine douce pour 6-11 ans
-          languageCode: 'fr-FR'
-        },
-        college: {
-          name: 'fr-FR-Neural2-D', // Voix masculine claire pour 11-15 ans
-          languageCode: 'fr-FR'
-        },
-        lycee: {
-          name: 'fr-FR-Neural2-E', // Voix féminine professionnelle pour 15-18 ans
-          languageCode: 'fr-FR'
-        }
-      },
-      audioConfig: {
-        audioEncoding: 'MP3', // Format optimal pour web
-        sampleRateHertz: 24000, // Qualité haute pour éducation
-        speakingRate: 0.9, // Légèrement plus lent pour compréhension
-        pitch: 0.0, // Pitch neutre
-        volumeGainDb: 0.0, // Volume optimal
-      },
-      enableSsml: true, // Support SSML pour mathématiques
-      requestTimeout: 10000, // 10s timeout
-      retryAttempts: 2, // Retry automatique
-      retryDelay: 1000, // 1s entre retries
-    }
-  };
-}
-
 /**
  * Configuration centralisée de l'application
  */
@@ -375,7 +303,6 @@ export function createAppConfig(): AppConfig {
     },
     cache: createCacheConfig(),
     rag: createRagConfig(),
-    textToSpeech: createTextToSpeechConfig(),
     qdrant: createQdrantConfig(),
   };
 }

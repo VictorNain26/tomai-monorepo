@@ -195,11 +195,13 @@ declare global {
       DATABASE_URL?: string;
       BETTER_AUTH_SECRET: string;
       BETTER_AUTH_URL?: string;
-      GEMINI_API_KEY: string;
-      // AI Services (migration Jan 2025)
-      MISTRAL_API_KEY?: string;     // Embeddings 1024D
-      GLADIA_API_KEY?: string;       // Speech-to-Text
-      ELEVENLABS_API_KEY?: string;   // Text-to-Speech
+      // AI Services — Mistral 100% (chat + embeddings + STT + TTS + OCR).
+      MISTRAL_API_KEY: string;
+      MISTRAL_CHAT_MODEL?: string;
+      MISTRAL_REASONING_MODEL?: string;
+      MISTRAL_AUX_MODEL?: string;
+      MISTRAL_TRANSCRIBE_MODEL?: string;
+      MISTRAL_TTS_MODEL?: string;
       MAX_TOKENS_PER_RESPONSE?: string;
       DAILY_REQUEST_LIMIT?: string;
       CACHE_DURATION?: string;

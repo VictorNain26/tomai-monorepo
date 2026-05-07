@@ -1,10 +1,10 @@
 /**
  * Identité Tom - Tuteur pédagogique
  *
- * Scindé en deux blocs pour tirer parti du caching implicite de Gemini 2.5+:
+ * Scindé en deux blocs pour tirer parti du caching implicite Mistral :
  * - generateIdentityCore : stable entre tous les utilisateurs (rôle, ton,
  *   politique de transparence). C'est cette portion qui se retrouve dans le
- *   cache-prefix et se facture ~10% du tarif standard à chaque réutilisation.
+ *   cache-prefix et se facture à tarif réduit à chaque réutilisation.
  * - generateStudentContext : spécifique à l'élève courant (nom, niveau,
  *   matière). Placé après les gros blocs stables (pedagogy/RAG/safety) pour
  *   ne pas casser le préfixe partagé.

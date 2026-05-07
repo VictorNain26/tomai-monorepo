@@ -1,28 +1,32 @@
 /**
  * Cost Tracking Service — persist per-call AI spend.
  *
- * The `cost_tracking` table has existed for a while (see
- * progress.service.getCostTracking) but was never populated by the chat
- * pipeline, leaving dashboards empty. This service computes a per-message
- * cost in cents from model pricing and inserts a row after each assistant
- * response.
+ * The `cost_tracking` table is populated after each Mistral call (chat,
+ * summarization, auto-title, card-generation, intent-classify, document
+ * analysis, transcription, TTS).
  *
- * Pricing is expressed in USD per million tokens, as published by each
- * provider. We convert to cents at insert time using a fixed USD/EUR rate
- * (configurable via env). Cached-input pricing is approximated at 10% of
- * standard input — the exact cache hit ratio is not available in the
- * Gemini streaming response so we treat cache savings conservatively.
+ * Pricing is expressed in USD per million tokens, as published by Mistral.
+ * Converted to cents at insert time using a configurable USD/EUR rate.
+ * Cached input is approximated at 10% of standard rate (exact cache hit
+ * ratio isn't surfaced in the streaming response — conservative estimate).
  *
- * Unknown models: we insert a row with cost_cents=0 and a
- * billingMetadata.unknownModel flag rather than silently dropping the call.
- * Monitoring can alert on these.
+ * Unknown models leave a cost_cents=0 row plus billingMetadata.unknownModel
+ * flag instead of being silently dropped, so monitoring can alert.
  */
 
 import { db } from '../db/connection.js';
 import { costTracking } from '../db/schema.js';
 import { logger } from '../lib/observability.js';
 
-export type AiOperation = 'chat' | 'summarization' | 'auto-title' | 'card-generation' | 'intent-classify' | 'document-analysis';
+export type AiOperation =
+  | 'chat'
+  | 'summarization'
+  | 'auto-title'
+  | 'card-generation'
+  | 'intent-classify'
+  | 'document-analysis'
+  | 'transcription'
+  | 'tts';
 
 export interface CostRecordInput {
   userId: string;
@@ -36,22 +40,28 @@ export interface CostRecordInput {
 }
 
 /**
- * Published pricing in USD per million tokens (input / output) as of April
- * 2026. Update when vendors change pricing; values are source-of-truth for
- * accounting. Cached input is charged at ~10% of standard input across all
- * major vendors.
+ * Mistral pricing (USD per 1M tokens), May 2026.
+ * Source : artificialanalysis.ai + docs.mistral.ai/pricing.
  */
 const MODEL_PRICING_USD_PER_MILLION: Record<string, { input: number; output: number }> = {
-  'gemini-2.5-flash': { input: 0.30, output: 2.50 },
-  'gemini-2.5-pro': { input: 1.25, output: 10.00 },
-  'gemini-3-flash': { input: 0.30, output: 2.50 },
-  'gemini-3-flash-preview': { input: 0.30, output: 2.50 },
-  'gemini-3.1-pro': { input: 2.00, output: 12.00 },
-  'claude-sonnet-4-6': { input: 3.00, output: 15.00 },
-  'claude-opus-4-7': { input: 5.00, output: 25.00 },
-  'claude-haiku-4-5': { input: 1.00, output: 5.00 },
+  'mistral-small': { input: 0.15, output: 0.60 },
+  'mistral-small-latest': { input: 0.15, output: 0.60 },
+  'mistral-medium': { input: 1.50, output: 7.50 },
+  'mistral-medium-latest': { input: 1.50, output: 7.50 },
   'mistral-medium-3': { input: 0.40, output: 2.00 },
-  'mistral-large-3': { input: 2.00, output: 6.00 },
+  'mistral-medium-3-5': { input: 1.50, output: 7.50 },
+  'mistral-large': { input: 0.50, output: 1.50 },
+  'mistral-large-latest': { input: 0.50, output: 1.50 },
+  'mistral-large-3': { input: 0.50, output: 1.50 },
+  'magistral-medium': { input: 2.00, output: 5.00 },
+  'magistral-medium-latest': { input: 2.00, output: 5.00 },
+  'magistral-small': { input: 0.50, output: 1.50 },
+  'magistral-small-latest': { input: 0.50, output: 1.50 },
+  'mistral-embed': { input: 0.10, output: 0 },
+  'voxtral-mini-transcribe': { input: 0, output: 0 },
+  'voxtral-mini-transcribe-latest': { input: 0, output: 0 },
+  'voxtral-tts': { input: 0, output: 0 },
+  'voxtral-tts-latest': { input: 0, output: 0 },
 };
 
 const CACHE_DISCOUNT = 0.10;
@@ -68,8 +78,8 @@ const USD_TO_EUR = resolveUsdRate();
 
 /** Normalize provider-suffixed model IDs down to the pricing key. */
 function normalizeModelId(aiModel: string): string {
-  // Handle dated previews like gemini-2.5-flash-preview-1218 → gemini-2.5-flash
-  // and claude variants with 1M-context suffix.
+  // Handle dated previews / variants by prefix-matching against the canonical
+  // pricing keys (e.g. mistral-small-2603 → mistral-small).
   const lower = aiModel.toLowerCase();
   for (const key of Object.keys(MODEL_PRICING_USD_PER_MILLION)) {
     if (lower.startsWith(key)) return key;

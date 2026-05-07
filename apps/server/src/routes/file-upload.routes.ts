@@ -2,7 +2,6 @@ import { Elysia, t } from 'elysia';
 import { handleAuthWithCookies } from '../middleware/auth.middleware.js';
 import { logger } from '../lib/observability.js';
 import { scalewayStorageService } from '../services/storage/scaleway-storage.service.js';
-import { geminiFilesService } from '../services/gemini-files.service.js';
 import { audioTranscriptionService } from '../services/audio-transcription.service.js';
 import { filesRepository } from '../db/repositories/index.js';
 import { env } from '../config/environment.config.js';
@@ -133,10 +132,12 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
   })
 
   /**
-   * POST /api/upload/confirm/:fileId - Confirmer upload terminé
+   * POST /api/upload/confirm/:fileId — confirmer upload terminé.
    *
-   * Frontend appelle cet endpoint APRÈS avoir uploadé vers Scaleway
-   * Backend vérifie le fichier et lance l'upload vers Gemini Files API
+   * Frontend appelle cet endpoint APRÈS avoir uploadé vers Scaleway.
+   * Backend transcrit l'audio (Voxtral) si applicable et marque le fichier
+   * comme `ready` ; les images / PDF sont fetchés à la demande par Mistral
+   * via leur URL Scaleway au moment du chat.
    */
   .post('/confirm/:fileId', async ({ params: { fileId }, request, set }) => {
     try {
@@ -182,13 +183,13 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
       const metadata = fileRecord.metadata as { fileType?: string } | null;
       const fileType = metadata?.fileType ?? detectFileType(fileRecord.mimeType);
 
-      let geminiFileUri: string | undefined;
-      let geminiExpiresAt: string | undefined;
       let transcription: string | undefined;
 
-      // Process based on file type
+      // Audio uploads are eagerly transcribed via Voxtral so the chat turn
+      // can quote the student's spoken message back to them. Image / PDF
+      // uploads need no preprocessing here — Mistral chat fetches them on
+      // demand via Scaleway URLs (`prepareMultimodalFiles`).
       if (fileType === 'audio') {
-        // Audio: transcription avec Gemini
         try {
           const fileContent = await scalewayStorageService.getFileContent(fileRecord.storageKey);
           if (fileContent) {
@@ -199,15 +200,12 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
                 targetLanguage: 'fr',
                 schoolLevel: user.schoolLevel as EducationLevelType,
                 context: 'general',
-              }
+              },
             );
 
             if (transcriptionResult.success && transcriptionResult.transcription) {
               transcription = transcriptionResult.transcription;
 
-              // Persist transcription on the file record so subsequent chat
-              // turns (or page refreshes) don't lose it. Returned inline above
-              // for the immediate client response and stored here for history.
               await filesRepository.mergeEducationalContext(fileId, {
                 transcription: transcriptionResult.transcription,
                 detectedLanguage: transcriptionResult.detectedLanguage,
@@ -222,54 +220,20 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
             fileId,
           });
         }
-      } else if ((fileType === 'image' || fileType === 'pdf') && geminiFilesService.isAvailable()) {
-        // Image/PDF: upload vers Gemini Files API (cache 48h)
-        try {
-          const fileContent = await scalewayStorageService.getFileContent(fileRecord.storageKey);
-          if (fileContent) {
-            const geminiResult = await geminiFilesService.uploadFile(
-              fileContent.content.buffer as ArrayBuffer,
-              fileContent.contentType,
-              fileRecord.fileName
-            );
-
-            if (geminiResult.success && geminiResult.fileUri) {
-              geminiFileUri = geminiResult.fileUri;
-              geminiExpiresAt = geminiResult.expiresAt?.toISOString();
-
-              // Update DB with Gemini info
-              await filesRepository.updateGeminiInfo(
-                fileId,
-                geminiFileUri,
-                geminiResult.expiresAt ?? new Date(Date.now() + 48 * 60 * 60 * 1000)
-              );
-            }
-          }
-        } catch (err) {
-          logger.warn('Gemini Files upload failed (non-blocking)', {
-            _error: err instanceof Error ? err.message : String(err),
-            operation: 'file:gemini-upload',
-            fileId,
-          });
-        }
       }
 
-      // Mark as ready
       await filesRepository.updateStatus(fileId, 'ready');
 
       logger.info('File processing complete', {
         operation: 'file:ready',
         fileId,
         fileType,
-        hasGeminiUri: !!geminiFileUri,
         hasTranscription: !!transcription,
       });
 
       return {
         success: true,
         fileId,
-        fileUri: geminiFileUri,
-        geminiExpiresAt,
         transcription,
       } as ConfirmUploadResponse;
 

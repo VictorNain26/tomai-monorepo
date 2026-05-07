@@ -38,8 +38,7 @@ export interface PresignedUploadResponse {
 export interface ConfirmUploadResponse {
   success: boolean;
   fileId?: string;
-  fileUri?: string;
-  geminiExpiresAt?: string;
+  /** Pre-fetched STT transcription for audio uploads. Empty for images / PDFs. */
   transcription?: string;
   error?: string;
 }

@@ -1,13 +1,11 @@
 /**
- * Gemini AI - Exports centralisés
+ * Mistral AI — exports centralisés.
  *
  * Usage:
  * ```typescript
  * import { generateSimpleResponse } from '@/lib/ai';
  * import { CardGenerationOutputSchema } from '@/lib/ai';
  * ```
- *
- * Note: Services utilisent @google/genai directement (pas TanStack AI)
  */
 
 // Simple Chat Service (pour cas simples sans streaming)

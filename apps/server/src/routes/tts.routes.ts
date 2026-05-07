@@ -1,11 +1,12 @@
 /**
- * Routes Text-to-Speech (TTS) - TomAI
- * Synthèse vocale avec ElevenLabs (Migration Janvier 2025)
+ * Routes Text-to-Speech (TTS) — TomAI.
+ *
+ * Synthèse vocale via Voxtral (Mistral, EU-sovereign).
  *
  * Cas d'usage éducatif :
- * - Lecture des réponses de l'IA à voix haute
- * - Prononciation correcte pour les matières de langue
- * - Accessibilité pour les élèves dyslexiques
+ *  - Lecture des réponses de l'IA à voix haute
+ *  - Prononciation correcte pour les matières de langue
+ *  - Accessibilité pour les élèves dyslexiques
  */
 
 import { Elysia, t } from 'elysia';
@@ -14,14 +15,9 @@ import { textToSpeechService, type TTSOptions } from '../services/text-to-speech
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/education.types.js';
 
-// ============================================
-// Routes
-// ============================================
-
 export const ttsRoutes = new Elysia({ name: 'tts-routes' })
   .group('/api/tts', (app) => app
 
-    // POST /api/tts/synthesize - Synthétiser texte en audio
     .post('/synthesize', async ({ body, request: { headers }, set }) => {
       const authContext = await handleAuthWithCookies(headers, set);
       if (!authContext.success) {
@@ -33,13 +29,11 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
       try {
         const { text, language = 'fr', schoolLevel } = body;
 
-        // Options TTS (voix auto-sélectionnée par niveau scolaire)
         const ttsOptions: TTSOptions = {
           language,
           schoolLevel: schoolLevel as EducationLevelType | undefined,
         };
 
-        // Synthèse audio via ElevenLabs
         const result = await textToSpeechService.synthesize(text, ttsOptions);
 
         if (!result.success) {
@@ -47,13 +41,13 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
             operation: 'tts:route:synthesize',
             userId: authContext.user.id,
             _error: result._error ?? 'Unknown TTS error',
-            severity: 'medium' as const
+            severity: 'medium' as const,
           });
 
           set.status = 500;
           return {
             success: false,
-            error: result._error ?? 'Échec de la synthèse vocale'
+            error: result._error ?? 'Échec de la synthèse vocale',
           };
         }
 
@@ -63,7 +57,7 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           textLength: text.length,
           durationMs: Date.now() - startTime,
           audioDurationMs: result.durationMs,
-          severity: 'low' as const
+          severity: 'low' as const,
         });
 
         return {
@@ -71,12 +65,12 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           audio: {
             data: result.audioData,
             mimeType: result.mimeType,
-            durationMs: result.durationMs
+            durationMs: result.durationMs,
           },
           meta: {
             textLength: text.length,
-            processingMs: Date.now() - startTime
-          }
+            processingMs: Date.now() - startTime,
+          },
         };
 
       } catch (error) {
@@ -84,13 +78,13 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           operation: 'tts:route:synthesize:error',
           userId: authContext.user.id,
           _error: error instanceof Error ? error.message : String(error),
-          severity: 'high' as const
+          severity: 'high' as const,
         });
 
         set.status = 500;
         return {
           success: false,
-          error: 'Erreur interne lors de la synthèse vocale'
+          error: 'Erreur interne lors de la synthèse vocale',
         };
       }
     }, {
@@ -103,30 +97,28 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
       }),
     })
 
-    // GET /api/tts/voices - Liste des voix disponibles (ElevenLabs)
+    // GET /api/tts/voices — voix Voxtral disponibles, mappées par niveau scolaire.
+    // La sélection est automatique selon le `schoolLevel` de l'utilisateur ;
+    // ce listing est exposé pour debug/configuration.
     .get('/voices', async ({ request: { headers }, set }) => {
       const authContext = await handleAuthWithCookies(headers, set);
       if (!authContext.success) {
         return authContext.error;
       }
 
-      // Voix ElevenLabs françaises mappées par niveau scolaire
-      // La voix est auto-sélectionnée selon le schoolLevel de l'utilisateur
       return {
         success: true,
-        provider: 'elevenlabs',
-        autoSelect: true, // La voix est choisie automatiquement selon le niveau
+        provider: 'voxtral',
+        autoSelect: true,
         voices: [
-          { id: 'charlotte', name: 'Charlotte', description: 'Voix féminine douce', levels: ['cp', 'ce1', 'ce2'] },
-          { id: 'sophie', name: 'Sophie', description: 'Voix féminine professionnelle', levels: ['cm1', 'cm2'] },
-          { id: 'camille', name: 'Camille', description: 'Voix neutre et claire', levels: ['sixieme', 'cinquieme'] },
-          { id: 'thomas', name: 'Thomas', description: 'Voix masculine claire', levels: ['quatrieme', 'troisieme'] },
-          { id: 'antoine', name: 'Antoine', description: 'Voix masculine mature', levels: ['seconde', 'premiere', 'terminale'] },
+          { id: 'voxtral-fr-camille', name: 'Camille', description: 'Voix neutre et claire', levels: ['cp', 'ce1', 'ce2', 'cm1', 'cm2'] },
+          { id: 'voxtral-fr-sophie', name: 'Sophie', description: 'Voix professionnelle', levels: ['sixieme', 'cinquieme', 'quatrieme', 'troisieme'] },
+          { id: 'voxtral-fr-antoine', name: 'Antoine', description: 'Voix mature', levels: ['seconde', 'premiere', 'terminale'] },
         ],
         languages: ['fr', 'en', 'es', 'de'],
         limits: {
-          maxTextLength: 5000
-        }
+          maxTextLength: 5000,
+        },
       };
-    })
+    }),
   );

@@ -55,14 +55,18 @@ mock.module('../lib/auth', () => ({
   },
 }));
 
-// App config — mutable Gemini key for degraded test
-let hasGeminiKey = true;
+// App config — mutable Mistral key for degraded test
+let hasMistralKey = true;
 mock.module('../config/app.config', () => ({
   appConfig: {
     ai: {
-      gemini: {
-        get apiKey() { return hasGeminiKey ? 'test-key' : ''; },
-        model: 'gemini-2.5-flash',
+      mistral: {
+        get apiKey() { return hasMistralKey ? 'test-key' : ''; },
+        chatModel: 'mistral-small-latest',
+        auxModel: 'mistral-small-latest',
+        reasoningModel: 'magistral-medium-latest',
+        transcribeModel: 'voxtral-mini-transcribe-latest',
+        ttsModel: 'voxtral-tts-latest',
       },
     },
     security: { corsOrigins: ['http://localhost:3001'] },
@@ -195,9 +199,15 @@ mock.module('../db/repositories/index', () => ({
   },
 }));
 
-// Gemini mock for /health/ai
-mock.module('@google/genai', () => ({
-  GoogleGenAI: class { models = { generateContent: mock(async () => ({ text: 'OK' })) }; },
+// Mistral mock for /health/ai
+mock.module('@mistralai/mistralai', () => ({
+  Mistral: class {
+    chat = {
+      complete: mock(async () => ({
+        choices: [{ message: { role: 'assistant', content: 'OK' } }],
+      })),
+    };
+  },
 }));
 
 // Import real app after all mocks
@@ -205,7 +215,7 @@ const { app } = await import('../app');
 
 beforeEach(() => {
   dbHealthy = true;
-  hasGeminiKey = true;
+  hasMistralKey = true;
   authUser = null;
 });
 
@@ -234,8 +244,8 @@ describe('API Endpoints', () => {
       expect(data.checks.ai.status).toBe('healthy');
     });
 
-    it('should return degraded when Gemini key missing', async () => {
-      hasGeminiKey = false;
+    it('returns degraded when Mistral key missing', async () => {
+      hasMistralKey = false;
       const res = await app.handle(new Request('http://localhost/health'));
       expect(res.status).toBe(200);
       const data = await res.json();

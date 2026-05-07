@@ -1,6 +1,5 @@
 /**
  * Mapping éducatif - Niveaux scolaires français
- * Externalisation depuis gemini-simple.service.ts (lignes 351-596)
  * Standards Éducation Nationale 2024-2025
  */
 
@@ -9,7 +8,6 @@ import type { CycleType, CycleInfo, CycleConfig } from './types.js';
 
 /**
  * Mapping officiel des cycles pédagogiques français
- * Extraction de gemini-simple.service.ts lignes 353-374
  */
 export const CYCLE_MAPPING: Record<CycleType, CycleConfig> = {
   cycle2: {
@@ -36,7 +34,6 @@ export const CYCLE_MAPPING: Record<CycleType, CycleConfig> = {
 
 /**
  * Mapping niveaux scolaires français vers texte descriptif
- * Extraction de gemini-simple.service.ts lignes 579-596
  */
 export const LEVEL_TEXT_MAPPING: Record<EducationLevelType, string> = {
   cp: 'CP (6 ans)',
@@ -55,7 +52,6 @@ export const LEVEL_TEXT_MAPPING: Record<EducationLevelType, string> = {
 
 /**
  * Détermine le cycle pédagogique pour un niveau donné
- * Extraction de gemini-simple.service.ts lignes 351-393
  */
 export function getCycleInfo(level: EducationLevelType): CycleInfo {
   // Détermination du cycle
@@ -79,7 +75,6 @@ export function getCycleInfo(level: EducationLevelType): CycleInfo {
 
 /**
  * Convertit un niveau scolaire en texte descriptif
- * Extraction de gemini-simple.service.ts lignes 579-596
  */
 export function getLevelText(level: EducationLevelType): string {
   return LEVEL_TEXT_MAPPING[level] || level;
@@ -87,7 +82,6 @@ export function getLevelText(level: EducationLevelType): string {
 
 /**
  * Génère le guide de réponses structurées selon le cycle
- * Extraction de gemini-simple.service.ts lignes 398-430
  */
 export function getStructuredResponseGuide(level: EducationLevelType): string {
   const cycleInfo = getCycleInfo(level);

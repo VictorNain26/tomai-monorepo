@@ -1,9 +1,9 @@
 /**
- * Document Services - Point d'entrée unifié
+ * Document Services — point d'entrée unifié.
  *
- * Architecture @google/genai 2025:
- * - DocumentExtractionService: Extraction texte locale (PDF, DOCX, TXT)
- * - DocumentAnalysisService: Classification + Analyse unifiée avec @google/genai
+ * Architecture Mistral :
+ * - DocumentExtractionService : extraction texte locale (PDF, DOCX, TXT)
+ * - DocumentAnalysisService : classification + analyse via Mistral Small 4 (vision incluse)
  */
 
 export { documentExtractionService } from './document-extraction.service.js';

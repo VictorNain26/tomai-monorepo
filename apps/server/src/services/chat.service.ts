@@ -76,14 +76,14 @@ export class ChatService {
       attachedFile?: {
         fileName: string;
         fileId?: string;
-        geminiFileId?: string;
+        fileUrl?: string;
         mimeType?: string;
         fileSizeBytes?: number;
       };
       attachedFiles?: Array<{
         fileName: string;
         fileId?: string;
-        geminiFileId?: string;
+        fileUrl?: string;
         mimeType?: string;
         fileSizeBytes?: number;
       }>;

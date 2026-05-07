@@ -44,7 +44,7 @@ export const studySessions = pgTable('study_sessions', {
   hintsGiven: integer('hints_given').default(0),
 
   // Métriques techniques - TEXT pour flexibilité (pas d'ENUM = pas de migration par modèle)
-  aiModelUsed: text('ai_model_used').notNull().default('gemini-3-flash'),
+  aiModelUsed: text('ai_model_used').notNull().default('mistral-small-latest'),
   totalTokensUsed: integer('total_tokens_used').default(0),
   apiCostCents: integer('api_cost_cents').default(0),
   averageResponseTimeMs: integer('average_response_time_ms'),
@@ -114,7 +114,7 @@ export const messages = pgTable('messages', {
   isFlagged: boolean('is_flagged').default(false),
 
   // Fichiers attachés (nouveau)
-  attachedFile: jsonb('attached_file'), // { fileName: string, fileId?: string, geminiFileId?: string, mimeType?: string }
+  attachedFile: jsonb('attached_file'), // { fileName: string, fileId?: string, fileUrl?: string, mimeType?: string }
 
   // Métadonnées
   messageMetadata: jsonb('message_metadata').default(sql`'{}'::jsonb`),
@@ -323,7 +323,8 @@ export type MessageRole = typeof messageRoleEnum.enumValues[number];
 export interface AttachedFile {
   fileName: string;
   fileId?: string;
-  geminiFileId?: string;
+  /** Public Scaleway URL — used by Mistral vision (image_url field). */
+  fileUrl?: string;
   mimeType?: string;
   fileSizeBytes?: number;
 }

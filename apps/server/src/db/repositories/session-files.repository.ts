@@ -65,7 +65,7 @@ export class SessionFilesRepository {
   }
 
   /**
-   * Lister les fichiers attachés avec contexte éducatif (pour injection AI)
+   * Lister les fichiers attachés avec contexte éducatif (pour injection AI).
    */
   async findBySessionWithContext(sessionId: string) {
     const rows = await db
@@ -74,16 +74,14 @@ export class SessionFilesRepository {
         fileName: files.fileName,
         mimeType: files.mimeType,
         educationalContext: files.educationalContext,
-        geminiFileUri: files.geminiFileUri,
-        geminiExpiresAt: files.geminiExpiresAt,
       })
       .from(sessionFiles)
       .innerJoin(files, eq(sessionFiles.fileId, files.id))
       .where(
         and(
           eq(sessionFiles.sessionId, sessionId),
-          eq(files.status, 'ready')
-        )
+          eq(files.status, 'ready'),
+        ),
       );
 
     return rows;

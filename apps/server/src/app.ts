@@ -159,14 +159,14 @@ const app = new Elysia({ name: 'tomai-server' })
     };
 
     // 3. AI Service Check (vérifie la configuration, pas l'API pour éviter rate limit)
-    const hasGeminiKey = !!appConfig.ai.gemini.apiKey;
-    const geminiModel = appConfig.ai.gemini.model;
+    const hasMistralKey = !!appConfig.ai.mistral?.apiKey;
+    const mistralModel = appConfig.ai.mistral?.chatModel ?? 'mistral-small-latest';
 
-    if (!hasGeminiKey) {
+    if (!hasMistralKey) {
       checks.ai = {
         status: 'unhealthy',
-        error: 'GEMINI_API_KEY not configured',
-        provider: geminiModel
+        error: 'MISTRAL_API_KEY not configured',
+        provider: mistralModel,
       };
       // AI non configuré → degraded (fonctionnalités IA indisponibles)
       if (overallStatus === 'healthy') {
@@ -175,7 +175,7 @@ const app = new Elysia({ name: 'tomai-server' })
     } else {
       checks.ai = {
         status: 'healthy',
-        provider: geminiModel
+        provider: mistralModel,
       };
     }
 
@@ -196,39 +196,35 @@ const app = new Elysia({ name: 'tomai-server' })
     };
   })
 
-  // Diagnostic AI endpoint - Tests actual Gemini API connection
-  // Use this to debug AI issues without affecting main health check
+  // Diagnostic AI endpoint - Tests actual Mistral API connection.
   .get('/health/ai', async ({ set }) => {
     const startTime = Date.now();
-    const model = appConfig.ai.gemini.model;
+    const model = appConfig.ai.mistral?.chatModel ?? 'mistral-small-latest';
 
-    // Check API key configuration
-    if (!appConfig.ai.gemini.apiKey) {
+    if (!appConfig.ai.mistral?.apiKey) {
       set.status = 503;
       return {
         status: 'unhealthy',
-        error: 'GEMINI_API_KEY not configured',
+        error: 'MISTRAL_API_KEY not configured',
         model,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
 
-    // Test actual API connection with minimal request
     try {
-      const { GoogleGenAI } = await import('@google/genai');
-      const genai = new GoogleGenAI({ apiKey: appConfig.ai.gemini.apiKey });
+      const { Mistral } = await import('@mistralai/mistralai');
+      const client = new Mistral({ apiKey: appConfig.ai.mistral.apiKey });
 
-      const response = await genai.models.generateContent({
+      const response = await client.chat.complete({
         model,
-        contents: 'Réponds uniquement "OK" sans rien ajouter.',
-        config: {
-          maxOutputTokens: 10,
-          temperature: 0
-        }
+        messages: [{ role: 'user', content: 'Réponds uniquement "OK" sans rien ajouter.' }],
+        temperature: 0,
+        maxTokens: 10,
       });
 
       const latencyMs = Date.now() - startTime;
-      const responseText = response.text?.trim() ?? '';
+      const rawText = response.choices?.[0]?.message?.content;
+      const responseText = typeof rawText === 'string' ? rawText.trim() : '';
 
       logger.info('AI health check passed', {
         operation: 'health:ai:success',
@@ -284,7 +280,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(fileUploadRoutes)  // Upload: Scaleway + PostgreSQL (RGPD France)
   .use(statusRoutes)        // Subscription status + token usage (DB-driven)
   .use(revenuecatWebhookRoutes) // Webhooks RevenueCat (single source of subscription truth)
-  .use(ttsRoutes)           // Text-to-Speech (Gemini 2.5 Flash TTS - 3.0 pending)
+  .use(ttsRoutes)           // Text-to-Speech (Voxtral)
   .use(deckRoutes)          // Outils de révision - decks, subjects, topics
   .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation
   .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau

@@ -1,52 +1,43 @@
 # Monorepo Tom
 
+Tutorat IA socratique adaptatif (CP-Terminale). Stack 100% Mistral (souveraineté EU).
+
 ## Commandes
 
 ```bash
-pnpm install                      # Installation
-pnpm dev                          # Landing:3001 + Server:3000
-pnpm dev:mobile                   # Expo mobile (8081)
-pnpm typecheck && pnpm lint       # Validation (obligatoire avant commit)
-pnpm build                        # Build production
+pnpm install
+pnpm dev                    # Landing:3001 + Server:3000 (Docker requis pour le server)
+pnpm dev:mobile             # Expo (8081)
+pnpm typecheck && pnpm lint # Validation obligatoire avant commit
+pnpm build
 ```
 
-Backend nécessite Docker : `cd apps/server && docker compose up -d`
+Backend nécessite `docker compose up -d` dans `apps/server` (PostgreSQL + pgvector).
 
-## Stack
+## Détails par couche
 
-@apps/server/CLAUDE.md pour le détail backend. @apps/mobile/CLAUDE.md pour le mobile.
+Chaque app a son propre `CLAUDE.md` avec ses spécificités :
+- @apps/server/CLAUDE.md — backend Bun/Elysia, services AI, RAG, billing, Pronote
+- @apps/mobile/CLAUDE.md — Expo, navigation, intégration Eden Treaty
+- @apps/landing/CLAUDE.md — Next.js, structure composants
 
-| Couche | Technologies |
-|--------|-------------|
-| Backend | Bun 1.3, Elysia.js 1.4, PostgreSQL 16 pgvector, Drizzle ORM |
-| Landing | Next.js 16, TailwindCSS 4, Framer Motion |
-| Mobile | Expo SDK 55, React Native 0.83, React 19.2, NativeWind v5, React Native Reusables |
-| Auth | Better Auth 1.5 + Google OAuth + account linking |
-| AI | Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Gladia (STT), ElevenLabs (TTS) |
-| Monorepo | Turborepo, pnpm workspaces, package `@repo/api` (Eden Treaty types) |
-| Deploy | Vercel (landing), Koyeb (server), EAS (mobile) |
-| Observabilité | Sentry (crash/perf), PostHog (analytics + flags + session replay) — en cours d'install |
+## Règles inviolables
 
-## Git workflow
+Codifiées dans @./constitution.md (TypeScript strict, branches, garde-fous CI/CD, sécurité). Lis-la avant tout contribution non triviale.
 
-- **`staging`** : travail quotidien, push direct OK
-- **`main`** : production, JAMAIS de push direct, toujours PR depuis staging
-- **Merge commit uniquement** : JAMAIS squash merge (désynchronise les branches)
+Conventions complémentaires :
+- @.claude/rules/testing-and-commits.md — TDD, runners, scopes commit
+- @.claude/rules/database-migrations.md — Drizzle dev vs prod
 
-Ces contraintes sont codifiées dans @./constitution.md — source de vérité inviolable pour les agents IA et les contributeurs humains.
+## Garde-fous déterministes
 
-## Enforcement
-
-Le workflow (TDD, review, validation) est géré par **superpowers skills** (auto-invoqués). Les conventions monorepo sont dans @.claude/rules/testing-and-commits.md et @.claude/rules/database-migrations.md.
-
-Garde-fous déterministes :
-- **Stop hook** (exit 2) : force validation + commit avant de quitter
-- **PreToolUse hook** : bloque commandes destructives (`rm -rf /`, `DROP DATABASE`, `db:push` en prod)
-- **Permission deny** : interdit la lecture de `.env` et secrets
-- **lefthook** : lint + typecheck (pre-commit), tests + build (pre-push)
+- **Stop hook** : force validation + commit avant fin de session
+- **PreToolUse hook** : bloque commandes destructives
+- **Permission deny** : interdit la lecture des secrets
+- **lefthook** : lint+typecheck (pre-commit), tests+build (pre-push)
 
 ## Review IA
 
-- PR staging→main : CodeRabbit Free (automatique)
+- PR staging→main : CodeRabbit Free (auto)
 - `/review` localement avant push
-- E2E Maestro en preview Android (signal, pas gate)
+- E2E Maestro Android en preview (signal, pas gate)

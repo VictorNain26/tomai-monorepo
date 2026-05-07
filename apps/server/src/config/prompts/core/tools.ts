@@ -1,8 +1,7 @@
 /**
- * Instructions outils pour l'agent Gemini multi-tool
+ * Instructions outils pour l'agent Mistral multi-tool.
  *
- * Centralise les règles d'utilisation des outils
- * (anciennement hardcodées dans gemini-chat.service.ts)
+ * Centralise les règles d'utilisation des outils.
  */
 
 export function generateToolInstructions(): string {

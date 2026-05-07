@@ -25,7 +25,7 @@ export interface MessageDetails {
   attachedFile?: {
     fileName: string;
     fileId?: string;
-    geminiFileId?: string;
+    fileUrl?: string;
     mimeType?: string;
     fileSizeBytes?: number;
   } | null;

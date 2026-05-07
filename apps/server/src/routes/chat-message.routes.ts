@@ -1,5 +1,5 @@
 /**
- * Routes Chat SSE Streaming - Gemini Agent Multi-Tool
+ * Routes Chat SSE Streaming — Mistral agent multi-tool.
  *
  * Token-optimized architecture:
  * - Accepts { content, data } (frontend sends ONLY new message)
@@ -125,7 +125,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       yield sse({ data: {
         type: 'error',
         id: `err_${Date.now()}`,
-        model: appConfig.ai.gemini.model,
+        model: appConfig.ai.mistral?.chatModel ?? 'mistral-small-latest',
         timestamp: Date.now(),
         error: { message: 'Erreur inattendue. Réessaie.', code: 'INTERNAL_ERROR' },
       } });

@@ -1,9 +1,9 @@
 /**
- * Service Learning - Génération de cartes de révision
+ * Service Learning — génération de cartes de révision.
  *
- * Architecture Single-Phase 2025:
- * - types.ts: Types TypeScript
- * - card-generator.service.ts: Génération en un seul appel Gemini
+ * Architecture Single-Phase :
+ * - types.ts : types TypeScript
+ * - card-generator.service.ts : génération en un seul appel Mistral
  *
  * Usage:
  * ```typescript

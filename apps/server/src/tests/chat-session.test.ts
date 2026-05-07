@@ -445,7 +445,7 @@ describe('ChatMessageService', () => {
       const result = await messageService.saveMessage(VALID_UUID, 'assistant', 'Response', {
         tokensUsed: 150,
         responseTimeMs: 500,
-        aiModel: 'gemini-2.5-flash',
+        aiModel: 'mistral-small-latest',
       });
       expect(result.messageId).toBe('msg-002');
     });

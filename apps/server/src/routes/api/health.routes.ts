@@ -137,7 +137,7 @@ export const apiHealthRoutes = new Elysia({ name: 'api-health-check' })
 
     checks.ai = {
       status: 'healthy',
-      provider: 'gemini-3-flash'
+      provider: 'mistral-small-latest',
     };
 
     if (overallStatus === 'unhealthy') {

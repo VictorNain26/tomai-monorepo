@@ -23,22 +23,22 @@ pnpm dev:mobile
 
 ## Prerequisites
 
-- **pnpm** 10.28+
-- **Node.js** 22+ (via Bun 1.3 pour le server)
+- **pnpm** 10+
+- **Node.js** 22+ (Bun 1.3 pour le server)
 - **Docker** (PostgreSQL 16 + pgvector)
 
 ## Structure
 
 ```
 apps/
-├── landing/       # Next.js 16 - Site vitrine SEO (port 3001)
-├── server/        # Bun + Elysia.js - Backend API (port 3000)
-└── mobile/        # Expo SDK 55 - App iOS/Android (port 8081)
+├── landing/       # Next.js 16 — Site vitrine SEO (port 3001)
+├── server/        # Bun + Elysia.js — Backend API (port 3000)
+└── mobile/        # Expo SDK 55 — App iOS/Android (port 8081)
 
 packages/
-├── api/           # @repo/api - Client Eden Treaty + TanStack Query
-├── shared-types/  # @repo/shared-types - Types partages
-└── eslint-config/ # @repo/eslint-config - Configs ESLint
+├── api/           # @repo/api — Client Eden Treaty + TanStack Query
+├── shared-types/  # @repo/shared-types — Types partages
+└── eslint-config/ # @repo/eslint-config — Configs ESLint
 ```
 
 ## Commands
@@ -46,17 +46,17 @@ packages/
 ```bash
 # Dev
 pnpm dev                # Landing + Server
-pnpm dev:landing        # Landing seul
-pnpm dev:server         # Server seul
-pnpm dev:mobile         # Expo mobile
+pnpm dev:landing
+pnpm dev:server
+pnpm dev:mobile
 
 # Validation
-pnpm typecheck          # TypeScript strict
-pnpm lint               # ESLint zero warnings
+pnpm typecheck
+pnpm lint
 pnpm validate           # typecheck + lint
 
 # Build
-pnpm build              # Production (toutes apps)
+pnpm build
 
 # Database
 pnpm db:push            # Dev: sync schema → DB
@@ -68,15 +68,15 @@ pnpm db:studio          # Drizzle Studio UI
 
 | Couche | Technologies |
 |--------|-------------|
-| Monorepo | Turborepo 2.7, pnpm 10.28, TypeScript 5.9 strict |
-| Backend | Bun 1.3, Elysia.js 1.4, PostgreSQL 16 pgvector, Drizzle ORM |
+| Monorepo | Turborepo, pnpm workspaces, TypeScript strict |
+| Backend | Bun + Elysia.js, PostgreSQL 16 pgvector, Drizzle ORM |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion |
-| Mobile | Expo SDK 55, React Native 0.83, NativeWind 5, React Native Reusables |
+| Mobile | Expo SDK 55, React Native, NativeWind, React Native Reusables |
 | Auth | Better Auth + Google OAuth |
-| AI | Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Qdrant Cloud (RAG) |
-| Voix | Gladia (STT), ElevenLabs (TTS) |
-| Paiements | Stripe (web) + RevenueCat (mobile IAP) |
-| Stockage | Scaleway Object Storage (RGPD France, fr-par) |
+| AI | **Mistral 100%** (souveraineté EU) — chat, embeddings, STT/TTS Voxtral, OCR |
+| RAG | Qdrant Cloud + mistral-embed (1024D) + BM25 reranking |
+| Paiements | RevenueCat (mobile IAP, source unique de facturation) |
+| Stockage | Scaleway Object Storage (RGPD, fr-par) |
 
 ## Git Workflow
 
@@ -104,7 +104,6 @@ staging (push direct OK, CI auto)
 
 ## Documentation
 
-- [apps/server/README.md](./apps/server/README.md) - Backend API
-- [apps/landing/README.md](./apps/landing/README.md) - Landing page
-- [apps/mobile/README.md](./apps/mobile/README.md) - App mobile Expo
-- [docs/AGENT-IA-ROADMAP.md](./docs/AGENT-IA-ROADMAP.md) - Roadmap agent IA
+- [apps/server/README.md](./apps/server/README.md) — Backend API
+- [apps/landing/README.md](./apps/landing/README.md) — Landing page
+- [apps/mobile/README.md](./apps/mobile/README.md) — App mobile Expo

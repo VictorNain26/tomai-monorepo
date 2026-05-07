@@ -3,7 +3,7 @@
  * Gestion des métadonnées fichiers stockés sur Scaleway Object Storage
  */
 
-import { eq, and, sql, lt, desc, inArray } from 'drizzle-orm';
+import { eq, and, sql, desc, inArray } from 'drizzle-orm';
 import { db } from '../connection.js';
 import { files, type FileStatus } from '../schema.js';
 
@@ -97,23 +97,6 @@ export class FilesRepository {
   }
 
   /**
-   * Mettre à jour les infos Gemini d'un fichier
-   */
-  async updateGeminiInfo(id: string, geminiFileUri: string, geminiExpiresAt: Date): Promise<File | undefined> {
-    const [updatedFile] = await db
-      .update(files)
-      .set({
-        geminiFileUri,
-        geminiExpiresAt,
-        updatedAt: sql`NOW()`
-      })
-      .where(eq(files.id, id))
-      .returning();
-
-    return updatedFile;
-  }
-
-  /**
    * Marquer un fichier comme supprimé (soft delete)
    */
   async softDelete(id: string): Promise<File | undefined> {
@@ -130,21 +113,6 @@ export class FilesRepository {
       .returning();
 
     return result.length > 0;
-  }
-
-  /**
-   * Trouver les fichiers expirés (Gemini expiré + status ready)
-   * Utile pour le cleanup automatique
-   */
-  async findExpiredGeminiFiles(limit = 100): Promise<File[]> {
-    return await db
-      .select()
-      .from(files)
-      .where(and(
-        eq(files.status, 'ready'),
-        lt(files.geminiExpiresAt, sql`NOW()`)
-      ))
-      .limit(limit);
   }
 
   /**

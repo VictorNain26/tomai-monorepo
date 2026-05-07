@@ -23,8 +23,8 @@ export interface EnvironmentConfig {
   // Base de données
   DATABASE_URL: string;
 
-  // IA et services externes
-  GEMINI_API_KEY?: string;
+  // IA et services externes (Mistral 100% — chat + embeddings + STT + TTS + OCR)
+  MISTRAL_API_KEY?: string;
 
   // Scaleway Object Storage (RGPD - France)
   SCALEWAY_ACCESS_KEY?: string;
@@ -110,8 +110,8 @@ function parseEnvironment(): EnvironmentConfig {
       ? Bun.env['DATABASE_URL']!
       : (Bun.env['DATABASE_URL_EXTERNAL'] ?? Bun.env['DATABASE_URL'])!,
 
-    // IA et services externes
-    GEMINI_API_KEY: Bun.env['GEMINI_API_KEY'],
+    // IA et services externes (Mistral 100%)
+    MISTRAL_API_KEY: Bun.env['MISTRAL_API_KEY'],
 
     // Scaleway Object Storage (RGPD - France)
     SCALEWAY_ACCESS_KEY: Bun.env['SCALEWAY_ACCESS_KEY'],

@@ -11,7 +11,10 @@ export type { AttachedFileInfo, FileAnalysisResult, FileAnalysisOptions, Multimo
 
 class FileContextService {
   /**
-   * Récupère les métadonnées d'un fichier depuis PostgreSQL
+   * Récupère les métadonnées d'un fichier depuis PostgreSQL.
+   * Mistral n'a pas de Files API persistante : on n'a besoin que de l'identité
+   * du fichier (id, mimeType) — la résolution en image_url ou base64 se fait
+   * au moment de l'appel chat dans `prepareMultimodalFiles`.
    */
   async retrieveFileMetadata(fileId: string): Promise<AttachedFileInfo | null> {
     try {
@@ -21,31 +24,17 @@ class FileContextService {
         return null;
       }
 
-      // Vérifier si le fileUri Gemini est encore valide (TTL 48h)
-      let geminiFileId = file.geminiFileUri ?? undefined;
-      if (geminiFileId && file.geminiExpiresAt) {
-        if (file.geminiExpiresAt <= new Date()) {
-          logger.info('Gemini file URI expired', {
-            fileId,
-            expiredAt: file.geminiExpiresAt.toISOString(),
-            operation: 'retrieve-file-metadata'
-          });
-          geminiFileId = undefined;
-        }
-      }
-
       return {
         fileName: file.fileName,
         fileId: file.id,
-        geminiFileId,
         mimeType: file.mimeType,
-        fileSizeBytes: file.sizeBytes
+        fileSizeBytes: file.sizeBytes,
       };
     } catch (error) {
       logger.warn('Failed to retrieve file metadata', {
         fileId,
         error: error instanceof Error ? error.message : String(error),
-        operation: 'retrieve-file-metadata'
+        operation: 'retrieve-file-metadata',
       });
       return null;
     }
@@ -263,18 +252,14 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       .map(id => fileRecords.find(f => f.id === id))
       .filter((f): f is NonNullable<typeof f> => f !== undefined);
 
-    const attachedFileInfos: AttachedFileInfo[] = orderedFiles.map(file => {
-      const geminiExpired = file.geminiExpiresAt && file.geminiExpiresAt <= new Date();
-      return {
-        fileName: file.fileName,
-        fileId: file.id,
-        geminiFileId: geminiExpired ? undefined : (file.geminiFileUri ?? undefined),
-        mimeType: file.mimeType,
-        fileSizeBytes: file.sizeBytes
-      };
-    });
+    const attachedFileInfos: AttachedFileInfo[] = orderedFiles.map((file) => ({
+      fileName: file.fileName,
+      fileId: file.id,
+      mimeType: file.mimeType,
+      fileSizeBytes: file.sizeBytes,
+    }));
 
-    // Analyze files (sequentially to respect Gemini rate limits) using preloaded records.
+    // Analyze files (sequentially to respect Mistral rate limits) using preloaded records.
     const analysisResults: (FileAnalysisResult | null)[] = [];
     for (const file of orderedFiles) {
       const result = await this.analyzeFileWithCache(file.id, { content, schoolLevel, userId }, file);

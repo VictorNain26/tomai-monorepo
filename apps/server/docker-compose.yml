@@ -31,9 +31,13 @@ services:
       - BETTER_AUTH_URL=http://localhost:3000
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      # AI Services
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # AI Services (Mistral 100% — chat + embeddings + STT + TTS + OCR)
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - MISTRAL_CHAT_MODEL=${MISTRAL_CHAT_MODEL:-mistral-small-latest}
+      - MISTRAL_REASONING_MODEL=${MISTRAL_REASONING_MODEL:-magistral-medium-latest}
+      - MISTRAL_AUX_MODEL=${MISTRAL_AUX_MODEL:-mistral-small-latest}
+      - MISTRAL_TRANSCRIBE_MODEL=${MISTRAL_TRANSCRIBE_MODEL:-voxtral-mini-transcribe-latest}
+      - MISTRAL_TTS_MODEL=${MISTRAL_TTS_MODEL:-voxtral-tts-latest}
       # RAG - Qdrant Cloud
       - QDRANT_URL=${QDRANT_URL}
       - QDRANT_API_KEY=${QDRANT_API_KEY}
