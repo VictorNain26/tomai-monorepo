@@ -233,12 +233,34 @@ class MistralChatService {
         subject: params.subject,
       });
 
+      // HITL approval gate (CCA D1 §6c): when the classifier says the
+      // student is asking for a complete solution with non-low confidence,
+      // we drop `generate_flashcards` from the offered tool set entirely.
+      // Otherwise the model could route a "solve this for me" turn into a
+      // freshly-generated card deck that *contains* the answer — the soft
+      // system-prompt reinforcement isn't a hard guarantee. This makes the
+      // bypass structurally impossible.
+      const isHardSolveIntent =
+        params.classifiedIntent?.intent === 'solve-this-for-me' &&
+        params.classifiedIntent.confidence !== 'low';
+      const offeredTools = isHardSolveIntent
+        ? agentTools.filter((t) => t.function.name !== 'generate_flashcards')
+        : agentTools;
+      if (isHardSolveIntent) {
+        logger.info('HITL gate: dropping generate_flashcards for solve-intent', {
+          userId: params.userId,
+          sessionId: params.sessionId,
+          confidence: params.classifiedIntent?.confidence,
+          operation: 'mistral-chat:hitl-gate',
+        });
+      }
+
       while (iteration < MAX_TOOL_ITERATIONS) {
         const stream = await withTimeout(
           this.client.chat.stream({
             model: this.model,
             messages: messages as Parameters<typeof this.client.chat.stream>[0]['messages'],
-            tools: agentTools as Parameters<typeof this.client.chat.stream>[0]['tools'],
+            tools: offeredTools as Parameters<typeof this.client.chat.stream>[0]['tools'],
             toolChoice: 'auto',
             temperature: appConfig.ai.mistral?.temperature ?? 0.7,
             maxTokens: appConfig.ai.mistral?.maxTokens ?? 16384,
