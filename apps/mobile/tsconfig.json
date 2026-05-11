@@ -7,8 +7,9 @@
     "lib": ["ES2024"],
     "types": ["jest", "@testing-library/react-native", "node"],
 
-    /* Path Mapping */
-    "baseUrl": ".",
+    /* Path Mapping (TS 5+ bundler mode : paths résolus relativement au tsconfig
+     * sans baseUrl, déprécié en TS 6.x). Babel résout via babel-plugin-module-
+     * resolver côté Metro (config dans babel.config.js, indépendant de baseUrl). */
     "paths": {
       "@/*": ["./src/*"]
     }
