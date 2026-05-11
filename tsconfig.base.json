@@ -56,6 +56,11 @@
     "skipLibCheck": true,
 
     /* Output */
-    "noEmit": true
+    "noEmit": true,
+
+    /* baseUrl est déprécié en TS 5.x et stoppe en TS 7.0 (utilisé dans
+     * packages/api, apps/landing, apps/mobile pour les path aliases).
+     * Silence l'avertissement jusqu'à la migration paths sans baseUrl. */
+    "ignoreDeprecations": "5.0"
   }
 }
