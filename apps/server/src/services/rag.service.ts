@@ -101,38 +101,19 @@ class RAGService {
       // RAG_THRESHOLDS.MIN_SCORE 0.35 est calibré cosine ; le passer à
       // searchHybrid filtrerait tous les résultats. Le filtrage qualité se fait
       // a posteriori sur averageSimilarity (calculé depuis score Qdrant).
-      let results: QdrantSearchResult[];
-      try {
-        results = await qdrantService.searchHybrid(
-          queryDense,
-          querySparse,
-          { niveau: options.niveau, matiere: options.matiere },
-          topK,
-          { hnswEf: 128 },
-        );
-      } catch (hybridError) {
-        // Fallback dense-only si la collection n'est pas (encore) configurée
-        // avec sparse vectors (pendant la fenêtre de migration côté curriculum).
-        // Source : tomai-curriculum/scripts/migrate_collection.py — la collection
-        // doit avoir sparse_vectors_config.bm25 (Modifier.IDF) avant que
-        // searchHybrid fonctionne. Sans ça Qdrant renvoie 400 "sparse not found".
-        const msg = hybridError instanceof Error ? hybridError.message : String(hybridError);
-        const looksLikeSparseMissing = /sparse|bm25|vector.*not.*found/i.test(msg);
-        if (!looksLikeSparseMissing) throw hybridError;
-        logger.warn('Hybrid search failed, falling back to dense-only', {
-          operation: 'rag-search:fallback-dense',
-          _error: msg,
-          niveau: options.niveau,
-          matiere: options.matiere,
-        });
-        const minScore = options.minSimilarity ?? RAG_THRESHOLDS.MIN_SCORE;
-        results = await qdrantService.search(
-          queryDense,
-          { niveau: options.niveau, matiere: options.matiere },
-          topK,
-          { scoreThreshold: minScore, hnswEf: 128 },
-        );
-      }
+      //
+      // Pré-requis collection (vérifié par boot check ou déploiement coordonné) :
+      // - sparse_vectors_config.bm25 avec Modifier.IDF (cf. migrate_collection.py
+      //   du curriculum). Si absent, Qdrant renvoie 400 "vector name not found"
+      //   et l'erreur propage — on ne masque PAS le problème avec un fallback
+      //   silencieux qui rendrait la régression invisible en observabilité.
+      const results = await qdrantService.searchHybrid(
+        queryDense,
+        querySparse,
+        { niveau: options.niveau, matiere: options.matiere },
+        topK,
+        { hnswEf: 128 },
+      );
 
       if (results.length === 0) {
         return this.emptyResult(Date.now() - startTime);
