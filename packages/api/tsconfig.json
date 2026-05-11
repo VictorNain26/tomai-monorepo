@@ -4,7 +4,6 @@
   "compilerOptions": {
     "lib": ["ES2022", "DOM"],
     "jsx": "react-jsx",
-    "baseUrl": ".",
     "paths": {
       "@repo/shared-types": ["../shared-types/src"]
     }

@@ -36,6 +36,12 @@ export interface QdrantSearchOptions {
   hnswEf?: number;
 }
 
+/** Sparse vector representation for Qdrant hybrid search (BM25 IDF native). */
+export interface SparseVector {
+  indices: number[];
+  values: number[];
+}
+
 export interface CollectionStats {
   total_points: number;
   by_niveau: Record<string, number>;
@@ -78,10 +84,7 @@ class QdrantService {
     const client = this.getClient();
     const startTime = Date.now();
 
-    const must: Array<{ key: string; match: { value: string } }> = [];
-    if (filter?.niveau) must.push({ key: 'niveau', match: { value: filter.niveau } });
-    if (filter?.matiere) must.push({ key: 'matiere', match: { value: filter.matiere } });
-    if (filter?.difficulty) must.push({ key: 'difficulty', match: { value: filter.difficulty } });
+    const must = this.buildMustFilter(filter);
 
     const response = await client.query(COLLECTION_NAME, {
       query: queryVector,
@@ -92,8 +95,77 @@ class QdrantService {
       params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
     });
 
-    const results: QdrantSearchResult[] = response.points.map((point) => {
-      const p = point.payload as Record<string, unknown>;
+    const results = this.mapPointsToResults(response.points);
+
+    logger.info('Qdrant search completed', {
+      operation: 'qdrant:search',
+      resultsCount: results.length,
+      durationMs: Date.now() - startTime,
+    });
+
+    return results;
+  }
+
+  /**
+   * Hybrid search via Qdrant Query API : prefetch dense + sparse, fusion RRF native.
+   *
+   * Pré-requis collection : doit avoir vectors_config={dense, ...} et
+   * sparse_vectors_config={bm25: SparseVectorParams(modifier=IDF)}. Voir
+   * tomai-curriculum/scripts/migrate_collection.py.
+   *
+   * Source : https://qdrant.tech/articles/sparse-vectors
+   */
+  async searchHybrid(
+    queryDense: number[],
+    querySparse: SparseVector,
+    filter?: QdrantFilter,
+    limit: number = 10,
+    options?: QdrantSearchOptions
+  ): Promise<QdrantSearchResult[]> {
+    const client = this.getClient();
+    const startTime = Date.now();
+
+    const must = this.buildMustFilter(filter);
+    const prefetchLimit = Math.max(limit * 4, 20);
+
+    const response = await client.query(COLLECTION_NAME, {
+      prefetch: [
+        { query: queryDense, using: 'dense', limit: prefetchLimit },
+        { query: querySparse, using: 'bm25', limit: prefetchLimit },
+      ],
+      query: { fusion: 'rrf' },
+      limit,
+      filter: must.length > 0 ? { must } : undefined,
+      with_payload: true,
+      score_threshold: options?.scoreThreshold,
+      params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
+    });
+
+    const results = this.mapPointsToResults(response.points);
+
+    logger.info('Qdrant hybrid search completed', {
+      operation: 'qdrant:search:hybrid',
+      resultsCount: results.length,
+      prefetchLimit,
+      durationMs: Date.now() - startTime,
+    });
+
+    return results;
+  }
+
+  private buildMustFilter(filter?: QdrantFilter): Array<{ key: string; match: { value: string } }> {
+    const must: Array<{ key: string; match: { value: string } }> = [];
+    if (filter?.niveau) must.push({ key: 'niveau', match: { value: filter.niveau } });
+    if (filter?.matiere) must.push({ key: 'matiere', match: { value: filter.matiere } });
+    if (filter?.difficulty) must.push({ key: 'difficulty', match: { value: filter.difficulty } });
+    return must;
+  }
+
+  private mapPointsToResults(
+    points: ReadonlyArray<{ id: string | number; score?: number; payload?: unknown }>,
+  ): QdrantSearchResult[] {
+    return points.map((point) => {
+      const p = (point.payload ?? {}) as Record<string, unknown>;
       return {
         id: String(point.id),
         score: point.score ?? 0,
@@ -107,14 +179,6 @@ class QdrantService {
         difficulty: p['difficulty'] ? String(p['difficulty']) : undefined,
       };
     });
-
-    logger.info('Qdrant search completed', {
-      operation: 'qdrant:search',
-      resultsCount: results.length,
-      durationMs: Date.now() - startTime,
-    });
-
-    return results;
   }
 
   async getStats(): Promise<CollectionStats> {
