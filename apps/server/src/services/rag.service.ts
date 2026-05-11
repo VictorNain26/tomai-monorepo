@@ -91,20 +91,48 @@ class RAGService {
     }
 
     try {
-      const [queryDense, querySparse] = await Promise.all([
-        mistralEmbeddingsService.embed(options.query),
-        Promise.resolve(this.toSparseVector(options.query)),
-      ]);
+      const queryDense = await mistralEmbeddingsService.embed(options.query);
+      const querySparse = this.toSparseVector(options.query);
 
       const topK = options.limit ?? 5;
-      const minScore = options.minSimilarity ?? RAG_THRESHOLDS.MIN_SCORE;
-      const results = await qdrantService.searchHybrid(
-        queryDense,
-        querySparse,
-        { niveau: options.niveau, matiere: options.matiere },
-        topK,
-        { scoreThreshold: minScore, hnswEf: 128 },
-      );
+      // NOTE : on ne passe PAS scoreThreshold à searchHybrid. La fusion RRF
+      // côté Qdrant retourne des scores petits (1/(k+rank), k=60 → top-1 ≈ 0.016)
+      // qui ne sont PAS comparables à la cosine similarity (~0.5-0.9). Le seuil
+      // RAG_THRESHOLDS.MIN_SCORE 0.35 est calibré cosine ; le passer à
+      // searchHybrid filtrerait tous les résultats. Le filtrage qualité se fait
+      // a posteriori sur averageSimilarity (calculé depuis score Qdrant).
+      let results: QdrantSearchResult[];
+      try {
+        results = await qdrantService.searchHybrid(
+          queryDense,
+          querySparse,
+          { niveau: options.niveau, matiere: options.matiere },
+          topK,
+          { hnswEf: 128 },
+        );
+      } catch (hybridError) {
+        // Fallback dense-only si la collection n'est pas (encore) configurée
+        // avec sparse vectors (pendant la fenêtre de migration côté curriculum).
+        // Source : tomai-curriculum/scripts/migrate_collection.py — la collection
+        // doit avoir sparse_vectors_config.bm25 (Modifier.IDF) avant que
+        // searchHybrid fonctionne. Sans ça Qdrant renvoie 400 "sparse not found".
+        const msg = hybridError instanceof Error ? hybridError.message : String(hybridError);
+        const looksLikeSparseMissing = /sparse|bm25|vector.*not.*found/i.test(msg);
+        if (!looksLikeSparseMissing) throw hybridError;
+        logger.warn('Hybrid search failed, falling back to dense-only', {
+          operation: 'rag-search:fallback-dense',
+          _error: msg,
+          niveau: options.niveau,
+          matiere: options.matiere,
+        });
+        const minScore = options.minSimilarity ?? RAG_THRESHOLDS.MIN_SCORE;
+        results = await qdrantService.search(
+          queryDense,
+          { niveau: options.niveau, matiere: options.matiere },
+          topK,
+          { scoreThreshold: minScore, hnswEf: 128 },
+        );
+      }
 
       if (results.length === 0) {
         return this.emptyResult(Date.now() - startTime);
