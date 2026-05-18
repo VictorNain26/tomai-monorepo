@@ -43,21 +43,21 @@ export interface HybridSearchOptions {
 export interface SemanticChunk {
   id: string;
   score: number;
-  content: string;
-  title: string;
-  domaine?: string;
-  sousdomaine?: string;
+  text: string;
+  section: string;
+  matiere: string;
+  niveau: string;
 }
 
 export interface HybridSearchResult {
   context: string;
   strategy: string;
   semanticChunks: SemanticChunk[];
-  microChunks: Array<{ id: string; score: number; content: string }>;
+  microChunks: Array<{ id: string; score: number; text: string }>;
   averageSimilarity: number;
   searchTime: number;
-  bestMatchTitle?: string;
-  bestMatchDomaine?: string;
+  bestMatchSection?: string;
+  bestMatchMatiere?: string;
 }
 
 // =============================================================================
@@ -146,8 +146,8 @@ class RAGService {
         microChunks: [],
         averageSimilarity,
         searchTime,
-        bestMatchTitle: bestMatch?.title,
-        bestMatchDomaine: bestMatch?.domaine,
+        bestMatchSection: bestMatch?.section,
+        bestMatchMatiere: bestMatch?.matiere,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -256,10 +256,10 @@ class RAGService {
     return results.map((r) => ({
       id: r.id,
       score: r.score,
-      content: r.content,
-      title: r.title,
-      domaine: r.domaine,
-      sousdomaine: r.sousdomaine,
+      text: r.text,
+      section: r.section,
+      matiere: r.matiere,
+      niveau: r.niveau,
     }));
   }
 
@@ -268,8 +268,8 @@ class RAGService {
 
     const contextParts = results.map((result, index) => {
       const scorePercent = (result.score * 100).toFixed(0);
-      return `[${index + 1}] ${result.title} (${result.niveau} - ${result.matiere}) [${scorePercent}%]
-${result.content}`;
+      return `[${index + 1}] ${result.section} (${result.niveau} - ${result.matiere}) [${scorePercent}%]
+${result.text}`;
     });
 
     return `📚 PROGRAMMES OFFICIELS

@@ -15,20 +15,21 @@ const CACHE_PREFIX = 'qdrant:' as const;
 export interface QdrantSearchResult {
   id: string;
   score: number;
-  title: string;
-  content: string;
+  // Payload canonique tomai-curriculum (ADR-0007). Aliases title/content
+  // retirés en Phase 2A — on lit le schema source de vérité directement.
+  text: string;
+  section: string;
   matiere: string;
   niveau: string;
-  domaine?: string;
-  sousdomaine?: string;
-  content_type?: string;
-  difficulty?: string;
+  cycle: string;
+  source_file: string;
+  chunk_index: number;
 }
 
 export interface QdrantFilter {
   niveau?: string;
   matiere?: string;
-  difficulty?: string;
+  cycle?: string;
 }
 
 export interface QdrantSearchOptions {
@@ -157,7 +158,7 @@ class QdrantService {
     const must: Array<{ key: string; match: { value: string } }> = [];
     if (filter?.niveau) must.push({ key: 'niveau', match: { value: filter.niveau } });
     if (filter?.matiere) must.push({ key: 'matiere', match: { value: filter.matiere } });
-    if (filter?.difficulty) must.push({ key: 'difficulty', match: { value: filter.difficulty } });
+    if (filter?.cycle) must.push({ key: 'cycle', match: { value: filter.cycle } });
     return must;
   }
 
@@ -169,14 +170,14 @@ class QdrantService {
       return {
         id: String(point.id),
         score: point.score ?? 0,
-        title: String(p['title'] ?? ''),
-        content: String(p['content'] ?? ''),
+        // Payload canonique curriculum (schema/document.py:Chunk.to_qdrant_payload)
+        text: String(p['text'] ?? ''),
+        section: String(p['section'] ?? ''),
         matiere: String(p['matiere'] ?? ''),
         niveau: String(p['niveau'] ?? ''),
-        domaine: p['domaine'] ? String(p['domaine']) : undefined,
-        sousdomaine: p['sousdomaine'] ? String(p['sousdomaine']) : undefined,
-        content_type: p['content_type'] ? String(p['content_type']) : undefined,
-        difficulty: p['difficulty'] ? String(p['difficulty']) : undefined,
+        cycle: String(p['cycle'] ?? ''),
+        source_file: String(p['source_file'] ?? ''),
+        chunk_index: typeof p['chunk_index'] === 'number' ? p['chunk_index'] : 0,
       };
     });
   }
