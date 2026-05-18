@@ -16,13 +16,11 @@
  * returned object and the log line is monitored.
  */
 
-import { appConfig } from '../../config/app.config.js';
-import { getGeminiClient } from '../../lib/gemini-client.js';
+import { generateStructured } from '../../lib/ai/mistral-client.js';
 import { logger } from '../../lib/observability.js';
-import { withTimeout } from '../../lib/retry.js';
 import type { EducationLevelType } from '../../types/index.js';
 
-export const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-04-21';
+export const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-05-18';
 
 export type StudentIntent =
   | 'solve-this-for-me'   // student asks the agent to complete an exercise
@@ -49,19 +47,28 @@ const ALLOWED_INTENTS: StudentIntent[] = [
 ];
 
 const RESPONSE_SCHEMA = {
-  type: 'object',
-  properties: {
-    intent: {
-      type: 'string',
-      enum: ALLOWED_INTENTS,
+  name: 'intent_classification',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      intent: {
+        type: 'string',
+        enum: ALLOWED_INTENTS,
+      },
+      confidence: {
+        type: 'string',
+        enum: ['low', 'medium', 'high'],
+      },
     },
-    confidence: {
-      type: 'string',
-      enum: ['low', 'medium', 'high'],
-    },
+    required: ['intent', 'confidence'],
+    additionalProperties: false,
   },
-  required: ['intent', 'confidence'],
 } as const;
+
+// Cache stable pour prompt cache Mistral (-90 % sur cached tokens).
+// À bumper si le prompt change pour forcer un nouveau cache.
+const INTENT_CACHE_KEY = `intent-classifier-${INTENT_CLASSIFIER_PROMPT_VERSION}`;
 
 function buildPrompt(userMessage: string, levelLabel: string): string {
   const truncated = userMessage.length > 800 ? `${userMessage.slice(0, 800)}…` : userMessage;
@@ -82,12 +89,6 @@ ${truncated}`;
 }
 
 class IntentClassifierService {
-  private readonly model: string;
-
-  constructor() {
-    this.model = appConfig.ai.gemini.model;
-  }
-
   async classify(userMessage: string, schoolLevel: EducationLevelType): Promise<ClassifiedIntent> {
     const trimmed = userMessage.trim();
 
@@ -102,26 +103,16 @@ class IntentClassifierService {
 
     const startTime = Date.now();
     try {
-      const response = await withTimeout(
-        getGeminiClient().models.generateContent({
-          model: this.model,
-          contents: [{ role: 'user', parts: [{ text: buildPrompt(trimmed, schoolLevel) }] }],
-          config: {
-            temperature: 0,
-            maxOutputTokens: 80,
-            responseMimeType: 'application/json',
-            responseJsonSchema: RESPONSE_SCHEMA,
-            // thinkingBudget:0 is the cheapest path — intent classification
-            // doesn't need reasoning depth and we need a sub-second return.
-            thinkingConfig: { thinkingBudget: 0 },
-          },
-        }),
-        8_000,
-        'gemini:intent-classify',
-      );
+      const parsed = await generateStructured<{ intent?: string; confidence?: string }>({
+        model: 'ministral-8b-latest',  // ADR-0001 : classification 5 catégories, output 80 tokens
+        messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
+        temperature: 0,
+        maxTokens: 80,
+        schema: RESPONSE_SCHEMA,
+        promptCacheKey: INTENT_CACHE_KEY,
+        timeoutMs: 8_000,
+      });
 
-      const text = response.text?.trim() ?? '';
-      const parsed = JSON.parse(text) as { intent?: string; confidence?: string };
       const intent = ALLOWED_INTENTS.includes(parsed.intent as StudentIntent)
         ? (parsed.intent as StudentIntent)
         : 'unknown';

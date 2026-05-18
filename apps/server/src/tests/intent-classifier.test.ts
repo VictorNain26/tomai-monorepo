@@ -1,6 +1,11 @@
 /**
  * Tests unitaires - Intent Classifier Service
- * Mock: Gemini client (via setGeminiClient) + logger + app config
+ * Mock: Mistral client (lib/ai/mistral-client) + logger + app config
+ *
+ * Service migré Phase 2B vers `ministral-8b-latest` via
+ * `generateStructured` du wrapper Mistral. JSON Schema strict garantit la
+ * forme retournée — le test mocke directement la valeur parsée (pas du
+ * string JSON brut).
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
@@ -16,38 +21,39 @@ mock.module('../lib/observability', () => ({ logger: mockLogger }));
 mock.module('../config/app.config', () => ({
   appConfig: {
     ai: {
-      gemini: {
+      mistral: {
         apiKey: 'test-key',
-        model: 'gemini-2.5-flash',
+        model: 'mistral-medium-latest',
       },
     },
   },
 }));
 
+// Mistral client mock — generateStructured retourne directement l'objet parsé
+// (JSON Schema strict garantit la forme côté Mistral).
+let mockStructuredResponse: { intent?: string; confidence?: string } | Error = {
+  intent: 'explain-concept',
+  confidence: 'high',
+};
+
+// Mock COMPLET du wrapper Mistral (toutes les exports) pour ne pas casser
+// d'autres tests qui partagent le même module-mock cache Bun et importeraient
+// `generateText` ou `chatStream`.
+mock.module('../lib/ai/mistral-client', () => ({
+  generateStructured: mock(async () => {
+    if (mockStructuredResponse instanceof Error) throw mockStructuredResponse;
+    return mockStructuredResponse;
+  }),
+  generateText: mock(async () => 'not-used-here'),
+  chatStream: mock(async function* () { yield { type: 'done' as const }; }),
+  setMistralClient: mock(() => {}),
+}));
+
 // Import after mocks
 const { intentClassifierService } = await import('../services/chat/intent-classifier.service');
-const { setGeminiClient } = await import('../lib/gemini-client');
-
-// ============================================
-// Gemini client stub (injected via setGeminiClient)
-// ============================================
-
-let mockGeminiResponse: { text?: string } | Error = { text: '{"intent":"explain-concept","confidence":"high"}' };
-
-function makeStubClient() {
-  return {
-    models: {
-      generateContent: mock(async () => {
-        if (mockGeminiResponse instanceof Error) throw mockGeminiResponse;
-        return mockGeminiResponse;
-      }),
-    },
-  } as unknown as Parameters<typeof setGeminiClient>[0];
-}
 
 beforeEach(() => {
-  mockGeminiResponse = { text: '{"intent":"explain-concept","confidence":"high"}' };
-  setGeminiClient(makeStubClient());
+  mockStructuredResponse = { intent: 'explain-concept', confidence: 'high' };
 });
 
 describe('Intent Classifier Service', () => {
@@ -83,17 +89,17 @@ describe('Intent Classifier Service', () => {
     });
 
     it('should not short-circuit a 20-char greeting', async () => {
-      // Longer messages go through Gemini even if they start with a greeting word.
-      mockGeminiResponse = { text: '{"intent":"explain-concept","confidence":"medium"}' };
+      // Longer messages go through Mistral even if they start with a greeting word.
+      mockStructuredResponse = { intent: 'explain-concept', confidence: 'medium' };
       const result = await intentClassifierService.classify('Bonjour, je bloque sur fractions', 'sixieme');
       expect(result.intent).toBe('explain-concept');
       expect(result.confidence).toBe('medium');
     });
   });
 
-  describe('classify() — Gemini path', () => {
-    it('should parse a valid Gemini JSON response', async () => {
-      mockGeminiResponse = { text: '{"intent":"solve-this-for-me","confidence":"high"}' };
+  describe('classify() — Mistral path', () => {
+    it('should parse a valid Mistral structured response', async () => {
+      mockStructuredResponse = { intent: 'solve-this-for-me', confidence: 'high' };
       const result = await intentClassifierService.classify(
         'Donne-moi la réponse à 3/4 + 2/5 stp',
         'cinquieme',
@@ -103,7 +109,7 @@ describe('Intent Classifier Service', () => {
     });
 
     it('should fall back to unknown on invalid intent value', async () => {
-      mockGeminiResponse = { text: '{"intent":"not-a-real-intent","confidence":"high"}' };
+      mockStructuredResponse = { intent: 'not-a-real-intent', confidence: 'high' };
       const result = await intentClassifierService.classify(
         "Explique-moi le théorème de Pythagore",
         'quatrieme',
@@ -112,7 +118,7 @@ describe('Intent Classifier Service', () => {
     });
 
     it('should fall back to low confidence on invalid confidence value', async () => {
-      mockGeminiResponse = { text: '{"intent":"explain-concept","confidence":"bogus"}' };
+      mockStructuredResponse = { intent: 'explain-concept', confidence: 'bogus' };
       const result = await intentClassifierService.classify(
         "Explique-moi le théorème de Pythagore",
         'quatrieme',
@@ -120,26 +126,20 @@ describe('Intent Classifier Service', () => {
       expect(result.confidence).toBe('low');
     });
 
-    it('should return unknown + error on Gemini throw', async () => {
-      mockGeminiResponse = new Error('gemini unavailable');
+    it('should return unknown + error on Mistral throw', async () => {
+      mockStructuredResponse = new Error('mistral unavailable');
       const result = await intentClassifierService.classify(
         "Explique-moi le théorème de Pythagore",
         'quatrieme',
       );
       expect(result.intent).toBe('unknown');
       expect(result.confidence).toBe('low');
-      expect(result.error).toBe('gemini unavailable');
+      expect(result.error).toBe('mistral unavailable');
     });
 
-    it('should return unknown + error on malformed JSON', async () => {
-      mockGeminiResponse = { text: 'not json at all' };
-      const result = await intentClassifierService.classify(
-        "Explique-moi le théorème de Pythagore",
-        'quatrieme',
-      );
-      expect(result.intent).toBe('unknown');
-      expect(result.error).toBeDefined();
-    });
+    // Note: avec JSON Schema strict côté Mistral, le payload malformé n'arrive
+    // pas au client — l'API rejette en amont. Le cas "intent inconnu" est
+    // couvert par le test "fall back to unknown on invalid intent value".
   });
 
   describe('buildReinforcement()', () => {
