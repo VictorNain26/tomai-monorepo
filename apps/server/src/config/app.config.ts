@@ -44,6 +44,16 @@ export interface AppConfig {
     };
     mistral?: {
       apiKey: string | undefined;
+      // Chat / génération de texte. Stack 100% Mistral souveraine EU (Phase 2B).
+      model: string;           // Chat principal — mistral-medium-latest (sweet spot perf/coût mai 2026)
+      reasoningModel: string;  // Reasoning explicite — magistral-medium-latest
+      ttsModel: string;        // TTS — voxtral-tts-latest (FR supporté, EU)
+      maxTokens: number;
+      temperature: number;
+      topP: number;
+      requestTimeout: number;
+      retryAttempts: number;
+      retryDelay: number;
     };
     gladia?: {
       apiKey: string | undefined;
@@ -242,9 +252,22 @@ function createAiConfig(): AppConfig['ai'] {
       safetySettings: (Bun.env['GEMINI_SAFETY'] as 'none' | 'low' | 'medium' | 'high') ?? 'medium',
       thinkingLevel: (Bun.env['GEMINI_THINKING_LEVEL'] as 'minimal' | 'low' | 'medium' | 'high') ?? 'low',
     },
-    // Mistral AI - Embeddings 1024D (migration Gemini → Mistral Jan 2025)
+    // Mistral AI — stack souveraine EU complète (embeddings + chat + TTS Voxtral).
+    // Phase 2B migration : remplace Gemini chat + ElevenLabs TTS.
     mistral: Bun.env['MISTRAL_API_KEY'] ? {
       apiKey: Bun.env['MISTRAL_API_KEY'],
+      // Mistral Medium 3.5 (avril 2026) — sweet spot perf/coût pour tutorat
+      model: Bun.env['MISTRAL_MODEL'] ?? 'mistral-medium-latest',
+      // Magistral Medium 1.2 — reasoning quand pertinent
+      reasoningModel: Bun.env['MISTRAL_REASONING_MODEL'] ?? 'magistral-medium-latest',
+      // Voxtral TTS (sorti mars 2025, FR, voice cloning 3s, EU)
+      ttsModel: Bun.env['MISTRAL_TTS_MODEL'] ?? 'voxtral-tts-latest',
+      maxTokens: parseInt(Bun.env['MISTRAL_MAX_TOKENS'] ?? '16384', 10),
+      temperature: parseFloat(Bun.env['MISTRAL_TEMPERATURE'] ?? '0.7'),
+      topP: parseFloat(Bun.env['MISTRAL_TOP_P'] ?? '0.95'),
+      requestTimeout: parseInt(Bun.env['MISTRAL_TIMEOUT'] ?? '60000', 10),
+      retryAttempts: parseInt(Bun.env['MISTRAL_RETRY_ATTEMPTS'] ?? '3', 10),
+      retryDelay: parseInt(Bun.env['MISTRAL_RETRY_DELAY'] ?? '1000', 10),
     } : undefined,
     // Gladia - Speech-to-Text (migration Gemini → Gladia Jan 2025)
     gladia: Bun.env['GLADIA_API_KEY'] ? {
