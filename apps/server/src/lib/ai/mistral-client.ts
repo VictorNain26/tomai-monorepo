@@ -41,9 +41,18 @@ export function setMistralClient(client: Mistral | null): void {
 
 export type MistralRole = 'system' | 'user' | 'assistant' | 'tool';
 
+/**
+ * Multimodal content parts (vision). Mistral models with vision (medium 3.5 /
+ * pixtral fusion) accept `image_url` parts inline alongside text. The `url`
+ * shape supports both `data:` URIs and absolute https URLs.
+ */
+export type MistralContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; imageUrl: string | { url: string } };
+
 export interface MistralMessage {
   role: MistralRole;
-  content: string;
+  content: string | MistralContentPart[];
 }
 
 export interface GenerateTextOptions {
@@ -178,7 +187,9 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
   const client = getClient();
   const res = await client.chat.complete({
     model,
-    messages: opts.messages,
+    // Cast confiné : le SDK Mistral typé corrèle role <-> shape par rôle, mais
+    // notre MistralMessage volontairement uniforme côté caller. Runtime OK.
+    messages: opts.messages as never,
     temperature,
     maxTokens,
   });
@@ -234,7 +245,7 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
     const client = getClient();
     const stream = await client.chat.stream({
       model,
-      messages: opts.messages,
+      messages: opts.messages as never,
       temperature,
       maxTokens,
       tools: opts.tools as never,
