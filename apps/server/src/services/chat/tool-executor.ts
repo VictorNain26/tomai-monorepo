@@ -122,7 +122,7 @@ async function executeToolOnce(
 ): Promise<object> {
   switch (toolName) {
     case 'search_educational_content':
-      return await executeRagSearch(args);
+      return await executeRagSearch(args, context);
 
     case 'generate_flashcards':
       return await executeGenerateFlashcards(args, context);
@@ -145,7 +145,10 @@ async function executeToolOnce(
 // TOOL IMPLEMENTATIONS
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function executeRagSearch(args: Record<string, unknown>): Promise<object> {
+async function executeRagSearch(
+  args: Record<string, unknown>,
+  context: ToolExecutionContext,
+): Promise<object> {
   const startTime = Date.now();
   const query = typeof args.query === 'string' ? args.query : '';
   const niveau = (typeof args.niveau === 'string' ? args.niveau : '6eme') as EducationLevelType;
@@ -171,6 +174,8 @@ async function executeRagSearch(args: Record<string, unknown>): Promise<object> 
     niveau,
     matiere,
     limit,
+    auditUserId: context.userId,
+    auditSessionId: context.sessionId,
   });
 
   return {
@@ -208,6 +213,8 @@ async function executeGenerateFlashcards(
         niveau: context.schoolLevel,
         matiere: subject,
         limit: 3,
+        auditUserId: context.userId,
+        auditSessionId: context.sessionId,
       });
       ragContext = ragResult.context;
     } catch (err) {
