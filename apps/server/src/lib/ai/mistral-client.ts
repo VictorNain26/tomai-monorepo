@@ -50,9 +50,21 @@ export type MistralContentPart =
   | { type: 'text'; text: string }
   | { type: 'image_url'; imageUrl: string | { url: string } };
 
+export interface MistralToolCall {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+}
+
 export interface MistralMessage {
   role: MistralRole;
   content: string | MistralContentPart[];
+  /** Set by the model on `assistant` messages that request tool execution. */
+  toolCalls?: MistralToolCall[];
+  /** Set by the caller on `tool` messages to correlate the result with its call. */
+  toolCallId?: string;
+  /** Optional `tool` message field for symmetry with the OpenAI tools spec. */
+  name?: string;
 }
 
 export interface GenerateTextOptions {
@@ -278,9 +290,19 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
   }
 
   // Path POST direct — pour prompt_cache_key. Parse SSE manuellement.
+  // Convert our camelCase MistralMessage to the snake_case wire shape Mistral
+  // expects (tool_calls, tool_call_id). The SDK path does this automatically.
+  const wireMessages = opts.messages.map((m) => {
+    const out: Record<string, unknown> = { role: m.role, content: m.content };
+    if (m.toolCalls) out['tool_calls'] = m.toolCalls;
+    if (m.toolCallId) out['tool_call_id'] = m.toolCallId;
+    if (m.name) out['name'] = m.name;
+    return out;
+  });
+
   const body: Record<string, unknown> = {
     model,
-    messages: opts.messages,
+    messages: wireMessages,
     temperature,
     max_tokens: maxTokens,
     stream: true,

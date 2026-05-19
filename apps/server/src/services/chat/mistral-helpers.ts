@@ -1,9 +1,21 @@
-import {
-  HarmBlockThreshold,
-  HarmCategory,
-  ThinkingLevel,
-  type SafetySetting,
-} from '@google/genai';
+/**
+ * Mistral chat helpers — replaces gemini-helpers.ts.
+ *
+ * Drops the Gemini-specific knobs that no longer apply:
+ * - ThinkingLevel       : not exposed by Mistral. Magistral reasoning quality
+ *                         is controlled by model choice, not a config flag.
+ * - HarmCategory        : Mistral does not surface a per-category safety
+ *                         threshold API. Content moderation is built-in.
+ *
+ * Keeps the genuinely useful helpers:
+ * - MAX_TOOL_ITERATIONS  : same agentic loop bound (5 iterations).
+ * - Streaming timeouts   : same setup + per-chunk guards, just renamed.
+ * - wrapUserMessage      : prompt-injection defence (delimiter wrap), still
+ *                          necessary regardless of provider.
+ * - getToolStatusLabel   : UI status string for tool invocation.
+ * - getLearningContext   : reads FSRS due-cards + weak subjects from pg.
+ */
+
 import { sql, eq, and } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { learningCards, learningDecks } from '../../db/schema.js';
@@ -12,44 +24,11 @@ import { logger } from '../../lib/observability.js';
 export const MAX_TOOL_ITERATIONS = 5;
 
 /**
- * Timeouts for Gemini streaming. The setup timeout guards the initial API
- * handshake; the chunk timeout catches streams that stall mid-response.
+ * Timeouts for Mistral chat streaming. The setup timeout guards the initial
+ * API handshake; the chunk timeout catches streams that stall mid-response.
  */
-export const GEMINI_STREAM_SETUP_TIMEOUT_MS = 90_000;
-export const GEMINI_STREAM_CHUNK_TIMEOUT_MS = 60_000;
-
-export const THINKING_LEVEL_MAP: Record<string, ThinkingLevel> = {
-  minimal: ThinkingLevel.MINIMAL,
-  low: ThinkingLevel.LOW,
-  medium: ThinkingLevel.MEDIUM,
-  high: ThinkingLevel.HIGH,
-};
-
-/**
- * Map the tenant-facing safety level to Gemini's threshold enum.
- *
- * For a CP-Terminale platform the default is 'medium' which blocks
- * medium-and-above harm scores across all four standard categories. Set the
- * env var GEMINI_SAFETY to override per-environment.
- */
-const SAFETY_THRESHOLD_MAP: Record<'none' | 'low' | 'medium' | 'high', HarmBlockThreshold> = {
-  none: HarmBlockThreshold.BLOCK_NONE,
-  low: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-  medium: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  high: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-};
-
-const SAFETY_CATEGORIES: readonly HarmCategory[] = [
-  HarmCategory.HARM_CATEGORY_HARASSMENT,
-  HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-  HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-  HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-];
-
-export function buildSafetySettings(level: 'none' | 'low' | 'medium' | 'high'): SafetySetting[] {
-  const threshold = SAFETY_THRESHOLD_MAP[level];
-  return SAFETY_CATEGORIES.map(category => ({ category, threshold }));
-}
+export const CHAT_STREAM_SETUP_TIMEOUT_MS = 90_000;
+export const CHAT_STREAM_CHUNK_TIMEOUT_MS = 60_000;
 
 /**
  * Wrap a student message with structured delimiters so the model treats any
@@ -119,7 +98,7 @@ export async function getLearningContext(userId: string): Promise<string | null>
     return context;
   } catch (err) {
     logger.warn('Failed to fetch learning context', {
-      operation: 'gemini-chat:learning-context',
+      operation: 'chat:learning-context',
       _error: err instanceof Error ? err.message : String(err),
       userId,
     });

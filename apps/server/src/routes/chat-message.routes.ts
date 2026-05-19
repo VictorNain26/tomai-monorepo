@@ -125,7 +125,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       yield sse({ data: {
         type: 'error',
         id: `err_${Date.now()}`,
-        model: appConfig.ai.gemini.model,
+        model: appConfig.ai.mistral?.model ?? 'mistral-medium-latest',
         timestamp: Date.now(),
         error: { message: 'Erreur inattendue. Réessaie.', code: 'INTERNAL_ERROR' },
       } });

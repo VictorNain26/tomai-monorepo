@@ -30,8 +30,8 @@ JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `
   - OCR documents : `mistral-ocr-25.12`
   - TTS : `voxtral-tts-26.03` (FR, voice cloning, EU)
   - STT : Gladia (Paris, EU OK)
-  - **Migration Gemini → Mistral en cours** (Phase 2B partielle, voir
-    `docs/PHASE_2B_HANDOVER.md`)
+  - **Migration Gemini → Mistral terminée** : `@google/genai` retiré du
+    `package.json`, aucun appel sortant Google côté runtime.
 - **RAG** : Qdrant Cloud + Mistral embeddings + sparse BM25 IDF natif (hybrid RRF côté server).
   Curriculum index dans repo séparé `tomai-curriculum/` (voir son CLAUDE.md).
 - **Paiement** : Stripe (webhooks HMAC signés) + RevenueCat (à migrer vers signature JWT — voir SP4)
@@ -72,7 +72,7 @@ Best practices token (cf ADR-0001 D4) :
 - **Quota** : token quota windowed (5h rolling + daily cap) derrière flag `QUOTA_ENFORCEMENT_ENABLED`
 - **RAG** : recherche unifiée Qdrant hybrid native (dense Mistral + sparse BM25 IDF + fusion RRF). Pas de Cohere (souveraineté EU).
 - **Pronote** : auth QR code, devoirs, notes, emploi du temps (SSRF protection)
-- **Storage** : upload presigned Scaleway, confirmation. **Files API Gemini à supprimer Phase 2B** (voir `docs/PHASE_2B_HANDOVER.md`) — sera remplacée par base64 inline (photos) + Mistral OCR (PDFs).
+- **Storage** : upload presigned Scaleway, confirmation. Multimodal chat consomme directement le blob Scaleway (base64 inline pour photos, `extractedText` côté record pour PDFs). Pas de cache fichier externe (Mistral n'a pas d'équivalent à Gemini Files API).
 
 ## Patterns
 
@@ -109,9 +109,3 @@ Source de vérité : `src/db/schema.ts`. Règles détaillées : @../../.claude/r
 ## Sources officielles
 
 [Elysia.js](https://elysiajs.com) | [Drizzle ORM](https://orm.drizzle.team) | [Better Auth](https://better-auth.com) | [Mistral API](https://docs.mistral.ai/api/) | [Mistral Models](https://docs.mistral.ai/getting-started/models/models_overview/) | [Stripe Webhooks](https://docs.stripe.com/webhooks) | [RevenueCat Webhooks v2](https://www.revenuecat.com/docs/integrations/webhooks/webhooks-v2)
-
-**Gemini API encore référencée dans le code legacy** (Phase 2B migration en cours) :
-- `gemini-chat.service.ts`, `gemini-helpers.ts`, `gemini-files.service.ts`,
-  `file-multimodal.service.ts`, `chat-orchestration.service.ts`,
-  `tool-declarations.ts`, `tool-executor.ts`, `document-analysis.service.ts`
-- À migrer en suivant `docs/PHASE_2B_HANDOVER.md`

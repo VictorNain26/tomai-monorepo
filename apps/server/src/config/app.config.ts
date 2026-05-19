@@ -28,20 +28,6 @@ export interface AppConfig {
     connectionTimeoutMs: number;
   };
   ai: {
-    gemini: {
-      apiKey: string | undefined;
-      model: string;           // Modèle principal (chat) - Gemini 3 Flash
-      audioModel: string;      // Modèle audio (analyse prononciation) - Gemini 3 Flash
-      ttsModel: string;        // Modèle TTS - Gemini 2.5 Flash TTS (pas encore 3.0)
-      maxTokens: number;
-      temperature: number;
-      topP: number;
-      requestTimeout: number;
-      retryAttempts: number;
-      retryDelay: number;
-      safetySettings: 'none' | 'low' | 'medium' | 'high';
-      thinkingLevel: 'minimal' | 'low' | 'medium' | 'high';
-    };
     mistral?: {
       apiKey: string | undefined;
       // Chat / génération de texte. Stack 100% Mistral souveraine EU (Phase 2B).
@@ -235,25 +221,9 @@ function createDatabaseConfig(): AppConfig['database'] {
 
 function createAiConfig(): AppConfig['ai'] {
   return {
-    gemini: {
-      apiKey: Bun.env['GEMINI_API_KEY'],
-      // Modèles spécialisés pour usage optimal
-      // Fallback sur un modèle GA stable pour éviter une panne si la var d'env
-      // disparaît ou pointe vers un preview retiré. La prod surcharge via env.
-      model: Bun.env['GEMINI_MODEL'] ?? 'gemini-2.5-flash',
-      audioModel: Bun.env['GEMINI_AUDIO_MODEL'] ?? 'gemini-2.5-flash',
-      ttsModel: Bun.env['GEMINI_TTS_MODEL'] ?? 'gemini-2.5-flash-preview-tts', // Text-to-Speech natif (pas encore 3.0)
-      maxTokens: parseInt(Bun.env['GEMINI_MAX_TOKENS'] ?? '16384', 10), // Gemini 3 Flash supports 1M context
-      temperature: parseFloat(Bun.env['GEMINI_TEMPERATURE'] ?? '0.7'),    // Optimal pour éducation
-      topP: parseFloat(Bun.env['GEMINI_TOP_P'] ?? '0.95'),                // Créativité contrôlée
-      requestTimeout: parseInt(Bun.env['GEMINI_TIMEOUT'] ?? '60000', 10), // Timeout 60s
-      retryAttempts: parseInt(Bun.env['GEMINI_RETRY_ATTEMPTS'] ?? '3', 10),
-      retryDelay: parseInt(Bun.env['GEMINI_RETRY_DELAY'] ?? '1000', 10),
-      safetySettings: (Bun.env['GEMINI_SAFETY'] as 'none' | 'low' | 'medium' | 'high') ?? 'medium',
-      thinkingLevel: (Bun.env['GEMINI_THINKING_LEVEL'] as 'minimal' | 'low' | 'medium' | 'high') ?? 'low',
-    },
     // Mistral AI — stack souveraine EU complète (embeddings + chat + TTS Voxtral).
-    // Phase 2B migration : remplace Gemini chat + ElevenLabs TTS.
+    // Phase 2B migration finished : Mistral is the only LLM provider for chat,
+    // satellites (auto-title, classifier, summarization, etc.), and TTS.
     mistral: Bun.env['MISTRAL_API_KEY'] ? {
       apiKey: Bun.env['MISTRAL_API_KEY'],
       // Mistral Medium 3.5 (avril 2026) — sweet spot perf/coût pour tutorat
