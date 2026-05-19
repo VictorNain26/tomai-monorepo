@@ -174,7 +174,6 @@ class ChatOrchestrationService {
       conversationHistory: sessionCtx.formattedHistory,
       intentReinforcement,
       files: multimodalFiles.map(f => ({
-        fileUri: f.fileUri,
         base64: f.base64,
         mimeType: f.mimeType,
         contentType: f.contentType,

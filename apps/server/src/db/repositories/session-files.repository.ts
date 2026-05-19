@@ -65,7 +65,10 @@ export class SessionFilesRepository {
   }
 
   /**
-   * Lister les fichiers attachés avec contexte éducatif (pour injection AI)
+   * Lister les fichiers attachés avec contexte éducatif (pour injection AI).
+   *
+   * Pas de cache fichier externe (Mistral n'a pas de Files API) — les chemins
+   * multimodaux se re-construisent à partir du blob Scaleway à chaque tour.
    */
   async findBySessionWithContext(sessionId: string) {
     const rows = await db
@@ -74,8 +77,6 @@ export class SessionFilesRepository {
         fileName: files.fileName,
         mimeType: files.mimeType,
         educationalContext: files.educationalContext,
-        geminiFileUri: files.geminiFileUri,
-        geminiExpiresAt: files.geminiExpiresAt,
       })
       .from(sessionFiles)
       .innerJoin(files, eq(sessionFiles.fileId, files.id))
