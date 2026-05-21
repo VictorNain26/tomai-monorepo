@@ -83,3 +83,4 @@ export * from './billing.schema';
 export * from './files.schema';
 export * from './learning-tools.schema';
 export * from './notifications.schema';
+export * from './audit.schema';

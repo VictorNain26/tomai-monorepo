@@ -91,7 +91,7 @@ class DocumentAnalysisService {
         operation: 'document-extraction-complete',
       });
 
-      const ragResult = await this.queryRAG(extraction.text, schoolLevel);
+      const ragResult = await this.queryRAG(extraction.text, schoolLevel, userId);
 
       const analysisStart = Date.now();
       const { classification, analysis } = await this.analyzeText(
@@ -168,7 +168,7 @@ class DocumentAnalysisService {
       // No OCR text upfront — use the user question as RAG query if present,
       // otherwise skip RAG (the previous "document scolaire image" string
       // returned irrelevant top-k that biased the pedagogical framing).
-      const ragResult = await this.queryRAG(userQuestion ?? null, schoolLevel);
+      const ragResult = await this.queryRAG(userQuestion ?? null, schoolLevel, userId);
 
       const { classification, analysis, extractedText } = await this.analyzeImageWithVision(
         base64Data,
@@ -291,6 +291,7 @@ class DocumentAnalysisService {
   private async queryRAG(
     queryText: string | null,
     schoolLevel: EducationLevelType,
+    auditUserId?: string,
   ): Promise<RAGQueryResult> {
     if (!queryText || queryText.trim().length < 10) {
       return { found: false, chunksCount: 0, context: '' };
@@ -314,6 +315,7 @@ class DocumentAnalysisService {
         niveau: schoolLevel,
         limit: 5,
         minSimilarity: 0.6,
+        auditUserId: auditUserId ?? null,
       });
 
       if (response.semanticChunks.length === 0) {

@@ -16,6 +16,7 @@
 
 import { qdrantService, type QdrantSearchResult, type SparseVector } from './qdrant.service.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
+import { retrievalAuditRepository } from '../db/repositories/index.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
 
@@ -38,6 +39,14 @@ export interface HybridSearchOptions {
   competence?: string | null;
   limit?: number;
   minSimilarity?: number;
+  /**
+   * Audit trail (RGPD article 30) — when both are provided, we persist a row
+   * to `retrieval_audit` so we can answer "what did this user search" without
+   * replaying logs. The query text itself is hashed before insert; only
+   * metadata (filters, counts, latency) hits the table.
+   */
+  auditUserId?: string | null;
+  auditSessionId?: string | null;
 }
 
 export interface SemanticChunk {
@@ -115,18 +124,37 @@ class RAGService {
         { hnswEf: 128 },
       );
 
-      if (results.length === 0) {
-        return this.emptyResult(Date.now() - startTime);
-      }
-
-      const semanticChunks = this.toSemanticChunks(results);
+      const semanticChunks = results.length > 0 ? this.toSemanticChunks(results) : [];
       const bestMatch = results[0];
       const averageSimilarity =
         semanticChunks.length > 0
           ? semanticChunks.reduce((sum, c) => sum + c.score, 0) / semanticChunks.length
           : 0;
-      const context = this.buildContext(results);
       const searchTime = Date.now() - startTime;
+      const strategy = 'qdrant-hybrid-rrf';
+
+      // RGPD article 30 — fire-and-forget audit insert. Only metadata
+      // (hashed query, filters, counts, latency) hits the table; the prompt
+      // never persists. Failure is logged but never breaks the response.
+      if (options.auditUserId) {
+        void retrievalAuditRepository.log({
+          userId: options.auditUserId,
+          sessionId: options.auditSessionId ?? null,
+          query: options.query,
+          niveau: options.niveau,
+          matiere: options.matiere ?? null,
+          resultsCount: semanticChunks.length,
+          avgScore: averageSimilarity || null,
+          durationMs: searchTime,
+          strategy,
+        });
+      }
+
+      if (results.length === 0) {
+        return this.emptyResult(searchTime);
+      }
+
+      const context = this.buildContext(results);
 
       logger.info('RAG search completed', {
         operation: 'rag-search',
@@ -141,7 +169,7 @@ class RAGService {
 
       return {
         context,
-        strategy: 'qdrant-hybrid-rrf',
+        strategy,
         semanticChunks,
         microChunks: [],
         averageSimilarity,
