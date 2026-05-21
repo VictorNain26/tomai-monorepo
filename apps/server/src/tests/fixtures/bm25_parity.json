@@ -1,0 +1,325 @@
+[
+  {
+    "text": "Pythagore et théorème de Pythagore",
+    "tokens": [
+      "pythagore",
+      "et",
+      "théorème",
+      "de",
+      "pythagore"
+    ],
+    "token_hashes": [
+      [
+        "pythagore",
+        97600914
+      ],
+      [
+        "et",
+        1192914684
+      ],
+      [
+        "théorème",
+        2122572385
+      ],
+      [
+        "de",
+        1545391778
+      ],
+      [
+        "pythagore",
+        97600914
+      ]
+    ]
+  },
+  {
+    "text": "L'égalité de deux fractions",
+    "tokens": [
+      "l",
+      "égalité",
+      "de",
+      "deux",
+      "fractions"
+    ],
+    "token_hashes": [
+      [
+        "l",
+        1762406667
+      ],
+      [
+        "égalité",
+        2027173608
+      ],
+      [
+        "de",
+        1545391778
+      ],
+      [
+        "deux",
+        571517047
+      ],
+      [
+        "fractions",
+        1616818576
+      ]
+    ]
+  },
+  {
+    "text": "Histoire-Géographie au cycle 4 : la Renaissance européenne",
+    "tokens": [
+      "histoire",
+      "géographie",
+      "au",
+      "cycle",
+      "4",
+      "la",
+      "renaissance",
+      "européenne"
+    ],
+    "token_hashes": [
+      [
+        "histoire",
+        1210071176
+      ],
+      [
+        "géographie",
+        80117392
+      ],
+      [
+        "au",
+        1478825755
+      ],
+      [
+        "cycle",
+        516359153
+      ],
+      [
+        "4",
+        822911587
+      ],
+      [
+        "la",
+        1211222494
+      ],
+      [
+        "renaissance",
+        1778618697
+      ],
+      [
+        "européenne",
+        1014414449
+      ]
+    ]
+  },
+  {
+    "text": "L'œuvre d'art au Moyen Âge",
+    "tokens": [
+      "l",
+      "œuvre",
+      "d",
+      "art",
+      "au",
+      "moyen",
+      "âge"
+    ],
+    "token_hashes": [
+      [
+        "l",
+        1762406667
+      ],
+      [
+        "œuvre",
+        397233820
+      ],
+      [
+        "d",
+        1628185715
+      ],
+      [
+        "art",
+        795810186
+      ],
+      [
+        "au",
+        1478825755
+      ],
+      [
+        "moyen",
+        257663111
+      ],
+      [
+        "âge",
+        1650009721
+      ]
+    ]
+  },
+  {
+    "text": "L'ADN et l'évolution des espèces",
+    "tokens": [
+      "l",
+      "adn",
+      "et",
+      "l",
+      "évolution",
+      "des",
+      "espèces"
+    ],
+    "token_hashes": [
+      [
+        "l",
+        1762406667
+      ],
+      [
+        "adn",
+        892930306
+      ],
+      [
+        "et",
+        1192914684
+      ],
+      [
+        "l",
+        1762406667
+      ],
+      [
+        "évolution",
+        575971402
+      ],
+      [
+        "des",
+        1381602051
+      ],
+      [
+        "espèces",
+        752797206
+      ]
+    ]
+  },
+  {
+    "text": "œuvre, ça marche, déjà, où",
+    "tokens": [
+      "œuvre",
+      "ça",
+      "marche",
+      "déjà",
+      "où"
+    ],
+    "token_hashes": [
+      [
+        "œuvre",
+        397233820
+      ],
+      [
+        "ça",
+        1055080357
+      ],
+      [
+        "marche",
+        403475087
+      ],
+      [
+        "déjà",
+        1031556804
+      ],
+      [
+        "où",
+        1479759909
+      ]
+    ]
+  },
+  {
+    "text": "",
+    "tokens": [],
+    "token_hashes": []
+  },
+  {
+    "text": "123 456 nombres",
+    "tokens": [
+      "123",
+      "456",
+      "nombres"
+    ],
+    "token_hashes": [
+      [
+        "123",
+        1916298011
+      ],
+      [
+        "456",
+        506952508
+      ],
+      [
+        "nombres",
+        1384909481
+      ]
+    ]
+  },
+  {
+    "text": "Café, naïveté, façon, hôtel",
+    "tokens": [
+      "café",
+      "naïveté",
+      "façon",
+      "hôtel"
+    ],
+    "token_hashes": [
+      [
+        "café",
+        856211068
+      ],
+      [
+        "naïveté",
+        2033863379
+      ],
+      [
+        "façon",
+        1178341576
+      ],
+      [
+        "hôtel",
+        169383406
+      ]
+    ]
+  },
+  {
+    "text": "Aujourd'hui les élèves apprennent le théorème.",
+    "tokens": [
+      "aujourd",
+      "hui",
+      "les",
+      "élèves",
+      "apprennent",
+      "le",
+      "théorème"
+    ],
+    "token_hashes": [
+      [
+        "aujourd",
+        1920352069
+      ],
+      [
+        "hui",
+        1871541821
+      ],
+      [
+        "les",
+        1265302555
+      ],
+      [
+        "élèves",
+        1155513842
+      ],
+      [
+        "apprennent",
+        47266794
+      ],
+      [
+        "le",
+        1278332970
+      ],
+      [
+        "théorème",
+        2122572385
+      ]
+    ]
+  }
+]

@@ -4,6 +4,29 @@
  */
 
 // =============================================================================
+// RAG CHUNK PAYLOAD (mirror Pydantic `Chunk` from tomai-curriculum)
+// =============================================================================
+export type {
+  Matiere,
+  Niveau,
+  NiveauCollege,
+  NiveauLycee,
+  Cycle,
+  ChunkPayload,
+} from './chunk.js';
+
+// =============================================================================
+// BM25 SPARSE VECTOR (parity with tomai-curriculum/schema/bm25.py)
+// =============================================================================
+export {
+  TOKEN_RE,
+  hashTokenFnv1a,
+  tokenizeFr,
+  toSparseVector,
+  type SparseVector,
+} from './bm25.js';
+
+// =============================================================================
 // TYPES AUTHENTICATION
 // =============================================================================
 

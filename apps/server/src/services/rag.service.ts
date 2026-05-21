@@ -14,12 +14,13 @@
  * - https://qdrant.tech/articles/bm42 (Modifier.IDF côté Qdrant)
  */
 
-import { qdrantService, type QdrantSearchResult, type SparseVector } from './qdrant.service.js';
+import { qdrantService, type QdrantSearchResult } from './qdrant.service.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
 import { rerankerService } from './reranker.service.js';
 import { retrievalAuditRepository } from '../db/repositories/index.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
+import { toSparseVector } from '@repo/shared-types';
 
 // Thresholds pour cosine similarity (0-1)
 const RAG_THRESHOLDS = {
@@ -102,7 +103,7 @@ class RAGService {
 
     try {
       const queryDense = await mistralEmbeddingsService.embed(options.query);
-      const querySparse = this.toSparseVector(options.query);
+      const querySparse = toSparseVector(options.query);
 
       const topK = options.limit ?? 5;
       // When the reranker is enabled, prefetch ~4x more candidates so the
@@ -219,33 +220,6 @@ class RAGService {
 
       throw error;
     }
-  }
-
-  /**
-   * Tokenise une query française pour Qdrant Modifier.IDF.
-   * Qdrant calcule l'IDF côté server à partir des indices + values fournis.
-   */
-  private toSparseVector(query: string): SparseVector {
-    const tokens = query.toLowerCase().match(/[a-zàâäéèêëïîôùûüÿœæç0-9]+/g) ?? [];
-    const counts = new Map<number, number>();
-    for (const token of tokens) {
-      const idx = this.hashToken(token);
-      counts.set(idx, (counts.get(idx) ?? 0) + 1);
-    }
-    return {
-      indices: Array.from(counts.keys()),
-      values: Array.from(counts.values()),
-    };
-  }
-
-  /** Hash 32-bit positif stable d'un token (FNV-1a). */
-  private hashToken(token: string): number {
-    let h = 2166136261;
-    for (let i = 0; i < token.length; i++) {
-      h = (h ^ token.charCodeAt(i)) >>> 0;
-      h = Math.imul(h, 16777619) >>> 0;
-    }
-    return h & 0x7fffffff;
   }
 
   /**
