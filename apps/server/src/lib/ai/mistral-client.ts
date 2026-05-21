@@ -18,6 +18,7 @@
 import { Mistral } from '@mistralai/mistralai';
 import { appConfig } from '../../config/app.config.js';
 import { logger } from '../observability.js';
+import { withGenAiSpan } from '../otel/index.js';
 
 // ── Singleton client SDK ────────────────────────────────────────────────────
 
@@ -180,32 +181,60 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
   const timeoutMs = opts.timeoutMs ?? cfg.requestTimeout;
 
-  if (opts.promptCacheKey) {
-    const data = await postChatCompletion(
-      {
-        model,
-        messages: opts.messages,
-        temperature,
-        max_tokens: maxTokens,
-        prompt_cache_key: opts.promptCacheKey,
-      },
-      timeoutMs,
-    );
-    const choices = (data['choices'] as Array<Record<string, unknown>>) ?? [];
-    const message = choices[0]?.['message'] as Record<string, unknown> | undefined;
-    return String(message?.['content'] ?? '');
-  }
+  return withGenAiSpan(
+    {
+      operation: 'chat',
+      provider: 'mistral_ai',
+      model,
+      maxTokens,
+      temperature,
+      serverAddress: 'api.mistral.ai',
+    },
+    async (recordResponse) => {
+      if (opts.promptCacheKey) {
+        const data = await postChatCompletion(
+          {
+            model,
+            messages: opts.messages,
+            temperature,
+            max_tokens: maxTokens,
+            prompt_cache_key: opts.promptCacheKey,
+          },
+          timeoutMs,
+        );
+        const choices = (data['choices'] as Array<Record<string, unknown>>) ?? [];
+        const message = choices[0]?.['message'] as Record<string, unknown> | undefined;
+        const usage = data['usage'] as { prompt_tokens?: number; completion_tokens?: number } | undefined;
+        recordResponse({
+          id: typeof data['id'] === 'string' ? data['id'] : undefined,
+          model: typeof data['model'] === 'string' ? data['model'] : undefined,
+          finishReasons: [String(choices[0]?.['finish_reason'] ?? 'stop')],
+          inputTokens: usage?.prompt_tokens,
+          outputTokens: usage?.completion_tokens,
+        });
+        return String(message?.['content'] ?? '');
+      }
 
-  const client = getClient();
-  const res = await client.chat.complete({
-    model,
-    // Cast confiné : le SDK Mistral typé corrèle role <-> shape par rôle, mais
-    // notre MistralMessage volontairement uniforme côté caller. Runtime OK.
-    messages: opts.messages as never,
-    temperature,
-    maxTokens,
-  });
-  return String(res.choices?.[0]?.message?.content ?? '');
+      const client = getClient();
+      const res = await client.chat.complete({
+        model,
+        // Cast confiné : le SDK Mistral typé corrèle role <-> shape par rôle, mais
+        // notre MistralMessage volontairement uniforme côté caller. Runtime OK.
+        messages: opts.messages as never,
+        temperature,
+        maxTokens,
+      });
+      const finish = res.choices?.[0]?.finishReason;
+      recordResponse({
+        id: res.id,
+        model: res.model,
+        finishReasons: finish ? [String(finish)] : undefined,
+        inputTokens: res.usage?.promptTokens,
+        outputTokens: res.usage?.completionTokens,
+      });
+      return String(res.choices?.[0]?.message?.content ?? '');
+    },
+  );
 }
 
 /**
@@ -223,20 +252,40 @@ export async function generateStructured<T = unknown>(
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
   const timeoutMs = opts.timeoutMs ?? cfg.requestTimeout;
 
-  const body: Record<string, unknown> = {
-    model,
-    messages: opts.messages,
-    temperature,
-    max_tokens: maxTokens,
-    response_format: { type: 'json_schema', json_schema: opts.schema },
-  };
-  if (opts.promptCacheKey) body['prompt_cache_key'] = opts.promptCacheKey;
+  return withGenAiSpan(
+    {
+      operation: 'chat',
+      provider: 'mistral_ai',
+      model,
+      maxTokens,
+      temperature,
+      serverAddress: 'api.mistral.ai',
+    },
+    async (recordResponse) => {
+      const body: Record<string, unknown> = {
+        model,
+        messages: opts.messages,
+        temperature,
+        max_tokens: maxTokens,
+        response_format: { type: 'json_schema', json_schema: opts.schema },
+      };
+      if (opts.promptCacheKey) body['prompt_cache_key'] = opts.promptCacheKey;
 
-  const data = await postChatCompletion(body, timeoutMs);
-  const choices = (data['choices'] as Array<Record<string, unknown>>) ?? [];
-  const message = choices[0]?.['message'] as Record<string, unknown> | undefined;
-  const content = String(message?.['content'] ?? '');
-  return JSON.parse(content) as T;
+      const data = await postChatCompletion(body, timeoutMs);
+      const choices = (data['choices'] as Array<Record<string, unknown>>) ?? [];
+      const message = choices[0]?.['message'] as Record<string, unknown> | undefined;
+      const usage = data['usage'] as { prompt_tokens?: number; completion_tokens?: number } | undefined;
+      recordResponse({
+        id: typeof data['id'] === 'string' ? data['id'] : undefined,
+        model: typeof data['model'] === 'string' ? data['model'] : undefined,
+        finishReasons: [String(choices[0]?.['finish_reason'] ?? 'stop')],
+        inputTokens: usage?.prompt_tokens,
+        outputTokens: usage?.completion_tokens,
+      });
+      const content = String(message?.['content'] ?? '');
+      return JSON.parse(content) as T;
+    },
+  );
 }
 
 /**

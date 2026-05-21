@@ -1,5 +1,6 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { logger } from '../lib/observability.js';
+import { withDbSpan } from '../lib/otel/index.js';
 import { cacheService } from './memory-cache.service.js';
 import { QdrantHierarchyService } from './qdrant-hierarchy.service.js';
 import type { ChaptersHierarchy, EducationLevelType } from '../types/index.js';
@@ -85,26 +86,32 @@ class QdrantService {
     const client = this.getClient();
     const startTime = Date.now();
 
-    const must = this.buildMustFilter(filter);
+    return withDbSpan(
+      { system: 'qdrant', operation: 'search', collection: COLLECTION_NAME },
+      async (recordRows) => {
+        const must = this.buildMustFilter(filter);
 
-    const response = await client.query(COLLECTION_NAME, {
-      query: queryVector,
-      limit,
-      filter: must.length > 0 ? { must } : undefined,
-      with_payload: true,
-      score_threshold: options?.scoreThreshold,
-      params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
-    });
+        const response = await client.query(COLLECTION_NAME, {
+          query: queryVector,
+          limit,
+          filter: must.length > 0 ? { must } : undefined,
+          with_payload: true,
+          score_threshold: options?.scoreThreshold,
+          params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
+        });
 
-    const results = this.mapPointsToResults(response.points);
+        const results = this.mapPointsToResults(response.points);
+        recordRows(results.length);
 
-    logger.info('Qdrant search completed', {
-      operation: 'qdrant:search',
-      resultsCount: results.length,
-      durationMs: Date.now() - startTime,
-    });
+        logger.info('Qdrant search completed', {
+          operation: 'qdrant:search',
+          resultsCount: results.length,
+          durationMs: Date.now() - startTime,
+        });
 
-    return results;
+        return results;
+      },
+    );
   }
 
   /**
@@ -126,32 +133,38 @@ class QdrantService {
     const client = this.getClient();
     const startTime = Date.now();
 
-    const must = this.buildMustFilter(filter);
-    const prefetchLimit = Math.max(limit * 4, 20);
+    return withDbSpan(
+      { system: 'qdrant', operation: 'search_hybrid', collection: COLLECTION_NAME },
+      async (recordRows) => {
+        const must = this.buildMustFilter(filter);
+        const prefetchLimit = Math.max(limit * 4, 20);
 
-    const response = await client.query(COLLECTION_NAME, {
-      prefetch: [
-        { query: queryDense, using: 'dense', limit: prefetchLimit },
-        { query: querySparse, using: 'bm25', limit: prefetchLimit },
-      ],
-      query: { fusion: 'rrf' },
-      limit,
-      filter: must.length > 0 ? { must } : undefined,
-      with_payload: true,
-      score_threshold: options?.scoreThreshold,
-      params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
-    });
+        const response = await client.query(COLLECTION_NAME, {
+          prefetch: [
+            { query: queryDense, using: 'dense', limit: prefetchLimit },
+            { query: querySparse, using: 'bm25', limit: prefetchLimit },
+          ],
+          query: { fusion: 'rrf' },
+          limit,
+          filter: must.length > 0 ? { must } : undefined,
+          with_payload: true,
+          score_threshold: options?.scoreThreshold,
+          params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
+        });
 
-    const results = this.mapPointsToResults(response.points);
+        const results = this.mapPointsToResults(response.points);
+        recordRows(results.length);
 
-    logger.info('Qdrant hybrid search completed', {
-      operation: 'qdrant:search:hybrid',
-      resultsCount: results.length,
-      prefetchLimit,
-      durationMs: Date.now() - startTime,
-    });
+        logger.info('Qdrant hybrid search completed', {
+          operation: 'qdrant:search:hybrid',
+          resultsCount: results.length,
+          prefetchLimit,
+          durationMs: Date.now() - startTime,
+        });
 
-    return results;
+        return results;
+      },
+    );
   }
 
   private buildMustFilter(filter?: QdrantFilter): Array<{ key: string; match: { value: string } }> {

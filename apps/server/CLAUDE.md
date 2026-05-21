@@ -37,7 +37,7 @@ JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `
 - **Paiement** : Stripe (webhooks HMAC signés) + RevenueCat (à migrer vers signature JWT — voir SP4)
 - **Storage** : Scaleway S3 (presigned URLs, RGPD fr-par)
 - **Pronote** : Pawnote 1.6 + AES-256-GCM (PBKDF2 600K iterations — salt aléatoire par enregistrement à implémenter SP1)
-- **Observabilité** : à installer (Sentry + structured logging avec `requestId` + OTel GenAI semconv envisagé)
+- **Observabilité** : OpenTelemetry (GenAI semconv pour les appels Mistral, `db.*` pour Qdrant). Init dans `src/index.ts` via `setupOtel()` avant tout import applicatif. Console exporter en dev, OTLP HTTP en prod (`OTEL_EXPORTER_OTLP_ENDPOINT`). Sentry à ajouter quand on en aura le besoin métier.
 
 ## Couche AI — pattern centralisé
 
