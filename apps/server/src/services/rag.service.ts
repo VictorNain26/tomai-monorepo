@@ -16,6 +16,7 @@
 
 import { qdrantService, type QdrantSearchResult, type SparseVector } from './qdrant.service.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
+import { rerankerService } from './reranker.service.js';
 import { retrievalAuditRepository } from '../db/repositories/index.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
@@ -104,6 +105,12 @@ class RAGService {
       const querySparse = this.toSparseVector(options.query);
 
       const topK = options.limit ?? 5;
+      // When the reranker is enabled, prefetch ~4x more candidates so the
+      // cross-encoder has room to reorder. Without the reranker we just hit
+      // Qdrant for topK directly.
+      const rerankEnabled = rerankerService.isEnabled();
+      const prefetchK = rerankEnabled ? Math.max(topK * 4, 20) : topK;
+
       // NOTE : on ne passe PAS scoreThreshold à searchHybrid. La fusion RRF
       // côté Qdrant retourne des scores petits (1/(k+rank), k=60 → top-1 ≈ 0.016)
       // qui ne sont PAS comparables à la cosine similarity (~0.5-0.9). Le seuil
@@ -116,13 +123,35 @@ class RAGService {
       //   du curriculum). Si absent, Qdrant renvoie 400 "vector name not found"
       //   et l'erreur propage — on ne masque PAS le problème avec un fallback
       //   silencieux qui rendrait la régression invisible en observabilité.
-      const results = await qdrantService.searchHybrid(
+      let results = await qdrantService.searchHybrid(
         queryDense,
         querySparse,
         { niveau: options.niveau, matiere: options.matiere },
-        topK,
+        prefetchK,
         { hnswEf: 128 },
       );
+
+      let strategy: 'qdrant-hybrid-rrf' | 'qdrant-hybrid-rrf+rerank-bge-m3' =
+        'qdrant-hybrid-rrf';
+
+      // Stage 2: cross-encoder rerank. If the reranker is disabled or fails,
+      // we keep the hybrid order — rerankerService.rerank handles the
+      // fallback internally so we don't have to special-case here.
+      if (rerankEnabled && results.length > 1) {
+        const reranked = await rerankerService.rerank(
+          options.query,
+          results.map((r) => ({ id: r.id, text: r.text })),
+          { topN: topK },
+        );
+        const orderById = new Map(reranked.map((r) => [r.id, r.rank]));
+        results = results
+          .filter((r) => orderById.has(r.id))
+          .sort((a, b) => (orderById.get(a.id) ?? 999) - (orderById.get(b.id) ?? 999))
+          .slice(0, topK);
+        strategy = 'qdrant-hybrid-rrf+rerank-bge-m3';
+      } else if (results.length > topK) {
+        results = results.slice(0, topK);
+      }
 
       const semanticChunks = results.length > 0 ? this.toSemanticChunks(results) : [];
       const bestMatch = results[0];
@@ -131,7 +160,6 @@ class RAGService {
           ? semanticChunks.reduce((sum, c) => sum + c.score, 0) / semanticChunks.length
           : 0;
       const searchTime = Date.now() - startTime;
-      const strategy = 'qdrant-hybrid-rrf';
 
       // RGPD article 30 — fire-and-forget audit insert. Only metadata
       // (hashed query, filters, counts, latency) hits the table; the prompt
