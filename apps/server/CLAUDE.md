@@ -70,7 +70,7 @@ Best practices token (cf ADR-0001 D4) :
 - **Learning** : FSRS (spaced repetition), decks, cards (génération `mistral-small` + JSON Schema), generations. Logique à extraire en `LearningService` + repositories (voir SP5)
 - **Subscription** : checkout, lifecycle, gestion enfants (role parent), usage quotas
 - **Quota** : token quota windowed (5h rolling + daily cap) derrière flag `QUOTA_ENFORCEMENT_ENABLED`
-- **RAG** : recherche unifiée Qdrant hybrid native (dense Mistral + sparse BM25 IDF + fusion RRF). Pas de Cohere (souveraineté EU).
+- **RAG** : recherche unifiée Qdrant hybrid native (dense Mistral + sparse BM25 IDF + fusion RRF) + reranker `bge-reranker-v2-m3` self-hosted Scaleway optionnel (toggle `RERANKER_ENABLED`). Pas de Cohere (souveraineté EU). Déploiement : `apps/server/RERANKER_DEPLOY.md`.
 - **Pronote** : auth QR code, devoirs, notes, emploi du temps (SSRF protection)
 - **Storage** : upload presigned Scaleway, confirmation. Multimodal chat consomme directement le blob Scaleway (base64 inline pour photos, `extractedText` côté record pour PDFs). Pas de cache fichier externe (Mistral n'a pas d'équivalent à Gemini Files API).
 
