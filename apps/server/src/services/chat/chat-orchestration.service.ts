@@ -12,8 +12,8 @@
 import { chatService } from '../chat.service.js';
 import { sessionFilesRepository } from '../../db/repositories/index.js';
 import { fileContextService } from './file-context.service.js';
-import { geminiChatService } from './gemini-chat.service.js';
-import { getLearningContext } from './gemini-helpers.js';
+import { mistralChatService } from './mistral-chat.service.js';
+import { getLearningContext } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { intentClassifierService, type ClassifiedIntent } from './intent-classifier.service.js';
@@ -21,10 +21,9 @@ import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { costTrackingService } from '../cost-tracking.service.js';
 import { episodicMemoryService } from '../episodic-memory.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
-import { appConfig } from '../../config/app.config.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { GeminiStreamChunk, PronoteContext } from './gemini-types.js';
+import type { ChatStreamChunk, PronoteContext } from './chat-streaming-types.js';
 
 export interface ChatStreamRequest {
   userId: string;
@@ -54,9 +53,9 @@ const MAX_ENRICHED_CONTENT_CHARS = 50_000;
 class ChatOrchestrationService {
   /**
    * Pipeline principal : assemble le contexte, persiste, stream, post-process.
-   * Retourne un AsyncGenerator de GeminiStreamChunk.
+   * Retourne un AsyncGenerator de ChatStreamChunk.
    */
-  async *orchestrateStream(request: ChatStreamRequest): AsyncGenerator<GeminiStreamChunk> {
+  async *orchestrateStream(request: ChatStreamRequest): AsyncGenerator<ChatStreamChunk> {
     const startTime = Date.now();
 
     // Phase 1: Session
@@ -146,13 +145,13 @@ class ChatOrchestrationService {
     yield {
       type: 'status' as const,
       id: `ack_${Date.now()}`,
-      model: appConfig.ai.gemini.model,
+      model: 'mistral-medium-latest',
       timestamp: Date.now(),
       status: 'Tom réfléchit…',
     };
 
-    // Phase 5: Stream from Gemini
-    // Merge episodic context into learning context so geminiChatService
+    // Phase 5: Stream from Mistral
+    // Merge episodic context into learning context so mistralChatService
     // only has one "prior knowledge" section to reason about. Learning
     // context (FSRS due cards) + episodes (past sessions) are complementary
     // pedagogical memory signals.
@@ -160,7 +159,7 @@ class ChatOrchestrationService {
       .filter((x): x is string => Boolean(x))
       .join('\n\n') || null;
 
-    const streamGenerator = geminiChatService.generateStreamChunks({
+    const streamGenerator = mistralChatService.generateStreamChunks({
       userId: request.userId,
       content: enrichedContent,
       schoolLevel: request.schoolLevel,
@@ -174,7 +173,6 @@ class ChatOrchestrationService {
       conversationHistory: sessionCtx.formattedHistory,
       intentReinforcement,
       files: multimodalFiles.map(f => ({
-        fileUri: f.fileUri,
         base64: f.base64,
         mimeType: f.mimeType,
         contentType: f.contentType,
@@ -267,7 +265,7 @@ class ChatOrchestrationService {
     userId: string;
     userContent: string;
     fullContent: string;
-    chunk: GeminiStreamChunk;
+    chunk: ChatStreamChunk;
     startTime: number;
     attachedFileInfo: {
       fileName: string;

@@ -3,17 +3,31 @@ import { db } from '../../db/connection.js';
 import { files } from '../../db/schema.js';
 import { filesRepository } from '../../db/repositories/index.js';
 import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
-import { geminiFilesService } from '../gemini-files.service.js';
 import { logger } from '../../lib/observability.js';
 import type { DocumentAnalysisResult } from '../document/index.js';
 import type { MultimodalFile } from './file-context-types.js';
 
+/**
+ * Prepare the multimodal payload for the chat call. For each attached file:
+ *
+ * - Image : encode the bytes inline as base64 (Mistral vision accepts
+ *           `data:<mime>;base64,...` URLs in the `image_url` content part).
+ * - Document : reuse the OCR'd text stored in `educationalContext.extractedText`
+ *              at upload time. We don't re-extract here to keep the chat path
+ *              fast; if extraction was skipped, the document just won't appear
+ *              in the multimodal payload (the document-analysis pipeline takes
+ *              over via the chat enrichment path).
+ *
+ * Replaces the Gemini Files cache layer (TTL 48h, 2-step polling upload). With
+ * Mistral there is no equivalent API, so we re-encode from Scaleway on every
+ * turn. Cost is dominated by Mistral inference, not the upstream bandwidth.
+ */
 export async function prepareMultimodalFiles(fileIds: string[]): Promise<MultimodalFile[]> {
   if (!fileIds || fileIds.length === 0) {
     return [];
   }
 
-  const files: MultimodalFile[] = [];
+  const result: MultimodalFile[] = [];
 
   for (const fileId of fileIds) {
     try {
@@ -23,62 +37,49 @@ export async function prepareMultimodalFiles(fileIds: string[]): Promise<Multimo
       const isImage = file.mimeType.startsWith('image/');
       const contentType: 'image' | 'document' = isImage ? 'image' : 'document';
 
-      let fileUri = file.geminiFileUri ?? undefined;
-      const isExpired = fileUri && file.geminiExpiresAt && file.geminiExpiresAt <= new Date();
-      if (isExpired) {
-        fileUri = undefined;
-      }
-
-      const multimodalFile: MultimodalFile = {
-        mimeType: file.mimeType,
-        contentType,
-        fileName: file.fileName
-      };
-
-      if (fileUri) {
-        multimodalFile.fileUri = fileUri;
-      } else {
+      if (isImage) {
         const content = await scalewayStorageService.getFileContent(file.storageKey);
         if (!content) continue;
-
-        const uploadResult = await geminiFilesService.uploadFile(
-          content.content.buffer as ArrayBuffer,
-          file.mimeType,
-          file.fileName
-        );
-
-        if (uploadResult.success && uploadResult.fileUri && uploadResult.expiresAt) {
-          multimodalFile.fileUri = uploadResult.fileUri;
-          await filesRepository.updateGeminiInfo(
-            file.id,
-            uploadResult.fileUri,
-            uploadResult.expiresAt
-          );
-          logger.info('Re-uploaded expired file to Gemini', {
-            fileId, fileName: file.fileName, operation: 'prepare-multimodal'
-          });
-        } else {
-          multimodalFile.base64 = content.content.toString('base64');
-          logger.warn('Gemini re-upload failed, using base64 fallback', {
-            fileId, error: uploadResult.error, operation: 'prepare-multimodal'
-          });
-        }
+        result.push({
+          fileName: file.fileName,
+          mimeType: file.mimeType,
+          contentType,
+          base64: content.content.toString('base64'),
+        });
+        continue;
       }
 
-      files.push(multimodalFile);
+      // Document path: reuse the OCR'd text that was cached at upload time. The
+      // chat path already injects analysisContext separately via file-context;
+      // we mirror extractedText here for callers that want the raw OCR
+      // (text-only embedding into a system message).
+      const eduContext = (file.educationalContext ?? {}) as {
+        extractedText?: string;
+      };
+      if (eduContext.extractedText) {
+        result.push({
+          fileName: file.fileName,
+          mimeType: file.mimeType,
+          contentType,
+          extractedText: eduContext.extractedText,
+        });
+      }
     } catch (error) {
       logger.warn('Failed to prepare multimodal file', {
         fileId,
         error: error instanceof Error ? error.message : String(error),
-        operation: 'prepare-multimodal'
+        operation: 'prepare-multimodal',
       });
     }
   }
 
-  return files;
+  return result;
 }
 
-export async function updateFileAnalysis(fileId: string, result: DocumentAnalysisResult): Promise<void> {
+export async function updateFileAnalysis(
+  fileId: string,
+  result: DocumentAnalysisResult,
+): Promise<void> {
   try {
     const file = await filesRepository.findById(fileId);
     if (!file) return;
@@ -93,26 +94,27 @@ export async function updateFileAnalysis(fileId: string, result: DocumentAnalysi
       hadRAG: !!result.rag?.found,
       classification: result.classification,
       ragContext: result.rag?.context,
-      metrics: result.metrics
+      metrics: result.metrics,
     };
 
-    await db.update(files)
+    await db
+      .update(files)
       .set({
         educationalContext: sql`${JSON.stringify(updatedContext)}::jsonb`,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(files.id, fileId));
 
     logger.info('File analysis saved to DB', {
       fileId,
       documentType: result.classification.documentType,
-      operation: 'update-file-analysis'
+      operation: 'update-file-analysis',
     });
   } catch (error) {
     logger.warn('Failed to update file analysis in DB', {
       error: error instanceof Error ? error.message : String(error),
       fileId,
-      operation: 'update-file-analysis'
+      operation: 'update-file-analysis',
     });
   }
 }

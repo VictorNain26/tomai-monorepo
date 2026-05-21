@@ -178,8 +178,8 @@ async function executeRagSearch(args: Record<string, unknown>): Promise<object> 
     context: result.context,
     resultsCount: result.semanticChunks.length,
     averageScore: result.averageSimilarity,
-    bestMatchTitle: result.bestMatchTitle,
-    bestMatchDomaine: result.bestMatchDomaine,
+    bestMatchSection: result.bestMatchSection,
+    bestMatchMatiere: result.bestMatchMatiere,
     chunks: result.semanticChunks,
     searchTimeMs: Date.now() - startTime,
   };

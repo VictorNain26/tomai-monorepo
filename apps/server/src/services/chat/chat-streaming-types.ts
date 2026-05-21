@@ -1,14 +1,19 @@
 import type { EducationLevelType } from '../../types/index.js';
 
+/**
+ * Chat streaming wire types — vendor-neutral. Renamed from `gemini-types.ts`
+ * when the chat path moved to Mistral (Phase 2B). The shape covers Mistral's
+ * SSE streaming response: text deltas, tool calls, final usage and metadata.
+ */
+
 export interface AttachedFile {
-  fileUri?: string;
+  /** Inline base64 payload for multimodal user messages (Mistral vision). */
   base64?: string;
   mimeType: string;
   contentType: 'image' | 'document';
 }
 
 export interface HistoricalFileRef {
-  geminiFileId?: string;
   mimeType?: string;
 }
 
@@ -45,7 +50,7 @@ export interface StreamGenerationParams {
   }>;
 }
 
-export interface GeminiStreamChunk {
+export interface ChatStreamChunk {
   type: 'content' | 'done' | 'error' | 'status' | 'deck_created';
   id: string;
   model: string;

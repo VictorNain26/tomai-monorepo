@@ -1,20 +1,21 @@
 /**
  * Summarization Service — Résumé conversationnel incrémental
  *
- * Pattern SummaryBuffer (Best Practice 2026):
+ * Pattern SummaryBuffer (Best Practice 2026) :
  * - Résume les anciens messages pour garder le contexte pédagogique
- * - Incrémental: fusionne l'ancien résumé avec les nouveaux échanges
+ * - Incrémental : fusionne l'ancien résumé avec les nouveaux échanges
  * - Asynchrone (fire-and-forget) pour ne pas bloquer le streaming
- * - Gemini Flash non-streaming, temperature 0.3 pour cohérence
+ *
+ * Modèle : `mistral-small-latest` (cf ADR-0001). Tâche templatée, qualité
+ * suffisante, ~3× moins cher que medium. Escalade vers medium si qualité
+ * insuffisante mesurée en prod.
+ * Prompt cache actif (system prompt stable invariant inter-sessions).
  */
 
-import { type GoogleGenAI } from '@google/genai';
-import { appConfig } from '../../config/app.config.js';
+import { generateText } from '../../lib/ai/mistral-client.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { messagesRepository } from '../../db/repositories/messages.repository.js';
 import { logger } from '../../lib/observability.js';
-import { withTimeout } from '../../lib/retry.js';
-import { getGeminiClient } from '../../lib/gemini-client.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -88,16 +89,12 @@ Un résumé précédent existe déjà. Tu dois le FUSIONNER avec les nouveaux é
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const SUMMARIZATION_PROMPT_VERSION = '2026-04-21';
+export const SUMMARIZATION_PROMPT_VERSION = '2026-05-18';
+
+// Prompt cache : bumper la version pour invalider après modif prompts.
+const SUMMARIZATION_CACHE_KEY = `summarization-${SUMMARIZATION_PROMPT_VERSION}`;
 
 class SummarizationService {
-  private readonly ai: GoogleGenAI;
-  private readonly model: string;
-
-  constructor() {
-    this.ai = getGeminiClient();
-    this.model = appConfig.ai.gemini.model;
-  }
 
   /**
    * Vérifie si un résumé est nécessaire et le génère si oui.
@@ -200,45 +197,38 @@ class SummarizationService {
   }
 
   /**
-   * Génère un résumé via Gemini Flash (non-streaming, temp 0.3).
+   * Génère un résumé via Mistral Small (non-streaming, temp 0.3).
    * Si un résumé précédent existe, fait un résumé incrémental.
+   *
+   * Ordre messages = system prompt (stable, caché) → contenu variable.
+   * Maximise cache hit prompt_cache_key.
    */
   private async generateSummary(
     messagesText: string,
     previousSummary?: string | null
   ): Promise<string | null> {
-    let prompt: string;
+    const systemPrompt = previousSummary ? INCREMENTAL_PROMPT : SUMMARIZATION_PROMPT;
+    const userContent = previousSummary
+      ? `## RÉSUMÉ PRÉCÉDENT\n${previousSummary}\n\n## NOUVEAUX ÉCHANGES\n${messagesText}`
+      : `## CONVERSATION\n${messagesText}`;
 
-    if (previousSummary) {
-      prompt = INCREMENTAL_PROMPT
-        .replace('{previousSummary}', previousSummary)
-        .replace('{newMessages}', messagesText);
-    } else {
-      prompt = `${SUMMARIZATION_PROMPT}\n\n## CONVERSATION\n${messagesText}`;
-    }
+    const text = await generateText({
+      model: 'mistral-small-latest',  // ADR-0001 D2 : sweet spot perf/coût
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+      temperature: 0.3,
+      maxTokens: 2048,
+      promptCacheKey: SUMMARIZATION_CACHE_KEY,
+      timeoutMs: 45_000,
+    });
 
-    const response = await withTimeout(
-      this.ai.models.generateContent({
-        model: this.model,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
-          temperature: 0.3,
-          maxOutputTokens: 2048,
-        },
-      }),
-      45_000,
-      'gemini:summarization',
-    );
+    const trimmed = text.trim();
+    if (!trimmed) return null;
 
-    const text = response.text?.trim();
-    if (!text) return null;
-
-    // Tronquer si trop long
-    if (text.length > MAX_SUMMARY_LENGTH) {
-      return text.slice(0, MAX_SUMMARY_LENGTH);
-    }
-
-    return text;
+    // Tronquer si trop long (garde-fou côté client, le modèle respecte max_tokens)
+    return trimmed.length > MAX_SUMMARY_LENGTH ? trimmed.slice(0, MAX_SUMMARY_LENGTH) : trimmed;
   }
 }
 

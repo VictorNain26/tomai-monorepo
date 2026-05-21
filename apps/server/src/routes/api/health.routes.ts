@@ -75,24 +75,17 @@ export const healthApiRoutes = new Elysia({ name: 'api-health' })
         limit: 5,
       });
 
-      const { generateSimpleResponse } = await import('../../lib/ai/index');
-      const response = await generateSimpleResponse({
-        level: niveau,
-        subject: matiere,
-        userQuery: query,
-        educationalContext: ragResult.context
-      });
-
+      // Diagnostic dev-only : on retourne juste le contexte RAG (chunks)
+      // sans appeler de LLM. La génération de réponse appartient au flow
+      // chat normal (chat-orchestration) et n'a pas sa place dans /test-rag.
       return {
         success: true,
-        response: response.content,
-        provider: response.provider,
-        tokens: response.tokensUsed,
         rag: {
           resultsCount: ragResult.semanticChunks.length,
           strategy: ragResult.strategy,
-          method: 'direct-rrf'
-        }
+          method: 'direct-rrf',
+          context: ragResult.context.slice(0, 2000), // tronqué pour réponse JSON raisonnable
+        },
       };
     } catch (error) {
       logger.error('Test RAG failed', {

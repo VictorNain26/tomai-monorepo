@@ -22,7 +22,7 @@ Backend nécessite Docker : `cd apps/server && docker compose up -d`
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion |
 | Mobile | Expo SDK 55, React Native 0.83, React 19.2, NativeWind v5, React Native Reusables |
 | Auth | Better Auth 1.5 + Google OAuth + account linking |
-| AI | Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Gladia (STT), ElevenLabs (TTS) |
+| AI | Mistral (chat `medium-latest`, embeddings 1024D, vision Pixtral, OCR, TTS Voxtral), Gladia (STT) — stack 100 % EU |
 | Monorepo | Turborepo, pnpm workspaces, package `@repo/api` (Eden Treaty types) |
 | Deploy | Vercel (landing), Koyeb (server), EAS (mobile) |
 | Observabilité | Sentry (crash/perf), PostHog (analytics + flags + session replay) — en cours d'install |

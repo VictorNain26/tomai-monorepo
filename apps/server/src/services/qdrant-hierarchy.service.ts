@@ -80,6 +80,9 @@ export class QdrantHierarchyService {
       return cached;
     }
 
+    // Schema curriculum ADR-0007 : pas de hiérarchie domaine/sousdomaine/title.
+    // On a juste `section` par chunk. On retourne 1 entrée par section unique
+    // de la matière (themes vide, le front peut s'adapter ou ignorer).
     const client = this.getClient();
     const points = await client.scroll(this.collectionName, {
       filter: {
@@ -89,31 +92,23 @@ export class QdrantHierarchyService {
         ],
       },
       limit: 1000,
-      with_payload: ['domaine', 'sousdomaine', 'title'],
+      with_payload: ['section'],
     });
 
-    const chapitreMap = new Map<string, { category: string; themes: Set<string> }>();
+    const sectionSet = new Set<string>();
     for (const point of points.points) {
       const p = point.payload as Record<string, unknown>;
-      const category = p['domaine'] ? String(p['domaine']) : 'Autre';
-      const chapitre = p['sousdomaine'] ? String(p['sousdomaine']) : null;
-      const theme = p['title'] ? String(p['title']) : null;
-
-      if (!chapitre) continue;
-      if (!chapitreMap.has(chapitre)) chapitreMap.set(chapitre, { category, themes: new Set() });
-      if (theme) chapitreMap.get(chapitre)!.themes.add(theme);
+      const section = p['section'] ? String(p['section']) : null;
+      if (section) sectionSet.add(section);
     }
 
-    const result = Array.from(chapitreMap.entries())
-      .map(([chapitre, data]) => ({
-        domaine: chapitre,
-        category: data.category,
-        themes: Array.from(data.themes).sort(),
-      }))
-      .sort((a, b) => {
-        const cmp = a.category.localeCompare(b.category);
-        return cmp !== 0 ? cmp : a.domaine.localeCompare(b.domaine);
-      });
+    const result = Array.from(sectionSet)
+      .sort((a, b) => a.localeCompare(b, 'fr'))
+      .map((section) => ({
+        domaine: section,
+        category: matiere,
+        themes: [] as string[],
+      }));
 
     cacheService.set(CACHE_PREFIX, cacheKey, result, CACHE_TTL_DEFAULT);
     logger.info('Topics retrieved', { operation: 'qdrant:topics', niveau, matiere, count: result.length });
@@ -136,6 +131,10 @@ export class QdrantHierarchyService {
       return cached;
     }
 
+    // Schema curriculum ADR-0007 : hiérarchie 1-niveau (`section` seul). Chaque
+    // section unique devient un Chapter sans SubChapter (la granularité fine
+    // domaine/sousdomaine/title n'existe plus depuis l'élimination des champs
+    // LLM-generated). Le frontend reçoit donc une liste plate de chapters.
     const client = this.getClient();
     const points = await client.scroll(this.collectionName, {
       filter: {
@@ -145,51 +144,25 @@ export class QdrantHierarchyService {
         ],
       },
       limit: 1000,
-      with_payload: ['domaine', 'sousdomaine', 'title'],
+      with_payload: ['section'],
     });
 
-    const hierarchyMap = new Map<string, Map<string, Set<string>>>();
-
+    const sectionCounts = new Map<string, number>();
     for (const point of points.points) {
       const p = point.payload as Record<string, unknown>;
-      const domaine = p['domaine'] ? String(p['domaine']) : 'Autre';
-      const sousdomaine = p['sousdomaine'] ? String(p['sousdomaine']) : null;
-      const title = p['title'] ? String(p['title']) : null;
-
-      if (!sousdomaine) continue;
-
-      if (!hierarchyMap.has(domaine)) {
-        hierarchyMap.set(domaine, new Map());
-      }
-      const subChaptersMap = hierarchyMap.get(domaine)!;
-
-      if (!subChaptersMap.has(sousdomaine)) {
-        subChaptersMap.set(sousdomaine, new Set());
-      }
-      if (title) {
-        subChaptersMap.get(sousdomaine)!.add(title);
-      }
+      const section = p['section'] ? String(p['section']) : null;
+      if (!section) continue;
+      sectionCounts.set(section, (sectionCounts.get(section) ?? 0) + 1);
     }
 
-    const chapters: Chapter[] = Array.from(hierarchyMap.entries())
-      .map(([domaineName, subChaptersMap]) => {
-        const subChapters: SubChapter[] = Array.from(subChaptersMap.entries())
-          .map(([subChapterName, topicsSet]) => ({
-            id: this.slugify(subChapterName),
-            name: subChapterName,
-            topics: Array.from(topicsSet).sort(),
-            topicsCount: topicsSet.size,
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-
-        return {
-          id: this.slugify(domaineName),
-          name: domaineName,
-          subChapters,
-          subChaptersCount: subChapters.length,
-          topicsCount: subChapters.reduce((sum, sc) => sum + sc.topicsCount, 0),
-        };
-      })
+    const chapters: Chapter[] = Array.from(sectionCounts.entries())
+      .map(([sectionName, chunkCount]) => ({
+        id: this.slugify(sectionName),
+        name: sectionName,
+        subChapters: [] as SubChapter[],
+        subChaptersCount: 0,
+        topicsCount: chunkCount,
+      }))
       .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 
     const result: ChaptersHierarchy = {

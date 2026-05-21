@@ -167,7 +167,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
 
         const deckTitle = isFullDomaineMode
           ? domaine
-          : (ragResult.bestMatchTitle ?? topic ?? domaine);
+          : (ragResult.bestMatchSection ?? topic ?? domaine);
         const deckDescription = isFullDomaineMode
           ? `Révision complète du domaine "${domaine}" - ${generatedCards.length} cartes`
           : `Cartes sur "${topic}" (${domaine})`;

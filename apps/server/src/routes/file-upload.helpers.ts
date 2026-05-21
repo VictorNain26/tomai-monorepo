@@ -38,8 +38,9 @@ export interface PresignedUploadResponse {
 export interface ConfirmUploadResponse {
   success: boolean;
   fileId?: string;
-  fileUri?: string;
-  geminiExpiresAt?: string;
+  /** Inline audio transcription (Gladia EU) returned to the client when the
+   *  uploaded file is an audio recording. Other file types are processed on
+   *  the chat path (Mistral vision for images, OCR'd text for PDFs). */
   transcription?: string;
   error?: string;
 }
