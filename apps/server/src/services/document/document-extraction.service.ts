@@ -5,7 +5,7 @@
  * - Extraction PDF via unpdf (pure JS, serverless-compatible)
  * - Extraction DOCX via mammoth
  * - Extraction texte brut
- * - OCR images via Gemini Vision (délégué)
+ * - OCR images via Mistral Vision
  *
  * Architecture 2025: Separation of concerns
  * - Ce service extrait le TEXTE uniquement
@@ -15,6 +15,7 @@
 import { extractText, getDocumentProxy } from 'unpdf';
 import mammoth from 'mammoth';
 import { logger } from '../../lib/observability.js';
+import { extractImageWithMistralVision } from './mistral-vision.js';
 
 export interface ExtractionResult {
   success: boolean;
@@ -22,7 +23,7 @@ export interface ExtractionResult {
   metadata: {
     pageCount?: number;
     wordCount: number;
-    extractionMethod: 'unpdf' | 'mammoth' | 'text' | 'gemini-vision';
+    extractionMethod: 'unpdf' | 'mammoth' | 'text' | 'mistral-vision';
     extractionTimeMs: number;
   };
   error?: string;
@@ -70,14 +71,9 @@ class DocumentExtractionService {
         return await this.extractFromText(buffer, startTime);
       }
 
-      // Images - retourne un marqueur pour traitement Gemini Vision
+      // Images - Mistral Vision OCR/description
       if (cleanMimeType.startsWith('image/')) {
-        return this.createResult(
-          true,
-          '[IMAGE_REQUIRES_VISION_API]',
-          'gemini-vision',
-          startTime
-        );
+        return await extractImageWithMistralVision(buffer, cleanMimeType, startTime);
       }
 
       // Type non supporté
