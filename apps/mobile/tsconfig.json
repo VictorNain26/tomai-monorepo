@@ -5,7 +5,7 @@
     /* React Native specific */
     "jsx": "react-native",
     "lib": ["ES2024"],
-    "types": ["jest", "@testing-library/react-native", "node"],
+    "types": ["jest", "@testing-library/react-native", "node", "bun-types"],
 
     /* Path Mapping (TS 5+ bundler mode : paths résolus relativement au tsconfig
      * sans baseUrl, déprécié en TS 6.x). Babel résout via babel-plugin-module-

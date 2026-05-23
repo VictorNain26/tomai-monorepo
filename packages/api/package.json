@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@types/react": "catalog:",
+    "bun-types": "^1.3.14",
     "react": "catalog:",
     "tomai-server": "workspace:*",
     "typescript": "catalog:"
