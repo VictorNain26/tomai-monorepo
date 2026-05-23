@@ -55,6 +55,9 @@
     /* Interop */
     "skipLibCheck": true,
 
+    /* TypeScript 6+ Deprecations (TODO: refactor paths for TS 7) */
+    "ignoreDeprecations": "6.0",
+
     /* Output */
     "noEmit": true
   }
