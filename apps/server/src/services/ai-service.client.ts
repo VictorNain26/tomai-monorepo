@@ -23,6 +23,16 @@ const AI_SERVICE_URL = Bun.env['AI_SERVICE_URL'] ?? '';
 const AI_SERVICE_TOKEN = Bun.env['AI_SERVICE_TOKEN'] ?? '';
 const AI_SERVICE_TIMEOUT_MS = parseInt(Bun.env['AI_SERVICE_TIMEOUT_MS'] ?? '15000', 10);
 
+// Warn at startup if token is missing (non-prod concern but should be explicit)
+if (!AI_SERVICE_TOKEN) {
+  logger.warn(
+    'AI_SERVICE_TOKEN not set: ai-service endpoints will be called without Bearer auth. ' +
+      'This is acceptable for local development but not recommended for production. ' +
+      'Set AI_SERVICE_TOKEN to enable request authentication.',
+    { operation: 'ai-service:init' },
+  );
+}
+
 export interface SparseVector {
   indices: number[];
   values: number[];
