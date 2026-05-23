@@ -4,11 +4,19 @@
  * Migrations are automatically applied at startup via Drizzle ORM.
  * @see src/db/migrate.ts for runtime migration implementation
  * @see https://orm.drizzle.team/docs/drizzle-kit-migrate
+ *
+ * OpenTelemetry is initialised here before any service-tier module is
+ * imported so the global tracer is in place when mistral-client / qdrant
+ * are first evaluated. The application imports go through dynamic import
+ * to preserve that ordering under ESM hoisting.
  */
 
-import { app, initializeServices } from './app';
-import { appConfig } from './config/app.config';
-import { logger } from './lib/observability';
+import { setupOtel } from './lib/otel/otel.js';
+setupOtel();
+
+const { app, initializeServices } = await import('./app');
+const { logger } = await import('./lib/observability.js');
+const { appConfig } = await import('./config/app.config.js');
 
 const PORT = parseInt(process.env.PORT ?? process.env.BACKEND_PORT ?? '3000');
 

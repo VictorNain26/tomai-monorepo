@@ -16,19 +16,19 @@ export const healthApiRoutes = new Elysia({ name: 'api-health' })
     }
     try {
       const { qdrantService } = await import('../../services/qdrant.service.js');
-      const { mistralEmbeddingsService } = await import('../../services/mistral-embeddings.service.js');
+      const { aiServiceClient } = await import('../../services/ai-service.client.js');
 
-      const [qdrantOk, mistralOk] = await Promise.all([
+      const [qdrantOk, aiOk] = await Promise.all([
         qdrantService.isAvailable(),
-        mistralEmbeddingsService.isAvailable(),
+        aiServiceClient.isAvailable(),
       ]);
       const stats = await qdrantService.getStats();
 
       return {
         success: true,
-        status: qdrantOk && mistralOk ? 'healthy' : 'degraded',
+        status: qdrantOk && aiOk ? 'healthy' : 'degraded',
         qdrant: qdrantOk,
-        mistral: mistralOk,
+        aiService: aiOk,
         collection: 'tomai_educational',
         pointsCount: stats.total_points
       };
@@ -75,24 +75,17 @@ export const healthApiRoutes = new Elysia({ name: 'api-health' })
         limit: 5,
       });
 
-      const { generateSimpleResponse } = await import('../../lib/ai/index');
-      const response = await generateSimpleResponse({
-        level: niveau,
-        subject: matiere,
-        userQuery: query,
-        educationalContext: ragResult.context
-      });
-
+      // Diagnostic dev-only : on retourne juste le contexte RAG (chunks)
+      // sans appeler de LLM. La génération de réponse appartient au flow
+      // chat normal (chat-orchestration) et n'a pas sa place dans /test-rag.
       return {
         success: true,
-        response: response.content,
-        provider: response.provider,
-        tokens: response.tokensUsed,
         rag: {
           resultsCount: ragResult.semanticChunks.length,
           strategy: ragResult.strategy,
-          method: 'direct-rrf'
-        }
+          method: 'direct-rrf',
+          context: ragResult.context.slice(0, 2000), // tronqué pour réponse JSON raisonnable
+        },
       };
     } catch (error) {
       logger.error('Test RAG failed', {

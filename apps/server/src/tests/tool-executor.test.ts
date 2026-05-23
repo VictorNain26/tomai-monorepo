@@ -19,11 +19,11 @@ mock.module('../lib/observability', () => ({ logger: mockLogger }));
 // Resolves to src/services/rag.service.ts
 let ragAvailable = true;
 let ragResult: Record<string, unknown> | null = {
-  semanticChunks: [{ content: 'chunk1' }],
+  semanticChunks: [{ text: 'chunk1', section: 'Nombres et calculs', matiere: 'mathematiques', niveau: 'cinquieme' }],
   context: 'RAG context text',
   averageSimilarity: 0.85,
-  bestMatchTitle: 'Programme mathématiques',
-  bestMatchDomaine: 'Nombres et calculs',
+  bestMatchSection: 'Nombres et calculs',
+  bestMatchMatiere: 'mathematiques',
 };
 
 mock.module('../services/rag.service', () => ({
@@ -115,11 +115,11 @@ const baseContext = {
 beforeEach(() => {
   ragAvailable = true;
   ragResult = {
-    semanticChunks: [{ content: 'chunk1' }],
+    semanticChunks: [{ text: 'chunk1', section: 'Nombres et calculs', matiere: 'mathematiques', niveau: 'cinquieme' }],
     context: 'RAG context text',
     averageSimilarity: 0.85,
-    bestMatchTitle: 'Programme mathématiques',
-    bestMatchDomaine: 'Nombres et calculs',
+    bestMatchSection: 'Nombres et calculs',
+    bestMatchMatiere: 'mathematiques',
   };
   profileResult = {
     strengths: ['calcul'],

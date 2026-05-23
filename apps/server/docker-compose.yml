@@ -38,6 +38,9 @@ services:
       - QDRANT_URL=${QDRANT_URL}
       - QDRANT_API_KEY=${QDRANT_API_KEY}
       - QDRANT_COLLECTION=${QDRANT_COLLECTION:-tomai_educational}
+      # AI Service (BGE-M3 embed + bge-reranker-v2-m3) — local dev
+      - AI_SERVICE_URL=http://ai-service:8000
+      - AI_SERVICE_TOKEN=${AI_SERVICE_TOKEN:-}
       # Pronote Integration (AES-256-GCM encryption)
       - PRONOTE_ENCRYPTION_KEY=${PRONOTE_ENCRYPTION_KEY}
       # RevenueCat webhook shared secret (sent as Authorization header)
@@ -54,6 +57,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      ai-service:
+        condition: service_healthy
     networks:
       - tomai-dev
     restart: unless-stopped
@@ -68,6 +73,42 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  # ===========================================
+  # tomai-ai-service — BGE-M3 dense+sparse + bge-reranker-v2-m3
+  # Doc : apps/ai-service/README.md
+  # ===========================================
+  ai-service:
+    build:
+      context: ../ai-service
+      dockerfile: Dockerfile
+    container_name: tomai-ai-service-dev
+    ports:
+      - "8001:8000"  # 8001 côté host pour éviter collision avec backend
+    environment:
+      - EMBED_MODEL=BAAI/bge-m3
+      - RERANK_MODEL=BAAI/bge-reranker-v2-m3
+      - USE_FP16=auto
+      - HF_HOME=/data/hf_cache
+      - PORT=8000
+      - API_TOKEN=${AI_SERVICE_TOKEN:-}
+    volumes:
+      # Cache HF persistant : évite re-download ~3.5 GB à chaque restart
+      - ai_service_hf_cache:/data/hf_cache
+    networks:
+      - tomai-dev
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 6GB  # marge confortable pour FP32 BGE-M3 + bge-reranker
+          cpus: '2.0'
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s  # cold start = download + load modèles (~30-60s)
 
   # ===========================================
   # PostgreSQL 16 + pgvector
@@ -148,6 +189,8 @@ services:
 volumes:
   postgres_dev_data:
     name: tomai_postgres_dev_data
+  ai_service_hf_cache:
+    name: tomai_ai_service_hf_cache
 
 # ===========================================
 # Réseau isolé development

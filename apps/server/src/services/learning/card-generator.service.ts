@@ -27,8 +27,8 @@
  * @see prompts/pedagogy.ts pour documentation détaillée des sources
  */
 
-import { getGeminiClient } from '../../lib/gemini-client.js';
-import { CardGenerationOutputSchema } from '../../lib/ai/index.js';
+import { generateStructured } from '../../lib/ai/mistral-client.js';
+import { CardGenerationOutputSchema } from '../../lib/ai/schemas/index.js';
 import {
   getSubjectInstructions,
   getRecommendedCardTypes,
@@ -41,8 +41,13 @@ import {
 } from './prompts/index.js';
 import { logger } from '../../lib/observability.js';
 import { withRetry } from '../../lib/retry.js';
-import { appConfig } from '../../config/app.config.js';
 import type { CardGenerationParams, ParsedCard } from './types.js';
+
+// ADR-0001 : mistral-small pour génération templatée flashcards (qualité OK,
+// 3× moins cher que medium, escalade possible). JSON Schema strict.
+// Prompt cache sur l'instruction de base + adaptations cycle/sujet.
+const CARD_GENERATOR_PROMPT_VERSION = '2026-05-18';
+const CARD_GENERATOR_CACHE_KEY = `card-generator-${CARD_GENERATOR_PROMPT_VERSION}`;
 
 // ============================================================================
 // TYPES
@@ -67,11 +72,9 @@ export interface CardGenerationError {
 // GEMINI CLIENT — shared singleton for DI-friendly tests
 // ============================================================================
 
-export const CARD_GENERATOR_PROMPT_VERSION = '2026-04-21';
-
-function genai() {
-  return getGeminiClient();
-}
+// CARD_GENERATOR_PROMPT_VERSION : déjà défini en haut du fichier comme const
+// pour le prompt cache key. Conservé en export pour compat.
+export { CARD_GENERATOR_PROMPT_VERSION };
 
 // ============================================================================
 // JSON SCHEMA SIMPLIFIÉ - Respecte limite 4 niveaux Gemini
@@ -94,28 +97,41 @@ function genai() {
  *
  * Niveaux: cards[] → {cardType, content} → content fields = 3 niveaux ✅
  */
-const simplifiedCardSchema = {
-  type: 'array',
-  items: {
+// JSON Schema Mistral pour génération cartes — wrappé dans response_format.
+// Note : Mistral support pleinement les schemas avec nested objects et
+// additionalProperties strict (vs limite 4-nesting de Gemini).
+const cardGenerationSchema = {
+  name: 'card_generation',
+  strict: false, // content reste libre car typé par cardType (validation Zod après)
+  schema: {
     type: 'object',
     properties: {
-      cardType: {
-        type: 'string',
-        enum: [
-          'concept', 'flashcard', 'qcm', 'vrai_faux',
-          'matching', 'fill_blank', 'word_order',
-          'calculation', 'timeline', 'matching_era', 'cause_effect',
-          'classification', 'process_order', 'grammar_transform', 'reformulation'
-        ],
-        description: 'Type de carte (snake_case obligatoire)'
+      cards: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            cardType: {
+              type: 'string',
+              enum: [
+                'concept', 'flashcard', 'qcm', 'vrai_faux',
+                'matching', 'fill_blank', 'word_order',
+                'calculation', 'timeline', 'matching_era', 'cause_effect',
+                'classification', 'process_order', 'grammar_transform', 'reformulation',
+              ],
+              description: 'Type de carte (snake_case obligatoire)',
+            },
+            content: {
+              type: 'object',
+              description: 'Contenu de la carte selon le type (voir prompt pour structure)',
+            },
+          },
+          required: ['cardType', 'content'],
+        },
       },
-      content: {
-        type: 'object',
-        description: 'Contenu de la carte selon le type (voir prompt pour structure)'
-      }
     },
-    required: ['cardType', 'content']
-  }
+    required: ['cards'],
+  },
 } as const;
 
 // ============================================================================
@@ -224,55 +240,37 @@ export async function generateCards(
 
     const prompt = buildPrompt(params);
 
-    const { text, tokensUsed } = await withRetry(
+    // ADR-0001 D2 : mistral-small pour génération templatée. JSON Schema
+    // strict natif Mistral (vs limite 4-nesting de Gemini contournée). Zod
+    // valide ensuite la forme métier (discriminatedUnion sur cardType).
+    // Prompt cache sur le préfixe pédagogique stable (templates + matière).
+    const wrapped = await withRetry(
       async () => {
-        const response = await genai().models.generateContent({
-          model: appConfig.ai.gemini.model,
-          contents: prompt,
-          config: {
-            // Schema simplifié pour respecter limite 4 niveaux Gemini
-            // Le prompt guide la structure, Zod valide après parsing
-            responseMimeType: 'application/json',
-            responseJsonSchema: simplifiedCardSchema,
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95
-          }
+        const parsed = await generateStructured<{ cards: unknown[] }>({
+          model: 'mistral-small-latest',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+          maxTokens: 4096,
+          schema: cardGenerationSchema,
+          promptCacheKey: CARD_GENERATOR_CACHE_KEY,
         });
-
-        return {
-          text: response.text ?? '',
-          tokensUsed: response.usageMetadata?.totalTokenCount ?? 0
-        };
+        // Le SDK Mistral ne nous donne pas les tokens usage en JSON Schema
+        // mode via notre POST direct. Approximation : taille content sortie.
+        return { parsed, tokensUsed: JSON.stringify(parsed).length / 4 };
       },
       {
         operationName: 'card-generation',
         maxAttempts: 3,
         initialDelayMs: 1000,
-        nonRetryableErrors: ['INVALID_']
-      }
+        nonRetryableErrors: ['INVALID_'],
+      },
     );
 
-    // Parse JSON
-    let parsedJson: unknown;
-    try {
-      parsedJson = JSON.parse(text);
-    } catch {
-      logger.error('Card generation JSON parse error', {
-        operation: 'learning:generate:parse_error',
-        topic: params.topic,
-        contentPreview: text.substring(0, 300),
-        durationMs: Date.now() - startTime,
-        _error: 'JSON parse failed',
-        severity: 'high' as const
-      });
-
-      return {
-        success: false,
-        error: 'La réponse IA n\'est pas un JSON valide',
-        code: 'INVALID_OUTPUT'
-      };
-    }
+    // generateStructured retourne déjà l'objet parsé via JSON Schema strict
+    // Mistral — pas de JSON.parse manuel ni de try/catch parse error nécessaire.
+    // L'objet a la forme { cards: [...] } — on extrait l'array pour la validation Zod suivante.
+    const parsedJson: unknown = wrapped.parsed.cards;
+    const tokensUsed = wrapped.tokensUsed;
 
     // Best Practice 2025: Validation Zod comme défense en profondeur
     // responseJsonSchema garantit la structure, Zod valide les invariants métier

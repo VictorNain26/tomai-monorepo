@@ -9,8 +9,8 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
 
-    /* Path Mapping */
-    "baseUrl": ".",
+    /* Path Mapping (TS 5+ bundler mode : paths résolus relativement au tsconfig
+     * sans baseUrl, déprécié en TS 6.x). */
     "paths": {
       "@/*": ["./*"]
     }

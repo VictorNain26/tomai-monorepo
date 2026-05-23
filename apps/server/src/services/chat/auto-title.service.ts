@@ -1,18 +1,18 @@
 /**
- * Auto-Title Service — Generate conversation titles after first exchange
+ * Auto-Title Service — Generate conversation titles after first exchange.
  *
- * Called fire-and-forget after the first assistant response.
- * Uses Gemini Flash to generate a short, descriptive title.
+ * Called fire-and-forget après la première réponse assistant.
+ *
+ * Modèle : `ministral-3-3b` (cf ADR-0001). Output ~15 tokens, latence min,
+ * coût ≈ $0.0000015/req. Bien suffisant pour un titre de 50 chars.
+ * Prompt cache actif pour le préfixe d'instruction stable.
  */
 
-import { type GoogleGenAI } from '@google/genai';
-import { appConfig } from '../../config/app.config.js';
+import { generateText } from '../../lib/ai/mistral-client.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { logger } from '../../lib/observability.js';
-import { withTimeout } from '../../lib/retry.js';
-import { getGeminiClient } from '../../lib/gemini-client.js';
 
-export const AUTO_TITLE_PROMPT_VERSION = '2026-04-21';
+export const AUTO_TITLE_PROMPT_VERSION = '2026-05-18';
 
 const TITLE_PROMPT = `Génère un titre COURT (10-50 caractères) pour cette conversation de tutorat scolaire.
 
@@ -33,15 +33,11 @@ RÉPONSE DU TUTEUR (début):
 
 Réponds UNIQUEMENT avec le titre, rien d'autre.`;
 
+// Clé stable pour prompt cache Mistral (-90 % sur cached tokens). À bumper
+// quand le TITLE_PROMPT change pour forcer un nouveau cache.
+const TITLE_PROMPT_CACHE_KEY = `auto-title-${AUTO_TITLE_PROMPT_VERSION}`;
+
 class AutoTitleService {
-  private readonly ai: GoogleGenAI;
-  private readonly model: string;
-
-  constructor() {
-    this.ai = getGeminiClient();
-    this.model = appConfig.ai.gemini.model;
-  }
-
   /**
    * Generate and store a title for a session after first exchange.
    * Fire-and-forget: never throws, logs errors.
@@ -54,41 +50,36 @@ class AutoTitleService {
     try {
       const session = await studySessionsRepository.findById(sessionId);
       if (!session) return;
-
-      // Skip if session already has a title
-      if (session.topic) return;
+      if (session.topic) return; // Skip si déjà titré
 
       const assistantPreview = assistantResponse.slice(0, 300);
-
       const prompt = TITLE_PROMPT
         .replace('{userMessage}', userMessage.slice(0, 500))
         .replace('{assistantPreview}', assistantPreview);
 
-      const response = await withTimeout(
-        this.ai.models.generateContent({
-          model: this.model,
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          config: {
-            temperature: 0.3,
-            maxOutputTokens: 64,
-          },
-        }),
-        20_000,
-        'gemini:auto-title',
-      );
+      const raw = await generateText({
+        model: 'ministral-3b-latest',  // ADR-0001 : tâche triviale, modèle minimal
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        maxTokens: 64,
+        promptCacheKey: TITLE_PROMPT_CACHE_KEY,
+        timeoutMs: 20_000,
+      });
 
-      let title = response.text?.trim();
+      let title = raw.trim();
       if (!title) return;
 
-      // Clean up: remove quotes, truncate
+      // Cleanup : retirer guillemets éventuels, tronquer
       title = title.replace(/^["'«]|["'»]$/g, '').trim();
       if (title.length > 50) {
         title = title.slice(0, 47) + '...';
       }
 
-      // Reject titles that are too short (likely incomplete generation)
+      // Rejeter titres trop courts (génération incomplète)
       if (title.length < 8) {
-        logger.warn('Auto-title too short, skipping', { sessionId, title, operation: 'auto-title:rejected' });
+        logger.warn('Auto-title too short, skipping', {
+          sessionId, title, operation: 'auto-title:rejected',
+        });
         return;
       }
 

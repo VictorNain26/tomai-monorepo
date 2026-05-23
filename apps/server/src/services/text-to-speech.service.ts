@@ -1,92 +1,61 @@
 /**
- * Service Text-to-Speech - TomAI
+ * Text-to-Speech façade — délègue à Voxtral (Mistral, souveraineté EU).
  *
- * Architecture ElevenLabs 100% (Migration Janvier 2025):
- * - ElevenLabs (UK, GDPR) : TTS production haute qualité
- *
- * ❌ Plus de dépendance Gemini pour le TTS
- * ❌ Pas de fallback silencieux - échec explicite si non configuré
- *
- * Cas d'usage éducatif :
- * - Lecture des réponses de l'IA à voix haute
- * - Prononciation correcte pour les matières de langue
- * - Accessibilité pour les élèves dyslexiques
+ * Lecture des réponses de l'IA à voix haute, prononciation pour les matières
+ * de langue, accessibilité dyslexie. Pas de fallback silencieux : si Voxtral
+ * n'est pas configuré, on retourne une erreur explicite — la route TTS
+ * répond 500 et le frontend peut afficher un message clair.
  */
 
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/education.types.js';
-import { getElevenLabsTTSService, isElevenLabsConfigured } from './elevenlabs-tts.service.js';
-
-// ============================================
-// Types
-// ============================================
+import { getVoxtralTTSService, isVoxtralTTSConfigured } from './voxtral-tts.service.js';
 
 export interface TTSResult {
   success: boolean;
-  audioData?: string; // Base64 encoded audio
-  mimeType?: string; // audio/mpeg (MP3)
-  durationMs?: number; // Durée estimée en ms
+  audioData?: string;
+  mimeType?: string;
+  durationMs?: number;
   _error?: string;
 }
 
 export interface TTSOptions {
-  /** Langue du texte */
   language?: 'fr' | 'en' | 'es' | 'de';
-  /** Niveau scolaire pour adapter la voix */
   schoolLevel?: EducationLevelType;
 }
 
-// ============================================
-// Service
-// ============================================
-
 export class TextToSpeechService {
   constructor() {
-    if (!isElevenLabsConfigured()) {
-      logger.warn('ElevenLabs API key not configured - TTS will fail', {
+    if (!isVoxtralTTSConfigured()) {
+      logger.warn('MISTRAL_API_KEY not configured — TTS (Voxtral) will fail', {
         operation: 'tts:init',
       });
     }
   }
 
-  /**
-   * Synthétise du texte en audio via ElevenLabs
-   * Pas de fallback - échec explicite si non configuré
-   */
   async synthesize(text: string, options: TTSOptions = {}): Promise<TTSResult> {
     const startTime = Date.now();
 
-    // Vérifier que ElevenLabs est configuré
-    if (!isElevenLabsConfigured()) {
+    if (!isVoxtralTTSConfigured()) {
       return {
         success: false,
-        _error: 'Service TTS non configuré (ELEVENLABS_API_KEY manquant)',
+        _error: 'Service TTS non configuré (MISTRAL_API_KEY manquant)',
       };
     }
 
     try {
-      const elevenLabsService = getElevenLabsTTSService();
-      const result = await elevenLabsService.synthesize(text, {
+      const result = await getVoxtralTTSService().synthesize(text, {
         language: options.language,
         schoolLevel: options.schoolLevel,
       });
 
       if (!result.success || !result.audioData) {
-        logger.error('ElevenLabs TTS failed', {
-          operation: 'tts:synthesis',
-          _error: result.error ?? 'No audio data',
-          severity: 'high' as const,
-        });
-
-        return {
-          success: false,
-          _error: result.error ?? 'Échec de la synthèse vocale',
-        };
+        return { success: false, _error: result.error ?? 'Échec de la synthèse vocale' };
       }
 
-      logger.info('TTS synthesis completed (ElevenLabs 100%)', {
+      logger.info('TTS synthesis completed', {
         operation: 'tts:synthesis:complete',
-        provider: 'elevenlabs',
+        provider: 'voxtral',
         textLength: text.length,
         durationMs: Date.now() - startTime,
       });
@@ -103,15 +72,12 @@ export class TextToSpeechService {
         _error: error instanceof Error ? error.message : String(error),
         severity: 'high' as const,
       });
-
       return {
         success: false,
         _error: error instanceof Error ? error.message : 'Échec de la synthèse vocale',
       };
     }
   }
-
 }
 
-// Singleton
 export const textToSpeechService = new TextToSpeechService();

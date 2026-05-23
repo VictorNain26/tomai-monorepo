@@ -3,7 +3,6 @@ import type { EducationLevelType } from '../../types/index.js';
 export interface AttachedFileInfo {
   fileName: string;
   fileId?: string;
-  geminiFileId?: string;
   mimeType?: string;
   fileSizeBytes?: number;
 }
@@ -23,10 +22,22 @@ export interface FileAnalysisOptions {
   userId: string;
 }
 
+/**
+ * File payload prepared for the chat multimodal pipeline.
+ *
+ * - Image    : `base64` data + `mimeType` for inline `image_url` parts.
+ * - Document : `extractedText` (already OCRed via document-extraction.service)
+ *              for plain-text injection in the system context.
+ *
+ * No Gemini Files cache layer: Mistral has no equivalent of Gemini's files
+ * API, so every chat turn re-encodes the asset from Scaleway. Acceptable for
+ * the photo-of-exercise use case (small JPEG / PNG); PDFs go through text
+ * extraction once at upload time and reuse the cached text on every turn.
+ */
 export interface MultimodalFile {
-  fileUri?: string;
-  base64?: string;
+  fileName: string;
   mimeType: string;
   contentType: 'image' | 'document';
-  fileName: string;
+  base64?: string;
+  extractedText?: string;
 }

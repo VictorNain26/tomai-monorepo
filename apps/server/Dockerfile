@@ -10,16 +10,16 @@ FROM oven/bun:1.3-slim AS base
 
 WORKDIR /app
 
-# Node.js 22 LTS (for pnpm) + system deps
-# SYNC: pnpm version must match packageManager in root package.json
+# Node.js 24 LTS (for pnpm) + system deps
+# SYNC: pnpm version must match packageManager in root package.json (pnpm@10.30.3)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && corepack enable \
-    && corepack prepare pnpm@10.28.2 --activate \
+    && corepack prepare pnpm@10.30.3 --activate \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -37,7 +37,7 @@ COPY packages/shared-types/package.json ./packages/shared-types/
 
 # Production deps only
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --prod
+    pnpm install --frozen-lockfile --ignore-scripts --prod
 
 # Stage 3: BUILD
 FROM base AS build
@@ -54,7 +54,7 @@ COPY packages/shared-types/package.json ./packages/shared-types/
 
 # Full install (dev + prod) for build
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --ignore-scripts
 
 # Sources
 COPY apps/server/src/ ./apps/server/src/

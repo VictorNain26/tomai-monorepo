@@ -1,15 +1,15 @@
 /**
- * Tests d'intégration RAG - Appels réels Qdrant
+ * Tests d'intégration RAG - Appels réels Qdrant + ai-service
  * Vérifie que les réponses sont correctes et pertinentes
  *
- * Requires: QDRANT_URL, QDRANT_API_KEY, MISTRAL_API_KEY
+ * Requires: QDRANT_URL, QDRANT_API_KEY, AI_SERVICE_URL (BGE-M3 + rerank)
  * Run: bun run test:integration
  */
 
 import { describe, it, expect, beforeAll } from 'bun:test';
 import { ragService } from '../services/rag.service';
 import { qdrantService } from '../services/qdrant.service';
-import { mistralEmbeddingsService } from '../services/mistral-embeddings.service';
+import { aiServiceClient } from '../services/ai-service.client';
 
 // Queries de test avec réponses attendues (basé sur dataset réel)
 const TEST_QUERIES = [
@@ -63,8 +63,8 @@ describe('RAG Integration Tests - Real Qdrant Calls', () => {
       expect(available).toBe(true);
     });
 
-    it('should have Mistral embeddings available', async () => {
-      const available = await mistralEmbeddingsService.isAvailable();
+    it('should have ai-service available (BGE-M3 + rerank)', async () => {
+      const available = await aiServiceClient.isAvailable();
       expect(available).toBe(true);
     });
 
