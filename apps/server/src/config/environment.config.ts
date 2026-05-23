@@ -23,9 +23,6 @@ export interface EnvironmentConfig {
   // Base de données
   DATABASE_URL: string;
 
-  // IA et services externes
-  GEMINI_API_KEY?: string;
-
   // Scaleway Object Storage (RGPD - France)
   SCALEWAY_ACCESS_KEY?: string;
   SCALEWAY_SECRET_KEY?: string;
@@ -109,9 +106,6 @@ function parseEnvironment(): EnvironmentConfig {
     DATABASE_URL: inDocker
       ? Bun.env['DATABASE_URL']!
       : (Bun.env['DATABASE_URL_EXTERNAL'] ?? Bun.env['DATABASE_URL'])!,
-
-    // IA et services externes
-    GEMINI_API_KEY: Bun.env['GEMINI_API_KEY'],
 
     // Scaleway Object Storage (RGPD - France)
     SCALEWAY_ACCESS_KEY: Bun.env['SCALEWAY_ACCESS_KEY'],

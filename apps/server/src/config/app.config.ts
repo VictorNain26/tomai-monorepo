@@ -3,8 +3,6 @@
  * Centralise toutes les constantes et configurations pour éviter les magic numbers
  */
 
-import { logger } from '../lib/observability.js';
-
 export interface AppConfig {
   server: {
     port: number;
@@ -42,9 +40,6 @@ export interface AppConfig {
       retryDelay: number;
     };
     gladia?: {
-      apiKey: string | undefined;
-    };
-    elevenlabs?: {
       apiKey: string | undefined;
     };
   };
@@ -137,17 +132,9 @@ export interface AppConfig {
  * Note: Better Auth gère ses propres variables d'environnement directement
  */
 function validateRequiredConfig(): void {
-  // Better Auth gère BETTER_AUTH_SECRET automatiquement
-  // Pas besoin de validation ici
-
-  // Vérifier qu'au moins une clé API IA est présente (sauf en mode test)
-  if (Bun.env['NODE_ENV'] !== 'test') {
-    const hasGemini = Boolean(Bun.env['GEMINI_API_KEY']);
-
-    if (!hasGemini) {
-      logger.warn('Clé API Gemini requise - certaines fonctionnalités seront limitées', { operation: 'config:validate', missing: 'GEMINI_API_KEY' });
-    }
-  }
+  // Better Auth gère BETTER_AUTH_SECRET automatiquement.
+  // Stack 100% Mistral souveraine EU : MISTRAL_API_KEY est validée par les services
+  // qui en dépendent (chat, embeddings épisodique, TTS Voxtral) au premier appel.
 }
 
 function createServerConfig(): { port: number; host: string; nodeEnv: string } {
@@ -242,10 +229,6 @@ function createAiConfig(): AppConfig['ai'] {
     // Gladia - Speech-to-Text (migration Gemini → Gladia Jan 2025)
     gladia: Bun.env['GLADIA_API_KEY'] ? {
       apiKey: Bun.env['GLADIA_API_KEY'],
-    } : undefined,
-    // ElevenLabs - Text-to-Speech (migration Gemini → ElevenLabs Jan 2025)
-    elevenlabs: Bun.env['ELEVENLABS_API_KEY'] ? {
-      apiKey: Bun.env['ELEVENLABS_API_KEY'],
     } : undefined,
   };
 }
