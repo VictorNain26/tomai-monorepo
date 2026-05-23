@@ -64,11 +64,13 @@ COPY tsconfig.base.json ./
 
 WORKDIR /app/apps/server
 
-# Validate + Build
+# Validate + Build (server entrypoint + migrate runner)
+# Both are bundled with --packages external; their externals must resolve against
+# the same node_modules that production stage gets (= this stage's, see below).
 RUN bun run typecheck:strict && \
     bun run lint:ci && \
-    bun build src/index.ts --outdir dist --target bun --minify --sourcemap=linked --format esm --packages external && \
-    test -f dist/index.js || (echo "ERREUR: dist/index.js manquant" && exit 1)
+    bun run build && \
+    test -f dist/index.js -a -f dist/migrate.js || (echo "ERREUR: dist/index.js ou dist/migrate.js manquant" && exit 1)
 
 # Stage 4: DEVELOPMENT
 FROM base AS development
@@ -104,15 +106,26 @@ FROM base AS production
 
 WORKDIR /app
 
-COPY --from=deps --chown=tomai:tomai /app/node_modules ./node_modules
-COPY --from=deps --chown=tomai:tomai /app/package.json ./
-COPY --from=deps --chown=tomai:tomai /app/apps/server/package.json ./apps/server/
-COPY --from=deps --chown=tomai:tomai /app/packages/shared-types/package.json ./packages/shared-types/
+# node_modules vient du stage `build` (= même résolution que pour le bundling)
+# au lieu du stage `deps` (--prod), pour éliminer le drift entre l'install qui
+# a vu le code compiler et celui qui sert le runtime. Coût: ~30 MB de devDeps
+# en plus, bénéfice: dev=prod, plus de "Cannot find module" silencieux.
+COPY --from=build --chown=tomai:tomai /app/node_modules ./node_modules
+COPY --from=build --chown=tomai:tomai /app/package.json ./
+COPY --from=build --chown=tomai:tomai /app/apps/server/package.json ./apps/server/
+COPY --from=build --chown=tomai:tomai /app/packages/shared-types/package.json ./packages/shared-types/
 COPY --from=build --chown=tomai:tomai /app/apps/server/dist ./apps/server/dist
 COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
-COPY --chown=tomai:tomai apps/server/src/db/migrate.ts ./apps/server/src/db/migrate.ts
 COPY --chown=tomai:tomai apps/server/docker-entrypoint.sh ./apps/server/docker-entrypoint.sh
 RUN chmod +x ./apps/server/docker-entrypoint.sh
+
+# Smoke import: échoue le `docker build` si un module externalisé du bundle
+# n'est pas résolvable depuis node_modules (la classe de bug qui a cassé PR #120
+# avec `drizzle-orm/postgres-js/migrator`). On teste seulement migrate.js car
+# index.js a un side-effect top-level (startServer) qui requiert la DB.
+# migrate.ts est gardé par `if (import.meta.main)`, donc l'import est safe.
+RUN bun --eval "await import('./apps/server/dist/migrate.js'); console.log('smoke OK')" \
+    || (echo "ERREUR: smoke import a échoué — un externalisé n'est pas résolvable au runtime" && exit 1)
 
 WORKDIR /app/apps/server
 ENV NODE_ENV=production
