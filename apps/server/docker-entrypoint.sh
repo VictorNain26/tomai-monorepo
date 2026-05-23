@@ -11,7 +11,7 @@ echo "📍 Environment: ${NODE_ENV:-development}"
 if [ "$NODE_ENV" != "development" ] && [ -d "./drizzle" ]; then
   MIGRATION_COUNT=$(find ./drizzle -maxdepth 1 -name "*.sql" -type f | wc -l)
   echo "🔄 Running $MIGRATION_COUNT database migrations..."
-  bun run src/db/migrate.ts
+  bun dist/migrate.js
   echo "✅ Migrations complete"
 fi
 
