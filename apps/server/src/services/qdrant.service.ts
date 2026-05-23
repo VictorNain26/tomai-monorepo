@@ -1,5 +1,6 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { logger } from '../lib/observability.js';
+import { withDbSpan } from '../lib/otel/index.js';
 import { cacheService } from './memory-cache.service.js';
 import { QdrantHierarchyService } from './qdrant-hierarchy.service.js';
 import type { ChaptersHierarchy, EducationLevelType } from '../types/index.js';
@@ -15,25 +16,32 @@ const CACHE_PREFIX = 'qdrant:' as const;
 export interface QdrantSearchResult {
   id: string;
   score: number;
-  title: string;
-  content: string;
+  // Payload canonique tomai-curriculum (ADR-0007). Aliases title/content
+  // retirés en Phase 2A — on lit le schema source de vérité directement.
+  text: string;
+  section: string;
   matiere: string;
   niveau: string;
-  domaine?: string;
-  sousdomaine?: string;
-  content_type?: string;
-  difficulty?: string;
+  cycle: string;
+  source_file: string;
+  chunk_index: number;
 }
 
 export interface QdrantFilter {
   niveau?: string;
   matiere?: string;
-  difficulty?: string;
+  cycle?: string;
 }
 
 export interface QdrantSearchOptions {
   scoreThreshold?: number;
   hnswEf?: number;
+}
+
+/** Sparse vector representation for Qdrant hybrid search (BM25 IDF native). */
+export interface SparseVector {
+  indices: number[];
+  values: number[];
 }
 
 export interface CollectionStats {
@@ -78,43 +86,113 @@ class QdrantService {
     const client = this.getClient();
     const startTime = Date.now();
 
+    return withDbSpan(
+      { system: 'qdrant', operation: 'search', collection: COLLECTION_NAME },
+      async (recordRows) => {
+        const must = this.buildMustFilter(filter);
+
+        const response = await client.query(COLLECTION_NAME, {
+          query: queryVector,
+          limit,
+          filter: must.length > 0 ? { must } : undefined,
+          with_payload: true,
+          score_threshold: options?.scoreThreshold,
+          params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
+        });
+
+        const results = this.mapPointsToResults(response.points);
+        recordRows(results.length);
+
+        logger.info('Qdrant search completed', {
+          operation: 'qdrant:search',
+          resultsCount: results.length,
+          durationMs: Date.now() - startTime,
+        });
+
+        return results;
+      },
+    );
+  }
+
+  /**
+   * Hybrid search via Qdrant Query API : prefetch dense + sparse, fusion RRF native.
+   *
+   * Pré-requis collection : doit avoir vectors_config={dense, ...} et
+   * sparse_vectors_config={bm25: SparseVectorParams(modifier=IDF)}. Voir
+   * tomai-curriculum/scripts/migrate_collection.py.
+   *
+   * Source : https://qdrant.tech/articles/sparse-vectors
+   */
+  async searchHybrid(
+    queryDense: number[],
+    querySparse: SparseVector,
+    filter?: QdrantFilter,
+    limit: number = 10,
+    options?: QdrantSearchOptions
+  ): Promise<QdrantSearchResult[]> {
+    const client = this.getClient();
+    const startTime = Date.now();
+
+    return withDbSpan(
+      { system: 'qdrant', operation: 'search_hybrid', collection: COLLECTION_NAME },
+      async (recordRows) => {
+        const must = this.buildMustFilter(filter);
+        const prefetchLimit = Math.max(limit * 4, 20);
+
+        const response = await client.query(COLLECTION_NAME, {
+          prefetch: [
+            { query: queryDense, using: 'dense', limit: prefetchLimit },
+            { query: querySparse, using: 'bm25', limit: prefetchLimit },
+          ],
+          query: { fusion: 'rrf' },
+          limit,
+          filter: must.length > 0 ? { must } : undefined,
+          with_payload: true,
+          score_threshold: options?.scoreThreshold,
+          params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
+        });
+
+        const results = this.mapPointsToResults(response.points);
+        recordRows(results.length);
+
+        logger.info('Qdrant hybrid search completed', {
+          operation: 'qdrant:search:hybrid',
+          resultsCount: results.length,
+          prefetchLimit,
+          durationMs: Date.now() - startTime,
+        });
+
+        return results;
+      },
+    );
+  }
+
+  private buildMustFilter(filter?: QdrantFilter): Array<{ key: string; match: { value: string } }> {
     const must: Array<{ key: string; match: { value: string } }> = [];
     if (filter?.niveau) must.push({ key: 'niveau', match: { value: filter.niveau } });
     if (filter?.matiere) must.push({ key: 'matiere', match: { value: filter.matiere } });
-    if (filter?.difficulty) must.push({ key: 'difficulty', match: { value: filter.difficulty } });
+    if (filter?.cycle) must.push({ key: 'cycle', match: { value: filter.cycle } });
+    return must;
+  }
 
-    const response = await client.query(COLLECTION_NAME, {
-      query: queryVector,
-      limit,
-      filter: must.length > 0 ? { must } : undefined,
-      with_payload: true,
-      score_threshold: options?.scoreThreshold,
-      params: options?.hnswEf ? { hnsw_ef: options.hnswEf } : undefined,
-    });
-
-    const results: QdrantSearchResult[] = response.points.map((point) => {
-      const p = point.payload as Record<string, unknown>;
+  private mapPointsToResults(
+    points: ReadonlyArray<{ id: string | number; score?: number; payload?: unknown }>,
+  ): QdrantSearchResult[] {
+    return points.map((point) => {
+      const p = (point.payload ?? {}) as Record<string, unknown>;
       return {
         id: String(point.id),
         score: point.score ?? 0,
-        title: String(p['title'] ?? ''),
-        content: String(p['content'] ?? ''),
+        // Payload canonique curriculum (schema/document.py:Chunk.to_qdrant_payload)
+        text: String(p['text'] ?? ''),
+        section: String(p['section'] ?? ''),
         matiere: String(p['matiere'] ?? ''),
         niveau: String(p['niveau'] ?? ''),
-        domaine: p['domaine'] ? String(p['domaine']) : undefined,
-        sousdomaine: p['sousdomaine'] ? String(p['sousdomaine']) : undefined,
-        content_type: p['content_type'] ? String(p['content_type']) : undefined,
-        difficulty: p['difficulty'] ? String(p['difficulty']) : undefined,
+        cycle: String(p['cycle'] ?? ''),
+        source_file: String(p['source_file'] ?? ''),
+        chunk_index: typeof p['chunk_index'] === 'number' ? p['chunk_index'] : 0,
       };
     });
-
-    logger.info('Qdrant search completed', {
-      operation: 'qdrant:search',
-      resultsCount: results.length,
-      durationMs: Date.now() - startTime,
-    });
-
-    return results;
   }
 
   async getStats(): Promise<CollectionStats> {

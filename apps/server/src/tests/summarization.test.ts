@@ -39,26 +39,26 @@ mock.module('../db/repositories/messages.repository', () => ({
   },
 }));
 
-// Gemini mock
-let geminiResponse = 'Mocked summary text';
+// Mistral client mock — service migré vers lib/ai/mistral-client.
+// generateText retourne directement le contenu string.
+let mistralResponse = 'Mocked summary text';
 
-mock.module('@google/genai', () => ({
-  GoogleGenAI: class {
-    models = {
-      generateContent: mock(async () => ({
-        text: geminiResponse,
-      })),
-    };
-  },
+// Mock complet du wrapper Mistral pour isolation Bun (autres tests peuvent
+// partager le même module-mock cache).
+mock.module('../lib/ai/mistral-client', () => ({
+  generateText: mock(async () => mistralResponse),
+  generateStructured: mock(async () => ({})),
+  chatStream: mock(async function* () { yield { type: 'done' as const }; }),
+  setMistralClient: mock(() => {}),
 }));
 
-// App config mock
+// App config mock — config Mistral nécessaire au chargement du client
 mock.module('../config/app.config', () => ({
   appConfig: {
     ai: {
-      gemini: {
+      mistral: {
         apiKey: 'test-key',
-        model: 'gemini-2.5-flash',
+        model: 'mistral-small-latest',
       },
     },
   },
@@ -82,7 +82,7 @@ beforeEach(() => {
   messagesResult = [];
   sessionUpdateCalled = false;
   sessionUpdateArgs = {};
-  geminiResponse = 'Mocked summary text';
+  mistralResponse = 'Mocked summary text';
 });
 
 describe('Summarization Service', () => {
@@ -132,7 +132,7 @@ describe('Summarization Service', () => {
     });
 
     it('should truncate summary exceeding 6000 chars', async () => {
-      geminiResponse = 'x'.repeat(7000);
+      mistralResponse = 'x'.repeat(7000);
       sessionResult = makeStudySession({ conversationSummary: null, summaryUpToMessageId: null });
       messagesResult = makeMessages(25);
       await summarizationService.summarizeIfNeeded('session-001');
@@ -142,7 +142,7 @@ describe('Summarization Service', () => {
     });
 
     it('should handle null Gemini response without throwing', async () => {
-      geminiResponse = null as unknown as string;
+      mistralResponse = null as unknown as string;
       sessionResult = makeStudySession({ conversationSummary: null, summaryUpToMessageId: null });
       messagesResult = makeMessages(25);
       // Should not throw — null response means no summary generated

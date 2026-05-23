@@ -20,12 +20,41 @@ JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `
 - **Database** : PostgreSQL 16 pgvector + Drizzle ORM 0.45
 - **Cache** : MemoryCacheService (LRU in-memory avec TTL) — PAS de Redis
 - **Auth** : Better Auth 1.5 + Google OAuth + account linking + cookieCache
-- **AI** : Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Gladia (STT), ElevenLabs (TTS)
-- **RAG** : Qdrant Cloud + Mistral embeddings + BM25 reranking + pre-generation intent classifier + Cohere Rerank stage 2
+- **AI** : **Stack 100 % Mistral souveraine EU** — modèle par tâche (voir ADR-0001) :
+  - Embeddings (RAG) : `BAAI/bge-m3` dense+sparse via `apps/ai-service/` (Python, Koyeb fra)
+  - Reranker (RAG) : `BAAI/bge-reranker-v2-m3` co-hosté dans `apps/ai-service/`
+  - Embeddings (mémoire épisodique) : `mistral-embed` (1024D)
+  - Chat tutorat principal : `mistral-medium-latest` (streaming + tools)
+  - Reasoning math complexe : `magistral-small-latest` (router conditionnel)
+  - Tâches simples (titre, classif, génération templatée) : `ministral-3b/8b` ou `mistral-small`
+  - Extraction structurée nuancée (épisodes, analyses) : `mistral-medium-latest`
+  - Vision (photos d'exercices) : `mistral-medium-latest` (multimodal natif depuis Pixtral fusion)
+  - OCR documents : `mistral-ocr-25.12`
+  - TTS : `voxtral-tts-26.03` (FR, voice cloning, EU)
+  - STT : Gladia (Paris, EU OK)
+  - **Migration Gemini → Mistral terminée** : `@google/genai` retiré du
+    `package.json`, aucun appel sortant Google côté runtime.
+- **RAG** : Qdrant Cloud + BGE-M3 dense+sparse (via `apps/ai-service/`) + hybrid RRF natif Qdrant + rerank cross-encoder.
+  Curriculum index dans repo séparé `tomai-curriculum/` (voir son CLAUDE.md).
 - **Paiement** : RevenueCat uniquement (mobile IAP, source unique de facturation). Webhooks protégés par secret partagé `REVENUECAT_WEBHOOK_AUTH` (≥32 chars, comparaison timing-safe)
 - **Storage** : Scaleway S3 (presigned URLs, RGPD fr-par)
 - **Pronote** : Pawnote 1.6 + AES-256-GCM (PBKDF2 600K iterations — salt aléatoire par enregistrement à implémenter SP1)
-- **Observabilité** : à installer (Sentry + structured logging avec `requestId`)
+- **Observabilité** : OpenTelemetry (GenAI semconv pour les appels Mistral, `db.*` pour Qdrant). Init dans `src/index.ts` via `setupOtel()` avant tout import applicatif. Console exporter en dev, OTLP HTTP en prod (`OTEL_EXPORTER_OTLP_ENDPOINT`). Sentry à ajouter quand on en aura le besoin métier.
+
+## Couche AI — pattern centralisé
+
+**Accès Mistral via `src/lib/ai/mistral-client.ts`** (jamais via SDK direct dans les services) :
+
+- `generateText({ messages, model, temperature, maxTokens, promptCacheKey, timeoutMs })` — completion non-streaming
+- `generateStructured<T>({ ..., schema })` — JSON Schema strict (élimine retry parsing)
+- `chatStream({ messages, tools, ... })` — streaming SSE pour le chat
+
+Best practices token (cf ADR-0001 D4) :
+- `prompt_cache_key` versionné sur tout service à system prompt stable (-90 % cached tokens)
+- `max_tokens` strict par tâche (titre 64, classif 80, résumé 2048, chat 1024)
+- JSON Schema strict pour toute sortie structurée
+- Batch API pour jobs offline (-50 %)
+- Choix modèle par tâche (jamais `mistral-large` par défaut — réserver aux cas où medium échoue)
 
 ## Architecture
 
@@ -38,14 +67,14 @@ JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `
 
 ### Modules principaux
 
-- **Chat** (`src/services/chat/`) : orchestration Gemini, summarization, tool execution, token budget, SSE streaming, intent classifier + Cohere Rerank, mémoire épisodique pgvector
+- **Chat** (`src/services/chat/`) : orchestration Mistral, summarization, tool execution, token budget, SSE streaming, intent classifier (ministral-8b), mémoire épisodique pgvector (mistral-medium extraction).
 - **Billing** (`src/services/billing/`) : `BillingService` unique, piloté par les webhooks RevenueCat (`src/routes/revenuecat-webhook-*.ts`). Mutations idempotentes sur `family_billing` + `user_subscriptions`. Idempotence stockée dans `webhook_events` (TTL 7 jours).
-- **Learning** : FSRS (spaced repetition), decks, cards, generations. Logique à extraire en `LearningService` + repositories (voir SP5)
+- **Learning** : FSRS (spaced repetition), decks, cards (génération `mistral-small` + JSON Schema), generations. Logique à extraire en `LearningService` + repositories (voir SP5)
 - **Subscription** (`src/routes/subscription/`) : routes lecture seule — `GET /api/subscriptions/status` (état famille + enfants) et `GET /api/subscriptions/usage` (tokens). Les achats/annulations passent par RevenueCat côté mobile ; le backend ne fait AUCUN appel provider sortant.
 - **Quota** : token quota windowed (5h rolling + daily cap) derrière flag `QUOTA_ENFORCEMENT_ENABLED`
-- **RAG** : recherche unifiée Qdrant + BM25 + Cohere Rerank optionnel
+- **RAG** : recherche unifiée Qdrant hybrid native (dense BGE-M3 + sparse BGE-M3 + fusion RRF) + reranker `bge-reranker-v2-m3` cross-encoder. Embeddings + rerank servis par `apps/ai-service/` (Python FastAPI, Koyeb fra). Pas de Cohere (souveraineté EU). Déploiement : `apps/ai-service/README.md`.
 - **Pronote** : auth QR code, devoirs, notes, emploi du temps (SSRF protection)
-- **Storage** : upload presigned Scaleway, confirmation, sync Gemini Files API
+- **Storage** : upload presigned Scaleway, confirmation. Multimodal chat consomme directement le blob Scaleway (base64 inline pour photos, `extractedText` côté record pour PDFs). Pas de cache fichier externe (Mistral n'a pas d'équivalent à Gemini Files API).
 
 ## Patterns
 
@@ -81,4 +110,4 @@ Source de vérité : `src/db/schema.ts`. Règles détaillées : @../../.claude/r
 
 ## Sources officielles
 
-[Elysia.js](https://elysiajs.com) | [Drizzle ORM](https://orm.drizzle.team) | [Better Auth](https://better-auth.com) | [Gemini API](https://ai.google.dev) | [RevenueCat Webhooks v2](https://www.revenuecat.com/docs/integrations/webhooks/webhooks-v2)
+[Elysia.js](https://elysiajs.com) | [Drizzle ORM](https://orm.drizzle.team) | [Better Auth](https://better-auth.com) | [Mistral API](https://docs.mistral.ai/api/) | [Mistral Models](https://docs.mistral.ai/getting-started/models/models_overview/) | [BGE-M3](https://huggingface.co/BAAI/bge-m3) | [RevenueCat Webhooks v2](https://www.revenuecat.com/docs/integrations/webhooks/webhooks-v2)

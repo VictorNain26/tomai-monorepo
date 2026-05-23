@@ -127,7 +127,11 @@ export function needsDailyReset(lastResetAt: Date): boolean {
   const todayReset = new Date(now);
   todayReset.setUTCHours(utcResetHour, 0, 0, 0);
 
-  if (parisHour < RESET_HOUR_PARIS) {
+  // If the computed boundary is still in the future, walk back one calendar
+  // day to land on the most recent reset that has actually occurred. Comparing
+  // todayReset to `now` is robust to the case where Paris has crossed midnight
+  // but UTC hasn't (parisHour < 10 was over-rewinding by one full day there).
+  if (todayReset > now) {
     todayReset.setUTCDate(todayReset.getUTCDate() - 1);
   }
 

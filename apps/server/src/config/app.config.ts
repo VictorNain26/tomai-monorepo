@@ -28,22 +28,18 @@ export interface AppConfig {
     connectionTimeoutMs: number;
   };
   ai: {
-    gemini: {
+    mistral?: {
       apiKey: string | undefined;
-      model: string;           // Modèle principal (chat) - Gemini 3 Flash
-      audioModel: string;      // Modèle audio (analyse prononciation) - Gemini 3 Flash
-      ttsModel: string;        // Modèle TTS - Gemini 2.5 Flash TTS (pas encore 3.0)
+      // Chat / génération de texte. Stack 100% Mistral souveraine EU (Phase 2B).
+      model: string;           // Chat principal — mistral-medium-latest (sweet spot perf/coût mai 2026)
+      reasoningModel: string;  // Reasoning explicite — magistral-medium-latest
+      ttsModel: string;        // TTS — voxtral-tts-latest (FR supporté, EU)
       maxTokens: number;
       temperature: number;
       topP: number;
       requestTimeout: number;
       retryAttempts: number;
       retryDelay: number;
-      safetySettings: 'none' | 'low' | 'medium' | 'high';
-      thinkingLevel: 'minimal' | 'low' | 'medium' | 'high';
-    };
-    mistral?: {
-      apiKey: string | undefined;
     };
     gladia?: {
       apiKey: string | undefined;
@@ -225,26 +221,23 @@ function createDatabaseConfig(): AppConfig['database'] {
 
 function createAiConfig(): AppConfig['ai'] {
   return {
-    gemini: {
-      apiKey: Bun.env['GEMINI_API_KEY'],
-      // Modèles spécialisés pour usage optimal
-      // Fallback sur un modèle GA stable pour éviter une panne si la var d'env
-      // disparaît ou pointe vers un preview retiré. La prod surcharge via env.
-      model: Bun.env['GEMINI_MODEL'] ?? 'gemini-2.5-flash',
-      audioModel: Bun.env['GEMINI_AUDIO_MODEL'] ?? 'gemini-2.5-flash',
-      ttsModel: Bun.env['GEMINI_TTS_MODEL'] ?? 'gemini-2.5-flash-preview-tts', // Text-to-Speech natif (pas encore 3.0)
-      maxTokens: parseInt(Bun.env['GEMINI_MAX_TOKENS'] ?? '16384', 10), // Gemini 3 Flash supports 1M context
-      temperature: parseFloat(Bun.env['GEMINI_TEMPERATURE'] ?? '0.7'),    // Optimal pour éducation
-      topP: parseFloat(Bun.env['GEMINI_TOP_P'] ?? '0.95'),                // Créativité contrôlée
-      requestTimeout: parseInt(Bun.env['GEMINI_TIMEOUT'] ?? '60000', 10), // Timeout 60s
-      retryAttempts: parseInt(Bun.env['GEMINI_RETRY_ATTEMPTS'] ?? '3', 10),
-      retryDelay: parseInt(Bun.env['GEMINI_RETRY_DELAY'] ?? '1000', 10),
-      safetySettings: (Bun.env['GEMINI_SAFETY'] as 'none' | 'low' | 'medium' | 'high') ?? 'medium',
-      thinkingLevel: (Bun.env['GEMINI_THINKING_LEVEL'] as 'minimal' | 'low' | 'medium' | 'high') ?? 'low',
-    },
-    // Mistral AI - Embeddings 1024D (migration Gemini → Mistral Jan 2025)
+    // Mistral AI — stack souveraine EU complète (embeddings + chat + TTS Voxtral).
+    // Phase 2B migration finished : Mistral is the only LLM provider for chat,
+    // satellites (auto-title, classifier, summarization, etc.), and TTS.
     mistral: Bun.env['MISTRAL_API_KEY'] ? {
       apiKey: Bun.env['MISTRAL_API_KEY'],
+      // Mistral Medium 3.5 (avril 2026) — sweet spot perf/coût pour tutorat
+      model: Bun.env['MISTRAL_MODEL'] ?? 'mistral-medium-latest',
+      // Magistral Medium 1.2 — reasoning quand pertinent
+      reasoningModel: Bun.env['MISTRAL_REASONING_MODEL'] ?? 'magistral-medium-latest',
+      // Voxtral TTS (sorti mars 2025, FR, voice cloning 3s, EU)
+      ttsModel: Bun.env['MISTRAL_TTS_MODEL'] ?? 'voxtral-tts-latest',
+      maxTokens: parseInt(Bun.env['MISTRAL_MAX_TOKENS'] ?? '16384', 10),
+      temperature: parseFloat(Bun.env['MISTRAL_TEMPERATURE'] ?? '0.7'),
+      topP: parseFloat(Bun.env['MISTRAL_TOP_P'] ?? '0.95'),
+      requestTimeout: parseInt(Bun.env['MISTRAL_TIMEOUT'] ?? '60000', 10),
+      retryAttempts: parseInt(Bun.env['MISTRAL_RETRY_ATTEMPTS'] ?? '3', 10),
+      retryDelay: parseInt(Bun.env['MISTRAL_RETRY_DELAY'] ?? '1000', 10),
     } : undefined,
     // Gladia - Speech-to-Text (migration Gemini → Gladia Jan 2025)
     gladia: Bun.env['GLADIA_API_KEY'] ? {

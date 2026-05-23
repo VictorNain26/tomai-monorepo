@@ -25,13 +25,14 @@
 import { and, desc, eq, sql, type SQL } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { sessionEpisodes, studySessions, messages } from '../db/schema.js';
-import { getGeminiClient } from '../lib/gemini-client.js';
+import { generateStructured } from '../lib/ai/mistral-client.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
-import { appConfig } from '../config/app.config.js';
 import { logger } from '../lib/observability.js';
-import { withTimeout } from '../lib/retry.js';
 
-export const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-04-21';
+export const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-05-18';
+
+// Prompt cache stable — bump version pour invalider
+const EPISODIC_CACHE_KEY = `episodic-extract-${EPISODIC_EXTRACTION_PROMPT_VERSION}`;
 
 interface ExtractedEpisode {
   summary: string;
@@ -58,19 +59,24 @@ Réponds UNIQUEMENT en JSON strict.`;
 }
 
 const EXTRACTION_SCHEMA = {
-  type: 'object',
-  properties: {
-    summary: { type: 'string' },
-    conceptsCovered: {
-      type: 'array',
-      items: { type: 'string' },
+  name: 'episode_extraction',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      summary: { type: 'string' },
+      conceptsCovered: {
+        type: 'array',
+        items: { type: 'string' },
+      },
+      outcome: {
+        type: 'string',
+        enum: ['completed', 'abandoned', 'succeeded'],
+      },
     },
-    outcome: {
-      type: 'string',
-      enum: ['completed', 'abandoned', 'succeeded'],
-    },
+    required: ['summary', 'conceptsCovered', 'outcome'],
+    additionalProperties: false,
   },
-  required: ['summary', 'conceptsCovered', 'outcome'],
 } as const;
 
 class EpisodicMemoryService {
@@ -115,30 +121,24 @@ class EpisodicMemoryService {
         .join('\n\n')
         .slice(0, 20_000);
 
-      const prompt = buildExtractionPrompt(session.subject, messagesText);
-
-      const response = await withTimeout(
-        getGeminiClient().models.generateContent({
-          model: appConfig.ai.gemini.model,
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          config: {
-            temperature: 0.2,
-            maxOutputTokens: 1200,
-            responseMimeType: 'application/json',
-            responseJsonSchema: EXTRACTION_SCHEMA,
-            thinkingConfig: { thinkingBudget: 0 },
+      // ADR-0001 D2 : mistral-medium — extraction structurée FR nuancée.
+      // JSON Schema strict garantit la forme. Prompt cache sur le prompt
+      // d'extraction (templaté, subject seul varie via interpolation).
+      const parsed = await generateStructured<ExtractedEpisode>({
+        model: 'mistral-medium-latest',
+        messages: [
+          {
+            role: 'user',
+            content: buildExtractionPrompt(session.subject, messagesText),
           },
-        }),
-        30_000,
-        'gemini:episodic-extract',
-      );
+        ],
+        temperature: 0.2,
+        maxTokens: 1200,
+        schema: EXTRACTION_SCHEMA,
+        promptCacheKey: EPISODIC_CACHE_KEY,
+        timeoutMs: 30_000,
+      });
 
-      const text = response.text?.trim() ?? '';
-      if (!text) {
-        throw new Error('Empty extraction response');
-      }
-
-      const parsed = JSON.parse(text) as ExtractedEpisode;
       if (!parsed.summary || !Array.isArray(parsed.conceptsCovered)) {
         throw new Error('Malformed extraction JSON');
       }

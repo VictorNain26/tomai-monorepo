@@ -11,7 +11,11 @@ export type { AttachedFileInfo, FileAnalysisResult, FileAnalysisOptions, Multimo
 
 class FileContextService {
   /**
-   * Récupère les métadonnées d'un fichier depuis PostgreSQL
+   * Récupère les métadonnées d'un fichier depuis PostgreSQL.
+   *
+   * Pas de cache LLM externe : Mistral n'a pas d'équivalent à Gemini Files API,
+   * donc les payloads multimodaux sont (re)construits à chaque tour à partir
+   * du contenu Scaleway. Voir prepareMultimodalFiles.
    */
   async retrieveFileMetadata(fileId: string): Promise<AttachedFileInfo | null> {
     try {
@@ -21,23 +25,9 @@ class FileContextService {
         return null;
       }
 
-      // Vérifier si le fileUri Gemini est encore valide (TTL 48h)
-      let geminiFileId = file.geminiFileUri ?? undefined;
-      if (geminiFileId && file.geminiExpiresAt) {
-        if (file.geminiExpiresAt <= new Date()) {
-          logger.info('Gemini file URI expired', {
-            fileId,
-            expiredAt: file.geminiExpiresAt.toISOString(),
-            operation: 'retrieve-file-metadata'
-          });
-          geminiFileId = undefined;
-        }
-      }
-
       return {
         fileName: file.fileName,
         fileId: file.id,
-        geminiFileId,
         mimeType: file.mimeType,
         fileSizeBytes: file.sizeBytes
       };
@@ -263,18 +253,16 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       .map(id => fileRecords.find(f => f.id === id))
       .filter((f): f is NonNullable<typeof f> => f !== undefined);
 
-    const attachedFileInfos: AttachedFileInfo[] = orderedFiles.map(file => {
-      const geminiExpired = file.geminiExpiresAt && file.geminiExpiresAt <= new Date();
-      return {
-        fileName: file.fileName,
-        fileId: file.id,
-        geminiFileId: geminiExpired ? undefined : (file.geminiFileUri ?? undefined),
-        mimeType: file.mimeType,
-        fileSizeBytes: file.sizeBytes
-      };
-    });
+    const attachedFileInfos: AttachedFileInfo[] = orderedFiles.map(file => ({
+      fileName: file.fileName,
+      fileId: file.id,
+      mimeType: file.mimeType,
+      fileSizeBytes: file.sizeBytes
+    }));
 
-    // Analyze files (sequentially to respect Gemini rate limits) using preloaded records.
+    // Analyze files sequentially to keep ordered prompts and avoid hammering
+    // Mistral with parallel multi-MB requests; preloaded FileRecord avoids the
+    // duplicate SELECT inside analyzeFileWithCache.
     const analysisResults: (FileAnalysisResult | null)[] = [];
     for (const file of orderedFiles) {
       const result = await this.analyzeFileWithCache(file.id, { content, schoolLevel, userId }, file);

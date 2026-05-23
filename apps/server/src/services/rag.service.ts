@@ -1,16 +1,24 @@
 /**
- * RAG Service - Interface unifiée pour la recherche sémantique
+ * RAG Service - Recherche sémantique hybride Qdrant native.
  *
- * Architecture simplifiée 2025:
- * - Appelle Qdrant Cloud directement (pas de service intermédiaire)
- * - Génère les embeddings avec Mistral directement
- * - Reranking BM25+RRF côté serveur
+ * Architecture mai 2026 (post-migration BGE-M3) :
+ * - Embed query via `tomai-ai-service` (BGE-M3 dense + sparse natif single pass)
+ * - Hybrid search Qdrant : prefetch dense + sparse → fusion RRF native
+ * - Stage 2 : rerank bge-reranker-v2-m3 (via le même ai-service)
+ *
+ * Pré-requis collection Qdrant : ingérée avec BGE-M3 (dense 1024D cosine +
+ * sparse natif lexical_weights). Voir `tomai-curriculum/scripts/ingest.py
+ * --embed-model=BAAI/bge-m3 --sparse-method=BAAI/bge-m3` et la décision
+ * benchmark documentée dans `tomai-curriculum/docs/ARCHITECTURE.md`.
+ *
+ * Sources :
+ * - https://qdrant.tech/articles/sparse-vectors (hybrid search natif)
+ * - https://huggingface.co/BAAI/bge-m3 (modèle + lexical_weights)
  */
 
-import { qdrantService } from './qdrant.service.js';
-import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
-import { rerankWithBm25Rrf, type RerankedResult } from './rerank.service.js';
-import { isCohereRerankConfigured, rerankWithCohere } from './rerank-cohere.service.js';
+import { qdrantService, type QdrantSearchResult } from './qdrant.service.js';
+import { aiServiceClient } from './ai-service.client.js';
+import { retrievalAuditRepository } from '../db/repositories/index.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
 
@@ -33,26 +41,34 @@ export interface HybridSearchOptions {
   competence?: string | null;
   limit?: number;
   minSimilarity?: number;
+  /**
+   * Audit trail (RGPD article 30) — when both are provided, we persist a row
+   * to `retrieval_audit` so we can answer "what did this user search" without
+   * replaying logs. The query text itself is hashed before insert; only
+   * metadata (filters, counts, latency) hits the table.
+   */
+  auditUserId?: string | null;
+  auditSessionId?: string | null;
 }
 
 export interface SemanticChunk {
   id: string;
   score: number;
-  content: string;
-  title: string;
-  domaine?: string;
-  sousdomaine?: string;
+  text: string;
+  section: string;
+  matiere: string;
+  niveau: string;
 }
 
 export interface HybridSearchResult {
   context: string;
   strategy: string;
   semanticChunks: SemanticChunk[];
-  microChunks: Array<{ id: string; score: number; content: string }>;
+  microChunks: Array<{ id: string; score: number; text: string }>;
   averageSimilarity: number;
   searchTime: number;
-  bestMatchTitle?: string;
-  bestMatchDomaine?: string;
+  bestMatchSection?: string;
+  bestMatchMatiere?: string;
 }
 
 // =============================================================================
@@ -68,12 +84,17 @@ class RAGService {
   private availabilityCache: { value: boolean; expiresAt: number } | null = null;
 
   /**
-   * Recherche sémantique avec reranking BM25+RRF
+   * Recherche sémantique hybride via Qdrant Query API.
+   *
+   * Pipeline :
+   * 1. Embedding dense de la query (Mistral 1024D)
+   * 2. Tokenisation BM25 côté server (sparse vector)
+   * 3. Qdrant Query API : prefetch dense + sparse → fusion RRF native
+   * 4. Construction du contexte structuré pour le LLM
    */
   async hybridSearch(options: HybridSearchOptions): Promise<HybridSearchResult> {
     const startTime = Date.now();
 
-    // Vérifier disponibilité
     const available = await this.isAvailable();
     if (!available) {
       logger.warn('RAG service not available', { operation: 'rag-search' });
@@ -81,56 +102,98 @@ class RAGService {
     }
 
     try {
-      // 1. Générer l'embedding de la query
-      const queryVector = await mistralEmbeddingsService.embed(options.query);
+      // BGE-M3 produit dense + sparse natif en un seul forward pass côté
+      // ai-service (économie de latence ~50% vs deux appels séparés).
+      const queryEmbed = await aiServiceClient.embed(options.query);
+      const queryDense = queryEmbed.dense;
+      const querySparse = queryEmbed.sparse;
 
-      // 2. Recherche vectorielle (top-20 pour reranking)
-      const initialLimit = 20;
-      const minScore = options.minSimilarity ?? RAG_THRESHOLDS.MIN_SCORE;
-      const rawResults = await qdrantService.search(
-        queryVector,
+      const topK = options.limit ?? 5;
+      // Stage 2 rerank toujours activé en post-migration (synergie infra :
+      // même service Python que l'embed, latence supplémentaire marginale).
+      // Prefetch 4× topK pour donner au cross-encoder de la matière à réordonner.
+      const prefetchK = Math.max(topK * 4, 20);
+
+      // NOTE : on ne passe PAS scoreThreshold à searchHybrid. La fusion RRF
+      // côté Qdrant retourne des scores petits (1/(k+rank), k=60 → top-1 ≈ 0.016)
+      // qui ne sont PAS comparables à la cosine similarity (~0.5-0.9). Le seuil
+      // RAG_THRESHOLDS.MIN_SCORE 0.35 est calibré cosine ; le passer à
+      // searchHybrid filtrerait tous les résultats. Le filtrage qualité se fait
+      // a posteriori sur averageSimilarity (calculé depuis score Qdrant).
+      //
+      // Pré-requis collection (vérifié par boot check ou déploiement coordonné) :
+      // - sparse_vectors_config.bm25 avec Modifier.IDF (cf. migrate_collection.py
+      //   du curriculum). Si absent, Qdrant renvoie 400 "vector name not found"
+      //   et l'erreur propage — on ne masque PAS le problème avec un fallback
+      //   silencieux qui rendrait la régression invisible en observabilité.
+      let results = await qdrantService.searchHybrid(
+        queryDense,
+        querySparse,
         { niveau: options.niveau, matiere: options.matiere },
-        initialLimit,
-        { scoreThreshold: minScore, hnswEf: 128 }
+        prefetchK,
+        { hnswEf: 128 },
       );
 
-      if (rawResults.length === 0) {
-        return this.emptyResult(Date.now() - startTime);
+      let strategy: 'qdrant-hybrid-rrf' | 'qdrant-hybrid-rrf+rerank-bge-m3' =
+        'qdrant-hybrid-rrf';
+
+      // Stage 2: cross-encoder rerank via ai-service. En cas d'échec, on
+      // log et on garde l'ordre hybrid pour ne pas casser le chat (rerank =
+      // optimisation, pas dépendance dure du retrieval).
+      if (results.length > 1) {
+        try {
+          const reranked = await aiServiceClient.rerank(
+            options.query,
+            results.map((r) => r.text),
+            topK,
+          );
+          // `reranked[i].index` réfère à la position dans `results` qu'on a envoyée
+          results = reranked
+            .map((r) => results[r.index])
+            .filter((r): r is QdrantSearchResult => r !== undefined)
+            .slice(0, topK);
+          strategy = 'qdrant-hybrid-rrf+rerank-bge-m3';
+        } catch (err) {
+          logger.warn('Rerank failed, falling back to hybrid order', {
+            operation: 'rag-search:rerank-fallback',
+            _error: err instanceof Error ? err.message : String(err),
+          });
+          if (results.length > topK) results = results.slice(0, topK);
+        }
+      } else if (results.length > topK) {
+        results = results.slice(0, topK);
       }
 
-      // 3. Reranking stage 1: BM25 + RRF fusion. We keep more than the
-      // final topK here so stage 2 (Cohere) can re-order a larger pool.
-      const topK = options.limit ?? 5;
-      const stage2PoolSize = Math.min(Math.max(topK * 3, 10), rawResults.length);
-      const stage1Results = rerankWithBm25Rrf(options.query, rawResults, stage2PoolSize);
-
-      // 4. Reranking stage 2 (optional): Cohere Rerank 3.5 cross-encoder.
-      // Enabled only when COHERE_API_KEY is set. If the Cohere call fails,
-      // we surface the error — no silent fallback to stage 1 output. The
-      // caller's outer try/catch below will log and propagate.
-      let filteredResults: RerankedResult[];
-      if (isCohereRerankConfigured()) {
-        filteredResults = await rerankWithCohere(options.query, stage1Results, topK);
-      } else {
-        filteredResults = stage1Results.slice(0, topK);
-      }
-
-      // 5. Convertir au format interne
-      const semanticChunks = this.toSemanticChunks(filteredResults);
-
-      // 6. Extraire le meilleur match
-      const bestMatch = filteredResults[0];
-
-      // 7. Calculer la similarité moyenne
+      const semanticChunks = results.length > 0 ? this.toSemanticChunks(results) : [];
+      const bestMatch = results[0];
       const averageSimilarity =
         semanticChunks.length > 0
           ? semanticChunks.reduce((sum, c) => sum + c.score, 0) / semanticChunks.length
           : 0;
-
-      // 8. Construire le contexte formaté
-      const context = this.buildContext(filteredResults);
-
       const searchTime = Date.now() - startTime;
+
+      // RGPD article 30 — fire-and-forget audit insert. Only metadata
+      // (hashed query, filters, counts, latency) hits the table; the prompt
+      // never persists. Failure is logged but never breaks the response.
+      if (options.auditUserId) {
+        void retrievalAuditRepository.log({
+          userId: options.auditUserId,
+          sessionId: options.auditSessionId ?? null,
+          query: options.query,
+          niveau: options.niveau,
+          matiere: options.matiere ?? null,
+          resultsCount: semanticChunks.length,
+          avgScore: averageSimilarity || null,
+          durationMs: searchTime,
+          strategy,
+        });
+      }
+
+      if (results.length === 0) {
+        return this.emptyResult(searchTime);
+      }
+
+      const context = this.buildContext(results);
 
       logger.info('RAG search completed', {
         operation: 'rag-search',
@@ -145,13 +208,13 @@ class RAGService {
 
       return {
         context,
-        strategy: 'direct-rrf',
+        strategy,
         semanticChunks,
         microChunks: [],
         averageSimilarity,
         searchTime,
-        bestMatchTitle: bestMatch?.title,
-        bestMatchDomaine: bestMatch?.domaine,
+        bestMatchSection: bestMatch?.section,
+        bestMatchMatiere: bestMatch?.matiere,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -187,11 +250,11 @@ class RAGService {
       return this.availabilityCache.value;
     }
     try {
-      const [qdrantOk, mistralOk] = await Promise.all([
+      const [qdrantOk, aiOk] = await Promise.all([
         qdrantService.isAvailable(),
-        mistralEmbeddingsService.isAvailable(),
+        aiServiceClient.isAvailable(),
       ]);
-      const available = qdrantOk && mistralOk;
+      const available = qdrantOk && aiOk;
       this.availabilityCache = { value: available, expiresAt: now + AVAILABILITY_CACHE_TTL_MS };
       return available;
     } catch {
@@ -229,24 +292,24 @@ class RAGService {
     };
   }
 
-  private toSemanticChunks(results: RerankedResult[]): SemanticChunk[] {
+  private toSemanticChunks(results: QdrantSearchResult[]): SemanticChunk[] {
     return results.map((r) => ({
       id: r.id,
       score: r.score,
-      content: r.content,
-      title: r.title,
-      domaine: r.domaine,
-      sousdomaine: r.sousdomaine,
+      text: r.text,
+      section: r.section,
+      matiere: r.matiere,
+      niveau: r.niveau,
     }));
   }
 
-  private buildContext(results: RerankedResult[]): string {
+  private buildContext(results: QdrantSearchResult[]): string {
     if (results.length === 0) return '';
 
     const contextParts = results.map((result, index) => {
       const scorePercent = (result.score * 100).toFixed(0);
-      return `[${index + 1}] ${result.title} (${result.niveau} - ${result.matiere}) [${scorePercent}%]
-${result.content}`;
+      return `[${index + 1}] ${result.section} (${result.niveau} - ${result.matiere}) [${scorePercent}%]
+${result.text}`;
     });
 
     return `📚 PROGRAMMES OFFICIELS
