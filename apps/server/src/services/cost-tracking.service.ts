@@ -42,14 +42,6 @@ export interface CostRecordInput {
  * major vendors.
  */
 const MODEL_PRICING_USD_PER_MILLION: Record<string, { input: number; output: number }> = {
-  'gemini-2.5-flash': { input: 0.30, output: 2.50 },
-  'gemini-2.5-pro': { input: 1.25, output: 10.00 },
-  'gemini-3-flash': { input: 0.30, output: 2.50 },
-  'gemini-3-flash-preview': { input: 0.30, output: 2.50 },
-  'gemini-3.1-pro': { input: 2.00, output: 12.00 },
-  'claude-sonnet-4-6': { input: 3.00, output: 15.00 },
-  'claude-opus-4-7': { input: 5.00, output: 25.00 },
-  'claude-haiku-4-5': { input: 1.00, output: 5.00 },
   'mistral-medium-3': { input: 0.40, output: 2.00 },
   'mistral-large-3': { input: 2.00, output: 6.00 },
 };
@@ -68,8 +60,7 @@ const USD_TO_EUR = resolveUsdRate();
 
 /** Normalize provider-suffixed model IDs down to the pricing key. */
 function normalizeModelId(aiModel: string): string {
-  // Handle dated previews like gemini-2.5-flash-preview-1218 → gemini-2.5-flash
-  // and claude variants with 1M-context suffix.
+  // Handle Mistral variant with version suffix (e.g. mistral-medium-3-2024 → mistral-medium-3).
   const lower = aiModel.toLowerCase();
   for (const key of Object.keys(MODEL_PRICING_USD_PER_MILLION)) {
     if (lower.startsWith(key)) return key;
