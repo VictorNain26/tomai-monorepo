@@ -16,19 +16,19 @@ export const healthApiRoutes = new Elysia({ name: 'api-health' })
     }
     try {
       const { qdrantService } = await import('../../services/qdrant.service.js');
-      const { mistralEmbeddingsService } = await import('../../services/mistral-embeddings.service.js');
+      const { aiServiceClient } = await import('../../services/ai-service.client.js');
 
-      const [qdrantOk, mistralOk] = await Promise.all([
+      const [qdrantOk, aiOk] = await Promise.all([
         qdrantService.isAvailable(),
-        mistralEmbeddingsService.isAvailable(),
+        aiServiceClient.isAvailable(),
       ]);
       const stats = await qdrantService.getStats();
 
       return {
         success: true,
-        status: qdrantOk && mistralOk ? 'healthy' : 'degraded',
+        status: qdrantOk && aiOk ? 'healthy' : 'degraded',
         qdrant: qdrantOk,
-        mistral: mistralOk,
+        aiService: aiOk,
         collection: 'tomai_educational',
         pointsCount: stats.total_points
       };

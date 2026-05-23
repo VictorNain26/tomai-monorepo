@@ -1,26 +1,26 @@
 /**
  * RAG Service - Recherche sémantique hybride Qdrant native.
  *
- * Architecture mai 2026 (sous-projet E du chantier RAG overhaul) :
- * - Appel direct Qdrant Cloud via Query API hybrid (dense + sparse BM25 IDF)
- * - Fusion RRF côté Qdrant (pas de BM25 manuel server, pas de Cohere)
- * - Embeddings query via Mistral (souveraineté EU)
+ * Architecture mai 2026 (post-migration BGE-M3) :
+ * - Embed query via `tomai-ai-service` (BGE-M3 dense + sparse natif single pass)
+ * - Hybrid search Qdrant : prefetch dense + sparse → fusion RRF native
+ * - Stage 2 : rerank bge-reranker-v2-m3 (via le même ai-service)
  *
- * Pré-requis collection Qdrant : doit avoir `sparse_vectors_config.bm25`
- * configuré avec Modifier.IDF (voir tomai-curriculum/scripts/migrate_collection.py).
+ * Pré-requis collection Qdrant : ingérée avec BGE-M3 (dense 1024D cosine +
+ * sparse natif lexical_weights). Voir `tomai-curriculum/scripts/ingest.py
+ * --embed-model=BAAI/bge-m3 --sparse-method=BAAI/bge-m3` et la décision
+ * benchmark documentée dans `tomai-curriculum/docs/ARCHITECTURE.md`.
  *
  * Sources :
  * - https://qdrant.tech/articles/sparse-vectors (hybrid search natif)
- * - https://qdrant.tech/articles/bm42 (Modifier.IDF côté Qdrant)
+ * - https://huggingface.co/BAAI/bge-m3 (modèle + lexical_weights)
  */
 
 import { qdrantService, type QdrantSearchResult } from './qdrant.service.js';
-import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
-import { rerankerService } from './reranker.service.js';
+import { aiServiceClient } from './ai-service.client.js';
 import { retrievalAuditRepository } from '../db/repositories/index.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
-import { toSparseVector } from '@repo/shared-types';
 
 // Thresholds pour cosine similarity (0-1)
 const RAG_THRESHOLDS = {
@@ -102,15 +102,17 @@ class RAGService {
     }
 
     try {
-      const queryDense = await mistralEmbeddingsService.embed(options.query);
-      const querySparse = toSparseVector(options.query);
+      // BGE-M3 produit dense + sparse natif en un seul forward pass côté
+      // ai-service (économie de latence ~50% vs deux appels séparés).
+      const queryEmbed = await aiServiceClient.embed(options.query);
+      const queryDense = queryEmbed.dense;
+      const querySparse = queryEmbed.sparse;
 
       const topK = options.limit ?? 5;
-      // When the reranker is enabled, prefetch ~4x more candidates so the
-      // cross-encoder has room to reorder. Without the reranker we just hit
-      // Qdrant for topK directly.
-      const rerankEnabled = rerankerService.isEnabled();
-      const prefetchK = rerankEnabled ? Math.max(topK * 4, 20) : topK;
+      // Stage 2 rerank toujours activé en post-migration (synergie infra :
+      // même service Python que l'embed, latence supplémentaire marginale).
+      // Prefetch 4× topK pour donner au cross-encoder de la matière à réordonner.
+      const prefetchK = Math.max(topK * 4, 20);
 
       // NOTE : on ne passe PAS scoreThreshold à searchHybrid. La fusion RRF
       // côté Qdrant retourne des scores petits (1/(k+rank), k=60 → top-1 ≈ 0.016)
@@ -135,21 +137,29 @@ class RAGService {
       let strategy: 'qdrant-hybrid-rrf' | 'qdrant-hybrid-rrf+rerank-bge-m3' =
         'qdrant-hybrid-rrf';
 
-      // Stage 2: cross-encoder rerank. If the reranker is disabled or fails,
-      // we keep the hybrid order — rerankerService.rerank handles the
-      // fallback internally so we don't have to special-case here.
-      if (rerankEnabled && results.length > 1) {
-        const reranked = await rerankerService.rerank(
-          options.query,
-          results.map((r) => ({ id: r.id, text: r.text })),
-          { topN: topK },
-        );
-        const orderById = new Map(reranked.map((r) => [r.id, r.rank]));
-        results = results
-          .filter((r) => orderById.has(r.id))
-          .sort((a, b) => (orderById.get(a.id) ?? 999) - (orderById.get(b.id) ?? 999))
-          .slice(0, topK);
-        strategy = 'qdrant-hybrid-rrf+rerank-bge-m3';
+      // Stage 2: cross-encoder rerank via ai-service. En cas d'échec, on
+      // log et on garde l'ordre hybrid pour ne pas casser le chat (rerank =
+      // optimisation, pas dépendance dure du retrieval).
+      if (results.length > 1) {
+        try {
+          const reranked = await aiServiceClient.rerank(
+            options.query,
+            results.map((r) => r.text),
+            topK,
+          );
+          // `reranked[i].index` réfère à la position dans `results` qu'on a envoyée
+          results = reranked
+            .map((r) => results[r.index])
+            .filter((r): r is QdrantSearchResult => r !== undefined)
+            .slice(0, topK);
+          strategy = 'qdrant-hybrid-rrf+rerank-bge-m3';
+        } catch (err) {
+          logger.warn('Rerank failed, falling back to hybrid order', {
+            operation: 'rag-search:rerank-fallback',
+            _error: err instanceof Error ? err.message : String(err),
+          });
+          if (results.length > topK) results = results.slice(0, topK);
+        }
       } else if (results.length > topK) {
         results = results.slice(0, topK);
       }
@@ -240,11 +250,11 @@ class RAGService {
       return this.availabilityCache.value;
     }
     try {
-      const [qdrantOk, mistralOk] = await Promise.all([
+      const [qdrantOk, aiOk] = await Promise.all([
         qdrantService.isAvailable(),
-        mistralEmbeddingsService.isAvailable(),
+        aiServiceClient.isAvailable(),
       ]);
-      const available = qdrantOk && mistralOk;
+      const available = qdrantOk && aiOk;
       this.availabilityCache = { value: available, expiresAt: now + AVAILABILITY_CACHE_TTL_MS };
       return available;
     } catch {
