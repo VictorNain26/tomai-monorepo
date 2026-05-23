@@ -44,7 +44,7 @@ export const studySessions = pgTable('study_sessions', {
   hintsGiven: integer('hints_given').default(0),
 
   // Métriques techniques - TEXT pour flexibilité (pas d'ENUM = pas de migration par modèle)
-  aiModelUsed: text('ai_model_used').notNull().default('gemini-3-flash'),
+  aiModelUsed: text('ai_model_used').notNull().default(''),
   totalTokensUsed: integer('total_tokens_used').default(0),
   apiCostCents: integer('api_cost_cents').default(0),
   averageResponseTimeMs: integer('average_response_time_ms'),
