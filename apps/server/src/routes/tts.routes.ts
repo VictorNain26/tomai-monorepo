@@ -1,6 +1,6 @@
 /**
  * Routes Text-to-Speech (TTS) - TomAI
- * Synthèse vocale avec ElevenLabs (Migration Janvier 2025)
+ * Synthèse vocale via Voxtral (Mistral, souveraineté EU).
  *
  * Cas d'usage éducatif :
  * - Lecture des réponses de l'IA à voix haute
@@ -39,7 +39,6 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           schoolLevel: schoolLevel as EducationLevelType | undefined,
         };
 
-        // Synthèse audio via ElevenLabs
         const result = await textToSpeechService.synthesize(text, ttsOptions);
 
         if (!result.success) {
@@ -103,30 +102,25 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
       }),
     })
 
-    // GET /api/tts/voices - Liste des voix disponibles (ElevenLabs)
+    // GET /api/tts/voices - Métadonnées Voxtral (MVP : voix par défaut unique)
     .get('/voices', async ({ request: { headers }, set }) => {
       const authContext = await handleAuthWithCookies(headers, set);
       if (!authContext.success) {
         return authContext.error;
       }
 
-      // Voix ElevenLabs françaises mappées par niveau scolaire
-      // La voix est auto-sélectionnée selon le schoolLevel de l'utilisateur
+      // MVP : voix par défaut Voxtral. Voice cloning + mapping par niveau
+      // scolaire viendront dans une itération suivante (POST /v1/audio/voices
+      // côté Mistral, samples 3s par profil).
       return {
         success: true,
-        provider: 'elevenlabs',
-        autoSelect: true, // La voix est choisie automatiquement selon le niveau
-        voices: [
-          { id: 'charlotte', name: 'Charlotte', description: 'Voix féminine douce', levels: ['cp', 'ce1', 'ce2'] },
-          { id: 'sophie', name: 'Sophie', description: 'Voix féminine professionnelle', levels: ['cm1', 'cm2'] },
-          { id: 'camille', name: 'Camille', description: 'Voix neutre et claire', levels: ['sixieme', 'cinquieme'] },
-          { id: 'thomas', name: 'Thomas', description: 'Voix masculine claire', levels: ['quatrieme', 'troisieme'] },
-          { id: 'antoine', name: 'Antoine', description: 'Voix masculine mature', levels: ['seconde', 'premiere', 'terminale'] },
-        ],
+        provider: 'voxtral',
+        autoSelect: false,
+        voices: [],
         languages: ['fr', 'en', 'es', 'de'],
         limits: {
-          maxTextLength: 5000
-        }
+          maxTextLength: 5000,
+        },
       };
     })
   );
