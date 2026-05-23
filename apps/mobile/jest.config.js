@@ -6,7 +6,13 @@ module.exports = {
     enableGlobally: true,
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@rn-primitives/.*|@tanstack/.*|@repo/api|@shopify/flash-list|nativewind|tailwind-merge|clsx|class-variance-authority|lucide-react-native|@stablelib/.*)',
+    // Whitelist `.pnpm/` so ALL files under pnpm's content-addressable
+    // store (`node_modules/.pnpm/<pkg>@<v>_<hash>/node_modules/<pkg>/...`)
+    // are transformed. Filtering inside `.pnpm/` is fiddly because pnpm
+    // encodes scopes as `+` and versions as `@<v>_<hash>`; we accept the
+    // slightly larger transform set in exchange for a regex that works
+    // on every machine. [\\\\/] matches both POSIX "/" and Windows "\".
+    'node_modules[\\\\/](?!\\.pnpm[\\\\/]|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?[\\\\/].*|@expo-google-fonts[\\\\/].*|react-navigation|@react-navigation[\\\\/].*|@rn-primitives[\\\\/].*|@tanstack[\\\\/].*|@repo[\\\\/]api|@shopify[\\\\/]flash-list|nativewind|tailwind-merge|clsx|class-variance-authority|lucide-react-native|@stablelib[\\\\/].*)',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
