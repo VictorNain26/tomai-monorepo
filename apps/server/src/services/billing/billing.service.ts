@@ -1,18 +1,16 @@
 /**
  * BillingService — single source of truth for mutations of family_billing
- * and child user_subscriptions rows driven by provider webhooks (Stripe,
- * RevenueCat).
+ * and child user_subscriptions rows driven by RevenueCat webhooks.
  *
- * Route handlers parse the provider's payload and call these methods instead
- * of hitting the DB directly, so the same side effects apply regardless of
- * which provider reported them.
+ * Route handlers parse the webhook payload and call these methods instead of
+ * hitting the DB directly, keeping billing logic isolated and testable.
  */
 
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { familyBilling, userSubscriptions } from '../../db/schema.js';
 import { logger } from '../../lib/observability.js';
-import { getFreePlanId, getPremiumPlanId } from '../../lib/stripe/config.js';
+import { getFreePlanId, getPremiumPlanId } from '../../lib/plan-cache.js';
 import type {
   ActivatePremiumInput,
   ExtendActivePeriodInput,
@@ -33,15 +31,10 @@ class BillingService {
       source,
     } = input;
 
-    const providerCols = source.provider === 'stripe'
-      ? {
-          stripeCustomerId: source.customerId,
-          stripeSubscriptionId: source.subscriptionId,
-        }
-      : {
-          revenuecatCustomerId: source.customerId,
-          revenuecatSubscriptionId: source.productId,
-        };
+    const providerCols = {
+      revenuecatCustomerId: source.customerId,
+      revenuecatSubscriptionId: source.productId,
+    };
 
     const billingValues = {
       parentId,
@@ -102,8 +95,8 @@ class BillingService {
   }
 
   /**
-   * Extend the active period (renewal / invoice paid). Children are kept on
-   * the premium plan; counters are optionally reset on period boundary.
+   * Extend the active period (renewal). Children are kept on the premium
+   * plan; counters are optionally reset on period boundary.
    */
   async extendActivePeriod(input: ExtendActivePeriodInput): Promise<void> {
     const { parentId, childrenIds, period, resetChildCounters } = input;
@@ -173,8 +166,7 @@ class BillingService {
 
   /**
    * Cancel-at-period-end marker. Parent paid for the current period and
-   * keeps access; no child mutation (handled by extendActivePeriod until
-   * expireAndDowngrade fires).
+   * keeps access; no child mutation until expireAndDowngrade fires.
    */
   async markCanceled(parentId: string): Promise<void> {
     await db
@@ -211,24 +203,18 @@ class BillingService {
 
   /**
    * Subscription actually ended — parent goes to expired, children switch
-   * to free plan. Optional `clearProviderRefs` nukes the provider id on the
-   * family_billing row (Stripe subscription_deleted leaves the row but
-   * unlinks the subscription; RevenueCat expiration keeps the row linked).
+   * to free plan.
    */
   async expireAndDowngrade(
     parentId: string,
     childrenIds: string[],
-    options: { clearStripeSubscriptionId?: boolean } = {},
   ): Promise<void> {
     await db
       .update(familyBilling)
       .set({
         billingStatus: 'expired',
         premiumChildrenCount: 0,
-        ...(options.clearStripeSubscriptionId && {
-          monthlyAmountCents: 0,
-          stripeSubscriptionId: null,
-        }),
+        monthlyAmountCents: 0,
         updatedAt: new Date(),
       })
       .where(eq(familyBilling.parentId, parentId));

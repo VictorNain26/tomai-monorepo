@@ -62,8 +62,6 @@ mock.module('../db/schema', () => ({
 // Import after mocks
 const {
   webhookIdempotenceService,
-  isStripeEventProcessed,
-  markStripeEventProcessed,
   isRevenueCatEventProcessed,
   markRevenueCatEventProcessed,
 } = await import('../services/webhook-idempotence.service');
@@ -98,13 +96,13 @@ describe('Webhook Idempotence Service', () => {
   describe('markProcessed', () => {
     it('should insert successfully and return true', async () => {
       dbInsertShouldThrow = null;
-      const result = await webhookIdempotenceService.markProcessed('evt_1', 'stripe', 'checkout.session.completed');
+      const result = await webhookIdempotenceService.markProcessed('evt_1', 'revenuecat', 'INITIAL_PURCHASE');
       expect(result).toBe(true);
     });
 
     it('should handle duplicate key gracefully and return false', async () => {
       dbInsertShouldThrow = new Error('duplicate key value violates unique constraint');
-      const result = await webhookIdempotenceService.markProcessed('evt_dup', 'stripe', 'invoice.paid');
+      const result = await webhookIdempotenceService.markProcessed('evt_dup', 'revenuecat', 'RENEWAL');
       expect(result).toBe(false);
     });
 
@@ -137,18 +135,7 @@ describe('Webhook Idempotence Service', () => {
     });
   });
 
-  describe('Stripe/RevenueCat helper functions', () => {
-    it('isStripeEventProcessed should delegate to isProcessed', async () => {
-      dbSelectResult = [{ id: 'x' }];
-      expect(await isStripeEventProcessed('evt_stripe')).toBe(true);
-    });
-
-    it('markStripeEventProcessed should delegate to markProcessed', async () => {
-      dbInsertShouldThrow = null;
-      await markStripeEventProcessed('evt_s1', 'invoice.paid');
-      // Should not throw
-    });
-
+  describe('RevenueCat helper functions', () => {
     it('isRevenueCatEventProcessed should delegate to isProcessed', async () => {
       dbSelectResult = [];
       expect(await isRevenueCatEventProcessed('rc_evt_1')).toBe(false);

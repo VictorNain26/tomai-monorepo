@@ -21,7 +21,9 @@ JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `
 - **Cache** : MemoryCacheService (LRU in-memory avec TTL) — PAS de Redis
 - **Auth** : Better Auth 1.5 + Google OAuth + account linking + cookieCache
 - **AI** : **Stack 100 % Mistral souveraine EU** — modèle par tâche (voir ADR-0001) :
-  - Embeddings : `mistral-embed` (1024D)
+  - Embeddings (RAG) : `BAAI/bge-m3` dense+sparse via `apps/ai-service/` (Python, Koyeb fra)
+  - Reranker (RAG) : `BAAI/bge-reranker-v2-m3` co-hosté dans `apps/ai-service/`
+  - Embeddings (mémoire épisodique) : `mistral-embed` (1024D)
   - Chat tutorat principal : `mistral-medium-latest` (streaming + tools)
   - Reasoning math complexe : `magistral-small-latest` (router conditionnel)
   - Tâches simples (titre, classif, génération templatée) : `ministral-3b/8b` ou `mistral-small`
@@ -32,9 +34,9 @@ JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `
   - STT : Gladia (Paris, EU OK)
   - **Migration Gemini → Mistral terminée** : `@google/genai` retiré du
     `package.json`, aucun appel sortant Google côté runtime.
-- **RAG** : Qdrant Cloud + Mistral embeddings + sparse BM25 IDF natif (hybrid RRF côté server).
+- **RAG** : Qdrant Cloud + BGE-M3 dense+sparse (via `apps/ai-service/`) + hybrid RRF natif Qdrant + rerank cross-encoder.
   Curriculum index dans repo séparé `tomai-curriculum/` (voir son CLAUDE.md).
-- **Paiement** : Stripe (webhooks HMAC signés) + RevenueCat (à migrer vers signature JWT — voir SP4)
+- **Paiement** : RevenueCat uniquement (mobile IAP, source unique de facturation). Webhooks protégés par secret partagé `REVENUECAT_WEBHOOK_AUTH` (≥32 chars, comparaison timing-safe)
 - **Storage** : Scaleway S3 (presigned URLs, RGPD fr-par)
 - **Pronote** : Pawnote 1.6 + AES-256-GCM (PBKDF2 600K iterations — salt aléatoire par enregistrement à implémenter SP1)
 - **Observabilité** : OpenTelemetry (GenAI semconv pour les appels Mistral, `db.*` pour Qdrant). Init dans `src/index.ts` via `setupOtel()` avant tout import applicatif. Console exporter en dev, OTLP HTTP en prod (`OTEL_EXPORTER_OTLP_ENDPOINT`). Sentry à ajouter quand on en aura le besoin métier.
@@ -66,11 +68,11 @@ Best practices token (cf ADR-0001 D4) :
 ### Modules principaux
 
 - **Chat** (`src/services/chat/`) : orchestration Mistral, summarization, tool execution, token budget, SSE streaming, intent classifier (ministral-8b), mémoire épisodique pgvector (mistral-medium extraction).
-- **Billing** : Stripe + RevenueCat. Logique à extraire en `BillingService` unique (voir SP5) — aujourd'hui dupliquée entre webhook handlers
+- **Billing** (`src/services/billing/`) : `BillingService` unique, piloté par les webhooks RevenueCat (`src/routes/revenuecat-webhook-*.ts`). Mutations idempotentes sur `family_billing` + `user_subscriptions`. Idempotence stockée dans `webhook_events` (TTL 7 jours).
 - **Learning** : FSRS (spaced repetition), decks, cards (génération `mistral-small` + JSON Schema), generations. Logique à extraire en `LearningService` + repositories (voir SP5)
-- **Subscription** : checkout, lifecycle, gestion enfants (role parent), usage quotas
+- **Subscription** (`src/routes/subscription/`) : routes lecture seule — `GET /api/subscriptions/status` (état famille + enfants) et `GET /api/subscriptions/usage` (tokens). Les achats/annulations passent par RevenueCat côté mobile ; le backend ne fait AUCUN appel provider sortant.
 - **Quota** : token quota windowed (5h rolling + daily cap) derrière flag `QUOTA_ENFORCEMENT_ENABLED`
-- **RAG** : recherche unifiée Qdrant hybrid native (dense Mistral + sparse BM25 IDF + fusion RRF) + reranker `bge-reranker-v2-m3` self-hosted Scaleway optionnel (toggle `RERANKER_ENABLED`). Pas de Cohere (souveraineté EU). Déploiement : `apps/server/RERANKER_DEPLOY.md`.
+- **RAG** : recherche unifiée Qdrant hybrid native (dense BGE-M3 + sparse BGE-M3 + fusion RRF) + reranker `bge-reranker-v2-m3` cross-encoder. Embeddings + rerank servis par `apps/ai-service/` (Python FastAPI, Koyeb fra). Pas de Cohere (souveraineté EU). Déploiement : `apps/ai-service/README.md`.
 - **Pronote** : auth QR code, devoirs, notes, emploi du temps (SSRF protection)
 - **Storage** : upload presigned Scaleway, confirmation. Multimodal chat consomme directement le blob Scaleway (base64 inline pour photos, `extractedText` côté record pour PDFs). Pas de cache fichier externe (Mistral n'a pas d'équivalent à Gemini Files API).
 
@@ -80,7 +82,7 @@ Best practices token (cf ADR-0001 D4) :
 - **JAMAIS d'accès DB direct depuis une route** → passer par le repository correspondant
 - **TOUJOURS valider les inputs** avec Zod schemas (`src/schemas/`)
 - **Auth** : `handleAuthWithCookies` middleware, JAMAIS de vérification manuelle
-- **Webhooks** : signature cryptographique obligatoire (HMAC Stripe, JWT RevenueCat), jamais Bearer statique seul
+- **Webhooks** : RevenueCat utilise un secret partagé (`REVENUECAT_WEBHOOK_AUTH`) comparé en timing-safe ; fail-fast au boot si absent ou trop court (<32 chars) en prod. Idempotence via `webhook_events` (dédup sur event id).
 - **Transactions** : `db.transaction(...)` pour toute opération multi-table (ex: créer deck + cards)
 - **Presigned URLs** pour uploads (frontend → Scaleway direct, bypass backend)
 - **Feature flags** via `app.config.ts` (ex: `quotaEnforcementEnabled`) pour déploiements progressifs
@@ -108,4 +110,4 @@ Source de vérité : `src/db/schema.ts`. Règles détaillées : @../../.claude/r
 
 ## Sources officielles
 
-[Elysia.js](https://elysiajs.com) | [Drizzle ORM](https://orm.drizzle.team) | [Better Auth](https://better-auth.com) | [Mistral API](https://docs.mistral.ai/api/) | [Mistral Models](https://docs.mistral.ai/getting-started/models/models_overview/) | [Stripe Webhooks](https://docs.stripe.com/webhooks) | [RevenueCat Webhooks v2](https://www.revenuecat.com/docs/integrations/webhooks/webhooks-v2)
+[Elysia.js](https://elysiajs.com) | [Drizzle ORM](https://orm.drizzle.team) | [Better Auth](https://better-auth.com) | [Mistral API](https://docs.mistral.ai/api/) | [Mistral Models](https://docs.mistral.ai/getting-started/models/models_overview/) | [BGE-M3](https://huggingface.co/BAAI/bge-m3) | [RevenueCat Webhooks v2](https://www.revenuecat.com/docs/integrations/webhooks/webhooks-v2)

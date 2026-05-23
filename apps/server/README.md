@@ -44,7 +44,7 @@ Documentation interactive auto-generee disponible en dev :
 | Stockage | Scaleway Object Storage (S3, RGPD France) |
 | STT | Gladia |
 | TTS | ElevenLabs |
-| Paiements | Stripe + RevenueCat |
+| Paiements | RevenueCat (mobile IAP, source unique) |
 | Pronote | Pawnote 1.6 + AES-256-GCM |
 
 ## Commands
@@ -101,8 +101,7 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 | `PRONOTE_ENCRYPTION_KEY` | AES-256-GCM pour tokens Pronote |
 | `GLADIA_API_KEY` | Speech-to-Text |
 | `ELEVENLABS_API_KEY` | Text-to-Speech |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Paiements Stripe |
-| `REVENUECAT_WEBHOOK_AUTH` | Webhooks RevenueCat (mobile IAP) |
+| `REVENUECAT_WEBHOOK_AUTH` | Webhooks RevenueCat (mobile IAP, required en prod) |
 
 ## Architecture
 
@@ -116,7 +115,7 @@ src/
 │   ├── connection.ts           # Pool PostgreSQL
 │   ├── migrate.ts              # Runtime migrator
 │   └── repositories/           # Data access layer
-├── lib/                        # Auth, encryption, Stripe, observability
+├── lib/                        # Auth, encryption, plan cache, observability
 ├── middleware/                  # Auth, rate-limit, memory monitor
 ├── routes/                     # API endpoints
 │   ├── chat-message.routes.ts  # SSE streaming
@@ -124,7 +123,8 @@ src/
 │   ├── pronote.routes.ts       # Integration Pronote
 │   ├── tts.routes.ts           # Text-to-Speech
 │   ├── learning/               # Decks, cartes, FSRS
-│   └── subscription/           # Stripe checkout, lifecycle
+│   ├── revenuecat-webhook.*.ts # Webhooks RevenueCat (source de vérité)
+│   └── subscription/           # Status lecture seule (DB + RC)
 ├── services/                   # Business logic
 │   ├── chat/                   # Gemini streaming, summarization, tools
 │   ├── storage/                # Scaleway S3

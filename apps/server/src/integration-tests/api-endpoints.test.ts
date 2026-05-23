@@ -104,9 +104,6 @@ mock.module('../services/token-quota.service', () => ({
   tokenQuotaService: { resetAllDailyTokens: mock(async () => ({ resetCount: 0 })) },
 }));
 
-// Stripe disabled (no env var)
-mock.module('../lib/stripe', () => ({ isStripeEnabled: mock(() => false) }));
-
 // Auth middleware — mutable user for auth tests
 let authUser: Record<string, unknown> | null = null;
 mock.module('../middleware/auth.middleware', () => ({
@@ -177,8 +174,7 @@ mock.module('../schemas/validation', () => ({
 mock.module('../routes/chat-message.routes', () => ({ chatMessageRoutes: new Elysia() }));
 mock.module('../routes/file-upload.routes', () => ({ fileUploadRoutes: new Elysia() }));
 mock.module('../routes/subscription/index', () => ({
-  checkoutRoutes: new Elysia(), childrenRoutes: new Elysia(),
-  statusRoutes: new Elysia(), lifecycleRoutes: new Elysia(),
+  statusRoutes: new Elysia(),
 }));
 mock.module('../routes/tts.routes', () => ({ ttsRoutes: new Elysia() }));
 mock.module('../routes/learning/index', () => ({
@@ -187,7 +183,6 @@ mock.module('../routes/learning/index', () => ({
 mock.module('../routes/waitlist.routes', () => ({ waitlistRoutes: new Elysia() }));
 mock.module('../routes/pronote-sync.routes', () => ({ pronoteSyncRoutes: new Elysia() }));
 mock.module('../routes/revenuecat-webhook.routes', () => ({ revenuecatWebhookRoutes: new Elysia() }));
-mock.module('../routes/stripe-webhook.routes', () => ({ stripeWebhookRoutes: new Elysia() }));
 
 // DB schema + repositories (dynamic imports in apiRoutes)
 mock.module('../db/schema', () => ({

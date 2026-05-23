@@ -48,9 +48,9 @@ export const user = pgTable('user', {
   preferences: jsonb('preferences').default(sql`'{"theme": "light", "language": "fr", "notifications": true, "adaptive_difficulty": true}'::jsonb`),
   metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
 
-  // Stripe subscription fields live on family_billing (single source of truth).
-  // Previously duplicated here but never read — removed to avoid accidental
-  // reads of stale data.
+  // Subscription fields live on family_billing (RevenueCat-driven, single
+  // source of truth). Previously duplicated here but never read — removed
+  // to avoid accidental reads of stale data.
 
   // ===== BETTER AUTH ADMIN PLUGIN FIELDS =====
   banned: boolean('banned').default(false),

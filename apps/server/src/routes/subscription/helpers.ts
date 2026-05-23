@@ -8,7 +8,6 @@
 import { db } from '../../db/connection.js';
 import { user } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
-import type { SubscriptionInfo } from '../../lib/stripe/index.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 
 // User type from Better Auth session
@@ -89,51 +88,4 @@ export async function getChildrenForParent(parentId: string): Promise<string[]> 
     .where(eq(user.parentId, parentId));
 
   return children.map((c) => c.id);
-}
-
-/**
- * Format subscription response
- */
-export function formatSubscriptionResponse(
-  info: SubscriptionInfo | null,
-  plan: 'free' | 'premium'
-) {
-  if (!info) {
-    return {
-      plan,
-      status: plan === 'free' ? 'active' : 'inactive',
-      subscription: null,
-    };
-  }
-
-  return {
-    plan,
-    status: info.status,
-    subscription: {
-      id: info.subscriptionId,
-      status: info.status,
-      currentPeriodStart: info.currentPeriodStart.toISOString(),
-      currentPeriodEnd: info.currentPeriodEnd.toISOString(),
-      cancelAtPeriodEnd: info.cancelAtPeriodEnd,
-      premiumChildrenCount: info.premiumChildrenCount,
-      monthlyAmountCents: info.monthlyAmountCents,
-      monthlyAmount: `${(info.monthlyAmountCents / 100).toFixed(2)}€`,
-    },
-  };
-}
-
-/**
- * Get Stripe subscription info for a parent
- */
-export async function getStripeSubscription(parentId: string) {
-  const { stripeService } = await import('../../lib/stripe/index.js');
-  return stripeService.getSubscriptionStatus(parentId);
-}
-
-/**
- * Get premium plan ID
- */
-export async function getPremiumPlanId(): Promise<string | null> {
-  const { stripeService } = await import('../../lib/stripe/index.js');
-  return stripeService.getPremiumPlanId();
 }
