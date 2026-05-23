@@ -199,6 +199,7 @@ declare global {
       MISTRAL_API_KEY?: string;     // Chat, embeddings épisodique, TTS Voxtral
       GLADIA_API_KEY?: string;       // Speech-to-Text
       AI_SERVICE_URL?: string;       // BGE-M3 micro-service (apps/ai-service)
+      AI_SERVICE_TOKEN?: string;     // Bearer token for ai-service auth
       MAX_TOKENS_PER_RESPONSE?: string;
       DAILY_REQUEST_LIMIT?: string;
       CACHE_DURATION?: string;
