@@ -413,10 +413,10 @@ importers:
         version: 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.3.6))(jose@6.1.3)(kysely@0.28.17)(nanostores@1.1.1))(better-auth@1.6.11(@opentelemetry/api@1.9.1)(drizzle-kit@0.31.9)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(bun-types@1.3.6)(expo-sqlite@55.0.11(expo@55.0.5)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(kysely@0.28.17)(postgres@3.4.8))(next@16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(expo-constants@55.0.9)(expo-linking@55.0.8)(expo-network@55.0.9(expo@55.0.5)(react@19.2.0))
       '@elysiajs/cors':
         specifier: ^1.3.3
-        version: 1.4.2(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))
+        version: 1.4.2(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))
       '@elysiajs/swagger':
         specifier: ^1.3.1
-        version: 1.3.1(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))
+        version: 1.3.1(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))
       '@mistralai/mistralai':
         specifier: ^1.11.0
         version: 1.13.0
@@ -446,7 +446,7 @@ importers:
         version: link:../../packages/shared-types
       '@sinclair/typebox':
         specifier: ^0.34.0
-        version: 0.34.48
+        version: 0.34.49
       better-auth:
         specifier: ^1.6.11
         version: 1.6.11(@opentelemetry/api@1.9.1)(drizzle-kit@0.31.9)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(bun-types@1.3.6)(expo-sqlite@55.0.11(expo@55.0.5)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(kysely@0.28.17)(postgres@3.4.8))(next@16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -458,7 +458,7 @@ importers:
         version: 0.45.2(@opentelemetry/api@1.9.1)(bun-types@1.3.6)(expo-sqlite@55.0.11(expo@55.0.5)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(kysely@0.28.17)(postgres@3.4.8)
       elysia:
         specifier: ^1.4.27
-        version: 1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3)
+        version: 1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3)
       glob:
         specifier: ^11.0.3
         version: 11.1.0
@@ -513,7 +513,7 @@ importers:
     dependencies:
       '@elysiajs/eden':
         specifier: ^1.4.5
-        version: 1.4.9(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))
+        version: 1.4.9(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))
       '@tanstack/react-query':
         specifier: ^5.90.12
         version: 5.90.20(react@19.2.0)
@@ -2945,11 +2945,11 @@ packages:
       react: '*'
       react-native: '*'
 
-  '@sinclair/typebox@0.27.8':
-    resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
+  '@sinclair/typebox@0.27.10':
+    resolution: {integrity: sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA==}
 
-  '@sinclair/typebox@0.34.48':
-    resolution: {integrity: sha512-kKJTNuK3AQOrgjjotVxMrCn1sUJwM76wMszfq1kdU4uYVJjvEWuFQ6HgvLt4Xz3fSmZlTOxJ/Ie13KnIcWQXFA==}
+  '@sinclair/typebox@0.34.49':
+    resolution: {integrity: sha512-brySQQs7Jtn0joV8Xh9ZV/hZb9Ozb0pmazDIASBkYKCjXrXU3mpcFahmK/z4YDhGkQvP9mWJbVyahdtU5wQA+A==}
 
   '@sinonjs/commons@3.0.1':
     resolution: {integrity: sha512-K3mCHKQ9sVh8o1C9cxkwxaOmXoAMlDxC1mYyHrjqOWEcBjYr76t96zL2zlj5dUGZ3HSw240X1qgH3Mjf1yJWpQ==}
@@ -9458,19 +9458,19 @@ snapshots:
     dependencies:
       '@types/hammerjs': 2.0.46
 
-  '@elysiajs/cors@1.4.2(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))':
+  '@elysiajs/cors@1.4.2(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))':
     dependencies:
-      elysia: 1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3)
+      elysia: 1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3)
 
-  '@elysiajs/eden@1.4.9(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))':
+  '@elysiajs/eden@1.4.9(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))':
     dependencies:
-      elysia: 1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3)
+      elysia: 1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3)
 
-  '@elysiajs/swagger@1.3.1(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))':
+  '@elysiajs/swagger@1.3.1(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))':
     dependencies:
       '@scalar/themes': 0.9.86
       '@scalar/types': 0.0.12
-      elysia: 1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3)
+      elysia: 1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3)
       openapi-types: 12.1.3
       pathe: 1.1.2
 
@@ -10415,11 +10415,11 @@ snapshots:
 
   '@jest/schemas@29.6.3':
     dependencies:
-      '@sinclair/typebox': 0.27.8
+      '@sinclair/typebox': 0.27.10
 
   '@jest/schemas@30.0.5':
     dependencies:
-      '@sinclair/typebox': 0.34.48
+      '@sinclair/typebox': 0.34.49
 
   '@jest/source-map@29.6.3':
     dependencies:
@@ -11457,9 +11457,9 @@ snapshots:
       react-native: 0.83.2(@babel/core@7.28.6)(@types/react@19.2.14)(react@19.2.0)
       tslib: 2.8.1
 
-  '@sinclair/typebox@0.27.8': {}
+  '@sinclair/typebox@0.27.10': {}
 
-  '@sinclair/typebox@0.34.48': {}
+  '@sinclair/typebox@0.34.49': {}
 
   '@sinonjs/commons@3.0.1':
     dependencies:
@@ -13165,11 +13165,11 @@ snapshots:
 
   electron-to-chromium@1.5.279: {}
 
-  elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3):
+  elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3):
     dependencies:
-      '@sinclair/typebox': 0.34.48
+      '@sinclair/typebox': 0.34.49
       cookie: 1.1.1
-      exact-mirror: 0.2.6(@sinclair/typebox@0.34.48)
+      exact-mirror: 0.2.6(@sinclair/typebox@0.34.49)
       fast-decode-uri-component: 1.0.1
       file-type: 21.3.1
       memoirist: 0.4.0
@@ -13480,9 +13480,9 @@ snapshots:
 
   event-target-shim@5.0.1: {}
 
-  exact-mirror@0.2.6(@sinclair/typebox@0.34.48):
+  exact-mirror@0.2.6(@sinclair/typebox@0.34.49):
     optionalDependencies:
-      '@sinclair/typebox': 0.34.48
+      '@sinclair/typebox': 0.34.49
 
   execa@5.1.1:
     dependencies:
