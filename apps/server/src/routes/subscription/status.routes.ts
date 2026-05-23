@@ -1,15 +1,13 @@
 /**
  * Status Routes
  *
- * GET /api/subscriptions/status - Get subscription status
- * GET /api/subscriptions/portal - Access Customer Portal
- * GET /api/subscriptions/usage - Get token usage
+ * GET /api/subscriptions/status - Get subscription status (DB-driven, RevenueCat as source of truth)
+ * GET /api/subscriptions/usage  - Get token usage
  *
- * Security: All routes require authentication and verify caller === parentId
+ * Security: All routes require authentication and verify caller identity (IDOR protection)
  */
 
 import { Elysia } from 'elysia';
-import { stripeService } from '../../lib/stripe/index.js';
 import { db } from '../../db/connection.js';
 import { user, familyBilling, userSubscriptions, subscriptionPlans } from '../../db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
@@ -17,52 +15,11 @@ import { getAuthenticatedParent, getAuthenticatedUser, verifyParentIdMatch } fro
 
 export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
   /**
-   * Create Customer Portal Session
-   * GET /api/subscriptions/portal?parentId=xxx
-   *
-   * Security: Verifies authenticated user === query.parentId (IDOR protection)
-   */
-  .get('/portal', async ({ query, set, request }) => {
-    const parentId = query.parentId;
-
-    if (!parentId) {
-      set.status = 400;
-      return { error: 'parentId query parameter required' };
-    }
-
-    // SECURITY: Get authenticated parent and verify identity match
-    const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
-    if (!parent) {
-      set.status = authStatus ?? 401;
-      return { error: authError };
-    }
-
-    // SECURITY: Verify caller is accessing their own subscription (IDOR protection)
-    const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
-    if (!valid) {
-      set.status = 403;
-      return { error: idorError };
-    }
-
-    try {
-      const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3001';
-      const session = await stripeService.createPortalSession({
-        parentId,
-        returnUrl: `${frontendUrl}/account`,
-      });
-
-      return { url: session.url };
-    } catch (err) {
-      set.status = 404;
-      return { error: err instanceof Error ? err.message : 'Portal session failed' };
-    }
-  })
-
-  /**
    * Get Subscription Status
    * GET /api/subscriptions/status?parentId=xxx
    *
-   * Returns subscription status for a parent, including all premium children.
+   * Reads family_billing (populated by RevenueCat webhooks) and joins
+   * children's user_subscriptions for plan info. No provider SDK calls.
    *
    * Security: Verifies authenticated user === query.parentId (IDOR protection)
    */
@@ -74,31 +31,24 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
       return { error: 'parentId query parameter required' };
     }
 
-    // SECURITY: Get authenticated parent and verify identity match
     const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
     if (!parent) {
       set.status = authStatus ?? 401;
       return { error: authError };
     }
 
-    // SECURITY: Verify caller is accessing their own subscription (IDOR protection)
     const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
     if (!valid) {
       set.status = 403;
       return { error: idorError };
     }
 
-    // Get billing info
     const [billing] = await db
       .select()
       .from(familyBilling)
       .where(eq(familyBilling.parentId, parentId))
       .limit(1);
 
-    // Get subscription details from Stripe
-    const subscriptionInfo = await stripeService.getSubscriptionStatus(parentId);
-
-    // Get all children with their subscription status
     const children = await db
       .select({
         id: user.id,
@@ -108,7 +58,7 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
       .from(user)
       .where(eq(user.parentId, parentId));
 
-    // Single JOIN query for all children (was 2 queries per child → N+1 pattern).
+    // Single JOIN query for all children (avoids N+1).
     const childIds = children.map((c) => c.id);
     const childSubscriptions = childIds.length > 0
       ? await db
@@ -146,20 +96,8 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
             monthlyAmountCents: billing.monthlyAmountCents,
             monthlyAmount: `${(billing.monthlyAmountCents / 100).toFixed(2)}€`,
             billingStatus: billing.billingStatus,
-          }
-        : null,
-      subscription: subscriptionInfo
-        ? {
-            id: subscriptionInfo.subscriptionId,
-            status: subscriptionInfo.status,
-            currentPeriodStart: subscriptionInfo.currentPeriodStart.toISOString(),
-            currentPeriodEnd: subscriptionInfo.currentPeriodEnd.toISOString(),
-            cancelAtPeriodEnd: subscriptionInfo.cancelAtPeriodEnd,
-            // Schedule info for pending changes
-            hasScheduledChanges: subscriptionInfo.hasScheduledChanges ?? false,
-            scheduledChildrenCount: subscriptionInfo.scheduledChildrenCount,
-            scheduledMonthlyAmountCents: subscriptionInfo.scheduledMonthlyAmountCents,
-            pendingRemovalChildrenIds: subscriptionInfo.pendingRemovalChildrenIds ?? [],
+            currentPeriodStart: billing.currentPeriodStart?.toISOString() ?? null,
+            currentPeriodEnd: billing.currentPeriodEnd?.toISOString() ?? null,
           }
         : null,
       children: childrenWithStatus,
@@ -188,14 +126,12 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
       return { error: 'userId query parameter required' };
     }
 
-    // SECURITY: Get authenticated user
     const authenticatedUser = await getAuthenticatedUser(request.headers);
     if (!authenticatedUser) {
       set.status = 401;
       return { error: 'Authentication required' };
     }
 
-    // Get user info
     const [userRecord] = await db
       .select()
       .from(user)
@@ -207,7 +143,6 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
       return { error: 'User not found' };
     }
 
-    // SECURITY: Verify access rights (IDOR protection)
     const isSelfAccess = authenticatedUser.id === userId;
     const isParentAccessingChild = authenticatedUser.role === 'parent' && userRecord.parentId === authenticatedUser.id;
 
@@ -216,7 +151,6 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
       return { error: 'Access denied: You can only view your own usage or your children\'s usage' };
     }
 
-    // Use token quota service for accurate server-side tracking
     const { tokenQuotaService } = await import('../../services/token-quota.service.js');
     const usage = await tokenQuotaService.getUsageStats(userId);
 

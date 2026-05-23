@@ -42,11 +42,6 @@ export const subscriptionPlans = pgTable('subscription_plans', {
   priceAdditionalChildCents: integer('price_additional_child_cents').notNull().default(0),
   currency: varchar('currency', { length: 3 }).notNull().default('EUR'),
 
-  // Stripe IDs
-  stripeProductId: varchar('stripe_product_id', { length: 255 }),
-  stripePriceIdFirstChild: varchar('stripe_price_id_first_child', { length: 255 }),
-  stripePriceIdAdditionalChild: varchar('stripe_price_id_additional_child', { length: 255 }),
-
   // Features list
   features: jsonb('features').default(sql`'[]'::jsonb`),
 
@@ -126,26 +121,22 @@ export const userSubscriptions = pgTable('user_subscriptions', {
 }));
 
 /**
- * Table family_billing - Facturation centralisée par parent
+ * Table family_billing - Facturation centralisée par parent (RevenueCat)
  *
- * Le parent gère la facturation Stripe pour tous ses enfants:
- * - Un seul abonnement Stripe par famille
- * - Calcul automatique: 15€ premier enfant + 5€ par enfant supplémentaire
- * - Prorata lors d'ajout/suppression d'enfants
+ * RevenueCat est la source unique de vérité : les webhooks INITIAL_PURCHASE /
+ * RENEWAL / CANCELLATION / EXPIRATION alimentent cette table. Le calcul du
+ * prix (15€ premier enfant + 5€ par enfant supplémentaire) est porté par
+ * les produits RevenueCat côté mobile.
  */
 export const familyBilling = pgTable('family_billing', {
   id: uuid('id').primaryKey().defaultRandom(),
   parentId: varchar('parent_id', { length: 255 }).notNull().unique(), // Le parent payeur
 
-  // Stripe integration (web - legacy)
-  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).unique(),
-  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }).unique(),
-
-  // RevenueCat integration (mobile)
+  // RevenueCat integration (mobile IAP)
   revenuecatCustomerId: varchar('revenuecat_customer_id', { length: 255 }),
   revenuecatSubscriptionId: varchar('revenuecat_subscription_id', { length: 255 }),
 
-  // Status (shared)
+  // Status
   billingStatus: varchar('billing_status', { length: 50 }).notNull().default('active'), // active, past_due, canceled, expired
 
   // Billing period
@@ -160,9 +151,6 @@ export const familyBilling = pgTable('family_billing', {
   // Children tracking
   premiumChildrenCount: integer('premium_children_count').notNull().default(0),
 
-  // Stripe metadata for reconciliation
-  stripeMetadata: jsonb('stripe_metadata').default(sql`'{}'::jsonb`),
-
   // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -173,21 +161,22 @@ export const familyBilling = pgTable('family_billing', {
     name: 'family_billing_parent_id_fkey'
   }).onDelete('cascade'),
 
-  stripeCustomerIdx: index('idx_family_billing_stripe_customer').on(table.stripeCustomerId),
-  stripeSubscriptionIdx: index('idx_family_billing_stripe_subscription').on(table.stripeSubscriptionId),
   revenuecatCustomerIdx: index('idx_family_billing_revenuecat_customer').on(table.revenuecatCustomerId),
   billingStatusIdx: index('idx_family_billing_status').on(table.billingStatus),
 }));
 
 /**
- * Table webhook_events - Stocke les événements traités pour idempotence
- * Remplace Redis pour la déduplication Stripe/RevenueCat
- * TTL géré par cleanup job (événements > 7 jours supprimés)
+ * Table webhook_events - Stocke les événements RevenueCat traités pour idempotence
+ * TTL géré par cleanup job (événements > 7 jours supprimés).
+ *
+ * Historiquement la colonne `source` gérait aussi Stripe ; elle est conservée
+ * pour permettre l'ajout futur d'autres providers et parce que la colonne
+ * existe déjà en prod — la narrowing applicative se fait via `WebhookSource`.
  */
 export const webhookEvents = pgTable('webhook_events', {
   id: uuid('id').primaryKey().defaultRandom(),
-  eventId: varchar('event_id', { length: 255 }).notNull().unique(), // ID Stripe/RevenueCat
-  source: varchar('source', { length: 50 }).notNull(), // 'stripe' | 'revenuecat'
+  eventId: varchar('event_id', { length: 255 }).notNull().unique(), // ID RevenueCat
+  source: varchar('source', { length: 50 }).notNull(), // 'revenuecat'
   eventType: varchar('event_type', { length: 100 }).notNull(), // Type d'événement
   processedAt: timestamp('processed_at', { withTimezone: true }).notNull().defaultNow(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(), // Pour cleanup
@@ -263,7 +252,7 @@ export type FamilyBillingWithRelations = FamilyBilling & {
 // Webhook Events Types (idempotence sans Redis)
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
-export type WebhookSource = 'stripe' | 'revenuecat';
+export type WebhookSource = 'revenuecat';
 
 // Waitlist Types
 export type WaitlistEntry = typeof waitlistEntries.$inferSelect;

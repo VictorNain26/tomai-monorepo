@@ -16,6 +16,7 @@ setupOtel();
 
 const { app, initializeServices } = await import('./app');
 const { logger } = await import('./lib/observability.js');
+const { appConfig } = await import('./config/app.config.js');
 
 const PORT = parseInt(process.env.PORT ?? process.env.BACKEND_PORT ?? '3000');
 
@@ -33,7 +34,11 @@ async function startServer() {
     logger.info('TomAI Server ready', {
       operation: 'server:start',
       port: PORT,
-      environment: process.env.NODE_ENV ?? 'development'
+      // Read through the centralized appConfig so this matches
+      // services:init:success — avoids the inconsistent "development"
+      // that was previously leaking into prod logs when this line used
+      // process.env directly.
+      environment: appConfig.server.nodeEnv,
     });
 
   } catch (error) {

@@ -1,6 +1,9 @@
 import { logger } from '../lib/observability';
-import { DEFAULT_PERIOD_MS } from '../lib/stripe/helpers';
 import { billingService } from '../services/billing';
+
+/** Default subscription period duration in milliseconds (30 days) —
+ *  fallback when RevenueCat does not provide an expiration timestamp. */
+const DEFAULT_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;
 
 // ============================================
 // Types

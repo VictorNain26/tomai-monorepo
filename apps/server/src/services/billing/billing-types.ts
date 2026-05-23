@@ -1,5 +1,5 @@
 /**
- * Billing service input types — shared between Stripe and RevenueCat flows.
+ * Billing service input types — RevenueCat-driven flows.
  */
 
 export interface BillingPeriod {
@@ -7,9 +7,11 @@ export interface BillingPeriod {
   end: Date;
 }
 
-export type BillingSource =
-  | { provider: 'stripe'; customerId: string; subscriptionId: string }
-  | { provider: 'revenuecat'; customerId: string; productId: string };
+export interface BillingSource {
+  provider: 'revenuecat';
+  customerId: string;
+  productId: string;
+}
 
 export interface ActivatePremiumInput {
   parentId: string;

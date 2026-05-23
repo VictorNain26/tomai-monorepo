@@ -40,9 +40,8 @@ services:
       - QDRANT_COLLECTION=${QDRANT_COLLECTION:-tomai_educational}
       # Pronote Integration (AES-256-GCM encryption)
       - PRONOTE_ENCRYPTION_KEY=${PRONOTE_ENCRYPTION_KEY}
-      # Stripe (optional for dev)
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      # RevenueCat webhook shared secret (sent as Authorization header)
+      - REVENUECAT_WEBHOOK_AUTH=${REVENUECAT_WEBHOOK_AUTH}
     env_file:
       - .env
     volumes:

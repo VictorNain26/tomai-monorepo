@@ -48,7 +48,10 @@ export interface PerformanceContext extends LogContext {
  * Structured Logger - Production-ready logging with context
  */
 class StructuredLogger {
-  private readonly isProduction = process.env.NODE_ENV === 'production';
+  // `bun build --target bun` freezes `process.env.NODE_ENV` at build time,
+  // which flipped this to `false` in the bundled dist/index.js even though
+  // NODE_ENV=production at runtime. Read via Bun.env to get the runtime value.
+  private readonly isProduction = Bun.env['NODE_ENV'] === 'production';
   
   private formatMessage(level: string, message: string, context?: LogContext): string {
     const timestamp = new Date().toISOString();
