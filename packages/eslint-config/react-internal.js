@@ -1,10 +1,15 @@
 import js from "@eslint/js";
+import { fixupPluginRules } from "@eslint/compat";
 import eslintConfigPrettier from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginReact from "eslint-plugin-react";
 import globals from "globals";
 import { config as baseConfig } from "./base.js";
+
+// eslint-plugin-react@7.x not yet ESLint 10 compatible — see react.js
+const fixedReact = fixupPluginRules(pluginReact);
+const fixedReactHooks = fixupPluginRules(pluginReactHooks);
 
 /**
  * A custom ESLint configuration for libraries that use React.
@@ -15,8 +20,9 @@ export const config = [
   js.configs.recommended,
   eslintConfigPrettier,
   ...tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
   {
+    plugins: { react: fixedReact },
+    rules: pluginReact.configs.flat.recommended.rules,
     languageOptions: {
       ...pluginReact.configs.flat.recommended.languageOptions,
       globals: {
@@ -27,7 +33,7 @@ export const config = [
   },
   {
     plugins: {
-      "react-hooks": pluginReactHooks,
+      "react-hooks": fixedReactHooks,
     },
     settings: { react: { version: "detect" } },
     rules: {
