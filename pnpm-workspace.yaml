@@ -29,6 +29,8 @@ catalog:
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - tinyexec
+  # Renovate security update: next@16.2.6
+  - next@16.2.6
 
 # Migré depuis package.json#pnpm.overrides — pnpm 11 ne lit plus le champ "pnpm"
 # du package.json. Toutes les overrides doivent vivre ici.
