@@ -1,0 +1,45 @@
+name: Smoke test (post-deploy)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  wait-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for Koyeb auto-deploy to settle
+        run: sleep 240 # 4 min — typical Koyeb rolling deploy time for tomai-server
+
+      - name: Backend health check
+        run: |
+          response=$(curl -sS -o /tmp/health.json -w "%{http_code}" https://api.tomia.fr/health)
+          if [ "$response" != "200" ]; then
+            echo "::error::Backend /health returned HTTP $response"
+            cat /tmp/health.json
+            exit 1
+          fi
+          # Check sub-services
+          db_status=$(jq -r '.checks.database.status' /tmp/health.json)
+          if [ "$db_status" != "healthy" ]; then
+            echo "::error::DB unhealthy: $db_status"
+            exit 1
+          fi
+          echo "✅ Backend healthy"
+
+      - name: AI-service health check
+        run: |
+          response=$(curl -sS -o /tmp/ai-health.json -w "%{http_code}" https://tomai-ai-service-tomia-fd296bf5.koyeb.app/health)
+          if [ "$response" != "200" ]; then
+            echo "::error::ai-service /health returned HTTP $response"
+            cat /tmp/ai-health.json
+            exit 1
+          fi
+          embed_ok=$(jq -r '.embed_loaded' /tmp/ai-health.json)
+          rerank_ok=$(jq -r '.rerank_loaded' /tmp/ai-health.json)
+          if [ "$embed_ok" != "true" ] || [ "$rerank_ok" != "true" ]; then
+            echo "::error::Models not loaded: embed=$embed_ok rerank=$rerank_ok"
+            exit 1
+          fi
+          echo "✅ AI-service healthy (BGE-M3 + reranker loaded)"

@@ -11,7 +11,7 @@ FROM oven/bun:1.3-slim AS base
 WORKDIR /app
 
 # Node.js 24 LTS (for pnpm) + system deps
-# SYNC: pnpm version must match packageManager in root package.json (pnpm@10.30.3)
+# SYNC: pnpm version must match packageManager in root package.json (pnpm@11.2.2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && corepack enable \
-    && corepack prepare pnpm@10.30.3 --activate \
+    && corepack prepare pnpm@11.2.2 --activate \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
