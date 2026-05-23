@@ -7,22 +7,14 @@
 # ============================================================
 
 # Stage 1: Builder (uv install des deps)
-FROM python:3.12-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 WORKDIR /build
 
-# uv = installer mature, plus rapide que pip
-RUN pip install --no-cache-dir uv
-
-COPY pyproject.toml ./
-RUN uv pip install --system --no-cache-dir \
-    fastapi>=0.115 \
-    "uvicorn[standard]>=0.32" \
-    pydantic>=2.9 \
-    FlagEmbedding>=1.3 \
-    sentence-transformers>=3.0 \
-    torch>=2.5 \
-    numpy>=1.26
+# uv is pre-installed in the official image
+COPY pyproject.toml README.md ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system --no-cache-dir .
 
 # Stage 2: Runtime
 FROM python:3.12-slim AS runtime
