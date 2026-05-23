@@ -134,7 +134,8 @@ export async function initializeServices(): Promise<void> {
       services: {
         database: 'ready',
         cache: 'memory-lru',
-        rag: 'qdrant-cloud-gemini',
+        rag: 'qdrant-cloud',
+        ai_stack: 'mistral',
         memory_monitor: 'active',
         token_reset_cron: 'active'
       },

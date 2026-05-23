@@ -36,7 +36,7 @@ export interface UpdateStudySessionInput {
   questionsAsked?: number;
   questionsAnswered?: number;
   hintsGiven?: number;
-  aiModelUsed?: 'gemini_3_flash';
+  aiModelUsed?: string;
   totalTokensUsed?: number;
   apiCostCents?: number;
   averageResponseTimeMs?: number;

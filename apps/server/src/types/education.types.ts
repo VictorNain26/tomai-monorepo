@@ -144,7 +144,7 @@ export interface HybridRAGResult {
 }
 
 /**
- * Contexte éducatif pour l'IA Gemini
+ * Contexte éducatif pour l'IA (Mistral)
  */
 export interface EducationalContext {
   /** Niveau de l'étudiant */
@@ -200,7 +200,7 @@ export interface EducationalResponse {
   /** Contenu de la réponse */
   content: string;
   /** Fournisseur IA utilisé */
-  provider: 'gemini-3-flash' | 'fallback';
+  provider: 'mistral-medium-3' | 'mistral-large-3' | 'fallback';
   /** Tokens utilisés */
   tokensUsed: number;
   /** Contexte RAG utilisé */
