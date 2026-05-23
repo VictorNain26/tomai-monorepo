@@ -6,24 +6,30 @@
 # Target: Koyeb eco-large (4 GB RAM, CPU)
 # ============================================================
 
-# Stage 1: Builder (uv install des deps)
+# Stage 1: Builder (uv install des deps in isolated venv)
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 WORKDIR /build
 
-# uv is pre-installed in the official image
+# Create isolated venv
+ENV VIRTUAL_ENV=/opt/venv
+RUN uv venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Install deps into venv
 COPY pyproject.toml README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --system --no-cache-dir .
+    uv pip install --no-cache-dir .
 
 # Stage 2: Runtime
 FROM python:3.12-slim AS runtime
 
 WORKDIR /app
 
-# Copie les site-packages du builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
+# Copy isolated venv from builder
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+COPY --from=builder /opt/venv /opt/venv
 
 # HF cache persistant si volume monté, sinon /tmp
 ENV HF_HOME=/data/hf_cache
