@@ -114,7 +114,8 @@ describe('executeUpdateProfile()', () => {
         observation: '',
         subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      // CCA Sprint 1: errors now use isError + errorCategory
+      expect(result.isError).toBe(true);
       expect(result.message).toContain("Observation ou matière manquante");
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
@@ -124,7 +125,7 @@ describe('executeUpdateProfile()', () => {
         observation: '   ',
         subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
 
@@ -133,7 +134,7 @@ describe('executeUpdateProfile()', () => {
         observation: 'Bonne progression',
         subject: '',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
 
@@ -141,7 +142,7 @@ describe('executeUpdateProfile()', () => {
       const result = await executeTool('update_student_profile', {
         observation: 'Bonne progression',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
   });

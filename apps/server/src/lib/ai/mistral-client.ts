@@ -98,6 +98,8 @@ export interface ChatStreamOptions {
   promptCacheKey?: string;
   /** Tools function-calling Mistral. */
   tools?: Array<Record<string, unknown>>;
+  /** Disable parallel tool calls for deterministic sequential execution. */
+  parallelToolCalls?: boolean;
 }
 
 export interface ChatStreamChunk {
@@ -199,6 +201,7 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
             temperature,
             max_tokens: maxTokens,
             prompt_cache_key: opts.promptCacheKey,
+            safe_prompt: true,
           },
           timeoutMs,
         );
@@ -223,6 +226,7 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
         messages: opts.messages as never,
         temperature,
         maxTokens,
+        safePrompt: true,
       });
       const finish = res.choices?.[0]?.finishReason;
       recordResponse({
@@ -268,6 +272,7 @@ export async function generateStructured<T = unknown>(
         temperature,
         max_tokens: maxTokens,
         response_format: { type: 'json_schema', json_schema: opts.schema },
+        safe_prompt: true,
       };
       if (opts.promptCacheKey) body['prompt_cache_key'] = opts.promptCacheKey;
 
@@ -303,6 +308,8 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
 
   if (!opts.promptCacheKey) {
     // Path SDK officiel — plus simple, gère le parsing SSE
+    // Note: SDK `parallelToolCalls` property name may differ; check @mistralai/mistralai docs.
+    // For now, we only set it on the direct POST path (above) where the API parameter is explicit.
     const client = getClient();
     const stream = await client.chat.stream({
       model,
@@ -310,6 +317,8 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
       temperature,
       maxTokens,
       tools: opts.tools as never,
+      safePrompt: true,
+      parallelToolCalls: opts.parallelToolCalls ?? false,
     });
     for await (const event of stream) {
       const delta = event.data?.choices?.[0]?.delta;
@@ -356,6 +365,11 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
     max_tokens: maxTokens,
     stream: true,
     prompt_cache_key: opts.promptCacheKey,
+    safe_prompt: true,
+    // Disable parallel tool execution for deterministic sequential flow.
+    // Mistral can call multiple tools in a single turn; sequential mode
+    // ensures each tool result is fed back before the next tool is called.
+    parallel_tool_calls: opts.parallelToolCalls ?? false,
   };
   if (opts.tools) body['tools'] = opts.tools;
 

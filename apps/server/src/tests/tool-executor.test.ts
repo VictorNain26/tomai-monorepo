@@ -153,16 +153,19 @@ describe('Tool Executor', () => {
       const result = await executeTool('search_educational_content', {
         query: 'fractions', niveau: 'troisieme', matiere: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.serviceUnavailable).toBe(true);
-      expect(result.found).toBe(false);
+      // CCA Sprint 1: errors are now structured with isError flag
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('transient');
+      expect(result.message).toContain('temporairement indisponible');
     });
   });
 
   describe('unknown tool', () => {
     it('should return error for unknown tool name', async () => {
       const result = await executeTool('get_student_homework', {}, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
       expect(result.message).toContain('Outil inconnu');
+      expect(result.errorCategory).toBe('validation');
     });
   });
 
@@ -214,8 +217,9 @@ describe('Tool Executor', () => {
   describe('Unknown tool', () => {
     it('should return error message for unknown tool', async () => {
       const result = await executeTool('unknown_tool', {}, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
       expect(result.message).toContain('Outil inconnu');
+      expect(result.errorCategory).toBe('validation');
     });
   });
 
@@ -226,7 +230,8 @@ describe('Tool Executor', () => {
       const result = await executeTool('search_educational_content', {
         query: 'test', niveau: 'troisieme', matiere: 'maths',
       }, baseContext) as Record<string, unknown>;
-      expect(result.error).toBe(true);
+      expect(result.isError).toBe(true);
+      expect(result.errorCategory).toBe('transient');
     });
   });
 });
