@@ -1,14 +1,17 @@
 /**
- * Tool Executor - Dispatch des appels d'outils Gemini
+ * Tool Executor - Dispatch des appels d'outils Mistral
  *
- * Chaque outil retourne un objet JSON sérialisable pour functionResponse.
- * Les erreurs sont encapsulées (jamais throw).
+ * Chaque outil retourne un objet JSON sérialisable avec un type structuré
+ * (ToolResult<T> = success | error). Les erreurs sont catégorisées pour
+ * permettre à l'agent de décider du retry. Jamais de throw.
+ * CCA Sprint 1 safety: structured tool errors.
  */
 
 import { ragService } from '../rag.service.js';
 import { generateCards, type CardGenerationResult } from '../learning/card-generator.service.js';
 import { learningService } from '../learning/learning.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
+import { makeToolError, type ToolResult } from './tool-errors.js';
 import { getLevelConfig } from '../../config/learning-config.js';
 import { getAppHelpContent } from '../../config/app-guide/index.js';
 import { logger } from '../../lib/observability.js';
@@ -53,15 +56,16 @@ const RETRYABLE_TOOLS = new Set([
 const RETRY_DELAY_MS = 1500;
 
 /**
- * Execute un outil et retourne le résultat JSON.
- * Ne throw jamais — les erreurs sont encapsulées dans la réponse.
+ * Execute un outil et retourne le résultat structuré.
+ * Ne throw jamais — les erreurs sont encapsulées dans ToolResult.
  * Les outils réseau (RAG) bénéficient d'1 retry automatique.
+ * CCA Sprint 1 safety: structured ToolResult<T> | ToolError.
  */
 export async function executeTool(
   toolName: string,
   args: Record<string, unknown>,
   context: ToolExecutionContext
-): Promise<object> {
+): Promise<ToolResult | object> {
   const startTime = Date.now();
 
   logger.info('Executing tool', {
@@ -95,6 +99,11 @@ export async function executeTool(
           durationMs: Date.now() - startTime,
           severity: 'high' as const,
         });
+        // Transient error: rate limit, timeout, 5xx — safe to retry.
+        return makeToolError(
+          'transient',
+          `${toolName} failed after retry. The AI can safely retry this request.`,
+        );
       }
     } else {
       logger.error('Tool execution failed', {
@@ -105,12 +114,12 @@ export async function executeTool(
         durationMs: Date.now() - startTime,
         severity: 'high' as const,
       });
+      // Non-transient error: assume business logic failure.
+      return makeToolError(
+        'business',
+        `Erreur lors de l'exécution de ${toolName}. Indique à l'élève que tu n'as pas pu vérifier dans les programmes officiels.`,
+      );
     }
-
-    return {
-      error: true,
-      message: `Erreur lors de l'exécution de ${toolName}. Indique à l'élève que tu n'as pas pu vérifier dans les programmes officiels.`,
-    };
   }
 }
 
@@ -137,7 +146,7 @@ async function executeToolOnce(
       return executeGetAppHelp(args, context);
 
     default:
-      return { error: true, message: `Outil inconnu: ${toolName}` };
+      return makeToolError('validation', `Outil inconnu: ${toolName}`);
   }
 }
 
@@ -157,16 +166,10 @@ async function executeRagSearch(
 
   const isAvailable = await ragService.isAvailable();
   if (!isAvailable) {
-    return {
-      found: false,
-      context: '',
-      resultsCount: 0,
-      averageScore: 0,
-      chunks: [],
-      searchTimeMs: Date.now() - startTime,
-      serviceUnavailable: true,
-      message: 'Le service de recherche est temporairement indisponible. Indique à l\'élève que tu ne peux pas vérifier dans les programmes officiels actuellement.',
-    };
+    return makeToolError(
+      'transient',
+      'Le service de recherche est temporairement indisponible. Indique à l\'élève que tu ne peux pas vérifier dans les programmes officiels actuellement.',
+    );
   }
 
   const result = await ragService.hybridSearch({
@@ -235,10 +238,10 @@ async function executeGenerateFlashcards(
   });
 
   if ('success' in result && result.success === false) {
-    return {
-      error: true,
-      message: `Erreur lors de la génération des cartes: ${result.error}`,
-    };
+    return makeToolError(
+      'business',
+      `Erreur lors de la génération des cartes: ${result.error}`,
+    );
   }
 
   const successResult = result as CardGenerationResult;
@@ -333,10 +336,10 @@ async function executeUpdateProfile(
   // Observation + subject required: reject empty calls so the agent doesn't
   // silently burn a tool slot without writing anything.
   if (!observation || !subject) {
-    return {
-      error: true,
-      message: "Observation ou matière manquante — le profil n'a pas été mis à jour.",
-    };
+    return makeToolError(
+      'validation',
+      "Observation ou matière manquante — le profil n'a pas été mis à jour.",
+    );
   }
 
   const strengthRaw = typeof args.strength === 'string' ? args.strength.trim().slice(0, 100) : undefined;

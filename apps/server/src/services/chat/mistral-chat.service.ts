@@ -28,6 +28,8 @@
  */
 
 import { chatStream, type MistralMessage, type MistralToolCall } from '../../lib/ai/mistral-client.js';
+import { routeReasoningEffort } from '../../lib/ai/mistral-reasoning.js';
+import { detectSystemPromptLeak } from '../../lib/ai/mistral-guardrails.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory, type OptimizationContext } from '../../utils/conversation/index.js';
@@ -169,6 +171,14 @@ class MistralChatService {
       const promptCacheKey =
         `chat-${PROMPT_CACHE_VERSION}-${params.schoolLevel}-${params.userRole}`;
 
+      // Route reasoning effort based on school level, STEM subject, and student intent.
+      // This decides whether to use costly reasoning mode (high) or fast mode (none).
+      const reasoningEffort = routeReasoningEffort({
+        schoolLevel: params.schoolLevel,
+        subject: params.subject,
+        intent: params.classifiedIntent?.intent,
+      });
+
       logger.info('Starting Mistral chat streaming', {
         userId: params.userId,
         sessionId: params.sessionId,
@@ -176,6 +186,7 @@ class MistralChatService {
         schoolLevel: params.schoolLevel,
         historyLength: messages.length - 2,
         filesCount: params.files?.length ?? 0,
+        reasoningEffort,
         operation: 'mistral-chat:agent-start',
       });
 
@@ -195,6 +206,7 @@ class MistralChatService {
           maxTokens: MAX_TOKENS,
           tools: agentTools as never,
           promptCacheKey,
+          parallelToolCalls: false,
         });
 
         // Collect text + tool calls for this turn.
@@ -212,6 +224,22 @@ class MistralChatService {
           if (chunk.type === 'text' && chunk.text) {
             assistantText += chunk.text;
             fullContent += chunk.text;
+
+            // CCA Sprint 1 safety: detect system prompt leaks in the accumulated output.
+            // Log at high severity but don't block the stream (silent failures are worse).
+            const leakMarker = detectSystemPromptLeak(fullContent);
+            if (leakMarker) {
+              logger.error('System prompt leak detected in generated content', {
+                _error: `Leaked marker: ${leakMarker}`,
+                userId: params.userId,
+                sessionId: params.sessionId,
+                operation: 'mistral-chat:prompt-leak',
+                severity: 'high' as const,
+                leakMarker,
+                contentLength: fullContent.length,
+              });
+            }
+
             yield {
               type: 'content' as const,
               id: messageId,

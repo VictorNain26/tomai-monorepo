@@ -9,13 +9,29 @@
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Budget total cible envoyé à Gemini (input tokens) */
+/**
+ * Budget total cible envoyé à Mistral (input tokens).
+ * Mistral mistral-medium-latest has 128k context window. We conservatively
+ * target 30k tokens of input to leave room for cached prompt sections
+ * (9k system prompt + tools) and output tokens (16k). Recalibrated for
+ * Mistral from Gemini-era values (formerly 25k for Gemini's 32k window).
+ * CCA Sprint 1 safety: confirmed for mistral-medium-latest v0.14.1+.
+ */
 const TARGET_BUDGET_TOKENS = 30_000;
 
-/** Overhead fixe: system prompt + tool declarations (optimisé Phase 5) */
+/**
+ * Overhead fixe: system prompt + tool declarations.
+ * Mistral system prompt: ~2k. Tool declarations: ~500. Total: ~2.5k.
+ * Capped at 2500 to account for prompt cache overhead.
+ */
 const FIXED_OVERHEAD_TOKENS = 2_500;
 
-/** Réserve pour la réponse générée */
+/**
+ * Réserve pour la réponse générée.
+ * Output reserve: 16k tokens for assistant response. Mistral limit per
+ * completion is typically 4k (configurable per call), but we reserve more
+ * for multi-turn conversations where the assistant may generate longer reasoning.
+ */
 const OUTPUT_RESERVE_TOKENS = 16_384;
 
 /** Ratio chars/token pour du texte français */

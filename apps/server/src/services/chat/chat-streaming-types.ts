@@ -23,6 +23,12 @@ export interface PronoteContext {
   todayTimetable?: Array<{ subject: string; startDate: string; endDate: string; canceled: boolean }>;
 }
 
+export interface ClassifiedIntent {
+  intent: string;
+  confidence: 'low' | 'medium' | 'high';
+  error?: string;
+}
+
 export interface StreamGenerationParams {
   userId: string;
   content: string;
@@ -42,6 +48,8 @@ export interface StreamGenerationParams {
    * socratic stance (e.g. on "solve this for me" requests).
    */
   intentReinforcement?: string | null;
+  /** Classified intent for reasoning effort routing (CCA Sprint 1). */
+  classifiedIntent?: ClassifiedIntent;
   conversationHistory: Array<{
     role: 'user' | 'assistant';
     content: string;
