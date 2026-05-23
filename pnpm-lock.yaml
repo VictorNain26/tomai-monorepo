@@ -413,7 +413,7 @@ importers:
         version: 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.1))(better-auth@1.5.5(drizzle-kit@0.31.9)(drizzle-orm@0.45.1(@opentelemetry/api@1.9.1)(bun-types@1.3.6)(expo-sqlite@55.0.11(expo@55.0.5)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(kysely@0.28.11)(postgres@3.4.8))(mongodb@7.1.0)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(expo-constants@55.0.9)(expo-linking@55.0.8)(expo-network@55.0.9(expo@55.0.5)(react@19.2.0))
       '@elysiajs/cors':
         specifier: ^1.3.3
-        version: 1.4.1(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))
+        version: 1.4.2(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))
       '@elysiajs/swagger':
         specifier: ^1.3.1
         version: 1.3.1(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))
@@ -1439,8 +1439,8 @@ packages:
     resolution: {integrity: sha512-XQsZgjm2EcVUiZQf11UBJQfmZeEmOW8DpI1gsFeln6w0ae0ii4dMQEQ0kjl6DspdWX1aGY1/loyXnP0JS06e/A==}
     engines: {node: '>=0.8.0'}
 
-  '@elysiajs/cors@1.4.1':
-    resolution: {integrity: sha512-lQfad+F3r4mNwsxRKbXyJB8Jg43oAOXjRwn7sKUL6bcOW3KjUqUimTS+woNpO97efpzjtDE0tEjGk9DTw8lqTQ==}
+  '@elysiajs/cors@1.4.2':
+    resolution: {integrity: sha512-FTCcbH35brTLigF1W7BYySRZomgI/dBEMK9BgK9RP9Nez7zmpGh4koL/Yr1BFv8nYz7CfhRvcM8d/c+XnwMaVQ==}
     peerDependencies:
       elysia: '>= 1.4.0'
 
@@ -9499,7 +9499,7 @@ snapshots:
     dependencies:
       '@types/hammerjs': 2.0.46
 
-  '@elysiajs/cors@1.4.1(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))':
+  '@elysiajs/cors@1.4.2(elysia@1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3))':
     dependencies:
       elysia: 1.4.27(@sinclair/typebox@0.34.48)(exact-mirror@0.2.6(@sinclair/typebox@0.34.48))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@5.9.3)
 
