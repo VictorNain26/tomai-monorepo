@@ -124,7 +124,7 @@ importers:
         version: 10.4.0(jiti@2.6.1)
       postcss:
         specifier: ^8.5.6
-        version: 8.5.10
+        version: 8.5.15
       tailwindcss:
         specifier: 'catalog:'
         version: 4.1.18
@@ -392,7 +392,7 @@ importers:
         version: 55.0.11(@babel/core@7.28.6)(expo@55.0.5)(jest@29.7.0(@types/node@25.3.3))(react-native@0.83.2(@babel/core@7.28.6)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@6.0.3)
       postcss:
         specifier: ^8.5.6
-        version: 8.5.10
+        version: 8.5.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -6396,8 +6396,8 @@ packages:
     resolution: {integrity: sha512-OCVPnIObs4N29kxTjzLfUryOkvZEq+pf8jTF0lg8E7uETuWHA+v7j3c/xJmiqpX450191LlmZfUKkXxkTry7nA==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.10:
-    resolution: {integrity: sha512-pMMHxBOZKFU6HgAZ4eyGnwXF/EvPGGqUr0MnZ5+99485wwW41kW91A4LOGxSHhgugZmSChL5AlElNdwlNgcnLQ==}
+  postcss@8.5.15:
+    resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
     engines: {node: ^10 || ^12 || >=14}
 
   postgres@3.4.8:
@@ -12040,7 +12040,7 @@ snapshots:
       '@alloc/quick-lru': 5.2.0
       '@tailwindcss/node': 4.1.18
       '@tailwindcss/oxide': 4.1.18
-      postcss: 8.5.10
+      postcss: 8.5.15
       tailwindcss: 4.1.18
 
   '@tanstack/query-async-storage-persister@5.90.22':
@@ -16182,7 +16182,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  postcss@8.5.10:
+  postcss@8.5.15:
     dependencies:
       nanoid: 3.3.12
       picocolors: 1.1.1
