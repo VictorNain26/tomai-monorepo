@@ -19,10 +19,10 @@ catalog:
   '@types/react-dom': ~19.2.3
   eslint: ^10.4.0
   lucide-react: ^1.16.0
-  react: 19.2.0
-  react-dom: 19.2.0
+  react: 19.2.6
+  react-dom: 19.2.6
   # Keep strictly in sync with `react` (@testing-library/react-native compares them).
-  react-test-renderer: 19.2.0
+  react-test-renderer: 19.2.6
   tailwindcss: ^4.1.18
   typescript: 6.0.3
 
