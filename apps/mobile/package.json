@@ -78,7 +78,7 @@
     "expo-status-bar": "^55.0.4",
     "expo-updates": "^55.0.15",
     "lucide-react-native": "^1.16.0",
-    "nativewind": "5.0.0-preview.2",
+    "nativewind": "5.0.0-preview.4",
     "pawnote": "^1.6.2",
     "react": "catalog:",
     "react-native": "0.83.2",
