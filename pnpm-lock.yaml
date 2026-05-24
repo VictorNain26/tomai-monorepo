@@ -413,10 +413,10 @@ importers:
         version: 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.3.6))(jose@6.1.3)(kysely@0.28.17)(nanostores@1.1.1))(better-auth@1.6.11(@opentelemetry/api@1.9.1)(drizzle-kit@0.31.9)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(bun-types@1.3.14)(expo-sqlite@55.0.11(expo@55.0.5)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(kysely@0.28.17)(postgres@3.4.8))(next@16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(expo-constants@55.0.9)(expo-linking@55.0.8)(expo-network@55.0.9(expo@55.0.5)(react@19.2.0))
       '@elysiajs/cors':
         specifier: ^1.3.3
-        version: 1.4.2(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))
+        version: 1.4.2(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))
       '@elysiajs/swagger':
         specifier: ^1.3.1
-        version: 1.3.1(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))
+        version: 1.3.1(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))
       '@mistralai/mistralai':
         specifier: ^1.11.0
         version: 1.13.0
@@ -458,7 +458,7 @@ importers:
         version: 0.45.2(@opentelemetry/api@1.9.1)(bun-types@1.3.14)(expo-sqlite@55.0.11(expo@55.0.5)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(kysely@0.28.17)(postgres@3.4.8)
       elysia:
         specifier: ^1.4.27
-        version: 1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3)
+        version: 1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3)
       glob:
         specifier: ^13.0.6
         version: 13.0.6
@@ -513,7 +513,7 @@ importers:
     dependencies:
       '@elysiajs/eden':
         specifier: ^1.4.5
-        version: 1.4.9(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))
+        version: 1.4.9(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))
       '@tanstack/react-query':
         specifier: ^5.90.12
         version: 5.90.20(react@19.2.0)
@@ -4453,8 +4453,8 @@ packages:
   electron-to-chromium@1.5.279:
     resolution: {integrity: sha512-0bblUU5UNdOt5G7XqGiJtpZMONma6WAfq9vsFmtn9x1+joAObr6x1chfqyxFSDCAFwFhCQDrqeAr6MYdpwJ9Hg==}
 
-  elysia@1.4.27:
-    resolution: {integrity: sha512-2UlmNEjPJVA/WZVPYKy+KdsrfFwwNlqSBW1lHz6i2AHc75k7gV4Rhm01kFeotH7PDiHIX2G8X3KnRPc33SGVIg==}
+  elysia@1.4.28:
+    resolution: {integrity: sha512-Vrx8sBnvq8squS/3yNBzR1jBXI+SgmnmvwawPjNuEHndUe5l1jV2Gp6JJ4ulDkEB8On6bWmmuyPpA+bq4t+WYg==}
     peerDependencies:
       '@sinclair/typebox': '>= 0.34.0 < 1'
       '@types/bun': '>= 1.2.0'
@@ -9550,19 +9550,19 @@ snapshots:
     dependencies:
       '@types/hammerjs': 2.0.46
 
-  '@elysiajs/cors@1.4.2(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))':
+  '@elysiajs/cors@1.4.2(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))':
     dependencies:
-      elysia: 1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3)
+      elysia: 1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3)
 
-  '@elysiajs/eden@1.4.9(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))':
+  '@elysiajs/eden@1.4.9(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))':
     dependencies:
-      elysia: 1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3)
+      elysia: 1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3)
 
-  '@elysiajs/swagger@1.3.1(elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))':
+  '@elysiajs/swagger@1.3.1(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3))':
     dependencies:
       '@scalar/themes': 0.9.86
       '@scalar/types': 0.0.12
-      elysia: 1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3)
+      elysia: 1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3)
       openapi-types: 12.1.3
       pathe: 1.1.2
 
@@ -13373,7 +13373,7 @@ snapshots:
 
   electron-to-chromium@1.5.279: {}
 
-  elysia@1.4.27(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3):
+  elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@0.2.6(@sinclair/typebox@0.34.49))(file-type@21.3.1)(openapi-types@12.1.3)(typescript@6.0.3):
     dependencies:
       '@sinclair/typebox': 0.34.49
       cookie: 1.1.1
