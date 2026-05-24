@@ -27,7 +27,7 @@
  *   whenever the system prompt template changes.
  */
 
-import { chatStream, type MistralMessage, type MistralToolCall } from '../../lib/ai/mistral-client.js';
+import { chatStream, type MistralMessage, type MistralToolCall, type MistralContentPart } from '../../lib/ai/mistral-client.js';
 import { routeReasoningEffort } from '../../lib/ai/mistral-reasoning.js';
 import { detectSystemPromptLeak } from '../../lib/ai/mistral-guardrails.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
@@ -118,16 +118,20 @@ class MistralChatService {
     const optimized = optimizeConversationHistory(history, context);
 
     return optimized
-      .filter((msg): msg is typeof msg & { role: 'assistant' | 'user' } => msg.role !== 'system')
-      .map((msg) => {
+      .filter((msg): msg is typeof msg & { role: 'assistant' | 'user'; content: string } =>
+        msg.role !== 'system' && msg.content !== null && msg.content !== undefined
+      )
+      .map((msg): MistralMessage => {
         if (msg.role === 'assistant') {
-          return { role: 'assistant' as const, content: msg.content };
+          // AssistantMessage from SDK type — role forced to "assistant"
+          return { role: 'assistant', content: msg.content, toolCalls: undefined };
         }
-        return { role: 'user' as const, content: msg.content };
+        // UserMessage from SDK type
+        return { role: 'user', content: msg.content };
       });
   }
 
-  private buildUserContent(content: string, files?: AttachedFile[]): MistralMessage['content'] {
+  private buildUserContent(content: string, files?: AttachedFile[]): string | MistralContentPart[] {
     const wrapped = wrapUserMessage(content);
     if (!files || files.length === 0) return wrapped;
 

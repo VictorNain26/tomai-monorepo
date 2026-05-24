@@ -15,6 +15,13 @@
  * Toutes supportent `promptCacheKey` (90 % discount sur cached tokens).
  */
 
+import type {
+  AssistantMessage as SdkAssistantMessage,
+  SystemMessage as SdkSystemMessage,
+  UserMessage as SdkUserMessage,
+  ToolMessage as SdkToolMessage,
+  Tool as SdkTool,
+} from '@mistralai/mistralai/models/components/index.js';
 import { Mistral } from '@mistralai/mistralai';
 import { appConfig } from '../../config/app.config.js';
 import { logger } from '../observability.js';
@@ -49,36 +56,32 @@ export type MistralContentPart =
   | { type: 'text'; text: string }
   | { type: 'image_url'; imageUrl: string | { url: string } };
 
+/**
+ * ToolCall — matches SDK v2.2.1 ToolCall structure.
+ * Captures function-call requests from the assistant.
+ */
 export interface MistralToolCall {
   id: string;
-  type: 'function';
+  type?: string;
   function: { name: string; arguments: string };
+  index?: number;
 }
-
-export type MistralRole = 'system' | 'user' | 'assistant' | 'tool';
 
 /**
- * Message format for Mistral completions — unified interface that works
- * across all callers. Structure respects SDK v2.2.1 role-to-content invariants
- * at runtime, even though TypeScript's discriminated union type narrowing may
- * require explicit casting when passing to SDK methods (SDK types are overly
- * strict on content chunk shapes).
+ * Discriminated union of Mistral message types — exactly isomorphic with SDK v2.2.1
+ * ChatCompletionRequestMessage for zero-cast compatibility.
  *
- * Migration note (v1→v2): SDK now uses discriminated unions keyed on role.
- * Our interface is compatible in structure but uses our own content part types
- * for simplicity (vs SDK's complex ContentChunk union). Conversions happen
- * transparently at the SDK boundary.
+ * Callers MUST ensure:
+ * - `system` role: content must be string (not undefined)
+ * - `user` role: content must be string (not undefined)
+ * - `assistant` role: role is forced to "assistant", optional toolCalls
+ * - `tool` role: toolCallId must be present (not undefined)
  */
-export interface MistralMessage {
-  role: MistralRole;
-  content: string | MistralContentPart[];
-  /** Set by the model on `assistant` messages that request tool execution. */
-  toolCalls?: MistralToolCall[];
-  /** Set by the caller on `tool` messages to correlate the result with its call. */
-  toolCallId?: string;
-  /** Optional `tool` message field for symmetry with the OpenAI tools spec. */
-  name?: string;
-}
+export type MistralMessage =
+  | { role: 'system'; content: string | SdkSystemMessage['content'] }
+  | { role: 'user'; content: string | SdkUserMessage['content'] }
+  | (SdkAssistantMessage & { role: 'assistant' })
+  | { role: 'tool'; content: string | SdkToolMessage['content']; toolCallId: string; name?: string };
 
 export interface GenerateTextOptions {
   messages: MistralMessage[];
@@ -108,11 +111,8 @@ export interface ChatStreamOptions {
   temperature?: number;
   maxTokens?: number;
   promptCacheKey?: string;
-  /** Tools function-calling Mistral. Accepts tool declarations (function + metadata). */
-  tools?: Array<{
-    type: 'function';
-    function: Record<string, unknown>;
-  }>;
+  /** Tools function-calling Mistral. Matches SDK v2.2.1 Tool structure. */
+  tools?: SdkTool[];
   /** Disable parallel tool calls for deterministic sequential execution. */
   parallelToolCalls?: boolean;
 }
@@ -234,18 +234,9 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
       }
 
       const client = getClient();
-      // SDK migration v2.2.1: Mistral SDK now enforces strict ContentChunk union
-      // types on message.content per role (cf. ChatCompletionRequest types).
-      // Our MistralMessage uses a simpler MistralContentPart union for API clarity.
-      // Both are structurally compatible and represent the same HTTP shape at runtime.
-      // This cast is unavoidable without:
-      // (a) duplicating SDK's complex ContentChunk type, or
-      // (b) changing our public API (breaking all callers).
-      // Issue upstream: https://github.com/mistralai/client-ts/issues (HYPOTHETICAL —
-      // consider relaxing content chunk validation to accept structurally equivalent types).
       const res = await client.chat.complete({
         model,
-        messages: opts.messages as never,
+        messages: opts.messages,
         temperature,
         maxTokens,
         safePrompt: true,
@@ -331,16 +322,12 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
   if (!opts.promptCacheKey) {
     // Path SDK officiel — plus simple, gère le parsing SSE
     const client = getClient();
-    // Same cast justification as generateText above (v2.2.1 SDK type strictness).
     const stream = await client.chat.stream({
       model,
-      messages: opts.messages as never,
+      messages: opts.messages,
       temperature,
       maxTokens,
-      tools: opts.tools?.map((tool) => ({
-        type: 'function',
-        function: tool.function,
-      })) as never,
+      tools: opts.tools,
       safePrompt: true,
       parallelToolCalls: opts.parallelToolCalls ?? false,
     });
@@ -376,9 +363,14 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
   // expects (tool_calls, tool_call_id). The SDK path does this automatically.
   const wireMessages = opts.messages.map((m) => {
     const out: Record<string, unknown> = { role: m.role, content: m.content };
-    if (m.toolCalls) out['tool_calls'] = m.toolCalls;
-    if (m.toolCallId) out['tool_call_id'] = m.toolCallId;
-    if (m.name) out['name'] = m.name;
+    // Narrow by role to access role-specific fields safely.
+    if (m.role === 'assistant' && 'toolCalls' in m && m.toolCalls) {
+      out['tool_calls'] = m.toolCalls;
+    }
+    if (m.role === 'tool') {
+      if ('toolCallId' in m && m.toolCallId) out['tool_call_id'] = m.toolCallId;
+      if ('name' in m && m.name) out['name'] = m.name;
+    }
     return out;
   });
 
