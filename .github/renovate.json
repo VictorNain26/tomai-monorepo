@@ -202,8 +202,8 @@
       "commitMessagePrefix": "chore(docker)"
     },
     {
-      "description": "Pin React + React DOM together (catalog-managed) and never auto-merge majors.",
-      "matchPackageNames": ["react", "react-dom"],
+      "description": "Pin React + React DOM + react-test-renderer together (catalog-managed). react-test-renderer must always match react exactly — @testing-library/react-native asserts equality at test setup.",
+      "matchPackageNames": ["react", "react-dom", "react-test-renderer"],
       "groupName": "react"
     }
   ]
