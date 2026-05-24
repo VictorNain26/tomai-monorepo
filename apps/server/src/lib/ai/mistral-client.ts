@@ -1,11 +1,11 @@
 /**
  * Mistral AI client wrapper — stack souveraine EU (Phase 2B).
  *
- * Centralise l'accès aux LLM Mistral pour le backend. Wrappe le SDK officiel
- * `@mistralai/mistralai` 1.13+ et complète par un appel HTTP direct quand le
+ * Centralise l'accès aux LLM Mistral pour le backend. Utilise le SDK officiel
+ * `@mistralai/mistralai` 2.2.1+ et complète par un appel HTTP direct quand le
  * SDK n'expose pas un paramètre (cas : `prompt_cache_key` documenté dans
- * l'API HTTP mais absent du `ChatCompletionRequest` du SDK TS — confirmé par
- * lecture node_modules en mai 2026).
+ * l'API HTTP mais absent du SDK TypeScript — confirmé par inspection v2.2.1
+ * en mai 2026).
  *
  * Trois fonctions exportées :
  * - `generateText` — completion non-streaming simple (auto-title, classification…)

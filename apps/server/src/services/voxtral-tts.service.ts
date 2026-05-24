@@ -2,8 +2,8 @@
  * Voxtral TTS Service — Mistral text-to-speech souveraine EU.
  *
  * Appelle directement POST https://api.mistral.ai/v1/audio/speech car le SDK
- * `@mistralai/mistralai` 1.13 expose seulement la transcription (audio→texte),
- * pas la synthèse (texte→audio). Confirmé par lecture node_modules en mai 2026 :
+ * `@mistralai/mistralai` 2.2.1 expose seulement la transcription (audio→texte),
+ * pas la synthèse (texte→audio). Confirmé par inspection v2.2.1 en mai 2026 :
  * funcs/audioTranscriptions{Complete,Stream} existent, aucun équivalent speech.
  *
  * @see https://docs.mistral.ai/capabilities/audio/text_to_speech
