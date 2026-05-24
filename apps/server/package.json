@@ -18,7 +18,7 @@
     "dev:memory": "bun --watch --hot --smol src/index.ts",
     "start:prod": "bun --smol dist/index.js",
     "build": "bun run build:server && bun run build:migrate",
-    "build:server": "bun build src/index.ts --outdir dist --target bun --minify --sourcemap=linked --format esm --packages external",
+    "build:server": "bun build src/index.ts --outdir dist --target bun --minify --sourcemap=linked --format esm",
     "build:migrate": "bun build src/db/migrate.ts --outdir dist --target bun --sourcemap=linked --format esm",
     "build:validated": "bun run validate:prod && bun run build",
     "build:koyeb": "bun run typecheck:strict && bun run lint:ci && bun run build",
