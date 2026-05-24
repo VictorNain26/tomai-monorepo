@@ -117,10 +117,14 @@ class MistralChatService {
     const context: OptimizationContext = { conversationSummary };
     const optimized = optimizeConversationHistory(history, context);
 
-    return optimized.map((msg) => ({
-      role: msg.role === 'assistant' ? ('assistant' as const) : ('user' as const),
-      content: msg.content,
-    }));
+    return optimized
+      .filter((msg): msg is typeof msg & { role: 'assistant' | 'user' } => msg.role !== 'system')
+      .map((msg) => {
+        if (msg.role === 'assistant') {
+          return { role: 'assistant' as const, content: msg.content };
+        }
+        return { role: 'user' as const, content: msg.content };
+      });
   }
 
   private buildUserContent(content: string, files?: AttachedFile[]): MistralMessage['content'] {
@@ -163,9 +167,9 @@ class MistralChatService {
       // Conversation = system + history + current user turn. The agentic loop
       // will append assistant + tool messages as it iterates.
       const messages: MistralMessage[] = [
-        { role: 'system', content: systemPrompt },
+        { role: 'system' as const, content: systemPrompt },
         ...this.buildHistoryMessages(params.conversationHistory, params.conversationSummary),
-        { role: 'user', content: userContent },
+        { role: 'user' as const, content: userContent },
       ];
 
       const promptCacheKey =
@@ -204,7 +208,7 @@ class MistralChatService {
           messages,
           temperature: TEMPERATURE,
           maxTokens: MAX_TOKENS,
-          tools: agentTools as never,
+          tools: agentTools,
           promptCacheKey,
           parallelToolCalls: false,
         });

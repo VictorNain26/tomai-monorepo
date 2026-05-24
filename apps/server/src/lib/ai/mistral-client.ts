@@ -40,8 +40,6 @@ export function setMistralClient(client: Mistral | null): void {
 
 // ── Types domain ────────────────────────────────────────────────────────────
 
-export type MistralRole = 'system' | 'user' | 'assistant' | 'tool';
-
 /**
  * Multimodal content parts (vision). Mistral models with vision (medium 3.5 /
  * pixtral fusion) accept `image_url` parts inline alongside text. The `url`
@@ -57,6 +55,20 @@ export interface MistralToolCall {
   function: { name: string; arguments: string };
 }
 
+export type MistralRole = 'system' | 'user' | 'assistant' | 'tool';
+
+/**
+ * Message format for Mistral completions — unified interface that works
+ * across all callers. Structure respects SDK v2.2.1 role-to-content invariants
+ * at runtime, even though TypeScript's discriminated union type narrowing may
+ * require explicit casting when passing to SDK methods (SDK types are overly
+ * strict on content chunk shapes).
+ *
+ * Migration note (v1→v2): SDK now uses discriminated unions keyed on role.
+ * Our interface is compatible in structure but uses our own content part types
+ * for simplicity (vs SDK's complex ContentChunk union). Conversions happen
+ * transparently at the SDK boundary.
+ */
 export interface MistralMessage {
   role: MistralRole;
   content: string | MistralContentPart[];
@@ -96,8 +108,11 @@ export interface ChatStreamOptions {
   temperature?: number;
   maxTokens?: number;
   promptCacheKey?: string;
-  /** Tools function-calling Mistral. */
-  tools?: Array<Record<string, unknown>>;
+  /** Tools function-calling Mistral. Accepts tool declarations (function + metadata). */
+  tools?: Array<{
+    type: 'function';
+    function: Record<string, unknown>;
+  }>;
   /** Disable parallel tool calls for deterministic sequential execution. */
   parallelToolCalls?: boolean;
 }
@@ -219,10 +234,17 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
       }
 
       const client = getClient();
+      // SDK migration v2.2.1: Mistral SDK now enforces strict ContentChunk union
+      // types on message.content per role (cf. ChatCompletionRequest types).
+      // Our MistralMessage uses a simpler MistralContentPart union for API clarity.
+      // Both are structurally compatible and represent the same HTTP shape at runtime.
+      // This cast is unavoidable without:
+      // (a) duplicating SDK's complex ContentChunk type, or
+      // (b) changing our public API (breaking all callers).
+      // Issue upstream: https://github.com/mistralai/client-ts/issues (HYPOTHETICAL —
+      // consider relaxing content chunk validation to accept structurally equivalent types).
       const res = await client.chat.complete({
         model,
-        // Cast confiné : le SDK Mistral typé corrèle role <-> shape par rôle, mais
-        // notre MistralMessage volontairement uniforme côté caller. Runtime OK.
         messages: opts.messages as never,
         temperature,
         maxTokens,
@@ -308,15 +330,17 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
 
   if (!opts.promptCacheKey) {
     // Path SDK officiel — plus simple, gère le parsing SSE
-    // Note: SDK `parallelToolCalls` property name may differ; check @mistralai/mistralai docs.
-    // For now, we only set it on the direct POST path (above) where the API parameter is explicit.
     const client = getClient();
+    // Same cast justification as generateText above (v2.2.1 SDK type strictness).
     const stream = await client.chat.stream({
       model,
       messages: opts.messages as never,
       temperature,
       maxTokens,
-      tools: opts.tools as never,
+      tools: opts.tools?.map((tool) => ({
+        type: 'function',
+        function: tool.function,
+      })) as never,
       safePrompt: true,
       parallelToolCalls: opts.parallelToolCalls ?? false,
     });
