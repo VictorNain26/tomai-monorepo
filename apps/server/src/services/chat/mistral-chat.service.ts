@@ -27,7 +27,7 @@
  *   whenever the system prompt template changes.
  */
 
-import { chatStream, type MistralMessage, type MistralToolCall } from '../../lib/ai/mistral-client.js';
+import { chatStream, type MistralMessage, type MistralToolCall, type MistralContentPart } from '../../lib/ai/mistral-client.js';
 import { routeReasoningEffort } from '../../lib/ai/mistral-reasoning.js';
 import { detectSystemPromptLeak } from '../../lib/ai/mistral-guardrails.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
@@ -117,13 +117,21 @@ class MistralChatService {
     const context: OptimizationContext = { conversationSummary };
     const optimized = optimizeConversationHistory(history, context);
 
-    return optimized.map((msg) => ({
-      role: msg.role === 'assistant' ? ('assistant' as const) : ('user' as const),
-      content: msg.content,
-    }));
+    return optimized
+      .filter((msg): msg is typeof msg & { role: 'assistant' | 'user'; content: string } =>
+        msg.role !== 'system' && msg.content !== null && msg.content !== undefined
+      )
+      .map((msg): MistralMessage => {
+        if (msg.role === 'assistant') {
+          // AssistantMessage from SDK type — role forced to "assistant"
+          return { role: 'assistant', content: msg.content, toolCalls: undefined };
+        }
+        // UserMessage from SDK type
+        return { role: 'user', content: msg.content };
+      });
   }
 
-  private buildUserContent(content: string, files?: AttachedFile[]): MistralMessage['content'] {
+  private buildUserContent(content: string, files?: AttachedFile[]): string | MistralContentPart[] {
     const wrapped = wrapUserMessage(content);
     if (!files || files.length === 0) return wrapped;
 
@@ -163,9 +171,9 @@ class MistralChatService {
       // Conversation = system + history + current user turn. The agentic loop
       // will append assistant + tool messages as it iterates.
       const messages: MistralMessage[] = [
-        { role: 'system', content: systemPrompt },
+        { role: 'system' as const, content: systemPrompt },
         ...this.buildHistoryMessages(params.conversationHistory, params.conversationSummary),
-        { role: 'user', content: userContent },
+        { role: 'user' as const, content: userContent },
       ];
 
       const promptCacheKey =
@@ -204,7 +212,7 @@ class MistralChatService {
           messages,
           temperature: TEMPERATURE,
           maxTokens: MAX_TOKENS,
-          tools: agentTools as never,
+          tools: agentTools,
           promptCacheKey,
           parallelToolCalls: false,
         });

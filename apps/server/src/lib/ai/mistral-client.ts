@@ -15,6 +15,13 @@
  * Toutes supportent `promptCacheKey` (90 % discount sur cached tokens).
  */
 
+import type {
+  AssistantMessage as SdkAssistantMessage,
+  SystemMessage as SdkSystemMessage,
+  UserMessage as SdkUserMessage,
+  ToolMessage as SdkToolMessage,
+  Tool as SdkTool,
+} from '@mistralai/mistralai/models/components/index.js';
 import { Mistral } from '@mistralai/mistralai';
 import { appConfig } from '../../config/app.config.js';
 import { logger } from '../observability.js';
@@ -40,8 +47,6 @@ export function setMistralClient(client: Mistral | null): void {
 
 // ── Types domain ────────────────────────────────────────────────────────────
 
-export type MistralRole = 'system' | 'user' | 'assistant' | 'tool';
-
 /**
  * Multimodal content parts (vision). Mistral models with vision (medium 3.5 /
  * pixtral fusion) accept `image_url` parts inline alongside text. The `url`
@@ -51,22 +56,32 @@ export type MistralContentPart =
   | { type: 'text'; text: string }
   | { type: 'image_url'; imageUrl: string | { url: string } };
 
+/**
+ * ToolCall — matches SDK v2.2.1 ToolCall structure.
+ * Captures function-call requests from the assistant.
+ */
 export interface MistralToolCall {
   id: string;
-  type: 'function';
+  type?: string;
   function: { name: string; arguments: string };
+  index?: number;
 }
 
-export interface MistralMessage {
-  role: MistralRole;
-  content: string | MistralContentPart[];
-  /** Set by the model on `assistant` messages that request tool execution. */
-  toolCalls?: MistralToolCall[];
-  /** Set by the caller on `tool` messages to correlate the result with its call. */
-  toolCallId?: string;
-  /** Optional `tool` message field for symmetry with the OpenAI tools spec. */
-  name?: string;
-}
+/**
+ * Discriminated union of Mistral message types — exactly isomorphic with SDK v2.2.1
+ * ChatCompletionRequestMessage for zero-cast compatibility.
+ *
+ * Callers MUST ensure:
+ * - `system` role: content must be string (not undefined)
+ * - `user` role: content must be string (not undefined)
+ * - `assistant` role: role is forced to "assistant", optional toolCalls
+ * - `tool` role: toolCallId must be present (not undefined)
+ */
+export type MistralMessage =
+  | { role: 'system'; content: string | SdkSystemMessage['content'] }
+  | { role: 'user'; content: string | SdkUserMessage['content'] }
+  | (SdkAssistantMessage & { role: 'assistant' })
+  | { role: 'tool'; content: string | SdkToolMessage['content']; toolCallId: string; name?: string };
 
 export interface GenerateTextOptions {
   messages: MistralMessage[];
@@ -96,8 +111,8 @@ export interface ChatStreamOptions {
   temperature?: number;
   maxTokens?: number;
   promptCacheKey?: string;
-  /** Tools function-calling Mistral. */
-  tools?: Array<Record<string, unknown>>;
+  /** Tools function-calling Mistral. Matches SDK v2.2.1 Tool structure. */
+  tools?: SdkTool[];
   /** Disable parallel tool calls for deterministic sequential execution. */
   parallelToolCalls?: boolean;
 }
@@ -221,9 +236,7 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
       const client = getClient();
       const res = await client.chat.complete({
         model,
-        // Cast confiné : le SDK Mistral typé corrèle role <-> shape par rôle, mais
-        // notre MistralMessage volontairement uniforme côté caller. Runtime OK.
-        messages: opts.messages as never,
+        messages: opts.messages,
         temperature,
         maxTokens,
         safePrompt: true,
@@ -308,15 +321,13 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
 
   if (!opts.promptCacheKey) {
     // Path SDK officiel — plus simple, gère le parsing SSE
-    // Note: SDK `parallelToolCalls` property name may differ; check @mistralai/mistralai docs.
-    // For now, we only set it on the direct POST path (above) where the API parameter is explicit.
     const client = getClient();
     const stream = await client.chat.stream({
       model,
-      messages: opts.messages as never,
+      messages: opts.messages,
       temperature,
       maxTokens,
-      tools: opts.tools as never,
+      tools: opts.tools,
       safePrompt: true,
       parallelToolCalls: opts.parallelToolCalls ?? false,
     });
@@ -352,9 +363,14 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
   // expects (tool_calls, tool_call_id). The SDK path does this automatically.
   const wireMessages = opts.messages.map((m) => {
     const out: Record<string, unknown> = { role: m.role, content: m.content };
-    if (m.toolCalls) out['tool_calls'] = m.toolCalls;
-    if (m.toolCallId) out['tool_call_id'] = m.toolCallId;
-    if (m.name) out['name'] = m.name;
+    // Narrow by role to access role-specific fields safely.
+    if (m.role === 'assistant' && 'toolCalls' in m && m.toolCalls) {
+      out['tool_calls'] = m.toolCalls;
+    }
+    if (m.role === 'tool') {
+      if ('toolCallId' in m && m.toolCallId) out['tool_call_id'] = m.toolCallId;
+      if ('name' in m && m.name) out['name'] = m.name;
+    }
     return out;
   });
 
