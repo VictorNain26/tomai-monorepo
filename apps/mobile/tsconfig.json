@@ -19,7 +19,8 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
+    "nativewind-env.d.ts",
+    "global-css.d.ts"
   ],
   "exclude": ["node_modules", ".expo", "babel.config.js", "metro.config.js"]
 }

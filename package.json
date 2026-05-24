@@ -30,7 +30,7 @@
     "@evilmartians/lefthook": "^2.1.4",
     "prettier": "^3.8.1",
     "turbo": "^2.8.13",
-    "typescript": "5.9.3"
+    "typescript": "6.0.3"
   },
   "engines": {
     "node": ">=22",
