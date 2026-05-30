@@ -1,0 +1,1 @@
+ALTER TABLE "study_sessions" ALTER COLUMN "ai_model_used" SET DEFAULT '';
