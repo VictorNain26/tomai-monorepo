@@ -11,7 +11,7 @@ cp .env.example .env
 # 2. Configurer les cles requises dans .env
 # - BETTER_AUTH_SECRET (generer: openssl rand -base64 32)
 # - GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
-# - GEMINI_API_KEY
+# - MISTRAL_API_KEY
 
 # 3. Demarrer (PostgreSQL + Backend avec hot-reload)
 docker compose up -d
@@ -37,13 +37,13 @@ Documentation interactive auto-generee disponible en dev :
 | Database | PostgreSQL 16 + pgvector |
 | ORM | Drizzle ORM 0.45 |
 | Cache | MemoryCacheService (LRU in-memory avec TTL) |
-| Auth | Better Auth 1.4 + Google OAuth |
-| AI Chat | Gemini 2.5 Flash (@google/genai) |
-| Embeddings | Mistral AI 1024D |
-| RAG | Qdrant Cloud + BM25 reranking |
+| Auth | Better Auth 1.6 + Google OAuth |
+| AI Chat | Mistral (`mistral-medium-latest`, streaming + tools) |
+| Embeddings | BGE-M3 (RAG, via ai-service) + `mistral-embed` 1024D (mémoire) |
+| RAG | Qdrant Cloud hybrid (BGE-M3 dense+sparse + RRF) + reranker BGE |
 | Stockage | Scaleway Object Storage (S3, RGPD France) |
 | STT | Gladia |
-| TTS | ElevenLabs |
+| TTS | Voxtral (`voxtral-tts-26.03`, EU) |
 | Paiements | RevenueCat (mobile IAP, source unique) |
 | Pronote | Pawnote 1.6 + AES-256-GCM |
 
@@ -88,19 +88,18 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 | `BETTER_AUTH_URL` | URL backend (http://localhost:3000) |
 | `GOOGLE_CLIENT_ID` | OAuth Google |
 | `GOOGLE_CLIENT_SECRET` | OAuth Google |
-| `GEMINI_API_KEY` | API Gemini pour chat IA |
+| `MISTRAL_API_KEY` | API Mistral (chat, embeddings, vision, OCR, TTS) |
 
 ### Optional
 
 | Variable | Description |
 |----------|-------------|
-| `MISTRAL_API_KEY` | Embeddings 1024D pour RAG |
+| `AI_SERVICE_URL` | Service embeddings/rerank BGE-M3 (apps/ai-service) |
 | `QDRANT_URL` / `QDRANT_API_KEY` | Qdrant Cloud pour RAG |
 | `SCALEWAY_ACCESS_KEY` / `SCALEWAY_SECRET_KEY` | Scaleway Object Storage |
 | `SCALEWAY_BUCKET` / `SCALEWAY_REGION` | Bucket et region (fr-par) |
 | `PRONOTE_ENCRYPTION_KEY` | AES-256-GCM pour tokens Pronote |
 | `GLADIA_API_KEY` | Speech-to-Text |
-| `ELEVENLABS_API_KEY` | Text-to-Speech |
 | `REVENUECAT_WEBHOOK_AUTH` | Webhooks RevenueCat (mobile IAP, required en prod) |
 
 ## Architecture
@@ -126,9 +125,9 @@ src/
 │   ├── revenuecat-webhook.*.ts # Webhooks RevenueCat (source de vérité)
 │   └── subscription/           # Status lecture seule (DB + RC)
 ├── services/                   # Business logic
-│   ├── chat/                   # Gemini streaming, summarization, tools
+│   ├── chat/                   # Mistral streaming, summarization, tools
 │   ├── storage/                # Scaleway S3
-│   ├── rag.service.ts          # RAG unifie (semantic + BM25)
+│   ├── rag.service.ts          # RAG unifie (Qdrant hybrid + rerank)
 │   ├── pronote.service.ts      # Pawnote wrapper + SSRF protection
 │   ├── fsrs.service.ts         # Spaced repetition
 │   └── token-quota.service.ts  # Quotas tokens IA

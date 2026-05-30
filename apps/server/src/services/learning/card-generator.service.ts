@@ -227,7 +227,7 @@ export async function generateCards(
   params: CardGenerationParams
 ): Promise<CardGenerationResult | CardGenerationError> {
   const startTime = Date.now();
-  const provider = 'Google Gemini';
+  const provider = 'Mistral';
 
   try {
     logger.info('Starting card generation', {
