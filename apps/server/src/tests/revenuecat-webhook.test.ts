@@ -293,13 +293,45 @@ describe('RevenueCat Webhook Handler', () => {
     });
   });
 
-  describe('Error containment', () => {
-    it('should return 500 when handler throws', async () => {
+  describe('Payload validation', () => {
+    it('should reject a null event with 400 (not 500)', async () => {
       const app = createTestApp();
       const req = makeRCRequest(
         { api_version: '4.0', event: null } as unknown as Record<string, unknown>,
         'Bearer test-secret'
       );
+      const res = await app.handle(req);
+      expect(res.status).toBe(400);
+      const json = await res.json() as { error: string };
+      expect(json.error).toBe('Invalid payload');
+    });
+
+    it('should reject a payload missing required event fields with 400', async () => {
+      const app = createTestApp();
+      const req = makeRCRequest(
+        { api_version: '4.0', event: { type: 'RENEWAL' } } as unknown as Record<string, unknown>,
+        'Bearer test-secret'
+      );
+      const res = await app.handle(req);
+      expect(res.status).toBe(400);
+    });
+
+    it('should reject an unknown event type with 400', async () => {
+      const app = createTestApp();
+      const event = makeRevenueCatEvent('TEST');
+      (event as { event: { type: string } }).event.type = 'NOT_A_REAL_TYPE';
+      const req = makeRCRequest(event, 'Bearer test-secret');
+      const res = await app.handle(req);
+      expect(res.status).toBe(400);
+    });
+
+    it('should still return 500 when a valid event makes a handler throw', async () => {
+      mockMarkProcessed.mockImplementationOnce(async () => {
+        throw new Error('DB down');
+      });
+      const app = createTestApp();
+      const event = makeRevenueCatEvent('TEST');
+      const req = makeRCRequest(event, 'Bearer test-secret');
       const res = await app.handle(req);
       expect(res.status).toBe(500);
     });
