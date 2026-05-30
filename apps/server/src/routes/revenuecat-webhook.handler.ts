@@ -12,8 +12,8 @@ import {
   handleExpiration,
   handleBillingIssue,
   handleUncancellation,
-  type RevenueCatEvent,
 } from './revenuecat-webhook-events';
+import { revenueCatWebhookSchema } from '../schemas/validation';
 
 // Use Bun.env instead of process.env because `bun build --target bun`
 // replaces `process.env.NODE_ENV` literals at build time (see notes in
@@ -69,8 +69,17 @@ export function createRevenueCatWebhookRoutes() {
         }
       }
 
-      const payload = body as RevenueCatEvent;
-      const event = payload.event;
+      const parsed = revenueCatWebhookSchema.safeParse(body);
+      if (!parsed.success) {
+        logger.warn('[RevenueCat Webhook] Malformed payload rejected', {
+          operation: 'revenuecat:webhook:invalid_payload',
+          _error: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
+          severity: 'medium' as const,
+        });
+        set.status = 400;
+        return { error: 'Invalid payload' };
+      }
+      const event = parsed.data.event;
 
       if (Bun.env['NODE_ENV'] === 'production' && event.environment === 'SANDBOX') {
         return { received: true, skipped: 'sandbox' };
