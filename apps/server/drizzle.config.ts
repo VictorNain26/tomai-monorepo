@@ -1,7 +1,6 @@
 import { defineConfig } from 'drizzle-kit';
-import * as dotenv from 'dotenv';
 
-dotenv.config();
+// Bun charge automatiquement les fichiers .env — pas besoin de dotenv.
 
 // Configuration adaptative selon l'environnement d'exécution
 function getDatabaseUrl(): string {
