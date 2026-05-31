@@ -13,9 +13,9 @@ import { studySessions } from './learning.schema';
 export const fileStatusEnum = pgEnum('file_status', [
   'pending',    // Upload en cours (presigned URL généré)
   'uploaded',   // Fichier uploadé dans Scaleway
-  'processing', // Analyse en cours (Gemini)
+  'processing', // Analyse en cours
   'ready',      // Prêt à utiliser
-  'expired',    // Gemini URI expiré (48h)
+  'expired',    // Référence expirée
   'deleted'     // Supprimé
 ]);
 
@@ -29,7 +29,7 @@ export type FileStatus = (typeof fileStatusEnum.enumValues)[number];
 /**
  * Table files - Métadonnées fichiers uploadés
  * Stockage: Scaleway Object Storage (RGPD France)
- * Analyse: Gemini Files API (cache 48h)
+ * Analyse: multimodal Mistral (base64 inline, pas de cache fichier externe)
  */
 export const files = pgTable('files', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -44,10 +44,6 @@ export const files = pgTable('files', {
   storageKey: varchar('storage_key', { length: 500 }).notNull(), // Clé S3 dans le bucket
   storageBucket: varchar('storage_bucket', { length: 100 }).notNull(),
   storageRegion: varchar('storage_region', { length: 20 }).notNull().default('fr-par'),
-
-  // Gemini Files API (cache 48h pour multimodal)
-  geminiFileUri: varchar('gemini_file_uri', { length: 500 }), // files/xxx format
-  geminiExpiresAt: timestamp('gemini_expires_at', { withTimezone: true }),
 
   // Contexte éducatif (résultat d'analyse)
   educationalContext: jsonb('educational_context').default(sql`'{}'::jsonb`),
