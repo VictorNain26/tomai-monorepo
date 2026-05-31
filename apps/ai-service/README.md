@@ -87,8 +87,20 @@ Readiness probe utilisée par Koyeb.
 | `RERANK_MODEL` | `BAAI/bge-reranker-v2-m3` | HF model id pour rerank |
 | `USE_FP16` | `auto` | `auto`/`true`/`false`. `auto` = True si CUDA |
 | `HF_HOME` | `/data/hf_cache` | Cache modèles HF (persistant si volume monté) |
-| `API_TOKEN` | (vide) | Si défini, exige `Authorization: Bearer <token>` |
+| `ENVIRONMENT` | `development` | `production` active le fail-fast au boot (cf. ci-dessous) |
+| `API_TOKEN` | (vide) | Si défini, exige `Authorization: Bearer <token>` (comparaison constant-time). **Obligatoire en production.** |
 | `PORT` | `8000` | Port d'écoute |
+
+### Sécurité — fail-fast en production
+
+Quand `ENVIRONMENT=production`, le service **refuse de démarrer** si `API_TOKEN`
+est absent ou vide (`RuntimeError` au boot, comme le fail-fast secrets du backend
+Bun). Cela évite d'exposer `/embed` et `/rerank` publiquement à cause d'une
+variable oubliée — on ne se repose pas uniquement sur le VPC privé Koyeb.
+
+En dev (`ENVIRONMENT` non défini ou ≠ `production`), `API_TOKEN` reste optionnel :
+absent = endpoints publics, pratique pour le smoke test local. `/health` reste
+toujours ouvert (readiness probe Koyeb).
 
 ## Déploiement Koyeb
 

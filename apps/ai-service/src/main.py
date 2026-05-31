@@ -12,11 +12,12 @@ Endpoints :
 
 from __future__ import annotations
 
+import hmac
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 
-from .config import API_TOKEN, EMBED_MODEL, RERANK_MODEL
+from .config import API_TOKEN, EMBED_MODEL, RERANK_MODEL, validate_config
 from .embed import encode as embed_encode
 from .embed import is_loaded as embed_loaded
 from .embed import load_model as embed_load
@@ -34,7 +35,8 @@ from .schemas import (
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """Précharge les modèles au startup (singleton)."""
+    """Valide la config puis précharge les modèles au startup (singleton)."""
+    validate_config()
     embed_load()
     rerank_load()
     yield
@@ -49,11 +51,15 @@ app = FastAPI(
 
 
 def _require_token(authorization: str | None = Header(default=None)) -> None:
-    """Auth bearer optionnelle. Si API_TOKEN non défini, endpoints publics."""
+    """Auth bearer optionnelle. Si API_TOKEN non défini, endpoints publics.
+
+    Comparaison constant-time (`hmac.compare_digest`) pour ne pas leaker le
+    token via une timing attack — même standard que `timingSafeEqual` côté Bun.
+    """
     if not API_TOKEN:
         return
     expected = f"Bearer {API_TOKEN}"
-    if authorization != expected:
+    if authorization is None or not hmac.compare_digest(authorization, expected):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
