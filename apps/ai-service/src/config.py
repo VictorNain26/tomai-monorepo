@@ -23,10 +23,33 @@ USE_FP16 = os.getenv("USE_FP16", "auto").lower()
 # Sur Koyeb sans volume, le modèle est re-téléchargé à chaque deploy.
 HF_HOME = os.getenv("HF_HOME", "/data/hf_cache")
 
-# Token d'authentification HTTP optionnel — `Authorization: Bearer <token>`
-# attendu si défini. Sinon endpoints publics (recommandé seulement en interne
-# privé, ex: VPC Koyeb).
+# Environnement de déploiement. `production` active le fail-fast au boot
+# (cf. validate_config). Toute valeur autre que `production` = dev/test permissif.
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+
+# Token d'authentification HTTP — `Authorization: Bearer <token>` attendu si
+# défini. En production il est OBLIGATOIRE (fail-fast au boot). En dev, absent
+# = endpoints publics (pratique pour le smoke test local).
 API_TOKEN = os.getenv("API_TOKEN", "")
 
 # Port FastAPI (Koyeb expose via $PORT)
 PORT = int(os.getenv("PORT", "8000"))
+
+
+def is_production() -> bool:
+    return ENVIRONMENT == "production"
+
+
+def validate_config() -> None:
+    """Fail-fast au boot : en production, refuse de démarrer sans API_TOKEN.
+
+    Aligné sur le backend Bun (`environment.config.ts`) qui fail-fast sur les
+    secrets prod manquants. Évite d'exposer /embed et /rerank publiquement par
+    une simple variable d'env oubliée.
+    """
+    if is_production() and not API_TOKEN:
+        raise RuntimeError(
+            "API_TOKEN is required in production (ENVIRONMENT=production) but is "
+            "missing or empty. Set API_TOKEN to protect /embed and /rerank, or "
+            "set ENVIRONMENT to a non-production value for local development."
+        )
