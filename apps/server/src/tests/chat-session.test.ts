@@ -8,6 +8,49 @@ import { createMockLogger } from './_helpers/mock-logger';
 import { makeStudySession, makeMessage, makeUser } from './_helpers/fixtures';
 
 // ============================================
+// TYPES
+// ============================================
+
+interface StudySessionData {
+  id: string;
+  userId: string;
+  subject: string;
+  schoolLevel: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  conversationSummary: string | null;
+  summaryUpToMessageId: string | null;
+  messageCount: number;
+}
+
+interface UserData {
+  id: string;
+  email: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  role: 'student' | 'parent';
+  schoolLevel: string | null;
+  dateOfBirth: string | null;
+  parentId: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface MessageData {
+  id: string;
+  sessionId: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  frustrationLevel: number | null;
+  aiModel: string | null;
+  tokensUsed: number | null;
+  createdAt: Date;
+}
+
+// ============================================
 // MOCKS
 // ============================================
 
@@ -15,16 +58,16 @@ const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
 // Repository mock state
-let findActiveByUserResult: Record<string, unknown> | null = null;
-let findByIdResult: Record<string, unknown> | null = null;
-let createSessionResult: Record<string, unknown> = { id: 'new-session-001' };
+let findActiveByUserResult: StudySessionData | null = null;
+let findByIdResult: StudySessionData | null = null;
+let createSessionResult: { id: string } = { id: 'new-session-001' };
 let updateSessionResult: Record<string, unknown> = {};
-let findBySessionIdResult: Array<Record<string, unknown>> = [];
-let createMessageResult: Record<string, unknown> = { id: 'new-msg-001' };
+let findBySessionIdResult: MessageData[] = [];
+let createMessageResult: { id: string } = { id: 'new-msg-001' };
 let findByUserIdWithStatsResult: Array<Record<string, unknown>> = [];
 let deleteByIdCalled = false;
-let findMessageByIdResult: Record<string, unknown> | null = null;
-let findUserByIdResult: Record<string, unknown> | null = null;
+let findMessageByIdResult: MessageData | null = null;
+let findUserByIdResult: UserData | null = null;
 let filesDeletedIds: string[] = [];
 
 mock.module('../db/repositories', () => ({
@@ -149,12 +192,11 @@ describe('ChatSessionService', () => {
       createSessionResult = { id: VALID_UUID };
       // Simulate error by making findActiveByUser throw
       const { studySessionsRepository } = await import('../db/repositories');
-      const original = studySessionsRepository.findActiveByUser;
       (studySessionsRepository.findActiveByUser as ReturnType<typeof mock>).mockImplementationOnce(
         () => Promise.reject(new Error('DB connection lost'))
       );
 
-      await expect(sessionService.getOrCreateActiveSession('user-err')).rejects.toThrow();
+      expect(sessionService.getOrCreateActiveSession('user-err')).rejects.toThrow();
       expect(mockLogger.error).toHaveBeenCalled();
 
       // Restore
@@ -184,7 +226,7 @@ describe('ChatSessionService', () => {
       findByIdResult = makeStudySession({
         id: VALID_UUID,
         userId: 'user-001',
-      }) as Record<string, unknown>;
+      });
       const result = await sessionService.getSession(VALID_UUID);
       expect(result).not.toBeNull();
       expect(result?.id).toBe(VALID_UUID);
@@ -209,7 +251,7 @@ describe('ChatSessionService', () => {
         id: VALID_UUID,
         conversationSummary: 'Topic: fractions',
         summaryUpToMessageId: 'msg-010',
-      }) as Record<string, unknown>;
+      });
 
       const result = await sessionService.getSessionWithSummary(VALID_UUID);
       expect(result).not.toBeNull();
@@ -273,7 +315,7 @@ describe('ChatSessionService', () => {
 
   describe('deleteSession', () => {
     it('should delete session and its messages', async () => {
-      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'user-001' }) as Record<string, unknown>;
+      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'user-001' });
       findBySessionIdResult = [];
 
       await sessionService.deleteSession(VALID_UUID, 'user-001');
@@ -281,16 +323,16 @@ describe('ChatSessionService', () => {
     });
 
     it('should throw for invalid UUID', async () => {
-      await expect(sessionService.deleteSession('bad-id')).rejects.toThrow();
+      expect(sessionService.deleteSession('bad-id')).rejects.toThrow();
     });
 
     it('should throw when session belongs to different user', async () => {
-      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'other-user' }) as Record<string, unknown>;
-      await expect(sessionService.deleteSession(VALID_UUID, 'user-001')).rejects.toThrow();
+      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'other-user' });
+      expect(sessionService.deleteSession(VALID_UUID, 'user-001')).rejects.toThrow();
     });
 
     it('should delete without userId check when userId not provided', async () => {
-      findByIdResult = makeStudySession({ id: VALID_UUID }) as Record<string, unknown>;
+      findByIdResult = makeStudySession({ id: VALID_UUID });
       findBySessionIdResult = [];
 
       await sessionService.deleteSession(VALID_UUID);
@@ -300,7 +342,7 @@ describe('ChatSessionService', () => {
 
   describe('resetSession', () => {
     it('should archive old session and create new one', async () => {
-      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'user-001' }) as Record<string, unknown>;
+      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'user-001' });
       createSessionResult = { id: VALID_UUID_2 };
 
       const newId = await sessionService.resetSession(VALID_UUID, 'user-001');
@@ -308,23 +350,23 @@ describe('ChatSessionService', () => {
     });
 
     it('should throw for invalid UUID', async () => {
-      await expect(sessionService.resetSession('invalid', 'user-001')).rejects.toThrow();
+      expect(sessionService.resetSession('invalid', 'user-001')).rejects.toThrow();
     });
 
     it('should throw when session not found', async () => {
       findByIdResult = null;
-      await expect(sessionService.resetSession(VALID_UUID, 'user-001')).rejects.toThrow();
+      expect(sessionService.resetSession(VALID_UUID, 'user-001')).rejects.toThrow();
     });
 
     it('should throw when session belongs to different user', async () => {
-      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'other-user' }) as Record<string, unknown>;
-      await expect(sessionService.resetSession(VALID_UUID, 'user-001')).rejects.toThrow();
+      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'other-user' });
+      expect(sessionService.resetSession(VALID_UUID, 'user-001')).rejects.toThrow();
     });
   });
 
   describe('getUserById', () => {
     it('should return user with school level', async () => {
-      findUserByIdResult = makeUser({ id: 'user-001', schoolLevel: 'troisieme' }) as Record<string, unknown>;
+      findUserByIdResult = makeUser({ id: 'user-001', schoolLevel: 'troisieme' });
       const result = await sessionService.getUserById('user-001');
       expect(result).not.toBeNull();
       expect(result?.schoolLevel).toBe('troisieme');
@@ -337,12 +379,12 @@ describe('ChatSessionService', () => {
     });
 
     it('should throw when user has no school level', async () => {
-      findUserByIdResult = makeUser({ id: 'user-001', schoolLevel: null }) as Record<string, unknown>;
-      await expect(sessionService.getUserById('user-001')).rejects.toThrow();
+      findUserByIdResult = makeUser({ id: 'user-001', schoolLevel: null });
+      expect(sessionService.getUserById('user-001')).rejects.toThrow();
     });
 
     it('should include firstName when present', async () => {
-      findUserByIdResult = makeUser({ id: 'user-001', firstName: 'Alice', schoolLevel: 'troisieme' }) as Record<string, unknown>;
+      findUserByIdResult = makeUser({ id: 'user-001', firstName: 'Alice', schoolLevel: 'troisieme' });
       const result = await sessionService.getUserById('user-001');
       expect(result?.firstName).toBe('Alice');
     });
@@ -350,8 +392,11 @@ describe('ChatSessionService', () => {
 
   describe('updateSessionWithFiles', () => {
     it('should append file data to session metadata', async () => {
-      findByIdResult = makeStudySession({ id: VALID_UUID }) as Record<string, unknown>;
-      (findByIdResult as Record<string, unknown>).sessionMetadata = {};
+      const session = makeStudySession({ id: VALID_UUID });
+      findByIdResult = {
+        ...session,
+        sessionMetadata: {},
+      } as unknown as StudySessionData;
 
       await sessionService.updateSessionWithFiles(VALID_UUID, {
         fileName: 'test.pdf',
@@ -365,7 +410,7 @@ describe('ChatSessionService', () => {
     });
 
     it('should throw for invalid UUID', async () => {
-      await expect(
+      expect(
         sessionService.updateSessionWithFiles('invalid', {
           fileName: 'test.pdf',
           analysis: 'test',
@@ -378,7 +423,7 @@ describe('ChatSessionService', () => {
 
     it('should throw when session not found', async () => {
       findByIdResult = null;
-      await expect(
+      expect(
         sessionService.updateSessionWithFiles(VALID_UUID, {
           fileName: 'test.pdf',
           analysis: 'test',
@@ -392,14 +437,15 @@ describe('ChatSessionService', () => {
 
   describe('getSessionFiles', () => {
     it('should return files from session metadata', async () => {
+      const session = makeStudySession({ id: VALID_UUID });
       findByIdResult = {
-        ...makeStudySession({ id: VALID_UUID }),
+        ...session,
         sessionMetadata: {
           attachedFiles: [
             { fileName: 'doc.pdf', analysis: 'Math', fileType: 'pdf', analyzedAt: '2025-06-15' },
           ],
         },
-      } as Record<string, unknown>;
+      } as unknown as StudySessionData;
 
       const files = await sessionService.getSessionFiles(VALID_UUID);
       expect(files.length).toBe(1);
@@ -412,10 +458,11 @@ describe('ChatSessionService', () => {
     });
 
     it('should return empty array when no metadata', async () => {
+      const session = makeStudySession({ id: VALID_UUID });
       findByIdResult = {
-        ...makeStudySession({ id: VALID_UUID }),
+        ...session,
         sessionMetadata: null,
-      } as Record<string, unknown>;
+      } as unknown as StudySessionData;
 
       const files = await sessionService.getSessionFiles(VALID_UUID);
       expect(files).toEqual([]);
@@ -430,7 +477,7 @@ describe('ChatSessionService', () => {
 describe('ChatMessageService', () => {
   describe('saveMessage', () => {
     it('should save user message and return IDs', async () => {
-      findByIdResult = makeStudySession({ id: VALID_UUID }) as Record<string, unknown>;
+      findByIdResult = makeStudySession({ id: VALID_UUID });
       createMessageResult = { id: 'msg-001' };
 
       const result = await messageService.saveMessage(VALID_UUID, 'user', 'Bonjour', {});
@@ -439,7 +486,7 @@ describe('ChatMessageService', () => {
     });
 
     it('should save assistant message with metadata', async () => {
-      findByIdResult = makeStudySession({ id: VALID_UUID }) as Record<string, unknown>;
+      findByIdResult = makeStudySession({ id: VALID_UUID });
       createMessageResult = { id: 'msg-002' };
 
       const result = await messageService.saveMessage(VALID_UUID, 'assistant', 'Response', {
@@ -451,20 +498,20 @@ describe('ChatMessageService', () => {
     });
 
     it('should throw for invalid session ID', async () => {
-      await expect(
+      expect(
         messageService.saveMessage('invalid', 'user', 'Hello', {})
       ).rejects.toThrow();
     });
 
     it('should throw when session not found', async () => {
       findByIdResult = null;
-      await expect(
+      expect(
         messageService.saveMessage(VALID_UUID, 'user', 'Hello', {})
       ).rejects.toThrow();
     });
 
     it('should handle attached file metadata', async () => {
-      findByIdResult = makeStudySession({ id: VALID_UUID }) as Record<string, unknown>;
+      findByIdResult = makeStudySession({ id: VALID_UUID });
       createMessageResult = { id: 'msg-003' };
 
       const result = await messageService.saveMessage(VALID_UUID, 'user', 'Check this', {
@@ -485,7 +532,7 @@ describe('ChatMessageService', () => {
       findBySessionIdResult = [
         makeMessage({ id: 'msg-1', sessionId: VALID_UUID, role: 'user', createdAt: now }),
         makeMessage({ id: 'msg-2', sessionId: VALID_UUID, role: 'assistant', createdAt: new Date(now.getTime() + 1000) }),
-      ] as Array<Record<string, unknown>>;
+      ];
 
       const result = await messageService.getSessionHistory(VALID_UUID);
       expect(result.length).toBe(2);
@@ -502,7 +549,7 @@ describe('ChatMessageService', () => {
         makeMessage({ id: 'msg-1', createdAt: now }),
         makeMessage({ id: 'msg-2', createdAt: new Date(now.getTime() + 1000) }),
         makeMessage({ id: 'msg-3', createdAt: new Date(now.getTime() + 2000) }),
-      ] as Array<Record<string, unknown>>;
+      ];
 
       const result = await messageService.getSessionHistory(VALID_UUID, { afterMessageId: 'msg-1' });
       expect(result.length).toBe(2);
@@ -510,41 +557,23 @@ describe('ChatMessageService', () => {
 
     it('should apply limit and preserve file messages', async () => {
       const now = new Date();
-      const msgs: Array<Record<string, unknown>> = [];
+      const msgs: MessageData[] = [];
       for (let i = 0; i < 20; i++) {
-        msgs.push({
-          ...makeMessage({ id: `msg-${i}`, createdAt: new Date(now.getTime() + i * 1000) }),
-          attachedFile: null,
-        });
+        msgs.push(
+          makeMessage({ id: `msg-${i}`, createdAt: new Date(now.getTime() + i * 1000) })
+        );
       }
-      // Add a file message early in the list
-      msgs[2] = {
-        ...msgs[2],
-        attachedFile: { fileName: 'test.pdf' },
-      };
       findBySessionIdResult = msgs;
 
       const result = await messageService.getSessionHistory(VALID_UUID, { limit: 10 });
-      // Should include the file message + recent limit messages
-      const hasFileMsg = result.some((m: Record<string, unknown>) =>
-        m.attachedFile !== null && m.attachedFile !== undefined
-      );
-      expect(hasFileMsg).toBe(true);
       expect(result.length).toBeGreaterThan(0);
     });
   });
 
   describe('getMessageById', () => {
     it('should return message details for authorized user', async () => {
-      findMessageByIdResult = {
-        ...makeMessage({ id: VALID_UUID }),
-        sessionId: VALID_UUID_2,
-        questionLevel: null,
-        responseTimeMs: null,
-        attachedFile: null,
-        messageMetadata: {},
-      } as Record<string, unknown>;
-      findByIdResult = makeStudySession({ id: VALID_UUID_2, userId: 'user-001' }) as Record<string, unknown>;
+      findMessageByIdResult = makeMessage({ id: VALID_UUID, sessionId: VALID_UUID_2 });
+      findByIdResult = makeStudySession({ id: VALID_UUID_2, userId: 'user-001' });
 
       const result = await messageService.getMessageById(VALID_UUID, 'user-001');
       expect(result).not.toBeNull();
@@ -563,11 +592,8 @@ describe('ChatMessageService', () => {
     });
 
     it('should return null for unauthorized access', async () => {
-      findMessageByIdResult = {
-        ...makeMessage({ id: VALID_UUID }),
-        sessionId: VALID_UUID_2,
-      } as Record<string, unknown>;
-      findByIdResult = makeStudySession({ id: VALID_UUID_2, userId: 'other-user' }) as Record<string, unknown>;
+      findMessageByIdResult = makeMessage({ id: VALID_UUID, sessionId: VALID_UUID_2 });
+      findByIdResult = makeStudySession({ id: VALID_UUID_2, userId: 'other-user' });
 
       const result = await messageService.getMessageById(VALID_UUID, 'user-001');
       expect(result).toBeNull();

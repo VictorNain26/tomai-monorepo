@@ -4,7 +4,8 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { 
+import { z } from 'zod';
+import {
   validateSchema,
   registerSchema,
   loginSchema,
@@ -15,8 +16,20 @@ import {
   emailSchema,
   passwordSchema,
   usernameSchema,
-  schoolLevelSchema
+  schoolLevelSchema,
+  type ValidationResult,
+  type ValidationSuccess,
+  type ValidationError,
 } from '../schemas/validation';
+
+// Assertion helpers narrowing the discriminated union so `.data` / `._error`
+// are type-safe after the check (tests are now typechecked, see tsconfig).
+function expectSuccess<T>(r: ValidationResult<T>): asserts r is ValidationSuccess<T> {
+  if (!r.success) throw new Error(`Expected success, got error: ${r._error}`);
+}
+function expectFailure<T>(r: ValidationResult<T>): asserts r is ValidationError {
+  if (r.success) throw new Error('Expected failure, got success');
+}
 
 describe('Validation Schemas - Unit Tests', () => {
   
@@ -27,26 +40,26 @@ describe('Validation Schemas - Unit Tests', () => {
   describe('emailSchema', () => {
     it('should validate valid emails', () => {
       const result = validateSchema(emailSchema, 'parent@tomai.fr');
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data).toBe('parent@tomai.fr');
     });
     
     it('should normalize email to lowercase', () => {
       const result = validateSchema(emailSchema, 'PARENT@TOMAI.FR');
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data).toBe('parent@tomai.fr');
     });
     
     it('should reject invalid email formats', () => {
       const result = validateSchema(emailSchema, 'invalid-email');
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('Format email invalide');
     });
     
     it('should reject emails too long', () => {
       const longEmail = 'a'.repeat(250) + '@example.com';
       const result = validateSchema(emailSchema, longEmail);
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('Email trop long');
     });
   });
@@ -54,19 +67,19 @@ describe('Validation Schemas - Unit Tests', () => {
   describe('passwordSchema', () => {
     it('should validate strong passwords', () => {
       const result = validateSchema(passwordSchema, 'Password123');
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data).toBe('Password123');
     });
     
     it('should reject weak passwords', () => {
       const result = validateSchema(passwordSchema, 'weak');
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('Mot de passe minimum 8 caractères');
     });
     
     it('should require uppercase, lowercase, and number', () => {
       const result = validateSchema(passwordSchema, 'alllowercase123');
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('minuscule, majuscule, chiffre');
     });
   });
@@ -74,37 +87,37 @@ describe('Validation Schemas - Unit Tests', () => {
   describe('usernameSchema', () => {
     it('should validate valid usernames', () => {
       const result = validateSchema(usernameSchema, 'eleve_cp');
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data).toBe('eleve_cp');
     });
     
     it('should normalize to lowercase', () => {
       const result = validateSchema(usernameSchema, 'ELEVE_CP');
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data).toBe('eleve_cp');
     });
     
     it('should reject invalid characters', () => {
       const result = validateSchema(usernameSchema, 'élève@cp');
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('lettres, chiffres, points, underscores');
     });
   });
 
   describe('schoolLevelSchema', () => {
     it('should validate all French education levels', () => {
-      const levels = ['cp', 'ce1', 'ce2', 'cm1', 'cm2', 'sixieme', 'cinquieme', 'quatrieme', 'troisieme', 'seconde', 'premiere', 'terminale'];
+      const levels: readonly z.infer<typeof schoolLevelSchema>[] = ['cp', 'ce1', 'ce2', 'cm1', 'cm2', 'sixieme', 'cinquieme', 'quatrieme', 'troisieme', 'seconde', 'premiere', 'terminale'];
 
       levels.forEach(level => {
         const result = validateSchema(schoolLevelSchema, level);
-        expect(result.success).toBe(true);
+        expectSuccess(result);
         expect(result.data).toBe(level);
       });
     });
     
     it('should reject invalid school levels', () => {
       const result = validateSchema(schoolLevelSchema, 'CM3');
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('Niveau scolaire invalide');
     });
   });
@@ -123,7 +136,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(registerSchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.email).toBe('parent@example.com');
       expect(result.data.firstName).toBe('Marie');
     });
@@ -135,7 +148,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(registerSchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.firstName).toBeUndefined();
     });
     
@@ -145,7 +158,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(registerSchema, invalidData);
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('email');
     });
   });
@@ -158,7 +171,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(loginSchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.email).toBe('parent@example.com');
     });
     
@@ -169,7 +182,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(loginSchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.username).toBe('eleve_cp');
     });
     
@@ -179,7 +192,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(loginSchema, invalidData);
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('Email ou username requis');
     });
   });
@@ -195,7 +208,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(chatSessionSchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.subject).toBe('Mathématiques');
     });
     
@@ -205,7 +218,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(chatSessionSchema, invalidData);
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('Matière requise');
     });
   });
@@ -219,7 +232,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(chatMessageSchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.content).toBe('Comment résoudre 2x + 3 = 7 ?');
       expect(result.data.sessionId).toBe('session-123');
     });
@@ -231,7 +244,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(chatMessageSchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.sessionId).toBeUndefined();
     });
     
@@ -242,7 +255,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(chatMessageSchema, invalidData);
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('Message maximum 2000 caractères');
     });
   });
@@ -256,7 +269,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(streamChatQuerySchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.message).toBe('Question en streaming');
     });
     
@@ -267,7 +280,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(streamChatQuerySchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.sessionId).toBeUndefined();
     });
   });
@@ -288,7 +301,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(createChildSchema, validData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
       expect(result.data.firstName).toBe('Lucas');
       expect(result.data.schoolLevel).toBe('ce2');
       expect(result.data.dateOfBirth).toBe('2015-03-15');
@@ -305,7 +318,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(createChildSchema, invalidData);
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('Âge doit être entre 5 et 19 ans');
     });
     
@@ -320,7 +333,7 @@ describe('Validation Schemas - Unit Tests', () => {
       };
       
       const result = validateSchema(createChildSchema, invalidData);
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('Âge doit être entre 5 et 19 ans');
     });
   });
@@ -346,7 +359,7 @@ describe('Validation Schemas - Unit Tests', () => {
         password: 'weak'
       });
       
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(result._error).toContain('email');
       expect(result._error).toContain('password');
     });
@@ -355,7 +368,7 @@ describe('Validation Schemas - Unit Tests', () => {
       // Passer null pour déclencher une erreur non-Zod
       const result = validateSchema(emailSchema, null);
       
-      expect(result.success).toBe(false);
+      expectFailure(result);
       expect(typeof result._error).toBe('string');
     });
   });

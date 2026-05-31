@@ -26,15 +26,17 @@ mock.module('../services/rag.service', () => ({
 }));
 
 // Cognitive profile — this is what we actually care about.
-let existingProfile: {
+interface Profile {
   strengths: string[] | null;
   weaknesses: string[] | null;
   preferredStyle: string | null;
   observations: unknown[];
   lastUpdatedByAgent: Date | null;
-} | null = null;
+}
 
-const updateProfileSpy = mock(async (_userId: string, _updates: Record<string, unknown>) => undefined);
+let existingProfile: Profile | null = null;
+
+const updateProfileSpy = mock(async () => undefined);
 const getProfileSpy = mock(async () => existingProfile);
 
 mock.module('../services/cognitive-profile.service', () => ({
@@ -87,7 +89,6 @@ const baseContext = {
   userRole: 'student' as const,
 };
 
-type Profile = NonNullable<typeof existingProfile>;
 const makeProfile = (overrides: Partial<Profile> = {}): Profile => ({
   strengths: [],
   weaknesses: [],
@@ -155,7 +156,7 @@ describe('executeUpdateProfile()', () => {
       }, baseContext) as Record<string, unknown>;
       expect(result.updated).toBe(true);
       expect(updateProfileSpy).toHaveBeenCalledTimes(1);
-      const updates = updateProfileSpy.mock.calls[0]?.[1] as { strengths?: string[] };
+      const updates = (updateProfileSpy.mock.calls[0] as unknown[])[1] as { strengths?: string[] };
       expect(updates.strengths).toEqual(['calcul mental', 'logique', 'geometrie']);
     });
 
@@ -164,7 +165,7 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'Confirme bon niveau', subject: 'mathematiques', strength: 'calcul mental',
       }, baseContext);
-      const updates = updateProfileSpy.mock.calls[0]?.[1] as { strengths?: string[] };
+      const updates = (updateProfileSpy.mock.calls[0] as unknown[])[1] as { strengths?: string[] };
       expect(updates.strengths).toEqual(['calcul mental', 'logique']);
     });
 
@@ -173,7 +174,7 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'Difficulté sur aires', subject: 'mathematiques', weakness: 'aires',
       }, baseContext);
-      const updates = updateProfileSpy.mock.calls[0]?.[1] as { weaknesses?: string[] };
+      const updates = (updateProfileSpy.mock.calls[0] as unknown[])[1] as { weaknesses?: string[] };
       expect(updates.weaknesses).toEqual(['fractions', 'aires']);
     });
 
@@ -184,7 +185,7 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'Nouvelle force', subject: 'mathematiques', strength: 'brand-new',
       }, baseContext);
-      const updates = updateProfileSpy.mock.calls[0]?.[1] as { strengths?: string[] };
+      const updates = (updateProfileSpy.mock.calls[0] as unknown[])[1] as { strengths?: string[] };
       expect(updates.strengths).toHaveLength(10);
       expect(updates.strengths?.[9]).toBe('brand-new');
       expect(updates.strengths?.includes('strength-0')).toBe(false);
@@ -195,7 +196,7 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'Juste une obs générale', subject: 'francais',
       }, baseContext);
-      const updates = updateProfileSpy.mock.calls[0]?.[1] as Record<string, unknown>;
+      const updates = (updateProfileSpy.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
       expect('strengths' in updates).toBe(false);
       expect('weaknesses' in updates).toBe(false);
     });
@@ -205,8 +206,8 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'Premier échange', subject: 'mathematiques', strength: 'curiosite',
       }, baseContext);
-      const updates = updateProfileSpy.mock.calls[0]?.[1] as { strengths?: string[] };
-      expect(updates.strengths).toEqual(['curiosite']);
+      const updates = ((updateProfileSpy.mock.calls[0] as unknown[]) || [])[1] as { strengths?: string[] };
+      expect(updates?.strengths).toEqual(['curiosite']);
     });
 
     it('should forward preferredStyle when provided', async () => {
@@ -214,8 +215,8 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'Préfère les diagrammes', subject: 'mathematiques', preferredStyle: 'visual',
       }, baseContext);
-      const updates = updateProfileSpy.mock.calls[0]?.[1] as { preferredStyle?: string };
-      expect(updates.preferredStyle).toBe('visual');
+      const updates = ((updateProfileSpy.mock.calls[0] as unknown[]) || [])[1] as { preferredStyle?: string };
+      expect(updates?.preferredStyle).toBe('visual');
     });
 
     it('should truncate observation at 250 chars', async () => {
@@ -223,8 +224,8 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'x'.repeat(500), subject: 'mathematiques',
       }, baseContext);
-      const updates = updateProfileSpy.mock.calls[0]?.[1] as { observation?: string };
-      expect(updates.observation?.length).toBeLessThanOrEqual(250);
+      const updates = ((updateProfileSpy.mock.calls[0] as unknown[]) || [])[1] as { observation?: string };
+      expect(updates?.observation?.length).toBeLessThanOrEqual(250);
     });
   });
 });

@@ -64,7 +64,7 @@ describe('BillingService', () => {
         source: { provider: 'revenuecat', customerId: 'rc-user-1', productId: 'prod_monthly' },
       });
       expect(mockInsert).toHaveBeenCalledTimes(1);
-      const values = (mockInsertValues.mock.calls[0]?.[0] ?? {}) as Record<string, unknown>;
+      const values = ((mockInsertValues.mock.calls[0] as unknown[])[0] ?? {}) as Record<string, unknown>;
       expect(values.revenuecatCustomerId).toBe('rc-user-1');
       expect(values.revenuecatSubscriptionId).toBe('prod_monthly');
       expect(values.billingStatus).toBe('active');

@@ -5,7 +5,27 @@
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
-import { makeUser, makeParentUser } from './_helpers/fixtures';
+import { makeUser } from './_helpers/fixtures';
+
+// ============================================
+// TYPES
+// ============================================
+
+interface UserData {
+  id: string;
+  email: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  role: 'student' | 'parent';
+  schoolLevel: string | null;
+  dateOfBirth: string | null;
+  parentId: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // ============================================
 // MOCKS
@@ -15,11 +35,11 @@ const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
 // Users repository mock
-let childrenResult: Array<Record<string, unknown>> = [];
-let userByUsername: Record<string, unknown> | null = null;
-let updateResult: Record<string, unknown> | null = null;
+let childrenResult: UserData[] = [];
+let userByUsername: UserData | null = null;
+let updateResult: UserData | null = null;
 let deleteResult = true;
-let findByIdResult: Record<string, unknown> | null = null;
+let findByIdResult: UserData | null = null;
 
 mock.module('../db/repositories', () => ({
   usersRepository: {
@@ -157,7 +177,7 @@ describe('Parent Service', () => {
     });
 
     it('should throw Access denied for non-child', async () => {
-      await expect(
+      expect(
         parentService.getStudentSessions('parent-001', 'stranger-001')
       ).rejects.toThrow();
     });
@@ -186,7 +206,7 @@ describe('Parent Service', () => {
 
     it('should throw on duplicate username', async () => {
       userByUsername = makeUser({ username: 'taken' });
-      await expect(
+      expect(
         parentService.createChild('parent-001', {
           firstName: 'Test',
           lastName: 'User',
@@ -208,7 +228,7 @@ describe('Parent Service', () => {
 
     it('should throw for non-child', async () => {
       childrenResult = [];
-      await expect(
+      expect(
         parentService.deleteChild('parent-001', 'stranger')
       ).rejects.toThrow();
     });
@@ -258,14 +278,14 @@ describe('Parent Service', () => {
 
     it('should throw Access denied for non-child', async () => {
       childrenResult = [];
-      await expect(
+      expect(
         parentService.updateChild('parent-001', 'stranger', { firstName: 'Hack' })
       ).rejects.toThrow();
     });
 
     it('should throw when update returns null', async () => {
       updateResult = null;
-      await expect(
+      expect(
         parentService.updateChild('parent-001', 'child-001', { firstName: 'Test' })
       ).rejects.toThrow();
     });

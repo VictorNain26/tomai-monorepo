@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import { State, Rating } from 'ts-fsrs';
+import type { FSRSData } from '../db/schema.js';
 
 // ============================================
 // MOCKS
@@ -40,8 +41,8 @@ mock.module('../db/connection', () => ({
           // where().orderBy()       (getDueCards cards query)
           const data = nextSelectResult();
           const p = Promise.resolve(data);
-          (p as Record<string, unknown>).limit = mock(() => p);
-          (p as Record<string, unknown>).orderBy = mock(() => p);
+          (p as unknown as Record<string, unknown>).limit = mock(() => p);
+          (p as unknown as Record<string, unknown>).orderBy = mock(() => p);
           return p;
         }),
       })),
@@ -79,7 +80,7 @@ function makeCardRow(
   id: string,
   deckId: string,
   position: number,
-  fsrsData: Record<string, unknown> | null,
+  fsrsData: FSRSData | null,
   cardType = 'basic'
 ) {
   return { id, deckId, position, fsrsData, cardType, content: { front: 'Q', back: 'A' } };
@@ -212,7 +213,7 @@ describe('FSRS Service', () => {
 
     it('should throw for non-existent card', async () => {
       selectQueue = [[]]; // Empty result
-      await expect(
+      expect(
         fsrsService.reviewCard('card-missing', Rating.Good, 'troisieme')
       ).rejects.toThrow('Card not found');
     });
@@ -317,7 +318,7 @@ describe('FSRS Service', () => {
     it('should throw for non-existent deck', async () => {
       selectQueue = [[]]; // No deck found
 
-      await expect(
+      expect(
         fsrsService.getDueCards({ deckId: 'bad-deck', userId: 'user-1' })
       ).rejects.toThrow('Deck not found');
     });

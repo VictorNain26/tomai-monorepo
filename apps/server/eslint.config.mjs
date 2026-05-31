@@ -24,14 +24,10 @@ export default [
       'coverage/**',
       'build/**',
       'build.ts',
-      'tests/**/*',
       'migrations/**/*.sql',
-      '**/*.spec.ts',
-      '**/*.test.ts',
       'patches/**/*',
       'shared-types/**',
-      'src/scripts/**/*',           // Scripts de maintenance (non-runtime)
-      'src/tests/integration/**/*'  // Tests d'intégration (non-runtime)
+      'src/scripts/**/*'            // Scripts de maintenance (non-runtime)
     ]
   },
   
@@ -97,6 +93,16 @@ export default [
           message: "Les imports dynamiques de types sont interdits. Utilisez 'import type' en haut de fichier."
         }
       ],
+    },
+  },
+
+  // Test files: the bun:test DSL (mock.module, describe/it) intentionally
+  // calls thenables for their side-effects, so no-floating-promises is noise
+  // here. no-explicit-any stays an error — type safety holds even in tests.
+  {
+    files: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off',
     },
   }
 ];

@@ -10,16 +10,8 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
-// Import the class to create fresh instances for testing
+// Import the service to test
 // The singleton memoryCacheService has side effects (setInterval), so we test via fresh import
-const { MemoryCacheService } = await (async () => {
-  // Re-import to get the module with mocked logger
-  const mod = await import('../services/memory-cache.service');
-  // We need the class, but it's not exported. Test via the singleton.
-  return { MemoryCacheService: null, service: mod.memoryCacheService };
-})();
-
-// Use the singleton for testing (it's already mocked)
 const { memoryCacheService: service } = await import('../services/memory-cache.service');
 
 // Clean up between tests

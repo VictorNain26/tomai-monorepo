@@ -107,10 +107,10 @@ describe('RAG Integration Tests - Real Qdrant Calls', () => {
         const bestScore = result.semanticChunks[0]?.score ?? 0;
         expect(bestScore).toBeGreaterThanOrEqual(testCase.minScore);
 
-        // Le titre du meilleur résultat doit contenir un des mots attendus
-        const bestTitle = result.semanticChunks[0]?.title.toLowerCase() ?? '';
+        // La section du meilleur résultat doit contenir un des mots attendus
+        const bestSection = result.semanticChunks[0]?.section.toLowerCase() ?? '';
         const hasExpectedTerm = testCase.expectedInTitle.some(term =>
-          bestTitle.includes(term.toLowerCase())
+          bestSection.includes(term.toLowerCase())
         );
         expect(hasExpectedTerm).toBe(true);
 
@@ -159,9 +159,8 @@ describe('RAG Integration Tests - Real Qdrant Calls', () => {
         limit: 5,
       });
 
-      // Tous les résultats doivent être en français
-      for (const chunk of result.semanticChunks) {
-        // Le chunk vient du payload Qdrant, vérifier via le contexte
+      // Tous les résultats doivent être en français — vérifier via le contexte
+      if (result.semanticChunks.length > 0) {
         expect(result.context).not.toContain('mathematiques:');
       }
     });

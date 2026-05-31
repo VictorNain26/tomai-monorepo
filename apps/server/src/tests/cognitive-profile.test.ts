@@ -8,6 +8,22 @@ import { createMockLogger } from './_helpers/mock-logger';
 import { makeCognitiveProfile } from './_helpers/fixtures';
 
 // ============================================
+// TYPES
+// ============================================
+
+interface CognitiveProfileData {
+  id: string;
+  userId: string;
+  strengths: string[];
+  weaknesses: string[];
+  preferredStyle: string | null;
+  observations: Array<{ date: string; observation: string; subject?: string }>;
+  lastUpdatedByAgent: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================
 // MOCKS
 // ============================================
 
@@ -15,7 +31,7 @@ const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
 // DB mock state
-let queryFindFirstResult: Record<string, unknown> | undefined = undefined;
+let queryFindFirstResult: CognitiveProfileData | undefined = undefined;
 let dbUpdateCalled = false;
 let dbInsertCalled = false;
 let dbShouldThrow = false;
