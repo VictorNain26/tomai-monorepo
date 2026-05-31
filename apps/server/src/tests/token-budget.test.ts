@@ -13,10 +13,9 @@ describe('Token Budget Service', () => {
     });
 
     it('should return 0 for null/undefined', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(estimateTokens(null as any)).toBe(0);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(estimateTokens(undefined as any)).toBe(0);
+      // Cast via unknown to feed runtime-invalid input without `any`.
+      expect(estimateTokens(null as unknown as string)).toBe(0);
+      expect(estimateTokens(undefined as unknown as string)).toBe(0);
     });
 
     it('should use 4 chars per token heuristic', () => {

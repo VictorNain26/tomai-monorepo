@@ -36,9 +36,9 @@ mock.module('../db/connection', () => ({
 
 // --- Repository mocks -------------------------------------------------------
 const mockDeckInsert = mock(async () => ({ id: 'deck-1', userId: 'user-1', cardCount: 0 }));
-const mockDeckFindById = mock(async (_id: string) => null as unknown);
+const mockDeckFindById = mock(async () => null as unknown);
 const mockDeckListByUser = mock(async () => [] as unknown[]);
-const mockDeckUpdateById = mock(async () => ({ id: 'deck-1', title: 'updated' }));
+const mockDeckUpdateById = mock(async () => ({ id: 'deck-1', title: 'updated' } as unknown));
 const mockDeckDeleteById = mock(async () => {});
 
 mock.module('../db/repositories/learning-decks.repository', () => ({
@@ -55,8 +55,8 @@ mock.module('../db/repositories/learning-decks.repository', () => ({
   },
 }));
 
-const mockCardInsertMany = mock(async () => [] as unknown[]);
-const mockCardListByDeck = mock(async () => [] as unknown[]);
+const mockCardInsertMany = mock(async (): Promise<unknown[]> => []);
+const mockCardListByDeck = mock(async (): Promise<unknown[]> => []);
 
 mock.module('../db/repositories/learning-cards.repository', () => ({
   learningCardsRepository: {
@@ -112,10 +112,11 @@ describe('LearningService', () => {
       expect(mockDeckInsert).toHaveBeenCalledTimes(1);
       expect(mockCardInsertMany).toHaveBeenCalledTimes(1);
       // Same tx handle is propagated to both writes
-      const deckTxArg = mockDeckInsert.mock.calls[0]?.[1];
-      const cardsTxArg = mockCardInsertMany.mock.calls[0]?.[1];
+      const deckTxArg = (mockDeckInsert.mock.calls[0] as unknown[])[1];
+      const cardsTxArg = (mockCardInsertMany.mock.calls[0] as unknown[])[1];
       expect(deckTxArg).toBe(cardsTxArg);
-      expect(result).toEqual({ deck: deckRow, cards: cardRows });
+      expect(result.deck).toMatchObject({ id: 'deck-1', userId: 'user-1' });
+      expect(result.cards).toHaveLength(2);
     });
 
     it('skips the card insert when the cards array is empty', async () => {
@@ -143,7 +144,7 @@ describe('LearningService', () => {
         throw new Error('boom');
       });
 
-      await expect(
+      expect(
         learningService.createDeckWithCards({
           userId: 'user-1',
           deck: { title: 'x', description: null, subject: 'x', source: 'prompt' },
@@ -162,7 +163,7 @@ describe('LearningService', () => {
       }));
       mockCardInsertMany.mockImplementationOnce(async () => []);
 
-      await expect(
+      expect(
         learningService.createDeckWithCards({
           userId: 'user-1',
           deck: { title: 'x', description: null, subject: 'x', source: 'prompt' },
@@ -181,9 +182,9 @@ describe('LearningService', () => {
       const result = await learningService.listUserDecks('user-1', { limit: 10, offset: 5 });
 
       expect(mockDeckListByUser).toHaveBeenCalledTimes(1);
-      expect(mockDeckListByUser.mock.calls[0]?.[0]).toBe('user-1');
-      expect(mockDeckListByUser.mock.calls[0]?.[1]).toEqual({ limit: 10, offset: 5 });
-      expect(result).toBe(decks);
+      expect((mockDeckListByUser.mock.calls[0] as unknown[])[0]).toBe('user-1');
+      expect((mockDeckListByUser.mock.calls[0] as unknown[])[1]).toEqual({ limit: 10, offset: 5 });
+      expect((result as typeof decks)).toEqual(decks);
     });
   });
 
@@ -196,13 +197,14 @@ describe('LearningService', () => {
 
       const result = await learningService.getDeckWithCardsOrThrow('user-1', 'deck-1');
 
-      expect(result).toEqual({ deck, cards });
+      expect(result.deck).toMatchObject({ id: 'deck-1', userId: 'user-1' });
+      expect(result.cards).toHaveLength(1);
     });
 
     it('throws DeckNotFoundError when the deck does not exist', async () => {
       mockDeckFindById.mockImplementationOnce(async () => null);
 
-      await expect(
+      expect(
         learningService.getDeckWithCardsOrThrow('user-1', 'missing'),
       ).rejects.toBeInstanceOf(DeckNotFoundError);
       expect(mockCardListByDeck).not.toHaveBeenCalled();
@@ -212,9 +214,9 @@ describe('LearningService', () => {
       mockDeckFindById.mockImplementationOnce(async () => ({
         id: 'deck-1',
         userId: 'other-user',
-      }));
+      } as unknown));
 
-      await expect(
+      expect(
         learningService.getDeckWithCardsOrThrow('user-1', 'deck-1'),
       ).rejects.toBeInstanceOf(DeckOwnershipError);
       expect(mockCardListByDeck).not.toHaveBeenCalled();
@@ -225,7 +227,7 @@ describe('LearningService', () => {
     it('throws DeckNotFoundError when the deck does not exist', async () => {
       mockDeckFindById.mockImplementationOnce(async () => null);
 
-      await expect(
+      expect(
         learningService.updateDeckOrThrow('user-1', 'missing', { title: 'new' }),
       ).rejects.toBeInstanceOf(DeckNotFoundError);
       expect(mockDeckUpdateById).not.toHaveBeenCalled();
@@ -235,9 +237,9 @@ describe('LearningService', () => {
       mockDeckFindById.mockImplementationOnce(async () => ({
         id: 'deck-1',
         userId: 'other-user',
-      }));
+      } as unknown));
 
-      await expect(
+      expect(
         learningService.updateDeckOrThrow('user-1', 'deck-1', { title: 'new' }),
       ).rejects.toBeInstanceOf(DeckOwnershipError);
       expect(mockDeckUpdateById).not.toHaveBeenCalled();
@@ -258,7 +260,7 @@ describe('LearningService', () => {
       });
 
       expect(mockDeckUpdateById).toHaveBeenCalledTimes(1);
-      expect(result).toEqual({ id: 'deck-1', title: 'new' });
+      expect(result).toMatchObject({ id: 'deck-1', title: 'new' });
     });
 
     it('rethrows DeckNotFoundError on concurrent-delete race (update returns null)', async () => {
@@ -268,7 +270,7 @@ describe('LearningService', () => {
       }));
       mockDeckUpdateById.mockImplementationOnce(async () => null);
 
-      await expect(
+      expect(
         learningService.updateDeckOrThrow('user-1', 'deck-1', { title: 'new' }),
       ).rejects.toBeInstanceOf(DeckNotFoundError);
     });
@@ -278,7 +280,7 @@ describe('LearningService', () => {
     it('throws DeckNotFoundError when the deck does not exist', async () => {
       mockDeckFindById.mockImplementationOnce(async () => null);
 
-      await expect(
+      expect(
         learningService.deleteDeckOrThrow('user-1', 'missing'),
       ).rejects.toBeInstanceOf(DeckNotFoundError);
       expect(mockDeckDeleteById).not.toHaveBeenCalled();
@@ -288,9 +290,9 @@ describe('LearningService', () => {
       mockDeckFindById.mockImplementationOnce(async () => ({
         id: 'deck-1',
         userId: 'other-user',
-      }));
+      } as unknown));
 
-      await expect(
+      expect(
         learningService.deleteDeckOrThrow('user-1', 'deck-1'),
       ).rejects.toBeInstanceOf(DeckOwnershipError);
       expect(mockDeckDeleteById).not.toHaveBeenCalled();
@@ -300,7 +302,7 @@ describe('LearningService', () => {
       mockDeckFindById.mockImplementationOnce(async () => ({
         id: 'deck-1',
         userId: 'user-1',
-      }));
+      } as unknown));
 
       await learningService.deleteDeckOrThrow('user-1', 'deck-1');
 

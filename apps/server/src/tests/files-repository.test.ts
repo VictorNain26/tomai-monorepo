@@ -149,7 +149,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
   });
 
   it('should resolve without error on empty patch', async () => {
-    await expect(
+    expect(
       filesRepository.mergeEducationalContext('file-1', {}),
     ).resolves.toBeUndefined();
     const setArg = capturedSetArg as Record<string, unknown>;

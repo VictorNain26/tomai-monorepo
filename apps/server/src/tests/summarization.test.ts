@@ -8,6 +8,33 @@ import { createMockLogger } from './_helpers/mock-logger';
 import { makeStudySession, makeMessage } from './_helpers/fixtures';
 
 // ============================================
+// TYPES
+// ============================================
+
+interface StudySessionData {
+  id: string;
+  userId: string;
+  subject: string;
+  schoolLevel: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  conversationSummary: string | null;
+  summaryUpToMessageId: string | null;
+  messageCount: number;
+}
+
+interface MessageData {
+  id: string;
+  sessionId: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  frustrationLevel: number | null;
+  aiModel: string | null;
+  tokensUsed: number | null;
+  createdAt: Date;
+}
+
+// ============================================
 // MOCKS
 // ============================================
 
@@ -15,7 +42,7 @@ const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
 // Session repository mock
-let sessionResult: Record<string, unknown> | null = null;
+let sessionResult: StudySessionData | null = null;
 let sessionUpdateCalled = false;
 let sessionUpdateArgs: Record<string, unknown> = {};
 
@@ -30,7 +57,7 @@ mock.module('../db/repositories/study-sessions.repository', () => ({
 }));
 
 // Messages repository mock
-let messagesResult: Array<Record<string, unknown>> = [];
+let messagesResult: MessageData[] = [];
 
 mock.module('../db/repositories/messages.repository', () => ({
   messagesRepository: {

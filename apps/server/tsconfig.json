@@ -19,10 +19,7 @@
     "node_modules",
     "dist",
     "coverage",
-    "tests/**/*",
     "patches/**/*",
-    "**/*.test.ts",
-    "**/*.spec.ts",
     "src/scripts/archive/**/*"
   ]
 }

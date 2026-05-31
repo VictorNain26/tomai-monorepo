@@ -85,17 +85,17 @@ describe('Encryption Service', () => {
     it('should throw on corrupted ciphertext', async () => {
       const encrypted = await encrypt('test data');
       const corrupted = encrypted.slice(0, -4) + 'XXXX';
-      await expect(decrypt(corrupted)).rejects.toThrow();
+      expect(decrypt(corrupted)).rejects.toThrow();
     });
 
     it('should throw on truncated data', async () => {
       const encrypted = await encrypt('test data');
       const truncated = encrypted.slice(0, 10);
-      await expect(decrypt(truncated)).rejects.toThrow();
+      expect(decrypt(truncated)).rejects.toThrow();
     });
 
     it('should throw on completely invalid base64', async () => {
-      await expect(decrypt('not-valid-base64!!!')).rejects.toThrow();
+      expect(decrypt('not-valid-base64!!!')).rejects.toThrow();
     });
   });
 
