@@ -53,7 +53,7 @@ export class ChatMessageService {
       return sessionMessages;
     } catch (_error) {
       logger.error('Error getting session history', { operation: 'chat:history:get', _error: _error instanceof Error ? _error.message : String(_error), sessionId, severity: 'medium' as const });
-      throw new Error('Failed to get session history');
+      throw new Error('Failed to get session history', { cause: _error });
     }
   }
 
@@ -152,7 +152,7 @@ export class ChatMessageService {
       return { messageId: message.id, realSessionId: validSessionId };
     } catch (_error) {
       logger.error('Error saving message', { operation: 'chat:message:save', _error: _error instanceof Error ? _error.message : String(_error), sessionId, role, severity: 'high' as const });
-      throw new Error('Failed to save message');
+      throw new Error('Failed to save message', { cause: _error });
     }
   }
 
@@ -205,7 +205,7 @@ export class ChatMessageService {
       };
     } catch (_error) {
       logger.error('Error getting message by ID', { operation: 'chat:message:get', _error: _error instanceof Error ? _error.message : String(_error), messageId, userId, severity: 'medium' as const });
-      throw new Error('Failed to get message');
+      throw new Error('Failed to get message', { cause: _error });
     }
   }
 

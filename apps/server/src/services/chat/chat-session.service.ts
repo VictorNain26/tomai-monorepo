@@ -199,7 +199,7 @@ export class ChatSessionService {
       };
     } catch (_error) {
       logger.error('Error getting session', { operation: 'chat:session:get', _error: _error instanceof Error ? _error.message : String(_error), sessionId, severity: 'medium' as const });
-      throw new Error('Failed to get session');
+      throw new Error('Failed to get session', { cause: _error });
     }
   }
 
@@ -249,7 +249,7 @@ export class ChatSessionService {
 
     } catch (_error) {
       logger.error('Error getting user sessions', { operation: 'chat:sessions:list', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
-      throw new Error('Failed to get user sessions');
+      throw new Error('Failed to get user sessions', { cause: _error });
     }
   }
 
@@ -281,7 +281,7 @@ export class ChatSessionService {
         userId,
         severity: 'medium' as const,
       });
-      throw new Error('Failed to list conversations');
+      throw new Error('Failed to list conversations', { cause: _error });
     }
   }
 
@@ -336,7 +336,7 @@ export class ChatSessionService {
         sessionId,
         severity: 'medium' as const
       });
-      throw new Error('Failed to reset session');
+      throw new Error('Failed to reset session', { cause: _error });
     }
   }
 
@@ -358,7 +358,7 @@ export class ChatSessionService {
       };
     } catch (_error) {
       logger.error('Error getting user by ID', { operation: 'chat:user:get', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
-      throw new Error('Failed to get user');
+      throw new Error('Failed to get user', { cause: _error });
     }
   }
 }

@@ -51,7 +51,7 @@ export class ParentService {
         operation: 'parent:getChildren',
         severity: 'high' as const
       });
-      throw new Error('Failed to get parent children');
+      throw new Error('Failed to get parent children', { cause: _error });
     }
   }
 
@@ -215,7 +215,7 @@ export class ParentService {
       }
     } catch (_error) {
       logger.error('Error deleting child', { operation: 'parent:child:delete', _error: _error instanceof Error ? _error.message : String(_error), parentId, childId, severity: 'high' as const });
-      throw new Error('Failed to delete child');
+      throw new Error('Failed to delete child', { cause: _error });
     }
   }
 

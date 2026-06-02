@@ -17,13 +17,13 @@ allowBuilds:
 catalog:
   '@types/react': ~19.2.10
   '@types/react-dom': ~19.2.3
-  eslint: ^10.4.0
-  lucide-react: ^1.16.0
+  eslint: ^10.4.1
+  lucide-react: ^1.17.0
   react: 19.2.6
   react-dom: 19.2.6
   # Keep strictly in sync with `react` (@testing-library/react-native compares them).
   react-test-renderer: 19.2.6
-  tailwindcss: ^4.1.18
+  tailwindcss: ^4.3.0
   typescript: 6.0.3
 
 # Supply-chain protection: bloque l'install de packages publiés depuis <24h
@@ -37,6 +37,17 @@ minimumReleaseAgeExclude:
 # Migré depuis package.json#pnpm.overrides — pnpm 11 ne lit plus le champ "pnpm"
 # du package.json. Toutes les overrides doivent vivre ici.
 overrides:
+  # Pin a single @types/node across the workspace: hoisted node-linker + multiple
+  # resolved versions made RN's global `Response` shadow node/undici's (which has
+  # `.body`), breaking mobile typecheck on server source pulled via @repo/api.
+  '@types/node': 25.9.1
+  # kysely 0.29 moved DEFAULT_MIGRATION_TABLE/_LOCK_TABLE to the `kysely/migration`
+  # entry; better-auth's bundled kysely-adapter still imports them from the root,
+  # breaking the bun server build. Known upstream bug, still open:
+  # https://github.com/better-auth/better-auth/issues/9610
+  # Pin to the latest 0.28.x (last line that re-exports them from root) and drop
+  # this override once better-auth ships the fix.
+  kysely: 0.28.17
   lightningcss: 1.30.1
   esbuild: '>=0.25.0'
   fast-xml-parser: '>=5.3.8'

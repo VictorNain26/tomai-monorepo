@@ -110,7 +110,7 @@ export class ProgressService {
       };
     } catch (_error) {
       logger.error('Error getting student stats', { operation: 'progress:stats:get', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
-      throw new Error('Failed to get student statistics');
+      throw new Error('Failed to get student statistics', { cause: _error });
     }
   }
 
@@ -132,7 +132,7 @@ export class ProgressService {
       }));
     } catch (_error) {
       logger.error('Error getting user sessions', { operation: 'progress:sessions:get', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
-      throw new Error('Failed to get user sessions');
+      throw new Error('Failed to get user sessions', { cause: _error });
     }
   }
 
@@ -166,7 +166,7 @@ export class ProgressService {
       }));
     } catch (_error) {
       logger.error('Error getting cost tracking', { operation: 'progress:costs:daily', _error: _error instanceof Error ? _error.message : String(_error), severity: 'medium' as const });
-      throw new Error('Failed to get cost tracking');
+      throw new Error('Failed to get cost tracking', { cause: _error });
     }
   }
 
@@ -201,7 +201,7 @@ export class ProgressService {
       }];
     } catch (_error) {
       logger.error('Error getting monthly costs', { operation: 'progress:costs:monthly', _error: _error instanceof Error ? _error.message : String(_error), severity: 'medium' as const });
-      throw new Error('Failed to get monthly costs');
+      throw new Error('Failed to get monthly costs', { cause: _error });
     }
   }
 
@@ -263,7 +263,7 @@ export class ProgressService {
       };
     } catch (_error) {
       logger.error('Error getting student performance', { operation: 'progress:performance:get', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
-      throw new Error('Failed to get student performance');
+      throw new Error('Failed to get student performance', { cause: _error });
     }
   }
 

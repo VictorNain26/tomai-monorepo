@@ -27,9 +27,9 @@
     "postinstall": "lefthook install || true"
   },
   "devDependencies": {
-    "@evilmartians/lefthook": "^2.1.4",
-    "prettier": "^3.8.1",
-    "turbo": "^2.8.13",
+    "@evilmartians/lefthook": "^2.1.9",
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.16",
     "typescript": "6.0.3"
   },
   "engines": {
