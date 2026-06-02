@@ -2,6 +2,13 @@ packages:
   - apps/*
   - packages/*
 
+# pnpm 11 reads these from here, NOT from .npmrc (where they are silently
+# ignored). RN 0.85's @react-native/jest-preset needs @babel/generator at
+# runtime but doesn't declare it; hoist Babel internals to the root so it
+# resolves under pnpm.
+publicHoistPattern:
+  - '@babel/*'
+
 # Supply-chain protection: chaque package qui veut exécuter un build script
 # doit être listé explicitement (pnpm 11 strictDepBuilds=true par défaut).
 # Tous les packages ici sont des libs officielles/matures qu'on trust pour
@@ -10,6 +17,7 @@ allowBuilds:
   '@evilmartians/lefthook': true
   '@prisma/engines': true
   esbuild: true
+  msgpackr-extract: false
   prisma: true
   protobufjs: true
   sharp: true
@@ -19,10 +27,12 @@ catalog:
   '@types/react-dom': ~19.2.3
   eslint: ^10.4.1
   lucide-react: ^1.17.0
-  react: 19.2.6
-  react-dom: 19.2.6
+  # Pinned to React 19.2.3 — the version Expo SDK 56 bundles. Keep aligned with
+  # the SDK's react pin so expo-doctor stays green and mobile uses one react.
+  react: 19.2.3
+  react-dom: 19.2.3
   # Keep strictly in sync with `react` (@testing-library/react-native compares them).
-  react-test-renderer: 19.2.6
+  react-test-renderer: 19.2.3
   tailwindcss: ^4.3.0
   typescript: 6.0.3
 

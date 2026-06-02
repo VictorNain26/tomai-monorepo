@@ -1,9 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, type ComponentProps } from 'react';
 import { Easing } from 'react-native';
-import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
-import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
-import type { MaterialTopTabNavigationOptions } from '@react-navigation/material-top-tabs';
+import { Tabs } from 'expo-router';
+import type { NativeStackNavigationOptions } from 'expo-router';
+import type { MaterialTopTabNavigationOptions } from 'expo-router/js-top-tabs';
 import { useThemeColors } from '@/hooks';
+
+// Expo Router 56 decoupled from the standalone @react-navigation packages and
+// ships its own bottom-tabs types. Derive the option type from the <Tabs>
+// component so it stays identical to what its screenOptions prop accepts
+// (the standalone @react-navigation/bottom-tabs types are a different identity).
+type BottomTabScreenOptions = Exclude<
+  NonNullable<ComponentProps<typeof Tabs>['screenOptions']>,
+  (...args: never[]) => unknown
+>;
 
 export function useStackScreenOptions(): NativeStackNavigationOptions {
   const colors = useThemeColors();
@@ -23,7 +32,7 @@ export function useStackScreenOptions(): NativeStackNavigationOptions {
   );
 }
 
-export function useTabScreenOptions(tabBackground: string): Partial<BottomTabNavigationOptions> {
+export function useTabScreenOptions(tabBackground: string): Partial<BottomTabScreenOptions> {
   return useMemo(
     () => ({
       animation: 'fade' as const,
@@ -48,7 +57,7 @@ export interface TabBarConfig {
     inactive: string;
     background: string;
   };
-  tabBarStyle: BottomTabNavigationOptions['tabBarStyle'];
+  tabBarStyle: BottomTabScreenOptions['tabBarStyle'];
 }
 
 /**
