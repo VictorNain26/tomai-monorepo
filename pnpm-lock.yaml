@@ -81,6 +81,9 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@19.2.15)(react@19.2.3)
+      '@repo/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -178,6 +181,9 @@ importers:
       '@repo/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@repo/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       '@rn-primitives/avatar':
         specifier: ^1.2.0
         version: 1.2.0(react-native@0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3))(react@19.2.3)
@@ -579,6 +585,12 @@ importers:
         version: 8.60.0(eslint@10.4.0(jiti@2.7.0))(typescript@5.9.3)
 
   packages/shared-types:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/tokens:
     devDependencies:
       typescript:
         specifier: 'catalog:'

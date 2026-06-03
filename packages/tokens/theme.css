@@ -1,0 +1,57 @@
+/* @repo/tokens — source unique de vérité des tokens de marque (light).
+ * Consommé par apps/mobile (NativeWind v5) et apps/landing (Tailwind v4) via :
+ *   @import "@repo/tokens/theme.css";
+ * Importer APRÈS l'import de Tailwind/NativeWind de l'app.
+ * Dark mode : appliqué par chaque app via son propre mécanisme (hors de ce fichier). */
+@theme {
+  /* Fontes */
+  --font-sans: 'NunitoSans';
+  --font-heading: 'Poppins';
+  --font-mono: 'JetBrainsMono';
+
+  /* Rayons */
+  --radius: 0.75rem;
+  --radius-2xl: 16px;
+  --radius-xl: 14px;
+  --radius-lg: 12px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+
+  /* Espacements additionnels */
+  --spacing-18: 4.5rem;
+  --spacing-22: 5.5rem;
+
+  /* Tailles de texte */
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: 0.875rem;
+
+  /* Couleurs sémantiques (light) — base froide, shadcn-aligned */
+  --color-background: #FFFFFF;
+  --color-foreground: #0F172A;
+  --color-primary: #2563EB;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #F1F5F9;
+  --color-secondary-foreground: #0F172A;
+  --color-muted: #F1F5F9;
+  --color-muted-foreground: #64748B;
+  --color-accent: #F1F5F9;
+  --color-accent-foreground: #0F172A;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #0F172A;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #0F172A;
+  --color-destructive: #DC2626;
+  --color-destructive-foreground: #FFFFFF;
+  --color-success: #059669;
+  --color-success-foreground: #FFFFFF;
+  --color-warning: #D97706;
+  --color-warning-foreground: #FFFFFF;
+  --color-info: #0EA5E9;
+  --color-info-foreground: #FFFFFF;
+  --color-border: #E2E8F0;
+  --color-input: #E2E8F0;
+  --color-ring: #2563EB;
+  --color-violet: #7C3AED;
+  --color-violet-foreground: #FFFFFF;
+}

@@ -7,47 +7,8 @@
 /**
  * TomAI Design System - 2026
  *
+ * Tokens de marque : source unique partagée dans @repo/tokens/theme.css.
  * Dark mode: NativeWind v5 dark: variant + Appearance.setColorScheme()
- * No CSS variables needed — uses standard Tailwind colors with dark: prefix.
+ * (valeurs JS impératives dans useThemeColors.ts — hors @repo/tokens).
  */
-
-@theme {
-  /* Fonts */
-  --font-sans: 'NunitoSans';
-  --font-heading: 'Poppins';
-  --font-mono: 'JetBrainsMono';
-
-  /* Border Radius */
-  --radius-2xl: 16px;
-  --radius-xl: 14px;
-  --radius-lg: 12px;
-  --radius-md: 10px;
-  --radius-sm: 8px;
-  --radius-xs: 6px;
-
-  /* Spacing additions */
-  --spacing-18: 4.5rem;
-  --spacing-22: 5.5rem;
-
-  /* Font sizes */
-  --text-2xs: 0.625rem;
-  --text-2xs--line-height: 0.875rem;
-
-  /* Semantic Colors (light-only — dark mode uses dark: prefix, not CSS variables)
-   * @see useThemeColors.ts for imperative JS dark values */
-  --color-primary: #3B82F6;
-  --color-primary-foreground: #FFFFFF;
-  --color-success: #059669;
-  --color-success-foreground: #FFFFFF;
-  --color-warning: #D97706;
-  --color-warning-foreground: #FFFFFF;
-  --color-destructive: #DC2626;
-  --color-destructive-foreground: #FFFFFF;
-  --color-info: #0EA5E9;
-  --color-info-foreground: #FFFFFF;
-  --color-foreground: #1C1917;
-  --color-muted: #57534E;
-  --color-background: #FAFAF9;
-  --color-border: #E7E5E4;
-  --color-card: #FFFFFF;
-}
+@import "@repo/tokens/theme.css";
