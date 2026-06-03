@@ -65,6 +65,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-font',
     'expo-secure-store',
     'expo-dev-client',
+    'expo-sharing',
+    'expo-sqlite',
     [
       'expo-camera',
       {
@@ -115,7 +117,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           usesCleartextTraffic: false,
         },
         ios: {
-          deploymentTarget: '15.1',
+          deploymentTarget: '16.4',
         },
       },
     ],

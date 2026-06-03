@@ -1,56 +1,11 @@
 @import "tailwindcss";
+@import "@repo/tokens/theme.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Spécifique landing : motif de fond marketing (hors @repo/tokens) */
 @theme {
-  /* TomIA EdTech Design System - Light Mode (Premium) */
-
-  /* Base colors - Clean, professional, trustworthy */
-  --color-background: hsl(0 0% 100%); /* #FFFFFF - Pure white */
-  --color-foreground: hsl(222 47% 11%); /* #0F172A - Slate 900 */
-
-  /* Primary - Professional Blue (Trust & Education) */
-  --color-primary: hsl(217 91% 50%); /* #2563EB - Blue 600 */
-  --color-primary-foreground: hsl(0 0% 100%);
-
-  /* Secondary - Subtle surface for contrast */
-  --color-secondary: hsl(210 40% 96.1%); /* #F1F5F9 - Slate 100 */
-  --color-secondary-foreground: hsl(222 47% 11%);
-
-  /* Muted - For supporting text */
-  --color-muted: hsl(210 40% 96.1%);
-  --color-muted-foreground: hsl(215 16% 47%); /* #64748B - Slate 500 */
-
-  /* Accent - Interactive elements */
-  --color-accent: hsl(210 40% 96.1%);
-  --color-accent-foreground: hsl(222 47% 11%);
-
-  /* Card - Pure white for elevation */
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(222 47% 11%);
-
-  /* Popover */
-  --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(222 47% 11%);
-
-  /* Destructive */
-  --color-destructive: hsl(0 84% 60%);
-  --color-destructive-foreground: hsl(0 0% 100%);
-
-  /* Border */
-  --color-border: hsl(214 32% 91%); /* #E2E8F0 - Slate 200 */
-  --color-input: hsl(214 32% 91%);
-  --color-ring: hsl(221 83% 53%);
-
-  /* Violet accent */
-  --color-violet: hsl(263 70% 50%);
-  --color-violet-foreground: hsl(0 0% 100%);
-
-  /* Grid pattern */
   --grid-color: hsl(214 32% 80% / 0.25);
-
-  /* Radius */
-  --radius: 0.75rem; /* 12px for modern, friendly feel */
 }
 
 /* Dark mode overrides (class-based via next-themes) */

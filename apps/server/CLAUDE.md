@@ -13,6 +13,26 @@ bun run build                     # Build production
 
 JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `docker compose up -d postgres && bun run dev`.
 
+### Premier démarrage dev local (vérifié)
+
+Sur une base **neuve**, `db:push` seul ne suffit pas : le serveur vérifie au boot la table de suivi `drizzle.__drizzle_migrations` (cf. `server-lifecycle.ts`), que `db:push` ne crée pas. Séquence qui marche (auth-only, aucun secret de prod) :
+
+```bash
+# 1. apps/server/.env minimal (secrets JETABLES) :
+#    NODE_ENV=development
+#    BETTER_AUTH_SECRET=<openssl rand -base64 32>
+#    BETTER_AUTH_URL=http://localhost:3000
+#    CORS_ORIGINS=http://localhost:3001,http://localhost:3002
+#    DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
+#    DATABASE_URL_EXTERNAL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
+docker compose up -d postgres
+docker exec tomai-postgres-dev psql -U tomai_dev -d tomai_dev -c "CREATE EXTENSION IF NOT EXISTS vector;"
+bun run db:migrate   # crée __drizzle_migrations + applique le SQL (PAS db:push sur une base neuve)
+bun run dev          # serveur sur :3000 (status "degraded" si MISTRAL_API_KEY absent = normal)
+```
+
+`db:push` reste OK pour **itérer le schéma ensuite** (la table de suivi existe déjà). Les features AI/RAG/billing échouent à l'usage tant que leur var n'est pas définie (env incrémental) — l'auth, elle, ne requiert que `BETTER_AUTH_SECRET` + `DATABASE_URL`.
+
 ## Stack
 
 - **Runtime** : Bun 1.3 + Docker Compose

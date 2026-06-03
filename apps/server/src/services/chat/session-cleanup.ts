@@ -73,6 +73,6 @@ export async function deleteSessionCascade(sessionId: string, userId?: string): 
       sessionId,
       severity: 'medium' as const,
     });
-    throw new Error('Failed to delete session');
+    throw new Error('Failed to delete session', { cause: _error });
   }
 }

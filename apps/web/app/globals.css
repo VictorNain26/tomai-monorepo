@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@import "@repo/tokens/theme.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Dark mode overrides (class-based via next-themes).
+ * Les valeurs light viennent de @repo/tokens ; ici on ne surcharge que le dark. */
+.dark {
+  --color-background: #020617;
+  --color-foreground: #F8FAFC;
+  --color-primary: #3B82F6;
+  --color-primary-foreground: #0F172A;
+  --color-secondary: #1E293B;
+  --color-secondary-foreground: #F8FAFC;
+  --color-muted: #1E293B;
+  --color-muted-foreground: #94A3B8;
+  --color-accent: #1E293B;
+  --color-accent-foreground: #F8FAFC;
+  --color-card: #0F172A;
+  --color-card-foreground: #F8FAFC;
+  --color-popover: #0F172A;
+  --color-popover-foreground: #F8FAFC;
+  --color-border: #1E293B;
+  --color-input: #1E293B;
+  --color-ring: #3B82F6;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-family: var(--font-nunito), system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-poppins), system-ui, sans-serif;
+}
+
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}

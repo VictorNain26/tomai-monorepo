@@ -68,7 +68,7 @@ export class ParentDashboardService {
             };
           } catch (childError) {
             logger.error('Critical error fetching child metrics', { operation: 'parent:dashboard:child', _error: (childError as Error).message, childId: child.id, parentId, severity: 'high' as const });
-            throw new Error(`Impossible de récupérer les métriques pour l'enfant ${child.id}: ${(childError as Error).message}`);
+            throw new Error(`Impossible de récupérer les métriques pour l'enfant ${child.id}: ${(childError as Error).message}`, { cause: childError });
           }
         }),
       );
@@ -76,7 +76,7 @@ export class ParentDashboardService {
       return metrics;
     } catch (_error) {
       logger.error('Error getting parent dashboard metrics', { operation: 'parent:dashboard:get', _error: _error instanceof Error ? _error.message : String(_error), parentId, severity: 'high' as const });
-      throw new Error('Failed to get parent dashboard metrics');
+      throw new Error('Failed to get parent dashboard metrics', { cause: _error });
     }
   }
 
@@ -119,7 +119,7 @@ export class ParentDashboardService {
       return progressData;
     } catch (_error) {
       logger.error('Error getting parent student progress', { operation: 'parent:progress:get', _error: _error instanceof Error ? _error.message : String(_error), parentId, studentId, severity: 'medium' as const });
-      throw new Error('Failed to get parent student progress');
+      throw new Error('Failed to get parent student progress', { cause: _error });
     }
   }
 
@@ -148,7 +148,7 @@ export class ParentDashboardService {
       }));
     } catch (_error) {
       logger.error('Error getting student sessions', { operation: 'parent:sessions:get', _error: _error instanceof Error ? _error.message : String(_error), parentId, studentId, severity: 'medium' as const });
-      throw new Error('Failed to get student sessions');
+      throw new Error('Failed to get student sessions', { cause: _error });
     }
   }
 
@@ -183,7 +183,7 @@ export class ParentDashboardService {
       }));
     } catch (_error) {
       logger.error('Error getting session messages', { operation: 'parent:messages:get', _error: _error instanceof Error ? _error.message : String(_error), parentId, sessionId, severity: 'medium' as const });
-      throw new Error('Failed to get session messages');
+      throw new Error('Failed to get session messages', { cause: _error });
     }
   }
 
@@ -223,7 +223,7 @@ export class ParentDashboardService {
       };
     } catch (_error) {
       logger.error('Error getting parent statistics', { operation: 'parent:stats:get', _error: _error instanceof Error ? _error.message : String(_error), parentId, severity: 'medium' as const });
-      throw new Error('Failed to get parent statistics');
+      throw new Error('Failed to get parent statistics', { cause: _error });
     }
   }
 

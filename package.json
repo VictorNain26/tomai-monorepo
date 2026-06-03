@@ -5,12 +5,14 @@
   "scripts": {
     "dev": "turbo run dev",
     "dev:landing": "turbo run dev --filter=landing",
+    "dev:web": "turbo run dev --filter=web",
     "dev:server": "turbo run dev --filter=tomai-server",
     "dev:mobile": "turbo run dev --filter=tom-mobile",
     "dev:mobile:ios": "turbo run dev:ios --filter=tom-mobile",
     "dev:mobile:android": "turbo run dev:android --filter=tom-mobile",
     "build": "turbo run build",
     "build:landing": "turbo run build --filter=landing",
+    "build:web": "turbo run build --filter=web",
     "build:server": "turbo run build --filter=tomai-server",
     "build:mobile": "turbo run build --filter=tom-mobile",
     "lint": "turbo run lint",
@@ -27,9 +29,9 @@
     "postinstall": "lefthook install || true"
   },
   "devDependencies": {
-    "@evilmartians/lefthook": "^2.1.4",
-    "prettier": "^3.8.1",
-    "turbo": "^2.8.13",
+    "@evilmartians/lefthook": "^2.1.9",
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.16",
     "typescript": "6.0.3"
   },
   "engines": {

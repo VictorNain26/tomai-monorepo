@@ -11,7 +11,7 @@ import {
   createMaterialTopTabNavigator,
   type MaterialTopTabNavigationOptions,
   type MaterialTopTabNavigationEventMap,
-} from '@react-navigation/material-top-tabs';
+} from 'expo-router/js-top-tabs';
 import { useSwipeableTabConfig } from '@/lib/navigation';
 
 const { Navigator } = createMaterialTopTabNavigator();
