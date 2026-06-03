@@ -55,24 +55,22 @@ mock.module('../lib/auth', () => ({
   },
 }));
 
-// App config — mutable Mistral key so the /health endpoint can flip to
+// Config env: mock MISTRAL_API_KEY so the /health endpoint can flip to
 // `degraded` in tests when MISTRAL_API_KEY is missing.
 let hasMistralKey = true;
-mock.module('../config/app.config', () => ({
-  appConfig: {
-    ai: {
-      mistral: {
-        get apiKey() { return hasMistralKey ? 'test-key' : ''; },
-        model: 'mistral-medium-latest',
-      },
-    },
-    security: { corsOrigins: ['http://localhost:3001'] },
+mock.module('../config/env', () => ({
+  env: {
+    NODE_ENV: 'test',
+    get MISTRAL_API_KEY() { return hasMistralKey ? 'test-key' : ''; },
+    BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
+    BETTER_AUTH_URL: 'http://localhost:3000',
   },
-}));
-
-mock.module('../config/environment.config', () => ({
-  env: { NODE_ENV: 'test', APP_VERSION: '1.0.0', DEPLOYMENT_ID: 'test' },
-  envUtils: { isDevelopment: false },
+  isDevelopment: () => false,
+  isProduction: () => true,
+  isInDocker: () => false,
+  getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
+  getCorsOrigins: () => ['http://localhost:3001'],
+  getTrustedOrigins: () => ['http://localhost:3001', 'tomia://'],
 }));
 
 // Cache service

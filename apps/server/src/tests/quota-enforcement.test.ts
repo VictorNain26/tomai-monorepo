@@ -65,7 +65,7 @@ mock.module('drizzle-orm', () => ({
   sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ type: 'sql', strings, values }),
 }));
 
-// Import after env + mocks so appConfig picks up the flag value.
+// Import after env + mocks so env picks up the flag value.
 const { checkQuota } = await import('../services/quota/quota-functions');
 const { checkDeckQuota } = await import('../services/quota/quota-deck');
 

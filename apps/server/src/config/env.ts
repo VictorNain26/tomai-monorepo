@@ -144,6 +144,10 @@ function parseEnv(): EnvType {
       prodChecks.push('REVENUECAT_WEBHOOK_AUTH must be at least 32 characters (production)');
     }
 
+    if (!result.data.PRONOTE_ENCRYPTION_KEY) {
+      prodChecks.push('PRONOTE_ENCRYPTION_KEY is required (production)');
+    }
+
     if (prodChecks.length > 0) {
       throw new Error(`Production validation failed:\n  ${prodChecks.join('\n  ')}`);
     }
@@ -182,11 +186,11 @@ export function getDatabaseUrl(): string {
 }
 
 /**
- * Build CORS origins list
+ * Build CORS origins list (HTTP/HTTPS only)
  * - Includes BETTER_AUTH_URL + FRONTEND_URL (if set)
  * - Adds CORS_ORIGINS comma-separated list
  * - Dev: adds localhost:3000/3001/3002
- * - Mobile: always adds tomia:// (production) and exp:// (Expo dev)
+ * Single source of truth for HTTP origins — no mobile schemes here
  */
 export function getCorsOrigins(): string[] {
   const origins = new Set<string>();
@@ -207,51 +211,32 @@ export function getCorsOrigins(): string[] {
       .forEach(o => origins.add(o));
   }
 
-  // Dev origins
+  // Dev origins (HTTP localhost)
   if (isDevelopment()) {
     origins.add('http://localhost:3000'); // server
     origins.add('http://localhost:3001'); // landing
     origins.add('http://localhost:3002'); // web app
   }
 
-  // Mobile deep link schemes (always present)
-  origins.add('tomia://');
-  origins.add('exp://'); // Expo development
-
   return Array.from(origins);
 }
 
 /**
  * Build trusted origins for Better Auth
- * Same as CORS origins but excludes mobile deep link schemes (no http/https)
+ * Composes CORS origins + adds mobile deep link schemes (tomia://, exp:// in dev)
  */
 export function getTrustedOrigins(): string[] {
   const origins = new Set<string>();
 
-  if (env.BETTER_AUTH_URL) {
-    origins.add(env.BETTER_AUTH_URL);
-  }
-  if (env.FRONTEND_URL) {
-    origins.add(env.FRONTEND_URL);
-  }
+  // Start with HTTP origins from getCorsOrigins()
+  getCorsOrigins().forEach(o => origins.add(o));
 
-  if (env.TRUSTED_ORIGINS) {
-    env.TRUSTED_ORIGINS.split(',')
-      .map(o => o.trim())
-      .filter(Boolean)
-      .forEach(o => origins.add(o));
-  } else if (env.CORS_ORIGINS) {
-    // Fallback to CORS_ORIGINS if TRUSTED_ORIGINS not set
-    env.CORS_ORIGINS.split(',')
-      .map(o => o.trim())
-      .filter(Boolean)
-      .forEach(o => origins.add(o));
-  }
+  // Add tomia:// (mobile deep link, always present)
+  origins.add('tomia://');
 
+  // Add exp:// only in development (Expo dev client)
   if (isDevelopment()) {
-    origins.add('http://localhost:3000');
-    origins.add('http://localhost:3001');
-    origins.add('http://localhost:3002');
+    origins.add('exp://');
   }
 
   return Array.from(origins);
