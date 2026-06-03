@@ -74,10 +74,11 @@ jobs:
           fi
 
   # =============================================
-  # Job 2: Tests (parallel with validate)
+  # Job 2: Tests (after validate passes)
   # =============================================
   test:
     name: Test
+    needs: validate-tasks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -160,3 +161,4 @@ jobs:
             exit 1
           fi
           echo "Migrations en sync avec schema.ts"
+

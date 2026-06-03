@@ -1,0 +1,31 @@
+name: AI Service
+
+on:
+  push:
+    branches: [main, staging]
+    paths: ['apps/ai-service/**']
+  pull_request:
+    branches: [main, staging]
+    paths: ['apps/ai-service/**']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: AI Service Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/ai-service
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # main
+        with:
+          python-version: "3.12"
+
+      - name: Run ai-service tests
+        run: uv sync --frozen && uv run pytest
