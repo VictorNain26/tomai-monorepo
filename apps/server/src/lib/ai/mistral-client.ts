@@ -23,7 +23,7 @@ import type {
   Tool as SdkTool,
 } from '@mistralai/mistralai/models/components/index.js';
 import { Mistral } from '@mistralai/mistralai';
-import { appConfig } from '../../config/app.config.js';
+import { env } from '../../config/env.js';
 import { logger } from '../observability.js';
 import { withGenAiSpan } from '../otel/index.js';
 
@@ -32,11 +32,10 @@ import { withGenAiSpan } from '../otel/index.js';
 let instance: Mistral | null = null;
 
 function getClient(): Mistral {
-  const cfg = appConfig.ai.mistral;
-  if (!cfg?.apiKey) {
+  if (!env.MISTRAL_API_KEY) {
     throw new Error('MISTRAL_API_KEY manquante — configurer .env');
   }
-  instance ??= new Mistral({ apiKey: cfg.apiKey });
+  instance ??= new Mistral({ apiKey: env.MISTRAL_API_KEY });
   return instance;
 }
 
@@ -133,11 +132,10 @@ const MISTRAL_API_BASE = 'https://api.mistral.ai/v1';
  * ici on fait du retry exponentiel léger sur 429/5xx pour matcher.
  */
 async function postChatCompletion(body: Record<string, unknown>, timeoutMs = 60000) {
-  const cfg = appConfig.ai.mistral;
-  if (!cfg?.apiKey) {
+  if (!env.MISTRAL_API_KEY) {
     throw new Error('MISTRAL_API_KEY manquante');
   }
-  const maxAttempts = cfg.retryAttempts ?? 3;
+  const maxAttempts = env.MISTRAL_RETRY_ATTEMPTS;
   let lastErr: unknown;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -148,7 +146,7 @@ async function postChatCompletion(body: Record<string, unknown>, timeoutMs = 600
       const init: RequestInit = {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${cfg.apiKey}`,
+          Authorization: `Bearer ${env.MISTRAL_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
@@ -165,7 +163,7 @@ async function postChatCompletion(body: Record<string, unknown>, timeoutMs = 600
       lastErr = new Error(`Mistral API ${res.status}: ${errText.slice(0, 200)}`);
       if (!transient || attempt === maxAttempts - 1) throw lastErr;
 
-      const wait = (cfg.retryDelay ?? 1000) * 2 ** attempt;
+      const wait = env.MISTRAL_RETRY_DELAY * 2 ** attempt;
       logger.warn('Mistral chat retry', {
         operation: 'mistral:chat:retry',
         status: res.status,
@@ -176,7 +174,7 @@ async function postChatCompletion(body: Record<string, unknown>, timeoutMs = 600
     } catch (err) {
       lastErr = err;
       if (attempt === maxAttempts - 1) throw err;
-      const wait = (cfg.retryDelay ?? 1000) * 2 ** attempt;
+      const wait = env.MISTRAL_RETRY_DELAY * 2 ** attempt;
       await new Promise((r) => setTimeout(r, wait));
     }
   }
@@ -190,13 +188,12 @@ async function postChatCompletion(body: Record<string, unknown>, timeoutMs = 600
  * Utilise POST direct si `promptCacheKey` fourni (SDK ne l'expose pas).
  */
 export async function generateText(opts: GenerateTextOptions): Promise<string> {
-  const cfg = appConfig.ai.mistral;
-  if (!cfg) throw new Error('Mistral non configuré');
+  if (!env.MISTRAL_API_KEY) throw new Error('Mistral non configuré');
 
-  const model = opts.model ?? cfg.model;
-  const temperature = opts.temperature ?? cfg.temperature;
-  const maxTokens = opts.maxTokens ?? cfg.maxTokens;
-  const timeoutMs = opts.timeoutMs ?? cfg.requestTimeout;
+  const model = opts.model ?? env.MISTRAL_MODEL;
+  const temperature = opts.temperature ?? env.MISTRAL_TEMPERATURE;
+  const maxTokens = opts.maxTokens ?? env.MISTRAL_MAX_TOKENS;
+  const timeoutMs = opts.timeoutMs ?? env.MISTRAL_TIMEOUT;
 
   return withGenAiSpan(
     {
@@ -261,13 +258,12 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
 export async function generateStructured<T = unknown>(
   opts: GenerateStructuredOptions<T>,
 ): Promise<T> {
-  const cfg = appConfig.ai.mistral;
-  if (!cfg) throw new Error('Mistral non configuré');
+  if (!env.MISTRAL_API_KEY) throw new Error('Mistral non configuré');
 
-  const model = opts.model ?? cfg.model;
-  const temperature = opts.temperature ?? cfg.temperature;
-  const maxTokens = opts.maxTokens ?? cfg.maxTokens;
-  const timeoutMs = opts.timeoutMs ?? cfg.requestTimeout;
+  const model = opts.model ?? env.MISTRAL_MODEL;
+  const temperature = opts.temperature ?? env.MISTRAL_TEMPERATURE;
+  const maxTokens = opts.maxTokens ?? env.MISTRAL_MAX_TOKENS;
+  const timeoutMs = opts.timeoutMs ?? env.MISTRAL_TIMEOUT;
 
   return withGenAiSpan(
     {
@@ -312,12 +308,11 @@ export async function generateStructured<T = unknown>(
  * stream SSE manuellement (SDK ne forward pas le param).
  */
 export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatStreamChunk> {
-  const cfg = appConfig.ai.mistral;
-  if (!cfg) throw new Error('Mistral non configuré');
+  if (!env.MISTRAL_API_KEY) throw new Error('Mistral non configuré');
 
-  const model = opts.model ?? cfg.model;
-  const temperature = opts.temperature ?? cfg.temperature;
-  const maxTokens = opts.maxTokens ?? cfg.maxTokens;
+  const model = opts.model ?? env.MISTRAL_MODEL;
+  const temperature = opts.temperature ?? env.MISTRAL_TEMPERATURE;
+  const maxTokens = opts.maxTokens ?? env.MISTRAL_MAX_TOKENS;
 
   if (!opts.promptCacheKey) {
     // Path SDK officiel — plus simple, gère le parsing SSE
@@ -392,7 +387,7 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
   const res = await fetch(`${MISTRAL_API_BASE}/chat/completions`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${cfg.apiKey}`,
+      Authorization: `Bearer ${env.MISTRAL_API_KEY}`,
       'Content-Type': 'application/json',
       Accept: 'text/event-stream',
     },

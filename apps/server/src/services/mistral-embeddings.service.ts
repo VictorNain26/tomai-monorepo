@@ -8,9 +8,10 @@
 import { Mistral } from '@mistralai/mistralai';
 import { logger } from '../lib/observability.js';
 import { withTimeout } from '../lib/retry.js';
+import { env } from '../config/env.js';
 
 // Configuration
-const MISTRAL_API_KEY = Bun.env['MISTRAL_API_KEY'] ?? '';
+const MISTRAL_API_KEY = env.MISTRAL_API_KEY ?? '';
 const EMBEDDING_MODEL = 'mistral-embed';
 const EMBEDDING_DIM = 1024;
 const MISTRAL_TIMEOUT_MS = 30_000;

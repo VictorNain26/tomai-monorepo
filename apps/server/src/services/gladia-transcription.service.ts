@@ -12,7 +12,7 @@
  */
 
 import { logger } from '../lib/observability.js';
-import { appConfig } from '../config/app.config.js';
+import { env } from '../config/env.js';
 
 // ============================================
 // Types
@@ -88,7 +88,7 @@ export class GladiaTranscriptionService {
   private readonly baseUrl = 'https://api.gladia.io/v2';
 
   constructor() {
-    const apiKey = appConfig.ai.gladia?.apiKey;
+    const apiKey = env.GLADIA_API_KEY;
     if (!apiKey) {
       throw new Error('GLADIA_API_KEY is required for audio transcription');
     }
@@ -332,5 +332,5 @@ export function getGladiaTranscriptionService(): GladiaTranscriptionService {
  * Check if Gladia is configured
  */
 export function isGladiaConfigured(): boolean {
-  return !!appConfig.ai.gladia?.apiKey;
+  return !!env.GLADIA_API_KEY;
 }

@@ -15,9 +15,13 @@ mock.module('../lib/observability', () => ({ logger: mockLogger }));
 // Force the feature flag ON for this suite. Bun captures Bun.env at boot,
 // so setting process.env at test time doesn't propagate — mock the module
 // that reads it instead.
-mock.module('../config/app.config', () => ({
-  appConfig: {
-    features: { quotaEnforcementEnabled: true },
+mock.module('../config/env', () => ({
+  env: {
+    QUOTA_ENFORCEMENT_ENABLED: true,
+    NODE_ENV: 'test',
+    DATABASE_URL: 'postgresql://test:test@localhost/test',
+    BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
+    BETTER_AUTH_URL: 'http://localhost:3000',
   },
 }));
 
@@ -61,7 +65,7 @@ mock.module('drizzle-orm', () => ({
   sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ type: 'sql', strings, values }),
 }));
 
-// Import after env + mocks so appConfig picks up the flag value.
+// Import after env + mocks so env picks up the flag value.
 const { checkQuota } = await import('../services/quota/quota-functions');
 const { checkDeckQuota } = await import('../services/quota/quota-deck');
 

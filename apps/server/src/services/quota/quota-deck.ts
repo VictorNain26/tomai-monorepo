@@ -8,7 +8,7 @@ import { db } from '../../db/connection.js';
 import { userSubscriptions } from '../../db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { logger } from '../../lib/observability.js';
-import { appConfig } from '../../config/app.config.js';
+import { env } from '../../config/env.js';
 import {
   QUOTA_CONFIG,
   needsDailyReset,
@@ -21,7 +21,7 @@ import { ensureUserSubscription } from './quota-functions.js';
 export async function checkDeckQuota(userId: string): Promise<DeckQuotaResult> {
   // Feature flag: unlimited access when enforcement is off. Counters still
   // increment in DB for analytics.
-  if (!appConfig.features.quotaEnforcementEnabled) {
+  if (!env.QUOTA_ENFORCEMENT_ENABLED) {
     return {
       allowed: true,
       decksRemainingToday: 999,

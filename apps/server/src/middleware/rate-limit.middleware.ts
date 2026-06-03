@@ -5,7 +5,7 @@
 
 import type { Context } from 'elysia';
 import { logger } from '../lib/observability';
-import { envUtils } from '../config/environment.config';
+import { isProduction, isDevelopment } from '../config/env';
 
 export interface RateLimitConfig {
   maxRequests: number;
@@ -19,7 +19,7 @@ export interface RateLimitConfig {
  * Production: Plus strict que développement
  */
 const DEFAULT_CONFIG: RateLimitConfig = {
-  maxRequests: envUtils.isProduction ? 100 : 500, // 100 req/min prod, 500 dev
+  maxRequests: isProduction() ? 100 : 500, // 100 req/min prod, 500 dev
   windowSeconds: 60, // 1 minute
   skipSuccessfulRequests: false,
 };
@@ -132,7 +132,7 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
       }
 
       // Logger les requêtes en développement
-      if (envUtils.isDevelopment && remaining < 10) {
+      if (isDevelopment() && remaining < 10) {
         logger.debug('Rate limit check', {
           operation: 'rate-limit:check',
           identifier,
@@ -163,13 +163,13 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
 export const RateLimitPresets = {
   // API générale
   api: {
-    maxRequests: envUtils.isProduction ? 100 : 500,
+    maxRequests: isProduction() ? 100 : 500,
     windowSeconds: 60,
   },
 
   // Auth endpoints (plus strict pour éviter brute-force)
   auth: {
-    maxRequests: envUtils.isProduction ? 10 : 50,
+    maxRequests: isProduction() ? 10 : 50,
     windowSeconds: 60,
     keyGenerator: (context: Context) => {
       // Type assertion pour body qui contient potentiellement email
@@ -181,7 +181,7 @@ export const RateLimitPresets = {
 
   // Chat/AI endpoints (modéré car coûteux)
   ai: {
-    maxRequests: envUtils.isProduction ? 30 : 100,
+    maxRequests: isProduction() ? 30 : 100,
     windowSeconds: 60,
     keyGenerator: (context: Context) => {
       // Rate limit par user si authentifié - Type assertion pour user custom
@@ -193,13 +193,13 @@ export const RateLimitPresets = {
 
   // File upload (très strict)
   upload: {
-    maxRequests: envUtils.isProduction ? 5 : 20,
+    maxRequests: isProduction() ? 5 : 20,
     windowSeconds: 60,
   },
 
   // Public endpoints (plus permissif)
   public: {
-    maxRequests: envUtils.isProduction ? 200 : 1000,
+    maxRequests: isProduction() ? 200 : 1000,
     windowSeconds: 60,
   },
 
@@ -208,7 +208,7 @@ export const RateLimitPresets = {
   // Cloudflare recommends: 10 req / 10 min for auth tier 2
   // @see https://developers.cloudflare.com/waf/rate-limiting-rules/best-practices/
   pronote: {
-    maxRequests: envUtils.isProduction ? 10 : 50,
+    maxRequests: isProduction() ? 10 : 50,
     windowSeconds: 300, // 5 minutes
     keyGenerator: (context: Context) => {
       // Rate limit par user authentifié

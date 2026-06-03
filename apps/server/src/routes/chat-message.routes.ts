@@ -13,7 +13,7 @@ import { chatOrchestrationService, ChatOrchestrationError } from '../services/ch
 import { tokenQuotaService } from '../services/token-quota.service.js';
 import { AppError, toErrorResponse } from '../lib/errors.js';
 import { logger } from '../lib/observability.js';
-import { appConfig } from '../config/app.config.js';
+import { env } from '../config/env.js';
 import type { EducationLevelType } from '../types/index.js';
 
 // Track active SSE connections per user
@@ -125,7 +125,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       yield sse({ data: {
         type: 'error',
         id: `err_${Date.now()}`,
-        model: appConfig.ai.mistral?.model ?? 'mistral-medium-latest',
+        model: env.MISTRAL_MODEL,
         timestamp: Date.now(),
         error: { message: 'Erreur inattendue. Réessaie.', code: 'INTERNAL_ERROR' },
       } });

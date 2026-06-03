@@ -17,12 +17,14 @@ const SALT_LENGTH = 16; // 128 bits of entropy per record
 const TAG_LENGTH = 128; // Authentication tag bits
 const PBKDF2_ITERATIONS = 600000; // OWASP 2023 recommendation for SHA-256
 
+import { env } from '../config/env.js';
+
 /**
  * Reads the Pronote encryption secret from env and imports it as PBKDF2 key material.
  * Fails fast if the secret is missing or too short.
  */
 async function importSecretKeyMaterial(): Promise<CryptoKey> {
-  const secret = process.env['PRONOTE_ENCRYPTION_KEY'];
+  const secret = env.PRONOTE_ENCRYPTION_KEY;
 
   if (!secret || secret.length < 32) {
     throw new Error(

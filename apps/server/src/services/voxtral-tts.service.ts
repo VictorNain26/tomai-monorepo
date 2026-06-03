@@ -10,7 +10,7 @@
  */
 
 import { logger } from '../lib/observability.js';
-import { appConfig } from '../config/app.config.js';
+import { env } from '../config/env.js';
 import type { EducationLevelType } from '../types/education.types.js';
 
 export interface VoxtralTTSResult {
@@ -59,12 +59,11 @@ export class VoxtralTTSService {
   private readonly baseUrl = 'https://api.mistral.ai/v1';
 
   constructor() {
-    const cfg = appConfig.ai.mistral;
-    if (!cfg?.apiKey) {
+    if (!env.MISTRAL_API_KEY) {
       throw new Error('MISTRAL_API_KEY is required for Voxtral TTS');
     }
-    this.apiKey = cfg.apiKey;
-    this.model = cfg.ttsModel ?? 'voxtral-tts-latest';
+    this.apiKey = env.MISTRAL_API_KEY;
+    this.model = env.MISTRAL_TTS_MODEL;
   }
 
   async synthesize(text: string, options: VoxtralTTSOptions = {}): Promise<VoxtralTTSResult> {
@@ -170,5 +169,5 @@ export function getVoxtralTTSService(): VoxtralTTSService {
 }
 
 export function isVoxtralTTSConfigured(): boolean {
-  return Boolean(appConfig.ai.mistral?.apiKey);
+  return Boolean(env.MISTRAL_API_KEY);
 }

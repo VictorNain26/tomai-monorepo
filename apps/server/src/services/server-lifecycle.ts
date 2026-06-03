@@ -1,4 +1,4 @@
-import { env } from '../config/environment.config.js';
+import { env } from '../config/env.js';
 import { logger } from '../lib/observability.js';
 import { tokenQuotaService } from './token-quota.service.js';
 import { memoryMonitor } from '../middleware/memory-monitor.middleware.js';
@@ -83,7 +83,7 @@ export async function initializeServices(): Promise<void> {
       provider: 'memory-lru'
     });
 
-    const hasPronoteKey = !!Bun.env['PRONOTE_ENCRYPTION_KEY'];
+    const hasPronoteKey = !!env.PRONOTE_ENCRYPTION_KEY;
     if (hasPronoteKey) {
       const encryptionValid = await validateEncryptionSetup();
       if (!encryptionValid) {

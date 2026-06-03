@@ -21,9 +21,9 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
-mock.module('../config/environment.config', () => ({
+mock.module('../config/env', () => ({
   env: {
-    BETTER_AUTH_SECRET: 'test-secret-for-unit-tests',
+    BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
     BETTER_AUTH_URL: 'http://localhost:3000',
     FRONTEND_URL: 'http://localhost:3001',
     NODE_ENV: 'development',
@@ -31,14 +31,28 @@ mock.module('../config/environment.config', () => ({
     GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
     SESSION_MAX_AGE: 604800,
     SESSION_UPDATE_AGE: 86400,
-    CORS_ORIGINS: [],
-    TRUSTED_ORIGINS: [],
+    CORS_ORIGINS: undefined,
+    TRUSTED_ORIGINS: undefined,
+    DATABASE_URL: 'postgresql://test:test@localhost/test',
+    PORT: 3000,
+    APP_VERSION: '1.0.0',
+    LOG_LEVEL: 'info',
+    MISTRAL_MODEL: 'mistral-medium-latest',
+    MISTRAL_TEMPERATURE: 0.7,
+    MISTRAL_MAX_TOKENS: 16384,
+    MISTRAL_TIMEOUT: 60000,
+    MISTRAL_RETRY_ATTEMPTS: 3,
+    MISTRAL_RETRY_DELAY: 1000,
+    MISTRAL_TTS_MODEL: 'voxtral-tts-latest',
+    MISTRAL_REASONING_MODEL: 'magistral-medium-latest',
+    QUOTA_ENFORCEMENT_ENABLED: true,
   },
-  envUtils: {
-    isDevelopment: true,
-    isProduction: false,
-    validateService: () => {},
-  },
+  isProduction: () => false,
+  isDevelopment: () => true,
+  isInDocker: () => false,
+  getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
+  getTrustedOrigins: () => ['http://localhost:3000', 'http://localhost:3001', 'tomia://', 'exp://'],
+  getCorsOrigins: () => ['http://localhost:3000', 'http://localhost:3001'],
 }));
 
 mock.module('../db/connection', () => ({

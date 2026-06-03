@@ -7,6 +7,8 @@ import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
 import * as schema from './schema';
 import { logger } from '../lib/observability';
+import { resolveDatabaseUrl } from '../config/database-url.js';
+import { env } from '../config/env.js';
 
 // ============================================================================
 // LAZY INITIALIZATION (2026 Best Practice for Testability)
@@ -18,14 +20,10 @@ let _initialized = false;
 
 /**
  * Get database connection string from environment
- * Throws only when actually needed, not at import time
+ * Delegates to resolveDatabaseUrl() for Docker-aware resolution
  */
 function getConnectionString(): string {
-  const connectionString = Bun.env['DATABASE_URL'];
-  if (!connectionString) {
-    throw new Error('DATABASE_URL environment variable is required');
-  }
-  return connectionString;
+  return resolveDatabaseUrl();
 }
 
 /**
@@ -49,7 +47,7 @@ function isSupabaseHost(url: string): boolean {
 function initializeConnection(): void {
   if (_initialized) return;
 
-  const environment = Bun.env['NODE_ENV'] ?? 'development';
+  const environment = env.NODE_ENV;
   const connectionString = getConnectionString();
   const isSupabase = isSupabaseHost(connectionString);
 

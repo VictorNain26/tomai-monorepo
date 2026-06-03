@@ -18,10 +18,11 @@
 
 import { withGenAiSpan } from '../lib/otel/index.js';
 import { logger } from '../lib/observability.js';
+import { env } from '../config/env.js';
 
-const AI_SERVICE_URL = Bun.env['AI_SERVICE_URL'] ?? '';
-const AI_SERVICE_TOKEN = Bun.env['AI_SERVICE_TOKEN'] ?? '';
-const AI_SERVICE_TIMEOUT_MS = parseInt(Bun.env['AI_SERVICE_TIMEOUT_MS'] ?? '15000', 10);
+const AI_SERVICE_URL = env.AI_SERVICE_URL ?? '';
+const AI_SERVICE_TOKEN = env.AI_SERVICE_TOKEN ?? '';
+const AI_SERVICE_TIMEOUT_MS = env.AI_SERVICE_TIMEOUT_MS;
 
 // Warn at startup if token is missing (non-prod concern but should be explicit)
 if (!AI_SERVICE_TOKEN) {

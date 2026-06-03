@@ -4,7 +4,7 @@ import { logger } from '../lib/observability.js';
 import { scalewayStorageService } from '../services/storage/scaleway-storage.service.js';
 import { audioTranscriptionService } from '../services/audio-transcription.service.js';
 import { filesRepository } from '../db/repositories/index.js';
-import { env } from '../config/environment.config.js';
+import { env } from '../config/env.js';
 import type { EducationLevelType } from '../types/education.types.js';
 import {
   MAX_FILE_SIZE,

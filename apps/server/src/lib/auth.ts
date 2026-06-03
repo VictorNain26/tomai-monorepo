@@ -17,63 +17,19 @@ import { eq } from "drizzle-orm";
 
 import { db } from "../db/connection";
 import { user, session, account, verification } from "../db/schema";
-import { env, envUtils } from "../config/environment.config";
+import { env, isProduction, isDevelopment, getTrustedOrigins } from "../config/env";
 import { logger } from "./observability";
 
 // Validation des services requis pour l'authentification
-envUtils.validateService('Better Auth', [
-  'BETTER_AUTH_SECRET',
-  'BETTER_AUTH_URL'
-]);
-
-if (envUtils.isProduction && !env.FRONTEND_URL) {
-  throw new Error('FRONTEND_URL is required for production authentication');
+if (!env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET.length < 32) {
+  throw new Error('BETTER_AUTH_SECRET is required and must be at least 32 characters');
+}
+if (!env.BETTER_AUTH_URL) {
+  throw new Error('BETTER_AUTH_URL is required');
 }
 
-/**
- * Configuration des origins de confiance basée sur les variables d'environnement
- */
-function getTrustedOrigins(): string[] {
-  // Si TRUSTED_ORIGINS est défini en production, l'utiliser
-  if (env.TRUSTED_ORIGINS && env.TRUSTED_ORIGINS.length > 0) {
-    return env.TRUSTED_ORIGINS;
-  }
-  
-  // Sinon, construire à partir des variables d'environnement connues
-  const origins: string[] = [];
-  
-  // Ajouter BETTER_AUTH_URL si défini
-  if (env.BETTER_AUTH_URL) {
-    origins.push(env.BETTER_AUTH_URL);
-  }
-  
-  // Ajouter FRONTEND_URL si défini
-  if (env.FRONTEND_URL) {
-    origins.push(env.FRONTEND_URL);
-  }
-  
-  // Ajouter CORS_ORIGINS si défini
-  if (env.CORS_ORIGINS) {
-    origins.push(...env.CORS_ORIGINS);
-  }
-  
-  // Origins de développement par défaut
-  if (envUtils.isDevelopment) {
-    origins.push(
-      'http://localhost:3000', // server
-      'http://localhost:3001', // landing
-      'http://localhost:3002'  // web app
-    );
-  }
-
-  // Mobile app deep link schemes (Expo)
-  origins.push(
-    'tomia://',           // Production app scheme
-    'exp://'              // Expo development
-  );
-
-  // Déduplication et filtrage
-  return Array.from(new Set(origins)).filter(Boolean);
+if (isProduction() && !env.FRONTEND_URL) {
+  throw new Error('FRONTEND_URL is required for production authentication');
 }
 
 const trustedOrigins = getTrustedOrigins();
@@ -84,7 +40,7 @@ const trustedOrigins = getTrustedOrigins();
  * En développement: undefined (localhost)
  */
 function getCookieDomain(): string | undefined {
-  if (envUtils.isDevelopment) {
+  if (isDevelopment()) {
     return undefined;
   }
   // Extraire le domaine parent depuis BETTER_AUTH_URL ou FRONTEND_URL
@@ -113,9 +69,9 @@ logger.info('Better Auth Configuration', {
   frontendURL: env.FRONTEND_URL,
   trustedOrigins,
   environment: env.NODE_ENV,
-  isProduction: envUtils.isProduction,
+  isProduction: isProduction(),
   cookieDomain,
-  crossSubDomainCookies: envUtils.isProduction,
+  crossSubDomainCookies: isProduction(),
   operation: 'auth:config'
 });
 
@@ -140,7 +96,7 @@ export const auth = betterAuth({
   // Configuration des cookies pour sous-domaines
   advanced: {
     // Cookies partagés entre sous-domaines (tomia.fr <-> api.tomia.fr)
-    crossSubDomainCookies: envUtils.isProduction ? {
+    crossSubDomainCookies: isProduction() ? {
       enabled: true,
       domain: cookieDomain // ".tomia.fr"
     } : undefined,
@@ -148,14 +104,14 @@ export const auth = betterAuth({
     defaultCookieAttributes: {
       // SameSite: "lax" suffit pour les sous-domaines du même domaine parent
       sameSite: "lax",
-      secure: envUtils.isProduction,
+      secure: isProduction(),
       httpOnly: true,
       path: "/",
     },
 
     generateSessionToken: true,
     cookiePrefix: "",
-    useSecureCookies: envUtils.isProduction,
+    useSecureCookies: isProduction(),
   },
   
   database: drizzleAdapter(db, {

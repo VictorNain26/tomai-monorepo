@@ -18,14 +18,16 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
-mock.module('../config/app.config', () => ({
-  appConfig: {
-    ai: {
-      mistral: {
-        apiKey: 'test-key',
-        model: 'mistral-medium-latest',
-      },
-    },
+mock.module('../config/env', () => ({
+  env: {
+    MISTRAL_API_KEY: 'test-key',
+    MISTRAL_MODEL: 'mistral-medium-latest',
+    MISTRAL_TEMPERATURE: 0.7,
+    MISTRAL_MAX_TOKENS: 16384,
+    MISTRAL_TIMEOUT: 60000,
+    MISTRAL_RETRY_ATTEMPTS: 3,
+    MISTRAL_RETRY_DELAY: 1000,
+    NODE_ENV: 'test',
   },
 }));
 
