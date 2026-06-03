@@ -9,24 +9,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Wait for Koyeb auto-deploy to settle
-        run: sleep 240 # 4 min — typical Koyeb rolling deploy time for tomai-server
-
-      - name: Backend health check
+      - name: Backend health check (with retry)
         run: |
-          response=$(curl -sS -o /tmp/health.json -w "%{http_code}" https://api.tomia.fr/health)
-          if [ "$response" != "200" ]; then
-            echo "::error::Backend /health returned HTTP $response"
-            cat /tmp/health.json
-            exit 1
-          fi
-          # Check sub-services
-          db_status=$(jq -r '.checks.database.status' /tmp/health.json)
-          if [ "$db_status" != "healthy" ]; then
-            echo "::error::DB unhealthy: $db_status"
-            exit 1
-          fi
-          echo "✅ Backend healthy"
+          max_attempts=12
+          attempt=0
+          wait_seconds=30
+          while [ $attempt -lt $max_attempts ]; do
+            attempt=$((attempt + 1))
+            echo "Attempt $attempt/$max_attempts: waiting ${wait_seconds}s before checking..."
+            sleep $wait_seconds
+
+            response=$(curl -sS -o /tmp/health.json -w "%{http_code}" https://api.tomia.fr/health)
+            if [ "$response" = "200" ]; then
+              db_status=$(jq -r '.checks.database.status' /tmp/health.json)
+              if [ "$db_status" = "healthy" ]; then
+                echo "✅ Backend healthy"
+                exit 0
+              else
+                echo "DB unhealthy ($db_status), retrying..."
+              fi
+            else
+              echo "HTTP $response, retrying..."
+            fi
+          done
+
+          echo "::error::Backend /health failed after 12 attempts (total ~6 min)"
+          cat /tmp/health.json 2>/dev/null || echo "(no response body)"
+          exit 1
 
       - name: AI-service health check
         run: |

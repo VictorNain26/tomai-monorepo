@@ -12,17 +12,17 @@ pre-commit:
     - name: lint-server
       root: "apps/server/"
       glob: "**/*.ts"
-      run: npx eslint {staged_files}
+      run: pnpm exec eslint {staged_files}
 
     - name: lint-mobile
       root: "apps/mobile/"
       glob: "**/*.{ts,tsx}"
-      run: npx eslint --max-warnings 0 {staged_files}
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
 
     - name: lint-landing
       root: "apps/landing/"
       glob: "**/*.{ts,tsx}"
-      run: npx eslint --max-warnings 0 {staged_files}
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
 
     - name: typecheck
       run: pnpm turbo run typecheck --affected --output-logs=errors-only
