@@ -39,6 +39,10 @@ mock.module('../services/webhook-idempotence.service', () => ({
   tryClaimRevenueCatEvent: mockTryClaim,
 }));
 
+// Export removed deprecated functions — no longer imported
+export const isRevenueCatEventProcessed = undefined;
+export const markRevenueCatEventProcessed = undefined;
+
 // DB mock — trackable per-operation
 const mockOnConflictDoUpdate = mock(() => Promise.resolve());
 const mockInsertValues = mock(() => ({ onConflictDoUpdate: mockOnConflictDoUpdate }));

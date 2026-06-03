@@ -70,8 +70,6 @@ mock.module('../db/schema', () => ({
 // Import after mocks
 const {
   webhookIdempotenceService,
-  isRevenueCatEventProcessed,
-  markRevenueCatEventProcessed,
   tryClaimRevenueCatEvent,
 } = await import('../services/webhook-idempotence.service');
 
@@ -85,45 +83,6 @@ beforeEach(() => {
 });
 
 describe('Webhook Idempotence Service', () => {
-  describe('isProcessed', () => {
-    it('should return true when event exists', async () => {
-      dbSelectResult = [{ id: 'uuid-123' }];
-      expect(await webhookIdempotenceService.isProcessed('evt_123')).toBe(true);
-    });
-
-    it('should return false when event does not exist', async () => {
-      dbSelectResult = [];
-      expect(await webhookIdempotenceService.isProcessed('evt_new')).toBe(false);
-    });
-
-    it('should fail-open on DB error (return false)', async () => {
-      dbSelectShouldThrow = new Error('Connection refused');
-      expect(await webhookIdempotenceService.isProcessed('evt_err')).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalled();
-    });
-  });
-
-  describe('markProcessed', () => {
-    it('should insert successfully and return true', async () => {
-      dbInsertShouldThrow = null;
-      const result = await webhookIdempotenceService.markProcessed('evt_1', 'revenuecat', 'INITIAL_PURCHASE');
-      expect(result).toBe(true);
-    });
-
-    it('should handle duplicate key gracefully and return false', async () => {
-      dbInsertShouldThrow = new Error('duplicate key value violates unique constraint');
-      const result = await webhookIdempotenceService.markProcessed('evt_dup', 'revenuecat', 'RENEWAL');
-      expect(result).toBe(false);
-    });
-
-    it('should return false on generic DB error', async () => {
-      dbInsertShouldThrow = new Error('Connection timeout');
-      const result = await webhookIdempotenceService.markProcessed('evt_err', 'revenuecat', 'INITIAL_PURCHASE');
-      expect(result).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalled();
-    });
-  });
-
   describe('cleanupExpired', () => {
     it('should delete expired events and return count', async () => {
       dbDeleteResult = { rowCount: 15 };
@@ -167,25 +126,14 @@ describe('Webhook Idempotence Service', () => {
     });
   });
 
-  describe('RevenueCat helper functions', () => {
-    it('isRevenueCatEventProcessed should delegate to isProcessed', async () => {
-      dbSelectResult = [];
-      expect(await isRevenueCatEventProcessed('rc_evt_1')).toBe(false);
-    });
-
-    it('markRevenueCatEventProcessed should delegate to markProcessed', async () => {
-      dbInsertShouldThrow = null;
-      await markRevenueCatEventProcessed('rc_evt_1', 'RENEWAL');
-      // Should not throw
-    });
-
-    it('tryClaimRevenueCatEvent should return true for new events', async () => {
+  describe('tryClaimRevenueCatEvent - helper function', () => {
+    it('should return true for new events', async () => {
       dbInsertRowCount = 1;
       const result = await tryClaimRevenueCatEvent('rc_evt_new', 'INITIAL_PURCHASE');
       expect(result).toBe(true);
     });
 
-    it('tryClaimRevenueCatEvent should return false for duplicate events', async () => {
+    it('should return false for duplicate events', async () => {
       dbInsertRowCount = 0;
       const result = await tryClaimRevenueCatEvent('rc_evt_dup', 'RENEWAL');
       expect(result).toBe(false);
