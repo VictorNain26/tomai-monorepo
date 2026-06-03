@@ -28,7 +28,7 @@ Le web ne partage **pas** ses composants avec le mobile (primitives RN ≠ DOM).
 - **`components/ui/`** : shadcn/ui uniquement (Button, Card…).
 - **`components/`** : composants applicatifs (`DashboardShell`, `LogoutButton`, `ThemeProvider`).
 - **`lib/`** : `auth-client.ts` (Better Auth), `roles.ts` (type `Role` + routing), `utils.ts` (`cn`).
-- **`middleware.ts`** : garde d'auth (redirige vers `/login` si pas de session) — équivalent web de `Stack.Protected`.
+- **`proxy.ts`** : garde d'auth (convention Next.js 16, ex-`middleware`) — redirige vers `/login` si pas de session. Équivalent web de `Stack.Protected`.
 
 ## Auth (Better Auth — client séparé)
 
@@ -36,7 +36,7 @@ Le serveur d'auth est **Elysia** (`apps/server`), pas Next.js. Le web est un **c
 
 - `lib/auth-client.ts` : `createAuthClient({ baseURL: NEXT_PUBLIC_SERVER_URL })` from `better-auth/react`. **Pas** de plugin `nextCookies` (réservé au Better Auth hébergé dans Next.js).
 - En **dev**, le cookie de session est host-only sur `localhost` → partagé entre `:3000` (api) et `:3002` (web). CORS serveur autorise `:3002` avec `credentials: true` (cf. `app.config.ts` + `auth.ts`, dev defaults).
-- `middleware.ts` interroge `/api/auth/get-session` en transférant le cookie.
+- `proxy.ts` interroge `/api/auth/get-session` en transférant le cookie.
 - Rôle : `'parent' | 'student'` côté serveur aujourd'hui ; `'school'` viendra avec le B2B.
 
 ## Conventions

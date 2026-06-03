@@ -5,12 +5,12 @@ const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000"
 /**
  * Garde d'authentification (équivalent web de `Stack.Protected` côté mobile).
  *
- * Le middleware interroge le serveur d'auth Elysia (`/api/auth/get-session`)
- * en transférant le cookie de session du navigateur. En dev, le cookie est
- * host-only sur `localhost`, donc accessible depuis :3002. Pas de session →
- * redirection vers /login.
+ * Convention Next.js 16 : `proxy` remplace `middleware` (même comportement).
+ * Interroge le serveur d'auth Elysia (`/api/auth/get-session`) en transférant
+ * le cookie de session du navigateur. En dev, le cookie est host-only sur
+ * `localhost`, donc accessible depuis :3002. Pas de session → /login.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let hasSession = false;
   try {
     const res = await fetch(`${SERVER_URL}/api/auth/get-session`, {

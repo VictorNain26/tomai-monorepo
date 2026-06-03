@@ -18,8 +18,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitForm() {
     setError(null);
     setLoading(true);
 
@@ -51,7 +50,13 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitForm();
+            }}
+            className="flex flex-col gap-4"
+          >
             {mode === "signup" && (
               <div className="flex flex-col gap-2">
                 <label htmlFor="name" className="text-sm font-medium">
@@ -61,6 +66,7 @@ export default function LoginPage() {
                   id="name"
                   type="text"
                   required
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Votre nom"
@@ -76,6 +82,7 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="vous@exemple.fr"
@@ -91,6 +98,7 @@ export default function LoginPage() {
                 type="password"
                 required
                 minLength={8}
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
