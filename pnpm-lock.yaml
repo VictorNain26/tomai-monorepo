@@ -192,7 +192,7 @@ importers:
         version: 1.3.0(@types/react@19.2.15)(react-native@0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
       '@rn-primitives/slot':
         specifier: ^1.2.0
-        version: 1.2.0(react-native@0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3))(react@19.2.3)
+        version: 1.4.0(react-native@0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3))(react@19.2.3)
       '@rn-primitives/types':
         specifier: ^1.2.0
         version: 1.2.0(react-native@0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3))(react@19.2.3)
@@ -3059,6 +3059,18 @@ packages:
 
   '@rn-primitives/slot@1.2.0':
     resolution: {integrity: sha512-cpbn+JLjSeq3wcA4uqgFsUimMrWYWx2Ks7r5rkwd1ds1utxynsGkLOKpYVQkATwWrYhtcoF1raxIKEqXuMN+/w==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
+      react-native-web: '*'
+    peerDependenciesMeta:
+      react-native:
+        optional: true
+      react-native-web:
+        optional: true
+
+  '@rn-primitives/slot@1.4.0':
+    resolution: {integrity: sha512-p8qIYH44HgXDbsxPFIbRS/IrKWOqb2/JDT8ivFAfhL8QSW0gtVZZo8I/wFip1vV9vRl8D3zMHUBB/PrzrN0Qww==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -6563,6 +6575,9 @@ packages:
 
   react-is@19.2.6:
     resolution: {integrity: sha512-XjBR15BhXuylgWGuslhDKqlSayuqvqBX91BP8pauG8kd1zY8kotkNWbXksTCNRarse4kuGbe2kIY05ARtwNIvw==}
+
+  react-is@19.2.7:
+    resolution: {integrity: sha512-kZFnouyVv7eP/Phmrlo9FK+zcAdriZJvzxXHF1Sl1P377WSGe2G/JxVolhTrB/jeV47lKImhNUsijjHAAbcl/A==}
 
   react-native-css@3.0.7:
     resolution: {integrity: sha512-xsU9T5MleHI/DDmY72A7ZikbkDfDNkMrAEichOJW2bBUMxPzAJPrFk9ys4cXYk4gLFaR11y23EccOJ+JT6Iusw==}
@@ -11157,6 +11172,12 @@ snapshots:
     optionalDependencies:
       react-native: 0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3)
 
+  '@rn-primitives/slot@1.4.0(react-native@0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      react: 19.2.3
+    optionalDependencies:
+      react-native: 0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3)
+
   '@rn-primitives/types@1.2.0(react-native@0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3))(react@19.2.3)':
     dependencies:
       react: 19.2.3
@@ -15710,6 +15731,9 @@ snapshots:
 
   react-is@19.2.6: {}
 
+  react-is@19.2.7:
+    optional: true
+
   react-native-css@3.0.7(@expo/metro-config@56.0.13(expo@56.0.8)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.85.3(@babel/core@7.28.6)(@react-native/jest-preset@0.85.3(@babel/core@7.28.6)(react@19.2.3))(@types/react@19.2.15)(react@19.2.3))(react@19.2.3):
     dependencies:
       '@expo/metro-config': 56.0.13(expo@56.0.8)(typescript@6.0.3)
@@ -16063,7 +16087,7 @@ snapshots:
   react-test-renderer@19.2.6(react@19.2.3):
     dependencies:
       react: 19.2.3
-      react-is: 19.2.6
+      react-is: 19.2.7
       scheduler: 0.27.0
     optional: true
 
