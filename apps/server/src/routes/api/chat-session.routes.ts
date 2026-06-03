@@ -1,26 +1,23 @@
 import { Elysia } from 'elysia';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro.js';
 import { chatService } from '../../services/chat.service';
 import { AppError } from '../../lib/errors';
 import { logger } from '../../lib/observability';
 
 export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
+  .use(authMacro)
+  .guard({ auth: true })
 
   /**
    * GET /chat/conversations - List all conversations for the user
    * Ordered by most recent activity. Supports pagination.
    */
-  .get('/chat/conversations', async ({ request: { headers }, query, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .get('/chat/conversations', async ({ user, query }) => {
     try {
       const limit = Math.min(Number(query?.limit) || 20, 50);
       const offset = Math.max(Number(query?.offset) || 0, 0);
 
-      const conversations = await chatService.listConversations(authContext.user.id, { limit, offset });
+      const conversations = await chatService.listConversations(user.id, { limit, offset });
 
       return {
         success: true,
@@ -39,7 +36,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     } catch (_error) {
       logger.error('Conversations list failed', {
         operation: 'api:chat:conversations:list',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const,
       });
@@ -47,14 +44,9 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
-  .get('/chat/sessions/latest', async ({ request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .get('/chat/sessions/latest', async ({ user }) => {
     try {
-      const sessions = await chatService.getUserSessions(authContext.user.id, 1);
+      const sessions = await chatService.getUserSessions(user.id, 1);
       const latestSession = sessions[0] ?? null;
 
       return {
@@ -70,7 +62,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     } catch (_error) {
       logger.error('Latest session retrieval failed', {
         operation: 'api:chat:sessions:latest',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const,
       });
@@ -78,19 +70,14 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
-  .post('/chat/session', async ({ request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .post('/chat/session', async ({ user }) => {
     try {
-      const sessionId = await chatService.getOrCreateActiveSession(authContext.user.id);
+      const sessionId = await chatService.getOrCreateActiveSession(user.id);
       return { success: true, sessionId };
     } catch (_error) {
       logger.error('Session retrieval failed', {
         operation: 'api:chat:session:getOrCreate',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const,
       });
@@ -102,19 +89,14 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
    * POST /chat/session/new - Always create a new conversation
    * Used by the FAB button on conversations list.
    */
-  .post('/chat/session/new', async ({ request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .post('/chat/session/new', async ({ user }) => {
     try {
-      const sessionId = await chatService.createSession(authContext.user.id, 'général');
+      const sessionId = await chatService.createSession(user.id, 'général');
       return { success: true, sessionId };
     } catch (_error) {
       logger.error('Session creation failed', {
         operation: 'api:chat:session:new',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const,
       });
@@ -122,19 +104,14 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
-  .post('/chat/session/:id/reset', async ({ params, request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .post('/chat/session/:id/reset', async ({ params, user }) => {
     try {
-      const newSessionId = await chatService.resetSession(params.id, authContext.user.id);
+      const newSessionId = await chatService.resetSession(params.id, user.id);
       return { success: true, sessionId: newSessionId };
     } catch (_error) {
       logger.error('Session reset failed', {
         operation: 'api:chat:session:reset',
-        userId: authContext.user.id,
+        userId: user.id,
         sessionId: params.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const,
@@ -143,19 +120,14 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
-  .delete('/chat/session/:id', async ({ params, request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .delete('/chat/session/:id', async ({ params, user }) => {
     try {
-      await chatService.deleteSession(params.id, authContext.user.id);
+      await chatService.deleteSession(params.id, user.id);
       return { success: true, message: 'Session deleted successfully' };
     } catch (_error) {
       logger.error('Session deletion failed', {
         operation: 'api:chat:session:delete',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const,
       });
@@ -163,15 +135,10 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
-  .get('/chat/session/:id/history', async ({ params, request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .get('/chat/session/:id/history', async ({ params, user, set }) => {
     try {
       const session = await chatService.getSession(params.id);
-      if (!session || session.userId !== authContext.user.id) {
+      if (!session || session.userId !== user.id) {
         set.status = 403;
         return { _error: 'Session not found or access denied' };
       }
@@ -197,7 +164,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     } catch (_error) {
       logger.error('Session history retrieval failed', {
         operation: 'api:chat:session:history',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
@@ -206,14 +173,9 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
-  .get('/chat/message/:id', async ({ params, request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .get('/chat/message/:id', async ({ params, user }) => {
     try {
-      const message = await chatService.getMessageById(params.id, authContext.user.id);
+      const message = await chatService.getMessageById(params.id, user.id);
 
       if (!message) {
         throw new AppError('SESSION_NOT_FOUND', 'Message not found');
@@ -233,7 +195,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       if (_error instanceof AppError) throw _error;
       logger.error('Message retrieval failed', {
         operation: 'api:chat:message',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const,
       });

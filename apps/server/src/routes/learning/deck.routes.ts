@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro.js';
 import { logger } from '../../lib/observability';
 import {
   learningService,
@@ -41,22 +41,17 @@ function handleDeckDomainError(
 }
 
 export const deckRoutes = new Elysia({ prefix: '/api/learning' })
+  .use(authMacro)
+  .guard({ auth: true })
 
-  .get('/decks', async ({ request, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
-
+  .get('/decks', async ({ user, set }) => {
     try {
-      const decks = await learningService.listUserDecks(authUser.id);
+      const decks = await learningService.listUserDecks(user.id);
       return { decks, count: decks.length };
     } catch (error) {
       logger.error('Failed to fetch decks', {
         operation: 'learning:decks:list',
-        userId: authUser.id,
+        userId: user.id,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
@@ -67,25 +62,18 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
 
   .post(
     '/decks',
-    async ({ request, body, set }) => {
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
-      const { user: authUser } = authContext;
-
+    async ({ body, user, set }) => {
       try {
         // Empty deck creation — caller will populate cards via other endpoints.
         const { deck: newDeck } = await learningService.createDeckWithCards({
-          userId: authUser.id,
+          userId: user.id,
           deck: body,
           cards: [],
         });
 
         logger.info('Deck created', {
           operation: 'learning:decks:create',
-          userId: authUser.id, deckId: newDeck.id,
+          userId: user.id, deckId: newDeck.id,
           subject: body.subject, source: body.source,
         });
 
@@ -93,7 +81,7 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
       } catch (error) {
         logger.error('Failed to create deck', {
           operation: 'learning:decks:create',
-          userId: authUser.id,
+          userId: user.id,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
@@ -123,23 +111,17 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     }
   )
 
-  .get('/decks/:id', async ({ request, params, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
+  .get('/decks/:id', async ({ params, user, set }) => {
     const { id: deckId } = params;
 
     try {
-      return await learningService.getDeckWithCardsOrThrow(authUser.id, deckId);
+      return await learningService.getDeckWithCardsOrThrow(user.id, deckId);
     } catch (error) {
       const domain = handleDeckDomainError(error, set);
       if (domain) return domain;
       logger.error('Failed to fetch deck', {
         operation: 'learning:decks:get',
-        userId: authUser.id, deckId,
+        userId: user.id, deckId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
@@ -150,24 +132,18 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
 
   .patch(
     '/decks/:id',
-    async ({ request, params, body, set }) => {
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
-      const { user: authUser } = authContext;
+    async ({ params, body, user, set }) => {
       const { id: deckId } = params;
 
       try {
-        const updatedDeck = await learningService.updateDeckOrThrow(authUser.id, deckId, body);
+        const updatedDeck = await learningService.updateDeckOrThrow(user.id, deckId, body);
         return { deck: updatedDeck };
       } catch (error) {
         const domain = handleDeckDomainError(error, set);
         if (domain) return domain;
         logger.error('Failed to update deck', {
           operation: 'learning:decks:update',
-          userId: authUser.id, deckId,
+          userId: user.id, deckId,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
@@ -184,24 +160,18 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     }
   )
 
-  .delete('/decks/:id', async ({ request, params, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
+  .delete('/decks/:id', async ({ params, user, set }) => {
     const { id: deckId } = params;
 
     try {
-      await learningService.deleteDeckOrThrow(authUser.id, deckId);
+      await learningService.deleteDeckOrThrow(user.id, deckId);
       return { success: true };
     } catch (error) {
       const domain = handleDeckDomainError(error, set);
       if (domain) return domain;
       logger.error('Failed to delete deck', {
         operation: 'learning:decks:delete',
-        userId: authUser.id, deckId,
+        userId: user.id, deckId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });

@@ -1,18 +1,15 @@
 import { Elysia, t } from 'elysia';
 import { and, eq } from 'drizzle-orm';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro.js';
 import { db } from '../../db/connection';
 import { devicePushTokens } from '../../db/schema';
 import { logger } from '../../lib/observability';
 
 export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
+  .use(authMacro)
 
-  .post('/users/push-token', async ({ body, request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .guard({ auth: true })
+  .post('/users/push-token', async ({ body, user, set }) => {
     try {
       const { token, platform, deviceName } = body;
 
@@ -24,7 +21,7 @@ export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
       await db
         .insert(devicePushTokens)
         .values({
-          userId: authContext.user.id,
+          userId: user.id,
           token,
           platform,
           deviceName: deviceName ?? null,
@@ -34,7 +31,7 @@ export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
         .onConflictDoUpdate({
           target: devicePushTokens.token,
           set: {
-            userId: authContext.user.id,
+            userId: user.id,
             platform,
             deviceName: deviceName ?? null,
             isActive: true,
@@ -45,7 +42,7 @@ export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
 
       logger.info('Push token saved', {
         operation: 'api:users:push-token',
-        userId: authContext.user.id,
+        userId: user.id,
         platform,
         tokenPrefix: token.slice(0, 30),
         severity: 'low' as const
@@ -55,7 +52,6 @@ export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
     } catch (_error) {
       logger.error('Push token save failed', {
         operation: 'api:users:push-token',
-        userId: authContext.user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
@@ -70,12 +66,7 @@ export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
     }),
   })
 
-  .delete('/users/push-token', async ({ body, request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .delete('/users/push-token', async ({ body, user, set }) => {
     try {
       const { token } = body;
 
@@ -83,14 +74,14 @@ export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
         .delete(devicePushTokens)
         .where(
           and(
-            eq(devicePushTokens.userId, authContext.user.id),
+            eq(devicePushTokens.userId, user.id),
             eq(devicePushTokens.token, token)
           )
         );
 
       logger.info('Push token deleted', {
         operation: 'api:users:push-token:delete',
-        userId: authContext.user.id,
+        userId: user.id,
         severity: 'low' as const
       });
 
@@ -98,7 +89,6 @@ export const pushTokenApiRoutes = new Elysia({ name: 'api-push-token' })
     } catch (_error) {
       logger.error('Push token delete failed', {
         operation: 'api:users:push-token:delete',
-        userId: authContext.user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });

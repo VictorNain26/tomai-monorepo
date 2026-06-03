@@ -8,23 +8,19 @@ import { Elysia } from 'elysia';
 import { db } from '../../db/connection';
 import { learningDecks, learningCards } from '../../db/schema';
 import { eq } from 'drizzle-orm';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro.js';
 import { logger } from '../../lib/observability';
 import { fsrsService } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';
 import { getUserLevel } from './helpers';
 
 export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
+  .use(authMacro)
+  .guard({ auth: true })
 
-  .get('/cards/:id/preview', async ({ request, params, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
+  .get('/cards/:id/preview', async ({ params, user, set }) => {
     const { id: cardId } = params;
-    const level = getUserLevel(authUser.id, authUser.schoolLevel);
+    const level = getUserLevel(user.id, user.schoolLevel);
 
     try {
       const [card] = await db
@@ -37,7 +33,7 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
         .where(eq(learningCards.id, cardId))
         .limit(1);
 
-      if (!card || card.deckUserId !== authUser.id) {
+      if (!card || card.deckUserId !== user.id) {
         set.status = 404;
         return { error: 'Carte non trouvée' };
       }
@@ -70,7 +66,7 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
     } catch (error) {
       logger.error('Failed to preview scheduling', {
         operation: 'learning:preview:error',
-        userId: authUser.id,
+        userId: user.id,
         cardId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'low' as const,
@@ -80,21 +76,15 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
     }
   })
 
-  .post('/decks/:id/reset', async ({ request, params, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
+  .post('/decks/:id/reset', async ({ params, user, set }) => {
     const { id: deckId } = params;
 
     try {
-      const cardsReset = await fsrsService.resetDeck(deckId, authUser.id);
+      const cardsReset = await fsrsService.resetDeck(deckId, user.id);
 
       logger.info('Deck FSRS reset', {
         operation: 'learning:reset',
-        userId: authUser.id,
+        userId: user.id,
         deckId,
         cardsReset,
       });
@@ -114,7 +104,7 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
 
       logger.error('Failed to reset deck', {
         operation: 'learning:reset:error',
-        userId: authUser.id,
+        userId: user.id,
         deckId,
         _error: errorMessage,
         severity: 'medium' as const,
@@ -124,14 +114,8 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
     }
   })
 
-  .get('/config', async ({ request, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
-    const level = getUserLevel(authUser.id, authUser.schoolLevel);
+  .get('/config', async ({ user }) => {
+    const level = getUserLevel(user.id, user.schoolLevel);
     const config = getLevelConfig(level);
 
     return {

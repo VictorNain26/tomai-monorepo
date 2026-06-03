@@ -9,7 +9,7 @@
  */
 
 import { Elysia, t } from 'elysia';
-import { handleAuthWithCookies } from '../middleware/auth.middleware.js';
+import { authMacro } from '../lib/auth-macro.js';
 import { textToSpeechService, type TTSOptions } from '../services/text-to-speech.service.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/education.types.js';
@@ -19,15 +19,12 @@ import type { EducationLevelType } from '../types/education.types.js';
 // ============================================
 
 export const ttsRoutes = new Elysia({ name: 'tts-routes' })
+  .use(authMacro)
+  .guard({ auth: true })
   .group('/api/tts', (app) => app
 
     // POST /api/tts/synthesize - Synthétiser texte en audio
-    .post('/synthesize', async ({ body, request: { headers }, set }) => {
-      const authContext = await handleAuthWithCookies(headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
+    .post('/synthesize', async ({ body, user, set }) => {
       const startTime = Date.now();
 
       try {
@@ -44,7 +41,7 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
         if (!result.success) {
           logger.error('TTS synthesis failed', {
             operation: 'tts:route:synthesize',
-            userId: authContext.user.id,
+            userId: user.id,
             _error: result._error ?? 'Unknown TTS error',
             severity: 'medium' as const
           });
@@ -58,7 +55,7 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
 
         logger.info('TTS synthesis completed', {
           operation: 'tts:route:synthesize:success',
-          userId: authContext.user.id,
+          userId: user.id,
           textLength: text.length,
           durationMs: Date.now() - startTime,
           audioDurationMs: result.durationMs,
@@ -81,7 +78,7 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
       } catch (error) {
         logger.error('TTS route error', {
           operation: 'tts:route:synthesize:error',
-          userId: authContext.user.id,
+          userId: user.id,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'high' as const
         });
@@ -103,12 +100,7 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
     })
 
     // GET /api/tts/voices - Métadonnées Voxtral (MVP : voix par défaut unique)
-    .get('/voices', async ({ request: { headers }, set }) => {
-      const authContext = await handleAuthWithCookies(headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
+    .get('/voices', async () => {
       // MVP : voix par défaut Voxtral. Voice cloning + mapping par niveau
       // scolaire viendront dans une itération suivante (POST /v1/audio/voices
       // côté Mistral, samples 3s par profil).

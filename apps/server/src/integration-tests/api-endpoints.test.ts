@@ -105,19 +105,43 @@ mock.module('../services/token-quota.service', () => ({
 // Auth middleware — mutable user for auth tests
 let authUser: Record<string, unknown> | null = null;
 mock.module('../middleware/auth.middleware', () => ({
-  handleAuthWithCookies: mock(async (_h: Headers, set: { status: number }) => {
+  requireAuth: mock(async () => {
     if (!authUser) {
-      set.status = 401;
-      return { success: false as const, error: { _error: 'Unauthorized' } };
+      return {
+        success: false as const,
+        _error: 'Unauthorized',
+        status: 401,
+        shouldClearCookies: false
+      };
     }
-    return { success: true as const, user: authUser };
+    return {
+      success: true as const,
+      user: authUser,
+      session: { id: 'session-001' }
+    };
   }),
-  handleParentAuthWithCookies: mock(async (_h: Headers, set: { status: number }) => {
-    if (!authUser || authUser.role !== 'parent') {
-      set.status = authUser ? 403 : 401;
-      return { success: false as const, error: { _error: 'Forbidden' } };
+  requireParentRole: mock(async () => {
+    if (!authUser) {
+      return {
+        success: false as const,
+        _error: 'Unauthorized',
+        status: 401,
+        shouldClearCookies: false
+      };
     }
-    return { success: true as const, user: authUser };
+    if (authUser.role !== 'parent') {
+      return {
+        success: false as const,
+        _error: 'Parent role required',
+        status: 403,
+        shouldClearCookies: false
+      };
+    }
+    return {
+      success: true as const,
+      user: authUser,
+      session: { id: 'session-001' }
+    };
   }),
 }));
 

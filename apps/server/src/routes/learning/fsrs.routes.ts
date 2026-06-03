@@ -10,24 +10,23 @@ import { Elysia, t } from 'elysia';
 import { db } from '../../db/connection';
 import { learningDecks, learningCards } from '../../db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro.js';
 import { logger } from '../../lib/observability';
 import { fsrsService, Rating } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';
 import { getUserLevel } from './helpers';
 
 export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
+  .use(authMacro)
+  .guard({ auth: true })
 
   /**
    * Get total due cards count for the authenticated user
    * GET /api/learning/due-summary
    */
-  .get('/due-summary', async ({ request, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) return authContext.error;
-
+  .get('/due-summary', async ({ user, set }) => {
     try {
-      const userId = authContext.user.id;
+      const userId = user.id;
 
       const result = await db
         .select({ count: sql<number>`count(*)::int` })
@@ -46,7 +45,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
     } catch (error) {
       logger.error('Failed to fetch due summary', {
         operation: 'learning:due-summary:error',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
@@ -67,16 +66,10 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    */
   .post(
     '/review',
-    async ({ request, body, set }) => {
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
-      const { user: authUser } = authContext;
+    async ({ body, user, set }) => {
       const { cardId, rating } = body;
 
-      const level = getUserLevel(authUser.id, authUser.schoolLevel);
+      const level = getUserLevel(user.id, user.schoolLevel);
 
       try {
         // Verify card belongs to user
@@ -90,7 +83,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
           .where(eq(learningCards.id, cardId))
           .limit(1);
 
-        if (!card || card.deckUserId !== authUser.id) {
+        if (!card || card.deckUserId !== user.id) {
           set.status = 404;
           return { error: 'Carte non trouvée' };
         }
@@ -100,7 +93,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
 
         logger.info('Card reviewed via API', {
           operation: 'learning:review',
-          userId: authUser.id,
+          userId: user.id,
           cardId,
           rating,
           newState: result.newState,
@@ -124,7 +117,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
       } catch (error) {
         logger.error('Failed to review card', {
           operation: 'learning:review:error',
-          userId: authUser.id,
+          userId: user.id,
           cardId,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
@@ -153,15 +146,9 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    */
   .get(
     '/decks/:id/due',
-    async ({ request, params, query, set }) => {
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
-      const { user: authUser } = authContext;
+    async ({ params, query, user, set }) => {
       const { id: deckId } = params;
-      const level = getUserLevel(authUser.id, authUser.schoolLevel);
+      const level = getUserLevel(user.id, user.schoolLevel);
 
       // Parameters with level-adapted defaults
       const config = getLevelConfig(level);
@@ -171,7 +158,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
       try {
         const dueCards = await fsrsService.getDueCards({
           deckId,
-          userId: authUser.id,
+          userId: user.id,
           limit,
           includeNew,
         });
@@ -204,7 +191,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
 
         logger.error('Failed to get due cards', {
           operation: 'learning:due:error',
-          userId: authUser.id,
+          userId: user.id,
           deckId,
           _error: errorMessage,
           severity: 'medium' as const,
@@ -229,17 +216,11 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    * - Debugging / support
    * - Parent dashboard (future)
    */
-  .get('/decks/:id/stats', async ({ request, params, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
+  .get('/decks/:id/stats', async ({ params, user, set }) => {
     const { id: deckId } = params;
 
     try {
-      const stats = await fsrsService.getDeckStats(deckId, authUser.id);
+      const stats = await fsrsService.getDeckStats(deckId, user.id);
 
       return {
         stats: {
@@ -258,7 +239,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
 
       logger.error('Failed to get deck stats', {
         operation: 'learning:stats:error',
-        userId: authUser.id,
+        userId: user.id,
         deckId,
         _error: errorMessage,
         severity: 'medium' as const,

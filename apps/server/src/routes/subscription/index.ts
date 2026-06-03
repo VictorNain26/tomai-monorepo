@@ -10,8 +10,3 @@
  */
 
 export { statusRoutes } from './status.routes.js';
-
-// Re-export helpers (DB-only, provider-agnostic)
-export {
-  getChildrenForParent,
-} from './helpers.js';

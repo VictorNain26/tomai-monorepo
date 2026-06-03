@@ -17,49 +17,6 @@ export interface AuthenticatedContext {
   session: Record<string, unknown>;
 }
 
-/**
- * Helper pour gérer auth + cookie clearing pattern (DRY Pattern)
- *
- * Factorise logic répétée 15+ fois dans api.routes.ts:
- * - Validation auth
- * - Cookie clearing si session orpheline
- * - Error status setting
- *
- * Usage:
- * ```ts
- * const authContext = await handleAuthWithCookies(headers, set);
- * if (!authContext.success) {
- *   return authContext.error;
- * }
- * const { user, session } = authContext;
- * ```
- */
-export async function handleAuthWithCookies(headers: Headers, set: { status?: number | string; headers: Record<string, string | number> }) {
-  const authResult = await requireAuth(headers);
-
-  if (!authResult.success) {
-    set.status = authResult.status;
-
-    // ✅ Clear cookies si session orpheline détectée
-    if (authResult.shouldClearCookies) {
-      set.headers['Set-Cookie'] = [
-        'better-auth.session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
-        'better-auth.session_data=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax'
-      ].join(', ');
-    }
-
-    return {
-      success: false as const,
-      error: { _error: authResult._error }
-    };
-  }
-
-  return {
-    success: true as const,
-    user: authResult.user,
-    session: authResult.session
-  };
-}
 
 /**
  * Middleware d'authentification avec validation DB stricte
@@ -72,7 +29,10 @@ export async function handleAuthWithCookies(headers: Headers, set: { status?: nu
  *
  * Performance: +20-50ms overhead (acceptable <1000 users)
  */
-export const requireAuth = async (headers: Headers) => {
+export const requireAuth = async (headers: Headers): Promise<
+  | { readonly success: true; readonly user: ElysiaAuthenticatedUser; readonly session: Record<string, unknown> }
+  | { readonly success: false; readonly _error: string; readonly status: 401 | 503; readonly shouldClearCookies: boolean }
+> => {
   try {
     // ✅ CRITICAL: Force DB validation, disable cookie cache
     // Better Auth cookie cache peut retourner sessions supprimées de DB
@@ -156,7 +116,10 @@ export const requireAuth = async (headers: Headers) => {
   }
 };
 
-export const requireParentRole = async (headers: Headers) => {
+export const requireParentRole = async (headers: Headers): Promise<
+  | { readonly success: true; readonly user: ElysiaAuthenticatedUser; readonly session: Record<string, unknown> }
+  | { readonly success: false; readonly _error: string; readonly status: 401 | 403 | 503; readonly shouldClearCookies: boolean }
+> => {
   const authResult = await requireAuth(headers);
 
   if (!authResult.success) {
@@ -175,44 +138,3 @@ export const requireParentRole = async (headers: Headers) => {
   return authResult;
 };
 
-/**
- * Helper pour gérer parent auth + cookie clearing pattern (DRY Pattern)
- *
- * Similaire à handleAuthWithCookies mais vérifie aussi le rôle parent.
- * Factorise logic répétée dans parent routes (~50 lignes).
- *
- * Usage:
- * ```ts
- * const authContext = await handleParentAuthWithCookies(headers, set);
- * if (!authContext.success) {
- *   return authContext.error;
- * }
- * const { user } = authContext;
- * ```
- */
-export async function handleParentAuthWithCookies(headers: Headers, set: { status?: number | string; headers: Record<string, string | number> }) {
-  const authResult = await requireParentRole(headers);
-
-  if (!authResult.success) {
-    set.status = authResult.status;
-
-    // ✅ Clear cookies si session orpheline détectée
-    if (authResult.shouldClearCookies) {
-      set.headers['Set-Cookie'] = [
-        'better-auth.session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
-        'better-auth.session_data=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax'
-      ].join(', ');
-    }
-
-    return {
-      success: false as const,
-      error: { _error: authResult._error }
-    };
-  }
-
-  return {
-    success: true as const,
-    user: authResult.user,
-    session: authResult.session
-  };
-}

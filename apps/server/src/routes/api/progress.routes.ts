@@ -1,24 +1,21 @@
 import { Elysia } from 'elysia';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro.js';
 import { progressService } from '../../services/progress.service';
 import { logger } from '../../lib/observability';
 
 export const progressApiRoutes = new Elysia({ name: 'api-progress' })
+  .use(authMacro)
 
-  .get('/progress/dashboard', async ({ request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .guard({ auth: true })
+  .get('/progress/dashboard', async ({ user, set }) => {
     try {
-      const stats = await progressService.getStudentStats(authContext.user.id);
+      const stats = await progressService.getStudentStats(user.id);
       return {
         success: true,
         student: {
-          id: authContext.user.id,
-          firstName: authContext.user.firstName,
-          level: authContext.user.schoolLevel
+          id: user.id,
+          firstName: user.firstName,
+          level: user.schoolLevel
         },
         stats: {
           totalSessions: stats.totalSessions,
@@ -30,7 +27,7 @@ export const progressApiRoutes = new Elysia({ name: 'api-progress' })
     } catch (_error) {
       logger.error('Progress dashboard retrieval failed', {
         operation: 'api:progress:dashboard',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });

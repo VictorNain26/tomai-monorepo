@@ -1,5 +1,5 @@
 /**
- * Routes Chat SSE Streaming - Gemini Agent Multi-Tool
+ * Routes Chat SSE Streaming - Mistral Agent Multi-Tool
  *
  * Token-optimized architecture:
  * - Accepts { content, data } (frontend sends ONLY new message)
@@ -8,7 +8,7 @@
  */
 
 import { Elysia, t, sse } from 'elysia';
-import { requireAuth } from '../middleware/auth.middleware.js';
+import { authMacro } from '../lib/auth-macro.js';
 import { chatOrchestrationService, ChatOrchestrationError } from '../services/chat/chat-orchestration.service.js';
 import { tokenQuotaService } from '../services/token-quota.service.js';
 import { AppError, toErrorResponse } from '../lib/errors.js';
@@ -27,27 +27,14 @@ function sanitizePrompt(text: string): string {
 }
 
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
-  .post('/stream', async function* ({ body, request: { headers }, set, store }) {
+  .use(authMacro)
+  .guard({ auth: true })
+  .post('/stream', async function* ({ body, user, set, store }) {
     const requestId = (store as { requestId?: string }).requestId;
     // SSE anti-buffering headers (BEFORE any yield)
     set.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
     set.headers['X-Accel-Buffering'] = 'no';
     set.headers['Connection'] = 'keep-alive';
-
-    // 1. Auth validation
-    const authResult = await requireAuth(headers);
-    if (!authResult.success) {
-      set.status = authResult.status;
-      if (authResult.shouldClearCookies) {
-        set.headers['Set-Cookie'] = [
-          'better-auth.session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
-          'better-auth.session_data=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax'
-        ].join(', ');
-      }
-      return toErrorResponse(new AppError('UNAUTHORIZED'), requestId);
-    }
-
-    const user = authResult.user;
     // body is already validated and typed by Elysia's t.Object schema below — no cast needed.
     const { content, data, pronoteContext } = body;
 
