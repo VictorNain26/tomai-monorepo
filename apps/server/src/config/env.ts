@@ -50,7 +50,7 @@ const EnvSchema = z.object({
   TRUSTED_ORIGINS: z.string().optional(),
 
   // Database
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   DATABASE_URL_EXTERNAL: z.string().optional(),
 
   // Authentication
