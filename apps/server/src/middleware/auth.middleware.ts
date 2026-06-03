@@ -17,49 +17,6 @@ export interface AuthenticatedContext {
   session: Record<string, unknown>;
 }
 
-/**
- * Helper pour gérer auth + cookie clearing pattern (DRY Pattern)
- *
- * Factorise logic répétée 15+ fois dans api.routes.ts:
- * - Validation auth
- * - Cookie clearing si session orpheline
- * - Error status setting
- *
- * Usage:
- * ```ts
- * const authContext = await handleAuthWithCookies(headers, set);
- * if (!authContext.success) {
- *   return authContext.error;
- * }
- * const { user, session } = authContext;
- * ```
- */
-export async function handleAuthWithCookies(headers: Headers, set: { status?: number | string; headers: Record<string, string | number> }) {
-  const authResult = await requireAuth(headers);
-
-  if (!authResult.success) {
-    set.status = authResult.status;
-
-    // ✅ Clear cookies si session orpheline détectée
-    if (authResult.shouldClearCookies) {
-      set.headers['Set-Cookie'] = [
-        'better-auth.session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
-        'better-auth.session_data=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax'
-      ].join(', ');
-    }
-
-    return {
-      success: false as const,
-      error: { _error: authResult._error }
-    };
-  }
-
-  return {
-    success: true as const,
-    user: authResult.user,
-    session: authResult.session
-  };
-}
 
 /**
  * Middleware d'authentification avec validation DB stricte
@@ -175,44 +132,3 @@ export const requireParentRole = async (headers: Headers) => {
   return authResult;
 };
 
-/**
- * Helper pour gérer parent auth + cookie clearing pattern (DRY Pattern)
- *
- * Similaire à handleAuthWithCookies mais vérifie aussi le rôle parent.
- * Factorise logic répétée dans parent routes (~50 lignes).
- *
- * Usage:
- * ```ts
- * const authContext = await handleParentAuthWithCookies(headers, set);
- * if (!authContext.success) {
- *   return authContext.error;
- * }
- * const { user } = authContext;
- * ```
- */
-export async function handleParentAuthWithCookies(headers: Headers, set: { status?: number | string; headers: Record<string, string | number> }) {
-  const authResult = await requireParentRole(headers);
-
-  if (!authResult.success) {
-    set.status = authResult.status;
-
-    // ✅ Clear cookies si session orpheline détectée
-    if (authResult.shouldClearCookies) {
-      set.headers['Set-Cookie'] = [
-        'better-auth.session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
-        'better-auth.session_data=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax'
-      ].join(', ');
-    }
-
-    return {
-      success: false as const,
-      error: { _error: authResult._error }
-    };
-  }
-
-  return {
-    success: true as const,
-    user: authResult.user,
-    session: authResult.session
-  };
-}

@@ -19,9 +19,11 @@ export type { PresignedUploadResponse, ConfirmUploadResponse } from './file-uplo
 
 export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
   .use(authMacro)
+  .guard({ auth: true })
 
   /**
    * GET /api/upload/status - Vérifier si le service est configuré
+   * Requires authentication to prevent unauthorized storage service discovery
    */
   .get('/status', () => {
     const configured = scalewayStorageService.isConfigured();
@@ -36,7 +38,6 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
   /**
    * POST /api/upload/presign - Générer URL présignée pour upload direct
    */
-  .guard({ auth: true })
   .post('/presign', async ({ body, user, set }) => {
     try {
       // Auth with strict DB validation (prevents orphan session reuse)

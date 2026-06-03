@@ -8,12 +8,15 @@
  */
 
 import { Elysia } from 'elysia';
+import { authMacro } from '../../lib/auth-macro.js';
 import { db } from '../../db/connection.js';
 import { user, familyBilling, userSubscriptions, subscriptionPlans } from '../../db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
-import { getAuthenticatedParent, getAuthenticatedUser, verifyParentIdMatch } from './helpers.js';
+import { verifyParentIdMatch } from './helpers.js';
 
 export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
+  .use(authMacro)
+
   /**
    * Get Subscription Status
    * GET /api/subscriptions/status?parentId=xxx
@@ -23,7 +26,8 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
    *
    * Security: Verifies authenticated user === query.parentId (IDOR protection)
    */
-  .get('/status', async ({ query, set, request }) => {
+  .guard({ parentAuth: true })
+  .get('/status', async ({ query, set, user: authenticatedUser }) => {
     const parentId = query.parentId;
 
     if (!parentId) {
@@ -31,13 +35,7 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
       return { error: 'parentId query parameter required' };
     }
 
-    const { parent, error: authError, status: authStatus } = await getAuthenticatedParent(request.headers);
-    if (!parent) {
-      set.status = authStatus ?? 401;
-      return { error: authError };
-    }
-
-    const { valid, error: idorError } = verifyParentIdMatch(parent.id, parentId);
+    const { valid, error: idorError } = verifyParentIdMatch(authenticatedUser.id, parentId);
     if (!valid) {
       set.status = 403;
       return { error: idorError };
@@ -118,18 +116,13 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
    * - Self access (userId === authenticatedUser.id)
    * - Parent accessing child (parent viewing their child's usage)
    */
-  .get('/usage', async ({ query, set, request }) => {
+  .guard({ auth: true })
+  .get('/usage', async ({ query, set, user: authenticatedUser }) => {
     const userId = query.userId;
 
     if (!userId) {
       set.status = 400;
       return { error: 'userId query parameter required' };
-    }
-
-    const authenticatedUser = await getAuthenticatedUser(request.headers);
-    if (!authenticatedUser) {
-      set.status = 401;
-      return { error: 'Authentication required' };
     }
 
     const [userRecord] = await db

@@ -67,8 +67,6 @@ mock.module('drizzle-orm', () => ({
 const {
   requireAuth,
   requireParentRole,
-  handleAuthWithCookies,
-  handleParentAuthWithCookies,
 } = await import('../middleware/auth.middleware');
 
 beforeEach(() => {
@@ -169,48 +167,4 @@ describe('Auth Middleware', () => {
     });
   });
 
-  describe('handleAuthWithCookies', () => {
-    it('should return success with valid auth', async () => {
-      const mockSet = { status: 200 as number | string, headers: {} as Record<string, string | number> };
-      const result = await handleAuthWithCookies(new Headers(), mockSet);
-      expect(result.success).toBe(true);
-    });
-
-    it('should set cookie clearing headers on orphaned session', async () => {
-      dbUserExists = false;
-      const mockSet = { status: 200 as number | string, headers: {} as Record<string, string | number> };
-      const result = await handleAuthWithCookies(new Headers(), mockSet);
-      expect(result.success).toBe(false);
-      expect(mockSet.status).toBe(401);
-      expect(String(mockSet.headers['Set-Cookie'])).toContain('better-auth.session_token=');
-    });
-
-    it('should set status code on failure', async () => {
-      authSessionResult = null;
-      const mockSet = { status: 200 as number | string, headers: {} as Record<string, string | number> };
-      await handleAuthWithCookies(new Headers(), mockSet);
-      expect(mockSet.status).toBe(401);
-    });
-  });
-
-  describe('handleParentAuthWithCookies', () => {
-    it('should succeed for parent user', async () => {
-      const parent = makeParentUser();
-      authSessionResult = {
-        user: { ...parent },
-        session: { id: 'sess-p', userId: parent.id },
-      };
-      const mockSet = { status: 200 as number | string, headers: {} as Record<string, string | number> };
-      const result = await handleParentAuthWithCookies(new Headers(), mockSet);
-      expect(result.success).toBe(true);
-    });
-
-    it('should set cookie clearing on orphaned session', async () => {
-      dbUserExists = false;
-      const mockSet = { status: 200 as number | string, headers: {} as Record<string, string | number> };
-      const result = await handleParentAuthWithCookies(new Headers(), mockSet);
-      expect(result.success).toBe(false);
-      expect(String(mockSet.headers['Set-Cookie'])).toContain('better-auth.session_token=');
-    });
-  });
 });
