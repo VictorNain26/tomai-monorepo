@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { and, eq } from 'drizzle-orm';
-import { authMacro } from '../../lib/auth-macro';
+import { authMacro } from '../../lib/auth-macro.js';
 import { db } from '../../db/connection';
 import { devicePushTokens } from '../../db/schema';
 import { logger } from '../../lib/observability';

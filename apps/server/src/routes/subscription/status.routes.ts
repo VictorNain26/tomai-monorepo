@@ -26,6 +26,7 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
    *
    * Security: Verifies authenticated user === query.parentId (IDOR protection)
    */
+  // Guard: parentAuth required (parent role only)
   .guard({ parentAuth: true })
   .get('/status', async ({ query, set, user: authenticatedUser }) => {
     const parentId = query.parentId;
@@ -116,6 +117,7 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
    * - Self access (userId === authenticatedUser.id)
    * - Parent accessing child (parent viewing their child's usage)
    */
+  // Guard: auth required (both parent and child can access their own usage or parent's children's usage)
   .guard({ auth: true })
   .get('/usage', async ({ query, set, user: authenticatedUser }) => {
     const userId = query.userId;

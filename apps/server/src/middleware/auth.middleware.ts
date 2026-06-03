@@ -29,7 +29,10 @@ export interface AuthenticatedContext {
  *
  * Performance: +20-50ms overhead (acceptable <1000 users)
  */
-export const requireAuth = async (headers: Headers) => {
+export const requireAuth = async (headers: Headers): Promise<
+  | { readonly success: true; readonly user: ElysiaAuthenticatedUser; readonly session: Record<string, unknown> }
+  | { readonly success: false; readonly _error: string; readonly status: 401 | 503; readonly shouldClearCookies: boolean }
+> => {
   try {
     // ✅ CRITICAL: Force DB validation, disable cookie cache
     // Better Auth cookie cache peut retourner sessions supprimées de DB
@@ -113,7 +116,10 @@ export const requireAuth = async (headers: Headers) => {
   }
 };
 
-export const requireParentRole = async (headers: Headers) => {
+export const requireParentRole = async (headers: Headers): Promise<
+  | { readonly success: true; readonly user: ElysiaAuthenticatedUser; readonly session: Record<string, unknown> }
+  | { readonly success: false; readonly _error: string; readonly status: 401 | 403 | 503; readonly shouldClearCookies: boolean }
+> => {
   const authResult = await requireAuth(headers);
 
   if (!authResult.success) {

@@ -1,5 +1,5 @@
 import { Elysia } from 'elysia';
-import { authMacro } from '../../lib/auth-macro';
+import { authMacro } from '../../lib/auth-macro.js';
 import { progressService } from '../../services/progress.service';
 import { logger } from '../../lib/observability';
 

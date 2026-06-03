@@ -1,5 +1,5 @@
 /**
- * Routes Chat SSE Streaming - Gemini Agent Multi-Tool
+ * Routes Chat SSE Streaming - Mistral Agent Multi-Tool
  *
  * Token-optimized architecture:
  * - Accepts { content, data } (frontend sends ONLY new message)

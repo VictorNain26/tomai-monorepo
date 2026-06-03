@@ -25,13 +25,6 @@
 
 import { Elysia } from 'elysia';
 import { requireAuth, requireParentRole } from '../middleware/auth.middleware';
-import type { ElysiaAuthenticatedUser } from '../types/index.js';
-
-// Export les types du macro pour typage dans les contextes
-export interface AuthMacroContext {
-  user: ElysiaAuthenticatedUser;
-  session: Record<string, unknown>;
-}
 
 const CLEAR_COOKIE_HEADERS = [
   'better-auth.session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
@@ -44,16 +37,13 @@ export const authMacro = new Elysia({ name: 'auth-macro' }).macro({
       const result = await requireAuth(request.headers);
 
       if (!result.success) {
-        // Applique le status (401, 503, etc)
-        set.status = result.status as number;
-
         // Clear cookies si session orpheline détectée
         if (result.shouldClearCookies) {
           set.headers['Set-Cookie'] = CLEAR_COOKIE_HEADERS;
         }
 
         // Retour d'erreur aborte le handler
-        return status(result.status as number);
+        return status(result.status);
       }
 
       // Retour d'objet injecte les champs dans le contexte
@@ -69,16 +59,13 @@ export const authMacro = new Elysia({ name: 'auth-macro' }).macro({
       const result = await requireParentRole(request.headers);
 
       if (!result.success) {
-        // Applique le status (401, 403, 503, etc)
-        set.status = result.status as number;
-
         // Clear cookies si session orpheline détectée
         if (result.shouldClearCookies) {
           set.headers['Set-Cookie'] = CLEAR_COOKIE_HEADERS;
         }
 
         // Retour d'erreur aborte le handler
-        return status(result.status as number);
+        return status(result.status);
       }
 
       // Retour d'objet injecte les champs dans le contexte

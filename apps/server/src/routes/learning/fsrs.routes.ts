@@ -10,7 +10,7 @@ import { Elysia, t } from 'elysia';
 import { db } from '../../db/connection';
 import { learningDecks, learningCards } from '../../db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { authMacro } from '../../lib/auth-macro';
+import { authMacro } from '../../lib/auth-macro.js';
 import { logger } from '../../lib/observability';
 import { fsrsService, Rating } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';
