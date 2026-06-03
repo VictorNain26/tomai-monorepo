@@ -520,6 +520,70 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  apps/web:
+    dependencies:
+      '@radix-ui/react-slot':
+        specifier: ^1.2.4
+        version: 1.2.4(@types/react@19.2.15)(react@19.2.3)
+      '@repo/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@repo/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: 'catalog:'
+        version: 1.17.0(react@19.2.3)
+      next:
+        specifier: ^16.2.6
+        version: 16.2.6(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.3
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.3(react@19.2.3)
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.6.0
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
+      '@tailwindcss/postcss':
+        specifier: ^4.3.0
+        version: 4.3.0
+      '@types/node':
+        specifier: 25.9.1
+        version: 25.9.1
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.15)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.4.1(jiti@2.7.0)
+      postcss:
+        specifier: ^8.5.6
+        version: 8.5.15
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/api:
     dependencies:
       '@elysiajs/eden':

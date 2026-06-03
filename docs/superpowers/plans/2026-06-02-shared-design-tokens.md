@@ -498,9 +498,68 @@ git commit -m "docs(tokens): document @repo/tokens shared design system"
 
 ---
 
+---
+
+# Phase 2 — `apps/web` (produit web role-aware, template fonctionnel)
+
+**Goal :** un nouvel app Next.js 16 `apps/web`, miroir du setup `apps/landing` (Tailwind v4 + shadcn/ui), consommant `@repo/tokens` + `@repo/api`, avec routing **par rôle** (parent / élève / établissement) et écrans **template** fonctionnels. Design minimal assumé.
+
+**Statut :** à exécuter après Phase 1 (faite).
+
+### Tâche 6 : Scaffold `apps/web` (skeleton Next.js)
+
+**Files (créer, calqués sur `apps/landing`) :**
+- `apps/web/package.json` (nom `web`, scripts dev/build/typecheck/lint identiques à landing, port 3002)
+- `apps/web/next.config.ts`, `apps/web/tsconfig.json`, `apps/web/postcss.config.mjs`, `apps/web/eslint.config.mjs`
+- `apps/web/app/globals.css` → `@import "tailwindcss";` + `@import "@repo/tokens/theme.css";` + bloc `.dark`
+- `apps/web/app/layout.tsx`, `apps/web/app/page.tsx` (redirige vers `/login`)
+- `apps/web/lib/utils.ts` (helper `cn`, identique landing), `apps/web/components/ui/` (shadcn: button, card)
+- Deps : `@repo/tokens`, `@repo/api`, shadcn (radix-slot, cva, clsx, tailwind-merge), next, react, next-themes
+
+- [ ] Steps : créer les fichiers, `pnpm install`, `pnpm --filter web build` → OK, commit `feat(web): scaffold Next.js app skeleton`.
+
+### Tâche 7 : Routing par rôle + écrans template
+
+**Files :**
+- `apps/web/lib/roles.ts` — type `Role = "parent" | "student" | "school"` + helper de routing.
+- `apps/web/app/login/page.tsx` — écran login template (form email/password, bouton Google placeholder).
+- `apps/web/app/(parent)/layout.tsx` + `page.tsx` — shell dashboard parent (template).
+- `apps/web/app/(student)/layout.tsx` + `page.tsx` — shell élève (template).
+- `apps/web/app/(school)/layout.tsx` + `page.tsx` — shell établissement (placeholder « bientôt », pas de feature).
+- Chaque layout : nav latérale simple + zone contenu, composants shadcn + tokens, zéro fioriture.
+
+- [ ] Steps : créer écrans, build OK, commit `feat(web): role-aware route groups with template screens`.
+
+### Tâche 8 : Auth Better Auth (web) — DOC-FIRST OBLIGATOIRE
+
+**Pré-requis :** consulter la doc Better Auth (client web React + gestion session/cookies SSR Next.js) AVANT d'écrire le code. Ne PAS inventer l'API client.
+
+**Files :**
+- `apps/web/lib/auth-client.ts` — client Better Auth web (`better-auth/react`), pointant `EXPO_PUBLIC_API_URL`/`NEXT_PUBLIC_API_URL`.
+- `apps/web/lib/api.ts` — client Eden Treaty (`@repo/api`) avec injection cookie session.
+- `apps/web/middleware.ts` — garde d'auth + redirection par rôle (équivalent web de `Stack.Protected`).
+- Brancher `login/page.tsx` sur `signIn` réel ; dériver le rôle de la session.
+
+- [ ] Steps : doc-first (citer URL), implémenter, tester un login réel contre le server local, commit `feat(web): wire Better Auth web client + role gating`.
+
+### Tâche 9 : Intégration monorepo
+
+- [ ] `apps/web` dans turbo (hérite déjà via `apps/*`) ; vérifier `pnpm dev` lance web sur 3002 sans collision.
+- [ ] `pnpm typecheck && pnpm lint && pnpm build` vert sur tout le monorepo. Commit.
+
+---
+
+# Phase 3 — Console B2B établissement (différée)
+
+**Statut :** NON planifiée en détail (pas de traction B2C, YAGNI). Le groupe de routes `(school)` créé en Phase 2 est le **placeholder propre** ; il sera développé en console dense (tables, reporting) quand un contrat établissement le justifiera, dans un plan séparé, en réutilisant `@repo/api` + `@repo/tokens`.
+
+---
+
 ## Self-review
 
-- **Couverture spec :** extraction tokens (T2), branchement mobile (T3), branchement landing (T4), réconciliation de la dérive (T0 fige la palette canonique), de-risk du mécanisme d'import (T1), validation (T5). ✅
+- **Couverture spec :** extraction tokens (T2), branchement mobile (T3), branchement landing (T4), réconciliation de la dérive (T0 fige la palette canonique), de-risk du mécanisme d'import (T1), validation (T5), web role-aware (T6-T9), placeholder B2B (Phase 3). ✅
+- **Phase 1 : FAITE** (commit `b7841e5`) — package créé, mobile + landing branchés, builds verts.
+- **Doc-first signalé :** Tâche 8 (Better Auth web) ne doit pas être codée sans consulter la doc.
 - **Hors scope assumé :** dark mode unifié, `apps/web`, console B2B, `@repo/core` — explicitement différés.
 - **Cohérence des noms :** `tokenNames` (index.ts) ↔ `tokenNames` (test) ↔ tokens de `theme.css` ; `@repo/tokens/theme.css` utilisé identiquement en T1/T3/T4.
 - **Point de fragilité connu :** résolution de l'import CSS cross-package par Metro (NativeWind v5) — traité en Tâche 1 (spike) avec fallback documenté avant tout engagement.
