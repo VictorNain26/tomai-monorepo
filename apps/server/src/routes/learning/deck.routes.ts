@@ -1,44 +1,9 @@
 import { Elysia, t } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
 import { logger } from '../../lib/observability';
-import {
-  learningService,
-  DeckNotFoundError,
-  DeckOwnershipError,
-} from '../../services/learning/learning.service';
+import { learningService } from '../../services/learning/learning.service';
+import { handleDeckDomainError } from './helpers';
 import { deckDiscoveryRoutes } from './deck-discovery.routes.js';
-
-/**
- * Map a LearningService domain error to an Elysia HTTP response.
- *
- * Per the service contract (see learning-errors.ts), both "not found" and
- * "ownership mismatch" surface as HTTP 404 so the API does not leak the
- * existence of another user's deck. The distinct error *code* in the body
- * lets internal callers and tests disambiguate without exposing resource
- * existence externally.
- *
- * Returns the response body when the error was handled, or `null` when the
- * error was not a known domain error (caller must rethrow).
- *
- * `set` is typed loosely (`status?: unknown`) because Elysia's own `set`
- * carries more than just `status` (headers, redirect, cookies) and typing
- * it strictly fights the framework. We only *assign* to `status`, so the
- * unknown input type is safe.
- */
-function handleDeckDomainError(
-  err: unknown,
-  set: { status?: unknown },
-): { success: false; error: 'DECK_NOT_FOUND' | 'DECK_FORBIDDEN' } | null {
-  if (err instanceof DeckNotFoundError) {
-    set.status = 404;
-    return { success: false, error: 'DECK_NOT_FOUND' };
-  }
-  if (err instanceof DeckOwnershipError) {
-    set.status = 404;
-    return { success: false, error: 'DECK_FORBIDDEN' };
-  }
-  return null;
-}
 
 export const deckRoutes = new Elysia({ prefix: '/api/learning' })
   .use(authMacro)

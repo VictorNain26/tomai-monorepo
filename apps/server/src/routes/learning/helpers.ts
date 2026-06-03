@@ -5,8 +5,41 @@
  */
 
 import { logger } from '../../lib/observability';
-import type { CardType } from '../../db/schema';
 import type { EducationLevelType } from '../../types/index';
+import {
+  DeckNotFoundError,
+  DeckOwnershipError,
+} from '../../services/learning/learning.service';
+
+/**
+ * Map a LearningService deck domain error to an Elysia HTTP response.
+ *
+ * Per the service contract (see learning-errors.ts), both "not found" and
+ * "ownership mismatch" surface as HTTP 404 so the API does not leak the
+ * existence of another user's deck. The distinct error *code* in the body
+ * lets internal callers and tests disambiguate without exposing resource
+ * existence externally.
+ *
+ * Returns the response body when the error was handled, or `null` when the
+ * error was not a known deck domain error (caller must rethrow / fall through).
+ *
+ * `set` is typed loosely (`status?: unknown`) because Elysia's `set` carries
+ * more than just `status`; we only ever assign to `status`.
+ */
+export function handleDeckDomainError(
+  err: unknown,
+  set: { status?: unknown },
+): { success: false; error: 'DECK_NOT_FOUND' | 'DECK_FORBIDDEN' } | null {
+  if (err instanceof DeckNotFoundError) {
+    set.status = 404;
+    return { success: false, error: 'DECK_NOT_FOUND' };
+  }
+  if (err instanceof DeckOwnershipError) {
+    set.status = 404;
+    return { success: false, error: 'DECK_FORBIDDEN' };
+  }
+  return null;
+}
 
 /**
  * Get user's education level with fallback and logging
@@ -26,51 +59,6 @@ export function getUserLevel(
     return 'sixieme' as EducationLevelType;
   }
   return schoolLevel as EducationLevelType;
-}
-
-/**
- * Validate card content based on card type
- */
-export function validateCardContent(
-  cardType: CardType,
-  content: Record<string, unknown>
-): { valid: boolean; error?: string } {
-  switch (cardType) {
-    case 'flashcard':
-      if (!content.front || !content.back) {
-        return { valid: false, error: 'Flashcard requires front and back' };
-      }
-      if (typeof content.front !== 'string' || typeof content.back !== 'string') {
-        return { valid: false, error: 'front and back must be strings' };
-      }
-      break;
-
-    case 'qcm':
-      if (!content.question || !content.options || content.correctIndex === undefined) {
-        return { valid: false, error: 'QCM requires question, options, and correctIndex' };
-      }
-      if (!Array.isArray(content.options) || content.options.length < 2) {
-        return { valid: false, error: 'QCM requires at least 2 options' };
-      }
-      if (typeof content.correctIndex !== 'number' || content.correctIndex < 0 || content.correctIndex >= content.options.length) {
-        return { valid: false, error: 'correctIndex must be a valid option index' };
-      }
-      break;
-
-    case 'vrai_faux':
-      if (!content.statement || content.isTrue === undefined) {
-        return { valid: false, error: 'Vrai/Faux requires statement and isTrue' };
-      }
-      if (typeof content.statement !== 'string' || typeof content.isTrue !== 'boolean') {
-        return { valid: false, error: 'statement must be string, isTrue must be boolean' };
-      }
-      break;
-
-    default:
-      return { valid: false, error: `Unknown card type: ${cardType}` };
-  }
-
-  return { valid: true };
 }
 
 /**

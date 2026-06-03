@@ -28,3 +28,28 @@ export class DeckOwnershipError extends Error {
     this.name = 'DeckOwnershipError';
   }
 }
+
+/**
+ * Thrown when the requested card does not exist OR is not owned by the caller.
+ * Ownership lookups go through a single JOIN-on-userId query, which cannot
+ * distinguish "missing" from "not yours" — both collapse to this error so the
+ * API never leaks the existence of another user's card. Respond with HTTP 404.
+ */
+export class CardNotFoundError extends Error {
+  constructor(cardId: string) {
+    super(`Card not found: ${cardId}`);
+    this.name = 'CardNotFoundError';
+  }
+}
+
+/**
+ * Thrown when a card's content does not satisfy the invariants of its type
+ * (e.g. a flashcard missing `front`/`back`, a QCM with an out-of-range
+ * `correctIndex`). Callers should respond with HTTP 400.
+ */
+export class CardValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CardValidationError';
+  }
+}
