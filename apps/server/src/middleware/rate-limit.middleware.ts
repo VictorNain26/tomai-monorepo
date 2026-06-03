@@ -26,14 +26,24 @@ const DEFAULT_CONFIG: RateLimitConfig = {
 
 /**
  * Générateur de clé par défaut basé sur IP
+ *
+ * Production: En derrière un unique proxy de confiance (Koyeb), l'IP client réelle
+ * est l'entrée RIGHTMOST de X-Forwarded-For (ajoutée par le proxy).
+ * Les entrées leftmost sont contrôlables par le client → non fiables en prod.
+ *
+ * Développement: L'IP vient directement de la connexion (aucun proxy).
  */
-function defaultKeyGenerator(context: Context): string {
-  // Essayer d'obtenir la vraie IP (derrière proxy/CDN)
+export function defaultKeyGenerator(context: Context): string {
   const forwardedFor = context.request.headers.get('x-forwarded-for');
   const realIp = context.request.headers.get('x-real-ip');
   const cfConnectingIp = context.request.headers.get('cf-connecting-ip');
 
-  const ip = cfConnectingIp ?? realIp ?? forwardedFor?.split(',')[0] ?? 'unknown';
+  const ip = isProduction() && forwardedFor
+    ? // Production: take the RIGHTMOST IP from X-Forwarded-For
+      // (added by Koyeb proxy), not the leftmost (client-controllable)
+      forwardedFor.split(',').map((p) => p.trim()).at(-1) ?? 'unknown'
+    : // Development or fallback: use cloudflare > x-real-ip > direct connection
+      cfConnectingIp ?? realIp ?? 'unknown';
 
   return `ip:${ip}`;
 }
@@ -60,15 +70,16 @@ function checkRateLimit(
   identifier: string,
   maxRequests: number,
   windowSeconds: number
-): { allowed: boolean; remaining: number } {
+): { allowed: boolean; remaining: number; resetTime: number } {
   const now = Date.now();
   const key = `ratelimit:${identifier}`;
   const record = rateLimitStore.get(key);
 
   // No record or expired
   if (!record || record.resetTime <= now) {
-    rateLimitStore.set(key, { count: 1, resetTime: now + windowSeconds * 1000 });
-    return { allowed: true, remaining: maxRequests - 1 };
+    const resetTime = now + windowSeconds * 1000;
+    rateLimitStore.set(key, { count: 1, resetTime });
+    return { allowed: true, remaining: maxRequests - 1, resetTime };
   }
 
   // Increment
@@ -76,7 +87,7 @@ function checkRateLimit(
   const allowed = record.count <= maxRequests;
   const remaining = Math.max(0, maxRequests - record.count);
 
-  return { allowed, remaining };
+  return { allowed, remaining, resetTime: record.resetTime };
 }
 
 /**
@@ -95,7 +106,7 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
       const identifier = finalConfig.keyGenerator!(context);
 
       // Vérifier rate limit (in-memory, synchrone)
-      const { allowed, remaining } = checkRateLimit(
+      const { allowed, remaining, resetTime } = checkRateLimit(
         identifier,
         finalConfig.maxRequests,
         finalConfig.windowSeconds
@@ -106,13 +117,15 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
         ...(context.set.headers as Record<string, string>),
         'X-RateLimit-Limit': finalConfig.maxRequests.toString(),
         'X-RateLimit-Remaining': remaining.toString(),
-        'X-RateLimit-Reset': (Date.now() + finalConfig.windowSeconds * 1000).toString(),
+        'X-RateLimit-Reset': Math.ceil(resetTime / 1000).toString(),
       };
 
       (context.set.headers as Record<string, string>) = headers;
 
       // Si limite dépassée, bloquer la requête
       if (!allowed) {
+        const retryAfterSeconds = Math.ceil((resetTime - Date.now()) / 1000);
+
         logger.warn('Rate limit exceeded', {
           operation: 'rate-limit:exceeded',
           identifier,
@@ -124,10 +137,11 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
         });
 
         context.set.status = 429;
+        (context.set.headers as Record<string, string>)['Retry-After'] = retryAfterSeconds.toString();
         return {
           error: 'Too Many Requests',
           message: `Rate limit exceeded. Maximum ${finalConfig.maxRequests} requests per ${finalConfig.windowSeconds} seconds.`,
-          retryAfter: finalConfig.windowSeconds,
+          retryAfter: retryAfterSeconds,
         };
       }
 
@@ -144,15 +158,18 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
       return;
 
     } catch (error) {
-      // En cas d'erreur, permettre la requête (fail-open)
+      // Fail-closed: On error, block the request (security > availability)
       logger.error('Rate limit middleware error', {
         operation: 'rate-limit:error',
         _error: error instanceof Error ? error.message : String(error),
-        severity: 'medium' as const,
+        severity: 'high' as const,
       });
 
-      // Continuer sans bloquer (graceful degradation)
-      return;
+      context.set.status = 503;
+      return {
+        error: 'Service Unavailable',
+        message: 'Rate limit check failed. Please try again later.',
+      };
     }
   };
 }

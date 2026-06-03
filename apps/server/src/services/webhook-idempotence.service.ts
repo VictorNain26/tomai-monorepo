@@ -7,7 +7,7 @@
 
 import { db } from '../db/connection.js';
 import { webhookEvents, type WebhookSource } from '../db/schema.js';
-import { eq, lt } from 'drizzle-orm';
+import { lt } from 'drizzle-orm';
 import { logger } from '../lib/observability.js';
 
 // =============================================
@@ -25,76 +25,68 @@ const CONFIG = {
 
 class WebhookIdempotenceService {
   /**
-   * Vérifie si un événement a déjà été traité
+   * Atomically attempts to claim an event for processing.
+   *
+   * Tries to INSERT the event. If the eventId already exists (unique constraint),
+   * the INSERT is ignored via ON CONFLICT DO NOTHING.
+   *
+   * Returns: true if this call inserted the row (event is new, should be processed)
+   *          false if row already existed (event was already claimed, skip processing)
+   *
+   * Throws: DB error on unexpected failures (fail-closed: caller should return 503)
    */
-  async isProcessed(eventId: string): Promise<boolean> {
-    try {
-      const existing = await db
-        .select({ id: webhookEvents.id })
-        .from(webhookEvents)
-        .where(eq(webhookEvents.eventId, eventId))
-        .limit(1);
-
-      return existing.length > 0;
-    } catch (error) {
-      logger.error('Failed to check webhook idempotence', {
-        operation: 'webhook:idempotence:check',
-        eventId,
-        _error: error instanceof Error ? error.message : String(error),
-        severity: 'high' as const,
-      });
-      // En cas d'erreur, on autorise le traitement (fail-open)
-      return false;
-    }
-  }
-
-  /**
-   * Marque un événement comme traité
-   */
-  async markProcessed(
+  async tryClaim(
     eventId: string,
     source: WebhookSource,
     eventType: string
   ): Promise<boolean> {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + CONFIG.EVENT_TTL_DAYS);
+
     try {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + CONFIG.EVENT_TTL_DAYS);
+      // Atomic: INSERT ... ON CONFLICT DO NOTHING ... RETURNING id
+      // Returns array with 1 element if inserted, empty array if conflict (already exists)
+      const result = await db
+        .insert(webhookEvents)
+        .values({
+          eventId,
+          source,
+          eventType,
+          expiresAt,
+        })
+        .onConflictDoNothing()
+        .returning({ id: webhookEvents.id });
 
-      await db.insert(webhookEvents).values({
-        eventId,
-        source,
-        eventType,
-        expiresAt,
-      });
+      const inserted = result.length === 1;
 
-      logger.debug('Webhook event marked as processed', {
-        operation: 'webhook:idempotence:mark',
-        eventId,
-        source,
-        eventType,
-      });
-
-      return true;
-    } catch (error) {
-      // Ignore duplicate key errors (event already processed)
-      if (error instanceof Error && error.message.includes('duplicate key')) {
-        logger.debug('Webhook event already marked (duplicate)', {
-          operation: 'webhook:idempotence:duplicate',
+      if (inserted) {
+        logger.debug('Webhook event claimed for processing', {
+          operation: 'webhook:idempotence:claim',
+          eventId,
+          source,
+          eventType,
+        });
+      } else {
+        logger.debug('Webhook event already claimed (duplicate), skipping', {
+          operation: 'webhook:idempotence:claim:duplicate',
           eventId,
         });
-        return false;
       }
 
-      logger.error('Failed to mark webhook as processed', {
-        operation: 'webhook:idempotence:mark',
+      return inserted;
+    } catch (error) {
+      // Unexpected DB error: fail-closed (caller must return 503)
+      logger.error('Failed to claim webhook event (atomic operation)', {
+        operation: 'webhook:idempotence:claim:error',
         eventId,
         source,
         _error: error instanceof Error ? error.message : String(error),
-        severity: 'medium' as const,
+        severity: 'high' as const,
       });
-      return false;
+      throw error;
     }
   }
+
 
   /**
    * Nettoie les événements expirés (à appeler périodiquement ou via cron)
@@ -139,15 +131,8 @@ export const webhookIdempotenceService = new WebhookIdempotenceService();
 // =============================================
 
 /**
- * Vérifie si événement RevenueCat déjà traité
+ * Atomically claims a RevenueCat event for processing
  */
-export async function isRevenueCatEventProcessed(eventId: string): Promise<boolean> {
-  return webhookIdempotenceService.isProcessed(eventId);
-}
-
-/**
- * Marque événement RevenueCat comme traité
- */
-export async function markRevenueCatEventProcessed(eventId: string, eventType: string): Promise<void> {
-  await webhookIdempotenceService.markProcessed(eventId, 'revenuecat', eventType);
+export async function tryClaimRevenueCatEvent(eventId: string, eventType: string): Promise<boolean> {
+  return webhookIdempotenceService.tryClaim(eventId, 'revenuecat', eventType);
 }

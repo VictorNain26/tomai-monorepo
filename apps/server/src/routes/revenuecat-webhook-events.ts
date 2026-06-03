@@ -63,8 +63,13 @@ function parseChildrenIds(attributes?: Record<string, { value: string }>): strin
     if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'string')) {
       return parsed;
     }
-  } catch {
-    // Invalid JSON
+  } catch (error) {
+    // Invalid JSON in subscriber_attributes.children_ids
+    logger.warn('Failed to parse children_ids from webhook attributes', {
+      operation: 'revenuecat:webhook:parse_children_ids',
+      raw: childrenIdsAttr,
+      _error: error instanceof Error ? error.message : String(error),
+    });
   }
 
   return [];

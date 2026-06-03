@@ -3,8 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { logger } from '../lib/observability';
 import { env, isProduction } from '../config/env.js';
 import {
-  isRevenueCatEventProcessed,
-  markRevenueCatEventProcessed,
+  tryClaimRevenueCatEvent,
 } from '../services/webhook-idempotence.service';
 import {
   handleInitialPurchase,
@@ -36,16 +35,27 @@ export function createRevenueCatWebhookRoutes() {
   return new Elysia({ prefix: '/webhooks/revenuecat' }).post(
     '/',
     async ({ request, body, set }) => {
-      if (WEBHOOK_AUTH_HEADER) {
-        const authHeader = request.headers.get('authorization');
-        if (!authHeaderIsValid(authHeader, WEBHOOK_AUTH_HEADER)) {
-          logger.warn('[RevenueCat Webhook] Invalid authorization', {
-            operation: 'revenuecat:webhook:auth',
-            severity: 'high' as const,
-          });
-          set.status = 401;
-          return { error: 'Unauthorized' };
-        }
+      // Fail-closed: webhook MUST be protected by secret in all environments
+      // If secret is not configured, reject with 503 (not ready)
+      if (!WEBHOOK_AUTH_HEADER) {
+        logger.error('[RevenueCat Webhook] Webhook secret not configured (critical)', {
+          operation: 'revenuecat:webhook:unconfigured',
+          _error: 'REVENUECAT_WEBHOOK_AUTH not set',
+          severity: 'high' as const,
+        });
+        set.status = 503;
+        return { error: 'Webhook not configured' };
+      }
+
+      // Secret exists: validate it with constant-time comparison
+      const authHeader = request.headers.get('authorization');
+      if (!authHeaderIsValid(authHeader, WEBHOOK_AUTH_HEADER)) {
+        logger.warn('[RevenueCat Webhook] Invalid authorization', {
+          operation: 'revenuecat:webhook:auth',
+          severity: 'high' as const,
+        });
+        set.status = 401;
+        return { error: 'Unauthorized' };
       }
 
       const parsed = revenueCatWebhookSchema.safeParse(body);
@@ -64,15 +74,32 @@ export function createRevenueCatWebhookRoutes() {
         return { received: true, skipped: 'sandbox' };
       }
 
-      if (await isRevenueCatEventProcessed(event.id)) {
-        logger.info(`[RevenueCat Webhook] Duplicate event skipped: ${event.id}`, {
+      // Atomic idempotence: try to claim the event for processing
+      // If claim fails (DB error), the thrown error bubbles → 503 (fail-closed)
+      let claimed: boolean;
+      try {
+        claimed = await tryClaimRevenueCatEvent(event.id, event.type);
+      } catch (error) {
+        // DB error during claim operation: fail-closed
+        logger.error(`[RevenueCat Webhook] Failed to claim event (idempotence check)`, {
+          operation: 'revenuecat:webhook:claim',
+          eventId: event.id,
+          _error: error instanceof Error ? error.message : String(error),
+          severity: 'high' as const,
+        });
+        set.status = 503;
+        return { error: 'Webhook idempotence check failed' };
+      }
+
+      if (!claimed) {
+        logger.info(`[RevenueCat Webhook] Event already processed: ${event.id}`, {
           operation: 'revenuecat:webhook:duplicate',
           eventId: event.id,
         });
         return { received: true, duplicate: true };
       }
 
-      logger.info(`[RevenueCat Webhook] Received: ${event.type}`, {
+      logger.info(`[RevenueCat Webhook] Processing new event: ${event.type}`, {
         operation: 'revenuecat:webhook:receive',
         eventId: event.id,
         eventType: event.type,
@@ -113,7 +140,6 @@ export function createRevenueCatWebhookRoutes() {
             });
         }
 
-        await markRevenueCatEventProcessed(event.id, event.type);
         return { received: true, event: event.type };
       } catch (error) {
         logger.error(`[RevenueCat Webhook] Error processing ${event.type}`, {
