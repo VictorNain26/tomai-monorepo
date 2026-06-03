@@ -3,17 +3,20 @@
  * 0 mocks — tests la vraie implémentation crypto (except config/env module)
  */
 
-import { describe, it, expect, mock } from 'bun:test';
+import { describe, it, expect, mock, afterEach } from 'bun:test';
 
 // Mock env module BEFORE importing encryption.ts
-// encryption.ts reads env.PRONOTE_ENCRYPTION_KEY at module load time
+// encryption.ts reads env.PRONOTE_ENCRYPTION_KEY at runtime (in importSecretKeyMaterial)
 const TEST_KEY = 'a'.repeat(32) + 'b'.repeat(8); // 40 chars, > 32 min
 
+// Make env mutable so tests can change PRONOTE_ENCRYPTION_KEY per case
+const mockEnv: { PRONOTE_ENCRYPTION_KEY?: string; NODE_ENV: string } = {
+  PRONOTE_ENCRYPTION_KEY: TEST_KEY,
+  NODE_ENV: 'test',
+};
+
 mock.module('../config/env', () => ({
-  env: {
-    PRONOTE_ENCRYPTION_KEY: TEST_KEY,
-    NODE_ENV: 'test',
-  },
+  env: mockEnv,
 }));
 
 // Import after mock is set
@@ -99,6 +102,23 @@ describe('Encryption Service', () => {
     it('should return true when properly configured', async () => {
       const result = await validateEncryptionSetup();
       expect(result).toBe(true);
+    });
+  });
+
+  describe('Key validation', () => {
+    afterEach(() => {
+      // Restore valid key for subsequent tests
+      mockEnv.PRONOTE_ENCRYPTION_KEY = TEST_KEY;
+    });
+
+    it('should throw when key is missing', async () => {
+      mockEnv.PRONOTE_ENCRYPTION_KEY = undefined;
+      expect(encrypt('data')).rejects.toThrow(/at least 32 characters/);
+    });
+
+    it('should throw when key is too short', async () => {
+      mockEnv.PRONOTE_ENCRYPTION_KEY = 'short';
+      expect(encrypt('data')).rejects.toThrow(/at least 32 characters/);
     });
   });
 });
