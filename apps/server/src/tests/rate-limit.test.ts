@@ -24,7 +24,7 @@ mock.module('../config/env', () => ({
 }));
 
 // Import after mocks
-const { createRateLimitMiddleware } = await import('../middleware/rate-limit.middleware');
+const { createRateLimitMiddleware, defaultKeyGenerator } = await import('../middleware/rate-limit.middleware');
 
 // ============================================
 // Test Helpers
@@ -68,12 +68,8 @@ describe('Rate Limit Middleware', () => {
         maxRequests: 1000, // Very high limit to avoid rate limit blocking this test
         windowSeconds: 60,
         keyGenerator: (context: Context): string => {
-          // Inline the default key generation logic for testing
-          const forwardedFor = context.request.headers.get('x-forwarded-for');
-          const ip = mockIsProduction && forwardedFor
-            ? forwardedFor.split(',').map((p) => p.trim()).at(-1) ?? 'unknown'
-            : 'development';
-          const key = `ip:${ip}`;
+          // Use the real defaultKeyGenerator function
+          const key = defaultKeyGenerator(context);
           extractedKeys.add(key);
           return key;
         },
@@ -121,11 +117,8 @@ describe('Rate Limit Middleware', () => {
         maxRequests: 1000,
         windowSeconds: 60,
         keyGenerator: (context: Context): string => {
-          const forwardedFor = context.request.headers.get('x-forwarded-for');
-          const ip = mockIsProduction && forwardedFor
-            ? forwardedFor.split(',').map((p) => p.trim()).at(-1) ?? 'unknown'
-            : 'development';
-          const key = `ip:${ip}`;
+          // Use the real defaultKeyGenerator function
+          const key = defaultKeyGenerator(context);
           extractedKeys.add(key);
           return key;
         },
@@ -139,8 +132,9 @@ describe('Rate Limit Middleware', () => {
 
       const result = middleware(context);
       expect(result).toBeUndefined();
-      // In dev mode, the key should be 'ip:development' (fallback), not any real IPs
-      expect(extractedKeys.has('ip:development')).toBe(true);
+      // In dev mode, when no X-Forwarded-For is present and cfConnectingIp is 7.7.7.7,
+      // the key should use cfConnectingIp
+      expect(extractedKeys.has('ip:7.7.7.7')).toBe(true);
       expect(extractedKeys.has('ip:9.9.9.9')).toBe(false);
     });
 

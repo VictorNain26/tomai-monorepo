@@ -44,8 +44,8 @@ class WebhookIdempotenceService {
     expiresAt.setDate(expiresAt.getDate() + CONFIG.EVENT_TTL_DAYS);
 
     try {
-      // Atomic: INSERT ... ON CONFLICT DO NOTHING
-      // Returns { rowCount: 1 } if inserted, { rowCount: 0 } if conflict (already exists)
+      // Atomic: INSERT ... ON CONFLICT DO NOTHING ... RETURNING id
+      // Returns array with 1 element if inserted, empty array if conflict (already exists)
       const result = await db
         .insert(webhookEvents)
         .values({
@@ -54,9 +54,10 @@ class WebhookIdempotenceService {
           eventType,
           expiresAt,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({ id: webhookEvents.id });
 
-      const inserted = (result as unknown as { rowCount?: number })?.rowCount === 1;
+      const inserted = result.length === 1;
 
       if (inserted) {
         logger.debug('Webhook event claimed for processing', {

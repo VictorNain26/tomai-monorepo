@@ -35,16 +35,27 @@ export function createRevenueCatWebhookRoutes() {
   return new Elysia({ prefix: '/webhooks/revenuecat' }).post(
     '/',
     async ({ request, body, set }) => {
-      if (WEBHOOK_AUTH_HEADER) {
-        const authHeader = request.headers.get('authorization');
-        if (!authHeaderIsValid(authHeader, WEBHOOK_AUTH_HEADER)) {
-          logger.warn('[RevenueCat Webhook] Invalid authorization', {
-            operation: 'revenuecat:webhook:auth',
-            severity: 'high' as const,
-          });
-          set.status = 401;
-          return { error: 'Unauthorized' };
-        }
+      // Fail-closed: webhook MUST be protected by secret in all environments
+      // If secret is not configured, reject with 503 (not ready)
+      if (!WEBHOOK_AUTH_HEADER) {
+        logger.error('[RevenueCat Webhook] Webhook secret not configured (critical)', {
+          operation: 'revenuecat:webhook:unconfigured',
+          _error: 'REVENUECAT_WEBHOOK_AUTH not set',
+          severity: 'high' as const,
+        });
+        set.status = 503;
+        return { error: 'Webhook not configured' };
+      }
+
+      // Secret exists: validate it with constant-time comparison
+      const authHeader = request.headers.get('authorization');
+      if (!authHeaderIsValid(authHeader, WEBHOOK_AUTH_HEADER)) {
+        logger.warn('[RevenueCat Webhook] Invalid authorization', {
+          operation: 'revenuecat:webhook:auth',
+          severity: 'high' as const,
+        });
+        set.status = 401;
+        return { error: 'Unauthorized' };
       }
 
       const parsed = revenueCatWebhookSchema.safeParse(body);

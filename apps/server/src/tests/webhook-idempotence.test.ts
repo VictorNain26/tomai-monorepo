@@ -44,13 +44,15 @@ const mockDbChain = {
   insert: mock(() => ({
     values: mock(() => {
       // Return object with onConflictDoNothing for tryClaim
-      // Also make it await-able for old markProcessed path
       if (dbInsertShouldThrow) {
         return Promise.reject(dbInsertShouldThrow);
       }
-      const result = Promise.resolve({ rowCount: dbInsertRowCount });
+      // Simulate .returning({ id: ... }).then result: array of inserted rows
+      const result = Promise.resolve(dbInsertRowCount === 1 ? [{ id: 'evt_id' }] : []);
       return {
-        onConflictDoNothing: mock(() => result),
+        onConflictDoNothing: mock(() => ({
+          returning: mock(() => result),
+        })),
       };
     }),
   })),
@@ -105,13 +107,13 @@ describe('Webhook Idempotence Service', () => {
   });
 
   describe('tryClaim - Atomic idempotence', () => {
-    it('should return true when event is newly claimed (rowCount === 1)', async () => {
+    it('should return true when event is newly claimed (result.length === 1)', async () => {
       dbInsertRowCount = 1;
       const result = await webhookIdempotenceService.tryClaim('evt_new', 'revenuecat', 'INITIAL_PURCHASE');
       expect(result).toBe(true);
     });
 
-    it('should return false when event already claimed (rowCount === 0)', async () => {
+    it('should return false when event already claimed (result.length === 0)', async () => {
       dbInsertRowCount = 0;
       const result = await webhookIdempotenceService.tryClaim('evt_dup', 'revenuecat', 'RENEWAL');
       expect(result).toBe(false);

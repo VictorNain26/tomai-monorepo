@@ -197,8 +197,7 @@ export const auth = betterAuth({
 
   plugins: [
     // openAPI + mcp only in development (expose internal auth structure in prod = security risk)
-    ...(isDevelopment() ? [openAPI()] : []),
-    ...(isDevelopment() ? [mcp({ loginPage: "/sign-in" })] : []),
+    ...(isDevelopment() ? [openAPI(), mcp({ loginPage: "/sign-in" })] : []),
     expo(),     // Mobile app support (deep links, secure storage)
 
     // Admin plugin for Quick Switch (parent impersonation)
