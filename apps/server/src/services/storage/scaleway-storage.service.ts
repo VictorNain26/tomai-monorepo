@@ -16,7 +16,7 @@ import {
   HeadObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { env } from '../../config/environment.config.js';
+import { env } from '../../config/env.js';
 import { logger } from '../../lib/observability.js';
 
 // ============================================================================

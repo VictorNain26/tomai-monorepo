@@ -1,4 +1,4 @@
-import { env } from '../config/environment.config.js';
+import { env } from '../config/env.js';
 import { logger } from '../lib/observability.js';
 import { tokenQuotaService } from './token-quota.service.js';
 import { memoryMonitor } from '../middleware/memory-monitor.middleware.js';

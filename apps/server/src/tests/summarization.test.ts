@@ -79,15 +79,17 @@ mock.module('../lib/ai/mistral-client', () => ({
   setMistralClient: mock(() => {}),
 }));
 
-// App config mock — config Mistral nécessaire au chargement du client
-mock.module('../config/app.config', () => ({
-  appConfig: {
-    ai: {
-      mistral: {
-        apiKey: 'test-key',
-        model: 'mistral-small-latest',
-      },
-    },
+// Env config mock — config Mistral nécessaire au chargement du client
+mock.module('../config/env', () => ({
+  env: {
+    MISTRAL_API_KEY: 'test-key',
+    MISTRAL_MODEL: 'mistral-small-latest',
+    MISTRAL_TEMPERATURE: 0.7,
+    MISTRAL_MAX_TOKENS: 16384,
+    MISTRAL_TIMEOUT: 60000,
+    MISTRAL_RETRY_ATTEMPTS: 3,
+    MISTRAL_RETRY_DELAY: 1000,
+    NODE_ENV: 'test',
   },
 }));
 

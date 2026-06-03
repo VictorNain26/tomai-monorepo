@@ -9,8 +9,7 @@ import { swagger } from '@elysiajs/swagger';
 
 // Auth et configuration
 import { auth } from './lib/auth.js';
-import { appConfig } from './config/app.config.js';
-import { env, envUtils } from './config/environment.config.js';
+import { env, isDevelopment, getCorsOrigins } from './config/env.js';
 
 // Routes modulaires
 import { apiRoutes } from './routes/api/index.js';
@@ -34,7 +33,7 @@ import { db } from './db/connection.js';
 import { sql } from 'drizzle-orm';
 import { cacheService } from './services/memory-cache.service.js';
 
-const isDev = envUtils.isDevelopment;
+const isDev = isDevelopment();
 
 // Application Elysia avec architecture modulaire
 const app = new Elysia({ name: 'tomai-server' })
@@ -46,7 +45,7 @@ const app = new Elysia({ name: 'tomai-server' })
   // CORS Configuration DÉFINITIVE - Cross-Origin pour frontend/backend séparés
   .use(cors({
     // PRODUCTION: www.tomia.fr + koyeb.app domains autorisés
-    origin: appConfig.security.corsOrigins,
+    origin: getCorsOrigins(),
     // CRITICAL: credentials=true pour cookies SameSite=none cross-origin
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -161,8 +160,8 @@ const app = new Elysia({ name: 'tomai-server' })
     // 3. AI Service Check — Mistral key presence only, no API roundtrip to
     // avoid rate-limit noise on the global health endpoint. The dedicated
     // /health/ai endpoint below probes the actual API with a tiny call.
-    const mistralModel = appConfig.ai.mistral?.model ?? 'mistral-medium-latest';
-    const hasMistralKey = !!appConfig.ai.mistral?.apiKey;
+    const mistralModel = env.MISTRAL_MODEL;
+    const hasMistralKey = !!env.MISTRAL_API_KEY;
 
     if (!hasMistralKey) {
       checks.ai = {
@@ -202,9 +201,9 @@ const app = new Elysia({ name: 'tomai-server' })
   // immune to upstream rate-limit blips.
   .get('/health/ai', async ({ set }) => {
     const startTime = Date.now();
-    const model = appConfig.ai.mistral?.model ?? 'mistral-medium-latest';
+    const model = env.MISTRAL_MODEL;
 
-    if (!appConfig.ai.mistral?.apiKey) {
+    if (!env.MISTRAL_API_KEY) {
       set.status = 503;
       return {
         status: 'unhealthy',

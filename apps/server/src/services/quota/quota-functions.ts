@@ -2,7 +2,7 @@ import { db } from '../../db/connection.js';
 import { userSubscriptions, subscriptionPlans } from '../../db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { logger } from '../../lib/observability.js';
-import { appConfig } from '../../config/app.config.js';
+import { env } from '../../config/env.js';
 import {
   QUOTA_CONFIG,
   getDailyResetTime,
@@ -112,7 +112,7 @@ export async function checkQuota(userId: string): Promise<QuotaCheckResult> {
   // Feature flag: when enforcement is off, every caller gets unlimited access.
   // Counters are still incremented (see incrementTokenUsage) so usage data is
   // collected for product analytics and can be verified before flipping the flag.
-  if (!appConfig.features.quotaEnforcementEnabled) {
+  if (!env.QUOTA_ENFORCEMENT_ENABLED) {
     return createDefaultQuotaResult(999_999, 999_999, 'premium');
   }
   return checkQuotaReal(userId);

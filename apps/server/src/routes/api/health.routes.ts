@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia';
 import { db } from '../../db/connection';
 import { sql } from 'drizzle-orm';
-import { env, envUtils } from '../../config/environment.config';
+import { env, isDevelopment } from '../../config/env';
 import { cacheService } from '../../services/memory-cache.service';
 import { logger } from '../../lib/observability';
 import type { EducationLevelType } from '../../types/education.types';
@@ -10,7 +10,7 @@ export const healthApiRoutes = new Elysia({ name: 'api-health' })
 
   .get('/curriculum-health', async ({ set }) => {
     // Diagnostic endpoint - development only
-    if (!envUtils.isDevelopment) {
+    if (!isDevelopment()) {
       set.status = 404;
       return { error: 'Not found' };
     }
@@ -47,7 +47,7 @@ export const healthApiRoutes = new Elysia({ name: 'api-health' })
 
   .post('/test-rag', async ({ body, set }) => {
     // Diagnostic endpoint - development only
-    if (!envUtils.isDevelopment) {
+    if (!isDevelopment()) {
       set.status = 404;
       return { error: 'Not found' };
     }
