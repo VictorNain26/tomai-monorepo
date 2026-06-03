@@ -51,8 +51,8 @@ mock.module('../config/env', () => ({
   isDevelopment: () => true,
   isInDocker: () => false,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
-  getTrustedOrigins: () => ['http://localhost:3000', 'http://localhost:3001'],
-  getCorsOrigins: () => ['http://localhost:3000', 'http://localhost:3001', 'tomia://', 'exp://'],
+  getTrustedOrigins: () => ['http://localhost:3000', 'http://localhost:3001', 'tomia://', 'exp://'],
+  getCorsOrigins: () => ['http://localhost:3000', 'http://localhost:3001'],
 }));
 
 mock.module('../db/connection', () => ({

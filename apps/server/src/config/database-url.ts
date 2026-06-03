@@ -9,6 +9,8 @@
  * 2. connection.ts: Uses the singleton env, but delegates here to avoid duplication
  */
 
+import { existsSync } from 'node:fs';
+
 /**
  * Detects if running in Docker container
  */
@@ -17,12 +19,7 @@ function isRunningInDocker(): boolean {
     return true;
   }
 
-  try {
-    const fs = require('fs');
-    return fs.existsSync('/.dockerenv');
-  } catch {
-    return false;
-  }
+  return existsSync('/.dockerenv');
 }
 
 /**

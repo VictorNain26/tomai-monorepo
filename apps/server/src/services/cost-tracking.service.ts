@@ -21,6 +21,7 @@
 import { db } from '../db/connection.js';
 import { costTracking } from '../db/schema.js';
 import { logger } from '../lib/observability.js';
+import { env } from '../config/env.js';
 
 export type AiOperation = 'chat' | 'summarization' | 'auto-title' | 'card-generation' | 'intent-classify' | 'document-analysis';
 
@@ -48,15 +49,7 @@ const MODEL_PRICING_USD_PER_MILLION: Record<string, { input: number; output: num
 
 const CACHE_DISCOUNT = 0.10;
 
-function resolveUsdRate(): number {
-  const raw = Bun.env['USD_TO_EUR_RATE'];
-  if (!raw) return 0.92;
-  const parsed = parseFloat(raw);
-  if (!Number.isFinite(parsed) || parsed <= 0) return 0.92;
-  return parsed;
-}
-
-const USD_TO_EUR = resolveUsdRate();
+const USD_TO_EUR = env.USD_TO_EUR_RATE;
 
 /** Normalize provider-suffixed model IDs down to the pricing key. */
 function normalizeModelId(aiModel: string): string {

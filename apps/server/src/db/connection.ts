@@ -8,6 +8,7 @@ import postgres, { type Sql } from 'postgres';
 import * as schema from './schema';
 import { logger } from '../lib/observability';
 import { resolveDatabaseUrl } from '../config/database-url.js';
+import { env } from '../config/env.js';
 
 // ============================================================================
 // LAZY INITIALIZATION (2026 Best Practice for Testability)
@@ -46,7 +47,7 @@ function isSupabaseHost(url: string): boolean {
 function initializeConnection(): void {
   if (_initialized) return;
 
-  const environment = Bun.env['NODE_ENV'] ?? 'development';
+  const environment = env.NODE_ENV;
   const connectionString = getConnectionString();
   const isSupabase = isSupabaseHost(connectionString);
 

@@ -7,6 +7,7 @@
  */
 
 import { z } from 'zod';
+import { existsSync } from 'node:fs';
 import { resolveDatabaseUrl } from './database-url.js';
 
 /**
@@ -16,13 +17,7 @@ function isRunningInDocker(): boolean {
   if (Bun.env['DOCKER_CONTAINER'] === 'true') {
     return true;
   }
-
-  try {
-    const fs = require('fs');
-    return fs.existsSync('/.dockerenv');
-  } catch {
-    return false;
-  }
+  return existsSync('/.dockerenv');
 }
 
 const isProd = Bun.env['NODE_ENV'] === 'production';
@@ -58,10 +53,10 @@ const EnvSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
   // Pronote encryption (required in production if Pronote is enabled)
-  PRONOTE_ENCRYPTION_KEY: z.string().optional(),
+  PRONOTE_ENCRYPTION_KEY: z.string().min(32, 'PRONOTE_ENCRYPTION_KEY must be at least 32 characters').optional(),
 
   // RevenueCat webhooks (required in production)
-  REVENUECAT_WEBHOOK_AUTH: z.string().optional(),
+  REVENUECAT_WEBHOOK_AUTH: z.string().min(32, 'REVENUECAT_WEBHOOK_AUTH must be at least 32 characters').optional(),
 
   // Session configuration
   SESSION_MAX_AGE: z.coerce.number().int().default(604800), // 7 days in seconds
@@ -104,6 +99,9 @@ const EnvSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS_API: z.coerce.number().int().default(100),
   RATE_LIMIT_MAX_REQUESTS_CHAT: z.coerce.number().int().default(10),
 
+  // Currency conversion
+  USD_TO_EUR_RATE: z.coerce.number().positive().default(0.92),
+
   // Feature flags
   QUOTA_ENFORCEMENT_ENABLED: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
 
@@ -136,12 +134,8 @@ function parseEnv(): EnvType {
   if (isProd) {
     const prodChecks: string[] = [];
 
-    if (!result.data.BETTER_AUTH_SECRET || result.data.BETTER_AUTH_SECRET.length < 32) {
-      prodChecks.push('BETTER_AUTH_SECRET must be at least 32 characters (production)');
-    }
-
-    if (!result.data.REVENUECAT_WEBHOOK_AUTH || result.data.REVENUECAT_WEBHOOK_AUTH.length < 32) {
-      prodChecks.push('REVENUECAT_WEBHOOK_AUTH must be at least 32 characters (production)');
+    if (!result.data.REVENUECAT_WEBHOOK_AUTH) {
+      prodChecks.push('REVENUECAT_WEBHOOK_AUTH is required (production)');
     }
 
     if (!result.data.PRONOTE_ENCRYPTION_KEY) {
