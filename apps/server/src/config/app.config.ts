@@ -169,8 +169,9 @@ function createSecurityConfig(): AppConfig['security'] {
     // Origins de développement par défaut
     if (Bun.env['NODE_ENV'] === 'development') {
       origins.push(
-        'http://localhost:3000',
-        'http://localhost:3001'
+        'http://localhost:3000', // server
+        'http://localhost:3001', // landing
+        'http://localhost:3002'  // web app
       );
     }
     

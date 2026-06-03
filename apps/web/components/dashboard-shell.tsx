@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Role } from "@/lib/roles";
 import { ROLE_LABEL } from "@/lib/roles";
+import { LogoutButton } from "@/components/logout-button";
 
 export interface NavItem {
   href: string;
@@ -36,12 +37,7 @@ export function DashboardShell({ role, nav, children }: DashboardShellProps) {
             </Link>
           ))}
         </nav>
-        <Link
-          href="/login"
-          className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
-        >
-          Déconnexion
-        </Link>
+        <LogoutButton />
       </aside>
       <main className="flex-1 p-8">{children}</main>
     </div>

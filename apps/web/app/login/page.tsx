@@ -1,61 +1,126 @@
-import Link from "next/link";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ROLES, ROLE_HOME, ROLE_LABEL } from "@/lib/roles";
+import { signIn, signUp } from "@/lib/auth-client";
+import { ROLE_HOME, type Role } from "@/lib/roles";
 
-/**
- * Écran de connexion (template).
- * TODO (Tâche 8, doc-first) : brancher Better Auth web (signIn email + Google),
- * dériver le rôle de la session et rediriger via ROLE_HOME. Pour l'instant, le
- * sélecteur de rôle ci-dessous permet de naviguer dans les espaces template.
- */
+type Mode = "signin" | "signup";
+
 export default function LoginPage() {
+  const router = useRouter();
+  const [mode, setMode] = useState<Mode>("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const result =
+      mode === "signin"
+        ? await signIn.email({ email, password })
+        : await signUp.email({ email, password, name });
+
+    setLoading(false);
+
+    if (result.error) {
+      setError(result.error.message ?? "Une erreur est survenue.");
+      return;
+    }
+
+    const role = (result.data?.user as { role?: Role } | undefined)?.role ?? "parent";
+    router.push(ROLE_HOME[role]);
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Connexion à Tom</CardTitle>
-          <CardDescription>Accédez à votre espace.</CardDescription>
+          <CardTitle className="text-2xl">
+            {mode === "signin" ? "Connexion à Tom" : "Créer un compte"}
+          </CardTitle>
+          <CardDescription>
+            {mode === "signin" ? "Accédez à votre espace." : "Inscrivez-vous pour commencer."}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="vous@exemple.fr"
-              className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="password" className="text-sm font-medium">
-              Mot de passe
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-          <Button disabled className="w-full">
-            Se connecter (à brancher)
-          </Button>
-
-          <div className="mt-2 border-t border-border pt-4">
-            <p className="mb-2 text-xs text-muted-foreground">
-              Démo template — choisir un espace :
-            </p>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {mode === "signup" && (
+              <div className="flex flex-col gap-2">
+                <label htmlFor="name" className="text-sm font-medium">
+                  Nom
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Votre nom"
+                  className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            )}
             <div className="flex flex-col gap-2">
-              {ROLES.map((role) => (
-                <Button key={role} asChild variant="outline" className="w-full">
-                  <Link href={ROLE_HOME[role]}>{ROLE_LABEL[role]}</Link>
-                </Button>
-              ))}
+              <label htmlFor="email" className="text-sm font-medium">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="vous@exemple.fr"
+                className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
             </div>
-          </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="password" className="text-sm font-medium">
+                Mot de passe
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading
+                ? "..."
+                : mode === "signin"
+                  ? "Se connecter"
+                  : "Créer mon compte"}
+            </Button>
+          </form>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === "signin" ? "signup" : "signin");
+              setError(null);
+            }}
+            className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            {mode === "signin"
+              ? "Pas de compte ? S'inscrire"
+              : "Déjà un compte ? Se connecter"}
+          </button>
         </CardContent>
       </Card>
     </div>

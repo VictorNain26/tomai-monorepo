@@ -24,15 +24,14 @@ services:
       - DOCKER_CONTAINER=true
       # Database (internal Docker network)
       - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
-      # CORS
-      - CORS_ORIGINS=http://localhost:3001
+      # CORS (landing:3001 + web:3002)
+      - CORS_ORIGINS=http://localhost:3001,http://localhost:3002
       # Auth (REQUIRED)
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - BETTER_AUTH_URL=http://localhost:3000
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       # AI Services
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       # RAG - Qdrant Cloud
       - QDRANT_URL=${QDRANT_URL}

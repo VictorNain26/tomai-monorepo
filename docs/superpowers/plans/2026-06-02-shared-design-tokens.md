@@ -559,7 +559,9 @@ git commit -m "docs(tokens): document @repo/tokens shared design system"
 
 - **Couverture spec :** extraction tokens (T2), branchement mobile (T3), branchement landing (T4), réconciliation de la dérive (T0 fige la palette canonique), de-risk du mécanisme d'import (T1), validation (T5), web role-aware (T6-T9), placeholder B2B (Phase 3). ✅
 - **Phase 1 : FAITE** (commit `b7841e5`) — package créé, mobile + landing branchés, builds verts.
-- **Doc-first signalé :** Tâche 8 (Better Auth web) ne doit pas être codée sans consulter la doc.
+- **Phase 2 (T6-T7) : FAITE** (commit `c30524d`) — scaffold web + écrans role-aware.
+- **Phase 2 (T8 auth) : CODE FAIT** (doc-first effectué) — client Better Auth web, login signup/signin réel, middleware de garde, `:3002` ajouté aux trustedOrigins + CORS serveur. **Vérification login de bout en bout en attente** : nécessite `cd apps/server && docker compose up -d postgres && bun run dev` + un `BETTER_AUTH_SECRET` dev.
+- **Reste T8 :** valider les cookies cross-port en live ; brancher Google OAuth web (optionnel).
 - **Hors scope assumé :** dark mode unifié, `apps/web`, console B2B, `@repo/core` — explicitement différés.
 - **Cohérence des noms :** `tokenNames` (index.ts) ↔ `tokenNames` (test) ↔ tokens de `theme.css` ; `@repo/tokens/theme.css` utilisé identiquement en T1/T3/T4.
 - **Point de fragilité connu :** résolution de l'import CSS cross-package par Metro (NativeWind v5) — traité en Tâche 1 (spike) avec fallback documenté avant tout engagement.
