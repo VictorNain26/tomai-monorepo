@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { handleAuthWithCookies } from '../middleware/auth.middleware.js';
+import { authMacro } from '../lib/auth-macro.js';
 import { logger } from '../lib/observability.js';
 import { scalewayStorageService } from '../services/storage/scaleway-storage.service.js';
 import { audioTranscriptionService } from '../services/audio-transcription.service.js';
@@ -18,6 +18,7 @@ import {
 export type { PresignedUploadResponse, ConfirmUploadResponse } from './file-upload.helpers.js';
 
 export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
+  .use(authMacro)
 
   /**
    * GET /api/upload/status - Vérifier si le service est configuré
@@ -35,15 +36,10 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
   /**
    * POST /api/upload/presign - Générer URL présignée pour upload direct
    */
-  .post('/presign', async ({ body, request, set }) => {
+  .guard({ auth: true })
+  .post('/presign', async ({ body, user, set }) => {
     try {
       // Auth with strict DB validation (prevents orphan session reuse)
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return { success: false, error: 'Authentication required' } as PresignedUploadResponse;
-      }
-
-      const user = authContext.user;
       const { fileName, mimeType, sizeBytes, context } = body;
 
       // Validate file type
@@ -137,15 +133,9 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
    * Frontend appelle cet endpoint APRÈS avoir uploadé vers Scaleway
    * Backend vérifie le fichier et lance l'upload vers Gemini Files API
    */
-  .post('/confirm/:fileId', async ({ params: { fileId }, request, set }) => {
+  .post('/confirm/:fileId', async ({ params: { fileId }, user, set }) => {
     try {
       // Auth with strict DB validation (prevents orphan session reuse)
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return { success: false, error: 'Authentication required' } as ConfirmUploadResponse;
-      }
-
-      const user = authContext.user;
 
       // Get file record
       const fileRecord = await filesRepository.findById(fileId);
@@ -253,14 +243,8 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
   /**
    * GET /api/upload/file/:fileId - Obtenir URL de téléchargement
    */
-  .get('/file/:fileId', async ({ params: { fileId }, request, set }) => {
+  .get('/file/:fileId', async ({ params: { fileId }, user, set }) => {
     try {
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return { success: false, error: 'Authentication required' };
-      }
-
-      const user = authContext.user;
       const fileRecord = await filesRepository.findById(fileId);
 
       if (!fileRecord) {
@@ -305,14 +289,8 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
   /**
    * DELETE /api/upload/file/:fileId - Supprimer un fichier
    */
-  .delete('/file/:fileId', async ({ params: { fileId }, request, set }) => {
+  .delete('/file/:fileId', async ({ params: { fileId }, user, set }) => {
     try {
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return { success: false, error: 'Authentication required' };
-      }
-
-      const user = authContext.user;
       const fileRecord = await filesRepository.findById(fileId);
 
       if (!fileRecord) {

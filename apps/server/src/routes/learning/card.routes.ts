@@ -2,23 +2,19 @@ import { Elysia, t } from 'elysia';
 import { db } from '../../db/connection';
 import { learningDecks, learningCards } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro';
 import { logger } from '../../lib/observability';
 import { fsrsService } from '../../services/fsrs.service';
 import { validateCardContent } from './helpers';
 import { cardGenerateRoutes } from './card-generate.routes.js';
 
 export const cardRoutes = new Elysia({ prefix: '/api/learning' })
+  .use(authMacro)
+  .guard({ auth: true })
 
   .post(
     '/decks/:id/cards',
-    async ({ request, params, body, set }) => {
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
-      const { user: authUser } = authContext;
+    async ({ params, body, user, set }) => {
       const { id: deckId } = params;
       const { cards } = body;
 
@@ -28,7 +24,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
           .from(learningDecks)
           .where(and(
             eq(learningDecks.id, deckId),
-            eq(learningDecks.userId, authUser.id)
+            eq(learningDecks.userId, user.id)
           ))
           .limit(1);
 
@@ -70,14 +66,14 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
 
         logger.info('Cards added to deck', {
           operation: 'learning:cards:add',
-          userId: authUser.id, deckId, cardsAdded: cards.length,
+          userId: user.id, deckId, cardsAdded: cards.length,
         });
 
         return { cards: insertedCards, count: insertedCards.length };
       } catch (error) {
         logger.error('Failed to add cards', {
           operation: 'learning:cards:add',
-          userId: authUser.id, deckId,
+          userId: user.id, deckId,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
@@ -105,13 +101,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
 
   .patch(
     '/cards/:id',
-    async ({ request, params, body, set }) => {
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
-      const { user: authUser } = authContext;
+    async ({ params, body, user, set }) => {
       const { id: cardId } = params;
 
       try {
@@ -125,7 +115,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
           .where(eq(learningCards.id, cardId))
           .limit(1);
 
-        if (!card || card.deckUserId !== authUser.id) {
+        if (!card || card.deckUserId !== user.id) {
           set.status = 404;
           return { error: 'Card not found' };
         }
@@ -153,7 +143,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
       } catch (error) {
         logger.error('Failed to update card', {
           operation: 'learning:cards:update',
-          userId: authUser.id, cardId,
+          userId: user.id, cardId,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
@@ -174,13 +164,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
     }
   )
 
-  .delete('/cards/:id', async ({ request, params, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
+  .delete('/cards/:id', async ({ params, user, set }) => {
     const { id: cardId } = params;
 
     try {
@@ -195,7 +179,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
         .where(eq(learningCards.id, cardId))
         .limit(1);
 
-      if (!card || card.deckUserId !== authUser.id) {
+      if (!card || card.deckUserId !== user.id) {
         set.status = 404;
         return { error: 'Card not found' };
       }
@@ -219,14 +203,14 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
 
       logger.info('Card deleted', {
         operation: 'learning:cards:delete',
-        userId: authUser.id, cardId, deckId: card.deckId,
+        userId: user.id, cardId, deckId: card.deckId,
       });
 
       return { success: true };
     } catch (error) {
       logger.error('Failed to delete card', {
         operation: 'learning:cards:delete',
-        userId: authUser.id, cardId,
+        userId: user.id, cardId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });

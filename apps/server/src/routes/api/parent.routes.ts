@@ -1,5 +1,5 @@
 import { Elysia } from 'elysia';
-import { handleParentAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro';
 import {
   validateSchema,
   isValidationError,
@@ -10,24 +10,21 @@ import { parentService } from '../../services/parent.service';
 import { logger } from '../../lib/observability';
 
 export const parentApiRoutes = new Elysia({ name: 'api-parent' })
+  .use(authMacro)
+  .guard({ parentAuth: true })
 
-  .get('/parent/dashboard', async ({ request: { headers }, set }) => {
-    const authContext = await handleParentAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .get('/parent/dashboard', async ({ user, set }) => {
     try {
       const [children, metrics] = await Promise.all([
-        parentService.getParentChildren(authContext.user.id),
-        parentService.getParentDashboardMetrics(authContext.user.id)
+        parentService.getParentChildren(user.id),
+        parentService.getParentDashboardMetrics(user.id)
       ]);
 
       return {
         success: true,
         parent: {
-          id: authContext.user.id,
-          name: authContext.user.firstName ?? 'Parent'
+          id: user.id,
+          name: user.firstName ?? 'Parent'
         },
         children,
         metrics
@@ -35,7 +32,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
     } catch (_error) {
       logger.error('Parent dashboard retrieval failed', {
         operation: 'api:parent:dashboard',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
@@ -44,19 +41,14 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
     }
   })
 
-  .get('/parent/children', async ({ request: { headers }, set }) => {
-    const authContext = await handleParentAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .get('/parent/children', async ({ user, set }) => {
     try {
-      const children = await parentService.getParentChildren(authContext.user.id);
+      const children = await parentService.getParentChildren(user.id);
       return children;
     } catch (_error) {
       logger.error('Parent children retrieval failed', {
         operation: 'api:parent:children',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
@@ -65,15 +57,10 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
     }
   })
 
-  .post('/parent/children', async ({ body, request: { headers }, set }) => {
-    const authContext = await handleParentAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .post('/parent/children', async ({ body, user, set }) => {
     logger.info('Child creation request received', {
       operation: 'api:parent:child:request',
-      userId: authContext.user.id,
+      userId: user.id,
       bodyType: typeof body,
       bodyKeys: body ? Object.keys(body as object) : [],
       contentLength: JSON.stringify(body).length,
@@ -85,7 +72,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       logger.error('Child creation validation failed', {
         _error: validation._error,
         operation: 'api:parent:child:validation',
-        userId: authContext.user.id,
+        userId: user.id,
         bodyType: typeof body,
         bodyKeys: body ? Object.keys(body as object) : [],
         validationDetails: validation._error,
@@ -96,12 +83,12 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
     }
 
     try {
-      const child = await parentService.createChild(authContext.user.id, validation.data);
+      const child = await parentService.createChild(user.id, validation.data);
       return { success: true, child, message: 'Child created successfully' };
     } catch (_error) {
       logger.error('Child creation failed', {
         operation: 'api:parent:child:create',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'high' as const
       });
@@ -110,12 +97,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
     }
   })
 
-  .patch('/parent/children/:id', async ({ params, body, request: { headers }, set }) => {
-    const authContext = await handleParentAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .patch('/parent/children/:id', async ({ params, body, user, set, request: { headers } }) => {
     const validation = validateSchema(updateChildSchema, body);
     if (isValidationError(validation)) {
       set.status = 400;
@@ -123,12 +105,12 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
     }
 
     try {
-      const child = await parentService.updateChild(authContext.user.id, params.id, validation.data, headers);
+      const child = await parentService.updateChild(user.id, params.id, validation.data, headers);
       return { success: true, child };
     } catch (_error) {
       logger.error('Child update failed', {
         operation: 'api:parent:child:update',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
@@ -137,19 +119,14 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
     }
   })
 
-  .delete('/parent/children/:id', async ({ params, request: { headers }, set }) => {
-    const authContext = await handleParentAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .delete('/parent/children/:id', async ({ params, user, set }) => {
     try {
-      await parentService.deleteChild(authContext.user.id, params.id);
+      await parentService.deleteChild(user.id, params.id);
       return { success: true, message: 'Child deleted successfully' };
     } catch (_error) {
       logger.error('Child deletion failed', {
         operation: 'api:parent:child:delete',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });

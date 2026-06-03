@@ -1,20 +1,17 @@
 import { Elysia, t } from 'elysia';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro';
 import { chatService } from '../../services/chat.service';
 import { logger } from '../../lib/observability';
 
 export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
+  .use(authMacro)
 
-  .get('/files', async ({ request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .guard({ auth: true })
+  .get('/files', async ({ user, set }) => {
     try {
       const { filesRepository } = await import('../../db/repositories/index');
 
-      const userFiles = await filesRepository.findByUserId(authContext.user.id);
+      const userFiles = await filesRepository.findByUserId(user.id);
       return {
         success: true,
         files: userFiles.map(f => {
@@ -36,7 +33,7 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
     } catch (_error) {
       logger.error('Files listing failed', {
         operation: 'api:files:list',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
@@ -45,15 +42,10 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
     }
   })
 
-  .get('/chat/session/:id/files', async ({ params, request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .get('/chat/session/:id/files', async ({ params, user, set }) => {
     try {
       const session = await chatService.getSession(params.id);
-      if (!session || session.userId !== authContext.user.id) {
+      if (!session || session.userId !== user.id) {
         set.status = 403;
         return { error: 'Session not found or access denied' };
       }
@@ -74,7 +66,7 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
     } catch (_error) {
       logger.error('Session files listing failed', {
         operation: 'api:chat:session:files:list',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
@@ -83,24 +75,19 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
     }
   })
 
-  .post('/chat/session/:id/files', async ({ params, body, request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .post('/chat/session/:id/files', async ({ params, body, user, set }) => {
     try {
       const { fileId } = body;
 
       const session = await chatService.getSession(params.id);
-      if (!session || session.userId !== authContext.user.id) {
+      if (!session || session.userId !== user.id) {
         set.status = 403;
         return { error: 'Session not found or access denied' };
       }
 
       const { filesRepository, sessionFilesRepository } = await import('../../db/repositories/index');
       const file = await filesRepository.findById(fileId);
-      if (!file || file.userId !== authContext.user.id) {
+      if (!file || file.userId !== user.id) {
         set.status = 403;
         return { error: 'File not found or access denied' };
       }
@@ -117,7 +104,7 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
     } catch (_error) {
       logger.error('Session file attach failed', {
         operation: 'api:chat:session:files:attach',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
@@ -130,15 +117,10 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
     }),
   })
 
-  .delete('/chat/session/:id/files/:fileId', async ({ params, request: { headers }, set }) => {
-    const authContext = await handleAuthWithCookies(headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
+  .delete('/chat/session/:id/files/:fileId', async ({ params, user, set }) => {
     try {
       const session = await chatService.getSession(params.id);
-      if (!session || session.userId !== authContext.user.id) {
+      if (!session || session.userId !== user.id) {
         set.status = 403;
         return { error: 'Session not found or access denied' };
       }
@@ -150,7 +132,7 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
     } catch (_error) {
       logger.error('Session file detach failed', {
         operation: 'api:chat:session:files:detach',
-        userId: authContext.user.id,
+        userId: user.id,
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });

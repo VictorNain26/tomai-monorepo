@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro';
 import { logger } from '../../lib/observability';
 import { ragService } from '../../services/rag.service';
 import { checkQuota, checkDeckQuota, incrementDeckUsage } from '../../services/token-quota.service';
@@ -12,27 +12,23 @@ import { learningService } from '../../services/learning/learning.service';
 import { getUserLevel } from './helpers';
 
 export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
+  .use(authMacro)
+  .guard({ auth: true })
   .post(
     '/generate',
-    async ({ request, body, set }) => {
-      const authContext = await handleAuthWithCookies(request.headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
-      const { user: authUser } = authContext;
+    async ({ body, user, set }) => {
       const { subject, domaine, topic } = body;
 
       const isFullDomaineMode = !topic || topic.trim() === '';
       const searchQuery = isFullDomaineMode ? domaine : topic;
 
-      const level = getUserLevel(authUser.id, authUser.schoolLevel);
+      const level = getUserLevel(user.id, user.schoolLevel);
 
-      const quota = await checkQuota(authUser.id);
+      const quota = await checkQuota(user.id);
       if (quota.plan === 'free') {
         logger.info('Deck generation blocked - free user', {
           operation: 'learning:generate:subscription-required',
-          userId: authUser.id,
+          userId: user.id,
           plan: quota.plan,
         });
         set.status = 403;
@@ -43,11 +39,11 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
         };
       }
 
-      const deckQuota = await checkDeckQuota(authUser.id);
+      const deckQuota = await checkDeckQuota(user.id);
       if (!deckQuota.allowed) {
         logger.info('Deck generation blocked - limit reached', {
           operation: 'learning:generate:deck-limit',
-          userId: authUser.id,
+          userId: user.id,
           decksRemainingToday: deckQuota.decksRemainingToday,
           decksRemainingThisMonth: deckQuota.decksRemainingThisMonth,
           dailyLimit: deckQuota.dailyLimit,
@@ -68,7 +64,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
       try {
         logger.info('Starting AI deck generation', {
           operation: 'learning:generate:start',
-          userId: authUser.id,
+          userId: user.id,
           subject, domaine, topic: topic ?? null,
           mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
           level,
@@ -85,7 +81,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
 
         logger.info('RAG context retrieved', {
           operation: 'learning:generate:rag',
-          userId: authUser.id,
+          userId: user.id,
           strategy: ragResult.strategy,
           chunksFound: ragResult.semanticChunks.length,
           avgSimilarity: ragResult.averageSimilarity.toFixed(3),
@@ -105,7 +101,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
 
           logger.warn('RAG validation failed - cannot generate without official context', {
             operation: 'learning:generate:rag-validation-failed',
-            userId: authUser.id, subject, domaine,
+            userId: user.id, subject, domaine,
             topic: topic ?? null,
             mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
             level,
@@ -153,7 +149,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
         if (isGenerationError(generationResult)) {
           logger.error('AI card generation failed', {
             operation: 'learning:generate:failed',
-            userId: authUser.id,
+            userId: user.id,
             _error: generationResult.error,
             _actualError: generationResult._debug?.actualError,
             code: generationResult.code,
@@ -173,7 +169,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           : `Cartes sur "${topic}" (${domaine})`;
 
         const { deck: newDeck, cards: insertedCards } = await learningService.createDeckWithCards({
-          userId: authUser.id,
+          userId: user.id,
           deck: {
             title: deckTitle,
             description: deckDescription,
@@ -185,11 +181,11 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           cards: generatedCards,
         });
 
-        const deckUsage = await incrementDeckUsage(authUser.id);
+        const deckUsage = await incrementDeckUsage(user.id);
 
         logger.info('AI deck generation completed', {
           operation: 'learning:generate:complete',
-          userId: authUser.id,
+          userId: user.id,
           deckId: newDeck.id,
           cardsGenerated: insertedCards.length,
           tokensUsed: generationResult.tokensUsed,
@@ -212,7 +208,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
       } catch (error) {
         logger.error('Failed to generate deck', {
           operation: 'learning:generate:error',
-          userId: authUser.id, subject, domaine,
+          userId: user.id, subject, domaine,
           topic: topic ?? null,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'high' as const,

@@ -11,7 +11,7 @@
  */
 
 import { Elysia, t } from 'elysia';
-import { handleAuthWithCookies } from '../middleware/auth.middleware.js';
+import { authMacro } from '../lib/auth-macro.js';
 import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 import { pronoteSyncService } from '../services/pronote-sync.service.js';
 import { logger } from '../lib/observability.js';
@@ -21,19 +21,16 @@ import { logger } from '../lib/observability.js';
 const pronoteRateLimit = createRateLimitMiddleware(RateLimitPresets.pronote);
 
 export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
+  .use(authMacro)
   .onBeforeHandle(pronoteRateLimit)
+  .guard({ auth: true })
   .group('/api/pronote', (app) => app
 
     // PUT /api/pronote/credentials — Upsert
-    .put('/credentials', async ({ body, request: { headers }, set }) => {
-      const authContext = await handleAuthWithCookies(headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
+    .put('/credentials', async ({ body, user, set }) => {
       try {
         const result = await pronoteSyncService.upsertCredentials(
-          authContext.user.id,
+          user.id,
           body
         );
 
@@ -46,7 +43,7 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
       } catch (error) {
         logger.error('Pronote credentials upsert failed', {
           operation: 'pronote-sync:route:upsert:error',
-          userId: authContext.user.id,
+          userId: user.id,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'high' as const,
         });
@@ -63,15 +60,10 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
     })
 
     // GET /api/pronote/credentials — Fetch
-    .get('/credentials', async ({ request: { headers }, set }) => {
-      const authContext = await handleAuthWithCookies(headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
+    .get('/credentials', async ({ user, set }) => {
       try {
         const credentials = await pronoteSyncService.getCredentials(
-          authContext.user.id
+          user.id
         );
 
         if (!credentials) {
@@ -83,7 +75,7 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
       } catch (error) {
         logger.error('Pronote credentials fetch failed', {
           operation: 'pronote-sync:route:get:error',
-          userId: authContext.user.id,
+          userId: user.id,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'high' as const,
         });
@@ -94,19 +86,14 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
     })
 
     // DELETE /api/pronote/credentials — Delete
-    .delete('/credentials', async ({ request: { headers }, set }) => {
-      const authContext = await handleAuthWithCookies(headers, set);
-      if (!authContext.success) {
-        return authContext.error;
-      }
-
+    .delete('/credentials', async ({ user, set }) => {
       try {
-        await pronoteSyncService.deleteCredentials(authContext.user.id);
+        await pronoteSyncService.deleteCredentials(user.id);
         return { success: true };
       } catch (error) {
         logger.error('Pronote credentials delete failed', {
           operation: 'pronote-sync:route:delete:error',
-          userId: authContext.user.id,
+          userId: user.id,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'high' as const,
         });

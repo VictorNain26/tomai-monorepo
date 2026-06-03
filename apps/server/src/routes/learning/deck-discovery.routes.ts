@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { handleAuthWithCookies } from '../../middleware/auth.middleware';
+import { authMacro } from '../../lib/auth-macro';
 import { logger } from '../../lib/observability';
 import { educationService } from '../../services/education.service';
 import { qdrantService } from '../../services/qdrant.service';
@@ -15,15 +15,11 @@ const LEVEL_SCHEMA = t.Optional(t.Union([
 ]));
 
 export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
+  .use(authMacro)
+  .guard({ auth: true })
 
-  .get('/subjects', async ({ request, query, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
-    const niveau = (query.niveau ?? authUser.schoolLevel ?? 'sixieme') as EducationLevelType;
+  .get('/subjects', async ({ query, user, set }) => {
+    const niveau = (query.niveau ?? user.schoolLevel ?? 'sixieme') as EducationLevelType;
 
     try {
       const subjects = await educationService.getSubjectsForLevel(niveau);
@@ -35,14 +31,14 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
 
       logger.info('Subjects fetched for level', {
         operation: 'learning:subjects:list',
-        userId: authUser.id, niveau, count: subjects.length,
+        userId: user.id, niveau, count: subjects.length,
       });
 
       return { niveau, subjects: formattedSubjects };
     } catch (error) {
       logger.error('Failed to fetch subjects', {
         operation: 'learning:subjects:list',
-        userId: authUser.id, niveau,
+        userId: user.id, niveau,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
@@ -53,15 +49,9 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
     query: t.Object({ niveau: LEVEL_SCHEMA }),
   })
 
-  .get('/topics', async ({ request, query, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
+  .get('/topics', async ({ query, user, set }) => {
     const { matiere } = query;
-    const niveau = (query.niveau ?? authUser.schoolLevel ?? 'sixieme') as EducationLevelType;
+    const niveau = (query.niveau ?? user.schoolLevel ?? 'sixieme') as EducationLevelType;
 
     if (!matiere) {
       set.status = 400;
@@ -74,7 +64,7 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
 
       logger.info('Topics fetched from Qdrant', {
         operation: 'learning:topics:list',
-        userId: authUser.id, matiere, niveau,
+        userId: user.id, matiere, niveau,
         domainesCount: domaines.length, totalTopics,
       });
 
@@ -82,7 +72,7 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
     } catch (error) {
       logger.error('Failed to fetch topics', {
         operation: 'learning:topics:list',
-        userId: authUser.id, matiere, niveau,
+        userId: user.id, matiere, niveau,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
@@ -96,15 +86,9 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
     }),
   })
 
-  .get('/chapters', async ({ request, query, set }) => {
-    const authContext = await handleAuthWithCookies(request.headers, set);
-    if (!authContext.success) {
-      return authContext.error;
-    }
-
-    const { user: authUser } = authContext;
+  .get('/chapters', async ({ query, user, set }) => {
     const { matiere } = query;
-    const niveau = (query.niveau ?? authUser.schoolLevel ?? 'sixieme') as EducationLevelType;
+    const niveau = (query.niveau ?? user.schoolLevel ?? 'sixieme') as EducationLevelType;
 
     if (!matiere) {
       set.status = 400;
@@ -117,7 +101,7 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
 
       logger.info('Chapters hierarchy fetched', {
         operation: 'learning:chapters:list',
-        userId: authUser.id, matiere, niveau,
+        userId: user.id, matiere, niveau,
         totalChapters: hierarchy.totalChapters,
         totalSubChapters: hierarchy.totalSubChapters,
         totalTopics: hierarchy.totalTopics,
@@ -127,7 +111,7 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
     } catch (error) {
       logger.error('Failed to fetch chapters', {
         operation: 'learning:chapters:list',
-        userId: authUser.id, matiere, niveau,
+        userId: user.id, matiere, niveau,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
