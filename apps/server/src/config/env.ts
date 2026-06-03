@@ -7,6 +7,7 @@
  */
 
 import { z } from 'zod';
+import { resolveDatabaseUrl } from './database-url.js';
 
 /**
  * Détecte si on est dans un container Docker
@@ -25,7 +26,6 @@ function isRunningInDocker(): boolean {
 }
 
 const isProd = Bun.env['NODE_ENV'] === 'production';
-const isDev = !isProd;
 const inDocker = isRunningInDocker();
 
 /**
@@ -42,16 +42,15 @@ const EnvSchema = z.object({
   DEPLOYMENT_ID: z.string().optional(),
 
   // URLs and Origins
-  BETTER_AUTH_URL: z.string().url().or(
-    z.string().refine(() => isDev, { message: 'BETTER_AUTH_URL must be a valid URL' })
-  ),
-  FRONTEND_URL: z.string().url().optional(),
+  BETTER_AUTH_URL: isProd ? z.url() : z.url().default('http://localhost:3000'),
+  FRONTEND_URL: z.url().optional(),
   CORS_ORIGINS: z.string().optional(),
   TRUSTED_ORIGINS: z.string().optional(),
 
-  // Database
+  // Database (resolved via resolveDatabaseUrl() which handles Docker detection)
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   DATABASE_URL_EXTERNAL: z.string().optional(),
+  // Note: getDatabaseUrl() delegates to resolveDatabaseUrl() to avoid duplication
 
   // Authentication
   BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 characters'),
@@ -92,12 +91,13 @@ const EnvSchema = z.object({
   // RAG — Qdrant Cloud + BGE-M3 embeddings via ai-service
   QDRANT_URL: z.string().optional(),
   QDRANT_API_KEY: z.string().optional(),
-  QDRANT_COLLECTION_NAME: z.string().default('tomai_educational'),
+  QDRANT_COLLECTION: z.string().default('tomai_educational'),
   QDRANT_ENABLED: z.enum(['true', 'false']).default('false'),
 
   // AI Service (Python FastAPI, Koyeb fra) — embeddings + reranking
   AI_SERVICE_URL: z.string().optional(),
-  AI_SERVICE_API_KEY: z.string().optional(),
+  AI_SERVICE_TOKEN: z.string().optional(),
+  AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().default(15000),
 
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(900000), // 15 min
@@ -177,12 +177,11 @@ export const isInDocker = (): boolean => inDocker;
  * Resolve DATABASE_URL based on Docker context
  * In Docker containers: use DATABASE_URL (internal hostname)
  * Locally: use DATABASE_URL_EXTERNAL (localhost) if provided, else DATABASE_URL
+ *
+ * Note: delegates to resolveDatabaseUrl() to avoid duplication with migrate.ts
  */
 export function getDatabaseUrl(): string {
-  if (inDocker) {
-    return env.DATABASE_URL;
-  }
-  return env.DATABASE_URL_EXTERNAL ?? env.DATABASE_URL;
+  return resolveDatabaseUrl();
 }
 
 /**

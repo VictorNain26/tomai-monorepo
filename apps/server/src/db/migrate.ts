@@ -1,5 +1,5 @@
 /**
- * Drizzle Migration Runner
+ * Drizzle Migration Runner (standalone, pre-boot)
  *
  * Single migration entry point — called by docker-entrypoint.sh.
  * NOT called from app startup (no double execution).
@@ -7,11 +7,16 @@
  * Usage:
  * - Development: bun run db:push (direct schema sync)
  * - Production/Staging: docker-entrypoint.sh runs this before server start
+ *
+ * Note: Does NOT import the full env singleton because migrate.ts runs BEFORE
+ * env validation (Bun.env may be missing prod secrets like BETTER_AUTH_SECRET).
+ * Uses resolveDatabaseUrl() directly instead.
  */
 
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { resolveDatabaseUrl } from '../config/database-url.js';
 
 /**
  * Detect Supabase host to enable SSL regardless of NODE_ENV
@@ -28,10 +33,11 @@ function isSupabaseHost(url: string): boolean {
 }
 
 export async function runMigrations(): Promise<void> {
-  const databaseUrl = process.env.DATABASE_URL;
-
-  if (!databaseUrl) {
-    console.error('DATABASE_URL is required for migrations');
+  let databaseUrl: string;
+  try {
+    databaseUrl = resolveDatabaseUrl();
+  } catch (error) {
+    console.error('DATABASE_URL resolution failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 

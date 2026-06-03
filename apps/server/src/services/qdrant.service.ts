@@ -3,12 +3,12 @@ import { logger } from '../lib/observability.js';
 import { withDbSpan } from '../lib/otel/index.js';
 import { cacheService } from './memory-cache.service.js';
 import { QdrantHierarchyService } from './qdrant-hierarchy.service.js';
+import { env } from '../config/env.js';
 import type { ChaptersHierarchy, EducationLevelType } from '../types/index.js';
 
-const QDRANT_URL = Bun.env['QDRANT_URL'] ?? '';
-const QDRANT_API_KEY = Bun.env['QDRANT_API_KEY'] ?? '';
-const COLLECTION_NAME =
-  Bun.env['QDRANT_COLLECTION'] ?? Bun.env['QDRANT_COLLECTION_NAME'] ?? 'tomai_educational';
+const QDRANT_URL = env.QDRANT_URL ?? '';
+const QDRANT_API_KEY = env.QDRANT_API_KEY ?? '';
+const COLLECTION_NAME = env.QDRANT_COLLECTION;
 
 const CACHE_TTL = { DEFAULT: 3600, MEMORY_CHECK: 60_000 } as const;
 const CACHE_PREFIX = 'qdrant:' as const;

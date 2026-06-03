@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia';
 import { timingSafeEqual } from 'node:crypto';
 import { logger } from '../lib/observability';
+import { env, isProduction } from '../config/env.js';
 import {
   isRevenueCatEventProcessed,
   markRevenueCatEventProcessed,
@@ -15,31 +16,9 @@ import {
 } from './revenuecat-webhook-events';
 import { revenueCatWebhookSchema } from '../schemas/validation';
 
-// Use Bun.env instead of process.env because `bun build --target bun`
-// replaces `process.env.NODE_ENV` literals at build time (see notes in
-// revenuecat-webhook.routes.ts). `Bun.env` always reflects runtime values.
-const WEBHOOK_AUTH_HEADER = Bun.env['REVENUECAT_WEBHOOK_AUTH'];
-const MIN_SECRET_LENGTH = 32; // ≥256 bits of entropy recommended for shared tokens
-
-// Fail fast in production when the shared secret is missing or weak.
-// RevenueCat does not sign webhooks cryptographically, so the shared token
-// IS the security boundary — a weak or absent secret exposes the endpoint
-// to forged IAP events (premium granted without payment).
-if (Bun.env['NODE_ENV'] === 'production') {
-  if (!WEBHOOK_AUTH_HEADER) {
-    throw new Error(
-      'REVENUECAT_WEBHOOK_AUTH must be set in production. Generate with: ' +
-      '`openssl rand -base64 48` and configure the RevenueCat dashboard ' +
-      'to send this value in the Authorization header.'
-    );
-  }
-  if (WEBHOOK_AUTH_HEADER.length < MIN_SECRET_LENGTH) {
-    throw new Error(
-      `REVENUECAT_WEBHOOK_AUTH is too short (${WEBHOOK_AUTH_HEADER.length} chars). ` +
-      `Minimum ${MIN_SECRET_LENGTH} for ≥256 bits of entropy. Generate via openssl rand -base64 48.`
-    );
-  }
-}
+// Webhook auth secret (validated at boot in env.ts, prod: ≥32 chars minimum)
+// Validation of presence + length already checked in env.ts prodChecks.
+const WEBHOOK_AUTH_HEADER = env.REVENUECAT_WEBHOOK_AUTH;
 
 /**
  * Constant-time comparison of the Authorization header vs the configured secret.
@@ -81,7 +60,7 @@ export function createRevenueCatWebhookRoutes() {
       }
       const event = parsed.data.event;
 
-      if (Bun.env['NODE_ENV'] === 'production' && event.environment === 'SANDBOX') {
+      if (isProduction() && event.environment === 'SANDBOX') {
         return { received: true, skipped: 'sandbox' };
       }
 

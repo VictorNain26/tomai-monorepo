@@ -46,6 +46,7 @@ function buildHeaders(raw: string | undefined): Record<string, string> | undefin
 
 function buildProcessors(): SpanProcessor[] {
   const processors: SpanProcessor[] = [];
+  // Pre-boot context: env singleton not yet initialized. Reads Bun.env directly.
   const endpoint = process.env['OTEL_EXPORTER_OTLP_ENDPOINT'];
   const headers = buildHeaders(process.env['OTEL_EXPORTER_OTLP_HEADERS']);
 

@@ -83,7 +83,7 @@ export async function initializeServices(): Promise<void> {
       provider: 'memory-lru'
     });
 
-    const hasPronoteKey = !!Bun.env['PRONOTE_ENCRYPTION_KEY'];
+    const hasPronoteKey = !!env.PRONOTE_ENCRYPTION_KEY;
     if (hasPronoteKey) {
       const encryptionValid = await validateEncryptionSetup();
       if (!encryptionValid) {
