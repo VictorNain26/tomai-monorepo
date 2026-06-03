@@ -18,6 +18,7 @@ const TAG_LENGTH = 128; // Authentication tag bits
 const PBKDF2_ITERATIONS = 600000; // OWASP 2023 recommendation for SHA-256
 
 import { env } from '../config/env.js';
+import { logger } from './observability.js';
 
 /**
  * Reads the Pronote encryption secret from env and imports it as PBKDF2 key material.
@@ -135,7 +136,12 @@ export async function validateEncryptionSetup(): Promise<boolean> {
     const encrypted = await encrypt(testData);
     const decrypted = await decrypt(encrypted);
     return decrypted === testData;
-  } catch {
+  } catch (error) {
+    logger.error('Encryption setup validation failed', {
+      operation: 'encryption:validation:failed',
+      _error: error instanceof Error ? error.message : String(error),
+      severity: 'high' as const,
+    });
     return false;
   }
 }

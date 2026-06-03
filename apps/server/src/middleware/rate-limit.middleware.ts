@@ -26,14 +26,24 @@ const DEFAULT_CONFIG: RateLimitConfig = {
 
 /**
  * Générateur de clé par défaut basé sur IP
+ *
+ * Production: En derrière un unique proxy de confiance (Koyeb), l'IP client réelle
+ * est l'entrée RIGHTMOST de X-Forwarded-For (ajoutée par le proxy).
+ * Les entrées leftmost sont contrôlables par le client → non fiables en prod.
+ *
+ * Développement: L'IP vient directement de la connexion (aucun proxy).
  */
 function defaultKeyGenerator(context: Context): string {
-  // Essayer d'obtenir la vraie IP (derrière proxy/CDN)
   const forwardedFor = context.request.headers.get('x-forwarded-for');
   const realIp = context.request.headers.get('x-real-ip');
   const cfConnectingIp = context.request.headers.get('cf-connecting-ip');
 
-  const ip = cfConnectingIp ?? realIp ?? forwardedFor?.split(',')[0] ?? 'unknown';
+  const ip = isProduction() && forwardedFor
+    ? // Production: take the RIGHTMOST IP from X-Forwarded-For
+      // (added by Koyeb proxy), not the leftmost (client-controllable)
+      forwardedFor.split(',').map((p) => p.trim()).at(-1) ?? 'unknown'
+    : // Development or fallback: use cloudflare > x-real-ip > direct connection
+      cfConnectingIp ?? realIp ?? 'unknown';
 
   return `ip:${ip}`;
 }
@@ -144,15 +154,18 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
       return;
 
     } catch (error) {
-      // En cas d'erreur, permettre la requête (fail-open)
+      // Fail-closed: On error, block the request (security > availability)
       logger.error('Rate limit middleware error', {
         operation: 'rate-limit:error',
         _error: error instanceof Error ? error.message : String(error),
-        severity: 'medium' as const,
+        severity: 'high' as const,
       });
 
-      // Continuer sans bloquer (graceful degradation)
-      return;
+      context.set.status = 503;
+      return {
+        error: 'Service Unavailable',
+        message: 'Rate limit check failed. Please try again later.',
+      };
     }
   };
 }

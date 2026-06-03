@@ -54,8 +54,13 @@ function getCookieDomain(): string | undefined {
         // Retourne .domaine.tld (ex: .tomia.fr)
         return '.' + parts.slice(-2).join('.');
       }
-    } catch {
-      // Fallback si URL invalide
+    } catch (error) {
+      // URL invalide — fallback à undefined (localhost)
+      logger.warn('Failed to extract cookie domain from URL', {
+        operation: 'auth:cookie_domain:invalid_url',
+        url: url ?? '(empty)',
+        _error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
   return undefined;
@@ -191,10 +196,9 @@ export const auth = betterAuth({
   },
 
   plugins: [
-    openAPI(),
-    mcp({
-      loginPage: "/sign-in"
-    }),
+    // openAPI + mcp only in development (expose internal auth structure in prod = security risk)
+    ...(isDevelopment() ? [openAPI()] : []),
+    ...(isDevelopment() ? [mcp({ loginPage: "/sign-in" })] : []),
     expo(),     // Mobile app support (deep links, secure storage)
 
     // Admin plugin for Quick Switch (parent impersonation)
