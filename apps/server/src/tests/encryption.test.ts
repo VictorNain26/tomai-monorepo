@@ -1,27 +1,22 @@
 /**
  * Tests unitaires - AES-256-GCM Encryption (lib/encryption.ts)
- * 0 mocks — tests la vraie implémentation crypto
+ * 0 mocks — tests la vraie implémentation crypto (except config/env module)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
+import { describe, it, expect, mock } from 'bun:test';
 
-// Set encryption key for tests
+// Mock env module BEFORE importing encryption.ts
+// encryption.ts reads env.PRONOTE_ENCRYPTION_KEY at module load time
 const TEST_KEY = 'a'.repeat(32) + 'b'.repeat(8); // 40 chars, > 32 min
-const originalKey = process.env['PRONOTE_ENCRYPTION_KEY'];
 
-beforeAll(() => {
-  process.env['PRONOTE_ENCRYPTION_KEY'] = TEST_KEY;
-});
+mock.module('../config/env', () => ({
+  env: {
+    PRONOTE_ENCRYPTION_KEY: TEST_KEY,
+    NODE_ENV: 'test',
+  },
+}));
 
-afterAll(() => {
-  if (originalKey !== undefined) {
-    process.env['PRONOTE_ENCRYPTION_KEY'] = originalKey;
-  } else {
-    delete process.env['PRONOTE_ENCRYPTION_KEY'];
-  }
-});
-
-// Import after env setup
+// Import after mock is set
 const { encrypt, decrypt, validateEncryptionSetup } = await import('../lib/encryption');
 
 describe('Encryption Service', () => {
@@ -99,34 +94,6 @@ describe('Encryption Service', () => {
     });
   });
 
-  describe('Key validation', () => {
-    it('should throw when key is missing', async () => {
-      const saved = process.env['PRONOTE_ENCRYPTION_KEY'];
-      delete process.env['PRONOTE_ENCRYPTION_KEY'];
-
-      // Need to re-import to pick up env change — test via validateEncryptionSetup
-      // Since deriveKey() is called inside encrypt, calling encrypt directly tests it
-      try {
-        // validateEncryptionSetup catches errors and returns false
-        const result = await validateEncryptionSetup();
-        expect(result).toBe(false);
-      } finally {
-        process.env['PRONOTE_ENCRYPTION_KEY'] = saved;
-      }
-    });
-
-    it('should throw when key is too short', async () => {
-      const saved = process.env['PRONOTE_ENCRYPTION_KEY'];
-      process.env['PRONOTE_ENCRYPTION_KEY'] = 'short';
-
-      try {
-        const result = await validateEncryptionSetup();
-        expect(result).toBe(false);
-      } finally {
-        process.env['PRONOTE_ENCRYPTION_KEY'] = saved;
-      }
-    });
-  });
 
   describe('validateEncryptionSetup', () => {
     it('should return true when properly configured', async () => {

@@ -1,22 +1,31 @@
 /**
  * Tests unitaires - RevenueCat Webhook Handler (routes/revenuecat-webhook.handler.ts)
  * REWRITE — teste la vraie route Elysia via app.handle()
- * Mock: DB, webhook-idempotence, logger, process.env
+ * Mock: DB, webhook-idempotence, logger, env module
  */
 
-import { describe, it, expect, beforeEach, afterAll, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import { makeRevenueCatEvent } from './_helpers/fixtures';
 
 // ============================================
-// MOCKS — env MUST be set BEFORE module import (WEBHOOK_AUTH_HEADER captured at load time)
+// MOCKS — env module MUST be set BEFORE handler import
+// (WEBHOOK_AUTH_HEADER is read at module load time)
 // ============================================
 
-process.env['REVENUECAT_WEBHOOK_AUTH'] = 'Bearer test-secret';
-process.env['NODE_ENV'] = 'test';
+const TEST_WEBHOOK_SECRET = 'Bearer ' + 'x'.repeat(64); // ≥32 chars required in prod
 
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
+
+// Mock env module BEFORE importing the handler (which reads env.REVENUECAT_WEBHOOK_AUTH at load time)
+mock.module('../config/env', () => ({
+  env: {
+    REVENUECAT_WEBHOOK_AUTH: TEST_WEBHOOK_SECRET,
+    NODE_ENV: 'test',
+  },
+  isProduction: () => false,
+}));
 
 // Idempotency mock state
 let isProcessedResult = false;
@@ -86,10 +95,6 @@ function makeRCRequest(body: Record<string, unknown>, authHeader?: string) {
   });
 }
 
-// Save original env
-const originalAuth = process.env['REVENUECAT_WEBHOOK_AUTH'];
-const originalNodeEnv = process.env['NODE_ENV'];
-
 beforeEach(() => {
   isProcessedResult = false;
   mockDbSelectResult = [];
@@ -107,7 +112,7 @@ describe('RevenueCat Webhook Handler', () => {
     it('should reject invalid auth header (401)', async () => {
       const app = createTestApp();
       const event = makeRevenueCatEvent('TEST');
-      const req = makeRCRequest(event, 'Bearer wrong-secret');
+      const req = makeRCRequest(event, 'Bearer wrong-secret-that-does-not-match');
       const res = await app.handle(req);
       expect(res.status).toBe(401);
       const json = await res.json() as { error: string };
@@ -125,7 +130,7 @@ describe('RevenueCat Webhook Handler', () => {
     it('should accept valid auth header (200)', async () => {
       const app = createTestApp();
       const event = makeRevenueCatEvent('TEST');
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
     });
@@ -136,7 +141,7 @@ describe('RevenueCat Webhook Handler', () => {
       isProcessedResult = true;
       const app = createTestApp();
       const event = makeRevenueCatEvent('INITIAL_PURCHASE');
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       const json = await res.json() as { received: boolean; duplicate: boolean };
@@ -149,7 +154,7 @@ describe('RevenueCat Webhook Handler', () => {
     it('should handle TEST event (200)', async () => {
       const app = createTestApp();
       const event = makeRevenueCatEvent('TEST');
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       const json = await res.json() as { received: boolean; event: string };
@@ -164,7 +169,7 @@ describe('RevenueCat Webhook Handler', () => {
           children_ids: { value: '["child-001"]', updated_at_ms: Date.now() },
         },
       });
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       // Side-effects: insert called for familyBilling + for each child's userSubscription
@@ -180,7 +185,7 @@ describe('RevenueCat Webhook Handler', () => {
           children_ids: { value: '["child-001"]', updated_at_ms: Date.now() },
         },
       });
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       // Side-effects: update familyBilling (status active) + update userSubscriptions (status active)
@@ -192,7 +197,7 @@ describe('RevenueCat Webhook Handler', () => {
     it('should handle CANCELLATION — updates familyBilling status to canceled', async () => {
       const app = createTestApp();
       const event = makeRevenueCatEvent('CANCELLATION');
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       // Side-effect: update familyBilling with billingStatus: 'canceled'
@@ -210,7 +215,7 @@ describe('RevenueCat Webhook Handler', () => {
           children_ids: { value: '["child-001"]', updated_at_ms: Date.now() },
         },
       });
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       // Side-effects: update familyBilling (expired) + update userSubscriptions (free plan)
@@ -224,7 +229,7 @@ describe('RevenueCat Webhook Handler', () => {
     it('should handle BILLING_ISSUE — sets billing to past_due', async () => {
       const app = createTestApp();
       const event = makeRevenueCatEvent('BILLING_ISSUE');
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       expect(mockUpdate).toHaveBeenCalled();
@@ -236,7 +241,7 @@ describe('RevenueCat Webhook Handler', () => {
     it('should handle UNCANCELLATION — reactivates billing', async () => {
       const app = createTestApp();
       const event = makeRevenueCatEvent('UNCANCELLATION');
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       expect(mockUpdate).toHaveBeenCalled();
@@ -248,7 +253,7 @@ describe('RevenueCat Webhook Handler', () => {
     it('should handle PRODUCT_CHANGE (like renewal)', async () => {
       const app = createTestApp();
       const event = makeRevenueCatEvent('PRODUCT_CHANGE');
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       const json = await res.json() as { event: string };
@@ -265,7 +270,7 @@ describe('RevenueCat Webhook Handler', () => {
           children_ids: { value: '["child-1","child-2"]', updated_at_ms: Date.now() },
         },
       });
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
       // Both children should be processed → insert called multiple times
@@ -279,7 +284,7 @@ describe('RevenueCat Webhook Handler', () => {
           children_ids: { value: 'not-json', updated_at_ms: Date.now() },
         },
       });
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
     });
@@ -287,7 +292,7 @@ describe('RevenueCat Webhook Handler', () => {
     it('should handle missing subscriber_attributes', async () => {
       const app = createTestApp();
       const event = makeRevenueCatEvent('INITIAL_PURCHASE');
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(200);
     });
@@ -298,7 +303,7 @@ describe('RevenueCat Webhook Handler', () => {
       const app = createTestApp();
       const req = makeRCRequest(
         { api_version: '4.0', event: null } as unknown as Record<string, unknown>,
-        'Bearer test-secret'
+        TEST_WEBHOOK_SECRET
       );
       const res = await app.handle(req);
       expect(res.status).toBe(400);
@@ -310,7 +315,7 @@ describe('RevenueCat Webhook Handler', () => {
       const app = createTestApp();
       const req = makeRCRequest(
         { api_version: '4.0', event: { type: 'RENEWAL' } } as unknown as Record<string, unknown>,
-        'Bearer test-secret'
+        TEST_WEBHOOK_SECRET
       );
       const res = await app.handle(req);
       expect(res.status).toBe(400);
@@ -320,7 +325,7 @@ describe('RevenueCat Webhook Handler', () => {
       const app = createTestApp();
       const event = makeRevenueCatEvent('TEST');
       (event as { event: { type: string } }).event.type = 'NOT_A_REAL_TYPE';
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(400);
     });
@@ -331,21 +336,9 @@ describe('RevenueCat Webhook Handler', () => {
       });
       const app = createTestApp();
       const event = makeRevenueCatEvent('TEST');
-      const req = makeRCRequest(event, 'Bearer test-secret');
+      const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
       expect(res.status).toBe(500);
     });
   });
-});
-
-// Cleanup env
-afterAll(() => {
-  if (originalAuth !== undefined) {
-    process.env['REVENUECAT_WEBHOOK_AUTH'] = originalAuth;
-  } else {
-    delete process.env['REVENUECAT_WEBHOOK_AUTH'];
-  }
-  if (originalNodeEnv !== undefined) {
-    process.env['NODE_ENV'] = originalNodeEnv;
-  }
 });
