@@ -49,7 +49,7 @@ Le type `App` (`typeof app`) est l'arbre de routes consommé par Eden Treaty cô
 - **Framework** : Elysia.js 1.4 (type-safe API, Eden Treaty exposé aux clients via `@repo/api`)
 - **Database** : PostgreSQL 16 pgvector + Drizzle ORM 0.45
 - **Cache** : MemoryCacheService (LRU in-memory avec TTL) — PAS de Redis
-- **Auth** : Better Auth 1.5 + Google OAuth + account linking + cookieCache
+- **Auth** : Better Auth 1.6 + Google OAuth + account linking + cookieCache (macro Elysia `authMacro`, cf. section Patterns)
 - **AI** : **Stack 100 % Mistral souveraine EU** — modèle par tâche (voir ADR-0001) :
   - Embeddings (RAG) : `BAAI/bge-m3` dense+sparse via `apps/ai-service/` (Python, Koyeb fra)
   - Reranker (RAG) : `BAAI/bge-reranker-v2-m3` co-hosté dans `apps/ai-service/`
@@ -99,7 +99,7 @@ Best practices token (cf ADR-0001 D4) :
 
 - **Chat** (`src/services/chat/`) : orchestration Mistral, summarization, tool execution, token budget, SSE streaming, intent classifier (ministral-8b), mémoire épisodique pgvector (mistral-medium extraction).
 - **Billing** (`src/services/billing/`) : `BillingService` unique, piloté par les webhooks RevenueCat (`src/routes/revenuecat-webhook-*.ts`). Mutations idempotentes sur `family_billing` + `user_subscriptions`. Idempotence stockée dans `webhook_events` (TTL 7 jours).
-- **Learning** : FSRS (spaced repetition), decks, cards (génération `mistral-small` + JSON Schema), generations. Logique à extraire en `LearningService` + repositories (voir SP5)
+- **Learning** : FSRS (spaced repetition), decks, cards (génération `mistral-small` + JSON Schema), generations. Logique extraite en `LearningService` + `learningCardsRepository`/`learningDecksRepository` ; routes fines → service → repo, mutations multi-tables en transaction (cf. `services/learning/`).
 - **Subscription** (`src/routes/subscription/`) : routes lecture seule — `GET /api/subscriptions/status` (état famille + enfants) et `GET /api/subscriptions/usage` (tokens). Les achats/annulations passent par RevenueCat côté mobile ; le backend ne fait AUCUN appel provider sortant.
 - **Quota** : token quota windowed (5h rolling + daily cap) derrière flag `QUOTA_ENFORCEMENT_ENABLED`
 - **RAG** : recherche unifiée Qdrant hybrid native (dense BGE-M3 + sparse BGE-M3 + fusion RRF) + reranker `bge-reranker-v2-m3` cross-encoder. Embeddings + rerank servis par `apps/ai-service/` (Python FastAPI, Koyeb fra). Pas de Cohere (souveraineté EU). Déploiement : `apps/ai-service/README.md`.
@@ -110,8 +110,8 @@ Best practices token (cf ADR-0001 D4) :
 
 - **JAMAIS de logique métier dans les route handlers** → toujours déléguer au service
 - **JAMAIS d'accès DB direct depuis une route** → passer par le repository correspondant
-- **TOUJOURS valider les inputs** avec Zod schemas (`src/schemas/`)
-- **Auth** : `handleAuthWithCookies` middleware, JAMAIS de vérification manuelle
+- **Validation HTTP** : TypeBox `t` (Elysia natif) sur chaque route — c'est ce qui alimente les types Eden Treaty. Zod (`src/schemas/`) réservé aux payloads non-route (webhooks RevenueCat, validations externes complexes).
+- **Auth** : macro Elysia `authMacro` + `.guard({ auth: true })` (`src/lib/auth-macro.ts`), qui injecte `{ user, session }` typés. JAMAIS de vérification manuelle ni d'ancien `handleAuthWithCookies` (supprimé).
 - **Webhooks** : RevenueCat utilise un secret partagé (`REVENUECAT_WEBHOOK_AUTH`) comparé en timing-safe ; fail-fast au boot si absent ou trop court (<32 chars) en prod. Idempotence via `webhook_events` (dédup sur event id).
 - **Transactions** : `db.transaction(...)` pour toute opération multi-table (ex: créer deck + cards)
 - **Presigned URLs** pour uploads (frontend → Scaleway direct, bypass backend)
