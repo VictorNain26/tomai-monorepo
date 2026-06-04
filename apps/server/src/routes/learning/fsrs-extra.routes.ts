@@ -5,11 +5,9 @@
  */
 
 import { Elysia } from 'elysia';
-import { db } from '../../db/connection';
-import { learningDecks, learningCards } from '../../db/schema';
-import { eq } from 'drizzle-orm';
 import { authMacro } from '../../lib/auth-macro.js';
 import { logger } from '../../lib/observability';
+import { learningService, CardNotFoundError } from '../../services/learning/learning.service';
 import { fsrsService } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';
 import { getUserLevel } from './helpers';
@@ -23,23 +21,7 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
     const level = getUserLevel(user.id, user.schoolLevel);
 
     try {
-      const [card] = await db
-        .select({
-          card: learningCards,
-          deckUserId: learningDecks.userId,
-        })
-        .from(learningCards)
-        .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
-        .where(eq(learningCards.id, cardId))
-        .limit(1);
-
-      if (!card || card.deckUserId !== user.id) {
-        set.status = 404;
-        return { error: 'Carte non trouvée' };
-      }
-
-      const fsrsData = card.card.fsrsData as Record<string, unknown> | null;
-      const preview = fsrsService.previewScheduling(level, fsrsData);
+      const preview = await learningService.previewCardOrThrow(user.id, cardId, level);
 
       const formatPreview = (grade: 1 | 2 | 3 | 4) => {
         const data = preview[grade];
@@ -64,6 +46,10 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
         },
       };
     } catch (error) {
+      if (error instanceof CardNotFoundError) {
+        set.status = 404;
+        return { error: 'Carte non trouvée' };
+      }
       logger.error('Failed to preview scheduling', {
         operation: 'learning:preview:error',
         userId: user.id,

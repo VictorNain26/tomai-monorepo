@@ -7,12 +7,11 @@
  */
 
 import { Elysia, t } from 'elysia';
-import { db } from '../../db/connection';
-import { learningDecks, learningCards } from '../../db/schema';
-import { eq, and, sql } from 'drizzle-orm';
 import { authMacro } from '../../lib/auth-macro.js';
 import { logger } from '../../lib/observability';
-import { fsrsService, Rating } from '../../services/fsrs.service';
+import { learningService, CardNotFoundError } from '../../services/learning/learning.service';
+import { fsrsService } from '../../services/fsrs.service';
+import type { Rating } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';
 import { getUserLevel } from './helpers';
 
@@ -26,21 +25,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    */
   .get('/due-summary', async ({ user, set }) => {
     try {
-      const userId = user.id;
-
-      const result = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(learningCards)
-        .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
-        .where(
-          and(
-            eq(learningDecks.userId, userId),
-            sql`(${learningCards.fsrsData}->>'due')::timestamptz <= NOW()`
-          )
-        );
-
-      const totalDue = result[0]?.count ?? 0;
-
+      const totalDue = await learningService.getDueSummaryForUser(user.id);
       return { success: true, totalDue };
     } catch (error) {
       logger.error('Failed to fetch due summary', {
@@ -68,28 +53,10 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
     '/review',
     async ({ body, user, set }) => {
       const { cardId, rating } = body;
-
       const level = getUserLevel(user.id, user.schoolLevel);
 
       try {
-        // Verify card belongs to user
-        const [card] = await db
-          .select({
-            card: learningCards,
-            deckUserId: learningDecks.userId,
-          })
-          .from(learningCards)
-          .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
-          .where(eq(learningCards.id, cardId))
-          .limit(1);
-
-        if (!card || card.deckUserId !== user.id) {
-          set.status = 404;
-          return { error: 'Carte non trouvée' };
-        }
-
-        // Record review with FSRS
-        const result = await fsrsService.reviewCard(cardId, rating as Rating, level);
+        const result = await learningService.reviewCardOrThrow(user.id, cardId, rating as Rating, level);
 
         logger.info('Card reviewed via API', {
           operation: 'learning:review',
@@ -115,6 +82,10 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
           },
         };
       } catch (error) {
+        if (error instanceof CardNotFoundError) {
+          set.status = 404;
+          return { error: 'Carte non trouvée' };
+        }
         logger.error('Failed to review card', {
           operation: 'learning:review:error',
           userId: user.id,

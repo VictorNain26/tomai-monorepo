@@ -11,4 +11,4 @@ export { fsrsRoutes } from './fsrs.routes';
 export { fsrsExtraRoutes } from './fsrs-extra.routes';
 
 // Re-export helpers for potential use elsewhere
-export { getUserLevel, validateCardContent, subjectLabels } from './helpers';
+export { getUserLevel, subjectLabels } from './helpers';

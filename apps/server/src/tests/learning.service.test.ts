@@ -5,8 +5,8 @@
  *  - Mock the repository modules so we verify delegation + ownership logic
  *    without hitting Postgres.
  *  - Mock `db.transaction` to a pass-through that calls the provided callback
- *    with a fake tx handle, letting us assert that `createDeckWithCards` runs
- *    both inserts inside a single transaction and rolls back on failure.
+ *    with a fake tx handle, letting us assert that multi-step operations run
+ *    inside a single transaction and roll back on failure.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
@@ -16,9 +16,6 @@ const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
 // --- Transaction envelope mock ---------------------------------------------
-// The service calls `db.transaction(async (tx) => { ... })`. We want two
-// things: (a) confirm it wraps the writes, (b) propagate exceptions so the
-// outer promise rejects when the card insert throws (rollback semantics).
 let transactionFailed = false;
 const TX_MARKER = Symbol('tx');
 const mockTransaction = mock(async (fn: (tx: unknown) => Promise<unknown>) => {
@@ -34,7 +31,7 @@ mock.module('../db/connection', () => ({
   db: { transaction: mockTransaction },
 }));
 
-// --- Repository mocks -------------------------------------------------------
+// --- Deck repository mocks -------------------------------------------------
 const mockDeckInsert = mock(async () => ({ id: 'deck-1', userId: 'user-1', cardCount: 0 }));
 const mockDeckFindById = mock(async () => null as unknown);
 const mockDeckListByUser = mock(async () => [] as unknown[]);
@@ -45,35 +42,65 @@ mock.module('../db/repositories/learning-decks.repository', () => ({
   learningDecksRepository: {
     insert: mockDeckInsert,
     findById: mockDeckFindById,
-    // `findByUserAndId` is still exposed by the real repository but is no
-    // longer reached by LearningService after Phase 2 (all ownership lookups
-    // route through `findById` to distinguish NotFound vs Ownership errors).
-    // Not mocked here — any stray call would surface as a test failure.
     listByUser: mockDeckListByUser,
     updateById: mockDeckUpdateById,
     deleteById: mockDeckDeleteById,
   },
 }));
 
+// --- Card repository mocks -------------------------------------------------
 const mockCardInsertMany = mock(async (): Promise<unknown[]> => []);
 const mockCardListByDeck = mock(async (): Promise<unknown[]> => []);
+const mockCardFindByIdWithOwner = mock(async (): Promise<unknown> => null);
+const mockCardUpdateById = mock(async (): Promise<unknown> => null);
+const mockCardDeleteById = mock(async (): Promise<unknown> => null);
+const mockCardCountByDeckId = mock(async (): Promise<number> => 0);
+const mockCardCountDueByUser = mock(async (): Promise<number> => 0);
 
 mock.module('../db/repositories/learning-cards.repository', () => ({
   learningCardsRepository: {
     insertMany: mockCardInsertMany,
     listByDeck: mockCardListByDeck,
+    findByIdWithOwner: mockCardFindByIdWithOwner,
+    updateById: mockCardUpdateById,
+    deleteById: mockCardDeleteById,
+    countByDeckId: mockCardCountByDeckId,
+    countDueByUser: mockCardCountDueByUser,
   },
 }));
 
-// FSRS init is a pure helper — stub it to a deterministic shape.
+// --- FSRS service mock -----------------------------------------------------
+const mockFsrsInit = mock(() => ({ state: 0 }));
+const mockFsrsReviewCard = mock(async () => ({
+  cardId: 'card-1',
+  rating: 3,
+  previousState: 0,
+  newState: 2,
+  nextDue: new Date(),
+  stability: 1,
+  difficulty: 0.3,
+  reps: 1,
+  lapses: 0,
+}));
+const mockFsrsPreviewScheduling = mock(() => ({
+  1: { due: new Date(), interval: 0 },
+  2: { due: new Date(), interval: 1 },
+  3: { due: new Date(), interval: 3 },
+  4: { due: new Date(), interval: 7 },
+}));
+
 mock.module('../services/fsrs.service', () => ({
-  fsrsService: { initializeCardFsrsData: mock(() => ({ state: 0 })) },
+  fsrsService: {
+    initializeCardFsrsData: mockFsrsInit,
+    reviewCard: mockFsrsReviewCard,
+    previewScheduling: mockFsrsPreviewScheduling,
+  },
+  Rating: { Again: 1, Hard: 2, Good: 3, Easy: 4 },
 }));
 
 const { learningService } = await import('../services/learning/learning.service');
-const { DeckNotFoundError, DeckOwnershipError } = await import(
-  '../services/learning/learning-errors'
-);
+const { DeckNotFoundError, DeckOwnershipError, CardNotFoundError, CardValidationError } =
+  await import('../services/learning/learning-errors');
 
 beforeEach(() => {
   transactionFailed = false;
@@ -85,6 +112,13 @@ beforeEach(() => {
   mockDeckDeleteById.mockClear();
   mockCardInsertMany.mockClear();
   mockCardListByDeck.mockClear();
+  mockCardFindByIdWithOwner.mockClear();
+  mockCardUpdateById.mockClear();
+  mockCardDeleteById.mockClear();
+  mockCardCountByDeckId.mockClear();
+  mockCardCountDueByUser.mockClear();
+  mockFsrsReviewCard.mockClear();
+  mockFsrsPreviewScheduling.mockClear();
 });
 
 // ---------------------------------------------------------------------------
@@ -111,7 +145,6 @@ describe('LearningService', () => {
       expect(mockTransaction).toHaveBeenCalledTimes(1);
       expect(mockDeckInsert).toHaveBeenCalledTimes(1);
       expect(mockCardInsertMany).toHaveBeenCalledTimes(1);
-      // Same tx handle is propagated to both writes
       const deckTxArg = (mockDeckInsert.mock.calls[0] as unknown[])[1];
       const cardsTxArg = (mockCardInsertMany.mock.calls[0] as unknown[])[1];
       expect(deckTxArg).toBe(cardsTxArg);
@@ -307,6 +340,279 @@ describe('LearningService', () => {
       await learningService.deleteDeckOrThrow('user-1', 'deck-1');
 
       expect(mockDeckDeleteById).toHaveBeenCalledWith('deck-1');
+    });
+  });
+
+  describe('addCardsToDeckOrThrow', () => {
+    it('throws DeckNotFoundError when the deck does not exist', async () => {
+      mockDeckFindById.mockImplementationOnce(async () => null);
+
+      expect(
+        learningService.addCardsToDeckOrThrow('user-1', 'deck-1', {
+          cards: [{ cardType: 'flashcard', content: {} }],
+        }),
+      ).rejects.toBeInstanceOf(DeckNotFoundError);
+      expect(mockTransaction).not.toHaveBeenCalled();
+    });
+
+    it('throws DeckOwnershipError when the deck belongs to someone else', async () => {
+      mockDeckFindById.mockImplementationOnce(async () => ({
+        id: 'deck-1',
+        userId: 'other-user',
+        cardCount: 0,
+      } as unknown));
+
+      expect(
+        learningService.addCardsToDeckOrThrow('user-1', 'deck-1', {
+          cards: [{ cardType: 'flashcard', content: {} }],
+        }),
+      ).rejects.toBeInstanceOf(DeckOwnershipError);
+      expect(mockTransaction).not.toHaveBeenCalled();
+    });
+
+    it('inserts cards and recomputes cardCount from the live count inside the tx', async () => {
+      const deck = { id: 'deck-1', userId: 'user-1', cardCount: 2 };
+      const inserted = [{ id: 'card-3', deckId: 'deck-1' }];
+      mockDeckFindById.mockImplementationOnce(async () => deck);
+      // First count → startPosition (2), second count → newCount after insert (3)
+      mockCardCountByDeckId.mockImplementationOnce(async () => 2).mockImplementationOnce(async () => 3);
+      mockCardInsertMany.mockImplementationOnce(async () => inserted);
+      mockDeckUpdateById.mockImplementationOnce(async () => ({ ...deck, cardCount: 3 }));
+
+      const result = await learningService.addCardsToDeckOrThrow('user-1', 'deck-1', {
+        cards: [{ cardType: 'flashcard', content: { front: 'q', back: 'a' } }],
+      });
+
+      expect(mockTransaction).toHaveBeenCalledTimes(1);
+      expect(mockCardInsertMany).toHaveBeenCalledTimes(1);
+      expect(mockCardCountByDeckId).toHaveBeenCalledTimes(2);
+      expect(mockDeckUpdateById).toHaveBeenCalledTimes(1);
+      // cardCount is the live recount, not arithmetic on the pre-tx snapshot
+      const updateArg = (mockDeckUpdateById.mock.calls[0] as unknown[])[1] as { cardCount: number };
+      expect(updateArg.cardCount).toBe(3);
+      // All writes share the same tx handle
+      const insertTx = (mockCardInsertMany.mock.calls[0] as unknown[])[1];
+      const updateTx = (mockDeckUpdateById.mock.calls[0] as unknown[])[2];
+      const countTx = (mockCardCountByDeckId.mock.calls[0] as unknown[])[1];
+      expect(insertTx).toBe(updateTx);
+      expect(insertTx).toBe(countTx);
+      expect((result as typeof inserted)).toEqual(inserted);
+    });
+
+    it('rolls back when the card insert throws', async () => {
+      mockDeckFindById.mockImplementationOnce(async () => ({
+        id: 'deck-1',
+        userId: 'user-1',
+        cardCount: 0,
+      }));
+      mockCardInsertMany.mockImplementationOnce(async () => {
+        throw new Error('insert fail');
+      });
+
+      expect(
+        learningService.addCardsToDeckOrThrow('user-1', 'deck-1', {
+          cards: [{ cardType: 'flashcard', content: { front: 'q', back: 'a' } }],
+        }),
+      ).rejects.toThrow('insert fail');
+      expect(transactionFailed).toBe(true);
+    });
+
+    it('throws CardValidationError before any write when card content is invalid', async () => {
+      mockDeckFindById.mockImplementationOnce(async () => ({
+        id: 'deck-1',
+        userId: 'user-1',
+        cardCount: 0,
+      }));
+
+      expect(
+        learningService.addCardsToDeckOrThrow('user-1', 'deck-1', {
+          cards: [{ cardType: 'flashcard', content: { front: 'only front' } }],
+        }),
+      ).rejects.toBeInstanceOf(CardValidationError);
+      expect(mockTransaction).not.toHaveBeenCalled();
+      expect(mockCardInsertMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateCardOrThrow', () => {
+    it('throws CardNotFoundError when the card is not found or not owned', async () => {
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => null);
+
+      expect(
+        learningService.updateCardOrThrow('user-1', 'card-1', { position: 5 }),
+      ).rejects.toBeInstanceOf(CardNotFoundError);
+      expect(mockCardUpdateById).not.toHaveBeenCalled();
+    });
+
+    it('delegates the update and returns the updated card', async () => {
+      const card = { id: 'card-1', deckId: 'deck-1', position: 0 };
+      const updated = { ...card, position: 5 };
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
+        card,
+        deckUserId: 'user-1',
+      }));
+      mockCardUpdateById.mockImplementationOnce(async () => updated);
+
+      const result = await learningService.updateCardOrThrow('user-1', 'card-1', { position: 5 });
+
+      expect(mockCardUpdateById).toHaveBeenCalledTimes(1);
+      expect(result).toMatchObject({ position: 5 });
+    });
+
+    it('throws CardNotFoundError on concurrent-delete race (update returns null)', async () => {
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
+        card: { id: 'card-1', deckId: 'deck-1' },
+        deckUserId: 'user-1',
+      }));
+      mockCardUpdateById.mockImplementationOnce(async () => null);
+
+      expect(
+        learningService.updateCardOrThrow('user-1', 'card-1', { position: 5 }),
+      ).rejects.toBeInstanceOf(CardNotFoundError);
+    });
+
+    it('validates new content against the existing card type when cardType is omitted', async () => {
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
+        card: { id: 'card-1', deckId: 'deck-1', cardType: 'flashcard' },
+        deckUserId: 'user-1',
+      }));
+
+      expect(
+        learningService.updateCardOrThrow('user-1', 'card-1', {
+          content: { front: 'only front' },
+        }),
+      ).rejects.toBeInstanceOf(CardValidationError);
+      expect(mockCardUpdateById).not.toHaveBeenCalled();
+    });
+
+    it('persists only content/position, never the cardType', async () => {
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
+        card: { id: 'card-1', deckId: 'deck-1', cardType: 'flashcard' },
+        deckUserId: 'user-1',
+      }));
+      mockCardUpdateById.mockImplementationOnce(async () => ({
+        id: 'card-1',
+        cardType: 'flashcard',
+      }));
+
+      await learningService.updateCardOrThrow('user-1', 'card-1', {
+        cardType: 'qcm',
+        content: { question: 'Q', options: ['a', 'b'], correctIndex: 0 },
+        position: 3,
+      });
+
+      const persisted = (mockCardUpdateById.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
+      expect(persisted).not.toHaveProperty('cardType');
+      expect(persisted).toMatchObject({ position: 3 });
+    });
+  });
+
+  describe('deleteCardOrThrow', () => {
+    it('throws CardNotFoundError when the card is not found or not owned', async () => {
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => null);
+
+      expect(
+        learningService.deleteCardOrThrow('user-1', 'card-1'),
+      ).rejects.toBeInstanceOf(CardNotFoundError);
+      expect(mockTransaction).not.toHaveBeenCalled();
+    });
+
+    it('deletes the card and recounts cardCount atomically', async () => {
+      const card = { id: 'card-1', deckId: 'deck-1' };
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
+        card,
+        deckUserId: 'user-1',
+      }));
+      mockCardDeleteById.mockImplementationOnce(async () => card);
+      mockCardCountByDeckId.mockImplementationOnce(async () => 1);
+      mockDeckUpdateById.mockImplementationOnce(async () => ({ id: 'deck-1', cardCount: 1 }));
+
+      await learningService.deleteCardOrThrow('user-1', 'card-1');
+
+      expect(mockTransaction).toHaveBeenCalledTimes(1);
+      expect(mockCardDeleteById).toHaveBeenCalledTimes(1);
+      expect(mockCardCountByDeckId).toHaveBeenCalledTimes(1);
+      expect(mockDeckUpdateById).toHaveBeenCalledTimes(1);
+      // All writes share the same tx handle
+      const deleteTx = (mockCardDeleteById.mock.calls[0] as unknown[])[1];
+      const countTx = (mockCardCountByDeckId.mock.calls[0] as unknown[])[1];
+      const updateTx = (mockDeckUpdateById.mock.calls[0] as unknown[])[2];
+      expect(deleteTx).toBe(countTx);
+      expect(deleteTx).toBe(updateTx);
+    });
+
+    it('rolls back when the delete fails', async () => {
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
+        card: { id: 'card-1', deckId: 'deck-1' },
+        deckUserId: 'user-1',
+      }));
+      mockCardDeleteById.mockImplementationOnce(async () => {
+        throw new Error('delete fail');
+      });
+
+      expect(
+        learningService.deleteCardOrThrow('user-1', 'card-1'),
+      ).rejects.toThrow('delete fail');
+      expect(transactionFailed).toBe(true);
+    });
+  });
+
+  describe('getDueSummaryForUser', () => {
+    it('delegates to the card repository countDueByUser', async () => {
+      mockCardCountDueByUser.mockImplementationOnce(async () => 7);
+
+      const result = await learningService.getDueSummaryForUser('user-1');
+
+      expect(mockCardCountDueByUser).toHaveBeenCalledWith('user-1');
+      expect(result).toBe(7);
+    });
+  });
+
+  describe('reviewCardOrThrow', () => {
+    it('throws CardNotFoundError when the card is not found or not owned', async () => {
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => null);
+
+      expect(
+        learningService.reviewCardOrThrow('user-1', 'card-1', 3 as never, 'sixieme'),
+      ).rejects.toBeInstanceOf(CardNotFoundError);
+      expect(mockFsrsReviewCard).not.toHaveBeenCalled();
+    });
+
+    it('delegates to fsrsService.reviewCard when ownership matches', async () => {
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
+        card: { id: 'card-1', deckId: 'deck-1' },
+        deckUserId: 'user-1',
+      }));
+
+      await learningService.reviewCardOrThrow('user-1', 'card-1', 3 as never, 'sixieme');
+
+      expect(mockFsrsReviewCard).toHaveBeenCalledTimes(1);
+      expect((mockFsrsReviewCard.mock.calls[0] as unknown[])[0]).toBe('card-1');
+      expect((mockFsrsReviewCard.mock.calls[0] as unknown[])[1]).toBe(3);
+    });
+  });
+
+  describe('previewCardOrThrow', () => {
+    it('throws CardNotFoundError when the card is not found or not owned', async () => {
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => null);
+
+      expect(
+        learningService.previewCardOrThrow('user-1', 'card-1', 'sixieme'),
+      ).rejects.toBeInstanceOf(CardNotFoundError);
+      expect(mockFsrsPreviewScheduling).not.toHaveBeenCalled();
+    });
+
+    it('delegates to fsrsService.previewScheduling when ownership matches', async () => {
+      const card = { id: 'card-1', deckId: 'deck-1', fsrsData: { state: 0 } };
+      mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
+        card,
+        deckUserId: 'user-1',
+      }));
+
+      await learningService.previewCardOrThrow('user-1', 'card-1', 'sixieme');
+
+      expect(mockFsrsPreviewScheduling).toHaveBeenCalledTimes(1);
+      expect((mockFsrsPreviewScheduling.mock.calls[0] as unknown[])[0]).toBe('sixieme');
     });
   });
 });
