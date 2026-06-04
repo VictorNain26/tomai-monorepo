@@ -1,6 +1,4 @@
-import { db } from '../../db/connection.js';
-import { userSubscriptions, subscriptionPlans } from '../../db/schema.js';
-import { eq, sql } from 'drizzle-orm';
+import { userSubscriptionsRepository } from '../../db/repositories/user-subscriptions.repository.js';
 import { logger } from '../../lib/observability.js';
 import { env } from '../../config/env.js';
 import {
@@ -25,16 +23,7 @@ export async function ensureUserSubscription(userId: string): Promise<{
   dailyLimit: number;
   planName: 'free' | 'premium';
 }> {
-  const [existing] = await db
-    .select({
-      planId: userSubscriptions.planId,
-      planName: subscriptionPlans.name,
-      dailyLimit: subscriptionPlans.dailyTokenLimit,
-    })
-    .from(userSubscriptions)
-    .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
-    .where(eq(userSubscriptions.userId, userId))
-    .limit(1);
+  const existing = await userSubscriptionsRepository.findByUserIdWithPlanName(userId);
 
   if (existing) {
     const planName = existing.planName === 'premium' ? 'premium' : 'free';
@@ -47,17 +36,13 @@ export async function ensureUserSubscription(userId: string): Promise<{
     };
   }
 
-  const [freePlan] = await db
-    .select()
-    .from(subscriptionPlans)
-    .where(eq(subscriptionPlans.name, 'free'))
-    .limit(1);
+  const freePlan = await userSubscriptionsRepository.findPlanByName('free');
 
   if (!freePlan) {
     throw new Error('Free plan not found in database');
   }
 
-  await db.insert(userSubscriptions).values({
+  await userSubscriptionsRepository.insertDefault({
     userId,
     planId: freePlan.id,
     status: 'active',
@@ -120,18 +105,7 @@ export async function checkQuota(userId: string): Promise<QuotaCheckResult> {
 
 async function checkQuotaReal(userId: string): Promise<QuotaCheckResult> {
   try {
-    const [row] = await db
-      .select({
-        planName: subscriptionPlans.name,
-        windowTokensUsed: userSubscriptions.windowTokensUsed,
-        windowStartAt: userSubscriptions.windowStartAt,
-        tokensUsedToday: userSubscriptions.tokensUsedToday,
-        lastResetAt: userSubscriptions.lastResetAt,
-      })
-      .from(userSubscriptions)
-      .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
-      .where(eq(userSubscriptions.userId, userId))
-      .limit(1);
+    const row = await userSubscriptionsRepository.findByUserIdWithPlanName(userId);
 
     // No subscription yet: treat as free plan at zero usage (the next
     // incrementTokenUsage will create the row via ensureUserSubscription).
@@ -197,80 +171,33 @@ export async function incrementTokenUsage(
 ): Promise<TokenUsageResult> {
   try {
     // Read current state (needed for plan config + reset decisions).
-    const [currentWithPlan] = await db
-      .select({
-        planName: subscriptionPlans.name,
-        windowStartAt: userSubscriptions.windowStartAt,
-        lastResetAt: userSubscriptions.lastResetAt,
-        lastWeeklyResetAt: userSubscriptions.lastWeeklyResetAt,
-      })
-      .from(userSubscriptions)
-      .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
-      .where(eq(userSubscriptions.userId, userId))
-      .limit(1);
+    let current = await userSubscriptionsRepository.findByUserIdWithPlanName(userId);
 
     // Brand-new user path: create subscription row, then retry
-    let current = currentWithPlan;
-    let planName: 'free' | 'premium';
     if (!current) {
-      const ensured = await ensureUserSubscription(userId);
-      planName = ensured.planName;
-      const [refetched] = await db
-        .select({
-          planName: subscriptionPlans.name,
-          windowStartAt: userSubscriptions.windowStartAt,
-          lastResetAt: userSubscriptions.lastResetAt,
-          lastWeeklyResetAt: userSubscriptions.lastWeeklyResetAt,
-        })
-        .from(userSubscriptions)
-        .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
-        .where(eq(userSubscriptions.userId, userId))
-        .limit(1);
-      if (!refetched) {
+      await ensureUserSubscription(userId);
+      current = await userSubscriptionsRepository.findByUserIdWithPlanName(userId);
+      if (!current) {
         throw new Error('Subscription not found after ensure');
       }
-      current = refetched;
-    } else {
-      planName = current.planName === 'premium' ? 'premium' : 'free';
     }
 
-    const windowHours = QUOTA_CONFIG[planName].windowHours;
+    const planName: 'free' | 'premium' = current.planName === 'premium' ? 'premium' : 'free';
     const windowLimit = QUOTA_CONFIG[planName].windowTokens;
     const dailyLimit = QUOTA_CONFIG[planName].dailyMaxTokens;
 
     // Decide resets from the snapshot we just read. Worst case: a concurrent writer
-    // also crosses the same boundary simultaneously — the CASE WHEN below still produces
-    // a correct "reset + delta" outcome atomically.
-    const shouldResetWindow = isWindowExpired(current.windowStartAt, windowHours);
-    const shouldResetDaily = needsDailyReset(current.lastResetAt);
-    const shouldResetWeekly = needsWeeklyReset(current.lastWeeklyResetAt);
-
-    // Atomic increment in a single UPDATE ... RETURNING. Eliminates the lost-write
-    // race between two concurrent streams for the same user (billing-critical).
-    const [updated] = await db
-      .update(userSubscriptions)
-      .set({
-        windowTokensUsed: shouldResetWindow
-          ? tokensUsed
-          : sql`${userSubscriptions.windowTokensUsed} + ${tokensUsed}`,
-        windowStartAt: shouldResetWindow ? new Date() : current.windowStartAt,
-        tokensUsedToday: shouldResetDaily
-          ? tokensUsed
-          : sql`${userSubscriptions.tokensUsedToday} + ${tokensUsed}`,
-        lastResetAt: shouldResetDaily ? new Date() : current.lastResetAt,
-        tokensUsedThisWeek: shouldResetWeekly
-          ? tokensUsed
-          : sql`${userSubscriptions.tokensUsedThisWeek} + ${tokensUsed}`,
-        lastWeeklyResetAt: shouldResetWeekly ? new Date() : current.lastWeeklyResetAt,
-        totalTokensUsed: sql`${userSubscriptions.totalTokensUsed} + ${tokensUsed}`,
-        totalMessagesCount: sql`${userSubscriptions.totalMessagesCount} + ${1}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(userSubscriptions.userId, userId))
-      .returning({
-        windowTokensUsed: userSubscriptions.windowTokensUsed,
-        tokensUsedToday: userSubscriptions.tokensUsedToday,
-      });
+    // also crosses the same boundary simultaneously — applyTokenIncrement's CASE-style
+    // branches still produce a correct "reset + delta" outcome atomically.
+    const updated = await userSubscriptionsRepository.applyTokenIncrement(userId, {
+      tokensUsed,
+      shouldResetWindow: isWindowExpired(current.windowStartAt, QUOTA_CONFIG[planName].windowHours),
+      windowStartAt: current.windowStartAt,
+      shouldResetDaily: needsDailyReset(current.lastResetAt),
+      lastResetAt: current.lastResetAt,
+      shouldResetWeekly: needsWeeklyReset(current.lastWeeklyResetAt),
+      lastWeeklyResetAt: current.lastWeeklyResetAt,
+    });
 
     if (!updated) {
       throw new Error('Failed to update token usage');
@@ -327,15 +254,7 @@ export async function incrementTokenUsage(
 export async function getUsageStats(userId: string): Promise<UsageStats> {
   const quota = await checkQuota(userId);
 
-  const [subscription] = await db
-    .select({
-      tokensUsedThisWeek: userSubscriptions.tokensUsedThisWeek,
-      totalTokensUsed: userSubscriptions.totalTokensUsed,
-      totalMessagesCount: userSubscriptions.totalMessagesCount,
-    })
-    .from(userSubscriptions)
-    .where(eq(userSubscriptions.userId, userId))
-    .limit(1);
+  const subscription = await userSubscriptionsRepository.findByUserId(userId);
 
   return {
     windowTokensUsed: quota.windowTokensUsed,

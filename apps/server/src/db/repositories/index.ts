@@ -9,6 +9,12 @@ export { pushTokensRepository, PushTokensRepository, type UpsertPushTokenInput }
 export { waitlistRepository, WaitlistRepository } from './waitlist.repository';
 export { subscriptionRepository, SubscriptionRepository } from './subscription.repository';
 export { episodicMemoryRepository, EpisodicMemoryRepository } from './episodic-memory.repository';
+export {
+  userSubscriptionsRepository,
+  UserSubscriptionsRepository,
+  type TokenIncrementParams,
+  type DeckIncrementParams,
+} from './user-subscriptions.repository';
 
 // Export database connection and schema for advanced queries
 export { db, sql } from '../connection';

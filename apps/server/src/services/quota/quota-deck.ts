@@ -4,9 +4,7 @@
  * Extracted from quota-functions.ts to keep each file under the 400-line limit.
  */
 
-import { db } from '../../db/connection.js';
-import { userSubscriptions } from '../../db/schema.js';
-import { eq, sql } from 'drizzle-orm';
+import { userSubscriptionsRepository } from '../../db/repositories/user-subscriptions.repository.js';
 import { logger } from '../../lib/observability.js';
 import { env } from '../../config/env.js';
 import {
@@ -37,16 +35,7 @@ async function checkDeckQuotaReal(userId: string): Promise<DeckQuotaResult> {
   const { dailyDecks, monthlyDecks } = QUOTA_CONFIG.premium;
 
   try {
-    const [row] = await db
-      .select({
-        decksGeneratedToday: userSubscriptions.decksGeneratedToday,
-        decksGeneratedThisMonth: userSubscriptions.decksGeneratedThisMonth,
-        lastResetAt: userSubscriptions.lastResetAt,
-        lastMonthlyResetAt: userSubscriptions.lastMonthlyResetAt,
-      })
-      .from(userSubscriptions)
-      .where(eq(userSubscriptions.userId, userId))
-      .limit(1);
+    const row = await userSubscriptionsRepository.findByUserId(userId);
 
     if (!row) {
       return {
@@ -93,45 +82,20 @@ export async function incrementDeckUsage(userId: string): Promise<DeckUsageResul
   try {
     await ensureUserSubscription(userId);
 
-    const [current] = await db
-      .select({
-        decksGeneratedToday: userSubscriptions.decksGeneratedToday,
-        decksGeneratedThisMonth: userSubscriptions.decksGeneratedThisMonth,
-        lastResetAt: userSubscriptions.lastResetAt,
-        lastMonthlyResetAt: userSubscriptions.lastMonthlyResetAt,
-      })
-      .from(userSubscriptions)
-      .where(eq(userSubscriptions.userId, userId))
-      .limit(1);
+    const current = await userSubscriptionsRepository.findByUserId(userId);
 
     if (!current) {
       throw new Error('Subscription not found');
     }
 
-    const shouldDailyReset = needsDailyReset(current.lastResetAt);
-    const shouldMonthlyReset = needsMonthlyReset(current.lastMonthlyResetAt);
-
     // Atomic increment (same pattern as incrementTokenUsage) — prevents
     // lost-write races between concurrent deck generations for the same user.
-    const [updated] = await db
-      .update(userSubscriptions)
-      .set({
-        decksGeneratedToday: shouldDailyReset
-          ? 1
-          : sql`${userSubscriptions.decksGeneratedToday} + ${1}`,
-        decksGeneratedThisMonth: shouldMonthlyReset
-          ? 1
-          : sql`${userSubscriptions.decksGeneratedThisMonth} + ${1}`,
-        ...(shouldDailyReset && { tokensUsedToday: 0, windowTokensUsed: 0, windowStartAt: new Date() }),
-        lastResetAt: shouldDailyReset ? new Date() : current.lastResetAt,
-        lastMonthlyResetAt: shouldMonthlyReset ? new Date() : current.lastMonthlyResetAt,
-        updatedAt: new Date(),
-      })
-      .where(eq(userSubscriptions.userId, userId))
-      .returning({
-        decksGeneratedToday: userSubscriptions.decksGeneratedToday,
-        decksGeneratedThisMonth: userSubscriptions.decksGeneratedThisMonth,
-      });
+    const updated = await userSubscriptionsRepository.applyDeckIncrement(userId, {
+      shouldResetDaily: needsDailyReset(current.lastResetAt),
+      lastResetAt: current.lastResetAt,
+      shouldResetMonthly: needsMonthlyReset(current.lastMonthlyResetAt),
+      lastMonthlyResetAt: current.lastMonthlyResetAt,
+    });
 
     if (!updated) {
       throw new Error('Failed to update deck usage');

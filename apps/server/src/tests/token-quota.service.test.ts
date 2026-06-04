@@ -20,101 +20,66 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
-// DB mock state
-let dbSelectResult: unknown[] = [];
+// Repository mock state. `dbSelectResult[0]` is the snapshot the service reads
+// before deciding resets; the increment mocks apply the service's reset
+// decisions (booleans) to that snapshot — exactly what the real atomic UPDATE
+// does, minus the SQL.
+let dbSelectResult: Record<string, unknown>[] = [];
 let dbUpdateResult = { rowCount: 1 };
 let dbInsertShouldThrow = false;
-// Capture the last .set() payload so the returning() mock can simulate a realistic
-// post-update row based on the current select snapshot + the set expressions.
-let lastSetPayload: Record<string, unknown> | null = null;
 
-function resolveSqlOrLiteral(value: unknown, currentRow: Record<string, unknown>): unknown {
-  if (value && typeof value === 'object' && (value as { type?: string }).type === 'sql') {
-    // sql`${col} + ${delta}` shape — we only model this specific pattern
-    const values = (value as { values: unknown[] }).values;
-    const [colKey, delta] = values;
-    if (typeof colKey === 'string' && typeof delta === 'number') {
-      const base = (currentRow[colKey] as number) ?? 0;
-      return base + delta;
-    }
-    return value;
-  }
-  return value;
+function currentRow(): Record<string, unknown> {
+  return dbSelectResult[0] ?? {};
 }
 
-const mockUpdateReturning = mock(() => {
-  const row = (dbSelectResult[0] as Record<string, unknown> | undefined) ?? {};
-  const set = lastSetPayload ?? {};
-  const resolved: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(set)) {
-    resolved[key] = resolveSqlOrLiteral(value, row);
-  }
-  return Promise.resolve([resolved]);
-});
-const mockUpdateWhere = mock(() => {
-  const promise = Promise.resolve(dbUpdateResult) as Promise<typeof dbUpdateResult> & {
-    returning: typeof mockUpdateReturning;
-  };
-  promise.returning = mockUpdateReturning;
-  return promise;
-});
-const mockUpdateSet = mock((payload: Record<string, unknown>) => {
-  lastSetPayload = payload;
-  return { where: mockUpdateWhere };
-});
-const mockDbUpdate = mock(() => ({ set: mockUpdateSet }));
-
-mock.module('../db/connection', () => ({
-  db: {
-    select: mock(() => ({
-      from: mock(() => ({
-        where: mock(() => ({
-          limit: mock(() => Promise.resolve(dbSelectResult)),
-        })),
-        innerJoin: mock(() => ({
-          where: mock(() => ({
-            limit: mock(() => Promise.resolve(dbSelectResult)),
-          })),
-        })),
-      })),
-    })),
-    insert: mock(() => ({
-      values: mock(() => {
-        if (dbInsertShouldThrow) throw new Error('Insert failed');
-        return Promise.resolve();
-      }),
-    })),
-    update: mockDbUpdate,
+const mockApplyTokenIncrement = mock(
+  (
+    _userId: string,
+    params: {
+      tokensUsed: number;
+      shouldResetWindow: boolean;
+      shouldResetDaily: boolean;
+    },
+  ) => {
+    const row = currentRow();
+    return Promise.resolve({
+      windowTokensUsed: params.shouldResetWindow
+        ? params.tokensUsed
+        : ((row.windowTokensUsed as number) ?? 0) + params.tokensUsed,
+      tokensUsedToday: params.shouldResetDaily
+        ? params.tokensUsed
+        : ((row.tokensUsedToday as number) ?? 0) + params.tokensUsed,
+    });
   },
-}));
+);
 
-mock.module('../db/schema', () => ({
-  userSubscriptions: {
-    userId: 'userId',
-    planId: 'planId',
-    windowTokensUsed: 'windowTokensUsed',
-    windowStartAt: 'windowStartAt',
-    tokensUsedToday: 'tokensUsedToday',
-    tokensUsedThisWeek: 'tokensUsedThisWeek',
-    totalTokensUsed: 'totalTokensUsed',
-    totalMessagesCount: 'totalMessagesCount',
-    lastResetAt: 'lastResetAt',
-    lastWeeklyResetAt: 'lastWeeklyResetAt',
-    lastMonthlyResetAt: 'lastMonthlyResetAt',
-    decksGeneratedToday: 'decksGeneratedToday',
-    decksGeneratedThisMonth: 'decksGeneratedThisMonth',
-    updatedAt: 'updatedAt',
+const mockApplyDeckIncrement = mock(
+  (_userId: string, params: { shouldResetDaily: boolean; shouldResetMonthly: boolean }) => {
+    const row = currentRow();
+    return Promise.resolve({
+      decksGeneratedToday: params.shouldResetDaily
+        ? 1
+        : ((row.decksGeneratedToday as number) ?? 0) + 1,
+      decksGeneratedThisMonth: params.shouldResetMonthly
+        ? 1
+        : ((row.decksGeneratedThisMonth as number) ?? 0) + 1,
+    });
   },
-  subscriptionPlans: {
-    id: 'id',
-    name: 'name',
-    dailyTokenLimit: 'dailyTokenLimit',
-  },
-}));
+);
 
-mock.module('drizzle-orm', () => ({
-  eq: (...args: unknown[]) => ({ type: 'eq', args }),
-  sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ type: 'sql', strings, values }),
+mock.module('../db/repositories/user-subscriptions.repository', () => ({
+  userSubscriptionsRepository: {
+    findByUserId: mock(() => Promise.resolve(dbSelectResult[0])),
+    findByUserIdWithPlanName: mock(() => Promise.resolve(dbSelectResult[0])),
+    findPlanByName: mock(() => Promise.resolve({ id: 'plan-free' })),
+    insertDefault: mock(() => {
+      if (dbInsertShouldThrow) throw new Error('Insert failed');
+      return Promise.resolve();
+    }),
+    applyTokenIncrement: mockApplyTokenIncrement,
+    applyDeckIncrement: mockApplyDeckIncrement,
+    resetExpiredDaily: mock(() => Promise.resolve(dbUpdateResult.rowCount)),
+  },
 }));
 
 // Import after mocks
@@ -142,11 +107,8 @@ beforeEach(() => {
   dbSelectResult = [];
   dbUpdateResult = { rowCount: 1 };
   dbInsertShouldThrow = false;
-  lastSetPayload = null;
-  mockDbUpdate.mockClear();
-  mockUpdateSet.mockClear();
-  mockUpdateWhere.mockClear();
-  mockUpdateReturning.mockClear();
+  mockApplyTokenIncrement.mockClear();
+  mockApplyDeckIncrement.mockClear();
 });
 
 describe('Token Quota Service', () => {

@@ -25,44 +25,15 @@ mock.module('../config/env', () => ({
   },
 }));
 
-// DB select mock — returns whatever we seed into dbSelectResult
-let dbSelectResult: unknown[] = [];
+// Repository mock — returns whatever we seed into dbSelectResult. checkQuota /
+// checkDeckQuota are read-only, so only the finder methods are exercised.
+let dbSelectResult: Record<string, unknown>[] = [];
 
-mock.module('../db/connection', () => ({
-  db: {
-    select: mock(() => ({
-      from: mock(() => ({
-        where: mock(() => ({
-          limit: mock(() => Promise.resolve(dbSelectResult)),
-        })),
-        innerJoin: mock(() => ({
-          where: mock(() => ({
-            limit: mock(() => Promise.resolve(dbSelectResult)),
-          })),
-        })),
-      })),
-    })),
+mock.module('../db/repositories/user-subscriptions.repository', () => ({
+  userSubscriptionsRepository: {
+    findByUserId: mock(() => Promise.resolve(dbSelectResult[0])),
+    findByUserIdWithPlanName: mock(() => Promise.resolve(dbSelectResult[0])),
   },
-}));
-
-mock.module('../db/schema', () => ({
-  userSubscriptions: {
-    userId: 'userId',
-    planId: 'planId',
-    windowTokensUsed: 'windowTokensUsed',
-    windowStartAt: 'windowStartAt',
-    tokensUsedToday: 'tokensUsedToday',
-    decksGeneratedToday: 'decksGeneratedToday',
-    decksGeneratedThisMonth: 'decksGeneratedThisMonth',
-    lastResetAt: 'lastResetAt',
-    lastMonthlyResetAt: 'lastMonthlyResetAt',
-  },
-  subscriptionPlans: { id: 'id', name: 'name' },
-}));
-
-mock.module('drizzle-orm', () => ({
-  eq: (...args: unknown[]) => ({ type: 'eq', args }),
-  sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ type: 'sql', strings, values }),
 }));
 
 // Import after env + mocks so env picks up the flag value.
