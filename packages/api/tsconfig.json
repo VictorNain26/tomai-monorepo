@@ -4,10 +4,9 @@
   "compilerOptions": {
     "lib": ["ES2022", "DOM"],
     "jsx": "react-jsx",
-    // bun-types: les types Eden Treaty re-exportés depuis `tomai-server/app`
-    // (workspace dep) tirent des fichiers source qui référencent le global Bun.
-    // Type-only, aucun impact runtime sur les consommateurs du package.
-    "types": ["bun-types"],
+    // No bun-types: the `App` type now comes from the server's *built*
+    // declarations (tomai-server/app -> dist/types/app.d.ts), which carry no
+    // Bun globals. Pulling bun-types here would re-admit the leak we removed.
     "paths": {
       "@repo/shared-types": ["../shared-types/src"]
     }

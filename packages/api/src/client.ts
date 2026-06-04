@@ -77,8 +77,16 @@ type TreatyApi = { api: Record<string, any>; [key: string]: unknown };
 let treatyClient: TreatyClient | null = null;
 
 /**
- * Get the Eden Treaty client with full type-safety from server routes.
+ * Get the Eden Treaty client.
  * Lazily initialized on first call (requires initializeApi() to have been called).
+ *
+ * The `App` type is consumed from the server's *built* declarations
+ * (`tomai-server/app` -> dist/types/app.d.ts), so clients carry no Bun globals.
+ *
+ * NOTE: the return is still loosely typed (`TreatyApi`). Turning on the full
+ * `TreatyClient` e2e route types is a separate change — it surfaces pre-existing
+ * contract drift (request DTOs, same-prefix route composition) that is fixed in
+ * its own PR.
  *
  * @example
  * const { data, error } = await getTreaty().api.parent.dashboard.get();

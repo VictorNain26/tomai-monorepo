@@ -30,6 +30,10 @@
         "build/**"
       ]
     },
+    "build:types": {
+      "dependsOn": ["^build:types"],
+      "outputs": ["dist/types/**"]
+    },
     "dev": {
       "cache": false,
       "persistent": true
@@ -50,7 +54,7 @@
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"],
+      "dependsOn": ["^typecheck", "^build:types"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "tsconfig.json",
