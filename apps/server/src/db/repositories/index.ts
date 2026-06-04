@@ -7,6 +7,7 @@ export { sessionFilesRepository, SessionFilesRepository } from './session-files.
 export { retrievalAuditRepository, RetrievalAuditRepository, type LogRetrievalInput } from './retrieval-audit.repository';
 export { pushTokensRepository, PushTokensRepository, type UpsertPushTokenInput } from './push-tokens.repository';
 export { waitlistRepository, WaitlistRepository } from './waitlist.repository';
+export { subscriptionRepository, SubscriptionRepository } from './subscription.repository';
 
 // Export database connection and schema for advanced queries
 export { db, sql } from '../connection';
