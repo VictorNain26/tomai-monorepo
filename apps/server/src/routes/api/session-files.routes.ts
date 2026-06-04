@@ -7,7 +7,7 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
   .use(authMacro)
 
   .guard({ auth: true })
-  .get('/files', async ({ user, set }) => {
+  .get('/files', async ({ user, status }) => {
     try {
       const { filesRepository } = await import('../../db/repositories/index');
 
@@ -37,17 +37,15 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      set.status = 500;
-      return { error: 'Failed to list files' };
+      return status(500, { error: 'Failed to list files' });
     }
   })
 
-  .get('/chat/session/:id/files', async ({ params, user, set }) => {
+  .get('/chat/session/:id/files', async ({ params, user, status }) => {
     try {
       const session = await chatService.getSession(params.id);
       if (!session || session.userId !== user.id) {
-        set.status = 403;
-        return { error: 'Session not found or access denied' };
+        return status(403, { error: 'Session not found or access denied' });
       }
 
       const { sessionFilesRepository } = await import('../../db/repositories/index');
@@ -70,32 +68,28 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      set.status = 500;
-      return { error: 'Failed to list session files' };
+      return status(500, { error: 'Failed to list session files' });
     }
   })
 
-  .post('/chat/session/:id/files', async ({ params, body, user, set }) => {
+  .post('/chat/session/:id/files', async ({ params, body, user, status }) => {
     try {
       const { fileId } = body;
 
       const session = await chatService.getSession(params.id);
       if (!session || session.userId !== user.id) {
-        set.status = 403;
-        return { error: 'Session not found or access denied' };
+        return status(403, { error: 'Session not found or access denied' });
       }
 
       const { filesRepository, sessionFilesRepository } = await import('../../db/repositories/index');
       const file = await filesRepository.findById(fileId);
       if (!file || file.userId !== user.id) {
-        set.status = 403;
-        return { error: 'File not found or access denied' };
+        return status(403, { error: 'File not found or access denied' });
       }
 
       const count = await sessionFilesRepository.countBySession(params.id);
       if (count >= 10) {
-        set.status = 400;
-        return { error: 'Maximum 10 fichiers par session' };
+        return status(400, { error: 'Maximum 10 fichiers par session' });
       }
 
       await sessionFilesRepository.attach(params.id, fileId);
@@ -108,8 +102,7 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      set.status = 500;
-      return { error: 'Failed to attach file' };
+      return status(500, { error: 'Failed to attach file' });
     }
   }, {
     body: t.Object({
@@ -117,12 +110,11 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
     }),
   })
 
-  .delete('/chat/session/:id/files/:fileId', async ({ params, user, set }) => {
+  .delete('/chat/session/:id/files/:fileId', async ({ params, user, status }) => {
     try {
       const session = await chatService.getSession(params.id);
       if (!session || session.userId !== user.id) {
-        set.status = 403;
-        return { error: 'Session not found or access denied' };
+        return status(403, { error: 'Session not found or access denied' });
       }
 
       const { sessionFilesRepository } = await import('../../db/repositories/index');
@@ -136,7 +128,6 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      set.status = 500;
-      return { error: 'Failed to detach file' };
+      return status(500, { error: 'Failed to detach file' });
     }
   });

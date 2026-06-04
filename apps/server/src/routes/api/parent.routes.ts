@@ -36,7 +36,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { _error: 'Dashboard retrieval failed' });
+      return status(500, { error: 'Dashboard retrieval failed' });
     }
   })
 
@@ -51,7 +51,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { _error: 'Children retrieval failed' });
+      return status(500, { error: 'Children retrieval failed' });
     }
   })
 
@@ -78,7 +78,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         validationDetails: validation._error,
         severity: 'medium' as const
       });
-      return status(400, { _error: 'Validation Error', message: validation._error, details: 'Check request body format' });
+      return status(400, { error: 'Validation Error', message: validation._error, details: 'Check request body format' });
     }
 
     try {
@@ -91,7 +91,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'high' as const
       });
-      return status(400, { _error: 'Creation failed', message: _error instanceof Error ? _error.message : 'Failed to create child' });
+      return status(400, { error: 'Creation failed', message: _error instanceof Error ? _error.message : 'Failed to create child' });
     }
   }, {
     body: t.Object({
@@ -119,7 +119,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
     // business rules (transforms, age check, regex) that TypeBox does not express.
     const validation = validateSchema(updateChildSchema, body);
     if (isValidationError(validation)) {
-      return status(400, { _error: 'Validation Error', message: validation._error });
+      return status(400, { error: 'Validation Error', message: validation._error });
     }
 
     try {
@@ -132,7 +132,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(400, { _error: 'Update failed', message: _error instanceof Error ? _error.message : 'Failed to update child' });
+      return status(400, { error: 'Update failed', message: _error instanceof Error ? _error.message : 'Failed to update child' });
     }
   }, {
     body: t.Object({
@@ -162,6 +162,6 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(400, { _error: 'Deletion failed', message: _error instanceof Error ? _error.message : 'Failed to delete child' });
+      return status(400, { error: 'Deletion failed', message: _error instanceof Error ? _error.message : 'Failed to delete child' });
     }
   });

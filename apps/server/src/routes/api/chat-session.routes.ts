@@ -139,7 +139,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     try {
       const session = await chatService.getSession(params.id);
       if (!session || session.userId !== user.id) {
-        return status(403, { _error: 'Session not found or access denied' });
+        return status(403, { error: 'Session not found or access denied' });
       }
 
       const messages = await chatService.getSessionHistory(params.id);
@@ -167,7 +167,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { _error: 'Session history retrieval failed' });
+      return status(500, { error: 'Session history retrieval failed' });
     }
   })
 

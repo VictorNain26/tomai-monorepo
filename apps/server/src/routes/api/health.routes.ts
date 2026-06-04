@@ -8,11 +8,10 @@ import type { EducationLevelType } from '../../types/education.types';
 
 export const healthApiRoutes = new Elysia({ name: 'api-health' })
 
-  .get('/curriculum-health', async ({ set }) => {
+  .get('/curriculum-health', async ({ status }) => {
     // Diagnostic endpoint - development only
     if (!isDevelopment()) {
-      set.status = 404;
-      return { error: 'Not found' };
+      return status(404, { error: 'Not found' });
     }
     try {
       const { qdrantService } = await import('../../services/qdrant.service.js');
@@ -45,11 +44,10 @@ export const healthApiRoutes = new Elysia({ name: 'api-health' })
     }
   })
 
-  .post('/test-rag', async ({ body, set }) => {
+  .post('/test-rag', async ({ body, status }) => {
     // Diagnostic endpoint - development only
     if (!isDevelopment()) {
-      set.status = 404;
-      return { error: 'Not found' };
+      return status(404, { error: 'Not found' });
     }
 
     const bodyData = body as { query?: string; subject?: string; niveau?: string };
@@ -103,7 +101,7 @@ export const healthApiRoutes = new Elysia({ name: 'api-health' })
 
 export const apiHealthRoutes = new Elysia({ name: 'api-health-check' })
 
-  .get('/health', async ({ set }) => {
+  .get('/health', async ({ status }) => {
     const checks: Record<string, { status: string; latency?: number; error?: string; provider?: string }> = {};
     let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
 
@@ -133,18 +131,14 @@ export const apiHealthRoutes = new Elysia({ name: 'api-health-check' })
       provider: 'mistral'
     };
 
-    if (overallStatus === 'unhealthy') {
-      set.status = 503;
-    } else {
-      set.status = 200;
-    }
-
-    return {
+    const body = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
       version: env.APP_VERSION,
       environment: env.NODE_ENV,
       deployment: env.DEPLOYMENT_ID ?? 'local',
-      checks
+      checks,
     };
+
+    return overallStatus === 'unhealthy' ? status(503, body) : body;
   });
