@@ -60,14 +60,15 @@ export class UsersRepository {
     return updatedUser;
   }
 
-  /**
-   * Trouver les enfants d'un parent (relation 1:1 directe)
-   */
   async findChildrenByParentId(parentId: string): Promise<User[]> {
-    return await db
+    return db
       .select()
       .from(user)
       .where(and(eq(user.parentId, parentId), eq(user.isActive, true)));
+  }
+
+  async findAllChildrenByParentId(parentId: string): Promise<User[]> {
+    return db.select().from(user).where(eq(user.parentId, parentId));
   }
 
   /**

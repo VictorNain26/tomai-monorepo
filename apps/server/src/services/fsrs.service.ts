@@ -8,9 +8,9 @@ import {
   type FSRSParameters,
   type Grade,
 } from 'ts-fsrs';
-import { eq, and } from 'drizzle-orm';
-import { db } from '../db/connection.js';
-import { learningCards, learningDecks, type FSRSData } from '../db/schema.js';
+import { learningCardsRepository } from '../db/repositories/learning-cards.repository.js';
+import { learningDecksRepository } from '../db/repositories/learning-decks.repository.js';
+import type { FSRSData } from '../db/schema.js';
 import { getLevelConfig } from '../config/learning-config.js';
 import type { EducationLevelType } from '../types/index.js';
 import { logger } from '../lib/observability.js';
@@ -26,9 +26,7 @@ class FSRSService {
     const params: Partial<FSRSParameters> = {
       request_retention: config.retention,
       maximum_interval: config.maxInterval,
-      // Enable short-term scheduling for new cards
       enable_short_term: true,
-      // Add some randomness to avoid predictable patterns
       enable_fuzz: true,
     };
 
@@ -46,7 +44,7 @@ class FSRSService {
       difficulty: data.difficulty ?? 0,
       elapsed_days: 0,
       scheduled_days: 0,
-      learning_steps: 0, // Required by ts-fsrs Card type
+      learning_steps: 0,
       reps: data.reps ?? 0,
       lapses: data.lapses ?? 0,
       state: (data.state ?? State.New) as State,
@@ -74,12 +72,7 @@ class FSRSService {
     const scheduler = this.getScheduler(level);
     const now = new Date();
 
-    // Récupérer la carte
-    const [card] = await db
-      .select()
-      .from(learningCards)
-      .where(eq(learningCards.id, cardId))
-      .limit(1);
+    const card = await learningCardsRepository.findById(cardId);
 
     if (!card) {
       throw new Error(`Card not found: ${cardId}`);
@@ -91,13 +84,8 @@ class FSRSService {
     const recordLog: RecordLog = scheduler.repeat(currentCard, now);
     const newCard = recordLog[rating as Grade].card;
     const newFsrsData = this.cardToFsrsData(newCard);
-    await db
-      .update(learningCards)
-      .set({
-        fsrsData: newFsrsData,
-        updatedAt: now,
-      })
-      .where(eq(learningCards.id, cardId));
+
+    await learningCardsRepository.updateById(cardId, { fsrsData: newFsrsData });
 
     logger.info('Card reviewed', {
       cardId,
@@ -127,21 +115,13 @@ class FSRSService {
     const { deckId, userId, limit = 20, includeNew = true } = options;
     const now = new Date();
 
-    const [deck] = await db
-      .select()
-      .from(learningDecks)
-      .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, userId)))
-      .limit(1);
+    const deck = await learningDecksRepository.findByUserAndId(deckId, userId);
 
     if (!deck) {
       throw new Error(`Deck not found or access denied: ${deckId}`);
     }
 
-    const cards = await db
-      .select()
-      .from(learningCards)
-      .where(eq(learningCards.deckId, deckId))
-      .orderBy(learningCards.position);
+    const cards = await learningCardsRepository.listByDeck(deckId);
 
     const dueCards: CardForReview[] = [];
 
@@ -158,7 +138,7 @@ class FSRSService {
             content: card.content,
             position: card.position,
             fsrsData: fsrsData ?? {},
-            priority: 1000 + card.position, // Nouvelles cartes en dernier
+            priority: 1000 + card.position,
             overdue: false,
           });
         }
@@ -204,20 +184,13 @@ class FSRSService {
   async getDeckStats(deckId: string, userId: string): Promise<DeckReviewStats> {
     const now = new Date();
 
-    const [deck] = await db
-      .select()
-      .from(learningDecks)
-      .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, userId)))
-      .limit(1);
+    const deck = await learningDecksRepository.findByUserAndId(deckId, userId);
 
     if (!deck) {
       throw new Error(`Deck not found or access denied: ${deckId}`);
     }
 
-    const cards = await db
-      .select()
-      .from(learningCards)
-      .where(eq(learningCards.deckId, deckId));
+    const cards = await learningCardsRepository.listByDeck(deckId);
 
     let newCards = 0;
     let learningCardsCount = 0;
@@ -317,13 +290,7 @@ class FSRSService {
   async resetCard(cardId: string): Promise<void> {
     const emptyFsrsData = this.initializeCardFsrsData();
 
-    await db
-      .update(learningCards)
-      .set({
-        fsrsData: emptyFsrsData,
-        updatedAt: new Date(),
-      })
-      .where(eq(learningCards.id, cardId));
+    await learningCardsRepository.updateById(cardId, { fsrsData: emptyFsrsData });
 
     logger.info('Card FSRS data reset', {
       cardId,
@@ -332,11 +299,7 @@ class FSRSService {
   }
 
   async resetDeck(deckId: string, userId: string): Promise<number> {
-    const [deck] = await db
-      .select()
-      .from(learningDecks)
-      .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, userId)))
-      .limit(1);
+    const deck = await learningDecksRepository.findByUserAndId(deckId, userId);
 
     if (!deck) {
       throw new Error(`Deck not found or access denied: ${deckId}`);
@@ -344,13 +307,7 @@ class FSRSService {
 
     const emptyFsrsData = this.initializeCardFsrsData();
 
-    await db
-      .update(learningCards)
-      .set({
-        fsrsData: emptyFsrsData,
-        updatedAt: new Date(),
-      })
-      .where(eq(learningCards.deckId, deckId));
+    await learningCardsRepository.resetFsrsDataByDeckId(deckId, emptyFsrsData);
 
     logger.info('Deck FSRS data reset', {
       deckId,

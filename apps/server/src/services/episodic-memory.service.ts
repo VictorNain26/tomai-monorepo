@@ -22,10 +22,10 @@
  * — but the critical log makes the operational problem visible.
  */
 
-import { and, desc, eq, sql, type SQL } from 'drizzle-orm';
-import { db } from '../db/connection.js';
-import { sessionEpisodes, studySessions, messages } from '../db/schema.js';
 import { generateStructured } from '../lib/ai/mistral-client.js';
+import { studySessionsRepository } from '../db/repositories/study-sessions.repository.js';
+import { messagesRepository } from '../db/repositories/messages.repository.js';
+import { episodicMemoryRepository } from '../db/repositories/episodic-memory.repository.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
 import { logger } from '../lib/observability.js';
 
@@ -88,11 +88,7 @@ class EpisodicMemoryService {
     const startTime = Date.now();
 
     try {
-      // Load session + its messages. If the session has <4 messages, skip —
-      // too little signal to produce a useful summary.
-      const session = await db.query.studySessions.findFirst({
-        where: eq(studySessions.id, sessionId),
-      });
+      const session = await studySessionsRepository.findById(sessionId);
       if (!session || session.userId !== userId) {
         logger.warn('Episodic extraction skipped — session not found or not owned', {
           operation: 'episodic:extract:not-found',
@@ -102,10 +98,7 @@ class EpisodicMemoryService {
         return;
       }
 
-      const sessionMessages = await db.query.messages.findMany({
-        where: eq(messages.sessionId, sessionId),
-        orderBy: [messages.createdAt],
-      });
+      const sessionMessages = await messagesRepository.findBySessionId(sessionId);
 
       if (sessionMessages.length < 4) {
         logger.debug('Episodic extraction skipped — too few messages', {
@@ -152,7 +145,7 @@ class EpisodicMemoryService {
       const ttlUntil = new Date();
       ttlUntil.setDate(ttlUntil.getDate() + EPISODE_TTL_DAYS);
 
-      await db.insert(sessionEpisodes).values({
+      await episodicMemoryRepository.insertEpisode({
         userId,
         sessionId,
         subject: session.subject,
@@ -214,29 +207,9 @@ class EpisodicMemoryService {
       const queryEmbedding = await mistralEmbeddingsService.embed(trimmed);
       const vectorLiteral = `[${queryEmbedding.join(',')}]`;
 
-      // Cosine similarity via pgvector's <=> operator (distance, 0 = identical).
-      // We compute similarity = 1 - distance for readability and filter to
-      // meaningfully similar episodes only.
-      const similarityExpr: SQL<number> = sql<number>`1 - (${sessionEpisodes.summaryEmbedding} <=> ${vectorLiteral}::vector)`;
+      const rows = await episodicMemoryRepository.findRelevantEpisodes(userId, vectorLiteral, limit);
 
-      const rows = await db
-        .select({
-          sessionId: sessionEpisodes.sessionId,
-          subject: sessionEpisodes.subject,
-          summaryText: sessionEpisodes.summaryText,
-          conceptsCovered: sessionEpisodes.conceptsCovered,
-          createdAt: sessionEpisodes.createdAt,
-          similarity: similarityExpr,
-        })
-        .from(sessionEpisodes)
-        .where(and(
-          eq(sessionEpisodes.userId, userId),
-          sql`${sessionEpisodes.ttlUntil} IS NULL OR ${sessionEpisodes.ttlUntil} > NOW()`,
-        ))
-        .orderBy(desc(similarityExpr))
-        .limit(limit);
-
-      // Only return results with meaningful similarity (>0.6 on normalized
+      // Only keep results with meaningful similarity (>0.6 on normalized
       // embeddings) — the HNSW index returns the top-k by raw distance even
       // when none are relevant, so we threshold here.
       return rows

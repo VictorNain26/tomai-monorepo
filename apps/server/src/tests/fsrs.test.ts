@@ -26,7 +26,11 @@ function nextSelectResult(): unknown[] {
   return result;
 }
 
-const mockUpdateWhere = mock(() => Promise.resolve());
+const mockReturning = mock(() => Promise.resolve([]));
+const mockUpdateWhere = mock(() => {
+  const p = Promise.resolve([]);
+  return Object.assign(p, { returning: mockReturning });
+});
 const mockUpdateSet = mock(() => ({ where: mockUpdateWhere }));
 const mockDbUpdate = mock(() => ({ set: mockUpdateSet }));
 
@@ -70,6 +74,10 @@ mock.module('../db/schema', () => ({
 mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
   and: (...args: unknown[]) => ({ type: 'and', args }),
+  asc: (col: unknown) => col,
+  desc: (col: unknown) => col,
+  sql: Object.assign(() => ({}), { raw: () => ({}) }),
+  inArray: (...args: unknown[]) => ({ type: 'inArray', args }),
 }));
 
 // Import after mocks — NOT mocking ts-fsrs or learning-config (real logic)
@@ -92,6 +100,7 @@ beforeEach(() => {
   mockDbUpdate.mockClear();
   mockUpdateSet.mockClear();
   mockUpdateWhere.mockClear();
+  mockReturning.mockClear();
 });
 
 describe('FSRS Service', () => {
