@@ -4,9 +4,7 @@
  * Extracted from quota-functions.ts to keep each file under the 400-line limit.
  */
 
-import { db } from '../../db/connection.js';
-import { userSubscriptions } from '../../db/schema.js';
-import { sql } from 'drizzle-orm';
+import { userSubscriptionsRepository } from '../../db/repositories/user-subscriptions.repository.js';
 import { logger } from '../../lib/observability.js';
 
 /**
@@ -15,17 +13,7 @@ import { logger } from '../../lib/observability.js';
  */
 export async function resetAllDailyTokens(): Promise<{ resetCount: number }> {
   try {
-    const result = await db
-      .update(userSubscriptions)
-      .set({
-        tokensUsedToday: 0,
-        decksGeneratedToday: 0,
-        lastResetAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(sql`${userSubscriptions.lastResetAt} < NOW() - INTERVAL '20 hours'`);
-
-    const resetCount = (result as unknown as { rowCount?: number }).rowCount ?? 0;
+    const resetCount = await userSubscriptionsRepository.resetExpiredDaily();
 
     if (resetCount > 0) {
       logger.info('Daily quota reset completed', {
