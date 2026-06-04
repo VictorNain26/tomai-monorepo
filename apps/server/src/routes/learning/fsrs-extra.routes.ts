@@ -16,7 +16,7 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
   .use(authMacro)
   .guard({ auth: true })
 
-  .get('/cards/:id/preview', async ({ params, user, set }) => {
+  .get('/cards/:id/preview', async ({ params, user, status }) => {
     const { id: cardId } = params;
     const level = getUserLevel(user.id, user.schoolLevel);
 
@@ -47,8 +47,7 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
       };
     } catch (error) {
       if (error instanceof CardNotFoundError) {
-        set.status = 404;
-        return { error: 'Carte non trouvée' };
+        return status(404, { error: 'Carte non trouvée' });
       }
       logger.error('Failed to preview scheduling', {
         operation: 'learning:preview:error',
@@ -57,12 +56,11 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'low' as const,
       });
-      set.status = 500;
-      return { error: 'Échec de la prévisualisation' };
+      return status(500, { error: 'Échec de la prévisualisation' });
     }
   })
 
-  .post('/decks/:id/reset', async ({ params, user, set }) => {
+  .post('/decks/:id/reset', async ({ params, user, status }) => {
     const { id: deckId } = params;
 
     try {
@@ -84,8 +82,7 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       if (errorMessage.includes('not found') || errorMessage.includes('access denied')) {
-        set.status = 404;
-        return { error: 'Deck non trouvé' };
+        return status(404, { error: 'Deck non trouvé' });
       }
 
       logger.error('Failed to reset deck', {
@@ -95,8 +92,7 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
         _error: errorMessage,
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Échec de la réinitialisation' };
+      return status(500, { error: 'Échec de la réinitialisation' });
     }
   })
 

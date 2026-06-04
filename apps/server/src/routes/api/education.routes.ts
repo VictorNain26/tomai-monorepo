@@ -3,7 +3,7 @@ import { logger } from '../../lib/observability';
 
 export const educationApiRoutes = new Elysia({ name: 'api-education' })
 
-  .get('/education/levels', async ({ set }) => {
+  .get('/education/levels', async ({ status }) => {
     try {
       const { educationService } = await import('../../services/education.service.js');
       const levels = await educationService.getAvailableLevels();
@@ -27,7 +27,6 @@ export const educationApiRoutes = new Elysia({ name: 'api-education' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'high' as const
       });
-      set.status = 500;
-      return { error: 'Curriculum service unavailable' };
+      return status(500, { error: 'Curriculum service unavailable' });
     }
   });

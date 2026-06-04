@@ -18,7 +18,7 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
   .use(authMacro)
   .guard({ auth: true })
 
-  .get('/subjects', async ({ query, user, set }) => {
+  .get('/subjects', async ({ query, user, status }) => {
     const niveau = (query.niveau ?? user.schoolLevel ?? 'sixieme') as EducationLevelType;
 
     try {
@@ -42,20 +42,18 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Failed to fetch subjects' };
+      return status(500, { error: 'Failed to fetch subjects' });
     }
   }, {
     query: t.Object({ niveau: LEVEL_SCHEMA }),
   })
 
-  .get('/topics', async ({ query, user, set }) => {
+  .get('/topics', async ({ query, user, status }) => {
     const { matiere } = query;
     const niveau = (query.niveau ?? user.schoolLevel ?? 'sixieme') as EducationLevelType;
 
     if (!matiere) {
-      set.status = 400;
-      return { error: 'matiere is required' };
+      return status(400, { error: 'matiere is required' });
     }
 
     try {
@@ -76,8 +74,7 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Failed to fetch topics' };
+      return status(500, { error: 'Failed to fetch topics' });
     }
   }, {
     query: t.Object({
@@ -86,13 +83,12 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
     }),
   })
 
-  .get('/chapters', async ({ query, user, set }) => {
+  .get('/chapters', async ({ query, user, status }) => {
     const { matiere } = query;
     const niveau = (query.niveau ?? user.schoolLevel ?? 'sixieme') as EducationLevelType;
 
     if (!matiere) {
-      set.status = 400;
-      return { error: 'matiere is required' };
+      return status(400, { error: 'matiere is required' });
     }
 
     try {
@@ -115,8 +111,7 @@ export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Failed to fetch chapters' };
+      return status(500, { error: 'Failed to fetch chapters' });
     }
   }, {
     query: t.Object({

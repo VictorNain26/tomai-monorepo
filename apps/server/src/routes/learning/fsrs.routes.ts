@@ -23,7 +23,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    * Get total due cards count for the authenticated user
    * GET /api/learning/due-summary
    */
-  .get('/due-summary', async ({ user, set }) => {
+  .get('/due-summary', async ({ user, status }) => {
     try {
       const totalDue = await learningService.getDueSummaryForUser(user.id);
       return { success: true, totalDue };
@@ -34,8 +34,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Failed to fetch due summary' };
+      return status(500, { error: 'Failed to fetch due summary' });
     }
   })
 
@@ -51,7 +50,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    */
   .post(
     '/review',
-    async ({ body, user, set }) => {
+    async ({ body, user, status }) => {
       const { cardId, rating } = body;
       const level = getUserLevel(user.id, user.schoolLevel);
 
@@ -83,8 +82,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
         };
       } catch (error) {
         if (error instanceof CardNotFoundError) {
-          set.status = 404;
-          return { error: 'Carte non trouvée' };
+          return status(404, { error: 'Carte non trouvée' });
         }
         logger.error('Failed to review card', {
           operation: 'learning:review:error',
@@ -93,8 +91,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        set.status = 500;
-        return { error: 'Échec de l\'enregistrement de la révision' };
+        return status(500, { error: 'Échec de l\'enregistrement de la révision' });
       }
     },
     {
@@ -117,7 +114,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    */
   .get(
     '/decks/:id/due',
-    async ({ params, query, user, set }) => {
+    async ({ params, query, user, status }) => {
       const { id: deckId } = params;
       const level = getUserLevel(user.id, user.schoolLevel);
 
@@ -156,8 +153,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         if (errorMessage.includes('not found') || errorMessage.includes('access denied')) {
-          set.status = 404;
-          return { error: 'Deck non trouvé' };
+          return status(404, { error: 'Deck non trouvé' });
         }
 
         logger.error('Failed to get due cards', {
@@ -167,8 +163,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
           _error: errorMessage,
           severity: 'medium' as const,
         });
-        set.status = 500;
-        return { error: 'Échec de la récupération des cartes' };
+        return status(500, { error: 'Échec de la récupération des cartes' });
       }
     },
     {
@@ -187,7 +182,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    * - Debugging / support
    * - Parent dashboard (future)
    */
-  .get('/decks/:id/stats', async ({ params, user, set }) => {
+  .get('/decks/:id/stats', async ({ params, user, status }) => {
     const { id: deckId } = params;
 
     try {
@@ -204,8 +199,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       if (errorMessage.includes('not found') || errorMessage.includes('access denied')) {
-        set.status = 404;
-        return { error: 'Deck non trouvé' };
+        return status(404, { error: 'Deck non trouvé' });
       }
 
       logger.error('Failed to get deck stats', {
@@ -215,7 +209,6 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
         _error: errorMessage,
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Échec de la récupération des statistiques' };
+      return status(500, { error: 'Échec de la récupération des statistiques' });
     }
   });

@@ -16,7 +16,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
   .guard({ auth: true })
   .post(
     '/generate',
-    async ({ body, user, set }) => {
+    async ({ body, user, status }) => {
       const { subject, domaine, topic } = body;
 
       const isFullDomaineMode = !topic || topic.trim() === '';
@@ -31,12 +31,11 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           userId: user.id,
           plan: quota.plan,
         });
-        set.status = 403;
-        return {
+        return status(403, {
           error: 'Abonnement requis',
           message: 'La génération de cartes de révision est réservée aux comptes premium. Demande à tes parents de souscrire un abonnement !',
           code: 'SUBSCRIPTION_REQUIRED',
-        };
+        });
       }
 
       const deckQuota = await checkDeckQuota(user.id);
@@ -49,8 +48,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           dailyLimit: deckQuota.dailyLimit,
           monthlyLimit: deckQuota.monthlyLimit,
         });
-        set.status = 429;
-        return {
+        return status(429, {
           error: 'Limite atteinte',
           message: deckQuota.message,
           code: 'DECK_LIMIT_REACHED',
@@ -58,7 +56,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           decksRemainingThisMonth: deckQuota.decksRemainingThisMonth,
           dailyLimit: deckQuota.dailyLimit,
           monthlyLimit: deckQuota.monthlyLimit,
-        };
+        });
       }
 
       try {
@@ -110,8 +108,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
             avgSimilarity: ragResult.averageSimilarity.toFixed(3),
             threshold: ragThresholds.GOOD_SCORE,
           });
-          set.status = isRagDisabled ? 503 : 400;
-          return {
+          return status(isRagDisabled ? 503 : 400, {
             error: errorReason,
             message: isRagDisabled
               ? 'Le service de programmes officiels est temporairement indisponible. Réessaie dans quelques minutes.'
@@ -125,7 +122,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
                 ],
             code: isRagDisabled ? 'RAG_SERVICE_UNAVAILABLE' : 'TOPIC_NOT_IN_CURRICULUM',
             level, subject,
-          };
+          });
         }
 
         const levelConfig = getLevelConfig(level);
@@ -155,8 +152,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
             code: generationResult.code,
             severity: 'medium' as const,
           });
-          set.status = 500;
-          return { error: generationResult.error, code: generationResult.code };
+          return status(500, { error: generationResult.error, code: generationResult.code });
         }
 
         const generatedCards = generationResult.cards;
@@ -213,8 +209,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           _error: error instanceof Error ? error.message : String(error),
           severity: 'high' as const,
         });
-        set.status = 500;
-        return { error: 'Échec de la génération du deck' };
+        return status(500, { error: 'Échec de la génération du deck' });
       }
     },
     {
