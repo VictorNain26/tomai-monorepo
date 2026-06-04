@@ -1,4 +1,4 @@
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
 import {
   validateSchema,
@@ -13,7 +13,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
   .use(authMacro)
   .guard({ parentAuth: true })
 
-  .get('/parent/dashboard', async ({ user, set }) => {
+  .get('/parent/dashboard', async ({ user, status }) => {
     try {
       const [children, metrics] = await Promise.all([
         parentService.getParentChildren(user.id),
@@ -36,12 +36,11 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      set.status = 500;
-      return { _error: 'Dashboard retrieval failed' };
+      return status(500, { _error: 'Dashboard retrieval failed' });
     }
   })
 
-  .get('/parent/children', async ({ user, set }) => {
+  .get('/parent/children', async ({ user, status }) => {
     try {
       const children = await parentService.getParentChildren(user.id);
       return children;
@@ -52,12 +51,11 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      set.status = 500;
-      return { _error: 'Children retrieval failed' };
+      return status(500, { _error: 'Children retrieval failed' });
     }
   })
 
-  .post('/parent/children', async ({ body, user, set }) => {
+  .post('/parent/children', async ({ body, user, status }) => {
     logger.info('Child creation request received', {
       operation: 'api:parent:child:request',
       userId: user.id,
@@ -67,6 +65,8 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       severity: 'low' as const
     });
 
+    // TypeBox provides structural gating + contract typing; Zod enforces detailed
+    // business rules (transforms, age check, regex) that TypeBox does not express.
     const validation = validateSchema(createChildSchema, body);
     if (isValidationError(validation)) {
       logger.error('Child creation validation failed', {
@@ -78,8 +78,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         validationDetails: validation._error,
         severity: 'medium' as const
       });
-      set.status = 400;
-      return { _error: 'Validation Error', message: validation._error, details: 'Check request body format' };
+      return status(400, { _error: 'Validation Error', message: validation._error, details: 'Check request body format' });
     }
 
     try {
@@ -92,16 +91,35 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'high' as const
       });
-      set.status = 400;
-      return { _error: 'Creation failed', message: _error instanceof Error ? _error.message : 'Failed to create child' };
+      return status(400, { _error: 'Creation failed', message: _error instanceof Error ? _error.message : 'Failed to create child' });
     }
+  }, {
+    body: t.Object({
+      firstName: t.String(),
+      lastName: t.String(),
+      username: t.String(),
+      password: t.String(),
+      schoolLevel: t.Union([
+        t.Literal('cp'), t.Literal('ce1'), t.Literal('ce2'),
+        t.Literal('cm1'), t.Literal('cm2'),
+        t.Literal('sixieme'), t.Literal('cinquieme'),
+        t.Literal('quatrieme'), t.Literal('troisieme'),
+        t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
+      ]),
+      // Optional at the contract level (Pronote-imported children have no birth
+      // date); the Zod `createChildSchema` still requires + validates it for the
+      // manual create-child form. TODO(product): decide whether imported children
+      // should be exempt in Zod too, instead of failing validation.
+      dateOfBirth: t.Optional(t.String()),
+    }),
   })
 
-  .patch('/parent/children/:id', async ({ params, body, user, set, request: { headers } }) => {
+  .patch('/parent/children/:id', async ({ params, body, user, status, request: { headers } }) => {
+    // TypeBox provides structural gating + contract typing; Zod enforces detailed
+    // business rules (transforms, age check, regex) that TypeBox does not express.
     const validation = validateSchema(updateChildSchema, body);
     if (isValidationError(validation)) {
-      set.status = 400;
-      return { _error: 'Validation Error', message: validation._error };
+      return status(400, { _error: 'Validation Error', message: validation._error });
     }
 
     try {
@@ -114,12 +132,26 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      set.status = 400;
-      return { _error: 'Update failed', message: _error instanceof Error ? _error.message : 'Failed to update child' };
+      return status(400, { _error: 'Update failed', message: _error instanceof Error ? _error.message : 'Failed to update child' });
     }
+  }, {
+    body: t.Object({
+      firstName: t.Optional(t.String()),
+      lastName: t.Optional(t.String()),
+      // username intentionally excluded — immutable after creation
+      password: t.Optional(t.String()),
+      schoolLevel: t.Optional(t.Union([
+        t.Literal('cp'), t.Literal('ce1'), t.Literal('ce2'),
+        t.Literal('cm1'), t.Literal('cm2'),
+        t.Literal('sixieme'), t.Literal('cinquieme'),
+        t.Literal('quatrieme'), t.Literal('troisieme'),
+        t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
+      ])),
+      dateOfBirth: t.Optional(t.String()),
+    }),
   })
 
-  .delete('/parent/children/:id', async ({ params, user, set }) => {
+  .delete('/parent/children/:id', async ({ params, user, status }) => {
     try {
       await parentService.deleteChild(user.id, params.id);
       return { success: true, message: 'Child deleted successfully' };
@@ -130,7 +162,6 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      set.status = 400;
-      return { _error: 'Deletion failed', message: _error instanceof Error ? _error.message : 'Failed to delete child' };
+      return status(400, { _error: 'Deletion failed', message: _error instanceof Error ? _error.message : 'Failed to delete child' });
     }
   });

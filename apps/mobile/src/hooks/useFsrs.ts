@@ -6,60 +6,26 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTreaty, unwrap } from '@repo/api';
+import { getTreaty, unwrap, type ResponseData } from '@repo/api';
 
 // ============================================================================
-// TYPES (aligned with server fsrs.routes.ts)
+// TYPES — derived from the server contract (single source of truth)
 // ============================================================================
 
-export type FSRSState = 'New' | 'Learning' | 'Review' | 'Relearning';
+type LearningApi = ReturnType<typeof getTreaty>['api']['learning'];
+type DeckById = ReturnType<LearningApi['decks']>;
+
+export type ReviewResult = ResponseData<LearningApi['review']['post']>['result'];
+export type DueCard = ResponseData<DeckById['due']['get']>['cards'][number];
+export type DeckStats = ResponseData<DeckById['stats']['get']>['stats'];
+
+type DueCardsResponse = ResponseData<DeckById['due']['get']>;
+
+// ============================================================================
+// QUERY KEY
+// ============================================================================
 
 export type FSRSRating = 1 | 2 | 3 | 4;
-
-export interface DueCard {
-  id: string;
-  deckId: string;
-  cardType: string;
-  content: Record<string, unknown>;
-  position: number;
-  overdue: boolean;
-}
-
-interface DueCardsResponse {
-  cards: DueCard[];
-  count: number;
-  overdueCount: number;
-  sessionConfig: {
-    recommendedCards: number;
-    sessionMinutes: number;
-    level: string;
-  };
-}
-
-export interface ReviewResult {
-  cardId: string;
-  rating: number;
-  previousState: FSRSState;
-  newState: FSRSState;
-  nextDue: string;
-  stability: number;
-  difficulty: number;
-  reps: number;
-  lapses: number;
-}
-
-export interface DeckStats {
-  deckId: string;
-  totalCards: number;
-  newCards: number;
-  learningCards: number;
-  reviewCards: number;
-  relearningCards: number;
-  dueToday: number;
-  overdueCards: number;
-  averageDifficulty: number;
-  averageStability: number;
-}
 
 // ============================================================================
 // QUERY KEYS
@@ -77,25 +43,24 @@ export const fsrsQueryKeys = {
 async function fetchDueCards(deckId: string): Promise<DueCardsResponse> {
   return unwrap(
     await getTreaty().api.learning.decks({ id: deckId }).due.get()
-  ) as DueCardsResponse;
+  );
 }
 
 async function reviewCard(data: {
   cardId: string;
   rating: FSRSRating;
 }): Promise<ReviewResult> {
-  // Server returns { success: true, result: {...} }
-  const response = unwrap<{ success: boolean; result: ReviewResult }>(
+  const { result } = unwrap(
     await getTreaty().api.learning.review.post(data)
   );
-  return response.result;
+  return result;
 }
 
 async function fetchDeckStats(deckId: string): Promise<DeckStats> {
-  const response = unwrap<{ stats: DeckStats }>(
+  const { stats } = unwrap(
     await getTreaty().api.learning.decks({ id: deckId }).stats.get()
   );
-  return response.stats;
+  return stats;
 }
 
 // ============================================================================

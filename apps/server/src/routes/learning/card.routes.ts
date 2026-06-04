@@ -14,7 +14,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
 
   .post(
     '/decks/:id/cards',
-    async ({ params, body, user, set }) => {
+    async ({ params, body, user, status }) => {
       const { id: deckId } = params;
       const { cards } = body;
 
@@ -35,19 +35,17 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
         return { cards: insertedCards, count: insertedCards.length };
       } catch (error) {
         if (error instanceof CardValidationError) {
-          set.status = 400;
-          return { error: error.message };
+          return status(400, { error: error.message });
         }
-        const domain = handleDeckDomainError(error, set);
-        if (domain) return domain;
+        const domain = handleDeckDomainError(error);
+        if (domain) return status(domain.status, domain.body);
         logger.error('Failed to add cards', {
           operation: 'learning:cards:add',
           userId: user.id, deckId,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        set.status = 500;
-        return { error: 'Failed to add cards' };
+        return status(500, { error: 'Failed to add cards' });
       }
     },
     {
@@ -70,7 +68,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
 
   .patch(
     '/cards/:id',
-    async ({ params, body, user, set }) => {
+    async ({ params, body, user, status }) => {
       const { id: cardId } = params;
 
       try {
@@ -78,12 +76,10 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
         return { card: updatedCard };
       } catch (error) {
         if (error instanceof CardValidationError) {
-          set.status = 400;
-          return { error: error.message };
+          return status(400, { error: error.message });
         }
         if (error instanceof CardNotFoundError) {
-          set.status = 404;
-          return { error: 'Card not found' };
+          return status(404, { error: 'Card not found' });
         }
         logger.error('Failed to update card', {
           operation: 'learning:cards:update',
@@ -91,8 +87,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        set.status = 500;
-        return { error: 'Failed to update card' };
+        return status(500, { error: 'Failed to update card' });
       }
     },
     {
@@ -108,7 +103,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
     }
   )
 
-  .delete('/cards/:id', async ({ params, user, set }) => {
+  .delete('/cards/:id', async ({ params, user, status }) => {
     const { id: cardId } = params;
 
     try {
@@ -116,8 +111,7 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
       return { success: true };
     } catch (error) {
       if (error instanceof CardNotFoundError) {
-        set.status = 404;
-        return { error: 'Card not found' };
+        return status(404, { error: 'Card not found' });
       }
       logger.error('Failed to delete card', {
         operation: 'learning:cards:delete',
@@ -125,7 +119,6 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Failed to delete card' };
+      return status(500, { error: 'Failed to delete card' });
     }
   });

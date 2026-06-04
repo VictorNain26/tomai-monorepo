@@ -31,6 +31,7 @@ import {
   useLearningSubjects,
   useLearningTopics,
   type LearningSubject,
+  type SchoolLevel,
 } from '@/hooks/useLearning';
 import { useUser } from '@/lib/auth';
 import { useTheme, useThemeColors } from '@/hooks';
@@ -51,7 +52,8 @@ export default function CreateDeckScreen() {
   const user = useUser();
   const colors = useThemeColors();
   const { isDark } = useTheme();
-  const niveau = user?.schoolLevel ?? 'sixieme';
+  // schoolLevel is a runtime-valid stored level; narrow once at this boundary
+  const niveau = (user?.schoolLevel ?? 'sixieme') as SchoolLevel;
 
   const [step, setStep] = useState<Step>('subject');
   const [selectedSubject, setSelectedSubject] = useState<LearningSubject | null>(null);

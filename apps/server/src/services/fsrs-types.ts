@@ -1,5 +1,5 @@
 import type { Rating, State } from 'ts-fsrs';
-import type { FSRSData } from '../db/schema.js';
+import type { FSRSData, CardType } from '../db/schema.js';
 
 export interface ReviewResult {
   cardId: string;
@@ -16,7 +16,7 @@ export interface ReviewResult {
 export interface CardForReview {
   id: string;
   deckId: string;
-  cardType: string;
+  cardType: CardType;
   content: unknown;
   position: number;
   fsrsData: FSRSData;

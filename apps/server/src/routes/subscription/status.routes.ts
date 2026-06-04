@@ -28,18 +28,16 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
    */
   // Guard: parentAuth required (parent role only)
   .guard({ parentAuth: true })
-  .get('/status', async ({ query, set, user: authenticatedUser }) => {
+  .get('/status', async ({ query, status, user: authenticatedUser }) => {
     const parentId = query.parentId;
 
     if (!parentId) {
-      set.status = 400;
-      return { error: 'parentId query parameter required' };
+      return status(400, { error: 'parentId query parameter required' });
     }
 
     const { valid, error: idorError } = verifyParentIdMatch(authenticatedUser.id, parentId);
     if (!valid) {
-      set.status = 403;
-      return { error: idorError };
+      return status(403, { error: idorError });
     }
 
     const [billing] = await db
@@ -119,12 +117,11 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
    */
   // Guard: auth required (both parent and child can access their own usage or parent's children's usage)
   .guard({ auth: true })
-  .get('/usage', async ({ query, set, user: authenticatedUser }) => {
+  .get('/usage', async ({ query, status, user: authenticatedUser }) => {
     const userId = query.userId;
 
     if (!userId) {
-      set.status = 400;
-      return { error: 'userId query parameter required' };
+      return status(400, { error: 'userId query parameter required' });
     }
 
     const [userRecord] = await db
@@ -134,16 +131,14 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
       .limit(1);
 
     if (!userRecord) {
-      set.status = 404;
-      return { error: 'User not found' };
+      return status(404, { error: 'User not found' });
     }
 
     const isSelfAccess = authenticatedUser.id === userId;
     const isParentAccessingChild = authenticatedUser.role === 'parent' && userRecord.parentId === authenticatedUser.id;
 
     if (!isSelfAccess && !isParentAccessingChild) {
-      set.status = 403;
-      return { error: 'Access denied: You can only view your own usage or your children\'s usage' };
+      return status(403, { error: 'Access denied: You can only view your own usage or your children\'s usage' });
     }
 
     const { tokenQuotaService } = await import('../../services/token-quota.service.js');

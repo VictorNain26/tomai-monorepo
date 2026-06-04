@@ -63,7 +63,7 @@ export {
 export {
   useChildTokenUsage,
   type ChildWindowUsage,
-  type ChildWeeklyUsage,
+  type ChildDailyUsage,
 } from './useChildTokenUsage';
 export {
   useThemeColors,
@@ -74,7 +74,6 @@ export {
   useReviewCard,
   useDeckStats,
   type FSRSRating,
-  type FSRSState,
   type DueCard,
   type ReviewResult,
   type DeckStats,

@@ -1,9 +1,16 @@
 /**
  * Chat Types
  *
- * Type definitions for the useChat hook.
- * Aligned with backend apps/server/src/routes/api.routes.ts
+ * Type definitions for the useChat hook. Server-facing shapes are derived from
+ * the Eden contract (single source of truth); UI-only shapes are local.
  */
+
+import { getTreaty, type ResponseData } from '@repo/api';
+
+type ChatApi = ReturnType<typeof getTreaty>['api']['chat'];
+
+/** Conversation list item — derived from `GET /api/chat/conversations`. */
+export type Conversation = ResponseData<ChatApi['conversations']['get']>['conversations'][number];
 
 /** Backend chat history message (GET /api/chat/session/:id/history) */
 export interface ChatMessage {
@@ -74,19 +81,6 @@ export interface CreatedDeck {
   title: string;
   cardCount: number;
   subject: string;
-}
-
-/** Conversation list item (GET /api/chat/conversations) */
-export interface Conversation {
-  id: string;
-  title: string | null;
-  subject: string;
-  status: string;
-  messageCount: number;
-  lastMessagePreview: string | null;
-  lastMessageRole: 'user' | 'assistant' | null;
-  lastActivityAt: string;
-  startedAt: string;
 }
 
 export interface UseChatOptions {

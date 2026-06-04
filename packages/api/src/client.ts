@@ -69,31 +69,23 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler): void {
 // EDEN TREATY CLIENT (type-safe e2e)
 // ============================================================================
 
-type TreatyClient = ReturnType<typeof treaty<App>>;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TreatyApi = { api: Record<string, any>; [key: string]: unknown };
+export type TreatyClient = ReturnType<typeof treaty<App>>;
 
 let treatyClient: TreatyClient | null = null;
 
 /**
- * Get the Eden Treaty client.
- * Lazily initialized on first call (requires initializeApi() to have been called).
+ * Get the Eden Treaty client with full end-to-end type-safety from the server
+ * routes. Lazily initialized on first call (requires initializeApi() first).
  *
- * The `App` type is consumed from the server's *built* declarations
- * (`tomai-server/app` -> dist/types/app.d.ts), so clients carry no Bun globals.
- *
- * NOTE: the return is still loosely typed (`TreatyApi`). Turning on the full
- * `TreatyClient` e2e route types is a separate change — it surfaces pre-existing
- * contract drift (request DTOs, same-prefix route composition) that is fixed in
- * its own PR.
+ * The `App` type comes from the server's *built* declarations
+ * (`tomai-server/app` -> dist/types/app.d.ts), so clients get the real route
+ * types without type-checking the Bun-flavoured server source. Response bodies
+ * (and their types) are derived from this contract — never hand-maintained.
  *
  * @example
- * const { data, error } = await getTreaty().api.parent.dashboard.get();
- * if (error) throw error;
- * return data;
+ * const decks = unwrap(await getTreaty().api.learning.decks.get()); // typed
  */
-export function getTreaty(): TreatyApi {
+export function getTreaty(): TreatyClient {
   if (treatyClient) return treatyClient;
 
   const config = getApiConfig();
@@ -167,12 +159,38 @@ function buildApiError(status: number, errorValue: unknown): ApiError {
   return err;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function unwrap<T = unknown>(response: any): T {
-  const res = response as { data?: unknown; error?: { status?: unknown; value?: unknown } | null };
-  if (res.error) {
-    const status = typeof res.error.status === 'number' ? res.error.status : 0;
-    throw buildApiError(status, res.error.value);
+/**
+ * Eden Treaty's discriminated success/failure response, as consumed by `unwrap`.
+ * Mirrors `@elysiajs/eden`'s `Treaty.TreatyResponse` (the extra `response` /
+ * `status` / `headers` fields are structurally compatible and ignored here).
+ */
+type TreatyResult<T> =
+  | { data: T; error: null }
+  | { data: null; error: { status: unknown; value: unknown } };
+
+/**
+ * Unwrap an Eden Treaty response: return `data` on success, throw a typed
+ * {@link ApiError} on failure. The success type `T` is inferred from the call,
+ * so callers never cast:
+ *
+ * @example
+ * const decks = unwrap(await getTreaty().api.learning.decks.get()); // typed
+ */
+export function unwrap<T>(response: TreatyResult<T>): T {
+  if (response.error) {
+    const status = typeof response.error.status === 'number' ? response.error.status : 0;
+    throw buildApiError(status, response.error.value);
   }
-  return res.data as T;
+  return response.data;
 }
+
+/**
+ * The success `data` type of an Eden Treaty endpoint method, for deriving
+ * client types from the server contract instead of hand-maintaining them.
+ *
+ * @example
+ * type LearningApi = ReturnType<typeof getTreaty>['api']['learning'];
+ * export type LearningDeck = ResponseData<LearningApi['decks']['get']>['decks'][number];
+ */
+export type ResponseData<Fn extends (...args: never[]) => Promise<{ data: unknown }>> =
+  NonNullable<Awaited<ReturnType<Fn>>['data']>;

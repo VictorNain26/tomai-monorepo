@@ -7,11 +7,16 @@
 
 import { useState, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { getTreaty, unwrap, UPLOAD_CONFIG } from '@repo/api';
+import { getTreaty, unwrap, UPLOAD_CONFIG, type ResponseData } from '@repo/api';
 
 // ============================================================================
-// TYPES (aligned with backend apps/server/src/routes/file-upload.routes.ts)
+// TYPES — derived from the server contract (single source of truth)
 // ============================================================================
+
+type UploadApi = ReturnType<typeof getTreaty>['api']['upload'];
+
+export type PresignResponse = ResponseData<UploadApi['presign']['post']>;
+export type ConfirmResponse = ResponseData<ReturnType<UploadApi['confirm']>['post']>;
 
 export type FileType = 'image' | 'pdf' | 'document' | 'audio' | 'unknown';
 
@@ -24,24 +29,6 @@ export interface FileAttachment {
   preview?: string;
   geminiFileId?: string;
   transcription?: string;
-}
-
-interface PresignResponse {
-  success: boolean;
-  fileId?: string;
-  uploadUrl?: string;
-  storageKey?: string;
-  expiresAt?: string;
-  error?: string;
-}
-
-interface ConfirmResponse {
-  success: boolean;
-  fileId?: string;
-  fileUri?: string;
-  geminiExpiresAt?: string;
-  transcription?: string;
-  error?: string;
 }
 
 interface UploadOptions {
@@ -104,13 +91,13 @@ export function usePresignedUpload() {
       sizeBytes: number;
       context?: string;
     }): Promise<PresignResponse> => {
-      return unwrap(await getTreaty().api.upload.presign.post(params)) as PresignResponse;
+      return unwrap(await getTreaty().api.upload.presign.post(params));
     },
   });
 
   const confirmMutation = useMutation({
     mutationFn: async (fileId: string): Promise<ConfirmResponse> => {
-      return unwrap(await getTreaty().api.upload.confirm({ fileId }).post()) as ConfirmResponse;
+      return unwrap(await getTreaty().api.upload.confirm({ fileId }).post());
     },
   });
 
@@ -145,11 +132,10 @@ export function usePresignedUpload() {
           context: options.context,
         });
 
-        if (!presignResult.success || !presignResult.uploadUrl || !presignResult.fileId) {
-          throw new Error(presignResult.error ?? 'Échec de la génération de l\'URL d\'upload');
-        }
+        // unwrap() already throws on error responses; fields are non-optional on success.
+        const { uploadUrl, fileId } = presignResult;
 
-        const uploadResponse = await fetch(presignResult.uploadUrl, {
+        const uploadResponse = await fetch(uploadUrl, {
           method: 'PUT',
           body: blob,
           headers: {
@@ -161,21 +147,16 @@ export function usePresignedUpload() {
           throw new Error('Upload vers le stockage échoué');
         }
 
-        const confirmResult = await confirmMutation.mutateAsync(presignResult.fileId);
-
-        if (!confirmResult.success) {
-          throw new Error(confirmResult.error ?? 'Échec de la confirmation de l\'upload');
-        }
+        const confirmResult = await confirmMutation.mutateAsync(fileId);
 
         const fileType = detectFileType(mimeType);
         const attachment: FileAttachment = {
-          fileId: presignResult.fileId,
+          fileId,
           fileName,
           mimeType,
           sizeBytes,
           type: fileType,
           preview: fileType === 'image' ? uri : undefined,
-          geminiFileId: confirmResult.fileUri,
           transcription: confirmResult.transcription,
         };
 

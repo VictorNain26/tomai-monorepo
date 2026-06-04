@@ -8,7 +8,7 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
   .use(authMacro)
   .guard({ auth: true })
 
-  .get('/decks', async ({ user, set }) => {
+  .get('/decks', async ({ user, status }) => {
     try {
       const decks = await learningService.listUserDecks(user.id);
       return { decks, count: decks.length };
@@ -19,14 +19,13 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Failed to fetch decks' };
+      return status(500, { error: 'Failed to fetch decks' });
     }
   })
 
   .post(
     '/decks',
-    async ({ body, user, set }) => {
+    async ({ body, user, status }) => {
       try {
         // Empty deck creation — caller will populate cards via other endpoints.
         const { deck: newDeck } = await learningService.createDeckWithCards({
@@ -49,8 +48,7 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        set.status = 500;
-        return { error: 'Failed to create deck' };
+        return status(500, { error: 'Failed to create deck' });
       }
     },
     {
@@ -75,44 +73,42 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     }
   )
 
-  .get('/decks/:id', async ({ params, user, set }) => {
+  .get('/decks/:id', async ({ params, user, status }) => {
     const { id: deckId } = params;
 
     try {
       return await learningService.getDeckWithCardsOrThrow(user.id, deckId);
     } catch (error) {
-      const domain = handleDeckDomainError(error, set);
-      if (domain) return domain;
+      const domain = handleDeckDomainError(error);
+      if (domain) return status(domain.status, domain.body);
       logger.error('Failed to fetch deck', {
         operation: 'learning:decks:get',
         userId: user.id, deckId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Failed to fetch deck' };
+      return status(500, { error: 'Failed to fetch deck' });
     }
   })
 
   .patch(
     '/decks/:id',
-    async ({ params, body, user, set }) => {
+    async ({ params, body, user, status }) => {
       const { id: deckId } = params;
 
       try {
         const updatedDeck = await learningService.updateDeckOrThrow(user.id, deckId, body);
         return { deck: updatedDeck };
       } catch (error) {
-        const domain = handleDeckDomainError(error, set);
-        if (domain) return domain;
+        const domain = handleDeckDomainError(error);
+        if (domain) return status(domain.status, domain.body);
         logger.error('Failed to update deck', {
           operation: 'learning:decks:update',
           userId: user.id, deckId,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        set.status = 500;
-        return { error: 'Failed to update deck' };
+        return status(500, { error: 'Failed to update deck' });
       }
     },
     {
@@ -124,22 +120,21 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
     }
   )
 
-  .delete('/decks/:id', async ({ params, user, set }) => {
+  .delete('/decks/:id', async ({ params, user, status }) => {
     const { id: deckId } = params;
 
     try {
       await learningService.deleteDeckOrThrow(user.id, deckId);
       return { success: true };
     } catch (error) {
-      const domain = handleDeckDomainError(error, set);
-      if (domain) return domain;
+      const domain = handleDeckDomainError(error);
+      if (domain) return status(domain.status, domain.body);
       logger.error('Failed to delete deck', {
         operation: 'learning:decks:delete',
         userId: user.id, deckId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { error: 'Failed to delete deck' };
+      return status(500, { error: 'Failed to delete deck' });
     }
   });

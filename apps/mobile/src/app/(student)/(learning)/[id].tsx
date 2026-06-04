@@ -17,7 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardViewer } from '@/components/learning';
 import { useDueCards, useReviewCard, useDeck, useThemeColors, type ThemeColors } from '@/hooks';
-import type { FSRSRating, ReviewResult, CardType } from '@/hooks';
+import type { FSRSRating, ReviewResult } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 import { haptics } from '@/lib/haptics';
 
@@ -199,8 +199,10 @@ export default function DeckReviewScreen() {
       <View className="flex-1 p-4">
         <CardViewer
           key={currentCard.id}
-          cardType={currentCard.cardType as CardType}
-          content={currentCard.content}
+          cardType={currentCard.cardType}
+          // content is a JSONB column typed `unknown` by the contract — it is
+          // always a plain object at runtime; CardViewer narrows per cardType.
+          content={currentCard.content as Record<string, unknown>}
         />
       </View>
 

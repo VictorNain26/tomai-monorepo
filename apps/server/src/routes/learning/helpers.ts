@@ -12,7 +12,7 @@ import {
 } from '../../services/learning/learning.service';
 
 /**
- * Map a LearningService deck domain error to an Elysia HTTP response.
+ * Map a LearningService deck domain error to a typed status response.
  *
  * Per the service contract (see learning-errors.ts), both "not found" and
  * "ownership mismatch" surface as HTTP 404 so the API does not leak the
@@ -20,23 +20,18 @@ import {
  * lets internal callers and tests disambiguate without exposing resource
  * existence externally.
  *
- * Returns the response body when the error was handled, or `null` when the
+ * Returns `{ status, body }` when the error was handled, or `null` when the
  * error was not a known deck domain error (caller must rethrow / fall through).
- *
- * `set` is typed loosely (`status?: unknown`) because Elysia's `set` carries
- * more than just `status`; we only ever assign to `status`.
+ * The caller is responsible for calling `return status(domain.status, domain.body)`.
  */
 export function handleDeckDomainError(
   err: unknown,
-  set: { status?: unknown },
-): { success: false; error: 'DECK_NOT_FOUND' | 'DECK_FORBIDDEN' } | null {
+): { status: 404; body: { success: false; error: 'DECK_NOT_FOUND' | 'DECK_FORBIDDEN' } } | null {
   if (err instanceof DeckNotFoundError) {
-    set.status = 404;
-    return { success: false, error: 'DECK_NOT_FOUND' };
+    return { status: 404, body: { success: false, error: 'DECK_NOT_FOUND' } };
   }
   if (err instanceof DeckOwnershipError) {
-    set.status = 404;
-    return { success: false, error: 'DECK_FORBIDDEN' };
+    return { status: 404, body: { success: false, error: 'DECK_FORBIDDEN' } };
   }
   return null;
 }
