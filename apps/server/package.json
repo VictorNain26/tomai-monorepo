@@ -70,7 +70,6 @@
     "@opentelemetry/sdk-trace-base": "^2.7.1",
     "@opentelemetry/semantic-conventions": "^1.41.1",
     "@qdrant/js-client-rest": "^1.18.0",
-    "@repo/shared-types": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
     "better-auth": "^1.6.13",
     "drizzle-orm": "^0.45.2",
