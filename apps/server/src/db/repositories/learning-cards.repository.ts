@@ -13,6 +13,7 @@ import {
   learningDecks,
   type LearningCard,
   type NewLearningCard,
+  type FSRSData,
 } from '../schema';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 
@@ -20,6 +21,15 @@ import type { PgTransaction } from 'drizzle-orm/pg-core';
 type DbOrTx = typeof db | PgTransaction<any, any, any>;
 
 export class LearningCardsRepository {
+  async findById(cardId: string): Promise<LearningCard | null> {
+    const [card] = await db
+      .select()
+      .from(learningCards)
+      .where(eq(learningCards.id, cardId))
+      .limit(1);
+    return card ?? null;
+  }
+
   /**
    * Fetch a card by id, verifying ownership via the deck it belongs to.
    * Returns the card and deck user id on match; null if card missing or
@@ -110,6 +120,13 @@ export class LearningCardsRepository {
    */
   async deleteByDeckId(deckId: string, executor: DbOrTx = db): Promise<void> {
     await executor.delete(learningCards).where(eq(learningCards.deckId, deckId));
+  }
+
+  async resetFsrsDataByDeckId(deckId: string, emptyFsrsData: FSRSData): Promise<void> {
+    await db
+      .update(learningCards)
+      .set({ fsrsData: emptyFsrsData, updatedAt: new Date() })
+      .where(eq(learningCards.deckId, deckId));
   }
 
   /**
