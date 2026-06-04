@@ -7,7 +7,6 @@ import {
   CardValidationError,
 } from '../../services/learning/learning.service';
 import { handleDeckDomainError } from './helpers';
-import { cardGenerateRoutes } from './card-generate.routes.js';
 
 export const cardRoutes = new Elysia({ prefix: '/api/learning' })
   .use(authMacro)
@@ -129,6 +128,4 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
       set.status = 500;
       return { error: 'Failed to delete card' };
     }
-  })
-
-  .use(cardGenerateRoutes);
+  });

@@ -18,7 +18,7 @@ import { fileUploadRoutes } from './routes/file-upload.routes.js';
 import { statusRoutes } from './routes/subscription/index.js';
 import { revenuecatWebhookRoutes } from './routes/revenuecat-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
-import { deckRoutes, cardRoutes, fsrsRoutes, fsrsExtraRoutes } from './routes/learning/index.js';
+import { learningRoutes } from './routes/learning/index.js';
 import { waitlistRoutes } from './routes/waitlist.routes.js';
 import { pronoteSyncRoutes } from './routes/pronote-sync.routes.js';
 
@@ -278,10 +278,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(statusRoutes)        // Subscription status + token usage (DB-driven)
   .use(revenuecatWebhookRoutes) // Webhooks RevenueCat (single source of subscription truth)
   .use(ttsRoutes)           // Text-to-Speech (Gemini 2.5 Flash TTS - 3.0 pending)
-  .use(deckRoutes)          // Outils de révision - decks, subjects, topics
-  .use(cardRoutes)          // Outils de révision - cards CRUD, AI generation
-  .use(fsrsRoutes)          // FSRS: révision espacée adaptative par niveau
-  .use(fsrsExtraRoutes)     // FSRS: preview, reset, config
+  .use(learningRoutes)      // Outils de révision - decks, cards, discovery, AI generation, FSRS
   .use(waitlistRoutes)      // Waitlist - Landing page email collection
   .use(pronoteSyncRoutes)   // Pronote credential sync (device-first)
 
