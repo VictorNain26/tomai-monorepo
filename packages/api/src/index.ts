@@ -37,6 +37,8 @@ export {
   UPLOAD_CONFIG,
   type ApiError,
   type UnauthorizedHandler,
+  type TreatyClient,
+  type ResponseData,
 } from './client';
 
 // Shared Types (platform-agnostic)

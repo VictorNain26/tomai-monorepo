@@ -17,7 +17,6 @@ import { createAuthClient } from 'better-auth/react';
 import { expoClient } from '@better-auth/expo/client';
 import { adminClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
-import { getTreaty, unwrap } from '@repo/api';
 import {
   GoogleSignin,
   isSuccessResponse,
@@ -213,9 +212,8 @@ export async function signInWithGoogle() {
  * Demande de réinitialisation de mot de passe.
  */
 export async function requestPasswordReset(email: string, redirectTo?: string) {
-  return unwrap(
-    await getTreaty().api.auth['forget-password'].post({ email, redirectTo })
-  );
+  // Better Auth client handles /api/auth/* routes — not typed in Eden Treaty
+  return authClient.requestPasswordReset({ email, redirectTo });
 }
 
 /**

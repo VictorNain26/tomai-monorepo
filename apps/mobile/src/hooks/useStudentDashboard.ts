@@ -7,30 +7,15 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getTreaty, unwrap } from '@repo/api';
+import { getTreaty, unwrap, type ResponseData } from '@repo/api';
 import { useUser } from '@/lib/auth';
 
 // ============================================================================
-// TYPES
+// TYPES — derived from the server contract (single source of truth)
 // ============================================================================
 
-export interface TokenUsage {
-  plan: 'free' | 'premium';
-  window: {
-    tokensUsed: number;
-    tokensRemaining: number;
-    limit: number;
-    usagePercent: number;
-    refreshIn: string;
-  };
-  daily: {
-    tokensUsed: number;
-    tokensRemaining: number;
-    limit: number;
-    usagePercent: number;
-    resetsIn: string;
-  };
-}
+type SubscriptionApi = ReturnType<typeof getTreaty>['api']['subscriptions'];
+export type TokenUsage = ResponseData<SubscriptionApi['usage']['get']>;
 
 // ============================================================================
 // QUERY KEYS
@@ -45,15 +30,9 @@ const queryKeys = {
 // ============================================================================
 
 async function fetchTokenUsage(userId: string): Promise<TokenUsage> {
-  const response = unwrap(
+  return unwrap(
     await getTreaty().api.subscriptions.usage.get({ query: { userId } })
   );
-  const data = response as { plan: string; window: TokenUsage['window']; daily: TokenUsage['daily'] };
-  return {
-    plan: data.plan as 'free' | 'premium',
-    window: data.window,
-    daily: data.daily,
-  };
 }
 
 // ============================================================================

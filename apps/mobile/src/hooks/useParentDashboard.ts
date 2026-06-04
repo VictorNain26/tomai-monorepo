@@ -7,72 +7,30 @@
 
 import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTreaty, unwrap } from '@repo/api';
+import { getTreaty, unwrap, type ResponseData } from '@repo/api';
 import { useUser } from '@/lib/auth';
-import type { EducationLevelType } from '@/constants/levels';
 
 // Re-export types for consumers
 export type { EducationLevelType } from '@/constants/levels';
 
 // ============================================================================
-// TYPES (aligned with backend apps/server/src/types/index.ts)
+// TYPES — derived from the server contract (single source of truth)
 // ============================================================================
 
-export interface IChild {
-  id: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  schoolLevel: string;
-  dateOfBirth?: string;
-  isActive: boolean;
-  parentId: string;
-  role: 'student';
-  createdAt: string;
-}
+type ParentApi = ReturnType<typeof getTreaty>['api']['parent'];
 
-export interface ICreateChildData {
-  firstName: string;
-  lastName: string;
-  username: string;
-  password: string;
-  schoolLevel: string;
-  dateOfBirth?: string;
-}
+/** Child shape as returned by the server contract. */
+export type IChild = ResponseData<ParentApi['children']['get']>[number];
 
-export interface ChildMetrics {
-  studentId: string;
-  studentName: string;
-  schoolLevel: string;
-  age: number;
-  totalSessions: number;
-  studyDays: number;
-  avgSessionDuration: number;
-  avgFrustration: number;
-  subjectsStudied: number;
-  totalStudyTime: number;
-  lastSessionDate: string | null;
-}
+/** Payload to create a child — derived from the post body parameter. */
+export type ICreateChildData = NonNullable<Parameters<ParentApi['children']['post']>[0]>;
 
-interface DashboardResponse {
-  success: boolean;
-  parent: { id: string; name: string };
-  children: IChild[];
-  metrics: ChildMetrics[];
-}
+type DashboardResponse = ResponseData<ParentApi['dashboard']['get']>;
+export type ChildMetrics = DashboardResponse['metrics'][number];
 
-export interface SchoolLevel {
-  key: EducationLevelType;
-  ragAvailable: boolean;
-  subjectsCount: number;
-}
-
-interface LevelsResponse {
-  success: boolean;
-  levels: SchoolLevel[];
-  total: number;
-  ragAvailableCount: number;
-}
+type EducationApi = ReturnType<typeof getTreaty>['api']['education'];
+type LevelsResponse = ResponseData<EducationApi['levels']['get']>;
+export type SchoolLevel = LevelsResponse['levels'][number];
 
 // ============================================================================
 // QUERY KEYS
@@ -93,26 +51,25 @@ const queryKeys = {
 async function fetchDashboard(): Promise<DashboardResponse> {
   return unwrap(
     await getTreaty().api.parent.dashboard.get()
-  ) as DashboardResponse;
+  );
 }
 
 async function fetchChildren(): Promise<IChild[]> {
   return unwrap(
     await getTreaty().api.parent.children.get()
-  ) as IChild[];
+  );
 }
 
 async function fetchLevels(): Promise<SchoolLevel[]> {
-  const response = unwrap(
-    await getTreaty().api.education.levels.get()
-  ) as LevelsResponse;
-  return response.levels.filter((l) => l.ragAvailable);
+  const { levels } = unwrap(await getTreaty().api.education.levels.get());
+  return levels.filter((l) => l.ragAvailable);
 }
 
 async function createChildApi(data: ICreateChildData): Promise<IChild> {
-  return unwrap(
+  const { child } = unwrap(
     await getTreaty().api.parent.children.post(data)
-  ) as IChild;
+  );
+  return child;
 }
 
 async function updateChildApi({
@@ -122,15 +79,16 @@ async function updateChildApi({
   childId: string;
   data: Partial<Omit<IChild, 'role'>>;
 }): Promise<IChild> {
-  return unwrap(
+  const { child } = unwrap(
     await getTreaty().api.parent.children({ id: childId }).patch(data)
-  ) as IChild;
+  );
+  return child;
 }
 
 async function deleteChildApi(childId: string): Promise<{ success: boolean }> {
   return unwrap(
     await getTreaty().api.parent.children({ id: childId }).delete()
-  ) as { success: boolean };
+  );
 }
 
 // ============================================================================

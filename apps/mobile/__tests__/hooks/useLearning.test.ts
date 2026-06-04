@@ -35,8 +35,8 @@ const mockDeck: LearningDeck = {
   sourcePrompt: "Génère des cartes sur l'algèbre",
   schoolLevel: 'quatrieme',
   cardCount: 10,
-  createdAt: '2025-01-10T10:00:00Z',
-  updatedAt: '2025-01-10T10:00:00Z',
+  createdAt: new Date('2025-01-10T10:00:00Z'),
+  updatedAt: new Date('2025-01-10T10:00:00Z'),
 };
 
 const mockCard: LearningCard = {
@@ -49,8 +49,8 @@ const mockCard: LearningCard = {
   },
   position: 0,
   fsrsData: null,
-  createdAt: '2025-01-10T10:00:00Z',
-  updatedAt: '2025-01-10T10:00:00Z',
+  createdAt: new Date('2025-01-10T10:00:00Z'),
+  updatedAt: new Date('2025-01-10T10:00:00Z'),
 };
 
 function mockTreatyApi(overrides: Record<string, unknown>) {
@@ -89,7 +89,7 @@ describe('useDecks', () => {
 
   it('should fetch decks successfully', async () => {
     mockTreatyApi({});
-    const decksGet = mockGetTreaty().api.learning.decks.get as jest.Mock;
+    const decksGet = mockGetTreaty().api.learning.decks.get as unknown as jest.Mock;
     decksGet.mockResolvedValueOnce({
       data: { decks: [mockDeck], count: 1 },
       error: null,
@@ -110,7 +110,7 @@ describe('useDecks', () => {
 
   it('should handle fetch error', async () => {
     mockTreatyApi({});
-    const decksGet = mockGetTreaty().api.learning.decks.get as jest.Mock;
+    const decksGet = mockGetTreaty().api.learning.decks.get as unknown as jest.Mock;
     decksGet.mockResolvedValueOnce({
       data: null,
       error: { status: 500, value: { message: 'Network error' } },
@@ -186,6 +186,8 @@ describe('useGenerateDeck', () => {
       metadata: {
         ragStrategy: 'hybrid',
         tokensUsed: 1500,
+        decksRemainingToday: 3,
+        decksRemainingThisMonth: 10,
       },
     };
 
@@ -294,7 +296,7 @@ describe('useLearningSubjects', () => {
     mockTreatyApi({});
 
     const { wrapper, queryClient } = createTestWrapper();
-    renderHook(() => useLearningSubjects(''), { wrapper });
+    renderHook(() => useLearningSubjects(undefined), { wrapper });
 
     queryClient.clear();
   });
@@ -353,7 +355,7 @@ describe('useLearningTopics', () => {
     qc1.clear();
 
     const { wrapper: wrapper2, queryClient: qc2 } = createTestWrapper();
-    renderHook(() => useLearningTopics('mathematiques', ''), {
+    renderHook(() => useLearningTopics('mathematiques', undefined), {
       wrapper: wrapper2,
     });
     qc2.clear();

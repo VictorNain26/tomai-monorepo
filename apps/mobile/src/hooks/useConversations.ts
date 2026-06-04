@@ -9,7 +9,6 @@ import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/lib/auth';
 
-import type { Conversation } from './chat/types';
 import {
   chatQueryKeys,
   fetchConversations,
@@ -57,7 +56,7 @@ export function useConversations() {
   );
 
   return {
-    conversations: conversationsQuery.data ?? [] as Conversation[],
+    conversations: conversationsQuery.data ?? [],
     isLoading: conversationsQuery.isLoading,
     error: conversationsQuery.error?.message ?? null,
     refetch: conversationsQuery.refetch,

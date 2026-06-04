@@ -6,39 +6,19 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getTreaty, unwrap } from '@repo/api';
+import { getTreaty, unwrap, type ResponseData } from '@repo/api';
 
 // ============================================================================
-// TYPES
+// TYPES — derived from the server contract (single source of truth)
 // ============================================================================
 
-export interface ChildWindowUsage {
-  tokensUsed: number;
-  tokensRemaining: number;
-  limit: number;
-  usagePercent: number;
-  refreshIn: string;
-}
+type SubscriptionApi = ReturnType<typeof getTreaty>['api']['subscriptions'];
+type UsageResponse = ResponseData<SubscriptionApi['usage']['get']>;
 
-export interface ChildDailyUsage {
-  tokensUsed: number;
-  tokensRemaining: number;
-  limit: number;
-  usagePercent: number;
-  resetsIn: string;
-}
-
-export interface ChildWeeklyUsage {
-  tokensUsed: number;
-}
-
-export interface ChildUsageResponse {
-  userId: string;
-  plan: 'free' | 'premium';
-  window: ChildWindowUsage;
-  daily: ChildDailyUsage;
-  weekly: ChildWeeklyUsage;
-}
+// Convenience aliases for consumers
+export type ChildWindowUsage = UsageResponse['window'];
+export type ChildDailyUsage = UsageResponse['daily'];
+export type ChildUsageResponse = UsageResponse;
 
 // ============================================================================
 // QUERY KEY
@@ -51,7 +31,7 @@ const queryKey = (childId: string) => ['subscription', 'usage', 'child', childId
 // ============================================================================
 
 async function fetchChildUsage(childId: string): Promise<ChildUsageResponse> {
-  return unwrap<ChildUsageResponse>(
+  return unwrap(
     await getTreaty().api.subscriptions.usage.get({ query: { userId: childId } })
   );
 }
@@ -77,7 +57,6 @@ export function useChildTokenUsage({ childId, enabled = true }: UseChildTokenUsa
   return {
     window: query.data?.window ?? null,
     daily: query.data?.daily ?? null,
-    weekly: query.data?.weekly ?? null,
     plan: query.data?.plan ?? 'free',
     isLoading: query.isLoading,
     isError: query.isError,
