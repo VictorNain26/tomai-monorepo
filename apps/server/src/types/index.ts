@@ -1,4 +1,4 @@
-import type { userRoleEnum } from '../db/schema';
+import type { userRoleEnum, SchoolLevel } from '../db/schema';
 
 // Type pour le rôle utilisateur
 type UserRole = typeof userRoleEnum.enumValues[number];
@@ -33,11 +33,8 @@ export type {
   AIStreamResponseWithTokens
 } from './ai.types.js';
 
-// Types Education - Harmonisés avec schema PostgreSQL
-export type EducationLevelType =
-  | 'cp' | 'ce1' | 'ce2' | 'cm1' | 'cm2'
-  | 'sixieme' | 'cinquieme' | 'quatrieme' | 'troisieme'
-  | 'seconde' | 'premiere' | 'terminale';
+// Single source of truth: derived from the DB `school_level` enum.
+export type EducationLevelType = SchoolLevel;
 
 export type EducationCycleType = 'cycle1' | 'cycle2' | 'cycle3' | 'cycle4' | 'lycee';
 
