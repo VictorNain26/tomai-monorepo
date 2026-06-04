@@ -33,6 +33,16 @@ bun run dev          # serveur sur :3000 (status "degraded" si MISTRAL_API_KEY a
 
 `db:push` reste OK pour **itérer le schéma ensuite** (la table de suivi existe déjà). Les features AI/RAG/billing échouent à l'usage tant que leur var n'est pas définie (env incrémental) — l'auth, elle, ne requiert que `BETTER_AUTH_SECRET` + `DATABASE_URL`.
 
+## Frontière de types (App / Eden Treaty)
+
+Le type `App` (`typeof app`) est l'arbre de routes consommé par Eden Treaty côté clients. Il est **entremêlé au runtime Bun** (DB, services), donc on ne laisse jamais un client typechecker `src/app.ts` directement (sinon fuite des globals `Bun` → erreurs TS2868 chez web/mobile).
+
+- **Le serveur publie son type comme artefact buildé** : `bun run build:types` (`tsconfig.build.types.json`) émet `dist/types/app.d.ts`. Les exports `tomai-server/app` pointent dessus, pas sur la source.
+- **`@repo/api` et les clients consomment le `.d.ts` buildé** — aucun n'embarque `bun-types`. Si un client a besoin des globals Bun, c'est que la frontière fuit.
+- **Ordonnancement** : turbo `typecheck` `dependsOn ["^build:types"]` (mis en cache). Le `dist/types/` est gitignored — jamais commité.
+- **DX à froid** : sur un clone neuf, `@repo/api/src/client.ts` est rouge dans l'IDE tant que `dist/types/app.d.ts` n'existe pas. Self-healing : `pnpm turbo typecheck` (ou `bun run build:types` dans `apps/server`) le régénère.
+- Émettre le `.d.ts` exige que le contrat public soit **nommable** : tout type qui fuit dans `App` doit être exporté (cf. `CredentialOutput`) ou neutralisé (plugins better-auth dev-only typés `BetterAuthPlugin[]`).
+
 ## Stack
 
 - **Runtime** : Bun 1.3 + Docker Compose

@@ -9,7 +9,7 @@
  * - mcp: Model Context Protocol
  */
 
-import { betterAuth } from "better-auth";
+import { betterAuth, type BetterAuthPlugin } from "better-auth";
 import { openAPI, mcp, admin } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -196,8 +196,13 @@ export const auth = betterAuth({
   },
 
   plugins: [
-    // openAPI + mcp only in development (expose internal auth structure in prod = security risk)
-    ...(isDevelopment() ? [openAPI(), mcp({ loginPage: "/sign-in" })] : []),
+    // openAPI + mcp only in development (expose internal auth structure in prod = security risk).
+    // Typed as BetterAuthPlugin[] so these dev-only plugins don't leak their
+    // (un-nameable) option types into `typeof auth` — which would break the
+    // declaration emit of the public App type. They add no client-consumed routes.
+    ...(isDevelopment()
+      ? ([openAPI(), mcp({ loginPage: "/sign-in" })] as BetterAuthPlugin[])
+      : []),
     expo(),     // Mobile app support (deep links, secure storage)
 
     // Admin plugin for Quick Switch (parent impersonation)

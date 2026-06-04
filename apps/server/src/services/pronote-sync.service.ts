@@ -18,7 +18,7 @@ interface UpsertInput {
   tokenExpiresAt: string;
 }
 
-interface CredentialOutput {
+export interface CredentialOutput {
   token: string;
   metadata: string;
   tokenExpiresAt: string;
