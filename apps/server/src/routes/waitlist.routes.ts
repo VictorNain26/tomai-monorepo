@@ -3,29 +3,23 @@
  */
 
 import { Elysia, t } from 'elysia';
-import { db } from '../db/connection.js';
-import { waitlistEntries } from '../db/schema.js';
+import { waitlistRepository } from '../db/repositories/waitlist.repository.js';
 import { logger } from '../lib/observability.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const waitlistRoutes = new Elysia({ name: 'waitlist-routes' })
-  .post('/api/waitlist', async ({ body, set }) => {
+  .post('/api/waitlist', async ({ body, status }) => {
     const { email, source } = body;
 
     if (!EMAIL_REGEX.test(email)) {
-      set.status = 400;
-      return { success: false, error: 'Email invalide' };
+      return status(400, { success: false, error: 'Email invalide' });
     }
 
     try {
-      const result = await db
-        .insert(waitlistEntries)
-        .values({ email: email.toLowerCase().trim(), source: source ?? null })
-        .onConflictDoNothing({ target: waitlistEntries.email })
-        .returning({ id: waitlistEntries.id });
+      const { created } = await waitlistRepository.add(email, source ?? null);
 
-      if (result.length === 0) {
+      if (!created) {
         return { success: true, alreadyExists: true };
       }
 
@@ -42,8 +36,7 @@ export const waitlistRoutes = new Elysia({ name: 'waitlist-routes' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      set.status = 500;
-      return { success: false, error: 'Erreur serveur' };
+      return status(500, { success: false, error: 'Erreur serveur' });
     }
   }, {
     body: t.Object({
