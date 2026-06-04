@@ -3,14 +3,9 @@
  * Types centralisés pour les niveaux et matières scolaires
  */
 
-// Type TypeScript complet pour tous les niveaux du système éducatif français
-export type EducationLevelType =
-  // Primaire (6-11 ans)
-  | 'cp' | 'ce1' | 'ce2' | 'cm1' | 'cm2'
-  // Collège (11-15 ans)
-  | 'sixieme' | 'cinquieme' | 'quatrieme' | 'troisieme'
-  // Lycée (15-18 ans)
-  | 'seconde' | 'premiere' | 'terminale';
+// Re-exported from the single source (derived from the DB `school_level` enum).
+import type { EducationLevelType } from './index.js';
+export type { EducationLevelType };
 
 // Types pour les matières complètes selon l'Éducation Nationale
 export type SubjectType =
