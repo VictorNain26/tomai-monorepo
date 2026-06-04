@@ -17,6 +17,7 @@ import {
 } from 'expo-audio';
 import * as FileSystem from 'expo-file-system';
 import { getTreaty, unwrap } from '@repo/api';
+import type { PresignResponse, ConfirmResponse } from './usePresignedUpload';
 import { haptics } from '@/lib/haptics';
 
 // ============================================================================
@@ -32,24 +33,6 @@ export interface VoiceInputState {
   duration: number;
   /** Error message if any */
   error: string | null;
-}
-
-interface PresignedUrlResponse {
-  success: boolean;
-  fileId?: string;
-  uploadUrl?: string;
-  storageKey?: string;
-  expiresAt?: string;
-  error?: string;
-}
-
-interface ConfirmUploadResponse {
-  success: boolean;
-  fileId?: string;
-  fileUri?: string;
-  geminiExpiresAt?: string;
-  transcription?: string;
-  error?: string;
 }
 
 // ============================================================================
@@ -301,19 +284,14 @@ async function uploadAndTranscribe(uri: string): Promise<string | null> {
   const fileInfo = await FileSystem.getInfoAsync(uri);
   const sizeBytes = fileInfo.exists ? fileInfo.size ?? 0 : 0;
 
-  const presignedResponse = unwrap(
+  // unwrap() throws on error responses; fields are non-optional on success.
+  const { uploadUrl, fileId } = unwrap(
     await getTreaty().api.upload.presign.post({
       fileName: 'voice-recording.m4a',
       mimeType: 'audio/mp4',
       sizeBytes,
     })
-  ) as PresignedUrlResponse;
-
-  if (!presignedResponse.success || !presignedResponse.uploadUrl || !presignedResponse.fileId) {
-    throw new Error(presignedResponse.error ?? 'Impossible de préparer l\'upload');
-  }
-
-  const { uploadUrl, fileId } = presignedResponse;
+  ) satisfies PresignResponse;
 
   const response = await fetch(uri);
   const blob = await response.blob();
@@ -330,11 +308,7 @@ async function uploadAndTranscribe(uri: string): Promise<string | null> {
 
   const confirmResponse = unwrap(
     await getTreaty().api.upload.confirm({ fileId }).post()
-  ) as ConfirmUploadResponse;
-
-  if (!confirmResponse.success) {
-    throw new Error(confirmResponse.error ?? 'Erreur lors de la confirmation');
-  }
+  ) satisfies ConfirmResponse;
 
   return confirmResponse.transcription ?? null;
 }

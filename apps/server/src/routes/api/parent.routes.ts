@@ -1,4 +1,4 @@
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
 import {
   validateSchema,
@@ -65,6 +65,8 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       severity: 'low' as const
     });
 
+    // TypeBox provides structural gating + contract typing; Zod enforces detailed
+    // business rules (transforms, age check, regex) that TypeBox does not express.
     const validation = validateSchema(createChildSchema, body);
     if (isValidationError(validation)) {
       logger.error('Child creation validation failed', {
@@ -91,9 +93,30 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       });
       return status(400, { _error: 'Creation failed', message: _error instanceof Error ? _error.message : 'Failed to create child' });
     }
+  }, {
+    body: t.Object({
+      firstName: t.String(),
+      lastName: t.String(),
+      username: t.String(),
+      password: t.String(),
+      schoolLevel: t.Union([
+        t.Literal('cp'), t.Literal('ce1'), t.Literal('ce2'),
+        t.Literal('cm1'), t.Literal('cm2'),
+        t.Literal('sixieme'), t.Literal('cinquieme'),
+        t.Literal('quatrieme'), t.Literal('troisieme'),
+        t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
+      ]),
+      // Optional at the contract level (Pronote-imported children have no birth
+      // date); the Zod `createChildSchema` still requires + validates it for the
+      // manual create-child form. TODO(product): decide whether imported children
+      // should be exempt in Zod too, instead of failing validation.
+      dateOfBirth: t.Optional(t.String()),
+    }),
   })
 
   .patch('/parent/children/:id', async ({ params, body, user, status, request: { headers } }) => {
+    // TypeBox provides structural gating + contract typing; Zod enforces detailed
+    // business rules (transforms, age check, regex) that TypeBox does not express.
     const validation = validateSchema(updateChildSchema, body);
     if (isValidationError(validation)) {
       return status(400, { _error: 'Validation Error', message: validation._error });
@@ -111,6 +134,21 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       });
       return status(400, { _error: 'Update failed', message: _error instanceof Error ? _error.message : 'Failed to update child' });
     }
+  }, {
+    body: t.Object({
+      firstName: t.Optional(t.String()),
+      lastName: t.Optional(t.String()),
+      // username intentionally excluded — immutable after creation
+      password: t.Optional(t.String()),
+      schoolLevel: t.Optional(t.Union([
+        t.Literal('cp'), t.Literal('ce1'), t.Literal('ce2'),
+        t.Literal('cm1'), t.Literal('cm2'),
+        t.Literal('sixieme'), t.Literal('cinquieme'),
+        t.Literal('quatrieme'), t.Literal('troisieme'),
+        t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
+      ])),
+      dateOfBirth: t.Optional(t.String()),
+    }),
   })
 
   .delete('/parent/children/:id', async ({ params, user, status }) => {

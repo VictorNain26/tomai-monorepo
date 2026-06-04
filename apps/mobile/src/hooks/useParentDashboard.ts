@@ -25,6 +25,9 @@ export type IChild = ResponseData<ParentApi['children']['get']>[number];
 /** Payload to create a child — derived from the post body parameter. */
 export type ICreateChildData = NonNullable<Parameters<ParentApi['children']['post']>[0]>;
 
+/** Payload to update a child — derived from the PATCH body parameter. */
+type IUpdateChildData = NonNullable<Parameters<ReturnType<ParentApi['children']>['patch']>[0]>;
+
 type DashboardResponse = ResponseData<ParentApi['dashboard']['get']>;
 export type ChildMetrics = DashboardResponse['metrics'][number];
 
@@ -77,7 +80,7 @@ async function updateChildApi({
   data,
 }: {
   childId: string;
-  data: Partial<Omit<IChild, 'role'>>;
+  data: IUpdateChildData;
 }): Promise<IChild> {
   const { child } = unwrap(
     await getTreaty().api.parent.children({ id: childId }).patch(data)
