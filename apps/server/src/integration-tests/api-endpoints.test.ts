@@ -200,7 +200,7 @@ mock.module('../routes/subscription/index', () => ({
 }));
 mock.module('../routes/tts.routes', () => ({ ttsRoutes: new Elysia() }));
 mock.module('../routes/learning/index', () => ({
-  deckRoutes: new Elysia(), cardRoutes: new Elysia(), fsrsRoutes: new Elysia(), fsrsExtraRoutes: new Elysia(),
+  learningRoutes: new Elysia(),
 }));
 mock.module('../routes/waitlist.routes', () => ({ waitlistRoutes: new Elysia() }));
 mock.module('../routes/pronote-sync.routes', () => ({ pronoteSyncRoutes: new Elysia() }));

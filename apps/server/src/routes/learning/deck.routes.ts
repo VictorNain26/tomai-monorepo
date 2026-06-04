@@ -3,7 +3,6 @@ import { authMacro } from '../../lib/auth-macro.js';
 import { logger } from '../../lib/observability';
 import { learningService } from '../../services/learning/learning.service';
 import { handleDeckDomainError } from './helpers';
-import { deckDiscoveryRoutes } from './deck-discovery.routes.js';
 
 export const deckRoutes = new Elysia({ prefix: '/api/learning' })
   .use(authMacro)
@@ -143,7 +142,4 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
       set.status = 500;
       return { error: 'Failed to delete deck' };
     }
-  })
-
-  // Mount discovery routes (subjects, topics, chapters)
-  .use(deckDiscoveryRoutes);
+  });
