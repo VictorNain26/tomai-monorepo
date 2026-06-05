@@ -24,7 +24,7 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
   .group('/api/tts', (app) => app
 
     // POST /api/tts/synthesize - Synthétiser texte en audio
-    .post('/synthesize', async ({ body, user, set }) => {
+    .post('/synthesize', async ({ body, user, status }) => {
       const startTime = Date.now();
 
       try {
@@ -46,11 +46,10 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
             severity: 'medium' as const
           });
 
-          set.status = 500;
-          return {
+          return status(500, {
             success: false,
-            error: result._error ?? 'Échec de la synthèse vocale'
-          };
+            error: result._error ?? 'Échec de la synthèse vocale',
+          });
         }
 
         logger.info('TTS synthesis completed', {
@@ -83,11 +82,10 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           severity: 'high' as const
         });
 
-        set.status = 500;
-        return {
+        return status(500, {
           success: false,
-          error: 'Erreur interne lors de la synthèse vocale'
-        };
+          error: 'Erreur interne lors de la synthèse vocale',
+        });
       }
     }, {
       body: t.Object({

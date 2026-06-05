@@ -7,7 +7,7 @@ export const progressApiRoutes = new Elysia({ name: 'api-progress' })
   .use(authMacro)
 
   .guard({ auth: true })
-  .get('/progress/dashboard', async ({ user, set }) => {
+  .get('/progress/dashboard', async ({ user, status }) => {
     try {
       const stats = await progressService.getStudentStats(user.id);
       return {
@@ -31,8 +31,7 @@ export const progressApiRoutes = new Elysia({ name: 'api-progress' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      set.status = 500;
-      return { _error: 'Progress retrieval failed' };
+      return status(500, { error: 'Progress retrieval failed' });
     }
   })
 

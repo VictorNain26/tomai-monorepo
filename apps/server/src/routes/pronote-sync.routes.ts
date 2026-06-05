@@ -27,7 +27,7 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
   .group('/api/pronote', (app) => app
 
     // PUT /api/pronote/credentials — Upsert
-    .put('/credentials', async ({ body, user, set }) => {
+    .put('/credentials', async ({ body, user, status }) => {
       try {
         const result = await pronoteSyncService.upsertCredentials(
           user.id,
@@ -35,8 +35,7 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
         );
 
         if (!result.success) {
-          set.status = 400;
-          return { success: false, error: result.error };
+          return status(400, { success: false, error: result.error });
         }
 
         return { success: true };
@@ -48,8 +47,7 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
           severity: 'high' as const,
         });
 
-        set.status = 500;
-        return { success: false, error: 'Erreur interne' };
+        return status(500, { success: false, error: 'Erreur interne' });
       }
     }, {
       body: t.Object({
@@ -60,15 +58,14 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
     })
 
     // GET /api/pronote/credentials — Fetch
-    .get('/credentials', async ({ user, set }) => {
+    .get('/credentials', async ({ user, status }) => {
       try {
         const credentials = await pronoteSyncService.getCredentials(
           user.id
         );
 
         if (!credentials) {
-          set.status = 404;
-          return { success: false, error: 'No Pronote credentials found' };
+          return status(404, { success: false, error: 'No Pronote credentials found' });
         }
 
         return { success: true, data: credentials };
@@ -80,13 +77,12 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
           severity: 'high' as const,
         });
 
-        set.status = 500;
-        return { success: false, error: 'Erreur interne' };
+        return status(500, { success: false, error: 'Erreur interne' });
       }
     })
 
     // DELETE /api/pronote/credentials — Delete
-    .delete('/credentials', async ({ user, set }) => {
+    .delete('/credentials', async ({ user, status }) => {
       try {
         await pronoteSyncService.deleteCredentials(user.id);
         return { success: true };
@@ -98,8 +94,7 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
           severity: 'high' as const,
         });
 
-        set.status = 500;
-        return { success: false, error: 'Erreur interne' };
+        return status(500, { success: false, error: 'Erreur interne' });
       }
     })
   );
