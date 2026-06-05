@@ -128,7 +128,7 @@ Best practices token (cf ADR-0001 D4) :
 
 ## Migrations Drizzle
 
-Source de vérité : `src/db/schema.ts`. Règles détaillées : @../../.claude/rules/database-migrations.md
+Source de vérité : `src/db/schema.ts`. Règles détaillées : `.claude/rules/database-migrations.md` (chargée automatiquement quand tu touches le code DB).
 - **Dev local** : `db:push` après modif schema
 - **Prod/staging** : `db:generate` → commit SQL → `docker-entrypoint.sh migrate.ts` auto
 
