@@ -2,7 +2,7 @@
 
 import { MessageSquare, Lightbulb, GraduationCap, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui";
 import { SectionHeader } from "../atoms/section-header";
 
 const STEPS = [

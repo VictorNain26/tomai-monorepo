@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ShieldCheck, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui";
 import { SectionHeader } from "../atoms/section-header";
 
 const FREE_FEATURES = [

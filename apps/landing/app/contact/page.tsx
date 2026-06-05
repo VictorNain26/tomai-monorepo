@@ -1,5 +1,5 @@
 import { PageLayout } from "@/components/layout/page-layout";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui";
 import { Mail, MapPin } from "lucide-react";
 
 export default function ContactPage() {

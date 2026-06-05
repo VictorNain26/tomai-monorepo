@@ -1,9 +1,8 @@
 "use client";
 
 import { Menu, X, Sun, Moon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, cn } from "@repo/ui";
 import { useState, useEffect, useCallback } from "react";
-import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { Logo } from "../atoms/logo";
 import { NavLinks } from "../molecules/nav-links";
