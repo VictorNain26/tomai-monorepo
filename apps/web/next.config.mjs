@@ -5,6 +5,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  transpilePackages: ['@repo/ui'],
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui";
 
 export function MobileCTABar() {
   const [visible, setVisible] = useState(false);

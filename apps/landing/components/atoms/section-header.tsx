@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@repo/ui";
 
 interface SectionHeaderProps {
   title: string;

@@ -1,6 +1,6 @@
 import { PageLayout } from "@/components/layout/page-layout";
 import { FAQ } from "@/components/sections/faq";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui";
 import { MessageCircle } from "lucide-react";
 import Link from "next/link";
 

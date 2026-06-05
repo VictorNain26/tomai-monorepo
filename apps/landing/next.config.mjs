@@ -6,6 +6,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  transpilePackages: ['@repo/ui'],
 
   // Images configuration
   images: {

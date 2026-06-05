@@ -2,9 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { CheckCircle2, Info, Loader2, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, cn } from "@repo/ui";
 import { joinWaitlist } from "@/lib/actions/waitlist";
-import { cn } from "@/lib/utils";
 
 interface WaitlistFormProps {
   source: string;

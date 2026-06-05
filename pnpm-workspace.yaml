@@ -23,8 +23,11 @@ allowBuilds:
   sharp: true
 
 catalog:
+  '@radix-ui/react-slot': ^1.2.4
   '@types/react': ~19.2.10
   '@types/react-dom': ~19.2.3
+  class-variance-authority: ^0.7.1
+  clsx: ^2.1.1
   eslint: ^10.4.1
   lucide-react: ^1.17.0
   # Pinned to React 19.2.3 — the version Expo SDK 56 bundles. Keep aligned with
@@ -33,6 +36,7 @@ catalog:
   react-dom: 19.2.3
   # Keep strictly in sync with `react` (@testing-library/react-native compares them).
   react-test-renderer: 19.2.3
+  tailwind-merge: ^3.6.0
   tailwindcss: ^4.3.0
   typescript: 6.0.3
 
