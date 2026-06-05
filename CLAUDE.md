@@ -15,7 +15,7 @@ Backend nécessite Docker : `cd apps/server && docker compose up -d`
 
 ## Stack
 
-@apps/server/CLAUDE.md pour le détail backend. @apps/mobile/CLAUDE.md pour le mobile. @apps/web/CLAUDE.md pour le web.
+Détail par app (chargé à la demande via walk-up quand tu travailles dedans) : `apps/server/CLAUDE.md` (backend), `apps/mobile/CLAUDE.md` (mobile), `apps/web/CLAUDE.md` (web).
 
 | Couche | Technologies |
 |--------|-------------|
@@ -37,7 +37,7 @@ Backend nécessite Docker : `cd apps/server && docker compose up -d`
 
 ## Enforcement
 
-Le workflow (TDD, review, validation) est géré par **superpowers skills** (auto-invoqués). Les conventions monorepo sont dans @.claude/rules/testing-and-commits.md et @.claude/rules/database-migrations.md.
+Le workflow (TDD, review, validation) est géré par **superpowers skills** (auto-invoqués). Les conventions monorepo vivent dans `.claude/rules/` — chargées automatiquement par Claude Code (pas besoin de les importer).
 
 Garde-fous déterministes :
 - **Stop hook** (exit 2) : force validation + commit avant de quitter
