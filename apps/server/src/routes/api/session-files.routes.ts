@@ -43,8 +43,8 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
 
   .get('/chat/session/:id/files', async ({ params, user, status }) => {
     try {
-      const session = await chatService.getSession(params.id);
-      if (!session || session.userId !== user.id) {
+      const session = await chatService.getSessionForUser(params.id, user.id);
+      if (!session) {
         return status(403, { error: 'Session not found or access denied' });
       }
 
@@ -76,8 +76,8 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
     try {
       const { fileId } = body;
 
-      const session = await chatService.getSession(params.id);
-      if (!session || session.userId !== user.id) {
+      const session = await chatService.getSessionForUser(params.id, user.id);
+      if (!session) {
         return status(403, { error: 'Session not found or access denied' });
       }
 
@@ -112,8 +112,8 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
 
   .delete('/chat/session/:id/files/:fileId', async ({ params, user, status }) => {
     try {
-      const session = await chatService.getSession(params.id);
-      if (!session || session.userId !== user.id) {
+      const session = await chatService.getSessionForUser(params.id, user.id);
+      if (!session) {
         return status(403, { error: 'Session not found or access denied' });
       }
 
