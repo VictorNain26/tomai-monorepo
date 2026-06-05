@@ -137,8 +137,8 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
 
   .get('/chat/session/:id/history', async ({ params, user, status }) => {
     try {
-      const session = await chatService.getSession(params.id);
-      if (!session || session.userId !== user.id) {
+      const session = await chatService.getSessionForUser(params.id, user.id);
+      if (!session) {
         return status(403, { error: 'Session not found or access denied' });
       }
 

@@ -48,6 +48,10 @@ export class ChatService {
     return this.sessions.getSession(sessionId);
   }
 
+  async getSessionForUser(sessionId: string, userId: string): Promise<SessionDetails | null> {
+    return this.sessions.getSessionForUser(sessionId, userId);
+  }
+
   async getSessionWithSummary(sessionId: string): Promise<{
     conversationSummary: string | null;
     summaryUpToMessageId: string | null;

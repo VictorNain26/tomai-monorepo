@@ -203,6 +203,16 @@ export class ChatSessionService {
     }
   }
 
+  /**
+   * Fetch a session only if it belongs to `userId`. Returns null when the
+   * session is missing or owned by someone else — collapsing the
+   * "not found" and "forbidden" cases so callers can't leak existence (IDOR).
+   */
+  async getSessionForUser(sessionId: string, userId: string): Promise<SessionDetails | null> {
+    const session = await this.getSession(sessionId);
+    return session && session.userId === userId ? session : null;
+  }
+
   async getSessionWithSummary(sessionId: string): Promise<{
     conversationSummary: string | null;
     summaryUpToMessageId: string | null;
