@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui";
 import { signIn, signUp } from "@/lib/auth-client";
+import { translateAuthError } from "@/lib/auth-errors";
 import { ROLE_HOME, type Role } from "@/lib/roles";
 
 type Mode = "signin" | "signup";
@@ -29,7 +30,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result.error) {
-      setError(result.error.message ?? "Une erreur est survenue.");
+      setError(translateAuthError(result.error));
       return;
     }
 

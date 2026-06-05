@@ -28,7 +28,7 @@ Le web ne partage **pas** ses composants avec le mobile (primitives RN ≠ DOM).
 - **`components/ui/`** : shadcn/ui uniquement (Button, Card…).
 - **`components/`** : composants applicatifs (`DashboardShell`, `LogoutButton`, `ThemeProvider`).
 - **`lib/`** : `auth-client.ts` (Better Auth), `roles.ts` (type `Role` + routing), `utils.ts` (`cn`).
-- **`proxy.ts`** : garde d'auth (convention Next.js 16, ex-`middleware`) — redirige vers `/login` si pas de session. Équivalent web de `Stack.Protected`.
+- **`proxy.ts`** : garde d'auth **role-aware** (convention Next.js 16, ex-`middleware`) — redirige vers `/login` sans session, et vers le home du rôle (`ROLE_HOME`) si le segment ne correspond pas au rôle de la session. Équivalent web de `Stack.Protected`.
 
 ## Auth (Better Auth — client séparé)
 
