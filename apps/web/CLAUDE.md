@@ -25,9 +25,9 @@ Le web ne partage **pas** ses composants avec le mobile (primitives RN ≠ DOM).
 - **`app/`** : App Router Next.js, routing par rôle via segments :
   - `app/login/` : connexion/inscription (email + mot de passe).
   - `app/parent/`, `app/student/`, `app/school/` : espaces par rôle, chacun avec son `layout.tsx` (= `DashboardShell`) + pages.
-- **`components/ui/`** : shadcn/ui uniquement (Button, Card…).
+- **UI** : composants shadcn/ui partagés via `@repo/ui` (Button, Card, `cn`…) — plus de `components/ui/` local.
 - **`components/`** : composants applicatifs (`DashboardShell`, `LogoutButton`, `ThemeProvider`).
-- **`lib/`** : `auth-client.ts` (Better Auth), `roles.ts` (type `Role` + routing), `utils.ts` (`cn`).
+- **`lib/`** : `auth-client.ts` (Better Auth), `auth-errors.ts` (traduction FR des erreurs), `roles.ts` (type `Role` + routing).
 - **`proxy.ts`** : garde d'auth **role-aware** (convention Next.js 16, ex-`middleware`) — redirige vers `/login` sans session, et vers le home du rôle (`ROLE_HOME`) si le segment ne correspond pas au rôle de la session. Équivalent web de `Stack.Protected`.
 
 ## Auth (Better Auth — client séparé)
@@ -41,7 +41,7 @@ Le serveur d'auth est **Elysia** (`apps/server`), pas Next.js. Le web est un **c
 
 ## Conventions
 
-- **JAMAIS** de composant UI custom → shadcn/ui (`@/components/ui/`).
+- **JAMAIS** de composant UI custom → `@repo/ui` (shadcn/ui partagé web + landing).
 - **JAMAIS** de CSS custom ni style inline → Tailwind + tokens `@repo/tokens`.
 - Pas de logique métier dans le front → tout passe par le serveur via `@repo/api`.
 - TypeScript strict, zéro `any`. React 19 (pas de `forwardRef`).
