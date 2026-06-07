@@ -12,7 +12,7 @@ Review the current branch against `main` for production readiness.
 
    - **TypeScript strict** — no `any`, no `@ts-ignore`, no unhandled `null`/`undefined`
    - **Security** — no secrets, no `.env` files committed, no SQL injection, no XSS vectors
-   - **API contracts** — changes in `packages/api/` or `packages/shared-types/` are backwards-compatible
+   - **API contracts** — changes in `packages/api/` are backwards-compatible
    - **Monorepo conventions** — imports use workspace packages, no circular dependencies, files under 400 lines
    - **DB migrations** — if `schema.ts` changed, drizzle SQL files are generated and committed, new columns are nullable
    - **TDD compliance** — tout fichier service/helper/validation modifie a un fichier `*.test.ts` correspondant. Les tests couvrent cas nominal + edge cases. Pas de test theater (mocks massifs, tests triviaux)
