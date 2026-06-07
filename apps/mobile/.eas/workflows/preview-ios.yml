@@ -4,10 +4,13 @@ name: Preview iOS (Smart Build)
 # It only rebuilds when native code changes, otherwise it just publishes an OTA update
 
 on:
-  push:
+  pull_request:
     branches:
-      - staging
-      - feature/*
+      - main
+    paths:
+      - apps/mobile/**
+      - packages/api/**
+      - packages/tokens/**
 
 jobs:
   fingerprint:
