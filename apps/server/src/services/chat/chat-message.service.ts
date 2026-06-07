@@ -213,3 +213,5 @@ export class ChatMessageService {
     return modelName ?? null;
   }
 }
+
+export const chatMessageService = new ChatMessageService();

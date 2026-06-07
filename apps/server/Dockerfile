@@ -33,7 +33,6 @@ FROM base AS deps
 # Monorepo workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/server/package.json ./apps/server/
-COPY packages/shared-types/package.json ./packages/shared-types/
 
 # Production deps only
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
@@ -50,7 +49,6 @@ ENV BUILD_DATE=${BUILD_DATE}
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/server/package.json ./apps/server/
-COPY packages/shared-types/package.json ./packages/shared-types/
 
 # Full install (dev + prod) for build
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
@@ -59,7 +57,6 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 # Sources
 COPY apps/server/src/ ./apps/server/src/
 COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./apps/server/
-COPY packages/shared-types/src/ ./packages/shared-types/src/
 COPY tsconfig.base.json ./
 
 WORKDIR /app/apps/server
@@ -79,7 +76,6 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/server/package.json ./apps/server/
-COPY packages/shared-types/package.json ./packages/shared-types/
 
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
@@ -87,7 +83,6 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 COPY --chown=tomai:tomai apps/server/src/ ./apps/server/src/
 COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
 COPY --chown=tomai:tomai apps/server/tsconfig*.json apps/server/drizzle.config*.ts apps/server/eslint.config.mjs ./apps/server/
-COPY --chown=tomai:tomai packages/shared-types/src/ ./packages/shared-types/src/
 COPY --chown=tomai:tomai tsconfig.base.json ./
 
 WORKDIR /app/apps/server
@@ -113,7 +108,6 @@ WORKDIR /app
 COPY --from=build --chown=tomai:tomai /app/node_modules ./node_modules
 COPY --from=build --chown=tomai:tomai /app/package.json ./
 COPY --from=build --chown=tomai:tomai /app/apps/server/package.json ./apps/server/
-COPY --from=build --chown=tomai:tomai /app/packages/shared-types/package.json ./packages/shared-types/
 COPY --from=build --chown=tomai:tomai /app/apps/server/dist ./apps/server/dist
 COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
 COPY --chown=tomai:tomai apps/server/docker-entrypoint.sh ./apps/server/docker-entrypoint.sh

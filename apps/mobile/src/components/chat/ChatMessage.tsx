@@ -221,14 +221,16 @@ function StaggeredDot({ delay, color }: { delay: number; color: string }) {
   const opacity = useSharedValue(0.3);
 
   useEffect(() => {
-    opacity.value = withDelay(
-      delay,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 400 }),
-          withTiming(0.3, { duration: 400 }),
+    opacity.set(
+      withDelay(
+        delay,
+        withRepeat(
+          withSequence(
+            withTiming(1, { duration: 400 }),
+            withTiming(0.3, { duration: 400 }),
+          ),
+          -1,
         ),
-        -1,
       ),
     );
   }, [delay, opacity]);

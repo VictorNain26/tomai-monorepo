@@ -1,6 +1,6 @@
 # Mobile Tom
 
-App Expo SDK 55 + React Native 0.83 + React 19.2. NativeWind v5 + React Native Reusables.
+App Expo SDK 56 + React Native 0.85 + React 19.2. NativeWind v5 + React Native Reusables.
 
 ## Workflow dev
 
@@ -26,7 +26,7 @@ pnpm test:coverage    # Couverture Jest
 ## CI/CD (EAS Workflows)
 
 ```bash
-pnpm workflow:preview:android     # Preview Android (auto sur push staging)
+pnpm workflow:preview:android     # Preview Android (auto sur PR vers main)
 pnpm workflow:preview:ios         # Preview iOS
 pnpm workflow:prod:android        # Production Android + submit Play Store
 pnpm workflow:prod:ios            # Production iOS + submit App Store
@@ -103,4 +103,4 @@ Backend Elysia à `apps/server`. **Eden Treaty** via `@repo/api` (workspace pack
 
 ## Sources officielles
 
-[Expo SDK 55](https://docs.expo.dev), [Expo Router v7](https://docs.expo.dev/router/introduction/), [React Native Reusables](https://rnr-docs.vercel.app), [NativeWind v5](https://www.nativewind.dev/v5), [TanStack Query v5](https://tanstack.com/query/v5), [Better Auth](https://better-auth.com), [Maestro](https://maestro.mobile.dev)
+[Expo SDK 56](https://docs.expo.dev), [Expo Router v7](https://docs.expo.dev/router/introduction/), [React Native Reusables](https://rnr-docs.vercel.app), [NativeWind v5](https://www.nativewind.dev/v5), [TanStack Query v5](https://tanstack.com/query/v5), [Better Auth](https://better-auth.com), [Maestro](https://maestro.mobile.dev)

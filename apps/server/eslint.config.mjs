@@ -26,7 +26,6 @@ export default [
       'build.ts',
       'migrations/**/*.sql',
       'patches/**/*',
-      'shared-types/**',
       'src/scripts/**/*'            // Scripts de maintenance (non-runtime)
     ]
   },

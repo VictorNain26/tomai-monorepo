@@ -2,10 +2,10 @@ name: AI Service
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main]
     paths: ['apps/ai-service/**']
   pull_request:
-    branches: [main, staging]
+    branches: [main]
     paths: ['apps/ai-service/**']
 
 permissions:
