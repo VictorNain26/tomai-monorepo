@@ -146,12 +146,9 @@ mock.module('../middleware/auth.middleware', () => ({
 }));
 
 // Services used by apiRoutes
-mock.module('../services/chat.service', () => ({
-  chatService: {
+mock.module('../services/chat/chat-session.service', () => ({
+  chatSessionService: {
     getOrCreateActiveSession: mock(async () => 'session-001'),
-    getSessionHistory: mock(async () => [
-      { id: 'msg-1', role: 'user', content: 'Hello', createdAt: new Date(), aiModel: null, attachedFile: null },
-    ]),
     deleteSession: mock(async () => {}),
     getUserSessions: mock(async () => []),
     getSession: mock(async (sessionId: string) => ({
@@ -165,8 +162,16 @@ mock.module('../services/chat.service', () => ({
       questionLevelsAvg: null,
       conceptsCovered: null,
     })),
-    getMessageById: mock(async () => null),
     resetSession: mock(async () => 'session-new'),
+  },
+}));
+
+mock.module('../services/chat/chat-message.service', () => ({
+  chatMessageService: {
+    getSessionHistory: mock(async () => [
+      { id: 'msg-1', role: 'user', content: 'Hello', createdAt: new Date(), aiModel: null, attachedFile: null },
+    ]),
+    getMessageById: mock(async () => null),
   },
 }));
 

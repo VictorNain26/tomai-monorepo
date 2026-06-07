@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
-import { chatService } from '../../services/chat.service';
+import { chatSessionService } from '../../services/chat/chat-session.service';
+import { chatMessageService } from '../../services/chat/chat-message.service';
 import { AppError } from '../../lib/errors';
 import { logger } from '../../lib/observability';
 
@@ -17,7 +18,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       const limit = Math.min(Number(query?.limit) || 20, 50);
       const offset = Math.max(Number(query?.offset) || 0, 0);
 
-      const conversations = await chatService.listConversations(user.id, { limit, offset });
+      const conversations = await chatSessionService.listConversations(user.id, { limit, offset });
 
       return {
         success: true,
@@ -46,7 +47,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
 
   .get('/chat/sessions/latest', async ({ user }) => {
     try {
-      const sessions = await chatService.getUserSessions(user.id, 1);
+      const sessions = await chatSessionService.getUserSessions(user.id, 1);
       const latestSession = sessions[0] ?? null;
 
       return {
@@ -72,7 +73,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
 
   .post('/chat/session', async ({ user }) => {
     try {
-      const sessionId = await chatService.getOrCreateActiveSession(user.id);
+      const sessionId = await chatSessionService.getOrCreateActiveSession(user.id);
       return { success: true, sessionId };
     } catch (_error) {
       logger.error('Session retrieval failed', {
@@ -91,7 +92,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
    */
   .post('/chat/session/new', async ({ user }) => {
     try {
-      const sessionId = await chatService.createSession(user.id, 'général');
+      const sessionId = await chatSessionService.createSession(user.id, 'général');
       return { success: true, sessionId };
     } catch (_error) {
       logger.error('Session creation failed', {
@@ -106,7 +107,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
 
   .post('/chat/session/:id/reset', async ({ params, user }) => {
     try {
-      const newSessionId = await chatService.resetSession(params.id, user.id);
+      const newSessionId = await chatSessionService.resetSession(params.id, user.id);
       return { success: true, sessionId: newSessionId };
     } catch (_error) {
       logger.error('Session reset failed', {
@@ -122,7 +123,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
 
   .delete('/chat/session/:id', async ({ params, user }) => {
     try {
-      await chatService.deleteSession(params.id, user.id);
+      await chatSessionService.deleteSession(params.id, user.id);
       return { success: true, message: 'Session deleted successfully' };
     } catch (_error) {
       logger.error('Session deletion failed', {
@@ -137,12 +138,12 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
 
   .get('/chat/session/:id/history', async ({ params, user, status }) => {
     try {
-      const session = await chatService.getSessionForUser(params.id, user.id);
+      const session = await chatSessionService.getSessionForUser(params.id, user.id);
       if (!session) {
         return status(403, { error: 'Session not found or access denied' });
       }
 
-      const messages = await chatService.getSessionHistory(params.id);
+      const messages = await chatMessageService.getSessionHistory(params.id);
 
       // Detect orphan: last message is user with no assistant reply (crash recovery)
       const lastMessage = messages[messages.length - 1];
@@ -173,7 +174,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
 
   .get('/chat/message/:id', async ({ params, user }) => {
     try {
-      const message = await chatService.getMessageById(params.id, user.id);
+      const message = await chatMessageService.getMessageById(params.id, user.id);
 
       if (!message) {
         throw new AppError('SESSION_NOT_FOUND', 'Message not found');

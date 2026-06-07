@@ -9,7 +9,8 @@
  * 5. Post-processing (tokens, summarization)
  */
 
-import { chatService } from '../chat.service.js';
+import { chatSessionService } from './chat-session.service.js';
+import { chatMessageService } from './chat-message.service.js';
 import { sessionFilesRepository } from '../../db/repositories/index.js';
 import { fileContextService } from './file-context.service.js';
 import { mistralChatService } from './mistral-chat.service.js';
@@ -122,7 +123,7 @@ class ChatOrchestrationService {
 
     // Phase 3: Persist user message BEFORE streaming.
     // Skip session re-check: resolveSession above already verified ownership.
-    await chatService.saveMessage(
+    await chatMessageService.saveMessage(
       sessionCtx.sessionId,
       'user',
       request.content,
@@ -214,18 +215,18 @@ class ChatOrchestrationService {
     let sessionId: string;
 
     if (request.sessionId?.trim()) {
-      const session = await chatService.getSession(request.sessionId);
+      const session = await chatSessionService.getSession(request.sessionId);
       if (!session || session.userId !== request.userId) {
         throw new ChatOrchestrationError('Session not found or access denied', 403);
       }
       sessionId = request.sessionId;
     } else {
-      sessionId = await chatService.getOrCreateActiveSession(request.userId);
+      sessionId = await chatSessionService.getOrCreateActiveSession(request.userId);
     }
 
-    const sessionSummary = await chatService.getSessionWithSummary(sessionId);
+    const sessionSummary = await chatSessionService.getSessionWithSummary(sessionId);
 
-    const sessionHistory = await chatService.getSessionHistory(sessionId, {
+    const sessionHistory = await chatMessageService.getSessionHistory(sessionId, {
       limit: 20,
       afterMessageId: sessionSummary?.summaryUpToMessageId ?? undefined,
     });
@@ -287,7 +288,7 @@ class ChatOrchestrationService {
     const { sessionId, userId, userContent, fullContent, chunk, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
     const tokensUsed = chunk.usage?.totalTokens ?? 0;
 
-    await chatService.saveMessage(sessionId, 'assistant', fullContent, {
+    await chatMessageService.saveMessage(sessionId, 'assistant', fullContent, {
       aiModel: chunk.model,
       tokensUsed,
       responseTimeMs: Date.now() - startTime,
