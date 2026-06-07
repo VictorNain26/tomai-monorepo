@@ -27,13 +27,15 @@ function Skeleton({
   const opacity = useSharedValue(0.5);
 
   useEffect(() => {
-    opacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 750 }),
-        withTiming(0.5, { duration: 750 })
-      ),
-      -1,
-      false
+    opacity.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 750 }),
+          withTiming(0.5, { duration: 750 })
+        ),
+        -1,
+        false
+      )
     );
   }, [opacity]);
 
