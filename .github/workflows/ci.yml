@@ -5,14 +5,14 @@ name: CI
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main]
     paths-ignore:
       - 'docs/**/*.md'
       - 'README.md'
       - '.vscode/**'
       - 'LICENSE'
   pull_request:
-    branches: [main, staging]
+    branches: [main]
     paths-ignore:
       - 'docs/**/*.md'
       - 'README.md'
