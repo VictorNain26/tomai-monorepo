@@ -1,110 +1,65 @@
 # Tom Monorepo
 
-Plateforme de tutorat IA adaptatif pour eleves francais (CP-Terminale). Pedagogie socratique, programmes Eduscol, integration Pronote.
+Plateforme de tutorat IA adaptatif pour élèves français — pédagogie socratique, intégration Pronote.
 
 ## Quick Start
 
 ```bash
-# 1. Installation
-pnpm install
-
-# 2. Backend (Docker requis pour PostgreSQL)
-cd apps/server && docker compose up -d && cd ../..
-
-# 3. Developpement
-pnpm dev
-# → Landing: http://localhost:3001
-# → Server: http://localhost:3000
-# → API docs: http://localhost:3000/swagger (dev only)
-
-# Mobile (separement)
-pnpm dev:mobile
+pnpm install                                          # Node 22+, pnpm 11+
+cd apps/server && docker compose up -d && cd ../..    # PostgreSQL 16 pgvector + backend
+pnpm dev                                              # Landing :3001 + Web :3002 + Server :3000
+pnpm dev:mobile                                       # Expo mobile (8081)
 ```
 
-## Prerequisites
-
-- **pnpm** 10.28+
-- **Node.js** 22+ (via Bun 1.3 pour le server)
-- **Docker** (PostgreSQL 16 + pgvector)
+API docs (dev) : http://localhost:3000/swagger
 
 ## Structure
 
 ```
 apps/
-├── landing/       # Next.js 16 - Site vitrine SEO (port 3001)
-├── server/        # Bun + Elysia.js - Backend API (port 3000)
-└── mobile/        # Expo SDK 55 - App iOS/Android (port 8081)
+├── server/      # Bun + Elysia.js — API backend (port 3000)
+├── web/         # Next.js 16 — produit web role-aware (port 3002)
+├── landing/     # Next.js 16 — site vitrine SEO (port 3001)
+├── mobile/      # Expo SDK 56 — app iOS/Android (port 8081)
+└── ai-service/  # Python FastAPI — embeddings BGE-M3 + reranker (RAG)
 
 packages/
-├── api/           # @repo/api - Client Eden Treaty + TanStack Query
-├── shared-types/  # @repo/shared-types - Types partages
-└── eslint-config/ # @repo/eslint-config - Configs ESLint
-```
-
-## Commands
-
-```bash
-# Dev
-pnpm dev                # Landing + Server
-pnpm dev:landing        # Landing seul
-pnpm dev:server         # Server seul
-pnpm dev:mobile         # Expo mobile
-
-# Validation
-pnpm typecheck          # TypeScript strict
-pnpm lint               # ESLint zero warnings
-pnpm validate           # typecheck + lint
-
-# Build
-pnpm build              # Production (toutes apps)
-
-# Database
-pnpm db:push            # Dev: sync schema → DB
-pnpm db:generate        # Prod: generer migration SQL
-pnpm db:studio          # Drizzle Studio UI
+├── api/             # Client Eden Treaty typé (contrat serveur → clients)
+├── ui/              # Composants shadcn partagés (web + landing)
+├── tokens/          # Design tokens Tailwind v4 partagés
+└── eslint-config/   # Config ESLint partagée
 ```
 
 ## Stack
 
 | Couche | Technologies |
 |--------|-------------|
-| Monorepo | Turborepo 2.7, pnpm 10.28, TypeScript 5.9 strict |
 | Backend | Bun 1.3, Elysia.js 1.4, PostgreSQL 16 pgvector, Drizzle ORM |
-| Landing | Next.js 16, TailwindCSS 4, Framer Motion |
-| Mobile | Expo SDK 55, React Native 0.83, NativeWind 5, React Native Reusables |
-| Auth | Better Auth + Google OAuth |
-| AI | Gemini 2.5 Flash (chat), Mistral (embeddings 1024D), Qdrant Cloud (RAG) |
-| Voix | Gladia (STT), ElevenLabs (TTS) |
-| Paiements | Stripe (web) + RevenueCat (mobile IAP) |
-| Stockage | Scaleway Object Storage (RGPD France, fr-par) |
+| Web / Landing | Next.js 16, TailwindCSS 4, shadcn/ui |
+| Mobile | Expo SDK 56, React Native 0.85, NativeWind v5 |
+| Auth | Better Auth 1.6 + Google OAuth |
+| AI | Mistral (chat, vision, OCR, TTS Voxtral), Gladia (STT) — stack 100 % EU |
+| RAG | Qdrant Cloud + BGE-M3 hybrid (via `apps/ai-service`) + rerank cross-encoder |
+| Paiements | RevenueCat (mobile IAP, source unique de facturation) |
+| Stockage | Scaleway S3 (RGPD, fr-par) |
+| Deploy | Vercel (landing + web), Koyeb (server + ai-service), EAS (mobile) |
 
-## Git Workflow
+## Commandes
 
+```bash
+pnpm typecheck && pnpm lint   # Validation (obligatoire avant commit)
+pnpm test                     # Tests (server: Bun, mobile: Jest)
+pnpm build                    # Build production
+pnpm db:generate              # Migrations Drizzle (prod)
+pnpm db:push                  # Sync schéma (dev local uniquement)
 ```
-staging (push direct OK, CI auto)
-    └──► PR (merge commit) ──► main (production)
-```
 
-- JAMAIS de push direct sur `main`
-- JAMAIS de squash merge (desynchronise les branches)
+## Git workflow
 
-## CI/CD
-
-| Workflow | Actions |
-|----------|---------|
-| `ci.yml` | typecheck, lint, test, build, migration sync |
-| `security.yml` | Detection secrets (gitleaks) |
-| `auto-merge.yml` | Auto-merge Dependabot patch/minor |
-
-| App | Plateforme | Deploiement |
-|-----|-----------|-------------|
-| Landing | Vercel | Auto sur push |
-| Server | Koyeb | Auto sur push main |
-| Mobile | EAS Build | Workflows manuels |
+- `main` est la seule branche permanente — jamais de push direct, toujours une PR
+- Merge commit uniquement (jamais de squash)
 
 ## Documentation
 
-- [apps/server/README.md](./apps/server/README.md) - Backend API
-- [apps/landing/README.md](./apps/landing/README.md) - Landing page
-- [apps/mobile/README.md](./apps/mobile/README.md) - App mobile Expo
-- [docs/AGENT-IA-ROADMAP.md](./docs/AGENT-IA-ROADMAP.md) - Roadmap agent IA
+Source de vérité : les `CLAUDE.md` de chaque app.
+[Racine](./CLAUDE.md) · [Server](./apps/server/CLAUDE.md) · [Web](./apps/web/CLAUDE.md) · [Mobile](./apps/mobile/CLAUDE.md) · [AI service](./apps/ai-service/README.md)

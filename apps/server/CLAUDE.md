@@ -68,7 +68,7 @@ Le type `App` (`typeof app`) est l'arbre de routes consommé par Eden Treaty cô
   Curriculum index dans repo séparé `tomai-curriculum/` (voir son CLAUDE.md).
 - **Paiement** : RevenueCat uniquement (mobile IAP, source unique de facturation). Webhooks protégés par secret partagé `REVENUECAT_WEBHOOK_AUTH` (≥32 chars, comparaison timing-safe)
 - **Storage** : Scaleway S3 (presigned URLs, RGPD fr-par)
-- **Pronote** : Pawnote 1.6 + AES-256-GCM (PBKDF2 600K iterations — salt aléatoire par enregistrement à implémenter SP1)
+- **Pronote** : device-first — Pawnote tourne côté mobile (`apps/mobile`), le serveur ne stocke que les credentials chiffrés AES-256-GCM (PBKDF2 600K iterations, salt aléatoire par enregistrement)
 - **Observabilité** : OpenTelemetry (GenAI semconv pour les appels Mistral, `db.*` pour Qdrant). Init dans `src/index.ts` via `setupOtel()` avant tout import applicatif. Console exporter en dev, OTLP HTTP en prod (`OTEL_EXPORTER_OTLP_ENDPOINT`). Sentry à ajouter quand on en aura le besoin métier.
 
 ## Couche AI — pattern centralisé

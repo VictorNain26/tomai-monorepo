@@ -129,5 +129,5 @@ curl -X POST http://localhost:8000/embed \
 Le **premier appel** déclenche le téléchargement HuggingFace (~3.5 GB).
 Cache dans `~/.cache/huggingface/` (override via `HF_HOME`).
 
-Alternative : `docker compose up ai-service` depuis la racine du monorepo
-(voir `docker-compose.yml` racine).
+Alternative : `docker compose up ai-service` depuis `apps/server/`
+(voir `apps/server/docker-compose.yml`, qui définit le service).
