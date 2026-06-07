@@ -142,6 +142,10 @@ function parseEnv(): EnvType {
       prodChecks.push('PRONOTE_ENCRYPTION_KEY is required (production)');
     }
 
+    if (result.data.AI_SERVICE_URL && !result.data.AI_SERVICE_TOKEN) {
+      prodChecks.push('AI_SERVICE_TOKEN is required when AI_SERVICE_URL is set (production)');
+    }
+
     if (prodChecks.length > 0) {
       throw new Error(`Production validation failed:\n  ${prodChecks.join('\n  ')}`);
     }
