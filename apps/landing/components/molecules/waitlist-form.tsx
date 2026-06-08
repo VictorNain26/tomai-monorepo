@@ -23,8 +23,12 @@ export function WaitlistForm({
 
   if (status === "success") {
     return (
-      <div className={cn("flex items-center gap-2 text-green-600 dark:text-green-400 font-medium", className)}>
-        <CheckCircle2 className="h-5 w-5" />
+      <div
+        role="status"
+        aria-live="polite"
+        className={cn("flex items-center gap-2 text-success font-medium", className)}
+      >
+        <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
         <span>Vous serez notifié du lancement !</span>
       </div>
     );
@@ -59,27 +63,37 @@ export function WaitlistForm({
   return (
     <form onSubmit={handleSubmit} className={cn("flex flex-col gap-2", className)}>
       <div className="flex flex-col sm:flex-row gap-2">
+        <label htmlFor="waitlist-email" className="sr-only">
+          Adresse e-mail
+        </label>
         <input
+          id="waitlist-email"
           type="email"
           required
           placeholder="votre@email.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          aria-describedby={status === "error" ? "waitlist-error" : undefined}
           className="h-12 flex-1 rounded-xl border border-border bg-background px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         />
-        <Button type="submit" size="lg" disabled={isPending} className="group">
+        <Button type="submit" size="lg" disabled={isPending} aria-busy={isPending} className="group">
           {isPending ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+              <span className="sr-only">Chargement…</span>
+            </>
           ) : (
             <>
               {buttonText}
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
             </>
           )}
         </Button>
       </div>
       {status === "error" && (
-        <p className="text-sm text-red-500">{errorMsg}</p>
+        <p id="waitlist-error" role="alert" className="text-sm text-destructive">
+          {errorMsg}
+        </p>
       )}
     </form>
   );

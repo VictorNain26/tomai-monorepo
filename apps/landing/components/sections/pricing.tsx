@@ -46,7 +46,7 @@ export function Pricing() {
             <ul className="space-y-4 mb-8">
               {FREE_FEATURES.map((feature, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <Check className="h-5 w-5 shrink-0 text-green-500 mt-0.5" />
+                  <Check className="h-5 w-5 shrink-0 text-success mt-0.5" />
                   <span className="text-foreground">{feature}</span>
                 </li>
               ))}
@@ -93,7 +93,7 @@ export function Pricing() {
             <ul className="space-y-4 mb-8">
               {PREMIUM_FEATURES.map((feature, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <Check className="h-5 w-5 shrink-0 text-green-500 mt-0.5" />
+                  <Check className="h-5 w-5 shrink-0 text-success mt-0.5" />
                   <span className="text-foreground font-medium">{feature}</span>
                 </li>
               ))}
@@ -108,7 +108,7 @@ export function Pricing() {
 
             {/* Guarantee badge */}
             <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
-              <ShieldCheck className="h-4 w-4 text-green-500" />
+              <ShieldCheck className="h-4 w-4 text-success" />
               <span>Satisfait ou remboursé</span>
             </div>
           </div>

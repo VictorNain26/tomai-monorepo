@@ -25,8 +25,14 @@
   --color-card-foreground: hsl(210 40% 98%);
   --color-popover: hsl(222 47% 11%);
   --color-popover-foreground: hsl(210 40% 98%);
-  --color-destructive: hsl(0 63% 31%);
-  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-destructive: #F87171;
+  --color-destructive-foreground: #1C1917;
+  --color-success: #34D399;
+  --color-success-foreground: #1C1917;
+  --color-warning: #FBBF24;
+  --color-warning-foreground: #1C1917;
+  --color-info: #38BDF8;
+  --color-info-foreground: #1C1917;
   --color-violet: hsl(263 70% 60%);
   --color-violet-foreground: hsl(0 0% 100%);
   --color-border: hsl(215 28% 17%); /* #1E293B */
