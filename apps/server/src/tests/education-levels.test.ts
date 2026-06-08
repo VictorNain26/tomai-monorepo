@@ -12,6 +12,7 @@ describe('education-levels', () => {
 
   it('isEducationLevel accepts a valid level', () => {
     expect(isEducationLevel('terminale')).toBe(true);
+    expect(isEducationLevel('cp')).toBe(true);
   });
 
   it('isEducationLevel rejects an unknown string', () => {
