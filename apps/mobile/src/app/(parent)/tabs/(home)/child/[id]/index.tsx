@@ -140,17 +140,17 @@ export default function ChildDetailScreen() {
           <View className="items-center">
             <Avatar fallback={fullName} size="xl" className="mb-3" />
             <Text className="text-xl font-bold text-white">{fullName}</Text>
-            <Text className="mt-0.5 text-sm text-blue-200">{levelLabel}</Text>
+            <Text className="mt-0.5 text-sm text-white/80">{levelLabel}</Text>
             <View className="mt-2 flex-row items-center gap-1 rounded-full bg-white/20 px-3 py-1">
               {isMapped ? (
                 <>
                   <CheckCircle2 color="#86efac" size={14} />
-                  <Text className="text-xs font-medium text-green-200">Pronote</Text>
+                  <Text className="text-xs font-medium text-white">Pronote</Text>
                 </>
               ) : (
                 <>
                   <Link2 color="#fde68a" size={14} />
-                  <Text className="text-xs text-yellow-200">Non connecte</Text>
+                  <Text className="text-xs text-white">Non connecte</Text>
                 </>
               )}
             </View>
