@@ -8,7 +8,7 @@
  * - Simon Willison — Lethal Trifecta / Prompt injection
  */
 
-export const SAFETY_PROMPT_VERSION = '2026-04-21';
+export const SAFETY_PROMPT_VERSION = '2026-06-08';
 
 /**
  * Génère les guardrails de sécurité pour le tuteur

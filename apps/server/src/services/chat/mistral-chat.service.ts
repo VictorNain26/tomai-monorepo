@@ -55,7 +55,7 @@ import {
 const MODEL = 'mistral-medium-latest';
 const TEMPERATURE = 0.6;
 const MAX_TOKENS = 1024;
-const PROMPT_CACHE_VERSION = '2026-05-18';
+const PROMPT_CACHE_VERSION = '2026-06-08';
 
 class MistralChatService {
   private buildSystemPromptForChat(params: {
@@ -146,12 +146,13 @@ class MistralChatService {
 
       const userContent = this.buildUserContent(params.content, params.files);
       const pronoteBlock = wrapPronoteData(params.pronoteContext);
+      const historyMessages = this.buildHistoryMessages(params.conversationHistory, params.conversationSummary);
 
-      // Conversation = system + history + current user turn. The agentic loop
+      // Conversation = system + history + optional <pronote_data> block + current user turn. The agentic loop
       // will append assistant + tool messages as it iterates.
       const messages: MistralMessage[] = [
         { role: 'system' as const, content: systemPrompt },
-        ...this.buildHistoryMessages(params.conversationHistory, params.conversationSummary),
+        ...historyMessages,
         ...(pronoteBlock ? [{ role: 'user' as const, content: pronoteBlock }] : []),
         { role: 'user' as const, content: userContent },
       ];
@@ -172,7 +173,7 @@ class MistralChatService {
         sessionId: params.sessionId,
         subject: params.subject,
         schoolLevel: params.schoolLevel,
-        historyLength: messages.length - 2,
+        historyLength: historyMessages.length,
         filesCount: params.files?.length ?? 0,
         reasoningEffort,
         operation: 'mistral-chat:agent-start',
