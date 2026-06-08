@@ -42,13 +42,13 @@ import type {
   StreamGenerationParams,
   ChatStreamChunk,
   AttachedFile,
-  PronoteContext,
 } from './chat-streaming-types.js';
 import {
   MAX_TOOL_ITERATIONS,
   CHAT_STREAM_SETUP_TIMEOUT_MS,
   CHAT_STREAM_CHUNK_TIMEOUT_MS,
   wrapUserMessage,
+  wrapPronoteData,
   getToolStatusLabel,
 } from './mistral-helpers.js';
 
@@ -64,7 +64,6 @@ class MistralChatService {
     firstName?: string;
     cognitiveProfileSummary?: string | null;
     learningContext?: string | null;
-    pronoteContext?: PronoteContext;
     intentReinforcement?: string | null;
   }): string {
     const levelText = getLevelText(params.level);
@@ -81,31 +80,11 @@ class MistralChatService {
 
     const learningSection = params.learningContext ? `\n\n${params.learningContext}` : '';
 
-    const pronoteSection = this.buildPronoteSection(params.pronoteContext);
-
     // Turn-specific reinforcement goes LAST so it takes precedence over
     // the more general safety guidance (recency bias in instruction-following).
     const intentSection = params.intentReinforcement ? `\n\n${params.intentReinforcement}` : '';
 
-    return basePrompt + profileSection + learningSection + pronoteSection + intentSection;
-  }
-
-  private buildPronoteSection(pronoteContext?: PronoteContext): string {
-    if (!pronoteContext) return '';
-
-    const parts: string[] = [];
-    if (pronoteContext.homework?.length) {
-      parts.push(`DEVOIRS DE LA SEMAINE:\n${JSON.stringify(pronoteContext.homework)}`);
-    }
-    if (pronoteContext.recentGrades?.length) {
-      parts.push(`DERNIERES NOTES:\n${JSON.stringify(pronoteContext.recentGrades)}`);
-    }
-    if (pronoteContext.todayTimetable?.length) {
-      parts.push(`EDT DU JOUR:\n${JSON.stringify(pronoteContext.todayTimetable)}`);
-    }
-
-    if (parts.length === 0) return '';
-    return `\n\n## DONNEES PRONOTE (contexte eleve)\n${parts.join('\n\n')}`;
+    return basePrompt + profileSection + learningSection + intentSection;
   }
 
   private buildHistoryMessages(
@@ -162,17 +141,18 @@ class MistralChatService {
         firstName: params.firstName,
         cognitiveProfileSummary: params.cognitiveProfileSummary,
         learningContext: params.learningContext,
-        pronoteContext: params.pronoteContext,
         intentReinforcement: params.intentReinforcement,
       });
 
       const userContent = this.buildUserContent(params.content, params.files);
+      const pronoteBlock = wrapPronoteData(params.pronoteContext);
 
       // Conversation = system + history + current user turn. The agentic loop
       // will append assistant + tool messages as it iterates.
       const messages: MistralMessage[] = [
         { role: 'system' as const, content: systemPrompt },
         ...this.buildHistoryMessages(params.conversationHistory, params.conversationSummary),
+        ...(pronoteBlock ? [{ role: 'user' as const, content: pronoteBlock }] : []),
         { role: 'user' as const, content: userContent },
       ];
 
