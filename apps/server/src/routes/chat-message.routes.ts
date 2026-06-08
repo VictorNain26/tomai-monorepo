@@ -9,6 +9,7 @@
 
 import { Elysia, t, sse } from 'elysia';
 import { authMacro } from '../lib/auth-macro.js';
+import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 import { chatOrchestrationService, ChatOrchestrationError } from '../services/chat/chat-orchestration.service.js';
 import { tokenQuotaService } from '../services/token-quota.service.js';
 import { AppError, toErrorResponse } from '../lib/errors.js';
@@ -28,6 +29,7 @@ function sanitizePrompt(text: string): string {
 
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
   .use(authMacro)
+  .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.ai))
   .guard({ auth: true })
   .post('/stream', async function* ({ body, user, set, store }) {
     const requestId = (store as { requestId?: string }).requestId;
