@@ -20,8 +20,9 @@ function mockSessionResponse(body: unknown, ok = true) {
 
 describe('proxy (role-aware auth guard)', () => {
   beforeEach(() => {
+    // proxy.ts captures SERVER_URL at module load and fetch is stubbed here,
+    // so the target URL is irrelevant to these tests — no env setup needed.
     vi.unstubAllGlobals();
-    process.env.NEXT_PUBLIC_SERVER_URL = 'http://localhost:3000';
   });
 
   it('redirects to /login when there is no session', async () => {

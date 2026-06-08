@@ -17,6 +17,10 @@ const ragCredsPresent = Boolean(
   process.env.AI_SERVICE_URL
 );
 
+if (!ragCredsPresent) {
+  console.warn('[rag.test] QDRANT_URL / QDRANT_API_KEY / AI_SERVICE_URL absent — RAG integration suite skipped');
+}
+
 // Queries de test avec réponses attendues (basé sur dataset réel)
 const TEST_QUERIES = [
   {
