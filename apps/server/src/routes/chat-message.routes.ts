@@ -9,12 +9,13 @@
 
 import { Elysia, t, sse } from 'elysia';
 import { authMacro } from '../lib/auth-macro.js';
+import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 import { chatOrchestrationService, ChatOrchestrationError } from '../services/chat/chat-orchestration.service.js';
 import { tokenQuotaService } from '../services/token-quota.service.js';
 import { AppError, toErrorResponse } from '../lib/errors.js';
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
-import type { EducationLevelType } from '../types/index.js';
+import { EDUCATION_LEVELS, isEducationLevel } from '../lib/education-levels.js';
 
 // Track active SSE connections per user
 const activeSSEConnections = new Map<string, number>();
@@ -28,6 +29,7 @@ function sanitizePrompt(text: string): string {
 
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
   .use(authMacro)
+  .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.ai))
   .guard({ auth: true })
   .post('/stream', async function* ({ body, user, set, store }) {
     const requestId = (store as { requestId?: string }).requestId;
@@ -81,7 +83,8 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         content: safeContent,
         sessionId: data.sessionId,
         subject: data.subject,
-        schoolLevel: (data.schoolLevel ?? user.schoolLevel) as EducationLevelType,
+        schoolLevel: data.schoolLevel
+          ?? (isEducationLevel(user.schoolLevel) ? user.schoolLevel : 'sixieme'),
         firstName: data.firstName ?? user.firstName ?? undefined,
         fileIds,
         userRole: user.role === 'parent' ? 'parent' : 'student',
@@ -141,11 +144,10 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
           description: 'Session UUID'
         })),
-        schoolLevel: t.Optional(t.String({
-          minLength: 2,
-          maxLength: 20,
-          description: 'Student school level'
-        })),
+        schoolLevel: t.Optional(t.Union(
+          [...EDUCATION_LEVELS.map((level) => t.Literal(level))],
+          { description: 'Student school level (CP → terminale)' }
+        )),
         firstName: t.Optional(t.String({
           minLength: 1,
           maxLength: 50,

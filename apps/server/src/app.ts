@@ -236,7 +236,6 @@ const app = new Elysia({ name: 'tomai-server' })
         status: 'healthy',
         model,
         latencyMs,
-        responsePreview: response.substring(0, 50),
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
