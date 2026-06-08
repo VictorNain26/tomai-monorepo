@@ -49,21 +49,20 @@ import {
   CHAT_STREAM_CHUNK_TIMEOUT_MS,
   wrapUserMessage,
   wrapPronoteData,
+  wrapStudentContext,
   getToolStatusLabel,
 } from './mistral-helpers.js';
 
 const MODEL = 'mistral-medium-latest';
 const TEMPERATURE = 0.6;
 const MAX_TOKENS = 1024;
-const PROMPT_CACHE_VERSION = '2026-06-08';
+const PROMPT_CACHE_VERSION = '2026-06-08b';
 
 class MistralChatService {
   private buildSystemPromptForChat(params: {
     level: EducationLevelType;
     subject?: string;
     firstName?: string;
-    cognitiveProfileSummary?: string | null;
-    learningContext?: string | null;
     intentReinforcement?: string | null;
   }): string {
     const levelText = getLevelText(params.level);
@@ -74,17 +73,11 @@ class MistralChatService {
       firstName: params.firstName,
     });
 
-    const profileSection = params.cognitiveProfileSummary
-      ? `\n\n## PROFIL DE L'ÉLÈVE\n${params.cognitiveProfileSummary}`
-      : '';
-
-    const learningSection = params.learningContext ? `\n\n${params.learningContext}` : '';
-
     // Turn-specific reinforcement goes LAST so it takes precedence over
     // the more general safety guidance (recency bias in instruction-following).
     const intentSection = params.intentReinforcement ? `\n\n${params.intentReinforcement}` : '';
 
-    return basePrompt + profileSection + learningSection + intentSection;
+    return basePrompt + intentSection;
   }
 
   private buildHistoryMessages(
@@ -139,20 +132,19 @@ class MistralChatService {
         level: params.schoolLevel,
         subject: params.subject,
         firstName: params.firstName,
-        cognitiveProfileSummary: params.cognitiveProfileSummary,
-        learningContext: params.learningContext,
         intentReinforcement: params.intentReinforcement,
       });
 
       const userContent = this.buildUserContent(params.content, params.files);
       const pronoteBlock = wrapPronoteData(params.pronoteContext);
+      const studentContextBlock = wrapStudentContext(params.cognitiveProfileSummary, params.learningContext);
       const historyMessages = this.buildHistoryMessages(params.conversationHistory, params.conversationSummary);
 
-      // Conversation = system + history + optional <pronote_data> block + current user turn. The agentic loop
-      // will append assistant + tool messages as it iterates.
+      // The agentic loop appends assistant + tool messages to this array as it iterates.
       const messages: MistralMessage[] = [
         { role: 'system' as const, content: systemPrompt },
         ...historyMessages,
+        ...(studentContextBlock ? [{ role: 'user' as const, content: studentContextBlock }] : []),
         ...(pronoteBlock ? [{ role: 'user' as const, content: pronoteBlock }] : []),
         { role: 'user' as const, content: userContent },
       ];

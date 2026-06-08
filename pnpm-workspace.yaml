@@ -83,3 +83,7 @@ overrides:
   underscore: '>=1.13.8'
   '@tootallnate/once': '>=3.0.1'
   lodash: '>=4.17.23'
+  # CVE fixes for transitive deps (GitHub Dependabot alerts). Drop once parents bump.
+  uuid: '>=11.1.1'
+  postcss: '>=8.5.10'
+  brace-expansion: '>=5.0.6'

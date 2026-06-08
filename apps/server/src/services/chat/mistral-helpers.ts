@@ -70,6 +70,32 @@ export function wrapPronoteData(pronoteContext?: PronoteContext): string | null 
   return `<pronote_data>\n${body}\n</pronote_data>`;
 }
 
+/**
+ * Wrap the student's cognitive profile + revision context as a delimited
+ * user-turn block. The cognitive profile contains free-text observations the
+ * model extracted from the student's own past messages, so it is untrusted —
+ * it must never sit in the system prompt where it could read as an
+ * instruction. Returns null when there is nothing to inject.
+ */
+export function wrapStudentContext(
+  cognitiveProfileSummary?: string | null,
+  learningContext?: string | null,
+): string | null {
+  const parts: string[] = [];
+  if (cognitiveProfileSummary) {
+    parts.push(`## PROFIL DE L'ÉLÈVE\n${cognitiveProfileSummary}`);
+  }
+  if (learningContext) {
+    parts.push(learningContext);
+  }
+  if (parts.length === 0) return null;
+
+  // Strip any literal delimiter tokens so a forged observation cannot break
+  // out of the fence and have trailing text read as outside-the-block input.
+  const body = parts.join('\n\n').replace(/<\/?student_context>/gi, '');
+  return `<student_context>\n${body}\n</student_context>`;
+}
+
 export function getToolStatusLabel(name: string): string {
   switch (name) {
     case 'search_educational_content': return 'Recherche dans les programmes...';

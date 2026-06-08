@@ -37,6 +37,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
+[tool.uv]
+# inscriptis 2.7.1 pins lxml<6.1.0 but 6.1.0 is the CVE fix (XXE iterparse).
+# override-dependencies lets us bypass that upper-bound cap.
+override-dependencies = ["lxml>=6.1.1"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

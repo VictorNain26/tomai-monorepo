@@ -51,12 +51,12 @@
   },
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 9am on the first day of the month"],
+    "schedule": ["before 9am on monday"],
     "automerge": true,
     "automergeType": "pr",
     "automergeStrategy": "merge-commit",
     "commitMessageAction": "Refresh",
-    "commitMessageTopic": "pnpm-lock.yaml"
+    "commitMessageTopic": "lockfiles"
   },
   "vulnerabilityAlerts": {
     "enabled": true,
