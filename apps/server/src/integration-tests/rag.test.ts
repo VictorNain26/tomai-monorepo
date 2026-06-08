@@ -6,10 +6,20 @@
  * Run: bun run test:integration
  */
 
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect } from 'bun:test';
 import { ragService } from '../services/rag.service';
 import { qdrantService } from '../services/qdrant.service';
 import { aiServiceClient } from '../services/ai-service.client';
+
+const ragCredsPresent = Boolean(
+  process.env.QDRANT_URL &&
+  process.env.QDRANT_API_KEY &&
+  process.env.AI_SERVICE_URL
+);
+
+if (!ragCredsPresent) {
+  console.warn('[rag.test] QDRANT_URL / QDRANT_API_KEY / AI_SERVICE_URL absent — RAG integration suite skipped');
+}
 
 // Queries de test avec réponses attendues (basé sur dataset réel)
 const TEST_QUERIES = [
@@ -47,15 +57,7 @@ const TEST_QUERIES = [
   },
 ];
 
-describe('RAG Integration Tests - Real Qdrant Calls', () => {
-
-  beforeAll(async () => {
-    // Vérifier que les services sont disponibles
-    const available = await ragService.isAvailable();
-    if (!available) {
-      throw new Error('RAG service not available - check credentials');
-    }
-  });
+describe.skipIf(!ragCredsPresent)('RAG Integration Tests - Real Qdrant Calls', () => {
 
   describe('Service Availability', () => {
     it('should have Qdrant available', async () => {
