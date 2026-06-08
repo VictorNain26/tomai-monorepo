@@ -5,10 +5,12 @@
 import { Elysia, t } from 'elysia';
 import { waitlistRepository } from '../db/repositories/waitlist.repository.js';
 import { logger } from '../lib/observability.js';
+import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const waitlistRoutes = new Elysia({ name: 'waitlist-routes' })
+  .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.public))
   .post('/api/waitlist', async ({ body, status }) => {
     const { email, source } = body;
 
