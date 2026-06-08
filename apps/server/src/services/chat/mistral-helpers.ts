@@ -20,6 +20,7 @@ import { sql, eq, and } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { learningCards, learningDecks } from '../../db/schema.js';
 import { logger } from '../../lib/observability.js';
+import type { PronoteContext } from './chat-streaming-types.js';
 
 export const MAX_TOOL_ITERATIONS = 5;
 
@@ -37,6 +38,31 @@ export const CHAT_STREAM_CHUNK_TIMEOUT_MS = 60_000;
  */
 export function wrapUserMessage(content: string): string {
   return `<student_message>\n${content}\n</student_message>`;
+}
+
+/**
+ * Wrap ephemeral Pronote data (homework, grades, timetable) as a delimited
+ * user-turn block. It is third-party data — a forged homework description
+ * must never be read as an instruction — so it lives in a `<pronote_data>`
+ * block the system prompt treats as data, NEVER inside the system prompt.
+ * Returns null when there is nothing to inject.
+ */
+export function wrapPronoteData(pronoteContext?: PronoteContext): string | null {
+  if (!pronoteContext) return null;
+
+  const parts: string[] = [];
+  if (pronoteContext.homework?.length) {
+    parts.push(`DEVOIRS DE LA SEMAINE:\n${JSON.stringify(pronoteContext.homework)}`);
+  }
+  if (pronoteContext.recentGrades?.length) {
+    parts.push(`DERNIERES NOTES:\n${JSON.stringify(pronoteContext.recentGrades)}`);
+  }
+  if (pronoteContext.todayTimetable?.length) {
+    parts.push(`EDT DU JOUR:\n${JSON.stringify(pronoteContext.todayTimetable)}`);
+  }
+
+  if (parts.length === 0) return null;
+  return `<pronote_data>\n${parts.join('\n\n')}\n</pronote_data>`;
 }
 
 export function getToolStatusLabel(name: string): string {
