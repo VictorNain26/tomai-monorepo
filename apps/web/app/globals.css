@@ -24,6 +24,14 @@
   --color-border: #1E293B;
   --color-input: #1E293B;
   --color-ring: #3B82F6;
+  --color-destructive: #F87171;
+  --color-destructive-foreground: #1C1917;
+  --color-success: #34D399;
+  --color-success-foreground: #1C1917;
+  --color-warning: #FBBF24;
+  --color-warning-foreground: #1C1917;
+  --color-info: #38BDF8;
+  --color-info-foreground: #1C1917;
 }
 
 body {
