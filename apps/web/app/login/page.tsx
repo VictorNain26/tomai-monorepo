@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui";
 import { signIn, signUp } from "@/lib/auth-client";
 import { translateAuthError } from "@/lib/auth-errors";
@@ -86,6 +87,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="vous@exemple.fr"
+                aria-describedby={error ? "login-error" : undefined}
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
@@ -102,18 +104,28 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                aria-describedby={error ? "login-error" : undefined}
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <p id="login-error" role="alert" aria-live="polite" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
 
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading
-                ? "..."
-                : mode === "signin"
-                  ? "Se connecter"
-                  : "Créer mon compte"}
+            <Button type="submit" disabled={loading} aria-busy={loading} className="w-full">
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  <span className="sr-only">Connexion en cours…</span>
+                </>
+              ) : mode === "signin" ? (
+                "Se connecter"
+              ) : (
+                "Créer mon compte"
+              )}
             </Button>
           </form>
 
