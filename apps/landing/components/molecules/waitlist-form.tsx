@@ -23,7 +23,7 @@ export function WaitlistForm({
 
   if (status === "success") {
     return (
-      <div className={cn("flex items-center gap-2 text-green-600 dark:text-green-400 font-medium", className)}>
+      <div className={cn("flex items-center gap-2 text-success font-medium", className)}>
         <CheckCircle2 className="h-5 w-5" />
         <span>Vous serez notifié du lancement !</span>
       </div>
@@ -79,7 +79,7 @@ export function WaitlistForm({
         </Button>
       </div>
       {status === "error" && (
-        <p className="text-sm text-red-500">{errorMsg}</p>
+        <p className="text-sm text-destructive">{errorMsg}</p>
       )}
     </form>
   );

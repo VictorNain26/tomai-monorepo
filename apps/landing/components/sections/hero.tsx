@@ -35,7 +35,7 @@ export function Hero() {
         {/* Trust signals */}
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-5 text-sm text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-green-500" />
+            <ShieldCheck className="h-4 w-4 text-success" />
             <span>RGPD</span>
           </div>
           <div className="flex items-center gap-1.5">

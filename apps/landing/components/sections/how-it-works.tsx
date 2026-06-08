@@ -11,24 +11,24 @@ const STEPS = [
     title: "Posez votre question",
     description: "Maths, Français, Histoire... Votre enfant pose sa question à TomIA comme à un professeur.",
     icon: MessageSquare,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
+    color: "text-info",
+    bg: "bg-info/10",
   },
   {
     number: "02",
     title: "TomIA guide la réflexion",
     description: "TomIA pose des questions simples pour aider votre enfant à avancer, sans jamais donner la réponse.",
     icon: Lightbulb,
-    color: "text-yellow-500",
-    bg: "bg-yellow-500/10",
+    color: "text-warning",
+    bg: "bg-warning/10",
   },
   {
     number: "03",
     title: "La notion est comprise",
     description: "L'élève trouve la solution par lui-même. Il gagne en confiance et retient mieux la leçon.",
     icon: GraduationCap,
-    color: "text-green-500",
-    bg: "bg-green-500/10",
+    color: "text-success",
+    bg: "bg-success/10",
   },
 ];
 
@@ -44,7 +44,7 @@ export function HowItWorks() {
         <div className="relative grid md:grid-cols-3 gap-12">
           {/* Animated Connecting Line (Desktop) */}
           <motion.div
-            className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-blue-500/30 via-yellow-500/30 to-green-500/30 origin-left"
+            className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-info/30 via-warning/30 to-success/30 origin-left"
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
             viewport={{ once: true, margin: "-80px" }}

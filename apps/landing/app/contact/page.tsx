@@ -29,10 +29,10 @@ export default function ContactPage() {
 
         {/* Location Card */}
         <div className="group relative overflow-hidden rounded-3xl bg-card border border-border/50 p-8 text-center transition-all hover:shadow-2xl hover:border-primary/50 hover:-translate-y-1">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-br from-info/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative z-10">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
-              <MapPin className="h-8 w-8 text-blue-500" />
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-info/10 group-hover:bg-info/20 transition-colors">
+              <MapPin className="h-8 w-8 text-info" />
             </div>
             <h3 className="text-2xl font-bold mb-3">Localisation</h3>
             <p className="text-muted-foreground leading-relaxed">

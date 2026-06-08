@@ -50,22 +50,22 @@ export function ProblemSolution() {
 
           {/* Solution Side */}
           <FadeIn direction="right">
-            <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-6 sm:p-8">
-              <h3 className="text-xl font-semibold text-green-600 dark:text-green-400 mb-6 flex items-center gap-2">
+            <div className="bg-success/5 border border-success/20 rounded-2xl p-6 sm:p-8">
+              <h3 className="text-xl font-semibold text-success mb-6 flex items-center gap-2">
                 <CheckCircle2 className="h-6 w-6" />
                 Avec TomIA
               </h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-foreground">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
                   <span>Un tuteur patient, disponible soir et week-end, connecté à Pronote</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
                   <span>Votre enfant comprend et retient — pas de copier-coller</span>
                 </li>
                 <li className="flex items-start gap-3 text-foreground">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
                   <span>Vous suivez ses progrès depuis votre tableau de bord</span>
                 </li>
               </ul>
