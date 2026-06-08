@@ -15,6 +15,7 @@ import { AppError, toErrorResponse } from '../lib/errors.js';
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
 import type { EducationLevelType } from '../types/index.js';
+import { EDUCATION_LEVELS } from '../lib/education-levels.js';
 
 // Track active SSE connections per user
 const activeSSEConnections = new Map<string, number>();
@@ -141,11 +142,10 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
           description: 'Session UUID'
         })),
-        schoolLevel: t.Optional(t.String({
-          minLength: 2,
-          maxLength: 20,
-          description: 'Student school level'
-        })),
+        schoolLevel: t.Optional(t.Union(
+          [...EDUCATION_LEVELS.map((level) => t.Literal(level))],
+          { description: 'Student school level (CP → terminale)' }
+        )),
         firstName: t.Optional(t.String({
           minLength: 1,
           maxLength: 50,
