@@ -26,10 +26,14 @@ let ragResult: Record<string, unknown> | null = {
   bestMatchMatiere: 'mathematiques',
 };
 
+let lastHybridSearchArgs: Record<string, unknown> | null = null;
 mock.module('../services/rag.service', () => ({
   ragService: {
     isAvailable: mock(async () => ragAvailable),
-    hybridSearch: mock(async () => ragResult),
+    hybridSearch: mock(async (opts: Record<string, unknown>) => {
+      lastHybridSearchArgs = opts;
+      return ragResult;
+    }),
   },
 }));
 
@@ -114,6 +118,7 @@ const baseContext = {
 
 beforeEach(() => {
   ragAvailable = true;
+  lastHybridSearchArgs = null;
   ragResult = {
     semanticChunks: [{ text: 'chunk1', section: 'Nombres et calculs', matiere: 'mathematiques', niveau: 'cinquieme' }],
     context: 'RAG context text',
@@ -146,6 +151,17 @@ describe('Tool Executor', () => {
       expect(result.found).toBe(true);
       expect(result.context).toBe('RAG context text');
       expect(result.resultsCount).toBe(1);
+    });
+
+    it('defaults niveau to the student school level and omits matiere when args are absent', async () => {
+      await executeTool('search_educational_content', { query: 'les fractions' }, {
+        ...baseContext,
+        schoolLevel: 'sixieme',
+      });
+      // Bug: a hardcoded '6eme' default never matches the index ('sixieme'),
+      // and matiere='general' matches zero points — both silently empty the RAG.
+      expect(lastHybridSearchArgs?.niveau).toBe('sixieme');
+      expect(lastHybridSearchArgs?.matiere).toBeUndefined();
     });
 
     it('should return serviceUnavailable when RAG is down', async () => {
