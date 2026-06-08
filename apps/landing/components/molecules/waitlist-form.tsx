@@ -78,7 +78,10 @@ export function WaitlistForm({
         />
         <Button type="submit" size="lg" disabled={isPending} aria-busy={isPending} className="group">
           {isPending ? (
-            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+              <span className="sr-only">Chargement…</span>
+            </>
           ) : (
             <>
               {buttonText}
@@ -88,7 +91,7 @@ export function WaitlistForm({
         </Button>
       </div>
       {status === "error" && (
-        <p id="waitlist-error" role="alert" aria-live="polite" className="text-sm text-destructive">
+        <p id="waitlist-error" role="alert" className="text-sm text-destructive">
           {errorMsg}
         </p>
       )}

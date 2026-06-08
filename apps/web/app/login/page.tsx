@@ -110,7 +110,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <p id="login-error" role="alert" aria-live="polite" className="text-sm text-destructive">
+              <p id="login-error" role="alert" className="text-sm text-destructive">
                 {error}
               </p>
             )}
