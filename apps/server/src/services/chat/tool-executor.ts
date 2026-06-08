@@ -160,8 +160,12 @@ async function executeRagSearch(
 ): Promise<object> {
   const startTime = Date.now();
   const query = typeof args.query === 'string' ? args.query : '';
-  const niveau = (typeof args.niveau === 'string' ? args.niveau : '6eme') as EducationLevelType;
-  const matiere = typeof args.matiere === 'string' ? args.matiere : 'general';
+  // Fall back to the student's actual level (never a hardcoded '6eme', which is
+  // not even a valid curriculum value and silently matches zero points). Omit
+  // the matiere filter when unspecified rather than forcing a 'general' that
+  // matches nothing — the student studies every subject.
+  const niveau = typeof args.niveau === 'string' ? (args.niveau as EducationLevelType) : context.schoolLevel;
+  const matiere = typeof args.matiere === 'string' ? args.matiere : undefined;
   const limit = typeof args.limit === 'number' ? args.limit : 5;
 
   const isAvailable = await ragService.isAvailable();
