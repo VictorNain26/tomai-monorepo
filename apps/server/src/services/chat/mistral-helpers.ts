@@ -62,7 +62,12 @@ export function wrapPronoteData(pronoteContext?: PronoteContext): string | null 
   }
 
   if (parts.length === 0) return null;
-  return `<pronote_data>\n${parts.join('\n\n')}\n</pronote_data>`;
+
+  // pronoteContext is client-supplied; strip any literal delimiter tokens a
+  // forged value could contain so it cannot break out of the fence and have
+  // trailing text read as outside-the-block instructions.
+  const body = parts.join('\n\n').replace(/<\/?pronote_data>/gi, '');
+  return `<pronote_data>\n${body}\n</pronote_data>`;
 }
 
 export function getToolStatusLabel(name: string): string {
