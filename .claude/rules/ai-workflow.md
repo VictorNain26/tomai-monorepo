@@ -1,6 +1,6 @@
 # Workflow IA — modèle par rôle (équilibre coût/perf)
 
-Comment répartir le travail entre l'orchestrateur et les sous-agents, et **quel modèle** pour chaque rôle. Complète (ne remplace pas) le workflow superpowers et `.claude/rules/testing-and-commits.md`.
+Comment répartir le travail entre l'orchestrateur et les sous-agents, et **quel modèle + quel effort** pour chaque rôle. Complète (ne remplace pas) le workflow superpowers et `.claude/rules/testing-and-commits.md`.
 
 ## Principe
 
@@ -8,18 +8,18 @@ Le coût d'une **erreur de jugement** (mauvaise archi, bug raté en revue) écra
 
 ## Modèle par rôle
 
-| Rôle | Agent | Modèle |
-|------|-------|--------|
-| Orchestration en **conception** (brainstorm, design, plan, décisions) | session | **opus** |
-| Orchestration en **exécution** (plan figé) | session | **sonnet** (via `/model`) |
-| Planification | `planner` (user-level) | opus |
-| Implémentation cadrée | `implementer` (projet) | **sonnet** ; `haiku` en override pour le trivial |
-| Revue de conformité spec | `spec-reviewer` (projet) | sonnet |
-| Revue de qualité de code | `code-reviewer` (user-level) | sonnet |
-| Revue archi / sécu / contrats | `architecture-reviewer` (user-level) | opus |
-| Exploration / recherche read-only | `Explore` (built-in) | inherit ; `model: haiku` en override si gros volume |
+| Rôle | Agent | Modèle | Effort |
+|------|-------|--------|--------|
+| Orchestration en **conception** (brainstorm, design, plan, décisions) | session | **opus** | xhigh |
+| Orchestration en **exécution** (plan figé) | session | **sonnet** (via `/model`) | high (via `/effort`) |
+| Planification | `planner` (user-level) | opus | high |
+| Implémentation cadrée | `implementer` (projet) | **sonnet** ; `haiku` (trivial) | medium ; low (trivial) |
+| Revue de conformité spec | `spec-reviewer` (projet) | sonnet | medium |
+| Revue de qualité de code | `code-reviewer` (user-level) | sonnet | medium |
+| Revue archi / sécu / contrats | `architecture-reviewer` (user-level) | opus | xhigh |
+| Exploration / recherche read-only | `Explore` (built-in) | inherit ; `haiku` (gros volume) | low |
 
-Réutilise les agents user-level et le built-in **tels quels** — ne pas les recréer dans le projet.
+`model:` et `effort:` vivent dans le frontmatter de chaque agent (source de vérité) ; sans `effort:`, l'agent hérite de l'effort de la session. La convention générale est au user-level (`~/.claude/CLAUDE.md` + `~/.claude/agents/`) — ce tableau ne garde que les valeurs résolues côté projet. Réutilise les agents user-level et le built-in **tels quels** — ne pas les recréer dans le projet.
 
 ## Le levier (non-évident)
 

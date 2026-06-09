@@ -1,3 +1,12 @@
+---
+description: Migrations Drizzle — chargé uniquement sur le schéma DB et les migrations
+paths:
+  - "apps/server/src/db/**"
+  - "apps/server/drizzle/**"
+  - "apps/server/drizzle.config.ts"
+  - "**/schema.ts"
+---
+
 # Migrations Drizzle ORM
 
 Source de verite : `apps/server/src/db/schema.ts` (codebase-first).
