@@ -2,15 +2,6 @@
 
 Le workflow TDD (Red-Green-Refactor) est géré par **superpowers:test-driven-development**. Ce fichier définit les conventions **spécifiques au monorepo** : runners, paths, validation, scopes.
 
-## Enforcement
-
-| Mécanisme | Fiabilité | Ce qu'il fait |
-|---|---|---|
-| **Stop hook** (exit 2) | Déterministe | Force validation + commit avant de quitter |
-| **lefthook pre-commit** | Déterministe | lint + typecheck automatiques |
-| **lefthook pre-push** | Déterministe | tests + build automatiques |
-| **superpowers skills** | Auto-invoqués | brainstorming → planning → TDD → review → completion |
-
 ## Test runners par app
 
 | App | Runner | Commande |

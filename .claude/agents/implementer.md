@@ -2,6 +2,7 @@
 name: implementer
 description: Execution agent for bounded, well-specified tasks in this monorepo (TS/Elysia/Drizzle/Eden, Python/uv). Scope, files and approach must be explicit in the prompt — it executes a plan, it does not design. Use after a plan exists; defer design calls to planner/architecture-reviewer.
 model: sonnet
+effort: medium
 tools: Write, Edit, Bash, Read, Grep, Glob
 ---
 

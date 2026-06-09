@@ -2,6 +2,7 @@
 name: spec-reviewer
 description: Spec-compliance reviewer (read-only). Verifies an implementation matches its specification — nothing missing, nothing extra — by reading the actual code, not by trusting the implementer's report. Use as the first review stage after implementation, before code-reviewer (quality).
 model: sonnet
+effort: medium
 tools: Read, Grep, Glob
 ---
 
