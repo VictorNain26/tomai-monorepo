@@ -18,7 +18,7 @@
 
 import { qdrantService, type QdrantSearchResult } from './qdrant.service.js';
 import { aiServiceClient } from './ai-service.client.js';
-import { retrievalAuditRepository } from '../db/repositories/index.js';
+import { retrievalAuditRepository } from '../db/repositories/retrieval-audit.repository.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
 
