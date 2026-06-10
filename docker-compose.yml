@@ -1,16 +1,22 @@
 # ============================================================
-# TomAI Backend - Docker Compose Development (2025)
-# Usage: docker compose up -d
-# Tools: docker compose --profile tools up -d
+# TomAI — Docker Compose (infra de développement du monorepo)
+# Défaut       : postgres + qdrant + ai-service
+# Backend (opt-in, iso-prod) : docker compose --profile backend up -d
+# Outils       : docker compose --profile tools up -d
+# Orchestration dev : `pnpm dev` (à la racine)
 # ============================================================
 
 services:
   # ===========================================
-  # Backend TomAI - Development avec hot-reload
+  # Backend TomAI — conteneurisé (OPT-IN)
+  # En dev normal le backend tourne sur l'host via `pnpm dev`.
+  # Ce service ne sert qu'à tester l'image iso-prod : --profile backend.
   # ===========================================
   backend:
+    profiles:
+      - backend
     build:
-      context: ../..
+      context: .
       dockerfile: apps/server/Dockerfile
       target: development
     container_name: tomai-backend-dev
@@ -45,14 +51,14 @@ services:
       # RevenueCat webhook shared secret (sent as Authorization header)
       - REVENUECAT_WEBHOOK_AUTH=${REVENUECAT_WEBHOOK_AUTH}
     env_file:
-      - .env
+      - apps/server/.env
     volumes:
-      # Hot-reload: mount sources avec paths corrects (monorepo context)
-      - ./src:/app/apps/server/src:ro
-      - ./drizzle:/app/apps/server/drizzle:ro
-      - ./scripts:/app/apps/server/scripts:ro
-      - ./tsconfig.json:/app/apps/server/tsconfig.json:ro
-      - ./drizzle.config.ts:/app/apps/server/drizzle.config.ts:ro
+      # Hot-reload: mount sources (contexte = racine du monorepo)
+      - ./apps/server/src:/app/apps/server/src:ro
+      - ./apps/server/drizzle:/app/apps/server/drizzle:ro
+      - ./apps/server/scripts:/app/apps/server/scripts:ro
+      - ./apps/server/tsconfig.json:/app/apps/server/tsconfig.json:ro
+      - ./apps/server/drizzle.config.ts:/app/apps/server/drizzle.config.ts:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -81,7 +87,7 @@ services:
   # ===========================================
   ai-service:
     build:
-      context: ../ai-service
+      context: ./apps/ai-service
       dockerfile: Dockerfile
     container_name: tomai-ai-service-dev
     ports:
@@ -180,10 +186,10 @@ services:
     environment:
       - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
     volumes:
-      - ./drizzle:/app/drizzle:ro
-      - ./drizzle.config.ts:/app/drizzle.config.ts:ro
-      - ./src/db:/app/src/db:ro
-      - ./package.json:/app/package.json:ro
+      - ./apps/server/drizzle:/app/drizzle:ro
+      - ./apps/server/drizzle.config.ts:/app/drizzle.config.ts:ro
+      - ./apps/server/src/db:/app/src/db:ro
+      - ./apps/server/package.json:/app/package.json:ro
     command: sh -c "bun add drizzle-kit drizzle-orm postgres && bunx drizzle-kit studio --host 0.0.0.0"
     depends_on:
       postgres:
