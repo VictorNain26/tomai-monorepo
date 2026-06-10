@@ -5,13 +5,25 @@ Backend Bun + Elysia.js pour tutorat socratique adaptatif.
 ## Commandes
 
 ```bash
-docker compose up -d              # OBLIGATOIRE : PostgreSQL 16 pgvector + Backend
+docker compose up -d              # Stack complète : Postgres + Qdrant + ai-service + Backend
 bun run typecheck && bun run lint # Validation
 bun run test                      # Tests Bun runner
 bun run build                     # Build production
 ```
 
 JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `docker compose up -d postgres && bun run dev`.
+
+### RAG en local (sans Qdrant Cloud)
+
+`docker compose up -d` lève toute la stack RAG : **Qdrant** (`:6333`) + **ai-service** BGE-M3 (`:8001`) + Postgres + Backend. Le backend tape le Qdrant local par défaut (`QDRANT_URL=http://qdrant:6333`) ; override Cloud via `QDRANT_URL`/`QDRANT_API_KEY` dans `.env`. Au 1er boot, ai-service télécharge ~3,5 Go de modèles (cache persistant `tomai_ai_service_hf_cache`).
+
+Peupler l'index curriculum (lancé depuis l'host → ai-service sur `:8001`, qdrant sur `:6333`) :
+
+```bash
+cd ../curriculum   # apps/curriculum/.env : AI_SERVICE_URL=http://localhost:8001  QDRANT_URL=http://localhost:6333  QDRANT_API_KEY=  QDRANT_COLLECTION=tomai_educational
+uv run python scripts/migrate_collection.py   # crée la collection
+uv run python scripts/ingest.py               # chunk + embed via /embed + upsert
+```
 
 ### Premier démarrage dev local (vérifié)
 
