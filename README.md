@@ -5,8 +5,9 @@ Plateforme de tutorat IA adaptatif pour élèves français — pédagogie socrat
 ## Quick Start
 
 ```bash
-pnpm install        # Node 22+, pnpm 11+
-pnpm setup          # one-time : .env, secret, postgres, migrations, modèles ai-service (~3,5 Go)
+pnpm install                 # Node 22+, pnpm 11+
+docker login ghcr.io         # image ai-service privée (GHCR), 1× — password = PAT avec read:packages
+pnpm setup                   # one-time : .env, secret, postgres, migrations, pull ai-service + modèles (~3,5 Go)
 pnpm dev            # infra Docker (postgres+qdrant+ai-service) + server :3000 + web :3002 + landing :3001
 pnpm dev:mobile     # Expo mobile (8081), terminal séparé
 ```
