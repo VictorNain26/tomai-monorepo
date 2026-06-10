@@ -1,4 +1,5 @@
 """Tests du client ai-service /embed — réseau mocké via monkeypatch httpx."""
+
 from __future__ import annotations
 
 import pytest
@@ -33,18 +34,14 @@ def test_embed_parses_dense_and_sparse(monkeypatch):
         return _fake_response(
             {
                 "model": "BAAI/bge-m3",
-                "embeddings": [
-                    {"dense": [0.1, 0.2], "sparse": {"indices": [7], "values": [1.5]}}
-                ],
+                "embeddings": [{"dense": [0.1, 0.2], "sparse": {"indices": [7], "values": [1.5]}}],
             }
         )
 
     monkeypatch.setattr(ai_service.httpx, "post", fake_post)
     items = ai_service.embed(["bonjour"], warm=False)
 
-    assert items == [
-        EmbedItem(dense=[0.1, 0.2], sparse=SparseVector(indices=[7], values=[1.5]))
-    ]
+    assert items == [EmbedItem(dense=[0.1, 0.2], sparse=SparseVector(indices=[7], values=[1.5]))]
     assert captured["url"].endswith("/embed")
     assert captured["json"] == {"texts": ["bonjour"]}
 

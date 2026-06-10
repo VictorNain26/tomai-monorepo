@@ -67,7 +67,7 @@ def wait_until_ready(max_wait_s: float = _WARM_MAX_WAIT_S) -> None:
         if time.monotonic() >= deadline:
             raise RuntimeError(f"ai-service /health pas prêt après {max_wait_s:.0f}s")
         attempt += 1
-        time.sleep(min(2 ** attempt, 15))
+        time.sleep(min(2**attempt, 15))
 
 
 def _post_embed(texts: list[str]) -> list[EmbedItem]:
@@ -102,7 +102,7 @@ def _post_embed(texts: list[str]) -> list[EmbedItem]:
             transient = status is None or status in (429, 500, 502, 503, 504)
             if attempt == _MAX_RETRIES - 1 or not transient:
                 raise
-            time.sleep(2 * (2 ** attempt))
+            time.sleep(2 * (2**attempt))
     raise RuntimeError("unreachable") from last_err
 
 

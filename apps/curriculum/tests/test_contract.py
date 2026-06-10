@@ -1,4 +1,5 @@
 """Conformité du contrat : contract.json committé == régénéré depuis les enums."""
+
 from __future__ import annotations
 
 import json

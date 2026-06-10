@@ -7,6 +7,7 @@ collection (named vectors + dims). Consommé en test-time par apps/server.
 
 Usage : uv run python scripts/export_contract.py
 """
+
 from __future__ import annotations
 
 import json
