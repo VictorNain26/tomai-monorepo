@@ -46,11 +46,7 @@ from typing import Any
 from dotenv import load_dotenv
 
 from schema import (
-    DEFAULT_EMBED_MODEL,
-    DEFAULT_SPARSE_METHOD,
     DEFAULT_TOP_K,
-    EMBEDDING_MODELS_1024D,
-    SPARSE_METHODS,
     hybrid_search,
 )
 
@@ -150,8 +146,6 @@ def run_evaluation(
     by_matiere: bool,
     fusion: str = "rrf",
     output_suffix: str = "",
-    embed_model: str = DEFAULT_EMBED_MODEL,
-    sparse_method: str = DEFAULT_SPARSE_METHOD,
     collection: str | None = None,
 ) -> None:
     if questions_file:
@@ -173,8 +167,6 @@ def run_evaluation(
 
     print(f"Top-k      : {top_k}")
     print(f"Fusion     : {fusion}")
-    print(f"Embed      : {embed_model}")
-    print(f"Sparse     : {sparse_method}")
     if collection:
         print(f"Collection : {collection}")
     print()
@@ -182,7 +174,7 @@ def run_evaluation(
     results = []
     skipped = 0
     for i, q in enumerate(questions, 1):
-        # Pause courte pour rester sous le rate limit Mistral free tier (~1 req/s)
+        # Pause courte pour rester sous le rate limit d'ai-service (~1 req/s)
         if i > 1:
             time.sleep(0.8)
 
@@ -192,8 +184,6 @@ def run_evaluation(
             matiere=q.get("matiere"),
             niveau=q.get("niveau"),
             fusion=fusion,
-            embed_model=embed_model,
-            sparse_method=sparse_method,
             collection=collection,
         )
         r = _score_question(q, chunks)
@@ -302,8 +292,6 @@ def run_evaluation(
             {
                 "top_k": top_k,
                 "fusion": fusion,
-                "embed_model": embed_model,
-                "sparse_method": sparse_method,
                 "collection": collection,
                 "n_total": len(results),
                 "n_scorable": len(scorable),
@@ -353,21 +341,6 @@ def main() -> None:
         help="Suffixe pour le fichier de sortie (ex: '-dbsf' → retrieval_eval-dbsf.json)",
     )
     parser.add_argument(
-        "--embed-model",
-        default=DEFAULT_EMBED_MODEL,
-        choices=list(EMBEDDING_MODELS_1024D),
-        help=f"Modèle d'embedding pour la query (défaut {DEFAULT_EMBED_MODEL}).",
-    )
-    parser.add_argument(
-        "--sparse-method",
-        default=DEFAULT_SPARSE_METHOD,
-        choices=list(SPARSE_METHODS),
-        help=(
-            f"Méthode sparse (défaut {DEFAULT_SPARSE_METHOD}). "
-            "Doit matcher la méthode utilisée à l'ingest sur cette collection."
-        ),
-    )
-    parser.add_argument(
         "--collection",
         default=None,
         help="Override la collection Qdrant cible (sinon QDRANT_COLLECTION env).",
@@ -380,8 +353,6 @@ def main() -> None:
         args.by_matiere,
         fusion=args.fusion,
         output_suffix=args.output_suffix,
-        embed_model=args.embed_model,
-        sparse_method=args.sparse_method,
         collection=args.collection,
     )
 
