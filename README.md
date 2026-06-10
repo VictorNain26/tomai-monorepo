@@ -5,13 +5,13 @@ Plateforme de tutorat IA adaptatif pour élèves français — pédagogie socrat
 ## Quick Start
 
 ```bash
-pnpm install                                          # Node 22+, pnpm 11+
-cd apps/server && docker compose up -d && cd ../..    # PostgreSQL 16 pgvector + backend
-pnpm dev                                              # Landing :3001 + Web :3002 + Server :3000
-pnpm dev:mobile                                       # Expo mobile (8081)
+pnpm install        # Node 22+, pnpm 11+
+pnpm setup          # one-time : .env, secret, postgres, migrations, modèles ai-service (~3,5 Go)
+pnpm dev            # infra Docker (postgres+qdrant+ai-service) + server :3000 + web :3002 + landing :3001
+pnpm dev:mobile     # Expo mobile (8081), terminal séparé
 ```
 
-API docs (dev) : http://localhost:3000/swagger
+Stop infra : `pnpm dev:down`. API docs (dev) : http://localhost:3000/swagger
 
 ## Structure
 

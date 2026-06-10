@@ -37,8 +37,8 @@ uv run pytest -q
 
 Aucun modèle chargé localement : `src/clients/ai_service.py` appelle
 `ai-service /embed` (dense 1024D + sparse natif BGE-M3, format Qdrant). Lancer
-`ai-service` en local : `cd apps/ai-service && docker compose up -d`, ou pointer
-`AI_SERVICE_URL` vers le déploiement Koyeb.
+`ai-service` en local : `docker compose up -d ai-service` (depuis la racine du
+monorepo), ou pointer `AI_SERVICE_URL` vers le déploiement Koyeb.
 
 ## Frontière avec le backend
 
