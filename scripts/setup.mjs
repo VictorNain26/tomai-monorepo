@@ -48,8 +48,8 @@ run("docker", ["exec", "tomai-postgres-dev", "psql", "-U", "tomai_dev", "-d", "t
 console.log("[setup] migrations Drizzle…");
 run("bun", ["run", "db:migrate"], { cwd: "apps/server" });
 
-// 4. Préchauffe ai-service (download ~3,5 Go la première fois)
-console.log("[setup] préchauffe ai-service (download des modèles, plusieurs minutes au 1er run)…");
+// 4. Pull + boot ai-service (image privée GHCR ; modèles ~3,5 Go au 1er run)
+console.log("[setup] ai-service : pull image GHCR (requiert `docker login ghcr.io`) + modèles…");
 run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "600", "ai-service"]);
 
 console.log("\n[setup] terminé. Lance `pnpm dev`.");
