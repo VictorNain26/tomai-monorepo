@@ -6,6 +6,10 @@
 # Orchestration dev : `pnpm dev` (à la racine)
 # ============================================================
 
+# Nom de projet Compose figé, indépendant du dossier : évite les conflits de
+# conteneurs/volumes quand le compose (ou le dossier) change de nom.
+name: tomai
+
 services:
   # ===========================================
   # Backend TomAI — conteneurisé (OPT-IN)
