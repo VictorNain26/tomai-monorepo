@@ -13,13 +13,16 @@ WORKDIR /build
 
 # Create isolated venv
 ENV VIRTUAL_ENV=/opt/venv
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 RUN uv venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Install deps into venv
-COPY pyproject.toml README.md ./
+# Install deps : torch CPU via [tool.uv.sources] + déterministe via uv.lock.
+# --no-install-project : seules les deps (le code src/ est copié au stage runtime).
+# --no-dev : exclut le dependency-group dev (ruff/pytest/httpx).
+COPY pyproject.toml uv.lock README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --no-cache-dir .
+    uv sync --frozen --no-dev --no-install-project
 
 # Stage 2: Runtime
 FROM python:3.12-slim AS runtime

@@ -90,9 +90,12 @@ services:
   # Doc : apps/ai-service/README.md
   # ===========================================
   ai-service:
-    build:
-      context: ./apps/ai-service
-      dockerfile: Dockerfile
+    # Image pré-buildée en CI → GHCR (torch CPU ~1,9 Go). Le dev PULL l'image.
+    # Si elle est absente du registry, `up` ÉCHOUE clairement — aucun build
+    # silencieux. Pour itérer sur le service (build local explicite) :
+    #   docker compose -f docker-compose.yml -f docker-compose.build.yml build ai-service
+    image: ghcr.io/victornain26/tomai-ai-service:latest
+    pull_policy: missing
     container_name: tomai-ai-service-dev
     ports:
       - "8001:8000"  # 8001 côté host pour éviter collision avec backend
@@ -101,6 +104,7 @@ services:
       - RERANK_MODEL=BAAI/bge-reranker-v2-m3
       - USE_FP16=auto
       - HF_HOME=/data/hf_cache
+      - HF_TOKEN=${HF_TOKEN:-}  # optionnel : download modèles plus rapide
       - PORT=8000
       - API_TOKEN=${AI_SERVICE_TOKEN:-}
     volumes:
@@ -119,7 +123,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 180s  # cold start = download + load modèles (~30-60s)
+      start_period: 300s  # 1er boot = download modèles ~3,5 Go ; ensuite cache volume
 
   # ===========================================
   # Qdrant — vector DB locale (RAG dev sans Qdrant Cloud)
