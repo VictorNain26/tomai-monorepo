@@ -5,11 +5,10 @@ reviews:
   auto_review:
     base_branches:
       - main
-      - staging
   path_instructions:
     - path: "apps/server/**"
       instructions: "TypeScript strict, Elysia.js patterns, Drizzle ORM, never any"
     - path: "apps/mobile/**"
-      instructions: "Expo SDK 55, NativeWind, React Native Reusables only"
+      instructions: "Expo SDK 56, NativeWind, React Native Reusables only"
     - path: "apps/landing/**"
       instructions: "Next.js 16, shadcn/ui only, no custom CSS"

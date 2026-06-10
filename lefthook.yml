@@ -12,7 +12,7 @@ pre-commit:
     - name: lint-server
       root: "apps/server/"
       glob: "**/*.ts"
-      run: pnpm exec eslint {staged_files}
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
 
     - name: lint-mobile
       root: "apps/mobile/"

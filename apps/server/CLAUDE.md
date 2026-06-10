@@ -5,17 +5,20 @@ Backend Bun + Elysia.js pour tutorat socratique adaptatif.
 ## Commandes
 
 ```bash
-docker compose up -d              # Stack complète : Postgres + Qdrant + ai-service + Backend
+# Stack dev — depuis la RACINE du monorepo (compose remonté à la racine) :
+pnpm setup                        # one-time : env + secret + postgres + migrations + modèles
+pnpm dev                          # infra Docker + server (host) :3000 + web + landing
+# Depuis apps/server :
 bun run typecheck && bun run lint # Validation
 bun run test                      # Tests Bun runner
 bun run build                     # Build production
 ```
 
-JAMAIS `bun run dev` sans PostgreSQL actif. Utiliser `docker compose up -d` ou `docker compose up -d postgres && bun run dev`.
+Le backend tourne sur l'**host** via `pnpm dev`, pas en conteneur (pas de clash :3000). Postgres seul : `docker compose up -d postgres` (racine). Image backend iso-prod (opt-in) : `docker compose --profile backend up` (racine).
 
 ### RAG en local (sans Qdrant Cloud)
 
-`docker compose up -d` lève toute la stack RAG : **Qdrant** (`:6333`) + **ai-service** BGE-M3 (`:8001`) + Postgres + Backend. Le backend tape le Qdrant local par défaut (`QDRANT_URL=http://qdrant:6333`) ; override Cloud via `QDRANT_URL`/`QDRANT_API_KEY` dans `.env`. Au 1er boot, ai-service télécharge ~3,5 Go de modèles (cache persistant `tomai_ai_service_hf_cache`).
+`pnpm dev` (racine) lève la stack RAG : **Qdrant** (`:6333`) + **ai-service** BGE-M3 (`:8001`) + Postgres, et le backend sur l'**host**. Le backend tape le Qdrant local par défaut (`QDRANT_URL=http://qdrant:6333`) ; override Cloud via `QDRANT_URL`/`QDRANT_API_KEY` dans `.env`. Au 1er boot, ai-service télécharge ~3,5 Go de modèles (cache persistant `tomai_ai_service_hf_cache`).
 
 Peupler l'index curriculum (lancé depuis l'host → ai-service sur `:8001`, qdrant sur `:6333`) :
 
@@ -27,7 +30,7 @@ uv run python scripts/ingest.py               # chunk + embed via /embed + upser
 
 ### Premier démarrage dev local (vérifié)
 
-Sur une base **neuve**, `db:push` seul ne suffit pas : le serveur vérifie au boot la table de suivi `drizzle.__drizzle_migrations` (cf. `server-lifecycle.ts`), que `db:push` ne crée pas. Séquence qui marche (auth-only, aucun secret de prod) :
+**`pnpm setup` (racine) automatise désormais cette séquence.** Le détail reste utile pour le *pourquoi* `db:migrate` ≠ `db:push` sur base neuve : le serveur vérifie au boot la table de suivi `drizzle.__drizzle_migrations` (cf. `server-lifecycle.ts`), que `db:push` ne crée pas. Séquence manuelle (commandes `docker` depuis la **racine**, `bun run` depuis `apps/server`) :
 
 ```bash
 # 1. apps/server/.env minimal (secrets JETABLES) :

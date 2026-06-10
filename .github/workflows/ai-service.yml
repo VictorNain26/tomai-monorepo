@@ -27,5 +27,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run ai-service tests
-        run: uv sync --frozen && uv run pytest
+      - name: Sync (frozen)
+        run: uv sync --frozen --all-extras
+
+      - name: Lint (ruff check)
+        run: uv run ruff check .
+
+      - name: Format check (ruff format)
+        run: uv run ruff format --check .
+
+      - name: Tests (pytest)
+        run: uv run pytest
