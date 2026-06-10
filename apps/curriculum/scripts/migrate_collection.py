@@ -3,7 +3,7 @@
 Administration de la collection Qdrant.
 
 Config canonique :
-- Vecteurs nommés `dense` (1024D cosine, Mistral) + `bm25` (sparse, Modifier.IDF)
+- Vecteurs nommés `dense` (1024D cosine, BGE-M3) + `bm25` (sparse, Modifier.IDF)
 - Quantization scalar int8 always_ram (4× compression RAM, <1% perte recall)
 - Payload indexes KEYWORD sur : niveau, matiere, cycle, source_file
 
@@ -67,7 +67,7 @@ def create_collection(client: QdrantClient, recreate: bool = False) -> None:
         collection_name=COLLECTION_NAME,
         vectors_config={
             "dense": models.VectorParams(
-                size=1024,  # mistral-embed
+                size=1024,  # BGE-M3 (1024D)
                 distance=models.Distance.COSINE,
                 on_disk=False,  # corpus <1M points, RAM OK
             ),

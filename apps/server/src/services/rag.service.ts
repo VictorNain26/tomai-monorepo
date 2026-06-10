@@ -7,9 +7,8 @@
  * - Stage 2 : rerank bge-reranker-v2-m3 (via le même ai-service)
  *
  * Pré-requis collection Qdrant : ingérée avec BGE-M3 (dense 1024D cosine +
- * sparse natif lexical_weights). Voir `tomai-curriculum/scripts/ingest.py
- * --embed-model=BAAI/bge-m3 --sparse-method=BAAI/bge-m3` et la décision
- * benchmark documentée dans `tomai-curriculum/docs/ARCHITECTURE.md`.
+ * sparse natif lexical_weights). Voir `apps/curriculum/scripts/ingest.py` et la
+ * décision benchmark documentée dans `apps/curriculum/docs/ARCHITECTURE.md`.
  *
  * Sources :
  * - https://qdrant.tech/articles/sparse-vectors (hybrid search natif)
@@ -87,9 +86,9 @@ class RAGService {
    * Recherche sémantique hybride via Qdrant Query API.
    *
    * Pipeline :
-   * 1. Embedding dense de la query (Mistral 1024D)
-   * 2. Tokenisation BM25 côté server (sparse vector)
-   * 3. Qdrant Query API : prefetch dense + sparse → fusion RRF native
+   * 1. Embed query via ai-service (BGE-M3 dense + sparse natif, single pass)
+   * 2. Qdrant Query API : prefetch dense + sparse → fusion RRF native
+   * 3. Rerank bge-reranker-v2-m3 (via ai-service)
    * 4. Construction du contexte structuré pour le LLM
    */
   async hybridSearch(options: HybridSearchOptions): Promise<HybridSearchResult> {
