@@ -167,4 +167,30 @@ describe.skipIf(!ragCredsPresent)('RAG Integration Tests - Real Qdrant Calls', (
       }
     });
   });
+
+  describe('Payload contract round-trip', () => {
+    it('returns the 7 canonical curriculum payload fields, correctly typed', async () => {
+      const queryEmbed = await aiServiceClient.embed('Comment calculer une aire ?');
+      const results = await qdrantService.searchHybrid(
+        queryEmbed.dense,
+        queryEmbed.sparse,
+        { niveau: 'cinquieme', matiere: 'mathematiques' },
+        20,
+        { hnswEf: 128 },
+      );
+      expect(results.length).toBeGreaterThan(0);
+
+      const top = results[0]!;
+      expect(typeof top.text).toBe('string');
+      expect(top.text.length).toBeGreaterThan(0);
+      expect(typeof top.section).toBe('string');
+      expect(top.matiere).toBe('mathematiques');
+      expect(top.niveau).toBe('cinquieme');
+      expect(['cycle3', 'cycle4', 'lycee']).toContain(top.cycle);
+      expect(typeof top.source_file).toBe('string');
+      expect(top.source_file.length).toBeGreaterThan(0);
+      expect(typeof top.chunk_index).toBe('number');
+      expect(top.chunk_index).toBeGreaterThanOrEqual(0);
+    });
+  });
 });
