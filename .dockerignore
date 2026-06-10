@@ -1,0 +1,39 @@
+# Build context = monorepo root. Garde les fichiers utiles aux COPY ciblés
+# des Dockerfiles, exclut le lourd et les secrets.
+
+# Dependencies
+**/node_modules/
+.pnpm-store/
+
+# Python
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+
+# Build outputs
+**/dist/
+**/.next/
+**/build/
+**/.turbo/
+**/coverage/
+**/*.tsbuildinfo
+
+# Mobile
+**/.expo/
+
+# Env & secrets (jamais envoyés au daemon)
+**/.env
+**/.env.*
+!**/.env.example
+
+# VCS / IDE / AI tooling
+.git/
+**/.vscode/
+**/.idea/
+.claude/
+docs/
+
+# OS
+**/.DS_Store
