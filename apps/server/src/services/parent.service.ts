@@ -222,15 +222,17 @@ export class ParentService {
       let filesPurged = 0;
       let filesFailed = 0;
       for (const { storageKey } of fileRecords) {
-        try {
-          await deleteFile(storageKey);
+        // deleteFile ne lève jamais : il avale l'erreur S3 et retourne false.
+        const purged = await deleteFile(storageKey);
+        if (purged) {
           filesPurged++;
-        } catch (_err) {
+        } else {
           filesFailed++;
-          logger.error('parent:delete-child-s3-purge', {
+          logger.error('S3 purge failed for child file', {
+            operation: 'parent:delete-child-s3-purge',
+            _error: 'deleteFile returned false (S3 error already logged by storage service)',
             storageKey,
             childId,
-            _error: _err instanceof Error ? _err.message : String(_err),
             severity: 'high' as const,
           });
         }

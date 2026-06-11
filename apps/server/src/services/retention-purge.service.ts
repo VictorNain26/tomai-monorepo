@@ -5,6 +5,8 @@ import { retrievalAudit } from '../db/schema/audit.schema.js';
 import { logger } from '../lib/observability.js';
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+// Approximation : 365 jours ≈ les « 12 mois » de la politique de
+// confidentialité (écart max 1 jour les années bissextiles, côté sûr).
 const TWELVE_MONTHS_MS = 365 * 24 * 60 * 60 * 1000;
 
 export async function purgeExpiredData(): Promise<{

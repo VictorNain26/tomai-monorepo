@@ -81,8 +81,9 @@ export class FilesRepository {
   }
 
   /**
-   * Lister tous les fichiers d'un utilisateur (toutes statuts sauf 'deleted')
-   * Utilisé avant suppression de compte pour collecter les clés S3 à purger.
+   * Lister tous les fichiers d'un utilisateur, tous statuts confondus (y
+   * compris 'deleted' : pour un effacement de compte, tout objet S3 restant
+   * doit être purgé). Utilisé avant la suppression pour collecter les clés.
    */
   async listByUserId(userId: string): Promise<Pick<File, 'id' | 'storageKey'>[]> {
     return await db
