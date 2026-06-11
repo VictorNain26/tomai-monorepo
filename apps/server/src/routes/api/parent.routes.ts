@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
+import { EDUCATION_LEVEL_UNION } from '../../lib/education-levels.js';
 import {
   validateSchema,
   isValidationError,
@@ -99,13 +100,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       lastName: t.String(),
       username: t.String(),
       password: t.String(),
-      schoolLevel: t.Union([
-        t.Literal('cp'), t.Literal('ce1'), t.Literal('ce2'),
-        t.Literal('cm1'), t.Literal('cm2'),
-        t.Literal('sixieme'), t.Literal('cinquieme'),
-        t.Literal('quatrieme'), t.Literal('troisieme'),
-        t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
-      ]),
+      schoolLevel: EDUCATION_LEVEL_UNION,
       // Optional at the contract level (Pronote-imported children have no birth
       // date); the Zod `createChildSchema` still requires + validates it for the
       // manual create-child form. TODO(product): decide whether imported children
@@ -140,13 +135,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       lastName: t.Optional(t.String()),
       // username intentionally excluded — immutable after creation
       password: t.Optional(t.String()),
-      schoolLevel: t.Optional(t.Union([
-        t.Literal('cp'), t.Literal('ce1'), t.Literal('ce2'),
-        t.Literal('cm1'), t.Literal('cm2'),
-        t.Literal('sixieme'), t.Literal('cinquieme'),
-        t.Literal('quatrieme'), t.Literal('troisieme'),
-        t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
-      ])),
+      schoolLevel: t.Optional(EDUCATION_LEVEL_UNION),
       dateOfBirth: t.Optional(t.String()),
     }),
   })

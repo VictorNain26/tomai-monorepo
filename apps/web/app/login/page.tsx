@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui";
 import { signIn, signUp } from "@/lib/auth-client";
 import { translateAuthError } from "@/lib/auth-errors";
-import { ROLE_HOME, type Role } from "@/lib/roles";
+import { ROLE_HOME, resolveWebRole } from "@/lib/roles";
 
 type Mode = "signin" | "signup";
 
@@ -35,7 +35,11 @@ export default function LoginPage() {
       return;
     }
 
-    const role = (result.data?.user as { role?: Role } | undefined)?.role ?? "parent";
+    const role = resolveWebRole((result.data?.user as { role?: string } | undefined)?.role);
+    if (!role) {
+      setError("Ce compte n'a pas d'espace sur le web pour le moment.");
+      return;
+    }
     router.push(ROLE_HOME[role]);
   }
 

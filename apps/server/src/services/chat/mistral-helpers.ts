@@ -37,7 +37,10 @@ export const CHAT_STREAM_CHUNK_TIMEOUT_MS = 60_000;
  * follow. Pairs with the INSTRUCTION_HIERARCHY block in the system prompt.
  */
 export function wrapUserMessage(content: string): string {
-  return `<student_message>\n${content}\n</student_message>`;
+  // Strip any literal delimiter tokens so a forged student message cannot
+  // break out of the fence and have trailing text read as an instruction.
+  const body = content.replace(/<\/?student_message>/gi, '');
+  return `<student_message>\n${body}\n</student_message>`;
 }
 
 /**

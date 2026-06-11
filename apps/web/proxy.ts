@@ -1,13 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ROLE_HOME, ROLES, type Role } from "@/lib/roles";
+import { ROLE_HOME, resolveWebRole, type Role } from "@/lib/roles";
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000";
-
-function asRole(value: unknown): Role | null {
-  return typeof value === "string" && (ROLES as readonly string[]).includes(value)
-    ? (value as Role)
-    : null;
-}
 
 /**
  * Garde d'authentification role-aware (équivalent web de `Stack.Protected`).
@@ -30,8 +24,9 @@ export async function proxy(request: NextRequest) {
     if (res.ok) {
       const session = (await res.json()) as { user?: { role?: string } } | null;
       if (session?.user) {
-        // Rôle inconnu/absent → même fallback que le login (parent).
-        role = asRole(session.user.role) ?? "parent";
+        // Rôle absent → défaut produit (parent). Rôle présent mais hors web
+        // (admin) → null → /login : pas d'espace à deviner pour ce compte.
+        role = resolveWebRole(session.user.role);
       }
     }
   } catch {

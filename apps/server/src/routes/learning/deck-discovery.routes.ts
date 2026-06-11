@@ -1,18 +1,13 @@
 import { Elysia, t } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
+import { EDUCATION_LEVEL_UNION } from '../../lib/education-levels.js';
 import { logger } from '../../lib/observability';
 import { educationService } from '../../services/education.service';
 import { qdrantService } from '../../services/qdrant.service';
 import { subjectLabels } from './helpers';
 import type { EducationLevelType } from '../../types/index';
 
-const LEVEL_SCHEMA = t.Optional(t.Union([
-  t.Literal('cp'), t.Literal('ce1'), t.Literal('ce2'),
-  t.Literal('cm1'), t.Literal('cm2'),
-  t.Literal('sixieme'), t.Literal('cinquieme'),
-  t.Literal('quatrieme'), t.Literal('troisieme'),
-  t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
-]));
+const LEVEL_SCHEMA = t.Optional(EDUCATION_LEVEL_UNION);
 
 export const deckDiscoveryRoutes = new Elysia({ prefix: '/api/learning' })
   .use(authMacro)
