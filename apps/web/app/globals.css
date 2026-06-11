@@ -1,38 +1,9 @@
 @import "tailwindcss";
 @import "@repo/tokens/theme.css";
+@import "@repo/tokens/theme-dark.css";
 @source "../../../packages/ui/src";
 
 @custom-variant dark (&:where(.dark, .dark *));
-
-/* Dark mode overrides (class-based via next-themes).
- * Les valeurs light viennent de @repo/tokens ; ici on ne surcharge que le dark. */
-.dark {
-  --color-background: #020617;
-  --color-foreground: #F8FAFC;
-  --color-primary: #3B82F6;
-  --color-primary-foreground: #0F172A;
-  --color-secondary: #1E293B;
-  --color-secondary-foreground: #F8FAFC;
-  --color-muted: #1E293B;
-  --color-muted-foreground: #94A3B8;
-  --color-accent: #1E293B;
-  --color-accent-foreground: #F8FAFC;
-  --color-card: #0F172A;
-  --color-card-foreground: #F8FAFC;
-  --color-popover: #0F172A;
-  --color-popover-foreground: #F8FAFC;
-  --color-border: #1E293B;
-  --color-input: #1E293B;
-  --color-ring: #3B82F6;
-  --color-destructive: #F87171;
-  --color-destructive-foreground: #1C1917;
-  --color-success: #34D399;
-  --color-success-foreground: #1C1917;
-  --color-warning: #FBBF24;
-  --color-warning-foreground: #1C1917;
-  --color-info: #38BDF8;
-  --color-info-foreground: #1C1917;
-}
 
 body {
   @apply bg-background text-foreground antialiased;
