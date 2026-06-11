@@ -163,17 +163,6 @@ export function addCustomerInfoUpdateListener(
 }
 
 // ============================================================================
-// SUBSCRIBER ATTRIBUTES
-// ============================================================================
-
-export async function setChildrenAttributes(childrenIds: string[]): Promise<void> {
-  await Purchases.setAttributes({
-    children_count: childrenIds.length.toString(),
-    children_ids: JSON.stringify(childrenIds),
-  });
-}
-
-// ============================================================================
 // HELPERS
 // ============================================================================
 
