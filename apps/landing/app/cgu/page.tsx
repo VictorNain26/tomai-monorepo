@@ -4,7 +4,7 @@ export default function CguPage() {
   return (
     <PageLayout
       title="Conditions Générales d'Utilisation"
-      description="Dernière mise à jour : 23 Février 2026"
+      description="Dernière mise à jour : 11 juin 2026"
     >
       <div className="relative mt-12">
         <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-blue-600/20 rounded-[2.5rem] blur-xl opacity-50" />
@@ -19,19 +19,61 @@ export default function CguPage() {
             <p>
               Le Service est accessible via l&apos;application mobile TomIA, disponible sur iOS et Android. L&apos;Utilisateur doit disposer d&apos;un appareil mobile compatible et d&apos;un accès à internet. Tous les coûts afférents à l&apos;accès au Service, que ce soient les frais matériels ou d&apos;accès à internet, sont exclusivement à la charge de l&apos;utilisateur. Il est seul responsable du bon fonctionnement de son appareil mobile ainsi que de son accès à internet.
             </p>
+            <p>
+              La création d&apos;un compte parent est réservée aux personnes majeures. Les
+              comptes destinés aux élèves mineurs sont créés et gérés par un parent (ou
+              titulaire de l&apos;autorité parentale) depuis son propre compte.
+            </p>
 
-            <h3>3. Propriété intellectuelle</h3>
+            <h3>3. Comptes enfants et autorité parentale</h3>
+            <p>
+              En créant un compte pour un enfant, le parent déclare être titulaire de
+              l&apos;autorité parentale sur cet enfant et accepte les présentes CGU en son nom
+              et au nom de l&apos;enfant. Pour les enfants de moins de 15 ans, le traitement
+              des données repose sur le consentement conjoint du parent et de l&apos;enfant,
+              conformément à l&apos;article 45 de la loi Informatique et Libertés.
+            </p>
+            <p>
+              Le parent veille à l&apos;usage que son enfant fait du Service et en répond. Il
+              dispose depuis son espace d&apos;un accès aux comptes de ses enfants (suivi,
+              modification, suppression).
+            </p>
+            <p>
+              <strong>Pour toi, élève :</strong> ton compte a été créé par tes parents pour
+              t&apos;aider à apprendre. Utilise Tom pour comprendre tes leçons, pas pour copier
+              des réponses. Tes parents peuvent voir ta progression, et tes conversations ne
+              sont partagées avec personne d&apos;autre.
+            </p>
+
+            <h3>4. Propriété intellectuelle</h3>
             <p>
               L&apos;application TomIA, ainsi que les textes, graphiques, images, sons et vidéos la composant, sont la propriété de l&apos;éditeur ou de ses partenaires. Toute représentation et/ou reproduction et/ou exploitation partielle ou totale des contenus et services proposés par l&apos;application TomIA, par quelque procédé que ce soit, sans l&apos;autorisation préalable et par écrit de TomIA est strictement interdite et serait susceptible de constituer une contrefaçon au sens des articles L 335-2 et suivants du Code de la propriété intellectuelle.
             </p>
 
-            <h3>4. Données personnelles</h3>
+            <h3>5. Données personnelles</h3>
             <p>
-              Les informations demandées à l&apos;inscription sont nécessaires et obligatoires pour la création du compte de l&apos;Utilisateur. En particulier, l&apos;adresse électronique pourra être utilisée pour l&apos;administration, la gestion et l&apos;animation du service.
-              TomIA assure à l&apos;Utilisateur une collecte et un traitement d&apos;informations personnelles dans le respect de la vie privée conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi n°78-17 du 6 janvier 1978 relative à l&apos;informatique, aux fichiers et aux libertés. Les données sont hébergées en Europe.
+              Le traitement des données personnelles des parents et des enfants (données
+              collectées, finalités, bases légales, durées de conservation, prestataires,
+              droits et modalités d&apos;exercice) est détaillé dans la{" "}
+              <a href="/confidentialite">politique de confidentialité</a>, qui fait partie
+              intégrante des présentes CGU. En résumé : les données sont traitées en France et
+              en Europe autant que possible, ne sont jamais vendues, et aucune publicité
+              n&apos;est diffusée.
             </p>
 
-            <h3>5. Responsabilité</h3>
+            <h3>6. Résiliation et suppression de compte</h3>
+            <p>
+              Le parent peut supprimer le compte d&apos;un enfant à tout moment depuis son
+              espace dans l&apos;application. La suppression du compte parent (et des comptes
+              enfants associés) s&apos;effectue sur demande à{" "}
+              <a href="mailto:contact@tomai.fr">contact@tomai.fr</a>. Les données sont alors
+              effacées dans les conditions prévues par la{" "}
+              <a href="/confidentialite">politique de confidentialité</a>. La résiliation
+              d&apos;un abonnement en cours s&apos;effectue selon les conditions de la
+              plateforme de téléchargement (App Store ou Google Play).
+            </p>
+
+            <h3>7. Responsabilité</h3>
             <p>
               TomIA est un outil d&apos;aide aux devoirs utilisant l&apos;intelligence artificielle. Les contenus éducatifs sont alignés sur les programmes officiels Éduscol mais ne sauraient se substituer à l&apos;enseignement scolaire. TomIA s&apos;efforce de fournir des informations fiables mais ne garantit pas l&apos;exactitude, la complétude et l&apos;actualité de toutes les informations diffusées.
             </p>
