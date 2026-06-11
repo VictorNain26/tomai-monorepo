@@ -18,16 +18,16 @@ import { useThemeColors } from '@/hooks/useThemeColors';
  */
 
 const inputVariants = cva(
-  'h-12 w-full rounded-lg border bg-stone-50 dark:bg-stone-900 px-4 py-3 text-base text-stone-800 dark:text-stone-100 web:ring-offset-stone-50 dark:web:ring-offset-stone-900 web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-offset-2',
+  'h-12 w-full rounded-lg border bg-background px-4 py-3 text-base text-foreground web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-offset-2',
   {
     variants: {
       variant: {
         default:
-          'border-stone-200 dark:border-stone-700 native:focus:border-blue-600 dark:native:focus:border-blue-400 web:focus-visible:ring-blue-600 dark:web:focus-visible:ring-blue-400',
+          'border-input native:focus:border-primary web:focus-visible:ring-ring',
         error:
-          'border-red-600 dark:border-red-400 native:focus:border-red-600 dark:native:focus:border-red-400 web:focus-visible:ring-red-600 dark:web:focus-visible:ring-red-400',
+          'border-destructive native:focus:border-destructive web:focus-visible:ring-destructive',
         success:
-          'border-emerald-600 dark:border-emerald-400 native:focus:border-emerald-600 dark:native:focus:border-emerald-400 web:focus-visible:ring-emerald-600 dark:web:focus-visible:ring-emerald-400',
+          'border-success native:focus:border-success web:focus-visible:ring-success',
       },
     },
     defaultVariants: {
@@ -86,7 +86,7 @@ function Input({
   return (
     <View className="w-full gap-1.5">
       {label && (
-        <Text variant="small" className="text-stone-800 dark:text-stone-100">
+        <Text variant="small" className="text-foreground">
           {label}
         </Text>
       )}
@@ -126,7 +126,7 @@ function Input({
         )}
       </View>
       {errorMessage && (
-        <Text variant="small" className="text-red-600 dark:text-red-400">
+        <Text variant="small" className="text-destructive">
           {errorMessage}
         </Text>
       )}
