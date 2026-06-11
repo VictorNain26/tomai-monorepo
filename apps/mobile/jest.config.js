@@ -12,12 +12,13 @@ module.exports = {
     // encodes scopes as `+` and versions as `@<v>_<hash>`; we accept the
     // slightly larger transform set in exchange for a regex that works
     // on every machine. [\\\\/] matches both POSIX "/" and Windows "\".
-    'node_modules[\\\\/](?!\\.pnpm[\\\\/]|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?[\\\\/].*|@expo-google-fonts[\\\\/].*|react-navigation|@react-navigation[\\\\/].*|@rn-primitives[\\\\/].*|@tanstack[\\\\/].*|@repo[\\\\/]api|@shopify[\\\\/]flash-list|nativewind|tailwind-merge|clsx|class-variance-authority|lucide-react-native|@stablelib[\\\\/].*)',
+    'node_modules[\\\\/](?!\\.pnpm[\\\\/]|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?[\\\\/].*|@expo-google-fonts[\\\\/].*|react-navigation|@react-navigation[\\\\/].*|@rn-primitives[\\\\/].*|@tanstack[\\\\/].*|@repo[\\\\/](api|tokens)|@shopify[\\\\/]flash-list|nativewind|tailwind-merge|clsx|class-variance-authority|lucide-react-native|@stablelib[\\\\/].*)',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@repo/api$': '<rootDir>/__mocks__/@repo/api.ts',
+    '^@repo/tokens$': '<rootDir>/../../packages/tokens/src/index.ts',
   },
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',

@@ -124,7 +124,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
           className="mb-4 h-16 w-16 items-center justify-center rounded-full"
           style={{ backgroundColor: bgColors.muted[50] }}
         >
-          <BarChart3 color={colors.muted} size={32} />
+          <BarChart3 color={colors.mutedForeground} size={32} />
         </View>
         <Text variant="large" className="mb-1">
           Aucune note
@@ -172,7 +172,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
               {overallAverage >= 12 ? (
                 <TrendingUp color={colors.success} size={24} />
               ) : overallAverage >= 10 ? (
-                <Minus color={colors.muted} size={24} />
+                <Minus color={colors.mutedForeground} size={24} />
               ) : (
                 <TrendingDown color={colors.destructive} size={24} />
               )}
@@ -218,9 +218,9 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                         </Text>
                       </View>
                       {isExpanded ? (
-                        <ChevronUp color={colors.muted} size={20} />
+                        <ChevronUp color={colors.mutedForeground} size={20} />
                       ) : (
-                        <ChevronDown color={colors.muted} size={20} />
+                        <ChevronDown color={colors.mutedForeground} size={20} />
                       )}
                     </View>
                   </View>

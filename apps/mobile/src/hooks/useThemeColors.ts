@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
+import { darkColors, lightColors, type ColorToken } from '@repo/tokens';
 import { useTheme } from './useTheme';
 
+/**
+ * Tokens couleur en valeurs JS pour les API RN impératives (ActivityIndicator,
+ * placeholderTextColor, icônes lucide…) — mêmes palettes @repo/tokens que les
+ * classes NativeWind injectées par ThemeProvider.
+ */
 export interface ThemeColors {
   primary: string;
   primaryForeground: string;
@@ -13,47 +19,34 @@ export interface ThemeColors {
   info: string;
   infoForeground: string;
   foreground: string;
-  muted: string;
+  mutedForeground: string;
   background: string;
   border: string;
   card: string;
 }
 
-const LIGHT: ThemeColors = {
-  primary: '#3B82F6',
-  primaryForeground: '#FFFFFF',
-  success: '#059669',
-  successForeground: '#FFFFFF',
-  warning: '#D97706',
-  warningForeground: '#FFFFFF',
-  destructive: '#DC2626',
-  destructiveForeground: '#FFFFFF',
-  info: '#0EA5E9',
-  infoForeground: '#FFFFFF',
-  foreground: '#1C1917',
-  muted: '#57534E',
-  background: '#FAFAF9',
-  border: '#E7E5E4',
-  card: '#FFFFFF',
-};
+function toThemeColors(tokens: Record<ColorToken, string>): ThemeColors {
+  return {
+    primary: tokens['--color-primary'],
+    primaryForeground: tokens['--color-primary-foreground'],
+    success: tokens['--color-success'],
+    successForeground: tokens['--color-success-foreground'],
+    warning: tokens['--color-warning'],
+    warningForeground: tokens['--color-warning-foreground'],
+    destructive: tokens['--color-destructive'],
+    destructiveForeground: tokens['--color-destructive-foreground'],
+    info: tokens['--color-info'],
+    infoForeground: tokens['--color-info-foreground'],
+    foreground: tokens['--color-foreground'],
+    mutedForeground: tokens['--color-muted-foreground'],
+    background: tokens['--color-background'],
+    border: tokens['--color-border'],
+    card: tokens['--color-card'],
+  };
+}
 
-const DARK: ThemeColors = {
-  primary: '#60A5FA',
-  primaryForeground: '#1C1917',
-  success: '#34D399',
-  successForeground: '#1C1917',
-  warning: '#FBBF24',
-  warningForeground: '#1C1917',
-  destructive: '#F87171',
-  destructiveForeground: '#1C1917',
-  info: '#38BDF8',
-  infoForeground: '#1C1917',
-  foreground: '#F5F5F4',
-  muted: '#A8A29E',
-  background: '#1C1917',
-  border: '#44403C',
-  card: '#292524',
-};
+const LIGHT = toThemeColors(lightColors);
+const DARK = toThemeColors(darkColors);
 
 export function useThemeColors(): ThemeColors {
   const { isDark } = useTheme();

@@ -146,7 +146,7 @@ export default function CreateDeckScreen() {
           accessibilityLabel="Retour"
           accessibilityRole="button"
         >
-          <ArrowLeft color={generateMutation.isPending ? colors.muted : colors.foreground} size={24} />
+          <ArrowLeft color={generateMutation.isPending ? colors.mutedForeground : colors.foreground} size={24} />
         </TouchableOpacity>
         <View className="flex-1">
           <Text variant="h3">Créer un deck</Text>
@@ -201,7 +201,7 @@ export default function CreateDeckScreen() {
                       activeOpacity={0.7}
                     >
                       <Text className="text-base font-medium">{subject.label}</Text>
-                      <ChevronRight color={colors.muted} size={20} />
+                      <ChevronRight color={colors.mutedForeground} size={20} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -284,7 +284,7 @@ export default function CreateDeckScreen() {
                           activeOpacity={0.7}
                         >
                           <Text className="flex-1 text-sm">{theme}</Text>
-                          <ChevronRight color={colors.muted} size={16} />
+                          <ChevronRight color={colors.mutedForeground} size={16} />
                         </TouchableOpacity>
                       ))}
                     </View>

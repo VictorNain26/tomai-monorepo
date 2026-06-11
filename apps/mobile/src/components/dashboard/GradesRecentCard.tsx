@@ -161,7 +161,7 @@ export function GradesRecentCard({
 
   // Trend icon
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
-  const trendColor = trend === 'up' ? colors.success : trend === 'down' ? colors.destructive : colors.muted;
+  const trendColor = trend === 'up' ? colors.success : trend === 'down' ? colors.destructive : colors.mutedForeground;
 
   return (
     <View style={shadows.sm} className="rounded-xl bg-white dark:bg-stone-800">

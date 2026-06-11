@@ -36,7 +36,7 @@ export function MarkdownContent({ children, isUser = false }: MarkdownContentPro
 
   const mutedColor = isUser
     ? 'rgba(248, 250, 252, 0.7)'
-    : colors.muted;
+    : colors.mutedForeground;
 
   const codeBg = isUser
     ? 'rgba(255, 255, 255, 0.15)'

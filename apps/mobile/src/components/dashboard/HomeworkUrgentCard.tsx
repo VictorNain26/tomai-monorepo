@@ -208,7 +208,7 @@ export function HomeworkUrgentCard({
                       {urgency === 'urgent' ? (
                         <AlertCircle color={colors.destructive} size={12} />
                       ) : (
-                        <Clock color={colors.muted} size={12} />
+                        <Clock color={colors.mutedForeground} size={12} />
                       )}
                       <Text
                         variant="tiny"

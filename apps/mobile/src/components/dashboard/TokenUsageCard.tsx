@@ -102,7 +102,7 @@ export const TokenUsageCard = memo(function TokenUsageCard({ usage, isLoading = 
         </View>
 
         <View className="flex-row items-center gap-1">
-          <RefreshCw color={colors.muted} size={12} />
+          <RefreshCw color={colors.mutedForeground} size={12} />
           <Text variant="muted" className="text-xs">
             {windowUsage.refreshIn}
           </Text>

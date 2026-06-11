@@ -125,7 +125,7 @@ export default function SettingsScreen() {
           <View className="rounded-xl bg-white dark:bg-stone-800">
             <View className="flex-row items-center justify-between px-4 py-4">
               <View className="flex-row items-center gap-3">
-                <Info color={colors.muted} size={20} />
+                <Info color={colors.mutedForeground} size={20} />
                 <Text>Version</Text>
               </View>
               <Text variant="muted">1.0.0</Text>

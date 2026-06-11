@@ -81,7 +81,7 @@ function Input({
       ? colors.destructive
       : effectiveVariant === 'success'
         ? colors.success
-        : colors.muted;
+        : colors.mutedForeground;
 
   return (
     <View className="w-full gap-1.5">
@@ -118,9 +118,9 @@ function Input({
             hitSlop={8}
           >
             {showPassword ? (
-              <EyeOff size={20} color={colors.muted} />
+              <EyeOff size={20} color={colors.mutedForeground} />
             ) : (
-              <Eye size={20} color={colors.muted} />
+              <Eye size={20} color={colors.mutedForeground} />
             )}
           </Pressable>
         )}

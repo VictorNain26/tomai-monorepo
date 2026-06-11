@@ -241,7 +241,7 @@ export function ChildPinSetup({
             keyboardType={pinType === 'pin' ? 'numeric' : 'default'}
             maxLength={pinType === 'pin' ? 6 : 50}
             placeholder={pinType === 'pin' ? '• • • •' : '••••••••'}
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={colors.mutedForeground}
             className="rounded-xl border bg-white dark:bg-stone-800 px-4 py-4 text-center text-xl tracking-widest text-foreground"
             style={{ borderColor: colors.border }}
             autoFocus
@@ -258,7 +258,7 @@ export function ChildPinSetup({
             keyboardType={pinType === 'pin' ? 'numeric' : 'default'}
             maxLength={pinType === 'pin' ? 6 : 50}
             placeholder={pinType === 'pin' ? '• • • •' : '••••••••'}
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={colors.mutedForeground}
             className="rounded-xl border bg-white dark:bg-stone-800 px-4 py-4 text-center text-xl tracking-widest text-foreground"
             style={{
               borderColor: mismatch ? colors.destructive : colors.border,

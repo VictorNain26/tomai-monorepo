@@ -180,7 +180,7 @@ export default function TimetableScreen() {
           // Empty state
           <View className="items-center py-12">
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800">
-              <Clock color={colors.muted} size={32} />
+              <Clock color={colors.mutedForeground} size={32} />
             </View>
             <Text className="mb-1 font-semibold">Aucun cours</Text>
             <Text variant="muted" className="text-center">
@@ -260,7 +260,7 @@ export default function TimetableScreen() {
                               {teacher && (
                                 <View className="flex-row items-center gap-1">
                                   <User
-                                    color={colors.muted}
+                                    color={colors.mutedForeground}
                                     size={14}
                                   />
                                   <Text variant="muted" className="text-sm">
@@ -271,7 +271,7 @@ export default function TimetableScreen() {
                               {room && (
                                 <View className="flex-row items-center gap-1">
                                   <MapPin
-                                    color={colors.muted}
+                                    color={colors.mutedForeground}
                                     size={14}
                                   />
                                   <Text variant="muted" className="text-sm">

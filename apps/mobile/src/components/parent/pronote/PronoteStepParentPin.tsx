@@ -54,7 +54,7 @@ export function PronoteStepParentPin({
           keyboardType="numeric"
           maxLength={6}
           placeholder="• • • •"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={colors.mutedForeground}
           className="mt-8 rounded-xl border bg-white dark:bg-stone-800 px-4 py-4 text-center text-2xl tracking-widest text-foreground"
           style={{ borderColor: error ? colors.destructive : colors.border }}
           autoFocus

@@ -214,7 +214,7 @@ export default function ParentProfileScreen() {
                     </View>
                   </View>
                   {item.showChevron && (
-                    <ChevronRight color={colors.muted} size={20} />
+                    <ChevronRight color={colors.mutedForeground} size={20} />
                   )}
                 </TouchableOpacity>
               ))}

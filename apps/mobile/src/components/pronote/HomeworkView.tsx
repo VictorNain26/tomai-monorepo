@@ -156,7 +156,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
             <View key={dateKey}>
               {/* Date header */}
               <View className="mb-2 flex-row items-center gap-2">
-                <Calendar color={colors.muted} size={16} />
+                <Calendar color={colors.mutedForeground} size={16} />
                 <Text className="font-semibold">{formatDateWithDay(dateKey)}</Text>
                 {isUrgent && (
                   <View
@@ -202,7 +202,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
                           ) : overdue ? (
                             <AlertCircle color={colors.destructive} size={20} />
                           ) : (
-                            <Circle color={colors.muted} size={20} />
+                            <Circle color={colors.mutedForeground} size={20} />
                           )}
                           <View className="flex-1">
                             <Text

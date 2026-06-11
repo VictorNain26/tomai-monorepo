@@ -36,7 +36,7 @@ export function LevelPickerSheet({ visible, onClose, onSelect, selectedLevel }: 
           <View className="flex-row items-center justify-between px-5 pb-3">
             <Text className="text-lg font-semibold">Niveau scolaire</Text>
             <TouchableOpacity onPress={onClose} className="p-1">
-              <X color={colors.muted} size={20} />
+              <X color={colors.mutedForeground} size={20} />
             </TouchableOpacity>
           </View>
 

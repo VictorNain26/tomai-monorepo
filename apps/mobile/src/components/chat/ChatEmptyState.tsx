@@ -52,7 +52,7 @@ export function ChatEmptyState({
             >
               <SubjectIcon subject={s.subject} size={20} />
               <Text className="flex-1">{s.label}</Text>
-              <ChevronRight color={colors.muted} size={16} />
+              <ChevronRight color={colors.mutedForeground} size={16} />
             </TouchableOpacity>
           ))}
         </View>
