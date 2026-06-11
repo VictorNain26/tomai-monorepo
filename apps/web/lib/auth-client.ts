@@ -10,7 +10,7 @@
  * @see https://www.better-auth.com/docs/concepts/client
  */
 import { createAuthClient } from "better-auth/react";
-import type { Role } from "@/lib/roles";
+import type { IAppUser } from "@repo/api/types";
 
 const baseURL = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
@@ -18,17 +18,14 @@ export const authClient = createAuthClient({ baseURL });
 
 export const { useSession, signIn, signUp, signOut } = authClient;
 
-/** Utilisateur applicatif typé (le rôle vient du serveur : parent | student). */
-export interface AppUser {
-  id: string;
-  email: string;
-  name: string;
-  image?: string;
-  role: Role;
-}
-
-/** Hook : utilisateur connecté typé, ou null si non connecté / en chargement. */
-export function useUser(): AppUser | null {
-  const { data } = useSession();
-  return (data?.user as AppUser | undefined) ?? null;
+/**
+ * Hook : utilisateur connecté (contrat @repo/api, vérité serveur) + état de
+ * chargement, pour distinguer « pas encore su » de « non connecté ». Le
+ * mapping rôle → espace web reste l'affaire de `resolveWebRole`.
+ */
+export function useUser(): { user: IAppUser | null; isPending: boolean } {
+  const { data, isPending } = useSession();
+  // Cast unique : Better Auth ne propage pas les additionalFields serveur
+  // (role, schoolLevel…) dans le type client cross-origin.
+  return { user: (data?.user as IAppUser | undefined) ?? null, isPending };
 }
