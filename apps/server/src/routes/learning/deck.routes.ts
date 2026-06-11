@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
+import { EDUCATION_LEVEL_UNION } from '../../lib/education-levels.js';
 import { logger } from '../../lib/observability';
 import { learningService } from '../../services/learning/learning.service';
 import { handleDeckDomainError } from './helpers';
@@ -62,13 +63,7 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
         ]),
         sourceId: t.Optional(t.String()),
         sourcePrompt: t.Optional(t.String()),
-        schoolLevel: t.Optional(t.Union([
-          t.Literal('cp'), t.Literal('ce1'), t.Literal('ce2'),
-          t.Literal('cm1'), t.Literal('cm2'),
-          t.Literal('sixieme'), t.Literal('cinquieme'),
-          t.Literal('quatrieme'), t.Literal('troisieme'),
-          t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
-        ])),
+        schoolLevel: t.Optional(EDUCATION_LEVEL_UNION),
       }),
     }
   )
