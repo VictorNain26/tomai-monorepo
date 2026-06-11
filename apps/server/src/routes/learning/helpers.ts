@@ -57,16 +57,6 @@ export function getUserLevel(
 }
 
 /**
- * School level type schema for Elysia validation
- * Used in multiple route files
- */
-export const schoolLevelLiterals = [
-  'cp', 'ce1', 'ce2', 'cm1', 'cm2',
-  'sixieme', 'cinquieme', 'quatrieme', 'troisieme',
-  'seconde', 'premiere', 'terminale',
-] as const;
-
-/**
  * Subject labels for French UI
  * Aligned with Qdrant matières and frontend SUBJECT_METADATA
  */
