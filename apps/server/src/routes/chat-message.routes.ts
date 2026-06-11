@@ -15,7 +15,7 @@ import { tokenQuotaService } from '../services/token-quota.service.js';
 import { AppError, toErrorResponse } from '../lib/errors.js';
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
-import { EDUCATION_LEVELS, isEducationLevel } from '../lib/education-levels.js';
+import { EDUCATION_LEVEL_UNION, isEducationLevel } from '../lib/education-levels.js';
 
 // Track active SSE connections per user
 const activeSSEConnections = new Map<string, number>();
@@ -145,7 +145,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           description: 'Session UUID'
         })),
         schoolLevel: t.Optional(t.Union(
-          [...EDUCATION_LEVELS.map((level) => t.Literal(level))],
+          [...EDUCATION_LEVEL_UNION.anyOf],
           { description: 'Student school level (CP → terminale)' }
         )),
         firstName: t.Optional(t.String({
