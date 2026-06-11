@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
 
 export default function CguPage() {
@@ -55,7 +56,7 @@ export default function CguPage() {
               Le traitement des données personnelles des parents et des enfants (données
               collectées, finalités, bases légales, durées de conservation, prestataires,
               droits et modalités d&apos;exercice) est détaillé dans la{" "}
-              <a href="/confidentialite">politique de confidentialité</a>, qui fait partie
+              <Link href="/confidentialite">politique de confidentialité</Link>, qui fait partie
               intégrante des présentes CGU. En résumé : les données sont traitées en France et
               en Europe autant que possible, ne sont jamais vendues, et aucune publicité
               n&apos;est diffusée.
@@ -68,7 +69,7 @@ export default function CguPage() {
               enfants associés) s&apos;effectue sur demande à{" "}
               <a href="mailto:contact@tomai.fr">contact@tomai.fr</a>. Les données sont alors
               effacées dans les conditions prévues par la{" "}
-              <a href="/confidentialite">politique de confidentialité</a>. La résiliation
+              <Link href="/confidentialite">politique de confidentialité</Link>. La résiliation
               d&apos;un abonnement en cours s&apos;effectue selon les conditions de la
               plateforme de téléchargement (App Store ou Google Play).
             </p>
@@ -76,6 +77,16 @@ export default function CguPage() {
             <h3>7. Responsabilité</h3>
             <p>
               TomIA est un outil d&apos;aide aux devoirs utilisant l&apos;intelligence artificielle. Les contenus éducatifs sont alignés sur les programmes officiels Éduscol mais ne sauraient se substituer à l&apos;enseignement scolaire. TomIA s&apos;efforce de fournir des informations fiables mais ne garantit pas l&apos;exactitude, la complétude et l&apos;actualité de toutes les informations diffusées.
+            </p>
+
+            <h3>8. Droit applicable</h3>
+            <p>
+              Les présentes CGU sont soumises au droit français. En cas de litige et à défaut
+              de résolution amiable, les tribunaux français seront seuls compétents,
+              sous réserve des règles protectrices applicables aux consommateurs. La
+              responsabilité de l&apos;éditeur ne saurait être engagée en cas de force majeure
+              ou d&apos;indisponibilité du Service imputable à un tiers (hébergeur,
+              fournisseur d&apos;accès).
             </p>
           </div>
         </div>

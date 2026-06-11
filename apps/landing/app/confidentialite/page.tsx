@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
 
 export default function ConfidentialitePage() {
@@ -22,7 +23,7 @@ export default function ConfidentialitePage() {
             <p>
               Le responsable du traitement est Victor Lenain, entrepreneur individuel, éditeur
               de l&apos;application TomIA (voir les{" "}
-              <a href="/mentions-legales">mentions légales</a>). Pour toute question relative à
+              <Link href="/mentions-legales">mentions légales</Link>). Pour toute question relative à
               vos données personnelles ou pour exercer vos droits :{" "}
               <a href="mailto:contact@tomai.fr">contact@tomai.fr</a>.
             </p>
