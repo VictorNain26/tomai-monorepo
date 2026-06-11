@@ -1,4 +1,4 @@
-import { t } from 'elysia';
+import { t, type Static } from 'elysia';
 import type { EducationLevelType } from '../types/index.js';
 
 /** Single source of truth for the 12 French school levels (CP → terminale). */
@@ -32,3 +32,12 @@ export const EDUCATION_LEVEL_UNION = t.Union([
   t.Literal('quatrieme'), t.Literal('troisieme'),
   t.Literal('seconde'), t.Literal('premiere'), t.Literal('terminale'),
 ]);
+
+// Two-way compile-time guard: the hand-written union above must accept
+// exactly the EDUCATION_LEVELS values — a level added to the DB enum but
+// missing here (or a typo here) fails to typecheck instead of silently
+// rejecting valid input at runtime.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _UnionAcceptsEveryLevel = AssertExtends<Static<typeof EDUCATION_LEVEL_UNION>, EducationLevelType>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _UnionHasOnlyValidLevels = AssertExtends<EducationLevelType, Static<typeof EDUCATION_LEVEL_UNION>>;
