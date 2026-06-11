@@ -2,7 +2,8 @@
  * Consommé par apps/mobile (NativeWind v5) et apps/landing (Tailwind v4) via :
  *   @import "@repo/tokens/theme.css";
  * Importer APRÈS l'import de Tailwind/NativeWind de l'app.
- * Dark mode : appliqué par chaque app via son propre mécanisme (hors de ce fichier). */
+ * Dark mode : theme-dark.css (classe .dark, web/landing) et src/colors.ts
+ * (variables runtime NativeWind, mobile). */
 @theme {
   /* Fontes */
   --font-sans: 'NunitoSans';
