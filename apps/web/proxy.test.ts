@@ -55,9 +55,15 @@ describe('proxy (role-aware auth guard)', () => {
     expect(res.headers.get('location')).toContain('/parent');
   });
 
-  it('treats an unknown role as parent and redirects off a mismatched segment', async () => {
-    mockSessionResponse({ user: { role: 'superadmin' } });
-    const res = await proxy(reqFor('/student/x'));
-    expect(res.headers.get('location')).toContain('/parent');
+  it('redirects a non-web role (admin) to /login instead of guessing a space', async () => {
+    mockSessionResponse({ user: { role: 'admin' } });
+    const res = await proxy(reqFor('/parent'));
+    expect(res.headers.get('location')).toContain('/login');
+  });
+
+  it('still defaults a session without role field to parent', async () => {
+    mockSessionResponse({ user: {} });
+    const res = await proxy(reqFor('/parent'));
+    expect(res.headers.get('location')).toBeNull();
   });
 });

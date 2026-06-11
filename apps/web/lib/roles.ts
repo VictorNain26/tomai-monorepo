@@ -17,3 +17,18 @@ export const ROLE_LABEL: Record<Role, string> = {
   student: "Élève",
   school: "Établissement",
 };
+
+export function asRole(value: unknown): Role | null {
+  return typeof value === "string" && (ROLES as readonly string[]).includes(value)
+    ? (value as Role)
+    : null;
+}
+
+/**
+ * Rôle web effectif d'une session : absent → défaut produit "parent" ;
+ * présent mais hors espace web (ex. 'admin', qui existe côté serveur via le
+ * plugin Better Auth) → null, à refuser explicitement par l'appelant.
+ */
+export function resolveWebRole(value: string | undefined): Role | null {
+  return value === undefined ? "parent" : asRole(value);
+}
