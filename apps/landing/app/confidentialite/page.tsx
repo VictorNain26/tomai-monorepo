@@ -158,8 +158,8 @@ export default function ConfidentialitePage() {
               Les échanges sont chiffrés (TLS). Les identifiants Pronote sont chiffrés en
               AES-256-GCM avec une dérivation de clé PBKDF2 à 600 000 itérations et un sel
               aléatoire par enregistrement. Le cache de l&apos;application mobile est chiffré
-              (ChaCha20-Poly1305) avec une clé conservée dans l&apos;enclave sécurisée de
-              l&apos;appareil. Les cookies de session sont protégés (httpOnly, secure) et
+              (ChaCha20-Poly1305) avec une clé conservée dans le stockage sécurisé du système
+              (trousseau iOS / Keystore Android). Les cookies de session sont protégés (httpOnly, secure) et
               l&apos;accès aux données d&apos;un enfant est strictement réservé à son parent.
             </p>
 
