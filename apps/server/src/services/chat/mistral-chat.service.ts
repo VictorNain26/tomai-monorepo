@@ -175,6 +175,7 @@ class MistralChatService {
       const toolsUsed: string[] = [];
       let toolCallsCount = 0;
       let iteration = 0;
+      const usageTotal = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
       while (iteration < MAX_TOOL_ITERATIONS) {
         // Each iteration is a fresh stream from Mistral with the current
@@ -236,8 +237,13 @@ class MistralChatService {
               type: 'function' as const,
               function: { name: chunk.toolCall.name, arguments: chunk.toolCall.arguments },
             });
+          } else if (chunk.type === 'done' && chunk.usage) {
+            // Chaque itération de la boucle agentique est un appel Mistral
+            // distinct — on additionne les usages de toutes les itérations.
+            usageTotal.promptTokens += chunk.usage.promptTokens;
+            usageTotal.completionTokens += chunk.usage.completionTokens;
+            usageTotal.totalTokens += chunk.usage.totalTokens;
           }
-          // 'done' chunk falls through naturally on next() returning done=true
 
           step = await withTimeout(
             iterator.next(),
@@ -331,17 +337,13 @@ class MistralChatService {
         iteration++;
       }
 
-      // Mistral streaming doesn't expose usage metadata on every event; the
-      // SDK puts it on the final chunk. We pass through 0s and let the
-      // caller's post-processing (cost-tracking) infer from message length
-      // until we wire up the usage event.
       yield {
         type: 'done' as const,
         id: messageId,
         model: MODEL,
         timestamp: Date.now(),
         finishReason: 'stop' as const,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        usage: usageTotal,
         metadata: {
           sessionId: params.sessionId,
           usedRAG: toolsUsed.includes('search_educational_content'),

@@ -120,6 +120,8 @@ export interface ChatStreamChunk {
   type: 'text' | 'tool_call' | 'done';
   text?: string;
   toolCall?: { id: string; name: string; arguments: string };
+  /** Présent uniquement sur le chunk 'done' — usage du stream complet. */
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 }
 
 // ── Helpers internes ────────────────────────────────────────────────────────
@@ -326,7 +328,16 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
       safePrompt: true,
       parallelToolCalls: opts.parallelToolCalls ?? false,
     });
+    let usage: ChatStreamChunk['usage'];
     for await (const event of stream) {
+      const u = event.data?.usage;
+      if (u) {
+        usage = {
+          promptTokens: u.promptTokens ?? 0,
+          completionTokens: u.completionTokens ?? 0,
+          totalTokens: u.totalTokens ?? ((u.promptTokens ?? 0) + (u.completionTokens ?? 0)),
+        };
+      }
       const delta = event.data?.choices?.[0]?.delta;
       if (delta?.content) {
         const text = typeof delta.content === 'string'
@@ -349,7 +360,7 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
         };
       }
     }
-    yield { type: 'done' };
+    yield { type: 'done', usage };
     return;
   }
 
@@ -400,6 +411,7 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let usage: ChatStreamChunk['usage'];
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -412,6 +424,14 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
       if (payload === '[DONE]') continue;
       try {
         const event = JSON.parse(payload);
+        const u = event.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null | undefined;
+        if (u) {
+          usage = {
+            promptTokens: u.prompt_tokens ?? 0,
+            completionTokens: u.completion_tokens ?? 0,
+            totalTokens: u.total_tokens ?? ((u.prompt_tokens ?? 0) + (u.completion_tokens ?? 0)),
+          };
+        }
         const delta = event.choices?.[0]?.delta;
         if (delta?.content) yield { type: 'text', text: String(delta.content) };
         for (const tc of delta?.tool_calls ?? []) {
@@ -429,5 +449,5 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
       }
     }
   }
-  yield { type: 'done' };
+  yield { type: 'done', usage };
 }
