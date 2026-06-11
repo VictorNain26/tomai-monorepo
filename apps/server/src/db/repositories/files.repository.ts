@@ -81,6 +81,17 @@ export class FilesRepository {
   }
 
   /**
+   * Lister tous les fichiers d'un utilisateur (toutes statuts sauf 'deleted')
+   * Utilisé avant suppression de compte pour collecter les clés S3 à purger.
+   */
+  async listByUserId(userId: string): Promise<Pick<File, 'id' | 'storageKey'>[]> {
+    return await db
+      .select({ id: files.id, storageKey: files.storageKey })
+      .from(files)
+      .where(eq(files.userId, userId));
+  }
+
+  /**
    * Mettre à jour le statut d'un fichier
    */
   async updateStatus(id: string, status: FileStatus): Promise<File | undefined> {

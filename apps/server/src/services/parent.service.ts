@@ -3,8 +3,9 @@
  * Implementation split into parent/parent-dashboard.service.ts and parent/parent-types.ts
  */
 
-import { usersRepository } from '../db/repositories';
+import { usersRepository, filesRepository } from '../db/repositories';
 import { logger } from '../lib/observability';
+import { deleteFile } from './storage/scaleway-storage.service';
 import { auth } from '../lib/auth';
 import type { SchoolLevel } from '../db/schema.js';
 import { ParentDashboardService } from './parent/parent-dashboard.service';
@@ -203,6 +204,9 @@ export class ParentService {
         throw new Error('Access denied: Student does not belong to parent');
       }
 
+      // Collect storage keys before the cascade destroys the DB references
+      const fileRecords = await filesRepository.listByUserId(childId);
+
       const deleted = await usersRepository.deleteById(childId);
       if (!deleted) {
         throw new Error('Failed to delete child from database');
@@ -213,6 +217,31 @@ export class ParentService {
         logger.error('CRITICAL: Child still exists after deletion', { operation: 'parent:child:delete:verify', _error: 'Child persists after delete query', childId, parentId, severity: 'critical' as const });
         throw new Error('Deletion failed: User still exists in database');
       }
+
+      // Best-effort S3 purge — a storage failure must never block the erasure right
+      let filesPurged = 0;
+      let filesFailed = 0;
+      for (const { storageKey } of fileRecords) {
+        try {
+          await deleteFile(storageKey);
+          filesPurged++;
+        } catch (_err) {
+          filesFailed++;
+          logger.error('parent:delete-child-s3-purge', {
+            storageKey,
+            childId,
+            _error: _err instanceof Error ? _err.message : String(_err),
+            severity: 'high' as const,
+          });
+        }
+      }
+
+      logger.info('Child account deleted with S3 purge', {
+        operation: 'parent:delete-child',
+        childId,
+        filesPurged,
+        filesFailed,
+      });
     } catch (_error) {
       logger.error('Error deleting child', { operation: 'parent:child:delete', _error: _error instanceof Error ? _error.message : String(_error), parentId, childId, severity: 'high' as const });
       throw new Error('Failed to delete child', { cause: _error });
