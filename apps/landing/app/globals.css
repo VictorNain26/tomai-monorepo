@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@repo/tokens/theme.css";
+@import "@repo/tokens/theme-dark.css";
 @source "../../../packages/ui/src";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -9,35 +10,7 @@
   --grid-color: hsl(214 32% 80% / 0.25);
 }
 
-/* Dark mode overrides (class-based via next-themes) */
 .dark {
-  --color-background: hsl(224 71% 4%); /* #020617 - Slate 950 */
-  --color-foreground: hsl(210 40% 98%); /* #F8FAFC - Slate 50 */
-  --color-primary: hsl(217 91% 60%); /* #3B82F6 - Blue 500 */
-  --color-primary-foreground: hsl(222 47% 11%);
-  --color-secondary: hsl(215 28% 17%); /* #1E293B - Slate 800 */
-  --color-secondary-foreground: hsl(210 40% 98%);
-  --color-muted: hsl(215 28% 17%);
-  --color-muted-foreground: hsl(215 20% 65%); /* #94A3B8 - Slate 400 */
-  --color-accent: hsl(215 28% 17%);
-  --color-accent-foreground: hsl(210 40% 98%);
-  --color-card: hsl(222 47% 13%); /* Slightly lighter for better contrast */
-  --color-card-foreground: hsl(210 40% 98%);
-  --color-popover: hsl(222 47% 11%);
-  --color-popover-foreground: hsl(210 40% 98%);
-  --color-destructive: #F87171;
-  --color-destructive-foreground: #1C1917;
-  --color-success: #34D399;
-  --color-success-foreground: #1C1917;
-  --color-warning: #FBBF24;
-  --color-warning-foreground: #1C1917;
-  --color-info: #38BDF8;
-  --color-info-foreground: #1C1917;
-  --color-violet: hsl(263 70% 60%);
-  --color-violet-foreground: hsl(0 0% 100%);
-  --color-border: hsl(215 28% 17%); /* #1E293B */
-  --color-input: hsl(215 28% 17%);
-  --color-ring: hsl(217 91% 60%);
   --grid-color: hsl(215 28% 30% / 0.25);
 }
 
