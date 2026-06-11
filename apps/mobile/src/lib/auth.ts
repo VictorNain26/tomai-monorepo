@@ -33,17 +33,9 @@ GoogleSignin.configure({
 // TYPES
 // ============================================================================
 
-export interface IAppUser {
-  id: string;
-  email: string;
-  name: string;
-  image?: string;
-  role: 'parent' | 'student';
-  schoolLevel?: string;
-  parentId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import type { IAppUser } from '@repo/api/types';
+
+export type { IAppUser };
 
 /** Session with impersonation metadata from Better Auth admin plugin */
 interface ImpersonatedSession {
