@@ -237,12 +237,23 @@ class MistralChatService {
               type: 'function' as const,
               function: { name: chunk.toolCall.name, arguments: chunk.toolCall.arguments },
             });
-          } else if (chunk.type === 'done' && chunk.usage) {
-            // Chaque itération de la boucle agentique est un appel Mistral
-            // distinct — on additionne les usages de toutes les itérations.
-            usageTotal.promptTokens += chunk.usage.promptTokens;
-            usageTotal.completionTokens += chunk.usage.completionTokens;
-            usageTotal.totalTokens += chunk.usage.totalTokens;
+          } else if (chunk.type === 'done') {
+            if (chunk.usage) {
+              // Chaque itération de la boucle agentique est un appel Mistral
+              // distinct — on additionne les usages de toutes les itérations.
+              usageTotal.promptTokens += chunk.usage.promptTokens;
+              usageTotal.completionTokens += chunk.usage.completionTokens;
+              usageTotal.totalTokens += chunk.usage.totalTokens;
+            } else {
+              // Un stream sans usage redeviendrait un quota silencieusement
+              // mort (cause du bug d'origine) — rendre le trou observable.
+              logger.warn('Mistral stream completed without usage metadata', {
+                userId: params.userId,
+                sessionId: params.sessionId,
+                iteration,
+                operation: 'mistral-chat:missing-usage',
+              });
+            }
           }
 
           step = await withTimeout(
