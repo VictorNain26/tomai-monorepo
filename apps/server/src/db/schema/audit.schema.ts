@@ -16,9 +16,9 @@ import { pgTable, uuid, varchar, integer, timestamp, real, index } from 'drizzle
  * DELETE caller. CRUD deletions are driven by the user-deletion cascade on
  * `auth.user.id` (RGPD article 17 right to erasure).
  *
- * Retention is handled by a periodic cron (not in scope for this PR): rows
- * older than 12 months get deleted. Article 30 calls for "as long as
- * processing is active"; for an MVP we keep one year of analytics + audit.
+ * Retention is enforced by `services/retention-purge.service.ts`: rows older
+ * than 12 months are deleted at boot and every 24 h. Article 30 calls for
+ * "as long as processing is active"; for an MVP we keep one year of analytics + audit.
  */
 export const retrievalAudit = pgTable(
   'retrieval_audit',

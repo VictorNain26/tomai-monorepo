@@ -23,6 +23,11 @@ Le workflow TDD (Red-Green-Refactor) est géré par **superpowers:test-driven-de
 - Mobile : `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
 - Landing : `cd apps/landing && pnpm typecheck && pnpm lint`
 
+**Avant push server, AUSSI `bun run test:integration`** (gating en CI). Piège connu :
+`api-endpoints.test.ts` mocke `drizzle-orm` partiellement — tout nouveau module
+importé par la chaîne `app.ts`/`server-lifecycle.ts` qui tire les schémas Drizzle
+doit être mocké dans ce fichier (pattern : voir le mock de `retention-purge.service`).
+
 ## Scopes de commit conventionnels
 
 `chat`, `server`, `landing`, `mobile`, `ci`, `db`, `auth`, `rag`. Toujours stager les fichiers explicitement (jamais `git add .`).

@@ -102,6 +102,13 @@ mock.module('../services/token-quota.service', () => ({
   tokenQuotaService: { resetAllDailyTokens: mock(async () => ({ resetCount: 0 })) },
 }));
 
+// Retention purge — its real module pulls the Drizzle schemas, whose
+// `relations` import the partial drizzle-orm mock above doesn't provide.
+mock.module('../services/retention-purge.service', () => ({
+  purgeExpiredData: mock(async () => ({ episodesDeleted: 0, auditRowsDeleted: 0 })),
+  startRetentionPurgeScheduler: () => () => {},
+}));
+
 // Auth middleware — mutable user for auth tests
 let authUser: Record<string, unknown> | null = null;
 mock.module('../middleware/auth.middleware', () => ({
