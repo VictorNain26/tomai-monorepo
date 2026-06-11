@@ -5,6 +5,7 @@ import { memoryMonitor } from '../middleware/memory-monitor.middleware.js';
 import { db } from '../db/connection.js';
 import { sql } from 'drizzle-orm';
 import { validateEncryptionSetup } from '../lib/encryption.js';
+import { startRetentionPurgeScheduler } from './retention-purge.service.js';
 
 let tokenResetInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -128,6 +129,7 @@ export async function initializeServices(): Promise<void> {
     memoryMonitor.startMonitoring(30000);
 
     startTokenResetCron();
+    startRetentionPurgeScheduler();
 
     logger.info('All services initialized successfully', {
       operation: 'services:init:success',
@@ -137,7 +139,8 @@ export async function initializeServices(): Promise<void> {
         rag: 'qdrant-cloud',
         ai_stack: 'mistral',
         memory_monitor: 'active',
-        token_reset_cron: 'active'
+        token_reset_cron: 'active',
+        retention_purge: 'active',
       },
       environment: env.NODE_ENV
     });
