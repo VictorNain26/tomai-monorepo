@@ -16,11 +16,11 @@ const packageRoot = join(import.meta.dir, "..");
 describe("cohérence CSS ↔ TS des tokens couleur", () => {
   test("theme.css (light) et lightColors déclarent les mêmes tokens aux mêmes valeurs", () => {
     const cssVars = parseColorVars(readFileSync(join(packageRoot, "theme.css"), "utf8"));
-    expect(cssVars).toEqual({ ...lightColors });
+    expect(cssVars).toEqual(lightColors);
   });
 
   test("theme-dark.css et darkColors déclarent les mêmes tokens aux mêmes valeurs", () => {
     const cssVars = parseColorVars(readFileSync(join(packageRoot, "theme-dark.css"), "utf8"));
-    expect(cssVars).toEqual({ ...darkColors });
+    expect(cssVars).toEqual(darkColors);
   });
 });

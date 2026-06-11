@@ -3,8 +3,8 @@
  * (divergences web/landing tranchées : card=#0F172A, violet=#8B5CF6,
  * status-foreground stone→slate). Mobile ne consomme PAS ce fichier :
  * NativeWind v5 reçoit darkColors (src/colors.ts) via VariableContextProvider.
- * Exhaustif (les 27 --color-*) pour rester l'égal exact de darkColors —
- * cohérence garantie par src/colors.test.ts. */
+ * Exhaustif — l'égal exact de darkColors, cohérence garantie par
+ * src/colors.test.ts. */
 .dark {
   --color-background: #020617;
   --color-foreground: #F8FAFC;
