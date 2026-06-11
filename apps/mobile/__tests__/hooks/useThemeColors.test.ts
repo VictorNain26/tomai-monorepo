@@ -31,4 +31,12 @@ describe('useThemeColors', () => {
     const { result } = renderHook(() => useThemeColors());
     expect(result.current.mutedForeground).toBe(lightColors['--color-muted-foreground']);
   });
+
+  it('retourne la même référence objet pour le même mode', () => {
+    mockScheme(false);
+    const { result, rerender } = renderHook(() => useThemeColors());
+    const first = result.current;
+    rerender(undefined);
+    expect(result.current).toBe(first);
+  });
 });

@@ -11,7 +11,9 @@ module.exports = {
     // are transformed. Filtering inside `.pnpm/` is fiddly because pnpm
     // encodes scopes as `+` and versions as `@<v>_<hash>`; we accept the
     // slightly larger transform set in exchange for a regex that works
-    // on every machine. [\\\\/] matches both POSIX "/" and Windows "\".
+    // on every machine. The named packages below are also whitelisted
+    // directly, independent of store path (workspace symlinks resolve
+    // outside `.pnpm/`). [\\\\/] matches both POSIX "/" and Windows "\".
     'node_modules[\\\\/](?!\\.pnpm[\\\\/]|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?[\\\\/].*|@expo-google-fonts[\\\\/].*|react-navigation|@react-navigation[\\\\/].*|@rn-primitives[\\\\/].*|@tanstack[\\\\/].*|@repo[\\\\/](api|tokens)|@shopify[\\\\/]flash-list|nativewind|tailwind-merge|clsx|class-variance-authority|lucide-react-native|@stablelib[\\\\/].*)',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
