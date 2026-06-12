@@ -17,8 +17,8 @@ export interface ConceptContent {
 export function ConceptViewer({ content }: { content: ConceptContent }) {
   return (
     <ScrollView className="flex-1">
-      <View className="mb-4 self-start rounded-full bg-purple-100 px-4 py-2">
-        <Text className="text-sm font-medium text-purple-700">📖 Concept</Text>
+      <View className="mb-4 self-start rounded-full bg-violet/15 px-4 py-2">
+        <Text className="text-sm font-medium text-violet">📖 Concept</Text>
       </View>
 
       <Text variant="h3" className="mb-4">
@@ -45,7 +45,7 @@ export function ConceptViewer({ content }: { content: ConceptContent }) {
       )}
 
       {content.formula && (
-        <View className="rounded-xl bg-blue-50 p-4">
+        <View className="rounded-xl bg-info/10 p-4">
           <Text className="mb-2 font-semibold">Formule :</Text>
           <Text className="text-center font-mono text-lg">{content.formula}</Text>
         </View>

@@ -108,7 +108,7 @@ export function PronotePinEntry({
       </Button>
 
       {/* Help Text */}
-      <View className="mt-6 rounded-xl bg-card p-4" style={{ backgroundColor: bgColors.muted[50] }}>
+      <View className="mt-6 rounded-xl p-4" style={{ backgroundColor: bgColors.muted[50] }}>
         <Text variant="muted" className="text-center text-sm">
           Le code PIN est affiche sur l'ecran Pronote apres le QR code.
           {'\n'}Il expire apres quelques minutes.

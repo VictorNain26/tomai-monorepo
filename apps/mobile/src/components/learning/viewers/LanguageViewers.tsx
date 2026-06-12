@@ -47,14 +47,14 @@ function FeedbackBox({
   correctAnswer?: string;
 }) {
   return (
-    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-      <Text className={isCorrect ? 'text-green-700' : 'text-red-700'}>
+    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-success/15' : 'bg-destructive/15'}`}>
+      <Text className={isCorrect ? 'text-success' : 'text-destructive'}>
         {isCorrect ? '✓ Bonne réponse !' : '✗ Mauvaise réponse'}
       </Text>
       {correctAnswer && !isCorrect && (
-        <Text className="mt-2 text-sm text-gray-700">Réponse : {correctAnswer}</Text>
+        <Text className="mt-2 text-sm text-foreground">Réponse : {correctAnswer}</Text>
       )}
-      {explanation && <Text className="mt-2 text-sm text-gray-700">{explanation}</Text>}
+      {explanation && <Text className="mt-2 text-sm text-foreground">{explanation}</Text>}
     </View>
   );
 }
@@ -99,7 +99,7 @@ export function MatchingViewer({ content }: { content: MatchingContent }) {
                 disabled={validated || isMatched}
                 className={`rounded-lg border p-3 ${
                   isMatched
-                    ? 'border-green-500 bg-green-50'
+                    ? 'border-success bg-success/15'
                     : isSelected
                       ? 'border-primary'
                       : 'border-border bg-card'
@@ -123,7 +123,7 @@ export function MatchingViewer({ content }: { content: MatchingContent }) {
                 disabled={validated || isUsed || selectedLeft === null}
                 className={`rounded-lg border p-3 ${
                   isUsed
-                    ? 'border-green-500 bg-green-50'
+                    ? 'border-success bg-success/15'
                     : 'border-border bg-card'
                 }`}
                 style={!isUsed && selectedLeft !== null ? { borderColor: borderColors.primary[50] } : undefined}
@@ -163,8 +163,8 @@ export function FillBlankViewer({ content }: { content: FillBlankContent }) {
   return (
     <View className="flex-1">
       {content.grammaticalPoint && (
-        <View className="mb-4 self-start rounded-full bg-blue-100 px-4 py-2">
-          <Text className="text-sm text-blue-700">{content.grammaticalPoint}</Text>
+        <View className="mb-4 self-start rounded-full bg-info/10 px-4 py-2">
+          <Text className="text-sm text-info">{content.grammaticalPoint}</Text>
         </View>
       )}
 
@@ -180,9 +180,9 @@ export function FillBlankViewer({ content }: { content: FillBlankContent }) {
           let bgClass = 'bg-card border-border';
           let useInlineStyle = false;
           if (validated && isCorrectOption) {
-            bgClass = 'bg-green-100 border-green-500';
+            bgClass = 'bg-success/15 border-success';
           } else if (validated && isSelected && !isCorrectOption) {
-            bgClass = 'bg-red-100 border-red-500';
+            bgClass = 'bg-destructive/15 border-destructive';
           } else if (isSelected) {
             bgClass = 'border-primary';
             useInlineStyle = true;

@@ -46,11 +46,11 @@ function FeedbackBox({
   explanation?: string;
 }) {
   return (
-    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-      <Text className={isCorrect ? 'text-green-700' : 'text-red-700'}>
+    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-success/15' : 'bg-destructive/15'}`}>
+      <Text className={isCorrect ? 'text-success' : 'text-destructive'}>
         {isCorrect ? '✓ Bonne réponse !' : '✗ Mauvaise réponse'}
       </Text>
-      {explanation && <Text className="mt-2 text-sm text-gray-700">{explanation}</Text>}
+      {explanation && <Text className="mt-2 text-sm text-foreground">{explanation}</Text>}
     </View>
   );
 }
@@ -209,7 +209,7 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
               disabled={validated || assignedEra !== undefined}
               className={`flex-row items-center justify-between rounded-lg border p-3 ${
                 assignedEra !== undefined
-                  ? 'border-green-500 bg-green-50'
+                  ? 'border-success bg-success/15'
                   : isSelected
                     ? 'border-primary'
                     : 'border-border bg-card'
@@ -218,7 +218,7 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
             >
               <Text className="flex-1">{item}</Text>
               {assignedEra !== undefined && (
-                <View className="rounded bg-green-200 px-2 py-1">
+                <View className="rounded bg-success/25 px-2 py-1">
                   <Text className="text-xs">{content.eras[assignedEra]}</Text>
                 </View>
               )}
@@ -257,8 +257,8 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
         </View>
       )}
 
-      <View className="mb-6 rounded-xl bg-orange-50 p-4">
-        <Text className="mb-1 text-sm font-medium text-orange-700">Cause :</Text>
+      <View className="mb-6 rounded-xl bg-warning/15 p-4">
+        <Text className="mb-1 text-sm font-medium text-warning">Cause :</Text>
         <Text className="text-lg">{content.cause}</Text>
       </View>
 
@@ -272,9 +272,9 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
           let bgClass = 'bg-card border-border';
           let useInlineStyle = false;
           if (validated && isCorrectOption) {
-            bgClass = 'bg-green-100 border-green-500';
+            bgClass = 'bg-success/15 border-success';
           } else if (validated && isSelected && !isCorrectOption) {
-            bgClass = 'bg-red-100 border-red-500';
+            bgClass = 'bg-destructive/15 border-destructive';
           } else if (isSelected) {
             bgClass = 'border-primary';
             useInlineStyle = true;

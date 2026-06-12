@@ -43,11 +43,11 @@ function FeedbackBox({
   explanation?: string;
 }) {
   return (
-    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-      <Text className={isCorrect ? 'text-green-700' : 'text-red-700'}>
+    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-success/15' : 'bg-destructive/15'}`}>
+      <Text className={isCorrect ? 'text-success' : 'text-destructive'}>
         {isCorrect ? '✓ Bonne réponse !' : '✗ Mauvaise réponse'}
       </Text>
-      {explanation && <Text className="mt-2 text-sm text-gray-700">{explanation}</Text>}
+      {explanation && <Text className="mt-2 text-sm text-foreground">{explanation}</Text>}
     </View>
   );
 }
@@ -101,9 +101,9 @@ export function QCMViewer({ content }: { content: QCMContent }) {
           let bgClass = 'bg-card border-border';
           let useInlineStyle = false;
           if (validated && isCorrectOption) {
-            bgClass = 'bg-green-100 border-green-500';
+            bgClass = 'bg-success/15 border-success';
           } else if (validated && isSelected && !isCorrectOption) {
-            bgClass = 'bg-red-100 border-red-500';
+            bgClass = 'bg-destructive/15 border-destructive';
           } else if (isSelected) {
             bgClass = 'border-primary';
             useInlineStyle = true;
@@ -155,9 +155,9 @@ export function VraiFauxViewer({ content }: { content: VraiFauxContent }) {
           disabled={validated}
           className={`flex-1 items-center rounded-xl border p-6 ${
             validated && content.isTrue
-              ? 'border-green-500 bg-green-100'
+              ? 'border-success bg-success/15'
               : validated && selected === true && !content.isTrue
-                ? 'border-red-500 bg-red-100'
+                ? 'border-destructive bg-destructive/15'
                 : 'border-border bg-card'
           }`}
         >
@@ -170,9 +170,9 @@ export function VraiFauxViewer({ content }: { content: VraiFauxContent }) {
           disabled={validated}
           className={`flex-1 items-center rounded-xl border p-6 ${
             validated && !content.isTrue
-              ? 'border-green-500 bg-green-100'
+              ? 'border-success bg-success/15'
               : validated && selected === false && content.isTrue
-                ? 'border-red-500 bg-red-100'
+                ? 'border-destructive bg-destructive/15'
                 : 'border-border bg-card'
           }`}
         >

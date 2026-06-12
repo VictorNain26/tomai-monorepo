@@ -21,14 +21,14 @@ export function CalculationViewer({ content }: { content: CalculationContent }) 
 
   return (
     <ScrollView className="flex-1">
-      <View className="mb-6 rounded-xl bg-blue-50 p-4">
+      <View className="mb-6 rounded-xl bg-info/10 p-4">
         <Text className="mb-2 font-semibold">Problème :</Text>
         <Text className="text-lg">{content.problem}</Text>
       </View>
 
       {content.hint && !showSteps && (
-        <View className="mb-4 rounded-lg bg-yellow-50 p-3">
-          <Text className="text-sm text-yellow-700">💡 {content.hint}</Text>
+        <View className="mb-4 rounded-lg bg-warning/15 p-3">
+          <Text className="text-sm text-warning">💡 {content.hint}</Text>
         </View>
       )}
 
@@ -61,8 +61,8 @@ export function CalculationViewer({ content }: { content: CalculationContent }) 
       )}
 
       {showAnswer && (
-        <View className="rounded-xl bg-green-100 p-4">
-          <Text className="mb-2 font-semibold text-green-700">Réponse :</Text>
+        <View className="rounded-xl bg-success/15 p-4">
+          <Text className="mb-2 font-semibold text-success">Réponse :</Text>
           <Text className="text-center text-xl font-bold">{content.answer}</Text>
         </View>
       )}
