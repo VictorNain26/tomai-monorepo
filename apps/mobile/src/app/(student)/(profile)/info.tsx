@@ -79,7 +79,7 @@ export default function ProfileInfoScreen() {
         {/* Info Notice */}
         <View className="rounded-xl p-4" style={{ backgroundColor: bgColors.muted[50] }}>
           <View className="flex-row items-start gap-3">
-            <Info color={colors.muted} size={20} />
+            <Info color={colors.mutedForeground} size={20} />
             <View className="flex-1">
               <Text variant="muted" className="text-sm">
                 Ces informations sont gérées par ton parent. Si tu as besoin de

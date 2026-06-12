@@ -74,10 +74,10 @@ export function useTabBarConfig(): TabBarConfig {
   const tabColors = useMemo(
     () => ({
       active: colors.primary,
-      inactive: colors.muted,
+      inactive: colors.mutedForeground,
       background: colors.background,
     }),
-    [colors.primary, colors.muted, colors.background]
+    [colors.primary, colors.mutedForeground, colors.background]
   );
 
   const tabBarStyle = useMemo(
@@ -104,7 +104,7 @@ export function useSwipeableTabConfig(): MaterialTopTabNavigationOptions {
       tabBarShowIcon: true,
       tabBarShowLabel: false,
       tabBarActiveTintColor: colors.primary,
-      tabBarInactiveTintColor: colors.muted,
+      tabBarInactiveTintColor: colors.mutedForeground,
       tabBarPressColor: 'transparent',
       tabBarIndicatorStyle: { backgroundColor: colors.primary, height: 2 },
       tabBarStyle: { backgroundColor: colors.background },
@@ -112,6 +112,6 @@ export function useSwipeableTabConfig(): MaterialTopTabNavigationOptions {
       swipeEnabled: true,
       lazy: true,
     }),
-    [colors.primary, colors.muted, colors.background]
+    [colors.primary, colors.mutedForeground, colors.background]
   );
 }

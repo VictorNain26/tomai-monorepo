@@ -167,7 +167,7 @@ export const ChatInput = memo(function ChatInput({
             </View>
           ) : voice.isProcessing ? (
             <View className="flex-1 flex-row items-center gap-2 py-3">
-              <Loader2 color={colors.muted} size={16} />
+              <Loader2 color={colors.mutedForeground} size={16} />
               <Text className="text-base text-stone-600 dark:text-stone-400">
                 Transcription...
               </Text>
@@ -178,7 +178,7 @@ export const ChatInput = memo(function ChatInput({
               value={message}
               onChangeText={setMessage}
               placeholder={placeholder}
-              placeholderTextColor={colors.muted}
+              placeholderTextColor={colors.mutedForeground}
               multiline
               maxLength={2000}
               editable={!isLoading}
@@ -212,7 +212,7 @@ export const ChatInput = memo(function ChatInput({
           {voice.isRecording ? (
             <Square color={colors.primaryForeground} size={16} fill={colors.primaryForeground} />
           ) : voice.isProcessing ? (
-            <Mic color={colors.muted} size={18} />
+            <Mic color={colors.mutedForeground} size={18} />
           ) : (
             <Mic color={colors.foreground} size={18} />
           )}
@@ -242,7 +242,7 @@ export const ChatInput = memo(function ChatInput({
             accessibilityLabel="Envoyer le message"
           >
             <Send
-              color={canSend ? colors.primaryForeground : colors.muted}
+              color={canSend ? colors.primaryForeground : colors.mutedForeground}
               size={18}
               style={!canSend ? { opacity: 0.5 } : undefined}
             />

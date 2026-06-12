@@ -96,7 +96,7 @@ export function DeleteChildModal({
                   disabled={isDeleting}
                   className="p-2"
                 >
-                  <X color={colors.muted} size={20} />
+                  <X color={colors.mutedForeground} size={20} />
                 </TouchableOpacity>
               </View>
 

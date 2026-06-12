@@ -93,7 +93,7 @@ function ConversationItem({
           hitSlop={12}
           className="mt-1 rounded-lg p-2"
         >
-          <Trash2 size={16} color={colors.muted} />
+          <Trash2 size={16} color={colors.mutedForeground} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -177,7 +177,7 @@ export default function ConversationsScreen() {
         </View>
       ) : conversations.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
-          <MessageCircle size={48} color={colors.muted} />
+          <MessageCircle size={48} color={colors.mutedForeground} />
           <Text className="mt-4 text-center text-lg font-medium text-foreground">
             Aucune conversation
           </Text>

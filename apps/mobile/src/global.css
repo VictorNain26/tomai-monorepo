@@ -8,7 +8,8 @@
  * TomAI Design System - 2026
  *
  * Tokens de marque : source unique partagée dans @repo/tokens/theme.css.
- * Dark mode: NativeWind v5 dark: variant + Appearance.setColorScheme()
- * (valeurs JS impératives dans useThemeColors.ts — hors @repo/tokens).
+ * Dark mode : ThemeProvider injecte les palettes @repo/tokens (src/colors.ts)
+ * en variables NativeWind à runtime (VariableContextProvider) ; useThemeColors
+ * dérive des mêmes palettes pour les API RN impératives.
  */
 @import "@repo/tokens/theme.css";

@@ -161,11 +161,11 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
               accessibilityRole="button"
             >
               {tts.isLoading ? (
-                <Loader2 color={colors.muted} size={14} />
+                <Loader2 color={colors.mutedForeground} size={14} />
               ) : tts.isSpeaking ? (
                 <VolumeX color={colors.foreground} size={14} />
               ) : (
-                <Volume2 color={colors.muted} size={14} />
+                <Volume2 color={colors.mutedForeground} size={14} />
               )}
               <Text
                 variant="tiny"

@@ -179,7 +179,7 @@ export default function DeckReviewScreen() {
           accessibilityRole="button"
           accessibilityLabel="Quitter la révision"
         >
-          <X color={colors.muted} size={24} />
+          <X color={colors.mutedForeground} size={24} />
         </TouchableOpacity>
         <View className="flex-1 items-center">
           <Text className="font-semibold" numberOfLines={1}>

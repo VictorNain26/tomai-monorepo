@@ -176,7 +176,7 @@ export default function PricingScreen() {
             </Text>
           </View>
           <View className="flex-row items-center justify-center gap-2">
-            <Clock color={colors.muted} size={16} />
+            <Clock color={colors.mutedForeground} size={16} />
             <Text variant="muted" className="text-sm">
               Annulation à tout moment
             </Text>
@@ -274,7 +274,7 @@ function PlanCard({
               </View>
             ) : (
               <View className="h-5 w-5 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800">
-                <X color={colors.muted} size={12} />
+                <X color={colors.mutedForeground} size={12} />
               </View>
             )}
             <Text

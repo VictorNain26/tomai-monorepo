@@ -156,7 +156,7 @@ export function PronoteChildImport({
                       <Text className="font-semibold">{resource.name}</Text>
                       {resource.className && (
                         <View className="mt-1 flex-row items-center gap-1">
-                          <School color={colors.muted} size={13} />
+                          <School color={colors.mutedForeground} size={13} />
                           <Text variant="muted" className="text-sm">
                             {resource.className}
                           </Text>
@@ -192,7 +192,7 @@ export function PronoteChildImport({
                     <View className="mt-1 flex-row items-center gap-2">
                       {resource.className && (
                         <>
-                          <School color={colors.muted} size={13} />
+                          <School color={colors.mutedForeground} size={13} />
                           <Text variant="muted" className="text-sm">
                             {resource.className}
                           </Text>

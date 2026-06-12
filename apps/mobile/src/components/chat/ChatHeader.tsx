@@ -92,7 +92,7 @@ export function ChatHeader({
             accessibilityHint="Ouvre les options de conversation"
             accessibilityRole="button"
           >
-            <MoreVertical color={colors.muted} size={18} />
+            <MoreVertical color={colors.mutedForeground} size={18} />
           </TouchableOpacity>
         </View>
       )}

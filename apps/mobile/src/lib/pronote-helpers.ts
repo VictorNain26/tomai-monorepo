@@ -76,7 +76,7 @@ export function getDaysUntil(dateStr: string): number {
 export function getGradeStyle(value: number | null, outOf: number, colors: ThemeColors): GradeStyle {
   if (value === null || outOf === 0) {
     return {
-      textColor: colors.muted,
+      textColor: colors.mutedForeground,
       bgColor: bgColors.muted[50],
       borderColor: borderColors.muted[20],
     };

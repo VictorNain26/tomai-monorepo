@@ -176,7 +176,7 @@ export default function EditChildScreen() {
                   {schoolLevel ? getLevelLabel(schoolLevel) : 'Sélectionner'}
                 </Text>
               </View>
-              <ChevronDown color={colors.muted} size={20} />
+              <ChevronDown color={colors.mutedForeground} size={20} />
             </TouchableOpacity>
           </View>
 

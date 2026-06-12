@@ -213,7 +213,7 @@ export default function StudentProfileScreen() {
               <Text variant="large">{user?.name ?? 'Élève'}</Text>
               {pronote.isConnected && pronote.resources[0]?.className && (
                 <View className="mt-1 flex-row items-center gap-1">
-                  <School color={colors.muted} size={14} />
+                  <School color={colors.mutedForeground} size={14} />
                   <Text variant="muted">{pronote.resources[0].className}</Text>
                 </View>
               )}
@@ -262,7 +262,7 @@ export default function StudentProfileScreen() {
                   </View>
                   {item.rightElement ?? (
                     item.showChevron && (
-                      <ChevronRight color={colors.muted} size={20} />
+                      <ChevronRight color={colors.mutedForeground} size={20} />
                     )
                   )}
                 </TouchableOpacity>

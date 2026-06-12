@@ -28,7 +28,7 @@ const mockColors: ThemeColors = {
   info: '#0EA5E9',
   infoForeground: '#FFFFFF',
   foreground: '#1E293B',
-  muted: '#64748B',
+  mutedForeground: '#64748B',
   background: '#F8FAFC',
   border: '#E2E8F0',
   card: '#FFFFFF',
@@ -126,7 +126,7 @@ describe('getGradeStyle', () => {
   it('should return muted style for null value', () => {
     const style = getGradeStyle(null, 20, mockColors);
     expect(style).toEqual({
-      textColor: mockColors.muted,
+      textColor: mockColors.mutedForeground,
       bgColor: bgColors.muted[50],
       borderColor: borderColors.muted[20],
     });

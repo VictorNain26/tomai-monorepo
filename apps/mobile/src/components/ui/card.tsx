@@ -5,14 +5,15 @@ import { Text, type TextProps } from './text';
 /**
  * TomAI Card Component - 2026
  *
- * Borderless design: depth via bg-white dark:bg-stone-800 contrast + subtle elevation.
+ * Borderless design: depth via bg-card contrast (real in dark mode; in light
+ * mode card ≈ background, separation comes from elevation/shadow).
  * No visible borders — clean, modern look.
  */
 
 function Card({ className, style, ...props }: ViewProps) {
   return (
     <View
-      className={cn('rounded-2xl bg-white dark:bg-stone-800', className)}
+      className={cn('rounded-2xl bg-card', className)}
       style={style}
       {...props}
     />
@@ -64,7 +65,7 @@ function CardFooter({ className, ...props }: ViewProps) {
 function CardCompact({ className, style, ...props }: ViewProps) {
   return (
     <View
-      className={cn('rounded-xl bg-white dark:bg-stone-800', className)}
+      className={cn('rounded-xl bg-card', className)}
       style={style}
       {...props}
     />

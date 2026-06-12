@@ -110,10 +110,10 @@ export function AttachmentMenu({
           accessibilityHint="Ouvre le menu pour ajouter une photo, un document ou un fichier"
         >
           {isUploading ? (
-            <Loader2 color={colors.muted} size={18} />
+            <Loader2 color={colors.mutedForeground} size={18} />
           ) : (
             <Plus
-              color={visible ? colors.primary : colors.muted}
+              color={visible ? colors.primary : colors.mutedForeground}
               size={20}
             />
           )}

@@ -23,14 +23,14 @@ import { haptics } from '@/lib/haptics';
  */
 
 const buttonVariants = cva(
-  'flex-row items-center justify-center gap-2 rounded-lg web:ring-offset-stone-50 dark:web:ring-offset-stone-900 web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-blue-600 dark:web:focus-visible:ring-blue-400 web:focus-visible:ring-offset-2',
+  'flex-row items-center justify-center gap-2 rounded-lg web:ring-offset-background web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2',
   {
     variants: {
       variant: {
-        default: 'bg-blue-600 dark:bg-blue-400',
-        destructive: 'bg-red-600 dark:bg-red-400',
-        outline: 'border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 active:bg-blue-50 dark:active:bg-blue-900',
-        ghost: 'active:bg-blue-50 dark:active:bg-blue-900',
+        default: 'bg-primary',
+        destructive: 'bg-destructive',
+        outline: 'border border-border bg-background active:bg-accent',
+        ghost: 'active:bg-accent',
       },
       size: {
         default: 'h-12 px-6 py-3',
@@ -49,10 +49,10 @@ const buttonVariants = cva(
 const buttonTextVariants = cva('font-semibold text-center', {
   variants: {
     variant: {
-      default: 'text-white dark:text-stone-900',
-      destructive: 'text-white dark:text-stone-900',
-      outline: 'text-stone-800 dark:text-stone-100',
-      ghost: 'text-stone-800 dark:text-stone-100',
+      default: 'text-primary-foreground',
+      destructive: 'text-destructive-foreground',
+      outline: 'text-foreground',
+      ghost: 'text-foreground',
     },
     size: {
       default: 'text-base',
