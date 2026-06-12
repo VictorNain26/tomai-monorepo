@@ -58,7 +58,9 @@ async function gracefulShutdown(signal: string) {
   try {
     const { closeConnection } = await import('./db/connection.js');
     const { memoryMonitor } = await import('./middleware/memory-monitor.middleware.js');
+    const { stopBackgroundJobs } = await import('./services/server-lifecycle.js');
 
+    stopBackgroundJobs();
     memoryMonitor.stopMonitoring();
     await closeConnection();
 

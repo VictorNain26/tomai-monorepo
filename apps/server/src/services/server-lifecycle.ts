@@ -8,6 +8,7 @@ import { validateEncryptionSetup } from '../lib/encryption.js';
 import { startRetentionPurgeScheduler } from './retention-purge.service.js';
 
 let tokenResetInterval: ReturnType<typeof setInterval> | null = null;
+let stopRetentionPurge: (() => void) | null = null;
 
 export function startTokenResetCron(): void {
   const ONE_HOUR = 60 * 60 * 1000;
@@ -129,7 +130,7 @@ export async function initializeServices(): Promise<void> {
     memoryMonitor.startMonitoring(30000);
 
     startTokenResetCron();
-    startRetentionPurgeScheduler();
+    stopRetentionPurge = startRetentionPurgeScheduler();
 
     logger.info('All services initialized successfully', {
       operation: 'services:init:success',
@@ -152,5 +153,16 @@ export async function initializeServices(): Promise<void> {
       severity: 'critical' as const
     });
     throw _error;
+  }
+}
+
+export function stopBackgroundJobs(): void {
+  if (tokenResetInterval) {
+    clearInterval(tokenResetInterval);
+    tokenResetInterval = null;
+  }
+  if (stopRetentionPurge) {
+    stopRetentionPurge();
+    stopRetentionPurge = null;
   }
 }
