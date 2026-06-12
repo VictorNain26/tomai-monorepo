@@ -5,7 +5,7 @@
  * 1. Assembler le contexte (fichiers, profil cognitif, learning)
  * 2. Gerer la session + historique
  * 3. Persister les messages (user avant stream, assistant apres)
- * 4. Orchestrer le streaming Gemini
+ * 4. Orchestrer le streaming Mistral
  * 5. Post-processing (tokens, summarization)
  */
 
