@@ -85,7 +85,7 @@ for (const file of files) {
   let content = readFileSync(file, 'utf8');
   const before = content;
   for (const [from, to] of [...PAIR_MAP, ...LONE_MAP]) {
-    const re = new RegExp(from.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&') + '(?![\\w/-])', 'g');
+    const re = new RegExp('(?<![\\w:-])' + from.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&') + '(?![\\w/-])', 'g');
     content = content.replace(re, () => {
       counts.set(from, (counts.get(from) ?? 0) + 1);
       return to;
