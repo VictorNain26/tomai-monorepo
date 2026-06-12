@@ -211,9 +211,9 @@ export default function ConversationsScreen() {
         style={shadows.lg}
       >
         {isCreating ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color={colors.primaryForeground} />
         ) : (
-          <Plus size={24} color="#fff" />
+          <Plus size={24} color={colors.primaryForeground} />
         )}
       </TouchableOpacity>
     </SafeAreaView>

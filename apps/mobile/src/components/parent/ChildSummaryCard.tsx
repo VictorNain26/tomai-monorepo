@@ -138,7 +138,7 @@ function LaunchTomButton({ childId, childName }: { childId: string; childName: s
       className="mt-3 flex-row items-center justify-center gap-2 rounded-xl py-2.5"
       style={{ backgroundColor: colors.success, opacity: isLaunching ? 0.7 : 1 }}
     >
-      <Play color="#fff" size={16} />
+      <Play color={colors.successForeground} size={16} />
       <Text className="font-semibold text-sm text-white">
         {isLaunching ? 'Lancement...' : 'Lancer Tom'}
       </Text>

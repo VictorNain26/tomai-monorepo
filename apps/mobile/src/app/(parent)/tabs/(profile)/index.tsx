@@ -170,7 +170,7 @@ export default function ParentProfileScreen() {
           <Card className="overflow-hidden">
             <View
               className="p-4"
-              style={{ backgroundColor: 'rgba(37, 99, 235, 0.06)' }}
+              style={{ backgroundColor: colors.primary + '0F' }}
             >
               <View className="mb-2 flex-row items-center gap-2">
                 <Sparkles color={colors.primary} size={20} />

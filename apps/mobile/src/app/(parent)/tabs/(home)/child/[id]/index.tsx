@@ -136,7 +136,7 @@ export default function ChildDetailScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Hero Header */}
-        <LinearGradient colors={['#2563eb', '#1d4ed8']} className="px-5 pb-6 pt-4">
+        <LinearGradient colors={[colors.primary, colors.primary]} className="px-5 pb-6 pt-4">
           <View className="items-center">
             <Avatar fallback={fullName} size="xl" className="mb-3" />
             <Text className="text-xl font-bold text-white">{fullName}</Text>
@@ -144,6 +144,7 @@ export default function ChildDetailScreen() {
             <View className="mt-2 flex-row items-center gap-1 rounded-full bg-white/20 px-3 py-1">
               {isMapped ? (
                 <>
+                  {/* green-300 / amber-200: decorative badge icon always over primary gradient — theme-invariant */}
                   <CheckCircle2 color="#86efac" size={14} />
                   <Text className="text-xs font-medium text-white">Pronote</Text>
                 </>
@@ -325,7 +326,7 @@ export default function ChildDetailScreen() {
                         style={{
                           backgroundColor: isActive
                             ? colors.success
-                            : 'rgba(107, 114, 128, 0.2)',
+                            : colors.border,
                         }}
                       />
                       <Text variant="muted" className="text-[9px]">{day}</Text>
@@ -356,7 +357,7 @@ export default function ChildDetailScreen() {
           className="flex-row items-center justify-center gap-2"
           style={{ backgroundColor: colors.success, opacity: isLaunching ? 0.6 : 1 }}
         >
-          <Play color="#fff" size={18} />
+          <Play color={colors.successForeground} size={18} />
           <Text className="font-semibold text-white">
             {isLaunching ? 'Lancement...' : `Lancer Tom pour ${child.firstName}`}
           </Text>

@@ -3,6 +3,7 @@ import { View, TextInput, Animated } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { bgColors } from '@/lib/styles';
+import { useThemeColors } from '@/hooks';
 
 interface PinPromptProps {
   name: string;
@@ -15,6 +16,7 @@ const MAX_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 30_000;
 
 export function PinPrompt({ name, type, onSubmit, onCancel }: PinPromptProps) {
+  const colors = useThemeColors();
   const [value, setValue] = useState('');
   const [error, setError] = useState(false);
   const [attempts, setAttempts] = useState(0);
@@ -70,7 +72,7 @@ export function PinPrompt({ name, type, onSubmit, onCancel }: PinPromptProps) {
           editable={!locked}
           onSubmitEditing={handleSubmit}
           className="rounded-xl border border-border bg-card px-4 py-4 text-center text-2xl tracking-widest text-foreground"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colors.mutedForeground}
           placeholder={type === 'pin' ? '• • • •' : '••••••••'}
         />
       </Animated.View>

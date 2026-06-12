@@ -57,8 +57,8 @@ export function MarkdownContent({ children, isUser = false }: MarkdownContentPro
   const blockquoteBg = isUser
     ? 'rgba(255, 255, 255, 0.1)'
     : isDark
-      ? 'rgba(37, 99, 235, 0.1)'
-      : 'rgba(37, 99, 235, 0.05)';
+      ? colors.primary + '1A'
+      : colors.primary + '0D';
 
   const mdStyles = useMemo(
     () => ({

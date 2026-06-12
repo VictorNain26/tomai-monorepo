@@ -34,7 +34,7 @@ import {
   type SchoolLevel,
 } from '@/hooks/useLearning';
 import { useUser } from '@/lib/auth';
-import { useTheme, useThemeColors } from '@/hooks';
+import { useThemeColors } from '@/hooks';
 
 // ============================================================================
 // TYPES
@@ -51,7 +51,6 @@ export default function CreateDeckScreen() {
   const toast = useToast();
   const user = useUser();
   const colors = useThemeColors();
-  const { isDark } = useTheme();
   // schoolLevel is a runtime-valid stored level; narrow once at this boundary
   const niveau = (user?.schoolLevel ?? 'sixieme') as SchoolLevel;
 
@@ -124,7 +123,7 @@ export default function CreateDeckScreen() {
     <SafeAreaView className="flex-1 bg-background">
       {/* Loading overlay during generation */}
       {generateMutation.isPending && (
-        <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: isDark ? 'rgba(28, 25, 23, 0.9)' : 'rgba(250, 250, 249, 0.9)' }}>
+        <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: colors.background + 'E6' }}>
           <View className="items-center gap-4 rounded-2xl bg-card p-8" style={shadows.lg}>
             <ActivityIndicator size="large" color={colors.primary} />
             <View className="items-center gap-2">

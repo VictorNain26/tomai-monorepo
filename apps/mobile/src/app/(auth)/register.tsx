@@ -16,15 +16,17 @@ import { Button } from '@/components/ui/button';
 import { TomAvatar } from '@/components/common';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { AuthScreen } from '@/components/auth/auth-screen';
+import { useThemeColors } from '@/hooks';
 import { bgColors } from '@/lib/styles';
 
 function PasswordCriterion({ met, label }: { met: boolean; label: string }) {
+  const colors = useThemeColors();
   return (
     <View className="flex-row items-center gap-2">
       {met ? (
-        <Check size={14} color="#059669" />
+        <Check size={14} color={colors.success} />
       ) : (
-        <Circle size={14} color="#A8A29E" />
+        <Circle size={14} color={colors.mutedForeground} />
       )}
       <Text
         variant="tiny"

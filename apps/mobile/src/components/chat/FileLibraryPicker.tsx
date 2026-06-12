@@ -109,7 +109,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
             className="h-6 w-6 items-center justify-center rounded-full"
             style={{ backgroundColor: colors.primary }}
           >
-            <Check color="#FFFFFF" size={14} />
+            <Check color={colors.primaryForeground} size={14} />
           </View>
         )}
       </TouchableOpacity>
