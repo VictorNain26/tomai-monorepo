@@ -30,7 +30,7 @@ function PasswordCriterion({ met, label }: { met: boolean; label: string }) {
       )}
       <Text
         variant="tiny"
-        className={met ? 'text-success' : 'text-stone-400'}
+        className={met ? 'text-success' : 'text-muted-foreground'}
       >
         {label}
       </Text>

@@ -123,7 +123,7 @@ export default function CreateDeckScreen() {
     <SafeAreaView className="flex-1 bg-background">
       {/* Loading overlay during generation */}
       {generateMutation.isPending && (
-        <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: colors.background + 'E6' }}>
+        <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: colors.background + 'E6' /* 90% */ }}>
           <View className="items-center gap-4 rounded-2xl bg-card p-8" style={shadows.lg}>
             <ActivityIndicator size="large" color={colors.primary} />
             <View className="items-center gap-2">

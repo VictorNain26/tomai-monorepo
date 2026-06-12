@@ -45,7 +45,7 @@ function ToggleOption({
       className={cn(
         'flex-1 items-center justify-center rounded-md px-3 py-2',
         active
-          ? 'bg-stone-50 shadow-sm dark:bg-stone-700'
+          ? 'bg-background shadow-sm'
           : 'bg-transparent'
       )}
       style={disabled ? { opacity: 0.5 } : undefined}
@@ -72,7 +72,7 @@ export function AccountTypeToggle({
 }: AccountTypeToggleProps) {
   return (
     <View
-      className="mb-6 flex-row rounded-lg border border-stone-200 bg-stone-100 p-1 dark:border-stone-700 dark:bg-stone-800"
+      className="mb-6 flex-row rounded-lg border border-border bg-muted p-1"
       accessibilityRole="tablist"
     >
       <ToggleOption

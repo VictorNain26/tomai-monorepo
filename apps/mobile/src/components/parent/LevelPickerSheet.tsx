@@ -29,7 +29,7 @@ export function LevelPickerSheet({ visible, onClose, onSelect, selectedLevel }: 
         >
           {/* Handle bar */}
           <View className="items-center pt-3 pb-2">
-            <View className="h-1 w-10 rounded-full bg-stone-300 dark:bg-stone-600" />
+            <View className="h-1 w-10 rounded-full bg-border" />
           </View>
 
           {/* Header */}
