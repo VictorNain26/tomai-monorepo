@@ -12,7 +12,9 @@ export default [
       'react/no-unescaped-entities': 'off',
     },
   },
-  // Anti-regression gate: ban raw palette classes — use semantic tokens from @repo/tokens
+  // Anti-regression gate: ban raw palette classes — use semantic tokens from @repo/tokens.
+  // Known bypass: the plugin only scans className/cva/cn usage, so the decorative palette
+  // strings in src/constants/subjects.ts (data object literals) are not linted — intentional.
   {
     files: ['src/**/*.ts', 'src/**/*.tsx'],
     plugins: { 'better-tailwindcss': eslintPluginBetterTailwindcss },
