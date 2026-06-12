@@ -26,7 +26,7 @@ export function PronoteBadge({ connected }: { connected: boolean }) {
       {connected ? (
         <>
           <CheckCircle2 color={colors.success} size={13} />
-          <Text className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <Text className="text-xs font-medium text-success">
             Pronote
           </Text>
         </>

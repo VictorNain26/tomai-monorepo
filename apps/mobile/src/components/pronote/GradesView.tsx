@@ -200,7 +200,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                   <View className="flex-row items-center justify-between p-4">
                     <View className="flex-1">
                       <Text className="font-semibold">{subject.subject}</Text>
-                      <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
+                      <Text variant="tiny" className="text-muted-foreground">
                         {subject.grades.length} note
                         {subject.grades.length > 1 ? 's' : ''}
                       </Text>
@@ -213,7 +213,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                         >
                           {subject.average.toFixed(1)}
                         </Text>
-                        <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
+                        <Text variant="tiny" className="text-muted-foreground">
                           /20
                         </Text>
                       </View>
@@ -253,7 +253,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                               <Text className="font-medium">
                                 {grade.description || 'Évaluation'}
                               </Text>
-                              <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
+                              <Text variant="tiny" className="text-muted-foreground">
                                 {formatDateShort(grade.date)} • Coef. {grade.coefficient}
                               </Text>
                             </View>
@@ -280,7 +280,7 @@ export function GradesView({ grades, isLoading, subtitle, onReviewWithTom }: Gra
                               style={{ backgroundColor: bgColors.primary[15] }}
                             >
                               <MessageCircle color={colors.primary} size={14} />
-                              <Text variant="tiny" className="text-blue-600 dark:text-blue-400 font-medium">
+                              <Text variant="tiny" className="text-primary font-medium">
                                 Revoir avec Tom
                               </Text>
                             </TouchableOpacity>

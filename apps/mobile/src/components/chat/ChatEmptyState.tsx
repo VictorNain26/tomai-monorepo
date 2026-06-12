@@ -44,7 +44,7 @@ export function ChatEmptyState({
             <TouchableOpacity
               key={s.prompt}
               onPress={() => onSendSuggestion(s.prompt)}
-              className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-3"
+              className="flex-row items-center gap-3 rounded-xl bg-card p-3"
               activeOpacity={0.7}
               accessibilityLabel={s.label}
               accessibilityHint="Envoie cette question a Tom"

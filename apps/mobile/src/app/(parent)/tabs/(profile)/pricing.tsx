@@ -66,9 +66,9 @@ export default function PricingScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
         <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
           <ArrowLeft color={colors.foreground} size={24} />
         </TouchableOpacity>
@@ -143,12 +143,12 @@ export default function PricingScreen() {
               {subscription.isLoading ? (
                 <View className="flex-row items-center gap-2">
                   <ActivityIndicator size="small" color="white" />
-                  <Text className="font-semibold text-white dark:text-stone-900">
+                  <Text className="font-semibold text-primary-foreground">
                     Chargement...
                   </Text>
                 </View>
               ) : (
-                <Text className="font-semibold text-white dark:text-stone-900">
+                <Text className="font-semibold text-primary-foreground">
                   Passer Premium - {priceString}/mois
                 </Text>
               )}
@@ -236,8 +236,8 @@ function PlanCard({
     <View
       className={`rounded-xl border p-4 ${
         isPremium
-          ? 'border-blue-600 dark:border-blue-400'
-          : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800'
+          ? 'border-primary'
+          : 'border-border bg-card'
       }`}
       style={isPremium ? { backgroundColor: bgColors.primary[5] } : undefined}
     >
@@ -249,7 +249,7 @@ function PlanCard({
         </View>
         {isCurrentPlan && (
           <View className="rounded-full px-3 py-1" style={{ backgroundColor: bgColors.primary[10] }}>
-            <Text className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+            <Text className="text-xs font-semibold text-primary">
               Plan actuel
             </Text>
           </View>
@@ -273,12 +273,12 @@ function PlanCard({
                 <Check color={colors.success} size={12} />
               </View>
             ) : (
-              <View className="h-5 w-5 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800">
+              <View className="h-5 w-5 items-center justify-center rounded-full bg-muted">
                 <X color={colors.mutedForeground} size={12} />
               </View>
             )}
             <Text
-              className={feature.included ? '' : 'text-stone-600 dark:text-stone-400'}
+              className={feature.included ? '' : 'text-muted-foreground'}
             >
               {feature.text}
             </Text>
@@ -296,7 +296,7 @@ interface FAQItemProps {
 
 function FAQItem({ question, answer }: FAQItemProps) {
   return (
-    <View className="mb-4 rounded-xl bg-white dark:bg-stone-800 p-4">
+    <View className="mb-4 rounded-xl bg-card p-4">
       <Text className="mb-2 font-semibold">{question}</Text>
       <Text variant="muted" className="text-sm leading-relaxed">
         {answer}

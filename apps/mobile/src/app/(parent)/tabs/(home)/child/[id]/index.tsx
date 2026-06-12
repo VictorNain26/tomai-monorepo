@@ -107,7 +107,7 @@ export default function ChildDetailScreen() {
 
   if (isLoadingChildren || !id) {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+      <SafeAreaView className="flex-1 bg-background">
         <View className="px-4 py-6">
           <Skeleton className="mb-4 h-40 w-full rounded-2xl" />
           <Skeleton className="h-20 w-full rounded-xl" />
@@ -118,11 +118,11 @@ export default function ChildDetailScreen() {
 
   if (!child) {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+      <SafeAreaView className="flex-1 bg-background">
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-red-600 dark:text-red-400">Enfant non trouve</Text>
+          <Text className="text-destructive">Enfant non trouve</Text>
           <Button onPress={() => router.back()} className="mt-4">
-            <Text className="text-white dark:text-stone-900">Retour</Text>
+            <Text className="text-primary-foreground">Retour</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -133,7 +133,7 @@ export default function ChildDetailScreen() {
   const levelLabel = getLevelLabel(child.schoolLevel);
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Hero Header */}
         <LinearGradient colors={['#2563eb', '#1d4ed8']} className="px-5 pb-6 pt-4">
@@ -204,7 +204,7 @@ export default function ChildDetailScreen() {
                 <Button
                   onPress={() => router.push(`/(parent)/tabs/(home)/pronote-connect?childId=${id}`)}
                 >
-                  <Text className="font-medium text-white dark:text-stone-900">Connecter</Text>
+                  <Text className="font-medium text-primary-foreground">Connecter</Text>
                 </Button>
               </View>
             </Card>
@@ -221,14 +221,14 @@ export default function ChildDetailScreen() {
                     className="flex-row items-center gap-1"
                     accessibilityLabel="Voir toutes les notes"
                   >
-                    <Text className="text-xs text-blue-600 dark:text-blue-400">Voir toutes</Text>
+                    <Text className="text-xs text-primary">Voir toutes</Text>
                     <ChevronRight color={colors.primary} size={14} />
                   </TouchableOpacity>
                 </View>
                 {recentGrades.map((grade, i) => (
                   <View
                     key={`grade-${i}`}
-                    className={`flex-row items-center justify-between py-2 ${i < recentGrades.length - 1 ? 'border-b border-stone-100 dark:border-stone-700' : ''}`}
+                    className={`flex-row items-center justify-between py-2 ${i < recentGrades.length - 1 ? 'border-b border-border' : ''}`}
                   >
                     <Text className="text-sm flex-1" numberOfLines={1}>{grade.subject}</Text>
                     <Text className="font-semibold text-sm">
@@ -251,14 +251,14 @@ export default function ChildDetailScreen() {
                     className="flex-row items-center gap-1"
                     accessibilityLabel="Voir tous les devoirs"
                   >
-                    <Text className="text-xs text-blue-600 dark:text-blue-400">Voir tous</Text>
+                    <Text className="text-xs text-primary">Voir tous</Text>
                     <ChevronRight color={colors.primary} size={14} />
                   </TouchableOpacity>
                 </View>
                 {upcomingHomework.map((hw, i) => (
                   <View
                     key={`hw-${i}`}
-                    className={`py-2 ${i < upcomingHomework.length - 1 ? 'border-b border-stone-100 dark:border-stone-700' : ''}`}
+                    className={`py-2 ${i < upcomingHomework.length - 1 ? 'border-b border-border' : ''}`}
                   >
                     <View className="flex-row items-center justify-between">
                       <Text className="text-sm font-medium">{hw.subject}</Text>
@@ -315,7 +315,7 @@ export default function ChildDetailScreen() {
               </View>
 
               {/* Weekly activity bar */}
-              <View className="mt-4 flex-row items-center justify-between border-t border-stone-100 dark:border-stone-700 pt-3">
+              <View className="mt-4 flex-row items-center justify-between border-t border-border pt-3">
                 {WEEKDAYS.map((day, i) => {
                   const isActive = i < (childMetrics?.studyDays ?? 0);
                   return (
@@ -342,13 +342,13 @@ export default function ChildDetailScreen() {
             className="items-center py-3"
             accessibilityLabel="Supprimer ce profil"
           >
-            <Text className="text-sm text-red-500 dark:text-red-400">Supprimer ce profil</Text>
+            <Text className="text-sm text-destructive">Supprimer ce profil</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
       {/* Sticky Launch Tom button */}
-      <View className="border-t border-stone-200 dark:border-stone-700 px-5 py-3">
+      <View className="border-t border-border px-5 py-3">
         <Button
           onPress={handleLaunchSession}
           disabled={isLaunching}

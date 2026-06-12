@@ -45,7 +45,7 @@ function Skeleton({
 
   return (
     <Animated.View
-      className={cn('bg-stone-100 dark:bg-stone-800', className)}
+      className={cn('bg-muted', className)}
       style={[
         {
           width,

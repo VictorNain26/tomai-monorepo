@@ -40,12 +40,12 @@ export default function GradesScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="h-10 w-10 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
+          className="h-10 w-10 items-center justify-center rounded-full bg-muted"
         >
           <ArrowLeft color={colors.foreground} size={20} />
         </TouchableOpacity>

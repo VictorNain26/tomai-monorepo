@@ -282,7 +282,7 @@ export default function ChatScreen() {
   }, [contextInfo.type, colors.warning, colors.primary, colors.destructive]);
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       <ChatHeader
         contextBadge={contextBadge}
         currentSessionId={currentSessionId}

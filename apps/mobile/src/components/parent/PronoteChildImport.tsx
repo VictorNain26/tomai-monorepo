@@ -228,7 +228,7 @@ export function PronoteChildImport({
           onPress={handleContinue}
           disabled={selectedCount === 0 || isSubmitting}
         >
-          <Text className="font-semibold text-white dark:text-stone-900">
+          <Text className="font-semibold text-primary-foreground">
             {isSubmitting
               ? 'En cours...'
               : selectedCount > 0

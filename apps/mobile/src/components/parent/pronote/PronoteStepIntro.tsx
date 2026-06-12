@@ -39,7 +39,7 @@ export function PronoteStepIntro({ onContinue }: PronoteStepIntroProps) {
       </Text>
 
       <Button onPress={onContinue} className="mt-8 w-full">
-        <Text className="font-semibold text-white dark:text-stone-900">
+        <Text className="font-semibold text-primary-foreground">
           Scanner le QR code
         </Text>
       </Button>

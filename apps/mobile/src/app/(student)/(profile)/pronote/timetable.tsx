@@ -123,9 +123,9 @@ export default function TimetableScreen() {
   }, [timetable]);
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3">
+      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <View className="flex-row items-center gap-3">
           <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
             <ArrowLeft color={colors.foreground} size={24} />
@@ -137,7 +137,7 @@ export default function TimetableScreen() {
         <View className="flex-row items-center gap-2">
           <TouchableOpacity
             onPress={() => setWeekOffset((w) => w - 1)}
-            className="rounded-lg bg-stone-100 dark:bg-stone-800 p-2"
+            className="rounded-lg bg-muted p-2"
           >
             <ChevronLeft color={colors.foreground} size={20} />
           </TouchableOpacity>
@@ -152,7 +152,7 @@ export default function TimetableScreen() {
           </Text>
           <TouchableOpacity
             onPress={() => setWeekOffset((w) => w + 1)}
-            className="rounded-lg bg-stone-100 dark:bg-stone-800 p-2"
+            className="rounded-lg bg-muted p-2"
           >
             <ChevronRight color={colors.foreground} size={20} />
           </TouchableOpacity>
@@ -179,7 +179,7 @@ export default function TimetableScreen() {
         ) : dayData.length === 0 ? (
           // Empty state
           <View className="items-center py-12">
-            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800">
+            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">
               <Clock color={colors.mutedForeground} size={32} />
             </View>
             <Text className="mb-1 font-semibold">Aucun cours</Text>
@@ -211,7 +211,7 @@ export default function TimetableScreen() {
                     return (
                       <View
                         key={entry.id}
-                        className="rounded-xl bg-white dark:bg-stone-800 p-4"
+                        className="rounded-xl bg-card p-4"
                         style={
                           isCancelled
                             ? { backgroundColor: bgColors.destructive[5], borderColor: borderColors.destructive[20] }
@@ -226,7 +226,7 @@ export default function TimetableScreen() {
                             <Text className="text-sm font-medium">
                               {formatTime(entry.startDate)}
                             </Text>
-                            <View className="my-1 h-4 w-px bg-stone-200 dark:bg-stone-700" />
+                            <View className="my-1 h-4 w-px bg-muted" />
                             <Text variant="muted" className="text-xs">
                               {formatTime(entry.endDate)}
                             </Text>

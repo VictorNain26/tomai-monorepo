@@ -77,7 +77,7 @@ export default function ResetPasswordScreen() {
   // Success state
   if (resetSuccess) {
     return (
-      <View className="flex-1 justify-center bg-stone-50 dark:bg-stone-900 px-6">
+      <View className="flex-1 justify-center bg-background px-6">
         <View className="items-center">
           <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.success[10] }}>
             <CheckCircle color={colors.success} size={32} />
@@ -106,7 +106,7 @@ export default function ResetPasswordScreen() {
   // Invalid token state
   if (!tokenValid) {
     return (
-      <View className="flex-1 justify-center bg-stone-50 dark:bg-stone-900 px-6">
+      <View className="flex-1 justify-center bg-background px-6">
         <View className="items-center">
           <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.destructive[10] }}>
             <AlertCircle color={colors.destructive} size={32} />
@@ -130,7 +130,7 @@ export default function ResetPasswordScreen() {
 
           <Link href="/(auth)/login" asChild>
             <Pressable className="mt-4" accessibilityLabel="Retour à la connexion">
-              <Text className="text-blue-600 dark:text-blue-400">Retour à la connexion</Text>
+              <Text className="text-primary">Retour à la connexion</Text>
             </Pressable>
           </Link>
         </View>
@@ -150,7 +150,7 @@ export default function ResetPasswordScreen() {
         accessibilityRole="button"
       >
         <ArrowLeft color={colors.foreground} size={20} />
-        <Text className="ml-1 text-blue-600 dark:text-blue-400">Retour</Text>
+        <Text className="ml-1 text-primary">Retour</Text>
       </Pressable>
 
       {/* Header */}

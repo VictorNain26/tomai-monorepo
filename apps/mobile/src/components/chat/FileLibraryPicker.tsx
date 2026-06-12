@@ -84,7 +84,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
       <TouchableOpacity
         onPress={() => handleToggle(item)}
         disabled={isDisabled}
-        className={`flex-row items-center gap-3 px-4 py-3 border-b border-stone-200 dark:border-stone-700 ${isDisabled ? 'opacity-40' : ''}`}
+        className={`flex-row items-center gap-3 px-4 py-3 border-b border-border ${isDisabled ? 'opacity-40' : ''}`}
         activeOpacity={0.7}
       >
         <View
@@ -98,7 +98,7 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
           <Text numberOfLines={1} className="font-medium">
             {item.fileName}
           </Text>
-          <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
+          <Text variant="tiny" className="text-muted-foreground">
             {formatFileSize(item.sizeBytes)}
             {item.subject ? ` · ${item.subject}` : ''}
           </Text>
@@ -123,17 +123,17 @@ export function FileLibraryPicker({ visible, onClose, sessionId }: FileLibraryPi
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-stone-50 dark:bg-stone-900">
+      <View className="flex-1 bg-background">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-3 pt-4">
+        <View className="flex-row items-center justify-between border-b border-border px-4 py-3 pt-4">
           <Text variant="large">Mon Classeur</Text>
           <View className="flex-row items-center gap-3">
-            <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
+            <Text variant="tiny" className="text-muted-foreground">
               {sessionFilesList.length}/10
             </Text>
             <TouchableOpacity
               onPress={onClose}
-              className="h-8 w-8 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
+              className="h-8 w-8 items-center justify-center rounded-full bg-muted"
               accessibilityLabel="Fermer"
             >
               <X color={colors.foreground} size={18} />

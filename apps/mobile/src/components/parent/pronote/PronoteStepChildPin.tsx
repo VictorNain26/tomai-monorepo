@@ -45,8 +45,8 @@ export function PronoteStepChildPin({
         />
       )}
       {error && (
-        <View className="mx-4 mb-4 rounded-xl bg-red-50 dark:bg-red-950 p-4">
-          <Text className="text-center text-red-600 dark:text-red-400">
+        <View className="mx-4 mb-4 rounded-xl bg-destructive/10 p-4">
+          <Text className="text-center text-destructive">
             {error}
           </Text>
         </View>

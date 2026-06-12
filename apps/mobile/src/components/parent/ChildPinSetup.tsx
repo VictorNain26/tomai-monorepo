@@ -242,7 +242,7 @@ export function ChildPinSetup({
             maxLength={pinType === 'pin' ? 6 : 50}
             placeholder={pinType === 'pin' ? '• • • •' : '••••••••'}
             placeholderTextColor={colors.mutedForeground}
-            className="rounded-xl border bg-white dark:bg-stone-800 px-4 py-4 text-center text-xl tracking-widest text-foreground"
+            className="rounded-xl border bg-card px-4 py-4 text-center text-xl tracking-widest text-foreground"
             style={{ borderColor: colors.border }}
             autoFocus
           />
@@ -259,14 +259,14 @@ export function ChildPinSetup({
             maxLength={pinType === 'pin' ? 6 : 50}
             placeholder={pinType === 'pin' ? '• • • •' : '••••••••'}
             placeholderTextColor={colors.mutedForeground}
-            className="rounded-xl border bg-white dark:bg-stone-800 px-4 py-4 text-center text-xl tracking-widest text-foreground"
+            className="rounded-xl border bg-card px-4 py-4 text-center text-xl tracking-widest text-foreground"
             style={{
               borderColor: mismatch ? colors.destructive : colors.border,
             }}
             onSubmitEditing={canSubmit ? handleComplete : undefined}
           />
           {mismatch && (
-            <Text className="mt-2 text-sm text-red-500">
+            <Text className="mt-2 text-sm text-destructive">
               Les codes ne correspondent pas
             </Text>
           )}
@@ -278,7 +278,7 @@ export function ChildPinSetup({
           disabled={!canSubmit}
           className="mt-2"
         >
-          <Text className="font-semibold text-white dark:text-stone-900">
+          <Text className="font-semibold text-primary-foreground">
             {isLast ? 'Terminer' : 'Suivant'}
           </Text>
         </Button>

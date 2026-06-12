@@ -28,7 +28,7 @@ function PasswordCriterion({ met, label }: { met: boolean; label: string }) {
       )}
       <Text
         variant="tiny"
-        className={met ? 'text-emerald-600 dark:text-emerald-400' : 'text-stone-400'}
+        className={met ? 'text-success' : 'text-stone-400'}
       >
         {label}
       </Text>
@@ -124,7 +124,7 @@ export default function RegisterScreen() {
       {/* Header */}
       <View className="mb-8 items-center">
         <TomAvatar size="lg" className="mb-4" />
-        <Text variant="h1" className="text-center text-blue-600 dark:text-blue-400">
+        <Text variant="h1" className="text-center text-primary">
           Inscription
         </Text>
         <Text variant="muted" className="mt-2 text-center px-4">
@@ -140,7 +140,7 @@ export default function RegisterScreen() {
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
         >
-          <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
+          <Text className="text-center text-destructive">{error}</Text>
         </View>
       )}
 
@@ -204,11 +204,11 @@ export default function RegisterScreen() {
 
       {/* Google OAuth */}
       <View className="my-6 flex-row items-center">
-        <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+        <View className="h-px flex-1 bg-muted" />
         <Text variant="muted" className="px-4">
           ou
         </Text>
-        <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+        <View className="h-px flex-1 bg-muted" />
       </View>
 
       <Button variant="outline" onPress={handleGoogleRegister} disabled={isLoading}>
@@ -221,7 +221,7 @@ export default function RegisterScreen() {
         <Text variant="muted">Déjà un compte ? </Text>
         <Link href="/(auth)/login" asChild>
           <Pressable>
-            <Text className="font-semibold text-blue-600 dark:text-blue-400">Se connecter</Text>
+            <Text className="font-semibold text-primary">Se connecter</Text>
           </Pressable>
         </Link>
       </View>

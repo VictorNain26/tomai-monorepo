@@ -41,9 +41,9 @@ export default function SettingsScreen() {
   const colors = useThemeColors();
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
+      <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
         <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
           <ArrowLeft color={colors.foreground} size={24} />
         </TouchableOpacity>
@@ -54,7 +54,7 @@ export default function SettingsScreen() {
         {/* Theme Section */}
         <View className="mb-6">
           <Text className="mb-3 font-semibold">Apparence</Text>
-          <View className="rounded-xl bg-white dark:bg-stone-800">
+          <View className="rounded-xl bg-card">
             {THEME_OPTIONS.map((option, index) => {
               const Icon = option.icon;
               const isSelected = themeMode === option.value;
@@ -64,7 +64,7 @@ export default function SettingsScreen() {
                   key={option.value}
                   onPress={() => setThemeMode(option.value)}
                   className={`flex-row items-center justify-between px-4 py-4 ${
-                    index !== THEME_OPTIONS.length - 1 ? 'border-b border-stone-200 dark:border-stone-700' : ''
+                    index !== THEME_OPTIONS.length - 1 ? 'border-b border-border' : ''
                   }`}
                   activeOpacity={0.7}
                 >
@@ -82,9 +82,9 @@ export default function SettingsScreen() {
         {/* Other Settings (Placeholders) */}
         <View className="mb-6">
           <Text className="mb-3 font-semibold">Préférences</Text>
-          <View className="rounded-xl bg-white dark:bg-stone-800">
+          <View className="rounded-xl bg-card">
             <TouchableOpacity
-              className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 px-4 py-4"
+              className="flex-row items-center justify-between border-b border-border px-4 py-4"
               activeOpacity={1}
               disabled={true}
               style={{ opacity: 0.5 }}
@@ -122,7 +122,7 @@ export default function SettingsScreen() {
         {/* App Info */}
         <View className="mb-6">
           <Text className="mb-3 font-semibold">À propos</Text>
-          <View className="rounded-xl bg-white dark:bg-stone-800">
+          <View className="rounded-xl bg-card">
             <View className="flex-row items-center justify-between px-4 py-4">
               <View className="flex-row items-center gap-3">
                 <Info color={colors.mutedForeground} size={20} />

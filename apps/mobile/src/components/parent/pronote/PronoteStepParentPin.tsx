@@ -55,14 +55,14 @@ export function PronoteStepParentPin({
           maxLength={6}
           placeholder="• • • •"
           placeholderTextColor={colors.mutedForeground}
-          className="mt-8 rounded-xl border bg-white dark:bg-stone-800 px-4 py-4 text-center text-2xl tracking-widest text-foreground"
+          className="mt-8 rounded-xl border bg-card px-4 py-4 text-center text-2xl tracking-widest text-foreground"
           style={{ borderColor: error ? colors.destructive : colors.border }}
           autoFocus
           onSubmitEditing={value.length >= 4 ? onSubmit : undefined}
         />
 
         {error && (
-          <Text className="mt-3 text-center text-sm text-red-500">{error}</Text>
+          <Text className="mt-3 text-center text-sm text-destructive">{error}</Text>
         )}
       </View>
 
@@ -71,7 +71,7 @@ export function PronoteStepParentPin({
         disabled={value.length < 4 || isPending}
         className="mt-6"
       >
-        <Text className="font-semibold text-white dark:text-stone-900">
+        <Text className="font-semibold text-primary-foreground">
           {isPending ? 'En cours...' : isConfirm ? 'Terminer' : 'Continuer'}
         </Text>
       </Button>

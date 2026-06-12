@@ -21,7 +21,7 @@ export function PronoteQrScanner({ onBarCodeScanned, error }: PronoteQrScannerPr
       {/* Instructions */}
       <View className="px-4 py-4">
         <View className="flex-row items-center gap-3">
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-primary">
             <ScanLine color="white" size={20} />
           </View>
           <View className="flex-1">
@@ -48,10 +48,10 @@ export function PronoteQrScanner({ onBarCodeScanned, error }: PronoteQrScannerPr
           style={{ backgroundColor: bgColors.black[50] }}
         >
           <View className="h-64 w-64 rounded-2xl border-4 border-white">
-            <View className="absolute -left-1 -top-1 h-8 w-8 rounded-tl-xl border-l-4 border-t-4 border-blue-600 dark:border-blue-400" />
-            <View className="absolute -right-1 -top-1 h-8 w-8 rounded-tr-xl border-r-4 border-t-4 border-blue-600 dark:border-blue-400" />
-            <View className="absolute -bottom-1 -left-1 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-blue-600 dark:border-blue-400" />
-            <View className="absolute -bottom-1 -right-1 h-8 w-8 rounded-br-xl border-b-4 border-r-4 border-blue-600 dark:border-blue-400" />
+            <View className="absolute -left-1 -top-1 h-8 w-8 rounded-tl-xl border-l-4 border-t-4 border-primary" />
+            <View className="absolute -right-1 -top-1 h-8 w-8 rounded-tr-xl border-r-4 border-t-4 border-primary" />
+            <View className="absolute -bottom-1 -left-1 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-primary" />
+            <View className="absolute -bottom-1 -right-1 h-8 w-8 rounded-br-xl border-b-4 border-r-4 border-primary" />
           </View>
           <Text className="mt-4 text-center text-white">
             Placez le QR code dans le cadre
@@ -62,7 +62,7 @@ export function PronoteQrScanner({ onBarCodeScanned, error }: PronoteQrScannerPr
       {/* Error message */}
       {error && (
         <View className="mx-4 my-4 rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
-          <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
+          <Text className="text-center text-destructive">{error}</Text>
         </View>
       )}
     </View>

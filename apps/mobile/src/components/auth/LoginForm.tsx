@@ -51,7 +51,7 @@ export function LoginForm({
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
         >
-          <Text className="text-center text-red-600 dark:text-red-400">
+          <Text className="text-center text-destructive">
             {errorMessage}
           </Text>
         </View>
@@ -86,7 +86,7 @@ export function LoginForm({
           <Pressable accessibilityLabel="Mot de passe oublié">
             <Text
               variant="small"
-              className="text-right text-blue-600 dark:text-blue-400"
+              className="text-right text-primary"
             >
               Mot de passe oublié ?
             </Text>

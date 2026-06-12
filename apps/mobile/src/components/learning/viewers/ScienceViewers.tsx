@@ -88,7 +88,7 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
             onPress={() => handleCategoryPress(category)}
             disabled={validated || selectedItem === null}
             className={`rounded-lg border p-2 ${
-              selectedItem !== null ? 'border-blue-600 dark:border-blue-400' : 'border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800'
+              selectedItem !== null ? 'border-primary' : 'border-border bg-muted'
             }`}
             style={selectedItem !== null ? { backgroundColor: bgColors.primary[10] } : undefined}
           >
@@ -111,8 +111,8 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
                 assignedCategory !== undefined
                   ? 'border-green-500 bg-green-50'
                   : isSelected
-                    ? 'border-blue-600 dark:border-blue-400'
-                    : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800'
+                    ? 'border-primary'
+                    : 'border-border bg-card'
               }`}
               style={assignedCategory === undefined && isSelected ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
@@ -129,7 +129,7 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
 
       {allClassified && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
+          <Text className="font-semibold text-primary-foreground">Valider</Text>
         </Button>
       )}
 
@@ -173,7 +173,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
 
       <View className="mb-6">
         {userOrder.length === 0 ? (
-          <View className="rounded-xl border border-dashed border-stone-200 dark:border-stone-700 p-4">
+          <View className="rounded-xl border border-dashed border-border p-4">
             <Text variant="muted" className="text-center">
               Appuie sur les étapes dans l'ordre correct
             </Text>
@@ -184,11 +184,11 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
               <TouchableOpacity
                 key={`${position}-${originalIndex}`}
                 onPress={() => handleRemove(position)}
-                className="flex-row items-center gap-3 rounded-lg border border-blue-600 dark:border-blue-400 p-3"
+                className="flex-row items-center gap-3 rounded-lg border border-primary p-3"
                 style={{ backgroundColor: bgColors.primary[10] }}
               >
-                <View className="h-6 w-6 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
-                  <Text className="text-xs text-white dark:text-stone-900">{position + 1}</Text>
+                <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
+                  <Text className="text-xs text-primary-foreground">{position + 1}</Text>
                 </View>
                 <Text className="flex-1">{content.steps[originalIndex]}</Text>
               </TouchableOpacity>
@@ -204,7 +204,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
               key={item.originalIndex}
               onPress={() => handleStepPress(item.originalIndex)}
               disabled={validated}
-              className="rounded-lg bg-white dark:bg-stone-800 p-3"
+              className="rounded-lg bg-card p-3"
             >
               <Text>{item.step}</Text>
             </TouchableOpacity>
@@ -214,7 +214,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
 
       {remainingSteps.length === 0 && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
+          <Text className="font-semibold text-primary-foreground">Valider</Text>
         </Button>
       )}
 

@@ -93,7 +93,7 @@ export default function StudentLayout() {
             accessibilityRole="button"
           >
             <ArrowLeft color={colors.primaryForeground} size={16} />
-            <Text className="text-sm font-semibold text-white dark:text-stone-900">
+            <Text className="text-sm font-semibold text-primary-foreground">
               {isRestoring ? 'Retour en cours...' : 'Retour au compte parent'}
             </Text>
           </TouchableOpacity>

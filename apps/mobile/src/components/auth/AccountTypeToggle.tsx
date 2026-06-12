@@ -55,8 +55,8 @@ function ToggleOption({
         className={cn(
           'font-semibold',
           active
-            ? 'text-blue-600 dark:text-blue-400'
-            : 'text-stone-500 dark:text-stone-400'
+            ? 'text-primary'
+            : 'text-muted-foreground'
         )}
       >
         {label}

@@ -76,7 +76,7 @@ export default function LoginScreen() {
     <AuthScreen>
       <View className="mb-8 items-center">
         <TomAvatar size="lg" className="mb-4" />
-        <Text variant="h1" className="text-center text-blue-600 dark:text-blue-400">
+        <Text variant="h1" className="text-center text-primary">
           Tom
         </Text>
         <Text variant="muted" className="mt-2 text-center">
@@ -107,7 +107,7 @@ export default function LoginScreen() {
         <Text variant="muted">Pas encore de compte ? </Text>
         <Link href="/(auth)/register" asChild>
           <Pressable accessibilityLabel="Créer un compte">
-            <Text className="font-semibold text-blue-600 dark:text-blue-400">
+            <Text className="font-semibold text-primary">
               S'inscrire
             </Text>
           </Pressable>

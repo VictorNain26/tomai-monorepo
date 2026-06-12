@@ -122,7 +122,7 @@ export function GradesRecentCard({
   // Loading state
   if (isLoading) {
     return (
-      <View style={shadows.sm} className="rounded-xl bg-white dark:bg-stone-800 p-4">
+      <View style={shadows.sm} className="rounded-xl bg-card p-4">
         <View className="mb-4 flex-row items-center gap-3">
           <Skeleton className="h-10 w-10 rounded-lg" />
           <View className="flex-1">
@@ -142,7 +142,7 @@ export function GradesRecentCard({
   // Empty state
   if (recentGrades.length === 0) {
     return (
-      <View style={shadows.sm} className="rounded-xl bg-white dark:bg-stone-800 p-5">
+      <View style={shadows.sm} className="rounded-xl bg-card p-5">
         <View className="flex-row items-center gap-3 mb-3">
           <View
             className="h-10 w-10 items-center justify-center rounded-lg"
@@ -164,7 +164,7 @@ export function GradesRecentCard({
   const trendColor = trend === 'up' ? colors.success : trend === 'down' ? colors.destructive : colors.mutedForeground;
 
   return (
-    <View style={shadows.sm} className="rounded-xl bg-white dark:bg-stone-800">
+    <View style={shadows.sm} className="rounded-xl bg-card">
       {/* Header with average */}
       <View className="flex-row items-center justify-between p-4 pb-2">
         <View className="flex-row items-center gap-3">
@@ -193,7 +193,7 @@ export function GradesRecentCard({
             accessibilityRole="button"
             accessibilityLabel="Voir toutes les notes"
           >
-            <Text variant="small" className="text-blue-600 dark:text-blue-400">
+            <Text variant="small" className="text-primary">
               Tout voir
             </Text>
             <ChevronRight color={colors.primary} size={16} />
@@ -223,7 +223,7 @@ export function GradesRecentCard({
 
                   {/* Content */}
                   <View className="flex-1">
-                    <Text variant="small" className="text-stone-600 dark:text-stone-400">
+                    <Text variant="small" className="text-muted-foreground">
                       {item.subject} • {formatDate(item.date)}
                     </Text>
                     <Text className="font-medium" numberOfLines={1}>
@@ -245,9 +245,9 @@ export function GradesRecentCard({
                       variant="large"
                       className={
                         status === 'good'
-                          ? 'text-emerald-600 dark:text-emerald-400'
+                          ? 'text-success'
                           : status === 'needs-work'
-                            ? 'text-amber-600 dark:text-amber-400'
+                            ? 'text-warning'
                             : ''
                       }
                     >

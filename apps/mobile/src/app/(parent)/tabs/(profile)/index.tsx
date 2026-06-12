@@ -120,7 +120,7 @@ export default function ParentProfileScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView className="flex-1 bg-background">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -136,7 +136,7 @@ export default function ParentProfileScreen() {
               className="h-14 w-14 items-center justify-center rounded-full"
               style={{ backgroundColor: bgColors.primary[10] }}
             >
-              <Text className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <Text className="text-2xl font-bold text-primary">
                 {user?.name ? user.name.charAt(0).toUpperCase() : '?'}
               </Text>
             </View>
@@ -157,7 +157,7 @@ export default function ParentProfileScreen() {
               )}
               <Text
                 variant="tiny"
-                className={isPro ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-blue-600 dark:text-blue-400 font-medium'}
+                className={isPro ? 'text-success font-medium' : 'text-primary font-medium'}
               >
                 {isPro ? 'Premium' : 'Gratuit'}
               </Text>
@@ -189,7 +189,7 @@ export default function ParentProfileScreen() {
         {/* Menu Sections */}
         {sections.map((section) => (
           <View key={section.title}>
-            <Text variant="small" className="mb-2 px-1 text-stone-600 dark:text-stone-400">
+            <Text variant="small" className="mb-2 px-1 text-muted-foreground">
               {section.title}
             </Text>
             <Card>
@@ -198,7 +198,7 @@ export default function ParentProfileScreen() {
                   key={item.label}
                   onPress={item.onPress}
                   className={`flex-row items-center justify-between px-4 py-3.5 ${
-                    index !== section.items.length - 1 ? 'border-b border-stone-200 dark:border-stone-700' : ''
+                    index !== section.items.length - 1 ? 'border-b border-border' : ''
                   }`}
                   activeOpacity={0.7}
                   accessibilityLabel={item.label}
@@ -235,7 +235,7 @@ export default function ParentProfileScreen() {
           accessibilityRole="button"
         >
           <LogOut color={colors.destructive} size={20} />
-          <Text className="font-semibold text-red-600 dark:text-red-400">Se déconnecter</Text>
+          <Text className="font-semibold text-destructive">Se déconnecter</Text>
         </TouchableOpacity>
 
         {/* App Version */}

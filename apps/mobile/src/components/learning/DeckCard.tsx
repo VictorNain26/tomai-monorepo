@@ -61,7 +61,7 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
   });
 
   return (
-    <View className="rounded-xl bg-white dark:bg-stone-800 p-4">
+    <View className="rounded-xl bg-card p-4">
       <View className="flex-row items-start gap-3">
         {/* Subject icon */}
         <View className={cn('h-12 w-12 items-center justify-center rounded-lg', subjectStyles.bgSubtle)}>
@@ -103,7 +103,7 @@ export const DeckCard = memo(function DeckCard({ deck, onDelete, isDeleting }: D
         <View className="flex-row gap-2">
           <TouchableOpacity
             onPress={handlePlay}
-            className="h-11 w-11 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400"
+            className="h-11 w-11 items-center justify-center rounded-full bg-primary"
             accessibilityLabel={`Reviser ${deck.title}`}
             accessibilityRole="button"
           >
