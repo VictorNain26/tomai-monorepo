@@ -35,7 +35,7 @@ export function ChatHeader({
   const { confirm } = useConfirm();
 
   return (
-    <View className="flex-row items-center gap-2 border-b border-stone-200 dark:border-stone-700 px-2 py-3">
+    <View className="flex-row items-center gap-2 border-b border-border px-2 py-3">
       {/* Back button */}
       <TouchableOpacity
         onPress={onBack}
@@ -71,7 +71,7 @@ export function ChatHeader({
               accessibilityLabel={`${sessionFileCount} fichier(s) attaché(s)`}
             >
               <FolderOpen color={colors.primary} size={14} />
-              <Text variant="tiny" className="text-blue-600 dark:text-blue-400 font-medium">
+              <Text variant="tiny" className="text-primary font-medium">
                 {sessionFileCount}
               </Text>
             </TouchableOpacity>
@@ -87,7 +87,7 @@ export function ChatHeader({
                 ],
               });
             }}
-            className="h-11 w-11 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800"
+            className="h-11 w-11 items-center justify-center rounded-full bg-muted"
             accessibilityLabel="Options de conversation"
             accessibilityHint="Ouvre les options de conversation"
             accessibilityRole="button"

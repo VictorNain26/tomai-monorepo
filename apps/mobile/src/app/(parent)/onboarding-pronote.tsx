@@ -33,7 +33,7 @@ export default function OnboardingPronoteScreen() {
 
   if (flow.step === 'scan' && !permission) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-900">
+      <SafeAreaView className="flex-1 items-center justify-center bg-background">
         <Text variant="muted">Chargement...</Text>
       </SafeAreaView>
     );
@@ -41,7 +41,7 @@ export default function OnboardingPronoteScreen() {
 
   if (flow.step === 'scan' && permission && !permission.granted) {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+      <SafeAreaView className="flex-1 bg-background">
         <View className="flex-1 items-center justify-center px-6">
           <Camera color={colors.foreground} size={48} />
           <Text className="mt-4 text-center text-lg font-semibold">
@@ -51,7 +51,7 @@ export default function OnboardingPronoteScreen() {
             Pour scanner le QR code Pronote, autorisez l'acces a la camera.
           </Text>
           <Button onPress={requestPermission} className="mt-6">
-            <Text className="font-semibold text-white dark:text-stone-900">
+            <Text className="font-semibold text-primary-foreground">
               Autoriser la camera
             </Text>
           </Button>
@@ -68,7 +68,7 @@ export default function OnboardingPronoteScreen() {
       : undefined;
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

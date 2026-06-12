@@ -122,7 +122,7 @@ export function AttachmentMenu({
         {/* Popup Menu */}
         {visible && (
           <View
-            className="absolute bottom-full left-0 mb-2 rounded-xl bg-white dark:bg-stone-800 py-1"
+            className="absolute bottom-full left-0 mb-2 rounded-xl bg-card py-1"
             style={[{ zIndex: 10, minWidth: 180 }, shadows.md]}
           >
             <TouchableOpacity
@@ -131,7 +131,7 @@ export function AttachmentMenu({
               accessibilityLabel="Prendre une photo"
             >
               <Camera color={colors.primary} size={18} />
-              <Text className="text-sm text-stone-800 dark:text-stone-100">Appareil photo</Text>
+              <Text className="text-sm text-foreground">Appareil photo</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handlePickImage}
@@ -139,7 +139,7 @@ export function AttachmentMenu({
               accessibilityLabel="Choisir depuis la galerie"
             >
               <ImageIcon color={colors.primary} size={18} />
-              <Text className="text-sm text-stone-800 dark:text-stone-100">Galerie</Text>
+              <Text className="text-sm text-foreground">Galerie</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handlePickDocument}
@@ -147,7 +147,7 @@ export function AttachmentMenu({
               accessibilityLabel="Choisir un document"
             >
               <FileText color={colors.primary} size={18} />
-              <Text className="text-sm text-stone-800 dark:text-stone-100">Document</Text>
+              <Text className="text-sm text-foreground">Document</Text>
             </TouchableOpacity>
             {onOpenClasseur && (
               <TouchableOpacity
@@ -156,7 +156,7 @@ export function AttachmentMenu({
                 accessibilityLabel="Mon Classeur"
               >
                 <FolderOpen color={colors.primary} size={18} />
-                <Text className="text-sm text-stone-800 dark:text-stone-100">Mon Classeur</Text>
+                <Text className="text-sm text-foreground">Mon Classeur</Text>
               </TouchableOpacity>
             )}
           </View>

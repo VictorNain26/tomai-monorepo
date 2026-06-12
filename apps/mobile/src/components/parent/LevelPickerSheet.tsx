@@ -24,12 +24,12 @@ export function LevelPickerSheet({ visible, onClose, onSelect, selectedLevel }: 
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={onClose}>
         <Pressable
-          className="rounded-t-3xl bg-white dark:bg-stone-900 pb-8"
+          className="rounded-t-3xl bg-background pb-8"
           onPress={(e) => e.stopPropagation()}
         >
           {/* Handle bar */}
           <View className="items-center pt-3 pb-2">
-            <View className="h-1 w-10 rounded-full bg-stone-300 dark:bg-stone-600" />
+            <View className="h-1 w-10 rounded-full bg-border" />
           </View>
 
           {/* Header */}
@@ -54,7 +54,7 @@ export function LevelPickerSheet({ visible, onClose, onSelect, selectedLevel }: 
                       key={level}
                       onPress={() => { onSelect(level); onClose(); }}
                       className="flex-row items-center justify-between rounded-xl px-4 py-3 mb-1"
-                      style={isSelected ? { backgroundColor: 'rgba(37, 99, 235, 0.08)' } : undefined}
+                      style={isSelected ? { backgroundColor: colors.primary + '14' } : undefined}
                     >
                       <Text className={isSelected ? 'font-semibold' : ''}>
                         {LEVEL_LABELS[level]}

@@ -114,7 +114,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
             className="flex-1 rounded-xl p-3"
             style={{ backgroundColor: bgColors.primary[10] }}
           >
-            <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
+            <Text variant="tiny" className="text-muted-foreground">
               Total
             </Text>
             <Text variant="large">{totalCount}</Text>
@@ -123,10 +123,10 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
             className="flex-1 rounded-xl p-3"
             style={{ backgroundColor: bgColors.success[10] }}
           >
-            <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
+            <Text variant="tiny" className="text-muted-foreground">
               Faits
             </Text>
-            <Text variant="large" className="text-emerald-600 dark:text-emerald-400">
+            <Text variant="large" className="text-success">
               {doneCount}
             </Text>
           </View>
@@ -135,10 +135,10 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
               className="flex-1 rounded-xl p-3"
               style={{ backgroundColor: bgColors.destructive[10] }}
             >
-              <Text variant="tiny" className="text-stone-600 dark:text-stone-400">
+              <Text variant="tiny" className="text-muted-foreground">
                 En retard
               </Text>
-              <Text variant="large" className="text-red-600 dark:text-red-400">
+              <Text variant="large" className="text-destructive">
                 {overdueCount}
               </Text>
             </View>
@@ -206,7 +206,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
                           )}
                           <View className="flex-1">
                             <Text
-                              className={`font-medium ${hw.done ? 'text-emerald-600 dark:text-emerald-400' : ''}`}
+                              className={`font-medium ${hw.done ? 'text-success' : ''}`}
                             >
                               {hw.subject}
                             </Text>
@@ -218,7 +218,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
                               {hw.description}
                             </Text>
                             {overdue && (
-                              <Text variant="tiny" className="mt-1 text-red-600 dark:text-red-400">
+                              <Text variant="tiny" className="mt-1 text-destructive">
                                 En retard
                               </Text>
                             )}
@@ -233,7 +233,7 @@ export function HomeworkView({ homework, isLoading, onAskTom }: HomeworkViewProp
                             style={{ backgroundColor: bgColors.primary[10] }}
                           >
                             <MessageCircle color={colors.primary} size={16} />
-                            <Text variant="small" className="text-blue-600 dark:text-blue-400 font-medium">
+                            <Text variant="small" className="text-primary font-medium">
                               Demander de l'aide à Tom
                             </Text>
                           </TouchableOpacity>

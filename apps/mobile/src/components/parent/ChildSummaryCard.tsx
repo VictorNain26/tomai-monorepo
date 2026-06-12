@@ -75,7 +75,7 @@ export function ChildSummaryCard({
           </View>
 
           {/* Stats row */}
-          <View className="mt-3 flex-row gap-1.5 border-t border-stone-100 dark:border-stone-700 pt-3">
+          <View className="mt-3 flex-row gap-1.5 border-t border-border pt-3">
             <StatBadge icon={<BarChart3 color={colors.primary} size={12} />} value={averageGrade !== null ? averageGrade.toFixed(1) : '—'} bg={bgColors.primary[5]} />
             <StatBadge icon={<BookOpen color={colors.warning} size={12} />} value={`${homeworkCount}`} bg={bgColors.warning[5]} />
             <StatBadge icon={<Clock color={colors.success} size={12} />} value={formatStudyTime(studyTimeMinutes)} bg={bgColors.success[5]} />
@@ -138,7 +138,7 @@ function LaunchTomButton({ childId, childName }: { childId: string; childName: s
       className="mt-3 flex-row items-center justify-center gap-2 rounded-xl py-2.5"
       style={{ backgroundColor: colors.success, opacity: isLaunching ? 0.7 : 1 }}
     >
-      <Play color="#fff" size={16} />
+      <Play color={colors.successForeground} size={16} />
       <Text className="font-semibold text-sm text-white">
         {isLaunching ? 'Lancement...' : 'Lancer Tom'}
       </Text>

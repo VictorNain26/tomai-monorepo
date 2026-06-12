@@ -41,11 +41,11 @@ function FeedbackBox({
   explanation?: string;
 }) {
   return (
-    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-      <Text className={isCorrect ? 'text-green-700' : 'text-red-700'}>
+    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-success/15' : 'bg-destructive/15'}`}>
+      <Text className={isCorrect ? 'text-success' : 'text-destructive'}>
         {isCorrect ? '✓ Bonne réponse !' : '✗ Mauvaise réponse'}
       </Text>
-      {explanation && <Text className="mt-2 text-sm text-gray-700">{explanation}</Text>}
+      {explanation && <Text className="mt-2 text-sm text-foreground">{explanation}</Text>}
     </View>
   );
 }
@@ -88,7 +88,7 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
             onPress={() => handleCategoryPress(category)}
             disabled={validated || selectedItem === null}
             className={`rounded-lg border p-2 ${
-              selectedItem !== null ? 'border-blue-600 dark:border-blue-400' : 'border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800'
+              selectedItem !== null ? 'border-primary' : 'border-border bg-muted'
             }`}
             style={selectedItem !== null ? { backgroundColor: bgColors.primary[10] } : undefined}
           >
@@ -109,16 +109,16 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
               disabled={validated || assignedCategory !== undefined}
               className={`flex-row items-center justify-between rounded-lg border p-3 ${
                 assignedCategory !== undefined
-                  ? 'border-green-500 bg-green-50'
+                  ? 'border-success bg-success/15'
                   : isSelected
-                    ? 'border-blue-600 dark:border-blue-400'
-                    : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800'
+                    ? 'border-primary'
+                    : 'border-border bg-card'
               }`}
               style={assignedCategory === undefined && isSelected ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
               <Text className="flex-1">{item}</Text>
               {assignedCategory !== undefined && (
-                <View className="rounded bg-green-200 px-2 py-1">
+                <View className="rounded bg-success/25 px-2 py-1">
                   <Text className="text-xs">{assignedCategory}</Text>
                 </View>
               )}
@@ -129,7 +129,7 @@ export function ClassificationViewer({ content }: { content: ClassificationConte
 
       {allClassified && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
+          <Text className="font-semibold text-primary-foreground">Valider</Text>
         </Button>
       )}
 
@@ -165,15 +165,15 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
 
   return (
     <ScrollView className="flex-1">
-      <View className="mb-4 rounded-lg bg-blue-50 p-3">
-        <Text className="font-medium text-blue-700">{content.processName}</Text>
+      <View className="mb-4 rounded-lg bg-info/10 p-3">
+        <Text className="font-medium text-info">{content.processName}</Text>
       </View>
 
       <Text className="mb-4 text-center">{content.instruction}</Text>
 
       <View className="mb-6">
         {userOrder.length === 0 ? (
-          <View className="rounded-xl border border-dashed border-stone-200 dark:border-stone-700 p-4">
+          <View className="rounded-xl border border-dashed border-border p-4">
             <Text variant="muted" className="text-center">
               Appuie sur les étapes dans l'ordre correct
             </Text>
@@ -184,11 +184,11 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
               <TouchableOpacity
                 key={`${position}-${originalIndex}`}
                 onPress={() => handleRemove(position)}
-                className="flex-row items-center gap-3 rounded-lg border border-blue-600 dark:border-blue-400 p-3"
+                className="flex-row items-center gap-3 rounded-lg border border-primary p-3"
                 style={{ backgroundColor: bgColors.primary[10] }}
               >
-                <View className="h-6 w-6 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
-                  <Text className="text-xs text-white dark:text-stone-900">{position + 1}</Text>
+                <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
+                  <Text className="text-xs text-primary-foreground">{position + 1}</Text>
                 </View>
                 <Text className="flex-1">{content.steps[originalIndex]}</Text>
               </TouchableOpacity>
@@ -204,7 +204,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
               key={item.originalIndex}
               onPress={() => handleStepPress(item.originalIndex)}
               disabled={validated}
-              className="rounded-lg bg-white dark:bg-stone-800 p-3"
+              className="rounded-lg bg-card p-3"
             >
               <Text>{item.step}</Text>
             </TouchableOpacity>
@@ -214,7 +214,7 @@ export function ProcessOrderViewer({ content }: { content: ProcessOrderContent }
 
       {remainingSteps.length === 0 && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
+          <Text className="font-semibold text-primary-foreground">Valider</Text>
         </Button>
       )}
 

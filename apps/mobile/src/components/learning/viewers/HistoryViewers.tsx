@@ -46,11 +46,11 @@ function FeedbackBox({
   explanation?: string;
 }) {
   return (
-    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-      <Text className={isCorrect ? 'text-green-700' : 'text-red-700'}>
+    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-success/15' : 'bg-destructive/15'}`}>
+      <Text className={isCorrect ? 'text-success' : 'text-destructive'}>
         {isCorrect ? '✓ Bonne réponse !' : '✗ Mauvaise réponse'}
       </Text>
-      {explanation && <Text className="mt-2 text-sm text-gray-700">{explanation}</Text>}
+      {explanation && <Text className="mt-2 text-sm text-foreground">{explanation}</Text>}
     </View>
   );
 }
@@ -89,7 +89,7 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
           Ta chronologie :
         </Text>
         {userOrder.length === 0 ? (
-          <View className="rounded-xl border border-dashed border-stone-200 dark:border-stone-700 p-4">
+          <View className="rounded-xl border border-dashed border-border p-4">
             <Text variant="muted" className="text-center">
               Appuie sur les événements pour les ordonner
             </Text>
@@ -102,11 +102,11 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
                 <TouchableOpacity
                   key={`${position}-${originalIndex}`}
                   onPress={() => handleRemove(position)}
-                  className="flex-row items-center gap-3 rounded-lg border border-blue-600 dark:border-blue-400 p-3"
+                  className="flex-row items-center gap-3 rounded-lg border border-primary p-3"
                   style={{ backgroundColor: bgColors.primary[10] }}
                 >
-                  <View className="h-6 w-6 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
-                    <Text className="text-xs text-white dark:text-stone-900">{position + 1}</Text>
+                  <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
+                    <Text className="text-xs text-primary-foreground">{position + 1}</Text>
                   </View>
                   <View className="flex-1">
                     <Text>{event.event}</Text>
@@ -128,7 +128,7 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
               key={event.originalIndex}
               onPress={() => handleEventPress(event.originalIndex)}
               disabled={validated}
-              className="rounded-lg bg-white dark:bg-stone-800 p-3"
+              className="rounded-lg bg-card p-3"
             >
               <Text>{event.event}</Text>
               {event.hint && (
@@ -143,7 +143,7 @@ export function TimelineViewer({ content }: { content: TimelineContent }) {
 
       {remainingEvents.length === 0 && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
+          <Text className="font-semibold text-primary-foreground">Valider</Text>
         </Button>
       )}
 
@@ -188,7 +188,7 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
             onPress={() => handleEraPress(index)}
             disabled={validated || selectedItem === null}
             className={`rounded-lg border p-2 ${
-              selectedItem !== null ? 'border-blue-600 dark:border-blue-400' : 'border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800'
+              selectedItem !== null ? 'border-primary' : 'border-border bg-muted'
             }`}
             style={selectedItem !== null ? { backgroundColor: bgColors.primary[10] } : undefined}
           >
@@ -209,16 +209,16 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
               disabled={validated || assignedEra !== undefined}
               className={`flex-row items-center justify-between rounded-lg border p-3 ${
                 assignedEra !== undefined
-                  ? 'border-green-500 bg-green-50'
+                  ? 'border-success bg-success/15'
                   : isSelected
-                    ? 'border-blue-600 dark:border-blue-400'
-                    : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800'
+                    ? 'border-primary'
+                    : 'border-border bg-card'
               }`}
               style={assignedEra === undefined && isSelected ? { backgroundColor: bgColors.primary[10] } : undefined}
             >
               <Text className="flex-1">{item}</Text>
               {assignedEra !== undefined && (
-                <View className="rounded bg-green-200 px-2 py-1">
+                <View className="rounded bg-success/25 px-2 py-1">
                   <Text className="text-xs">{content.eras[assignedEra]}</Text>
                 </View>
               )}
@@ -229,7 +229,7 @@ export function MatchingEraViewer({ content }: { content: MatchingEraContent }) 
 
       {allAssigned && !validated && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
+          <Text className="font-semibold text-primary-foreground">Valider</Text>
         </Button>
       )}
 
@@ -250,15 +250,15 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
   return (
     <ScrollView className="flex-1">
       {content.context && (
-        <View className="mb-4 rounded-lg bg-stone-100 dark:bg-stone-800 p-3">
+        <View className="mb-4 rounded-lg bg-muted p-3">
           <Text variant="muted" className="text-sm">
             {content.context}
           </Text>
         </View>
       )}
 
-      <View className="mb-6 rounded-xl bg-orange-50 p-4">
-        <Text className="mb-1 text-sm font-medium text-orange-700">Cause :</Text>
+      <View className="mb-6 rounded-xl bg-warning/15 p-4">
+        <Text className="mb-1 text-sm font-medium text-warning">Cause :</Text>
         <Text className="text-lg">{content.cause}</Text>
       </View>
 
@@ -269,14 +269,14 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
           const isSelected = selected === index;
           const isCorrectOption = index === content.correctIndex;
 
-          let bgClass = 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700';
+          let bgClass = 'bg-card border-border';
           let useInlineStyle = false;
           if (validated && isCorrectOption) {
-            bgClass = 'bg-green-100 border-green-500';
+            bgClass = 'bg-success/15 border-success';
           } else if (validated && isSelected && !isCorrectOption) {
-            bgClass = 'bg-red-100 border-red-500';
+            bgClass = 'bg-destructive/15 border-destructive';
           } else if (isSelected) {
-            bgClass = 'border-blue-600 dark:border-blue-400';
+            bgClass = 'border-primary';
             useInlineStyle = true;
           }
 
@@ -296,7 +296,7 @@ export function CauseEffectViewer({ content }: { content: CauseEffectContent }) 
 
       {!validated && selected !== null && (
         <Button onPress={() => setValidated(true)} className="mt-4">
-          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
+          <Text className="font-semibold text-primary-foreground">Valider</Text>
         </Button>
       )}
 

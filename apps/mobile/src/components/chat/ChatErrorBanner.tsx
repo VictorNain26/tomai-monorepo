@@ -26,7 +26,7 @@ export function ChatErrorBanner({ error, onRetry }: ChatErrorBannerProps) {
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
     >
-      <Text className="flex-1 text-red-600 dark:text-red-400">{error}</Text>
+      <Text className="flex-1 text-destructive">{error}</Text>
       <TouchableOpacity
         onPress={onRetry}
         className="flex-row items-center gap-1 rounded-full px-3 py-1.5"
@@ -36,7 +36,7 @@ export function ChatErrorBanner({ error, onRetry }: ChatErrorBannerProps) {
         accessibilityRole="button"
       >
         <RefreshCw color={colors.destructive} size={14} />
-        <Text className="text-sm font-semibold text-red-600 dark:text-red-400">
+        <Text className="text-sm font-semibold text-destructive">
           Réessayer
         </Text>
       </TouchableOpacity>

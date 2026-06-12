@@ -48,7 +48,7 @@ function ScreenHeader({
   foreground: string;
 }) {
   return (
-    <View className="flex-row items-center gap-3 border-b border-stone-200 dark:border-stone-700 px-4 py-3">
+    <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
       <TouchableOpacity
         onPress={onBack}
         className="h-10 w-10 items-center justify-center rounded-full"
@@ -76,7 +76,7 @@ export default function PronoteConnectScreen() {
 
   if (!permission) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-900">
+      <SafeAreaView className="flex-1 items-center justify-center bg-background">
         <Text variant="muted">Chargement...</Text>
       </SafeAreaView>
     );
@@ -84,7 +84,7 @@ export default function PronoteConnectScreen() {
 
   if (!permission.granted) {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+      <SafeAreaView className="flex-1 bg-background">
         <ScreenHeader
           title="Connexion Pronote"
           onBack={() => router.back()}
@@ -99,7 +99,7 @@ export default function PronoteConnectScreen() {
             Pour scanner le QR code Pronote, autorisez l'acces a la camera.
           </Text>
           <Button onPress={requestPermission} className="mt-6">
-            <Text className="font-semibold text-white dark:text-stone-900">
+            <Text className="font-semibold text-primary-foreground">
               Autoriser la camera
             </Text>
           </Button>
@@ -115,7 +115,7 @@ export default function PronoteConnectScreen() {
     if (!currentResource) return null;
 
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+      <SafeAreaView className="flex-1 bg-background">
         <ScreenHeader
           title="Créer l'accès enfant"
           onBack={() => router.back()}
@@ -136,7 +136,7 @@ export default function PronoteConnectScreen() {
   // ---- Main flow (scan / pin / import) ----
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView className="flex-1 bg-background">
       <ScreenHeader
         title="Connexion Pronote"
         onBack={() => router.back()}

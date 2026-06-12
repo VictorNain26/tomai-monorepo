@@ -27,7 +27,7 @@ export function AttachmentPreview({ attachments, onRemove }: AttachmentPreviewPr
         {attachments.map((attachment) => (
           <View
             key={attachment.fileId}
-            className="relative rounded-xl bg-stone-100 dark:bg-stone-800 p-2"
+            className="relative rounded-xl bg-muted p-2"
           >
             {attachment.preview ? (
               <Image
@@ -46,7 +46,7 @@ export function AttachmentPreview({ attachments, onRemove }: AttachmentPreviewPr
             )}
             <Text
               variant="tiny"
-              className="mt-1 max-w-[64px] text-stone-600 dark:text-stone-400"
+              className="mt-1 max-w-[64px] text-muted-foreground"
               numberOfLines={1}
             >
               {attachment.fileName}
@@ -54,7 +54,7 @@ export function AttachmentPreview({ attachments, onRemove }: AttachmentPreviewPr
             {onRemove && (
               <TouchableOpacity
                 onPress={() => onRemove(attachment.fileId)}
-                className="absolute -right-1 -top-1 h-5 w-5 items-center justify-center rounded-full bg-red-600 dark:bg-red-400"
+                className="absolute -right-1 -top-1 h-5 w-5 items-center justify-center rounded-full bg-destructive"
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 accessibilityLabel={`Supprimer ${attachment.fileName}`}
                 accessibilityRole="button"

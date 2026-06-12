@@ -26,7 +26,7 @@ const TextClassContext = createContext<string | undefined>(undefined);
  */
 
 const textVariants = cva(
-  cn('text-base text-stone-800 dark:text-stone-100 font-sans', Platform.select({ web: 'select-text' })),
+  cn('text-base text-foreground font-sans', Platform.select({ web: 'select-text' })),
   {
     variants: {
       variant: {
@@ -39,12 +39,12 @@ const textVariants = cva(
         // Body variants
         large: 'text-lg font-semibold',
         small: 'text-sm font-medium',
-        muted: 'text-sm text-stone-600 dark:text-stone-400',
+        muted: 'text-sm text-muted-foreground',
         reading: 'text-lg font-sans leading-relaxed',
-        tiny: 'text-xs font-medium text-stone-600 dark:text-stone-400',
+        tiny: 'text-xs font-medium text-muted-foreground',
         // Semantic variants
-        error: 'text-sm text-red-600 dark:text-red-400',
-        success: 'text-sm text-emerald-600 dark:text-emerald-400',
+        error: 'text-sm text-destructive',
+        success: 'text-sm text-success',
       },
     },
     defaultVariants: {

@@ -9,7 +9,7 @@ export function AuthScreen({ children }: AuthScreenProps) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-stone-50 dark:bg-stone-900"
+      className="flex-1 bg-background"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}

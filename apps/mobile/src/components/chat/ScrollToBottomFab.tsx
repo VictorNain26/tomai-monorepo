@@ -19,7 +19,7 @@ export function ScrollToBottomFab({ onPress }: ScrollToBottomFabProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="absolute bottom-3 right-3 h-11 w-11 items-center justify-center rounded-full bg-white dark:bg-stone-800 shadow-sm"
+      className="absolute bottom-3 right-3 h-11 w-11 items-center justify-center rounded-full bg-card shadow-sm"
       style={{ elevation: 3 }}
       accessibilityRole="button"
       accessibilityLabel="Retourner en bas de la conversation"

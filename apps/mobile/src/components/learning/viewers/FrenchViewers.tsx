@@ -34,14 +34,14 @@ function FeedbackBox({
   correctAnswer?: string;
 }) {
   return (
-    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-      <Text className={isCorrect ? 'text-green-700' : 'text-red-700'}>
+    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-success/15' : 'bg-destructive/15'}`}>
+      <Text className={isCorrect ? 'text-success' : 'text-destructive'}>
         {isCorrect ? '✓ Bonne réponse !' : '✗ Mauvaise réponse'}
       </Text>
       {correctAnswer && !isCorrect && (
-        <Text className="mt-2 text-sm text-gray-700">Réponse attendue : {correctAnswer}</Text>
+        <Text className="mt-2 text-sm text-foreground">Réponse attendue : {correctAnswer}</Text>
       )}
-      {explanation && <Text className="mt-2 text-sm text-gray-700">{explanation}</Text>}
+      {explanation && <Text className="mt-2 text-sm text-foreground">{explanation}</Text>}
     </View>
   );
 }
@@ -58,15 +58,15 @@ export function GrammarTransformViewer({ content }: { content: GrammarTransformC
 
   return (
     <ScrollView className="flex-1">
-      <View className="mb-4 self-start rounded-full bg-purple-100 px-4 py-2">
-        <Text className="text-sm text-purple-700">
+      <View className="mb-4 self-start rounded-full bg-violet/15 px-4 py-2">
+        <Text className="text-sm text-violet">
           ✏️ {TRANSFORM_LABELS[content.transformationType] ?? 'Transformation'}
         </Text>
       </View>
 
       <Text className="mb-4">{content.instruction}</Text>
 
-      <View className="mb-6 rounded-xl bg-stone-100 dark:bg-stone-800 p-4">
+      <View className="mb-6 rounded-xl bg-muted p-4">
         <Text className="text-center text-lg font-medium">{content.originalSentence}</Text>
       </View>
 
@@ -75,14 +75,14 @@ export function GrammarTransformViewer({ content }: { content: GrammarTransformC
         onChangeText={setUserAnswer}
         placeholder="Ta réponse..."
         editable={!validated}
-        className="mb-4 rounded-xl bg-white dark:bg-stone-800 p-4 text-base"
+        className="mb-4 rounded-xl bg-card p-4 text-base"
         autoCapitalize="none"
         autoCorrect={false}
       />
 
       {!validated && userAnswer.trim() !== '' && (
         <Button onPress={() => setValidated(true)}>
-          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
+          <Text className="font-semibold text-primary-foreground">Valider</Text>
         </Button>
       )}
 

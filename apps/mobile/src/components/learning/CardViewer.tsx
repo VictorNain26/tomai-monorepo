@@ -81,7 +81,7 @@ export function CardViewer({ cardType, content }: CardViewerProps) {
       return <GrammarTransformViewer content={castContent<GrammarTransformContent>(content)} />;
     default:
       return (
-        <View className="flex-1 items-center justify-center rounded-xl bg-white dark:bg-stone-800 p-6">
+        <View className="flex-1 items-center justify-center rounded-xl bg-card p-6">
           <Text variant="muted" className="text-center">
             Type de carte non supporté : {cardType}
           </Text>

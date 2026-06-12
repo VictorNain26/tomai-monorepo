@@ -17,8 +17,8 @@ export interface ConceptContent {
 export function ConceptViewer({ content }: { content: ConceptContent }) {
   return (
     <ScrollView className="flex-1">
-      <View className="mb-4 self-start rounded-full bg-purple-100 px-4 py-2">
-        <Text className="text-sm font-medium text-purple-700">📖 Concept</Text>
+      <View className="mb-4 self-start rounded-full bg-violet/15 px-4 py-2">
+        <Text className="text-sm font-medium text-violet">📖 Concept</Text>
       </View>
 
       <Text variant="h3" className="mb-4">
@@ -31,21 +31,21 @@ export function ConceptViewer({ content }: { content: ConceptContent }) {
       <View className="mb-6 gap-2">
         {content.keyPoints.map((point, index) => (
           <View key={`${index}-${point}`} className="flex-row gap-2">
-            <Text className="text-blue-600 dark:text-blue-400">•</Text>
+            <Text className="text-primary">•</Text>
             <Text className="flex-1">{point}</Text>
           </View>
         ))}
       </View>
 
       {content.example && (
-        <View className="mb-4 rounded-xl bg-stone-100 dark:bg-stone-800 p-4">
+        <View className="mb-4 rounded-xl bg-muted p-4">
           <Text className="mb-2 font-semibold">Exemple :</Text>
           <Text>{content.example}</Text>
         </View>
       )}
 
       {content.formula && (
-        <View className="rounded-xl bg-blue-50 p-4">
+        <View className="rounded-xl bg-info/10 p-4">
           <Text className="mb-2 font-semibold">Formule :</Text>
           <Text className="text-center font-mono text-lg">{content.formula}</Text>
         </View>

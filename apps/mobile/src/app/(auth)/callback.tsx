@@ -13,7 +13,7 @@ export default function OAuthCallbackScreen() {
   const colors = useThemeColors();
 
   return (
-    <View className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-900">
+    <View className="flex-1 items-center justify-center bg-background">
       <ActivityIndicator size="large" color={colors.primary} />
       <Text variant="muted" className="mt-4">
         Connexion en cours...

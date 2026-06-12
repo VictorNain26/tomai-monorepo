@@ -80,9 +80,9 @@ export function DeleteChildModal({
       >
         <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: bgColors.black[60] }}>
           <SafeAreaView className="w-full max-w-sm">
-            <View className="rounded-2xl bg-white dark:bg-stone-800">
+            <View className="rounded-2xl bg-card">
               {/* Header */}
-              <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 p-4">
+              <View className="flex-row items-center justify-between border-b border-border p-4">
                 <View className="flex-row items-center gap-3">
                   <View className="h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.destructive[10] }}>
                     <AlertTriangle color={colors.destructive} size={20} />
@@ -102,27 +102,27 @@ export function DeleteChildModal({
 
               {/* Content */}
               <View className="p-4">
-                <Text className="mb-4 leading-relaxed text-stone-600 dark:text-stone-400">
+                <Text className="mb-4 leading-relaxed text-muted-foreground">
                   Vous allez supprimer le compte de{' '}
-                  <Text className="font-semibold text-stone-800 dark:text-stone-100">
+                  <Text className="font-semibold text-foreground">
                     {childName}
                   </Text>{' '}
                   (@{childUsername}).
                 </Text>
 
                 <View className="mb-4 rounded-xl p-3" style={{ backgroundColor: bgColors.destructive[5] }}>
-                  <Text className="text-sm text-red-600 dark:text-red-400">
+                  <Text className="text-sm text-destructive">
                     Cette action est irréversible. Toutes les données de l'enfant
                     seront définitivement supprimées :
                   </Text>
                   <View className="mt-2 gap-1">
-                    <Text className="text-sm text-red-600 dark:text-red-400">
+                    <Text className="text-sm text-destructive">
                       • Historique des conversations
                     </Text>
-                    <Text className="text-sm text-red-600 dark:text-red-400">
+                    <Text className="text-sm text-destructive">
                       • Decks de révision créés
                     </Text>
-                    <Text className="text-sm text-red-600 dark:text-red-400">
+                    <Text className="text-sm text-destructive">
                       • Données de progression
                     </Text>
                   </View>
@@ -143,12 +143,12 @@ export function DeleteChildModal({
                     disabled={isDeleting}
                     className={
                       confirmText && !isConfirmValid
-                        ? 'border-red-600 dark:border-red-400'
+                        ? 'border-destructive'
                         : ''
                     }
                   />
                   {confirmText && !isConfirmValid && (
-                    <Text className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    <Text className="mt-1 text-xs text-destructive">
                       Le prénom ne correspond pas
                     </Text>
                   )}

@@ -37,7 +37,7 @@ export function PronotePinEntry({
     <View className="flex-1 px-4 py-6">
       {/* Instructions */}
       <View className="mb-6 flex-row items-center gap-3">
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-primary">
           <KeyRound color="white" size={20} />
         </View>
         <View className="flex-1">
@@ -92,7 +92,7 @@ export function PronotePinEntry({
       {/* Error message */}
       {error && (
         <View className="mb-4 rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
-          <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
+          <Text className="text-center text-destructive">{error}</Text>
         </View>
       )}
 
@@ -102,13 +102,13 @@ export function PronotePinEntry({
         disabled={pin.length !== 4 || isPending}
         className="mt-auto"
       >
-        <Text className="font-semibold text-white dark:text-stone-900">
+        <Text className="font-semibold text-primary-foreground">
           {isPending ? 'Connexion...' : 'Connecter Pronote'}
         </Text>
       </Button>
 
       {/* Help Text */}
-      <View className="mt-6 rounded-xl bg-white dark:bg-stone-800 p-4" style={{ backgroundColor: bgColors.muted[50] }}>
+      <View className="mt-6 rounded-xl p-4" style={{ backgroundColor: bgColors.muted[50] }}>
         <Text variant="muted" className="text-center text-sm">
           Le code PIN est affiche sur l'ecran Pronote apres le QR code.
           {'\n'}Il expire apres quelques minutes.

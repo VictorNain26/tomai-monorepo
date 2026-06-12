@@ -116,11 +116,11 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
       {/* Avatar */}
       {isUser ? (
         <View
-          className="h-8 w-8 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400"
+          className="h-8 w-8 items-center justify-center rounded-full bg-primary"
           accessibilityElementsHidden={true}
           importantForAccessibility="no-hide-descendants"
         >
-          <Text className="text-sm text-white dark:text-stone-900">👤</Text>
+          <Text className="text-sm text-primary-foreground">👤</Text>
         </View>
       ) : (
         <TomAvatar size="sm" />
@@ -134,7 +134,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
           accessibilityHint="Appui long pour copier le message"
           className={cn(
             'rounded-2xl px-4 py-3',
-            isUser ? 'rounded-tr-sm bg-blue-600 dark:bg-blue-400' : 'rounded-tl-sm bg-stone-100 dark:bg-stone-800'
+            isUser ? 'rounded-tr-sm bg-primary' : 'rounded-tl-sm bg-muted'
           )}
         >
           {isThinking ? (
@@ -169,7 +169,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
               )}
               <Text
                 variant="tiny"
-                className={tts.isSpeaking ? 'text-stone-800 dark:text-stone-100' : 'text-stone-600 dark:text-stone-400'}
+                className={tts.isSpeaking ? 'text-foreground' : 'text-muted-foreground'}
               >
                 {tts.isLoading
                   ? 'Chargement...'
@@ -179,7 +179,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
               </Text>
             </TouchableOpacity>
             {tts.error && (
-              <Text variant="tiny" className="ml-1 self-center text-red-600 dark:text-red-400" numberOfLines={1}>
+              <Text variant="tiny" className="ml-1 self-center text-destructive" numberOfLines={1}>
                 {tts.error}
               </Text>
             )}
@@ -252,7 +252,7 @@ function ThinkingIndicator({ status }: { status?: string | null }) {
   return (
     <View className="gap-1">
       <View className="flex-row items-center gap-2">
-        <Text className="text-stone-600 dark:text-stone-400">{label}</Text>
+        <Text className="text-muted-foreground">{label}</Text>
         <View className="flex-row gap-1">
           <StaggeredDot delay={0} color={colors.primary} />
           <StaggeredDot delay={150} color={colors.primary} />

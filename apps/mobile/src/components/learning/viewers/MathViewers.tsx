@@ -21,14 +21,14 @@ export function CalculationViewer({ content }: { content: CalculationContent }) 
 
   return (
     <ScrollView className="flex-1">
-      <View className="mb-6 rounded-xl bg-blue-50 p-4">
+      <View className="mb-6 rounded-xl bg-info/10 p-4">
         <Text className="mb-2 font-semibold">Problème :</Text>
         <Text className="text-lg">{content.problem}</Text>
       </View>
 
       {content.hint && !showSteps && (
-        <View className="mb-4 rounded-lg bg-yellow-50 p-3">
-          <Text className="text-sm text-yellow-700">💡 {content.hint}</Text>
+        <View className="mb-4 rounded-lg bg-warning/15 p-3">
+          <Text className="text-sm text-warning">💡 {content.hint}</Text>
         </View>
       )}
 
@@ -43,9 +43,9 @@ export function CalculationViewer({ content }: { content: CalculationContent }) 
           <Text className="mb-3 font-semibold">Étapes :</Text>
           <View className="gap-2">
             {content.steps.map((step, index) => (
-              <View key={`${index}-${step}`} className="flex-row gap-3 rounded-lg bg-stone-100 dark:bg-stone-800 p-3">
-                <View className="h-6 w-6 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400">
-                  <Text className="text-xs text-white dark:text-stone-900">{index + 1}</Text>
+              <View key={`${index}-${step}`} className="flex-row gap-3 rounded-lg bg-muted p-3">
+                <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
+                  <Text className="text-xs text-primary-foreground">{index + 1}</Text>
                 </View>
                 <Text className="flex-1">{step}</Text>
               </View>
@@ -56,13 +56,13 @@ export function CalculationViewer({ content }: { content: CalculationContent }) 
 
       {showSteps && !showAnswer && (
         <Button onPress={() => setShowAnswer(true)}>
-          <Text className="font-semibold text-white dark:text-stone-900">Voir la réponse</Text>
+          <Text className="font-semibold text-primary-foreground">Voir la réponse</Text>
         </Button>
       )}
 
       {showAnswer && (
-        <View className="rounded-xl bg-green-100 p-4">
-          <Text className="mb-2 font-semibold text-green-700">Réponse :</Text>
+        <View className="rounded-xl bg-success/15 p-4">
+          <Text className="mb-2 font-semibold text-success">Réponse :</Text>
           <Text className="text-center text-xl font-bold">{content.answer}</Text>
         </View>
       )}

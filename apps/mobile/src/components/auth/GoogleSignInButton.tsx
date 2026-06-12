@@ -22,11 +22,11 @@ export function GoogleSignInButton({
   return (
     <>
       <View className="my-6 flex-row items-center">
-        <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+        <View className="h-px flex-1 bg-muted" />
         <Text variant="muted" className="px-4">
           ou
         </Text>
-        <View className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+        <View className="h-px flex-1 bg-muted" />
       </View>
 
       <Button

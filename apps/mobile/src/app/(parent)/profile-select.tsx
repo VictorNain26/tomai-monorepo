@@ -138,7 +138,7 @@ export default function ProfileSelectScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900 items-center justify-center">
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
@@ -152,7 +152,7 @@ export default function ProfileSelectScreen() {
 
   if (switching) {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900 items-center justify-center">
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator size="large" color={colors.primary} />
         <Text variant="muted" className="mt-4">
           Changement de profil...
@@ -216,7 +216,7 @@ export default function ProfileSelectScreen() {
   // -- Grid -------------------------------------------------------------------
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900 items-center justify-center px-6">
+    <SafeAreaView className="flex-1 bg-background items-center justify-center px-6">
       <Text variant="h2" className="mb-2">
         Qui utilise Tom ?
       </Text>
@@ -225,7 +225,7 @@ export default function ProfileSelectScreen() {
       </Text>
 
       {error && (
-        <Text className="mb-4 text-red-500 text-sm text-center">{error}</Text>
+        <Text className="mb-4 text-destructive text-sm text-center">{error}</Text>
       )}
 
       <View className="flex-row flex-wrap justify-center gap-8">

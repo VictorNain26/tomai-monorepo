@@ -77,7 +77,7 @@ export default function ForgotPasswordScreen() {
   // Success state
   if (emailSent) {
     return (
-      <View className="flex-1 justify-center bg-stone-50 dark:bg-stone-900 px-6">
+      <View className="flex-1 justify-center bg-background px-6">
         <View className="items-center">
           <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColors.success[10] }}>
             <CheckCircle color={colors.success} size={32} />
@@ -124,7 +124,7 @@ export default function ForgotPasswordScreen() {
         accessibilityRole="button"
       >
         <ArrowLeft color={colors.foreground} size={20} />
-        <Text className="ml-1 text-blue-600 dark:text-blue-400">Retour</Text>
+        <Text className="ml-1 text-primary">Retour</Text>
       </Pressable>
 
       {/* Header */}
@@ -169,7 +169,7 @@ export default function ForgotPasswordScreen() {
         <Text variant="muted">Vous vous souvenez ? </Text>
         <Link href="/(auth)/login" asChild>
           <Pressable accessibilityLabel="Se connecter">
-            <Text className="font-semibold text-blue-600 dark:text-blue-400">Se connecter</Text>
+            <Text className="font-semibold text-primary">Se connecter</Text>
           </Pressable>
         </Link>
       </View>

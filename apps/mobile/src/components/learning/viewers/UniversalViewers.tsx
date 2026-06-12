@@ -43,11 +43,11 @@ function FeedbackBox({
   explanation?: string;
 }) {
   return (
-    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-      <Text className={isCorrect ? 'text-green-700' : 'text-red-700'}>
+    <View className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-success/15' : 'bg-destructive/15'}`}>
+      <Text className={isCorrect ? 'text-success' : 'text-destructive'}>
         {isCorrect ? '✓ Bonne réponse !' : '✗ Mauvaise réponse'}
       </Text>
-      {explanation && <Text className="mt-2 text-sm text-gray-700">{explanation}</Text>}
+      {explanation && <Text className="mt-2 text-sm text-foreground">{explanation}</Text>}
     </View>
   );
 }
@@ -63,7 +63,7 @@ export function FlashcardViewer({ content }: { content: FlashcardContent }) {
     <TouchableOpacity
       onPress={() => setIsFlipped(!isFlipped)}
       className={`flex-1 items-center justify-center rounded-xl border p-6 ${
-        isFlipped ? '' : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800'
+        isFlipped ? '' : 'border-border bg-card'
       }`}
       style={isFlipped ? { borderColor: borderColors.primary[30], backgroundColor: bgColors.primary[5] } : undefined}
       activeOpacity={0.8}
@@ -71,7 +71,7 @@ export function FlashcardViewer({ content }: { content: FlashcardContent }) {
       <Text className="mb-4 text-center text-lg leading-relaxed">
         {isFlipped ? content.back : content.front}
       </Text>
-      <View className="mt-4 rounded-full bg-stone-100 dark:bg-stone-800 px-4 py-2">
+      <View className="mt-4 rounded-full bg-muted px-4 py-2">
         <Text variant="muted" className="text-sm">
           {isFlipped ? '↩️ Voir la question' : '👆 Appuie pour révéler'}
         </Text>
@@ -98,14 +98,14 @@ export function QCMViewer({ content }: { content: QCMContent }) {
           const isSelected = selected === index;
           const isCorrectOption = index === content.correctIndex;
 
-          let bgClass = 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700';
+          let bgClass = 'bg-card border-border';
           let useInlineStyle = false;
           if (validated && isCorrectOption) {
-            bgClass = 'bg-green-100 border-green-500';
+            bgClass = 'bg-success/15 border-success';
           } else if (validated && isSelected && !isCorrectOption) {
-            bgClass = 'bg-red-100 border-red-500';
+            bgClass = 'bg-destructive/15 border-destructive';
           } else if (isSelected) {
-            bgClass = 'border-blue-600 dark:border-blue-400';
+            bgClass = 'border-primary';
             useInlineStyle = true;
           }
 
@@ -127,7 +127,7 @@ export function QCMViewer({ content }: { content: QCMContent }) {
 
       {!validated && selected !== null && (
         <Button onPress={() => setValidated(true)} className="mt-6">
-          <Text className="font-semibold text-white dark:text-stone-900">Valider</Text>
+          <Text className="font-semibold text-primary-foreground">Valider</Text>
         </Button>
       )}
 
@@ -155,10 +155,10 @@ export function VraiFauxViewer({ content }: { content: VraiFauxContent }) {
           disabled={validated}
           className={`flex-1 items-center rounded-xl border p-6 ${
             validated && content.isTrue
-              ? 'border-green-500 bg-green-100'
+              ? 'border-success bg-success/15'
               : validated && selected === true && !content.isTrue
-                ? 'border-red-500 bg-red-100'
-                : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800'
+                ? 'border-destructive bg-destructive/15'
+                : 'border-border bg-card'
           }`}
         >
           <Text className="text-2xl">✓</Text>
@@ -170,10 +170,10 @@ export function VraiFauxViewer({ content }: { content: VraiFauxContent }) {
           disabled={validated}
           className={`flex-1 items-center rounded-xl border p-6 ${
             validated && !content.isTrue
-              ? 'border-green-500 bg-green-100'
+              ? 'border-success bg-success/15'
               : validated && selected === false && content.isTrue
-                ? 'border-red-500 bg-red-100'
-                : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800'
+                ? 'border-destructive bg-destructive/15'
+                : 'border-border bg-card'
           }`}
         >
           <Text className="text-2xl">✗</Text>

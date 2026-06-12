@@ -29,7 +29,7 @@ export function DeckActionCard({ deckId, title, cardCount, subject }: DeckAction
       activeOpacity={0.7}
       onPress={() => router.push(`/(student)/(learning)/${deckId}`)}
       style={shadows.sm}
-      className="flex-row items-center gap-3 rounded-xl bg-white dark:bg-stone-800 p-3"
+      className="flex-row items-center gap-3 rounded-xl bg-card p-3"
       accessibilityRole="button"
       accessibilityLabel={`Réviser ${title}`}
     >
@@ -48,7 +48,7 @@ export function DeckActionCard({ deckId, title, cardCount, subject }: DeckAction
       </View>
 
       <View className="flex-row items-center gap-1">
-        <Text className="text-sm font-medium text-blue-600 dark:text-blue-400">Réviser</Text>
+        <Text className="text-sm font-medium text-primary">Réviser</Text>
         <ArrowRight color={colors.primary} size={16} />
       </View>
     </TouchableOpacity>

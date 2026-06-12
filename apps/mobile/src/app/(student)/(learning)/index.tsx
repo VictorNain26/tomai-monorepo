@@ -37,7 +37,7 @@ export default function LearningScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-900">
+    <SafeAreaView className="flex-1 bg-background">
       <ScrollView
         testID="deck-list"
         className="flex-1 px-4 py-6"
@@ -48,7 +48,7 @@ export default function LearningScreen() {
         {/* Header */}
         <View className="mb-6 flex-row items-start justify-between">
           <View className="flex-1">
-            <Text variant="h2" className="text-blue-600 dark:text-blue-400">
+            <Text variant="h2" className="text-primary">
               Révisions
             </Text>
             <Text variant="muted" className="mt-1">
@@ -59,7 +59,7 @@ export default function LearningScreen() {
           </View>
           <TouchableOpacity
             onPress={() => router.push('/(student)/(learning)/create')}
-            className="h-11 w-11 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-400"
+            className="h-11 w-11 items-center justify-center rounded-full bg-primary"
             accessibilityLabel="Créer un deck"
             accessibilityRole="button"
           >
@@ -70,7 +70,7 @@ export default function LearningScreen() {
         {/* Error */}
         {error && (
           <View className="mb-4 rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
-            <Text className="text-center text-red-600 dark:text-red-400">{error}</Text>
+            <Text className="text-center text-destructive">{error}</Text>
           </View>
         )}
 
@@ -98,12 +98,12 @@ export default function LearningScreen() {
             </Text>
             <TouchableOpacity
               onPress={() => router.push('/(student)/(learning)/create')}
-              className="mt-6 flex-row items-center gap-2 rounded-xl bg-blue-600 dark:bg-blue-400 px-6 py-3"
+              className="mt-6 flex-row items-center gap-2 rounded-xl bg-primary px-6 py-3"
               accessibilityLabel="Créer un deck"
               accessibilityRole="button"
             >
               <Plus color="white" size={18} />
-              <Text className="font-semibold text-white dark:text-stone-900">
+              <Text className="font-semibold text-primary-foreground">
                 Créer un deck
               </Text>
             </TouchableOpacity>
@@ -126,7 +126,7 @@ export default function LearningScreen() {
 
         {/* Info */}
         {!isLoading && decks.length > 0 && (
-          <View className="mt-6 rounded-xl bg-white dark:bg-stone-800 p-4">
+          <View className="mt-6 rounded-xl bg-card p-4">
             <Text variant="muted" className="text-center text-sm">
               Appuie sur le bouton Jouer pour démarrer un deck, ou sur Supprimer pour l'effacer.
             </Text>

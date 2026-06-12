@@ -87,13 +87,13 @@ export default function StudentLayout() {
           <TouchableOpacity
             onPress={handleReturnToParent}
             disabled={isRestoring}
-            className="flex-row items-center justify-center gap-2 bg-primary dark:bg-blue-400 px-4 pb-2"
+            className="flex-row items-center justify-center gap-2 bg-primary px-4 pb-2"
             style={{ paddingTop: insets.top + 4 }}
             accessibilityLabel="Retour au compte parent"
             accessibilityRole="button"
           >
             <ArrowLeft color={colors.primaryForeground} size={16} />
-            <Text className="text-sm font-semibold text-white dark:text-stone-900">
+            <Text className="text-sm font-semibold text-primary-foreground">
               {isRestoring ? 'Retour en cours...' : 'Retour au compte parent'}
             </Text>
           </TouchableOpacity>

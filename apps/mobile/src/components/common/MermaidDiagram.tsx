@@ -211,10 +211,10 @@ export function MermaidDiagram({ chart, className }: MermaidDiagramProps) {
   if (error) {
     return (
       <View style={styles.errorContainer} className={className}>
-        <Text className="text-sm font-semibold text-red-600 dark:text-red-400">
+        <Text className="text-sm font-semibold text-destructive">
           Erreur de diagramme
         </Text>
-        <Text className="mt-1 text-xs text-stone-600 dark:text-stone-400">{error}</Text>
+        <Text className="mt-1 text-xs text-muted-foreground">{error}</Text>
       </View>
     );
   }
