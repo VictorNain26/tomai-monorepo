@@ -194,6 +194,7 @@ export function MarkdownContent({ children, isUser = false }: MarkdownContentPro
         flex: 1,
       },
       link: {
+        // #93C5FD : lien lisible sur bulle primary (famille glass-on-primary, theme-invariant comme les rgba ci-dessus)
         color: isUser ? '#93C5FD' : colors.primary,
         textDecorationLine: 'underline' as const,
       },

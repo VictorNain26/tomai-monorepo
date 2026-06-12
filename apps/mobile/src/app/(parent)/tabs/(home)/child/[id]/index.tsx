@@ -136,7 +136,8 @@ export default function ChildDetailScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Hero Header */}
-        <LinearGradient colors={[colors.primary, colors.primary]} className="px-5 pb-6 pt-4">
+        {/* Dégradé décoratif d'en-tête, volontairement theme-invariant : les icônes badge (#86efac, #fde68a) ci-dessous sont calibrées contre ces stops. */}
+        <LinearGradient colors={['#2563eb', '#1d4ed8']} className="px-5 pb-6 pt-4">
           <View className="items-center">
             <Avatar fallback={fullName} size="xl" className="mb-3" />
             <Text className="text-xl font-bold text-white">{fullName}</Text>
