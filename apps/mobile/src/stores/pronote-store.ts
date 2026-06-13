@@ -24,6 +24,8 @@ const mmkvStorage: StateStorage = {
   removeItem: (name: string) => { getMMKV().remove(name); },
 };
 
+export type PronoteFetchKey = 'homework' | 'grades' | 'timetable';
+
 interface PronoteState {
   isConnected: boolean;
   metadata: PronoteMetadata | null;
@@ -35,6 +37,7 @@ interface PronoteState {
   lastHomeworkFetch: string | null;
   lastGradesFetch: string | null;
   lastTimetableFetch: string | null;
+  errors: { homework: string | null; grades: string | null; timetable: string | null };
 
   setConnected: (metadata: PronoteMetadata) => void;
   setResources: (resources: PronoteResource[]) => void;
@@ -42,6 +45,7 @@ interface PronoteState {
   setHomework: (homework: PronoteHomework[]) => void;
   setGrades: (grades: PronoteGrade[]) => void;
   setTimetable: (timetable: PronoteTimetableEntry[]) => void;
+  setError: (key: PronoteFetchKey, message: string | null) => void;
   reset: () => void;
 }
 
@@ -56,6 +60,7 @@ const initialState = {
   lastHomeworkFetch: null,
   lastGradesFetch: null,
   lastTimetableFetch: null,
+  errors: { homework: null, grades: null, timetable: null },
 };
 
 export const usePronoteStore = create<PronoteState>()(
@@ -82,6 +87,9 @@ export const usePronoteStore = create<PronoteState>()(
 
       setTimetable: (timetable) =>
         set({ timetable, lastTimetableFetch: new Date().toISOString() }),
+
+      setError: (key, message) =>
+        set((s) => ({ errors: { ...s.errors, [key]: message } })),
 
       reset: () => set(initialState),
     }),

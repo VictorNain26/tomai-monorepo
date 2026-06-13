@@ -29,7 +29,12 @@ export async function proxy(request: NextRequest) {
         role = resolveWebRole(session.user.role);
       }
     }
-  } catch {
+  } catch (err) {
+    console.error("[proxy] session fetch failed, failing closed to /login", {
+      path: request.nextUrl.pathname,
+      serverUrl: SERVER_URL,
+      error: err instanceof Error ? err.message : String(err),
+    });
     role = null;
   }
 

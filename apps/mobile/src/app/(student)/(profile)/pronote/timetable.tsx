@@ -25,6 +25,7 @@ import {
 
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ChatErrorBanner } from '@/components/chat';
 import { usePronote, useThemeColors } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { bgColors, borderColors } from '@/lib/styles';
@@ -158,6 +159,10 @@ export default function TimetableScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {pronote.errors.timetable && (
+        <ChatErrorBanner error={pronote.errors.timetable} onRetry={onRefresh} />
+      )}
 
       <ScrollView
         className="flex-1"

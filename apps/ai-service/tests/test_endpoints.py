@@ -147,3 +147,42 @@ def test_validate_config_permissive_in_development_without_token() -> None:
         patch.object(config, "API_TOKEN", ""),
     ):
         config.validate_config()
+
+
+def test_embed_offloads_to_threadpool(client: TestClient) -> None:
+    """Garde-fou: le handler /embed doit router l'inférence CPU-bound via
+    run_in_threadpool (sinon il bloque l'event loop sous --workers 1).
+    On espionne run_in_threadpool tout en le laissant s'exécuter réellement."""
+    # Local imports: top-level `import src.main` triggers FlagModel/CrossEncoder
+    # imports at collection time (before fixture patches), hanging the test suite.
+    from fastapi.concurrency import run_in_threadpool
+
+    import src.main as main_mod
+
+    with patch("src.main.run_in_threadpool", wraps=run_in_threadpool) as spy:
+        r = client.post("/embed", json={"texts": ["hi"]})
+    assert r.status_code == 200
+    assert spy.call_count == 1
+    # le premier argument positionnel est bien embed_encode (identité, pas __name__,
+    # car le callable est le mock posé par la fixture — MagicMock n'a pas __name__)
+    assert spy.call_args.args[0] is main_mod.embed_encode
+
+
+def test_rerank_offloads_to_threadpool(client: TestClient) -> None:
+    """Garde-fou: le handler /rerank doit router l'inférence CPU-bound via
+    run_in_threadpool (sinon il bloque l'event loop sous --workers 1).
+    On espionne run_in_threadpool tout en le laissant s'exécuter réellement."""
+    # Local imports: same reason as test_embed_offloads_to_threadpool above.
+    from fastapi.concurrency import run_in_threadpool
+
+    import src.main as main_mod
+
+    with patch("src.main.run_in_threadpool", wraps=run_in_threadpool) as spy:
+        r = client.post(
+            "/rerank",
+            json={"query": "pythagore", "texts": ["a", "b"], "top_n": 2},
+        )
+    assert r.status_code == 200
+    assert spy.call_count == 1
+    # le premier argument positionnel est bien rerank_run (identité)
+    assert spy.call_args.args[0] is main_mod.rerank_run

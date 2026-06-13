@@ -25,7 +25,13 @@ import { usePronote, useParentDashboard } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { useToast } from '@/components/ui/toast';
 import { useChildAccessStore } from '@/stores/child-access-store';
-import { splitPronoteName, toPronoteDedupeKey } from '@/lib/pronote-helpers';
+import {
+  splitPronoteName,
+  toPronoteDedupeKey,
+  parseQrCode,
+  extractEstablishment,
+  pronoteUsername,
+} from '@/lib/pronote-helpers';
 import type {
   PronoteResource,
   QrCodeData,
@@ -65,44 +71,6 @@ export interface UsePronoteReconnectResult {
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-function parseQrCode(data: string): QrCodeData | null {
-  try {
-    const parsed = JSON.parse(data) as Record<string, unknown>;
-    if (
-      typeof parsed.jeton === 'string' &&
-      typeof parsed.login === 'string' &&
-      typeof parsed.url === 'string'
-    ) {
-      return { jeton: parsed.jeton, login: parsed.login, url: parsed.url };
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function extractEstablishment(url: string): string {
-  try {
-    const match = url.match(/^https?:\/\/([^/:]+)/);
-    if (match?.[1]) {
-      return match[1].split('.')[0] || 'Mon etablissement';
-    }
-  } catch {
-    // ignore
-  }
-  return 'Mon etablissement';
-}
-
-function toUsername(name: string): string {
-  const combiningMarks = new RegExp('[\\u0300-\\u036f]', 'g');
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(combiningMarks, '')
-    .replace(/\s+/g, '.')
-    .replace(/[^a-z0-9.]/g, '');
-}
 
 // Bytes of temporary password entropy. 16 bytes → 128 bits, well above the
 // server's password policy floor. Encoded as hex (32 chars) for safe transit.
@@ -227,7 +195,7 @@ export function usePronoteReconnect(): UsePronoteReconnectResult {
 
         for (const resource of selected) {
           const { firstName, lastName } = splitPronoteName(resource.name);
-          const baseUsername = toUsername(resource.name);
+          const baseUsername = pronoteUsername(resource.name);
           const username = `${baseUsername}.${Date.now() % 10000}`;
 
           // Cryptographically-random temporary password (128 bits of entropy).

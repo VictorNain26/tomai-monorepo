@@ -25,7 +25,13 @@ import type {
 } from '@/services/pronote/pronote-types';
 import type { EducationLevelType } from '@/constants/levels';
 import type { ICreateChildData } from '@/hooks/useParentDashboard';
-import { splitPronoteName, toPronoteDedupeKey } from '@/lib/pronote-helpers';
+import {
+  splitPronoteName,
+  toPronoteDedupeKey,
+  parseQrCode,
+  extractEstablishment,
+  pronoteUsername,
+} from '@/lib/pronote-helpers';
 
 // ============================================================================
 // TYPES
@@ -78,49 +84,6 @@ export interface UsePronoteOnboardingResult {
   handleChildPinComplete: (data: ChildPinData) => Promise<void>;
   handleParentPinSubmit: () => void;
   handleParentPinConfirm: () => Promise<void>;
-}
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function parseQrCode(data: string): QrCodeData | null {
-  try {
-    const parsed = JSON.parse(data) as Record<string, unknown>;
-    if (
-      typeof parsed.jeton === 'string' &&
-      typeof parsed.login === 'string' &&
-      typeof parsed.url === 'string'
-    ) {
-      return { jeton: parsed.jeton, login: parsed.login, url: parsed.url };
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function extractEstablishment(url: string): string {
-  try {
-    const match = url.match(/^https?:\/\/([^/:]+)/);
-    if (match?.[1]) {
-      return match[1].split('.')[0] || 'Mon etablissement';
-    }
-  } catch {
-    // ignore
-  }
-  return 'Mon etablissement';
-}
-
-function generateUsername(name: string): string {
-  // Remove combining diacritical marks (U+0300 - U+036F).
-  const combiningMarks = new RegExp('[\\u0300-\\u036f]', 'g');
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(combiningMarks, '')
-    .replace(/\s+/g, '.')
-    .replace(/[^a-z0-9.]/g, '');
 }
 
 // ============================================================================
@@ -254,7 +217,7 @@ export function usePronoteOnboarding(): UsePronoteOnboardingResult {
           const childData: ICreateChildData = {
             firstName,
             lastName,
-            username: generateUsername(child.resource.name),
+            username: pronoteUsername(child.resource.name),
             password: child.pinValue,
             schoolLevel: child.schoolLevel,
           };

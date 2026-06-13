@@ -12,6 +12,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { HomeworkView } from '@/components/pronote';
+import { ChatErrorBanner } from '@/components/chat';
 import { usePronote, useThemeColors } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { getWeekLabel, getWeekBounds } from '@/lib/pronote-helpers';
@@ -82,6 +83,10 @@ export default function HomeworkScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {pronote.errors.homework && (
+        <ChatErrorBanner error={pronote.errors.homework} onRetry={onRefresh} />
+      )}
 
       <ScrollView
         className="flex-1 px-4 py-4"

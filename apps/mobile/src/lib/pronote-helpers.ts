@@ -1,11 +1,12 @@
 /**
- * Pronote Helpers - Shared utilities for grades and homework
+ * Pronote Helpers - Shared utilities for grades, homework, and QR onboarding
  *
- * Consolidates duplicate code from student and parent screens.
+ * Consolidates duplicate code from student/parent screens and onboarding hooks.
  */
 
 import { bgColors, borderColors } from '@/lib/styles';
 import type { ThemeColors } from '@/hooks/useThemeColors';
+import type { QrCodeData } from '@/services/pronote/pronote-types';
 
 // ============================================================================
 // TYPES
@@ -175,4 +176,60 @@ export function splitPronoteName(fullName: string): { firstName: string; lastNam
  */
 export function toPronoteDedupeKey(child: { firstName: string; lastName: string }): string {
   return `${child.lastName} ${child.firstName}`.trim();
+}
+
+// ============================================================================
+// QR CODE HELPERS
+// ============================================================================
+
+/**
+ * Parse a raw QR code string into a QrCodeData object.
+ * Returns null if the payload is not valid JSON or is missing required fields.
+ */
+export function parseQrCode(data: string): QrCodeData | null {
+  try {
+    const parsed = JSON.parse(data) as Record<string, unknown>;
+    if (
+      typeof parsed.jeton === 'string' &&
+      typeof parsed.login === 'string' &&
+      typeof parsed.url === 'string'
+    ) {
+      return { jeton: parsed.jeton, login: parsed.login, url: parsed.url };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract a human-readable establishment name from a Pronote URL.
+ * Uses the first subdomain segment (e.g. "pronote" from "https://pronote.example.fr").
+ * Falls back to 'Mon etablissement' when the URL doesn't match.
+ */
+export function extractEstablishment(url: string): string {
+  const match = url.match(/^https?:\/\/([^/:]+)/);
+  if (match?.[1]) {
+    return match[1].split('.')[0] || 'Mon etablissement';
+  }
+  return 'Mon etablissement';
+}
+
+/**
+ * Generate a Pronote username slug from a full name (e.g. "Élodie Bernard" → "elodie.bernard").
+ * Lowercases, strips combining diacritics, joins words with dots, removes non-alphanumeric chars.
+ * Leading/trailing whitespace is trimmed; no doubled or edge dots in the result.
+ */
+export function pronoteUsername(name: string): string {
+  // Remove combining diacritical marks (U+0300-U+036F) after NFD decomposition.
+  const combiningMarks = new RegExp('[\\u0300-\\u036f]', 'g');
+  return name
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(combiningMarks, '')
+    .replace(/\s+/g, '.')
+    .replace(/[^a-z0-9.]/g, '')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^\.+|\.+$/g, '');
 }

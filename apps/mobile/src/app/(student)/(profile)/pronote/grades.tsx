@@ -12,6 +12,7 @@ import { ArrowLeft } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { GradesView } from '@/components/pronote';
+import { ChatErrorBanner } from '@/components/chat';
 import { usePronote, useThemeColors } from '@/hooks';
 import { useUser } from '@/lib/auth';
 
@@ -51,6 +52,10 @@ export default function GradesScreen() {
         </TouchableOpacity>
         <Text variant="h3">Notes</Text>
       </View>
+
+      {pronote.errors.grades && (
+        <ChatErrorBanner error={pronote.errors.grades} onRetry={onRefresh} />
+      )}
 
       <ScrollView
         className="flex-1"

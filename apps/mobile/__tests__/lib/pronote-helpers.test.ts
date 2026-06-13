@@ -14,6 +14,9 @@ import {
   getWeekLabel,
   isLowGrade,
   isOverdue,
+  parseQrCode,
+  extractEstablishment,
+  pronoteUsername,
 } from '@/lib/pronote-helpers';
 
 const mockColors: ThemeColors = {
@@ -206,5 +209,52 @@ describe('getWeekLabel', () => {
 
   it('should return "Semaine -3" for offset -3', () => {
     expect(getWeekLabel(-3)).toBe('Semaine -3');
+  });
+});
+
+// ============================================================================
+// QR CODE HELPERS
+// ============================================================================
+
+describe('parseQrCode', () => {
+  it('returns a QrCodeData object for valid JSON', () => {
+    const raw = JSON.stringify({ jeton: 'abc', login: 'user', url: 'https://pronote.example.fr' });
+    expect(parseQrCode(raw)).toEqual({ jeton: 'abc', login: 'user', url: 'https://pronote.example.fr' });
+  });
+
+  it('returns null for malformed JSON', () => {
+    expect(parseQrCode('not-json')).toBeNull();
+  });
+
+  it('returns null when required fields are missing', () => {
+    expect(parseQrCode(JSON.stringify({ jeton: 'abc' }))).toBeNull();
+  });
+});
+
+describe('extractEstablishment', () => {
+  it('extracts the first subdomain segment from a URL', () => {
+    expect(extractEstablishment('https://pronote.example.fr/path')).toBe('pronote');
+  });
+
+  it('returns fallback for garbage input', () => {
+    expect(extractEstablishment('garbage')).toBe('Mon etablissement');
+  });
+});
+
+describe('pronoteUsername', () => {
+  it('lowercases, strips diacritics, and dot-joins', () => {
+    expect(pronoteUsername('Élodie Bernard')).toBe('elodie.bernard');
+  });
+
+  it('drops non-alphanumeric characters', () => {
+    expect(pronoteUsername("Jean-Luc O'Connor")).toBe('jeanluc.oconnor');
+  });
+
+  it('trims leading and trailing whitespace — no edge dots', () => {
+    expect(pronoteUsername(' Jean Dupont ')).toBe('jean.dupont');
+  });
+
+  it('collapses mixed whitespace+punctuation into a single dot — no doubled dots', () => {
+    expect(pronoteUsername('Anne - Marie')).toBe('anne.marie');
   });
 });
