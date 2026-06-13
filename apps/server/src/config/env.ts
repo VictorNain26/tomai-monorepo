@@ -146,6 +146,12 @@ function parseEnv(): EnvType {
       prodChecks.push('AI_SERVICE_TOKEN is required when AI_SERVICE_URL is set (production)');
     }
 
+    // Prod RAG runs on Qdrant Cloud, which is authenticated. Local dev Qdrant
+    // is keyless, so this requirement is production-only.
+    if (result.data.QDRANT_ENABLED === 'true' && !result.data.QDRANT_API_KEY) {
+      prodChecks.push('QDRANT_API_KEY is required when QDRANT_ENABLED=true (production)');
+    }
+
     if (prodChecks.length > 0) {
       throw new Error(`Production validation failed:\n  ${prodChecks.join('\n  ')}`);
     }
