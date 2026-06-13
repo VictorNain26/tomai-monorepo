@@ -208,13 +208,9 @@ export function parseQrCode(data: string): QrCodeData | null {
  * Falls back to 'Mon etablissement' when the URL doesn't match.
  */
 export function extractEstablishment(url: string): string {
-  try {
-    const match = url.match(/^https?:\/\/([^/:]+)/);
-    if (match?.[1]) {
-      return match[1].split('.')[0] || 'Mon etablissement';
-    }
-  } catch {
-    // ignore
+  const match = url.match(/^https?:\/\/([^/:]+)/);
+  if (match?.[1]) {
+    return match[1].split('.')[0] || 'Mon etablissement';
   }
   return 'Mon etablissement';
 }
@@ -222,16 +218,18 @@ export function extractEstablishment(url: string): string {
 /**
  * Generate a Pronote username slug from a full name (e.g. "Élodie Bernard" → "elodie.bernard").
  * Lowercases, strips combining diacritics, joins words with dots, removes non-alphanumeric chars.
- *
- * In usePronoteReconnect the caller appends a dedup suffix: `${pronoteUsername(name)}.${Date.now() % 10000}`
+ * Leading/trailing whitespace is trimmed; no doubled or edge dots in the result.
  */
 export function pronoteUsername(name: string): string {
   // Remove combining diacritical marks (U+0300-U+036F) after NFD decomposition.
   const combiningMarks = new RegExp('[\\u0300-\\u036f]', 'g');
   return name
+    .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(combiningMarks, '')
     .replace(/\s+/g, '.')
-    .replace(/[^a-z0-9.]/g, '');
+    .replace(/[^a-z0-9.]/g, '')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^\.+|\.+$/g, '');
 }

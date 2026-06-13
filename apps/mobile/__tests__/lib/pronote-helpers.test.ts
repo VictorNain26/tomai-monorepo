@@ -249,4 +249,12 @@ describe('pronoteUsername', () => {
   it('drops non-alphanumeric characters', () => {
     expect(pronoteUsername("Jean-Luc O'Connor")).toBe('jeanluc.oconnor');
   });
+
+  it('trims leading and trailing whitespace — no edge dots', () => {
+    expect(pronoteUsername(' Jean Dupont ')).toBe('jean.dupont');
+  });
+
+  it('collapses mixed whitespace+punctuation into a single dot — no doubled dots', () => {
+    expect(pronoteUsername('Anne - Marie')).toBe('anne.marie');
+  });
 });
