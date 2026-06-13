@@ -84,8 +84,8 @@ export default function HomeworkScreen() {
         </View>
       </View>
 
-      {pronote.error && (
-        <ChatErrorBanner error={pronote.error} onRetry={onRefresh} />
+      {pronote.errors.homework && (
+        <ChatErrorBanner error={pronote.errors.homework} onRetry={onRefresh} />
       )}
 
       <ScrollView

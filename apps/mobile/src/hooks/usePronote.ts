@@ -59,7 +59,7 @@ export function usePronote(userId: string) {
   const lastHomeworkFetch = usePronoteStore((s) => s.lastHomeworkFetch);
   const lastGradesFetch = usePronoteStore((s) => s.lastGradesFetch);
   const lastTimetableFetch = usePronoteStore((s) => s.lastTimetableFetch);
-  const lastError = usePronoteStore((s) => s.lastError);
+  const errors = usePronoteStore((s) => s.errors);
   const storeSetConnected = usePronoteStore((s) => s.setConnected);
   const storeSetResources = usePronoteStore((s) => s.setResources);
   const storeSetResourceMapping = usePronoteStore((s) => s.setResourceMapping);
@@ -110,7 +110,7 @@ export function usePronote(userId: string) {
       try {
         const handle = await pronoteSessionService.refreshSession(userId, metadata);
         if (!handle) return;
-        storeSetError(null);
+        storeSetError('homework', null);
 
         const now = new Date();
         const from = new Date(now);
@@ -131,7 +131,7 @@ export function usePronote(userId: string) {
         storeSetHomework(hw);
       } catch (err) {
         console.error('[Pronote] fetchHomework failed:', err);
-        storeSetError('Impossible de charger les devoirs. Réessaie.');
+        storeSetError('homework', 'Impossible de charger les devoirs. Réessaie.');
       }
     },
     [userId, metadata, lastHomeworkFetch, storeSetHomework, storeSetError],
@@ -144,7 +144,7 @@ export function usePronote(userId: string) {
     try {
       const handle = await pronoteSessionService.refreshSession(userId, metadata);
       if (!handle) return;
-      storeSetError(null);
+      storeSetError('grades', null);
 
       const period = getCurrentPeriod(handle);
       if (!period) return;
@@ -167,7 +167,7 @@ export function usePronote(userId: string) {
       storeSetGrades(g);
     } catch (err) {
       console.error('[Pronote] fetchGrades failed:', err);
-      storeSetError('Impossible de charger les notes. Réessaie.');
+      storeSetError('grades', 'Impossible de charger les notes. Réessaie.');
     }
   }, [userId, metadata, lastGradesFetch, storeSetGrades, storeSetError]);
 
@@ -179,7 +179,7 @@ export function usePronote(userId: string) {
       try {
         const handle = await pronoteSessionService.refreshSession(userId, metadata);
         if (!handle) return;
-        storeSetError(null);
+        storeSetError('timetable', null);
 
         const now = new Date();
         const from = new Date(now);
@@ -204,7 +204,7 @@ export function usePronote(userId: string) {
         storeSetTimetable(tt);
       } catch (err) {
         console.error('[Pronote] fetchTimetable failed:', err);
-        storeSetError("Impossible de charger l'emploi du temps. Réessaie.");
+        storeSetError('timetable', "Impossible de charger l'emploi du temps. Réessaie.");
       }
     },
     [userId, metadata, lastTimetableFetch, storeSetTimetable, storeSetError],
@@ -240,7 +240,7 @@ export function usePronote(userId: string) {
     homework,
     grades,
     timetable,
-    error: lastError,
+    errors,
 
     // Computed
     upcomingHomework,

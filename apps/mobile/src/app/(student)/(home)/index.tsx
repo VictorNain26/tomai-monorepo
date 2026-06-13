@@ -162,8 +162,11 @@ export default function StudentDashboard() {
           <Text variant="muted" className="mt-0.5">{tomMessage}</Text>
         </View>
 
-        {pronote.error && (
-          <ChatErrorBanner error={pronote.error} onRetry={onRefresh} />
+        {(pronote.errors.homework ?? pronote.errors.grades) && (
+          <ChatErrorBanner
+            error={(pronote.errors.homework ?? pronote.errors.grades) as string}
+            onRetry={onRefresh}
+          />
         )}
 
         {/* Due Cards */}

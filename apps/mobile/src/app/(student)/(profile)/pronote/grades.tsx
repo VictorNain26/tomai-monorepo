@@ -53,8 +53,8 @@ export default function GradesScreen() {
         <Text variant="h3">Notes</Text>
       </View>
 
-      {pronote.error && (
-        <ChatErrorBanner error={pronote.error} onRetry={onRefresh} />
+      {pronote.errors.grades && (
+        <ChatErrorBanner error={pronote.errors.grades} onRetry={onRefresh} />
       )}
 
       <ScrollView
