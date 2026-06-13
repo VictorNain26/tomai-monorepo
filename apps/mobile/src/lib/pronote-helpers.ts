@@ -12,7 +12,7 @@ import type { QrCodeData } from '@/services/pronote/pronote-types';
 // TYPES
 // ============================================================================
 
-export interface GradeStyle {
+interface GradeStyle {
   textColor: string;
   bgColor: string;
   borderColor: string;

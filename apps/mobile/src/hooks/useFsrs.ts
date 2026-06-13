@@ -16,8 +16,7 @@ type LearningApi = ReturnType<typeof getTreaty>['api']['learning'];
 type DeckById = ReturnType<LearningApi['decks']>;
 
 export type ReviewResult = ResponseData<LearningApi['review']['post']>['result'];
-export type DueCard = ResponseData<DeckById['due']['get']>['cards'][number];
-export type DeckStats = ResponseData<DeckById['stats']['get']>['stats'];
+type DeckStats = ResponseData<DeckById['stats']['get']>['stats'];
 
 type DueCardsResponse = ResponseData<DeckById['due']['get']>;
 

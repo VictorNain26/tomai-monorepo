@@ -22,7 +22,7 @@ export interface LibraryFile {
   createdAt: string;
 }
 
-export interface SessionFile {
+interface SessionFile {
   id: string;
   fileName: string;
   mimeType: string;

@@ -24,7 +24,7 @@ import { haptics } from '@/lib/haptics';
 // TYPES
 // ============================================================================
 
-export interface VoiceInputState {
+interface VoiceInputState {
   /** Is currently recording */
   isRecording: boolean;
   /** Is processing (uploading + transcribing) */

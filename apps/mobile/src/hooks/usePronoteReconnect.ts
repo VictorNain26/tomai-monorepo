@@ -42,9 +42,9 @@ import type { ChildPinData } from '@/hooks/usePronoteOnboarding';
 // TYPES
 // ============================================================================
 
-export type ReconnectStep = 'scan' | 'pin' | 'import' | 'pin-setup';
+type ReconnectStep = 'scan' | 'pin' | 'import' | 'pin-setup';
 
-export interface UsePronoteReconnectResult {
+interface UsePronoteReconnectResult {
   // ---- State ----
   step: ReconnectStep;
   establishment: string;

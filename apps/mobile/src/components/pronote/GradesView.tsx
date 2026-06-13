@@ -28,7 +28,7 @@ import { formatDateShort, getGradeStyle, isLowGrade } from '@/lib/pronote-helper
 // TYPES
 // ============================================================================
 
-export interface Grade {
+interface Grade {
   id: string;
   subject: string;
   value: number | null;

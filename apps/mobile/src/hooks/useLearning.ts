@@ -17,14 +17,11 @@ type DeckById = ReturnType<LearningApi['decks']>;
 export type LearningDeck = ResponseData<LearningApi['decks']['get']>['decks'][number];
 export type LearningCard = ResponseData<DeckById['get']>['cards'][number];
 export type CardType = LearningCard['cardType'];
-export type DeckSource = LearningDeck['source'];
-
-export type CreateDeckRequest = NonNullable<Parameters<LearningApi['decks']['post']>[0]>;
 export type GenerateDeckRequest = NonNullable<Parameters<LearningApi['generate']['post']>[0]>;
 export type GenerateDeckResponse = ResponseData<LearningApi['generate']['post']>;
 
 export type LearningSubject = ResponseData<LearningApi['subjects']['get']>['subjects'][number];
-export type LearningDomaine = ResponseData<LearningApi['topics']['get']>['domaines'][number];
+type LearningDomaine = ResponseData<LearningApi['topics']['get']>['domaines'][number];
 
 /** School level accepted by the discovery endpoints (from the contract). */
 type LevelQuery = NonNullable<Parameters<LearningApi['subjects']['get']>[0]>['query'];
