@@ -10,7 +10,7 @@ type ChildSubscriptionRow = {
   planName: string | null;
 };
 
-export class SubscriptionRepository {
+class SubscriptionRepository {
   async findFamilyBilling(parentId: string): Promise<FamilyBilling | undefined> {
     const [billing] = await db
       .select()

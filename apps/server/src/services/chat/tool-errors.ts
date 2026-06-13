@@ -12,7 +12,7 @@
  * - `permission`  : 401/403, RLS denial. Never retry, escalate.
  */
 
-export type ToolErrorCategory = 'transient' | 'validation' | 'business' | 'permission';
+type ToolErrorCategory = 'transient' | 'validation' | 'business' | 'permission';
 
 export interface StructuredToolError {
   isError: true;
@@ -50,15 +50,3 @@ export function makeToolError(
   return error;
 }
 
-export function isStructuredToolError(value: unknown): value is StructuredToolError {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    (value as { isError?: unknown }).isError === true &&
-    typeof (value as { errorCategory?: unknown }).errorCategory === 'string'
-  );
-}
-
-export function makeToolSuccess<T>(data: T): ToolSuccess<T> {
-  return { ok: true, data };
-}

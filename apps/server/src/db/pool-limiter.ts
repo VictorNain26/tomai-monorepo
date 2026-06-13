@@ -37,7 +37,7 @@ const CONCURRENCY_LIMIT = Math.floor(MAX_POOL_SIZE * 0.75);
  * Enforces maximum concurrent database operations to prevent pool exhaustion.
  * Uses p-limit to queue operations when limit is reached.
  */
-export const dbConcurrencyLimit = pLimit(CONCURRENCY_LIMIT);
+const dbConcurrencyLimit = pLimit(CONCURRENCY_LIMIT);
 
 /**
  * Wrapper for database operations with pool limiting

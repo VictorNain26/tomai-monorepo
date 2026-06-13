@@ -27,24 +27,24 @@ export interface QdrantSearchResult {
   chunk_index: number;
 }
 
-export interface QdrantFilter {
+interface QdrantFilter {
   niveau?: string;
   matiere?: string;
   cycle?: string;
 }
 
-export interface QdrantSearchOptions {
+interface QdrantSearchOptions {
   scoreThreshold?: number;
   hnswEf?: number;
 }
 
 /** Sparse vector representation for Qdrant hybrid search (BM25 IDF native). */
-export interface SparseVector {
+interface SparseVector {
   indices: number[];
   values: number[];
 }
 
-export interface CollectionStats {
+interface CollectionStats {
   total_points: number;
   by_niveau: Record<string, number>;
   by_matiere: Record<string, number>;

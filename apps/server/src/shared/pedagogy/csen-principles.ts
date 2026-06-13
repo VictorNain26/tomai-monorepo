@@ -31,7 +31,7 @@
 /**
  * Les 4 piliers de l'apprentissage - Structure de données
  */
-export const CSEN_FOUR_PILLARS = {
+const CSEN_FOUR_PILLARS = {
   attention: {
     id: 'attention',
     name: 'ATTENTION',
@@ -66,11 +66,6 @@ export const CSEN_FOUR_PILLARS = {
   }
 } as const;
 
-/**
- * Type pour les piliers
- */
-export type CSENPillarId = keyof typeof CSEN_FOUR_PILLARS;
-
 // ============================================================================
 // ENSEIGNEMENT EXPLICITE (Recommandations CSEN)
 // ============================================================================
@@ -78,7 +73,7 @@ export type CSENPillarId = keyof typeof CSEN_FOUR_PILLARS;
 /**
  * Principes d'enseignement explicite du CSEN
  */
-export const CSEN_EXPLICIT_TEACHING = {
+const CSEN_EXPLICIT_TEACHING = {
   newConcept: 'Nouveau concept → Exemple résolu d\'abord, puis l\'élève essaie',
   progressiveSteps: 'Étapes claires et progressives',
   checkUnderstanding: 'Vérifier la compréhension avant d\'avancer',
@@ -88,37 +83,6 @@ export const CSEN_EXPLICIT_TEACHING = {
 // ============================================================================
 // EXTENSIONS SCIENTIFIQUES (non-CSEN, académiquement validées)
 // ============================================================================
-
-/**
- * Extensions pédagogiques basées sur recherches académiques reconnues
- * Ces principes NE SONT PAS du CSEN mais sont scientifiquement validés
- */
-export const SCIENTIFIC_EXTENSIONS = {
-  elaboration: {
-    name: 'Élaboration active',
-    description: 'Reformuler un concept avec ses propres mots renforce l\'ancrage',
-    source: 'Pressley, M. et al. (1987). Elaborative interrogation. Journal of Educational Psychology',
-    usedFor: 'Type "reformulation" dans les cards'
-  },
-  scaffolding: {
-    name: 'Étayage (Scaffolding)',
-    description: 'Aide progressive pour atteindre la zone proximale de développement',
-    source: 'Vygotsky, L. (1978). Mind in Society. Harvard University Press',
-    usedFor: 'Champs "hints" optionnels, indices progressifs'
-  },
-  dualCoding: {
-    name: 'Double codage',
-    description: 'Combiner texte et image améliore la mémorisation',
-    source: 'Paivio, A. (1986). Mental Representations: A Dual Coding Approach',
-    usedFor: 'Champs "imageUrl" optionnels'
-  },
-  errorAnticipation: {
-    name: 'Anticipation des erreurs',
-    description: 'Signaler les erreurs fréquentes aide à les éviter',
-    source: 'Chi, M. T. H. (1978). Knowledge structures and memory development',
-    usedFor: 'Champs "commonMistakes" optionnels'
-  }
-} as const;
 
 // ============================================================================
 // GÉNÉRATEURS DE PROMPTS
@@ -178,11 +142,3 @@ export function generateCardsPedagogyPrompt(): string {
 - commonMistakes?: [{"mistake":"...", "why":"..."}] - erreurs fréquentes à éviter`;
 }
 
-/**
- * Génère un résumé court des principes (pour logs, debug, etc.)
- */
-export function getPrinciplesSummary(): string {
-  return Object.values(CSEN_FOUR_PILLARS)
-    .map(p => `${p.name}: ${p.principle}`)
-    .join(' | ');
-}

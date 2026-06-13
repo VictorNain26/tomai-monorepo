@@ -35,10 +35,10 @@ import {
 
 // Re-export types for backward compatibility
 export type {
-  DocumentType,
-  SubjectType,
+  
+  
   DocumentAnalysisResult,
-  DocumentAnalysisOptions,
+  
 } from './document-types.js';
 
 const ANALYSIS_MODEL = 'mistral-medium-latest';

@@ -97,7 +97,7 @@ export interface DeckUsageResult {
 // HELPER FUNCTIONS
 // =============================================
 
-export function getParisHour(): number {
+function getParisHour(): number {
   const parisFormatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Europe/Paris',
     hour: '2-digit',

@@ -12,7 +12,7 @@ type EpisodeRow = {
   similarity: number;
 };
 
-export class EpisodicMemoryRepository {
+class EpisodicMemoryRepository {
   async insertEpisode(data: NewSessionEpisode): Promise<void> {
     await db.insert(sessionEpisodes).values(data);
   }

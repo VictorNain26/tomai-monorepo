@@ -32,7 +32,7 @@ const RAG_THRESHOLDS = {
 // Types
 // =============================================================================
 
-export interface HybridSearchOptions {
+interface HybridSearchOptions {
   query: string;
   niveau: EducationLevelType;
   /** Filtrer sur une matière. Omettre pour chercher toutes matières confondues. */
@@ -50,7 +50,7 @@ export interface HybridSearchOptions {
   auditSessionId?: string | null;
 }
 
-export interface SemanticChunk {
+interface SemanticChunk {
   id: string;
   score: number;
   text: string;
@@ -59,7 +59,7 @@ export interface SemanticChunk {
   niveau: string;
 }
 
-export interface HybridSearchResult {
+interface HybridSearchResult {
   context: string;
   strategy: string;
   semanticChunks: SemanticChunk[];
@@ -322,5 +322,3 @@ ${contextParts.join('\n\n---\n\n')}
 // Singleton
 export const ragService = new RAGService();
 
-// Alias pour compatibilité
-export const ragSemanticService = ragService;

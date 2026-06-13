@@ -26,7 +26,7 @@ export interface ListDecksOptions {
   offset?: number;
 }
 
-export class LearningDecksRepository {
+class LearningDecksRepository {
   /**
    * List decks owned by a user, most-recently-updated first.
    */

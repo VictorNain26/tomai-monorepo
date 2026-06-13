@@ -17,7 +17,7 @@ import type { EducationLevelType } from '../../../types/index.js';
 /**
  * Liste complète des types (15) - l'IA peut utiliser n'importe lequel
  */
-export const ALL_CARD_TYPES: CardType[] = [
+const ALL_CARD_TYPES: CardType[] = [
   'concept', // Pédagogique - théorie avant pratique
   'flashcard', 'qcm', 'vrai_faux',
   'matching', 'fill_blank', 'word_order',
@@ -38,7 +38,7 @@ export const ALL_CARD_TYPES: CardType[] = [
  * 'concept' en premier pour les matières nécessitant théorie avant pratique
  * 'reformulation' ajouté partout pour favoriser l'élaboration (Sciences Cognitives 2025)
  */
-export const SUGGESTED_CARD_TYPES: Record<SubjectCategory, CardType[]> = {
+const SUGGESTED_CARD_TYPES: Record<SubjectCategory, CardType[]> = {
   mathematiques: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'calculation', 'fill_blank', 'reformulation'],
   sciences: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'calculation', 'classification', 'process_order', 'cause_effect', 'reformulation'],
   francais: ['concept', 'flashcard', 'qcm', 'vrai_faux', 'fill_blank', 'grammar_transform', 'matching', 'reformulation'],
@@ -145,7 +145,7 @@ const SUBJECT_MAPPING: Record<string, SubjectCategory> = {
 // FONCTIONS EXPORTÉES
 // ============================================================================
 
-export function getSubjectCategory(subject: string): SubjectCategory {
+function getSubjectCategory(subject: string): SubjectCategory {
   const normalized = subject.toLowerCase().trim();
   return SUBJECT_MAPPING[normalized] ?? 'autre';
 }
@@ -175,21 +175,3 @@ export function getCycleAdaptationInstructions(cycle: EducationCycle): string {
   return CYCLE_GUIDANCE[cycle];
 }
 
-// Compat export
-export type { SubjectCategory };
-export interface SubjectConfig {
-  category: SubjectCategory;
-  requiresKaTeX: boolean;
-  instructions: string;
-  recommendedCardTypes: CardType[];
-}
-
-export function getSubjectConfig(subject: string): SubjectConfig {
-  const category = getSubjectCategory(subject);
-  return {
-    category,
-    requiresKaTeX: subjectRequiresKaTeX(subject),
-    instructions: SUBJECT_INSTRUCTIONS[category],
-    recommendedCardTypes: getRecommendedCardTypes(subject)
-  };
-}

@@ -49,9 +49,9 @@ const ATTR_DB_COLLECTION_NAME = 'db.collection.name';
 const ATTR_DB_QUERY_SUMMARY = 'db.query.summary';
 const ATTR_DB_RESPONSE_RETURNED_ROWS = 'db.response.returned_rows';
 
-export type GenAiOperation = 'chat' | 'embeddings' | 'text_completion' | 'execute_tool';
+type GenAiOperation = 'chat' | 'embeddings' | 'text_completion' | 'execute_tool';
 
-export interface GenAiSpanInput {
+interface GenAiSpanInput {
   operation: GenAiOperation;
   /** "mistral_ai" per SemConv (snake_case). */
   provider: 'mistral_ai';
@@ -64,7 +64,7 @@ export interface GenAiSpanInput {
   captureInput?: string;
 }
 
-export interface GenAiResponseFacts {
+interface GenAiResponseFacts {
   id?: string;
   model?: string;
   finishReasons?: string[];
@@ -127,7 +127,7 @@ export async function withGenAiSpan<T>(
   );
 }
 
-export interface DbSpanInput {
+interface DbSpanInput {
   /** Stable db.system.name — "qdrant", "postgresql", etc. */
   system: string;
   /** "search", "upsert", "delete", "scroll"... */

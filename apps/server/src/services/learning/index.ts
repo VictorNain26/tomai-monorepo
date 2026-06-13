@@ -32,13 +32,9 @@ export * from './types.js';
 export {
   generateCards,
   isGenerationError,
-  type CardGenerationResult,
-  type CardGenerationError
+  
+  
 } from './card-generator.service.js';
 
 // Prompts utilities
-export {
-  getSubjectCategory,
-  subjectRequiresKaTeX,
-  getEducationCycle
-} from './prompts/index.js';
+;

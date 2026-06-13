@@ -5,7 +5,7 @@
  * sur l'application Tom (navigation, fonctionnalites, abonnement, etc.)
  */
 
-export type AppHelpTopic =
+type AppHelpTopic =
   | 'overview'
   | 'navigation'
   | 'chat'
@@ -14,11 +14,6 @@ export type AppHelpTopic =
   | 'files'
   | 'subscription'
   | 'profile';
-
-export const APP_HELP_TOPICS: AppHelpTopic[] = [
-  'overview', 'navigation', 'chat', 'flashcards',
-  'pronote', 'files', 'subscription', 'profile',
-];
 
 const APP_GUIDE: Record<AppHelpTopic, { student: string; parent: string }> = {
   overview: {

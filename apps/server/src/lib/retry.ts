@@ -11,7 +11,7 @@ import { logger } from './observability.js';
 // TYPES
 // ============================================================================
 
-export interface RetryOptions {
+interface RetryOptions {
   /** Nombre maximum de tentatives (défaut: 3) */
   maxAttempts?: number;
   /** Délai initial en ms (défaut: 1000) */
@@ -114,7 +114,7 @@ function sleep(ms: number): Promise<void> {
  * @example
  * const result = await withTimeout(client.embeddings.create(...), 30_000, 'mistral:embed');
  */
-export class TimeoutError extends Error {
+class TimeoutError extends Error {
   constructor(operation: string, timeoutMs: number) {
     super(`Operation "${operation}" timed out after ${timeoutMs}ms`);
     this.name = 'TimeoutError';

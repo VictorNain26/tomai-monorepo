@@ -31,15 +31,6 @@ export interface MessageDetails {
   } | null;
 }
 
-export interface ProgressUpdate {
-  userId: string;
-  subject: string;
-  concept: string;
-  masteryLevel: number;
-  practiceTime: number;
-  successRate: number;
-}
-
 export interface UserSession {
   id: string;
   subject: string;

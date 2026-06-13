@@ -82,7 +82,7 @@ export type MistralMessage =
   | (SdkAssistantMessage & { role: 'assistant' })
   | { role: 'tool'; content: string | SdkToolMessage['content']; toolCallId: string; name?: string };
 
-export interface GenerateTextOptions {
+interface GenerateTextOptions {
   messages: MistralMessage[];
   model?: string;
   temperature?: number;
@@ -97,14 +97,14 @@ export interface GenerateTextOptions {
   timeoutMs?: number;
 }
 
-export interface GenerateStructuredOptions<T> extends GenerateTextOptions {
+interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   /** JSON Schema strict (mode `json_schema` du SDK Mistral). */
   schema: Record<string, unknown>;
   /** Pour le typing fort côté caller — sera retourné JSON.parse-é. */
   expectedType?: () => T;
 }
 
-export interface ChatStreamOptions {
+interface ChatStreamOptions {
   messages: MistralMessage[];
   model?: string;
   temperature?: number;

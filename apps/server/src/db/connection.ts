@@ -102,43 +102,12 @@ function initializeConnection(): void {
 // EXPORTS (Lazy Getters)
 // ============================================================================
 
-/**
- * Get postgres SQL client (lazy initialization)
- */
-export function getSql(): Sql {
-  initializeConnection();
-  return _sql!;
-}
-
-/**
- * Get drizzle database instance (lazy initialization)
- */
-export function getDb(): PostgresJsDatabase<typeof schema> {
-  initializeConnection();
-  return _db!;
-}
-
-// Legacy exports for backward compatibility
-// These trigger lazy initialization on first access
-export const sql = new Proxy({} as Sql, {
-  get(_target, prop) {
-    initializeConnection();
-    return (_sql as unknown as Record<string | symbol, unknown>)[prop];
-  },
-  apply(_target, _thisArg, args) {
-    initializeConnection();
-    return (_sql as unknown as (...args: unknown[]) => unknown)(...args);
-  }
-});
-
 export const db = new Proxy({} as PostgresJsDatabase<typeof schema>, {
   get(_target, prop) {
     initializeConnection();
     return (_db as unknown as Record<string | symbol, unknown>)[prop];
   }
 });
-
-export type Database = PostgresJsDatabase<typeof schema>;
 
 // ============================================================================
 // UTILITIES
@@ -190,9 +159,3 @@ export const closeConnection = async (): Promise<void> => {
   }
 };
 
-/**
- * Check if database is initialized (useful for tests)
- */
-export function isDatabaseInitialized(): boolean {
-  return _initialized;
-}

@@ -14,7 +14,7 @@
  * OpenAI tools, donc portable.
  */
 
-export interface MistralTool {
+interface MistralTool {
   type: 'function';
   function: {
     name: string;
@@ -23,7 +23,7 @@ export interface MistralTool {
   };
 }
 
-export const searchEducationalContentTool: MistralTool = {
+const searchEducationalContentTool: MistralTool = {
   type: 'function',
   function: {
     name: 'search_educational_content',
@@ -62,7 +62,7 @@ export const searchEducationalContentTool: MistralTool = {
   },
 };
 
-export const generateFlashcardsTool: MistralTool = {
+const generateFlashcardsTool: MistralTool = {
   type: 'function',
   function: {
     name: 'generate_flashcards',
@@ -91,7 +91,7 @@ export const generateFlashcardsTool: MistralTool = {
   },
 };
 
-export const getStudentProfileTool: MistralTool = {
+const getStudentProfileTool: MistralTool = {
   type: 'function',
   function: {
     name: 'get_student_profile',
@@ -106,7 +106,7 @@ export const getStudentProfileTool: MistralTool = {
   },
 };
 
-export const updateStudentProfileTool: MistralTool = {
+const updateStudentProfileTool: MistralTool = {
   type: 'function',
   function: {
     name: 'update_student_profile',
@@ -146,7 +146,7 @@ export const updateStudentProfileTool: MistralTool = {
   },
 };
 
-export const getAppHelpTool: MistralTool = {
+const getAppHelpTool: MistralTool = {
   type: 'function',
   function: {
     name: 'get_app_help',

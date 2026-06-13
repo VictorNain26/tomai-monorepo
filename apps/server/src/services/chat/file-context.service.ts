@@ -7,7 +7,7 @@ import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileInfo, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
 import { prepareMultimodalFiles, updateFileAnalysis } from './file-multimodal.service.js';
 
-export type { AttachedFileInfo, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
+;
 
 class FileContextService {
   /**

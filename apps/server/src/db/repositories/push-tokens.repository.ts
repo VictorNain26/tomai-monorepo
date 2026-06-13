@@ -8,14 +8,14 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../connection';
 import { devicePushTokens } from '../schema';
 
-export interface UpsertPushTokenInput {
+interface UpsertPushTokenInput {
   userId: string;
   token: string;
   platform: 'ios' | 'android';
   deviceName: string | null;
 }
 
-export class PushTokensRepository {
+class PushTokensRepository {
   /**
    * Register (or refresh) a device push token. Keyed on the token itself, so a
    * token that moves to another user/device is re-pointed rather than duplicated.

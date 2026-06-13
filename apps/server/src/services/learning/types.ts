@@ -80,28 +80,6 @@ export type CardType =
   | FrenchCardType
   | CognitiveCardType;
 
-/**
- * Liste des types valides pour validation
- */
-export const VALID_CARD_TYPES: CardType[] = [
-  // Pédagogique
-  'concept',
-  // Universel
-  'flashcard', 'qcm', 'vrai_faux',
-  // Langues
-  'matching', 'fill_blank', 'word_order',
-  // Maths/Sciences
-  'calculation',
-  // Histoire-Géo
-  'timeline', 'matching_era', 'cause_effect',
-  // SVT
-  'classification', 'process_order',
-  // Français
-  'grammar_transform',
-  // Sciences Cognitives (2025)
-  'reformulation'
-];
-
 // ============================================
 // CONTENUS DES CARTES
 // ============================================
@@ -110,7 +88,7 @@ export const VALID_CARD_TYPES: CardType[] = [
  * Contenu d'une carte concept (explication théorique)
  * Usage: Introduire une notion AVANT les exercices
  */
-export interface ConceptContent {
+interface ConceptContent {
   title: string;           // Titre de la notion
   explanation: string;     // Explication claire et concise
   keyPoints: string[];     // Points clés à retenir (2-4)
@@ -121,7 +99,7 @@ export interface ConceptContent {
 /**
  * Contenu d'une flashcard classique
  */
-export interface FlashcardContent {
+interface FlashcardContent {
   front: string;
   back: string;
 }
@@ -129,7 +107,7 @@ export interface FlashcardContent {
 /**
  * Contenu d'un QCM
  */
-export interface QCMContent {
+interface QCMContent {
   question: string;
   options: string[];      // 4 options
   correctIndex: number;   // Index de la bonne réponse (0-3)
@@ -139,7 +117,7 @@ export interface QCMContent {
 /**
  * Contenu d'un Vrai/Faux
  */
-export interface VraiFauxContent {
+interface VraiFauxContent {
   statement: string;
   isTrue: boolean;
   explanation: string;
@@ -149,7 +127,7 @@ export interface VraiFauxContent {
  * Contenu d'un exercice de matching (association)
  * Usage: Langues (vocabulaire), Histoire (dates/événements)
  */
-export interface MatchingContent {
+interface MatchingContent {
   instruction: string;
   pairs: Array<{
     left: string;    // Mot, événement, date...
@@ -162,7 +140,7 @@ export interface MatchingContent {
  * Contenu d'un exercice à trous
  * Usage: Langues (conjugaison), Français (grammaire)
  */
-export interface FillBlankContent {
+interface FillBlankContent {
   sentence: string;           // Phrase avec ___ pour le trou
   options: string[];          // Options possibles (4 max)
   correctIndex: number;       // Index de la bonne réponse
@@ -174,7 +152,7 @@ export interface FillBlankContent {
  * Contenu d'un exercice de remise en ordre de mots
  * Usage: Langues (construction de phrases)
  */
-export interface WordOrderContent {
+interface WordOrderContent {
   instruction: string;
   words: string[];           // Mots mélangés
   correctSentence: string;   // Phrase correcte
@@ -185,7 +163,7 @@ export interface WordOrderContent {
  * Contenu d'un exercice de calcul avec étapes
  * Usage: Mathématiques, Physique-Chimie
  */
-export interface CalculationContent {
+interface CalculationContent {
   problem: string;           // Énoncé du problème (peut contenir KaTeX)
   steps: string[];           // Étapes de résolution
   answer: string;            // Réponse finale (peut contenir KaTeX)
@@ -196,7 +174,7 @@ export interface CalculationContent {
  * Contenu d'un exercice de chronologie
  * Usage: Histoire
  */
-export interface TimelineContent {
+interface TimelineContent {
   instruction: string;
   events: Array<{
     event: string;           // Nom de l'événement
@@ -210,7 +188,7 @@ export interface TimelineContent {
  * Contenu d'un exercice d'association époque/événement
  * Usage: Histoire-Géo
  */
-export interface MatchingEraContent {
+interface MatchingEraContent {
   instruction: string;
   items: string[];           // Personnages, événements, œuvres...
   eras: string[];            // Époques, siècles, périodes...
@@ -221,7 +199,7 @@ export interface MatchingEraContent {
  * Contenu d'un exercice cause-effet
  * Usage: Histoire-Géo, SVT
  */
-export interface CauseEffectContent {
+interface CauseEffectContent {
   context: string;           // Contexte historique/scientifique
   cause: string;             // La cause à analyser
   possibleEffects: string[]; // Effets possibles (4 options)
@@ -233,7 +211,7 @@ export interface CauseEffectContent {
  * Contenu d'un exercice de classification
  * Usage: SVT, Sciences
  */
-export interface ClassificationContent {
+interface ClassificationContent {
   instruction: string;
   items: string[];           // Éléments à classer
   categories: string[];      // Catégories disponibles
@@ -245,7 +223,7 @@ export interface ClassificationContent {
  * Contenu d'un exercice d'ordre de processus
  * Usage: SVT (digestion, respiration...), Sciences
  */
-export interface ProcessOrderContent {
+interface ProcessOrderContent {
   instruction: string;
   processName: string;       // Nom du processus (ex: "La digestion")
   steps: string[];           // Étapes mélangées
@@ -257,7 +235,7 @@ export interface ProcessOrderContent {
  * Contenu d'un exercice de transformation grammaticale
  * Usage: Français
  */
-export interface GrammarTransformContent {
+interface GrammarTransformContent {
   instruction: string;       // Ex: "Mets cette phrase au passé composé"
   originalSentence: string;  // Phrase originale
   transformationType: 'tense' | 'voice' | 'form' | 'number'; // Type de transformation
@@ -271,7 +249,7 @@ export interface GrammarTransformContent {
  * Usage: Toutes matières - Sciences Cognitives 2025
  * Favorise l'ancrage mémoriel par la génération active
  */
-export interface ReformulationContent {
+interface ReformulationContent {
   concept: string;           // Nom du concept à reformuler
   prompt: string;            // Consigne de reformulation
   context?: string;          // Contexte facultatif
@@ -328,20 +306,6 @@ export type EducationCycle = 'cycle2' | 'cycle3' | 'cycle4' | 'lycee';
 // ============================================
 // CONFIGURATION ET PARAMÈTRES
 // ============================================
-
-/**
- * Configuration par matière
- */
-export interface SubjectConfig {
-  /** Catégorie de la matière */
-  category: SubjectCategory;
-  /** Nécessite KaTeX pour les formules */
-  requiresKaTeX: boolean;
-  /** Instructions spécifiques pour cette matière */
-  instructions: string;
-  /** Types de cartes recommandés */
-  recommendedCardTypes: CardType[];
-}
 
 /**
  * Paramètres pour la génération de cartes

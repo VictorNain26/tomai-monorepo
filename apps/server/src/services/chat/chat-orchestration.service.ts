@@ -26,7 +26,7 @@ import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { ChatStreamChunk, PronoteContext } from './chat-streaming-types.js';
 
-export interface ChatStreamRequest {
+interface ChatStreamRequest {
   userId: string;
   content: string;
   sessionId?: string;

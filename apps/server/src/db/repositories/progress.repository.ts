@@ -2,7 +2,7 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { db } from '../connection';
 import { progress, type Progress, type NewProgress } from '../schema';
 
-export class ProgressRepository {
+class ProgressRepository {
   async create(progressData: NewProgress): Promise<Progress> {
     const [progressRecord] = await db
       .insert(progress)

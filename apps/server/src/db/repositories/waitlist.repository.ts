@@ -7,7 +7,7 @@
 import { db } from '../connection';
 import { waitlistEntries } from '../schema';
 
-export class WaitlistRepository {
+class WaitlistRepository {
   /**
    * Add an email to the waitlist. Idempotent on the email (case-insensitive,
    * stored lowercased). Returns `true` when a new row was created, `false` when
