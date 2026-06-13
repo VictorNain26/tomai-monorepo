@@ -28,7 +28,7 @@ export const healthApiRoutes = new Elysia({ name: 'api-health' })
         status: qdrantOk && aiOk ? 'healthy' : 'degraded',
         qdrant: qdrantOk,
         aiService: aiOk,
-        collection: 'tomai_educational',
+        collection: env.QDRANT_COLLECTION,
         pointsCount: stats.total_points
       };
     } catch (error) {
