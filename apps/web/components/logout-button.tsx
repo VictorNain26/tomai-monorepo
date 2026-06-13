@@ -18,7 +18,8 @@ export function LogoutButton() {
       await signOut();
       router.push("/login");
       router.refresh();
-    } catch {
+    } catch (error) {
+      console.error("[LogoutButton] signOut failed", error);
       setError("Déconnexion impossible. Vérifiez votre connexion et réessayez.");
       setLoading(false);
     }
