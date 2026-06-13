@@ -133,15 +133,27 @@ function checkContainers(ctx) {
 
 function checkQdrantHealthz(ctx) {
   return { name: 'qdrant /healthz', run: async () => {
-    const res = await ctx.fetchFn(`${ctx.config.qdrantUrl}/healthz`, {});
-    if (!res.ok) throw new Error(`qdrant ${ctx.config.qdrantUrl}/healthz -> HTTP ${res.status}`);
+    const url = `${ctx.config.qdrantUrl}/healthz`;
+    let res;
+    try {
+      res = await ctx.fetchFn(url, {});
+    } catch (e) {
+      throw new Error(`qdrant ${url} injoignable (${e.cause?.code ?? e.message})`);
+    }
+    if (!res.ok) throw new Error(`qdrant ${url} -> HTTP ${res.status}`);
   }};
 }
 
 function checkAiServiceHealth(ctx) {
   return { name: 'ai-service /health (modèles chargés)', run: async () => {
-    const res = await ctx.fetchFn(`${ctx.config.aiServiceUrl}/health`, {});
-    if (!res.ok) throw new Error(`ai-service ${ctx.config.aiServiceUrl}/health -> HTTP ${res.status}`);
+    const url = `${ctx.config.aiServiceUrl}/health`;
+    let res;
+    try {
+      res = await ctx.fetchFn(url, {});
+    } catch (e) {
+      throw new Error(`ai-service ${url} injoignable (${e.cause?.code ?? e.message})`);
+    }
+    if (!res.ok) throw new Error(`ai-service ${url} -> HTTP ${res.status}`);
     const body = await res.json();
     if (body.embed_loaded !== true || body.rerank_loaded !== true) {
       throw new Error(`modèles non chargés (status='${body.status}', embed=${body.embed_loaded}, rerank=${body.rerank_loaded})`);
@@ -235,7 +247,7 @@ function checkServerRagHealth(ctx) {
     try {
       res = await ctx.fetchFn(`${ctx.config.serverUrl}/api/curriculum-health`, {});
     } catch (e) {
-      throw skip(`server non joignable sur ${ctx.config.serverUrl} (${e.code ?? e.message})`);
+      throw skip(`server non joignable sur ${ctx.config.serverUrl} (${e.cause?.code ?? e.code ?? e.message})`);
     }
     if (res.status === 404) throw skip('route /api/curriculum-health non exposée (garde dev)');
     if (!res.ok) throw new Error(`server /api/curriculum-health -> HTTP ${res.status} (server joignable mais en erreur)`);
