@@ -147,3 +147,19 @@ def test_validate_config_permissive_in_development_without_token() -> None:
         patch.object(config, "API_TOKEN", ""),
     ):
         config.validate_config()
+
+
+def test_embed_runs_off_event_loop(client: TestClient) -> None:
+    """L'inférence embed doit être offloadée (run_in_threadpool) — le handler
+    reste responsive. On vérifie que l'endpoint répond toujours 200 quand
+    embed_encode est une fonction bloquante (sleep)."""
+    import time
+
+    def _slow_embed(texts: list[str]) -> list[EmbedItem]:
+        time.sleep(0.05)
+        return _fake_embed(texts)
+
+    with patch("src.main.embed_encode", side_effect=_slow_embed):
+        r = client.post("/embed", json={"texts": ["hi"]})
+        assert r.status_code == 200
+        assert len(r.json()["embeddings"]) == 1

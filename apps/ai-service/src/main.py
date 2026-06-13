@@ -15,7 +15,9 @@ from __future__ import annotations
 import hmac
 from contextlib import asynccontextmanager
 
+import anyio
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.concurrency import run_in_threadpool
 
 from .config import API_TOKEN, EMBED_MODEL, RERANK_MODEL, validate_config
 from .embed import encode as embed_encode
@@ -49,6 +51,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Sérialise l'inférence par modèle : BGEM3FlagModel et CrossEncoder ne sont pas
+# documentés thread-safe, et le threadpool FastAPI peut lancer plusieurs threads.
+# Le lock (event-loop-bound) est acquis avant l'offload run_in_threadpool.
+_embed_lock = anyio.Lock()
+_rerank_lock = anyio.Lock()
+
 
 def _require_token(authorization: str | None = Header(default=None)) -> None:
     """Auth bearer optionnelle. Si API_TOKEN non défini, endpoints publics.
@@ -78,12 +86,14 @@ async def health() -> HealthResponse:
 @app.post("/embed", response_model=EmbedResponse, dependencies=[Depends(_require_token)])
 async def embed(req: EmbedRequest) -> EmbedResponse:
     """BGE-M3 dense + sparse natif en un seul forward pass."""
-    items = embed_encode(req.texts)
+    async with _embed_lock:
+        items = await run_in_threadpool(embed_encode, req.texts)
     return EmbedResponse(model=EMBED_MODEL, embeddings=items)
 
 
 @app.post("/rerank", response_model=RerankResponse, dependencies=[Depends(_require_token)])
 async def rerank(req: RerankRequest) -> RerankResponse:
     """bge-reranker-v2-m3 — compat format HuggingFace TEI POST /rerank."""
-    results = rerank_run(req.query, req.texts, top_n=req.top_n)
+    async with _rerank_lock:
+        results = await run_in_threadpool(rerank_run, req.query, req.texts, req.top_n)
     return RerankResponse(model=RERANK_MODEL, results=results)
