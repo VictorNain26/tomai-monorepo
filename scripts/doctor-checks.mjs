@@ -227,6 +227,23 @@ function checkRagRoundtrip(ctx) {
   }};
 }
 
+// ─── Server curriculum-health check ─────────────────────────────────────────
+
+function checkServerRagHealth(ctx) {
+  return { name: 'server /api/curriculum-health (si lancé)', run: async () => {
+    let res;
+    try {
+      res = await ctx.fetchFn(`${ctx.config.serverUrl}/api/curriculum-health`, {});
+    } catch (e) {
+      throw skip(`server non joignable sur ${ctx.config.serverUrl} (${e.code ?? e.message})`);
+    }
+    if (res.status === 404) throw skip('route /api/curriculum-health non exposée (garde dev)');
+    if (!res.ok) throw skip(`server -> HTTP ${res.status}`);
+    const body = await res.json();
+    if (body.status !== 'healthy') throw new Error(`RAG dégradé côté server (qdrant=${body.qdrant}, aiService=${body.aiService})`);
+  }};
+}
+
 /**
  * Construit la liste des checks. full=false -> sous-ensemble infra (pour le fail-fast `dev`).
  * full=true -> ajoute migrations, roundtrip RAG, server health.
@@ -239,5 +256,5 @@ export function buildChecks(ctx, { full } = { full: true }) {
     checkAiServiceHealth(ctx),
   ];
   if (!full) return infra;
-  return [...infra, checkMigrations(ctx), checkRagRoundtrip(ctx)]; // server ajouté tâche 5
+  return [...infra, checkMigrations(ctx), checkRagRoundtrip(ctx), checkServerRagHealth(ctx)];
 }

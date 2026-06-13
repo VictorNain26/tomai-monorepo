@@ -170,3 +170,26 @@ test('check rag: la collection est supprimée même si la search échoue (cleanu
   await assert.rejects(byName(checks, 'roundtrip').run());
   assert.ok(calls.some((c) => c.startsWith('DELETE')), 'cleanup DELETE doit avoir lieu malgré l\'échec');
 });
+
+test('check server: SKIP si connexion refusée (server non lancé)', async () => {
+  const fetchFn = async (url) => { if (url.includes('curriculum-health')) throw Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' }); return { ok: true, status: 200, json: async () => ({}) }; };
+  const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
+  const e = await byName(checks, 'server').run().then(() => null, (x) => x);
+  assert.ok(e && e[Symbol.for('doctor.skip')], 'doit être un SKIP');
+});
+
+test('check server: FAIL si 200 degraded', async () => {
+  const fetchFn = async (url) => url.includes('curriculum-health')
+    ? ({ ok: true, status: 200, json: async () => ({ status: 'degraded', qdrant: false, aiService: true }) })
+    : ({ ok: true, status: 200, json: async () => ({}) });
+  const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
+  await assert.rejects(byName(checks, 'server').run(), /degraded|qdrant/i);
+});
+
+test('check server: PASS si 200 healthy', async () => {
+  const fetchFn = async (url) => url.includes('curriculum-health')
+    ? ({ ok: true, status: 200, json: async () => ({ status: 'healthy', qdrant: true, aiService: true }) })
+    : ({ ok: true, status: 200, json: async () => ({}) });
+  const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
+  await byName(checks, 'server').run();
+});
