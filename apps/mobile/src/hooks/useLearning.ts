@@ -17,7 +17,7 @@ type DeckById = ReturnType<LearningApi['decks']>;
 export type LearningDeck = ResponseData<LearningApi['decks']['get']>['decks'][number];
 export type LearningCard = ResponseData<DeckById['get']>['cards'][number];
 export type CardType = LearningCard['cardType'];
-export type GenerateDeckRequest = NonNullable<Parameters<LearningApi['generate']['post']>[0]>;
+type GenerateDeckRequest = NonNullable<Parameters<LearningApi['generate']['post']>[0]>;
 export type GenerateDeckResponse = ResponseData<LearningApi['generate']['post']>;
 
 export type LearningSubject = ResponseData<LearningApi['subjects']['get']>['subjects'][number];

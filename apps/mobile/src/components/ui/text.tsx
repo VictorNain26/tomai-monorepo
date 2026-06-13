@@ -110,4 +110,3 @@ function Text({
 }
 
 export { Text, TextClassContext };
-export type { TextProps };
