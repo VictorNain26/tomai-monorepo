@@ -59,12 +59,14 @@ export function usePronote(userId: string) {
   const lastHomeworkFetch = usePronoteStore((s) => s.lastHomeworkFetch);
   const lastGradesFetch = usePronoteStore((s) => s.lastGradesFetch);
   const lastTimetableFetch = usePronoteStore((s) => s.lastTimetableFetch);
+  const lastError = usePronoteStore((s) => s.lastError);
   const storeSetConnected = usePronoteStore((s) => s.setConnected);
   const storeSetResources = usePronoteStore((s) => s.setResources);
   const storeSetResourceMapping = usePronoteStore((s) => s.setResourceMapping);
   const storeSetHomework = usePronoteStore((s) => s.setHomework);
   const storeSetGrades = usePronoteStore((s) => s.setGrades);
   const storeSetTimetable = usePronoteStore((s) => s.setTimetable);
+  const storeSetError = usePronoteStore((s) => s.setError);
   const storeReset = usePronoteStore((s) => s.reset);
 
   const connect = useCallback(
@@ -105,10 +107,11 @@ export function usePronote(userId: string) {
       if (!metadata) return;
       if (!isCacheStale(lastHomeworkFetch, HOMEWORK_TTL)) return;
 
-      const handle = await pronoteSessionService.refreshSession(userId, metadata);
-      if (!handle) return;
-
       try {
+        const handle = await pronoteSessionService.refreshSession(userId, metadata);
+        if (!handle) return;
+        storeSetError(null);
+
         const now = new Date();
         const from = new Date(now);
         from.setDate(from.getDate() - 7);
@@ -128,19 +131,21 @@ export function usePronote(userId: string) {
         storeSetHomework(hw);
       } catch (err) {
         console.error('[Pronote] fetchHomework failed:', err);
+        storeSetError('Impossible de charger les devoirs. Réessaie.');
       }
     },
-    [userId, metadata, lastHomeworkFetch, storeSetHomework],
+    [userId, metadata, lastHomeworkFetch, storeSetHomework, storeSetError],
   );
 
   const fetchGrades = useCallback(async () => {
     if (!metadata) return;
     if (!isCacheStale(lastGradesFetch, GRADES_TTL)) return;
 
-    const handle = await pronoteSessionService.refreshSession(userId, metadata);
-    if (!handle) return;
-
     try {
+      const handle = await pronoteSessionService.refreshSession(userId, metadata);
+      if (!handle) return;
+      storeSetError(null);
+
       const period = getCurrentPeriod(handle);
       if (!period) return;
 
@@ -162,18 +167,20 @@ export function usePronote(userId: string) {
       storeSetGrades(g);
     } catch (err) {
       console.error('[Pronote] fetchGrades failed:', err);
+      storeSetError('Impossible de charger les notes. Réessaie.');
     }
-  }, [userId, metadata, lastGradesFetch, storeSetGrades]);
+  }, [userId, metadata, lastGradesFetch, storeSetGrades, storeSetError]);
 
   const fetchTimetable = useCallback(
     async () => {
       if (!metadata) return;
       if (!isCacheStale(lastTimetableFetch, TIMETABLE_TTL)) return;
 
-      const handle = await pronoteSessionService.refreshSession(userId, metadata);
-      if (!handle) return;
-
       try {
+        const handle = await pronoteSessionService.refreshSession(userId, metadata);
+        if (!handle) return;
+        storeSetError(null);
+
         const now = new Date();
         const from = new Date(now);
         from.setHours(0, 0, 0, 0);
@@ -197,9 +204,10 @@ export function usePronote(userId: string) {
         storeSetTimetable(tt);
       } catch (err) {
         console.error('[Pronote] fetchTimetable failed:', err);
+        storeSetError("Impossible de charger l'emploi du temps. Réessaie.");
       }
     },
-    [userId, metadata, lastTimetableFetch, storeSetTimetable],
+    [userId, metadata, lastTimetableFetch, storeSetTimetable, storeSetError],
   );
 
   const setResourceMapping = useCallback(
@@ -232,6 +240,7 @@ export function usePronote(userId: string) {
     homework,
     grades,
     timetable,
+    error: lastError,
 
     // Computed
     upcomingHomework,

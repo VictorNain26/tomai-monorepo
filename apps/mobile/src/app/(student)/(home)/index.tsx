@@ -23,6 +23,7 @@ import {
   type HomeworkItem,
   type GradeItem,
 } from '@/components/dashboard';
+import { ChatErrorBanner } from '@/components/chat';
 import { useStudentDashboard, usePronote, useThemeColors, useDueSummary } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { bgColors } from '@/lib/styles';
@@ -160,6 +161,10 @@ export default function StudentDashboard() {
           )}
           <Text variant="muted" className="mt-0.5">{tomMessage}</Text>
         </View>
+
+        {pronote.error && (
+          <ChatErrorBanner error={pronote.error} onRetry={onRefresh} />
+        )}
 
         {/* Due Cards */}
         {(dueSummary?.totalDue ?? 0) > 0 && (
