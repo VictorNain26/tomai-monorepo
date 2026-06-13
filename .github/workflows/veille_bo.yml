@@ -1,0 +1,90 @@
+name: Veille BO
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # tous les lundis 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: veille-bo
+  cancel-in-progress: false
+
+jobs:
+  veille:
+    name: Veille programmes Eduscol
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/curriculum
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # main
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync (frozen)
+        run: uv sync --frozen
+
+      - name: Run veille script
+        env:
+          PISTE_CLIENT_ID: ${{ secrets.PISTE_CLIENT_ID }}
+          PISTE_CLIENT_SECRET: ${{ secrets.PISTE_CLIENT_SECRET }}
+        run: uv run python scripts/veille_programmes.py
+
+      - name: Open or update issue on changes
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'apps/curriculum/data/raw/.veille_changes.json';
+            let changes = [];
+            try {
+              changes = JSON.parse(fs.readFileSync(path, 'utf8'));
+            } catch (e) {
+              core.info(`Pas de fichier de changements lisible (${e.message}) — rien a signaler.`);
+              return;
+            }
+            if (!Array.isArray(changes) || changes.length === 0) {
+              core.info("Aucun changement detecte — pas d'issue.");
+              return;
+            }
+            const today = new Date().toISOString().slice(0, 10);
+            const title = `Veille BO — changements detectes (${today})`;
+            const lines = changes.map((c) => {
+              if (c.source === 'datagouv') {
+                return `- **[data.gouv.fr]** ${c.title || '(sans titre)'}\n  - ${c.url}`;
+              }
+              return `- **[Legifrance]** ${c.titre || ''}\n  - ${c.url_legifrance || ''}`;
+            });
+            const body = `Le script de veille a detecte **${changes.length}** changement(s) sur les programmes officiels.\n\n${lines.join('\n')}\n\n_Genere automatiquement par \`.github/workflows/veille_bo.yml\`._`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'veille-bo',
+            });
+            const match = existing.data.find((i) => i.title === title);
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body,
+              });
+              core.info(`Issue #${match.number} mise a jour.`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['veille-bo'],
+              });
+              core.info(`Issue #${created.data.number} creee.`);
+            }
