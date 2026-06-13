@@ -163,6 +163,25 @@ describe('PronoteSessionService', () => {
 
       expect(session).toBeNull();
     });
+
+    it('should return null and preserve the stored token when refresh throws', async () => {
+      mockGetItemAsync.mockResolvedValue('stored-token');
+      mockCreateSessionHandle.mockReturnValue({ user: { resources: [] }, instance: {} });
+      mockLoginToken.mockRejectedValue(new Error('network down'));
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const session = await typedService.refreshSession('user-1', {
+        instanceUrl: 'https://demo.pronote.fr',
+        username: 'jean',
+        deviceUuid: 'dev-1',
+        accountKind: 6,
+      });
+
+      expect(session).toBeNull();
+      // A failed refresh must not clobber the still-valid stored token.
+      expect(mockSetItemAsync).not.toHaveBeenCalled();
+      errorSpy.mockRestore();
+    });
   });
 
   describe('disconnect', () => {
