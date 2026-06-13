@@ -9,9 +9,9 @@ import { files, type FileStatus } from '../schema.js';
 
 // Types inférés du schéma
 export type File = typeof files.$inferSelect;
-export type NewFile = typeof files.$inferInsert;
+type NewFile = typeof files.$inferInsert;
 
-export class FilesRepository {
+class FilesRepository {
   /**
    * Créer un nouveau fichier
    */

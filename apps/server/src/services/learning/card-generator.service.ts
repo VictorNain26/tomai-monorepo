@@ -60,7 +60,7 @@ export interface CardGenerationResult {
   provider: string;
 }
 
-export interface CardGenerationError {
+interface CardGenerationError {
   success: false;
   error: string;
   code: 'GENERATION_FAILED' | 'INVALID_OUTPUT' | 'SERVICE_UNAVAILABLE';
@@ -74,7 +74,7 @@ export interface CardGenerationError {
 
 // CARD_GENERATOR_PROMPT_VERSION : déjà défini en haut du fichier comme const
 // pour le prompt cache key. Conservé en export pour compat.
-export { CARD_GENERATOR_PROMPT_VERSION };
+;
 
 // ============================================================================
 // JSON SCHEMA SIMPLIFIÉ - Respecte limite 4 niveaux Gemini

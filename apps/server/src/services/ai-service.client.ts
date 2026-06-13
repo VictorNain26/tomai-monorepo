@@ -34,12 +34,12 @@ if (!AI_SERVICE_TOKEN) {
   );
 }
 
-export interface SparseVector {
+interface SparseVector {
   indices: number[];
   values: number[];
 }
 
-export interface EmbedResult {
+interface EmbedResult {
   dense: number[];
   sparse: SparseVector;
 }

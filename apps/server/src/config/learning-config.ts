@@ -19,7 +19,7 @@ import type { EducationLevelType } from '../types/index.js';
  * - Recommandations Primlangues pour flashcards
  * - Recherches sur la rétention optimale
  */
-export interface LearningLevelConfig {
+interface LearningLevelConfig {
   /** Nombre de cartes par session (adapté à l'attention) */
   cardsPerSession: number;
   /** Taux de rétention cible FSRS (0.0-1.0) */
@@ -42,7 +42,7 @@ export interface LearningLevelConfig {
  * - DRANE: 10-20 cartes collège, 20-30 lycée
  * - Cepeda et al. (2006): rétention optimale 85-92% selon âge
  */
-export const LEARNING_CONFIG: Record<EducationLevelType, LearningLevelConfig> = {
+const LEARNING_CONFIG: Record<EducationLevelType, LearningLevelConfig> = {
   // ═══════════════════════════════════════════════════════════════
   // CYCLE 2 (CP-CE2, 6-8 ans)
   // Attention limitée (~15min), mémoire de travail en développement
@@ -161,59 +161,9 @@ export const LEARNING_CONFIG: Record<EducationLevelType, LearningLevelConfig> = 
 };
 
 /**
- * Guide vocabulaire par cycle pour génération IA
- *
- * Adapte le langage des cartes à l'âge de l'élève
- */
-export const VOCABULARY_GUIDE_BY_CYCLE = {
-  cycle2:
-    'Utilise des mots simples, des phrases courtes (max 10 mots). ' +
-    'Évite le jargon technique. Privilégie les exemples concrets du quotidien.',
-  cycle3:
-    'Vocabulaire accessible, phrases de 15-20 mots maximum. ' +
-    'Introduis le vocabulaire technique progressivement avec définitions simples.',
-  cycle4:
-    'Vocabulaire scolaire standard du collège. ' +
-    'Utilise les termes techniques du programme avec précision.',
-  lycee:
-    'Vocabulaire académique complet. Précision scientifique requise. ' +
-    'Utilise la terminologie officielle des programmes.',
-} as const;
-
-/**
  * Helper: récupère la configuration pour un niveau donné
  */
 export function getLevelConfig(level: EducationLevelType): LearningLevelConfig {
   return LEARNING_CONFIG[level];
 }
 
-/**
- * Helper: récupère le guide vocabulaire pour un niveau
- */
-export function getVocabularyGuide(level: EducationLevelType): string {
-  const config = LEARNING_CONFIG[level];
-  return VOCABULARY_GUIDE_BY_CYCLE[config.cycle];
-}
-
-/**
- * Helper: calcule le nombre de cartes recommandé pour une génération
- *
- * @param level Niveau scolaire
- * @param requestedCount Nombre demandé (optionnel)
- * @returns Nombre plafonné selon les recommandations
- */
-export function getRecommendedCardCount(
-  level: EducationLevelType,
-  requestedCount?: number
-): number {
-  const config = LEARNING_CONFIG[level];
-  const maxCards = config.cardsPerSession;
-
-  if (!requestedCount) {
-    // Par défaut: 60% du max pour une session équilibrée
-    return Math.round(maxCards * 0.6);
-  }
-
-  // Plafonner au maximum recommandé
-  return Math.min(requestedCount, maxCards);
-}

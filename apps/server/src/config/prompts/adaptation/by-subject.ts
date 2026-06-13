@@ -4,7 +4,7 @@
  * La pédagogie (CSEN/Dehaene) est dans shared/pedagogy
  */
 
-export type SubjectType =
+type SubjectType =
   | 'mathematiques'
   | 'francais'
   | 'langues'
@@ -66,7 +66,7 @@ const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
 /**
  * Normalise le nom de matière
  */
-export function normalizeSubject(subject: string): SubjectType {
+function normalizeSubject(subject: string): SubjectType {
   const s = subject.toLowerCase().trim();
 
   if (s.includes('math')) return 'mathematiques';
@@ -87,7 +87,7 @@ export function normalizeSubject(subject: string): SubjectType {
 /**
  * Génère les spécificités pour UNE matière
  */
-export function generateSubjectSpecifics(subject: string): string | null {
+function generateSubjectSpecifics(subject: string): string | null {
   const normalized = normalizeSubject(subject);
   if (!normalized) return null;
   return SUBJECT_SPECIFICS[normalized];
@@ -107,10 +107,3 @@ Adapte ta méthode à la matière abordée: Chain-of-Thought en maths, analyse t
 </subject_specifics>`;
 }
 
-/**
- * Vérifie si la matière nécessite KaTeX
- */
-export function requiresKaTeX(subject: string): boolean {
-  const s = subject.toLowerCase();
-  return s.includes('math') || s.includes('physique') || s.includes('chimie');
-}

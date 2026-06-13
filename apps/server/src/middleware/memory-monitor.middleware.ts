@@ -19,7 +19,7 @@ interface MemoryAlert {
   action: string;
 }
 
-export class MemoryMonitor {
+class MemoryMonitor {
   private static instance: MemoryMonitor;
   private isMonitoring = false;
   private intervalId?: ReturnType<typeof setInterval>;

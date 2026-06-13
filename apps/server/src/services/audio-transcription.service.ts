@@ -25,7 +25,7 @@ import {
 // Types
 // ============================================
 
-export interface TranscriptionResult {
+interface TranscriptionResult {
   success: boolean;
   transcription?: string;
   pronunciationAnalysis?: {
@@ -39,7 +39,7 @@ export interface TranscriptionResult {
   _error?: string;
 }
 
-export interface TranscriptionOptions {
+interface TranscriptionOptions {
   /** Langue cible pour l'analyse de prononciation */
   targetLanguage?: 'fr' | 'en' | 'es' | 'de';
   /** Niveau scolaire pour adapter le feedback */
@@ -88,7 +88,7 @@ const LANG_NAMES: Record<string, string> = {
 // Service
 // ============================================
 
-export class AudioTranscriptionService {
+class AudioTranscriptionService {
   constructor() {
     if (!isGladiaConfigured()) {
       logger.warn('Gladia API key not configured - audio transcription will fail', {

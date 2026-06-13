@@ -11,7 +11,7 @@ import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/education.types.js';
 import { getVoxtralTTSService, isVoxtralTTSConfigured } from './voxtral-tts.service.js';
 
-export interface TTSResult {
+interface TTSResult {
   success: boolean;
   audioData?: string;
   mimeType?: string;
@@ -24,7 +24,7 @@ export interface TTSOptions {
   schoolLevel?: EducationLevelType;
 }
 
-export class TextToSpeechService {
+class TextToSpeechService {
   constructor() {
     if (!isVoxtralTTSConfigured()) {
       logger.warn('MISTRAL_API_KEY not configured — TTS (Voxtral) will fail', {

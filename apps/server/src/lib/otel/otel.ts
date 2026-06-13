@@ -115,11 +115,3 @@ export function setupOtel(): void {
   process.on('SIGINT', () => void shutdown());
 }
 
-/** Test hook: tear down the SDK between integration tests. */
-export async function shutdownOtel(): Promise<void> {
-  if (sdk) {
-    await sdk.shutdown();
-    sdk = null;
-  }
-  started = false;
-}

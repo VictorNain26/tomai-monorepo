@@ -17,7 +17,7 @@ import { logger } from '../lib/observability.js';
 
 import type { ReviewResult, CardForReview, DeckReviewStats, GetDueCardsOptions } from './fsrs-types.js';
 
-export type { ReviewResult, CardForReview, DeckReviewStats, GetDueCardsOptions } from './fsrs-types.js';
+;
 
 class FSRSService {
   private getScheduler(level: EducationLevelType): ReturnType<typeof fsrs> {
@@ -319,4 +319,4 @@ class FSRSService {
 }
 
 export const fsrsService = new FSRSService();
-export { Rating, State };
+export { Rating,  };

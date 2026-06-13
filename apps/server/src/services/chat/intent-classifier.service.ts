@@ -20,7 +20,7 @@ import { generateStructured } from '../../lib/ai/mistral-client.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 
-export const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-05-18';
+const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-05-18';
 
 export type StudentIntent =
   | 'solve-this-for-me'   // student asks the agent to complete an exercise

@@ -41,7 +41,7 @@ const CHARS_PER_TOKEN = 4;
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════
 
-export interface TokenBudget {
+interface TokenBudget {
   /** Budget total disponible pour le contenu (hors overhead + output) */
   availableTokens: number;
   /** Budget alloué au résumé (15%) */
@@ -54,7 +54,7 @@ export interface TokenBudget {
   currentMessageMaxTokens: number;
 }
 
-export interface TokenEstimate {
+interface TokenEstimate {
   text: string;
   estimatedTokens: number;
   wasTruncated: boolean;

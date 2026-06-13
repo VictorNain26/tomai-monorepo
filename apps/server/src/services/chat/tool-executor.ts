@@ -17,7 +17,7 @@ import { getAppHelpContent } from '../../config/app-guide/index.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 
-export interface ToolExecutionContext {
+interface ToolExecutionContext {
   userId: string;
   schoolLevel: EducationLevelType;
   sessionId: string;
@@ -29,7 +29,7 @@ export interface ToolExecutionContext {
  * deck. Consumers (e.g. gemini-chat stream emitter) should narrow on
  * `kind: 'deck_created'` rather than duck-typing `deckId && generated`.
  */
-export interface DeckCreatedToolResult {
+interface DeckCreatedToolResult {
   kind: 'deck_created';
   generated: true;
   deckId: string;

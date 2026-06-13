@@ -8,7 +8,7 @@
  * - Correlation with request context
  */
 
-export type ErrorCode =
+type ErrorCode =
   // Auth (401, 403)
   | 'UNAUTHORIZED'
   | 'SESSION_EXPIRED'

@@ -9,7 +9,7 @@ const DEFAULT_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;
 // Types
 // ============================================
 
-export interface RevenueCatEvent {
+interface RevenueCatEvent {
   api_version: string;
   event: {
     type: RevenueCatEventType;
@@ -35,7 +35,7 @@ export interface RevenueCatEvent {
   };
 }
 
-export type RevenueCatEventType =
+type RevenueCatEventType =
   | 'TEST'
   | 'INITIAL_PURCHASE'
   | 'RENEWAL'

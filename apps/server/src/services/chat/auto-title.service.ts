@@ -12,7 +12,7 @@ import { generateText } from '../../lib/ai/mistral-client.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { logger } from '../../lib/observability.js';
 
-export const AUTO_TITLE_PROMPT_VERSION = '2026-05-18';
+const AUTO_TITLE_PROMPT_VERSION = '2026-05-18';
 
 const TITLE_PROMPT = `Génère un titre COURT (10-50 caractères) pour cette conversation de tutorat scolaire.
 

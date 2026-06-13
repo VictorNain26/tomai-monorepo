@@ -114,7 +114,7 @@ export const messages = pgTable('messages', {
   isFlagged: boolean('is_flagged').default(false),
 
   // Fichiers attachés (nouveau)
-  attachedFile: jsonb('attached_file'), // { fileName: string, fileId?: string, geminiFileId?: string, mimeType?: string }
+  attachedFile: jsonb('attached_file'), // { fileName: string, fileId?: string, mimeType?: string }
 
   // Métadonnées
   messageMetadata: jsonb('message_metadata').default(sql`'{}'::jsonb`),
@@ -323,7 +323,6 @@ export type MessageRole = typeof messageRoleEnum.enumValues[number];
 export interface AttachedFile {
   fileName: string;
   fileId?: string;
-  geminiFileId?: string;
   mimeType?: string;
   fileSizeBytes?: number;
 }

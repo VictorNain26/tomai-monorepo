@@ -13,7 +13,7 @@ import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
 import type { EducationLevelType } from '../types/education.types.js';
 
-export interface VoxtralTTSResult {
+interface VoxtralTTSResult {
   success: boolean;
   audioData?: string;
   mimeType?: string;
@@ -21,7 +21,7 @@ export interface VoxtralTTSResult {
   error?: string;
 }
 
-export interface VoxtralTTSOptions {
+interface VoxtralTTSOptions {
   voiceId?: string;
   language?: 'fr' | 'en' | 'es' | 'de';
   schoolLevel?: EducationLevelType;
@@ -53,7 +53,7 @@ const FORMAT_TO_MIME: Record<NonNullable<VoxtralTTSOptions['outputFormat']>, str
 const MP3_BYTES_PER_SECOND = 16_000;
 const MAX_INPUT_CHARS = 5_000;
 
-export class VoxtralTTSService {
+class VoxtralTTSService {
   private readonly apiKey: string;
   private readonly model: string;
   private readonly baseUrl = 'https://api.mistral.ai/v1';

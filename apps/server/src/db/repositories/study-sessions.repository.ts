@@ -21,7 +21,7 @@ export interface CreateStudySessionInput {
 /**
  * Input type pour mise à jour session
  */
-export interface UpdateStudySessionInput {
+interface UpdateStudySessionInput {
   topic?: string;
   status?: 'draft' | 'active' | 'paused' | 'completed' | 'abandoned' | 'timeout' | 'error';
   endedAt?: Date;
@@ -48,7 +48,7 @@ export interface UpdateStudySessionInput {
   summaryUpToMessageId?: string;
 }
 
-export class StudySessionsRepository {
+class StudySessionsRepository {
   /**
    * Create new study session
    * Pattern officiel Drizzle : omettre les champs avec defaults

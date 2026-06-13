@@ -11,7 +11,7 @@
 
 import type { EducationLevelType } from '../../types/index.js';
 
-export type ReasoningEffort = 'none' | 'high';
+type ReasoningEffort = 'none' | 'high';
 
 /** School levels where abstract reasoning becomes worth the latency cost. */
 const COLLEGE_AND_UP: ReadonlySet<EducationLevelType> = new Set<EducationLevelType>([
@@ -41,7 +41,7 @@ const HARD_INTENTS = new Set([
   'explain-concept',
 ]);
 
-export interface ReasoningRouteParams {
+interface ReasoningRouteParams {
   schoolLevel: EducationLevelType;
   subject?: string;
   /** Output of intent-classifier. Optional; missing → "none". */

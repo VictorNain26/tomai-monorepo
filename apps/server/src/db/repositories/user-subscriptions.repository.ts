@@ -10,7 +10,7 @@ import {
 
 type SubscriptionWithPlanName = UserSubscription & { planName: string };
 
-export type TokenIncrementParams = {
+type TokenIncrementParams = {
   tokensUsed: number;
   shouldResetWindow: boolean;
   windowStartAt: Date;
@@ -20,14 +20,14 @@ export type TokenIncrementParams = {
   lastWeeklyResetAt: Date;
 };
 
-export type DeckIncrementParams = {
+type DeckIncrementParams = {
   shouldResetDaily: boolean;
   lastResetAt: Date;
   shouldResetMonthly: boolean;
   lastMonthlyResetAt: Date;
 };
 
-export class UserSubscriptionsRepository {
+class UserSubscriptionsRepository {
   async findByUserId(userId: string): Promise<UserSubscription | undefined> {
     const [row] = await db
       .select()

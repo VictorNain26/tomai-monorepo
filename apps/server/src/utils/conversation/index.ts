@@ -4,7 +4,7 @@
  */
 
 // Types
-export type { IAIMessage, HistoryOptimizationConfig, OptimizationContext } from './types.js';
+export type {   OptimizationContext } from './types.js';
 
 // Fonctions utilitaires
 export {

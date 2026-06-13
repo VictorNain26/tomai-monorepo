@@ -2,7 +2,7 @@ import { eq, asc, count } from 'drizzle-orm';
 import { db } from '../connection';
 import { messages, type Message, type NewMessage } from '../schema';
 
-export class MessagesRepository {
+class MessagesRepository {
   async create(messageData: NewMessage): Promise<Message> {
     const [message] = await db
       .insert(messages)

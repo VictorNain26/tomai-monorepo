@@ -16,7 +16,7 @@ import type { EducationLevelType } from '../types/index.js';
 // Types - Réponses RAG uniquement (pas de UI metadata)
 // =============================================================================
 
-export interface RagSubject {
+interface RagSubject {
   key: string;
   ragAvailable: boolean;
   chunksCount?: number;

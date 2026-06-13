@@ -6,7 +6,7 @@ import { user } from '../schema';
 type User = typeof user.$inferSelect;
 type NewUser = typeof user.$inferInsert;
 
-export class UsersRepository {
+class UsersRepository {
   async findByEmail(email: string): Promise<User | undefined> {
     const [foundUser] = await db
       .select()

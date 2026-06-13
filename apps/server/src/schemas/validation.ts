@@ -25,7 +25,7 @@ export const usernameSchema = z.string()
   .toLowerCase()
   .trim();
 
-export const nameSchema = z.string()
+const nameSchema = z.string()
   .min(1, 'Nom requis')
   .max(50, 'Nom maximum 50 caractères')
   .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, 'Nom: lettres, espaces, apostrophes, tirets uniquement')
@@ -40,7 +40,7 @@ export const schoolLevelSchema = z.enum([
   error: 'Niveau scolaire invalide'
 });
 
-export const dateOfBirthSchema = z.string()
+const dateOfBirthSchema = z.string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format date invalide (YYYY-MM-DD)')
   .refine((date) => {
     const parsedDate = new Date(date + 'T00:00:00Z'); // UTC pour éviter les problèmes de timezone
@@ -56,18 +56,18 @@ export const dateOfBirthSchema = z.string()
     return age >= 5 && age <= 19; // Âges éducation française
   }, 'Âge doit être entre 5 et 19 ans');
 
-export const chatContentSchema = z.string()
+const chatContentSchema = z.string()
   .min(1, 'Message requis')
   .max(2000, 'Message maximum 2000 caractères')
   .trim();
 
-export const subjectSchema = z.string()
+const subjectSchema = z.string()
   .min(1, 'Matière requise')
   .max(100, 'Matière maximum 100 caractères')
   .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, 'Matière: lettres, espaces, apostrophes, tirets uniquement')
   .trim();
 
-export const sessionIdSchema = z.string()
+const sessionIdSchema = z.string()
   .optional()
   .refine((val) => !val || val.length <= 100, 'SessionId trop long');
 
@@ -182,7 +182,6 @@ export const revenueCatWebhookSchema = z.object({
   }),
 });
 
-export type RevenueCatWebhookInput = z.infer<typeof revenueCatWebhookSchema>;
 
 // ============================================
 // UTILITAIRES VALIDATION
@@ -225,13 +224,3 @@ export function validateSchema<T>(
   }
 }
 
-/**
- * Types inférés pour TypeScript strict
- */
-export type RegisterInput = z.infer<typeof registerSchema>;
-export type LoginInput = z.infer<typeof loginSchema>;
-export type ChatSessionInput = z.infer<typeof chatSessionSchema>;
-export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
-export type StreamChatQueryInput = z.infer<typeof streamChatQuerySchema>;
-export type CreateChildInput = z.infer<typeof createChildSchema>;
-export type UpdateChildInput = z.infer<typeof updateChildSchema>;
