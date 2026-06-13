@@ -10,9 +10,12 @@ docker login ghcr.io         # image ai-service privée (GHCR), 1× — password
 pnpm setup                   # one-time : .env, secret, postgres, migrations, pull ai-service + modèles (~3,5 Go)
 pnpm dev            # infra Docker (postgres+qdrant+ai-service) + server :3000 + web :3002 + landing :3001
 pnpm dev:mobile     # Expo mobile (8081), terminal séparé
+pnpm doctor         # vérifie la stack complète end-to-end : docker, conteneurs, qdrant, ai-service, migrations, RAG roundtrip
 ```
 
 Stop infra : `pnpm dev:down`. API docs (dev) : http://localhost:3000/swagger
+
+> `pnpm dev` effectue un fail-fast sur l'infra Docker avant de lancer les apps : si postgres, qdrant ou ai-service est absent ou unhealthy, les apps ne démarrent pas. Lancer `pnpm doctor` pour le détail complet.
 
 ## Structure
 

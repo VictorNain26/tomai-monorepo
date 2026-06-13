@@ -20,6 +20,8 @@ Le backend tourne sur l'**host** via `pnpm dev`, pas en conteneur (pas de clash 
 
 `pnpm dev` (racine) lève la stack RAG : **Qdrant** (`:6333`) + **ai-service** BGE-M3 (`:8001`) + Postgres, et le backend sur l'**host**. Le backend tape le Qdrant local par défaut (`QDRANT_URL=http://qdrant:6333`) ; override Cloud via `QDRANT_URL`/`QDRANT_API_KEY` dans `.env`. Au 1er boot, ai-service télécharge ~3,5 Go de modèles (cache persistant `tomai_ai_service_hf_cache`).
 
+Pour diagnostiquer l'infra RAG complète (conteneurs, qdrant, ai-service, migrations, roundtrip embed→search) : `pnpm doctor` (racine). Chaque check affiche PASS/FAIL/SKIP avec la raison — exit code 0 uniquement si tout passe.
+
 Peupler l'index curriculum (lancé depuis l'host → ai-service sur `:8001`, qdrant sur `:6333`) :
 
 ```bash
