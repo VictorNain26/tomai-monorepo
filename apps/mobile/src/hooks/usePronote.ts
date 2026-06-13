@@ -27,7 +27,6 @@ import type {
   PronoteHomework,
   PronoteGrade,
   PronoteTimetableEntry,
-  PronoteChatContext,
 } from '@/services/pronote/pronote-types';
 
 // Cache TTLs in milliseconds
@@ -210,32 +209,6 @@ export function usePronote(userId: string) {
     [storeSetResourceMapping],
   );
 
-  const getChatContext = useCallback((): PronoteChatContext | undefined => {
-    if (!isConnected) return undefined;
-
-    const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(now);
-    todayEnd.setHours(23, 59, 59, 999);
-
-    const todayTimetable = timetable.filter((e) => {
-      const start = new Date(e.startDate);
-      return start >= todayStart && start <= todayEnd;
-    });
-
-    // Recent grades: last 10
-    const recentGrades = [...grades]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 10);
-
-    return {
-      homework: homework.length > 0 ? homework : undefined,
-      recentGrades: recentGrades.length > 0 ? recentGrades : undefined,
-      todayTimetable: todayTimetable.length > 0 ? todayTimetable : undefined,
-    };
-  }, [isConnected, homework, grades, timetable]);
-
   // Computed values (matching old useStudentPronote API)
   const upcomingHomework = useMemo(
     () => homework.filter((h) => !h.done).length,
@@ -270,7 +243,6 @@ export function usePronote(userId: string) {
     fetchHomework,
     fetchGrades,
     fetchTimetable,
-    getChatContext,
     setResourceMapping,
   };
 }
