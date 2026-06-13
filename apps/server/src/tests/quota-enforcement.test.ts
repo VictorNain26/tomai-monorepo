@@ -28,11 +28,16 @@ mock.module('../config/env', () => ({
 // Repository mock — returns whatever we seed into dbSelectResult. checkQuota /
 // checkDeckQuota are read-only, so only the finder methods are exercised.
 let dbSelectResult: Record<string, unknown>[] = [];
+let dbShouldThrow: Error | null = null;
 
 mock.module('../db/repositories/user-subscriptions.repository', () => ({
   userSubscriptionsRepository: {
-    findByUserId: mock(() => Promise.resolve(dbSelectResult[0])),
-    findByUserIdWithPlanName: mock(() => Promise.resolve(dbSelectResult[0])),
+    findByUserId: mock(() =>
+      dbShouldThrow ? Promise.reject(dbShouldThrow) : Promise.resolve(dbSelectResult[0]),
+    ),
+    findByUserIdWithPlanName: mock(() =>
+      dbShouldThrow ? Promise.reject(dbShouldThrow) : Promise.resolve(dbSelectResult[0]),
+    ),
   },
 }));
 
@@ -42,6 +47,7 @@ const { checkDeckQuota } = await import('../services/quota/quota-deck');
 
 beforeEach(() => {
   dbSelectResult = [];
+  dbShouldThrow = null;
 });
 
 describe('checkQuota (enforcement ON)', () => {
@@ -98,6 +104,18 @@ describe('checkQuota (enforcement ON)', () => {
     expect(result.windowTokensUsed).toBe(0);      // treated as reset
     expect(result.windowTokensRemaining).toBe(5_000);
   });
+
+  it('fails OPEN (allowed=true, free defaults) when the DB read throws', async () => {
+    // Deliberate billing-safety choice: a DB blip must not block paying users.
+    // This locks the direction of the fallback so a refactor can't silently
+    // flip it to fail-closed.
+    dbShouldThrow = new Error('connection terminated unexpectedly');
+    const result = await checkQuota('user-001');
+    expect(result.allowed).toBe(true);
+    expect(result.plan).toBe('free');
+    expect(result.windowLimit).toBe(5_000);
+    expect(result.dailyLimit).toBe(15_000);
+  });
 });
 
 describe('checkDeckQuota (enforcement ON)', () => {
@@ -134,5 +152,11 @@ describe('checkDeckQuota (enforcement ON)', () => {
     expect(result.allowed).toBe(true);
     expect(result.decksRemainingToday).toBe(5);
     expect(result.decksRemainingThisMonth).toBe(50);
+  });
+
+  it('fails OPEN (allowed=true) when the DB read throws', async () => {
+    dbShouldThrow = new Error('connection terminated unexpectedly');
+    const result = await checkDeckQuota('user-001');
+    expect(result.allowed).toBe(true);
   });
 });
