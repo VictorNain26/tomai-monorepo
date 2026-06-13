@@ -16,6 +16,25 @@
       ],
       "project": ["src/**/*.ts", "scripts/**/*.ts"]
     },
+    "apps/web": {
+      "entry": ["proxy.ts"],
+      "project": [
+        "app/**/*.{ts,tsx}",
+        "components/**/*.{ts,tsx}",
+        "lib/**/*.{ts,tsx}",
+        "proxy.ts"
+      ],
+      "ignoreDependencies": ["tailwindcss", "@repo/tokens"]
+    },
+    "apps/mobile": {
+      "entry": [
+        "src/app/**/*.{ts,tsx}",
+        "__mocks__/**/*.{ts,tsx}",
+        "scripts/**/*.{ts,js,mjs}"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,js}"],
+      "ignoreDependencies": ["react-native-pager-view", "@babel/core", "@babel/generator"]
+    },
     "packages/api": {
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]

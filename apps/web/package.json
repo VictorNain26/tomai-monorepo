@@ -15,7 +15,6 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
-    "@repo/api": "workspace:*",
     "@repo/tokens": "workspace:*",
     "@repo/ui": "workspace:*",
     "better-auth": "^1.6.13",
