@@ -70,7 +70,6 @@ export class ChatMessageService {
       attachedFile?: {
         fileName: string;
         fileId?: string;
-        geminiFileId?: string;
         mimeType?: string;
         fileSizeBytes?: number;
       };
@@ -80,7 +79,6 @@ export class ChatMessageService {
       attachedFiles?: Array<{
         fileName: string;
         fileId?: string;
-        geminiFileId?: string;
         mimeType?: string;
         fileSizeBytes?: number;
       }>;
@@ -200,7 +198,7 @@ export class ChatMessageService {
           typeof message.attachedFile === 'object' &&
           'fileName' in message.attachedFile &&
           message.attachedFile.fileName
-            ? message.attachedFile as { fileName: string; fileId?: string; geminiFileId?: string; mimeType?: string; fileSizeBytes?: number; }
+            ? message.attachedFile as { fileName: string; fileId?: string; mimeType?: string; fileSizeBytes?: number; }
             : null
       };
     } catch (_error) {
