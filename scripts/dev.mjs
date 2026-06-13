@@ -3,6 +3,7 @@
 // healthy -> apps host (Turbo, mobile exclu). Le backend tourne sur l'host (turbo),
 // pas en conteneur : pas de clash :3000.
 import { spawnSync, spawn } from "node:child_process";
+import { loadConfig, defaultExec, buildChecks, runChecks } from "./doctor-checks.mjs";
 
 function run(cmd, args) {
   const r = spawnSync(cmd, args, { stdio: "inherit" });
@@ -17,6 +18,14 @@ run("docker", ["compose", "up", "-d"]);
 
 console.log("[dev] attente postgres + qdrant (healthy)…");
 run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "120", "postgres", "qdrant"]);
+
+console.log("[dev] vérification infra (fail-fast) avant de lancer les apps…");
+const ctx = { config: loadConfig(), exec: defaultExec, fetchFn: fetch };
+const infra = await runChecks(buildChecks(ctx, { full: false }));
+if (infra.exitCode !== 0) {
+  console.error("[dev] infra incomplète — apps non lancées. Lance `pnpm doctor` pour le détail, puis `pnpm setup`/`docker compose up -d`.");
+  process.exit(1);
+}
 
 console.log("[dev] ai-service chauffe en arrière-plan ; lancement des apps (server, web, landing)…");
 const turbo = spawn("pnpm", ["exec", "turbo", "run", "dev", "--filter=!tom-mobile"], {
