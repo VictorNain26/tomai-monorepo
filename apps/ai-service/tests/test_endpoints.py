@@ -153,6 +153,8 @@ def test_embed_offloads_to_threadpool(client: TestClient) -> None:
     """Garde-fou: le handler /embed doit router l'inférence CPU-bound via
     run_in_threadpool (sinon il bloque l'event loop sous --workers 1).
     On espionne run_in_threadpool tout en le laissant s'exécuter réellement."""
+    # Local imports: top-level `import src.main` triggers FlagModel/CrossEncoder
+    # imports at collection time (before fixture patches), hanging the test suite.
     from fastapi.concurrency import run_in_threadpool
 
     import src.main as main_mod
@@ -170,6 +172,7 @@ def test_rerank_offloads_to_threadpool(client: TestClient) -> None:
     """Garde-fou: le handler /rerank doit router l'inférence CPU-bound via
     run_in_threadpool (sinon il bloque l'event loop sous --workers 1).
     On espionne run_in_threadpool tout en le laissant s'exécuter réellement."""
+    # Local imports: same reason as test_embed_offloads_to_threadpool above.
     from fastapi.concurrency import run_in_threadpool
 
     import src.main as main_mod

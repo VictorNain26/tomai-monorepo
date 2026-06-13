@@ -55,35 +55,37 @@ jobs:
               return;
             }
             const today = new Date().toISOString().slice(0, 10);
-            const title = `Veille BO — changements detectes (${today})`;
-            const lines = changes.map((c) => {
+            const STABLE_TITLE = 'Veille BO — programmes Eduscol';
+            const preview = changes.slice(0, 10);
+            const lines = preview.map((c) => {
               if (c.source === 'datagouv') {
                 return `- **[data.gouv.fr]** ${c.title || '(sans titre)'}\n  - ${c.url}`;
               }
               return `- **[Legifrance]** ${c.titre || ''}\n  - ${c.url_legifrance || ''}`;
             });
-            const body = `Le script de veille a detecte **${changes.length}** changement(s) sur les programmes officiels.\n\n${lines.join('\n')}\n\n_Genere automatiquement par \`.github/workflows/veille_bo.yml\`._`;
+            const suffix = changes.length > 10 ? `\n_(+ ${changes.length - 10} autre(s) non affiches)_` : '';
+            const summary = `## Releve du ${today}\n\n**${changes.length}** changement(s) detecte(s) sur les programmes officiels.\n\n${lines.join('\n')}${suffix}\n\n_Genere automatiquement par \`.github/workflows/veille_bo.yml\`._`;
             const existing = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
               labels: 'veille-bo',
             });
-            const match = existing.data.find((i) => i.title === title);
+            const match = existing.data.find((i) => i.title === STABLE_TITLE);
             if (match) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: match.number,
-                body,
+                body: summary,
               });
-              core.info(`Issue #${match.number} mise a jour.`);
+              core.info(`Issue #${match.number} mise a jour (commentaire ajoute).`);
             } else {
               const created = await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title,
-                body,
+                title: STABLE_TITLE,
+                body: summary,
                 labels: ['veille-bo'],
               });
               core.info(`Issue #${created.data.number} creee.`);
