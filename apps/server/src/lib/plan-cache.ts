@@ -22,7 +22,7 @@ const planCache = {
  * Lazy-initialize the plan cache from the database.
  * Safe to call multiple times — no-op after first success.
  */
-export async function initPlanCache(): Promise<void> {
+async function initPlanCache(): Promise<void> {
   if (planCache.initialized) return;
 
   const plans = await db
@@ -40,15 +40,6 @@ export async function initPlanCache(): Promise<void> {
 
   planCache.initialized = true;
   logger.info('[PlanCache] Initialized', { operation: 'plan-cache:init' });
-}
-
-/**
- * Clear the cache (call when plans are mutated at runtime — rare).
- */
-export function clearPlanCache(): void {
-  planCache.freePlanId = null;
-  planCache.premiumPlanId = null;
-  planCache.initialized = false;
 }
 
 export async function getFreePlanId(): Promise<string | null> {

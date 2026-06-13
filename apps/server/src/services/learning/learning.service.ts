@@ -38,7 +38,7 @@ import {
 } from './learning-errors.js';
 import { validateCardContent } from './card-validation.js';
 
-export interface CreateDeckWithCardsInput {
+interface CreateDeckWithCardsInput {
   userId: string;
   deck: Omit<NewLearningDeck, 'cardCount' | 'userId'>;
   cards: Array<{
@@ -47,13 +47,13 @@ export interface CreateDeckWithCardsInput {
   }>;
 }
 
-export interface UpdateDeckInput {
+interface UpdateDeckInput {
   title?: string;
   description?: string;
   subject?: string;
 }
 
-export interface AddCardsInput {
+interface AddCardsInput {
   cards: Array<{
     cardType: CardType;
     content: unknown;
@@ -62,7 +62,7 @@ export interface AddCardsInput {
   startPosition?: number;
 }
 
-export interface UpdateCardInput {
+interface UpdateCardInput {
   cardType?: CardType;
   content?: unknown;
   position?: number;

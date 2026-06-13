@@ -5,7 +5,7 @@ import type { EducationLevelType } from '../types/education.types.js';
 // Configuration
 // ============================================================================
 
-export const SUPPORTED_MIME_TYPES = {
+const SUPPORTED_MIME_TYPES = {
   image: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
   pdf: ['application/pdf'],
   document: [
@@ -21,29 +21,6 @@ export const SUPPORTED_MIME_TYPES = {
 } as const;
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB (Scaleway optimal)
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface PresignedUploadResponse {
-  success: boolean;
-  fileId?: string;
-  uploadUrl?: string;
-  storageKey?: string;
-  expiresAt?: string;
-  error?: string;
-}
-
-export interface ConfirmUploadResponse {
-  success: boolean;
-  fileId?: string;
-  /** Inline audio transcription (Gladia EU) returned to the client when the
-   *  uploaded file is an audio recording. Other file types are processed on
-   *  the chat path (Mistral vision for images, OCR'd text for PDFs). */
-  transcription?: string;
-  error?: string;
-}
 
 // ============================================================================
 // Helpers

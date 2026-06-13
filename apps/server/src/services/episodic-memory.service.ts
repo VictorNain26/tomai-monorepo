@@ -29,7 +29,7 @@ import { episodicMemoryRepository } from '../db/repositories/episodic-memory.rep
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
 import { logger } from '../lib/observability.js';
 
-export const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-05-18';
+const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-05-18';
 
 // Prompt cache stable — bump version pour invalider
 const EPISODIC_CACHE_KEY = `episodic-extract-${EPISODIC_EXTRACTION_PROMPT_VERSION}`;

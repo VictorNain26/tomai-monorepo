@@ -20,7 +20,7 @@ import type { CardType } from '../types.js';
  * Templates compacts pour chaque type de carte
  * Utilisés dans le prompt pour guider la structure de sortie
  */
-export const CARD_TEMPLATES: Record<CardType, string> = {
+const CARD_TEMPLATES: Record<CardType, string> = {
   // Pédagogique - théorie avant pratique
   concept: 'concept: {title, explanation, keyPoints[2-4], example?, formula?}',
 
@@ -69,9 +69,3 @@ export function getTemplatesForTypes(types: CardType[]): string {
     .join('\n');
 }
 
-/**
- * Vérifie si un type de carte existe dans les templates
- */
-export function isValidCardType(type: string): type is CardType {
-  return type in CARD_TEMPLATES;
-}

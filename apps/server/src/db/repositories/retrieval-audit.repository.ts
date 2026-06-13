@@ -14,7 +14,7 @@ import { db } from '../connection.js';
 import { retrievalAudit, type NewRetrievalAudit } from '../schema/audit.schema.js';
 import { logger } from '../../lib/observability.js';
 
-export interface LogRetrievalInput {
+interface LogRetrievalInput {
   userId: string | null;
   sessionId?: string | null;
   /** Raw query string — hashed before insert, never persisted as-is. */
@@ -31,7 +31,7 @@ function hashQuery(query: string): string {
   return createHash('sha256').update(query.trim().toLowerCase()).digest('hex');
 }
 
-export class RetrievalAuditRepository {
+class RetrievalAuditRepository {
   /**
    * Fire-and-forget insert. The caller is expected to await this with
    * `void` so a DB blip never blocks the retrieval response path — we log

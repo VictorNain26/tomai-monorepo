@@ -47,19 +47,19 @@ const SCALEWAY_CONFIG = {
 // Types
 // ============================================================================
 
-export interface PresignedUploadResult {
+interface PresignedUploadResult {
   uploadUrl: string;
   fileId: string;
   storageKey: string;
   expiresAt: Date;
 }
 
-export interface PresignedDownloadResult {
+interface PresignedDownloadResult {
   downloadUrl: string;
   expiresAt: Date;
 }
 
-export interface StoredFileInfo {
+interface StoredFileInfo {
   storageKey: string;
   bucket: string;
   region: string;
@@ -128,7 +128,7 @@ function getS3Client(): S3Client {
  *
  * @see https://github.com/aws/aws-sdk-js-v3/blob/main/packages/s3-request-presigner/README.md
  */
-export async function generatePresignedUploadUrl(params: {
+async function generatePresignedUploadUrl(params: {
   userId: string;
   fileName: string;
   mimeType: string;
@@ -196,7 +196,7 @@ export async function generatePresignedUploadUrl(params: {
 /**
  * Génère une URL présignée pour téléchargement
  */
-export async function generatePresignedDownloadUrl(
+async function generatePresignedDownloadUrl(
   storageKey: string
 ): Promise<PresignedDownloadResult> {
   const client = getS3Client();
@@ -227,7 +227,7 @@ export async function generatePresignedDownloadUrl(
 /**
  * Vérifie qu'un fichier existe et récupère ses métadonnées
  */
-export async function getFileInfo(storageKey: string): Promise<StoredFileInfo | null> {
+async function getFileInfo(storageKey: string): Promise<StoredFileInfo | null> {
   const client = getS3Client();
 
   try {
@@ -288,7 +288,7 @@ export async function deleteFile(storageKey: string): Promise<boolean> {
 /**
  * Récupère le contenu d'un fichier (pour envoi à Gemini)
  */
-export async function getFileContent(storageKey: string): Promise<{
+async function getFileContent(storageKey: string): Promise<{
   content: Buffer;
   contentType: string;
 } | null> {
@@ -331,7 +331,7 @@ export async function getFileContent(storageKey: string): Promise<{
 /**
  * Vérifie si le service Scaleway est correctement configuré
  */
-export function isConfigured(): boolean {
+function isConfigured(): boolean {
   return !!(
     env.SCALEWAY_ACCESS_KEY &&
     env.SCALEWAY_SECRET_KEY &&
@@ -342,7 +342,7 @@ export function isConfigured(): boolean {
 /**
  * Health check du service
  */
-export async function healthCheck(): Promise<{
+async function healthCheck(): Promise<{
   status: 'healthy' | 'unhealthy' | 'not_configured';
   message: string;
 }> {

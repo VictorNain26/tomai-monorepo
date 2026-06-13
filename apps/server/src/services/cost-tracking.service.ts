@@ -23,9 +23,9 @@ import { costTracking } from '../db/schema.js';
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
 
-export type AiOperation = 'chat' | 'summarization' | 'auto-title' | 'card-generation' | 'intent-classify' | 'document-analysis';
+type AiOperation = 'chat' | 'summarization' | 'auto-title' | 'card-generation' | 'intent-classify' | 'document-analysis';
 
-export interface CostRecordInput {
+interface CostRecordInput {
   userId: string;
   sessionId?: string;
   aiModel: string;

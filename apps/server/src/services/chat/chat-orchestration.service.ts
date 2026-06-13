@@ -26,7 +26,7 @@ import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { ChatStreamChunk, PronoteContext } from './chat-streaming-types.js';
 
-export interface ChatStreamRequest {
+interface ChatStreamRequest {
   userId: string;
   content: string;
   sessionId?: string;
@@ -45,7 +45,6 @@ interface SessionContext {
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
-    attachedFile: { geminiFileId: string; mimeType?: string } | null;
   }>;
 }
 
@@ -233,24 +232,11 @@ class ChatOrchestrationService {
 
     const formattedHistory = sessionHistory
       .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-      .map(msg => {
-        const attachedFile = msg.attachedFile as {
-          fileName?: string;
-          fileId?: string;
-          geminiFileId?: string;
-          mimeType?: string;
-          fileSizeBytes?: number;
-        } | null;
-
-        return {
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-          timestamp: msg.createdAt.toISOString(),
-          attachedFile: attachedFile?.geminiFileId
-            ? { geminiFileId: attachedFile.geminiFileId, mimeType: attachedFile.mimeType }
-            : null,
-        };
-      });
+      .map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: msg.createdAt.toISOString(),
+      }));
 
     return {
       sessionId,
@@ -272,14 +258,12 @@ class ChatOrchestrationService {
     attachedFileInfo: {
       fileName: string;
       fileId?: string;
-      geminiFileId?: string;
       mimeType?: string;
       fileSizeBytes?: number;
     } | null;
     attachedFileInfos?: Array<{
       fileName: string;
       fileId?: string;
-      geminiFileId?: string;
       mimeType?: string;
       fileSizeBytes?: number;
     }>;

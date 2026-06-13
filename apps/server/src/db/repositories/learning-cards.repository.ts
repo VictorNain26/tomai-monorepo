@@ -20,7 +20,7 @@ import type { PgTransaction } from 'drizzle-orm/pg-core';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DbOrTx = typeof db | PgTransaction<any, any, any>;
 
-export class LearningCardsRepository {
+class LearningCardsRepository {
   async findById(cardId: string): Promise<LearningCard | null> {
     const [card] = await db
       .select()

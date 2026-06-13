@@ -27,7 +27,6 @@ export interface FileAttachment {
   sizeBytes: number;
   type: FileType;
   preview?: string;
-  geminiFileId?: string;
   transcription?: string;
 }
 

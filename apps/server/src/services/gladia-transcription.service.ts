@@ -33,7 +33,7 @@ export interface GladiaTranscriptionResult {
   error?: string;
 }
 
-export interface GladiaTranscriptionOptions {
+interface GladiaTranscriptionOptions {
   /** Langue cible (code ISO 2 lettres: fr, en, es, de) */
   language?: string;
   /** Activer la détection automatique de langue */
@@ -83,7 +83,7 @@ interface GladiaTranscriptionResponse {
 // Service
 // ============================================
 
-export class GladiaTranscriptionService {
+class GladiaTranscriptionService {
   private readonly apiKey: string;
   private readonly baseUrl = 'https://api.gladia.io/v2';
 

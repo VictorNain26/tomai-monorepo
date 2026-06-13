@@ -10,7 +10,7 @@
 
 import type { EducationLevelType } from '../../../types/index.js';
 
-export type CycleType = 'cycle2' | 'cycle3' | 'cycle4' | 'lycee';
+type CycleType = 'cycle2' | 'cycle3' | 'cycle4' | 'lycee';
 
 /**
  * Mapping niveau → cycle
@@ -33,7 +33,7 @@ const LEVEL_TO_CYCLE: Record<EducationLevelType, CycleType> = {
 /**
  * Retourne le cycle pour un niveau donné
  */
-export function getCycleFromLevel(level: EducationLevelType): CycleType {
+function getCycleFromLevel(level: EducationLevelType): CycleType {
   return LEVEL_TO_CYCLE[level];
 }
 
@@ -76,10 +76,3 @@ export function generateLevelAdaptation(level: EducationLevelType): string {
   return adaptations[cycle];
 }
 
-/**
- * Vérifie si le niveau nécessite KaTeX simplifié
- */
-export function needsSimplifiedKaTeX(level: EducationLevelType): boolean {
-  const cycle = getCycleFromLevel(level);
-  return cycle === 'cycle2' || cycle === 'cycle3';
-}

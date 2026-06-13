@@ -10,7 +10,7 @@
  *   ne pas casser le préfixe partagé.
  */
 
-export interface IdentityParams {
+interface IdentityParams {
   studentName: string;
   levelText: string;
   subject?: string;
@@ -52,10 +52,3 @@ ${contextLine}
 </student>`;
 }
 
-/**
- * @deprecated Utiliser generateIdentityCore + generateStudentContext.
- * Conservé pour compatibilité ascendante si d'autres appelants existent.
- */
-export function generateIdentityPrompt(params: IdentityParams): string {
-  return `${generateIdentityCore()}\n\n${generateStudentContext(params)}`;
-}

@@ -12,12 +12,6 @@ import { user, session as sessionTable } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import type { ElysiaAuthenticatedUser } from '../types/index.js';
 
-export interface AuthenticatedContext {
-  user: ElysiaAuthenticatedUser;
-  session: Record<string, unknown>;
-}
-
-
 /**
  * Middleware d'authentification avec validation DB stricte
  *

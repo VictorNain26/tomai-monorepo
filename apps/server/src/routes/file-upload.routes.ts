@@ -13,7 +13,7 @@ import {
   buildEducationalContext,
 } from './file-upload.helpers.js';
 
-export type { PresignedUploadResponse, ConfirmUploadResponse } from './file-upload.helpers.js';
+;
 
 export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
   .use(authMacro)

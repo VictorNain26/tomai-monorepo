@@ -25,19 +25,9 @@ export interface MessageDetails {
   attachedFile?: {
     fileName: string;
     fileId?: string;
-    geminiFileId?: string;
     mimeType?: string;
     fileSizeBytes?: number;
   } | null;
-}
-
-export interface ProgressUpdate {
-  userId: string;
-  subject: string;
-  concept: string;
-  masteryLevel: number;
-  practiceTime: number;
-  successRate: number;
 }
 
 export interface UserSession {

@@ -7,7 +7,7 @@ import type { Context } from 'elysia';
 import { logger } from '../lib/observability';
 import { isProduction, isDevelopment } from '../config/env';
 
-export interface RateLimitConfig {
+interface RateLimitConfig {
   maxRequests: number;
   windowSeconds: number;
   skipSuccessfulRequests?: boolean;

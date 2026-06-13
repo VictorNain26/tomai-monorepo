@@ -9,7 +9,7 @@ type ChildWithStatus = {
   status: string;
 };
 
-export type FamilyStatusResult = {
+type FamilyStatusResult = {
   plan: string;
   status: string;
   billing: {
@@ -23,7 +23,7 @@ export type FamilyStatusResult = {
   children: ChildWithStatus[];
 };
 
-export class SubscriptionService {
+class SubscriptionService {
   async getFamilyStatus(parentId: string): Promise<FamilyStatusResult> {
     const [billing, children] = await Promise.all([
       subscriptionRepository.findFamilyBilling(parentId),

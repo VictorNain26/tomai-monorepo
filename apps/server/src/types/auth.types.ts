@@ -9,6 +9,6 @@ export type User = ElysiaAuthenticatedUser;
 
 export type {
   ElysiaAuthenticatedUser,
-  BetterAuthSession,
-  ElysiaAuthContext
+  
+  
 } from './index.js';

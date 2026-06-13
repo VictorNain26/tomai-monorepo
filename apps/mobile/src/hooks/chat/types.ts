@@ -26,7 +26,6 @@ export interface ChatMessage {
 export interface AttachedFileInfo {
   fileName: string;
   fileId?: string;
-  geminiFileId?: string;
   mimeType?: string;
   fileSizeBytes?: number;
   /** Local image preview URI (client-side only, not persisted) */

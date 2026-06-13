@@ -7,7 +7,7 @@ import { eq, and, count } from 'drizzle-orm';
 import { db } from '../connection.js';
 import { sessionFiles, files } from '../schema.js';
 
-export class SessionFilesRepository {
+class SessionFilesRepository {
   /**
    * Attacher un fichier à une session (idempotent)
    */

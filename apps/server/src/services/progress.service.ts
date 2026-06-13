@@ -9,7 +9,7 @@ import { db } from '../db/connection';
 import { studySessions, messages, costTracking } from '../db/schema';
 import { logger } from '../lib/observability';
 
-export interface StudentStats {
+interface StudentStats {
   totalSessions: number;
   totalStudyTime: number; // in minutes
   conceptsLearned: number;
@@ -21,7 +21,7 @@ export interface StudentStats {
   monthlyActivity: number;
 }
 
-export interface SessionOverview {
+interface SessionOverview {
   id: string;
   subject: string;
   startedAt: Date;
@@ -31,14 +31,14 @@ export interface SessionOverview {
   durationMinutes: number;
 }
 
-export interface CostTracking {
+interface CostTracking {
   date: string;
   totalMessages: number;
   totalTokens: number;
   estimatedCost: number;
 }
 
-export interface MonthlyCost {
+interface MonthlyCost {
   month: string;
   year: number;
   totalCost: number;
@@ -46,7 +46,7 @@ export interface MonthlyCost {
   totalTokens: number;
 }
 
-export interface StudentPerformance {
+interface StudentPerformance {
   averageFrustration: number;
   totalMessagesExchanged: number;
   studyConsistency: 'Regular' | 'Irregular' | 'Excellent';
@@ -54,7 +54,7 @@ export interface StudentPerformance {
   engagementLevel: 'High' | 'Medium' | 'Low';
 }
 
-export class ProgressService {
+class ProgressService {
   /**
    * Get comprehensive student statistics
    */

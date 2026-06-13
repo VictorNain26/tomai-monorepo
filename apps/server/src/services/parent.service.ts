@@ -12,7 +12,7 @@ import { ParentDashboardService } from './parent/parent-dashboard.service';
 import type { ChildInfo, ParentDashboardMetrics, StudentProgress, SessionSummary, SessionMessage } from './parent/parent-types';
 
 // Re-export types
-export type { ChildInfo, ParentDashboardMetrics, StudentProgress, SessionSummary, SessionMessage } from './parent/parent-types';
+;
 
 export class ParentService {
   private readonly dashboard = new ParentDashboardService();
