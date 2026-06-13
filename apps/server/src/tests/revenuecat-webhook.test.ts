@@ -363,14 +363,22 @@ describe('RevenueCat Webhook Handler', () => {
     });
 
     it('should return 500 when a valid event handler throws', async () => {
-      // Mock the billing service to throw on one of the event handlers
-      // For simplicity, we test the error handling path
+      // Authenticated, deduped, schema-valid event whose DB write fails:
+      // the handler must surface that as 500, not swallow it.
+      mockDbSelectResult = [{ id: 'plan-premium' }];
+      mockOnConflictDoUpdate.mockImplementationOnce(() =>
+        Promise.reject(new Error('db write failed')),
+      );
       const app = createTestApp();
-      const event = makeRevenueCatEvent('TEST');
+      const event = makeRevenueCatEvent('INITIAL_PURCHASE', {
+        subscriber_attributes: {
+          children_ids: { value: '["child-001"]', updated_at_ms: Date.now() },
+        },
+      });
       const req = makeRCRequest(event, TEST_WEBHOOK_SECRET);
       const res = await app.handle(req);
-      // TEST event succeeds; other handlers would fail here
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(500);
+      expect(mockOnConflictDoUpdate).toHaveBeenCalled();
     });
   });
 });
