@@ -60,4 +60,3 @@ function Skeleton({
 }
 
 export { Skeleton };
-export type { SkeletonProps };

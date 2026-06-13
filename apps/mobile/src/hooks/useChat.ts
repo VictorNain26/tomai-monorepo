@@ -31,7 +31,7 @@ import { useOfflineCache } from './useOfflineCache';
 import { useNetworkStatus } from './useNetworkStatus';
 
 // Re-export types for consumers
-export type { ChatMessage, ChatFileAttachment, AttachedFileInfo, CreatedDeck } from './chat/types';
+export type { ChatMessage, ChatFileAttachment } from './chat/types';
 
 /** Generate a unique message ID (Hermes-safe, no crypto global) */
 function generateMessageId(role: 'user' | 'assistant'): string {

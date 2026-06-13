@@ -16,15 +16,6 @@ import { getTreaty, unwrap } from '@repo/api';
 // TYPES
 // ============================================================================
 
-export interface TextToSpeechState {
-  /** Is currently speaking (derived from player status, exposed for consumers) */
-  isSpeaking: boolean;
-  /** Is loading audio from API */
-  isLoading: boolean;
-  /** Error message if any */
-  error: string | null;
-}
-
 /**
  * Internal state — `isSpeaking` is derived during render, not stored.
  * `currentText` doubles as render-input (for derived `isSpeaking`) and as the
@@ -52,7 +43,7 @@ interface TTSSynthesizeResponse {
   error?: string;
 }
 
-export interface TTSOptions {
+interface TTSOptions {
   /** Language for voice selection */
   language?: 'fr' | 'en' | 'es' | 'de';
   /** School level to adapt voice */

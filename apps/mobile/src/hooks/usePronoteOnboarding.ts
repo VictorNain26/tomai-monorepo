@@ -37,7 +37,7 @@ import {
 // TYPES
 // ============================================================================
 
-export type OnboardingStep =
+type OnboardingStep =
   | 'welcome'
   | 'scan'
   | 'pin'
@@ -53,7 +53,7 @@ export interface ChildPinData {
   pinValue: string;
 }
 
-export interface UsePronoteOnboardingResult {
+interface UsePronoteOnboardingResult {
   // ---- State ----
   step: OnboardingStep;
   qrData: QrCodeData | null;

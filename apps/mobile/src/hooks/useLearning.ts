@@ -17,14 +17,11 @@ type DeckById = ReturnType<LearningApi['decks']>;
 export type LearningDeck = ResponseData<LearningApi['decks']['get']>['decks'][number];
 export type LearningCard = ResponseData<DeckById['get']>['cards'][number];
 export type CardType = LearningCard['cardType'];
-export type DeckSource = LearningDeck['source'];
-
-export type CreateDeckRequest = NonNullable<Parameters<LearningApi['decks']['post']>[0]>;
-export type GenerateDeckRequest = NonNullable<Parameters<LearningApi['generate']['post']>[0]>;
+type GenerateDeckRequest = NonNullable<Parameters<LearningApi['generate']['post']>[0]>;
 export type GenerateDeckResponse = ResponseData<LearningApi['generate']['post']>;
 
 export type LearningSubject = ResponseData<LearningApi['subjects']['get']>['subjects'][number];
-export type LearningDomaine = ResponseData<LearningApi['topics']['get']>['domaines'][number];
+type LearningDomaine = ResponseData<LearningApi['topics']['get']>['domaines'][number];
 
 /** School level accepted by the discovery endpoints (from the contract). */
 type LevelQuery = NonNullable<Parameters<LearningApi['subjects']['get']>[0]>['query'];
@@ -55,11 +52,6 @@ async function fetchDeck(id: string): Promise<{ deck: LearningDeck; cards: Learn
 
 async function deleteDeck(id: string): Promise<void> {
   unwrap(await getTreaty().api.learning.decks({ id }).delete());
-}
-
-async function createDeck(data: CreateDeckRequest): Promise<LearningDeck> {
-  const { deck } = unwrap(await getTreaty().api.learning.decks.post(data));
-  return deck;
 }
 
 async function fetchSubjects(niveau: SchoolLevel): Promise<LearningSubject[]> {
@@ -101,22 +93,11 @@ export function useDeck(id: string) {
   });
 }
 
-export function useDeleteDeck() {
+function useDeleteDeck() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteDeck,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.decks });
-    },
-  });
-}
-
-export function useCreateDeck() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createDeck,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.decks });
     },

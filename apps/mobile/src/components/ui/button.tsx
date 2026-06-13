@@ -170,5 +170,4 @@ function Button({
   );
 }
 
-export { Button, buttonVariants, buttonTextVariants };
-export type { ButtonProps, HapticFeedback };
+export { Button };

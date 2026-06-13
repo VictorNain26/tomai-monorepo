@@ -2,5 +2,5 @@
  * Pronote Components - Shared between student and parent views
  */
 
-export { GradesView, type Grade } from './GradesView';
-export { HomeworkView, type Homework } from './HomeworkView';
+export { GradesView } from './GradesView';
+export { HomeworkView } from './HomeworkView';

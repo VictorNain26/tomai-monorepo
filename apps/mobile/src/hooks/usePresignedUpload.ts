@@ -18,9 +18,9 @@ type UploadApi = ReturnType<typeof getTreaty>['api']['upload'];
 export type PresignResponse = ResponseData<UploadApi['presign']['post']>;
 export type ConfirmResponse = ResponseData<ReturnType<UploadApi['confirm']>['post']>;
 
-export type FileType = 'image' | 'pdf' | 'document' | 'audio' | 'unknown';
+type FileType = 'image' | 'pdf' | 'document' | 'audio' | 'unknown';
 
-export interface FileAttachment {
+interface FileAttachment {
   fileId: string;
   fileName: string;
   mimeType: string;

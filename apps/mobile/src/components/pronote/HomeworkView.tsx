@@ -25,7 +25,7 @@ import { formatDateWithDay, isOverdue, getDaysUntil } from '@/lib/pronote-helper
 // TYPES
 // ============================================================================
 
-export interface Homework {
+interface Homework {
   id: string;
   subject: string;
   description: string;

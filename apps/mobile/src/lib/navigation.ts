@@ -51,7 +51,7 @@ export function useTabScreenOptions(tabBackground: string): Partial<BottomTabScr
   );
 }
 
-export interface TabBarConfig {
+interface TabBarConfig {
   tabColors: {
     active: string;
     inactive: string;

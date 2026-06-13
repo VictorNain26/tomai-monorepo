@@ -136,27 +136,3 @@ export const userPreferences = sqliteTable('user_preferences', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
-// ============================================================================
-// TYPE EXPORTS
-// ============================================================================
-
-export type ChatMessage = typeof chatMessages.$inferSelect;
-export type NewChatMessage = typeof chatMessages.$inferInsert;
-
-export type ChatSession = typeof chatSessions.$inferSelect;
-export type NewChatSession = typeof chatSessions.$inferInsert;
-
-export type LearningDeck = typeof learningDecks.$inferSelect;
-export type NewLearningDeck = typeof learningDecks.$inferInsert;
-
-export type FsrsState = typeof fsrsState.$inferSelect;
-export type NewFsrsState = typeof fsrsState.$inferInsert;
-
-export type PendingAction = typeof pendingActions.$inferSelect;
-export type NewPendingAction = typeof pendingActions.$inferInsert;
-
-export type SyncMetadata = typeof syncMetadata.$inferSelect;
-export type NewSyncMetadata = typeof syncMetadata.$inferInsert;
-
-export type UserPreference = typeof userPreferences.$inferSelect;
-export type NewUserPreference = typeof userPreferences.$inferInsert;

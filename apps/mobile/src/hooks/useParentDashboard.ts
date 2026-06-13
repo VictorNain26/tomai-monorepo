@@ -10,9 +10,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTreaty, unwrap, type ResponseData } from '@repo/api';
 import { useUser } from '@/lib/auth';
 
-// Re-export types for consumers
-export type { EducationLevelType } from '@/constants/levels';
-
 // ============================================================================
 // TYPES — derived from the server contract (single source of truth)
 // ============================================================================
@@ -33,7 +30,7 @@ export type ChildMetrics = DashboardResponse['metrics'][number];
 
 type EducationApi = ReturnType<typeof getTreaty>['api']['education'];
 type LevelsResponse = ResponseData<EducationApi['levels']['get']>;
-export type SchoolLevel = LevelsResponse['levels'][number];
+type SchoolLevel = LevelsResponse['levels'][number];
 
 // ============================================================================
 // QUERY KEYS

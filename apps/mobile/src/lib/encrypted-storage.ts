@@ -26,7 +26,7 @@ import * as SecureStore from 'expo-secure-store';
 
 export const CACHE_KEY_SECURE_STORE_NAME = 'TOMIA_CACHE_KEY';
 
-export interface EncryptedStorage {
+interface EncryptedStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;

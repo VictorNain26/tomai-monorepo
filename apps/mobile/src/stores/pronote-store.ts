@@ -24,7 +24,7 @@ const mmkvStorage: StateStorage = {
   removeItem: (name: string) => { getMMKV().remove(name); },
 };
 
-export type PronoteFetchKey = 'homework' | 'grades' | 'timetable';
+type PronoteFetchKey = 'homework' | 'grades' | 'timetable';
 
 interface PronoteState {
   isConnected: boolean;

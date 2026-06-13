@@ -91,7 +91,7 @@ const encryptedStorage = createEncryptedStorage();
  * AsyncStorage persister for query cache.
  * Stores query cache in AsyncStorage for offline access, encrypted at rest.
  */
-export const asyncStoragePersister = createAsyncStoragePersister({
+const asyncStoragePersister = createAsyncStoragePersister({
   storage: encryptedStorage,
   key: 'TOMIA_QUERY_CACHE',
   // Throttle writes to avoid excessive storage operations
@@ -116,20 +116,6 @@ export const persistOptions = {
 // ============================================================================
 
 /**
- * Check if the app is currently online.
- */
-export function isOnline(): boolean {
-  return onlineManager.isOnline();
-}
-
-/**
- * Manually set online status (useful for testing).
- */
-export function setOnline(online: boolean): void {
-  onlineManager.setOnline(online);
-}
-
-/**
  * Clear all persisted query cache.
  * Use on logout or data reset.
  */
@@ -138,26 +124,3 @@ export async function clearQueryCache(): Promise<void> {
   await AsyncStorage.removeItem('TOMIA_QUERY_CACHE');
 }
 
-/**
- * Invalidate all queries and refetch.
- * Use when user pulls to refresh.
- */
-export async function refreshAllQueries(): Promise<void> {
-  await queryClient.invalidateQueries();
-}
-
-/**
- * Get cache statistics for debugging.
- */
-export function getQueryCacheStats(): {
-  queryCount: number;
-  mutationCount: number;
-} {
-  const queryCache = queryClient.getQueryCache();
-  const mutationCache = queryClient.getMutationCache();
-
-  return {
-    queryCount: queryCache.getAll().length,
-    mutationCount: mutationCache.getAll().length,
-  };
-}

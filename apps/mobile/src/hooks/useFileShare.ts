@@ -21,7 +21,7 @@ import { getTreaty, unwrap } from '@repo/api';
 // TYPES
 // ============================================================================
 
-export interface FileShareState {
+interface FileShareState {
   isDownloading: boolean;
   isSharing: boolean;
   progress: number;

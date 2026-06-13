@@ -13,7 +13,7 @@ export type SubjectColor =
   | 'blue' | 'violet' | 'purple' | 'emerald' | 'amber'
   | 'rose' | 'yellow' | 'slate' | 'teal' | 'gray';
 
-export interface SubjectMetadata {
+interface SubjectMetadata {
   name: string;
   description: string;
   icon: string;

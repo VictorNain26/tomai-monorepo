@@ -1,70 +1,38 @@
 // Hooks - Export central
 
-export { useChat, type ChatMessage, type ChatFileAttachment, type CreatedDeck } from './useChat';
+export { useChat, type ChatMessage, type ChatFileAttachment } from './useChat';
 export { useConversations, type Conversation } from './useConversations';
-export { useNetworkStatus } from './useNetworkStatus';
-export { useOfflineCache } from './useOfflineCache';
-export {
-  usePresignedUpload,
-  type FileAttachment,
-  type FileType,
-} from './usePresignedUpload';
+export { usePresignedUpload } from './usePresignedUpload';
 export {
   useStudentDashboard,
-  type TokenUsage,
 } from './useStudentDashboard';
 export {
   useLearning,
-  useDecks,
   useDeck,
-  useDeleteDeck,
-  useCreateDeck,
-  useLearningSubjects,
-  useLearningTopics,
-  type LearningDeck,
-  type LearningCard,
   type CardType,
-  type CreateDeckRequest,
-  type LearningSubject,
-  type LearningDomaine,
 } from './useLearning';
 export {
   useParentDashboard,
   type IChild,
-  type ICreateChildData,
-  type SchoolLevel,
-  type EducationLevelType,
 } from './useParentDashboard';
 export { usePronote } from './usePronote';
 export {
   useTheme,
   type ThemeMode,
-  type ColorScheme,
 } from './useTheme';
 export {
   useSubscription,
   useIsPro,
-  type SubscriptionState,
-  type SubscriptionActions,
 } from './useSubscription';
 export {
   useVoiceInput,
-  type VoiceInputState,
 } from './useVoiceInput';
 export {
   useTextToSpeech,
-  type TextToSpeechState,
-  type TTSOptions,
 } from './useTextToSpeech';
 export {
   useFileShare,
-  type FileShareState,
 } from './useFileShare';
-export {
-  useChildTokenUsage,
-  type ChildWindowUsage,
-  type ChildDailyUsage,
-} from './useChildTokenUsage';
 export {
   useThemeColors,
   type ThemeColors,
@@ -74,9 +42,7 @@ export {
   useReviewCard,
   useDeckStats,
   type FSRSRating,
-  type DueCard,
   type ReviewResult,
-  type DeckStats,
 } from './useFsrs';
 export { useDueSummary } from './useDueSummary';
 export {
@@ -85,5 +51,4 @@ export {
   useAttachFile,
   useDetachFile,
   type LibraryFile,
-  type SessionFile,
 } from './useFiles';

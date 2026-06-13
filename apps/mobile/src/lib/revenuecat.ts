@@ -42,13 +42,6 @@ export const PRODUCT_IDS = {
   YEARLY: 'tomia_yearly', // 149,99€/an - tous enfants
 } as const;
 
-export const PRODUCT_MAX_CHILDREN: Record<string, number> = {
-  [PRODUCT_IDS.FAMILY_1]: 1,
-  [PRODUCT_IDS.FAMILY_2]: 2,
-  [PRODUCT_IDS.FAMILY_3]: 3,
-  [PRODUCT_IDS.FAMILY_5]: 5,
-  [PRODUCT_IDS.YEARLY]: 10,
-};
 
 // ============================================================================
 // INITIALIZATION
@@ -94,18 +87,6 @@ export async function getCustomerInfo(): Promise<CustomerInfo> {
   return Purchases.getCustomerInfo();
 }
 
-export async function hasProEntitlement(): Promise<boolean> {
-  const customerInfo = await Purchases.getCustomerInfo();
-  return customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
-}
-
-export async function getSubscriptionExpirationDate(): Promise<Date | null> {
-  const customerInfo = await Purchases.getCustomerInfo();
-  const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
-  if (!entitlement?.expirationDate) return null;
-  return new Date(entitlement.expirationDate);
-}
-
 // ============================================================================
 // OFFERINGS & PRODUCTS
 // ============================================================================
@@ -113,18 +94,6 @@ export async function getSubscriptionExpirationDate(): Promise<Date | null> {
 export async function getCurrentOffering(): Promise<PurchasesOffering | null> {
   const offerings = await Purchases.getOfferings();
   return offerings.current;
-}
-
-export async function getAvailablePackages(): Promise<PurchasesPackage[]> {
-  const offerings = await Purchases.getOfferings();
-  return offerings.current?.availablePackages ?? [];
-}
-
-export async function getPackage(
-  identifier: (typeof PRODUCT_IDS)[keyof typeof PRODUCT_IDS],
-): Promise<PurchasesPackage | undefined> {
-  const packages = await getAvailablePackages();
-  return packages.find((pkg) => pkg.identifier === identifier);
 }
 
 // ============================================================================

@@ -261,4 +261,3 @@ export function ToastProvider({ children }: ToastProviderProps) {
   );
 }
 
-export type { Toast, ToastVariant };

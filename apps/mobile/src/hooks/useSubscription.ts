@@ -19,7 +19,7 @@ import {
   ENTITLEMENT_ID,
 } from '@/lib/revenuecat';
 
-export interface SubscriptionState {
+interface SubscriptionState {
   isLoading: boolean;
   isPro: boolean;
   customerInfo: CustomerInfo | null;
@@ -28,7 +28,7 @@ export interface SubscriptionState {
   willRenew: boolean;
 }
 
-export interface SubscriptionActions {
+interface SubscriptionActions {
   purchase: (pkg: PurchasesPackage) => Promise<boolean>;
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;

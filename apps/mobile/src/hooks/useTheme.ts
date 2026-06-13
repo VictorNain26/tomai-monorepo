@@ -18,7 +18,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 // ============================================================================
 
 export type ThemeMode = 'light' | 'dark' | 'system';
-export type ColorScheme = 'light' | 'dark';
+type ColorScheme = 'light' | 'dark';
 
 interface ThemeContextValue {
   /** User's preference (light/dark/system) */
