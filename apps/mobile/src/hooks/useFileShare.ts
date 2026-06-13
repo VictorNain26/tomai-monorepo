@@ -196,5 +196,3 @@ function getUTIFromMimeType(mimeType?: string): string | undefined {
 
   return utiMap[mimeType];
 }
-
-export default useFileShare;

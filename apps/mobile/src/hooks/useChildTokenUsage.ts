@@ -64,5 +64,3 @@ export function useChildTokenUsage({ childId, enabled = true }: UseChildTokenUsa
     refetch: query.refetch,
   };
 }
-
-export default useChildTokenUsage;

@@ -293,5 +293,3 @@ export function useTextToSpeech() {
     clearError,
   };
 }
-
-export default useTextToSpeech;
