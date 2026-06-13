@@ -26,7 +26,7 @@ mock.module('../services/token-quota.service', () => ({
   tokenQuotaService: { resetAllDailyTokens: mock(() => Promise.resolve({ resetCount: 0 })) },
 }));
 
-const { startTokenResetCron, stopBackgroundJobs } = await import(
+const { startTokenResetCron, initializeServices, stopBackgroundJobs } = await import(
   '../services/server-lifecycle'
 );
 
@@ -40,8 +40,17 @@ describe('server-lifecycle background jobs', () => {
     expect(() => stopBackgroundJobs()).not.toThrow();
   });
 
-  it('stopBackgroundJobs is idempotent (safe to call twice)', () => {
-    startTokenResetCron();
+  it('stopBackgroundJobs calls the retention stop-fn exactly once', async () => {
+    // initializeServices is the only path that sets the module-level stopRetentionPurge
+    // variable (via startRetentionPurgeScheduler). Without calling it, stopBackgroundJobs
+    // never reaches the retention branch — so this test would be RED if that call were removed.
+    await initializeServices();
+    stopBackgroundJobs();
+    expect(stopRetention).toHaveBeenCalledTimes(1);
+  });
+
+  it('stopBackgroundJobs is idempotent (safe to call twice)', async () => {
+    await initializeServices();
     stopBackgroundJobs();
     expect(() => stopBackgroundJobs()).not.toThrow();
   });
