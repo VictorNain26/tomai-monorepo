@@ -11,13 +11,11 @@ on:
       - 'README.md'
       - '.vscode/**'
       - 'LICENSE'
+  # No paths-ignore here: the required checks (typecheck/lint/Test/Build) must
+  # report on every PR or the branch ruleset blocks merges for config/docs-only
+  # PRs. Turbo `--affected` makes those runs fast no-ops (0 affected packages).
   pull_request:
     branches: [main]
-    paths-ignore:
-      - 'docs/**/*.md'
-      - 'README.md'
-      - '.vscode/**'
-      - 'LICENSE'
 
 permissions:
   contents: read
