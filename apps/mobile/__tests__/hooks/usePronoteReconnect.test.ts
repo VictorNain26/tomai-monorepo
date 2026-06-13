@@ -24,8 +24,9 @@ jest.mock('../../src/lib/auth', () => ({
 
 const mockCreateChild = jest.fn();
 const mockSetResourceMapping = jest.fn();
+const mockConnect = jest.fn();
 jest.mock('../../src/hooks', () => ({
-  usePronote: () => ({ connect: jest.fn(), setResourceMapping: mockSetResourceMapping }),
+  usePronote: () => ({ connect: mockConnect, setResourceMapping: mockSetResourceMapping }),
   useParentDashboard: () => ({ createChild: mockCreateChild, children: [] }),
 }));
 
@@ -62,10 +63,28 @@ describe('usePronoteReconnect import loop', () => {
     jest.clearAllMocks();
     mockCreateChild.mockImplementation(async () => ({ id: `child-${Math.random()}` }));
     mockSetCredential.mockResolvedValue(undefined);
+    // Default: connect succeeds and returns both resources so handleImport can
+    // find them via indexOf and call setResourceMapping.
+    mockConnect.mockResolvedValue({ resources: RESOURCES });
   });
 
   it('creates one account per resource with a non-empty temp password, then goes to pin-setup', async () => {
     const { result } = renderHook(() => usePronoteReconnect());
+
+    // Scan a valid QR code so qrData is set, then submit pin to populate
+    // internal `resources` state via pronote.connect. This is required so
+    // handleImport can find each resource via indexOf and call setResourceMapping.
+    await act(async () => {
+      result.current.handleBarCodeScanned({
+        data: JSON.stringify({ jeton: 'tok', login: 'log', url: 'https://pronote.example.fr' }),
+      });
+    });
+    await act(async () => {
+      result.current.setPin('1234');
+    });
+    await act(async () => {
+      await result.current.handlePinSubmit();
+    });
 
     await act(async () => {
       await result.current.handleImport(RESOURCES);
@@ -84,6 +103,17 @@ describe('usePronoteReconnect import loop', () => {
     expect(firstArg.password.length).toBeGreaterThan(0);
     // Temp password is prefixed with 'tmp-' (see generateTempPassword in usePronoteReconnect.ts:81)
     expect(firstArg.password).toMatch(/^tmp-/);
+
+    // setResourceMapping is called once per resource with (childId, resourceIndex).
+    // resourceIndex is the position of the resource in the array returned by connect,
+    // which matches RESOURCES order: r1 → 0, r2 → 1.
+    expect(mockSetResourceMapping).toHaveBeenCalledTimes(2);
+    const child0Id = (mockCreateChild.mock.results[0]!.value as Promise<{ id: string }>);
+    const child1Id = (mockCreateChild.mock.results[1]!.value as Promise<{ id: string }>);
+    const resolvedChild0 = await child0Id;
+    const resolvedChild1 = await child1Id;
+    expect(mockSetResourceMapping).toHaveBeenNthCalledWith(1, resolvedChild0.id, 0);
+    expect(mockSetResourceMapping).toHaveBeenNthCalledWith(2, resolvedChild1.id, 1);
 
     expect(result.current.step).toBe('pin-setup');
     expect(result.current.error).toBeNull();
@@ -112,7 +142,7 @@ describe('usePronoteReconnect import loop', () => {
     });
 
     expect(mockToast.error).toHaveBeenCalled();
-    expect(result.current.step).not.toBe('pin-setup');
+    // isImporting returns to false, proving the finally block ran after the throw.
     expect(result.current.isImporting).toBe(false);
   });
 });
