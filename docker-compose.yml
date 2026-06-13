@@ -36,24 +36,17 @@ services:
       - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
       # CORS (landing:3001 + web:3002)
       - CORS_ORIGINS=http://localhost:3001,http://localhost:3002
-      # Auth (REQUIRED)
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      # Container-network override (diffère de apps/server/.env en host)
       - BETTER_AUTH_URL=http://localhost:3000
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      # AI Services
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       # RAG - Qdrant : local (service qdrant) par défaut, override possible vers Cloud
       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
       - QDRANT_API_KEY=${QDRANT_API_KEY:-}
       - QDRANT_COLLECTION=${QDRANT_COLLECTION:-tomai_educational}
       # AI Service (BGE-M3 embed + bge-reranker-v2-m3) — local dev
       - AI_SERVICE_URL=http://ai-service:8000
-      - AI_SERVICE_TOKEN=${AI_SERVICE_TOKEN:-}
-      # Pronote Integration (AES-256-GCM encryption)
-      - PRONOTE_ENCRYPTION_KEY=${PRONOTE_ENCRYPTION_KEY}
-      # RevenueCat webhook shared secret (sent as Authorization header)
-      - REVENUECAT_WEBHOOK_AUTH=${REVENUECAT_WEBHOOK_AUTH}
+      # Les secrets (BETTER_AUTH_SECRET, GOOGLE_*, MISTRAL_API_KEY, AI_SERVICE_TOKEN,
+      # PRONOTE_ENCRYPTION_KEY, REVENUECAT_WEBHOOK_AUTH) viennent d'env_file ci-dessous —
+      # les lister en ${VAR} ici les écraserait à blanc (environment > env_file).
     env_file:
       - apps/server/.env
     volumes:
