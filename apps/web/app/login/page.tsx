@@ -23,24 +23,28 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const result =
-      mode === "signin"
-        ? await signIn.email({ email, password })
-        : await signUp.email({ email, password, name });
+    try {
+      const result =
+        mode === "signin"
+          ? await signIn.email({ email, password })
+          : await signUp.email({ email, password, name });
 
-    setLoading(false);
+      if (result.error) {
+        setError(translateAuthError(result.error));
+        return;
+      }
 
-    if (result.error) {
-      setError(translateAuthError(result.error));
-      return;
+      const role = resolveWebRole((result.data?.user as { role?: string } | undefined)?.role);
+      if (!role) {
+        setError("Ce compte n'a pas d'espace sur le web pour le moment.");
+        return;
+      }
+      router.push(ROLE_HOME[role]);
+    } catch {
+      setError("Une erreur réseau est survenue. Réessayez.");
+    } finally {
+      setLoading(false);
     }
-
-    const role = resolveWebRole((result.data?.user as { role?: string } | undefined)?.role);
-    if (!role) {
-      setError("Ce compte n'a pas d'espace sur le web pour le moment.");
-      return;
-    }
-    router.push(ROLE_HOME[role]);
   }
 
   return (

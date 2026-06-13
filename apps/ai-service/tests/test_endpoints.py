@@ -27,7 +27,9 @@ def _fake_embed(texts: list[str]) -> list[EmbedItem]:
 
 
 def _fake_rerank(query: str, texts: list[str], top_n: int | None = None) -> list[RerankItem]:
-    return [RerankItem(index=i, score=1.0 - i * 0.1) for i in range(len(texts))]
+    # Mirror the real rerank.rerank top_n slicing so the endpoint's pass-through is tested.
+    items = [RerankItem(index=i, score=1.0 - i * 0.1) for i in range(len(texts))]
+    return items[:top_n] if top_n is not None else items
 
 
 @pytest.fixture
@@ -75,7 +77,8 @@ def test_rerank_returns_sorted_results(client: TestClient) -> None:
     assert r.status_code == 200
     data = r.json()
     assert data["model"] == "BAAI/bge-reranker-v2-m3"
-    assert len(data["results"]) >= 1
+    # top_n=2 over 3 texts must come back as exactly 2 — proves the endpoint forwards top_n.
+    assert len(data["results"]) == 2
     assert all("index" in item and "score" in item for item in data["results"])
 
 

@@ -163,13 +163,20 @@ describe('useDeck', () => {
     queryClient.clear();
   });
 
-  it('should not fetch when id is empty', () => {
+  it('should not fetch when id is empty', async () => {
     mockTreatyApi({});
+    const treaty = mockGetTreaty();
 
     const { wrapper, queryClient } = createTestWrapper();
-    renderHook(() => useDeck(''), { wrapper });
+    const { result } = renderHook(() => useDeck(''), { wrapper });
+    await act(async () => {
+      await Promise.resolve();
+    });
 
-    // With empty id, enabled=false so no API call should happen
+    // Empty id => enabled:false => the query must stay idle and never hit the API.
+    expect(treaty.api.learning.decks).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+
     queryClient.clear();
   });
 });
@@ -292,11 +299,18 @@ describe('useLearningSubjects', () => {
     queryClient.clear();
   });
 
-  it('should not fetch when niveau is empty', () => {
+  it('should not fetch when niveau is empty', async () => {
     mockTreatyApi({});
+    const treaty = mockGetTreaty();
 
     const { wrapper, queryClient } = createTestWrapper();
-    renderHook(() => useLearningSubjects(undefined), { wrapper });
+    const { result } = renderHook(() => useLearningSubjects(undefined), { wrapper });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(treaty.api.learning.subjects.get).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
 
     queryClient.clear();
   });
@@ -347,17 +361,31 @@ describe('useLearningTopics', () => {
     queryClient.clear();
   });
 
-  it('should not fetch when matiere or niveau is empty', () => {
+  it('should not fetch when matiere or niveau is empty', async () => {
     mockTreatyApi({});
+    const treaty = mockGetTreaty();
 
     const { wrapper: wrapper1, queryClient: qc1 } = createTestWrapper();
-    renderHook(() => useLearningTopics('', 'quatrieme'), { wrapper: wrapper1 });
+    const { result: result1 } = renderHook(() => useLearningTopics('', 'quatrieme'), {
+      wrapper: wrapper1,
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result1.current.fetchStatus).toBe('idle');
     qc1.clear();
 
     const { wrapper: wrapper2, queryClient: qc2 } = createTestWrapper();
-    renderHook(() => useLearningTopics('mathematiques', undefined), {
+    const { result: result2 } = renderHook(() => useLearningTopics('mathematiques', undefined), {
       wrapper: wrapper2,
     });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result2.current.fetchStatus).toBe('idle');
     qc2.clear();
+
+    // Neither partial-arg combination may reach the API.
+    expect(treaty.api.learning.topics.get).not.toHaveBeenCalled();
   });
 });
