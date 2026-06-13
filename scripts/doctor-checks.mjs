@@ -176,6 +176,57 @@ function checkMigrations(ctx) {
   }};
 }
 
+// ─── RAG roundtrip check ─────────────────────────────────────────────────────
+
+const SMOKE_COLLECTION = '_doctor_smoke';
+
+function qdrantHeaders(ctx) {
+  const h = { 'Content-Type': 'application/json' };
+  if (ctx.config.qdrantApiKey) h['api-key'] = ctx.config.qdrantApiKey;
+  return h;
+}
+
+function checkRagRoundtrip(ctx) {
+  return { name: 'roundtrip RAG réel (embed → qdrant → search)', run: async () => {
+    if (!ctx.config.aiServiceToken) throw new Error('AI_SERVICE_TOKEN absent — roundtrip RAG impossible (renseigne apps/server/.env)');
+    const { qdrantUrl, aiServiceUrl, aiServiceToken } = ctx.config;
+
+    // 1. embed réel
+    const emb = await ctx.fetchFn(`${aiServiceUrl}/embed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${aiServiceToken}` },
+      body: JSON.stringify({ texts: ['doctor smoke test'] }),
+    });
+    if (!emb.ok) throw new Error(`embed -> HTTP ${emb.status}`);
+    const dense = (await emb.json())?.embeddings?.[0]?.dense;
+    if (!Array.isArray(dense) || dense.length === 0) throw new Error('embed: dense vide ou absent');
+
+    const base = `${qdrantUrl}/collections/${SMOKE_COLLECTION}`;
+    try {
+      // 2. (re)create collection jetable, dim = taille du dense réel
+      await ctx.fetchFn(base, { method: 'DELETE', headers: qdrantHeaders(ctx) }); // idempotence si résidu
+      const created = await ctx.fetchFn(base, { method: 'PUT', headers: qdrantHeaders(ctx),
+        body: JSON.stringify({ vectors: { size: dense.length, distance: 'Cosine' } }) });
+      if (!created.ok) throw new Error(`create collection -> HTTP ${created.status}`);
+
+      // 3. upsert
+      const up = await ctx.fetchFn(`${base}/points?wait=true`, { method: 'PUT', headers: qdrantHeaders(ctx),
+        body: JSON.stringify({ points: [{ id: 1, vector: dense }] }) });
+      if (!up.ok) throw new Error(`upsert -> HTTP ${up.status}`);
+
+      // 4. search
+      const se = await ctx.fetchFn(`${base}/points/search`, { method: 'POST', headers: qdrantHeaders(ctx),
+        body: JSON.stringify({ vector: dense, limit: 1 }) });
+      if (!se.ok) throw new Error(`search -> HTTP ${se.status}`);
+      const hits = (await se.json())?.result ?? [];
+      if (hits.length === 0 || hits[0].id !== 1) throw new Error('search: le point upserté n\'est pas revenu');
+    } finally {
+      // 5. cleanup (toujours, même en cas d'échec partiel)
+      await ctx.fetchFn(base, { method: 'DELETE', headers: qdrantHeaders(ctx) }).catch(() => {});
+    }
+  }};
+}
+
 /**
  * Construit la liste des checks. full=false -> sous-ensemble infra (pour le fail-fast `dev`).
  * full=true -> ajoute migrations, roundtrip RAG, server health.
@@ -188,5 +239,5 @@ export function buildChecks(ctx, { full } = { full: true }) {
     checkAiServiceHealth(ctx),
   ];
   if (!full) return infra;
-  return [...infra, checkMigrations(ctx)]; // roundtrip + server ajoutés tâches 4-5
+  return [...infra, checkMigrations(ctx), checkRagRoundtrip(ctx)]; // server ajouté tâche 5
 }

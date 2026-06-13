@@ -129,3 +129,44 @@ test('check migrations: PASS si vector présent et migrations à jour', async ()
   const checks = buildChecks(ctx, { full: true });
   await byName(checks, 'migrations').run();
 });
+
+test('check rag: FAIL explicite si AI_SERVICE_TOKEN absent', async () => {
+  const ctx = { config: { ...CFG, aiServiceToken: '' }, exec: () => ({ ok: true, stdout: '' }), fetchFn: async () => ({ ok: true, status: 200, json: async () => ({}) }) };
+  const checks = buildChecks(ctx, { full: true });
+  await assert.rejects(byName(checks, 'roundtrip').run(), /AI_SERVICE_TOKEN/);
+});
+
+test('check rag: FAIL si embed renvoie un dense vide', async () => {
+  const fetchFn = async (url) => {
+    if (url.includes('/embed')) return { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: [], sparse: { indices: [], values: [] } }] }) };
+    return { ok: true, status: 200, json: async () => ({ result: true, status: 'ok' }) };
+  };
+  const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
+  await assert.rejects(byName(checks, 'roundtrip').run(), /embed|dense/i);
+});
+
+test('check rag: PASS quand embed + upsert + search retournent le point', async () => {
+  const calls = [];
+  const fetchFn = async (url, opts) => {
+    calls.push(`${opts?.method ?? 'GET'} ${url}`);
+    if (url.includes('/embed')) return { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: Array(1024).fill(0.01), sparse: { indices: [], values: [] } }] }) };
+    if (url.includes('/points/search')) return { ok: true, status: 200, json: async () => ({ status: 'ok', result: [{ id: 1, score: 1.0 }] }) };
+    return { ok: true, status: 200, json: async () => ({ result: true, status: 'ok' }) };
+  };
+  const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
+  await byName(checks, 'roundtrip').run();
+  assert.ok(calls.some((c) => c.startsWith('DELETE')), 'la collection jetable doit être supprimée');
+});
+
+test('check rag: la collection est supprimée même si la search échoue (cleanup en finally)', async () => {
+  const calls = [];
+  const fetchFn = async (url, opts) => {
+    calls.push(`${opts?.method ?? 'GET'} ${url}`);
+    if (url.includes('/embed')) return { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: Array(1024).fill(0.01), sparse: { indices: [], values: [] } }] }) };
+    if (url.includes('/points/search')) return { ok: false, status: 500, text: async () => 'boom' };
+    return { ok: true, status: 200, json: async () => ({ result: true, status: 'ok' }) };
+  };
+  const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
+  await assert.rejects(byName(checks, 'roundtrip').run());
+  assert.ok(calls.some((c) => c.startsWith('DELETE')), 'cleanup DELETE doit avoir lieu malgré l\'échec');
+});
