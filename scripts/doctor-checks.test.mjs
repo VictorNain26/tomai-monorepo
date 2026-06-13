@@ -94,3 +94,38 @@ test('check qdrant /healthz: FAIL si non-200', async () => {
   const checks = buildChecks(ctxWith({ fetchFn }), { full: false });
   await assert.rejects(byName(checks, 'qdrant').run(), /6333|healthz|qdrant/i);
 });
+
+test('check migrations: FAIL si extension vector absente', async () => {
+  const exec = (cmd, args) => {
+    const sql = args.join(' ');
+    if (sql.includes('pg_extension')) return { ok: true, stdout: '0' };      // vector absent
+    return { ok: true, stdout: '0' };
+  };
+  const ctx = { ...ctxWith({ exec }), journalEntries: 1 };
+  const checks = buildChecks(ctx, { full: true });
+  await assert.rejects(byName(checks, 'migrations').run(), /vector/i);
+});
+
+test('check migrations: FAIL si migrations en retard', async () => {
+  const exec = (cmd, args) => {
+    const sql = args.join(' ');
+    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };       // vector présent
+    if (sql.includes('__drizzle_migrations')) return { ok: true, stdout: '2' }; // 2 appliquées
+    return { ok: true, stdout: '0' };
+  };
+  const ctx = { ...ctxWith({ exec }), journalEntries: 5 };                      // 5 attendues
+  const checks = buildChecks(ctx, { full: true });
+  await assert.rejects(byName(checks, 'migrations').run(), /migration/i);
+});
+
+test('check migrations: PASS si vector présent et migrations à jour', async () => {
+  const exec = (cmd, args) => {
+    const sql = args.join(' ');
+    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };
+    if (sql.includes('__drizzle_migrations')) return { ok: true, stdout: '5' };
+    return { ok: true, stdout: '0' };
+  };
+  const ctx = { ...ctxWith({ exec }), journalEntries: 5 };
+  const checks = buildChecks(ctx, { full: true });
+  await byName(checks, 'migrations').run();
+});

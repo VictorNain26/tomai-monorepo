@@ -149,6 +149,33 @@ function checkAiServiceHealth(ctx) {
   }};
 }
 
+// ─── Migrations check ────────────────────────────────────────────────────────
+
+import { existsSync } from 'node:fs';
+
+/** Nombre de migrations attendues = entrées du journal Drizzle. */
+export function countJournalEntries(path = new URL('../apps/server/drizzle/meta/_journal.json', import.meta.url).pathname) {
+  if (!existsSync(path)) return 0;
+  try { return (JSON.parse(readFileSync(path, 'utf8')).entries ?? []).length; } catch { return 0; }
+}
+
+function psqlScalar(ctx, sql) {
+  // -tA : tuple-only, unaligned -> sortie = la valeur brute
+  const r = ctx.exec('docker', ['exec', 'tomai-postgres-dev', 'psql', '-U', 'tomai_dev', '-d', 'tomai_dev', '-tA', '-c', sql]);
+  if (!r.ok) throw new Error(`psql a échoué: ${r.stderr || sql}`);
+  return r.stdout.trim();
+}
+
+function checkMigrations(ctx) {
+  return { name: 'postgres: extension vector + migrations Drizzle à jour', run: async () => {
+    const hasVector = psqlScalar(ctx, "SELECT count(*) FROM pg_extension WHERE extname='vector';");
+    if (hasVector === '0') throw new Error("extension 'vector' absente — lance 'pnpm setup'");
+    const applied = Number(psqlScalar(ctx, 'SELECT count(*) FROM drizzle.__drizzle_migrations;'));
+    const expected = ctx.journalEntries ?? countJournalEntries();
+    if (applied < expected) throw new Error(`migrations en retard: ${applied}/${expected} appliquées — lance 'pnpm setup' (ou 'bun run db:migrate' dans apps/server)`);
+  }};
+}
+
 /**
  * Construit la liste des checks. full=false -> sous-ensemble infra (pour le fail-fast `dev`).
  * full=true -> ajoute migrations, roundtrip RAG, server health.
@@ -161,5 +188,5 @@ export function buildChecks(ctx, { full } = { full: true }) {
     checkAiServiceHealth(ctx),
   ];
   if (!full) return infra;
-  return infra; // étendu dans les tâches 3-5
+  return [...infra, checkMigrations(ctx)]; // roundtrip + server ajoutés tâches 4-5
 }
