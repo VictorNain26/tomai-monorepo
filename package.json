@@ -6,6 +6,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:down": "docker compose down",
     "setup": "node scripts/setup.mjs",
+    "test:scripts": "node --test scripts/",
     "dev:landing": "turbo run dev --filter=landing",
     "dev:web": "turbo run dev --filter=web",
     "dev:server": "turbo run dev --filter=tomai-server",

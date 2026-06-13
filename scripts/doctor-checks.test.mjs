@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runChecks, loadConfig } from './doctor-checks.mjs';
+import { runChecks, loadConfig, buildChecks } from './doctor-checks.mjs';
+
+const CFG = { qdrantUrl: 'http://q:6333', qdrantApiKey: '', aiServiceUrl: 'http://ai:8001', aiServiceToken: 't', serverUrl: 'http://s:3000' };
+
+function ctxWith({ exec, fetchFn }) {
+  return { config: CFG, exec: exec ?? (() => ({ ok: true, stdout: '' })), fetchFn: fetchFn ?? (async () => ({ ok: true, status: 200, json: async () => ({}) })) };
+}
+function byName(checks, name) { return checks.find((c) => c.name.includes(name)); }
 
 test('runChecks: tout PASS -> exitCode 0', async () => {
   const checks = [
@@ -53,4 +60,37 @@ test('loadConfig: .env server prioritaire sur défaut, processEnv prioritaire su
   });
   assert.equal(cfg.qdrantUrl, 'http://q:6333');
   assert.equal(cfg.aiServiceToken, 'from-shell');
+});
+
+test('check conteneurs: FAIL si qdrant absent du ps', async () => {
+  const psJson = ['{"Service":"postgres","Health":"healthy","State":"running"}',
+                  '{"Service":"ai-service","Health":"healthy","State":"running"}'].join('\n');
+  const checks = buildChecks(ctxWith({ exec: () => ({ ok: true, stdout: psJson }) }), { full: false });
+  await assert.rejects(byName(checks, 'conteneurs').run(), /qdrant/);
+});
+
+test('check conteneurs: FAIL si un service non healthy', async () => {
+  const psJson = ['{"Service":"postgres","Health":"starting","State":"running"}',
+                  '{"Service":"qdrant","Health":"healthy","State":"running"}',
+                  '{"Service":"ai-service","Health":"healthy","State":"running"}'].join('\n');
+  const checks = buildChecks(ctxWith({ exec: () => ({ ok: true, stdout: psJson }) }), { full: false });
+  await assert.rejects(byName(checks, 'conteneurs').run(), /postgres/);
+});
+
+test('check conteneurs: PASS si les 3 healthy', async () => {
+  const psJson = ['postgres','qdrant','ai-service'].map((s) => `{"Service":"${s}","Health":"healthy","State":"running"}`).join('\n');
+  const checks = buildChecks(ctxWith({ exec: () => ({ ok: true, stdout: psJson }) }), { full: false });
+  await byName(checks, 'conteneurs').run(); // ne lève pas
+});
+
+test('check ai-service /health: FAIL si embed_loaded false', async () => {
+  const fetchFn = async () => ({ ok: true, status: 200, json: async () => ({ status: 'loading', embed_loaded: false, rerank_loaded: true }) });
+  const checks = buildChecks(ctxWith({ fetchFn }), { full: false });
+  await assert.rejects(byName(checks, 'ai-service').run(), /embed/);
+});
+
+test('check qdrant /healthz: FAIL si non-200', async () => {
+  const fetchFn = async (url) => url.includes('healthz') ? ({ ok: false, status: 500, text: async () => 'err' }) : ({ ok: true, status: 200, json: async () => ({}) });
+  const checks = buildChecks(ctxWith({ fetchFn }), { full: false });
+  await assert.rejects(byName(checks, 'qdrant').run(), /6333|healthz|qdrant/i);
 });

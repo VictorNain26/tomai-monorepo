@@ -104,3 +104,62 @@ export function defaultExec(cmd, args) {
     stderr: r.stderr ?? '',
   };
 }
+
+// ─── Check implementations ───────────────────────────────────────────────────
+
+const REQUIRED_SERVICES = ['postgres', 'qdrant', 'ai-service'];
+
+function checkDockerDaemon(ctx) {
+  return { name: 'docker daemon', run: async () => {
+    const r = ctx.exec('docker', ['version', '--format', '{{.Server.Version}}']);
+    if (!r.ok) throw new Error('daemon Docker injoignable (docker version a échoué)');
+  }};
+}
+
+function checkContainers(ctx) {
+  return { name: 'conteneurs healthy', run: async () => {
+    const r = ctx.exec('docker', ['compose', 'ps', '--format', 'json']);
+    if (!r.ok) throw new Error('docker compose ps a échoué');
+    const rows = r.stdout.trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    const byService = new Map(rows.map((row) => [row.Service, row]));
+    for (const svc of REQUIRED_SERVICES) {
+      const row = byService.get(svc);
+      if (!row) throw new Error(`service '${svc}' absent (pas démarré) — lance 'pnpm dev' ou 'docker compose up -d'`);
+      if (row.Health && row.Health !== 'healthy') throw new Error(`service '${svc}' non healthy (Health='${row.Health}')`);
+      if (row.State !== 'running') throw new Error(`service '${svc}' non running (State='${row.State}')`);
+    }
+  }};
+}
+
+function checkQdrantHealthz(ctx) {
+  return { name: 'qdrant /healthz', run: async () => {
+    const res = await ctx.fetchFn(`${ctx.config.qdrantUrl}/healthz`, {});
+    if (!res.ok) throw new Error(`qdrant ${ctx.config.qdrantUrl}/healthz -> HTTP ${res.status}`);
+  }};
+}
+
+function checkAiServiceHealth(ctx) {
+  return { name: 'ai-service /health (modèles chargés)', run: async () => {
+    const res = await ctx.fetchFn(`${ctx.config.aiServiceUrl}/health`, {});
+    if (!res.ok) throw new Error(`ai-service ${ctx.config.aiServiceUrl}/health -> HTTP ${res.status}`);
+    const body = await res.json();
+    if (body.embed_loaded !== true || body.rerank_loaded !== true) {
+      throw new Error(`modèles non chargés (status='${body.status}', embed=${body.embed_loaded}, rerank=${body.rerank_loaded})`);
+    }
+  }};
+}
+
+/**
+ * Construit la liste des checks. full=false -> sous-ensemble infra (pour le fail-fast `dev`).
+ * full=true -> ajoute migrations, roundtrip RAG, server health.
+ */
+export function buildChecks(ctx, { full } = { full: true }) {
+  const infra = [
+    checkDockerDaemon(ctx),
+    checkContainers(ctx),
+    checkQdrantHealthz(ctx),
+    checkAiServiceHealth(ctx),
+  ];
+  if (!full) return infra;
+  return infra; // étendu dans les tâches 3-5
+}
