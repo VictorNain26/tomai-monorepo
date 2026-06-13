@@ -2,6 +2,7 @@ import { Elysia } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
 import { progressService } from '../../services/progress.service';
 import { logger } from '../../lib/observability';
+import { env } from '../../config/env';
 
 export const progressApiRoutes = new Elysia({ name: 'api-progress' })
   .use(authMacro)
@@ -53,7 +54,7 @@ export const progressApiRoutes = new Elysia({ name: 'api-progress' })
       return {
         success: true,
         healthy: true,
-        collection: 'tomai_educational',
+        collection: env.QDRANT_COLLECTION,
         totalPoints: stats.total_points,
         byNiveau: stats.by_niveau,
         byMatiere: stats.by_matiere
