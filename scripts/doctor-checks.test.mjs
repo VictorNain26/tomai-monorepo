@@ -155,7 +155,7 @@ test('check rag: PASS quand embed + upsert + search retournent le point', async 
   };
   const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
   await byName(checks, 'roundtrip').run();
-  assert.ok(calls.some((c) => c.startsWith('DELETE')), 'la collection jetable doit être supprimée');
+  assert.equal(calls.at(-1)?.startsWith('DELETE'), true, 'le dernier appel doit être le DELETE de cleanup');
 });
 
 test('check rag: la collection est supprimée même si la search échoue (cleanup en finally)', async () => {
@@ -168,7 +168,8 @@ test('check rag: la collection est supprimée même si la search échoue (cleanu
   };
   const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
   await assert.rejects(byName(checks, 'roundtrip').run());
-  assert.ok(calls.some((c) => c.startsWith('DELETE')), 'cleanup DELETE doit avoir lieu malgré l\'échec');
+  const deleteCount = calls.filter((c) => c.startsWith('DELETE')).length;
+  assert.ok(deleteCount >= 2, `doit y avoir au moins 2 DELETE (pre-flight + finally cleanup), got ${deleteCount}`);
 });
 
 test('check server: SKIP si connexion refusée (server non lancé)', async () => {
@@ -176,6 +177,17 @@ test('check server: SKIP si connexion refusée (server non lancé)', async () =>
   const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
   const e = await byName(checks, 'server').run().then(() => null, (x) => x);
   assert.ok(e && e[Symbol.for('doctor.skip')], 'doit être un SKIP');
+});
+
+test('check server: FAIL (pas SKIP) si server répond HTTP 500', async () => {
+  const fetchFn = async (url) => url.includes('curriculum-health')
+    ? ({ ok: false, status: 500, json: async () => ({}) })
+    : ({ ok: true, status: 200, json: async () => ({}) });
+  const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
+  const e = await byName(checks, 'server').run().then(() => null, (x) => x);
+  assert.ok(e, 'doit lever une erreur');
+  assert.ok(!e[Symbol.for('doctor.skip')], 'ne doit PAS être un SKIP — un 500 est un vrai FAIL');
+  assert.match(e.message, /500/);
 });
 
 test('check server: FAIL si 200 degraded', async () => {

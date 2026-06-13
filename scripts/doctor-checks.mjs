@@ -54,7 +54,7 @@ export function loadConfig({
     qdrantUrl:       env('QDRANT_URL')         ?? 'http://localhost:6333',
     aiServiceUrl:    env('AI_SERVICE_URL')      ?? 'http://localhost:8001',
     aiServiceToken:  env('AI_SERVICE_TOKEN'),
-    serverUrl:       env('SERVER_URL')          ?? 'http://localhost:3000',
+    serverUrl:       env('SERVER_HEALTH_URL')    ?? 'http://localhost:3000',
     dbUrl:           env('DATABASE_URL'),
     qdrantApiKey:    env('QDRANT_API_KEY'),
     pgContainer:     env('PG_CONTAINER')        ?? 'tomai-postgres-dev',
@@ -238,7 +238,7 @@ function checkServerRagHealth(ctx) {
       throw skip(`server non joignable sur ${ctx.config.serverUrl} (${e.code ?? e.message})`);
     }
     if (res.status === 404) throw skip('route /api/curriculum-health non exposée (garde dev)');
-    if (!res.ok) throw skip(`server -> HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`server /api/curriculum-health -> HTTP ${res.status} (server joignable mais en erreur)`);
     const body = await res.json();
     if (body.status !== 'healthy') throw new Error(`RAG dégradé côté server (qdrant=${body.qdrant}, aiService=${body.aiService})`);
   }};
