@@ -139,5 +139,3 @@ export const haptics = {
   /** Swipe action */
   swipe: impact.light,
 };
-
-export default haptics;

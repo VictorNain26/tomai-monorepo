@@ -312,5 +312,3 @@ async function uploadAndTranscribe(uri: string): Promise<string | null> {
 
   return confirmResponse.transcription ?? null;
 }
-
-export default useVoiceInput;

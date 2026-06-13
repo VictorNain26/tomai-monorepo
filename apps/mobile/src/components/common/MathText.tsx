@@ -329,5 +329,3 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
 });
-
-export default MathText;
