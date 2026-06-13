@@ -18,7 +18,11 @@ from dataclasses import dataclass
 
 import httpx
 
-EMBED_BATCH_SIZE = 200  # marge sous la borne 256 d'ai-service (schemas.py)
+# Lots envoyés à /embed. Défaut 200 (< borne 256 d'ai-service, schemas.py).
+# Configurable car BGE-M3 sur CPU lent (peu de cœurs) dépasse le timeout sur de
+# gros lots : EMBED_BATCH_SIZE=16 rend chaque appel sûr. Aucun effet sur les
+# vecteurs (le batch ne change que le nombre de textes par requête HTTP).
+EMBED_BATCH_SIZE = int(os.environ.get("EMBED_BATCH_SIZE", "200"))
 _HEALTH_TIMEOUT_S = 5.0
 _EMBED_TIMEOUT_S = 300.0  # le 1er appel après warming paie le forward pass froid (Koyeb CPU)
 _WARM_MAX_WAIT_S = 600.0
