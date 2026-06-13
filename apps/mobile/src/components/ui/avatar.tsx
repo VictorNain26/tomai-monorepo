@@ -72,5 +72,4 @@ function Avatar({ src, fallback, size, className, style }: AvatarProps) {
   );
 }
 
-export { Avatar, avatarVariants };
-export type { AvatarProps };
+export { Avatar };

@@ -36,7 +36,7 @@ const inputVariants = cva(
   }
 );
 
-export interface InputProps
+interface InputProps
   extends Omit<TextInputProps, 'editable'>,
     VariantProps<typeof inputVariants> {
   className?: string;
@@ -137,4 +137,4 @@ function Input({
   );
 }
 
-export { Input, inputVariants };
+export { Input };

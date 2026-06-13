@@ -73,5 +73,4 @@ function Progress({
   );
 }
 
-export { Progress, progressVariants };
-export type { ProgressProps };
+export { Progress };

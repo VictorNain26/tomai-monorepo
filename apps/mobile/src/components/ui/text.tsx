@@ -109,5 +109,5 @@ function Text({
   );
 }
 
-export { Text, TextClassContext, textVariants };
+export { Text, TextClassContext };
 export type { TextProps };
