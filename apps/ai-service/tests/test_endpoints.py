@@ -149,17 +149,37 @@ def test_validate_config_permissive_in_development_without_token() -> None:
         config.validate_config()
 
 
-def test_embed_runs_off_event_loop(client: TestClient) -> None:
-    """L'inférence embed doit être offloadée (run_in_threadpool) — le handler
-    reste responsive. On vérifie que l'endpoint répond toujours 200 quand
-    embed_encode est une fonction bloquante (sleep)."""
-    import time
+def test_embed_offloads_to_threadpool(client: TestClient) -> None:
+    """Garde-fou: le handler /embed doit router l'inférence CPU-bound via
+    run_in_threadpool (sinon il bloque l'event loop sous --workers 1).
+    On espionne run_in_threadpool tout en le laissant s'exécuter réellement."""
+    from fastapi.concurrency import run_in_threadpool
 
-    def _slow_embed(texts: list[str]) -> list[EmbedItem]:
-        time.sleep(0.05)
-        return _fake_embed(texts)
+    import src.main as main_mod
 
-    with patch("src.main.embed_encode", side_effect=_slow_embed):
+    with patch("src.main.run_in_threadpool", wraps=run_in_threadpool) as spy:
         r = client.post("/embed", json={"texts": ["hi"]})
-        assert r.status_code == 200
-        assert len(r.json()["embeddings"]) == 1
+    assert r.status_code == 200
+    assert spy.call_count == 1
+    # le premier argument positionnel est bien embed_encode (identité, pas __name__,
+    # car le callable est le mock posé par la fixture — MagicMock n'a pas __name__)
+    assert spy.call_args.args[0] is main_mod.embed_encode
+
+
+def test_rerank_offloads_to_threadpool(client: TestClient) -> None:
+    """Garde-fou: le handler /rerank doit router l'inférence CPU-bound via
+    run_in_threadpool (sinon il bloque l'event loop sous --workers 1).
+    On espionne run_in_threadpool tout en le laissant s'exécuter réellement."""
+    from fastapi.concurrency import run_in_threadpool
+
+    import src.main as main_mod
+
+    with patch("src.main.run_in_threadpool", wraps=run_in_threadpool) as spy:
+        r = client.post(
+            "/rerank",
+            json={"query": "pythagore", "texts": ["a", "b"], "top_n": 2},
+        )
+    assert r.status_code == 200
+    assert spy.call_count == 1
+    # le premier argument positionnel est bien rerank_run (identité)
+    assert spy.call_args.args[0] is main_mod.rerank_run
