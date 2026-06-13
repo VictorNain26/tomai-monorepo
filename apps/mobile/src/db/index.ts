@@ -5,7 +5,7 @@
  */
 
 // Client and initialization
-export { getDatabase, initializeDatabase } from './client';
+export { initializeDatabase } from './client';
 
 // Schema and types
 export * from './schema';

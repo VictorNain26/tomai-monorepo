@@ -57,11 +57,6 @@ async function deleteDeck(id: string): Promise<void> {
   unwrap(await getTreaty().api.learning.decks({ id }).delete());
 }
 
-async function createDeck(data: CreateDeckRequest): Promise<LearningDeck> {
-  const { deck } = unwrap(await getTreaty().api.learning.decks.post(data));
-  return deck;
-}
-
 async function fetchSubjects(niveau: SchoolLevel): Promise<LearningSubject[]> {
   const { subjects } = unwrap(
     await getTreaty().api.learning.subjects.get({ query: { niveau } })
@@ -101,22 +96,11 @@ export function useDeck(id: string) {
   });
 }
 
-export function useDeleteDeck() {
+function useDeleteDeck() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteDeck,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.decks });
-    },
-  });
-}
-
-export function useCreateDeck() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createDeck,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.decks });
     },

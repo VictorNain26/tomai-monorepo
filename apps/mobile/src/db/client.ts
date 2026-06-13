@@ -236,5 +236,3 @@ export async function clearLocalData(): Promise<void> {
 // EXPORTS
 // ============================================================================
 
-export { schema };
-export type { ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';

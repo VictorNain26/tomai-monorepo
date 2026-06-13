@@ -31,7 +31,7 @@ export type FSRSRating = 1 | 2 | 3 | 4;
 // QUERY KEYS
 // ============================================================================
 
-export const fsrsQueryKeys = {
+const fsrsQueryKeys = {
   dueCards: (deckId: string) => ['fsrs', 'due', deckId] as const,
   stats: (deckId: string) => ['fsrs', 'stats', deckId] as const,
 };
