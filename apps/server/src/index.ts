@@ -60,8 +60,21 @@ async function gracefulShutdown(signal: string) {
     const { memoryMonitor } = await import('./middleware/memory-monitor.middleware.js');
     const { stopBackgroundJobs } = await import('./services/server-lifecycle.js');
 
-    stopBackgroundJobs();
-    memoryMonitor.stopMonitoring();
+    // Each stop call is isolated so a throwing user-supplied fn cannot skip the DB drain.
+    for (const step of [
+      { name: 'stopBackgroundJobs', run: stopBackgroundJobs },
+      { name: 'stopMonitoring', run: () => memoryMonitor.stopMonitoring() },
+    ]) {
+      try {
+        step.run();
+      } catch (err) {
+        logger.error(`Shutdown step failed: ${step.name}`, {
+          operation: 'server:shutdown',
+          _error: err instanceof Error ? err.message : String(err),
+          severity: 'high' as const,
+        });
+      }
+    }
     await closeConnection();
 
     if (global.gc) {
