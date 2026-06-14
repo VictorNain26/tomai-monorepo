@@ -48,4 +48,11 @@ describe('computeCostCents — cached tokens', () => {
     const r = computeCostCents('mistral-medium-latest', 1_000_000, 0, 0);
     expect(r.costCents).toBe(138);
   });
+  it('clamp cachedTokens à promptTokens si la valeur API est aberrante', () => {
+    // cached (5M) > input (1M) → clampé à 1M : tout l'input facturé cached à 10%
+    // (1M/1M)*1.5*0.10 * 0.92 * 100 = 13.8 → 14 cents (≠ 138 plein tarif, ≠ négatif)
+    const r = computeCostCents('mistral-medium-latest', 1_000_000, 0, 5_000_000);
+    expect(r.unknownModel).toBe(false);
+    expect(r.costCents).toBe(14);
+  });
 });

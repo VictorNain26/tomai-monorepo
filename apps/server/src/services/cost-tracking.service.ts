@@ -101,8 +101,7 @@ class CostTrackingService {
     );
 
     if (unknownModel) {
-      // Observability: an unmapped model leaves a $0 row but alerts us to
-      // update the pricing table. Do not silently discard the call.
+      // Ligne à $0 intentionnelle — signale au monitoring de mettre à jour MODEL_PRICING_USD_PER_MILLION.
       logger.warn('Cost tracking: unknown model pricing', {
         operation: 'cost-tracking:unknown-model',
         aiModel: input.aiModel,

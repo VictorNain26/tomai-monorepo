@@ -120,7 +120,8 @@ export interface ChatStreamChunk {
   type: 'text' | 'tool_call' | 'done';
   text?: string;
   toolCall?: { id: string; name: string; arguments: string };
-  /** Présent uniquement sur le chunk 'done' — usage du stream complet. */
+  /** Présent uniquement sur le chunk 'done' — usage du stream complet.
+   * Forme synchronisée avec ChatStreamChunk.usage de chat-streaming-types.ts. */
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number; cachedTokens: number };
 }
 
@@ -336,6 +337,10 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
           promptTokens: u.promptTokens ?? 0,
           completionTokens: u.completionTokens ?? 0,
           totalTokens: u.totalTokens ?? ((u.promptTokens ?? 0) + (u.completionTokens ?? 0)),
+          // SDK v2.2.1 UsageInfo ne déclare pas promptTokensDetails alors que le
+          // champ existe dans la réponse wire (confirmé end-to-end). Retirer ce
+          // cast quand le SDK l'expose. Le path HTTP (cached_tokens, snake_case)
+          // est lui typé inline.
           cachedTokens: (u as { promptTokensDetails?: { cachedTokens?: number } }).promptTokensDetails?.cachedTokens ?? 0,
         };
       }
