@@ -8,6 +8,7 @@
  */
 
 import { logger } from '../lib/observability.js';
+import { normalizeForSpeech } from '../lib/text/speech-normalize.js';
 import type { EducationLevelType } from '../types/education.types.js';
 import { getVoxtralTTSService, isVoxtralTTSConfigured } from './voxtral-tts.service.js';
 
@@ -44,7 +45,8 @@ class TextToSpeechService {
     }
 
     try {
-      const result = await getVoxtralTTSService().synthesize(text, {
+      const normalizedText = normalizeForSpeech(text);
+      const result = await getVoxtralTTSService().synthesize(normalizedText, {
         language: options.language,
         schoolLevel: options.schoolLevel,
       });
