@@ -93,6 +93,10 @@ const EnvSchema = z.object({
   AI_SERVICE_URL: z.string().optional(),
   AI_SERVICE_TOKEN: z.string().optional(),
   AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().default(15000),
+  // Candidats récupérés (Qdrant) puis reranké (cross-encoder) par query. Le coût
+  // du rerank est ∝ ce nombre. Défaut = prod/GPU (qualité) ; baisser en dev CPU
+  // (ex. 8) accélère le rerank au prix d'un léger écart de classement.
+  RAG_RERANK_CANDIDATES: z.coerce.number().int().positive().optional(),
 
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(900000), // 15 min

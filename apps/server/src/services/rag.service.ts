@@ -19,6 +19,7 @@ import { qdrantService, type QdrantSearchResult } from './qdrant.service.js';
 import { aiServiceClient } from './ai-service.client.js';
 import { retrievalAuditRepository } from '../db/repositories/retrieval-audit.repository.js';
 import { logger } from '../lib/observability.js';
+import { env } from '../config/env.js';
 import type { EducationLevelType } from '../types/index.js';
 
 // Thresholds pour cosine similarity (0-1)
@@ -78,6 +79,9 @@ interface HybridSearchResult {
 // are both real network calls. Caching avoids doubling them per flashcard generation
 // (audit P0-7: tool-executor calls isAvailable then hybridSearch which re-checks).
 const AVAILABILITY_CACHE_TTL_MS = 30_000;
+// Negative cache court : un échec transitoire (ai-service lent / blip) ne doit pas
+// désactiver le RAG 30 s pour toutes les requêtes suivantes — re-check vite.
+const AVAILABILITY_NEG_CACHE_TTL_MS = 3_000;
 
 class RAGService {
   private availabilityCache: { value: boolean; expiresAt: number } | null = null;
@@ -111,7 +115,9 @@ class RAGService {
       // Stage 2 rerank toujours activé en post-migration (synergie infra :
       // même service Python que l'embed, latence supplémentaire marginale).
       // Prefetch 4× topK pour donner au cross-encoder de la matière à réordonner.
-      const prefetchK = Math.max(topK * 4, 20);
+      // Override env (RAG_RERANK_CANDIDATES) : baisser en dev CPU pour accélérer
+      // le rerank (coût ∝ candidats), garder haut en prod GPU pour la qualité.
+      const prefetchK = env.RAG_RERANK_CANDIDATES ?? Math.max(topK * 4, 20);
 
       // NOTE : on ne passe PAS scoreThreshold à searchHybrid. La fusion RRF
       // côté Qdrant retourne des scores petits (1/(k+rank), k=60 → top-1 ≈ 0.016)
@@ -254,10 +260,12 @@ class RAGService {
         aiServiceClient.isAvailable(),
       ]);
       const available = qdrantOk && aiOk;
-      this.availabilityCache = { value: available, expiresAt: now + AVAILABILITY_CACHE_TTL_MS };
+      // Succès caché 30 s ; échec seulement 3 s pour récupérer vite d'un blip.
+      const ttl = available ? AVAILABILITY_CACHE_TTL_MS : AVAILABILITY_NEG_CACHE_TTL_MS;
+      this.availabilityCache = { value: available, expiresAt: now + ttl };
       return available;
     } catch {
-      this.availabilityCache = { value: false, expiresAt: now + AVAILABILITY_CACHE_TTL_MS };
+      this.availabilityCache = { value: false, expiresAt: now + AVAILABILITY_NEG_CACHE_TTL_MS };
       return false;
     }
   }
