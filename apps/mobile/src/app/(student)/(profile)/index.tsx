@@ -106,9 +106,13 @@ export default function StudentProfileScreen() {
       confirmLabel: 'Déconnexion',
       variant: 'destructive',
     });
-    if (confirmed) {
+    if (!confirmed) return;
+    try {
       await signOut();
       router.replace('/(auth)/login');
+    } catch (error) {
+      console.error('[Logout] signOut failed', error);
+      toast.error('Déconnexion impossible', 'Vérifiez votre connexion et réessayez.');
     }
   }
 

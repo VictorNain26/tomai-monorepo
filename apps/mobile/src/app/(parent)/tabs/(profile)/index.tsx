@@ -25,6 +25,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUser, signOut } from '@/lib/auth';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { useToast } from '@/components/ui/toast';
 import { useIsPro, useThemeColors, usePronote } from '@/hooks';
 import { bgColors, borderColors } from '@/lib/styles';
 
@@ -53,6 +54,7 @@ export default function ParentProfileScreen() {
   const router = useRouter();
   const user = useUser();
   const { confirm } = useConfirm();
+  const toast = useToast();
   const colors = useThemeColors();
   const { isPro, isLoading: isLoadingPro } = useIsPro();
   const pronote = usePronote(user?.id ?? '');
@@ -64,9 +66,13 @@ export default function ParentProfileScreen() {
       confirmLabel: 'Déconnexion',
       variant: 'destructive',
     });
-    if (confirmed) {
+    if (!confirmed) return;
+    try {
       await signOut();
       router.replace('/(auth)/login');
+    } catch (error) {
+      console.error('[Logout] signOut failed', error);
+      toast.error('Déconnexion impossible', 'Vérifiez votre connexion et réessayez.');
     }
   }
 
