@@ -120,8 +120,9 @@ export interface ChatStreamChunk {
   type: 'text' | 'tool_call' | 'done';
   text?: string;
   toolCall?: { id: string; name: string; arguments: string };
-  /** Présent uniquement sur le chunk 'done' — usage du stream complet. */
-  usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+  /** Présent uniquement sur le chunk 'done' — usage du stream complet.
+   * Forme synchronisée avec ChatStreamChunk.usage de chat-streaming-types.ts. */
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number; cachedTokens: number };
 }
 
 // ── Helpers internes ────────────────────────────────────────────────────────
@@ -336,6 +337,11 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
           promptTokens: u.promptTokens ?? 0,
           completionTokens: u.completionTokens ?? 0,
           totalTokens: u.totalTokens ?? ((u.promptTokens ?? 0) + (u.completionTokens ?? 0)),
+          // SDK v2.2.1 UsageInfo ne déclare pas promptTokensDetails alors que le
+          // champ existe dans la réponse wire (confirmé end-to-end). Retirer ce
+          // cast quand le SDK l'expose. Le path HTTP (cached_tokens, snake_case)
+          // est lui typé inline.
+          cachedTokens: (u as { promptTokensDetails?: { cachedTokens?: number } }).promptTokensDetails?.cachedTokens ?? 0,
         };
       }
       const delta = event.data?.choices?.[0]?.delta;
@@ -424,12 +430,13 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
       if (payload === '[DONE]') continue;
       try {
         const event = JSON.parse(payload);
-        const u = event.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null | undefined;
+        const u = event.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } } | null | undefined;
         if (u) {
           usage = {
             promptTokens: u.prompt_tokens ?? 0,
             completionTokens: u.completion_tokens ?? 0,
             totalTokens: u.total_tokens ?? ((u.prompt_tokens ?? 0) + (u.completion_tokens ?? 0)),
+            cachedTokens: u.prompt_tokens_details?.cached_tokens ?? 0,
           };
         }
         const delta = event.choices?.[0]?.delta;
@@ -448,6 +455,11 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
         // ligne SSE malformée — ignorer (parfois keep-alive ou commentaire)
       }
     }
+  }
+  if (!usage) {
+    logger.warn('Mistral stream ended without usage', {
+      operation: 'mistral:chat:usage-missing',
+    });
   }
   yield { type: 'done', usage };
 }

@@ -182,7 +182,7 @@ class MistralChatService {
       const toolsUsed: string[] = [];
       let toolCallsCount = 0;
       let iteration = 0;
-      const usageTotal = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+      const usageTotal = { promptTokens: 0, completionTokens: 0, totalTokens: 0, cachedTokens: 0 };
 
       while (iteration < MAX_TOOL_ITERATIONS) {
         // Each iteration is a fresh stream from Mistral with the current
@@ -251,6 +251,7 @@ class MistralChatService {
               usageTotal.promptTokens += chunk.usage.promptTokens;
               usageTotal.completionTokens += chunk.usage.completionTokens;
               usageTotal.totalTokens += chunk.usage.totalTokens;
+              usageTotal.cachedTokens += chunk.usage.cachedTokens;
             } else {
               // Un stream sans usage redeviendrait un quota silencieusement
               // mort (cause du bug d'origine) — rendre le trou observable.

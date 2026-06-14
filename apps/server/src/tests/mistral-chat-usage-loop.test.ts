@@ -20,10 +20,10 @@ function makeStream(): AsyncIterable<ClientChunk> {
     async *[Symbol.asyncIterator]() {
       if (iteration === 1) {
         yield { type: 'tool_call', toolCall: { id: 'tc_1', name: 'search_educational_content', arguments: '{}' } };
-        yield { type: 'done', usage: { promptTokens: 100, completionTokens: 20, totalTokens: 120 } };
+        yield { type: 'done', usage: { promptTokens: 100, completionTokens: 20, totalTokens: 120, cachedTokens: 0 } };
       } else {
         yield { type: 'text', text: 'Bonjour' };
-        yield { type: 'done', usage: { promptTokens: 50, completionTokens: 10, totalTokens: 60 } };
+        yield { type: 'done', usage: { promptTokens: 50, completionTokens: 10, totalTokens: 60, cachedTokens: 0 } };
       }
     },
   };
@@ -79,7 +79,7 @@ describe('generateStreamChunks usage accumulation', () => {
     const chunks = await collect();
     const done = chunks.find((c) => c.type === 'done');
     expect(done).toBeDefined();
-    expect(done?.usage).toEqual({ promptTokens: 150, completionTokens: 30, totalTokens: 180 });
+    expect(done?.usage).toEqual({ promptTokens: 150, completionTokens: 30, totalTokens: 180, cachedTokens: 0 });
   });
 
   it('marks usedRAG true when search_educational_content was called', async () => {
