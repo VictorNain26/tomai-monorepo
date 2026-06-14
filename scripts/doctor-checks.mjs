@@ -136,7 +136,11 @@ function checkQdrantHealthz(ctx) {
     const url = `${ctx.config.qdrantUrl}/healthz`;
     let res;
     try {
-      res = await ctx.fetchFn(url, {});
+      // Qdrant Cloud secures /healthz once an API key is set: an unauthenticated
+      // probe returns 403. Send the api-key header (same as every other Qdrant
+      // call here) so the check validates reachability AND a valid key — a wrong
+      // key must fail the doctor, not slip through an unauthenticated probe.
+      res = await ctx.fetchFn(url, { headers: qdrantHeaders(ctx) });
     } catch (e) {
       throw new Error(`qdrant ${url} injoignable (${e.cause?.code ?? e.message})`);
     }
