@@ -58,7 +58,7 @@ import {
 const MODEL = 'mistral-medium-latest';
 const TEMPERATURE = 0.6;
 const MAX_TOKENS = 1024;
-const PROMPT_CACHE_VERSION = '2026-06-14-attachments';
+const PROMPT_CACHE_VERSION = '2026-06-14-tools';
 
 class MistralChatService {
   private buildSystemPromptForChat(params: {

@@ -14,6 +14,16 @@
  * OpenAI tools, donc portable.
  */
 
+/**
+ * Slugs de matières indexés dans Qdrant. Source unique — tout slug hors liste
+ * retourne 0 résultat en silence. Ne pas modifier sans re-indexer la collection.
+ */
+export const RAG_SUBJECTS = [
+  'mathematiques', 'francais', 'anglais', 'espagnol', 'allemand',
+  'histoire', 'geographie', 'physique-chimie', 'svt', 'technologie',
+  'ses', 'philosophie', 'nsi',
+] as const;
+
 interface MistralTool {
   type: 'function';
   function: {
@@ -48,8 +58,8 @@ const searchEducationalContentTool: MistralTool = {
         },
         matiere: {
           type: 'string',
-          description:
-            'La matière normalisée: mathematiques, francais, anglais, espagnol, allemand, histoire, geographie, physique-chimie, svt, technologie, ses, philosophie, nsi',
+          enum: [...RAG_SUBJECTS],
+          description: 'La matière normalisée (slug Qdrant)',
         },
         limit: {
           type: 'number',
@@ -77,12 +87,14 @@ const generateFlashcardsTool: MistralTool = {
         },
         subject: {
           type: 'string',
-          description:
-            'La matière: mathematiques, francais, anglais, espagnol, allemand, histoire, geographie, physique-chimie, svt, technologie, ses, philosophie, nsi',
+          enum: [...RAG_SUBJECTS],
+          description: 'La matière (slug Qdrant)',
         },
         cardCount: {
           type: 'number',
-          description: 'Nombre de cartes à générer (5 par défaut, 3 minimum, 10 maximum)',
+          minimum: 3,
+          maximum: 10,
+          description: 'Nombre de cartes à générer (5 par défaut)',
         },
       },
       required: ['topic', 'subject'],
@@ -117,8 +129,9 @@ const updateStudentProfileTool: MistralTool = {
       properties: {
         observation: {
           type: 'string',
+          maxLength: 250,
           description:
-            "Une phrase factuelle sur ce que l'élève sait faire ou sur sa difficulté. Ex: \"Confond les verbes du 1er et 2nd groupe au passé composé.\" (max 250 caractères)",
+            "Une phrase factuelle sur ce que l'élève sait faire ou sur sa difficulté. Ex: \"Confond les verbes du 1er et 2nd groupe au passé composé.\"",
         },
         subject: {
           type: 'string',
@@ -126,13 +139,15 @@ const updateStudentProfileTool: MistralTool = {
         },
         strength: {
           type: 'string',
+          maxLength: 100,
           description:
-            "Ajoute une force au profil si l'élève démontre une maîtrise claire sur un point (ex: \"Bonne compréhension du théorème de Pythagore\"). Max 100 caractères.",
+            "Ajoute une force au profil si l'élève démontre une maîtrise claire sur un point (ex: \"Bonne compréhension du théorème de Pythagore\").",
         },
         weakness: {
           type: 'string',
+          maxLength: 100,
           description:
-            "Ajoute une faiblesse au profil si l'élève bute de façon récurrente sur un point (ex: \"Oublie la retenue en addition posée\"). Max 100 caractères.",
+            "Ajoute une faiblesse au profil si l'élève bute de façon récurrente sur un point (ex: \"Oublie la retenue en addition posée\").",
         },
         preferredStyle: {
           type: 'string',
