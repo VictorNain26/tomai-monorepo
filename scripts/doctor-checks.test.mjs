@@ -95,6 +95,21 @@ test('check qdrant /healthz: FAIL si non-200', async () => {
   await assert.rejects(byName(checks, 'qdrant').run(), /6333|healthz|qdrant/i);
 });
 
+test('check qdrant /healthz: envoie le header api-key (Cloud sécurise /healthz, sinon 403)', async () => {
+  let sentHeaders = null;
+  const ctx = {
+    config: { ...CFG, qdrantApiKey: 'secret-key' },
+    exec: () => ({ ok: true, stdout: '' }),
+    fetchFn: async (url, opts) => {
+      if (url.includes('healthz')) sentHeaders = opts?.headers ?? null;
+      return { ok: true, status: 200, json: async () => ({}) };
+    },
+  };
+  const checks = buildChecks(ctx, { full: false });
+  await byName(checks, 'qdrant').run();
+  assert.equal(sentHeaders?.['api-key'], 'secret-key');
+});
+
 test('check migrations: FAIL si extension vector absente', async () => {
   const exec = (cmd, args) => {
     const sql = args.join(' ');
