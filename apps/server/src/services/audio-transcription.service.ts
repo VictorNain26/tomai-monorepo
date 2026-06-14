@@ -1,11 +1,13 @@
 /**
  * Service de Transcription Audio - TomAI
  *
- * Architecture Gladia 100% (Migration Janvier 2025):
- * - Gladia (France) : Transcription STT haute précision
- * - Analyse de prononciation : Programmatique (scores confiance + comparaison texte)
+ * Stack 100 % Mistral souveraine : STT via Voxtral (voxtral-mini-latest).
+ * Analyse de prononciation programmatique — scores et comparaison texte.
  *
- * ❌ Plus de dépendance Gemini pour l'audio
+ * Note : Voxtral ne fournit pas de timecodes par mot ni de score de confiance.
+ * L'analyse de prononciation (buildPronunciationAnalysis) ne sera donc pas
+ * déclenchée (branche `words && words.length > 0` reste fausse) — comportement
+ * identique à un résultat Gladia sans utterances.
  *
  * Cas d'usage éducatif principal :
  * - Matières de langue (anglais, espagnol, allemand) : analyse de prononciation
@@ -16,10 +18,9 @@
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/education.types.js';
 import {
-  getGladiaTranscriptionService,
-  isGladiaConfigured,
-  type GladiaTranscriptionResult,
-} from './gladia-transcription.service.js';
+  getVoxtralTranscribeService,
+  isVoxtralTranscribeConfigured,
+} from './voxtral-transcribe.service.js';
 
 // ============================================
 // Types
@@ -90,16 +91,16 @@ const LANG_NAMES: Record<string, string> = {
 
 class AudioTranscriptionService {
   constructor() {
-    if (!isGladiaConfigured()) {
-      logger.warn('Gladia API key not configured - audio transcription will fail', {
+    if (!isVoxtralTranscribeConfigured()) {
+      logger.warn('MISTRAL_API_KEY not configured - audio transcription will fail', {
         operation: 'audio:init',
       });
     }
   }
 
   /**
-   * Transcrit un fichier audio et analyse la prononciation si demandé
-   * Utilise Gladia 100% + analyse programmatique
+   * Transcrit un fichier audio et analyse la prononciation si demandé.
+   * Utilise Voxtral STT (Mistral) + analyse programmatique.
    */
   async transcribeAudio(
     audioBuffer: ArrayBuffer,
@@ -110,62 +111,48 @@ class AudioTranscriptionService {
 
     const {
       targetLanguage = 'fr',
-      schoolLevel,
-      referenceText,
       context = 'general',
     } = options;
 
-    // Vérifier que Gladia est configuré
-    if (!isGladiaConfigured()) {
+    if (!isVoxtralTranscribeConfigured()) {
       return {
         success: false,
-        _error: 'Service de transcription non configuré (GLADIA_API_KEY manquant)',
+        _error: 'Service de transcription non configuré (MISTRAL_API_KEY manquant)',
       };
     }
 
     try {
-      // Transcription via Gladia
-      const gladiaService = getGladiaTranscriptionService();
-      const gladiaResult = await gladiaService.transcribe(audioBuffer, mimeType, {
+      const sttService = getVoxtralTranscribeService();
+      const sttResult = await sttService.transcribe(audioBuffer, mimeType, {
         language: targetLanguage,
-        detectLanguage: true,
       });
 
-      if (!gladiaResult.success || !gladiaResult.transcription) {
-        logger.error('Gladia transcription failed', {
+      if (!sttResult.success || !sttResult.transcription) {
+        logger.error('Voxtral STT transcription failed', {
           operation: 'audio:transcription',
-          _error: gladiaResult.error ?? 'No transcription result',
+          _error: sttResult.error ?? 'No transcription result',
           severity: 'high' as const,
         });
 
         return {
           success: false,
-          _error: gladiaResult.error ?? 'Échec de la transcription',
+          _error: sttResult.error ?? 'Échec de la transcription',
         };
       }
 
-      // Construire le résultat de base
+      // Construire le résultat de base.
+      // Voxtral ne fournit pas words/confidence/duration — l'analyse de
+      // prononciation restera désactivée (branche words.length > 0 fausse).
       const result: TranscriptionResult = {
         success: true,
-        transcription: gladiaResult.transcription,
-        detectedLanguage: gladiaResult.detectedLanguage ?? targetLanguage,
-        duration: gladiaResult.duration,
+        transcription: sttResult.transcription,
+        detectedLanguage: sttResult.detectedLanguage ?? targetLanguage,
+        duration: sttResult.duration,
       };
 
-      // Ajouter l'analyse de prononciation si contexte approprié
-      if (context !== 'general' && gladiaResult.words && gladiaResult.words.length > 0) {
-        result.pronunciationAnalysis = this.buildPronunciationAnalysis(
-          gladiaResult,
-          referenceText,
-          targetLanguage,
-          schoolLevel,
-          context
-        );
-      }
-
-      logger.info('Audio transcription completed (Gladia 100%)', {
+      logger.info('Audio transcription completed (Voxtral STT)', {
         operation: 'audio:transcription',
-        provider: 'gladia',
+        provider: 'voxtral',
         context,
         targetLanguage,
         hasAnalysis: !!result.pronunciationAnalysis,
@@ -188,20 +175,27 @@ class AudioTranscriptionService {
   }
 
   /**
-   * Construit l'analyse de prononciation à partir des données Gladia
+   * Construit l'analyse de prononciation à partir des données STT.
+   * Voxtral ne fournit pas de timecodes par mot — cette méthode n'est appelée
+   * que si words est non vide (ce qui n'arrive pas avec Voxtral aujourd'hui).
+   * Conservée pour une future évolution si le modèle fournit des timecodes.
    */
   private buildPronunciationAnalysis(
-    gladiaResult: GladiaTranscriptionResult,
+    sttResult: {
+      words?: Array<{ word: string; confidence: number }>;
+      confidence?: number;
+      transcription?: string;
+    },
     referenceText: string | undefined,
     targetLanguage: string,
     schoolLevel: EducationLevelType | undefined,
     context: string
   ): TranscriptionResult['pronunciationAnalysis'] {
-    const words = gladiaResult.words ?? [];
-    const transcription = gladiaResult.transcription ?? '';
+    const words = sttResult.words ?? [];
+    const transcription = sttResult.transcription ?? '';
 
     // 1. Calculer le score basé sur la confiance moyenne
-    const avgConfidence = gladiaResult.confidence ?? this.calculateAverageConfidence(words);
+    const avgConfidence = sttResult.confidence ?? this.calculateAverageConfidence(words);
     const score = Math.round(avgConfidence * 100);
 
     // 2. Identifier les mots bien/mal prononcés
