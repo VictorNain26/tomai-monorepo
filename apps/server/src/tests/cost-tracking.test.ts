@@ -28,4 +28,11 @@ describe('computeCostCents', () => {
     expect(r.unknownModel).toBe(true);
     expect(r.costCents).toBe(0);
   });
+
+  it('ne matche pas magistral-medium-latest sur la clé mistral-medium', () => {
+    const r = computeCostCents('magistral-medium-latest', 1_000_000, 1_000_000, false);
+    expect(r.unknownModel).toBe(false);
+    // (2.0 + 5.0) * 0.92 * 100 = 644 — tarif magistral-medium, PAS mistral-medium
+    expect(r.costCents).toBe(644);
+  });
 });

@@ -60,7 +60,8 @@ const USD_TO_EUR = env.USD_TO_EUR_RATE;
 
 /** Normalize provider-suffixed model IDs down to the pricing key. */
 function normalizeModelId(aiModel: string): string {
-  // Handle Mistral variant with version suffix (e.g. mistral-medium-3-2024 → mistral-medium-3).
+  // Normalize provider-suffixed model IDs to their pricing prefix
+  // (e.g. "mistral-medium-latest" → "mistral-medium").
   const lower = aiModel.toLowerCase();
   for (const key of Object.keys(MODEL_PRICING_USD_PER_MILLION)) {
     if (lower.startsWith(key)) return key;
@@ -85,7 +86,6 @@ export function computeCostCents(
   const outputUsd = (tokensOutput / 1_000_000) * pricing.output;
   const totalEur = (inputUsd + outputUsd) * USD_TO_EUR;
 
-  // Store as cents (integer) — Math.round to nearest cent.
   return { costCents: Math.round(totalEur * 100), unknownModel: false };
 }
 
