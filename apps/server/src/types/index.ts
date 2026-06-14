@@ -56,8 +56,7 @@ declare global {
       BETTER_AUTH_SECRET: string;
       BETTER_AUTH_URL?: string;
       // AI Services — stack 100 % Mistral souveraine EU (Phase 2B closed)
-      MISTRAL_API_KEY?: string;     // Chat, embeddings épisodique, TTS Voxtral
-      GLADIA_API_KEY?: string;       // Speech-to-Text
+      MISTRAL_API_KEY?: string;     // Chat, embeddings épisodique, TTS/STT Voxtral
       AI_SERVICE_URL?: string;       // BGE-M3 micro-service (apps/ai-service)
       AI_SERVICE_TOKEN?: string;     // Bearer token for ai-service auth
       MAX_TOKENS_PER_RESPONSE?: string;

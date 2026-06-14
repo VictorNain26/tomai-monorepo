@@ -80,9 +80,6 @@ const EnvSchema = z.object({
   MISTRAL_RETRY_ATTEMPTS: z.coerce.number().int().default(3),
   MISTRAL_RETRY_DELAY: z.coerce.number().int().default(1000),
 
-  // STT — Gladia (EU, Paris)
-  GLADIA_API_KEY: z.string().optional(),
-
   // RAG — Qdrant Cloud + BGE-M3 embeddings via ai-service
   QDRANT_URL: z.string().optional(),
   QDRANT_API_KEY: z.string().optional(),

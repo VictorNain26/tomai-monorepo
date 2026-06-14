@@ -165,8 +165,8 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
 
       let transcription: string | undefined;
 
-      // Audio: transcription via Gladia (EU) at upload time so the chat path
-      // doesn't have to wait for STT on every turn. Images and PDFs are sent
+      // Audio: transcription via Voxtral STT (Mistral) at upload time so the chat
+      // path doesn't have to wait for STT on every turn. Images and PDFs are sent
       // back to Mistral inline (base64 / OCR text) by file-multimodal at chat
       // time — no separate upload step, no external file cache.
       if (fileType === 'audio') {
@@ -179,7 +179,6 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
               {
                 targetLanguage: 'fr',
                 schoolLevel: user.schoolLevel as EducationLevelType,
-                context: 'general',
               }
             );
 
