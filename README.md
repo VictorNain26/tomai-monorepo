@@ -17,6 +17,8 @@ Stop infra : `pnpm dev:down`. API docs (dev) : http://localhost:3000/swagger
 
 > `pnpm dev` effectue un fail-fast sur l'infra Docker avant de lancer les apps : si postgres, qdrant ou ai-service est absent ou unhealthy, les apps ne démarrent pas. Lancer `pnpm doctor` pour le détail complet.
 
+> **RAG (programmes officiels)** : l'index vit sur **Qdrant Cloud — source unique de vérité** (partagée dev + prod, déjà ingérée). Renseigne `QDRANT_URL` + `QDRANT_API_KEY` (+ `QDRANT_ENABLED=true`, `QDRANT_COLLECTION`) dans `apps/server/.env` — valeurs auprès de l'équipe, gabarit dans `.env.example`. Aucune ingestion locale nécessaire. Sans ces vars, l'app tourne en `degraded` (RAG off). Pour (re)peupler l'index ou bosser 100 % offline : voir `apps/curriculum/README.md`.
+
 ## Structure
 
 ```
@@ -66,4 +68,4 @@ pnpm db:push                  # Sync schéma (dev local uniquement)
 ## Documentation
 
 Source de vérité : les `CLAUDE.md` de chaque app.
-[Racine](./CLAUDE.md) · [Server](./apps/server/CLAUDE.md) · [Web](./apps/web/CLAUDE.md) · [Mobile](./apps/mobile/CLAUDE.md) · [AI service](./apps/ai-service/README.md)
+[Racine](./CLAUDE.md) · [Server](./apps/server/CLAUDE.md) · [Web](./apps/web/CLAUDE.md) · [Mobile](./apps/mobile/CLAUDE.md) · [AI service](./apps/ai-service/README.md) · [Curriculum / index RAG](./apps/curriculum/README.md)

@@ -38,15 +38,14 @@ services:
       - CORS_ORIGINS=http://localhost:3001,http://localhost:3002
       # Container-network override (diffère de apps/server/.env en host)
       - BETTER_AUTH_URL=http://localhost:3000
-      # RAG - Qdrant : local (service qdrant) par défaut, override possible vers Cloud
-      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
-      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
-      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-tomai_educational}
-      # AI Service (BGE-M3 embed + bge-reranker-v2-m3) — local dev
+      # AI Service : hostname interne du réseau Docker (l'env_file pointe :8001 host)
       - AI_SERVICE_URL=http://ai-service:8000
-      # Les secrets (BETTER_AUTH_SECRET, GOOGLE_*, MISTRAL_API_KEY, AI_SERVICE_TOKEN,
-      # PRONOTE_ENCRYPTION_KEY, REVENUECAT_WEBHOOK_AUTH) viennent d'env_file ci-dessous —
-      # les lister en ${VAR} ici les écraserait à blanc (environment > env_file).
+      # RAG Qdrant (QDRANT_URL / QDRANT_API_KEY / QDRANT_COLLECTION) + secrets
+      # (BETTER_AUTH_SECRET, GOOGLE_*, MISTRAL_API_KEY, AI_SERVICE_TOKEN,
+      # PRONOTE_ENCRYPTION_KEY, REVENUECAT_WEBHOOK_AUTH) viennent d'env_file : l'index
+      # curriculum vit sur Qdrant Cloud (source unique de vérité). Les lister en ${VAR}
+      # ici les écraserait (environment > env_file). Offline sans Cloud : poser
+      # QDRANT_URL=http://qdrant:6333 dans apps/server/.env.
     env_file:
       - apps/server/.env
     volumes:

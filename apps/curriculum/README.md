@@ -8,8 +8,15 @@ Qdrant). La couche LLM (chat socratique, prompting, hallucination eval) est
 la responsabilité du backend `tomai-monorepo/apps/server`. Source de vérité
 architecture : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-**Souveraineté EU stricte** : Mistral (embeddings) + Qdrant Cloud (fr-par).
+**Souveraineté EU stricte** : embeddings BGE-M3 self-host (ai-service) + Qdrant Cloud (fr-par).
 Aucun SaaS hors UE.
+
+> **Index = Qdrant Cloud, source unique de vérité** (partagée dev + prod). Ce
+> pipeline **construit/maintient** cet index — c'est un job **rare** (les
+> programmes BO bougent ≈ annuellement), **pas** une étape de setup par dev. Un
+> dev qui code sur l'app consomme l'index Cloud directement (cf. README racine),
+> il ne lance jamais ce pipeline. Nom de collection = config d'env
+> (`QDRANT_COLLECTION`, défaut neutre `tomai_educational`).
 
 ## État
 
@@ -82,21 +89,27 @@ docs/ARCHITECTURE.md       Source de vérité unique sur l'architecture
 docs/audits/               Rapports coverage horodatés
 ```
 
-## Quickstart
+## Construire / rafraîchir l'index (job rare)
+
+Pipeline de build de l'index Cloud. À lancer quand le **contenu** change, pas en
+setup dev. `QDRANT_URL` pointe le Qdrant Cloud (`https://` + `QDRANT_API_KEY`) ;
+l'ai-service local (`AI_SERVICE_URL=http://localhost:8001`) fait l'embedding.
 
 ```bash
 # 1. Setup
-cp .env.example .env       # MISTRAL_API_KEY, QDRANT_URL, QDRANT_API_KEY
+cp .env.example .env       # QDRANT_URL (Cloud https), QDRANT_API_KEY, AI_SERVICE_URL, MISTRAL_API_KEY
 uv sync --all-extras
 
 # 2. Extraire les PDFs en markdown (idempotent)
 uv run python scripts/extract_pdfs.py
 
-# 3. Créer la collection Qdrant cible
+# 3. Créer la collection Qdrant cible (idempotent)
 uv run python scripts/migrate_collection.py
 
 # 4. Ingérer (chunking + embeddings + upsert)
-uv run python scripts/ingest.py
+#    EMBED_BATCH_SIZE=16 si l'ai-service tourne sur CPU peu de cœurs (évite le
+#    timeout 300s d'/embed) ; débrider le conteneur : docker update --cpus 8 tomai-ai-service-dev
+EMBED_BATCH_SIZE=16 uv run python scripts/ingest.py
 
 # 5. Tester le retrieval
 uv run python scripts/query.py "Théorème de Pythagore" --matiere=mathematiques --niveau=quatrieme
@@ -112,6 +125,24 @@ uv run python scripts/evaluate.py --by-matiere       # chunk_id recall + MRR
 # 8. Veille BO
 uv run python scripts/veille_programmes.py
 ```
+
+## Mise à jour du contenu
+
+Les IDs de points sont déterministes sur le contenu :
+`uuid5(NAMESPACE_URL, sha256("matière:niveau:texte"))`.
+
+- **Ajouter** (nouvelle matière/section) → propre et idempotent : nouveaux textes
+  = nouveaux IDs, l'existant n'est pas touché. Re-`ingest.py` (ou `--matiere=X`).
+- **Modifier / supprimer** du contenu existant → ⚠️ le pipeline **ne supprime pas
+  les points obsolètes** : un texte changé crée un nouveau point et **laisse
+  l'ancien** (son hash n'existe plus) → orphelin retrievable, données périmées.
+
+Pour modifier sans laisser d'orphelins (à mettre en place **quand le besoin réel
+arrive**, pas avant) : **blue-green via alias Qdrant** — le serveur interroge un
+alias stable, on ingère dans une nouvelle collection versionnée, puis swap
+atomique de l'alias (`update_collection_aliases`) → zéro coupure, zéro orphelin,
+rollback instantané. Pour une retouche ciblée : `delete-by-matiere` avant de
+ré-ingérer cette matière.
 
 ## Qualité & CI
 

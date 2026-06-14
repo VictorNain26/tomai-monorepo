@@ -40,9 +40,13 @@ def get_qdrant_client():
 
         url = os.environ.get("QDRANT_URL")
         api_key = os.environ.get("QDRANT_API_KEY")
-        if not url or not api_key:
-            raise RuntimeError("QDRANT_URL et QDRANT_API_KEY manquantes (.env)")
-        _qdrant_client = QdrantClient(url=url, api_key=api_key, check_compatibility=True)
+        if not url:
+            raise RuntimeError("QDRANT_URL manquante (.env)")
+        # Sépare dev/prod par le scheme : Qdrant Cloud (https) exige une clé ;
+        # le Qdrant local de dev (http) tourne sans auth (api_key=None).
+        if url.startswith("https://") and not api_key:
+            raise RuntimeError("QDRANT_API_KEY requis pour Qdrant Cloud (URL https)")
+        _qdrant_client = QdrantClient(url=url, api_key=api_key or None, check_compatibility=True)
     return _qdrant_client
 
 

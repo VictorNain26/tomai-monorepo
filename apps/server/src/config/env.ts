@@ -93,6 +93,10 @@ const EnvSchema = z.object({
   AI_SERVICE_URL: z.string().optional(),
   AI_SERVICE_TOKEN: z.string().optional(),
   AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().default(15000),
+  // Candidats récupérés (Qdrant) puis reranké (cross-encoder) par query. Le coût
+  // du rerank est ∝ ce nombre. Défaut = prod/GPU (qualité) ; baisser en dev CPU
+  // (ex. 8) accélère le rerank au prix d'un léger écart de classement.
+  RAG_RERANK_CANDIDATES: z.coerce.number().int().positive().optional(),
 
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(900000), // 15 min
@@ -144,6 +148,12 @@ function parseEnv(): EnvType {
 
     if (result.data.AI_SERVICE_URL && !result.data.AI_SERVICE_TOKEN) {
       prodChecks.push('AI_SERVICE_TOKEN is required when AI_SERVICE_URL is set (production)');
+    }
+
+    // Prod RAG runs on Qdrant Cloud, which is authenticated. Local dev Qdrant
+    // is keyless, so this requirement is production-only.
+    if (result.data.QDRANT_ENABLED === 'true' && !result.data.QDRANT_API_KEY) {
+      prodChecks.push('QDRANT_API_KEY is required when QDRANT_ENABLED=true (production)');
     }
 
     if (prodChecks.length > 0) {

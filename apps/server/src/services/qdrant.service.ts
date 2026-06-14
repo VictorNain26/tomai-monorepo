@@ -64,10 +64,13 @@ class QdrantService {
 
   private getClient(): QdrantClient {
     if (!this.client) {
-      if (!QDRANT_URL || !QDRANT_API_KEY) {
-        throw new Error('QDRANT_URL and QDRANT_API_KEY are required');
+      if (!QDRANT_URL) {
+        throw new Error('QDRANT_URL is required');
       }
-      this.client = new QdrantClient({ url: QDRANT_URL, apiKey: QDRANT_API_KEY });
+      // Local Qdrant (dev) runs unauthenticated — an empty key is valid and
+      // must not be sent as a literal apiKey. Qdrant Cloud sets the key; a
+      // missing cloud key surfaces as a 401 caught by isAvailable().
+      this.client = new QdrantClient({ url: QDRANT_URL, apiKey: QDRANT_API_KEY || undefined });
       logger.info('Qdrant client initialized', {
         operation: 'qdrant:init',
         url: QDRANT_URL.substring(0, 30) + '...',

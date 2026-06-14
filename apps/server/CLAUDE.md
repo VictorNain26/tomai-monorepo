@@ -16,19 +16,15 @@ bun run build                     # Build production
 
 Le backend tourne sur l'**host** via `pnpm dev`, pas en conteneur (pas de clash :3000). Postgres seul : `docker compose up -d postgres` (racine). Image backend iso-prod (opt-in) : `docker compose --profile backend up` (racine).
 
-### RAG en local (sans Qdrant Cloud)
+### RAG — Qdrant Cloud (source unique de vérité)
 
-`pnpm dev` (racine) lève la stack RAG : **Qdrant** (`:6333`) + **ai-service** BGE-M3 (`:8001`) + Postgres, et le backend sur l'**host**. Le backend tape le Qdrant local par défaut (`QDRANT_URL=http://qdrant:6333`) ; override Cloud via `QDRANT_URL`/`QDRANT_API_KEY` dans `.env`. Au 1er boot, ai-service télécharge ~3,5 Go de modèles (cache persistant `tomai_ai_service_hf_cache`).
+L'index curriculum (programmes officiels) vit sur **Qdrant Cloud, partagé dev + prod** — pas d'ingestion par dev. Le backend lit la collection via `QDRANT_URL`/`QDRANT_API_KEY`/`QDRANT_COLLECTION` (**config d'env**, jamais un défaut code : défaut neutre `tomai_educational`, valeur réelle dans `.env`) ; `QDRANT_ENABLED=true` requis côté serveur (défaut code `false`). Séparation dev/prod **portée par le scheme d'URL** : `qdrant.service.ts` n'exige une clé que pour `https://` (Cloud), le Qdrant local (`http://`) tourne sans auth ; en prod un fail-fast dans `env.ts` exige la clé si `QDRANT_ENABLED=true`. Gabarit des vars : `.env.example`.
 
-Pour diagnostiquer l'infra RAG complète (conteneurs, qdrant, ai-service, migrations, roundtrip embed→search) : `pnpm doctor` (racine). Chaque check affiche PASS/FAIL/SKIP avec la raison — exit code 0 uniquement si tout passe.
+`pnpm dev` (racine) lève quand même la stack locale **Qdrant** (`:6333`) + **ai-service** BGE-M3 (`:8001`) + Postgres : l'ai-service embed les **queries** au runtime, le Qdrant local sert `pnpm doctor` (roundtrip embed→search isolé) et le dev 100 % offline. 1er boot ai-service : ~3,5 Go de modèles (cache `tomai_ai_service_hf_cache`).
 
-Peupler l'index curriculum (lancé depuis l'host → ai-service sur `:8001`, qdrant sur `:6333`) :
+`pnpm doctor` (racine) diagnostique l'infra RAG (conteneurs, qdrant, ai-service, migrations, roundtrip). PASS/FAIL/SKIP par check, exit 0 seulement si tout passe.
 
-```bash
-cd ../curriculum   # apps/curriculum/.env : AI_SERVICE_URL=http://localhost:8001  QDRANT_URL=http://localhost:6333  QDRANT_API_KEY=  QDRANT_COLLECTION=tomai_educational
-uv run python scripts/migrate_collection.py   # crée la collection
-uv run python scripts/ingest.py               # chunk + embed via /embed + upsert
-```
+**(Re)construire l'index Cloud** = job rare (programmes BO ≈ annuels), pas une étape de setup dev. Procédure + knob `EMBED_BATCH_SIZE` (embedding CPU lent) + pattern d'update (alias blue-green) : `apps/curriculum/README.md`.
 
 ### Premier démarrage dev local (vérifié)
 

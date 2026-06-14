@@ -41,10 +41,14 @@ PAYLOAD_INDEX_FIELDS = ("niveau", "matiere", "cycle", "source_file")
 def get_client() -> QdrantClient:
     url = os.environ.get("QDRANT_URL")
     api_key = os.environ.get("QDRANT_API_KEY")
-    if not url or not api_key:
-        raise RuntimeError("QDRANT_URL et QDRANT_API_KEY sont obligatoires (.env)")
+    if not url:
+        raise RuntimeError("QDRANT_URL est obligatoire (.env)")
+    # Sépare dev/prod par le scheme : Qdrant Cloud (https) exige une clé ;
+    # le Qdrant local de dev (http) tourne sans auth (api_key=None).
+    if url.startswith("https://") and not api_key:
+        raise RuntimeError("QDRANT_API_KEY requis pour Qdrant Cloud (URL https)")
     # check_compatibility=True : warn si client/server diffèrent — drift catch.
-    return QdrantClient(url=url, api_key=api_key, check_compatibility=True)
+    return QdrantClient(url=url, api_key=api_key or None, check_compatibility=True)
 
 
 def create_collection(client: QdrantClient, recreate: bool = False) -> None:
