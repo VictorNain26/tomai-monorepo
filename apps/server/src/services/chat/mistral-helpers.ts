@@ -110,6 +110,54 @@ export function wrapStudentContext(
   return `<student_context>\n${body}\n</student_context>`;
 }
 
+/**
+ * Shape of the `search_educational_content` tool result that carries untrusted
+ * curriculum text. The official-programme corpus is third-party data: a forged
+ * or poisoned chunk must never be read as an instruction.
+ */
+interface RagToolResult {
+  found?: boolean;
+  context?: string;
+  resultsCount?: number;
+  averageScore?: number;
+  bestMatchSection?: string;
+  bestMatchMatiere?: string;
+  chunks?: Array<{ score?: number; section?: string; matiere?: string; text?: string }>;
+}
+
+/**
+ * Build the `tool` message content for a RAG search result: the curriculum text
+ * (untrusted) is tag-stripped and wrapped in a `<curriculum_excerpt>` fence the
+ * system prompt treats as data, while the metadata (found, score, sections)
+ * stays as plain JSON outside the fence. Replaces a raw `JSON.stringify` that
+ * would have let a poisoned chunk read as an instruction.
+ */
+export function wrapCurriculumToolResult(result: unknown): string {
+  if (typeof result !== 'object' || result === null) {
+    return JSON.stringify(result);
+  }
+  const rag = result as RagToolResult;
+  const metadata = {
+    found: rag.found,
+    resultsCount: rag.resultsCount,
+    averageScore: rag.averageScore,
+    bestMatchSection: rag.bestMatchSection,
+    bestMatchMatiere: rag.bestMatchMatiere,
+    chunks: (rag.chunks ?? []).map((c) => ({
+      score: c.score,
+      section: c.section,
+      matiere: c.matiere,
+    })),
+  };
+
+  const excerpt = stripPromptTags(rag.context ?? '');
+  const fence = excerpt
+    ? `\n<curriculum_excerpt>\n${excerpt}\n</curriculum_excerpt>`
+    : '';
+
+  return `${JSON.stringify(metadata)}${fence}`;
+}
+
 export function getToolStatusLabel(name: string): string {
   switch (name) {
     case 'search_educational_content': return 'Recherche dans les programmes...';

@@ -50,6 +50,7 @@ import {
   wrapUserMessage,
   wrapPronoteData,
   wrapStudentContext,
+  wrapCurriculumToolResult,
   getToolStatusLabel,
 } from './mistral-helpers.js';
 
@@ -338,9 +339,17 @@ class MistralChatService {
         for (let i = 0; i < pendingCalls.length; i++) {
           const call = pendingCalls[i];
           if (!call) continue;
+          const result = results[i] ?? {};
+          // The curriculum corpus is third-party data — fence its text so a
+          // poisoned chunk cannot be read as an instruction. Other tool results
+          // are server-owned and stay as plain JSON.
+          const content =
+            call.function.name === 'search_educational_content'
+              ? wrapCurriculumToolResult(result)
+              : JSON.stringify(result);
           messages.push({
             role: 'tool',
-            content: JSON.stringify(results[i] ?? {}),
+            content,
             toolCallId: call.id,
             name: call.function.name,
           });
