@@ -60,7 +60,7 @@ const TEMPERATURE = 0.6;
 const MAX_TOKENS = 1024;
 // Bump this constant whenever content under config/prompts/** or shared/pedagogy/**
 // changes — otherwise Mistral serves the stale cached prefix.
-const PROMPT_CACHE_VERSION = '2026-06-14-intent';
+const PROMPT_CACHE_VERSION = '2026-06-14-viz';
 
 class MistralChatService {
   private buildSystemPromptForChat(params: {

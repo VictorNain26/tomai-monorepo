@@ -38,7 +38,7 @@ export const CHAT_STREAM_CHUNK_TIMEOUT_MS = 60_000;
  * text read as a system instruction.
  */
 const TEMPLATE_TAGS =
-  /<\/?(?:student_message|pronote_data|student_context|attached_file|curriculum_excerpt|identity|tone|transparency|pedagogy|safety|rag_policy|level_adaptation|subject_specifics)\b[^>]*>/gi;
+  /<\/?(?:student_message|pronote_data|student_context|attached_file|curriculum_excerpt|identity|tone|transparency|pedagogy|visualization|safety|rag_policy|level_adaptation|subject_specifics)\b[^>]*>/gi;
 
 /** Remove all template delimiter tags from untrusted content. */
 export function stripPromptTags(content: string): string {

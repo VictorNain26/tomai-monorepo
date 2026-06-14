@@ -7,6 +7,7 @@ import { generateIdentityCore, generateStudentContext } from './core/identity.js
 import { generateRAGSourceOfTruth } from './core/rag-policy.js';
 import { generateSafetyGuardrails } from './core/safety.js';
 import { generateAttachmentsPolicy } from './core/attachments.js';
+import { generateVisualizationPolicy } from './core/visualization.js';
 import { generateChatbotPedagogyPrompt } from '../../shared/pedagogy/index.js';
 import { generateLevelAdaptation } from './adaptation/by-level.js';
 import { generateSubjectBlock } from './adaptation/by-subject.js';
@@ -37,6 +38,7 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
     // ——— STABLE PREFIX (partagé entre utilisateurs, cachable) ———
     generateIdentityCore(),
     generateChatbotPedagogyPrompt(),
+    generateVisualizationPolicy(),
     generateRAGSourceOfTruth(),
     generateAttachmentsPolicy(),
     generateSafetyGuardrails(),
