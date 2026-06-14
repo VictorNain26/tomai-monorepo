@@ -29,7 +29,7 @@ describe('chatStream usage (SDK path)', () => {
 
     const chunks = await collect(chatStream({ messages: [{ role: 'user', content: 'salut' }] }));
     const done = chunks.find((c) => c.type === 'done');
-    expect(done?.usage).toEqual({ promptTokens: 100, completionTokens: 50, totalTokens: 150 });
+    expect(done?.usage).toEqual({ promptTokens: 100, completionTokens: 50, totalTokens: 150, cachedTokens: 0 });
   });
 });
 
@@ -48,6 +48,6 @@ describe('chatStream usage (HTTP direct path, promptCacheKey)', () => {
       promptCacheKey: 'test-v1',
     }));
     const done = chunks.find((c) => c.type === 'done');
-    expect(done?.usage).toEqual({ promptTokens: 120, completionTokens: 80, totalTokens: 200 });
+    expect(done?.usage).toEqual({ promptTokens: 120, completionTokens: 80, totalTokens: 200, cachedTokens: 0 });
   });
 });

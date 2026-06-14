@@ -67,10 +67,12 @@ export interface ChatStreamChunk {
   content?: string;
   role?: 'assistant';
   finishReason?: 'stop' | 'length' | 'error';
+  /** Forme synchronisée avec ChatStreamChunk.usage de mistral-client.ts. */
   usage?: {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    cachedTokens: number;
   };
   error?: {
     message: string;

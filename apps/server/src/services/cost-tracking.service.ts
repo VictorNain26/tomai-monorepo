@@ -9,9 +9,8 @@
  *
  * Pricing is expressed in USD per million tokens, as published by each
  * provider. We convert to cents at insert time using a fixed USD/EUR rate
- * (configurable via env). Cached-input pricing is approximated at 10% of
- * standard input — the exact cache hit ratio is not available in the
- * Gemini streaming response so we treat cache savings conservatively.
+ * (configurable via env). Cached tokens (from prompt_tokens_details.cached_tokens
+ * in the Mistral SSE response) are billed at 10% of the standard input rate.
  *
  * Unknown models: we insert a row with cost_cents=0 and a
  * billingMetadata.unknownModel flag rather than silently dropping the call.
@@ -32,19 +31,26 @@ interface CostRecordInput {
   operation: AiOperation;
   tokensInput: number;
   tokensOutput: number;
-  /** True when this call benefited from prompt caching; applies the cached rate. */
-  cacheHit?: boolean;
+  /** Tokens served from the prompt cache (billed at 10% of input rate). */
+  cachedTokens?: number;
 }
 
 /**
- * Published pricing in USD per million tokens (input / output) as of April
- * 2026. Update when vendors change pricing; values are source-of-truth for
- * accounting. Cached input is charged at ~10% of standard input across all
- * major vendors.
+ * Published Mistral pricing in USD per million tokens (input / output),
+ * as published at mistral.ai/pricing (juin 2026). Keys are prefixes:
+ * normalizeModelId matches via startsWith, so "mistral-medium" covers
+ * "mistral-medium-latest", "mistral-medium-2508", etc. Longer prefixes
+ * (ministral-3b, ministral-8b) must come before shorter ones to avoid
+ * shadowing.
  */
 const MODEL_PRICING_USD_PER_MILLION: Record<string, { input: number; output: number }> = {
-  'mistral-medium-3': { input: 0.40, output: 2.00 },
-  'mistral-large-3': { input: 2.00, output: 6.00 },
+  'magistral-medium':  { input: 2.00,  output: 5.00  },
+  'magistral-small':   { input: 0.50,  output: 1.50  },
+  'ministral-3b':      { input: 0.10,  output: 0.10  },
+  'ministral-8b':      { input: 0.15,  output: 0.15  },
+  'mistral-medium':    { input: 1.50,  output: 7.50  },
+  'mistral-small':     { input: 0.10,  output: 0.30  },
+  'mistral-large':     { input: 0.50,  output: 1.50  },
 };
 
 const CACHE_DISCOUNT = 0.10;
@@ -53,7 +59,8 @@ const USD_TO_EUR = env.USD_TO_EUR_RATE;
 
 /** Normalize provider-suffixed model IDs down to the pricing key. */
 function normalizeModelId(aiModel: string): string {
-  // Handle Mistral variant with version suffix (e.g. mistral-medium-3-2024 → mistral-medium-3).
+  // Normalize provider-suffixed model IDs to their pricing prefix
+  // (e.g. "mistral-medium-latest" → "mistral-medium").
   const lower = aiModel.toLowerCase();
   for (const key of Object.keys(MODEL_PRICING_USD_PER_MILLION)) {
     if (lower.startsWith(key)) return key;
@@ -61,11 +68,11 @@ function normalizeModelId(aiModel: string): string {
   return lower;
 }
 
-function computeCostCents(
+export function computeCostCents(
   aiModel: string,
   tokensInput: number,
   tokensOutput: number,
-  cacheHit: boolean,
+  cachedTokens: number,
 ): { costCents: number; unknownModel: boolean } {
   const key = normalizeModelId(aiModel);
   const pricing = MODEL_PRICING_USD_PER_MILLION[key];
@@ -73,12 +80,14 @@ function computeCostCents(
     return { costCents: 0, unknownModel: true };
   }
 
-  const effectiveInputRate = cacheHit ? pricing.input * CACHE_DISCOUNT : pricing.input;
-  const inputUsd = (tokensInput / 1_000_000) * effectiveInputRate;
+  const cached = Math.min(Math.max(cachedTokens, 0), tokensInput);
+  const uncachedInput = tokensInput - cached;
+  const inputUsd =
+    (uncachedInput / 1_000_000) * pricing.input +
+    (cached / 1_000_000) * pricing.input * CACHE_DISCOUNT;
   const outputUsd = (tokensOutput / 1_000_000) * pricing.output;
   const totalEur = (inputUsd + outputUsd) * USD_TO_EUR;
 
-  // Store as cents (integer) — Math.round to nearest cent.
   return { costCents: Math.round(totalEur * 100), unknownModel: false };
 }
 
@@ -88,12 +97,11 @@ class CostTrackingService {
       input.aiModel,
       input.tokensInput,
       input.tokensOutput,
-      input.cacheHit ?? false,
+      input.cachedTokens ?? 0,
     );
 
     if (unknownModel) {
-      // Observability: an unmapped model leaves a $0 row but alerts us to
-      // update the pricing table. Do not silently discard the call.
+      // Ligne à $0 intentionnelle — signale au monitoring de mettre à jour MODEL_PRICING_USD_PER_MILLION.
       logger.warn('Cost tracking: unknown model pricing', {
         operation: 'cost-tracking:unknown-model',
         aiModel: input.aiModel,
@@ -111,7 +119,7 @@ class CostTrackingService {
         tokensOutput: input.tokensOutput,
         costCents,
         billingMetadata: {
-          cacheHit: input.cacheHit ?? false,
+          cachedTokens: input.cachedTokens ?? 0,
           unknownModel,
           usdToEur: USD_TO_EUR,
         },

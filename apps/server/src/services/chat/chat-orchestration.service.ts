@@ -295,6 +295,7 @@ class ChatOrchestrationService {
           operation: 'chat',
           tokensInput: chunk.usage.promptTokens,
           tokensOutput: chunk.usage.completionTokens,
+          cachedTokens: chunk.usage.cachedTokens,
         });
       }
     }
