@@ -11,7 +11,7 @@
  * provider. We convert to cents at insert time using a fixed USD/EUR rate
  * (configurable via env). Cached-input pricing is approximated at 10% of
  * standard input — the exact cache hit ratio is not available in the
- * Gemini streaming response so we treat cache savings conservatively.
+ * Mistral streaming response so we treat cache savings conservatively.
  *
  * Unknown models: we insert a row with cost_cents=0 and a
  * billingMetadata.unknownModel flag rather than silently dropping the call.
@@ -37,14 +37,21 @@ interface CostRecordInput {
 }
 
 /**
- * Published pricing in USD per million tokens (input / output) as of April
- * 2026. Update when vendors change pricing; values are source-of-truth for
- * accounting. Cached input is charged at ~10% of standard input across all
- * major vendors.
+ * Published Mistral pricing in USD per million tokens (input / output),
+ * as published at mistral.ai/pricing (juin 2026). Keys are prefixes:
+ * normalizeModelId matches via startsWith, so "mistral-medium" covers
+ * "mistral-medium-latest", "mistral-medium-2508", etc. Longer prefixes
+ * (ministral-3b, ministral-8b) must come before shorter ones to avoid
+ * shadowing.
  */
 const MODEL_PRICING_USD_PER_MILLION: Record<string, { input: number; output: number }> = {
-  'mistral-medium-3': { input: 0.40, output: 2.00 },
-  'mistral-large-3': { input: 2.00, output: 6.00 },
+  'magistral-medium':  { input: 2.00,  output: 5.00  },
+  'magistral-small':   { input: 0.50,  output: 1.50  },
+  'ministral-3b':      { input: 0.10,  output: 0.10  },
+  'ministral-8b':      { input: 0.15,  output: 0.15  },
+  'mistral-medium':    { input: 1.50,  output: 7.50  },
+  'mistral-small':     { input: 0.10,  output: 0.30  },
+  'mistral-large':     { input: 0.50,  output: 1.50  },
 };
 
 const CACHE_DISCOUNT = 0.10;
@@ -61,7 +68,7 @@ function normalizeModelId(aiModel: string): string {
   return lower;
 }
 
-function computeCostCents(
+export function computeCostCents(
   aiModel: string,
   tokensInput: number,
   tokensOutput: number,
