@@ -89,6 +89,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         fileIds,
         userRole: user.role === 'parent' ? 'parent' : 'student',
         pronoteContext,
+        inputMode: data.inputMode,
       });
 
       for await (const chunk of stream) {
@@ -164,6 +165,9 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         }), {
           maxItems: 5,
           description: 'File IDs for multimodal messages'
+        })),
+        inputMode: t.Optional(t.Union([t.Literal('text'), t.Literal('voice')], {
+          description: 'Input channel declared by the user gesture (mic vs keyboard); never inferred by the model. Defaults to text.'
         }))
       }),
       pronoteContext: t.Optional(t.Object({

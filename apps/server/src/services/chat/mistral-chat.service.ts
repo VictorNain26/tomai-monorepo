@@ -31,6 +31,7 @@ import { chatStream, type MistralMessage, type MistralToolCall, type MistralCont
 import { routeReasoningEffort } from '../../lib/ai/mistral-reasoning.js';
 import { detectSystemPromptLeak } from '../../lib/ai/mistral-guardrails.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
+import { isSpeakable } from '../../lib/text/speech-normalize.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory, type OptimizationContext } from '../../utils/conversation/index.js';
 import { agentTools } from './tool-declarations.js';
@@ -60,7 +61,7 @@ const TEMPERATURE = 0.6;
 const MAX_TOKENS = 1024;
 // Bump this constant whenever content under config/prompts/** or shared/pedagogy/**
 // changes — otherwise Mistral serves the stale cached prefix.
-const PROMPT_CACHE_VERSION = '2026-06-14-viz';
+const PROMPT_CACHE_VERSION = '2026-06-14-voicefmt';
 
 class MistralChatService {
   private buildSystemPromptForChat(params: {
@@ -152,6 +153,11 @@ class MistralChatService {
         // (recency bias). Not wrapped in <student_message> — this is not student input.
         ...(params.intentReinforcement
           ? [{ role: 'user' as const, content: `[Consigne pour ce tour]\n${params.intentReinforcement}` }]
+          : []),
+        // Voice turn marker: trusted server-side note (not student input) that
+        // triggers the spoken-style rule in the stable <response_format> block.
+        ...(params.inputMode === 'voice'
+          ? [{ role: 'user' as const, content: "[VOCAL] Ce tour a été dicté à l'oral — réponds en style parlé, sans markdown." }]
           : []),
         { role: 'user' as const, content: userContent },
       ];
@@ -376,6 +382,7 @@ class MistralChatService {
           usedRAG: toolsUsed.includes('search_educational_content'),
           toolsUsed,
           toolCallsCount,
+          speakable: isSpeakable(fullContent),
         },
       };
 

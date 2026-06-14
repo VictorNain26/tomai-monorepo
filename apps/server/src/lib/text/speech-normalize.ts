@@ -119,3 +119,18 @@ export function normalizeForSpeech(text: string): string {
 
   return result;
 }
+
+/**
+ * Tells whether an assistant answer is worth reading aloud. Returns false when
+ * it carries a Mermaid diagram, a fenced code block or a markdown table — visual
+ * structures the client should show, not speak. KaTeX formulas stay speakable:
+ * `normalizeForSpeech` verbalizes them ("a sur b"). Used to set the
+ * `speakable` hint on the chat `done` event; the client/user decides what to do.
+ */
+export function isSpeakable(text: string): boolean {
+  // Any fence covers both ```mermaid diagrams and ``` code blocks.
+  if (text.includes('```')) return false;
+  // Markdown table delimiter row, e.g. |---|:--:| .
+  if (/\|[\s:-]*-{3,}[\s:|-]*\|/.test(text)) return false;
+  return true;
+}
