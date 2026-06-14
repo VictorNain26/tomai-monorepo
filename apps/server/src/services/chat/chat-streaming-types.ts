@@ -71,6 +71,7 @@ export interface ChatStreamChunk {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    cachedTokens: number;
   };
   error?: {
     message: string;

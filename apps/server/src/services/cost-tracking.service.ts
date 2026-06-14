@@ -9,9 +9,8 @@
  *
  * Pricing is expressed in USD per million tokens, as published by each
  * provider. We convert to cents at insert time using a fixed USD/EUR rate
- * (configurable via env). Cached-input pricing is approximated at 10% of
- * standard input — the exact cache hit ratio is not available in the
- * Mistral streaming response so we treat cache savings conservatively.
+ * (configurable via env). Cached tokens (from prompt_tokens_details.cached_tokens
+ * in the Mistral SSE response) are billed at 10% of the standard input rate.
  *
  * Unknown models: we insert a row with cost_cents=0 and a
  * billingMetadata.unknownModel flag rather than silently dropping the call.
@@ -32,8 +31,8 @@ interface CostRecordInput {
   operation: AiOperation;
   tokensInput: number;
   tokensOutput: number;
-  /** True when this call benefited from prompt caching; applies the cached rate. */
-  cacheHit?: boolean;
+  /** Tokens served from the prompt cache (billed at 10% of input rate). */
+  cachedTokens?: number;
 }
 
 /**
@@ -73,7 +72,7 @@ export function computeCostCents(
   aiModel: string,
   tokensInput: number,
   tokensOutput: number,
-  cacheHit: boolean,
+  cachedTokens: number,
 ): { costCents: number; unknownModel: boolean } {
   const key = normalizeModelId(aiModel);
   const pricing = MODEL_PRICING_USD_PER_MILLION[key];
@@ -81,8 +80,11 @@ export function computeCostCents(
     return { costCents: 0, unknownModel: true };
   }
 
-  const effectiveInputRate = cacheHit ? pricing.input * CACHE_DISCOUNT : pricing.input;
-  const inputUsd = (tokensInput / 1_000_000) * effectiveInputRate;
+  const cached = Math.min(Math.max(cachedTokens, 0), tokensInput);
+  const uncachedInput = tokensInput - cached;
+  const inputUsd =
+    (uncachedInput / 1_000_000) * pricing.input +
+    (cached / 1_000_000) * pricing.input * CACHE_DISCOUNT;
   const outputUsd = (tokensOutput / 1_000_000) * pricing.output;
   const totalEur = (inputUsd + outputUsd) * USD_TO_EUR;
 
@@ -95,7 +97,7 @@ class CostTrackingService {
       input.aiModel,
       input.tokensInput,
       input.tokensOutput,
-      input.cacheHit ?? false,
+      input.cachedTokens ?? 0,
     );
 
     if (unknownModel) {
@@ -118,7 +120,7 @@ class CostTrackingService {
         tokensOutput: input.tokensOutput,
         costCents,
         billingMetadata: {
-          cacheHit: input.cacheHit ?? false,
+          cachedTokens: input.cachedTokens ?? 0,
           unknownModel,
           usdToEur: USD_TO_EUR,
         },
