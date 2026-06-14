@@ -46,14 +46,13 @@ let listByUserIdResult: { id: string; storageKey: string }[] = [];
 const mockListByUserId = mock(async () => listByUserIdResult);
 
 // Storage service mock
-// Miroir du vrai contrat : deleteFile ne lève jamais, il retourne false en échec.
-let deleteFileShouldFail = false;
-const mockDeleteFile = mock(async () => {
-  return !deleteFileShouldFail;
-});
+// Miroir du vrai contrat : deleteFiles ne lève jamais, il retourne les clés
+// qu'il n'a pas pu supprimer (batch DeleteObjects).
+let deleteFilesResult: { deleted: number; failed: string[] } = { deleted: 0, failed: [] };
+const mockDeleteFiles = mock(async () => deleteFilesResult);
 
 mock.module('../services/storage/scaleway-storage.service', () => ({
-  deleteFile: mockDeleteFile,
+  deleteFiles: mockDeleteFiles,
 }));
 
 // RGPD art.17 — pseudonymization repo mock + call-order tracking so we can
@@ -165,8 +164,8 @@ beforeEach(() => {
   deleteResult = true;
   findByIdResult = null;
   listByUserIdResult = [];
-  deleteFileShouldFail = false;
-  mockDeleteFile.mockClear();
+  deleteFilesResult = { deleted: 0, failed: [] };
+  mockDeleteFiles.mockClear();
   mockListByUserId.mockClear();
   mockLogger.error.mockClear();
   mockLogger.info.mockClear();
@@ -278,28 +277,31 @@ describe('Parent Service', () => {
       ).rejects.toThrow();
     });
 
-    it('collects storage keys, deletes user, then calls deleteFile for each key', async () => {
+    it('batch-deletes all child storage keys in a single call', async () => {
       listByUserIdResult = [
         { id: 'file-001', storageKey: 'uploads/child-001/a.pdf' },
         { id: 'file-002', storageKey: 'uploads/child-001/b.png' },
       ];
+      deleteFilesResult = { deleted: 2, failed: [] };
       findByIdResult = null;
       await parentService.deleteChild('parent-001', 'child-001');
-      expect(mockDeleteFile).toHaveBeenCalledTimes(2);
-      expect(mockDeleteFile).toHaveBeenCalledWith('uploads/child-001/a.pdf');
-      expect(mockDeleteFile).toHaveBeenCalledWith('uploads/child-001/b.png');
+      expect(mockDeleteFiles).toHaveBeenCalledTimes(1);
+      expect(mockDeleteFiles).toHaveBeenCalledWith([
+        'uploads/child-001/a.pdf',
+        'uploads/child-001/b.png',
+      ]);
     });
 
-    it('does not throw when an S3 delete fails, logs the error and counts the failure', async () => {
+    it('does not throw when batch delete reports failures, logs and counts them', async () => {
       listByUserIdResult = [{ id: 'file-001', storageKey: 'uploads/child-001/a.pdf' }];
-      deleteFileShouldFail = true;
+      deleteFilesResult = { deleted: 0, failed: ['uploads/child-001/a.pdf'] };
       findByIdResult = null;
       await parentService.deleteChild('parent-001', 'child-001'); // must not throw
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           operation: 'parent:delete-child-s3-purge',
-          storageKey: 'uploads/child-001/a.pdf',
+          failedCount: 1,
         })
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
@@ -308,11 +310,11 @@ describe('Parent Service', () => {
       );
     });
 
-    it('makes no storage calls when the child has zero files', async () => {
+    it('passes an empty list to deleteFiles when the child has zero files', async () => {
       listByUserIdResult = [];
       findByIdResult = null;
       await parentService.deleteChild('parent-001', 'child-001');
-      expect(mockDeleteFile).not.toHaveBeenCalled();
+      expect(mockDeleteFiles).toHaveBeenCalledWith([]);
     });
   });
 

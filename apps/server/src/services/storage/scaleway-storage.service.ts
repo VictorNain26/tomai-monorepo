@@ -13,6 +13,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   HeadObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -286,6 +287,58 @@ export async function deleteFile(storageKey: string): Promise<boolean> {
 }
 
 /**
+ * Supprime plusieurs fichiers en une requête (S3 DeleteObjects).
+ *
+ * Comme `deleteFile`, ne lève jamais : retourne les clés en échec pour que
+ * l'appelant journalise sans bloquer (la suppression de compte RGPD ne doit
+ * pas échouer sur une erreur S3). DeleteObjects plafonne à 1000 objets par
+ * requête côté S3/Scaleway, d'où le découpage en lots.
+ *
+ * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html
+ * @see https://www.scaleway.com/en/docs/object-storage/faq/ (multi-delete, 1000 max)
+ */
+const S3_DELETE_BATCH_MAX = 1000;
+
+export async function deleteFiles(
+  storageKeys: string[]
+): Promise<{ deleted: number; failed: string[] }> {
+  if (storageKeys.length === 0) {
+    return { deleted: 0, failed: [] };
+  }
+
+  const client = getS3Client();
+  let deleted = 0;
+  const failed: string[] = [];
+
+  for (let i = 0; i < storageKeys.length; i += S3_DELETE_BATCH_MAX) {
+    const chunk = storageKeys.slice(i, i + S3_DELETE_BATCH_MAX);
+    try {
+      const result = await client.send(
+        new DeleteObjectsCommand({
+          Bucket: env.SCALEWAY_BUCKET,
+          Delete: { Objects: chunk.map((Key) => ({ Key })), Quiet: false },
+        })
+      );
+      deleted += result.Deleted?.length ?? 0;
+      for (const err of result.Errors ?? []) {
+        if (err.Key) failed.push(err.Key);
+      }
+    } catch (error) {
+      // Whole chunk failed (network/auth) — none confirmed deleted.
+      logger.error('Failed to batch-delete files from storage', {
+        _error: error instanceof Error ? error.message : String(error),
+        operation: 'scaleway:delete-batch',
+        chunkSize: chunk.length,
+        severity: 'medium' as const,
+      });
+      failed.push(...chunk);
+    }
+  }
+
+  return { deleted, failed };
+}
+
+/**
  * Récupère le contenu d'un fichier (pour injection multimodale)
  */
 async function getFileContent(storageKey: string): Promise<{
@@ -389,6 +442,7 @@ export const scalewayStorageService = {
   generatePresignedDownloadUrl,
   getFileInfo,
   deleteFile,
+  deleteFiles,
   getFileContent,
   isConfigured,
   healthCheck,

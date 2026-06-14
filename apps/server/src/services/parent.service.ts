@@ -5,7 +5,7 @@
 
 import { usersRepository, filesRepository, retrievalAuditRepository } from '../db/repositories';
 import { logger } from '../lib/observability';
-import { deleteFile } from './storage/scaleway-storage.service';
+import { deleteFiles } from './storage/scaleway-storage.service';
 import { auth } from '../lib/auth';
 import type { SchoolLevel } from '../db/schema.js';
 import { ParentDashboardService } from './parent/parent-dashboard.service';
@@ -224,31 +224,27 @@ export class ParentService {
         throw new Error('Deletion failed: User still exists in database');
       }
 
-      // Best-effort S3 purge — a storage failure must never block the erasure right
-      let filesPurged = 0;
-      let filesFailed = 0;
-      for (const { storageKey } of fileRecords) {
-        // deleteFile ne lève jamais : il avale l'erreur S3 et retourne false.
-        const purged = await deleteFile(storageKey);
-        if (purged) {
-          filesPurged++;
-        } else {
-          filesFailed++;
-          logger.error('S3 purge failed for child file', {
-            operation: 'parent:delete-child-s3-purge',
-            _error: 'deleteFile returned false (S3 error already logged by storage service)',
-            storageKey,
-            childId,
-            severity: 'high' as const,
-          });
-        }
+      // Best-effort S3 purge — a storage failure must never block the erasure
+      // right. One batched DeleteObjects instead of one request per file.
+      // deleteFiles never throws: it returns the keys it could not delete.
+      const { deleted: filesPurged, failed: filesFailedKeys } = await deleteFiles(
+        fileRecords.map((record) => record.storageKey)
+      );
+      if (filesFailedKeys.length > 0) {
+        logger.error('S3 purge failed for some child files', {
+          operation: 'parent:delete-child-s3-purge',
+          _error: 'deleteFiles reported failures (S3 errors already logged by storage service)',
+          failedCount: filesFailedKeys.length,
+          childId,
+          severity: 'high' as const,
+        });
       }
 
       logger.info('Child account deleted with S3 purge', {
         operation: 'parent:delete-child',
         childId,
         filesPurged,
-        filesFailed,
+        filesFailed: filesFailedKeys.length,
         auditRowsPseudonymized,
       });
     } catch (_error) {
