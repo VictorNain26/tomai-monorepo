@@ -98,8 +98,9 @@ class MistralChatService {
           // AssistantMessage from SDK type — role forced to "assistant"
           return { role: 'assistant', content: msg.content, toolCalls: undefined };
         }
-        // UserMessage from SDK type
-        return { role: 'user', content: msg.content };
+        // Past user turns are stored raw (chat-orchestration persists request.content
+        // unwrapped) — re-fence them so an injection in an earlier turn stays inert.
+        return { role: 'user', content: wrapUserMessage(msg.content) };
       });
   }
 

@@ -32,15 +32,26 @@ export const CHAT_STREAM_SETUP_TIMEOUT_MS = 90_000;
 export const CHAT_STREAM_CHUNK_TIMEOUT_MS = 60_000;
 
 /**
+ * Every delimiter tag used by the prompt template (fences for untrusted content
+ * AND system-prompt section tags). Stripped from any untrusted text so a forged
+ * value cannot inject e.g. `</safety>` to escape its fence and have trailing
+ * text read as a system instruction.
+ */
+const TEMPLATE_TAGS =
+  /<\/?(?:student_message|pronote_data|student_context|attached_file|curriculum_excerpt|identity|tone|transparency|pedagogy|safety|rag_policy|level_adaptation|subject_specifics)\b[^>]*>/gi;
+
+/** Remove all template delimiter tags from untrusted content. */
+export function stripPromptTags(content: string): string {
+  return content.replace(TEMPLATE_TAGS, '');
+}
+
+/**
  * Wrap a student message with structured delimiters so the model treats any
  * instruction-looking text inside as content to analyse, never as an order to
  * follow. Pairs with the INSTRUCTION_HIERARCHY block in the system prompt.
  */
 export function wrapUserMessage(content: string): string {
-  // Strip any literal delimiter tokens so a forged student message cannot
-  // break out of the fence and have trailing text read as an instruction.
-  const body = content.replace(/<\/?student_message>/gi, '');
-  return `<student_message>\n${body}\n</student_message>`;
+  return `<student_message>\n${stripPromptTags(content)}\n</student_message>`;
 }
 
 /**
@@ -69,7 +80,7 @@ export function wrapPronoteData(pronoteContext?: PronoteContext): string | null 
   // pronoteContext is client-supplied; strip any literal delimiter tokens a
   // forged value could contain so it cannot break out of the fence and have
   // trailing text read as outside-the-block instructions.
-  const body = parts.join('\n\n').replace(/<\/?pronote_data>/gi, '');
+  const body = stripPromptTags(parts.join('\n\n'));
   return `<pronote_data>\n${body}\n</pronote_data>`;
 }
 
@@ -95,7 +106,7 @@ export function wrapStudentContext(
 
   // Strip any literal delimiter tokens so a forged observation cannot break
   // out of the fence and have trailing text read as outside-the-block input.
-  const body = parts.join('\n\n').replace(/<\/?student_context>/gi, '');
+  const body = stripPromptTags(parts.join('\n\n'));
   return `<student_context>\n${body}\n</student_context>`;
 }
 
