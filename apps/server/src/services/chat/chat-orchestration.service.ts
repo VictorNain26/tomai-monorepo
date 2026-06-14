@@ -95,16 +95,29 @@ class ChatOrchestrationService {
     const intentReinforcement = intentClassifierService.buildReinforcement(classifiedIntent);
     const episodicContext = episodicMemoryService.formatEpisodesForPrompt(relevantEpisodes);
 
-    const { attachedFileInfos, enrichedContent: rawEnrichedContent } = fileContext;
+    const { attachedFileInfos, attachedFiles } = fileContext;
     // Primary file stays in the dedicated column for backward-compat readers;
     // the full list is persisted separately in messageMetadata via saveMessage
     // below (audit F-8: previously files 2..N were silently dropped).
     const attachedFileInfo = attachedFileInfos[0] ?? null;
     const hasMultipleFiles = attachedFileInfos.length > 1;
 
-    const enrichedContent = rawEnrichedContent.length > MAX_ENRICHED_CONTENT_CHARS
-      ? rawEnrichedContent.slice(0, MAX_ENRICHED_CONTENT_CHARS) + '\n\n[Contenu tronqué]'
-      : rawEnrichedContent;
+    // Cap the combined analysis size so a large document can't blow the context
+    // budget. Truncate each analysis against a shared running budget rather than
+    // the student message (the message is never truncated).
+    let remainingBudget = MAX_ENRICHED_CONTENT_CHARS;
+    const boundedAttachedFiles = attachedFiles.map(f => {
+      if (remainingBudget <= 0) {
+        return { ...f, analysis: '[Contenu tronqué]' };
+      }
+      if (f.analysis.length > remainingBudget) {
+        const truncated = f.analysis.slice(0, remainingBudget) + '\n\n[Contenu tronqué]';
+        remainingBudget = 0;
+        return { ...f, analysis: truncated };
+      }
+      remainingBudget -= f.analysis.length;
+      return f;
+    });
 
     logger.info('Chat context assembled', {
       userId: request.userId,
@@ -161,7 +174,8 @@ class ChatOrchestrationService {
 
     const streamGenerator = mistralChatService.generateStreamChunks({
       userId: request.userId,
-      content: enrichedContent,
+      content: request.content,
+      attachedFiles: boundedAttachedFiles,
       schoolLevel: request.schoolLevel,
       firstName: request.firstName,
       sessionId: sessionCtx.sessionId,
@@ -295,6 +309,7 @@ class ChatOrchestrationService {
           operation: 'chat',
           tokensInput: chunk.usage.promptTokens,
           tokensOutput: chunk.usage.completionTokens,
+          cachedTokens: chunk.usage.cachedTokens,
         });
       }
     }

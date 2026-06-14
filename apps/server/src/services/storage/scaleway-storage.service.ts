@@ -286,7 +286,7 @@ export async function deleteFile(storageKey: string): Promise<boolean> {
 }
 
 /**
- * Récupère le contenu d'un fichier (pour envoi à Gemini)
+ * Récupère le contenu d'un fichier (pour injection multimodale)
  */
 async function getFileContent(storageKey: string): Promise<{
   content: Buffer;

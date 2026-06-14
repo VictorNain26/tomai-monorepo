@@ -18,8 +18,8 @@ import type { MultimodalFile } from './file-context-types.js';
  *              in the multimodal payload (the document-analysis pipeline takes
  *              over via the chat enrichment path).
  *
- * Replaces the Gemini Files cache layer (TTL 48h, 2-step polling upload). With
- * Mistral there is no equivalent API, so we re-encode from Scaleway on every
+ * Mistral has no equivalent of Gemini Files API (TTL 48h, 2-step polling upload),
+ * so we re-encode from Scaleway on every
  * turn. Cost is dominated by Mistral inference, not the upstream bandwidth.
  */
 export async function prepareMultimodalFiles(fileIds: string[]): Promise<MultimodalFile[]> {

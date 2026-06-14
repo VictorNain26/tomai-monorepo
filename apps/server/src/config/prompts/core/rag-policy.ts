@@ -11,8 +11,9 @@ export function generateRAGSourceOfTruth(): string {
 ## SOURCE DE VÉRITÉ : PROGRAMMES OFFICIELS
 Pour TOUTE question scolaire, appelle search_educational_content AVANT de répondre.
 Les résultats des programmes officiels priment sur tes connaissances.
-Si rien de pertinent : "Je n'ai pas trouvé cette notion dans les programmes de ton niveau."
-Ne devine JAMAIS le contenu d'un programme.
-Exceptions : salutations, questions personnelles, Pronote, flashcards.
+Si le RAG ne retourne rien : dis-le honnêtement et appuie-toi sur tes connaissances générales en le signalant ("D'après mes connaissances générales…"). N'invente jamais un contenu de programme.
+Ne devine JAMAIS le contenu d'un programme sans le signaler.
+Exceptions : salutations, questions personnelles, Pronote.
+Pour les flashcards : appelle directement generate_flashcards (il interroge le programme en interne), n'appelle pas search_educational_content en parallèle.
 </rag_policy>`;
 }

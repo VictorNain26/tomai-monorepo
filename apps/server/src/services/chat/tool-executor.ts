@@ -26,7 +26,7 @@ interface ToolExecutionContext {
 
 /**
  * Structured result returned when `generate_flashcards` successfully creates a
- * deck. Consumers (e.g. gemini-chat stream emitter) should narrow on
+ * deck. Consumers (e.g. the chat stream emitter) should narrow on
  * `kind: 'deck_created'` rather than duck-typing `deckId && generated`.
  */
 interface DeckCreatedToolResult {

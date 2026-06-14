@@ -3,7 +3,7 @@
  *
  * Architecture Single-Phase 2025:
  * - types.ts: Types TypeScript
- * - card-generator.service.ts: Génération en un seul appel Gemini
+ * - card-generator.service.ts: Génération en un seul appel Mistral
  *
  * Usage:
  * ```typescript

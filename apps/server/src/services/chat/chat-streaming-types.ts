@@ -1,8 +1,8 @@
 import type { EducationLevelType } from '../../types/index.js';
+import type { AttachedFileForPrompt } from './file-context-types.js';
 
 /**
- * Chat streaming wire types — vendor-neutral. Renamed from `gemini-types.ts`
- * when the chat path moved to Mistral (Phase 2B). The shape covers Mistral's
+ * Chat streaming wire types — vendor-neutral. The shape covers Mistral's
  * SSE streaming response: text deltas, tool calls, final usage and metadata.
  */
 
@@ -43,6 +43,12 @@ export interface StreamGenerationParams {
   pronoteContext?: PronoteContext;
   files?: AttachedFile[];
   /**
+   * Attached-document analyses (OCR of the student's files). Injected as a
+   * SEPARATE `<attached_file>` fenced block, never concatenated into the
+   * student message — otherwise stripPromptTags would remove the fence.
+   */
+  attachedFiles?: AttachedFileForPrompt[];
+  /**
    * Turn-specific reinforcement block injected by the intent classifier.
    * When non-null, prepended to the system prompt to force a stricter
    * socratic stance (e.g. on "solve this for me" requests).
@@ -67,10 +73,12 @@ export interface ChatStreamChunk {
   content?: string;
   role?: 'assistant';
   finishReason?: 'stop' | 'length' | 'error';
+  /** Forme synchronisée avec ChatStreamChunk.usage de mistral-client.ts. */
   usage?: {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    cachedTokens: number;
   };
   error?: {
     message: string;

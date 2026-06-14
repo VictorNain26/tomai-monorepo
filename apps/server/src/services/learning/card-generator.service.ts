@@ -1,15 +1,12 @@
 /**
  * Card Generator Service - Architecture Simplifiée 2025
  *
- * Génération de cartes en UN SEUL appel Gemini avec schema simplifié.
+ * Génération de cartes en UN SEUL appel Mistral avec schema simplifié.
  *
- * Architecture Evidence-Based (Google recommandé):
- * - Schema simplifié (cardType enum + content object) → respecte limite 4 niveaux
+ * Architecture Evidence-Based:
+ * - Schema simplifié (cardType enum + content object) → lisible et stable
  * - Prompt détaillé guide la structure de chaque type
  * - Validation Zod stricte après parsing (discriminatedUnion)
- *
- * @see https://ai.google.dev/gemini-api/docs/structured-output
- * @see https://discuss.ai.google.dev/t/maximum-tool-nesting-depth-update-this-morning/104341
  *
  * ## Fondements Scientifiques
  *
@@ -68,38 +65,28 @@ interface CardGenerationError {
   _debug?: { actualError: string };
 }
 
-// ============================================================================
-// GEMINI CLIENT — shared singleton for DI-friendly tests
-// ============================================================================
-
 // CARD_GENERATOR_PROMPT_VERSION : déjà défini en haut du fichier comme const
 // pour le prompt cache key. Conservé en export pour compat.
 ;
 
 // ============================================================================
-// JSON SCHEMA SIMPLIFIÉ - Respecte limite 4 niveaux Gemini
+// JSON SCHEMA SIMPLIFIÉ
 // ============================================================================
 
 /**
- * Schema minimal pour Gemini - Architecture Evidence-Based
+ * Schema minimal — Architecture Evidence-Based
  *
- * Problème: discriminatedUnion avec 15 types + nested objects dépasse
- * la limite de nesting (4 niveaux) de Gemini → INVALID_ARGUMENT
- *
- * Solution Google recommandée:
- * "Simplify your schema by reducing nesting, rely on prompt to guide structure"
- * @see https://ai.google.dev/gemini-api/docs/structured-output
- * @see https://discuss.ai.google.dev/t/maximum-tool-nesting-depth-update-this-morning/104341
+ * Le schema garde délibérément `content` non typé (object libre) pour deux
+ * raisons : (1) 15 cardTypes × leurs champs imbriqués formeraient un schema
+ * verbeux ; (2) Mistral génère mieux quand le prompt guide la structure plutôt
+ * qu'un schema exhaustif. La validation de forme métier est déléguée à Zod
+ * (discriminatedUnion sur cardType) après parsing.
  *
  * Architecture:
  * - Phase 1: Schema simple (cardType enum + content object non typé)
  * - Phase 2: Validation Zod stricte après parsing (discriminatedUnion)
- *
- * Niveaux: cards[] → {cardType, content} → content fields = 3 niveaux ✅
  */
 // JSON Schema Mistral pour génération cartes — wrappé dans response_format.
-// Note : Mistral support pleinement les schemas avec nested objects et
-// additionalProperties strict (vs limite 4-nesting de Gemini).
 const cardGenerationSchema = {
   name: 'card_generation',
   strict: false, // content reste libre car typé par cardType (validation Zod après)
@@ -142,7 +129,7 @@ const cardGenerationSchema = {
  * Construit le prompt optimisé pour la génération de cartes
  * Architecture modulaire utilisant les fichiers prompts/*.ts
  *
- * Tokens estimés: ~1000-1200 (optimisé pour quotas Gemini)
+ * Tokens estimés: ~1000-1200
  */
 function buildPrompt(params: CardGenerationParams): string {
   const { topic, subject, level, cardCount, ragContext, domaine } = params;
@@ -241,7 +228,7 @@ export async function generateCards(
     const prompt = buildPrompt(params);
 
     // ADR-0001 D2 : mistral-small pour génération templatée. JSON Schema
-    // strict natif Mistral (vs limite 4-nesting de Gemini contournée). Zod
+    // strict natif Mistral. Zod
     // valide ensuite la forme métier (discriminatedUnion sur cardType).
     // Prompt cache sur le préfixe pédagogique stable (templates + matière).
     const wrapped = await withRetry(

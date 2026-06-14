@@ -6,6 +6,7 @@
 import { generateIdentityCore, generateStudentContext } from './core/identity.js';
 import { generateRAGSourceOfTruth } from './core/rag-policy.js';
 import { generateSafetyGuardrails } from './core/safety.js';
+import { generateAttachmentsPolicy } from './core/attachments.js';
 import { generateChatbotPedagogyPrompt } from '../../shared/pedagogy/index.js';
 import { generateLevelAdaptation } from './adaptation/by-level.js';
 import { generateSubjectBlock } from './adaptation/by-subject.js';
@@ -21,12 +22,12 @@ interface SystemPromptParams {
 /**
  * Construit le prompt système complet.
  *
- * Ordre : [BLOCS STABLES] puis [BLOCS DYNAMIQUES]. Gemini 2.5+ applique
- * automatiquement un cache implicite (-90% sur les tokens d'input) sur les
- * préfixes >=1024 tokens partagés entre appels. Placer identityCore +
- * pedagogy + RAG policy + safety EN PREMIER maximise la portion cachable.
- * Le contexte élève et les adaptations niveau/matière arrivent après — ils
- * changent d'un appel à l'autre mais ne cassent pas le préfixe stable.
+ * Ordre : [BLOCS STABLES] puis [BLOCS DYNAMIQUES]. Mistral applique un cache
+ * de préfixe explicite (prompt_cache_key) sur les tokens d'input stables.
+ * Placer identityCore + pedagogy + RAG policy + safety EN PREMIER maximise la
+ * portion cachable. Le contexte élève et les adaptations niveau/matière
+ * arrivent après — ils changent d'un appel à l'autre mais ne cassent pas le
+ * préfixe stable.
  */
 export function buildSystemPrompt(params: SystemPromptParams): string {
   const { level, levelText, subject, firstName } = params;
@@ -37,6 +38,7 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
     generateIdentityCore(),
     generateChatbotPedagogyPrompt(),
     generateRAGSourceOfTruth(),
+    generateAttachmentsPolicy(),
     generateSafetyGuardrails(),
     // ——— DYNAMIC (spécifique à l'élève / au tour) ———
     generateStudentContext({ studentName, levelText, subject }),

@@ -126,7 +126,7 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
    * POST /api/upload/confirm/:fileId - Confirmer upload terminé
    *
    * Frontend appelle cet endpoint APRÈS avoir uploadé vers Scaleway
-   * Backend vérifie le fichier et lance l'upload vers Gemini Files API
+   * Backend vérifie le fichier et enregistre les métadonnées en base
    */
   .post('/confirm/:fileId', async ({ params: { fileId }, user, status }) => {
     try {
