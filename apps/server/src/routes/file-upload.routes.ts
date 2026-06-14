@@ -179,7 +179,6 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
               {
                 targetLanguage: 'fr',
                 schoolLevel: user.schoolLevel as EducationLevelType,
-                context: 'general',
               }
             );
 
