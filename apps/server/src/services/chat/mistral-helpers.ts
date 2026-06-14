@@ -1,11 +1,11 @@
 /**
- * Mistral chat helpers — replaces gemini-helpers.ts.
+ * Mistral chat helpers.
  *
- * Drops the Gemini-specific knobs that no longer apply:
- * - ThinkingLevel       : not exposed by Mistral. Magistral reasoning quality
- *                         is controlled by model choice, not a config flag.
- * - HarmCategory        : Mistral does not surface a per-category safety
- *                         threshold API. Content moderation is built-in.
+ * The following Gemini-era knobs have no Mistral equivalent and were dropped:
+ * - ThinkingLevel       : Magistral reasoning quality is controlled by model
+ *                         choice, not a config flag.
+ * - HarmCategory        : content moderation is built-in to Mistral models,
+ *                         no per-category threshold API.
  *
  * Keeps the genuinely useful helpers:
  * - MAX_TOOL_ITERATIONS  : same agentic loop bound (5 iterations).

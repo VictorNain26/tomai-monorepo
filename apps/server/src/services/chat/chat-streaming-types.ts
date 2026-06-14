@@ -2,8 +2,7 @@ import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from './file-context-types.js';
 
 /**
- * Chat streaming wire types — vendor-neutral. Renamed from `gemini-types.ts`
- * when the chat path moved to Mistral (Phase 2B). The shape covers Mistral's
+ * Chat streaming wire types — vendor-neutral. The shape covers Mistral's
  * SSE streaming response: text deltas, tool calls, final usage and metadata.
  */
 

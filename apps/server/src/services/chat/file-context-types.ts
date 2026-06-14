@@ -41,8 +41,8 @@ export interface FileAnalysisOptions {
  * - Document : `extractedText` (already OCRed via document-extraction.service)
  *              for plain-text injection in the system context.
  *
- * No Gemini Files cache layer: Mistral has no equivalent of Gemini's files
- * API, so every chat turn re-encodes the asset from Scaleway. Acceptable for
+ * Mistral has no files cache API: every chat turn re-encodes the asset from
+ * Scaleway. Acceptable for
  * the photo-of-exercise use case (small JPEG / PNG); PDFs go through text
  * extraction once at upload time and reuse the cached text on every turn.
  */

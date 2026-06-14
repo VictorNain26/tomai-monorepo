@@ -276,7 +276,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(fileUploadRoutes)  // Upload: Scaleway + PostgreSQL (RGPD France)
   .use(statusRoutes)        // Subscription status + token usage (DB-driven)
   .use(revenuecatWebhookRoutes) // Webhooks RevenueCat (single source of subscription truth)
-  .use(ttsRoutes)           // Text-to-Speech (Gemini 2.5 Flash TTS - 3.0 pending)
+  .use(ttsRoutes)           // Text-to-Speech (Voxtral TTS — voxtral-tts-26.03)
   .use(learningRoutes)      // Outils de révision - decks, cards, discovery, AI generation, FSRS
   .use(waitlistRoutes)      // Waitlist - Landing page email collection
   .use(pronoteSyncRoutes)   // Pronote credential sync (device-first)

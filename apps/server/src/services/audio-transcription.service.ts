@@ -5,7 +5,7 @@
  * - Gladia (France) : Transcription STT haute précision
  * - Analyse de prononciation : Programmatique (scores confiance + comparaison texte)
  *
- * ❌ Plus de dépendance Gemini pour l'audio
+ * Stack 100% Gladia + analyse programmatique
  *
  * Cas d'usage éducatif principal :
  * - Matières de langue (anglais, espagnol, allemand) : analyse de prononciation

@@ -1,13 +1,12 @@
 /**
  * Mapping éducatif - Niveaux scolaires français
- * Externalisation depuis gemini-simple.service.ts (lignes 351-596)
  * Standards Éducation Nationale 2024-2025
  */
 
 import type { EducationLevelType } from '../../types/index.js';
 /**
  * Mapping niveaux scolaires français vers texte descriptif
- * Extraction de gemini-simple.service.ts lignes 579-596
+ * Niveaux scolaires français (Éducation Nationale)
  */
 const LEVEL_TEXT_MAPPING: Record<EducationLevelType, string> = {
   cp: 'CP (6 ans)',
@@ -26,7 +25,7 @@ const LEVEL_TEXT_MAPPING: Record<EducationLevelType, string> = {
 
 /**
  * Convertit un niveau scolaire en texte descriptif
- * Extraction de gemini-simple.service.ts lignes 579-596
+ * Niveaux scolaires français (Éducation Nationale)
  */
 export function getLevelText(level: EducationLevelType): string {
   return LEVEL_TEXT_MAPPING[level] || level;

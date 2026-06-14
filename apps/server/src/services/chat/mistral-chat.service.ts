@@ -1,7 +1,7 @@
 /**
  * MistralChatService — main chat orchestrator (Phase 2B core).
  *
- * Replaces gemini-chat.service.ts. Streams the assistant response from Mistral
+ * Streams the assistant response from Mistral
  * with tool support, runs the agentic loop (model -> tool calls -> tool results
  * -> model), and emits a uniform `ChatStreamChunk` sequence consumed by
  * `chat-orchestration.service.ts`.
@@ -58,28 +58,23 @@ import {
 const MODEL = 'mistral-medium-latest';
 const TEMPERATURE = 0.6;
 const MAX_TOKENS = 1024;
-const PROMPT_CACHE_VERSION = '2026-06-14-tools';
+// Bump this constant whenever content under config/prompts/** or shared/pedagogy/**
+// changes — otherwise Mistral serves the stale cached prefix.
+const PROMPT_CACHE_VERSION = '2026-06-14-intent';
 
 class MistralChatService {
   private buildSystemPromptForChat(params: {
     level: EducationLevelType;
     subject?: string;
     firstName?: string;
-    intentReinforcement?: string | null;
   }): string {
     const levelText = getLevelText(params.level);
-    const basePrompt = buildSystemPrompt({
+    return buildSystemPrompt({
       level: params.level,
       levelText,
       subject: params.subject,
       firstName: params.firstName,
     });
-
-    // Turn-specific reinforcement goes LAST so it takes precedence over
-    // the more general safety guidance (recency bias in instruction-following).
-    const intentSection = params.intentReinforcement ? `\n\n${params.intentReinforcement}` : '';
-
-    return basePrompt + intentSection;
   }
 
   private buildHistoryMessages(
@@ -135,7 +130,6 @@ class MistralChatService {
         level: params.schoolLevel,
         subject: params.subject,
         firstName: params.firstName,
-        intentReinforcement: params.intentReinforcement,
       });
 
       const userContent = this.buildUserContent(params.content, params.files);
@@ -153,6 +147,12 @@ class MistralChatService {
         ...(studentContextBlock ? [{ role: 'user' as const, content: studentContextBlock }] : []),
         ...(pronoteBlock ? [{ role: 'user' as const, content: pronoteBlock }] : []),
         ...(attachedFilesBlock ? [{ role: 'user' as const, content: attachedFilesBlock }] : []),
+        // Turn-specific pedagogical reinforcement injected as a trusted server-side
+        // instruction, placed just before the student message so it takes precedence
+        // (recency bias). Not wrapped in <student_message> — this is not student input.
+        ...(params.intentReinforcement
+          ? [{ role: 'user' as const, content: `[Consigne pour ce tour]\n${params.intentReinforcement}` }]
+          : []),
         { role: 'user' as const, content: userContent },
       ];
 

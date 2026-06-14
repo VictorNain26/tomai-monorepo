@@ -72,7 +72,7 @@ class LearningService {
   /**
    * Atomically create a deck and its cards in a single transaction.
    * Callers: `POST /api/learning/decks`, `POST /api/learning/generate`,
-   * and the Gemini tool-executor.
+   * and the agent tool-executor.
    *
    * If the card insert fails, the deck insert is rolled back — previously
    * the tool-executor performed the two writes separately, leaving orphan

@@ -13,7 +13,7 @@ class FileContextService {
   /**
    * Récupère les métadonnées d'un fichier depuis PostgreSQL.
    *
-   * Pas de cache LLM externe : Mistral n'a pas d'équivalent à Gemini Files API,
+   * Pas de cache LLM externe : Mistral n'a pas d'équivalent à une Files API,
    * donc les payloads multimodaux sont (re)construits à chaque tour à partir
    * du contenu Scaleway. Voir prepareMultimodalFiles.
    */

@@ -11,7 +11,7 @@
  * provider. We convert to cents at insert time using a fixed USD/EUR rate
  * (configurable via env). Cached-input pricing is approximated at 10% of
  * standard input — the exact cache hit ratio is not available in the
- * Gemini streaming response so we treat cache savings conservatively.
+ * Mistral streaming response so we treat cache savings conservatively.
  *
  * Unknown models: we insert a row with cost_cents=0 and a
  * billingMetadata.unknownModel flag rather than silently dropping the call.
