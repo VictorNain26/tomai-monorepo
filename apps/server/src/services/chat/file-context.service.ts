@@ -4,7 +4,7 @@ import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
 import { documentAnalysisService, type DocumentAnalysisResult } from '../document/index.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { AttachedFileInfo, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
+import type { AttachedFileInfo, AttachedFileForPrompt, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
 import { prepareMultimodalFiles, updateFileAnalysis } from './file-multimodal.service.js';
 
 ;
@@ -45,12 +45,12 @@ class FileContextService {
    * Récupère le contexte de tous les fichiers attachés à une session
    * Lit depuis la table session_files (classeur) au lieu de scanner l'historique
    */
-  async getSessionFilesContext(sessionId: string): Promise<string> {
+  async getSessionFilesForPrompt(sessionId: string): Promise<AttachedFileForPrompt[]> {
     try {
       const attachedFiles = await sessionFilesRepository.findBySessionWithContext(sessionId);
 
       if (attachedFiles.length === 0) {
-        return '';
+        return [];
       }
 
       logger.info('Found attached files for session', {
@@ -59,7 +59,7 @@ class FileContextService {
         operation: 'get-session-files-context'
       });
 
-      const validContexts = attachedFiles
+      return attachedFiles
         .map(f => {
           const eduContext = f.educationalContext as {
             analysisContext?: string;
@@ -71,32 +71,19 @@ class FileContextService {
 
           return {
             fileName: f.fileName,
-            context: eduContext.analysisContext,
+            analysis: eduContext.analysisContext,
             documentType: eduContext.documentType,
             subject: eduContext.subject,
           };
         })
         .filter((ctx): ctx is NonNullable<typeof ctx> => ctx !== null);
-
-      if (validContexts.length > 0) {
-        return validContexts
-          .map(ctx => {
-            const typeInfo = ctx.documentType && ctx.subject
-              ? ` (${ctx.documentType} - ${ctx.subject})`
-              : '';
-            return `\n\nCONTEXTE DU FICHIER "${ctx.fileName}"${typeInfo}:\n${ctx.context}`;
-          })
-          .join('');
-      }
-
-      return '';
     } catch (error) {
       logger.error('Failed to get session files context', {
         _error: error instanceof Error ? error.message : String(error),
         operation: 'get-session-files-context',
         severity: 'medium' as const
       });
-      return '';
+      return [];
     }
   }
 
@@ -236,16 +223,15 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
     sessionId: string;
   }): Promise<{
     attachedFileInfos: AttachedFileInfo[];
-    enrichedContent: string;
-    sessionFilesContext: string;
+    attachedFiles: AttachedFileForPrompt[];
   }> {
     const { fileIds, content, schoolLevel, userId, sessionId } = params;
 
     // Batch-fetch all attached files once (1 SELECT) in parallel with session context.
     // Previous implementation did N SELECTs in retrieveFileMetadata + N more in analyzeFileWithCache.
-    const [fileRecords, sessionFilesContext] = await Promise.all([
+    const [fileRecords, sessionFiles] = await Promise.all([
       filesRepository.findByIds(fileIds),
-      this.getSessionFilesContext(sessionId)
+      this.getSessionFilesForPrompt(sessionId)
     ]);
 
     // Preserve input order and build attached metadata from preloaded records (no extra SELECT).
@@ -269,29 +255,27 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       analysisResults.push(result);
     }
 
-    let enrichedContent = content;
-
-    // Concatenate all file enrichments
+    // File analyses are returned as SEPARATE structured blocks (never prefixed
+    // into the student message). The caller wraps them in their own
+    // `<attached_file>` fence so the document body cannot be read as an
+    // instruction. Session-classeur files come first (older context), then the
+    // files attached to this turn.
+    const turnFiles: AttachedFileForPrompt[] = [];
     for (let i = 0; i < analysisResults.length; i++) {
       const result = analysisResults[i];
       if (!result?.analysis) continue;
 
-      const fileName = attachedFileInfos[i]?.fileName ?? 'document';
-      const fileHeader = result.documentType && result.subject
-        ? `[Fichier joint - ${fileName} | ${result.documentType} - ${result.subject}]`
-        : `[Fichier joint - ${fileName}]`;
-
-      enrichedContent = `${fileHeader}\n${result.analysis}\n\n${enrichedContent}`;
-    }
-
-    if (sessionFilesContext) {
-      enrichedContent = `${sessionFilesContext}\n\n${enrichedContent}`;
+      turnFiles.push({
+        fileName: attachedFileInfos[i]?.fileName ?? 'document',
+        analysis: result.analysis,
+        documentType: result.documentType,
+        subject: result.subject,
+      });
     }
 
     return {
       attachedFileInfos,
-      enrichedContent,
-      sessionFilesContext
+      attachedFiles: [...sessionFiles, ...turnFiles],
     };
   }
 

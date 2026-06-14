@@ -50,6 +50,7 @@ import {
   wrapUserMessage,
   wrapPronoteData,
   wrapStudentContext,
+  wrapAttachedFiles,
   wrapCurriculumToolResult,
   getToolStatusLabel,
 } from './mistral-helpers.js';
@@ -109,9 +110,9 @@ class MistralChatService {
     const wrapped = wrapUserMessage(content);
     if (!files || files.length === 0) return wrapped;
 
-    // Multimodal turn: text + image_url parts. Documents (extractedText) are
-    // already injected upstream in the enrichedContent string by file-context,
-    // so we only attach image bytes here.
+    // Multimodal turn: text + image_url parts. Document analyses (OCR) are
+    // injected as a separate <attached_file> block (attachedFilesBlock), so we
+    // only attach image bytes here.
     const imageParts = files
       .filter((f) => f.contentType === 'image' && f.base64)
       .map((f) => ({
@@ -140,6 +141,9 @@ class MistralChatService {
       const userContent = this.buildUserContent(params.content, params.files);
       const pronoteBlock = wrapPronoteData(params.pronoteContext);
       const studentContextBlock = wrapStudentContext(params.cognitiveProfileSummary, params.learningContext);
+      const attachedFilesBlock = params.attachedFiles?.length
+        ? wrapAttachedFiles(params.attachedFiles)
+        : '';
       const historyMessages = this.buildHistoryMessages(params.conversationHistory, params.conversationSummary);
 
       // The agentic loop appends assistant + tool messages to this array as it iterates.
@@ -148,6 +152,7 @@ class MistralChatService {
         ...historyMessages,
         ...(studentContextBlock ? [{ role: 'user' as const, content: studentContextBlock }] : []),
         ...(pronoteBlock ? [{ role: 'user' as const, content: pronoteBlock }] : []),
+        ...(attachedFilesBlock ? [{ role: 'user' as const, content: attachedFilesBlock }] : []),
         { role: 'user' as const, content: userContent },
       ];
 

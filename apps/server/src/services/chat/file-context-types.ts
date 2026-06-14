@@ -16,6 +16,18 @@ export interface FileAnalysisResult {
   hadRAG?: boolean;
 }
 
+/**
+ * A single attached-file analysis, ready to be wrapped in its own
+ * `<attached_file>` block by wrapAttachedFiles. Kept SEPARATE from the
+ * student message so the document body cannot be read as an instruction.
+ */
+export interface AttachedFileForPrompt {
+  fileName: string;
+  analysis: string;
+  documentType?: string;
+  subject?: string;
+}
+
 export interface FileAnalysisOptions {
   content?: string;
   schoolLevel: EducationLevelType;

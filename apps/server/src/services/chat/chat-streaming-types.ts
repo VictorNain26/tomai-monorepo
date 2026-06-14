@@ -1,4 +1,5 @@
 import type { EducationLevelType } from '../../types/index.js';
+import type { AttachedFileForPrompt } from './file-context-types.js';
 
 /**
  * Chat streaming wire types — vendor-neutral. Renamed from `gemini-types.ts`
@@ -42,6 +43,12 @@ export interface StreamGenerationParams {
   userRole: 'student' | 'parent';
   pronoteContext?: PronoteContext;
   files?: AttachedFile[];
+  /**
+   * Attached-document analyses (OCR of the student's files). Injected as a
+   * SEPARATE `<attached_file>` fenced block, never concatenated into the
+   * student message — otherwise stripPromptTags would remove the fence.
+   */
+  attachedFiles?: AttachedFileForPrompt[];
   /**
    * Turn-specific reinforcement block injected by the intent classifier.
    * When non-null, prepended to the system prompt to force a stricter
