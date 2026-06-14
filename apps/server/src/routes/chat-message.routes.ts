@@ -29,8 +29,10 @@ function sanitizePrompt(text: string): string {
 
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
   .use(authMacro)
-  .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.ai))
+  // Rate-limit AFTER the auth guard so `resolve` has injected `user` — the `ai`
+  // preset keys by user id, which is undefined if this runs before the guard.
   .guard({ auth: true })
+  .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.ai))
   .post('/stream', async function* ({ body, user, set, store }) {
     const requestId = (store as { requestId?: string }).requestId;
     // SSE anti-buffering headers (BEFORE any yield)

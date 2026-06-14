@@ -93,7 +93,10 @@ const app = new Elysia({ name: 'tomai-server' })
   }) : new Elysia())
 
   // Rate Limiting Global - Protection DDoS et brute-force
-  .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.api))
+  // Webhooks are exempted: they carry their own shared-secret auth + idempotency
+  // and arrive in bursts from a shared provider IP pool (RevenueCat) that the
+  // per-IP limiter would otherwise 429, dropping billing events.
+  .onBeforeHandle(createRateLimitMiddleware({ ...RateLimitPresets.api, skipPaths: ['/webhooks/'] }))
 
   // Better Auth integration - Mount at root, Better Auth handles /api/auth basePath
   // IMPORTANT: .mount() at root lets Better Auth manage all /api/auth/* routes
