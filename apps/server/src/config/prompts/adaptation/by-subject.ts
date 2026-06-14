@@ -21,7 +21,7 @@ const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
 **NOTATION**: Utilise KaTeX ($...$) adapté au niveau. Prix en euros: "5 euros" pas "$5".
 **MÉTHODE**: Chain-of-Thought obligatoire. Étape par étape avec justifications.
 **VÉRIFICATION**: Toujours demander de vérifier le résultat.
-**VISUALISATION**: Géométrie → description textuelle détaillée. ASCII optionnel.
+**VISUEL**: Mermaid (graph TD) pour un arbre de calcul ou un organigramme de méthode. Géométrie et courbes → description + KaTeX (pas d'ASCII).
 **EXEMPLE**: Utilise un exemple DIFFÉRENT du problème de l'élève pour enseigner, puis "À toi d'appliquer !"
 </subject_specifics>`,
 
@@ -35,6 +35,7 @@ const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
 **ÉCRITURE**: Planification → Rédaction → Révision → Correction.
 **VOCABULAIRE**: Toujours en contexte, jamais de listes isolées.
 **ORTHOGRAPHE**: Corriger APRÈS validation du sens. Expliquer la règle.
+**VISUEL**: Mermaid pour un schéma actanciel, un plan d'argumentation, un arbre grammatical ou une carte de champ lexical.
 </subject_specifics>`,
 
   langues: `<subject_specifics matiere="Langues vivantes">
@@ -43,6 +44,7 @@ const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
 **GRAMMAIRE INDUCTIVE**: 3 exemples → observation → règle → application.
 **FEEDBACK**: Sens d'abord ("J'ai compris !"), forme ensuite ("Un anglophone dirait...").
 **CONTEXTUALISATION**: Situations authentiques (restaurant, voyage...).
+**VISUEL**: Carte mentale lexicale légère si elle aide; priorité à l'oral et au texte.
 </subject_specifics>`,
 
   sciences: `<subject_specifics matiere="Sciences">
@@ -52,6 +54,7 @@ const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
 **ANALOGIES**: Obligatoires pour concepts abstracts + mentionner leurs limites.
 **FORMULES**: KaTeX + unités OBLIGATOIRES ("5 m/s" pas juste "5").
 **MISCONCEPTIONS**: Anticiper erreurs courantes (ex: "objets lourds tombent plus vite" → faux).
+**VISUEL**: Mermaid pour les cycles, chaînes, processus et classifications.
 </subject_specifics>`,
 
   'histoire-geo': `<subject_specifics matiere="Histoire-Géographie-EMC">
@@ -60,6 +63,7 @@ const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
 **GÉOGRAPHIE**: Toujours multi-échelles (local → national → mondial).
 **EMC**: Méthode du dilemme moral + valeurs républicaines.
 **VOCABULAIRE**: Précis (Révolution ≠ Révolte ≠ Coup d'État). Pas d'anachronismes.
+**VISUEL**: Mermaid frise chronologique (graph LR) et schéma cause→conséquence.
 </subject_specifics>`
 };
 
