@@ -36,6 +36,8 @@ interface ChatStreamRequest {
   fileIds: string[];
   userRole: 'student' | 'parent';
   pronoteContext?: PronoteContext;
+  /** Input channel declared by the user's gesture (mic vs keyboard). */
+  inputMode?: 'text' | 'voice';
 }
 
 interface SessionContext {
@@ -139,12 +141,13 @@ class ChatOrchestrationService {
       sessionCtx.sessionId,
       'user',
       request.content,
-      attachedFileInfo
-        ? {
-            attachedFile: attachedFileInfo,
-            ...(hasMultipleFiles && { attachedFiles: attachedFileInfos }),
-          }
-        : {},
+      {
+        ...(attachedFileInfo && {
+          attachedFile: attachedFileInfo,
+          ...(hasMultipleFiles && { attachedFiles: attachedFileInfos }),
+        }),
+        ...(request.inputMode && { inputMode: request.inputMode }),
+      },
       { verifySessionExists: false },
     );
 
@@ -187,6 +190,7 @@ class ChatOrchestrationService {
       conversationHistory: sessionCtx.formattedHistory,
       intentReinforcement,
       classifiedIntent,
+      inputMode: request.inputMode,
       files: multimodalFiles.map(f => ({
         base64: f.base64,
         mimeType: f.mimeType,

@@ -56,6 +56,12 @@ export interface StreamGenerationParams {
   intentReinforcement?: string | null;
   /** Classified intent for reasoning effort routing (CCA Sprint 1). */
   classifiedIntent?: ClassifiedIntent;
+  /**
+   * Input channel declared by the user's gesture (mic vs keyboard), never
+   * inferred by the model. When 'voice', a turn note is injected so Tom answers
+   * in a spoken style. Defaults to 'text'.
+   */
+  inputMode?: 'text' | 'voice';
   conversationHistory: Array<{
     role: 'user' | 'assistant';
     content: string;
@@ -96,5 +102,12 @@ export interface ChatStreamChunk {
     usedRAG: boolean;
     toolsUsed: string[];
     toolCallsCount: number;
+    /**
+     * Hint for the client: false when the answer holds a Mermaid diagram, a
+     * code block or a table (not worth reading aloud) so the client shows it
+     * instead of speaking it. KaTeX formulas stay speakable (normalizeForSpeech
+     * verbalizes them). A hint, never an order — the user stays in control.
+     */
+    speakable?: boolean;
   };
 }

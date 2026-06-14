@@ -92,6 +92,8 @@ export class ChatMessageService {
         confidence: 'low' | 'medium' | 'high';
         error?: string;
       };
+      /** Input channel declared by the user's gesture (mic vs keyboard). */
+      inputMode?: 'text' | 'voice';
     },
     options: { verifySessionExists?: boolean } = {}
   ): Promise<{ messageId: string; realSessionId: string }> {
@@ -131,6 +133,9 @@ export class ChatMessageService {
       }
       if (metadata.classifiedIntent) {
         messageMetadata.classifiedIntent = metadata.classifiedIntent;
+      }
+      if (metadata.inputMode) {
+        messageMetadata.inputMode = metadata.inputMode;
       }
 
       const message = await messagesRepository.create({
