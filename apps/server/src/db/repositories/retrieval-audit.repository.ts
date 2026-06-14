@@ -1,8 +1,9 @@
 /**
  * Retrieval audit repository — append-only persistence for RGPD article 30.
  *
- * Single method: `log()`. No find / update / delete on the application path
- * (deletions are driven by RGPD jobs outside the runtime call graph).
+ * `log()` appends rows; `pseudonymizeByUserId()` anonymizes them in place when
+ * an account is erased (RGPD article 17). No row-level read on the application
+ * path — DSAR reads go through dedicated queries.
  *
  * The hash is computed here, not by the caller, so every callsite gets the
  * same normalisation (`trim().toLowerCase()`) and there's only one place to
@@ -10,6 +11,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { eq } from 'drizzle-orm';
 import { db } from '../connection.js';
 import { retrievalAudit, type NewRetrievalAudit } from '../schema/audit.schema.js';
 import { logger } from '../../lib/observability.js';
@@ -59,6 +61,23 @@ class RetrievalAuditRepository {
         _error: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  /**
+   * RGPD article 17 (right to erasure). The table carries no FK cascade — rows
+   * must outlive the user so analytics/security history stays intact — so on
+   * account deletion we anonymize in place by nulling the pseudonymous
+   * `user_id`. Idempotent (a re-run matches nothing). Unlike `log()`, failures
+   * here MUST propagate: erasure is a legal guarantee, not best-effort. Returns
+   * the number of rows anonymized for the deletion audit log.
+   */
+  async pseudonymizeByUserId(userId: string): Promise<number> {
+    const result = await db
+      .update(retrievalAudit)
+      .set({ userId: null })
+      .where(eq(retrievalAudit.userId, userId))
+      .returning({ id: retrievalAudit.id });
+    return result.length;
   }
 }
 
