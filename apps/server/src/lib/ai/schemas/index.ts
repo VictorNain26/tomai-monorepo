@@ -1,7 +1,7 @@
 /**
  * AI Schemas - Exports centralisés
  *
- * Schemas Zod pour structured output avec Gemini
+ * Schemas Zod pour structured output Mistral
  *
  * Usage:
  * ```typescript

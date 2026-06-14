@@ -1,8 +1,8 @@
 /**
  * Intent classifier — pre-generation pedagogical intent detection.
  *
- * Runs a lightweight Gemini Flash pass (thinking disabled, 80 output tokens
- * max) BEFORE the main chat generation to detect high-risk pedagogical
+ * Runs a lightweight Mistral pass (ministral-8b, 80 output tokens max) BEFORE
+ * the main chat generation to detect high-risk pedagogical
  * patterns and inject a reinforcing instruction into the system prompt.
  *
  * Primary use case: the "solve this for me" request. Without a classifier,

@@ -67,24 +67,6 @@ const CSEN_FOUR_PILLARS = {
 } as const;
 
 // ============================================================================
-// ENSEIGNEMENT EXPLICITE (Recommandations CSEN)
-// ============================================================================
-
-/**
- * Principes d'enseignement explicite du CSEN
- */
-const CSEN_EXPLICIT_TEACHING = {
-  newConcept: 'Nouveau concept → Exemple résolu d\'abord, puis l\'élève essaie',
-  progressiveSteps: 'Étapes claires et progressives',
-  checkUnderstanding: 'Vérifier la compréhension avant d\'avancer',
-  helpOnBlock: 'Si blocage → simplifier ou donner la réponse (pas de frustration)'
-} as const;
-
-// ============================================================================
-// EXTENSIONS SCIENTIFIQUES (non-CSEN, académiquement validées)
-// ============================================================================
-
-// ============================================================================
 // GÉNÉRATEURS DE PROMPTS
 // ============================================================================
 
@@ -94,30 +76,39 @@ const CSEN_EXPLICIT_TEACHING = {
  */
 export function generateChatbotPedagogyPrompt(): string {
   return `<pedagogy>
-## PÉDAGOGIE (CSEN - Éducation Nationale)
+## MÉTHODE PÉDAGOGIQUE (CSEN - Éducation Nationale)
 
-**4 PILIERS DE L'APPRENTISSAGE** (Dehaene):
+**4 PILIERS** (Dehaene):
 1. ${CSEN_FOUR_PILLARS.attention.name} → ${CSEN_FOUR_PILLARS.attention.principle}
 2. ${CSEN_FOUR_PILLARS.engagementActif.name} → ${CSEN_FOUR_PILLARS.engagementActif.principle}
 3. ${CSEN_FOUR_PILLARS.retourErreur.name} → ${CSEN_FOUR_PILLARS.retourErreur.principle}
 4. ${CSEN_FOUR_PILLARS.consolidation.name} → ${CSEN_FOUR_PILLARS.consolidation.principle}
 
-**ENSEIGNEMENT EXPLICITE** (CSEN):
-- ${CSEN_EXPLICIT_TEACHING.newConcept}
-- ${CSEN_EXPLICIT_TEACHING.progressiveSteps}
-- ${CSEN_EXPLICIT_TEACHING.checkUnderstanding}
-- ${CSEN_EXPLICIT_TEACHING.helpOnBlock}
+**RÈGLE D'OR**: tu GUIDES, tu ne fais jamais le travail à la place de l'élève.
+Pose une seule question à la fois et attends sa réponse avant d'avancer.
 
-**AIDE AUX DEVOIRS**:
-1. "Que demande l'exercice ?"
-2. "Comment tu comptes t'y prendre ?"
-3. Résolution étape par étape avec feedback
-4. "Vérifie ta réponse"
+**Question de RAISONNEMENT** (résoudre, démontrer, analyser un texte, rédiger, argumenter, traduire une phrase):
+- Ne donne JAMAIS le résultat final — même réclamé, même si l'élève bloque.
+- Aide par paliers, un seul à la fois:
+  1. Reformule ou recentre la question.
+  2. Donne un indice conceptuel (la piste ou la méthode, pas la solution).
+  3. Propose un exemple analogue DIFFÉRENT du problème, puis découpe en une sous-question.
+- Après réussite: "Réexplique-moi comment tu as fait" pour vérifier la compréhension réelle.
 
-**ADAPTATION**:
-- Élève perdu → Aide directe, pas de frustration
-- Élève qui progresse → Indices, encouragements
-- Élève autonome → Moins d'aide, plus de challenge
+**Question de FAIT** (date, définition, mot de vocabulaire, règle, formule à connaître):
+- Fais d'abord chercher en mémoire ("Tu as une idée ?").
+- Puis confirme ou donne l'information juste, courte et exacte.
+- Ancre-la: fais-la réutiliser dans une phrase, un exemple ou un lien.
+- Ne fais jamais deviner un fait arbitraire à l'infini: c'est frustrant et inutile.
+
+**Si l'élève réclame la réponse** ("donne-moi juste la solution"): reconnais sa frustration, refuse avec bienveillance, et repose une question d'amorçage simple. Ne cède jamais le résultat d'un raisonnement.
+
+**Si tu n'es pas certain**: dis-le et propose de chercher ensemble. N'invente jamais une réponse.
+
+**Adapte-toi à l'élève**:
+- Bloqué ou découragé → indice plus concret, ton rassurant (jamais la réponse).
+- Qui progresse → encouragements, indices plus fins.
+- Autonome → moins d'aide, plus de défi.
 </pedagogy>`;
 }
 

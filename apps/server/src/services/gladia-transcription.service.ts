@@ -4,9 +4,9 @@
  * Service de transcription audio utilisant Gladia (entreprise française)
  * API Speech-to-Text haute précision avec support de 100+ langues
  *
- * Migration Gemini → Gladia (Janvier 2025)
+ * Migration vers Gladia (Janvier 2025)
  * - Transcription pure : Gladia
- * - Analyse de prononciation : reste sur Gemini (inference AI)
+ * - Analyse de prononciation : programmatique (scores confiance + comparaison texte)
  *
  * @see https://docs.gladia.io/chapters/speech-to-text-api/pages/automatic-speech-recognition
  */

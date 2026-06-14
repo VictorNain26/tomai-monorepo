@@ -1,11 +1,11 @@
 /**
- * Mistral chat helpers — replaces gemini-helpers.ts.
+ * Mistral chat helpers.
  *
- * Drops the Gemini-specific knobs that no longer apply:
- * - ThinkingLevel       : not exposed by Mistral. Magistral reasoning quality
- *                         is controlled by model choice, not a config flag.
- * - HarmCategory        : Mistral does not surface a per-category safety
- *                         threshold API. Content moderation is built-in.
+ * The following Gemini-era knobs have no Mistral equivalent and were dropped:
+ * - ThinkingLevel       : Magistral reasoning quality is controlled by model
+ *                         choice, not a config flag.
+ * - HarmCategory        : content moderation is built-in to Mistral models,
+ *                         no per-category threshold API.
  *
  * Keeps the genuinely useful helpers:
  * - MAX_TOOL_ITERATIONS  : same agentic loop bound (5 iterations).
@@ -32,15 +32,26 @@ export const CHAT_STREAM_SETUP_TIMEOUT_MS = 90_000;
 export const CHAT_STREAM_CHUNK_TIMEOUT_MS = 60_000;
 
 /**
+ * Every delimiter tag used by the prompt template (fences for untrusted content
+ * AND system-prompt section tags). Stripped from any untrusted text so a forged
+ * value cannot inject e.g. `</safety>` to escape its fence and have trailing
+ * text read as a system instruction.
+ */
+const TEMPLATE_TAGS =
+  /<\/?(?:student_message|pronote_data|student_context|attached_file|curriculum_excerpt|identity|tone|transparency|pedagogy|safety|rag_policy|level_adaptation|subject_specifics)\b[^>]*>/gi;
+
+/** Remove all template delimiter tags from untrusted content. */
+export function stripPromptTags(content: string): string {
+  return content.replace(TEMPLATE_TAGS, '');
+}
+
+/**
  * Wrap a student message with structured delimiters so the model treats any
  * instruction-looking text inside as content to analyse, never as an order to
  * follow. Pairs with the INSTRUCTION_HIERARCHY block in the system prompt.
  */
 export function wrapUserMessage(content: string): string {
-  // Strip any literal delimiter tokens so a forged student message cannot
-  // break out of the fence and have trailing text read as an instruction.
-  const body = content.replace(/<\/?student_message>/gi, '');
-  return `<student_message>\n${body}\n</student_message>`;
+  return `<student_message>\n${stripPromptTags(content)}\n</student_message>`;
 }
 
 /**
@@ -69,7 +80,7 @@ export function wrapPronoteData(pronoteContext?: PronoteContext): string | null 
   // pronoteContext is client-supplied; strip any literal delimiter tokens a
   // forged value could contain so it cannot break out of the fence and have
   // trailing text read as outside-the-block instructions.
-  const body = parts.join('\n\n').replace(/<\/?pronote_data>/gi, '');
+  const body = stripPromptTags(parts.join('\n\n'));
   return `<pronote_data>\n${body}\n</pronote_data>`;
 }
 
@@ -95,8 +106,78 @@ export function wrapStudentContext(
 
   // Strip any literal delimiter tokens so a forged observation cannot break
   // out of the fence and have trailing text read as outside-the-block input.
-  const body = parts.join('\n\n').replace(/<\/?student_context>/gi, '');
+  const body = stripPromptTags(parts.join('\n\n'));
   return `<student_context>\n${body}\n</student_context>`;
+}
+
+/**
+ * Shape of the `search_educational_content` tool result that carries untrusted
+ * curriculum text. The official-programme corpus is third-party data: a forged
+ * or poisoned chunk must never be read as an instruction.
+ */
+interface RagToolResult {
+  found?: boolean;
+  context?: string;
+  resultsCount?: number;
+  averageScore?: number;
+  bestMatchSection?: string;
+  bestMatchMatiere?: string;
+  chunks?: Array<{ score?: number; section?: string; matiere?: string; text?: string }>;
+}
+
+/**
+ * Build the `tool` message content for a RAG search result: the curriculum text
+ * (untrusted) is tag-stripped and wrapped in a `<curriculum_excerpt>` fence the
+ * system prompt treats as data, while the metadata (found, score, sections)
+ * stays as plain JSON outside the fence. Replaces a raw `JSON.stringify` that
+ * would have let a poisoned chunk read as an instruction.
+ */
+export function wrapCurriculumToolResult(result: unknown): string {
+  if (typeof result !== 'object' || result === null) {
+    return JSON.stringify(result);
+  }
+  const rag = result as RagToolResult;
+  const metadata = {
+    found: rag.found,
+    resultsCount: rag.resultsCount,
+    averageScore: rag.averageScore,
+    bestMatchSection: rag.bestMatchSection,
+    bestMatchMatiere: rag.bestMatchMatiere,
+    chunks: (rag.chunks ?? []).map((c) => ({
+      score: c.score,
+      section: c.section,
+      matiere: c.matiere,
+    })),
+  };
+
+  const excerpt = stripPromptTags(rag.context ?? '');
+  const fence = excerpt
+    ? `\n<curriculum_excerpt>\n${excerpt}\n</curriculum_excerpt>`
+    : '';
+
+  return `${JSON.stringify(metadata)}${fence}`;
+}
+
+/**
+ * Wrap each attached file's analysis as its own `<attached_file>` block. The
+ * analysis is third-party content (OCR of a student's document) so it is
+ * tag-stripped and fenced — it must NEVER be concatenated into the
+ * `<student_message>` (where stripPromptTags would remove the fence and let
+ * the document body read as outside-the-block input). Returns '' when empty.
+ */
+export function wrapAttachedFiles(
+  files: Array<{ fileName: string; analysis: string; documentType?: string; subject?: string }>,
+): string {
+  const blocks = files
+    .filter((f) => f.analysis?.trim())
+    .map((f) => {
+      const type = f.documentType && f.subject ? `${f.documentType} - ${f.subject}` : 'document';
+      const safeName = stripPromptTags(f.fileName).replace(/"/g, '');
+      const safeType = stripPromptTags(type).replace(/"/g, '');
+      return `<attached_file name="${safeName}" type="${safeType}">\n${stripPromptTags(f.analysis)}\n</attached_file>`;
+    });
+
+  return blocks.join('\n\n');
 }
 
 export function getToolStatusLabel(name: string): string {

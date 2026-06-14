@@ -1,7 +1,7 @@
 /**
  * MistralChatService — main chat orchestrator (Phase 2B core).
  *
- * Replaces gemini-chat.service.ts. Streams the assistant response from Mistral
+ * Streams the assistant response from Mistral
  * with tool support, runs the agentic loop (model -> tool calls -> tool results
  * -> model), and emits a uniform `ChatStreamChunk` sequence consumed by
  * `chat-orchestration.service.ts`.
@@ -50,34 +50,31 @@ import {
   wrapUserMessage,
   wrapPronoteData,
   wrapStudentContext,
+  wrapAttachedFiles,
+  wrapCurriculumToolResult,
   getToolStatusLabel,
 } from './mistral-helpers.js';
 
 const MODEL = 'mistral-medium-latest';
 const TEMPERATURE = 0.6;
 const MAX_TOKENS = 1024;
-const PROMPT_CACHE_VERSION = '2026-06-08b';
+// Bump this constant whenever content under config/prompts/** or shared/pedagogy/**
+// changes — otherwise Mistral serves the stale cached prefix.
+const PROMPT_CACHE_VERSION = '2026-06-14-intent';
 
 class MistralChatService {
   private buildSystemPromptForChat(params: {
     level: EducationLevelType;
     subject?: string;
     firstName?: string;
-    intentReinforcement?: string | null;
   }): string {
     const levelText = getLevelText(params.level);
-    const basePrompt = buildSystemPrompt({
+    return buildSystemPrompt({
       level: params.level,
       levelText,
       subject: params.subject,
       firstName: params.firstName,
     });
-
-    // Turn-specific reinforcement goes LAST so it takes precedence over
-    // the more general safety guidance (recency bias in instruction-following).
-    const intentSection = params.intentReinforcement ? `\n\n${params.intentReinforcement}` : '';
-
-    return basePrompt + intentSection;
   }
 
   private buildHistoryMessages(
@@ -98,8 +95,9 @@ class MistralChatService {
           // AssistantMessage from SDK type — role forced to "assistant"
           return { role: 'assistant', content: msg.content, toolCalls: undefined };
         }
-        // UserMessage from SDK type
-        return { role: 'user', content: msg.content };
+        // Past user turns are stored raw (chat-orchestration persists request.content
+        // unwrapped) — re-fence them so an injection in an earlier turn stays inert.
+        return { role: 'user', content: wrapUserMessage(msg.content) };
       });
   }
 
@@ -107,9 +105,9 @@ class MistralChatService {
     const wrapped = wrapUserMessage(content);
     if (!files || files.length === 0) return wrapped;
 
-    // Multimodal turn: text + image_url parts. Documents (extractedText) are
-    // already injected upstream in the enrichedContent string by file-context,
-    // so we only attach image bytes here.
+    // Multimodal turn: text + image_url parts. Document analyses (OCR) are
+    // injected as a separate <attached_file> block (attachedFilesBlock), so we
+    // only attach image bytes here.
     const imageParts = files
       .filter((f) => f.contentType === 'image' && f.base64)
       .map((f) => ({
@@ -132,12 +130,14 @@ class MistralChatService {
         level: params.schoolLevel,
         subject: params.subject,
         firstName: params.firstName,
-        intentReinforcement: params.intentReinforcement,
       });
 
       const userContent = this.buildUserContent(params.content, params.files);
       const pronoteBlock = wrapPronoteData(params.pronoteContext);
       const studentContextBlock = wrapStudentContext(params.cognitiveProfileSummary, params.learningContext);
+      const attachedFilesBlock = params.attachedFiles?.length
+        ? wrapAttachedFiles(params.attachedFiles)
+        : '';
       const historyMessages = this.buildHistoryMessages(params.conversationHistory, params.conversationSummary);
 
       // The agentic loop appends assistant + tool messages to this array as it iterates.
@@ -146,6 +146,13 @@ class MistralChatService {
         ...historyMessages,
         ...(studentContextBlock ? [{ role: 'user' as const, content: studentContextBlock }] : []),
         ...(pronoteBlock ? [{ role: 'user' as const, content: pronoteBlock }] : []),
+        ...(attachedFilesBlock ? [{ role: 'user' as const, content: attachedFilesBlock }] : []),
+        // Turn-specific pedagogical reinforcement injected as a trusted server-side
+        // instruction, placed just before the student message so it takes precedence
+        // (recency bias). Not wrapped in <student_message> — this is not student input.
+        ...(params.intentReinforcement
+          ? [{ role: 'user' as const, content: `[Consigne pour ce tour]\n${params.intentReinforcement}` }]
+          : []),
         { role: 'user' as const, content: userContent },
       ];
 
@@ -338,9 +345,17 @@ class MistralChatService {
         for (let i = 0; i < pendingCalls.length; i++) {
           const call = pendingCalls[i];
           if (!call) continue;
+          const result = results[i] ?? {};
+          // The curriculum corpus is third-party data — fence its text so a
+          // poisoned chunk cannot be read as an instruction. Other tool results
+          // are server-owned and stay as plain JSON.
+          const content =
+            call.function.name === 'search_educational_content'
+              ? wrapCurriculumToolResult(result)
+              : JSON.stringify(result);
           messages.push({
             role: 'tool',
-            content: JSON.stringify(results[i] ?? {}),
+            content,
             toolCallId: call.id,
             name: call.function.name,
           });
