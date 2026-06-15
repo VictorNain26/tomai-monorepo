@@ -16,6 +16,15 @@ export const subscriptionPlanTypeEnum = pgEnum('subscription_plan_type', ['free'
  */
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'paused', 'cancelled', 'expired']);
 
+/**
+ * Enum for family billing status (RevenueCat-driven).
+ *
+ * Distinct from subscription_status: these are the exact literals BillingService
+ * writes from RevenueCat webhooks — note the US spelling (`canceled`) and
+ * `past_due`, which differ from subscription_status' `cancelled`/`paused`.
+ */
+export const billingStatusEnum = pgEnum('billing_status', ['active', 'past_due', 'canceled', 'expired']);
+
 // =============================================
 // TABLES
 // =============================================
@@ -137,7 +146,7 @@ export const familyBilling = pgTable('family_billing', {
   revenuecatSubscriptionId: varchar('revenuecat_subscription_id', { length: 255 }),
 
   // Status
-  billingStatus: varchar('billing_status', { length: 50 }).notNull().default('active'), // active, past_due, canceled, expired
+  billingStatus: billingStatusEnum('billing_status').notNull().default('active'),
 
   // Billing period
   currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),

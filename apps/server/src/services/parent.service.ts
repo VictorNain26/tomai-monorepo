@@ -3,7 +3,7 @@
  * Implementation split into parent/parent-dashboard.service.ts and parent/parent-types.ts
  */
 
-import { usersRepository, filesRepository } from '../db/repositories';
+import { usersRepository, filesRepository, retrievalAuditRepository } from '../db/repositories';
 import { logger } from '../lib/observability';
 import { deleteFile } from './storage/scaleway-storage.service';
 import { auth } from '../lib/auth';
@@ -207,6 +207,12 @@ export class ParentService {
       // Collect storage keys before the cascade destroys the DB references
       const fileRecords = await filesRepository.listByUserId(childId);
 
+      // RGPD art. 17 — anonymize the append-only RAG audit trail (no FK cascade)
+      // BEFORE erasing the account. Defensive order: a failure here aborts the
+      // deletion, so we never leave an identifiable audit row pointing at a user
+      // that has already been removed.
+      const auditRowsPseudonymized = await retrievalAuditRepository.pseudonymizeByUserId(childId);
+
       const deleted = await usersRepository.deleteById(childId);
       if (!deleted) {
         throw new Error('Failed to delete child from database');
@@ -243,6 +249,7 @@ export class ParentService {
         childId,
         filesPurged,
         filesFailed,
+        auditRowsPseudonymized,
       });
     } catch (_error) {
       logger.error('Error deleting child', { operation: 'parent:child:delete', _error: _error instanceof Error ? _error.message : String(_error), parentId, childId, severity: 'high' as const });
