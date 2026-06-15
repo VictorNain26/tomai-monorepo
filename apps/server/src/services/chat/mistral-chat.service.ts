@@ -21,10 +21,11 @@
  *   then feed the JSON-serialised results back as `role: 'tool'` messages.
  *
  * Prompt cache
- *   `prompt_cache_key = "chat-<promptVersion>-<schoolLevel>-<userRole>"` so the
- *   stable system prompt prefix gets the 90% cached-tokens discount across
- *   turns of the same school level and role. Bump the prompt version constant
- *   whenever the system prompt template changes.
+ *   `prompt_cache_key = "chat-<promptVersion>"` — a single key shared by every
+ *   student so the stable system-prompt prefix (identical across levels/roles)
+ *   gets the 90% cached-tokens discount from one warm bucket instead of ~22
+ *   fragmented ones. Bump the prompt version constant whenever the system prompt
+ *   template changes.
  */
 
 import { chatStream, type MistralMessage, type MistralToolCall, type MistralContentPart } from '../../lib/ai/mistral-client.js';
@@ -162,8 +163,14 @@ class MistralChatService {
         { role: 'user' as const, content: userContent },
       ];
 
-      const promptCacheKey =
-        `chat-${PROMPT_CACHE_VERSION}-${params.schoolLevel}-${params.userRole}`;
+      // Single stable key: the cacheable system-prompt prefix (identity → safety)
+      // is byte-identical across school levels and roles (verified), so keying by
+      // level/role splits one shared ~1.9k-token prefix into ~22 buckets that warm
+      // up and expire independently. Measured on the real route: a terminale turn
+      // got 0 cached tokens off a freshly-warmed ce2 bucket. One key lets every
+      // student share the same warm prefix; level/subject/student context live
+      // AFTER the prefix so they never poison the shared cache.
+      const promptCacheKey = `chat-${PROMPT_CACHE_VERSION}`;
 
       // Route reasoning effort based on school level, STEM subject, and student intent.
       // This decides whether to use costly reasoning mode (high) or fast mode (none).

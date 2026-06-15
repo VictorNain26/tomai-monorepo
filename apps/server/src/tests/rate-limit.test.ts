@@ -24,7 +24,7 @@ mock.module('../config/env', () => ({
 }));
 
 // Import after mocks
-const { createRateLimitMiddleware, defaultKeyGenerator } = await import('../middleware/rate-limit.middleware');
+const { createRateLimitMiddleware, defaultKeyGenerator, RateLimitPresets } = await import('../middleware/rate-limit.middleware');
 
 // ============================================
 // Test Helpers
@@ -159,5 +159,61 @@ describe('Rate Limit Middleware', () => {
       expect((result as unknown as { error: string })?.error).toBe('Service Unavailable');
       expect(context.set.status).toBe(503);
     });
+  });
+});
+
+describe('RateLimitPresets — per-user keying', () => {
+  // Context shaped the way Elysia exposes it AFTER the auth `resolve` has run:
+  // `user` is injected by authMacro. The preset only sees it if the rate-limit
+  // runs after .guard({ auth: true }) — see rate-limit-ordering.test.ts.
+  function authedCtx(userId: string | undefined): Context {
+    return {
+      request: {
+        headers: new Map<string, string>([['x-forwarded-for', '9.9.9.9']]),
+        url: 'http://localhost/api/pronote/credentials',
+      },
+      ...(userId ? { user: { id: userId } } : {}),
+    } as unknown as Context;
+  }
+
+  it('pronote keys by authenticated user id (not by shared IP)', () => {
+    expect(RateLimitPresets.pronote.keyGenerator?.(authedCtx('student-42'))).toBe(
+      'pronote:user:student-42'
+    );
+  });
+
+  it('pronote falls back to IP only when unauthenticated', () => {
+    expect(RateLimitPresets.pronote.keyGenerator?.(authedCtx(undefined))).toBe('ip:9.9.9.9');
+  });
+
+  it('ai keys by authenticated user id', () => {
+    expect(RateLimitPresets.ai.keyGenerator?.(authedCtx('user-7'))).toBe('ai:user:user-7');
+  });
+});
+
+describe('createRateLimitMiddleware — skipPaths (webhook exemption)', () => {
+  function mkCtx(path: string, ip: string): Context {
+    return {
+      request: {
+        headers: new Map<string, string>([['x-forwarded-for', ip]]),
+        url: `http://localhost${path}`,
+      },
+      set: { headers: {}, status: 200 },
+    } as unknown as Context;
+  }
+
+  it('never rate-limits an exempted path prefix, even past the limit', () => {
+    const mw = createRateLimitMiddleware({ maxRequests: 1, windowSeconds: 60, skipPaths: ['/webhooks/'] });
+    // RevenueCat events arrive in bursts from a shared IP pool — must never 429.
+    expect(mw(mkCtx('/webhooks/revenuecat', '5.5.5.5'))).toBeUndefined();
+    expect(mw(mkCtx('/webhooks/revenuecat', '5.5.5.5'))).toBeUndefined();
+    expect(mw(mkCtx('/webhooks/revenuecat', '5.5.5.5'))).toBeUndefined();
+  });
+
+  it('still rate-limits non-exempted paths', () => {
+    const mw = createRateLimitMiddleware({ maxRequests: 1, windowSeconds: 60, skipPaths: ['/webhooks/'] });
+    expect(mw(mkCtx('/api/something', '6.6.6.6'))).toBeUndefined();
+    const blocked = mw(mkCtx('/api/something', '6.6.6.6'));
+    expect((blocked as unknown as { error?: string })?.error).toBe('Too Many Requests');
   });
 });
