@@ -12,6 +12,9 @@ interface RateLimitConfig {
   windowSeconds: number;
   skipSuccessfulRequests?: boolean;
   keyGenerator?: (context: Context) => string;
+  // Path prefixes exempted from rate limiting entirely (e.g. payment webhooks
+  // that carry their own auth + idempotency and arrive in bursts).
+  skipPaths?: string[];
 }
 
 /**
@@ -102,6 +105,15 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
 
   return function rateLimitMiddleware(context: Context) {
     try {
+      // Exempt configured path prefixes (webhooks: own auth + idempotency,
+      // bursty traffic from a shared provider IP pool) from rate limiting.
+      if (finalConfig.skipPaths?.length) {
+        const pathname = new URL(context.request.url).pathname;
+        if (finalConfig.skipPaths.some((prefix) => pathname.startsWith(prefix))) {
+          return;
+        }
+      }
+
       // Générer clé unique pour cet identifiant
       const identifier = finalConfig.keyGenerator!(context);
 
@@ -228,9 +240,10 @@ export const RateLimitPresets = {
     maxRequests: isProduction() ? 10 : 50,
     windowSeconds: 300, // 5 minutes
     keyGenerator: (context: Context) => {
-      // Rate limit par user authentifié
-      const ctx = context as Context & { student?: { id: string } };
-      const userId = ctx.student?.id;
+      // Rate limit par user authentifié (injecté par authMacro `resolve`).
+      // Requiert que ce middleware tourne APRÈS `.guard({ auth: true })`.
+      const ctx = context as Context & { user?: { id: string } };
+      const userId = ctx.user?.id;
       return userId ? `pronote:user:${userId}` : defaultKeyGenerator(context);
     },
   },

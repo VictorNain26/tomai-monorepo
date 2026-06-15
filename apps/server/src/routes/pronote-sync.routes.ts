@@ -22,8 +22,10 @@ const pronoteRateLimit = createRateLimitMiddleware(RateLimitPresets.pronote);
 
 export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
   .use(authMacro)
-  .onBeforeHandle(pronoteRateLimit)
+  // Rate-limit AFTER the auth guard so `resolve` has injected `user` — the
+  // pronote preset keys by user id, undefined if this runs before the guard.
   .guard({ auth: true })
+  .onBeforeHandle(pronoteRateLimit)
   .group('/api/pronote', (app) => app
 
     // PUT /api/pronote/credentials — Upsert
