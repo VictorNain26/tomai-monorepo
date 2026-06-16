@@ -231,6 +231,7 @@ mock.module('../routes/learning/index', () => ({
 }));
 mock.module('../routes/waitlist.routes', () => ({ waitlistRoutes: new Elysia() }));
 mock.module('../routes/pronote-sync.routes', () => ({ pronoteSyncRoutes: new Elysia() }));
+mock.module('../routes/pronote-data.routes', () => ({ pronoteDataRoutes: new Elysia() }));
 mock.module('../routes/revenuecat-webhook.routes', () => ({ revenuecatWebhookRoutes: new Elysia() }));
 
 // DB schema + repositories (dynamic imports in apiRoutes)

@@ -21,6 +21,7 @@ import { ttsRoutes } from './routes/tts.routes.js';
 import { learningRoutes } from './routes/learning/index.js';
 import { waitlistRoutes } from './routes/waitlist.routes.js';
 import { pronoteSyncRoutes } from './routes/pronote-sync.routes.js';
+import { pronoteDataRoutes } from './routes/pronote-data.routes.js';
 
 // Middleware
 import { logger } from './lib/observability.js';
@@ -280,6 +281,7 @@ const app = new Elysia({ name: 'tomai-server' })
   .use(learningRoutes)      // Outils de révision - decks, cards, discovery, AI generation, FSRS
   .use(waitlistRoutes)      // Waitlist - Landing page email collection
   .use(pronoteSyncRoutes)   // Pronote credential sync (device-first)
+  .use(pronoteDataRoutes)  // Pronote data endpoints (grades, homework, timetable)
 
 
 // Export pour utilisation dans index.ts
