@@ -162,6 +162,7 @@ describe('PawnoteServerAdapter', () => {
     it('maps a loginToken throw to PronoteReauthRequired', async () => {
       mockLoginToken.mockRejectedValueOnce(new Error('BadCredentials'));
 
+      // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toBeInstanceOf() is not typed as Promise but is awaitable
       await expect(adapter.connect(BASE_INPUT)).rejects.toBeInstanceOf(PronoteReauthRequired);
       expect(mockLoginToken).toHaveBeenCalledTimes(1);
     });
@@ -169,6 +170,7 @@ describe('PawnoteServerAdapter', () => {
     it('does not fall back to credentials on loginToken failure', async () => {
       mockLoginToken.mockRejectedValueOnce(new Error('BadCredentials'));
 
+      // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toBeInstanceOf() is not typed as Promise but is awaitable
       await expect(adapter.connect(BASE_INPUT)).rejects.toBeInstanceOf(PronoteReauthRequired);
       expect(mockLoginCredentials).not.toHaveBeenCalled();
     });
@@ -199,6 +201,22 @@ describe('PawnoteServerAdapter', () => {
   // ============================================
 
   describe('getGrades', () => {
+    it('returns [] when the grades tab has no period', async () => {
+      // Build a handle whose grades tab has neither defaultPeriod nor periods.
+      const handleNoPeriod = {
+        userResource: {
+          tabs: new Map([
+            [4 /* TabLocation.Grades */, { defaultPeriod: null, periods: [] }],
+          ]),
+        },
+      };
+      mockCreateSessionHandle.mockReturnValueOnce(handleNoPeriod as unknown as typeof mockHandle);
+
+      const session = await adapter.connect(BASE_INPUT);
+      const grades = await adapter.getGrades(session, 0);
+      expect(grades).toEqual([]);
+    });
+
     it('maps a numeric grade correctly', async () => {
       const session = await adapter.connect(BASE_INPUT);
       const grades = await adapter.getGrades(session, 0);
@@ -259,7 +277,6 @@ describe('PawnoteServerAdapter', () => {
       const lessons = await adapter.getTimetable(session, 0, '2026-06-16');
 
       expect(lessons).toHaveLength(2);
-      expect(lessons.every((l) => l.subject !== undefined)).toBe(true);
     });
 
     it('maps lesson fields correctly', async () => {

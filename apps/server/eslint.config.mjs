@@ -102,8 +102,6 @@ export default [
     files: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
-      // expect(...).rejects.toBeInstanceOf() is not typed as thenable but is valid bun:test usage
-      '@typescript-eslint/await-thenable': 'off',
     },
   }
 ];

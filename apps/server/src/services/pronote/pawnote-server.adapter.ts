@@ -86,6 +86,20 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim();
 }
 
+/**
+ * Narrows a ProviderSession to AdapterSession (which carries a live handle).
+ * Sessions rebuilt from DB/cache (Task 5) will not have a handle, so this
+ * guard makes the failure explicit rather than crashing deep inside pawnote.
+ */
+function assertAdapterSession(session: ProviderSession): AdapterSession {
+  if (!('handle' in session) || session.handle == null) {
+    throw new Error(
+      'AdapterSession expected: session has no live handle. Call connect() before read methods.',
+    );
+  }
+  return session as AdapterSession;
+}
+
 function getCurrentPeriod(handle: SessionHandle) {
   const gradesTab = handle.userResource.tabs.get(TabLocation.Grades);
   if (gradesTab?.defaultPeriod) return gradesTab.defaultPeriod;
@@ -121,8 +135,11 @@ export class PawnoteServerAdapter implements PronoteProvider {
   }
 
   /**
-   * TEST-ONLY — demo endpoint rejects loginToken; production routes must use connect().
-   * Do NOT call this from production code paths.
+   * @internal
+   * TEST-ONLY — the public Pronote demo rejects loginToken (it does not issue
+   * reusable tokens), so this credential path exists solely for integration
+   * testing against that demo. It is intentionally absent from PronoteProvider
+   * and MUST NOT be called from any production route.
    */
   async connectWithCredentials(input: {
     url: string;
@@ -142,23 +159,40 @@ export class PawnoteServerAdapter implements PronoteProvider {
     return { token: info.token, username: info.username, handle };
   }
 
-  async getGrades(session: ProviderSession, _resourceId: number): Promise<NormalizedGrade[]> {
-    const { handle } = session as AdapterSession;
+  // resourceId identifies the child resource on the Pronote account.
+  // Multi-child selection via pawnote is unproven: the demo is a single-student
+  // account (handle.userResource is singular). Until a parent account can be
+  // exercised, only resourceId === 0 is supported; any other value throws to
+  // prevent silent data-leakage across children.
+  async getGrades(session: ProviderSession, resourceId: number): Promise<NormalizedGrade[]> {
+    if (resourceId !== 0) {
+      throw new Error(
+        `Multi-child resource selection is not yet supported (resourceId=${resourceId}). ` +
+          'Only resourceId=0 (single-student account) has been exercised against pawnote.',
+      );
+    }
+    const { handle } = assertAdapterSession(session);
     const period = getCurrentPeriod(handle);
     if (!period) return [];
 
     const overview = await gradesOverview(handle, period);
     return overview.grades.map((gr) => ({
-      subject: gr.subject.name,
+      subject: gr.subject?.name ?? '',
       value: gr.value.kind === GradeKind.Grade ? gr.value.points : null,
       scale: gr.outOf.points,
       date: gr.date.toISOString().slice(0, 10),
-      comment: gr.comment || null,
+      comment: gr.comment.length > 0 ? gr.comment : null,
     }));
   }
 
-  async getHomework(session: ProviderSession, _resourceId: number): Promise<NormalizedHomework[]> {
-    const { handle } = session as AdapterSession;
+  async getHomework(session: ProviderSession, resourceId: number): Promise<NormalizedHomework[]> {
+    if (resourceId !== 0) {
+      throw new Error(
+        `Multi-child resource selection is not yet supported (resourceId=${resourceId}). ` +
+          'Only resourceId=0 (single-student account) has been exercised against pawnote.',
+      );
+    }
+    const { handle } = assertAdapterSession(session);
 
     const now = new Date();
     const from = new Date(now);
@@ -168,7 +202,7 @@ export class PawnoteServerAdapter implements PronoteProvider {
 
     const assignments = await assignmentsFromIntervals(handle, from, to);
     return assignments.map((a) => ({
-      subject: a.subject.name,
+      subject: a.subject?.name ?? '',
       description: stripHtml(a.description),
       dueDate: a.deadline.toISOString().slice(0, 10),
       done: a.done,
@@ -177,10 +211,16 @@ export class PawnoteServerAdapter implements PronoteProvider {
 
   async getTimetable(
     session: ProviderSession,
-    _resourceId: number,
+    resourceId: number,
     day: string,
   ): Promise<NormalizedLesson[]> {
-    const { handle } = session as AdapterSession;
+    if (resourceId !== 0) {
+      throw new Error(
+        `Multi-child resource selection is not yet supported (resourceId=${resourceId}). ` +
+          'Only resourceId=0 (single-student account) has been exercised against pawnote.',
+      );
+    }
+    const { handle } = assertAdapterSession(session);
 
     const from = new Date(day);
     from.setUTCHours(0, 0, 0, 0);
