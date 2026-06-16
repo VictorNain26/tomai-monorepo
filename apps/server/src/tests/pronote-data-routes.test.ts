@@ -195,6 +195,14 @@ describe('pronote-data routes', () => {
     expect(res.status).toBe(200);
   });
 
+  it('unrelated user (not self, not parent) accessing homework → 403', async () => {
+    currentUser = { id: OTHER_USER_ID, role: 'parent' };
+    isParentOfResult = false;
+
+    const res = await app.handle(makeRequest('GET', `/api/pronote/children/${CHILD_ID}/homework`));
+    expect(res.status).toBe(403);
+  });
+
   it('parent accessing child timetable → 200', async () => {
     currentUser = { id: PARENT_ID, role: 'parent' };
     isParentOfResult = true;
@@ -203,11 +211,27 @@ describe('pronote-data routes', () => {
     expect(res.status).toBe(200);
   });
 
+  it('unrelated user (not self, not parent) accessing timetable → 403', async () => {
+    currentUser = { id: OTHER_USER_ID, role: 'parent' };
+    isParentOfResult = false;
+
+    const res = await app.handle(makeRequest('GET', `/api/pronote/children/${CHILD_ID}/timetable?day=2026-06-16`));
+    expect(res.status).toBe(403);
+  });
+
   it('timetable without ?day param → 422 (TypeBox validation)', async () => {
     currentUser = { id: PARENT_ID, role: 'parent' };
     isParentOfResult = true;
 
     const res = await app.handle(makeRequest('GET', `/api/pronote/children/${CHILD_ID}/timetable`));
+    expect(res.status).toBe(422);
+  });
+
+  it('timetable with malformed ?day param → 422 (TypeBox pattern validation)', async () => {
+    currentUser = { id: PARENT_ID, role: 'parent' };
+    isParentOfResult = true;
+
+    const res = await app.handle(makeRequest('GET', `/api/pronote/children/${CHILD_ID}/timetable?day=not-a-date`));
     expect(res.status).toBe(422);
   });
 
@@ -241,15 +265,17 @@ describe('pronote-data routes', () => {
   // Error mapping
   // ------------------------------------
 
-  it('PronoteResourceNotMappedError → 404 with code pronote_resource_not_mapped', async () => {
+  it('PronoteResourceNotMappedError → 404 with code pronote_resource_not_mapped (static message, no childId leak)', async () => {
     currentUser = { id: CHILD_ID, role: 'student' };
     const { PronoteResourceNotMappedError } = await import('../services/pronote/pronote-data.service');
     mockGetGrades = mock(async () => { throw new PronoteResourceNotMappedError(CHILD_ID); });
 
     const res = await app.handle(makeRequest('GET', `/api/pronote/children/${CHILD_ID}/grades`));
     expect(res.status).toBe(404);
-    const body = await res.json() as { code: string };
+    const body = await res.json() as { code: string; error: string };
     expect(body.code).toBe('pronote_resource_not_mapped');
+    expect(body.error).toBe('Resource not found');
+    expect(JSON.stringify(body)).not.toContain(CHILD_ID);
   });
 
   it('PronoteNotConnectedError → 409 with code pronote_not_connected', async () => {

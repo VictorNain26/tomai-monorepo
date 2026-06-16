@@ -10,7 +10,7 @@
  * PUT  /api/pronote/children/:childId/resource   — caller = parent only
  */
 
-import { Elysia, t } from 'elysia';
+import { Elysia, t, ElysiaCustomStatusResponse } from 'elysia';
 import { authMacro } from '../lib/auth-macro.js';
 import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 import {
@@ -25,6 +25,36 @@ import { PronoteReauthRequired } from '../services/pronote/pawnote-server.adapte
 
 const pronoteDataRateLimit = createRateLimitMiddleware(RateLimitPresets.pronote);
 
+type AnyStatusResponse = ElysiaCustomStatusResponse<number, unknown, number>;
+type StatusFn = (code: number, body: unknown) => AnyStatusResponse;
+
+async function assertParentOrSelf(
+  userId: string,
+  childId: string,
+  status: StatusFn,
+): Promise<AnyStatusResponse | null> {
+  if (userId !== childId && !(await parentService.isParentOf(userId, childId))) {
+    return status(403, { error: 'Access denied', code: 'forbidden' });
+  }
+  return null;
+}
+
+function mapPronoteError(error: unknown, status: StatusFn): AnyStatusResponse {
+  if (error instanceof PronoteResourceNotMappedError) {
+    return status(404, { error: 'Resource not found', code: 'pronote_resource_not_mapped' });
+  }
+  if (error instanceof PronoteNotConnectedError) {
+    return status(409, { error: 'Pronote account not connected', code: 'pronote_not_connected' });
+  }
+  if (error instanceof PronoteReauthRequired) {
+    return status(409, { error: 'Pronote session expired, re-authentication required', code: 'pronote_reauth_required' });
+  }
+  if (error instanceof PronoteMetadataError) {
+    return status(500, { error: 'Pronote metadata invalid', code: 'pronote_metadata_invalid' });
+  }
+  throw error;
+}
+
 export const pronoteDataRoutes = new Elysia({ name: 'pronote-data-routes' })
   .use(authMacro)
   .guard({ auth: true })
@@ -35,27 +65,14 @@ export const pronoteDataRoutes = new Elysia({ name: 'pronote-data-routes' })
     .get('/grades', async ({ params, user, status }) => {
       const { childId } = params;
 
-      if (user.id !== childId && !(await parentService.isParentOf(user.id, childId))) {
-        return status(403, { error: 'Access denied', code: 'forbidden' });
-      }
+      const denied = await assertParentOrSelf(user.id, childId, status as StatusFn);
+      if (denied) return denied;
 
       try {
         const grades = await pronoteDataService.getGrades(childId);
         return { success: true, data: grades };
       } catch (error) {
-        if (error instanceof PronoteResourceNotMappedError) {
-          return status(404, { error: error.message, code: 'pronote_resource_not_mapped' });
-        }
-        if (error instanceof PronoteNotConnectedError) {
-          return status(409, { error: error.message, code: 'pronote_not_connected' });
-        }
-        if (error instanceof PronoteReauthRequired) {
-          return status(409, { error: error.message, code: 'pronote_reauth_required' });
-        }
-        if (error instanceof PronoteMetadataError) {
-          return status(500, { error: error.message, code: 'pronote_metadata_invalid' });
-        }
-        throw error;
+        return mapPronoteError(error, status as StatusFn);
       }
     })
 
@@ -63,27 +80,14 @@ export const pronoteDataRoutes = new Elysia({ name: 'pronote-data-routes' })
     .get('/homework', async ({ params, user, status }) => {
       const { childId } = params;
 
-      if (user.id !== childId && !(await parentService.isParentOf(user.id, childId))) {
-        return status(403, { error: 'Access denied', code: 'forbidden' });
-      }
+      const denied = await assertParentOrSelf(user.id, childId, status as StatusFn);
+      if (denied) return denied;
 
       try {
         const homework = await pronoteDataService.getHomework(childId);
         return { success: true, data: homework };
       } catch (error) {
-        if (error instanceof PronoteResourceNotMappedError) {
-          return status(404, { error: error.message, code: 'pronote_resource_not_mapped' });
-        }
-        if (error instanceof PronoteNotConnectedError) {
-          return status(409, { error: error.message, code: 'pronote_not_connected' });
-        }
-        if (error instanceof PronoteReauthRequired) {
-          return status(409, { error: error.message, code: 'pronote_reauth_required' });
-        }
-        if (error instanceof PronoteMetadataError) {
-          return status(500, { error: error.message, code: 'pronote_metadata_invalid' });
-        }
-        throw error;
+        return mapPronoteError(error, status as StatusFn);
       }
     })
 
@@ -91,30 +95,17 @@ export const pronoteDataRoutes = new Elysia({ name: 'pronote-data-routes' })
     .get('/timetable', async ({ params, query, user, status }) => {
       const { childId } = params;
 
-      if (user.id !== childId && !(await parentService.isParentOf(user.id, childId))) {
-        return status(403, { error: 'Access denied', code: 'forbidden' });
-      }
+      const denied = await assertParentOrSelf(user.id, childId, status as StatusFn);
+      if (denied) return denied;
 
       try {
         const timetable = await pronoteDataService.getTimetable(childId, query.day);
         return { success: true, data: timetable };
       } catch (error) {
-        if (error instanceof PronoteResourceNotMappedError) {
-          return status(404, { error: error.message, code: 'pronote_resource_not_mapped' });
-        }
-        if (error instanceof PronoteNotConnectedError) {
-          return status(409, { error: error.message, code: 'pronote_not_connected' });
-        }
-        if (error instanceof PronoteReauthRequired) {
-          return status(409, { error: error.message, code: 'pronote_reauth_required' });
-        }
-        if (error instanceof PronoteMetadataError) {
-          return status(500, { error: error.message, code: 'pronote_metadata_invalid' });
-        }
-        throw error;
+        return mapPronoteError(error, status as StatusFn);
       }
     }, {
-      query: t.Object({ day: t.String() }),
+      query: t.Object({ day: t.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}$' }) }),
     })
 
     // PUT /api/pronote/children/:childId/resource — parent only
