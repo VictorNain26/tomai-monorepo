@@ -5,6 +5,8 @@ import {
   text,
   timestamp,
   foreignKey,
+  integer,
+  unique,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { user } from './auth.schema';
@@ -62,3 +64,25 @@ export const pronoteCredentialsRelations = relations(
 // Types
 export type PronoteCredential = typeof pronoteCredentials.$inferSelect;
 export type NewPronoteCredential = typeof pronoteCredentials.$inferInsert;
+
+export const pronoteChildResources = pgTable(
+  'pronote_child_resources',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    parentUserId: varchar('parent_user_id', { length: 255 })
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    childUserId: varchar('child_user_id', { length: 255 })
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    resourceId: integer('resource_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    childUnique: unique('pronote_child_resources_child_unique').on(table.childUserId),
+  })
+);
+
+export type PronoteChildResource = typeof pronoteChildResources.$inferSelect;
+export type NewPronoteChildResource = typeof pronoteChildResources.$inferInsert;
