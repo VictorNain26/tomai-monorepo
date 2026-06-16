@@ -105,11 +105,14 @@ class PronoteDataService {
 
       // Persist the rotated token BEFORE caching — caching before persisting
       // would risk serving a token that was never stored (e.g. on process crash).
-      await pronoteSyncService.upsertCredentials(parentUserId, {
+      const persist = await pronoteSyncService.upsertCredentials(parentUserId, {
         token: session.token,
         metadata: cred.metadata,
         tokenExpiresAt: cred.tokenExpiresAt,
       });
+      if (!persist.success) {
+        throw new Error(`Failed to persist rotated Pronote token for parent ${parentUserId}: ${persist.error}`);
+      }
 
       this.cache.set(parentUserId, session);
       return session;

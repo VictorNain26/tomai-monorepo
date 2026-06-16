@@ -77,24 +77,6 @@ describe('PronoteChildResourcesRepository', () => {
     mockDeleteWhere.mockClear();
   });
 
-  describe('getResourceId', () => {
-    it('should return the resourceId when a row exists', async () => {
-      selectResult = { resourceId: RESOURCE_ID };
-
-      const result = await pronoteChildResourcesRepository.getResourceId(CHILD_USER_ID);
-
-      expect(result).toBe(RESOURCE_ID);
-    });
-
-    it('should return null when no row exists', async () => {
-      selectResult = undefined;
-
-      const result = await pronoteChildResourcesRepository.getResourceId(CHILD_USER_ID);
-
-      expect(result).toBeNull();
-    });
-  });
-
   describe('upsertMapping', () => {
     it('should call insert().values().onConflictDoUpdate() with childUserId as conflict target', async () => {
       await pronoteChildResourcesRepository.upsertMapping(

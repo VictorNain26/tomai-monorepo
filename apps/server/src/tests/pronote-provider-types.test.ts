@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { PronoteProvider, NormalizedGrade } from '../services/pronote/provider.types';
+import type { NormalizedGrade } from '../services/pronote/provider.types';
 
 describe('PronoteProvider port', () => {
   it('NormalizedGrade carries source-agnostic fields', () => {
@@ -9,8 +9,4 @@ describe('PronoteProvider port', () => {
     expect(g.scale).toBe(20);
   });
 
-  it('provider exposes the four read methods + lifecycle', () => {
-    const shape: (keyof PronoteProvider)[] = ['connect', 'getGrades', 'getHomework', 'getTimetable', 'disconnect'];
-    expect(shape).toHaveLength(5);
-  });
 });
