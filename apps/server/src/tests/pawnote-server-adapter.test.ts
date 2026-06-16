@@ -1,6 +1,9 @@
 /**
  * Tests - PawnoteServerAdapter
  * Mock: pawnote (loginToken, gradesOverview, assignmentsFromIntervals, timetableFromIntervals)
+ *
+ * connectWithCredentials is test-only and lives in
+ * integration-tests/helpers/pronote-credentials-login.ts; it is not exercised here.
  */
 
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
@@ -28,14 +31,6 @@ const mockLoginToken = mock(async () => ({
   username: 'jean.dupont',
   kind: 7,
   token: 'rotated-token-96chars-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-  navigatorIdentifier: 'nav-id',
-}));
-
-const mockLoginCredentials = mock(async () => ({
-  url: 'https://demo.index-education.net/pronote',
-  username: 'jean.dupont',
-  kind: 7,
-  token: 'credentials-token-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
   navigatorIdentifier: 'nav-id',
 }));
 
@@ -107,7 +102,6 @@ const mockCreateSessionHandle = mock(() => mockHandle);
 mock.module('pawnote', () => ({
   createSessionHandle: mockCreateSessionHandle,
   loginToken: mockLoginToken,
-  loginCredentials: mockLoginCredentials,
   gradesOverview: mockGradesOverview,
   assignmentsFromIntervals: mockAssignmentsFromIntervals,
   timetableFromIntervals: mockTimetableFromIntervals,
@@ -138,7 +132,6 @@ describe('PawnoteServerAdapter', () => {
   beforeEach(() => {
     adapter = new PawnoteServerAdapter();
     mockLoginToken.mockClear();
-    mockLoginCredentials.mockClear();
     mockGradesOverview.mockClear();
     mockAssignmentsFromIntervals.mockClear();
     mockTimetableFromIntervals.mockClear();
@@ -167,32 +160,11 @@ describe('PawnoteServerAdapter', () => {
       expect(mockLoginToken).toHaveBeenCalledTimes(1);
     });
 
-    it('does not fall back to credentials on loginToken failure', async () => {
+    it('throws PronoteReauthRequired on loginToken failure', async () => {
       mockLoginToken.mockRejectedValueOnce(new Error('BadCredentials'));
 
       // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toBeInstanceOf() is not typed as Promise but is awaitable
       await expect(adapter.connect(BASE_INPUT)).rejects.toBeInstanceOf(PronoteReauthRequired);
-      expect(mockLoginCredentials).not.toHaveBeenCalled();
-    });
-  });
-
-  // ============================================
-  // connectWithCredentials (TEST-ONLY path)
-  // ============================================
-
-  describe('connectWithCredentials', () => {
-    it('returns a session with the credential token', async () => {
-      const session = await adapter.connectWithCredentials({
-        url: BASE_INPUT.url,
-        kind: BASE_INPUT.kind,
-        username: BASE_INPUT.username,
-        password: 'secret',
-        deviceUuid: BASE_INPUT.deviceUuid,
-      });
-      expect(session.token).toBe(
-        'credentials-token-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-      );
-      expect(mockLoginCredentials).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -1,7 +1,6 @@
 import {
   createSessionHandle,
   loginToken,
-  loginCredentials,
   gradesOverview,
   assignmentsFromIntervals,
   timetableFromIntervals,
@@ -17,7 +16,6 @@ import type {
   NormalizedHomework,
   NormalizedLesson,
 } from './provider.types';
-import { env } from '../../config/env.js';
 
 // ============================================
 // Typed error — caller must re-auth from scratch
@@ -45,39 +43,41 @@ export interface AdapterSession extends ProviderSession {
 // Fetcher — spoofed mobile UA required by Pronote
 // ============================================
 
-const PRONOTE_USER_AGENT =
+export const PRONOTE_USER_AGENT =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 19_0 like Mac OS X) ' +
   'AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 ' +
   'PRONOTE Mobile APP Version/2.0.11';
 
 // Pawnote expects a custom Response shape: { status, content, headers }
-const pronoteFetcher = async (request: {
-  url: URL;
-  method?: 'GET' | 'POST';
-  headers?: Record<string, string> | Headers;
-  content?: string;
-  redirect?: 'follow' | 'manual';
-}) => {
-  const res = await fetch(request.url, {
-    method: request.method ?? 'GET',
-    headers: {
-      ...(request.headers instanceof Headers
-        ? Object.fromEntries(request.headers.entries())
-        : request.headers),
-      'User-Agent': PRONOTE_USER_AGENT,
-    },
-    body: request.method === 'POST' ? (request.content ?? undefined) : undefined,
-    redirect: request.redirect,
-  });
+export function createServerFetcher() {
+  return async (request: {
+    url: URL;
+    method?: 'GET' | 'POST';
+    headers?: Record<string, string> | Headers;
+    content?: string;
+    redirect?: 'follow' | 'manual';
+  }) => {
+    const res = await fetch(request.url, {
+      method: request.method ?? 'GET',
+      headers: {
+        ...(request.headers instanceof Headers
+          ? Object.fromEntries(request.headers.entries())
+          : request.headers),
+        'User-Agent': PRONOTE_USER_AGENT,
+      },
+      body: request.method === 'POST' ? (request.content ?? undefined) : undefined,
+      redirect: request.redirect,
+    });
 
-  const content = await res.text();
-  const headers: Record<string, string> = {};
-  res.headers.forEach((value, key) => {
-    headers[key] = value;
-  });
+    const content = await res.text();
+    const headers: Record<string, string> = {};
+    res.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
 
-  return { status: res.status, content, headers };
-};
+    return { status: res.status, content, headers };
+  };
+}
 
 // ============================================
 // Helpers
@@ -120,7 +120,7 @@ export class PawnoteServerAdapter implements PronoteProvider {
     token: string;
     deviceUuid: string;
   }): Promise<AdapterSession> {
-    const handle = createSessionHandle(pronoteFetcher);
+    const handle = createSessionHandle(createServerFetcher());
     try {
       const info = await loginToken(handle, {
         url: input.url,
@@ -133,34 +133,6 @@ export class PawnoteServerAdapter implements PronoteProvider {
     } catch (cause) {
       throw new PronoteReauthRequired(cause);
     }
-  }
-
-  /**
-   * @internal
-   * TEST-ONLY — the public Pronote demo rejects loginToken (it does not issue
-   * reusable tokens), so this credential path exists solely for integration
-   * testing against that demo. It is intentionally absent from PronoteProvider
-   * and MUST NOT be called from any production route.
-   */
-  async connectWithCredentials(input: {
-    url: string;
-    kind: number;
-    username: string;
-    password: string;
-    deviceUuid: string;
-  }): Promise<AdapterSession> {
-    if (env.NODE_ENV === 'production') {
-      throw new Error('connectWithCredentials is TEST-ONLY and must not be called in production');
-    }
-    const handle = createSessionHandle(pronoteFetcher);
-    const info = await loginCredentials(handle, {
-      url: input.url,
-      kind: input.kind as AccountKind,
-      username: input.username,
-      password: input.password,
-      deviceUUID: input.deviceUuid,
-    });
-    return { token: info.token, username: info.username, handle };
   }
 
   // resourceId identifies the child resource on the Pronote account.
