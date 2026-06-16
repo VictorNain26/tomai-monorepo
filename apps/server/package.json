@@ -67,6 +67,7 @@
     "elysia": "^1.4.28",
     "mammoth": "^1.12.0",
     "p-limit": "^7.3.0",
+    "pawnote": "^1.6.2",
     "postgres": "^3.4.7",
     "ts-fsrs": "^5.4.1",
     "unpdf": "^1.6.2",
