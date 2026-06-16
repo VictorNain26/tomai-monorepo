@@ -1,5 +1,6 @@
 import type { ProviderSession } from './provider.types';
 
+// TODO: add max-size eviction if the parent count grows (entries are only evicted on access-after-expiry)
 export class SessionCache<T extends ProviderSession = ProviderSession> {
   private readonly store = new Map<string, { session: T; expiresAt: number }>();
 

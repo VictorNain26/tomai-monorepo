@@ -17,6 +17,7 @@ import type {
   NormalizedHomework,
   NormalizedLesson,
 } from './provider.types';
+import { env } from '../../config/env.js';
 
 // ============================================
 // Typed error — caller must re-auth from scratch
@@ -148,6 +149,9 @@ export class PawnoteServerAdapter implements PronoteProvider {
     password: string;
     deviceUuid: string;
   }): Promise<AdapterSession> {
+    if (env.NODE_ENV === 'production') {
+      throw new Error('connectWithCredentials is TEST-ONLY and must not be called in production');
+    }
     const handle = createSessionHandle(pronoteFetcher);
     const info = await loginCredentials(handle, {
       url: input.url,

@@ -243,6 +243,24 @@ describe('PronoteDataService', () => {
   });
 
   // ============================================
+  // Error: PronoteReauthRequired propagates out of getGrades
+  // ============================================
+
+  describe('PronoteReauthRequired propagation', () => {
+    it('propagates PronoteReauthRequired thrown by connect without wrapping', async () => {
+      const { PronoteReauthRequired } = await import('../services/pronote/pawnote-server.adapter');
+      const childIdReauth = 'child-reauth-test';
+      const parentIdReauth = 'parent-reauth-test';
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdReauth, resourceId: 0 }));
+      mockGetCredentials.mockImplementation(async () => VALID_CREDENTIALS);
+      mockConnect.mockImplementation(async () => { throw new PronoteReauthRequired(new Error('token rejected')); });
+
+      // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toBeInstanceOf() is not typed as Promise but is awaitable
+      await expect(pronoteDataService.getGrades(childIdReauth)).rejects.toBeInstanceOf(PronoteReauthRequired);
+    });
+  });
+
+  // ============================================
   // getHomework + getTimetable delegate correctly
   // ============================================
 

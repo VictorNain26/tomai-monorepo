@@ -47,15 +47,16 @@ interface PronoteMetadata {
 function parseMetadata(raw: string): PronoteMetadata {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
 
-  if (parsed.accountKind === undefined || parsed.accountKind === null) {
-    throw new PronoteMetadataError('accountKind');
-  }
+  if (typeof parsed.instanceUrl !== 'string' || !parsed.instanceUrl) throw new PronoteMetadataError('instanceUrl');
+  if (typeof parsed.username !== 'string' || !parsed.username) throw new PronoteMetadataError('username');
+  if (typeof parsed.deviceUuid !== 'string' || !parsed.deviceUuid) throw new PronoteMetadataError('deviceUuid');
+  if (typeof parsed.accountKind !== 'number') throw new PronoteMetadataError('accountKind');
 
   return {
-    instanceUrl: parsed.instanceUrl as string,
-    username: parsed.username as string,
-    deviceUuid: parsed.deviceUuid as string,
-    accountKind: parsed.accountKind as number,
+    instanceUrl: parsed.instanceUrl,
+    username: parsed.username,
+    deviceUuid: parsed.deviceUuid,
+    accountKind: parsed.accountKind,
   };
 }
 
@@ -63,41 +64,66 @@ function parseMetadata(raw: string): PronoteMetadata {
 // Service class — injectable cache for testability
 // ============================================
 
+/**
+ * AUTHORIZATION: this service does NOT check caller identity.
+ * Route handlers MUST verify the caller is the child or the child's parent
+ * before calling these methods.
+ */
 class PronoteDataService {
   constructor(private readonly cache: SessionCache<AdapterSession>) {}
+
+  /**
+   * In-flight deduplication keyed by parentUserId.
+   * Concurrent requests for the same parent coalesce onto a single
+   * connect+persist+cache.set call — prevents the race where two callers both
+   * see an empty cache, both call connect(), and the second upsert overwrites
+   * the first rotated (one-shot) token.
+   */
+  private readonly inflight = new Map<string, Promise<AdapterSession>>();
+
+  private async getOrCreateSession(parentUserId: string): Promise<AdapterSession> {
+    const cached = this.cache.get(parentUserId);
+    if (cached) return cached;
+
+    const existing = this.inflight.get(parentUserId);
+    if (existing) return existing;
+
+    const p = (async () => {
+      const cred = await pronoteSyncService.getCredentials(parentUserId);
+      if (!cred) throw new PronoteNotConnectedError(parentUserId);
+
+      const meta = parseMetadata(cred.metadata);
+
+      // PronoteReauthRequired propagates — no catch, no password fallback
+      const session = await pawnoteServerAdapter.connect({
+        url: meta.instanceUrl,
+        kind: meta.accountKind,
+        username: meta.username,
+        token: cred.token,
+        deviceUuid: meta.deviceUuid,
+      });
+
+      // Persist the rotated token BEFORE caching — caching before persisting
+      // would risk serving a token that was never stored (e.g. on process crash).
+      await pronoteSyncService.upsertCredentials(parentUserId, {
+        token: session.token,
+        metadata: cred.metadata,
+        tokenExpiresAt: cred.tokenExpiresAt,
+      });
+
+      this.cache.set(parentUserId, session);
+      return session;
+    })().finally(() => this.inflight.delete(parentUserId));
+
+    this.inflight.set(parentUserId, p);
+    return p;
+  }
 
   private async resolveSession(childId: string): Promise<{ session: AdapterSession; resourceId: number }> {
     const mapping = await pronoteChildResourcesRepository.getMapping(childId);
     if (!mapping) throw new PronoteResourceNotMappedError(childId);
 
-    const cached = this.cache.get(mapping.parentUserId);
-    if (cached) {
-      return { session: cached, resourceId: mapping.resourceId };
-    }
-
-    const cred = await pronoteSyncService.getCredentials(mapping.parentUserId);
-    if (!cred) throw new PronoteNotConnectedError(mapping.parentUserId);
-
-    const meta = parseMetadata(cred.metadata);
-
-    // PronoteReauthRequired propagates — no catch, no password fallback
-    const session = await pawnoteServerAdapter.connect({
-      url: meta.instanceUrl,
-      kind: meta.accountKind,
-      username: meta.username,
-      token: cred.token,
-      deviceUuid: meta.deviceUuid,
-    });
-
-    // Re-persist the rotated token; keep existing metadata string and expiry
-    await pronoteSyncService.upsertCredentials(mapping.parentUserId, {
-      token: session.token,
-      metadata: cred.metadata,
-      tokenExpiresAt: cred.tokenExpiresAt,
-    });
-
-    this.cache.set(mapping.parentUserId, session);
-
+    const session = await this.getOrCreateSession(mapping.parentUserId);
     return { session, resourceId: mapping.resourceId };
   }
 
