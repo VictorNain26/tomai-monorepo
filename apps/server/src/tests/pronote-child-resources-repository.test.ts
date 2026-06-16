@@ -115,6 +115,24 @@ describe('PronoteChildResourcesRepository', () => {
     });
   });
 
+  describe('getMapping', () => {
+    it('should return { parentUserId, resourceId } when a row exists', async () => {
+      selectResult = { parentUserId: PARENT_USER_ID, resourceId: RESOURCE_ID };
+
+      const result = await pronoteChildResourcesRepository.getMapping(CHILD_USER_ID);
+
+      expect(result).toEqual({ parentUserId: PARENT_USER_ID, resourceId: RESOURCE_ID });
+    });
+
+    it('should return null when no row exists', async () => {
+      selectResult = undefined;
+
+      const result = await pronoteChildResourcesRepository.getMapping(CHILD_USER_ID);
+
+      expect(result).toBeNull();
+    });
+  });
+
   describe('deleteByChild', () => {
     it('should call delete().where() with childUserId', async () => {
       await pronoteChildResourcesRepository.deleteByChild(CHILD_USER_ID);

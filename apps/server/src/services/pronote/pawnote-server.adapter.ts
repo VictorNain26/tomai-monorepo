@@ -36,7 +36,7 @@ export class PronoteReauthRequired extends Error {
 // connect() returns this; read methods reuse the handle without a second login.
 // ============================================
 
-interface AdapterSession extends ProviderSession {
+export interface AdapterSession extends ProviderSession {
   handle: SessionHandle;
 }
 
@@ -243,3 +243,5 @@ export class PawnoteServerAdapter implements PronoteProvider {
     // Pawnote sessions are stateless server-side; nothing to close.
   }
 }
+
+export const pawnoteServerAdapter = new PawnoteServerAdapter();

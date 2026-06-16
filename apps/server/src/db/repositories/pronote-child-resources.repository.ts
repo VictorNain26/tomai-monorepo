@@ -12,6 +12,20 @@ class PronoteChildResourcesRepository {
     return row?.resourceId ?? null;
   }
 
+  async getMapping(
+    childUserId: string,
+  ): Promise<{ parentUserId: string; resourceId: number } | null> {
+    const [row] = await db
+      .select({
+        parentUserId: pronoteChildResources.parentUserId,
+        resourceId: pronoteChildResources.resourceId,
+      })
+      .from(pronoteChildResources)
+      .where(eq(pronoteChildResources.childUserId, childUserId));
+
+    return row ?? null;
+  }
+
   async upsertMapping(
     parentUserId: string,
     childUserId: string,
