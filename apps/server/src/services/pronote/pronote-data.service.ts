@@ -127,6 +127,20 @@ class PronoteDataService {
     return { session, resourceId: mapping.resourceId };
   }
 
+  /**
+   * @internal Pre-warm the session cache for a given parent user.
+   *
+   * Used to seed a live session immediately after a credentials-based login
+   * (e.g. right after a successful QR-code / password connect), and by
+   * integration tests that must bypass `loginToken` when the demo account
+   * does not support token-based re-authentication.
+   *
+   * NOT for production data paths — call connect() there instead.
+   */
+  primeSession(parentUserId: string, session: AdapterSession): void {
+    this.cache.set(parentUserId, session);
+  }
+
   async getGrades(childId: string): Promise<NormalizedGrade[]> {
     const { session, resourceId } = await this.resolveSession(childId);
     return pawnoteServerAdapter.getGrades(session, resourceId);
