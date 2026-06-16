@@ -1,9 +1,10 @@
 /**
  * Pronote Credential Sync Service
  *
- * Device-first architecture: the mobile device handles all Pronote API calls.
- * This service only stores/retrieves encrypted credentials for multi-device sync.
- * The server NEVER decrypts tokens for its own use — decryption is for the client.
+ * Stores and retrieves AES-256-GCM encrypted Pronote credentials.
+ * Two consumers: mobile (device-first, decrypts for direct pawnote calls) and
+ * the server-side provider (PawnoteServerAdapter, decrypts in-memory for
+ * parent/web reads via pronote-data.service).
  */
 
 import { eq } from 'drizzle-orm';

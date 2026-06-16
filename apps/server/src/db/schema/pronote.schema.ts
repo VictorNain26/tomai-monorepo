@@ -14,15 +14,15 @@ import { user } from './auth.schema';
 /**
  * Pronote credentials sync table
  *
- * Device-first architecture (2026):
- * - Mobile device makes all Pronote API calls via pawnote
- * - Server stores encrypted credentials for multi-device sync only
- * - Server NEVER calls Pronote directly
+ * Stores encrypted token + metadata for two consumers:
+ * - Mobile (device-first): decrypts and uses the token directly for student auth
+ * - Server-side provider (PawnoteServerAdapter): decrypts the token in-memory
+ *   to call Pronote server-side for parent/web reads (loginToken flow)
  *
  * Security:
  * - Token encrypted AES-256-GCM before storage
  * - Metadata (instanceUrl, username, deviceUuid) encrypted separately
- * - Decryption happens on the requesting device
+ * - Decryption is always ephemeral (never stored decrypted)
  */
 export const pronoteCredentials = pgTable(
   'pronote_credentials',
