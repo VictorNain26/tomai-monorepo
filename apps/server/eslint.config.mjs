@@ -57,7 +57,7 @@ export default [
       
       // TypeScript rules - Production strict (selon audit recommendations)
       '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-unused-vars': 'error', // ✅ Activé selon audit
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }], // ✅ Activé selon audit
       'no-unused-vars': 'off',
       '@typescript-eslint/no-floating-promises': 'error', // ✅ Ajouté selon audit
       '@typescript-eslint/await-thenable': 'error', // ✅ Ajouté selon audit
@@ -102,6 +102,8 @@ export default [
     files: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
+      // expect(...).rejects.toBeInstanceOf() is not typed as thenable but is valid bun:test usage
+      '@typescript-eslint/await-thenable': 'off',
     },
   }
 ];

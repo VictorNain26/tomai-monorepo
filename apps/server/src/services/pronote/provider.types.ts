@@ -27,7 +27,7 @@ export interface ProviderSession {
 }
 
 export interface PronoteProvider {
-  connect(input: { url: string; username: string; token: string; deviceUuid: string }): Promise<ProviderSession>;
+  connect(input: { url: string; kind: number; username: string; token: string; deviceUuid: string }): Promise<ProviderSession>;
   getGrades(session: ProviderSession, resourceId: number): Promise<NormalizedGrade[]>;
   getHomework(session: ProviderSession, resourceId: number): Promise<NormalizedHomework[]>;
   getTimetable(session: ProviderSession, resourceId: number, day: string): Promise<NormalizedLesson[]>;
