@@ -55,7 +55,14 @@ apps/mobile ┘ (WebView native pour l'auth, device-first pour les données jusq
 
 ## Modèle d'authentification (le cœur — révisé 2026-06-16)
 
-**Règle invariante, web ET mobile** : **l'obtention du token est toujours pilotée par l'utilisateur dans un navigateur/WebView ; la lecture des données via le token est server-side.**
+**Règle invariante** : **on ne stocke JAMAIS le mot de passe — seulement un jeton de session révocable (token-only AU STOCKAGE).** La lecture des données via le jeton est server-side.
+
+**Canaux de connexion (décision UX 2026-06-17, modèle agrégateur) :**
+- **Mobile** : WebView sur la page Pronote/EduConnect **officielle** → le mot de passe **ne transite jamais** par nous, on récupère le jeton (pattern Papillon). Gère l'ENT nativement.
+- **Web** : saisie identifiant/mot de passe Pronote dans Tom (modèle agrégateur type Bankin') → le backend fait `loginCredentials` (proxy, le navigateur ne peut pas appeler Pronote = CORS) → le mot de passe **transite en mémoire serveur le temps de l'échange puis est jeté**, seul le jeton est stocké. Marche en accès direct ; **l'ENT sur le web reste le point dur** (scraping EduConnect serveur fragile, garde anti-IP déc. 2024).
+- **Pas de rebond web→mobile.** Chaque canal est autonome.
+- Token-only **au stockage** garanti partout ; token-only **au transit** seulement sur mobile.
+- Conséquence : un chemin `loginCredentials` revient en prod **délibérément** (endpoint de connexion web), distinct du helper test-only sorti du code.
 
 1. **Acquisition du token (côté client)** :
    - **Mobile** : WebView native (incognito, User-Agent app-mobile Pronote). L'utilisateur fait son flow (accès direct **ou** ENT/EduConnect). On intercepte le **jeton d'appairage app-mobile** Pronote.

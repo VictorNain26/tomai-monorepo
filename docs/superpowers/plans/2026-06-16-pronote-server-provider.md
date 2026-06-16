@@ -205,7 +205,18 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Create: `apps/server/src/services/pronote/pawnote-server.adapter.ts`
 - Test: `apps/server/src/tests/pawnote-server-adapter.test.ts`
 
-The adapter wraps `pawnote`. `connect` does `loginToken` and returns the rotated token. The read methods map pawnote payloads to normalized types. Use the mobile imports (`usePronote.ts:8-22`) as the source of truth for pawnote APIs.
+The adapter wraps `pawnote`.
+
+**Production path**: `connect({ url, username, token, deviceUuid })` calls `loginToken` and returns the rotated token in `ProviderSession`. If `loginToken` fails (expired/invalidated token), throw a typed `PronoteReauthRequired` error — **NO fallback to credentials**. We are token-only: a credentials fallback would need a stored password we never keep, and would silently mask a re-auth need (forbidden by the owner's zero-silent-fallback rule). The caller surfaces "reconnect required" to the user (re-do the QR).
+
+**Test-only path**: also expose `connectWithCredentials({ url, username, password, deviceUuid })` (calls `loginCredentials`), used ONLY by the demo probe/e2e — the public demo does NOT accept `loginToken` (Task 0 confirmed `BadCredentialsError` on demo). Mark it clearly test-only; it must not be reachable from any production route.
+
+**Field mappings — use the EXACT pawnote 1.6.2 shapes captured by the Task 0 probe** (real, confirmed):
+- grades: `overview.grades[]` → `.value.kind` (GradeKind: `0`=Grade, `1`=Absent…), `.value.points` (valid only when `kind===GradeKind.Grade` → otherwise `NormalizedGrade.value = null`), `.outOf.points` (=`scale`), `.subject.name`, `.date` (Date), `.comment`. Period: `handle.userResource.tabs.get(TabLocation.Grades)?.defaultPeriod ?? periods[0]`.
+- homework: `assignmentsFromIntervals(handle, from, to)` → `Assignment[]` → `.subject.name`, `.description` (HTML — strip tags for `NormalizedHomework.description`), `.deadline` (Date → `dueDate`), `.done`.
+- timetable: `timetableFromIntervals(handle, from, to)` → `Timetable` with `.classes[]`, discriminate by `.is` (`'lesson'`|`'activity'`|`'detention'`); lesson → `.subject?.name`, `.startDate`, `.endDate`, `.classrooms[]` (first → `room`), `.canceled`.
+
+Use the mobile `usePronote.ts:8-22` as the working API reference and confirm against the installed types.
 
 - [ ] **Step 1: Write the failing test (mock pawnote)**
 
@@ -565,7 +576,11 @@ If `apps/server/dist/types` is git-tracked, stage it; otherwise skip. `git statu
 
 - [ ] **Step 1: Write a real e2e that seeds a parent+child, maps the demo resource, and reads via the HTTP route**
 
-Using the real DB (integration suite) and the demo account: upsert a parent credential from a real demo `loginCredentials` token, create a parent+child pair, `PUT .../resource` the demo resource id, then `GET .../grades` through `app.handle()` and assert a non-empty normalized payload. This proves the full chain with zero mocks. Clean up: `DELETE FROM "user" WHERE email LIKE 'probe-%'` and the credential/mapping rows in an `afterAll`.
+Using the real DB (integration suite) and the demo account: establish a real demo session via `connectWithCredentials` (the demo does NOT accept `loginToken` — Task 0 confirmed `BadCredentialsError`, so the token-rotation cycle is NOT provable on the demo), seed a parent+child pair, persist the parent credential, `PUT .../resource` the demo resource id, seed the demo session into the cache so resolution uses it, then `GET .../grades` through `app.handle()` and assert a non-empty normalized payload. This proves the full chain (resolution → resource → real read → normalized endpoint) with **zero mocks on the data path**.
+
+**Explicitly document in the test (out of demo scope):** the token-based re-login cycle (`loginToken`) must be proven later against a REAL Pronote account (QR) — the demo cannot exercise it. Do NOT fake it.
+
+Clean up: `DELETE FROM "user" WHERE email LIKE 'probe-%'` and the credential/mapping rows in an `afterAll`.
 
 - [ ] **Step 2: Run the integration suite**
 
