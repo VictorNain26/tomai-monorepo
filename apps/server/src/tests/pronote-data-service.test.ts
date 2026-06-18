@@ -10,8 +10,8 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 // ============================================
 
 const mockGetMapping = mock(async (_childId: string) => null as { parentUserId: string; credentialId: string; resourceId: number } | null);
-const mockGetCredentials = mock(async (_userId: string) => null as { token: string; metadata: string; tokenExpiresAt: string } | null);
-const mockUpsertCredentials = mock(async () => ({ success: true }));
+const mockGetCredentialById = mock(async (_id: string) => null as { id: string; token: string; metadata: string; tokenExpiresAt: string } | null);
+const mockUpdateTokenById = mock(async (_id: string, _token: string) => true);
 const mockConnect = mock(async () => ({ token: 'rotated-token', username: 'jean.dupont', handle: {} }));
 const mockGetGrades = mock(async () => [
   { subject: 'Maths', value: 15, scale: 20, date: '2026-06-01', comment: null },
@@ -31,8 +31,8 @@ mock.module('../db/repositories/pronote-child-resources.repository', () => ({
 
 mock.module('../services/pronote-sync.service', () => ({
   pronoteSyncService: {
-    getCredentials: mockGetCredentials,
-    upsertCredentials: mockUpsertCredentials,
+    getCredentialById: mockGetCredentialById,
+    updateTokenById: mockUpdateTokenById,
   },
 }));
 
@@ -73,7 +73,9 @@ const VALID_METADATA = JSON.stringify({
   deviceUuid: 'device-uuid-123',
   accountKind: 7,
 });
+const CRED_ID = 'cred-uuid-001';
 const VALID_CREDENTIALS = {
+  id: CRED_ID,
   token: 'stored-token-abc',
   metadata: VALID_METADATA,
   tokenExpiresAt: '2026-12-31T00:00:00Z',
@@ -87,8 +89,8 @@ const VALID_MAPPING = { parentUserId: PARENT_ID, credentialId: 'cred-uuid-001', 
 describe('PronoteDataService', () => {
   beforeEach(() => {
     mockGetMapping.mockClear();
-    mockGetCredentials.mockClear();
-    mockUpsertCredentials.mockClear();
+    mockGetCredentialById.mockClear();
+    mockUpdateTokenById.mockClear();
     mockConnect.mockClear();
     mockGetGrades.mockClear();
     mockGetHomework.mockClear();
@@ -96,7 +98,7 @@ describe('PronoteDataService', () => {
 
     // Reset to happy-path defaults
     mockGetMapping.mockImplementation(async () => VALID_MAPPING);
-    mockGetCredentials.mockImplementation(async () => VALID_CREDENTIALS);
+    mockGetCredentialById.mockImplementation(async () => VALID_CREDENTIALS);
     mockConnect.mockImplementation(async () => ({ token: 'rotated-token', username: 'jean.dupont', handle: {} }));
     mockGetGrades.mockImplementation(async () => [
       { subject: 'Maths', value: 15, scale: 20, date: '2026-06-01', comment: null },
@@ -126,13 +128,11 @@ describe('PronoteDataService', () => {
       expect(connectArg?.token).toBe('stored-token-abc');
       expect(connectArg?.url).toBe('https://demo.index-education.net/pronote');
 
-      // rotated token re-persisted with existing metadata and tokenExpiresAt
-      expect(mockUpsertCredentials).toHaveBeenCalledTimes(1);
-      const upsertArgs = (mockUpsertCredentials.mock.calls as unknown as Array<[string, Record<string, unknown>]>)[0];
-      expect(upsertArgs?.[0]).toBe(PARENT_ID);
-      expect(upsertArgs?.[1]?.token).toBe('rotated-token');
-      expect(upsertArgs?.[1]?.metadata).toBe(VALID_METADATA);
-      expect(upsertArgs?.[1]?.tokenExpiresAt).toBe(VALID_CREDENTIALS.tokenExpiresAt);
+      // rotated token re-persisted via updateTokenById with credentialId
+      expect(mockUpdateTokenById).toHaveBeenCalledTimes(1);
+      const updateArgs = (mockUpdateTokenById.mock.calls as unknown as Array<[string, string]>)[0];
+      expect(updateArgs?.[0]).toBe(CRED_ID);
+      expect(updateArgs?.[1]).toBe('rotated-token');
 
       // reads called with resourceId from mapping
       expect(mockGetGrades).toHaveBeenCalledTimes(1);
@@ -144,21 +144,21 @@ describe('PronoteDataService', () => {
   // ============================================
 
   describe('cache hit', () => {
-    it('does not call connect or upsertCredentials on a second call for the same parent', async () => {
+    it('does not call connect or updateTokenById on a second call for the same credential', async () => {
       // Use a distinct childId to isolate this test's cache entry from other tests
       const childIdForCacheTest = 'child-cache-test';
       mockGetMapping.mockImplementation(async () => ({ parentUserId: 'parent-cache-test', credentialId: 'cred-cache', resourceId: 0 }));
-      mockGetCredentials.mockImplementation(async () => VALID_CREDENTIALS);
+      mockGetCredentialById.mockImplementation(async () => ({ ...VALID_CREDENTIALS, id: 'cred-cache' }));
 
       await pronoteDataService.getGrades(childIdForCacheTest);
       mockConnect.mockClear();
-      mockUpsertCredentials.mockClear();
+      mockUpdateTokenById.mockClear();
       mockGetGrades.mockClear();
 
       await pronoteDataService.getGrades(childIdForCacheTest);
 
       expect(mockConnect).not.toHaveBeenCalled();
-      expect(mockUpsertCredentials).not.toHaveBeenCalled();
+      expect(mockUpdateTokenById).not.toHaveBeenCalled();
       expect(mockGetGrades).toHaveBeenCalledTimes(1);
     });
   });
@@ -191,11 +191,10 @@ describe('PronoteDataService', () => {
   // ============================================
 
   describe('PronoteNotConnectedError', () => {
-    it('throws when getCredentials returns null', async () => {
+    it('throws when getCredentialById returns null', async () => {
       const childIdNC = 'child-no-creds';
-      const parentIdNC = 'parent-no-creds';
-      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdNC, credentialId: 'cred-nc', resourceId: 0 }));
-      mockGetCredentials.mockImplementation(async () => null);
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: 'parent-no-creds', credentialId: 'cred-nc', resourceId: 0 }));
+      mockGetCredentialById.mockImplementation(async () => null);
 
       // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toBeInstanceOf() is not typed as Promise but is awaitable
       await expect(pronoteDataService.getGrades(childIdNC)).rejects.toBeInstanceOf(
@@ -203,14 +202,13 @@ describe('PronoteDataService', () => {
       );
     });
 
-    it('carries the parentUserId', async () => {
+    it('carries the credentialId', async () => {
       const childIdNC2 = 'child-no-creds-2';
-      const parentIdNC2 = 'parent-no-creds-2';
-      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdNC2, credentialId: 'cred-nc2', resourceId: 0 }));
-      mockGetCredentials.mockImplementation(async () => null);
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: 'parent-no-creds-2', credentialId: 'cred-nc2', resourceId: 0 }));
+      mockGetCredentialById.mockImplementation(async () => null);
 
       const err = await pronoteDataService.getGrades(childIdNC2).catch((e: unknown) => e);
-      expect((err as InstanceType<typeof PronoteNotConnectedError>).parentUserId).toBe(parentIdNC2);
+      expect((err as InstanceType<typeof PronoteNotConnectedError>).credentialId).toBe('cred-nc2');
     });
   });
 
@@ -230,7 +228,7 @@ describe('PronoteDataService', () => {
         deviceUuid: 'device-uuid-123',
         // accountKind intentionally absent
       });
-      mockGetCredentials.mockImplementation(async () => ({
+      mockGetCredentialById.mockImplementation(async () => ({
         ...VALID_CREDENTIALS,
         metadata: metaWithoutKind,
       }));
@@ -252,7 +250,7 @@ describe('PronoteDataService', () => {
       const childIdReauth = 'child-reauth-test';
       const parentIdReauth = 'parent-reauth-test';
       mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdReauth, credentialId: 'cred-reauth', resourceId: 0 }));
-      mockGetCredentials.mockImplementation(async () => VALID_CREDENTIALS);
+      mockGetCredentialById.mockImplementation(async () => VALID_CREDENTIALS);
       mockConnect.mockImplementation(async () => { throw new PronoteReauthRequired(new Error('token rejected')); });
 
       // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toBeInstanceOf() is not typed as Promise but is awaitable

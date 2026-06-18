@@ -18,11 +18,11 @@ export class PronoteResourceNotMappedError extends Error {
 }
 
 export class PronoteNotConnectedError extends Error {
-  readonly parentUserId: string;
-  constructor(parentUserId: string) {
-    super(`No Pronote credentials found for parent ${parentUserId}`);
+  readonly credentialId: string;
+  constructor(credentialId: string) {
+    super(`No Pronote credentials found for credential ${credentialId}`);
     this.name = 'PronoteNotConnectedError';
-    this.parentUserId = parentUserId;
+    this.credentialId = credentialId;
   }
 }
 
@@ -73,24 +73,24 @@ class PronoteDataService {
   constructor(private readonly cache: SessionCache<AdapterSession>) {}
 
   /**
-   * In-flight deduplication keyed by parentUserId.
-   * Concurrent requests for the same parent coalesce onto a single
+   * In-flight deduplication keyed by credentialId.
+   * Concurrent requests for the same credential coalesce onto a single
    * connect+persist+cache.set call — prevents the race where two callers both
-   * see an empty cache, both call connect(), and the second upsert overwrites
+   * see an empty cache, both call connect(), and the second update overwrites
    * the first rotated (one-shot) token.
    */
   private readonly inflight = new Map<string, Promise<AdapterSession>>();
 
-  private async getOrCreateSession(parentUserId: string): Promise<AdapterSession> {
-    const cached = this.cache.get(parentUserId);
+  private async getOrCreateSession(credentialId: string): Promise<AdapterSession> {
+    const cached = this.cache.get(credentialId);
     if (cached) return cached;
 
-    const existing = this.inflight.get(parentUserId);
+    const existing = this.inflight.get(credentialId);
     if (existing) return existing;
 
     const p = (async () => {
-      const cred = await pronoteSyncService.getCredentials(parentUserId);
-      if (!cred) throw new PronoteNotConnectedError(parentUserId);
+      const cred = await pronoteSyncService.getCredentialById(credentialId);
+      if (!cred) throw new PronoteNotConnectedError(credentialId);
 
       const meta = parseMetadata(cred.metadata);
 
@@ -105,20 +105,16 @@ class PronoteDataService {
 
       // Persist the rotated token BEFORE caching — caching before persisting
       // would risk serving a token that was never stored (e.g. on process crash).
-      const persist = await pronoteSyncService.upsertCredentials(parentUserId, {
-        token: session.token,
-        metadata: cred.metadata,
-        tokenExpiresAt: cred.tokenExpiresAt,
-      });
-      if (!persist.success) {
-        throw new Error(`Failed to persist rotated Pronote token for parent ${parentUserId}: ${persist.error}`);
+      const persisted = await pronoteSyncService.updateTokenById(credentialId, session.token);
+      if (!persisted) {
+        throw new Error(`Failed to persist rotated Pronote token for credential ${credentialId}`);
       }
 
-      this.cache.set(parentUserId, session);
+      this.cache.set(credentialId, session);
       return session;
-    })().finally(() => this.inflight.delete(parentUserId));
+    })().finally(() => this.inflight.delete(credentialId));
 
-    this.inflight.set(parentUserId, p);
+    this.inflight.set(credentialId, p);
     return p;
   }
 
@@ -126,12 +122,12 @@ class PronoteDataService {
     const mapping = await pronoteChildResourcesRepository.getMapping(childId);
     if (!mapping) throw new PronoteResourceNotMappedError(childId);
 
-    const session = await this.getOrCreateSession(mapping.parentUserId);
+    const session = await this.getOrCreateSession(mapping.credentialId);
     return { session, resourceId: mapping.resourceId };
   }
 
   /**
-   * @internal Pre-warm the session cache for a given parent user.
+   * @internal Pre-warm the session cache for a given credential id.
    *
    * Used to seed a live session immediately after a credentials-based login
    * (e.g. right after a successful QR-code / password connect), and by
@@ -140,8 +136,8 @@ class PronoteDataService {
    *
    * NOT for production data paths — call connect() there instead.
    */
-  primeSession(parentUserId: string, session: AdapterSession): void {
-    this.cache.set(parentUserId, session);
+  primeSession(credentialId: string, session: AdapterSession): void {
+    this.cache.set(credentialId, session);
   }
 
   async getGrades(childId: string): Promise<NormalizedGrade[]> {

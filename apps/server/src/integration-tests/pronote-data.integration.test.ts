@@ -197,7 +197,8 @@ beforeAll(async () => {
 
   // Pre-warm the session cache so the route hits cache, bypassing loginToken
   // (which the demo rejects — see top-of-file comment).
-  pronoteDataService.primeSession(parentId, session);
+  // Key is credentialId (cred.id) — the cache is now keyed by credential, not by parent user.
+  pronoteDataService.primeSession(cred.id, session);
 }, 60_000);
 
 afterAll(async () => {
