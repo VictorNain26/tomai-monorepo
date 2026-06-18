@@ -99,6 +99,14 @@ const mockTimetableFromIntervals = mock(async () => ({
 
 const mockCreateSessionHandle = mock(() => mockHandle);
 
+const mockLoginQrCode = mock(async () => ({
+  url: 'https://demo.index-education.net/pronote',
+  username: 'jean.dupont',
+  kind: 7,
+  token: 'qr-rotated-token-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  navigatorIdentifier: 'nav-id',
+}));
+
 const mockGeolocation = mock(async () => [
   {
     url: 'https://ecole-b.index-education.net/pronote',
@@ -118,9 +126,21 @@ const mockGeolocation = mock(async () => [
   },
 ]);
 
+// mockHandle needs user.resources for connectWithQrPayload tests
+const mockHandleWithResources = {
+  ...mockHandle,
+  user: {
+    resources: [
+      { id: 'res-0', kind: 1, name: 'Emma Dupont', className: '3ème A', establishmentName: 'Collège Jean Moulin' },
+      { id: 'res-1', kind: 1, name: 'Lucas Dupont', className: undefined, establishmentName: 'Collège Jean Moulin' },
+    ],
+  },
+};
+
 mock.module('pawnote', () => ({
   createSessionHandle: mockCreateSessionHandle,
   loginToken: mockLoginToken,
+  loginQrCode: mockLoginQrCode,
   gradesOverview: mockGradesOverview,
   assignmentsFromIntervals: mockAssignmentsFromIntervals,
   timetableFromIntervals: mockTimetableFromIntervals,
@@ -153,6 +173,7 @@ describe('PawnoteServerAdapter', () => {
   beforeEach(() => {
     adapter = new PawnoteServerAdapter();
     mockLoginToken.mockClear();
+    mockLoginQrCode.mockClear();
     mockGradesOverview.mockClear();
     mockAssignmentsFromIntervals.mockClear();
     mockTimetableFromIntervals.mockClear();
@@ -299,6 +320,67 @@ describe('PawnoteServerAdapter', () => {
       mockGeolocation.mockResolvedValueOnce([]);
       const results = await adapter.searchEstablishments(48.85, 2.35);
       expect(results).toEqual([]);
+    });
+  });
+
+  // ============================================
+  // connectWithQrPayload
+  // ============================================
+
+  describe('connectWithQrPayload', () => {
+    const FAKE_QR = { jeton: 'tok', login: 'jean.dupont', url: 'https://demo.index-education.net/pronote' };
+    const FAKE_PIN = '1234';
+
+    beforeEach(() => {
+      mockCreateSessionHandle.mockReturnValue(mockHandleWithResources as unknown as typeof mockHandle);
+    });
+
+    it('calls loginQrCode with a server-generated deviceUUID', async () => {
+      await adapter.connectWithQrPayload({ qr: FAKE_QR, pin: FAKE_PIN });
+
+      expect(mockLoginQrCode).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const callArg = (mockLoginQrCode.mock.calls[0] as any)[1] as Record<string, unknown>;
+      expect(typeof callArg['deviceUUID']).toBe('string');
+      expect((callArg['deviceUUID'] as string).length).toBeGreaterThan(0);
+      expect(callArg['pin']).toBe(FAKE_PIN);
+      expect(callArg['qr']).toEqual(FAKE_QR);
+    });
+
+    it('returns session with token and username from loginQrCode', async () => {
+      const result = await adapter.connectWithQrPayload({ qr: FAKE_QR, pin: FAKE_PIN });
+
+      expect(result.session.token).toBe(
+        'qr-rotated-token-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      );
+      expect(result.session.username).toBe('jean.dupont');
+    });
+
+    it('maps resources to DiscoveredResource with index as resourceId', async () => {
+      const result = await adapter.connectWithQrPayload({ qr: FAKE_QR, pin: FAKE_PIN });
+
+      expect(result.resources).toHaveLength(2);
+      expect(result.resources[0]).toEqual({
+        resourceId: 0,
+        name: 'Emma Dupont',
+        className: '3ème A',
+        establishmentName: 'Collège Jean Moulin',
+      });
+      expect(result.resources[1]).toEqual({
+        resourceId: 1,
+        name: 'Lucas Dupont',
+        className: null,
+        establishmentName: 'Collège Jean Moulin',
+      });
+    });
+
+    it('returns metadata with instanceUrl, username, kind and deviceUuid', async () => {
+      const result = await adapter.connectWithQrPayload({ qr: FAKE_QR, pin: FAKE_PIN });
+
+      expect(result.metadata.instanceUrl).toBe('https://demo.index-education.net/pronote');
+      expect(result.metadata.username).toBe('jean.dupont');
+      expect(result.metadata.kind).toBe(7);
+      expect(typeof result.metadata.deviceUuid).toBe('string');
     });
   });
 

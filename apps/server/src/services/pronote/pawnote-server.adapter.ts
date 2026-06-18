@@ -1,6 +1,7 @@
 import {
   createSessionHandle,
   loginToken,
+  loginQrCode,
   geolocation,
   gradesOverview,
   assignmentsFromIntervals,
@@ -198,6 +199,42 @@ export class PawnoteServerAdapter implements PronoteProvider {
         room: e.classrooms?.[0] ?? null,
         canceled: e.canceled,
       }));
+  }
+
+  async connectWithQrPayload(input: {
+    qr: { jeton: string; login: string; url: string };
+    pin: string;
+  }): Promise<{
+    session: AdapterSession;
+    metadata: { instanceUrl: string; username: string; kind: number; deviceUuid: string };
+    resources: { resourceId: number; name: string; className: string | null; establishmentName: string }[];
+  }> {
+    const deviceUuid = crypto.randomUUID();
+    const handle = createSessionHandle(createServerFetcher());
+
+    const info = await loginQrCode(handle, {
+      deviceUUID: deviceUuid,
+      pin: input.pin,
+      qr: input.qr,
+    });
+
+    const resources = handle.user.resources.map((res, index) => ({
+      resourceId: index,
+      name: res.name,
+      className: res.className ?? null,
+      establishmentName: res.establishmentName,
+    }));
+
+    return {
+      session: { token: info.token, username: info.username, handle },
+      metadata: {
+        instanceUrl: info.url,
+        username: info.username,
+        kind: info.kind as number,
+        deviceUuid,
+      },
+      resources,
+    };
   }
 
   async searchEstablishments(
