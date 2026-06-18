@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 // MOCKS — must precede service import
 // ============================================
 
-const mockGetMapping = mock(async (_childId: string) => null as { parentUserId: string; resourceId: number } | null);
+const mockGetMapping = mock(async (_childId: string) => null as { parentUserId: string; credentialId: string; resourceId: number } | null);
 const mockGetCredentials = mock(async (_userId: string) => null as { token: string; metadata: string; tokenExpiresAt: string } | null);
 const mockUpsertCredentials = mock(async () => ({ success: true }));
 const mockConnect = mock(async () => ({ token: 'rotated-token', username: 'jean.dupont', handle: {} }));
@@ -78,7 +78,7 @@ const VALID_CREDENTIALS = {
   metadata: VALID_METADATA,
   tokenExpiresAt: '2026-12-31T00:00:00Z',
 };
-const VALID_MAPPING = { parentUserId: PARENT_ID, resourceId: RESOURCE_ID };
+const VALID_MAPPING = { parentUserId: PARENT_ID, credentialId: 'cred-uuid-001', resourceId: RESOURCE_ID };
 
 // ============================================
 // PronoteDataService
@@ -147,7 +147,7 @@ describe('PronoteDataService', () => {
     it('does not call connect or upsertCredentials on a second call for the same parent', async () => {
       // Use a distinct childId to isolate this test's cache entry from other tests
       const childIdForCacheTest = 'child-cache-test';
-      mockGetMapping.mockImplementation(async () => ({ parentUserId: 'parent-cache-test', resourceId: 0 }));
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: 'parent-cache-test', credentialId: 'cred-cache', resourceId: 0 }));
       mockGetCredentials.mockImplementation(async () => VALID_CREDENTIALS);
 
       await pronoteDataService.getGrades(childIdForCacheTest);
@@ -194,7 +194,7 @@ describe('PronoteDataService', () => {
     it('throws when getCredentials returns null', async () => {
       const childIdNC = 'child-no-creds';
       const parentIdNC = 'parent-no-creds';
-      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdNC, resourceId: 0 }));
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdNC, credentialId: 'cred-nc', resourceId: 0 }));
       mockGetCredentials.mockImplementation(async () => null);
 
       // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toBeInstanceOf() is not typed as Promise but is awaitable
@@ -206,7 +206,7 @@ describe('PronoteDataService', () => {
     it('carries the parentUserId', async () => {
       const childIdNC2 = 'child-no-creds-2';
       const parentIdNC2 = 'parent-no-creds-2';
-      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdNC2, resourceId: 0 }));
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdNC2, credentialId: 'cred-nc2', resourceId: 0 }));
       mockGetCredentials.mockImplementation(async () => null);
 
       const err = await pronoteDataService.getGrades(childIdNC2).catch((e: unknown) => e);
@@ -223,7 +223,7 @@ describe('PronoteDataService', () => {
     it('throws when metadata lacks accountKind', async () => {
       const childIdMeta = 'child-bad-meta';
       const parentIdMeta = 'parent-bad-meta';
-      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdMeta, resourceId: 0 }));
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdMeta, credentialId: 'cred-meta', resourceId: 0 }));
       const metaWithoutKind = JSON.stringify({
         instanceUrl: 'https://demo.index-education.net/pronote',
         username: 'jean.dupont',
@@ -251,7 +251,7 @@ describe('PronoteDataService', () => {
       const { PronoteReauthRequired } = await import('../services/pronote/pawnote-server.adapter');
       const childIdReauth = 'child-reauth-test';
       const parentIdReauth = 'parent-reauth-test';
-      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdReauth, resourceId: 0 }));
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: parentIdReauth, credentialId: 'cred-reauth', resourceId: 0 }));
       mockGetCredentials.mockImplementation(async () => VALID_CREDENTIALS);
       mockConnect.mockImplementation(async () => { throw new PronoteReauthRequired(new Error('token rejected')); });
 
@@ -268,7 +268,7 @@ describe('PronoteDataService', () => {
     it('returns homework items', async () => {
       // Use a fresh parent to force cache miss
       const childIdHW = 'child-hw-test';
-      mockGetMapping.mockImplementation(async () => ({ parentUserId: 'parent-hw-test', resourceId: 0 }));
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: 'parent-hw-test', credentialId: 'cred-hw', resourceId: 0 }));
 
       const hw = await pronoteDataService.getHomework(childIdHW);
 
@@ -281,7 +281,7 @@ describe('PronoteDataService', () => {
   describe('getTimetable', () => {
     it('returns timetable items and passes day param', async () => {
       const childIdTT = 'child-tt-test';
-      mockGetMapping.mockImplementation(async () => ({ parentUserId: 'parent-tt-test', resourceId: 0 }));
+      mockGetMapping.mockImplementation(async () => ({ parentUserId: 'parent-tt-test', credentialId: 'cred-tt', resourceId: 0 }));
 
       const lessons = await pronoteDataService.getTimetable(childIdTT, '2026-06-10');
 

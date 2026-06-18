@@ -117,9 +117,9 @@ export const pronoteDataRoutes = new Elysia({ name: 'pronote-data-routes' })
         return status(403, { error: 'Access denied: only a parent can configure the resource mapping', code: 'forbidden' });
       }
 
-      await pronoteChildResourcesRepository.upsertMapping(user.id, childId, body.resourceId);
+      await pronoteChildResourcesRepository.upsertMapping(user.id, childId, body.credentialId, body.resourceId);
       return { success: true };
     }, {
-      body: t.Object({ resourceId: t.Number() }),
+      body: t.Object({ credentialId: t.String({ format: 'uuid' }), resourceId: t.Number() }),
     })
   );

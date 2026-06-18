@@ -88,7 +88,7 @@ mock.module('../services/pronote/pawnote-server.adapter', () => {
 });
 
 // pronoteChildResourcesRepository
-let mockUpsertMapping = mock(async (_parentId: string, _childId: string, _resourceId: number) => {});
+let mockUpsertMapping = mock(async (_parentId: string, _childId: string, _credentialId: string, _resourceId: number) => {});
 mock.module('../db/repositories/pronote-child-resources.repository', () => ({
   pronoteChildResourcesRepository: {
     get upsertMapping() { return mockUpsertMapping; },
@@ -242,14 +242,16 @@ describe('pronote-data routes', () => {
   it('parent calling PUT resource → 200', async () => {
     currentUser = { id: PARENT_ID, role: 'parent' };
     isParentOfResult = true;
+    const CRED_ID = '00000000-0000-0000-0000-000000000042';
 
-    const res = await app.handle(makeRequest('PUT', `/api/pronote/children/${CHILD_ID}/resource`, { resourceId: 42 }));
+    const res = await app.handle(makeRequest('PUT', `/api/pronote/children/${CHILD_ID}/resource`, { credentialId: CRED_ID, resourceId: 42 }));
     expect(res.status).toBe(200);
     expect(mockUpsertMapping.mock.calls.length).toBe(1);
     // parentUserId must come from user.id, not from the body
-    const [calledParentId, calledChildId, calledResourceId] = mockUpsertMapping.mock.calls[0] as [string, string, number];
+    const [calledParentId, calledChildId, calledCredentialId, calledResourceId] = mockUpsertMapping.mock.calls[0] as [string, string, string, number];
     expect(calledParentId).toBe(PARENT_ID);
     expect(calledChildId).toBe(CHILD_ID);
+    expect(calledCredentialId).toBe(CRED_ID);
     expect(calledResourceId).toBe(42);
   });
 
@@ -257,7 +259,7 @@ describe('pronote-data routes', () => {
     currentUser = { id: CHILD_ID, role: 'student' };
     isParentOfResult = false;
 
-    const res = await app.handle(makeRequest('PUT', `/api/pronote/children/${CHILD_ID}/resource`, { resourceId: 42 }));
+    const res = await app.handle(makeRequest('PUT', `/api/pronote/children/${CHILD_ID}/resource`, { credentialId: '00000000-0000-0000-0000-000000000042', resourceId: 42 }));
     expect(res.status).toBe(403);
   });
 

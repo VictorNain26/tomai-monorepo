@@ -5,29 +5,32 @@ import { pronoteChildResources } from '../schema';
 class PronoteChildResourcesRepository {
   async getMapping(
     childUserId: string,
-  ): Promise<{ parentUserId: string; resourceId: number } | null> {
+  ): Promise<{ parentUserId: string; credentialId: string; resourceId: number } | null> {
     const [row] = await db
       .select({
         parentUserId: pronoteChildResources.parentUserId,
+        credentialId: pronoteChildResources.credentialId,
         resourceId: pronoteChildResources.resourceId,
       })
       .from(pronoteChildResources)
       .where(eq(pronoteChildResources.childUserId, childUserId));
 
-    return row ?? null;
+    if (!row || row.credentialId === null) return null;
+    return { parentUserId: row.parentUserId, credentialId: row.credentialId, resourceId: row.resourceId };
   }
 
   async upsertMapping(
     parentUserId: string,
     childUserId: string,
+    credentialId: string,
     resourceId: number,
   ): Promise<void> {
     await db
       .insert(pronoteChildResources)
-      .values({ parentUserId, childUserId, resourceId })
+      .values({ parentUserId, childUserId, credentialId, resourceId })
       .onConflictDoUpdate({
         target: [pronoteChildResources.parentUserId, pronoteChildResources.childUserId],
-        set: { resourceId, updatedAt: new Date() },
+        set: { credentialId, resourceId, updatedAt: new Date() },
       });
   }
 

@@ -75,7 +75,7 @@ import { pronoteDataService } from '../services/pronote/pronote-data.service.js'
 import { pronoteChildResourcesRepository } from '../db/repositories/pronote-child-resources.repository.js';
 import { pronoteDataRoutes } from '../routes/pronote-data.routes.js';
 import { db } from '../db/connection.js';
-import { user as userTable, parentChild as parentChildTable } from '../db/schema.js';
+import { user as userTable, parentChild as parentChildTable, pronoteCredentials as pronoteCredentialsTable } from '../db/schema.js';
 import { like } from 'drizzle-orm';
 
 // ============================================================
@@ -178,8 +178,22 @@ beforeAll(async () => {
   // Seed parent_child junction
   await db.insert(parentChildTable).values({ parentUserId: parentId, childUserId: childId });
 
-  // Persist child → resource mapping (parentId, childId, resourceId=0)
-  await pronoteChildResourcesRepository.upsertMapping(parentId, childId, 0);
+  // Insert a minimal credential row so the FK constraint on pronote_child_resources is satisfied.
+  // The credential content is irrelevant: the integration test bypasses getCredentials via primeSession.
+  const [cred] = await db
+    .insert(pronoteCredentialsTable)
+    .values({
+      id: randomUUID(),
+      userId: parentId,
+      encryptedToken: 'integration-test-placeholder',
+      encryptedMetadata: 'integration-test-placeholder',
+      establishmentUrl: DEMO_URL,
+      tokenExpiresAt: new Date('2099-01-01'),
+    })
+    .returning();
+  if (!cred) throw new Error('Failed to insert probe credential');
+
+  await pronoteChildResourcesRepository.upsertMapping(parentId, childId, cred.id, 0);
 
   // Pre-warm the session cache so the route hits cache, bypassing loginToken
   // (which the demo rejects — see top-of-file comment).

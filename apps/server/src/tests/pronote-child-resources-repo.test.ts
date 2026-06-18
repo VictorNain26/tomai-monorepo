@@ -62,6 +62,7 @@ const { pronoteChildResourcesRepository } = await import(
 
 const PARENT_USER_ID = 'parent-001';
 const CHILD_USER_ID = 'child-001';
+const CREDENTIAL_ID = 'cred-uuid-001';
 const RESOURCE_ID = 42;
 
 // ============================================
@@ -79,8 +80,7 @@ describe('PronoteChildResourcesRepository', () => {
   });
 
   describe('upsertMapping', () => {
-    it('should call insert().values().onConflictDoUpdate() with childUserId as conflict target', async () => {
-      const CREDENTIAL_ID = 'cred-uuid-001';
+    it('calls insert().values().onConflictDoUpdate() with credentialId and parentUserId+childUserId conflict target', async () => {
       await pronoteChildResourcesRepository.upsertMapping(
         PARENT_USER_ID,
         CHILD_USER_ID,
@@ -92,6 +92,7 @@ describe('PronoteChildResourcesRepository', () => {
       const valuesArg = (mockValues.mock.calls as unknown as Array<[Record<string, unknown>]>)[0]?.[0];
       expect(valuesArg?.parentUserId).toBe(PARENT_USER_ID);
       expect(valuesArg?.childUserId).toBe(CHILD_USER_ID);
+      expect(valuesArg?.credentialId).toBe(CREDENTIAL_ID);
       expect(valuesArg?.resourceId).toBe(RESOURCE_ID);
 
       expect(mockOnConflictDoUpdate).toHaveBeenCalledTimes(1);
@@ -101,8 +102,7 @@ describe('PronoteChildResourcesRepository', () => {
   });
 
   describe('getMapping', () => {
-    it('should return { parentUserId, credentialId, resourceId } when a row exists with a credentialId', async () => {
-      const CREDENTIAL_ID = 'cred-uuid-001';
+    it('returns { parentUserId, credentialId, resourceId } when a row exists with a credentialId', async () => {
       selectResult = { parentUserId: PARENT_USER_ID, credentialId: CREDENTIAL_ID, resourceId: RESOURCE_ID };
 
       const result = await pronoteChildResourcesRepository.getMapping(CHILD_USER_ID);
@@ -110,7 +110,7 @@ describe('PronoteChildResourcesRepository', () => {
       expect(result).toEqual({ parentUserId: PARENT_USER_ID, credentialId: CREDENTIAL_ID, resourceId: RESOURCE_ID });
     });
 
-    it('should return null when credentialId is null', async () => {
+    it('returns null when credentialId is null (mapping not resolvable)', async () => {
       selectResult = { parentUserId: PARENT_USER_ID, credentialId: null, resourceId: RESOURCE_ID };
 
       const result = await pronoteChildResourcesRepository.getMapping(CHILD_USER_ID);
@@ -118,7 +118,7 @@ describe('PronoteChildResourcesRepository', () => {
       expect(result).toBeNull();
     });
 
-    it('should return null when no row exists', async () => {
+    it('returns null when no row exists', async () => {
       selectResult = undefined;
 
       const result = await pronoteChildResourcesRepository.getMapping(CHILD_USER_ID);
@@ -128,7 +128,7 @@ describe('PronoteChildResourcesRepository', () => {
   });
 
   describe('deleteByChild', () => {
-    it('should call delete().where() with childUserId', async () => {
+    it('calls delete().where() with childUserId', async () => {
       await pronoteChildResourcesRepository.deleteByChild(CHILD_USER_ID);
 
       expect(mockDeleteWhere).toHaveBeenCalledTimes(1);
