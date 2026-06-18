@@ -26,6 +26,13 @@ export interface ProviderSession {
   username: string;
 }
 
+export interface DiscoveredResource {
+  resourceId: number;
+  name: string;
+  className: string | null;
+  establishmentName: string;
+}
+
 export interface PronoteProvider {
   connect(input: { url: string; kind: number; username: string; token: string; deviceUuid: string }): Promise<ProviderSession>;
   getGrades(session: ProviderSession, resourceId: number): Promise<NormalizedGrade[]>;

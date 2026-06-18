@@ -1,4 +1,4 @@
-import type { NormalizedGrade, NormalizedHomework, NormalizedLesson } from './provider.types';
+import type { NormalizedGrade, NormalizedHomework, NormalizedLesson, DiscoveredResource } from './provider.types';
 import { pawnoteServerAdapter, type AdapterSession } from './pawnote-server.adapter';
 import { SessionCache } from './session-cache';
 import { pronoteChildResourcesRepository } from '../../db/repositories/pronote-child-resources.repository';
@@ -138,6 +138,21 @@ class PronoteDataService {
    */
   primeSession(credentialId: string, session: AdapterSession): void {
     this.cache.set(credentialId, session);
+  }
+
+  /**
+   * List the Pronote resources available for a credential (via the cached session).
+   * The session must have been primed (e.g. right after connectQr) or will be
+   * restored from the stored token.
+   */
+  async listResources(credentialId: string): Promise<DiscoveredResource[]> {
+    const session = await this.getOrCreateSession(credentialId);
+    return session.handle.user.resources.map((res, index) => ({
+      resourceId: index,
+      name: res.name,
+      className: res.className ?? null,
+      establishmentName: res.establishmentName,
+    }));
   }
 
   async getGrades(childId: string): Promise<NormalizedGrade[]> {

@@ -151,7 +151,7 @@ class PronoteSyncService {
    * Get decrypted Pronote credentials by credential id.
    * Returns null if not found.
    */
-  async getCredentialById(id: string): Promise<(CredentialOutput & { id: string }) | null> {
+  async getCredentialById(id: string): Promise<(CredentialOutput & { id: string; userId: string }) | null> {
     const rows = await db
       .select()
       .from(pronoteCredentials)
@@ -172,6 +172,7 @@ class PronoteSyncService {
 
     return {
       id: row.id,
+      userId: row.userId,
       token,
       metadata,
       tokenExpiresAt: row.tokenExpiresAt.toISOString(),

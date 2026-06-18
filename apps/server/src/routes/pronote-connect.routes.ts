@@ -11,7 +11,11 @@ import { Elysia, t } from 'elysia';
 import { authMacro } from '../lib/auth-macro.js';
 import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 import { pawnoteServerAdapter } from '../services/pronote/pawnote-server.adapter.js';
-import { pronoteConnectService } from '../services/pronote/pronote-connect.service.js';
+import {
+  pronoteConnectService,
+  PronoteCredentialNotFoundError,
+  PronoteCredentialForbiddenError,
+} from '../services/pronote/pronote-connect.service.js';
 import {
   PronoteNotConnectedError,
   PronoteMetadataError,
@@ -70,5 +74,31 @@ export const pronoteConnectRoutes = new Elysia({ name: 'pronote-connect-routes' 
         url: t.String(),
       }),
       pin: t.String({ minLength: 4, maxLength: 4 }),
+    }),
+  })
+
+  // GET /api/pronote/credentials/:id/children
+  .get('/api/pronote/credentials/:id/children', async ({ params, user, status }) => {
+    try {
+      const children = await pronoteConnectService.discover(user.id, params.id);
+      return { success: true, data: children };
+    } catch (error) {
+      if (error instanceof PronoteCredentialNotFoundError) {
+        return status(404, { error: 'Pronote credential not found', code: 'pronote_credential_not_found' });
+      }
+      if (error instanceof PronoteCredentialForbiddenError) {
+        return status(403, { error: 'Access denied', code: 'pronote_credential_forbidden' });
+      }
+      if (error instanceof PronoteNotConnectedError) {
+        return status(409, { error: 'Pronote account not connected', code: 'pronote_not_connected' });
+      }
+      if (error instanceof PronoteMetadataError) {
+        return status(500, { error: 'Pronote metadata invalid', code: 'pronote_metadata_invalid' });
+      }
+      throw error;
+    }
+  }, {
+    params: t.Object({
+      id: t.String(),
     }),
   });
