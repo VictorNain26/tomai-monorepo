@@ -31,6 +31,7 @@ export const pronoteCredentials = pgTable(
     userId: varchar('user_id', { length: 255 }).notNull().unique(),
     encryptedToken: text('encrypted_token').notNull(),
     encryptedMetadata: text('encrypted_metadata').notNull(),
+    establishmentUrl: varchar('establishment_url', { length: 255 }),
     tokenExpiresAt: timestamp('token_expires_at', {
       withTimezone: true,
     }).notNull(),
