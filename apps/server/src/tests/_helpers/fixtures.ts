@@ -15,7 +15,6 @@ interface UserData {
   role: 'student' | 'parent';
   schoolLevel: string | null;
   dateOfBirth: string | null;
-  parentId: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -32,7 +31,6 @@ export function makeUser(overrides?: Partial<UserData>): UserData {
     role: 'student',
     schoolLevel: 'troisieme',
     dateOfBirth: '2010-03-15',
-    parentId: null,
     isActive: true,
     createdAt: BASE_DATE,
     updatedAt: BASE_DATE,
@@ -51,7 +49,6 @@ export function makeParentUser(overrides?: Partial<UserData>): UserData {
     role: 'parent',
     schoolLevel: null,
     dateOfBirth: null,
-    parentId: null,
     ...overrides,
   });
 }

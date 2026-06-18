@@ -75,7 +75,7 @@ import { pronoteDataService } from '../services/pronote/pronote-data.service.js'
 import { pronoteChildResourcesRepository } from '../db/repositories/pronote-child-resources.repository.js';
 import { pronoteDataRoutes } from '../routes/pronote-data.routes.js';
 import { db } from '../db/connection.js';
-import { user as userTable } from '../db/schema.js';
+import { user as userTable, parentChild as parentChildTable } from '../db/schema.js';
 import { like } from 'drizzle-orm';
 
 // ============================================================
@@ -158,7 +158,7 @@ beforeAll(async () => {
   if (!parent) throw new Error('Failed to insert probe parent');
   parentId = parent.id;
 
-  // Seed DB: child user with parentId
+  // Seed DB: child user
   const childEmail = `${PROBE_PREFIX}-child@example.test`;
   const [child] = await db
     .insert(userTable)
@@ -167,7 +167,6 @@ beforeAll(async () => {
       email: childEmail,
       name: 'Probe Child',
       role: 'student',
-      parentId: parentId,
       emailVerified: false,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -175,6 +174,9 @@ beforeAll(async () => {
     .returning();
   if (!child) throw new Error('Failed to insert probe child');
   childId = child.id;
+
+  // Seed parent_child junction
+  await db.insert(parentChildTable).values({ parentUserId: parentId, childUserId: childId });
 
   // Persist child → resource mapping (parentId, childId, resourceId=0)
   await pronoteChildResourcesRepository.upsertMapping(parentId, childId, 0);
@@ -192,7 +194,7 @@ afterAll(async () => {
       await pronoteChildResourcesRepository.deleteByChild(childId);
     } catch { /* non-critical */ }
   }
-  // Hard-delete probe users by email pattern (child first due to parentId FK)
+  // Hard-delete probe users by email pattern (CASCADE handles parent_child rows)
   await db
     .delete(userTable)
     .where(like(userTable.email, `${PROBE_PREFIX}%@example.test`));

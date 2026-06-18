@@ -40,7 +40,6 @@ export const user = pgTable('user', {
   role: userRoleEnum('role').notNull().default('parent'), // Défaut parent (comme auth.ts)
   schoolLevel: schoolLevelEnum('school_level'), // Niveau scolaire pour élèves
   dateOfBirth: varchar('date_of_birth', { length: 10 }), // Format YYYY-MM-DD string (comme auth.ts)
-  parentId: varchar('parent_id', { length: 255 }), // Référence parent-enfant
   isActive: boolean('is_active').notNull().default(true), // État du compte
   loginCount: integer('login_count').default(0), // Compteur de connexions
 
@@ -65,16 +64,8 @@ export const user = pgTable('user', {
   // Index pour performance
   emailIdx: index('idx_user_email').on(table.email),
   usernameIdx: index('idx_user_username').on(table.username),
-  parentIdIdx: index('idx_user_parent_id').on(table.parentId),
   roleIdx: index('idx_user_role').on(table.role),
   schoolLevelIdx: index('idx_user_school_level').on(table.schoolLevel),
-
-  // Self-referencing foreign key pour parent-child
-  parentIdFk: foreignKey({
-    columns: [table.parentId],
-    foreignColumns: [table.id],
-    name: 'user_parent_id_fkey'
-  }).onDelete('set null'),
 }));
 
 /**
@@ -191,8 +182,7 @@ export const parentRestoreToken = pgTable('parent_restore_token', {
 
 /**
  * Table parent_child — jonction N-N parent↔enfant
- * Complète user.parentId (retirée en Task 8) par un lien multiple N-N.
- * user.parentId est conservé le temps de la migration progressive.
+ * Remplace l'ancienne colonne user.parentId (supprimée Task 8).
  */
 export const parentChild = pgTable('parent_child', {
   id: uuid('id').primaryKey().defaultRandom(),

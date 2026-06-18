@@ -21,7 +21,6 @@ interface UserData {
   role: 'student' | 'parent';
   schoolLevel: string | null;
   dateOfBirth: string | null;
-  parentId: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -171,7 +170,7 @@ let parentService: InstanceType<typeof ParentService>;
 
 beforeEach(() => {
   parentService = new ParentService();
-  const child = makeUser({ id: 'child-001', parentId: 'parent-001' });
+  const child = makeUser({ id: 'child-001' });
   childrenResult = [child];
   userByUsername = null;
   updateResult = { ...child, schoolLevel: 'seconde' };
@@ -354,7 +353,7 @@ describe('Parent Service', () => {
 
   describe('updateChild', () => {
     it('should update partial fields (firstName only)', async () => {
-      updateResult = { ...makeUser({ id: 'child-001', parentId: 'parent-001' }), firstName: 'Marie' };
+      updateResult = { ...makeUser({ id: 'child-001' }), firstName: 'Marie' };
       const result = await parentService.updateChild('parent-001', 'child-001', {
         firstName: 'Marie',
       });
@@ -364,7 +363,7 @@ describe('Parent Service', () => {
 
     it('should update multiple fields at once', async () => {
       updateResult = {
-        ...makeUser({ id: 'child-001', parentId: 'parent-001' }),
+        ...makeUser({ id: 'child-001' }),
         firstName: 'Jean',
         lastName: 'Martin',
         schoolLevel: 'seconde',
@@ -444,7 +443,7 @@ describe('Parent Service', () => {
     });
 
     it('should return 0 when dateOfBirth is missing', async () => {
-      childrenResult = [makeUser({ id: 'child-001', parentId: 'parent-001', dateOfBirth: null })];
+      childrenResult = [makeUser({ id: 'child-001', dateOfBirth: null })];
       const metrics = await parentService.getParentDashboardMetrics('parent-001');
       expect(metrics[0]?.age).toBe(0);
     });
