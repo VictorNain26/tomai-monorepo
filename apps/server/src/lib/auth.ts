@@ -20,6 +20,7 @@ import { user, session, account, verification } from "../db/schema";
 import { parentChildRepository } from "../db/repositories/parent-child.repository";
 import { env, isProduction, isDevelopment, getTrustedOrigins } from "../config/env";
 import { logger } from "./observability";
+import { canParentImpersonate } from "./impersonation-policy";
 
 // Validation des services requis pour l'authentification
 if (!env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET.length < 32) {
@@ -264,7 +265,7 @@ export const auth = betterAuth({
         }
 
         const linked = await parentChildRepository.isLinked(requestingUser.id, targetUserId);
-        if (targetUser.role !== 'student' || !linked) {
+        if (!canParentImpersonate(requestingUser.role, targetUser.role, linked)) {
           logger.warn('Impersonation denied: target is not child of parent', {
             operation: 'auth:impersonation:denied',
             parentId: requestingUser.id,
