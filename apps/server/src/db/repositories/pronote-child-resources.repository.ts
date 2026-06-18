@@ -26,8 +26,8 @@ class PronoteChildResourcesRepository {
       .insert(pronoteChildResources)
       .values({ parentUserId, childUserId, resourceId })
       .onConflictDoUpdate({
-        target: pronoteChildResources.childUserId,
-        set: { parentUserId, resourceId, updatedAt: new Date() },
+        target: [pronoteChildResources.parentUserId, pronoteChildResources.childUserId],
+        set: { resourceId, updatedAt: new Date() },
       });
   }
 

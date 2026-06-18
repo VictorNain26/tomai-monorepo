@@ -80,12 +80,21 @@ export const pronoteChildResources = pgTable(
     childUserId: varchar('child_user_id', { length: 255 })
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    credentialId: uuid('credential_id'),
     resourceId: integer('resource_id').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    childUnique: unique('pronote_child_resources_child_unique').on(table.childUserId),
+    parentChildUnique: unique('pronote_child_resources_parent_child_unique').on(
+      table.parentUserId,
+      table.childUserId,
+    ),
+    credentialFk: foreignKey({
+      columns: [table.credentialId],
+      foreignColumns: [pronoteCredentials.id],
+      name: 'pronote_child_resources_credential_id_fkey',
+    }).onDelete('cascade'),
   })
 );
 
