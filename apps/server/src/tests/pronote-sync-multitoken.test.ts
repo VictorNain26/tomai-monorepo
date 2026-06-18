@@ -51,7 +51,8 @@ const mockInsertValues = mock((vals: { userId: string; establishmentUrl: string;
 });
 
 let mockSetResult: Row | undefined;
-const mockWhereUpdate = mock(() => Promise.resolve());
+const mockUpdateReturning = mock(() => Promise.resolve(mockSetResult ? [{ id: mockSetResult.id }] : []));
+const mockWhereUpdate = mock(() => ({ returning: mockUpdateReturning }));
 const mockSet = mock((vals: Partial<Row>) => {
   if (mockSetResult) Object.assign(mockSetResult, vals);
   return { where: mockWhereUpdate };
@@ -113,6 +114,7 @@ beforeEach(() => {
   mockReturning.mockClear();
   mockSet.mockClear();
   mockWhereUpdate.mockClear();
+  mockUpdateReturning.mockClear();
   mockWhereSelect.mockClear();
 });
 
@@ -202,8 +204,9 @@ describe('updateTokenById', () => {
     };
     mockSetResult = seededRow;
 
-    await pronoteSyncService.updateTokenById('cred-id-2', 'new-rotated-token');
+    const persisted = await pronoteSyncService.updateTokenById('cred-id-2', 'new-rotated-token');
 
+    expect(persisted).toBe(true);
     expect(mockEncrypt).toHaveBeenCalledWith('new-rotated-token');
     expect(mockSet).toHaveBeenCalledTimes(1);
     const setArg = mockSet.mock.calls[0]?.[0] as Record<string, unknown>;
@@ -211,5 +214,13 @@ describe('updateTokenById', () => {
     expect(setArg.encryptedToken).toBe('encrypted:new-rotated-token');
     // Must NOT change metadata
     expect(setArg).not.toHaveProperty('encryptedMetadata');
+  });
+
+  it('returns false when id does not exist', async () => {
+    mockSetResult = undefined;
+
+    const persisted = await pronoteSyncService.updateTokenById('nonexistent-id', 'some-token');
+
+    expect(persisted).toBe(false);
   });
 });

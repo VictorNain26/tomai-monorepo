@@ -165,18 +165,21 @@ class PronoteSyncService {
    * Update only the token for a credential identified by id.
    * Re-encrypts the new token before storage.
    */
-  async updateTokenById(id: string, token: string): Promise<void> {
+  async updateTokenById(id: string, token: string): Promise<boolean> {
     const encryptedToken = await encrypt(token);
 
-    await db
+    const res = await db
       .update(pronoteCredentials)
       .set({ encryptedToken, updatedAt: new Date() })
-      .where(eq(pronoteCredentials.id, id));
+      .where(eq(pronoteCredentials.id, id))
+      .returning({ id: pronoteCredentials.id });
 
     logger.info('Pronote token updated by id', {
       operation: 'pronote-sync:update-token',
       id,
     });
+
+    return res.length > 0;
   }
 
   /**

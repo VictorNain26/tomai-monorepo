@@ -35,4 +35,4 @@ async function backfill(): Promise<void> {
   console.log(`Done: ${done}/${rows.length} rows updated.`);
 }
 
-await backfill();
+backfill().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
