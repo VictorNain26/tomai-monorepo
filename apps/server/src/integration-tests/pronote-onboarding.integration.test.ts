@@ -22,7 +22,9 @@
  *   and all Pronote API calls remain fully real (zero mock on the data path).
  *
  * Skip behaviour: if the demo is unreachable (offline CI), all tests skip cleanly.
- * Cleanup: afterAll removes all probe-onboarding-* and probe-child-* users.
+ * Cleanup: afterAll removes the probe parent (by email prefix) and the activated
+ * child (by id captured from activate()). The child's pronote_child_resources row
+ * is deleted automatically via FK onDelete cascade on child_user_id → user.id.
  *
  * Security: only counts/booleans/lengths are logged — never tokens, passwords or
  * credentials.
@@ -57,7 +59,7 @@ import { pronoteConnectService } from '../services/pronote/pronote-connect.servi
 import { pronoteSyncService } from '../services/pronote-sync.service.js';
 import { db } from '../db/connection.js';
 import { user as userTable } from '../db/schema.js';
-import { like } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 
 // ============================================================
 // Demo constants
@@ -79,7 +81,7 @@ function checkDemoReachable(): Promise<boolean> {
     .catch(() => false);
 }
 
-const demoReachable = await checkDemoReachable();
+let demoReachable = await checkDemoReachable();
 
 if (!demoReachable) {
   console.warn('[pronote-onboarding.integration] Demo unreachable — all tests will be skipped');
@@ -104,14 +106,22 @@ let activatedChildId: string | null = null;
 beforeAll(async () => {
   if (!demoReachable) return;
 
-  // 1. Login against the demo (loginCredentials path — token-based auth is not tested here)
-  session = await loginWithCredentials({
-    url: DEMO_URL,
-    kind: DEMO_KIND,
-    username: DEMO_USERNAME,
-    password: DEMO_PASSWORD,
-    deviceUuid: 'tom-onboarding-e2e',
-  });
+  // 1. Login against the demo (loginCredentials path — token-based auth is not tested here).
+  //    Wrap in try/catch: a network failure here should produce a clean skip, not an opaque
+  //    error with parentId uninitialised.
+  try {
+    session = await loginWithCredentials({
+      url: DEMO_URL,
+      kind: DEMO_KIND,
+      username: DEMO_USERNAME,
+      password: DEMO_PASSWORD,
+      deviceUuid: 'tom-onboarding-e2e',
+    });
+  } catch (err) {
+    console.warn('[pronote-onboarding.integration] loginWithCredentials failed — skipping', err);
+    demoReachable = false;
+    return;
+  }
 
   // 2. Seed: parent user in DB
   const parentEmail = `${PROBE_PREFIX}-parent@example.test`;
@@ -162,12 +172,13 @@ afterAll(async () => {
     .delete(userTable)
     .where(like(userTable.email, `${PROBE_PREFIX}%@example.test`));
 
-  // Delete child users created by activate() — their email is generated as
-  // <username>@tomai.internal by parentService.createChild (Better Auth internal email).
-  // We match on the username prefix embedded in the email.
-  await db
-    .delete(userTable)
-    .where(like(userTable.email, `${PROBE_CHILD_PREFIX}%`));
+  // Delete the child user created by activate(). parentService.createChild generates
+  // the email as child_<timestamp>_<rand>@internal.tomai — not the probe prefix — so we
+  // delete by the id captured from the activate() result. The pronote_child_resources row
+  // is removed automatically via FK onDelete cascade (child_user_id → user.id).
+  if (activatedChildId) {
+    await db.delete(userTable).where(eq(userTable.id, activatedChildId));
+  }
 });
 
 // ============================================================
@@ -176,7 +187,7 @@ afterAll(async () => {
 
 describe.skipIf(!demoReachable)('Pronote onboarding e2e — discover → activate → read', () => {
 
-  let discoveredResourceId: number;
+  let discoveredResourceId: number = -1;
 
   it('discover — returns ≥1 real resource from the demo', async () => {
     const children = await pronoteConnectService.discover(parentId, credentialId);
@@ -228,7 +239,8 @@ describe.skipIf(!demoReachable)('Pronote onboarding e2e — discover → activat
 
     console.log(`[pronote-onboarding.integration] getGrades: ${grades.length} grade(s)`);
 
-    // Proves the full chain: credential → mapping → resolveSession → adapter → pawnote → demo
-    expect(Array.isArray(grades)).toBe(true);
+    // Proves the full chain: credential → mapping → resolveSession → adapter → pawnote → demo.
+    // A silent mapping failure returning [] must fail this test.
+    expect(grades.length).toBeGreaterThan(0);
   }, 30_000);
 });
