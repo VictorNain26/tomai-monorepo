@@ -7,7 +7,7 @@
  * parent/web reads via pronote-data.service).
  */
 
-import { eq } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { pronoteCredentials } from '../db/schema.js';
 import { encrypt, decrypt } from '../lib/encryption.js';
@@ -113,14 +113,18 @@ class PronoteSyncService {
   }
 
   /**
-   * Get decrypted Pronote credentials for a user (first found).
-   * Returns null if no credentials exist.
+   * Get decrypted Pronote credentials for a user — oldest credential by createdAt.
+   * Deterministic even when multiple credentials exist (e.g. multi-token/multi-establishment).
+   * For multi-token reads (parent, several establishments), callers should use
+   * getCredentialById once the credential list endpoint is added (Plan B2).
    */
   async getCredentials(userId: string): Promise<CredentialOutput | null> {
     const rows = await db
       .select()
       .from(pronoteCredentials)
-      .where(eq(pronoteCredentials.userId, userId));
+      .where(eq(pronoteCredentials.userId, userId))
+      .orderBy(asc(pronoteCredentials.createdAt))
+      .limit(1);
 
     if (rows.length === 0) {
       return null;

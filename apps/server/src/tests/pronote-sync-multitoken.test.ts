@@ -58,9 +58,19 @@ const mockSet = mock((vals: Partial<Row>) => {
   return { where: mockWhereUpdate };
 });
 
-const mockWhereSelect = mock(() => {
+const mockLimitSelect = mock((): Promise<Row[]> => {
   if (mockSetResult) return Promise.resolve([mockSetResult]);
   return Promise.resolve([]);
+});
+
+const mockOrderBySelect = mock(() => ({ limit: mockLimitSelect }));
+
+// Dual-purpose: supports `.orderBy().limit()` (getCredentials) and direct await (getCredentialById)
+const mockWhereSelect = mock((): Promise<Row[]> & { orderBy: typeof mockOrderBySelect } => {
+  const result: Row[] = mockSetResult ? [mockSetResult] : [];
+  const promise = Promise.resolve(result) as Promise<Row[]> & { orderBy: typeof mockOrderBySelect };
+  promise.orderBy = mockOrderBySelect;
+  return promise;
 });
 
 mock.module('../db/connection', () => ({
@@ -79,12 +89,14 @@ mock.module('../db/schema', () => ({
     encryptedToken: 'encryptedToken',
     encryptedMetadata: 'encryptedMetadata',
     tokenExpiresAt: 'tokenExpiresAt',
+    createdAt: 'createdAt',
     updatedAt: 'updatedAt',
   },
 }));
 
 mock.module('drizzle-orm', () => ({
   eq: mock((col: unknown, val: unknown) => ({ col, val })),
+  asc: mock((col: unknown) => ({ type: 'asc', col })),
   and: mock((...args: unknown[]) => args),
 }));
 
