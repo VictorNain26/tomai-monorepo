@@ -135,6 +135,43 @@ describe('inferSchoolLevel', () => {
     expect(inferSchoolLevel('Tale')).toBe('terminale');
   });
 
+  it('maps "TLEG2" to terminale (series code TL)', () => {
+    expect(inferSchoolLevel('TLEG2')).toBe('terminale');
+  });
+
+  it('maps "TS1" to terminale (series code TS)', () => {
+    expect(inferSchoolLevel('TS1')).toBe('terminale');
+  });
+
+  it('maps "1ERE" to premiere, not terminale', () => {
+    expect(inferSchoolLevel('1ERE')).toBe('premiere');
+  });
+
+  it('maps "T1ERE" to premiere, not terminale (premiere check before T-series heuristic)', () => {
+    expect(inferSchoolLevel('T1ERE')).toBe('premiere');
+  });
+
+  // Word-boundary false positive guards (Finding 1)
+  it('returns null for "A3E" (left boundary missing would match 3e)', () => {
+    expect(inferSchoolLevel('A3E')).toBeNull();
+  });
+
+  it('returns null for "L3e" (left boundary missing would match 3e)', () => {
+    expect(inferSchoolLevel('L3e')).toBeNull();
+  });
+
+  it('maps "3e A" to troisieme (right boundary, after space)', () => {
+    expect(inferSchoolLevel('3e A')).toBe('troisieme');
+  });
+
+  it('maps "6e B" to sixieme (right boundary)', () => {
+    expect(inferSchoolLevel('6e B')).toBe('sixieme');
+  });
+
+  it('maps "5ème B" to cinquieme (diacritic + right boundary)', () => {
+    expect(inferSchoolLevel('5ème B')).toBe('cinquieme');
+  });
+
   // Primary
   it('maps "CP" to cp', () => {
     expect(inferSchoolLevel('CP')).toBe('cp');

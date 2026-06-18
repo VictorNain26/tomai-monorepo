@@ -278,6 +278,7 @@ describe('getCredentialById', () => {
 
     expect(result).not.toBeNull();
     expect(result!.id).toBe('cred-id-1');
+    expect(result!.userId).toBe(VALID_USER_ID);
     expect(result!.token).toBe(VALID_TOKEN);
     expect(result!.metadata).toBe(VALID_METADATA_WITH_URL);
   });

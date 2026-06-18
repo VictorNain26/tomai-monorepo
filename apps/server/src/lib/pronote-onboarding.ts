@@ -50,20 +50,27 @@ export function inferSchoolLevel(className: string | null): SchoolLevel | null {
   if (/\bce1\b/.test(n)) return 'ce1';
   if (/\bcp\b/.test(n)) return 'cp';
 
-  // Terminale — check before "1re" to avoid matching "T" in "1re"
-  // "T" alone at start covers TLEG2, Tle, Tale, etc.
-  if (/\bterminale\b/.test(n)) return 'terminale';
-  if (/\bterm\b/.test(n)) return 'terminale';
-  if (/\btle\b/.test(n)) return 'terminale';
-  if (/\btale\b/.test(n)) return 'terminale';
-  // Starts with T followed by a letter (e.g. "TLEG2", "TG1") but NOT "tr" (troisieme)
-  if (/^t[a-suvwxyz]/i.test(n)) return 'terminale';
+  // Collège — word boundary on BOTH sides to avoid false positives like "A3e", "L3e"
+  // Note: "3EME1" normalizes to "3eme1" — \b3eme has left boundary, no right boundary needed
+  if (/\btroisieme\b/.test(n)) return 'troisieme';
+  if (/\b3eme/.test(n)) return 'troisieme';
+  if (/\b3e\b/.test(n)) return 'troisieme';
+  if (/3°/.test(n)) return 'troisieme';
 
-  // Première
-  if (/\bpremiere\b/.test(n)) return 'premiere';
-  if (/1ere\b/.test(n)) return 'premiere';
-  if (/1re\b/.test(n)) return 'premiere';
-  // "1ère" normalizes to "1ere" already handled above
+  if (/\bquatrieme\b/.test(n)) return 'quatrieme';
+  if (/\b4eme/.test(n)) return 'quatrieme';
+  if (/\b4e\b/.test(n)) return 'quatrieme';
+  if (/4°/.test(n)) return 'quatrieme';
+
+  if (/\bcinquieme\b/.test(n)) return 'cinquieme';
+  if (/\b5eme/.test(n)) return 'cinquieme';
+  if (/\b5e\b/.test(n)) return 'cinquieme';
+  if (/5°/.test(n)) return 'cinquieme';
+
+  if (/\bsixieme\b/.test(n)) return 'sixieme';
+  if (/\b6eme/.test(n)) return 'sixieme';
+  if (/\b6e\b/.test(n)) return 'sixieme';
+  if (/6°/.test(n)) return 'sixieme';
 
   // Seconde — "2NDE3" normalizes to "2nde3" (no word boundary after "nde")
   if (/\bseconde\b/.test(n)) return 'seconde';
@@ -71,27 +78,21 @@ export function inferSchoolLevel(className: string | null): SchoolLevel | null {
   if (/\b2de\b/.test(n)) return 'seconde';
   if (/\b2nd\b/.test(n)) return 'seconde';
 
-  // Collège — troisième before matching generic numbers
-  // Note: class names like "3EME1" normalize to "3eme1" — no word boundary after "eme"
-  if (/\btroisieme\b/.test(n)) return 'troisieme';
-  if (/\b3eme/.test(n)) return 'troisieme';
-  if (/3e\b/.test(n)) return 'troisieme';
-  if (/3°/.test(n)) return 'troisieme';
+  // Première — before terminale to avoid T-prefix heuristic capturing "T1ERE"
+  // No left boundary on 1ere/1re: "T1ERE" is a real Pronote form meaning première
+  if (/\bpremiere\b/.test(n)) return 'premiere';
+  if (/1ere\b/.test(n)) return 'premiere';
+  if (/1re\b/.test(n)) return 'premiere';
+  // "1ère" normalizes to "1ere" already handled above
 
-  if (/\bquatrieme\b/.test(n)) return 'quatrieme';
-  if (/\b4eme/.test(n)) return 'quatrieme';
-  if (/4e\b/.test(n)) return 'quatrieme';
-  if (/4°/.test(n)) return 'quatrieme';
-
-  if (/\bcinquieme\b/.test(n)) return 'cinquieme';
-  if (/\b5eme/.test(n)) return 'cinquieme';
-  if (/5e\b/.test(n)) return 'cinquieme';
-  if (/5°/.test(n)) return 'cinquieme';
-
-  if (/\bsixieme\b/.test(n)) return 'sixieme';
-  if (/\b6eme/.test(n)) return 'sixieme';
-  if (/6e\b/.test(n)) return 'sixieme';
-  if (/6°/.test(n)) return 'sixieme';
+  // Terminale — named forms first, then series codes (TS/TES/TL/TG/TMD/TSTMG…)
+  if (/\bterminale\b/.test(n)) return 'terminale';
+  if (/\bterm\b/.test(n)) return 'terminale';
+  if (/\btle\b/.test(n)) return 'terminale';
+  if (/\btale\b/.test(n)) return 'terminale';
+  // Series codes: T followed by s/e/l/g/m/d (TS, TES, TL, TG, TMD, TSTMG…)
+  // Deliberately excludes generic tokens like "ta", "tb", etc.
+  if (/\bt[seglmd]/i.test(n)) return 'terminale';
 
   return null;
 }
