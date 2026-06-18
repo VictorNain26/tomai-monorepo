@@ -4,6 +4,7 @@ import {
   gradesOverview,
   assignmentsFromIntervals,
   timetableFromIntervals,
+  use,
   GradeKind,
   TabLocation,
   type AccountKind,
@@ -135,19 +136,12 @@ export class PawnoteServerAdapter implements PronoteProvider {
     }
   }
 
-  // resourceId identifies the child resource on the Pronote account.
-  // Multi-child selection via pawnote is unproven: the demo is a single-student
-  // account (handle.userResource is singular). Until a parent account can be
-  // exercised, only resourceId === 0 is supported; any other value throws to
-  // prevent silent data-leakage across children.
+  // resourceId identifies the child resource index on the Pronote account.
+  // pawnote.use(handle, index) selects the active resource before each read.
+  // Multi-child real-account validation is deferred to a parent integration test.
   async getGrades(session: ProviderSession, resourceId: number): Promise<NormalizedGrade[]> {
-    if (resourceId !== 0) {
-      throw new Error(
-        `Multi-child resource selection is not yet supported (resourceId=${resourceId}). ` +
-          'Only resourceId=0 (single-student account) has been exercised against pawnote.',
-      );
-    }
     const { handle } = assertAdapterSession(session);
+    use(handle, resourceId);
     const period = getCurrentPeriod(handle);
     if (!period) return [];
 
@@ -162,13 +156,8 @@ export class PawnoteServerAdapter implements PronoteProvider {
   }
 
   async getHomework(session: ProviderSession, resourceId: number): Promise<NormalizedHomework[]> {
-    if (resourceId !== 0) {
-      throw new Error(
-        `Multi-child resource selection is not yet supported (resourceId=${resourceId}). ` +
-          'Only resourceId=0 (single-student account) has been exercised against pawnote.',
-      );
-    }
     const { handle } = assertAdapterSession(session);
+    use(handle, resourceId);
 
     const now = new Date();
     const from = new Date(now);
@@ -190,13 +179,8 @@ export class PawnoteServerAdapter implements PronoteProvider {
     resourceId: number,
     day: string,
   ): Promise<NormalizedLesson[]> {
-    if (resourceId !== 0) {
-      throw new Error(
-        `Multi-child resource selection is not yet supported (resourceId=${resourceId}). ` +
-          'Only resourceId=0 (single-student account) has been exercised against pawnote.',
-      );
-    }
     const { handle } = assertAdapterSession(session);
+    use(handle, resourceId);
 
     const from = new Date(day);
     from.setUTCHours(0, 0, 0, 0);
