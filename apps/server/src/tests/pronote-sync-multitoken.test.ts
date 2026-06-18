@@ -89,7 +89,7 @@ mock.module('drizzle-orm', () => ({
 }));
 
 // Import AFTER mocks
-const { pronoteSyncService } = await import('../services/pronote-sync.service');
+const { pronoteSyncService, normalizeEstablishmentUrl } = await import('../services/pronote-sync.service');
 
 const VALID_USER_ID = 'user-123';
 const VALID_TOKEN = 'valid-token-abc';
@@ -116,6 +116,93 @@ beforeEach(() => {
   mockWhereUpdate.mockClear();
   mockUpdateReturning.mockClear();
   mockWhereSelect.mockClear();
+});
+
+describe('normalizeEstablishmentUrl', () => {
+  it('strips trailing slash', () => {
+    expect(normalizeEstablishmentUrl('https://pronote.example.fr/pronote/')).toBe(
+      'https://pronote.example.fr/pronote'
+    );
+  });
+
+  it('strips multiple trailing slashes', () => {
+    expect(normalizeEstablishmentUrl('https://pronote.example.fr/pronote///')).toBe(
+      'https://pronote.example.fr/pronote'
+    );
+  });
+
+  it('lowercases the host', () => {
+    expect(normalizeEstablishmentUrl('https://PRONOTE.Example.FR/pronote')).toBe(
+      'https://pronote.example.fr/pronote'
+    );
+  });
+
+  it('produces identical key for trailing-slash and non-trailing-slash variants', () => {
+    const withSlash = normalizeEstablishmentUrl('https://pronote.example.fr/pronote/');
+    const withoutSlash = normalizeEstablishmentUrl('https://pronote.example.fr/pronote');
+    expect(withSlash).toBe(withoutSlash);
+  });
+
+  it('produces identical key for host-case variants', () => {
+    const lower = normalizeEstablishmentUrl('https://pronote.example.fr/pronote');
+    const upper = normalizeEstablishmentUrl('https://PRONOTE.EXAMPLE.FR/pronote');
+    expect(lower).toBe(upper);
+  });
+});
+
+describe('upsertCredentials — establishment_url deduplication', () => {
+  const BASE_TOKEN = 'dedup-token';
+  const BASE_EXPIRES = new Date(Date.now() + 3600_000).toISOString();
+
+  function metaWithUrl(instanceUrl: string): string {
+    return JSON.stringify({ instanceUrl, username: 'user', deviceUuid: 'dev', accountKind: 2 });
+  }
+
+  it('two upserts with same establishment but trailing-slash diff produce same establishmentUrl', async () => {
+    const capturedUrls: string[] = [];
+    mockInsertValues.mockImplementation((vals: { establishmentUrl: string }) => {
+      capturedUrls.push(vals.establishmentUrl);
+      return { onConflictDoUpdate: mockOnConflictDoUpdate };
+    });
+
+    await pronoteSyncService.upsertCredentials(VALID_USER_ID, {
+      token: BASE_TOKEN,
+      metadata: metaWithUrl('https://school.net/pronote/'),
+      tokenExpiresAt: BASE_EXPIRES,
+    });
+    await pronoteSyncService.upsertCredentials(VALID_USER_ID, {
+      token: BASE_TOKEN,
+      metadata: metaWithUrl('https://school.net/pronote'),
+      tokenExpiresAt: BASE_EXPIRES,
+    });
+
+    expect(capturedUrls).toHaveLength(2);
+    expect(capturedUrls[0]).toBe(capturedUrls[1]);
+    expect(capturedUrls[0]).toBe('https://school.net/pronote');
+  });
+
+  it('two upserts with same establishment but host-case diff produce same establishmentUrl', async () => {
+    const capturedUrls: string[] = [];
+    mockInsertValues.mockImplementation((vals: { establishmentUrl: string }) => {
+      capturedUrls.push(vals.establishmentUrl);
+      return { onConflictDoUpdate: mockOnConflictDoUpdate };
+    });
+
+    await pronoteSyncService.upsertCredentials(VALID_USER_ID, {
+      token: BASE_TOKEN,
+      metadata: metaWithUrl('https://SCHOOL.NET/pronote'),
+      tokenExpiresAt: BASE_EXPIRES,
+    });
+    await pronoteSyncService.upsertCredentials(VALID_USER_ID, {
+      token: BASE_TOKEN,
+      metadata: metaWithUrl('https://school.net/pronote'),
+      tokenExpiresAt: BASE_EXPIRES,
+    });
+
+    expect(capturedUrls).toHaveLength(2);
+    expect(capturedUrls[0]).toBe(capturedUrls[1]);
+    expect(capturedUrls[0]).toBe('https://school.net/pronote');
+  });
 });
 
 describe('upsertCredentials — multi-token extensions', () => {

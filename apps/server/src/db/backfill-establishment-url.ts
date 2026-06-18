@@ -9,6 +9,7 @@ import { isNull, eq } from 'drizzle-orm';
 import { db } from './connection.js';
 import { pronoteCredentials } from './schema.js';
 import { decrypt } from '../lib/encryption.js';
+import { normalizeEstablishmentUrl } from '../services/pronote-sync.service.js';
 
 async function backfill(): Promise<void> {
   const rows = await db
@@ -27,7 +28,7 @@ async function backfill(): Promise<void> {
     }
     await db
       .update(pronoteCredentials)
-      .set({ establishmentUrl: meta.instanceUrl })
+      .set({ establishmentUrl: normalizeEstablishmentUrl(meta.instanceUrl) })
       .where(eq(pronoteCredentials.id, row.id));
     done += 1;
   }

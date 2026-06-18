@@ -13,6 +13,19 @@ import { pronoteCredentials } from '../db/schema.js';
 import { encrypt, decrypt } from '../lib/encryption.js';
 import { logger } from '../lib/observability.js';
 
+/**
+ * Normalize an establishment URL for use as a deduplication key.
+ * Strips trailing slashes and lowercases the host so that
+ * "https://x.net/pronote" and "https://x.net/pronote/" resolve to the same key.
+ * The raw instanceUrl stored in encrypted metadata is left untouched.
+ */
+export function normalizeEstablishmentUrl(raw: string): string {
+  const u = new URL(raw);
+  const host = u.host.toLowerCase();
+  const path = u.pathname.replace(/\/+$/, '');
+  return `${u.protocol}//${host}${path}`;
+}
+
 interface UpsertInput {
   token: string;
   metadata: string;
@@ -53,7 +66,7 @@ class PronoteSyncService {
       if (typeof parsed.instanceUrl !== 'string' || !parsed.instanceUrl) {
         return { success: false, error: 'Metadata must contain a non-empty instanceUrl' };
       }
-      establishmentUrl = parsed.instanceUrl;
+      establishmentUrl = normalizeEstablishmentUrl(parsed.instanceUrl);
     } catch {
       return { success: false, error: 'Metadata must be valid JSON' };
     }
