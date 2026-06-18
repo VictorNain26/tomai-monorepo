@@ -105,6 +105,7 @@ mock.module('pawnote', () => ({
   gradesOverview: mockGradesOverview,
   assignmentsFromIntervals: mockAssignmentsFromIntervals,
   timetableFromIntervals: mockTimetableFromIntervals,
+  use: () => {},
   GradeKind: { Error: -1, Grade: 0, Absent: 1, Exempted: 2 },
   TabLocation: { Grades: 4 },
 }));
