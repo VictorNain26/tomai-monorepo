@@ -99,12 +99,32 @@ const mockTimetableFromIntervals = mock(async () => ({
 
 const mockCreateSessionHandle = mock(() => mockHandle);
 
+const mockGeolocation = mock(async () => [
+  {
+    url: 'https://ecole-b.index-education.net/pronote',
+    name: 'Collège B',
+    latitude: 48.86,
+    longitude: 2.36,
+    postalCode: 75002,
+    distance: 2.5,
+  },
+  {
+    url: 'https://ecole-a.index-education.net/pronote',
+    name: 'Lycée A',
+    latitude: 48.855,
+    longitude: 2.355,
+    postalCode: 75001,
+    distance: 0.8,
+  },
+]);
+
 mock.module('pawnote', () => ({
   createSessionHandle: mockCreateSessionHandle,
   loginToken: mockLoginToken,
   gradesOverview: mockGradesOverview,
   assignmentsFromIntervals: mockAssignmentsFromIntervals,
   timetableFromIntervals: mockTimetableFromIntervals,
+  geolocation: mockGeolocation,
   use: () => {},
   GradeKind: { Error: -1, Grade: 0, Absent: 1, Exempted: 2 },
   TabLocation: { Grades: 4 },
@@ -137,6 +157,7 @@ describe('PawnoteServerAdapter', () => {
     mockAssignmentsFromIntervals.mockClear();
     mockTimetableFromIntervals.mockClear();
     mockCreateSessionHandle.mockClear();
+    mockGeolocation.mockClear();
   });
 
   // ============================================
@@ -243,6 +264,43 @@ describe('PawnoteServerAdapter', () => {
   // ============================================
   // getTimetable
   // ============================================
+
+  // ============================================
+  // searchEstablishments
+  // ============================================
+
+  describe('searchEstablishments', () => {
+    it('calls geolocation with the given coordinates and the server fetcher', async () => {
+      await adapter.searchEstablishments(48.85, 2.35);
+      expect(mockGeolocation).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock.calls is untyped in bun:test
+      const position = (mockGeolocation.mock.calls[0] as any)[0];
+      expect(position).toEqual({ latitude: 48.85, longitude: 2.35 });
+    });
+
+    it('returns establishments sorted by distance ascending', async () => {
+      const results = await adapter.searchEstablishments(48.85, 2.35);
+      expect(results[0].distance).toBeLessThan(results[1].distance);
+      expect(results[0].name).toBe('Lycée A');
+      expect(results[1].name).toBe('Collège B');
+    });
+
+    it('maps all required fields faithfully', async () => {
+      const results = await adapter.searchEstablishments(48.85, 2.35);
+      expect(results[0]).toEqual({
+        name: 'Lycée A',
+        url: 'https://ecole-a.index-education.net/pronote',
+        postalCode: 75001,
+        distance: 0.8,
+      });
+    });
+
+    it('returns empty array when no establishments found', async () => {
+      mockGeolocation.mockResolvedValueOnce([]);
+      const results = await adapter.searchEstablishments(48.85, 2.35);
+      expect(results).toEqual([]);
+    });
+  });
 
   describe('getTimetable', () => {
     it('returns only lessons (not activities/detentions)', async () => {

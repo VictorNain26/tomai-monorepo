@@ -1,6 +1,7 @@
 import {
   createSessionHandle,
   loginToken,
+  geolocation,
   gradesOverview,
   assignmentsFromIntervals,
   timetableFromIntervals,
@@ -197,6 +198,21 @@ export class PawnoteServerAdapter implements PronoteProvider {
         room: e.classrooms?.[0] ?? null,
         canceled: e.canceled,
       }));
+  }
+
+  async searchEstablishments(
+    latitude: number,
+    longitude: number,
+  ): Promise<{ name: string; url: string; postalCode: number; distance: number }[]> {
+    const instances = await geolocation({ latitude, longitude }, createServerFetcher());
+    return instances
+      .map((inst) => ({
+        name: inst.name,
+        url: inst.url,
+        postalCode: inst.postalCode,
+        distance: inst.distance,
+      }))
+      .sort((a, b) => a.distance - b.distance);
   }
 
   async disconnect(_session: ProviderSession): Promise<void> {
