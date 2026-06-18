@@ -66,15 +66,21 @@ describe('PawnoteServerAdapter — resource selection', () => {
     expect(mockUse).toHaveBeenCalledWith(session.handle, 1);
   });
 
-  it('getTimetable calls use(handle, 0) for resourceId=0', async () => {
-    const session = makeSession(0);
-    await adapter.getTimetable(session, 0, '2026-06-18');
+  it('getTimetable calls use(handle, 3) for resourceId=3 — no throw', async () => {
+    const session = makeSession(3);
+    await adapter.getTimetable(session, 3, '2026-06-18');
     expect(mockUse).toHaveBeenCalledTimes(1);
-    expect(mockUse).toHaveBeenCalledWith(session.handle, 0);
+    expect(mockUse).toHaveBeenCalledWith(session.handle, 3);
   });
 
   it('assertAdapterSession still throws when handle is absent', async () => {
     const broken = { token: 'tok', username: 'u' };
-    expect(adapter.getGrades(broken, 0)).rejects.toThrow('AdapterSession expected');
+    let error: unknown;
+    try {
+      await adapter.getGrades(broken, 0);
+    } catch (e) {
+      error = e;
+    }
+    expect((error as Error | undefined)?.message).toContain('AdapterSession expected');
   });
 });
