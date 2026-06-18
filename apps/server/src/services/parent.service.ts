@@ -260,7 +260,18 @@ export class ParentService {
   }
 
   async isParentOf(parentId: string, studentId: string): Promise<boolean> {
-    return parentChildRepository.isLinked(parentId, studentId);
+    try {
+      return await parentChildRepository.isLinked(parentId, studentId);
+    } catch (error) {
+      logger.error('Error verifying parent-child relationship', {
+        operation: 'parent:isParentOf:error',
+        parentId,
+        studentId,
+        _error: error instanceof Error ? error.message : String(error),
+        severity: 'medium' as const,
+      });
+      return false;
+    }
   }
 }
 

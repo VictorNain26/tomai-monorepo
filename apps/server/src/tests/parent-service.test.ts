@@ -138,6 +138,7 @@ mock.module('../db/connection', () => ({
 
 mock.module('../db/schema', () => ({
   studySessions: { userId: 'userId', subject: 'subject', startedAt: 'startedAt' },
+  parentChild: { id: 'id', parentUserId: 'parentUserId', childUserId: 'childUserId' },
 }));
 
 mock.module('../db/pool-limiter', () => ({
@@ -148,6 +149,19 @@ mock.module('drizzle-orm', () => ({
   sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ type: 'sql', strings, values }),
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
   desc: (...args: unknown[]) => ({ type: 'desc', args }),
+}));
+
+// Parent-child repository mock
+let isLinkedResult = true;
+let isLinkedShouldThrow = false;
+mock.module('../db/repositories/parent-child.repository', () => ({
+  parentChildRepository: {
+    link: mock(async () => {}),
+    isLinked: mock(async () => {
+      if (isLinkedShouldThrow) throw new Error('db down');
+      return isLinkedResult;
+    }),
+  },
 }));
 
 // Import after mocks
@@ -172,6 +186,8 @@ beforeEach(() => {
   callSequence.length = 0;
   mockPseudonymize.mockClear();
   mockDeleteById.mockClear();
+  isLinkedResult = true;
+  isLinkedShouldThrow = false;
 });
 
 describe('Parent Service', () => {
@@ -320,15 +336,17 @@ describe('Parent Service', () => {
 
   describe('isParentOf', () => {
     it('should return true for parent-child relationship', async () => {
+      isLinkedResult = true;
       expect(await parentService.isParentOf('parent-001', 'child-001')).toBe(true);
     });
 
     it('should return false for non-child', async () => {
+      isLinkedResult = false;
       expect(await parentService.isParentOf('parent-001', 'stranger')).toBe(false);
     });
 
-    it('should return false on error', async () => {
-      childrenResult = []; // Simulate empty result
+    it('should return false on error (fail-closed)', async () => {
+      isLinkedShouldThrow = true;
       const result = await parentService.isParentOf('err-parent', 'child-001');
       expect(result).toBe(false);
     });
