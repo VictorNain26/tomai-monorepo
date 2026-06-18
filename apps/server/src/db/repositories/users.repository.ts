@@ -1,6 +1,6 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { db } from '../connection';
-import { user } from '../schema';
+import { user, parentChild } from '../schema';
 
 // Types inférés du schéma
 type User = typeof user.$inferSelect;
@@ -61,14 +61,21 @@ class UsersRepository {
   }
 
   async findChildrenByParentId(parentId: string): Promise<User[]> {
-    return db
+    const rows = await db
       .select()
-      .from(user)
-      .where(and(eq(user.parentId, parentId), eq(user.isActive, true)));
+      .from(parentChild)
+      .innerJoin(user, eq(user.id, parentChild.childUserId))
+      .where(and(eq(parentChild.parentUserId, parentId), eq(user.isActive, true)));
+    return rows.map((r) => r.user);
   }
 
   async findAllChildrenByParentId(parentId: string): Promise<User[]> {
-    return db.select().from(user).where(eq(user.parentId, parentId));
+    const rows = await db
+      .select()
+      .from(parentChild)
+      .innerJoin(user, eq(user.id, parentChild.childUserId))
+      .where(eq(parentChild.parentUserId, parentId));
+    return rows.map((r) => r.user);
   }
 
   /**
