@@ -191,7 +191,7 @@ export const parentRestoreToken = pgTable('parent_restore_token', {
 
 /**
  * Table parent_child — jonction N-N parent↔enfant
- * Remplace la colonne user.parentId (1-1) par un lien multiple.
+ * Complète user.parentId (retirée en Task 8) par un lien multiple N-N.
  * user.parentId est conservé le temps de la migration progressive.
  */
 export const parentChild = pgTable('parent_child', {

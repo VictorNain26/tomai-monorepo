@@ -36,6 +36,13 @@ class ParentChildRepository {
       .where(eq(parentChild.childUserId, childUserId));
     return rows.map((r) => r.parentUserId);
   }
+
+  async isLinked(parentUserId: string, childUserId: string): Promise<boolean> {
+    const [row] = await db.select({ id: parentChild.id }).from(parentChild)
+      .where(and(eq(parentChild.parentUserId, parentUserId), eq(parentChild.childUserId, childUserId)))
+      .limit(1);
+    return Boolean(row);
+  }
 }
 
 export const parentChildRepository = new ParentChildRepository();
