@@ -28,7 +28,7 @@ Conception : `docs/superpowers/specs/2026-06-15-pronote-server-side-design.md`. 
 
 ## Décisions de conception (tranchées)
 
-1. **Enfant = profil** : à l'activation, le serveur génère un `username` interne unique et un `password` aléatoire fort (jamais utilisé — accès par impersonation parent Better Auth). `dateOfBirth` = null (Pronote ne le fournit pas).
+1. **Enfant = compte avec accès autonome** (décision 2026-06-18) : à l'activation, le **parent définit `username` + mot de passe** pour chaque enfant. L'enfant se connecte ensuite seul (login par username via Better Auth, déjà en place) et accède à son espace (chat, révisions, ses notes via l'accès `self` déjà autorisé sur les routes). Le parent reste lié (consultation + impersonation). `dateOfBirth` = null (Pronote ne le fournit pas).
 2. **schoolLevel confirmé par le parent** : `discover` *suggère* un niveau depuis `className` (helper best-effort) ; `activate` *reçoit* le `schoolLevel` final dans chaque sélection (le mobile pré-remplit la suggestion, le parent valide). Le serveur n'impose pas un mapping fragile.
 3. **Fusion-confirmation par nom** : `discover` compare chaque resource Pronote aux enfants existants du parent (nom normalisé) et renvoie `existingChildId` si match → `activate` lie au lieu de créer.
 4. **`createChild` étendu** (rétro-compatible) : `username`/`password`/`dateOfBirth` deviennent optionnels (générés / null si absents). Les appelants actuels (qui les passent) restent inchangés.
@@ -85,13 +85,15 @@ Commit.
 
 ---
 
-## Task 4 — Étendre createChild (champs optionnels)
+## Task 4 — createChild : dateOfBirth optionnel
 
 **Fichiers** : `parent.service.ts`, `src/tests/parent-service.test.ts`.
 
-**Step 1 (test)** : `createChild(parentId,{firstName,lastName,schoolLevel})` (sans username/password/dateOfBirth) crée un enfant : username interne unique généré, password aléatoire, dateOfBirth absent (null/undefined), role student, link parent. Les appels existants (avec tous les champs) restent identiques.
+Pronote ne fournit pas la date de naissance ; l'activation crée des enfants sans. **`username` et `password` restent requis** (définis par le parent à l'activation — c'est le moyen de login autonome de l'enfant). Seul `dateOfBirth?` devient optionnel (colonne user nullable).
 
-**Step 2 (impl)** : rendre `username?`/`password?`/`dateOfBirth?` optionnels. Si absent : `username = child_<timestamp>_<rand>`, `password = crypto.randomUUID()` (fort, jamais réutilisé), `dateOfBirth = undefined` (colonne nullable). Garder compensation delete.
+**Step 1 (test)** : `createChild(parentId,{firstName,lastName,username,password,schoolLevel})` (sans `dateOfBirth`) crée l'enfant (role student, link parent, `dateOfBirth` null/undefined). Les appels existants (avec `dateOfBirth`) restent identiques.
+
+**Step 2 (impl)** : rendre `dateOfBirth?` optionnel dans la signature ; passer `undefined` si absent. Garder compensation delete.
 
 **Test** : `bun run test` (parent-service). Commit.
 
@@ -101,13 +103,13 @@ Commit.
 
 **Fichiers** : `pronote-connect.service.ts`, `pronote-connect.routes.ts`, tests.
 
-**Contrat** : `activate(parentUserId, credentialId, selections): Promise<{activated:{resourceId,childId}[]}>` où `selection={resourceId:number; firstName:string; lastName:string; schoolLevel:SchoolLevel; linkToChildId?:string}`. Vérifie propriété du credential. Pour chaque sélection :
-- si `linkToChildId` : `parentChildRepository.link(parentUserId, linkToChildId)` (idempotent) ; `childId = linkToChildId`.
-- sinon : `parentService.createChild(parentUserId,{firstName,lastName,schoolLevel})` → `childId`.
+**Contrat** : `activate(parentUserId, credentialId, selections): Promise<{activated:{resourceId,childId}[]}>` où `selection={resourceId:number; firstName:string; lastName:string; schoolLevel:SchoolLevel; username:string; password:string; linkToChildId?:string}` (le parent définit `username`+`password` = login autonome de l'enfant). Vérifie propriété du credential. Pour chaque sélection :
+- si `linkToChildId` : `parentChildRepository.link(parentUserId, linkToChildId)` (idempotent) ; `childId = linkToChildId` (pas de création ; username/password ignorés).
+- sinon : `parentService.createChild(parentUserId,{firstName,lastName,username,password,schoolLevel})` → `childId` (dateOfBirth omis).
 - puis `pronoteChildResourcesRepository.upsertMapping(parentUserId, childId, credentialId, resourceId)`.
 Transactionnel par item ; si createChild échoue, ne pas écrire le mapping ; agréger les succès.
 
-**Route** : `POST /api/pronote/credentials/:id/activate`, `.guard({auth:true})`, body `t.Object({selections:t.Array(t.Object({resourceId:t.Number(),firstName:t.String(),lastName:t.String(),schoolLevel:t.String(),linkToChildId:t.Optional(t.String())}))})` → `{success:true,data:{activated}}`.
+**Route** : `POST /api/pronote/credentials/:id/activate`, `.guard({auth:true})`, body `t.Object({selections:t.Array(t.Object({resourceId:t.Number(),firstName:t.String(),lastName:t.String(),schoolLevel:t.String(),username:t.String({minLength:3}),password:t.String({minLength:8}),linkToChildId:t.Optional(t.String())}))})` → `{success:true,data:{activated}}`. **Ne jamais logger `password`.**
 
 **Tests** : mock createChild/repos. Cas create, cas link, cas mixte. Commit.
 
