@@ -26,7 +26,7 @@ Tom est un copilote de scolarité. **Le cœur — le copilote pédagogique — f
 ## 3. Workflow onboarding Pronote (quand l'adulte choisit de connecter)
 
 1. **Recherche d'établissement** par géolocalisation (`pawnote.geolocation({latitude, longitude})` → liste `{name, url}` ; l'URL de l'instance est résolue automatiquement, **jamais saisie**).
-2. **Connexion** : login → on obtient et stocke un **jeton** (jamais le mot de passe).
+2. **Connexion (capture mobile → push serveur)** : QR (canal MVP, déjà présent — l'app transmet le payload QR+PIN au serveur qui obtient le jeton via `loginQrCode`) ou WebView (fast-follow, parents sans l'app Pronote). Jamais le mot de passe. Jeton stocké server-side → les étapes 3-5 et la consultation sont ensuite accessibles **web et mobile**.
 3. **Découverte** : lecture du compte → liste des enfants rattachés (`UserResource` : nom, classe, établissement).
 4. **Sélection** : l'adulte coche les enfants à activer.
 5. **Activation** : pour chaque enfant → profil créé (nom/classe **pré-remplis depuis Pronote**, username auto `prenom.nom`) + lien `(parent, jeton, enfant) → resource_id`. Si un profil correspondant existe déjà (autre parent) → **rattachement par confirmation** (§4).
@@ -49,11 +49,14 @@ Multi-établissement : un même compte peut connecter plusieurs Pronote (fratrie
 Port/adapter : `PronoteProvider` (interface normalisée) ↔ `PawnoteServerAdapter` (reverse-eng server-side, token-based) → demain `DocaposteAdapter` (officiel) / `EcoleDirecteAdapter`. Les clients (web/mobile) consomment l'API Tom, indépendante de la source.
 
 - **Token-only au stockage** (jamais le mot de passe ; AES-256-GCM + PBKDF2 600K, clé EU). Token-only **au transit** seulement sur mobile.
-- **Canaux de connexion** :
-  - **Mobile** = WebView sur la page Pronote/EduConnect **officielle** (mot de passe ne transite pas, gère l'ENT nativement) — pattern Papillon (réécrit, pas leur code GPL).
-  - **Web** = saisie identifiants façon **agrégateur** (Bankin'/Linxo) ; le backend fait la connexion server-side (le navigateur ne peut pas appeler Pronote = CORS), mot de passe **transitoire jamais stocké**.
-- **Lecture des données = server-side** via le jeton (cache de session mémoire + refresh à expiration ; token rotatif re-persisté à chaque usage).
-- **Résolution établissement** : `pawnote.geolocation` → liste d'établissements + URLs ; l'utilisateur choisit, l'URL reste invisible.
+- **Capture du jeton sur mobile → poussée au serveur** (révision 2026-06-18 post-audit mobile). Deux canaux, tous deux **contournent l'ENT** et **ne font jamais transiter le mot de passe** :
+  - **QR — canal MVP, déjà présent dans l'app** (`loginQrCode`). L'app scanne le QR mobile généré par l'app Pronote officielle du parent (post-auth ENT) + son PIN. **On réutilise l'écran QR existant.** Pour sortir pawnote du bundle (GPL, cf. §7), le mobile **n'appelle plus `loginQrCode` en local** : il transmet le payload `{qr, pin}` au serveur (`POST /api/pronote/connect/qr`) qui fait `loginQrCode` → jeton, chiffré et stocké. Couvre les parents qui ont déjà l'app Pronote (la majorité).
+  - **WebView — fast-follow UX** : pour les parents **sans** l'app Pronote, l'app ouvre la page **officielle** de l'établissement (Pronote direct OU ENT/EduConnect/ATRIUM) ; l'utilisateur s'authentifie chez son établissement ; la WebView capture le jeton (pattern Papillon, réécrit — pas leur code GPL) et le pousse au serveur. Gère l'ENT nativement (≠ `loginCredentials` direct, cassé sur les écoles ENT).
+- **Le jeton vit côté serveur** (chiffré). Une connexion (sur mobile) ⇒ données disponibles **partout** : découverte/activation et consultation passent par l'API Tom, accessibles **web ET mobile**. Le mobile passe de « device-first (jeton + lectures locales, pawnote dans le bundle) » à « capture + push, puis consommation de l'API Tom ».
+- **Lecture des données = server-side** via le jeton (`loginToken`, résolution multi-jeton de l'incrément 1 ; cache de session mémoire + refresh ; token rotatif re-persisté).
+- **Le QR server-side dérisque le token rotatif dès maintenant** : `POST /api/pronote/connect/qr` exécute `loginQrCode` → jeton → `loginToken` côté serveur, **sans attendre le front** — un test d'intégration alimenté par un vrai payload QR prouve le cycle prod (le démo ne le permet pas, cf. §10).
+- **`loginCredentials` (formulaire identifiants) retiré du chemin prod** — ne marche que pour les écoles hors-ENT (minorité) et faisait transiter le mdp ; conservé **test-only** (écoles Pronote-direct, ex. compte démo, pour prouver découverte/activation/lectures sur données réelles).
+- **Résolution établissement** : `pawnote.geolocation` → liste d'établissements + URLs ; sert à ouvrir la bonne page (QR : pré-remplir l'instance ; WebView : ouvrir la page officielle).
 
 ## 6. Sécurité & RGPD
 
@@ -67,9 +70,9 @@ Chiffrement au repos, hébergement EU, minimisation (jeton only), accès audité
 - **RGPD données mineurs** : AIPD obligatoire, consentement. → archi compatible, dossier juriste à faire.
 
 **🟠 Majeurs :**
-- **ENT/EduConnect** : pawnote ne fait pas l'ENT, le web non plus (CORS), scraping serveur fragile. → WebView mobile gère l'ENT ; QR pour le web en ENT ; **le compte test mesurera l'ampleur**.
+- **ENT/EduConnect = la norme dans le public** (dérisqué 2026-06-18 : Marseilleveyre `0131923v` est en **ENT ATRIUM** — source officielle ac-aix-marseille : « accès à Pronote par l'ENT ATRIUM, vous n'avez donc pas de codes Pronote ». ATRIUM couvre Aix-Marseille + Nice ; chaque région a son ENT). → **canal de capture = QR (déjà présent dans l'app, contourne l'ENT) en MVP, WebView en fast-follow** (parents sans l'app Pronote, gère l'ENT nativement) ; `loginCredentials` direct ne marche que pour les écoles hors-ENT. **Conséquence actée : capture mobile → push serveur** (§5). Le code `loginCredentials` est confirmé conforme à pawnote (revue doc-first) — l'échec venait de l'ENT, pas de notre intégration.
 - **Dépendance reverse-eng fragile** : Pronote peut casser pawnote à une mise à jour. → version-lock, monitoring, **voie officielle Docaposte** (B2B, par établissement, payant) comme pérennité.
-- **Token rotatif** : durée de vie + coexistence device/serveur non validées. → dérisquer sur vrai compte.
+- **Token rotatif** : `loginToken` non encore prouvé sur un vrai compte (le démo le rejette ; les écoles ENT ne permettent pas `loginCredentials` pour obtenir un 1er jeton). → dérisquer via **`POST /api/pronote/connect/qr` côté serveur (B2-backend)** alimenté par un vrai payload QR (`loginQrCode → loginToken`), **avant** le front et indépendamment du démo.
 
 **🟡 Gérables :**
 - Multi-établissement (plusieurs jetons). Scaling multi-instance (cache mémoire non partagé → sticky-session, optimiser plus tard). Dédup enfant (confirmation). Changement d'établissement (nouveau profil, fusion manuelle future). Reconnexion (`PronoteReauthRequired` → UX fluide).
@@ -77,13 +80,14 @@ Chiffrement au repos, hébergement EU, minimisation (jeton only), accès audité
 ## 8. Phasage
 
 - **Fait — socle backend lecture (prouvé e2e sur le compte démo)** : `PronoteProvider` + `PawnoteServerAdapter` (token), cache de session, table `pronote_child_resources`, service de résolution, endpoints + autorisation. **Construit sur l'ancien modèle** (1 jeton/compte, `parentId` unique).
-- **Incrément 1 — à coder** :
-  1. **Évolution du modèle** : multi-jeton `(user, établissement)`, jonction `parent_child` (plusieurs-à-plusieurs), mapping resource `(parent, jeton, enfant)`, resync. Migration des call-sites `parentId` → jonction.
-  2. **Onboarding** : géoloc établissement → connexion → découverte des enfants → activation (création profils + mappings + fusion-confirmation). **Pronote non bloquant** (coexiste avec `createChild` manuel).
+- **Fait — incrément 1, partie 1 : évolution du modèle** (livré sur `feat/pronote-server-provider`, poussée) : multi-jeton `(user, établissement)`, jonction `parent_child` (plusieurs-à-plusieurs), mapping resource `(parent, jeton, enfant)` par `credential_id`, resync (clé naturelle). Migration des call-sites `parentId` → jonction. Migration prod `0023` (DDL pur, testée fresh-base). 59/59 unit + intégration verte, 2 revues opus.
+- **À coder — incrément 1, partie 2 (B2)** :
+  - **B2-backend** (indépendant du mobile, testable e2e sur le démo) : géoloc établissement, **`POST /api/pronote/connect/qr`** (capture server-side : payload QR+PIN → `loginQrCode` → jeton chiffré ; **dérisque le token rotatif**), **découverte** des enfants (`handle.user.resources`), **activation** (profils + mappings + fusion-confirmation), **resync** (US-12). **Pronote non bloquant** (coexiste avec `createChild` manuel).
+  - **B2-front mobile** (refactor ciblé — audit 2026-06-18 : app saine **8,5/10**, **~87 % gardé**, ~3-4 j) : couche données Pronote device-first → consommation API Tom (réécrire `pronote-session.ts` + `usePronote.ts`, ~400 LOC, **0 écran consommateur cassé**, interface du hook étanche) ; **retrait de pawnote du bundle** (GPL réglé) ; QR transmis au serveur ; **pivot parent-only** (jeter espace élève autonome + `child-access-store` ~1 386 LOC, unifier les vues Pronote dupliquées ~1 100 LOC).
 - **Reporté** (sans casser l'archi) :
   - **Compte élève autonome** (login élève : claim token / lien-QR de jumelage, ou magic-link via email saisi par le parent). S'ajoute par-dessus le profil existant.
   - **Espace enseignant** : pawnote n'expose **pas** de roster de classe (vérifié, §10) → source distincte requise (Docaposte officiel / EcoleDirecte). Le workflow prof n'est **pas** réalisable via pawnote.
-  - **ENT**, **EcoleDirecte**, fronts **web** (agrégateur) et **mobile** (WebView, + retrait pawnote du bundle = GPL réglé).
+  - **WebView ENT** (fast-follow UX, parents sans l'app Pronote), **EcoleDirecte**, front **web** (agrégateur, même API).
 
 ## 9. Hors scope
 
