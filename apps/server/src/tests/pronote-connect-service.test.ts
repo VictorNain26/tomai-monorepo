@@ -75,18 +75,22 @@ const mockCreateChild = mock(
   }),
 );
 
+// isParentOf returns true by default (the linked child belongs to the parent)
+const mockIsParentOf = mock(async (_parentId: string, _childId: string): Promise<boolean> => true);
+
 mock.module('../services/parent.service', () => ({
   parentService: {
     getParentChildren: mockGetParentChildren,
     createChild: mockCreateChild,
+    isParentOf: mockIsParentOf,
   },
 }));
 
-const mockParentChildLink = mock(async (_parentUserId: string, _childUserId: string): Promise<void> => {});
+const mockDeleteById = mock(async (_id: string): Promise<boolean> => true);
 
-mock.module('../db/repositories/parent-child.repository', () => ({
-  parentChildRepository: {
-    link: mockParentChildLink,
+mock.module('../db/repositories/users.repository', () => ({
+  usersRepository: {
+    deleteById: mockDeleteById,
   },
 }));
 
@@ -100,6 +104,14 @@ mock.module('../db/repositories/pronote-child-resources.repository', () => ({
   pronoteChildResourcesRepository: {
     upsertMapping: mockUpsertMapping,
     getResourceIdsByCredential: mockGetResourceIdsByCredential,
+  },
+}));
+
+mock.module('../lib/observability', () => ({
+  logger: {
+    info: mock(() => {}),
+    warn: mock(() => {}),
+    error: mock(() => {}),
   },
 }));
 
@@ -158,7 +170,8 @@ describe('PronoteConnectService.connectQr', () => {
     mockListResources.mockClear();
     mockGetParentChildren.mockClear();
     mockCreateChild.mockClear();
-    mockParentChildLink.mockClear();
+    mockIsParentOf.mockClear();
+    mockDeleteById.mockClear();
     mockUpsertMapping.mockClear();
   });
 
@@ -238,7 +251,6 @@ describe('PronoteConnectService.discover', () => {
     mockListResources.mockClear();
     mockGetParentChildren.mockClear();
     mockCreateChild.mockClear();
-    mockParentChildLink.mockClear();
     mockUpsertMapping.mockClear();
     mockGetResourceIdsByCredential.mockClear();
   });
@@ -309,7 +321,8 @@ describe('PronoteConnectService.activate', () => {
   beforeEach(() => {
     mockGetCredentialById.mockClear();
     mockCreateChild.mockClear();
-    mockParentChildLink.mockClear();
+    mockIsParentOf.mockClear();
+    mockDeleteById.mockClear();
     mockUpsertMapping.mockClear();
   });
 
@@ -336,7 +349,8 @@ describe('PronoteConnectService.activate', () => {
     expect(childData.schoolLevel).toBe('cinquieme');
     expect(childData.dateOfBirth).toBeUndefined();
 
-    expect(mockParentChildLink).not.toHaveBeenCalled();
+    // isParentOf not called when creating (not linking) a child
+    expect(mockIsParentOf).not.toHaveBeenCalled();
 
     expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -348,9 +362,11 @@ describe('PronoteConnectService.activate', () => {
 
     expect(result.activated).toHaveLength(1);
     expect(result.activated[0]).toEqual({ resourceId: 1, childId: 'child-new-1' });
+    expect(result.failed).toHaveLength(0);
   });
 
   it('(b) links existing child and maps when linkToChildId present (no createChild)', async () => {
+    // isParentOf returns true by default (child belongs to parent)
     const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
       {
         resourceId: 0,
@@ -365,9 +381,10 @@ describe('PronoteConnectService.activate', () => {
 
     expect(mockCreateChild).not.toHaveBeenCalled();
 
-    expect(mockParentChildLink).toHaveBeenCalledTimes(1);
+    // C2: isParentOf must be checked before mapping
+    expect(mockIsParentOf).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [pId, cId] = mockParentChildLink.mock.calls[0] as any;
+    const [pId, cId] = mockIsParentOf.mock.calls[0] as any;
     expect(pId).toBe('user-001');
     expect(cId).toBe('child-existing-1');
 
@@ -381,6 +398,7 @@ describe('PronoteConnectService.activate', () => {
 
     expect(result.activated).toHaveLength(1);
     expect(result.activated[0]).toEqual({ resourceId: 0, childId: 'child-existing-1' });
+    expect(result.failed).toHaveLength(0);
   });
 
   it('(c) handles mixed selections (link + create)', async () => {
@@ -406,13 +424,14 @@ describe('PronoteConnectService.activate', () => {
       },
     ]);
 
-    expect(mockParentChildLink).toHaveBeenCalledTimes(1);
+    expect(mockIsParentOf).toHaveBeenCalledTimes(1);
     expect(mockCreateChild).toHaveBeenCalledTimes(1);
     expect(mockUpsertMapping).toHaveBeenCalledTimes(2);
 
     expect(result.activated).toHaveLength(2);
     expect(result.activated).toContainEqual({ resourceId: 0, childId: 'child-existing-1' });
     expect(result.activated).toContainEqual({ resourceId: 1, childId: 'child-new-2' });
+    expect(result.failed).toHaveLength(0);
   });
 
   it('(d) throws PronoteCredentialForbiddenError and writes nothing when credential belongs to another user', async () => {
@@ -441,11 +460,11 @@ describe('PronoteConnectService.activate', () => {
     }
 
     expect(mockCreateChild).not.toHaveBeenCalled();
-    expect(mockParentChildLink).not.toHaveBeenCalled();
+    expect(mockIsParentOf).not.toHaveBeenCalled();
     expect(mockUpsertMapping).not.toHaveBeenCalled();
   });
 
-  it('(e) includes successful items even when one item fails', async () => {
+  it('(e) includes successful items even when one item fails — failed array non-empty', async () => {
     mockCreateChild
       .mockRejectedValueOnce(new Error('Ce nom d\'utilisateur existe déjà'))
       .mockResolvedValueOnce({ id: 'child-new-3', firstName: 'Marie', lastName: 'Martin' });
@@ -471,7 +490,82 @@ describe('PronoteConnectService.activate', () => {
 
     expect(result.activated).toHaveLength(1);
     expect(result.activated[0]).toEqual({ resourceId: 1, childId: 'child-new-3' });
+    // I1: failed array must report the failed item
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0]!.resourceId).toBe(0);
+    expect(typeof result.failed[0]!.reason).toBe('string');
     expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
+  });
+
+  // C2 — IDOR guard
+  it('(f) rejects linkToChildId that does not belong to the parent — no upsertMapping called', async () => {
+    mockIsParentOf.mockResolvedValueOnce(false);
+
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Emma',
+        lastName: 'Dupont',
+        schoolLevel: 'troisieme',
+        username: 'ignored',
+        password: 'ignored123',
+        linkToChildId: 'child-from-other-family',
+      },
+    ]);
+
+    expect(mockUpsertMapping).not.toHaveBeenCalled();
+    expect(result.activated).toHaveLength(0);
+    // Item ends in failed with reason
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0]!.resourceId).toBe(0);
+    // PronoteChildNotOwnedError should be exposed as reason
+    expect(result.failed[0]!.reason).toContain('child-from-other-family');
+  });
+
+  // I2 — orphan compensation
+  it('(g) deletes the created child when upsertMapping fails after createChild', async () => {
+    mockCreateChild.mockResolvedValueOnce({ id: 'child-orphan', firstName: 'Orphan', lastName: 'Child' });
+    mockUpsertMapping.mockRejectedValueOnce(new Error('DB constraint'));
+
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Orphan',
+        lastName: 'Child',
+        schoolLevel: 'seconde',
+        username: 'orphan',
+        password: 'password123',
+      },
+    ]);
+
+    expect(result.activated).toHaveLength(0);
+    expect(result.failed).toHaveLength(1);
+    // I2: deleteById must be called with the created child's id to compensate
+    expect(mockDeleteById).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const deletedId = (mockDeleteById.mock.calls[0] as any)[0];
+    expect(deletedId).toBe('child-orphan');
+  });
+
+  // I2 — linkToChildId path: no compensation when mapping fails (child was not created)
+  it('(h) does NOT call deleteById when mapping fails for an existing linked child', async () => {
+    mockUpsertMapping.mockRejectedValueOnce(new Error('DB constraint'));
+
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Emma',
+        lastName: 'Dupont',
+        schoolLevel: 'troisieme',
+        username: 'ignored',
+        password: 'ignored123',
+        linkToChildId: 'child-existing-1',
+      },
+    ]);
+
+    expect(result.activated).toHaveLength(0);
+    expect(result.failed).toHaveLength(1);
+    expect(mockDeleteById).not.toHaveBeenCalled();
   });
 });
 

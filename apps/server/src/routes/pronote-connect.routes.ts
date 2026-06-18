@@ -21,7 +21,7 @@ import {
   PronoteNotConnectedError,
   PronoteMetadataError,
 } from '../services/pronote/pronote-data.service.js';
-import { PronoteReauthRequired } from '../services/pronote/pawnote-server.adapter.js';
+import { PronoteReauthRequired, PronoteUrlNotAllowedError } from '../services/pronote/pawnote-server.adapter.js';
 import { logger } from '../lib/observability.js';
 
 const pronoteRateLimit = createRateLimitMiddleware(RateLimitPresets.pronote);
@@ -56,6 +56,9 @@ export const pronoteConnectRoutes = new Elysia({ name: 'pronote-connect-routes' 
       });
       return { success: true, data: result };
     } catch (error) {
+      if (error instanceof PronoteUrlNotAllowedError) {
+        return status(400, { error: 'Invalid Pronote URL', code: 'pronote_url_not_allowed' });
+      }
       if (error instanceof PronoteReauthRequired) {
         return status(409, { error: 'QR code rejected by Pronote server', code: 'pronote_reauth_required' });
       }
@@ -145,6 +148,7 @@ export const pronoteConnectRoutes = new Elysia({ name: 'pronote-connect-routes' 
         operation: 'pronote-connect:activate',
         userId: user.id,
         activatedCount: result.activated.length,
+        failedCount: result.failed.length,
       });
       return { success: true, data: result };
     } catch (error) {

@@ -9,11 +9,12 @@ import { pawnoteServerAdapter } from './pawnote-server.adapter.js';
 import { pronoteSyncService } from '../pronote-sync.service.js';
 import { pronoteDataService } from './pronote-data.service.js';
 import { parentService } from '../parent.service.js';
-import { parentChildRepository } from '../../db/repositories/parent-child.repository.js';
 import { pronoteChildResourcesRepository } from '../../db/repositories/pronote-child-resources.repository.js';
+import { usersRepository } from '../../db/repositories/users.repository.js';
 import type { DiscoveredResource } from './provider.types.js';
 import type { SchoolLevel } from '../../db/schema.js';
 import { splitName, inferSchoolLevel, matchExistingChild } from '../../lib/pronote-onboarding.js';
+import { logger } from '../../lib/observability.js';
 
 export type { DiscoveredResource };
 
@@ -47,6 +48,13 @@ export class PronoteCredentialForbiddenError extends Error {
   constructor() {
     super('This Pronote credential does not belong to the requesting user');
     this.name = 'PronoteCredentialForbiddenError';
+  }
+}
+
+export class PronoteChildNotOwnedError extends Error {
+  constructor(childId: string) {
+    super(`Child ${childId} does not belong to the requesting parent`);
+    this.name = 'PronoteChildNotOwnedError';
   }
 }
 
@@ -173,19 +181,26 @@ class PronoteConnectService {
     parentUserId: string,
     credentialId: string,
     selections: ActivationSelection[],
-  ): Promise<{ activated: { resourceId: number; childId: string }[] }> {
+  ): Promise<{
+    activated: { resourceId: number; childId: string }[];
+    failed: { resourceId: number; reason: string }[];
+  }> {
     const cred = await pronoteSyncService.getCredentialById(credentialId);
     if (!cred) throw new PronoteCredentialNotFoundError(credentialId);
     if (cred.userId !== parentUserId) throw new PronoteCredentialForbiddenError();
 
     const activated: { resourceId: number; childId: string }[] = [];
+    const failed: { resourceId: number; reason: string }[] = [];
 
     for (const selection of selections) {
+      let createdChildId: string | null = null;
       try {
         let childId: string;
 
         if (selection.linkToChildId) {
-          await parentChildRepository.link(parentUserId, selection.linkToChildId);
+          // C2: verify the child already belongs to this parent before mapping
+          const owned = await parentService.isParentOf(parentUserId, selection.linkToChildId);
+          if (!owned) throw new PronoteChildNotOwnedError(selection.linkToChildId);
           childId = selection.linkToChildId;
         } else {
           const child = await parentService.createChild(parentUserId, {
@@ -195,6 +210,7 @@ class PronoteConnectService {
             password: selection.password,
             schoolLevel: selection.schoolLevel,
           });
+          createdChildId = child.id;
           childId = child.id;
         }
 
@@ -206,12 +222,31 @@ class PronoteConnectService {
         );
 
         activated.push({ resourceId: selection.resourceId, childId });
-      } catch {
-        // Item failure is isolated — exclude from activated, continue with rest
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        // I1: log without leaking credentials
+        logger.warn('Pronote activate item failed', {
+          operation: 'pronote-connect:activate:item-failed',
+          credentialId,
+          resourceId: selection.resourceId,
+          reason,
+        });
+        failed.push({ resourceId: selection.resourceId, reason });
+
+        // I2: compensate orphaned child if mapping failed after creation
+        if (createdChildId !== null) {
+          await usersRepository.deleteById(createdChildId).catch((deleteErr) => {
+            logger.warn('Pronote activate: failed to delete orphan child', {
+              operation: 'pronote-connect:activate:orphan-cleanup',
+              childId: createdChildId,
+              reason: deleteErr instanceof Error ? deleteErr.message : String(deleteErr),
+            });
+          });
+        }
       }
     }
 
-    return { activated };
+    return { activated, failed };
   }
 }
 

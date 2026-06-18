@@ -19,6 +19,8 @@ import type {
   NormalizedHomework,
   NormalizedLesson,
 } from './provider.types';
+import { assertAllowedPronoteUrl } from '../../lib/pronote-url-allowlist.js';
+export { PronoteUrlNotAllowedError } from '../../lib/pronote-url-allowlist.js';
 
 // ============================================
 // Typed error — caller must re-auth from scratch
@@ -60,6 +62,7 @@ export function createServerFetcher() {
     content?: string;
     redirect?: 'follow' | 'manual';
   }) => {
+    assertAllowedPronoteUrl(request.url);
     const res = await fetch(request.url, {
       method: request.method ?? 'GET',
       headers: {
