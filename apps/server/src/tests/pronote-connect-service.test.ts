@@ -4,6 +4,7 @@
  * Covers: connectQr — deviceUuid generated server-side, upsertCredentials called,
  * primeSession called, credentialId + resources returned.
  * Covers: discover — ownership check, suggestion, dedup.
+ * Covers: activate — create/link + mappings, ownership check, partial failure.
  */
 
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
@@ -66,9 +67,36 @@ const mockGetParentChildren = mock(async (_parentId: string) => [
   { id: 'child-existing-1', firstName: 'Emma', lastName: 'Dupont', username: 'emmadupont', schoolLevel: 'troisieme', isActive: true, parentId: 'user-001', role: 'student' as const, createdAt: new Date().toISOString() },
 ]);
 
+const mockCreateChild = mock(
+  async (_parentId: string, _childData: unknown): Promise<{ id: string; firstName: string; lastName: string }> => ({
+    id: 'child-new-1',
+    firstName: 'Lucas',
+    lastName: 'Dupont',
+  }),
+);
+
 mock.module('../services/parent.service', () => ({
   parentService: {
     getParentChildren: mockGetParentChildren,
+    createChild: mockCreateChild,
+  },
+}));
+
+const mockParentChildLink = mock(async (_parentUserId: string, _childUserId: string): Promise<void> => {});
+
+mock.module('../db/repositories/parent-child.repository', () => ({
+  parentChildRepository: {
+    link: mockParentChildLink,
+  },
+}));
+
+const mockUpsertMapping = mock(
+  async (_parentUserId: string, _childUserId: string, _credentialId: string, _resourceId: number): Promise<void> => {},
+);
+
+mock.module('../db/repositories/pronote-child-resources.repository', () => ({
+  pronoteChildResourcesRepository: {
+    upsertMapping: mockUpsertMapping,
   },
 }));
 
@@ -126,6 +154,9 @@ describe('PronoteConnectService.connectQr', () => {
     mockGetCredentialById.mockClear();
     mockListResources.mockClear();
     mockGetParentChildren.mockClear();
+    mockCreateChild.mockClear();
+    mockParentChildLink.mockClear();
+    mockUpsertMapping.mockClear();
   });
 
   it('calls the adapter with the QR payload and PIN', async () => {
@@ -203,6 +234,9 @@ describe('PronoteConnectService.discover', () => {
     mockGetCredentialById.mockClear();
     mockListResources.mockClear();
     mockGetParentChildren.mockClear();
+    mockCreateChild.mockClear();
+    mockParentChildLink.mockClear();
+    mockUpsertMapping.mockClear();
   });
 
   it('returns enriched children with suggestions and dedup', async () => {
@@ -260,5 +294,179 @@ describe('PronoteConnectService.discover', () => {
 
     expect(result[0]!.suggested.schoolLevel).toBeNull();
     expect(result[0]!.existingChildId).toBeNull();
+  });
+});
+
+// ============================================
+// PronoteConnectService.activate
+// ============================================
+
+describe('PronoteConnectService.activate', () => {
+  beforeEach(() => {
+    mockGetCredentialById.mockClear();
+    mockCreateChild.mockClear();
+    mockParentChildLink.mockClear();
+    mockUpsertMapping.mockClear();
+  });
+
+  it('(a) creates child and maps when no linkToChildId', async () => {
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 1,
+        firstName: 'Lucas',
+        lastName: 'Dupont',
+        schoolLevel: 'cinquieme',
+        username: 'lucasdupont',
+        password: 'password123',
+      },
+    ]);
+
+    expect(mockCreateChild).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [parentId, childData] = mockCreateChild.mock.calls[0] as any;
+    expect(parentId).toBe('user-001');
+    expect(childData.firstName).toBe('Lucas');
+    expect(childData.lastName).toBe('Dupont');
+    expect(childData.username).toBe('lucasdupont');
+    expect(childData.password).toBe('password123');
+    expect(childData.schoolLevel).toBe('cinquieme');
+    expect(childData.dateOfBirth).toBeUndefined();
+
+    expect(mockParentChildLink).not.toHaveBeenCalled();
+
+    expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [pId, cId, credId, resId] = mockUpsertMapping.mock.calls[0] as any;
+    expect(pId).toBe('user-001');
+    expect(cId).toBe('child-new-1');
+    expect(credId).toBe('cred-abc-123');
+    expect(resId).toBe(1);
+
+    expect(result.activated).toHaveLength(1);
+    expect(result.activated[0]).toEqual({ resourceId: 1, childId: 'child-new-1' });
+  });
+
+  it('(b) links existing child and maps when linkToChildId present (no createChild)', async () => {
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Emma',
+        lastName: 'Dupont',
+        schoolLevel: 'troisieme',
+        username: 'ignored-username',
+        password: 'ignored-password',
+        linkToChildId: 'child-existing-1',
+      },
+    ]);
+
+    expect(mockCreateChild).not.toHaveBeenCalled();
+
+    expect(mockParentChildLink).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [pId, cId] = mockParentChildLink.mock.calls[0] as any;
+    expect(pId).toBe('user-001');
+    expect(cId).toBe('child-existing-1');
+
+    expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [mpId, mcId, credId, resId] = mockUpsertMapping.mock.calls[0] as any;
+    expect(mpId).toBe('user-001');
+    expect(mcId).toBe('child-existing-1');
+    expect(credId).toBe('cred-abc-123');
+    expect(resId).toBe(0);
+
+    expect(result.activated).toHaveLength(1);
+    expect(result.activated[0]).toEqual({ resourceId: 0, childId: 'child-existing-1' });
+  });
+
+  it('(c) handles mixed selections (link + create)', async () => {
+    mockCreateChild.mockResolvedValueOnce({ id: 'child-new-2', firstName: 'Lucas', lastName: 'Dupont' });
+
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Emma',
+        lastName: 'Dupont',
+        schoolLevel: 'troisieme',
+        username: 'emmadupont',
+        password: 'password123',
+        linkToChildId: 'child-existing-1',
+      },
+      {
+        resourceId: 1,
+        firstName: 'Lucas',
+        lastName: 'Dupont',
+        schoolLevel: 'cinquieme',
+        username: 'lucasdupont',
+        password: 'password456',
+      },
+    ]);
+
+    expect(mockParentChildLink).toHaveBeenCalledTimes(1);
+    expect(mockCreateChild).toHaveBeenCalledTimes(1);
+    expect(mockUpsertMapping).toHaveBeenCalledTimes(2);
+
+    expect(result.activated).toHaveLength(2);
+    expect(result.activated).toContainEqual({ resourceId: 0, childId: 'child-existing-1' });
+    expect(result.activated).toContainEqual({ resourceId: 1, childId: 'child-new-2' });
+  });
+
+  it('(d) throws PronoteCredentialForbiddenError and writes nothing when credential belongs to another user', async () => {
+    mockGetCredentialById.mockResolvedValueOnce({
+      id: 'cred-abc-123',
+      userId: 'user-other',
+      token: 'tok',
+      metadata: '{}',
+      tokenExpiresAt: new Date().toISOString(),
+    });
+
+    try {
+      await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+        {
+          resourceId: 1,
+          firstName: 'Lucas',
+          lastName: 'Dupont',
+          schoolLevel: 'cinquieme',
+          username: 'lucasdupont',
+          password: 'password123',
+        },
+      ]);
+      expect(true).toBe(false);
+    } catch (err) {
+      expect(err).toBeInstanceOf(PronoteCredentialForbiddenError);
+    }
+
+    expect(mockCreateChild).not.toHaveBeenCalled();
+    expect(mockParentChildLink).not.toHaveBeenCalled();
+    expect(mockUpsertMapping).not.toHaveBeenCalled();
+  });
+
+  it('(e) includes successful items even when one item fails', async () => {
+    mockCreateChild
+      .mockRejectedValueOnce(new Error('Ce nom d\'utilisateur existe déjà'))
+      .mockResolvedValueOnce({ id: 'child-new-3', firstName: 'Marie', lastName: 'Martin' });
+
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Lucas',
+        lastName: 'Dupont',
+        schoolLevel: 'cinquieme',
+        username: 'taken-username',
+        password: 'password123',
+      },
+      {
+        resourceId: 1,
+        firstName: 'Marie',
+        lastName: 'Martin',
+        schoolLevel: 'seconde',
+        username: 'mariemartin',
+        password: 'password456',
+      },
+    ]);
+
+    expect(result.activated).toHaveLength(1);
+    expect(result.activated[0]).toEqual({ resourceId: 1, childId: 'child-new-3' });
+    expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
   });
 });

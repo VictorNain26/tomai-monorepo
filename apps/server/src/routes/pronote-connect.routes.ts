@@ -15,6 +15,7 @@ import {
   pronoteConnectService,
   PronoteCredentialNotFoundError,
   PronoteCredentialForbiddenError,
+  type ActivationSelection,
 } from '../services/pronote/pronote-connect.service.js';
 import {
   PronoteNotConnectedError,
@@ -100,5 +101,42 @@ export const pronoteConnectRoutes = new Elysia({ name: 'pronote-connect-routes' 
   }, {
     params: t.Object({
       id: t.String(),
+    }),
+  })
+
+  // POST /api/pronote/credentials/:id/activate
+  .post('/api/pronote/credentials/:id/activate', async ({ params, body, user, status }) => {
+    try {
+      const selections = body.selections as ActivationSelection[];
+      const result = await pronoteConnectService.activate(user.id, params.id, selections);
+      logger.info('Pronote activate success', {
+        operation: 'pronote-connect:activate',
+        userId: user.id,
+        activatedCount: result.activated.length,
+      });
+      return { success: true, data: result };
+    } catch (error) {
+      if (error instanceof PronoteCredentialNotFoundError) {
+        return status(404, { error: 'Pronote credential not found', code: 'pronote_credential_not_found' });
+      }
+      if (error instanceof PronoteCredentialForbiddenError) {
+        return status(403, { error: 'Access denied', code: 'pronote_credential_forbidden' });
+      }
+      throw error;
+    }
+  }, {
+    params: t.Object({
+      id: t.String(),
+    }),
+    body: t.Object({
+      selections: t.Array(t.Object({
+        resourceId: t.Number(),
+        firstName: t.String(),
+        lastName: t.String(),
+        schoolLevel: t.String(),
+        username: t.String({ minLength: 3 }),
+        password: t.String({ minLength: 8 }),
+        linkToChildId: t.Optional(t.String()),
+      })),
     }),
   });

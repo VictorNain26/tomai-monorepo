@@ -9,11 +9,23 @@ import { pawnoteServerAdapter } from './pawnote-server.adapter.js';
 import { pronoteSyncService } from '../pronote-sync.service.js';
 import { pronoteDataService } from './pronote-data.service.js';
 import { parentService } from '../parent.service.js';
+import { parentChildRepository } from '../../db/repositories/parent-child.repository.js';
+import { pronoteChildResourcesRepository } from '../../db/repositories/pronote-child-resources.repository.js';
 import type { DiscoveredResource } from './provider.types.js';
 import type { SchoolLevel } from '../../db/schema.js';
 import { splitName, inferSchoolLevel, matchExistingChild } from '../../lib/pronote-onboarding.js';
 
 export type { DiscoveredResource };
+
+export interface ActivationSelection {
+  resourceId: number;
+  firstName: string;
+  lastName: string;
+  schoolLevel: SchoolLevel;
+  username: string;
+  password: string;
+  linkToChildId?: string;
+}
 
 export interface DiscoveredChild extends DiscoveredResource {
   suggested: {
@@ -101,6 +113,60 @@ class PronoteConnectService {
         existingChildId: matchExistingChild(resource.name, children),
       };
     });
+  }
+
+  /**
+   * Activate Pronote resources for a parent: create or link children and write mappings.
+   *
+   * Each selection is processed independently — a failing item is excluded from the
+   * result without aborting the rest of the batch.
+   *
+   * Throws PronoteCredentialNotFoundError or PronoteCredentialForbiddenError before
+   * any write if the ownership check fails.
+   */
+  async activate(
+    parentUserId: string,
+    credentialId: string,
+    selections: ActivationSelection[],
+  ): Promise<{ activated: { resourceId: number; childId: string }[] }> {
+    const cred = await pronoteSyncService.getCredentialById(credentialId);
+    if (!cred) throw new PronoteCredentialNotFoundError(credentialId);
+    if (cred.userId !== parentUserId) throw new PronoteCredentialForbiddenError();
+
+    const activated: { resourceId: number; childId: string }[] = [];
+
+    for (const selection of selections) {
+      try {
+        let childId: string;
+
+        if (selection.linkToChildId) {
+          await parentChildRepository.link(parentUserId, selection.linkToChildId);
+          childId = selection.linkToChildId;
+        } else {
+          const child = await parentService.createChild(parentUserId, {
+            firstName: selection.firstName,
+            lastName: selection.lastName,
+            username: selection.username,
+            password: selection.password,
+            schoolLevel: selection.schoolLevel,
+          });
+          childId = child.id;
+        }
+
+        await pronoteChildResourcesRepository.upsertMapping(
+          parentUserId,
+          childId,
+          credentialId,
+          selection.resourceId,
+        );
+
+        activated.push({ resourceId: selection.resourceId, childId });
+      } catch {
+        // Item failure is isolated — exclude from activated, continue with rest
+      }
+    }
+
+    return { activated };
   }
 }
 
