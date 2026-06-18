@@ -93,7 +93,7 @@ export class ParentService {
     username: string;
     password: string;
     schoolLevel: string;
-    dateOfBirth: string;
+    dateOfBirth?: string;
   }): Promise<ChildInfo> {
     const existingUser = await usersRepository.findByUsername(childData.username);
     if (existingUser) {

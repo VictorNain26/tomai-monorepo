@@ -254,6 +254,20 @@ describe('Parent Service', () => {
       expect(child.firstName).toBe('Marie');
     });
 
+    it('should create child without dateOfBirth (Pronote path)', async () => {
+      const child = await parentService.createChild('parent-001', {
+        firstName: 'Lucas',
+        lastName: 'Martin',
+        username: 'lucas',
+        password: 'password123',
+        schoolLevel: 'quatrieme',
+      });
+      expect(child.id).toBe('new-child-001');
+      expect(child.firstName).toBe('Lucas');
+      expect(child.role).toBe('student');
+      expect(child.dateOfBirth).toBeUndefined();
+    });
+
     it('should throw on duplicate username', async () => {
       userByUsername = makeUser({ username: 'taken' });
       expect(
