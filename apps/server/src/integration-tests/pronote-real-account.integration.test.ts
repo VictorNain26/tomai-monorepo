@@ -10,10 +10,10 @@
  * (CI, fresh clones) — so it is safe to commit.
  *
  * SECURITY: never logs passwords, full tokens, usernames, or raw response data.
- * Only logs counts, booleans, token lengths, and resource counts.
+ * Only logs counts, booleans, token lengths, the account `kind`, and URL host.
  */
 
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { loginWithCredentials } from './helpers/pronote-credentials-login.js';
 import {
   pawnoteServerAdapter,
@@ -46,6 +46,17 @@ if (!envsPresent) {
 }
 
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
+// pawnote/Papillon use a real UUID v4 as the device identifier, not a literal
+// string. Keep one stable UUID for the whole run (login + token rotation).
+const DEVICE_UUID = crypto.randomUUID();
+
+function urlHost(raw: string): string {
+  try {
+    return new URL(raw).host;
+  } catch {
+    return '(invalid url)';
+  }
+}
 
 // ============================================================
 // Suite — skips entirely when env vars are absent
@@ -54,24 +65,45 @@ const TODAY_ISO = new Date().toISOString().slice(0, 10);
 describe.skipIf(!envsPresent)('Pronote real-account de-risk (zero mocks, real network)', () => {
   let session: AdapterSession;
 
-  // Step 1 — credentials login
-  it('step 1 — credentials login returns a non-empty token', async () => {
-    session = await loginWithCredentials({
-      url: PRONOTE_TEST_URL,
-      kind: Number(PRONOTE_TEST_KIND),
-      username: PRONOTE_TEST_USERNAME,
-      password: PRONOTE_TEST_PASSWORD,
-      deviceUuid: 'tom-e2e-real',
-    });
-
-    expect(typeof session.token).toBe('string');
-    expect(session.token.length).toBeGreaterThan(0);
-
-    const resourceCount = session.handle.user.resources?.length ?? 0;
-    console.log(`[pronote-real-account] login OK — token length: ${session.token.length}, resources: ${resourceCount}`);
+  // Login once for the whole suite. A failure here aborts the suite with a
+  // clear diagnostic instead of cascading TypeErrors through the read steps.
+  beforeAll(async () => {
+    const kind = Number(PRONOTE_TEST_KIND);
+    // Diagnostic (no secrets): the account kind is not a secret, and the host
+    // identifies the school instance — both are needed to debug auth failures.
+    console.log(
+      `[pronote-real-account] login attempt — kind=${kind} (expected 6=student, 7=parent, 8=teacher), host=${urlHost(PRONOTE_TEST_URL)}, username length=${PRONOTE_TEST_USERNAME.length}`,
+    );
+    try {
+      session = await loginWithCredentials({
+        url: PRONOTE_TEST_URL,
+        kind,
+        username: PRONOTE_TEST_USERNAME,
+        password: PRONOTE_TEST_PASSWORD,
+        deviceUuid: DEVICE_UUID,
+      });
+    } catch (error) {
+      const name = error instanceof Error ? error.name : String(error);
+      console.error(
+        `[pronote-real-account] LOGIN FAILED: ${name}.\n` +
+          'If BadCredentialsError, check in this order:\n' +
+          '  1. PRONOTE_TEST_KIND matches the account type (6=student, 7=parent, 8=teacher)\n' +
+          '  2. PRONOTE_TEST_URL is the instance URL, e.g. https://XXXXXXXX.index-education.net/pronote\n' +
+          '  3. If 1 & 2 are correct, the school is likely ENT/EduConnect-only — direct credentials\n' +
+          '     login is not supported by pawnote (the WebView channel is required for ENT schools).',
+      );
+      throw error;
+    }
+    console.log(
+      `[pronote-real-account] login OK — token length: ${session.token.length}, resources: ${session.handle.user.resources?.length ?? 0}`,
+    );
   }, 60_000);
 
-  // Step 2 — real reads
+  it('step 1 — credentials login produced a non-empty token', () => {
+    expect(typeof session.token).toBe('string');
+    expect(session.token.length).toBeGreaterThan(0);
+  });
+
   it('step 2a — getGrades returns an array', async () => {
     const grades = await pawnoteServerAdapter.getGrades(session, 0);
     expect(Array.isArray(grades)).toBe(true);
@@ -90,22 +122,21 @@ describe.skipIf(!envsPresent)('Pronote real-account de-risk (zero mocks, real ne
     console.log(`[pronote-real-account] getTimetable(${TODAY_ISO}): ${lessons.length} lesson(s)`);
   }, 30_000);
 
-  // Step 3 — loginToken rotation cycle (THE key de-risk)
+  // THE key de-risk: connect() calls pawnote loginToken internally with the
+  // rotated token — the production read path the demo account cannot exercise.
   it('step 3 — loginToken rotation cycle: connect() with rotated token then one read', async () => {
-    // connect() calls pawnote loginToken internally
     const rotatedSession = await pawnoteServerAdapter.connect({
       url: PRONOTE_TEST_URL,
       kind: Number(PRONOTE_TEST_KIND),
       username: session.username,
       token: session.token,
-      deviceUuid: 'tom-e2e-real',
+      deviceUuid: DEVICE_UUID,
     });
 
     expect(typeof rotatedSession.token).toBe('string');
     expect(rotatedSession.token.length).toBeGreaterThan(0);
     console.log(`[pronote-real-account] loginToken OK — rotated token length: ${rotatedSession.token.length}`);
 
-    // One read on the new session confirms it's live
     const grades = await pawnoteServerAdapter.getGrades(rotatedSession, 0);
     expect(Array.isArray(grades)).toBe(true);
     console.log(`[pronote-real-account] post-rotation getGrades: ${grades.length} item(s) — cycle PROVEN`);
