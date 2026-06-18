@@ -1,4 +1,4 @@
-import { pgTable, varchar, text, timestamp, boolean, integer, jsonb, pgEnum, index, foreignKey, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, text, timestamp, boolean, integer, jsonb, pgEnum, index, foreignKey, uuid, unique } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // =============================================
@@ -189,6 +189,32 @@ export const parentRestoreToken = pgTable('parent_restore_token', {
   }).onDelete('cascade'),
 }));
 
+/**
+ * Table parent_child — jonction N-N parent↔enfant
+ * Remplace la colonne user.parentId (1-1) par un lien multiple.
+ * user.parentId est conservé le temps de la migration progressive.
+ */
+export const parentChild = pgTable('parent_child', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  parentUserId: varchar('parent_user_id', { length: 255 }).notNull(),
+  childUserId: varchar('child_user_id', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  pairUnique: unique('parent_child_pair_unique').on(table.parentUserId, table.childUserId),
+  parentIdx: index('idx_parent_child_parent').on(table.parentUserId),
+  childIdx: index('idx_parent_child_child').on(table.childUserId),
+  parentFk: foreignKey({
+    columns: [table.parentUserId],
+    foreignColumns: [user.id],
+    name: 'parent_child_parent_user_id_fkey',
+  }).onDelete('cascade'),
+  childFk: foreignKey({
+    columns: [table.childUserId],
+    foreignColumns: [user.id],
+    name: 'parent_child_child_user_id_fkey',
+  }).onDelete('cascade'),
+}));
+
 // =============================================
 // RELATIONS
 // =============================================
@@ -222,5 +248,8 @@ export type SchoolLevel = typeof schoolLevelEnum.enumValues[number];
 
 // AI Model: string type (pas d'ENUM = flexibilité pour nouveaux modèles)
 export type AIModel = string;
+
+export type ParentChild = typeof parentChild.$inferSelect;
+export type NewParentChild = typeof parentChild.$inferInsert;
 
 // Note: UserWithRelations is defined in index.ts (cross-domain type)
