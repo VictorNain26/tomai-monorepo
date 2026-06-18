@@ -28,12 +28,14 @@ export interface CredentialOutput {
 interface UpsertResult {
   success: boolean;
   error?: string;
+  credentialId?: string;
 }
 
 class PronoteSyncService {
   /**
-   * Create or update Pronote credentials for a user.
-   * Encrypts token and metadata before storage.
+   * Create or update Pronote credentials for a user+establishment pair.
+   * Derives establishmentUrl from metadata.instanceUrl.
+   * Returns credentialId on success.
    */
   async upsertCredentials(
     userId: string,
@@ -44,9 +46,14 @@ class PronoteSyncService {
       return { success: false, error: 'Token cannot be empty' };
     }
 
-    // Validate metadata is valid JSON
+    // Validate metadata is valid JSON and extract instanceUrl
+    let establishmentUrl: string;
     try {
-      JSON.parse(input.metadata);
+      const parsed = JSON.parse(input.metadata) as Record<string, unknown>;
+      if (typeof parsed.instanceUrl !== 'string' || !parsed.instanceUrl) {
+        return { success: false, error: 'Metadata must contain a non-empty instanceUrl' };
+      }
+      establishmentUrl = parsed.instanceUrl;
     } catch {
       return { success: false, error: 'Metadata must be valid JSON' };
     }
@@ -61,35 +68,39 @@ class PronoteSyncService {
     const encryptedToken = await encrypt(input.token);
     const encryptedMetadata = await encrypt(input.metadata);
 
-    // Atomic upsert — eliminates race condition on concurrent requests
-    await db
+    // Atomic upsert keyed on (userId, establishmentUrl) — one credential per parent+school
+    const rows = await db
       .insert(pronoteCredentials)
       .values({
         userId,
+        establishmentUrl,
         encryptedToken,
         encryptedMetadata,
         tokenExpiresAt,
       })
       .onConflictDoUpdate({
-        target: pronoteCredentials.userId,
+        target: [pronoteCredentials.userId, pronoteCredentials.establishmentUrl],
         set: {
           encryptedToken,
           encryptedMetadata,
           tokenExpiresAt,
           updatedAt: new Date(),
         },
-      });
+      })
+      .returning({ id: pronoteCredentials.id });
+
+    const credentialId = rows[0]?.id;
 
     logger.info('Pronote credentials upserted', {
       operation: 'pronote-sync:upsert',
       userId,
     });
 
-    return { success: true };
+    return { success: true, credentialId };
   }
 
   /**
-   * Get decrypted Pronote credentials for a user.
+   * Get decrypted Pronote credentials for a user (first found).
    * Returns null if no credentials exist.
    */
   async getCredentials(userId: string): Promise<CredentialOutput | null> {
@@ -117,6 +128,55 @@ class PronoteSyncService {
       metadata,
       tokenExpiresAt: row.tokenExpiresAt.toISOString(),
     };
+  }
+
+  /**
+   * Get decrypted Pronote credentials by credential id.
+   * Returns null if not found.
+   */
+  async getCredentialById(id: string): Promise<(CredentialOutput & { id: string }) | null> {
+    const rows = await db
+      .select()
+      .from(pronoteCredentials)
+      .where(eq(pronoteCredentials.id, id));
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const row = rows[0]!;
+    const token = await decrypt(row.encryptedToken);
+    const metadata = await decrypt(row.encryptedMetadata);
+
+    logger.info('Pronote credentials retrieved by id', {
+      operation: 'pronote-sync:get-by-id',
+      id,
+    });
+
+    return {
+      id: row.id,
+      token,
+      metadata,
+      tokenExpiresAt: row.tokenExpiresAt.toISOString(),
+    };
+  }
+
+  /**
+   * Update only the token for a credential identified by id.
+   * Re-encrypts the new token before storage.
+   */
+  async updateTokenById(id: string, token: string): Promise<void> {
+    const encryptedToken = await encrypt(token);
+
+    await db
+      .update(pronoteCredentials)
+      .set({ encryptedToken, updatedAt: new Date() })
+      .where(eq(pronoteCredentials.id, id));
+
+    logger.info('Pronote token updated by id', {
+      operation: 'pronote-sync:update-token',
+      id,
+    });
   }
 
   /**

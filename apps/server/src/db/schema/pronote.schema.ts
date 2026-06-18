@@ -28,10 +28,10 @@ export const pronoteCredentials = pgTable(
   'pronote_credentials',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: varchar('user_id', { length: 255 }).notNull().unique(),
+    userId: varchar('user_id', { length: 255 }).notNull(),
     encryptedToken: text('encrypted_token').notNull(),
     encryptedMetadata: text('encrypted_metadata').notNull(),
-    establishmentUrl: varchar('establishment_url', { length: 255 }),
+    establishmentUrl: varchar('establishment_url', { length: 255 }).notNull(),
     tokenExpiresAt: timestamp('token_expires_at', {
       withTimezone: true,
     }).notNull(),
@@ -48,6 +48,10 @@ export const pronoteCredentials = pgTable(
       foreignColumns: [user.id],
       name: 'pronote_credentials_user_id_fkey',
     }).onDelete('cascade'),
+    userEstablishmentUnique: unique('pronote_credentials_user_establishment_unique').on(
+      table.userId,
+      table.establishmentUrl,
+    ),
   })
 );
 

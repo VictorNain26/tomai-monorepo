@@ -31,9 +31,14 @@ const mockWhere = mock(() => {
   return findResult ? [findResult] : [];
 });
 
-const mockOnConflictDoUpdate = mock(async () => {
+const mockReturning = mock(() => {
   upsertCalled = true;
+  return Promise.resolve([{ id: 'mock-cred-id' }]);
 });
+
+const mockOnConflictDoUpdate = mock(() => ({
+  returning: mockReturning,
+}));
 
 const mockValues = mock(() => ({
   onConflictDoUpdate: mockOnConflictDoUpdate,
@@ -71,6 +76,7 @@ mock.module('../db/schema', () => ({
 
 mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
+  and: (...args: unknown[]) => args,
 }));
 
 // Import after mocks
@@ -103,6 +109,8 @@ describe('PronoteSyncService', () => {
     mockLogger.info.mockClear();
     mockLogger.error.mockClear();
     mockLogger.warn.mockClear();
+    mockReturning.mockClear();
+    mockOnConflictDoUpdate.mockClear();
   });
 
   // ============================================
