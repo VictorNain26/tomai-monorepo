@@ -104,6 +104,38 @@ export const pronoteConnectRoutes = new Elysia({ name: 'pronote-connect-routes' 
     }),
   })
 
+  // POST /api/pronote/credentials/:id/resync
+  .post('/api/pronote/credentials/:id/resync', async ({ params, user, status }) => {
+    try {
+      const result = await pronoteConnectService.resync(user.id, params.id);
+      logger.info('Pronote resync success', {
+        operation: 'pronote-connect:resync',
+        userId: user.id,
+        addedCount: result.added.length,
+        stillMappedCount: result.stillMapped.length,
+      });
+      return { success: true, data: result };
+    } catch (error) {
+      if (error instanceof PronoteCredentialNotFoundError) {
+        return status(404, { error: 'Pronote credential not found', code: 'pronote_credential_not_found' });
+      }
+      if (error instanceof PronoteCredentialForbiddenError) {
+        return status(403, { error: 'Access denied', code: 'pronote_credential_forbidden' });
+      }
+      if (error instanceof PronoteNotConnectedError) {
+        return status(409, { error: 'Pronote account not connected', code: 'pronote_not_connected' });
+      }
+      if (error instanceof PronoteMetadataError) {
+        return status(500, { error: 'Pronote metadata invalid', code: 'pronote_metadata_invalid' });
+      }
+      throw error;
+    }
+  }, {
+    params: t.Object({
+      id: t.String(),
+    }),
+  })
+
   // POST /api/pronote/credentials/:id/activate
   .post('/api/pronote/credentials/:id/activate', async ({ params, body, user, status }) => {
     try {

@@ -51,6 +51,22 @@ export class PronoteCredentialForbiddenError extends Error {
 }
 
 class PronoteConnectService {
+  private async enrichResource(
+    resource: DiscoveredResource,
+    children: { id: string; firstName: string; lastName: string }[],
+  ): Promise<DiscoveredChild> {
+    const suggested = splitName(resource.name);
+    return {
+      ...resource,
+      suggested: {
+        firstName: suggested.firstName,
+        lastName: suggested.lastName,
+        schoolLevel: inferSchoolLevel(resource.className),
+      },
+      existingChildId: matchExistingChild(resource.name, children),
+    };
+  }
+
   async connectQr(
     userId: string,
     input: { qr: { jeton: string; login: string; url: string }; pin: string },
@@ -101,18 +117,47 @@ class PronoteConnectService {
       parentService.getParentChildren(userId),
     ]);
 
-    return resources.map((resource) => {
-      const suggested = splitName(resource.name);
-      return {
-        ...resource,
-        suggested: {
-          firstName: suggested.firstName,
-          lastName: suggested.lastName,
-          schoolLevel: inferSchoolLevel(resource.className),
-        },
-        existingChildId: matchExistingChild(resource.name, children),
-      };
-    });
+    return Promise.all(resources.map((resource) => this.enrichResource(resource, children)));
+  }
+
+  /**
+   * Compare current Pronote resources against already-mapped ones for this credential.
+   *
+   * Returns:
+   *   added       — resources not yet mapped, enriched with name suggestions and dedup.
+   *   stillMapped — resourceIds that are already mapped and still present on the account.
+   *
+   * Idempotent: writes nothing. The parent activates new children via activate().
+   *
+   * Throws PronoteCredentialNotFoundError or PronoteCredentialForbiddenError on bad ownership.
+   */
+  async resync(
+    userId: string,
+    credentialId: string,
+  ): Promise<{ added: DiscoveredChild[]; stillMapped: number[] }> {
+    const cred = await pronoteSyncService.getCredentialById(credentialId);
+    if (!cred) throw new PronoteCredentialNotFoundError(credentialId);
+    if (cred.userId !== userId) throw new PronoteCredentialForbiddenError();
+
+    const [resources, mappedIds, children] = await Promise.all([
+      pronoteDataService.listResources(credentialId),
+      pronoteChildResourcesRepository.getResourceIdsByCredential(credentialId),
+      parentService.getParentChildren(userId),
+    ]);
+
+    const mappedSet = new Set(mappedIds);
+    const added: DiscoveredChild[] = [];
+    const stillMapped: number[] = [];
+
+    for (const resource of resources) {
+      if (mappedSet.has(resource.resourceId)) {
+        stillMapped.push(resource.resourceId);
+      } else {
+        added.push(await this.enrichResource(resource, children));
+      }
+    }
+
+    return { added, stillMapped };
   }
 
   /**

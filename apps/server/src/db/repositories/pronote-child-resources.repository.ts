@@ -39,6 +39,15 @@ class PronoteChildResourcesRepository {
       .delete(pronoteChildResources)
       .where(eq(pronoteChildResources.childUserId, childUserId));
   }
+
+  async getResourceIdsByCredential(credentialId: string): Promise<number[]> {
+    const rows = await db
+      .select({ resourceId: pronoteChildResources.resourceId })
+      .from(pronoteChildResources)
+      .where(eq(pronoteChildResources.credentialId, credentialId));
+
+    return rows.map((r) => r.resourceId);
+  }
 }
 
 export const pronoteChildResourcesRepository = new PronoteChildResourcesRepository();

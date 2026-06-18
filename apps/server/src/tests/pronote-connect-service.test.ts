@@ -94,9 +94,12 @@ const mockUpsertMapping = mock(
   async (_parentUserId: string, _childUserId: string, _credentialId: string, _resourceId: number): Promise<void> => {},
 );
 
+const mockGetResourceIdsByCredential = mock(async (_credentialId: string): Promise<number[]> => []);
+
 mock.module('../db/repositories/pronote-child-resources.repository', () => ({
   pronoteChildResourcesRepository: {
     upsertMapping: mockUpsertMapping,
+    getResourceIdsByCredential: mockGetResourceIdsByCredential,
   },
 }));
 
@@ -237,6 +240,7 @@ describe('PronoteConnectService.discover', () => {
     mockCreateChild.mockClear();
     mockParentChildLink.mockClear();
     mockUpsertMapping.mockClear();
+    mockGetResourceIdsByCredential.mockClear();
   });
 
   it('returns enriched children with suggestions and dedup', async () => {
@@ -468,5 +472,96 @@ describe('PronoteConnectService.activate', () => {
     expect(result.activated).toHaveLength(1);
     expect(result.activated[0]).toEqual({ resourceId: 1, childId: 'child-new-3' });
     expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ============================================
+// PronoteConnectService.resync
+// ============================================
+
+describe('PronoteConnectService.resync', () => {
+  beforeEach(() => {
+    mockGetCredentialById.mockClear();
+    mockListResources.mockClear();
+    mockGetParentChildren.mockClear();
+    mockGetResourceIdsByCredential.mockClear();
+    mockUpsertMapping.mockClear();
+  });
+
+  it('(a) new resource → in added (enriched), not in stillMapped', async () => {
+    // No existing mappings for this credential
+    mockGetResourceIdsByCredential.mockResolvedValueOnce([]);
+
+    const result = await pronoteConnectService.resync('user-001', 'cred-abc-123');
+
+    expect(result.stillMapped).toHaveLength(0);
+    expect(result.added).toHaveLength(2);
+    // Resources should be enriched
+    expect(result.added[0]!.resourceId).toBe(0);
+    expect(result.added[0]!.suggested.firstName).toBe('Emma');
+    expect(result.added[0]!.existingChildId).toBe('child-existing-1');
+    expect(result.added[1]!.resourceId).toBe(1);
+    expect(result.added[1]!.suggested.firstName).toBe('Lucas');
+    expect(result.added[1]!.existingChildId).toBeNull();
+    // Must not write anything
+    expect(mockUpsertMapping).not.toHaveBeenCalled();
+  });
+
+  it('(b) already-mapped resource → in stillMapped, not in added', async () => {
+    // resourceId 0 already mapped, resourceId 1 not
+    mockGetResourceIdsByCredential.mockResolvedValueOnce([0]);
+
+    const result = await pronoteConnectService.resync('user-001', 'cred-abc-123');
+
+    expect(result.stillMapped).toContain(0);
+    expect(result.stillMapped).not.toContain(1);
+    expect(result.added).toHaveLength(1);
+    expect(result.added[0]!.resourceId).toBe(1);
+    expect(mockUpsertMapping).not.toHaveBeenCalled();
+  });
+
+  it('(c) mixed: some mapped, some new', async () => {
+    // resourceId 0 already mapped
+    mockGetResourceIdsByCredential.mockResolvedValueOnce([0]);
+
+    const result = await pronoteConnectService.resync('user-001', 'cred-abc-123');
+
+    expect(result.stillMapped).toEqual([0]);
+    expect(result.added).toHaveLength(1);
+    expect(result.added[0]!.resourceId).toBe(1);
+    expect(mockUpsertMapping).not.toHaveBeenCalled();
+  });
+
+  it('(d) bad ownership → throws before reading resources', async () => {
+    mockGetCredentialById.mockResolvedValueOnce({
+      id: 'cred-abc-123',
+      userId: 'user-other',
+      token: 'tok',
+      metadata: '{}',
+      tokenExpiresAt: new Date().toISOString(),
+    });
+
+    try {
+      await pronoteConnectService.resync('user-001', 'cred-abc-123');
+      expect(true).toBe(false);
+    } catch (err) {
+      expect(err).toBeInstanceOf(PronoteCredentialForbiddenError);
+    }
+
+    expect(mockListResources).not.toHaveBeenCalled();
+    expect(mockGetResourceIdsByCredential).not.toHaveBeenCalled();
+  });
+
+  it('(e) missing credential → throws PronoteCredentialNotFoundError', async () => {
+    mockGetCredentialById.mockResolvedValueOnce(null);
+
+    try {
+      await pronoteConnectService.resync('user-001', 'missing-cred');
+      expect(true).toBe(false);
+    } catch (err) {
+      expect(err).toBeInstanceOf(PronoteCredentialNotFoundError);
+    }
+
+    expect(mockListResources).not.toHaveBeenCalled();
   });
 });
