@@ -42,6 +42,10 @@ const mockGradesOverview = mock(async () => ({
       subject: { name: 'Mathématiques' },
       date: new Date('2026-06-01'),
       comment: 'Bon travail',
+      coefficient: 2,
+      average: { kind: 0, points: 12.5 },
+      max: { kind: 0, points: 18 },
+      min: { kind: 0, points: 8 },
     },
     {
       value: { kind: 1 /* GradeKind.Absent */, points: 0 },
@@ -49,6 +53,8 @@ const mockGradesOverview = mock(async () => ({
       subject: { name: 'Histoire' },
       date: new Date('2026-06-02'),
       comment: '',
+      coefficient: 1,
+      // average/max/min absent — pawnote Grade marks them as optional
     },
   ],
 }));
@@ -242,6 +248,30 @@ describe('PawnoteServerAdapter', () => {
       expect(math!.scale).toBe(20);
       expect(math!.date).toBe('2026-06-01');
       expect(math!.comment).toBe('Bon travail');
+    });
+
+    it('maps coefficient, classAverage, max, min when present', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      const grades = await adapter.getGrades(session, 0);
+
+      const math = grades.find((g) => g.subject === 'Mathématiques');
+      expect(math).toBeDefined();
+      expect(math!.coefficient).toBe(2);
+      expect(math!.classAverage).toBe(12.5);
+      expect(math!.max).toBe(18);
+      expect(math!.min).toBe(8);
+    });
+
+    it('sets classAverage, max, min to null when absent from pawnote', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      const grades = await adapter.getGrades(session, 0);
+
+      const hist = grades.find((g) => g.subject === 'Histoire');
+      expect(hist).toBeDefined();
+      expect(hist!.coefficient).toBe(1);
+      expect(hist!.classAverage).toBeNull();
+      expect(hist!.max).toBeNull();
+      expect(hist!.min).toBeNull();
     });
 
     it('maps an Absent grade to value: null', async () => {

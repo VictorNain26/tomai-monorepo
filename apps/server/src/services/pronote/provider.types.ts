@@ -1,9 +1,13 @@
 export interface NormalizedGrade {
   subject: string;
-  value: number | null;     // null = unmarked / "absent" (pawnote GradeKind !== Grade)
-  scale: number;            // e.g. 20
-  date: string;             // ISO date
+  value: number | null;           // null = unmarked / "absent" (pawnote GradeKind !== Grade)
+  scale: number;                  // e.g. 20
+  date: string;                   // ISO date
   comment: string | null;
+  coefficient: number;            // always present in pawnote Grade
+  classAverage: number | null;    // pawnote Grade.average?.points (optional)
+  max: number | null;             // pawnote Grade.max?.points (optional)
+  min: number | null;             // pawnote Grade.min?.points (optional)
 }
 
 export interface NormalizedHomework {

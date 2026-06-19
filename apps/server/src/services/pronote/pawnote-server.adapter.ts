@@ -157,6 +157,10 @@ export class PawnoteServerAdapter implements PronoteProvider {
       scale: gr.outOf.points,
       date: gr.date.toISOString().slice(0, 10),
       comment: gr.comment.length > 0 ? gr.comment : null,
+      coefficient: gr.coefficient,
+      classAverage: gr.average?.points ?? null,
+      max: gr.max?.points ?? null,
+      min: gr.min?.points ?? null,
     }));
   }
 
