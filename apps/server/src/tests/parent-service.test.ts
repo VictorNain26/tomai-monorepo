@@ -21,7 +21,6 @@ interface UserData {
   role: 'student' | 'parent';
   schoolLevel: string | null;
   dateOfBirth: string | null;
-  parentId: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -138,6 +137,7 @@ mock.module('../db/connection', () => ({
 
 mock.module('../db/schema', () => ({
   studySessions: { userId: 'userId', subject: 'subject', startedAt: 'startedAt' },
+  parentChild: { id: 'id', parentUserId: 'parentUserId', childUserId: 'childUserId' },
 }));
 
 mock.module('../db/pool-limiter', () => ({
@@ -150,6 +150,19 @@ mock.module('drizzle-orm', () => ({
   desc: (...args: unknown[]) => ({ type: 'desc', args }),
 }));
 
+// Parent-child repository mock
+let isLinkedResult = true;
+let isLinkedShouldThrow = false;
+mock.module('../db/repositories/parent-child.repository', () => ({
+  parentChildRepository: {
+    link: mock(async () => {}),
+    isLinked: mock(async () => {
+      if (isLinkedShouldThrow) throw new Error('db down');
+      return isLinkedResult;
+    }),
+  },
+}));
+
 // Import after mocks
 const { ParentService } = await import('../services/parent.service');
 
@@ -157,7 +170,7 @@ let parentService: InstanceType<typeof ParentService>;
 
 beforeEach(() => {
   parentService = new ParentService();
-  const child = makeUser({ id: 'child-001', parentId: 'parent-001' });
+  const child = makeUser({ id: 'child-001' });
   childrenResult = [child];
   userByUsername = null;
   updateResult = { ...child, schoolLevel: 'seconde' };
@@ -172,6 +185,8 @@ beforeEach(() => {
   callSequence.length = 0;
   mockPseudonymize.mockClear();
   mockDeleteById.mockClear();
+  isLinkedResult = true;
+  isLinkedShouldThrow = false;
 });
 
 describe('Parent Service', () => {
@@ -237,6 +252,20 @@ describe('Parent Service', () => {
       });
       expect(child.id).toBe('new-child-001');
       expect(child.firstName).toBe('Marie');
+    });
+
+    it('should create child without dateOfBirth (Pronote path)', async () => {
+      const child = await parentService.createChild('parent-001', {
+        firstName: 'Lucas',
+        lastName: 'Martin',
+        username: 'lucas',
+        password: 'password123',
+        schoolLevel: 'quatrieme',
+      });
+      expect(child.id).toBe('new-child-001');
+      expect(child.firstName).toBe('Lucas');
+      expect(child.role).toBe('student');
+      expect(child.dateOfBirth).toBeUndefined();
     });
 
     it('should throw on duplicate username', async () => {
@@ -320,15 +349,17 @@ describe('Parent Service', () => {
 
   describe('isParentOf', () => {
     it('should return true for parent-child relationship', async () => {
+      isLinkedResult = true;
       expect(await parentService.isParentOf('parent-001', 'child-001')).toBe(true);
     });
 
     it('should return false for non-child', async () => {
+      isLinkedResult = false;
       expect(await parentService.isParentOf('parent-001', 'stranger')).toBe(false);
     });
 
-    it('should return false on error', async () => {
-      childrenResult = []; // Simulate empty result
+    it('should return false on error (fail-closed)', async () => {
+      isLinkedShouldThrow = true;
       const result = await parentService.isParentOf('err-parent', 'child-001');
       expect(result).toBe(false);
     });
@@ -336,7 +367,7 @@ describe('Parent Service', () => {
 
   describe('updateChild', () => {
     it('should update partial fields (firstName only)', async () => {
-      updateResult = { ...makeUser({ id: 'child-001', parentId: 'parent-001' }), firstName: 'Marie' };
+      updateResult = { ...makeUser({ id: 'child-001' }), firstName: 'Marie' };
       const result = await parentService.updateChild('parent-001', 'child-001', {
         firstName: 'Marie',
       });
@@ -346,7 +377,7 @@ describe('Parent Service', () => {
 
     it('should update multiple fields at once', async () => {
       updateResult = {
-        ...makeUser({ id: 'child-001', parentId: 'parent-001' }),
+        ...makeUser({ id: 'child-001' }),
         firstName: 'Jean',
         lastName: 'Martin',
         schoolLevel: 'seconde',
@@ -426,7 +457,7 @@ describe('Parent Service', () => {
     });
 
     it('should return 0 when dateOfBirth is missing', async () => {
-      childrenResult = [makeUser({ id: 'child-001', parentId: 'parent-001', dateOfBirth: null })];
+      childrenResult = [makeUser({ id: 'child-001', dateOfBirth: null })];
       const metrics = await parentService.getParentDashboardMetrics('parent-001');
       expect(metrics[0]?.age).toBe(0);
     });

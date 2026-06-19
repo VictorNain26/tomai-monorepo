@@ -1,0 +1,417 @@
+/**
+ * Tests - PawnoteServerAdapter
+ * Mock: pawnote (loginToken, gradesOverview, assignmentsFromIntervals, timetableFromIntervals)
+ *
+ * connectWithCredentials is test-only and lives in
+ * integration-tests/helpers/pronote-credentials-login.ts; it is not exercised here.
+ */
+
+import { describe, it, expect, mock, beforeEach } from 'bun:test';
+
+// ============================================
+// MOCKS — must precede adapter import
+// ============================================
+
+const mockHandle = {
+  userResource: {
+    tabs: new Map([
+      [
+        4 /* TabLocation.Grades */,
+        {
+          defaultPeriod: { id: 'period-1', name: 'Trimestre 1' },
+          periods: [{ id: 'period-1', name: 'Trimestre 1' }],
+        },
+      ],
+    ]),
+  },
+};
+
+const mockLoginToken = mock(async () => ({
+  url: 'https://demo.index-education.net/pronote',
+  username: 'jean.dupont',
+  kind: 7,
+  token: 'rotated-token-96chars-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  navigatorIdentifier: 'nav-id',
+}));
+
+const mockGradesOverview = mock(async () => ({
+  grades: [
+    {
+      value: { kind: 0 /* GradeKind.Grade */, points: 15 },
+      outOf: { points: 20 },
+      subject: { name: 'Mathématiques' },
+      date: new Date('2026-06-01'),
+      comment: 'Bon travail',
+    },
+    {
+      value: { kind: 1 /* GradeKind.Absent */, points: 0 },
+      outOf: { points: 20 },
+      subject: { name: 'Histoire' },
+      date: new Date('2026-06-02'),
+      comment: '',
+    },
+  ],
+}));
+
+const mockAssignmentsFromIntervals = mock(async () => [
+  {
+    subject: { name: 'Physique' },
+    description: '<p>Lire le <b>chapitre 3</b></p>',
+    deadline: new Date('2026-06-10'),
+    done: false,
+  },
+  {
+    subject: { name: 'Français' },
+    description: 'Rédiger une page',
+    deadline: new Date('2026-06-11'),
+    done: true,
+  },
+]);
+
+const mockTimetableFromIntervals = mock(async () => ({
+  classes: [
+    {
+      is: 'lesson',
+      subject: { name: 'SVT' },
+      startDate: new Date('2026-06-16T08:00:00Z'),
+      endDate: new Date('2026-06-16T09:00:00Z'),
+      classrooms: ['Salle 12'],
+      canceled: false,
+    },
+    {
+      is: 'activity',
+      subject: { name: 'Sport' },
+      startDate: new Date('2026-06-16T10:00:00Z'),
+      endDate: new Date('2026-06-16T11:00:00Z'),
+      classrooms: [],
+      canceled: false,
+    },
+    {
+      is: 'lesson',
+      subject: undefined,
+      startDate: new Date('2026-06-16T11:00:00Z'),
+      endDate: new Date('2026-06-16T12:00:00Z'),
+      classrooms: [],
+      canceled: true,
+    },
+  ],
+}));
+
+const mockCreateSessionHandle = mock(() => mockHandle);
+
+const mockLoginQrCode = mock(async () => ({
+  url: 'https://demo.index-education.net/pronote',
+  username: 'jean.dupont',
+  kind: 7,
+  token: 'qr-rotated-token-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  navigatorIdentifier: 'nav-id',
+}));
+
+const mockGeolocation = mock(async () => [
+  {
+    url: 'https://ecole-b.index-education.net/pronote',
+    name: 'Collège B',
+    latitude: 48.86,
+    longitude: 2.36,
+    postalCode: 75002,
+    distance: 2.5,
+  },
+  {
+    url: 'https://ecole-a.index-education.net/pronote',
+    name: 'Lycée A',
+    latitude: 48.855,
+    longitude: 2.355,
+    postalCode: 75001,
+    distance: 0.8,
+  },
+]);
+
+// mockHandle needs user.resources for connectWithQrPayload tests
+const mockHandleWithResources = {
+  ...mockHandle,
+  user: {
+    resources: [
+      { id: 'res-0', kind: 1, name: 'Emma Dupont', className: '3ème A', establishmentName: 'Collège Jean Moulin' },
+      { id: 'res-1', kind: 1, name: 'Lucas Dupont', className: undefined, establishmentName: 'Collège Jean Moulin' },
+    ],
+  },
+};
+
+mock.module('pawnote', () => ({
+  createSessionHandle: mockCreateSessionHandle,
+  loginToken: mockLoginToken,
+  loginQrCode: mockLoginQrCode,
+  gradesOverview: mockGradesOverview,
+  assignmentsFromIntervals: mockAssignmentsFromIntervals,
+  timetableFromIntervals: mockTimetableFromIntervals,
+  geolocation: mockGeolocation,
+  use: () => {},
+  GradeKind: { Error: -1, Grade: 0, Absent: 1, Exempted: 2 },
+  TabLocation: { Grades: 4 },
+}));
+
+// Import after mocks
+const { PawnoteServerAdapter, PronoteReauthRequired } = await import(
+  '../services/pronote/pawnote-server.adapter'
+);
+
+// ============================================
+// Tests
+// ============================================
+
+const BASE_INPUT = {
+  url: 'https://demo.index-education.net/pronote',
+  kind: 7,
+  username: 'jean.dupont',
+  token: 'stored-token',
+  deviceUuid: 'device-uuid-123',
+};
+
+describe('PawnoteServerAdapter', () => {
+  let adapter: InstanceType<typeof PawnoteServerAdapter>;
+
+  beforeEach(() => {
+    adapter = new PawnoteServerAdapter();
+    mockLoginToken.mockClear();
+    mockLoginQrCode.mockClear();
+    mockGradesOverview.mockClear();
+    mockAssignmentsFromIntervals.mockClear();
+    mockTimetableFromIntervals.mockClear();
+    mockCreateSessionHandle.mockClear();
+    mockGeolocation.mockClear();
+  });
+
+  // ============================================
+  // connect
+  // ============================================
+
+  describe('connect', () => {
+    it('returns the rotated token from loginToken', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      expect(session.token).toBe(
+        'rotated-token-96chars-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      );
+      expect(session.username).toBe('jean.dupont');
+      expect(mockLoginToken).toHaveBeenCalledTimes(1);
+    });
+
+    it('maps a loginToken throw to PronoteReauthRequired', async () => {
+      mockLoginToken.mockRejectedValueOnce(new Error('BadCredentials'));
+
+      // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toBeInstanceOf() is not typed as Promise but is awaitable
+      await expect(adapter.connect(BASE_INPUT)).rejects.toBeInstanceOf(PronoteReauthRequired);
+      expect(mockLoginToken).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws PronoteReauthRequired on loginToken failure', async () => {
+      mockLoginToken.mockRejectedValueOnce(new Error('BadCredentials'));
+
+      // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toBeInstanceOf() is not typed as Promise but is awaitable
+      await expect(adapter.connect(BASE_INPUT)).rejects.toBeInstanceOf(PronoteReauthRequired);
+    });
+  });
+
+  // ============================================
+  // getGrades
+  // ============================================
+
+  describe('getGrades', () => {
+    it('returns [] when the grades tab has no period', async () => {
+      // Build a handle whose grades tab has neither defaultPeriod nor periods.
+      const handleNoPeriod = {
+        userResource: {
+          tabs: new Map([
+            [4 /* TabLocation.Grades */, { defaultPeriod: null, periods: [] }],
+          ]),
+        },
+      };
+      mockCreateSessionHandle.mockReturnValueOnce(handleNoPeriod as unknown as typeof mockHandle);
+
+      const session = await adapter.connect(BASE_INPUT);
+      const grades = await adapter.getGrades(session, 0);
+      expect(grades).toEqual([]);
+    });
+
+    it('maps a numeric grade correctly', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      const grades = await adapter.getGrades(session, 0);
+
+      const math = grades.find((g) => g.subject === 'Mathématiques');
+      expect(math).toBeDefined();
+      expect(math!.value).toBe(15);
+      expect(math!.scale).toBe(20);
+      expect(math!.date).toBe('2026-06-01');
+      expect(math!.comment).toBe('Bon travail');
+    });
+
+    it('maps an Absent grade to value: null', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      const grades = await adapter.getGrades(session, 0);
+
+      const hist = grades.find((g) => g.subject === 'Histoire');
+      expect(hist).toBeDefined();
+      expect(hist!.value).toBeNull();
+      expect(hist!.comment).toBeNull();
+    });
+  });
+
+  // ============================================
+  // getHomework
+  // ============================================
+
+  describe('getHomework', () => {
+    it('strips HTML tags from description', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      const hw = await adapter.getHomework(session, 0);
+
+      const phys = hw.find((h) => h.subject === 'Physique');
+      expect(phys).toBeDefined();
+      expect(phys!.description).toBe('Lire le chapitre 3');
+      expect(phys!.dueDate).toBe('2026-06-10');
+      expect(phys!.done).toBe(false);
+    });
+
+    it('preserves plain text description unchanged', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      const hw = await adapter.getHomework(session, 0);
+
+      const fr = hw.find((h) => h.subject === 'Français');
+      expect(fr).toBeDefined();
+      expect(fr!.description).toBe('Rédiger une page');
+      expect(fr!.done).toBe(true);
+    });
+  });
+
+  // ============================================
+  // getTimetable
+  // ============================================
+
+  // ============================================
+  // searchEstablishments
+  // ============================================
+
+  describe('searchEstablishments', () => {
+    it('calls geolocation with the given coordinates and the server fetcher', async () => {
+      await adapter.searchEstablishments(48.85, 2.35);
+      expect(mockGeolocation).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock.calls is untyped in bun:test
+      const position = (mockGeolocation.mock.calls[0] as any)[0];
+      expect(position).toEqual({ latitude: 48.85, longitude: 2.35 });
+    });
+
+    it('returns establishments sorted by distance ascending', async () => {
+      const results = await adapter.searchEstablishments(48.85, 2.35);
+      expect(results[0].distance).toBeLessThan(results[1].distance);
+      expect(results[0].name).toBe('Lycée A');
+      expect(results[1].name).toBe('Collège B');
+    });
+
+    it('maps all required fields faithfully', async () => {
+      const results = await adapter.searchEstablishments(48.85, 2.35);
+      expect(results[0]).toEqual({
+        name: 'Lycée A',
+        url: 'https://ecole-a.index-education.net/pronote',
+        postalCode: 75001,
+        distance: 0.8,
+      });
+    });
+
+    it('returns empty array when no establishments found', async () => {
+      mockGeolocation.mockResolvedValueOnce([]);
+      const results = await adapter.searchEstablishments(48.85, 2.35);
+      expect(results).toEqual([]);
+    });
+  });
+
+  // ============================================
+  // connectWithQrPayload
+  // ============================================
+
+  describe('connectWithQrPayload', () => {
+    const FAKE_QR = { jeton: 'tok', login: 'jean.dupont', url: 'https://demo.index-education.net/pronote' };
+    const FAKE_PIN = '1234';
+
+    beforeEach(() => {
+      mockCreateSessionHandle.mockReturnValue(mockHandleWithResources as unknown as typeof mockHandle);
+    });
+
+    it('calls loginQrCode with a server-generated deviceUUID', async () => {
+      await adapter.connectWithQrPayload({ qr: FAKE_QR, pin: FAKE_PIN });
+
+      expect(mockLoginQrCode).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const callArg = (mockLoginQrCode.mock.calls[0] as any)[1] as Record<string, unknown>;
+      expect(typeof callArg['deviceUUID']).toBe('string');
+      expect((callArg['deviceUUID'] as string).length).toBeGreaterThan(0);
+      expect(callArg['pin']).toBe(FAKE_PIN);
+      expect(callArg['qr']).toEqual(FAKE_QR);
+    });
+
+    it('returns session with token and username from loginQrCode', async () => {
+      const result = await adapter.connectWithQrPayload({ qr: FAKE_QR, pin: FAKE_PIN });
+
+      expect(result.session.token).toBe(
+        'qr-rotated-token-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      );
+      expect(result.session.username).toBe('jean.dupont');
+    });
+
+    it('maps resources to DiscoveredResource with index as resourceId', async () => {
+      const result = await adapter.connectWithQrPayload({ qr: FAKE_QR, pin: FAKE_PIN });
+
+      expect(result.resources).toHaveLength(2);
+      expect(result.resources[0]).toEqual({
+        resourceId: 0,
+        name: 'Emma Dupont',
+        className: '3ème A',
+        establishmentName: 'Collège Jean Moulin',
+      });
+      expect(result.resources[1]).toEqual({
+        resourceId: 1,
+        name: 'Lucas Dupont',
+        className: null,
+        establishmentName: 'Collège Jean Moulin',
+      });
+    });
+
+    it('returns metadata with instanceUrl, username, kind and deviceUuid', async () => {
+      const result = await adapter.connectWithQrPayload({ qr: FAKE_QR, pin: FAKE_PIN });
+
+      expect(result.metadata.instanceUrl).toBe('https://demo.index-education.net/pronote');
+      expect(result.metadata.username).toBe('jean.dupont');
+      expect(result.metadata.kind).toBe(7);
+      expect(typeof result.metadata.deviceUuid).toBe('string');
+    });
+  });
+
+  describe('getTimetable', () => {
+    it('returns only lessons (not activities/detentions)', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      const lessons = await adapter.getTimetable(session, 0, '2026-06-16');
+
+      expect(lessons).toHaveLength(2);
+    });
+
+    it('maps lesson fields correctly', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      const lessons = await adapter.getTimetable(session, 0, '2026-06-16');
+
+      const svt = lessons.find((l) => l.subject === 'SVT');
+      expect(svt).toBeDefined();
+      expect(svt!.start).toBe('2026-06-16T08:00:00.000Z');
+      expect(svt!.end).toBe('2026-06-16T09:00:00.000Z');
+      expect(svt!.room).toBe('Salle 12');
+      expect(svt!.canceled).toBe(false);
+    });
+
+    it('falls back to empty string for lesson with no subject', async () => {
+      const session = await adapter.connect(BASE_INPUT);
+      const lessons = await adapter.getTimetable(session, 0, '2026-06-16');
+
+      const noSubject = lessons.find((l) => l.canceled);
+      expect(noSubject).toBeDefined();
+      expect(noSubject!.subject).toBe('');
+      expect(noSubject!.room).toBeNull();
+    });
+  });
+});

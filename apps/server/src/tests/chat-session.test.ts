@@ -33,7 +33,6 @@ interface UserData {
   role: 'student' | 'parent';
   schoolLevel: string | null;
   dateOfBirth: string | null;
-  parentId: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

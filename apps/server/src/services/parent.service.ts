@@ -4,6 +4,7 @@
  */
 
 import { usersRepository, filesRepository, retrievalAuditRepository } from '../db/repositories';
+import { parentChildRepository } from '../db/repositories/parent-child.repository';
 import { logger } from '../lib/observability';
 import { deleteFiles } from './storage/scaleway-storage.service';
 import { auth } from '../lib/auth';
@@ -92,7 +93,7 @@ export class ParentService {
     username: string;
     password: string;
     schoolLevel: string;
-    dateOfBirth: string;
+    dateOfBirth?: string;
   }): Promise<ChildInfo> {
     const existingUser = await usersRepository.findByUsername(childData.username);
     if (existingUser) {
@@ -108,16 +109,21 @@ export class ParentService {
       }
     });
 
-    await usersRepository.update(result.user.id, {
-      firstName: childData.firstName,
-      lastName: childData.lastName,
-      username: childData.username,
-      displayUsername: childData.username,
-      role: 'student',
-      schoolLevel: childData.schoolLevel as SchoolLevel,
-      dateOfBirth: childData.dateOfBirth,
-      parentId: parentId
-    });
+    try {
+      await usersRepository.update(result.user.id, {
+        firstName: childData.firstName,
+        lastName: childData.lastName,
+        username: childData.username,
+        displayUsername: childData.username,
+        role: 'student',
+        schoolLevel: childData.schoolLevel as SchoolLevel,
+        dateOfBirth: childData.dateOfBirth,
+      });
+      await parentChildRepository.link(parentId, result.user.id);
+    } catch (err) {
+      await usersRepository.deleteById(result.user.id);
+      throw err;
+    }
 
     return {
       id: result.user.id,
@@ -255,10 +261,15 @@ export class ParentService {
 
   async isParentOf(parentId: string, studentId: string): Promise<boolean> {
     try {
-      const children = await this.getParentChildren(parentId);
-      return children.some(child => child.id === studentId);
-    } catch (_error) {
-      logger.error('Error verifying parent-child relationship', { operation: 'parent:verify', _error: _error instanceof Error ? _error.message : String(_error), parentId, studentId, severity: 'medium' as const });
+      return await parentChildRepository.isLinked(parentId, studentId);
+    } catch (error) {
+      logger.error('Error verifying parent-child relationship', {
+        operation: 'parent:isParentOf:error',
+        parentId,
+        studentId,
+        _error: error instanceof Error ? error.message : String(error),
+        severity: 'medium' as const,
+      });
       return false;
     }
   }

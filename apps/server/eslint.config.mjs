@@ -57,7 +57,7 @@ export default [
       
       // TypeScript rules - Production strict (selon audit recommendations)
       '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-unused-vars': 'error', // ✅ Activé selon audit
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }], // ✅ Activé selon audit
       'no-unused-vars': 'off',
       '@typescript-eslint/no-floating-promises': 'error', // ✅ Ajouté selon audit
       '@typescript-eslint/await-thenable': 'error', // ✅ Ajouté selon audit

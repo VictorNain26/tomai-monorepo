@@ -12,6 +12,7 @@ import { authMacro } from '../../lib/auth-macro.js';
 import { subscriptionService } from '../../services/subscription.service.js';
 import { usersRepository } from '../../db/repositories/users.repository.js';
 import { verifyParentIdMatch } from './helpers.js';
+import { parentChildRepository } from '../../db/repositories/parent-child.repository.js';
 
 export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
   .use(authMacro)
@@ -48,7 +49,8 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
 
     const isSelfAccess = authenticatedUser.id === userId;
     const isParentAccessingChild =
-      authenticatedUser.role === 'parent' && userRecord.parentId === authenticatedUser.id;
+      authenticatedUser.role === 'parent' &&
+      (await parentChildRepository.isLinked(authenticatedUser.id, userRecord.id));
 
     if (!isSelfAccess && !isParentAccessingChild) {
       return status(403, {

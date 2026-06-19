@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { user, session, account } from './auth.schema';
+import { user, session, account, parentChild } from './auth.schema';
 import { studySessions, messages, costTracking, progress } from './learning.schema';
 import { learningDecks, studentCognitiveProfiles } from './learning-tools.schema';
 import { pronoteCredentials } from './pronote.schema';
@@ -9,16 +9,10 @@ import { files, sessionFiles } from './files.schema';
 // CROSS-DOMAIN RELATIONS
 // =============================================
 
-export const userRelations = relations(user, ({ one, many }) => ({
-  // Parent-child relationships
-  parent: one(user, {
-    fields: [user.parentId],
-    references: [user.id],
-    relationName: 'parent_child'
-  }),
-  children: many(user, {
-    relationName: 'parent_child'
-  }),
+export const userRelations = relations(user, ({ many, one }) => ({
+  // Parent-child junction links
+  asParentLinks: many(parentChild, { relationName: 'pc_parent' }),
+  asChildLinks: many(parentChild, { relationName: 'pc_child' }),
 
   // Auth relationships
   sessions: many(session),
@@ -48,6 +42,19 @@ export const userRelations = relations(user, ({ one, many }) => ({
   }),
 }));
 
+export const parentChildRelations = relations(parentChild, ({ one }) => ({
+  parent: one(user, {
+    fields: [parentChild.parentUserId],
+    references: [user.id],
+    relationName: 'pc_parent',
+  }),
+  child: one(user, {
+    fields: [parentChild.childUserId],
+    references: [user.id],
+    relationName: 'pc_child',
+  }),
+}));
+
 export const studySessionsRelations = relations(studySessions, ({ one, many }) => ({
   user: one(user, {
     fields: [studySessions.userId],
@@ -65,8 +72,6 @@ import type { User, Session, Account } from './auth.schema';
 import type { StudySession, Progress } from './learning.schema';
 
 export type UserWithRelations = User & {
-  parent?: User | null;
-  children?: User[];
   sessions?: Session[];
   accounts?: Account[];
   studySessions?: StudySession[];

@@ -1,16 +1,30 @@
 /**
  * Pronote Credential Sync Service
  *
- * Device-first architecture: the mobile device handles all Pronote API calls.
- * This service only stores/retrieves encrypted credentials for multi-device sync.
- * The server NEVER decrypts tokens for its own use — decryption is for the client.
+ * Stores and retrieves AES-256-GCM encrypted Pronote credentials.
+ * Two consumers: mobile (device-first, decrypts for direct pawnote calls) and
+ * the server-side provider (PawnoteServerAdapter, decrypts in-memory for
+ * parent/web reads via pronote-data.service).
  */
 
-import { eq } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { pronoteCredentials } from '../db/schema.js';
 import { encrypt, decrypt } from '../lib/encryption.js';
 import { logger } from '../lib/observability.js';
+
+/**
+ * Normalize an establishment URL for use as a deduplication key.
+ * Strips trailing slashes and lowercases the host so that
+ * "https://x.net/pronote" and "https://x.net/pronote/" resolve to the same key.
+ * The raw instanceUrl stored in encrypted metadata is left untouched.
+ */
+export function normalizeEstablishmentUrl(raw: string): string {
+  const u = new URL(raw);
+  const host = u.host.toLowerCase();
+  const path = u.pathname.replace(/\/+$/, '');
+  return `${u.protocol}//${host}${path}`;
+}
 
 interface UpsertInput {
   token: string;
@@ -27,12 +41,14 @@ export interface CredentialOutput {
 interface UpsertResult {
   success: boolean;
   error?: string;
+  credentialId?: string;
 }
 
 class PronoteSyncService {
   /**
-   * Create or update Pronote credentials for a user.
-   * Encrypts token and metadata before storage.
+   * Create or update Pronote credentials for a user+establishment pair.
+   * Derives establishmentUrl from metadata.instanceUrl.
+   * Returns credentialId on success.
    */
   async upsertCredentials(
     userId: string,
@@ -43,9 +59,14 @@ class PronoteSyncService {
       return { success: false, error: 'Token cannot be empty' };
     }
 
-    // Validate metadata is valid JSON
+    // Validate metadata is valid JSON and extract instanceUrl
+    let establishmentUrl: string;
     try {
-      JSON.parse(input.metadata);
+      const parsed = JSON.parse(input.metadata) as Record<string, unknown>;
+      if (typeof parsed.instanceUrl !== 'string' || !parsed.instanceUrl) {
+        return { success: false, error: 'Metadata must contain a non-empty instanceUrl' };
+      }
+      establishmentUrl = normalizeEstablishmentUrl(parsed.instanceUrl);
     } catch {
       return { success: false, error: 'Metadata must be valid JSON' };
     }
@@ -60,42 +81,50 @@ class PronoteSyncService {
     const encryptedToken = await encrypt(input.token);
     const encryptedMetadata = await encrypt(input.metadata);
 
-    // Atomic upsert — eliminates race condition on concurrent requests
-    await db
+    // Atomic upsert keyed on (userId, establishmentUrl) — one credential per parent+school
+    const rows = await db
       .insert(pronoteCredentials)
       .values({
         userId,
+        establishmentUrl,
         encryptedToken,
         encryptedMetadata,
         tokenExpiresAt,
       })
       .onConflictDoUpdate({
-        target: pronoteCredentials.userId,
+        target: [pronoteCredentials.userId, pronoteCredentials.establishmentUrl],
         set: {
           encryptedToken,
           encryptedMetadata,
           tokenExpiresAt,
           updatedAt: new Date(),
         },
-      });
+      })
+      .returning({ id: pronoteCredentials.id });
+
+    const credentialId = rows[0]?.id;
 
     logger.info('Pronote credentials upserted', {
       operation: 'pronote-sync:upsert',
       userId,
     });
 
-    return { success: true };
+    return { success: true, credentialId };
   }
 
   /**
-   * Get decrypted Pronote credentials for a user.
-   * Returns null if no credentials exist.
+   * Get decrypted Pronote credentials for a user — oldest credential by createdAt.
+   * Deterministic even when multiple credentials exist (e.g. multi-token/multi-establishment).
+   * For multi-token reads (parent, several establishments), callers should use
+   * getCredentialById once the credential list endpoint is added (Plan B2).
    */
   async getCredentials(userId: string): Promise<CredentialOutput | null> {
     const rows = await db
       .select()
       .from(pronoteCredentials)
-      .where(eq(pronoteCredentials.userId, userId));
+      .where(eq(pronoteCredentials.userId, userId))
+      .orderBy(asc(pronoteCredentials.createdAt))
+      .limit(1);
 
     if (rows.length === 0) {
       return null;
@@ -116,6 +145,59 @@ class PronoteSyncService {
       metadata,
       tokenExpiresAt: row.tokenExpiresAt.toISOString(),
     };
+  }
+
+  /**
+   * Get decrypted Pronote credentials by credential id.
+   * Returns null if not found.
+   */
+  async getCredentialById(id: string): Promise<(CredentialOutput & { id: string; userId: string }) | null> {
+    const rows = await db
+      .select()
+      .from(pronoteCredentials)
+      .where(eq(pronoteCredentials.id, id));
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const row = rows[0]!;
+    const token = await decrypt(row.encryptedToken);
+    const metadata = await decrypt(row.encryptedMetadata);
+
+    logger.info('Pronote credentials retrieved by id', {
+      operation: 'pronote-sync:get-by-id',
+      id,
+    });
+
+    return {
+      id: row.id,
+      userId: row.userId,
+      token,
+      metadata,
+      tokenExpiresAt: row.tokenExpiresAt.toISOString(),
+    };
+  }
+
+  /**
+   * Update only the token for a credential identified by id.
+   * Re-encrypts the new token before storage.
+   */
+  async updateTokenById(id: string, token: string): Promise<boolean> {
+    const encryptedToken = await encrypt(token);
+
+    const res = await db
+      .update(pronoteCredentials)
+      .set({ encryptedToken, updatedAt: new Date() })
+      .where(eq(pronoteCredentials.id, id))
+      .returning({ id: pronoteCredentials.id });
+
+    logger.info('Pronote token updated by id', {
+      operation: 'pronote-sync:update-token',
+      id,
+    });
+
+    return res.length > 0;
   }
 
   /**

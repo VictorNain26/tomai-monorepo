@@ -26,14 +26,31 @@ mock.module('../lib/encryption', () => ({
 let findResult: Record<string, unknown> | undefined = undefined;
 let upsertCalled = false;
 let deleteCalled = false;
+let capturedOrderBy: unknown[] = [];
+let capturedLimit: number | undefined = undefined;
 
-const mockWhere = mock(() => {
+const mockLimit = mock((n: number) => {
+  capturedLimit = n;
   return findResult ? [findResult] : [];
 });
 
-const mockOnConflictDoUpdate = mock(async () => {
-  upsertCalled = true;
+const mockOrderBy = mock((...args: unknown[]) => {
+  capturedOrderBy = args;
+  return { limit: mockLimit };
 });
+
+const mockWhere = mock(() => {
+  return { orderBy: mockOrderBy };
+});
+
+const mockReturning = mock(() => {
+  upsertCalled = true;
+  return Promise.resolve([{ id: 'mock-cred-id' }]);
+});
+
+const mockOnConflictDoUpdate = mock(() => ({
+  returning: mockReturning,
+}));
 
 const mockValues = mock(() => ({
   onConflictDoUpdate: mockOnConflictDoUpdate,
@@ -65,12 +82,15 @@ mock.module('../db/schema', () => ({
     encryptedToken: 'encryptedToken',
     encryptedMetadata: 'encryptedMetadata',
     tokenExpiresAt: 'tokenExpiresAt',
+    createdAt: 'createdAt',
     updatedAt: 'updatedAt',
   },
 }));
 
 mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
+  asc: (col: unknown) => ({ type: 'asc', col }),
+  and: (...args: unknown[]) => args,
 }));
 
 // Import after mocks
@@ -98,11 +118,17 @@ describe('PronoteSyncService', () => {
     findResult = undefined;
     upsertCalled = false;
     deleteCalled = false;
+    capturedOrderBy = [];
+    capturedLimit = undefined;
     mockEncrypt.mockClear();
     mockDecrypt.mockClear();
     mockLogger.info.mockClear();
     mockLogger.error.mockClear();
     mockLogger.warn.mockClear();
+    mockReturning.mockClear();
+    mockOnConflictDoUpdate.mockClear();
+    mockOrderBy.mockClear();
+    mockLimit.mockClear();
   });
 
   // ============================================
@@ -186,6 +212,40 @@ describe('PronoteSyncService', () => {
       expect(result?.token).toBe(VALID_TOKEN);
       expect(result?.metadata).toBe(VALID_METADATA);
       expect(mockDecrypt).toHaveBeenCalledTimes(2);
+    });
+
+    it('should apply orderBy(createdAt asc) and limit(1) for determinism', async () => {
+      findResult = {
+        id: 'cred-001',
+        userId: VALID_USER_ID,
+        encryptedToken: `encrypted:${VALID_TOKEN}`,
+        encryptedMetadata: `encrypted:${VALID_METADATA}`,
+        tokenExpiresAt: new Date(VALID_EXPIRES),
+      };
+
+      await pronoteSyncService.getCredentials(VALID_USER_ID);
+
+      expect(capturedLimit).toBe(1);
+      expect(capturedOrderBy).toHaveLength(1);
+      expect(capturedOrderBy[0]).toEqual({ type: 'asc', col: 'createdAt' });
+    });
+
+    it('should always return the oldest credential regardless of result set size', async () => {
+      // Mock returns a single row (the mock resolves limit=1 at the mock layer).
+      // This test verifies that even when multiple credentials would exist,
+      // the query uses limit(1), so at most one row is ever processed.
+      findResult = {
+        id: 'cred-oldest',
+        userId: VALID_USER_ID,
+        encryptedToken: `encrypted:${VALID_TOKEN}`,
+        encryptedMetadata: `encrypted:${VALID_METADATA}`,
+        tokenExpiresAt: new Date(VALID_EXPIRES),
+      };
+
+      const result = await pronoteSyncService.getCredentials(VALID_USER_ID);
+
+      expect(capturedLimit).toBe(1);
+      expect(result?.token).toBe(VALID_TOKEN);
     });
   });
 
