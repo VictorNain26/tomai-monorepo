@@ -39,9 +39,9 @@ export default function ChildHomeworkScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await pronote.fetchHomework();
+    await pronote.fetchHomework(id);
     setRefreshing(false);
-  }, [pronote]);
+  }, [pronote, id]);
 
   return (
     <SafeAreaView className="flex-1 bg-background">
