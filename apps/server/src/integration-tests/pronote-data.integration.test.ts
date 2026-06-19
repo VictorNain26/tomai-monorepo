@@ -76,7 +76,7 @@ import { pronoteChildResourcesRepository } from '../db/repositories/pronote-chil
 import { pronoteDataRoutes } from '../routes/pronote-data.routes.js';
 import { db } from '../db/connection.js';
 import { user as userTable, parentChild as parentChildTable, pronoteCredentials as pronoteCredentialsTable } from '../db/schema.js';
-import { like } from 'drizzle-orm';
+import { like, sql } from 'drizzle-orm';
 
 // ============================================================
 // Demo constants
@@ -92,8 +92,8 @@ const DEMO_DEVICE_UUID = 'tom-e2e';
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 
 // ============================================================
-// Reachability check — top-level await so describe.skipIf
-// evaluates the correct value at registration time.
+// Reachability checks — top-level awaits so describe.skipIf
+// evaluates the correct values at registration time.
 // ============================================================
 
 function checkDemoReachable(): Promise<boolean> {
@@ -102,11 +102,28 @@ function checkDemoReachable(): Promise<boolean> {
     .catch(() => false);
 }
 
-const demoReachable = await checkDemoReachable();
+async function checkDbReachable(): Promise<boolean> {
+  try {
+    await db.execute(sql`select 1`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const [demoReachable, dbReachable] = await Promise.all([
+  checkDemoReachable(),
+  checkDbReachable(),
+]);
 
 if (!demoReachable) {
   console.warn('[pronote-data.integration] Demo unreachable — all tests will be skipped');
 }
+if (!dbReachable) {
+  console.warn('[pronote-data.integration] DB unreachable — all tests will be skipped');
+}
+
+const canRun = demoReachable && dbReachable;
 
 // ============================================================
 // Test state
@@ -130,7 +147,7 @@ const testApp = new Elysia().use(pronoteDataRoutes);
 // ============================================================
 
 beforeAll(async () => {
-  if (!demoReachable) return;
+  if (!canRun) return;
 
   // Authenticate against the demo
   session = await loginWithCredentials({
@@ -202,6 +219,7 @@ beforeAll(async () => {
 }, 60_000);
 
 afterAll(async () => {
+  if (!canRun) return;
   // Delete probe users — CASCADE handles pronote_child_resources,
   // but we delete the mapping explicitly first for clarity.
   if (childId) {
@@ -219,7 +237,7 @@ afterAll(async () => {
 // Part A — real adapter reads (no mocks, no route)
 // ============================================================
 
-describe.skipIf(!demoReachable)('Part A — pawnoteServerAdapter real reads (zero mocks)', () => {
+describe.skipIf(!canRun)('Part A — pawnoteServerAdapter real reads (zero mocks)', () => {
 
   it('getGrades — returns non-empty NormalizedGrade[] with sane fields', async () => {
     const grades = await pawnoteServerAdapter.getGrades(session, 0);
@@ -277,7 +295,7 @@ describe.skipIf(!demoReachable)('Part A — pawnoteServerAdapter real reads (zer
 // Part B — real HTTP route chain
 // ============================================================
 
-describe.skipIf(!demoReachable)('Part B — real HTTP route (auth mocked, data path real)', () => {
+describe.skipIf(!canRun)('Part B — real HTTP route (auth mocked, data path real)', () => {
 
   it('GET /grades — parent user gets 200 with real demo grades', async () => {
     _mockUser = { id: parentId, email: `${PROBE_PREFIX}-parent@example.test`, role: 'parent' };

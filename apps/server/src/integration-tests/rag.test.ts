@@ -11,14 +11,29 @@ import { ragService } from '../services/rag.service';
 import { qdrantService } from '../services/qdrant.service';
 import { aiServiceClient } from '../services/ai-service.client';
 
-const ragCredsPresent = Boolean(
+const ragVarsPresent = Boolean(
   process.env.QDRANT_URL &&
   process.env.QDRANT_API_KEY &&
   process.env.AI_SERVICE_URL
 );
 
-if (!ragCredsPresent) {
+// When vars are present, verify services are actually reachable before running.
+// This prevents spurious timeouts when the stack is configured but not running.
+async function checkServicesReachable(): Promise<boolean> {
+  if (!ragVarsPresent) return false;
+  const [qdrantOk, aiOk] = await Promise.all([
+    qdrantService.isAvailable().catch(() => false),
+    aiServiceClient.isAvailable().catch(() => false),
+  ]);
+  return qdrantOk && aiOk;
+}
+
+const ragCredsPresent = await checkServicesReachable();
+
+if (!ragVarsPresent) {
   console.warn('[rag.test] QDRANT_URL / QDRANT_API_KEY / AI_SERVICE_URL absent — RAG integration suite skipped');
+} else if (!ragCredsPresent) {
+  console.warn('[rag.test] Qdrant or ai-service unreachable — RAG integration suite skipped');
 }
 
 // Queries de test avec réponses attendues (basé sur dataset réel)

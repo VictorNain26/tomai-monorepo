@@ -59,7 +59,7 @@ import { pronoteConnectService } from '../services/pronote/pronote-connect.servi
 import { pronoteSyncService } from '../services/pronote-sync.service.js';
 import { db } from '../db/connection.js';
 import { user as userTable } from '../db/schema.js';
-import { eq, like } from 'drizzle-orm';
+import { eq, like, sql } from 'drizzle-orm';
 
 // ============================================================
 // Demo constants
@@ -71,8 +71,8 @@ const DEMO_PASSWORD = 'pronotevs';
 const DEMO_KIND = 6; // AccountKind.STUDENT
 
 // ============================================================
-// Reachability check — top-level await so describe.skipIf
-// evaluates the correct value at registration time.
+// Reachability checks — top-level awaits so describe.skipIf
+// evaluates the correct values at registration time.
 // ============================================================
 
 function checkDemoReachable(): Promise<boolean> {
@@ -81,11 +81,28 @@ function checkDemoReachable(): Promise<boolean> {
     .catch(() => false);
 }
 
-let demoReachable = await checkDemoReachable();
+async function checkDbReachable(): Promise<boolean> {
+  try {
+    await db.execute(sql`select 1`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const [demoReachable, dbReachable] = await Promise.all([
+  checkDemoReachable(),
+  checkDbReachable(),
+]);
 
 if (!demoReachable) {
   console.warn('[pronote-onboarding.integration] Demo unreachable — all tests will be skipped');
 }
+if (!dbReachable) {
+  console.warn('[pronote-onboarding.integration] DB unreachable — all tests will be skipped');
+}
+
+const canRun = demoReachable && dbReachable;
 
 // ============================================================
 // Test state
@@ -104,7 +121,7 @@ let activatedChildId: string | null = null;
 // ============================================================
 
 beforeAll(async () => {
-  if (!demoReachable) return;
+  if (!canRun) return;
 
   // 1. Login against the demo (loginCredentials path — token-based auth is not tested here).
   //    Wrap in try/catch: a network failure here should produce a clean skip, not an opaque
@@ -119,7 +136,6 @@ beforeAll(async () => {
     });
   } catch (err) {
     console.warn('[pronote-onboarding.integration] loginWithCredentials failed — skipping', err);
-    demoReachable = false;
     return;
   }
 
@@ -167,6 +183,7 @@ beforeAll(async () => {
 }, 60_000);
 
 afterAll(async () => {
+  if (!canRun) return;
   // Delete probe parent (and credential via FK cascade) by email pattern
   await db
     .delete(userTable)
@@ -185,7 +202,7 @@ afterAll(async () => {
 // Chain: discover → activate → read
 // ============================================================
 
-describe.skipIf(!demoReachable)('Pronote onboarding e2e — discover → activate → read', () => {
+describe.skipIf(!canRun)('Pronote onboarding e2e — discover → activate → read', () => {
 
   let discoveredResourceId: number = -1;
 
