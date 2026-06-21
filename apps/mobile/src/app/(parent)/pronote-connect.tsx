@@ -2,17 +2,14 @@
  * PronoteConnectScreen — server-driven Pronote onboarding wizard.
  *
  * Step flow (mirrors OnboardingStep from usePronoteConnect):
- *   intro → scan → pin → discovering → select → (define-access) → activating → result
+ *   intro → scan → pin → discovering → select → activating → result
  *
  * Hook contract points honored:
- *   1. setQrData(parsed) is called from the QR scan callback BEFORE the pin step
+ *   1. goToScan() advances from intro to scan.
+ *   2. setQrData(parsed) is called from the QR scan callback BEFORE the pin step
  *      is shown. submitPin no-ops when qrData is null — screen must set it first.
- *   2. existingChildId child → defaults to mode='link' with linkToChildId set.
+ *   3. existingChildId child → defaults to mode='link' with linkToChildId set.
  *      New child → defaults to mode='create'. Both can be overridden by the parent.
- *
- * "select" and "define-access" hook steps are both handled by the same UI:
- * the per-child access form (ChildAccessCard). confirmSelections() is called
- * when the parent presses "Confirmer et activer".
  */
 
 import { useState, useCallback } from 'react';
@@ -64,6 +61,7 @@ export default function PronoteConnectScreen() {
     error,
     results,
     setQrData,
+    goToScan,
     submitPin,
     confirmSelections,
     retryFailed,
@@ -204,7 +202,7 @@ export default function PronoteConnectScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {step === 'intro' && (
-          <PronoteStepIntro onContinue={() => { /* hook transitions to scan on first QR */ }} />
+          <PronoteStepIntro onContinue={goToScan} />
         )}
 
         {step === 'scan' && (
@@ -233,7 +231,7 @@ export default function PronoteConnectScreen() {
 
         {step === 'discovering' && <PronoteStepConnecting />}
 
-        {(step === 'select' || step === 'define-access') && (
+        {step === 'select' && (
           <View className="flex-1">
             <ScrollView
               className="flex-1 px-4 py-5"
@@ -290,6 +288,7 @@ export default function PronoteConnectScreen() {
             discovered={discovered}
             selections={selections}
             accessForms={accessForms}
+            onFormChange={handleFormChange}
             onRetry={handleRetry}
             onDone={() => router.back()}
             isPending={isPending}

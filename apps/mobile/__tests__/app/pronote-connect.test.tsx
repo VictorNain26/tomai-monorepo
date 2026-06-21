@@ -17,6 +17,7 @@ import { render, fireEvent, act } from '@testing-library/react-native';
 // ─── Hook mock ───────────────────────────────────────────────────────────────
 
 const mockSetQrData = jest.fn();
+const mockGoToScan = jest.fn();
 const mockSubmitPin = jest.fn();
 const mockConfirmSelections = jest.fn();
 const mockRetryFailed = jest.fn();
@@ -169,6 +170,7 @@ function makeHookState(overrides: Record<string, unknown> = {}) {
     error: null,
     results: { activated: [], failed: [] },
     setQrData: mockSetQrData,
+    goToScan: mockGoToScan,
     submitPin: mockSubmitPin,
     confirmSelections: mockConfirmSelections,
     retryFailed: mockRetryFailed,
@@ -343,5 +345,71 @@ describe('PronoteConnectScreen', () => {
 
     expect(getByTestId('result-failed-list')).toBeTruthy();
     expect(getByTestId('result-retry-btn')).toBeTruthy();
+  });
+
+  // ── 7. intro continue → goToScan called ────────────────────────────────────
+  it('intro step: pressing continue calls goToScan', () => {
+    mockUsePronoteConnect.mockReturnValue(makeHookState({ step: 'intro' }));
+
+    const { getByTestId } = render(<PronoteConnectScreen />);
+
+    fireEvent.press(getByTestId('mock-intro-continue'));
+
+    expect(mockGoToScan).toHaveBeenCalledTimes(1);
+  });
+
+  // ── 8. result step: edit failed child username → retryFailed with corrected value ──
+  it('result step: editing failed child username then retry calls retryFailed with corrected username', async () => {
+    mockRetryFailed.mockResolvedValue(undefined);
+
+    // Simulate hook where selections has failing username
+    const failedSelections = [
+      {
+        resourceId: 3,
+        firstName: 'Lea',
+        lastName: 'BERNARD',
+        schoolLevel: 'cinquieme',
+        mode: 'create' as const,
+        username: 'lea.bernard',
+        password: 'Password1!',
+      },
+    ];
+
+    mockUsePronoteConnect.mockReturnValue(
+      makeHookState({
+        step: 'result',
+        results: {
+          activated: [],
+          failed: [{ resourceId: 3, reason: 'missing_credentials' }],
+        },
+        discovered: [
+          {
+            resourceId: 3,
+            name: 'BERNARD Lea',
+            className: '5eC',
+            establishmentName: 'Collège Jean Moulin',
+            suggested: { firstName: 'Lea', lastName: 'BERNARD', schoolLevel: 'cinquieme' },
+            existingChildId: null,
+          },
+        ],
+        selections: failedSelections,
+      }),
+    );
+
+    const { getByTestId } = render(<PronoteConnectScreen />);
+
+    // Edit the username field for the failed child
+    fireEvent.changeText(getByTestId('result-failed-username-3'), 'lea.bernard.new');
+
+    // Press retry
+    await act(async () => {
+      fireEvent.press(getByTestId('result-retry-btn'));
+    });
+
+    // retryFailed should be called with the CORRECTED username
+    expect(mockRetryFailed).toHaveBeenCalledTimes(1);
+    const [calledWith] = mockRetryFailed.mock.calls[0] as [typeof failedSelections];
+    const childEntry = calledWith.find((s) => s.resourceId === 3);
+    expect(childEntry?.username).toBe('lea.bernard.new');
   });
 });

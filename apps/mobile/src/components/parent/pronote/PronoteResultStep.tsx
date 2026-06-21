@@ -3,7 +3,8 @@
  *
  * Shows:
  *  - Activated children (with logins to hand to the child)
- *  - Failed children (with reason + retry button for the failed subset)
+ *  - Failed children with editable credential fields (except already_mapped conflicts)
+ *  - Retry button for the failed subset
  *  - "Terminer" button when no failures remain
  */
 
@@ -12,6 +13,7 @@ import { View, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { ChildAccessSelection, DiscoveredChild } from '@/hooks/usePronoteConnect';
 import type { AccessForm } from './pronote-connect-types';
@@ -28,10 +30,14 @@ export interface PronoteResultStepProps {
   discovered: DiscoveredChild[];
   selections: ChildAccessSelection[];
   accessForms: Record<number, AccessForm>;
+  onFormChange: (resourceId: number, field: keyof AccessForm, value: string) => void;
   onRetry: () => void;
   onDone: () => void;
   isPending: boolean;
 }
+
+// Failures that can't be fixed by editing credentials — show reason only.
+const CONFLICT_REASONS = ['already_mapped'];
 
 // ============================================================================
 // COMPONENT
@@ -42,6 +48,7 @@ export function PronoteResultStep({
   discovered,
   selections,
   accessForms,
+  onFormChange,
   onRetry,
   onDone,
   isPending,
@@ -113,25 +120,58 @@ export function PronoteResultStep({
           >
             Échecs ({results.failed.length})
           </Text>
-          {results.failed.map(({ resourceId, reason }) => (
-            <Card
-              key={resourceId}
-              className="mb-2 rounded-xl p-4"
-              style={{ borderWidth: 1, borderColor: colors.destructive + '40' }}
-              accessibilityLabel={`Échec pour ${nameForResource(resourceId)}: ${reason}`}
-            >
-              <Text className="font-semibold">{nameForResource(resourceId)}</Text>
-              <Text variant="muted" className="mt-0.5 text-xs text-destructive">
-                {reason}
-              </Text>
-            </Card>
-          ))}
+          {results.failed.map(({ resourceId, reason }) => {
+            const isConflict = CONFLICT_REASONS.includes(reason);
+            const sel = selections.find((s) => s.resourceId === resourceId);
+            const form = accessForms[resourceId];
+            const currentUsername = form?.username ?? sel?.username ?? '';
+            const currentPassword = form?.password ?? sel?.password ?? '';
+
+            return (
+              <Card
+                key={resourceId}
+                className="mb-3 rounded-xl p-4"
+                style={{ borderWidth: 1, borderColor: colors.destructive + '40' }}
+                accessibilityLabel={`Échec pour ${nameForResource(resourceId)}: ${reason}`}
+              >
+                <Text className="font-semibold">{nameForResource(resourceId)}</Text>
+                <Text variant="muted" className="mt-0.5 mb-3 text-xs text-destructive">
+                  {reason}
+                </Text>
+
+                {!isConflict && (
+                  <View className="gap-3">
+                    <Input
+                      label="Identifiant"
+                      placeholder="ex. alice.dupont (min. 3 caractères)"
+                      value={currentUsername}
+                      onChangeText={(v) => onFormChange(resourceId, 'username', v)}
+                      accessibilityLabel={`Identifiant de ${nameForResource(resourceId)}`}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      testID={`result-failed-username-${resourceId}`}
+                    />
+                    <Input
+                      label="Mot de passe"
+                      placeholder="min. 8 caractères"
+                      value={currentPassword}
+                      onChangeText={(v) => onFormChange(resourceId, 'password', v)}
+                      accessibilityLabel={`Mot de passe de ${nameForResource(resourceId)}`}
+                      secureTextEntry
+                      testID={`result-failed-password-${resourceId}`}
+                    />
+                  </View>
+                )}
+              </Card>
+            );
+          })}
 
           <Button
             testID="result-retry-btn"
             onPress={onRetry}
             disabled={isPending}
             className="mt-3"
+            accessibilityRole="button"
             accessibilityLabel="Réessayer les activations échouées"
           >
             <Text className="font-semibold text-primary-foreground">

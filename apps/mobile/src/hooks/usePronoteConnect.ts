@@ -70,7 +70,6 @@ export type OnboardingStep =
   | 'pin'
   | 'discovering'
   | 'select'
-  | 'define-access'
   | 'activating'
   | 'result';
 
@@ -92,6 +91,7 @@ export interface PronoteConnectState {
 
 type Action =
   | { type: 'set-qr-data'; qrData: QrData }
+  | { type: 'go-to-scan' }
   | { type: 'set-pin'; pin: string }
   | { type: 'connect-start' }
   | { type: 'connect-success'; credentialId: string; discovered: DiscoveredChild[] }
@@ -119,6 +119,9 @@ function reducer(state: PronoteConnectState, action: Action): PronoteConnectStat
   switch (action.type) {
     case 'set-qr-data':
       return { ...state, qrData: action.qrData, step: 'pin', error: null };
+
+    case 'go-to-scan':
+      return { ...state, step: 'scan', error: null };
 
     case 'set-pin':
       return { ...state, pin: action.pin };
@@ -200,6 +203,7 @@ function isReauthError(err: unknown): boolean {
 
 export interface UsePronoteConnectReturn extends PronoteConnectState {
   setQrData: (qrData: QrData) => void;
+  goToScan: () => void;
   submitPin: (pin: string) => Promise<void>;
   confirmSelections: (selections: ChildAccessSelection[]) => Promise<void>;
   retryFailed: (correctedSelections: ChildAccessSelection[]) => Promise<void>;
@@ -211,6 +215,10 @@ export function usePronoteConnect(): UsePronoteConnectReturn {
 
   const setQrData = useCallback((qrData: QrData) => {
     dispatch({ type: 'set-qr-data', qrData });
+  }, []);
+
+  const goToScan = useCallback(() => {
+    dispatch({ type: 'go-to-scan' });
   }, []);
 
   const submitPin = useCallback(
@@ -329,6 +337,7 @@ export function usePronoteConnect(): UsePronoteConnectReturn {
   return {
     ...state,
     setQrData,
+    goToScan,
     submitPin,
     confirmSelections,
     retryFailed,
