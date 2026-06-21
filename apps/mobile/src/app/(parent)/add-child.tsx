@@ -23,7 +23,9 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useParentDashboard } from '@/hooks/useParentDashboard';
-import { LevelPicker } from './add-child-level-picker';
+import { ChildCredentialsFields } from '@/components/parent/ChildCredentialsFields';
+import type { ChildCredentialsErrors } from '@/components/parent/ChildCredentialsFields';
+import { validateUsername, validatePassword } from '@/lib/child-credential-validators';
 import type { EducationLevelType } from '@/constants/levels';
 
 // ============================================================================
@@ -39,13 +41,10 @@ interface FormValues {
   schoolLevel: EducationLevelType;
 }
 
-interface FormErrors {
+interface FormErrors extends ChildCredentialsErrors {
   firstName?: string;
   lastName?: string;
-  username?: string;
-  password?: string;
   dateOfBirth?: string;
-  schoolLevel?: string;
   api?: string;
 }
 
@@ -58,22 +57,13 @@ function validate(values: FormValues): FormErrors {
   if (!values.lastName.trim()) {
     errors.lastName = 'Nom requis';
   }
-  if (!values.username.trim()) {
-    errors.username = 'Identifiant requis';
-  } else if (values.username.trim().length < 3) {
-    errors.username = 'Identifiant : 3 caractères minimum';
-  } else if (values.username.trim().length > 30) {
-    errors.username = 'Identifiant : 30 caractères maximum';
-  } else if (!/^[a-zA-Z0-9_.]+$/.test(values.username.trim())) {
-    errors.username = 'Identifiant : lettres, chiffres, points, underscores';
-  }
-  if (!values.password) {
-    errors.password = 'Mot de passe requis';
-  } else if (values.password.length < 8) {
-    errors.password = 'Mot de passe : 8 caractères minimum';
-  } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(values.password)) {
-    errors.password = 'Mot de passe : majuscule, minuscule, chiffre requis';
-  }
+
+  const usernameError = validateUsername(values.username);
+  if (usernameError) errors.username = usernameError;
+
+  const passwordError = validatePassword(values.password);
+  if (passwordError) errors.password = passwordError;
+
   if (!values.dateOfBirth) {
     errors.dateOfBirth = 'Date de naissance requise';
   } else if (!/^\d{4}-\d{2}-\d{2}$/.test(values.dateOfBirth)) {
@@ -100,45 +90,6 @@ function validate(values: FormValues): FormErrors {
 
 function hasErrors(errors: FormErrors): boolean {
   return Object.keys(errors).length > 0;
-}
-
-function passwordStrength(password: string): 'weak' | 'medium' | 'strong' {
-  if (password.length < 8) return 'weak';
-  const hasLower = /[a-z]/.test(password);
-  const hasUpper = /[A-Z]/.test(password);
-  const hasDigit = /\d/.test(password);
-  const hasSpecial = /[^a-zA-Z0-9]/.test(password);
-  const score = [hasLower, hasUpper, hasDigit, hasSpecial].filter(Boolean).length;
-  if (score <= 2) return 'weak';
-  if (score === 3) return 'medium';
-  return 'strong';
-}
-
-// ============================================================================
-// PASSWORD STRENGTH INDICATOR
-// ============================================================================
-
-function PasswordStrengthBar({ password }: { password: string }) {
-  if (!password) return null;
-  const strength = passwordStrength(password);
-  const label =
-    strength === 'weak' ? 'Faible' : strength === 'medium' ? 'Moyen' : 'Fort';
-  const barClass =
-    strength === 'weak'
-      ? 'bg-destructive'
-      : strength === 'medium'
-        ? 'bg-warning'
-        : 'bg-success';
-  const width = strength === 'weak' ? 'w-1/3' : strength === 'medium' ? 'w-2/3' : 'w-full';
-
-  return (
-    <View className="mt-1 gap-1">
-      <View className="h-1 w-full rounded-full bg-muted">
-        <View className={`h-1 rounded-full ${barClass} ${width}`} />
-      </View>
-      <Text variant="tiny">{`Force : ${label}`}</Text>
-    </View>
-  );
 }
 
 // ============================================================================
@@ -173,6 +124,13 @@ export default function AddChildScreen() {
       });
     },
     []
+  );
+
+  const handleCredentialsChange = useCallback(
+    (field: 'username' | 'password' | 'schoolLevel', value: string) => {
+      set(field as keyof FormValues, value as FormValues[keyof FormValues]);
+    },
+    [set]
   );
 
   const handleSubmit = useCallback(async () => {
@@ -269,35 +227,14 @@ export default function AddChildScreen() {
             testID="add-child-last-name"
           />
 
-          {/* Username */}
-          <Input
-            label="Identifiant"
-            placeholder="ex. alice.dupont (min. 3 caractères)"
-            value={values.username}
-            onChangeText={(v) => set('username', v)}
-            variant={errors.username ? 'error' : 'default'}
-            errorMessage={errors.username}
-            accessibilityLabel="Identifiant de connexion de l'enfant"
-            autoCapitalize="none"
-            autoCorrect={false}
-            testID="add-child-username"
+          {/* Credentials: username + password + level */}
+          <ChildCredentialsFields
+            username={values.username}
+            password={values.password}
+            schoolLevel={values.schoolLevel}
+            onChange={handleCredentialsChange}
+            errors={{ username: errors.username, password: errors.password }}
           />
-
-          {/* Password */}
-          <View className="gap-1">
-            <Input
-              label="Mot de passe"
-              placeholder="min. 8 caractères"
-              value={values.password}
-              onChangeText={(v) => set('password', v)}
-              variant={errors.password ? 'error' : 'default'}
-              errorMessage={errors.password}
-              accessibilityLabel="Mot de passe de l'enfant"
-              secureTextEntry
-              testID="add-child-password"
-            />
-            <PasswordStrengthBar password={values.password} />
-          </View>
 
           {/* Date of birth */}
           <Input
@@ -311,12 +248,6 @@ export default function AddChildScreen() {
             keyboardType="numeric"
             maxLength={10}
             testID="add-child-dob"
-          />
-
-          {/* School level */}
-          <LevelPicker
-            value={values.schoolLevel}
-            onChange={(v) => set('schoolLevel', v)}
           />
 
           {/* Submit */}

@@ -6,8 +6,8 @@
  *   schoolLevel (picker), dateOfBirth (YYYY-MM-DD)
  *
  * testIDs:
- *   add-child-first-name, add-child-last-name, add-child-username,
- *   add-child-password, add-child-dob, add-child-level-picker,
+ *   add-child-first-name, add-child-last-name, credentials-username,
+ *   credentials-password, add-child-dob, add-child-level-picker,
  *   add-child-submit, add-child-error
  */
 
@@ -69,8 +69,8 @@ import AddChildScreen from '@/app/(parent)/add-child';
 function fillValidForm(getByTestId: ReturnType<typeof render>['getByTestId']) {
   fireEvent.changeText(getByTestId('add-child-first-name'), 'Alice');
   fireEvent.changeText(getByTestId('add-child-last-name'), 'Dupont');
-  fireEvent.changeText(getByTestId('add-child-username'), 'alice.dupont');
-  fireEvent.changeText(getByTestId('add-child-password'), 'Password1');
+  fireEvent.changeText(getByTestId('credentials-username'), 'alice.dupont');
+  fireEvent.changeText(getByTestId('credentials-password'), 'Password1');
   fireEvent.changeText(getByTestId('add-child-dob'), '2012-05-15');
 }
 
@@ -86,8 +86,8 @@ describe('AddChildScreen', () => {
     const { getByTestId } = render(<AddChildScreen />);
     expect(getByTestId('add-child-first-name')).toBeTruthy();
     expect(getByTestId('add-child-last-name')).toBeTruthy();
-    expect(getByTestId('add-child-username')).toBeTruthy();
-    expect(getByTestId('add-child-password')).toBeTruthy();
+    expect(getByTestId('credentials-username')).toBeTruthy();
+    expect(getByTestId('credentials-password')).toBeTruthy();
     expect(getByTestId('add-child-dob')).toBeTruthy();
     expect(getByTestId('add-child-submit')).toBeTruthy();
   });
@@ -125,8 +125,8 @@ describe('AddChildScreen', () => {
 
     fireEvent.changeText(getByTestId('add-child-first-name'), 'Alice');
     fireEvent.changeText(getByTestId('add-child-last-name'), 'Dupont');
-    fireEvent.changeText(getByTestId('add-child-username'), 'ab'); // < min 3
-    fireEvent.changeText(getByTestId('add-child-password'), 'Password1');
+    fireEvent.changeText(getByTestId('credentials-username'), 'ab'); // < min 3
+    fireEvent.changeText(getByTestId('credentials-password'), 'Password1');
     fireEvent.changeText(getByTestId('add-child-dob'), '2012-05-15');
 
     await act(async () => {
@@ -142,7 +142,7 @@ describe('AddChildScreen', () => {
     const { getByTestId, findByTestId } = render(<AddChildScreen />);
 
     fillValidForm(getByTestId);
-    fireEvent.changeText(getByTestId('add-child-password'), 'Short1'); // < 8
+    fireEvent.changeText(getByTestId('credentials-password'), 'Short1'); // < 8
 
     await act(async () => {
       fireEvent.press(getByTestId('add-child-submit'));
