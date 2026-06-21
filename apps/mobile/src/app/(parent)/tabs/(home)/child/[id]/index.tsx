@@ -26,8 +26,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/toast';
 import { DeleteChildModal } from '@/components/parent';
-import { useParentDashboard, useThemeColors, usePronote } from '@/hooks';
-import { usePronoteStatus } from '@/hooks/usePronoteStatus';
+import { useParentDashboard, useThemeColors, usePronote, usePronoteStatus } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { getLevelLabel } from '@/constants/levels';
 import { computeAverageGrade, formatStudyTime, formatFrenchDate } from '@/lib/formatters';
@@ -131,9 +130,11 @@ export default function ChildDetailScreen() {
                 <>
                   {/* green-300 / amber-200: decorative badge icon always over primary gradient — theme-invariant */}
                   <CheckCircle2 color="#86efac" size={14} />
-                  <Text className="text-xs font-medium text-white">
-                    {pronoteStatus.data?.className ?? 'Pronote'}
-                  </Text>
+                  {pronoteStatus.data?.className ? (
+                    <Text className="text-xs font-medium text-white">
+                      {pronoteStatus.data.className}
+                    </Text>
+                  ) : null}
                 </>
               ) : (
                 <>
