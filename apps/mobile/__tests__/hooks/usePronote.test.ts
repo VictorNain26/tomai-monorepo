@@ -4,7 +4,6 @@
  * Verifies:
  * 1. Per-domain error surfacing (cross-contamination guard).
  * 2. fetchGrades(childId) targets the correct route.
- * 3. connect() delegates to POST /api/pronote/connect/qr and updates store.
  */
 
 import { renderHook, act, waitFor } from '@testing-library/react-native';
@@ -85,8 +84,6 @@ describe('usePronote error surfacing', () => {
     jest.clearAllMocks();
     act(() => {
       usePronoteStore.setState({
-        isConnected: true,
-        metadata: null,
         lastGradesFetch: null,
         lastHomeworkFetch: null,
         lastTimetableFetch: null,
@@ -182,8 +179,6 @@ describe('usePronote fetchGrades childId routing', () => {
     jest.clearAllMocks();
     act(() => {
       usePronoteStore.setState({
-        isConnected: true,
-        metadata: null,
         lastGradesFetch: null,
         lastHomeworkFetch: null,
         lastTimetableFetch: null,
@@ -218,75 +213,5 @@ describe('usePronote fetchGrades childId routing', () => {
     await act(async () => { await result.current.fetchGrades('child-abc'); });
 
     expect(childrenFn).toHaveBeenCalledWith({ childId: 'child-abc' });
-  });
-});
-
-describe('usePronote connect', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    act(() => {
-      usePronoteStore.setState({
-        isConnected: false,
-        resources: [],
-        errors: { homework: null, grades: null, timetable: null },
-      });
-    });
-  });
-
-  it('calls POST /api/pronote/connect/qr and updates store on success', async () => {
-    const connectPost = jest.fn().mockResolvedValue({
-      data: {
-        success: true,
-        data: {
-          credentialId: 'cred-1',
-          resources: [{ resourceId: 1, name: 'Alice', className: '5A', establishmentName: 'Collège X' }],
-        },
-      },
-      error: null,
-    });
-
-    mockGetTreaty.mockReturnValue({
-      api: { pronote: { connect: { qr: { post: connectPost } } } },
-    } as unknown as ReturnType<typeof getTreaty>);
-
-    const { result } = renderHook(() => usePronote('user-1'));
-    const qrData = { jeton: 'tok', login: 'usr', url: 'https://school.fr/pronote/' };
-
-    let connectResult: { success: boolean } | undefined;
-    await act(async () => {
-      connectResult = await result.current.connect(qrData, '1234');
-    });
-
-    expect(connectPost).toHaveBeenCalledWith({
-      qr: { jeton: 'tok', login: 'usr', url: 'https://school.fr/pronote/' },
-      pin: '1234',
-    });
-    expect(connectResult?.success).toBe(true);
-
-    await waitFor(() => {
-      expect(result.current.isConnected).toBe(true);
-    });
-  });
-
-  it('returns success:false and does not update store when API errors', async () => {
-    const connectPost = jest.fn().mockResolvedValue({
-      data: null,
-      error: { status: 409, value: { message: 'QR expiré', code: 'pronote_reauth_required' } },
-    });
-
-    mockGetTreaty.mockReturnValue({
-      api: { pronote: { connect: { qr: { post: connectPost } } } },
-    } as unknown as ReturnType<typeof getTreaty>);
-
-    const { result } = renderHook(() => usePronote('user-1'));
-    const qrData = { jeton: 'tok', login: 'usr', url: 'https://school.fr/pronote/' };
-
-    let connectResult: { success: boolean } | undefined;
-    await act(async () => {
-      connectResult = await result.current.connect(qrData, '1234');
-    });
-
-    expect(connectResult?.success).toBe(false);
-    expect(result.current.isConnected).toBe(false);
   });
 });

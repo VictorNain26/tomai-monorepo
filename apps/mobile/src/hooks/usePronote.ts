@@ -11,11 +11,6 @@ import { useCallback, useMemo } from 'react';
 import { getTreaty, unwrap } from '@repo/api';
 import { usePronoteStore } from '@/stores/pronote-store';
 import { mapGrade, mapHomework, mapLesson } from '@/services/pronote/pronote-mappers';
-import type {
-  QrCodeData,
-  PronoteConnectionResult,
-  PronoteResource,
-} from '@/services/pronote/pronote-types';
 
 // Cache TTLs in milliseconds
 const HOMEWORK_TTL = 15 * 60 * 1000; // 15 minutes
@@ -29,9 +24,6 @@ function isCacheStale(lastFetch: string | null, ttl: number): boolean {
 
 export function usePronote(userId: string) {
   // Select individual fields to avoid re-renders on unrelated state changes
-  const isConnected = usePronoteStore((s) => s.isConnected);
-  const resources = usePronoteStore((s) => s.resources);
-  const resourceMappings = usePronoteStore((s) => s.resourceMappings);
   const homework = usePronoteStore((s) => s.homework);
   const grades = usePronoteStore((s) => s.grades);
   const timetable = usePronoteStore((s) => s.timetable);
@@ -39,66 +31,10 @@ export function usePronote(userId: string) {
   const lastGradesFetch = usePronoteStore((s) => s.lastGradesFetch);
   const lastTimetableFetch = usePronoteStore((s) => s.lastTimetableFetch);
   const errors = usePronoteStore((s) => s.errors);
-  const storeSetConnected = usePronoteStore((s) => s.setConnected);
-  const storeSetResources = usePronoteStore((s) => s.setResources);
-  const storeSetResourceMapping = usePronoteStore((s) => s.setResourceMapping);
   const storeSetHomework = usePronoteStore((s) => s.setHomework);
   const storeSetGrades = usePronoteStore((s) => s.setGrades);
   const storeSetTimetable = usePronoteStore((s) => s.setTimetable);
   const storeSetError = usePronoteStore((s) => s.setError);
-  const storeReset = usePronoteStore((s) => s.reset);
-
-  const connect = useCallback(
-    async (qrData: QrCodeData, pin: string): Promise<PronoteConnectionResult> => {
-      try {
-        const response = await getTreaty().api.pronote.connect.qr.post({
-          qr: { jeton: qrData.jeton, login: qrData.login, url: qrData.url },
-          pin,
-        });
-
-        const raw = unwrap(response) as unknown as {
-          success: boolean;
-          data: {
-            credentialId: string;
-            resources: Array<{
-              resourceId: number;
-              name: string;
-              className: string | null;
-              establishmentName: string;
-            }>;
-          };
-        };
-
-        if (!raw?.success) {
-          return { success: false, error: 'Connexion échouée' };
-        }
-
-        const clientResources: PronoteResource[] = raw.data.resources.map((r) => ({
-          id: String(r.resourceId),
-          name: r.name,
-          className: r.className ?? undefined,
-        }));
-
-        storeSetConnected({
-          instanceUrl: qrData.url,
-          username: qrData.login,
-          deviceUuid: raw.data.credentialId,
-          accountKind: 7, // Parent (only parents use QR connect)
-        });
-        storeSetResources(clientResources);
-
-        return { success: true, resources: clientResources, accountKind: 7 };
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Erreur inconnue';
-        return { success: false, error: msg };
-      }
-    },
-    [storeSetConnected, storeSetResources],
-  );
-
-  const disconnect = useCallback(async () => {
-    storeReset();
-  }, [storeReset]);
 
   const fetchGrades = useCallback(
     async (childId?: string) => {
@@ -160,13 +96,6 @@ export function usePronote(userId: string) {
     [userId, lastTimetableFetch, storeSetTimetable, storeSetError],
   );
 
-  const setResourceMapping = useCallback(
-    (childId: string, resourceIndex: number) => {
-      storeSetResourceMapping(childId, resourceIndex);
-    },
-    [storeSetResourceMapping],
-  );
-
   // Computed values
   const upcomingHomework = useMemo(
     () => homework.filter((h) => !h.done).length,
@@ -184,9 +113,6 @@ export function usePronote(userId: string) {
 
   return {
     // State
-    isConnected,
-    resources,
-    resourceMappings,
     homework,
     grades,
     timetable,
@@ -197,11 +123,8 @@ export function usePronote(userId: string) {
     averageGrade,
 
     // Actions
-    connect,
-    disconnect,
     fetchHomework,
     fetchGrades,
     fetchTimetable,
-    setResourceMapping,
   };
 }
