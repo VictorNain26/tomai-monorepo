@@ -15,6 +15,7 @@ import { eq, and } from 'drizzle-orm';
 import type { SchoolLevel } from '../db/schema.js';
 import { ParentDashboardService } from './parent/parent-dashboard.service';
 import type { ChildInfo, ParentDashboardMetrics, StudentProgress, SessionSummary, SessionMessage } from './parent/parent-types';
+import { pronoteChildResourcesRepository } from '../db/repositories/pronote-child-resources.repository';
 
 // Re-export types
 ;
@@ -41,15 +42,19 @@ export class ParentService {
         isActive: child.isActive ?? true,
         parentId: parentId,
         role: 'student' as const,
-        createdAt: child.createdAt?.toISOString() ?? new Date().toISOString()
+        createdAt: child.createdAt?.toISOString() ?? new Date().toISOString(),
+        hasPronote: false,
       }));
+
+      const mapped = await pronoteChildResourcesRepository.getMappedChildIds(result.map(c => c.id));
+      const enriched = result.map(c => ({ ...c, hasPronote: mapped.has(c.id) }));
 
       logger.debug('Processed children data', {
         parentId,
-        processedCount: result.length,
+        processedCount: enriched.length,
         operation: 'parent:getChildren'
       });
-      return result;
+      return enriched;
     } catch (_error) {
       logger.error('Failed to get parent children', {
         _error: _error instanceof Error ? _error.message : String(_error),
@@ -143,7 +148,8 @@ export class ParentService {
       isActive: true,
       parentId: parentId,
       role: 'student' as const,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      hasPronote: false,
     };
   }
 
@@ -191,6 +197,7 @@ export class ParentService {
         throw new Error('Failed to update child');
       }
 
+      const childHasPronote = (await pronoteChildResourcesRepository.getMappedChildIds([updatedChild.id])).has(updatedChild.id);
       return {
         id: updatedChild.id,
         firstName: updatedChild.firstName ?? '',
@@ -201,7 +208,8 @@ export class ParentService {
         isActive: updatedChild.isActive ?? true,
         parentId: parentId,
         role: 'student' as const,
-        createdAt: updatedChild.createdAt?.toISOString() ?? new Date().toISOString()
+        createdAt: updatedChild.createdAt?.toISOString() ?? new Date().toISOString(),
+        hasPronote: childHasPronote,
       };
     } catch (_error) {
       logger.error('Error updating child', { operation: 'parent:child:update', _error: _error instanceof Error ? _error.message : String(_error), parentId, childId, severity: 'medium' as const });

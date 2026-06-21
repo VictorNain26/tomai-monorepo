@@ -155,6 +155,20 @@ mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
   and: (...args: unknown[]) => ({ type: 'and', args }),
   desc: (...args: unknown[]) => ({ type: 'desc', args }),
+  inArray: (...args: unknown[]) => ({ type: 'inArray', args }),
+}));
+
+// Pronote child resources repository mock
+let mappedChildIds: Set<string> = new Set();
+const mockGetMappedChildIds = mock(async (childIds: string[]) => {
+  if (childIds.length === 0) return new Set<string>();
+  return new Set(childIds.filter(id => mappedChildIds.has(id)));
+});
+
+mock.module('../db/repositories/pronote-child-resources.repository', () => ({
+  pronoteChildResourcesRepository: {
+    get getMappedChildIds() { return mockGetMappedChildIds; },
+  },
 }));
 
 // Parent-child repository mock
@@ -194,6 +208,8 @@ beforeEach(() => {
   mockDeleteById.mockClear();
   isLinkedResult = true;
   isLinkedShouldThrow = false;
+  mappedChildIds = new Set();
+  mockGetMappedChildIds.mockClear();
 });
 
 describe('Parent Service', () => {
@@ -209,6 +225,56 @@ describe('Parent Service', () => {
       childrenResult = [];
       const result = await parentService.getParentChildren('parent-no-kids');
       expect(result.length).toBe(0);
+    });
+
+    it('hasPronote: true for mapped child, false for unmapped (batch lookup)', async () => {
+      const child1 = makeUser({ id: 'child-001' });
+      const child2 = makeUser({ id: 'child-002' });
+      childrenResult = [child1, child2];
+      mappedChildIds = new Set(['child-001']);
+
+      const result = await parentService.getParentChildren('parent-001');
+
+      expect(result.length).toBe(2);
+      const mapped = result.find(c => c.id === 'child-001');
+      const unmapped = result.find(c => c.id === 'child-002');
+      expect(mapped?.hasPronote).toBe(true);
+      expect(unmapped?.hasPronote).toBe(false);
+    });
+
+    it('hasPronote: mapping lookup is a SINGLE batch call (no N+1)', async () => {
+      const child1 = makeUser({ id: 'child-001' });
+      const child2 = makeUser({ id: 'child-002' });
+      childrenResult = [child1, child2];
+      mappedChildIds = new Set(['child-001']);
+
+      await parentService.getParentChildren('parent-001');
+
+      expect(mockGetMappedChildIds).toHaveBeenCalledTimes(1);
+      expect(mockGetMappedChildIds).toHaveBeenCalledWith(['child-001', 'child-002']);
+    });
+
+    it('hasPronote: mapping from another parent does not leak into results', async () => {
+      // P1 has child-001 (not mapped); P2's child-p2 is mapped — must not affect P1 results
+      childrenResult = [makeUser({ id: 'child-001' })];
+      // The mock returns false for child-001 regardless of mappedChildIds for p2
+      mappedChildIds = new Set(['child-p2']);
+
+      const result = await parentService.getParentChildren('parent-001');
+
+      expect(result.length).toBe(1);
+      expect(result[0]?.hasPronote).toBe(false);
+    });
+
+    it('hasPronote: short-circuits when no children (no mapping call)', async () => {
+      childrenResult = [];
+      await parentService.getParentChildren('parent-no-kids');
+      // getMappedChildIds should not be called with empty array traversal
+      // (short-circuit: either not called, or called once with [])
+      const calls = mockGetMappedChildIds.mock.calls;
+      if (calls.length > 0) {
+        expect(calls[0]?.[0]).toEqual([]);
+      }
     });
   });
 

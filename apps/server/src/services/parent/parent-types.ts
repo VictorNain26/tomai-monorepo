@@ -9,6 +9,7 @@ export interface ChildInfo {
   parentId: string;
   role: 'student';
   createdAt: string;
+  hasPronote: boolean;
 }
 
 export interface ParentDashboardMetrics {
