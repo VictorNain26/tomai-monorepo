@@ -169,6 +169,31 @@ class PronoteDataService {
     const { session, resourceId } = await this.resolveSession(childId);
     return pawnoteServerAdapter.getTimetable(session, resourceId, day);
   }
+
+  /**
+   * Configure (or reconfigure) the Pronote resource mapping for a child.
+   * Resolves className/establishmentName from the live resource list before
+   * writing, so the mapping is never persisted with null metadata.
+   *
+   * The caller (route) is responsible for authorization (parent-only).
+   */
+  async configureResource(
+    parentUserId: string,
+    childUserId: string,
+    credentialId: string,
+    resourceId: number,
+  ): Promise<void> {
+    const resources = await this.listResources(credentialId);
+    const res = resources.find((r) => r.resourceId === resourceId);
+    await pronoteChildResourcesRepository.upsertMapping(
+      parentUserId,
+      childUserId,
+      credentialId,
+      resourceId,
+      res?.className ?? null,
+      res?.establishmentName ?? null,
+    );
+  }
 }
 
 // 10-minute TTL for cached Pronote sessions

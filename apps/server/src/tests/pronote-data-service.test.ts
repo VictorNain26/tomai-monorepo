@@ -10,9 +10,19 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 // ============================================
 
 const mockGetMapping = mock(async (_childId: string) => null as { parentUserId: string; credentialId: string; resourceId: number } | null);
+const mockUpsertMapping = mock(async (_parentId: string, _childId: string, _credId: string, _resId: number, _className: string | null, _estName: string | null) => {});
 const mockGetCredentialById = mock(async (_id: string) => null as { id: string; token: string; metadata: string; tokenExpiresAt: string } | null);
 const mockUpdateTokenById = mock(async (_id: string, _token: string) => true);
-const mockConnect = mock(async () => ({ token: 'rotated-token', username: 'jean.dupont', handle: {} }));
+
+const MOCK_RESOURCES = [
+  { name: 'Emma Dupont', className: '3ème A', establishmentName: 'Collège Jean Moulin' },
+  { name: 'Lucas Dupont', className: '5ème B', establishmentName: 'Collège Jean Moulin' },
+];
+const mockConnect = mock(async () => ({
+  token: 'rotated-token',
+  username: 'jean.dupont',
+  handle: { user: { resources: MOCK_RESOURCES } },
+}));
 const mockGetGrades = mock(async () => [
   { subject: 'Maths', value: 15, scale: 20, date: '2026-06-01', comment: null },
 ]);
@@ -26,6 +36,7 @@ const mockGetTimetable = mock(async () => [
 mock.module('../db/repositories/pronote-child-resources.repository', () => ({
   pronoteChildResourcesRepository: {
     getMapping: mockGetMapping,
+    upsertMapping: mockUpsertMapping,
   },
 }));
 
@@ -89,6 +100,7 @@ const VALID_MAPPING = { parentUserId: PARENT_ID, credentialId: 'cred-uuid-001', 
 describe('PronoteDataService', () => {
   beforeEach(() => {
     mockGetMapping.mockClear();
+    mockUpsertMapping.mockClear();
     mockGetCredentialById.mockClear();
     mockUpdateTokenById.mockClear();
     mockConnect.mockClear();
@@ -99,7 +111,11 @@ describe('PronoteDataService', () => {
     // Reset to happy-path defaults
     mockGetMapping.mockImplementation(async () => VALID_MAPPING);
     mockGetCredentialById.mockImplementation(async () => VALID_CREDENTIALS);
-    mockConnect.mockImplementation(async () => ({ token: 'rotated-token', username: 'jean.dupont', handle: {} }));
+    mockConnect.mockImplementation(async () => ({
+      token: 'rotated-token',
+      username: 'jean.dupont',
+      handle: { user: { resources: MOCK_RESOURCES } },
+    }));
     mockGetGrades.mockImplementation(async () => [
       { subject: 'Maths', value: 15, scale: 20, date: '2026-06-01', comment: null },
     ]);
@@ -287,6 +303,45 @@ describe('PronoteDataService', () => {
       expect(lessons[0]!.subject).toBe('SVT');
       const ttArg = (mockGetTimetable.mock.calls as unknown as Array<[unknown, number, string]>)[0];
       expect(ttArg?.[2]).toBe('2026-06-10');
+    });
+  });
+
+  // ============================================
+  // configureResource: populates className/establishmentName from live resource list
+  // ============================================
+
+  describe('configureResource', () => {
+    it('resolves className and establishmentName from listResources and passes them to upsertMapping', async () => {
+      const childIdCR = 'child-configure-resource';
+      const credIdCR = 'cred-configure-resource';
+      // resourceId 1 → Lucas Dupont in MOCK_RESOURCES: { className: '5ème B', establishmentName: 'Collège Jean Moulin' }
+      mockGetCredentialById.mockImplementation(async () => ({ ...VALID_CREDENTIALS, id: credIdCR }));
+
+      await pronoteDataService.configureResource(PARENT_ID, childIdCR, credIdCR, 1);
+
+      expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
+      const [calledParent, calledChild, calledCred, calledResId, calledClass, calledEst] =
+        mockUpsertMapping.mock.calls[0] as [string, string, string, number, string | null, string | null];
+      expect(calledParent).toBe(PARENT_ID);
+      expect(calledChild).toBe(childIdCR);
+      expect(calledCred).toBe(credIdCR);
+      expect(calledResId).toBe(1);
+      expect(calledClass).toBe('5ème B');
+      expect(calledEst).toBe('Collège Jean Moulin');
+    });
+
+    it('passes null className/establishmentName when resourceId not found in list', async () => {
+      const childIdCR2 = 'child-configure-resource-unknown';
+      const credIdCR2 = 'cred-configure-resource-unknown';
+      mockGetCredentialById.mockImplementation(async () => ({ ...VALID_CREDENTIALS, id: credIdCR2 }));
+
+      await pronoteDataService.configureResource(PARENT_ID, childIdCR2, credIdCR2, 99);
+
+      expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
+      const [, , , , calledClass, calledEst] =
+        mockUpsertMapping.mock.calls[0] as [string, string, string, number, string | null, string | null];
+      expect(calledClass).toBeNull();
+      expect(calledEst).toBeNull();
     });
   });
 });

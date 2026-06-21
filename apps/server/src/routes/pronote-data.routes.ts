@@ -19,7 +19,6 @@ import {
   PronoteNotConnectedError,
   PronoteMetadataError,
 } from '../services/pronote/pronote-data.service.js';
-import { pronoteChildResourcesRepository } from '../db/repositories/pronote-child-resources.repository.js';
 import { parentService } from '../services/parent.service.js';
 import { PronoteReauthRequired } from '../services/pronote/pawnote-server.adapter.js';
 
@@ -117,7 +116,7 @@ export const pronoteDataRoutes = new Elysia({ name: 'pronote-data-routes' })
         return status(403, { error: 'Access denied: only a parent can configure the resource mapping', code: 'forbidden' });
       }
 
-      await pronoteChildResourcesRepository.upsertMapping(user.id, childId, body.credentialId, body.resourceId, null, null);
+      await pronoteDataService.configureResource(user.id, childId, body.credentialId, body.resourceId);
       return { success: true };
     }, {
       body: t.Object({ credentialId: t.String({ format: 'uuid' }), resourceId: t.Number() }),

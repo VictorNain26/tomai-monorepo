@@ -42,6 +42,7 @@ mock.module('../middleware/rate-limit.middleware', () => ({
 let mockGetGrades = mock(async (_childId: string) => [{ subject: 'Maths', value: 18 }]);
 let mockGetHomework = mock(async (_childId: string) => [{ description: 'Exercice 3' }]);
 let mockGetTimetable = mock(async (_childId: string, _day: string) => [{ start: '08:00', subject: 'Français' }]);
+let mockConfigureResource = mock(async (_parentId: string, _childId: string, _credentialId: string, _resourceId: number) => {});
 
 mock.module('../services/pronote/pronote-data.service', () => {
   class PronoteResourceNotMappedError extends Error {
@@ -69,6 +70,7 @@ mock.module('../services/pronote/pronote-data.service', () => {
       get getGrades() { return mockGetGrades; },
       get getHomework() { return mockGetHomework; },
       get getTimetable() { return mockGetTimetable; },
+      get configureResource() { return mockConfigureResource; },
     },
     PronoteResourceNotMappedError,
     PronoteNotConnectedError,
@@ -139,6 +141,7 @@ describe('pronote-data routes', () => {
     mockGetGrades = mock(async (_childId: string) => [{ subject: 'Maths', value: 18 }]);
     mockGetHomework = mock(async (_childId: string) => [{ description: 'Exercice 3' }]);
     mockGetTimetable = mock(async (_childId: string, _day: string) => [{ start: '08:00', subject: 'Français' }]);
+    mockConfigureResource = mock(async (_parentId: string, _childId: string, _credentialId: string, _resourceId: number) => {});
     mockUpsertMapping = mock(async () => {});
   });
 
@@ -239,16 +242,17 @@ describe('pronote-data routes', () => {
   // PUT resource — parent only
   // ------------------------------------
 
-  it('parent calling PUT resource → 200', async () => {
+  it('parent calling PUT resource → 200, delegates to configureResource (not upsertMapping directly)', async () => {
     currentUser = { id: PARENT_ID, role: 'parent' };
     isParentOfResult = true;
     const CRED_ID = '00000000-0000-0000-0000-000000000042';
 
     const res = await app.handle(makeRequest('PUT', `/api/pronote/children/${CHILD_ID}/resource`, { credentialId: CRED_ID, resourceId: 42 }));
     expect(res.status).toBe(200);
-    expect(mockUpsertMapping.mock.calls.length).toBe(1);
-    // parentUserId must come from user.id, not from the body
-    const [calledParentId, calledChildId, calledCredentialId, calledResourceId] = mockUpsertMapping.mock.calls[0] as [string, string, string, number];
+    // Route must delegate to pronoteDataService.configureResource — never call upsertMapping directly
+    expect(mockUpsertMapping.mock.calls.length).toBe(0);
+    expect(mockConfigureResource.mock.calls.length).toBe(1);
+    const [calledParentId, calledChildId, calledCredentialId, calledResourceId] = mockConfigureResource.mock.calls[0] as [string, string, string, number];
     expect(calledParentId).toBe(PARENT_ID);
     expect(calledChildId).toBe(CHILD_ID);
     expect(calledCredentialId).toBe(CRED_ID);
