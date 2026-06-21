@@ -10,7 +10,7 @@
  */
 
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
-import { openAPI, mcp, admin } from "better-auth/plugins";
+import { openAPI, mcp, admin, username } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { eq } from "drizzle-orm";
@@ -186,14 +186,6 @@ export const auth = betterAuth({
         type: "boolean",
         defaultValue: true,
       },
-      username: {
-        type: "string",
-        required: false,
-      },
-      displayUsername: {
-        type: "string",
-        required: false,
-      },
     }
   },
 
@@ -206,6 +198,7 @@ export const auth = betterAuth({
       ? ([openAPI(), mcp({ loginPage: "/sign-in" })] as BetterAuthPlugin[])
       : []),
     expo(),     // Mobile app support (deep links, secure storage)
+    username(), // Autonomous child login: POST /api/auth/sign-in/username
 
     // Admin plugin for Quick Switch (parent impersonation)
     // Best Practice 2026: Built-in impersonation with custom authorization

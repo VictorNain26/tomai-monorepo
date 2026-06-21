@@ -100,13 +100,18 @@ export class ParentService {
       throw new Error('Ce nom d\'utilisateur existe déjà');
     }
 
+    // username is injected by the Better Auth username plugin's before hook at
+    // runtime (intercepts /sign-up/email) but is not yet reflected in the TS
+    // type of signUpEmail body — hence the cast.
+    const signUpBody = {
+      email: `child_${Date.now()}_${Math.random().toString(36).substring(7)}@internal.tomai`,
+      password: childData.password,
+      name: `${childData.firstName} ${childData.lastName}`.trim(),
+      username: childData.username,
+    };
     const result = await auth.api.signUpEmail({
-      body: {
-        email: `child_${Date.now()}_${Math.random().toString(36).substring(7)}@internal.tomai`,
-        password: childData.password,
-        name: `${childData.firstName} ${childData.lastName}`.trim(),
-        username: childData.username
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      body: signUpBody as any,
     });
 
     try {
