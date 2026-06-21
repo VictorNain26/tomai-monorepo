@@ -169,6 +169,13 @@
       "when": 1781806368794,
       "tag": "0023_swift_nomad",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1782044161558,
+      "tag": "0024_gorgeous_peter_quill",
+      "breakpoints": true
     }
   ]
 }
