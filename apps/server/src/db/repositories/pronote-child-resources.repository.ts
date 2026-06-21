@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../connection';
 import { pronoteChildResources } from '../schema';
+import type { PronoteChildStatus } from '../../services/pronote/provider.types.js';
 
 class PronoteChildResourcesRepository {
   async getMapping(
@@ -40,6 +41,25 @@ class PronoteChildResourcesRepository {
     await db
       .delete(pronoteChildResources)
       .where(eq(pronoteChildResources.childUserId, childUserId));
+  }
+
+  async getStatusByChild(childUserId: string): Promise<PronoteChildStatus> {
+    const [row] = await db
+      .select({
+        establishmentName: pronoteChildResources.establishmentName,
+        className: pronoteChildResources.className,
+      })
+      .from(pronoteChildResources)
+      .where(eq(pronoteChildResources.childUserId, childUserId));
+
+    if (!row) {
+      return { hasPronote: false, establishmentName: null, className: null };
+    }
+    return {
+      hasPronote: true,
+      establishmentName: row.establishmentName ?? null,
+      className: row.className ?? null,
+    };
   }
 
   async getResourceIdsByCredential(credentialId: string): Promise<number[]> {

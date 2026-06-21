@@ -21,6 +21,8 @@ import {
 } from '../services/pronote/pronote-data.service.js';
 import { parentService } from '../services/parent.service.js';
 import { PronoteReauthRequired } from '../services/pronote/pawnote-server.adapter.js';
+import { pronoteChildResourcesRepository } from '../db/repositories/pronote-child-resources.repository.js';
+import type { PronoteChildStatus } from '../services/pronote/provider.types.js';
 
 const pronoteDataRateLimit = createRateLimitMiddleware(RateLimitPresets.pronote);
 
@@ -105,6 +107,17 @@ export const pronoteDataRoutes = new Elysia({ name: 'pronote-data-routes' })
       }
     }, {
       query: t.Object({ day: t.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}$' }) }),
+    })
+
+    // GET /api/pronote/children/:childId/status
+    .get('/status', async ({ params, user, status }) => {
+      const { childId } = params;
+
+      const denied = await assertParentOrSelf(user.id, childId, status as StatusFn);
+      if (denied) return denied;
+
+      const data: PronoteChildStatus = await pronoteChildResourcesRepository.getStatusByChild(childId);
+      return { success: true, data };
     })
 
     // PUT /api/pronote/children/:childId/resource — parent only

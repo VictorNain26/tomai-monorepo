@@ -5,9 +5,10 @@
  * typed error → HTTP status mapping, and happy paths.
  */
 
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, mock, type Mock } from 'bun:test';
 import { Elysia } from 'elysia';
 import { createMockLogger } from './_helpers/mock-logger';
+import type { PronoteChildStatus } from '../services/pronote/provider.types';
 
 // ============================================
 // MOCKS (must be before any import of the real modules)
@@ -91,9 +92,17 @@ mock.module('../services/pronote/pawnote-server.adapter', () => {
 
 // pronoteChildResourcesRepository
 let mockUpsertMapping = mock(async (_parentId: string, _childId: string, _credentialId: string, _resourceId: number) => {});
+let mockGetStatusByChild: Mock<(_childUserId: string) => Promise<PronoteChildStatus>> = mock(
+  async (_childUserId: string): Promise<PronoteChildStatus> => ({
+    hasPronote: false,
+    establishmentName: null,
+    className: null,
+  }),
+);
 mock.module('../db/repositories/pronote-child-resources.repository', () => ({
   pronoteChildResourcesRepository: {
     get upsertMapping() { return mockUpsertMapping; },
+    get getStatusByChild() { return mockGetStatusByChild; },
   },
 }));
 
@@ -143,6 +152,13 @@ describe('pronote-data routes', () => {
     mockGetTimetable = mock(async (_childId: string, _day: string) => [{ start: '08:00', subject: 'Français' }]);
     mockConfigureResource = mock(async (_parentId: string, _childId: string, _credentialId: string, _resourceId: number) => {});
     mockUpsertMapping = mock(async () => {});
+    mockGetStatusByChild = mock(
+      async (_childUserId: string): Promise<PronoteChildStatus> => ({
+        hasPronote: false,
+        establishmentName: null,
+        className: null,
+      }),
+    );
   });
 
   // ------------------------------------
@@ -315,5 +331,69 @@ describe('pronote-data routes', () => {
     expect(res.status).toBe(500);
     const body = await res.json() as { code: string };
     expect(body.code).toBe('pronote_metadata_invalid');
+  });
+
+  // ------------------------------------
+  // GET /status — Task 4: read-model
+  // ------------------------------------
+
+  it('status: parent with mapped child → 200 + hasPronote:true + names', async () => {
+    currentUser = { id: PARENT_ID, role: 'parent' };
+    isParentOfResult = true;
+    mockGetStatusByChild = mock(
+      async (_childUserId: string): Promise<PronoteChildStatus> => ({
+        hasPronote: true,
+        establishmentName: 'Lycée Victor Hugo',
+        className: 'Terminale S',
+      }),
+    );
+
+    const res = await app.handle(makeRequest('GET', `/api/pronote/children/${CHILD_ID}/status`));
+    expect(res.status).toBe(200);
+    const body = await res.json() as { success: boolean; data: { hasPronote: boolean; establishmentName: string | null; className: string | null } };
+    expect(body.success).toBe(true);
+    expect(body.data.hasPronote).toBe(true);
+    expect(body.data.establishmentName).toBe('Lycée Victor Hugo');
+    expect(body.data.className).toBe('Terminale S');
+  });
+
+  it('status: parent with unmapped child → 200 + hasPronote:false + null names', async () => {
+    currentUser = { id: PARENT_ID, role: 'parent' };
+    isParentOfResult = true;
+    // mockGetStatusByChild already returns hasPronote:false by default in beforeEach
+
+    const res = await app.handle(makeRequest('GET', `/api/pronote/children/${CHILD_ID}/status`));
+    expect(res.status).toBe(200);
+    const body = await res.json() as { success: boolean; data: { hasPronote: boolean; establishmentName: string | null; className: string | null } };
+    expect(body.success).toBe(true);
+    expect(body.data.hasPronote).toBe(false);
+    expect(body.data.establishmentName).toBeNull();
+    expect(body.data.className).toBeNull();
+  });
+
+  it('status: child accessing own status (self) → 200', async () => {
+    currentUser = { id: CHILD_ID, role: 'student' };
+    isParentOfResult = false;
+    mockGetStatusByChild = mock(
+      async (_childUserId: string): Promise<PronoteChildStatus> => ({
+        hasPronote: true,
+        establishmentName: 'Collège Jean Moulin',
+        className: '4ème B',
+      }),
+    );
+
+    const res = await app.handle(makeRequest('GET', `/api/pronote/children/${CHILD_ID}/status`));
+    expect(res.status).toBe(200);
+    const body = await res.json() as { success: boolean; data: { hasPronote: boolean } };
+    expect(body.success).toBe(true);
+    expect(body.data.hasPronote).toBe(true);
+  });
+
+  it('status: third-party (other parent, not self) → 403', async () => {
+    currentUser = { id: OTHER_USER_ID, role: 'parent' };
+    isParentOfResult = false;
+
+    const res = await app.handle(makeRequest('GET', `/api/pronote/children/${CHILD_ID}/status`));
+    expect(res.status).toBe(403);
   });
 });
