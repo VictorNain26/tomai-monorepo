@@ -35,6 +35,7 @@ export function usePronote(userId: string) {
   const storeSetGrades = usePronoteStore((s) => s.setGrades);
   const storeSetTimetable = usePronoteStore((s) => s.setTimetable);
   const storeSetError = usePronoteStore((s) => s.setError);
+  const storeReset = usePronoteStore((s) => s.reset);
 
   const fetchGrades = useCallback(
     async (childId?: string) => {
@@ -126,5 +127,6 @@ export function usePronote(userId: string) {
     fetchHomework,
     fetchGrades,
     fetchTimetable,
+    reset: storeReset,
   };
 }
