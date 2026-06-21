@@ -86,9 +86,21 @@ mock.module('../db/schema', () => ({
     id: 'id',
     userId: 'userId',
     establishmentUrl: 'establishmentUrl',
+    establishmentName: 'establishmentName',
     encryptedToken: 'encryptedToken',
     encryptedMetadata: 'encryptedMetadata',
     tokenExpiresAt: 'tokenExpiresAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+  },
+  pronoteChildResources: {
+    id: 'id',
+    credentialId: 'credentialId',
+    parentUserId: 'parentUserId',
+    childUserId: 'childUserId',
+    resourceId: 'resourceId',
+    className: 'className',
+    establishmentName: 'establishmentName',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
   },
@@ -98,6 +110,7 @@ mock.module('drizzle-orm', () => ({
   eq: mock((col: unknown, val: unknown) => ({ col, val })),
   asc: mock((col: unknown) => ({ type: 'asc', col })),
   and: mock((...args: unknown[]) => args),
+  count: mock((col: unknown) => ({ fn: 'count', col })),
 }));
 
 // Import AFTER mocks

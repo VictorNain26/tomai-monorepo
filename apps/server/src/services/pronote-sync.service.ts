@@ -7,9 +7,9 @@
  * parent/web reads via pronote-data.service).
  */
 
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, count } from 'drizzle-orm';
 import { db } from '../db/connection.js';
-import { pronoteCredentials } from '../db/schema.js';
+import { pronoteCredentials, pronoteChildResources } from '../db/schema.js';
 import { encrypt, decrypt } from '../lib/encryption.js';
 import { logger } from '../lib/observability.js';
 
@@ -24,6 +24,13 @@ export function normalizeEstablishmentUrl(raw: string): string {
   const host = u.host.toLowerCase();
   const path = u.pathname.replace(/\/+$/, '');
   return `${u.protocol}//${host}${path}`;
+}
+
+export interface PronoteCredentialSummary {
+  credentialId: string;
+  establishmentName: string | null;
+  establishmentUrl: string;
+  childCount: number;
 }
 
 interface UpsertInput {
@@ -201,6 +208,45 @@ class PronoteSyncService {
     });
 
     return res.length > 0;
+  }
+
+  /**
+   * List credential summaries for a user.
+   * One row per establishment, with childCount aggregated in a single query.
+   * establishmentName is read from the stored column — no live Pronote call.
+   */
+  async listCredentialSummaries(userId: string): Promise<PronoteCredentialSummary[]> {
+    // Aggregate child counts per credential in one query
+    const childCounts = await db
+      .select({
+        credentialId: pronoteChildResources.credentialId,
+        childCount: count(pronoteChildResources.id),
+      })
+      .from(pronoteChildResources)
+      .groupBy(pronoteChildResources.credentialId);
+
+    const countByCredentialId = new Map<string, number>(
+      childCounts
+        .filter(r => r.credentialId !== null)
+        .map(r => [r.credentialId as string, Number(r.childCount)])
+    );
+
+    const creds = await db
+      .select({
+        id: pronoteCredentials.id,
+        establishmentName: pronoteCredentials.establishmentName,
+        establishmentUrl: pronoteCredentials.establishmentUrl,
+      })
+      .from(pronoteCredentials)
+      .where(eq(pronoteCredentials.userId, userId))
+      .orderBy(asc(pronoteCredentials.createdAt));
+
+    return creds.map(c => ({
+      credentialId: c.id,
+      establishmentName: c.establishmentName,
+      establishmentUrl: c.establishmentUrl,
+      childCount: countByCredentialId.get(c.id) ?? 0,
+    }));
   }
 
   /**

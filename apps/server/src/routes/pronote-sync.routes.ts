@@ -14,6 +14,7 @@ import { Elysia, t } from 'elysia';
 import { authMacro } from '../lib/auth-macro.js';
 import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 import { pronoteSyncService } from '../services/pronote-sync.service.js';
+import type { PronoteCredentialSummary } from '../services/pronote-sync.service.js';
 import { logger } from '../lib/observability.js';
 
 // Pronote credential endpoints trigger PBKDF2 (600K iterations) on decrypt,
@@ -27,6 +28,22 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
   .guard({ auth: true })
   .onBeforeHandle(pronoteRateLimit)
   .group('/api/pronote', (app) => app
+
+    // GET /api/pronote/credentials/list — List all credential summaries for the authenticated user
+    .get('/credentials/list', async ({ user, status }) => {
+      try {
+        const data: PronoteCredentialSummary[] = await pronoteSyncService.listCredentialSummaries(user.id);
+        return { success: true, data };
+      } catch (error) {
+        logger.error('Pronote credentials list failed', {
+          operation: 'pronote-sync:route:list:error',
+          userId: user.id,
+          _error: error instanceof Error ? error.message : String(error),
+          severity: 'high' as const,
+        });
+        return status(500, { success: false, error: 'Erreur interne' });
+      }
+    })
 
     // PUT /api/pronote/credentials — Upsert
     .put('/credentials', async ({ body, user, status }) => {

@@ -60,11 +60,15 @@ const mockDeleteWhere = mock(async () => {
   deleteCalled = true;
 });
 
+// groupBy stub for listCredentialSummaries child-count query (returns empty array → childCount 0)
+const mockGroupBy = mock(() => Promise.resolve([]));
+
 mock.module('../db/connection', () => ({
   db: {
     select: mock(() => ({
       from: mock(() => ({
         where: mockWhere,
+        groupBy: mockGroupBy,
       })),
     })),
     insert: mock(() => ({
@@ -78,10 +82,24 @@ mock.module('../db/connection', () => ({
 
 mock.module('../db/schema', () => ({
   pronoteCredentials: {
+    id: 'id',
     userId: 'userId',
+    establishmentUrl: 'establishmentUrl',
+    establishmentName: 'establishmentName',
     encryptedToken: 'encryptedToken',
     encryptedMetadata: 'encryptedMetadata',
     tokenExpiresAt: 'tokenExpiresAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+  },
+  pronoteChildResources: {
+    id: 'id',
+    credentialId: 'credentialId',
+    parentUserId: 'parentUserId',
+    childUserId: 'childUserId',
+    resourceId: 'resourceId',
+    className: 'className',
+    establishmentName: 'establishmentName',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
   },
@@ -91,6 +109,7 @@ mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
   asc: (col: unknown) => ({ type: 'asc', col }),
   and: (...args: unknown[]) => args,
+  count: (col: unknown) => ({ fn: 'count', col }),
 }));
 
 // Import after mocks
