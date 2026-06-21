@@ -2,13 +2,13 @@
  * Login Screen - TomAI 2026
  *
  * Parent + Eleve authentication (email/password + Google OAuth).
- * Children access the app via profile selection after parent connects Pronote.
+ * Parents use signIn.email; students (Pronote) use signIn.username.
  */
 
 import { useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { Link } from 'expo-router';
-import { signIn, signInWithGoogle } from '@/lib/auth';
+import { signIn, signInUsername, signInWithGoogle } from '@/lib/auth';
 
 import { Text } from '@/components/ui/text';
 import { TomAvatar } from '@/components/common';
@@ -37,7 +37,10 @@ export default function LoginScreen() {
     setError(null);
 
     try {
-      const result = await signIn(identifier, password);
+      const result =
+        accountType === 'student'
+          ? await signInUsername(identifier, password)
+          : await signIn(identifier, password);
       if (result.error) {
         setError('Identifiants incorrects');
       }

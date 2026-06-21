@@ -12,8 +12,7 @@ import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { ChildPinSetup } from '@/components/parent/ChildPinSetup';
 import { PronoteStepConnecting } from './PronoteStepConnecting';
-import type { PronoteResource } from '@/services/pronote/pronote-types';
-import type { ChildPinData } from '@/hooks/usePronoteOnboarding';
+import type { PronoteResource, ChildPinData } from '@/services/pronote/pronote-types';
 
 interface PronoteStepChildPinProps {
   resource: PronoteResource;

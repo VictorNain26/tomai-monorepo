@@ -12,7 +12,6 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useRouter } from 'expo-router';
 import {
   Settings,
-  School,
   LogOut,
   ChevronRight,
   Crown,
@@ -26,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { useUser, signOut } from '@/lib/auth';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
-import { useIsPro, useThemeColors, usePronote } from '@/hooks';
+import { useIsPro, useThemeColors } from '@/hooks';
 import { bgColors, borderColors } from '@/lib/styles';
 
 // ============================================================================
@@ -57,7 +56,6 @@ export default function ParentProfileScreen() {
   const toast = useToast();
   const colors = useThemeColors();
   const { isPro, isLoading: isLoadingPro } = useIsPro();
-  const pronote = usePronote(user?.id ?? '');
 
   async function handleLogout() {
     const confirmed = await confirm({
@@ -91,20 +89,6 @@ export default function ParentProfileScreen() {
               ? 'Plan Premium actif'
               : 'Plan Gratuit',
           onPress: () => router.push('/(parent)/tabs/(profile)/pricing'),
-          showChevron: true,
-        },
-      ],
-    },
-
-    // Pronote section
-    {
-      title: 'Pronote',
-      items: [
-        {
-          icon: <School color={colors.foreground} size={20} />,
-          label: 'Pronote',
-          sublabel: pronote.isConnected ? 'Connecte' : 'Non connecte',
-          onPress: () => router.push('/(parent)/tabs/(profile)/pronote-connect'),
           showChevron: true,
         },
       ],

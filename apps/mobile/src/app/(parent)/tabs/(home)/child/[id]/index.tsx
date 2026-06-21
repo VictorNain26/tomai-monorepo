@@ -10,13 +10,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Play,
   BarChart3,
   BookOpen,
   Clock,
   Flame,
   ChevronRight,
-  School,
   CheckCircle2,
   Link2,
 } from 'lucide-react-native';
@@ -31,7 +29,6 @@ import { DeleteChildModal } from '@/components/parent';
 import { useParentDashboard, useThemeColors, usePronote } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { getLevelLabel } from '@/constants/levels';
-import { launchChildSession, useSession } from '@/lib/auth';
 import { computeAverageGrade, formatStudyTime, formatFrenchDate } from '@/lib/formatters';
 import { bgColors } from '@/lib/styles';
 
@@ -45,7 +42,6 @@ export default function ChildDetailScreen() {
   const router = useRouter();
   const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { refetch: refetchSession } = useSession();
   const colors = useThemeColors();
 
   const {
@@ -60,7 +56,6 @@ export default function ChildDetailScreen() {
   const pronoteHook = usePronote(user?.id ?? '');
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isLaunching, setIsLaunching] = useState(false);
 
   const child = useMemo(() => children.find((c) => c.id === id), [children, id]);
   const childMetrics = useMemo(() => metrics.find((m) => m.studentId === id), [metrics, id]);
@@ -90,19 +85,6 @@ export default function ChildDetailScreen() {
     } catch (error) {
       toast.error('Erreur', error instanceof Error ? error.message : 'Impossible de supprimer');
     }
-  };
-
-  const handleLaunchSession = async () => {
-    if (!id || !child) return;
-    setIsLaunching(true);
-    const result = await launchChildSession(id);
-    if (result.success) {
-      await refetchSession();
-      router.replace('/(student)');
-    } else {
-      toast.error('Erreur', result.error ?? 'Impossible de lancer la session');
-    }
-    setIsLaunching(false);
   };
 
   if (isLoadingChildren || !id) {
@@ -188,29 +170,6 @@ export default function ChildDetailScreen() {
               </View>
             </Card>
           </View>
-
-          {/* Pronote not connected CTA */}
-          {!pronoteHook.isConnected && (
-            <Card>
-              <View className="items-center p-5">
-                <View
-                  className="mb-3 h-12 w-12 items-center justify-center rounded-full"
-                  style={{ backgroundColor: bgColors.primary[10] }}
-                >
-                  <School color={colors.primary} size={24} />
-                </View>
-                <Text className="mb-1 font-semibold">Connecter Pronote</Text>
-                <Text variant="muted" className="mb-3 text-center text-sm">
-                  Synchronisez les notes et devoirs de {child.firstName}
-                </Text>
-                <Button
-                  onPress={() => router.push(`/(parent)/tabs/(home)/pronote-connect?childId=${id}`)}
-                >
-                  <Text className="font-medium text-primary-foreground">Connecter</Text>
-                </Button>
-              </View>
-            </Card>
-          )}
 
           {/* Recent Grades */}
           {isMapped && recentGrades.length > 0 && (
@@ -348,22 +307,6 @@ export default function ChildDetailScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Sticky Launch Tom button */}
-      <View className="border-t border-border px-5 py-3">
-        <Button
-          onPress={handleLaunchSession}
-          disabled={isLaunching}
-          accessibilityLabel={`Lancer Tom pour ${child.firstName}`}
-          className="flex-row items-center justify-center gap-2"
-          style={{ backgroundColor: colors.success, opacity: isLaunching ? 0.6 : 1 }}
-        >
-          <Play color={colors.successForeground} size={18} />
-          <Text className="font-semibold text-white">
-            {isLaunching ? 'Lancement...' : `Lancer Tom pour ${child.firstName}`}
-          </Text>
-        </Button>
-      </View>
 
       <DeleteChildModal
         visible={showDeleteModal}

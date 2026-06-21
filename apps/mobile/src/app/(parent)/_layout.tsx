@@ -2,8 +2,8 @@
  * Parent Layout - TomAI 2026
  *
  * Stack navigator wrapping:
- * - profile-select: Netflix-like profile grid (initial)
- * - onboarding-pronote: forced Pronote setup (0 children)
+ * - index: redirects to tabs (group entry point)
+ * - add-child: manual child add screen (0 children empty-state)
  * - tabs: MaterialTopTabs shell (home + profile)
  */
 
@@ -25,8 +25,8 @@ export default function ParentLayout() {
 
   return (
     <Stack screenOptions={screenOptions}>
-      <Stack.Screen name="profile-select" />
-      <Stack.Screen name="onboarding-pronote" />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="add-child" options={{ title: 'Ajouter un enfant' }} />
       <Stack.Screen name="tabs" />
     </Stack>
   );

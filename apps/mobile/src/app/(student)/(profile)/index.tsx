@@ -22,7 +22,6 @@ import {
   BarChart3,
   Calendar,
   School,
-  UserCircle,
   FolderOpen,
 } from 'lucide-react-native';
 
@@ -30,11 +29,10 @@ import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import { TokenUsageCard } from '@/components/dashboard';
-import { useUser, useSession, signOut, hasParentSessionBackup, restoreParentSession } from '@/lib/auth';
+import { useUser, signOut } from '@/lib/auth';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useStudentDashboard, usePronote, useThemeColors } from '@/hooks';
 import { bgColors, borderColors, shadows } from '@/lib/styles';
-import { useEffect, useState } from 'react';
 
 // ============================================================================
 // TYPES
@@ -62,42 +60,10 @@ export default function StudentProfileScreen() {
   const router = useRouter();
   const toast = useToast();
   const user = useUser();
-  const { refetch: refetchSession } = useSession();
   const { confirm, info } = useConfirm();
   const colors = useThemeColors();
   const { usage, isLoadingUsage } = useStudentDashboard();
   const pronote = usePronote(user?.id ?? '');
-
-  // Check if parent session is available (launched from parent account)
-  const [hasParentBackup, setHasParentBackup] = useState(false);
-  const [isRestoringParent, setIsRestoringParent] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    hasParentSessionBackup().then((v) => { if (mounted) setHasParentBackup(v); });
-    return () => { mounted = false; };
-  }, []);
-
-  // Uses refetch() to sync React state after stopping impersonation
-  // @see https://github.com/better-auth/better-auth/discussions/3860
-  async function handleReturnToParent() {
-    const confirmed = await confirm({
-      title: 'Retour au compte parent',
-      message: 'Voulez-vous revenir au compte parent ?',
-      confirmLabel: 'Retour parent',
-    });
-    if (confirmed) {
-      setIsRestoringParent(true);
-      const restored = await restoreParentSession();
-      if (restored) {
-        await refetchSession();
-        router.replace('/(parent)/');
-      } else {
-        toast.error('Erreur', 'Impossible de restaurer la session parent');
-      }
-      setIsRestoringParent(false);
-    }
-  }
 
   async function handleLogout() {
     const confirmed = await confirm({
@@ -274,28 +240,6 @@ export default function StudentProfileScreen() {
             </Card>
           </View>
         ))}
-
-        {/* Return to Parent Button (only if launched from parent) */}
-        {hasParentBackup && (
-          <TouchableOpacity
-            onPress={handleReturnToParent}
-            disabled={isRestoringParent}
-            className="flex-row items-center justify-center gap-2 rounded-xl border py-4"
-            style={{
-              borderColor: borderColors.primary[30],
-              backgroundColor: bgColors.primary[5],
-              opacity: isRestoringParent ? 0.6 : 1,
-            }}
-            activeOpacity={0.7}
-            accessibilityLabel="Retour au compte parent"
-            accessibilityRole="button"
-          >
-            <UserCircle color={colors.primary} size={20} />
-            <Text className="font-semibold" style={{ color: colors.primary }}>
-              {isRestoringParent ? 'Retour en cours...' : 'Retour au compte parent'}
-            </Text>
-          </TouchableOpacity>
-        )}
 
         {/* Logout Button */}
         <TouchableOpacity

@@ -2,31 +2,26 @@
  * ChildSummaryCard - Compact card for the parent dashboard list.
  *
  * Shows avatar, name, level, stats row, Pronote badge.
- * Tap card → detail. "Lancer Tom" inline button.
+ * Tap card → detail.
  */
 
-import { useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
 import {
   GraduationCap,
   BarChart3,
   BookOpen,
   Clock,
   Flame,
-  Play,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
 import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
-import { useToast } from '@/components/ui/toast';
 import { PronoteBadge } from './PronoteBadge';
 import { useThemeColors } from '@/hooks';
 import type { IChild } from '@/hooks/useParentDashboard';
 import { getLevelLabel } from '@/constants/levels';
 import { formatStudyTime } from '@/lib/formatters';
-import { launchChildSession, useSession } from '@/lib/auth';
 import { bgColors } from '@/lib/styles';
 
 interface ChildSummaryCardProps {
@@ -81,9 +76,6 @@ export function ChildSummaryCard({
             <StatBadge icon={<Clock color={colors.success} size={12} />} value={formatStudyTime(studyTimeMinutes)} bg={bgColors.success[5]} />
             <StatBadge icon={<Flame color={colors.destructive} size={12} />} value={`${streak}j`} bg={bgColors.destructive[5]} />
           </View>
-
-          {/* Launch Tom button */}
-          <LaunchTomButton childId={child.id} childName={child.firstName} />
         </View>
       </Card>
     </TouchableOpacity>
@@ -106,42 +98,3 @@ function StatBadge({ icon, value, bg }: { icon: React.ReactNode; value: string; 
   );
 }
 
-// ============================================================================
-// LAUNCH TOM BUTTON (compact inline variant)
-// ============================================================================
-
-function LaunchTomButton({ childId, childName }: { childId: string; childName: string }) {
-  const router = useRouter();
-  const toast = useToast();
-  const colors = useThemeColors();
-  const { refetch: refetchSession } = useSession();
-  const [isLaunching, setIsLaunching] = useState(false);
-
-  const handleLaunch = async () => {
-    setIsLaunching(true);
-    const result = await launchChildSession(childId);
-    if (result.success) {
-      await refetchSession();
-      router.replace('/(student)');
-    } else {
-      toast.error('Erreur', result.error ?? 'Impossible de lancer la session');
-    }
-    setIsLaunching(false);
-  };
-
-  return (
-    <TouchableOpacity
-      onPress={handleLaunch}
-      disabled={isLaunching}
-      activeOpacity={0.7}
-      accessibilityLabel={`Lancer Tom pour ${childName}`}
-      className="mt-3 flex-row items-center justify-center gap-2 rounded-xl py-2.5"
-      style={{ backgroundColor: colors.success, opacity: isLaunching ? 0.7 : 1 }}
-    >
-      <Play color={colors.successForeground} size={16} />
-      <Text className="font-semibold text-sm text-white">
-        {isLaunching ? 'Lancement...' : 'Lancer Tom'}
-      </Text>
-    </TouchableOpacity>
-  );
-}
