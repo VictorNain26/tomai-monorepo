@@ -26,8 +26,8 @@ export interface ActivationSelection {
   firstName: string;
   lastName: string;
   schoolLevel: SchoolLevel;
-  username: string;
-  password: string;
+  username?: string;
+  password?: string;
   linkToChildId?: string;
 }
 
@@ -211,6 +211,10 @@ class PronoteConnectService {
 
           childId = selection.linkToChildId;
         } else {
+          if (!selection.username || !selection.password) {
+            failed.push({ resourceId: selection.resourceId, reason: 'missing_credentials' });
+            continue;
+          }
           const child = await parentService.createChild(parentUserId, {
             firstName: selection.firstName,
             lastName: selection.lastName,

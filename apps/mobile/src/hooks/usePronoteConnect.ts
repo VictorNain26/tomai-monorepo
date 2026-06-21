@@ -155,7 +155,7 @@ function reducer(state: PronoteConnectState, action: Action): PronoteConnectStat
         activated: [...state.results.activated, ...action.results.activated],
         failed: action.results.failed,
       };
-      return { ...state, isPending: false, results: merged, step: merged.failed.length > 0 ? 'result' : 'result' };
+      return { ...state, isPending: false, results: merged, step: 'result' };
     }
 
     case 'reset':
@@ -187,7 +187,6 @@ function toActivationSelection(sel: ChildAccessSelection): ActivationSelection {
     schoolLevel: sel.schoolLevel,
     username: sel.username,
     password: sel.password,
-    linkToChildId: sel.linkToChildId,
   };
 }
 

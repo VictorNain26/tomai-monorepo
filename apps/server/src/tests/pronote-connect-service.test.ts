@@ -616,6 +616,41 @@ describe('PronoteConnectService.activate', () => {
     expect(mockDeleteById).not.toHaveBeenCalled();
   });
 
+  it('(j) link selection without username/password succeeds — activated, createChild not called', async () => {
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Emma',
+        lastName: 'Dupont',
+        schoolLevel: 'troisieme',
+        // no username, no password — link mode
+        linkToChildId: 'child-existing-1',
+      },
+    ]);
+
+    expect(mockCreateChild).not.toHaveBeenCalled();
+    expect(result.activated).toHaveLength(1);
+    expect(result.activated[0]).toEqual({ resourceId: 0, childId: 'child-existing-1' });
+    expect(result.failed).toHaveLength(0);
+  });
+
+  it('(k) create selection without username/password → failed[missing_credentials], createChild not called', async () => {
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 1,
+        firstName: 'Lucas',
+        lastName: 'Dupont',
+        schoolLevel: 'cinquieme',
+        // no username, no password — missing on create mode
+      },
+    ]);
+
+    expect(mockCreateChild).not.toHaveBeenCalled();
+    expect(result.activated).toHaveLength(0);
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0]).toEqual({ resourceId: 1, reason: 'missing_credentials' });
+  });
+
   it('(i) linkToChildId already mapped → failed[already_mapped], no overwrite, isParentOf guard ran first', async () => {
     // Pre-condition: child-existing-1 already has a mapping (different credential + resourceId)
     mockGetMapping.mockResolvedValueOnce({

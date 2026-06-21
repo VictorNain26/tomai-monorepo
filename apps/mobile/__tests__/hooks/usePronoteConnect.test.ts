@@ -402,6 +402,58 @@ describe('usePronoteConnect', () => {
     expect(result.current.isPending).toBe(false);
   });
 
+  it('create mode strips linkToChildId even if selection object carried a stale value', async () => {
+    const activatePost = jest.fn().mockResolvedValue({
+      data: { success: true, data: { activated: [{ resourceId: 1, childId: 'child-new' }], failed: [] } },
+      error: null,
+    });
+
+    mockGetTreaty.mockReturnValue({
+      api: {
+        pronote: {
+          connect: { qr: { post: jest.fn().mockResolvedValue(successQrResponse) } },
+          credentials: jest.fn(() => ({
+            children: { get: jest.fn().mockResolvedValue(successChildrenResponse) },
+            activate: { post: activatePost },
+          })),
+        },
+      },
+    } as unknown as ReturnType<typeof getTreaty>);
+
+    const { result } = renderHook(() => usePronoteConnect());
+
+    act(() => {
+      result.current.setQrData(sampleQrData);
+    });
+
+    await act(async () => {
+      await result.current.submitPin(samplePin);
+    });
+
+    // Stale linkToChildId on a create-mode selection — must be stripped before sending
+    const selections = [
+      {
+        resourceId: 1,
+        firstName: 'Marie',
+        lastName: 'Dupont',
+        schoolLevel: 'quatrieme',
+        mode: 'create' as const,
+        username: 'marie_d',
+        password: 'passw0rd!',
+        linkToChildId: 'stale-link-id', // stale value that must be dropped
+      },
+    ];
+
+    await act(async () => {
+      await result.current.confirmSelections(selections);
+    });
+
+    const callArg = activatePost.mock.calls[0][0] as { selections: { resourceId: number; linkToChildId?: string; username?: string }[] };
+    expect(callArg.selections[0].linkToChildId).toBeUndefined();
+    expect(callArg.selections[0].username).toBe('marie_d');
+    expect(result.current.step).toBe('result');
+  });
+
   it('reset() returns hook to initial state', async () => {
     buildMockTreaty({
       connectQrResult: successQrResponse,
