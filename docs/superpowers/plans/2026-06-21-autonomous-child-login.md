@@ -4,7 +4,7 @@
 
 **Goal:** Donner à chaque enfant un login autonome (identifiant + mot de passe via le plugin `username` de Better Auth) et supprimer toute la machinerie d'impersonation parent→enfant.
 
-**Architecture:** Backend Better Auth : activer le plugin `username`, retirer le plugin `admin`. Mobile : router le chemin « Élève » du login (toggle déjà existant) vers `signIn.username`, supprimer `profile-select`/`child-access-store`/helpers d'impersonation, et remplacer l'empty-state Pronote par un écran d'ajout d'enfant manuel (endpoint générique déjà existant). Le dashboard parent lit déjà les données enfant en session parent (`assertParentOrSelf`) — rien à changer côté data.
+**Architecture:** Backend Better Auth : activer le plugin `username`, retirer le plugin `admin`. Mobile : router le chemin « Élève » du login (toggle déjà existant) vers `signIn.username`, ajouter un écran d'ajout d'enfant manuel (endpoint générique déjà existant), puis retirer l'ancien onboarding Pronote local, l'impersonation, `profile-select` et `child-access-store`. Le dashboard parent lit déjà les données enfant en session parent (`assertParentOrSelf`) — rien à changer côté data.
 
 **Tech Stack:** Better Auth 1.6 (`username`/`admin` plugins), Elysia, Drizzle, Bun test ; Expo/RN, NativeWind v5, Eden Treaty, jest-expo.
 
@@ -13,22 +13,23 @@
 ## Global Constraints
 
 - **Pas de prod / pas d'utilisateurs réels** → aucune migration de données, retraits francs.
+- **Vert à chaque commit** : le hook lefthook **pre-commit lance `typecheck`** et `typedRoutes: true` est actif → chaque commit doit passer le typecheck (pas de route/helper supprimé avant ses référents). L'ordre des tâches respecte cette contrainte (additifs d'abord, retraits feuilles→racines).
 - **Doc-first** plugin username : [better-auth.com/docs/plugins/username](https://www.better-auth.com/docs/plugins/username) — requiert `username` (string, unique, optional) + `displayUsername` (string, optional) sur la table user (déjà présents : `auth.schema.ts:34-35`).
-- **Server** : TypeBox sur chaque route, logique métier en service (jamais en route), validation avant commit `cd apps/server && bun run typecheck && bun run lint && bun run test` **+ `bun run test:integration`** avant push. Piège mock `api-endpoints.test.ts` si un nouveau module tire les schémas Drizzle (cf. `.claude/rules/testing-and-commits.md`).
+- **Server** : TypeBox sur chaque route, logique métier en service (jamais en route), validation `cd apps/server && bun run typecheck && bun run lint && bun run test` **+ `bun run test:integration`** avant push. Piège mock `api-endpoints.test.ts` si un nouveau module tire les schémas Drizzle (cf. `.claude/rules/testing-and-commits.md`).
 - **Mobile** : TypeScript strict zéro `any` ; NativeWind only (pas de `StyleSheet`) ; primitives `@/components/ui/` ; a11y WCAG AA (labels, rôles, cibles ≥44pt, contrast 4.5:1) ; tokens `@repo/tokens` ; 400 lignes max/fichier. Validation `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`.
-- **Frontière de types serveur** (`apps/server/CLAUDE.md`) : le plugin `username()` est un vrai plugin nameable (comme `expo()`/`admin()`), il reste dans le tableau `plugins` sans cast `BetterAuthPlugin[]` (réservé aux dev-only openAPI/mcp).
-- **Commits** : conventional, staging explicite (jamais `git add .`), scopes `auth`/`mobile`/`server`. Branche : `feat/autonomous-child-login` (déjà créée).
+- **Frontière de types serveur** (`apps/server/CLAUDE.md`) : `username()` est un plugin nameable (comme `expo()`), il reste dans le tableau `plugins` sans cast `BetterAuthPlugin[]` (réservé aux dev-only openAPI/mcp).
+- **Commits** : conventional, staging explicite (jamais `git add .`), scopes `auth`/`mobile`/`server`. Branche : `feat/autonomous-child-login`.
 
 ---
 
 ### Task 1: Backend — activer le plugin `username`
 
 **Files:**
-- Modify: `apps/server/src/lib/auth.ts` (imports L13 ; `additionalFields` L189-196 ; `plugins` L200-287)
+- Modify: `apps/server/src/lib/auth.ts` (import L13 ; `additionalFields` L189-196 ; `plugins` ~L200-208)
 - Test: `apps/server/src/tests/username-login.test.ts` (create)
 
 **Interfaces:**
-- Produces: route `POST /api/auth/sign-in/username` (`signIn.username({ username, password })`) ; un compte créé par `parentService.createChild` est connectable par username.
+- Produces: route `POST /api/auth/sign-in/username` (`auth.api.signInUsername`) ; un compte créé par `parentService.createChild` est connectable par username + password.
 
 - [ ] **Step 1: Écrire le test qui échoue**
 
@@ -79,15 +80,9 @@ Expected: FAIL — `auth.api.signInUsername` n'existe pas (plugin absent).
 - [ ] **Step 3: Activer le plugin**
 
 Dans `apps/server/src/lib/auth.ts` :
-
-1. L13, ajouter `username` à l'import plugins :
-```ts
-import { openAPI, mcp, admin, username } from "better-auth/plugins";
-```
-
+1. L13 : ajouter `username` à l'import — `import { openAPI, mcp, admin, username } from "better-auth/plugins";`
 2. Retirer les champs `username` et `displayUsername` de `user.additionalFields` (L189-196) — le plugin les déclare nativement. Laisser les autres additionalFields intacts.
-
-3. Ajouter `username()` au tableau `plugins`, après `expo()` :
+3. Ajouter `username()` au tableau `plugins`, juste après `expo(),` :
 ```ts
     expo(),     // Mobile app support (deep links, secure storage)
     username(), // Autonomous child login: sign in with username + password
@@ -95,16 +90,18 @@ import { openAPI, mcp, admin, username } from "better-auth/plugins";
 
 - [ ] **Step 4: Lancer le test, vérifier le succès**
 
-Run: `cd apps/server && bun run test src/tests/username-login.test.ts`
-Expected: PASS. (Base dev : `bun run db:push` au préalable si besoin — les colonnes existent déjà, push no-op.)
+Run: `cd apps/server && bun run db:push && bun run test src/tests/username-login.test.ts`
+Expected: PASS (db:push no-op — colonnes déjà présentes).
 
 - [ ] **Step 5: Non-régression auth + types**
 
 Run: `cd apps/server && bun run typecheck && bun run test src/tests/auth-config.test.ts`
-Expected: PASS. Si `auth-config.test.ts` assert la liste des additionalFields, adapter l'assertion (username/displayUsername désormais portés par le plugin, pas par additionalFields).
+Expected: PASS. Si `auth-config.test.ts` assert la liste des additionalFields, adapter l'assertion (username/displayUsername désormais portés par le plugin).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Suite complète + commit**
 
+Run: `cd apps/server && bun run test`
+Expected: PASS (runner isolé — cf. leçon ledger A4 : un module tirant les schémas Drizzle peut casser des mocks partiels).
 ```bash
 git add apps/server/src/lib/auth.ts apps/server/src/tests/username-login.test.ts
 git commit -m "feat(auth): enable better-auth username plugin for autonomous child login"
@@ -115,9 +112,8 @@ git commit -m "feat(auth): enable better-auth username plugin for autonomous chi
 ### Task 2: Backend — supprimer l'impersonation admin
 
 **Files:**
-- Modify: `apps/server/src/lib/auth.ts` (import L13 + L23 ; bloc `admin({...})` L210-286 ; commentaire d'en-tête L5-6)
+- Modify: `apps/server/src/lib/auth.ts` (imports L13 + L23 ; bloc `admin({...})` ~L210-286 ; commentaire d'en-tête L5-6)
 - Delete: `apps/server/src/lib/impersonation-policy.ts` + son test s'il existe (`src/tests/impersonation-policy.test.ts`)
-- Test: réutilise `apps/server/src/integration-tests/pronote-data*.test.ts` (non-régression accès parent)
 
 **Interfaces:**
 - Produces: plus de routes `/api/auth/admin/*` ; le rôle par défaut `parent` reste assuré par `additionalFields.role.defaultValue` (L171).
@@ -125,35 +121,30 @@ git commit -m "feat(auth): enable better-auth username plugin for autonomous chi
 - [ ] **Step 1: Retirer le plugin admin et ses dépendances**
 
 Dans `apps/server/src/lib/auth.ts` :
-1. L13 : retirer `admin` de l'import (`import { openAPI, mcp, username } from "better-auth/plugins";`).
-2. L23 : supprimer `import { canParentImpersonate } from "./impersonation-policy";`.
-3. Supprimer entièrement le bloc `admin({ ... })` (L210-286) du tableau `plugins`.
-4. Nettoyer le commentaire d'en-tête (L5-6) qui mentionne `admin: Parent impersonation`.
+1. L13 : retirer `admin` de l'import → `import { openAPI, mcp, username } from "better-auth/plugins";`
+2. L23 : supprimer `import { canParentImpersonate } from "./impersonation-policy";`
+3. Supprimer entièrement le bloc `admin({ ... })` du tableau `plugins`.
+4. Nettoyer le commentaire d'en-tête (L5-6) mentionnant `admin: Parent impersonation`.
 
-- [ ] **Step 2: Supprimer le fichier de policy + son test**
+- [ ] **Step 2: Supprimer la policy + son test**
 
 ```bash
-git rm apps/server/src/lib/impersonation-policy.ts
-# si présent :
-git rm apps/server/src/tests/impersonation-policy.test.ts
+cd apps/server
+git rm src/lib/impersonation-policy.ts
+git rm src/tests/impersonation-policy.test.ts 2>/dev/null || true
 ```
 
-- [ ] **Step 3: Vérifier qu'aucune référence ne subsiste**
+- [ ] **Step 3: Vérifier l'absence de référence**
 
-Run: `cd apps/server && grep -rn "impersonat\|canParentImpersonate\|admin(" src/`
-Expected: aucune occurrence applicative (hors `username`/commentaires). Corriger toute référence restante.
+Run: `cd apps/server && grep -rn "impersonat\|canParentImpersonate" src/`
+Expected: aucune occurrence applicative. Corriger toute référence restante (tests inclus).
 
-- [ ] **Step 4: Typecheck + tests serveur complets**
+- [ ] **Step 4: Typecheck + lint + suite + non-régression accès parent**
 
-Run: `cd apps/server && bun run typecheck && bun run lint && bun run test`
-Expected: PASS. Tout test ciblant `impersonationAllowed`/admin est supprimé ou adapté.
+Run: `cd apps/server && bun run typecheck && bun run lint && bun run test && bun run test src/integration-tests/pronote-data.integration.test.ts`
+Expected: PASS — un parent lit `/children/:childId/grades` de son enfant (garde `assertParentOrSelf`), un tiers reçoit 403. Tout test ciblant `impersonationAllowed`/admin est supprimé ou adapté.
 
-- [ ] **Step 5: Non-régression accès données parent (sans impersonation)**
-
-Run: `cd apps/server && bun run test src/integration-tests/pronote-data.integration.test.ts`
-Expected: PASS — un parent lit `/children/:childId/grades` de son enfant (garde `assertParentOrSelf`), un tiers reçoit 403.
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add apps/server/src/lib/auth.ts
@@ -162,20 +153,23 @@ git commit -m "feat(auth): remove parent->child impersonation (admin plugin)"
 
 ---
 
-### Task 3: Client — plugin username, suppression du client admin
+### Task 3: Mobile — câbler le login Élève sur `signIn.username` (additif)
 
 **Files:**
-- Modify: `apps/mobile/src/lib/auth.ts` (imports L16-18 ; `plugins` L57-67 ; ajouter `signInUsername` ; supprimer `useImpersonatedBy` L99-103, `ImpersonatedSession` L41-43, `hasParentSessionBackup` L234-242, `restoreParentSession` L252-259, `launchChildSession` L275-298)
+- Modify: `apps/mobile/src/lib/auth.ts` (import plugins L18 ; tableau `plugins` L59-67 ; ajouter `signInUsername` ~L114)
+- Modify: `apps/mobile/src/app/(auth)/login.tsx` (import L11 ; `handleLogin` L30-51 ; commentaire L4-5)
+- Test: `apps/mobile/__tests__/app/login.test.tsx` (create)
 
 **Interfaces:**
-- Produces: `signInUsername(username: string, password: string)` ; `authClient.signIn.username` disponible. Supprime du module : `useImpersonatedBy`, `hasParentSessionBackup`, `restoreParentSession`, `launchChildSession`.
+- Produces: `signInUsername(username: string, password: string)` ; `authClient.signIn.username` disponible.
+- Note: **additif** — `adminClient()` et les helpers d'impersonation restent en place (retirés en Task 6). Garde le tree vert.
 
-- [ ] **Step 1: Mettre à jour le client Better Auth**
+- [ ] **Step 1: Ajouter le client username + l'action**
 
 Dans `apps/mobile/src/lib/auth.ts` :
-1. L18 : remplacer `import { adminClient } from 'better-auth/client/plugins';` par `import { usernameClient } from 'better-auth/client/plugins';`.
-2. L65 : remplacer `adminClient(), // Quick Switch...` par `usernameClient(), // Autonomous child login`.
-3. Ajouter l'action après `signIn` (vers L114) :
+1. L18 : ajouter `usernameClient` à l'import existant → `import { adminClient, usernameClient } from 'better-auth/client/plugins';`
+2. Dans le tableau `plugins` (après `adminClient(),`) : ajouter `usernameClient(),`
+3. Ajouter après la fonction `signIn` (~L114) :
 ```ts
 /**
  * Connexion enfant avec identifiant (username) + mot de passe.
@@ -184,39 +178,10 @@ export async function signInUsername(username: string, password: string) {
   return authClient.signIn.username({ username, password });
 }
 ```
-4. Supprimer : l'interface `ImpersonatedSession` (L41-43), `useImpersonatedBy` (L99-103), tout le bloc « QUICK SWITCH » (L222-298 : `hasParentSessionBackup`, `restoreParentSession`, `launchChildSession`) et le commentaire d'en-tête « Quick Switch 2026 » (L7-11).
 
-- [ ] **Step 2: Vérifier qu'aucune référence interne ne casse**
+- [ ] **Step 2: Écrire le test du login qui échoue**
 
-Run: `cd apps/mobile && grep -rn "adminClient\|launchChildSession\|restoreParentSession\|useImpersonatedBy\|hasParentSessionBackup\|impersonat" src/`
-Expected: les seules occurrences restantes sont dans les fichiers traités par les Tasks 6-7 (login/profile-select déjà neutralisés ou à venir). Noter la liste pour les tasks suivantes.
-
-- [ ] **Step 3: Typecheck**
-
-Run: `cd apps/mobile && pnpm typecheck`
-Expected: erreurs UNIQUEMENT dans les call sites supprimés par Tasks 6-7 (`profile-select.tsx`, `child/[id]/index.tsx`, `ChildSummaryCard.tsx`, `(student)/_layout.tsx`). C'est attendu — ces fichiers sont traités ensuite. Ne pas committer tant que le typecheck n'est pas vert (regrouper avec Tasks 6-7) **ou** committer ce module isolément si les call sites sont déjà retirés.
-
-- [ ] **Step 4: Commit (après Tasks 6-7 si le typecheck dépend d'elles)**
-
-```bash
-git add apps/mobile/src/lib/auth.ts
-git commit -m "feat(mobile): add username sign-in, drop impersonation client helpers"
-```
-
----
-
-### Task 4: Mobile — router le login Élève vers `signIn.username`
-
-**Files:**
-- Modify: `apps/mobile/src/app/(auth)/login.tsx` (import L11 ; `handleLogin` L30-51 ; commentaire d'en-tête L4-5)
-- Test: `apps/mobile/__tests__/app/login.test.tsx` (create si absent)
-
-**Interfaces:**
-- Consumes: `signIn`, `signInUsername` (Task 3) ; `accountType: 'parent' | 'student'` (existant).
-
-- [ ] **Step 1: Écrire le test qui échoue**
-
-Créer `apps/mobile/__tests__/app/login.test.tsx` :
+D'abord lire `apps/mobile/src/components/auth/AccountTypeToggle.tsx` et `LoginForm.tsx` pour les libellés exacts (onglet « Élève », label du champ identifiant, bouton submit). Puis créer `apps/mobile/__tests__/app/login.test.tsx` :
 
 ```tsx
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
@@ -236,215 +201,66 @@ describe('LoginScreen', () => {
 
   it('uses username sign-in when the Élève tab is active', async () => {
     const { getByText, getByLabelText } = render(<LoginScreen />);
-    fireEvent.press(getByText('Élève'));
-    fireEvent.changeText(getByLabelText('Identifiant'), 'kid_abc');
+    fireEvent.press(getByText('Élève'));                       // adapter au libellé réel
+    fireEvent.changeText(getByLabelText('Identifiant'), 'kid_abc'); // adapter
     fireEvent.changeText(getByLabelText('Mot de passe'), 'child-password-123');
-    fireEvent.press(getByText('Se connecter'));
-    await waitFor(() => expect(signInUsername).toHaveBeenCalledWith('kid_abc', 'child-password-123'));
+    fireEvent.press(getByText('Se connecter'));                // adapter
+    await waitFor(() =>
+      expect(signInUsername).toHaveBeenCalledWith('kid_abc', 'child-password-123'),
+    );
     expect(signInEmail).not.toHaveBeenCalled();
   });
 });
 ```
 
-(Adapter les libellés exacts — `Élève`, `Identifiant`, `Mot de passe`, `Se connecter` — à ceux rendus par `AccountTypeToggle` / `LoginForm` ; les lire d'abord.)
-
-- [ ] **Step 2: Lancer le test, vérifier l'échec**
+- [ ] **Step 3: Lancer le test, vérifier l'échec**
 
 Run: `cd apps/mobile && pnpm test login.test`
-Expected: FAIL — `handleLogin` appelle toujours `signIn` (email) pour le student.
+Expected: FAIL — `handleLogin` appelle `signIn` (email) pour le student.
 
-- [ ] **Step 3: Brancher sur `accountType`**
+- [ ] **Step 4: Brancher sur `accountType`**
 
 Dans `apps/mobile/src/app/(auth)/login.tsx` :
 1. L11 : `import { signIn, signInUsername, signInWithGoogle } from '@/lib/auth';`
-2. Dans `handleLogin`, remplacer l'appel `const result = await signIn(identifier, password);` par :
+2. Dans `handleLogin`, remplacer `const result = await signIn(identifier, password);` par :
 ```ts
       const result =
         accountType === 'student'
           ? await signInUsername(identifier, password)
           : await signIn(identifier, password);
 ```
-3. Mettre à jour le commentaire d'en-tête L4-5 (les enfants se connectent par identifiant, plus via sélection de profil).
+3. Mettre à jour le commentaire d'en-tête L4-5 (enfants se connectent par identifiant, plus via sélection de profil).
 
-- [ ] **Step 4: Lancer le test, vérifier le succès**
+- [ ] **Step 5: Lancer le test, vérifier le succès**
 
 Run: `cd apps/mobile && pnpm test login.test`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Validation + commit**
 
+Run: `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
+Expected: PASS.
 ```bash
-git add apps/mobile/src/app/(auth)/login.tsx apps/mobile/__tests__/app/login.test.tsx
+git add apps/mobile/src/lib/auth.ts apps/mobile/src/app/\(auth\)/login.tsx apps/mobile/__tests__/app/login.test.tsx
 git commit -m "feat(mobile): route student login to username sign-in"
 ```
 
 ---
 
-### Task 5: Mobile — supprimer l'ancien onboarding Pronote (consommateur du PIN local)
+### Task 4: Mobile — écran « Ajouter un enfant » manuel (additif)
 
 **Files:**
-- Delete: `apps/mobile/src/hooks/usePronoteOnboarding.ts`, `apps/mobile/src/hooks/usePronoteReconnect.ts`, `apps/mobile/src/app/(parent)/onboarding-pronote.tsx`, `apps/mobile/src/app/(parent)/tabs/(profile)/pronote-connect.tsx`, le réexport `apps/mobile/src/app/(parent)/tabs/(home)/pronote-connect.tsx`, et les tests `__tests__/hooks/usePronoteOnboarding.test.ts` / `usePronoteReconnect.test.ts`
-- Keep: `src/components/parent/Pronote*`, `src/components/parent/pronote/PronoteStep*`, `src/lib/pronote-helpers.ts`, `src/stores/pronote-store.ts` (réutilisés au sous-projet 2)
-- Modify: l'export-barrel `src/hooks/index.ts` (retirer les exports supprimés) ; toute route les référençant.
-
-**Interfaces:**
-- Produces: plus aucun consommateur de `useChildAccessStore` via Pronote (prépare Task 8).
-
-- [ ] **Step 1: Supprimer hooks + écrans + tests**
-
-```bash
-cd apps/mobile
-git rm src/hooks/usePronoteOnboarding.ts src/hooks/usePronoteReconnect.ts \
-  src/app/\(parent\)/onboarding-pronote.tsx \
-  src/app/\(parent\)/tabs/\(profile\)/pronote-connect.tsx \
-  src/app/\(parent\)/tabs/\(home\)/pronote-connect.tsx \
-  __tests__/hooks/usePronoteOnboarding.test.ts __tests__/hooks/usePronoteReconnect.test.ts
-```
-(Adapter les chemins exacts des écrans `pronote-connect` après `grep -rn "usePronoteReconnect\|usePronoteOnboarding" src/`.)
-
-- [ ] **Step 2: Nettoyer les barrels / imports**
-
-Run: `cd apps/mobile && grep -rn "usePronoteOnboarding\|usePronoteReconnect\|onboarding-pronote\|pronote-connect" src/`
-Retirer chaque référence trouvée (barrel `src/hooks/index.ts`, navigations `router.push`/`<Link>`). Le bouton/CTA qui menait à `onboarding-pronote` ou `pronote-connect` est retiré (Pronote revient au sous-projet 2).
-
-- [ ] **Step 3: Typecheck + lint + tests**
-
-Run: `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
-Expected: PASS (les call sites d'impersonation de la Task 3 peuvent encore casser si Task 3 déjà appliquée — sinon vert ici).
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add -u
-git commit -m "refactor(mobile): remove legacy Pronote onboarding hooks/screens (server model in sub-project 2)"
-```
-
----
-
-### Task 6: Mobile — supprimer `profile-select` + recâbler l'entrée parent
-
-**Files:**
-- Delete: `apps/mobile/src/app/(parent)/profile-select.tsx`
-- Modify: `apps/mobile/src/app/(parent)/_layout.tsx` (retirer la `Stack.Screen name="profile-select"`), le point d'entrée du groupe `(parent)` (redirection vers `tabs`)
-
-**Interfaces:**
-- Consumes: la suppression de `child-access-store` (Task 8) — `profile-select` est son dernier consommateur d'UI ; le supprimer ici débloque Task 8.
-
-- [ ] **Step 1: Identifier l'entrée parent**
-
-Run: `cd apps/mobile && grep -rn "profile-select" src/` puis lire `src/app/(parent)/_layout.tsx` et `src/app/(parent)/index.tsx` (s'il existe).
-Objectif : après login parent, l'app doit ouvrir directement `(parent)/tabs` (dashboard), sans écran intermédiaire de sélection de profil.
-
-- [ ] **Step 2: Supprimer l'écran + sa route**
-
-```bash
-cd apps/mobile && git rm src/app/\(parent\)/profile-select.tsx
-```
-Dans `(parent)/_layout.tsx` : retirer l'enregistrement `profile-select`. Si `(parent)/index.tsx` faisait `redirect` vers `profile-select`, le rediriger vers `/(parent)/tabs` (ou retirer l'index si `tabs` est déjà l'entrée par défaut du groupe).
-
-- [ ] **Step 3: Vérifier le routing à 0 et à N enfants**
-
-Run: `cd apps/mobile && grep -rn "profile-select" src/`
-Expected: aucune occurrence.
-Le cas « 0 enfant » est traité en Task 8 (empty-state add-child). Ici, vérifier juste que le parent atterrit sur `tabs`.
-
-- [ ] **Step 4: Typecheck + lint**
-
-Run: `cd apps/mobile && pnpm typecheck && pnpm lint`
-Expected: PASS (hors call sites impersonation Task 7 si non encore traités).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add -u
-git commit -m "feat(mobile): remove profile-select, parent enters dashboard directly"
-```
-
----
-
-### Task 7: Mobile — retirer les CTA « Lancer Tom » et la bannière « Return to Parent »
-
-**Files:**
-- Modify: `apps/mobile/src/app/(parent)/tabs/(home)/child/[id]/index.tsx` (appel `launchChildSession` ~L98 + son CTA), `apps/mobile/src/components/parent/ChildSummaryCard.tsx` (~L122), `apps/mobile/src/app/(student)/_layout.tsx` (bannière + `restoreParentSession` + `useImpersonatedBy` ~L42-66)
-
-**Interfaces:**
-- Consumes: l'absence des helpers d'impersonation (Task 3).
-
-- [ ] **Step 1: Retirer le CTA « Lancer Tom pour [enfant] »**
-
-Dans `child/[id]/index.tsx` et `ChildSummaryCard.tsx` : supprimer l'appel à `launchChildSession`, le bouton/Pressable associé, et tout state lié (`isLaunching`, etc.). Le parent consulte les données enfant via les écrans existants (grades/homework/timetable) — pas d'entrée dans l'espace enfant.
-
-- [ ] **Step 2: Retirer la bannière « Return to Parent »**
-
-Dans `(student)/_layout.tsx` : supprimer le bloc qui lit `useImpersonatedBy()`/`hasParentSessionBackup` et affiche le bouton « Return to Parent » appelant `restoreParentSession`. L'espace enfant n'a plus de notion de session parente.
-
-- [ ] **Step 3: Vérifier l'absence totale de références impersonation**
-
-Run: `cd apps/mobile && grep -rn "launchChildSession\|restoreParentSession\|useImpersonatedBy\|hasParentSessionBackup\|impersonat" src/`
-Expected: **aucune occurrence**.
-
-- [ ] **Step 4: Typecheck + lint + tests (le module auth Task 3 doit être vert maintenant)**
-
-Run: `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
-Expected: PASS.
-
-- [ ] **Step 5: Commit (inclure le module de la Task 3 si pas encore committé)**
-
-```bash
-git add -u
-git commit -m "feat(mobile): drop parent->child quick-switch UI (no impersonation)"
-```
-
----
-
-### Task 8: Mobile — supprimer `child-access-store` (plus aucun consommateur)
-
-**Files:**
-- Delete: `apps/mobile/src/stores/child-access-store.ts`, `apps/mobile/__tests__/stores/child-access-store.test.ts`
-- Modify: barrel `src/stores/index.ts` si présent
-
-**Interfaces:**
-- Consumes: Tasks 5-7 ont retiré tous les call sites (`setCredential`, `setParentCredential`, `verifyCredential`, `verifyParentCredential`, `hasCredential`).
-
-- [ ] **Step 1: Confirmer zéro consommateur**
-
-Run: `cd apps/mobile && grep -rn "child-access-store\|useChildAccessStore\|setParentCredential\|verifyParentCredential" src/ __tests__/`
-Expected: seulement le fichier du store + son test.
-
-- [ ] **Step 2: Supprimer le store + test**
-
-```bash
-cd apps/mobile && git rm src/stores/child-access-store.ts __tests__/stores/child-access-store.test.ts
-```
-Retirer l'export du barrel `src/stores/index.ts` si présent.
-
-- [ ] **Step 3: Typecheck + lint + tests**
-
-Run: `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
-Expected: PASS.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add -u
-git commit -m "refactor(mobile): remove child-access-store (local PIN obsolete)"
-```
-
----
-
-### Task 9: Mobile — écran « Ajouter un enfant » manuel + empty-state parent
-
-**Files:**
-- Create: `apps/mobile/src/app/(parent)/add-child.tsx` (ou `(parent)/tabs/(home)/add-child.tsx` selon le routing du groupe)
-- Modify: l'entrée parent à 0 enfant (cf. Task 6) pour pointer vers cet écran ; barrel routes si besoin
+- Create: `apps/mobile/src/app/(parent)/add-child.tsx`
+- Modify: `apps/mobile/src/app/(parent)/_layout.tsx` (enregistrer la route si nécessaire)
 - Test: `apps/mobile/__tests__/app/add-child.test.tsx` (create)
 
 **Interfaces:**
-- Consumes: `useParentDashboard().createChild(data: ICreateChildData)` (`src/hooks/useParentDashboard.ts:170`) → `POST /api/parent/children`. Champs requis (alignés sur `apps/server/src/schemas/validation` `createChildSchema` — **les lire avant de figer le formulaire**) : `firstName`, `lastName`, `username` (min 3), `password` (min 8), `schoolLevel` (`EDUCATION_LEVEL_UNION`), `dateOfBirth` (requis par le Zod `createChildSchema`).
+- Consumes: `useParentDashboard().createChild(data: ICreateChildData)` (`src/hooks/useParentDashboard.ts:170`) → `POST /api/parent/children`.
+- Note: **additif** — écran créé + route enregistrée, pas encore branché comme empty-state (Task 5). Reachable pour test.
 
 - [ ] **Step 1: Lire le contrat exact**
 
-Lire `apps/server/src/schemas/validation` (`createChildSchema`) et `apps/mobile/src/hooks/useParentDashboard.ts` (`ICreateChildData`) pour aligner précisément les champs/validations du formulaire (notamment `dateOfBirth` requis, format username, longueur mot de passe).
+Lire `apps/server/src/schemas/validation` (`createChildSchema`) et `apps/mobile/src/hooks/useParentDashboard.ts` (`ICreateChildData`) pour aligner les champs/validations : `firstName`, `lastName`, `username` (min 3), `password` (min 8), `schoolLevel`, `dateOfBirth` (requis par le Zod `createChildSchema`).
 
 - [ ] **Step 2: Écrire le test qui échoue**
 
@@ -467,7 +283,7 @@ describe('AddChildScreen', () => {
     fireEvent.changeText(getByLabelText('Nom'), 'Test');
     fireEvent.changeText(getByLabelText('Identifiant'), 'kid_abc');
     fireEvent.changeText(getByLabelText('Mot de passe'), 'child-password-123');
-    // niveau + date de naissance : adapter aux composants réels (picker)
+    // niveau + date de naissance : adapter aux composants réels (picker/date)
     fireEvent.press(getByText('Créer le compte'));
     await waitFor(() =>
       expect(createChild).toHaveBeenCalledWith(
@@ -485,31 +301,116 @@ Expected: FAIL — l'écran n'existe pas.
 
 - [ ] **Step 4: Implémenter l'écran**
 
-Créer `apps/mobile/src/app/(parent)/add-child.tsx` : formulaire (primitives `@/components/ui/`, NativeWind, tokens) avec champs prénom, nom, identifiant, mot de passe (indicateur de robustesse, min 8), niveau (picker `EDUCATION_LEVEL`), date de naissance. États complets (idle/submitting/erreur « identifiant déjà pris » renvoyée par l'API/error). a11y : `accessibilityLabel` sur chaque champ, cibles ≥44pt, rôles. Sur succès → `router.back()` (ou retour dashboard). Réutiliser un éventuel composant de saisie existant (`PronoteStepChildPin` ou form parent) plutôt que dupliquer.
+Créer `apps/mobile/src/app/(parent)/add-child.tsx` : formulaire (primitives `@/components/ui/`, NativeWind, tokens `@repo/tokens`) — prénom, nom, identifiant, mot de passe (indicateur de robustesse, min 8), niveau (picker via `EDUCATION_LEVEL`/`@/constants/levels`), date de naissance. États complets (idle/submitting/erreur API « identifiant déjà pris »). a11y : `accessibilityLabel` par champ, cibles ≥44pt, rôles. Sur succès → `router.back()`. Réutiliser les inputs existants (`@/components/ui/`) plutôt que dupliquer. ≤400 lignes (extraire un sous-composant si besoin). Enregistrer la route dans `(parent)/_layout.tsx` si le routing du groupe l'exige.
 
-- [ ] **Step 5: Brancher l'empty-state**
-
-À l'endroit défini en Task 6 (parent à 0 enfant), afficher un état vide avec CTA « Ajouter un enfant » → `router.push('/(parent)/add-child')`. Enregistrer la route dans `(parent)/_layout.tsx` si nécessaire.
-
-- [ ] **Step 6: Lancer le test + validation complète**
+- [ ] **Step 5: Lancer le test + validation**
 
 Run: `cd apps/mobile && pnpm test add-child.test && pnpm typecheck && pnpm lint && pnpm test`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add apps/mobile/src/app/\(parent\)/add-child.tsx apps/mobile/__tests__/app/add-child.test.tsx
 git add -u
-git commit -m "feat(mobile): manual add-child screen + empty-state (Pronote-independent)"
+git commit -m "feat(mobile): manual add-child screen (Pronote-independent)"
 ```
 
 ---
 
-### Task 10: Validation finale + nettoyage doc
+### Task 5: Mobile — retirer l'ancien onboarding Pronote, brancher l'empty-state sur add-child
 
 **Files:**
-- Modify: `apps/mobile/CLAUDE.md` (section Pronote/onboarding si elle décrit l'ancien modèle de profile-switch — facultatif), commentaires d'en-tête résiduels.
+- Delete: `apps/mobile/src/hooks/usePronoteOnboarding.ts`, `apps/mobile/src/hooks/usePronoteReconnect.ts`, `apps/mobile/src/app/(parent)/onboarding-pronote.tsx`, les écrans `pronote-connect` (sous `(parent)/tabs/(profile)/` et le réexport `(parent)/tabs/(home)/`), et les tests `__tests__/hooks/usePronoteOnboarding.test.ts` / `usePronoteReconnect.test.ts`
+- Keep: `src/components/parent/Pronote*`, `src/components/parent/pronote/PronoteStep*`, `src/lib/pronote-helpers.ts`, `src/stores/pronote-store.ts`
+- Modify: barrel `src/hooks/index.ts` ; le point de routing « 0 enfant » (aujourd'hui → `onboarding-pronote`) → vers `add-child`
+
+**Interfaces:**
+- Consumes: l'écran `add-child` (Task 4). Le 0-children empty-state pointe désormais vers lui.
+- Produces: plus de consommateur Pronote de `child-access-store` (prépare Task 6).
+
+- [ ] **Step 1: Cartographier les référents**
+
+Run: `cd apps/mobile && grep -rn "usePronoteOnboarding\|usePronoteReconnect\|onboarding-pronote\|pronote-connect" src/`
+Noter : qui navigue vers `onboarding-pronote` (le 0-children empty-state) et `pronote-connect` (CTA reconnect), et le barrel `src/hooks/index.ts`.
+
+- [ ] **Step 2: Supprimer hooks + écrans + tests**
+
+```bash
+cd apps/mobile
+git rm src/hooks/usePronoteOnboarding.ts src/hooks/usePronoteReconnect.ts \
+  __tests__/hooks/usePronoteOnboarding.test.ts __tests__/hooks/usePronoteReconnect.test.ts
+git rm src/app/\(parent\)/onboarding-pronote.tsx
+# chemins pronote-connect confirmés à l'étape 1 :
+git rm src/app/\(parent\)/tabs/\(profile\)/pronote-connect.tsx
+git rm src/app/\(parent\)/tabs/\(home\)/pronote-connect.tsx
+```
+
+- [ ] **Step 3: Repointer l'empty-state + nettoyer les imports**
+
+Retirer du barrel `src/hooks/index.ts` les exports supprimés. Repointer la navigation « 0 enfant » (route typée) de `/(parent)/onboarding-pronote` vers `/(parent)/add-child`. Retirer le CTA qui menait à `pronote-connect` (Pronote revient au sous-projet 2). Vérifier : `grep -rn "onboarding-pronote\|pronote-connect\|usePronoteOnboarding\|usePronoteReconnect" src/` → aucune occurrence.
+
+- [ ] **Step 4: Validation + commit**
+
+Run: `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
+Expected: PASS.
+```bash
+git add -u
+git commit -m "refactor(mobile): drop legacy Pronote onboarding, empty-state -> add-child"
+```
+
+---
+
+### Task 6: Mobile — supprimer impersonation, profile-select et child-access-store
+
+**Files:**
+- Modify: `apps/mobile/src/lib/auth.ts` (retirer `adminClient` + `ImpersonatedSession` + `useImpersonatedBy` + `hasParentSessionBackup` + `restoreParentSession` + `launchChildSession` + commentaire « Quick Switch »)
+- Modify: `apps/mobile/src/app/(parent)/tabs/(home)/child/[id]/index.tsx` (CTA `launchChildSession` ~L98), `apps/mobile/src/components/parent/ChildSummaryCard.tsx` (~L122), `apps/mobile/src/app/(student)/_layout.tsx` (bannière Return-to-Parent ~L42-66)
+- Modify: `apps/mobile/src/app/(parent)/_layout.tsx` (retirer la route `profile-select`, recâbler l'entrée parent → `tabs`)
+- Delete: `apps/mobile/src/app/(parent)/profile-select.tsx`, `apps/mobile/src/stores/child-access-store.ts`, `apps/mobile/__tests__/stores/child-access-store.test.ts`
+
+**Interfaces:**
+- Consumes: Tasks 3-5 ont retiré tous les autres consommateurs. `profile-select` et les call sites CTA/bannière sont les derniers référents de l'impersonation et du store.
+
+- [ ] **Step 1: Retirer les call sites CTA + bannière**
+
+Dans `child/[id]/index.tsx` et `ChildSummaryCard.tsx` : supprimer l'appel `launchChildSession`, le bouton/Pressable « Lancer Tom pour [enfant] » et tout state associé (`isLaunching`…). Dans `(student)/_layout.tsx` : supprimer le bloc lisant `useImpersonatedBy()`/`hasParentSessionBackup` et le bouton « Return to Parent » appelant `restoreParentSession`.
+
+- [ ] **Step 2: Supprimer profile-select + recâbler l'entrée parent**
+
+```bash
+cd apps/mobile && git rm src/app/\(parent\)/profile-select.tsx
+```
+Dans `(parent)/_layout.tsx` : retirer l'enregistrement `profile-select`. Recâbler l'entrée du groupe `(parent)` pour qu'un parent connecté atterrisse directement sur `(parent)/tabs` (si `(parent)/index.tsx` redirigeait vers `profile-select`, le rediriger vers `/(parent)/tabs` ou supprimer l'index si `tabs` est l'entrée par défaut).
+
+- [ ] **Step 3: Retirer les helpers d'impersonation + le client admin**
+
+Dans `apps/mobile/src/lib/auth.ts` : supprimer l'interface `ImpersonatedSession`, `useImpersonatedBy`, le bloc « QUICK SWITCH » (`hasParentSessionBackup`, `restoreParentSession`, `launchChildSession`), le commentaire d'en-tête « Quick Switch 2026 », et retirer `adminClient` de l'import + du tableau `plugins` (laisser `usernameClient`).
+
+- [ ] **Step 4: Supprimer child-access-store (plus aucun consommateur)**
+
+Run: `cd apps/mobile && grep -rn "child-access-store\|useChildAccessStore\|launchChildSession\|restoreParentSession\|useImpersonatedBy\|hasParentSessionBackup\|adminClient\|profile-select\|impersonat" src/ __tests__/`
+Expected: seulement le fichier du store + son test.
+```bash
+git rm src/stores/child-access-store.ts __tests__/stores/child-access-store.test.ts
+```
+Retirer l'export du barrel `src/stores/index.ts` si présent.
+
+- [ ] **Step 5: Validation + commit**
+
+Run: `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
+Expected: PASS — `grep` final (Step 4) ne renvoie plus aucune occurrence.
+```bash
+git add -u
+git commit -m "feat(mobile): remove impersonation, profile-select and local PIN store"
+```
+
+---
+
+### Task 7: Validation finale + nettoyage doc
+
+**Files:**
+- Modify (facultatif): `apps/mobile/CLAUDE.md` (section décrivant l'ancien profile-switch), commentaires d'en-tête résiduels.
 
 - [ ] **Step 1: Validation monorepo complète**
 
@@ -518,7 +419,7 @@ Run:
 cd apps/server && bun run typecheck && bun run lint && bun run test && bun run test:integration
 cd ../mobile && pnpm typecheck && pnpm lint && pnpm test
 ```
-Expected: tout PASS (intégration serveur : tests env-gated `pronote-real-account`/`rag` skippent sans creds — normal).
+Expected: tout PASS (intégration serveur : `pronote-real-account`/`rag` skippent sans creds — normal).
 
 - [ ] **Step 2: Grep final anti-résidu**
 
@@ -526,7 +427,7 @@ Run:
 ```bash
 grep -rn "impersonat\|profile-select\|child-access-store\|usePronoteOnboarding\|usePronoteReconnect" apps/mobile/src apps/server/src
 ```
-Expected: aucune occurrence (hors specs/plans `docs/`).
+Expected: aucune occurrence (hors `docs/`).
 
 - [ ] **Step 3: Commit éventuel des ajustements doc**
 
@@ -540,17 +441,17 @@ git commit -m "docs(mobile): align CLAUDE.md with autonomous child login model"
 ## Self-Review
 
 **Spec coverage :**
-- Plugin `username` serveur+client → Tasks 1, 3. ✅
-- Endpoint reset mot de passe enfant → **hors scope sous-projet 1** (sous-projet 2), conforme au spec. ✅
-- Suppression admin/impersonation serveur → Task 2. ✅
-- Login toggle Parent/Élève → existant + branchement username Task 4. ✅
-- Suppressions mobile (profile-select, child-access-store, helpers, bannière, CTA) → Tasks 5-8. ✅
-- Empty-state add-child manuel → Task 9. ✅
-- Data parent inchangée (assertParentOrSelf) → vérifié Task 2 Step 5 (non-régression). ✅
+- Plugin `username` serveur → Task 1 ; client → Task 3. ✅
+- Endpoint reset mot de passe enfant → **hors scope** (sous-projet 2), conforme au spec. ✅
+- Suppression admin/impersonation serveur → Task 2 ; mobile → Task 6. ✅
+- Login toggle Parent/Élève → existant + branchement username Task 3. ✅
+- Add-child manuel → Task 4 ; empty-state branché Task 5. ✅
+- Suppressions mobile (onboarding legacy, profile-select, child-access-store, helpers, bannière, CTA) → Tasks 5-6. ✅
+- Data parent inchangée (assertParentOrSelf) → non-régression Task 2 Step 4. ✅
 - Pas de migration (pré-prod) → aucun task de migration. ✅
 
-**Placeholder scan :** les « adapter les libellés/chemins exacts » renvoient à une lecture préalable obligatoire (pas un TODO de code) ; le contrat add-child (Task 9 Step 1) impose de lire `createChildSchema` avant de figer le formulaire — volontaire, le schéma Zod est la source de vérité.
+**Vert à chaque commit (typedRoutes + hook pre-commit typecheck) :** additifs d'abord (T1 username serveur, T3 username login, T4 add-child), puis retraits feuilles→racines (T5 onboarding+repoint empty-state→add-child ; T6 impersonation+profile-select+store une fois leurs référents partis). Chaque task se termine par un typecheck vert avant commit. ✅
 
-**Type consistency :** `signInUsername(username, password)` défini Task 3, consommé Task 4 ✅ ; `createChild(ICreateChildData)` consommé Task 9 (signature lue Step 1) ✅ ; `assertParentOrSelf` non modifié, seulement vérifié ✅.
+**Placeholder scan :** les « adapter les libellés/chemins exacts » renvoient à une lecture préalable obligatoire (Task 3 Step 2, Task 4 Step 1, Task 5 Step 1) — pas des TODO de code ; le contrat add-child impose de lire `createChildSchema` (source de vérité). ✅
 
-**Ordre/dépendances :** Tasks 5-7 retirent tous les consommateurs avant la suppression de `child-access-store` (Task 8) et du module auth impersonation (Task 3 committé avec Task 7). Le typecheck mobile n'est garanti vert qu'à partir de la fin de Task 7 — noté explicitement dans Tasks 3/5/6.
+**Type consistency :** `signInUsername(username, password)` défini Task 3, consommé login Task 3 ✅ ; `createChild(ICreateChildData)` consommé Task 4 (signature lue Step 1) ✅ ; `assertParentOrSelf` seulement vérifié, non modifié ✅ ; `adminClient` ajouté nulle part en T3 (déjà présent), retiré T6 — pas de double-retrait ✅.
