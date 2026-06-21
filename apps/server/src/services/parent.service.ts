@@ -44,10 +44,18 @@ export class ParentService {
         role: 'student' as const,
         createdAt: child.createdAt?.toISOString() ?? new Date().toISOString(),
         hasPronote: false,
+        pronoteCredentialId: null as string | null,
       }));
 
-      const mapped = await pronoteChildResourcesRepository.getMappedChildIds(result.map(c => c.id));
-      const enriched = result.map(c => ({ ...c, hasPronote: mapped.has(c.id) }));
+      const credentialMap = await pronoteChildResourcesRepository.getCredentialIdByChild(
+        parentId,
+        result.map(c => c.id),
+      );
+      const enriched = result.map(c => ({
+        ...c,
+        hasPronote: credentialMap.has(c.id),
+        pronoteCredentialId: credentialMap.get(c.id) ?? null,
+      }));
 
       logger.debug('Processed children data', {
         parentId,
@@ -150,6 +158,7 @@ export class ParentService {
       role: 'student' as const,
       createdAt: new Date().toISOString(),
       hasPronote: false,
+      pronoteCredentialId: null,
     };
   }
 
@@ -197,7 +206,10 @@ export class ParentService {
         throw new Error('Failed to update child');
       }
 
-      const childHasPronote = (await pronoteChildResourcesRepository.getMappedChildIds([updatedChild.id])).has(updatedChild.id);
+      const credMap = await pronoteChildResourcesRepository.getCredentialIdByChild(
+        parentId,
+        [updatedChild.id],
+      );
       return {
         id: updatedChild.id,
         firstName: updatedChild.firstName ?? '',
@@ -209,7 +221,8 @@ export class ParentService {
         parentId: parentId,
         role: 'student' as const,
         createdAt: updatedChild.createdAt?.toISOString() ?? new Date().toISOString(),
-        hasPronote: childHasPronote,
+        hasPronote: credMap.has(updatedChild.id),
+        pronoteCredentialId: credMap.get(updatedChild.id) ?? null,
       };
     } catch (_error) {
       logger.error('Error updating child', { operation: 'parent:child:update', _error: _error instanceof Error ? _error.message : String(_error), parentId, childId, severity: 'medium' as const });

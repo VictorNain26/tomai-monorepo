@@ -50,6 +50,7 @@ mock.module('../db/schema', () => ({
 mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
   inArray: (...args: unknown[]) => ({ type: 'inArray', args }),
+  and: (...args: unknown[]) => ({ type: 'and', args }),
 }));
 
 // Import after mocks

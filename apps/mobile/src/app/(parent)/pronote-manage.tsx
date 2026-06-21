@@ -278,35 +278,38 @@ export default function PronoteManageScreen() {
               }
             })();
 
-          return (
-            <View key={credential.credentialId}>
-              <PronoteCredentialCard
-                credential={credential}
-                pronoteChildren={pronoteChildren}
-                isResyncing={resyncingId === credential.credentialId}
-                isDeleting={deletingId === credential.credentialId}
-                onResync={() => void handleResync(credential.credentialId)}
-                onDelete={() => void handleDelete(credential.credentialId, displayName)}
-                onResetPassword={(childId) => setActiveResetChildId(childId)}
-              />
+          const credentialChildren = pronoteChildren.filter(
+            (c) => c.pronoteCredentialId === credential.credentialId,
+          );
 
-              {activeResetChildId !== null &&
-                pronoteChildren.some((c) => c.id === activeResetChildId) && (
-                  <Card className="mb-4 rounded-2xl p-4">
-                    <ResetPasswordForm
-                      childId={activeResetChildId}
-                      childName={
-                        pronoteChildren.find((c) => c.id === activeResetChildId)?.firstName ?? ''
-                      }
-                      onSubmit={handleResetPassword}
-                      onCancel={() => setActiveResetChildId(null)}
-                      colors={colors}
-                    />
-                  </Card>
-                )}
-            </View>
+          return (
+            <PronoteCredentialCard
+              key={credential.credentialId}
+              credential={credential}
+              pronoteChildren={credentialChildren}
+              isResyncing={resyncingId === credential.credentialId}
+              isDeleting={deletingId === credential.credentialId}
+              onResync={() => void handleResync(credential.credentialId)}
+              onDelete={() => void handleDelete(credential.credentialId, displayName)}
+              onResetPassword={(childId) => setActiveResetChildId(childId)}
+            />
           );
         })}
+
+        {activeResetChildId !== null &&
+          pronoteChildren.some((c) => c.id === activeResetChildId) && (
+            <Card className="mb-4 rounded-2xl p-4">
+              <ResetPasswordForm
+                childId={activeResetChildId}
+                childName={
+                  pronoteChildren.find((c) => c.id === activeResetChildId)?.firstName ?? ''
+                }
+                onSubmit={handleResetPassword}
+                onCancel={() => setActiveResetChildId(null)}
+                colors={colors}
+              />
+            </Card>
+          )}
 
         {/* Add another establishment */}
         <Button

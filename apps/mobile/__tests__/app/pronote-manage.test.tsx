@@ -231,7 +231,7 @@ describe('PronoteManageScreen', () => {
       makeHookState({
         credentials: [makeCredential()],
         pronoteChildren: [
-          { id: 'child-1', firstName: 'Marie', lastName: 'DUPONT', hasPronote: true },
+          { id: 'child-1', firstName: 'Marie', lastName: 'DUPONT', hasPronote: true, pronoteCredentialId: 'cred-1' },
         ],
       }),
     );
@@ -258,7 +258,7 @@ describe('PronoteManageScreen', () => {
       makeHookState({
         credentials: [makeCredential()],
         pronoteChildren: [
-          { id: 'child-1', firstName: 'Marie', lastName: 'DUPONT', hasPronote: true },
+          { id: 'child-1', firstName: 'Marie', lastName: 'DUPONT', hasPronote: true, pronoteCredentialId: 'cred-1' },
         ],
       }),
     );
@@ -273,6 +273,58 @@ describe('PronoteManageScreen', () => {
 
     expect(mockResetChildPassword).toHaveBeenCalledWith('child-1', 'ValidPass1');
     expect(mockToastSuccess).toHaveBeenCalled();
+  });
+
+  // ── 6. multi-establishment: each child appears under its own card only ───────
+  it('multi-establishment: each child appears under only its own establishment card', () => {
+    mockUsePronoteManage.mockReturnValue(
+      makeHookState({
+        credentials: [
+          makeCredential({ credentialId: 'cred-1', establishmentName: 'Lycée Jean Moulin', childCount: 1 }),
+          makeCredential({ credentialId: 'cred-2', establishmentName: 'Collège Paul Bert', childCount: 1 }),
+        ],
+        pronoteChildren: [
+          { id: 'child-a', firstName: 'Alice', lastName: 'Durand', hasPronote: true, pronoteCredentialId: 'cred-1' },
+          { id: 'child-b', firstName: 'Bob', lastName: 'Martin', hasPronote: true, pronoteCredentialId: 'cred-2' },
+        ],
+      }),
+    );
+
+    const { getByTestId, queryByTestId } = render(<PronoteManageScreen />);
+
+    // child-a's reset button exists under cred-1 card
+    expect(getByTestId('reset-pwd-btn-child-a')).toBeTruthy();
+    // child-b's reset button exists under cred-2 card
+    expect(getByTestId('reset-pwd-btn-child-b')).toBeTruthy();
+
+    // The card-level scoping is structural: PronoteCredentialCard only receives
+    // its own children, so each reset button appears exactly once.
+    expect(queryByTestId('reset-pwd-btn-child-a')).toBeTruthy();
+    expect(queryByTestId('reset-pwd-btn-child-b')).toBeTruthy();
+  });
+
+  // ── 7. reset form renders EXACTLY ONCE even with 2 establishments ────────────
+  it('reset-password: form renders exactly once when triggered (not duplicated under each card)', async () => {
+    mockUsePronoteManage.mockReturnValue(
+      makeHookState({
+        credentials: [
+          makeCredential({ credentialId: 'cred-1', establishmentName: 'Lycée Jean Moulin', childCount: 1 }),
+          makeCredential({ credentialId: 'cred-2', establishmentName: 'Collège Paul Bert', childCount: 1 }),
+        ],
+        pronoteChildren: [
+          { id: 'child-a', firstName: 'Alice', lastName: 'Durand', hasPronote: true, pronoteCredentialId: 'cred-1' },
+          { id: 'child-b', firstName: 'Bob', lastName: 'Martin', hasPronote: true, pronoteCredentialId: 'cred-2' },
+        ],
+      }),
+    );
+
+    const { getByTestId, queryAllByTestId } = render(<PronoteManageScreen />);
+
+    // Trigger reset for child-a
+    fireEvent.press(getByTestId('reset-pwd-btn-child-a'));
+
+    // The input field must appear exactly once, not once per credential card
+    expect(queryAllByTestId('reset-pwd-input').length).toBe(1);
   });
 
   // ── 5. empty state ──────────────────────────────────────────────────────────

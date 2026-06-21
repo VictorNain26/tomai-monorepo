@@ -8,10 +8,9 @@
  *   DELETE /api/pronote/credentials/:id → remove credential (children kept)
  *   PATCH /api/parent/children/:id → reset child password
  *
- * Children per credential are joined client-side from useParentDashboard
- * (hasPronote:true children, ordered by credentialId — server does not yet
- * expose credentialId on /parent/children; we show all hasPronote children
- * under each credential until that field ships, then filter strictly).
+ * Children per credential are joined client-side from useParentDashboard.
+ * Each child carries pronoteCredentialId (from server), so we filter strictly
+ * to show only the children belonging to a given establishment.
  */
 
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
@@ -119,7 +118,7 @@ export function usePronoteManage(): UsePronoteManageReturn {
   });
 
   const { children: allChildren } = useParentDashboard();
-  const pronoteChildren = allChildren.filter((c) => c.hasPronote);
+  const pronoteChildren = allChildren.filter((c) => c.hasPronote && c.pronoteCredentialId != null);
 
   const resyncMutation = useMutation({
     mutationFn: resyncCredential,

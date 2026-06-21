@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 import { db } from '../connection';
 import { pronoteChildResources } from '../schema';
 import type { PronoteChildStatus } from '../../services/pronote/provider.types.js';
@@ -69,6 +69,30 @@ class PronoteChildResourcesRepository {
       .from(pronoteChildResources)
       .where(inArray(pronoteChildResources.childUserId, childIds));
     return new Set(rows.map(r => r.childUserId));
+  }
+
+  async getCredentialIdByChild(
+    parentUserId: string,
+    childIds: string[],
+  ): Promise<Map<string, string>> {
+    if (childIds.length === 0) return new Map();
+    const rows = await db
+      .select({
+        childUserId: pronoteChildResources.childUserId,
+        credentialId: pronoteChildResources.credentialId,
+      })
+      .from(pronoteChildResources)
+      .where(
+        and(
+          eq(pronoteChildResources.parentUserId, parentUserId),
+          inArray(pronoteChildResources.childUserId, childIds),
+        ),
+      );
+    return new Map(
+      rows
+        .filter(r => r.credentialId !== null)
+        .map(r => [r.childUserId, r.credentialId as string]),
+    );
   }
 
   async getResourceIdsByCredential(credentialId: string): Promise<number[]> {
