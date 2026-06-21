@@ -13,9 +13,13 @@ const mockValues = mock(() => ({
   onConflictDoUpdate: mockOnConflictDoUpdate,
 }));
 
-const mockSelectWhere = mock(() => {
+const mockSelectLimit = mock(() => {
   return selectResult ? [selectResult] : [];
 });
+
+const mockSelectWhere = mock(() => ({
+  limit: mockSelectLimit,
+}));
 
 const mockDeleteWhere = mock(async () => {
   deleteCalled = true;
@@ -78,6 +82,7 @@ describe('PronoteChildResourcesRepository', () => {
     mockOnConflictDoUpdate.mockClear();
     mockValues.mockClear();
     mockSelectWhere.mockClear();
+    mockSelectLimit.mockClear();
     mockDeleteWhere.mockClear();
   });
 

@@ -37,7 +37,7 @@ import { PronotePinEntry } from '@/components/parent/PronotePinEntry';
 import { PronoteStepIntro } from '@/components/parent/pronote/PronoteStepIntro';
 import { PronoteStepConnecting } from '@/components/parent/pronote/PronoteStepConnecting';
 import { ChildAccessCard } from '@/components/parent/pronote/ChildAccessCard';
-import { PronoteResultStep } from '@/components/parent/pronote/PronoteResultStep';
+import { PronoteResultStep, CONFLICT_REASONS } from '@/components/parent/pronote/PronoteResultStep';
 
 import { buildDefaultAccessForm } from '@/components/parent/pronote/pronote-connect-types';
 import type { AccessForm } from '@/components/parent/pronote/pronote-connect-types';
@@ -171,9 +171,13 @@ export default function PronoteConnectScreen() {
   }, [discovered, getForm, confirmSelections]);
 
   const handleRetry = useCallback(() => {
-    const failedIds = new Set(results.failed.map((f) => f.resourceId));
+    const correctableFailedIds = new Set(
+      results.failed
+        .filter((f) => !CONFLICT_REASONS.includes(f.reason))
+        .map((f) => f.resourceId),
+    );
     const failedSelections = selections
-      .filter((s) => failedIds.has(s.resourceId))
+      .filter((s) => correctableFailedIds.has(s.resourceId))
       .map((s) => {
         const form = accessForms[s.resourceId];
         if (!form) return s;

@@ -28,7 +28,7 @@ export interface QrData {
 export interface DiscoveredChild {
   resourceId: number;
   name: string;
-  className: string;
+  className: string | null;
   establishmentName: string;
   suggested: {
     firstName: string;

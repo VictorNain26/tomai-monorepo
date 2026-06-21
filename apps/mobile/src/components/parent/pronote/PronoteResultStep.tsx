@@ -37,7 +37,7 @@ export interface PronoteResultStepProps {
 }
 
 // Failures that can't be fixed by editing credentials — show reason only.
-const CONFLICT_REASONS = ['already_mapped'];
+export const CONFLICT_REASONS = ['already_mapped'];
 
 // ============================================================================
 // COMPONENT
@@ -69,6 +69,7 @@ export function PronoteResultStep({
 
   const hasActivated = results.activated.length > 0;
   const hasFailed = results.failed.length > 0;
+  const hasCorrectableFailure = results.failed.some((f) => !CONFLICT_REASONS.includes(f.reason));
 
   return (
     <ScrollView className="flex-1 px-4 py-5" showsVerticalScrollIndicator={false}>
@@ -166,18 +167,30 @@ export function PronoteResultStep({
             );
           })}
 
-          <Button
-            testID="result-retry-btn"
-            onPress={onRetry}
-            disabled={isPending}
-            className="mt-3"
-            accessibilityRole="button"
-            accessibilityLabel="Réessayer les activations échouées"
-          >
-            <Text className="font-semibold text-primary-foreground">
-              {isPending ? 'Réessai...' : 'Réessayer les échecs'}
-            </Text>
-          </Button>
+          {hasCorrectableFailure ? (
+            <Button
+              testID="result-retry-btn"
+              onPress={onRetry}
+              disabled={isPending}
+              className="mt-3"
+              accessibilityRole="button"
+              accessibilityLabel="Réessayer les activations échouées"
+            >
+              <Text className="font-semibold text-primary-foreground">
+                {isPending ? 'Réessai...' : 'Réessayer les échecs'}
+              </Text>
+            </Button>
+          ) : (
+            <Button
+              testID="result-done-btn"
+              onPress={onDone}
+              className="mt-3"
+              accessibilityRole="button"
+              accessibilityLabel="Terminer l'onboarding Pronote"
+            >
+              <Text className="font-semibold text-primary-foreground">Terminer</Text>
+            </Button>
+          )}
         </View>
       )}
 

@@ -57,7 +57,7 @@ export function ChildAccessCard({
             {child.suggested.firstName} {child.suggested.lastName}
           </Text>
           <Text variant="muted" className="text-xs">
-            {child.className} — {child.establishmentName}
+            {child.className ? `${child.className} — ` : ''}{child.establishmentName}
           </Text>
         </View>
       </View>

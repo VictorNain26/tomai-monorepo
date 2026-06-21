@@ -23,6 +23,7 @@ import {
 } from '../services/pronote/pronote-data.service.js';
 import { PronoteReauthRequired, PronoteUrlNotAllowedError } from '../services/pronote/pawnote-server.adapter.js';
 import { logger } from '../lib/observability.js';
+import { EDUCATION_LEVEL_UNION } from '../lib/education-levels.js';
 
 const pronoteRateLimit = createRateLimitMiddleware(RateLimitPresets.pronote);
 
@@ -169,8 +170,8 @@ export const pronoteConnectRoutes = new Elysia({ name: 'pronote-connect-routes' 
         resourceId: t.Number(),
         firstName: t.String(),
         lastName: t.String(),
-        schoolLevel: t.String(),
-        username: t.Optional(t.String({ minLength: 3 })),
+        schoolLevel: t.Union([...EDUCATION_LEVEL_UNION.anyOf]),
+        username: t.Optional(t.String({ minLength: 3, maxLength: 30, pattern: '^[a-zA-Z0-9_.]+$' })),
         password: t.Optional(t.String({ minLength: 8 })),
         linkToChildId: t.Optional(t.String()),
       })),

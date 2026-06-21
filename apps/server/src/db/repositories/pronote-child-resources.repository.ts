@@ -14,7 +14,8 @@ class PronoteChildResourcesRepository {
         resourceId: pronoteChildResources.resourceId,
       })
       .from(pronoteChildResources)
-      .where(eq(pronoteChildResources.childUserId, childUserId));
+      .where(eq(pronoteChildResources.childUserId, childUserId))
+      .limit(1);
 
     if (!row || row.credentialId === null) return null;
     return { parentUserId: row.parentUserId, credentialId: row.credentialId, resourceId: row.resourceId };
@@ -50,7 +51,8 @@ class PronoteChildResourcesRepository {
         className: pronoteChildResources.className,
       })
       .from(pronoteChildResources)
-      .where(eq(pronoteChildResources.childUserId, childUserId));
+      .where(eq(pronoteChildResources.childUserId, childUserId))
+      .limit(1);
 
     if (!row) {
       return { hasPronote: false, establishmentName: null, className: null };

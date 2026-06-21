@@ -412,4 +412,112 @@ describe('PronoteConnectScreen', () => {
     const childEntry = calledWith.find((s) => s.resourceId === 3);
     expect(childEntry?.username).toBe('lea.bernard.new');
   });
+
+  // ── 9. result step: all-conflict failure → shows "Terminer" not retry ──────
+  it('result step: only already_mapped failures shows "Terminer" button instead of retry', () => {
+    mockUsePronoteConnect.mockReturnValue(
+      makeHookState({
+        step: 'result',
+        results: {
+          activated: [],
+          failed: [{ resourceId: 4, reason: 'already_mapped' }],
+        },
+        discovered: [
+          {
+            resourceId: 4,
+            name: 'DUPONT Emma',
+            className: null,
+            establishmentName: 'Lycée Paul Valéry',
+            suggested: { firstName: 'Emma', lastName: 'DUPONT', schoolLevel: 'seconde' },
+            existingChildId: null,
+          },
+        ],
+        selections: [
+          {
+            resourceId: 4,
+            firstName: 'Emma',
+            lastName: 'DUPONT',
+            schoolLevel: 'seconde',
+            mode: 'create' as const,
+          },
+        ],
+      }),
+    );
+
+    const { getByTestId, queryByTestId } = render(<PronoteConnectScreen />);
+
+    expect(queryByTestId('result-retry-btn')).toBeNull();
+    expect(getByTestId('result-done-btn')).toBeTruthy();
+  });
+
+  // ── 10. result step: mixed failures → retry only sends correctable subset ──
+  it('result step: mixed failures (correctable + conflict) → retryFailed only receives correctable', async () => {
+    mockRetryFailed.mockResolvedValue(undefined);
+
+    const selections = [
+      {
+        resourceId: 5,
+        firstName: 'Luc',
+        lastName: 'MARTIN',
+        schoolLevel: 'sixieme',
+        mode: 'create' as const,
+        username: 'luc.martin',
+        password: 'Password1!',
+      },
+      {
+        resourceId: 6,
+        firstName: 'Marie',
+        lastName: 'MARTIN',
+        schoolLevel: 'quatrieme',
+        mode: 'create' as const,
+        username: 'marie.martin',
+        password: 'Password1!',
+      },
+    ];
+
+    mockUsePronoteConnect.mockReturnValue(
+      makeHookState({
+        step: 'result',
+        results: {
+          activated: [],
+          failed: [
+            { resourceId: 5, reason: 'missing_credentials' },
+            { resourceId: 6, reason: 'already_mapped' },
+          ],
+        },
+        discovered: [
+          {
+            resourceId: 5,
+            name: 'MARTIN Luc',
+            className: '6eA',
+            establishmentName: 'Collège Jean Moulin',
+            suggested: { firstName: 'Luc', lastName: 'MARTIN', schoolLevel: 'sixieme' },
+            existingChildId: null,
+          },
+          {
+            resourceId: 6,
+            name: 'MARTIN Marie',
+            className: '4eB',
+            establishmentName: 'Collège Jean Moulin',
+            suggested: { firstName: 'Marie', lastName: 'MARTIN', schoolLevel: 'quatrieme' },
+            existingChildId: null,
+          },
+        ],
+        selections,
+      }),
+    );
+
+    const { getByTestId } = render(<PronoteConnectScreen />);
+
+    expect(getByTestId('result-retry-btn')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(getByTestId('result-retry-btn'));
+    });
+
+    expect(mockRetryFailed).toHaveBeenCalledTimes(1);
+    const [calledWith] = mockRetryFailed.mock.calls[0] as [typeof selections];
+    expect(calledWith.some((s) => s.resourceId === 6)).toBe(false);
+    expect(calledWith.some((s) => s.resourceId === 5)).toBe(true);
+  });
 });
