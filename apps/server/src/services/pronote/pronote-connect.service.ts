@@ -205,6 +205,14 @@ class PronoteConnectService {
           // C2: verify the child already belongs to this parent before mapping
           const owned = await parentService.isParentOf(parentUserId, selection.linkToChildId);
           if (!owned) throw new PronoteChildNotOwnedError(selection.linkToChildId);
+
+          // C3: reject if the child already has a Pronote mapping (no silent overwrite)
+          const existing = await pronoteChildResourcesRepository.getMapping(selection.linkToChildId);
+          if (existing) {
+            failed.push({ resourceId: selection.resourceId, reason: 'already_mapped' });
+            continue;
+          }
+
           childId = selection.linkToChildId;
         } else {
           const child = await parentService.createChild(parentUserId, {

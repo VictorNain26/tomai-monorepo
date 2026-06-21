@@ -100,10 +100,16 @@ const mockUpsertMapping = mock(
 
 const mockGetResourceIdsByCredential = mock(async (_credentialId: string): Promise<number[]> => []);
 
+// Returns null by default (no existing mapping)
+const mockGetMapping = mock(
+  async (_childUserId: string): Promise<{ parentUserId: string; credentialId: string; resourceId: number } | null> => null,
+);
+
 mock.module('../db/repositories/pronote-child-resources.repository', () => ({
   pronoteChildResourcesRepository: {
     upsertMapping: mockUpsertMapping,
     getResourceIdsByCredential: mockGetResourceIdsByCredential,
+    getMapping: mockGetMapping,
   },
 }));
 
@@ -334,6 +340,7 @@ describe('PronoteConnectService.activate', () => {
     mockIsParentOf.mockClear();
     mockDeleteById.mockClear();
     mockUpsertMapping.mockClear();
+    mockGetMapping.mockClear();
   });
 
   it('(a) creates child and maps when no linkToChildId', async () => {
@@ -597,6 +604,41 @@ describe('PronoteConnectService.activate', () => {
     expect(result.activated).toHaveLength(0);
     expect(result.failed).toHaveLength(1);
     expect(mockDeleteById).not.toHaveBeenCalled();
+  });
+
+  it('(i) linkToChildId already mapped → failed[already_mapped], no overwrite, isParentOf guard ran first', async () => {
+    // Pre-condition: child-existing-1 already has a mapping (different credential + resourceId)
+    mockGetMapping.mockResolvedValueOnce({
+      parentUserId: 'user-001',
+      credentialId: 'cred-other-999',
+      resourceId: 42,
+    });
+
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Emma',
+        lastName: 'Dupont',
+        schoolLevel: 'troisieme',
+        username: 'ignored',
+        password: 'ignored123',
+        linkToChildId: 'child-existing-1',
+      },
+    ]);
+
+    // isParentOf must have been checked before the already_mapped guard
+    expect(mockIsParentOf).toHaveBeenCalledWith('user-001', 'child-existing-1');
+
+    // Result: rejected with 'already_mapped', nothing written
+    expect(result.activated).toHaveLength(0);
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0]).toEqual({ resourceId: 0, reason: 'already_mapped' });
+
+    // upsertMapping must NOT have been called (no overwrite)
+    expect(mockUpsertMapping).not.toHaveBeenCalled();
+
+    // The mock returns the original mapping — verify getMapping was called with the child id
+    expect(mockGetMapping).toHaveBeenCalledWith('child-existing-1');
   });
 });
 
