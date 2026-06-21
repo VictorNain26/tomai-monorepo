@@ -14,7 +14,7 @@ import { View } from 'react-native';
 
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
-import { LevelPicker } from '@/app/(parent)/add-child-level-picker';
+import { LevelPicker } from '@/components/parent/level-picker';
 import { passwordStrength } from '@/lib/child-credential-validators';
 import type { EducationLevelType } from '@/constants/levels';
 
