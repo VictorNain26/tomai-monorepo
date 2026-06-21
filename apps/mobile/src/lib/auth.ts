@@ -15,7 +15,7 @@
 
 import { createAuthClient } from 'better-auth/react';
 import { expoClient } from '@better-auth/expo/client';
-import { adminClient } from 'better-auth/client/plugins';
+import { adminClient, usernameClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
 import {
   GoogleSignin,
@@ -63,6 +63,7 @@ export const authClient = createAuthClient({
       storage: SecureStore,
     }),
     adminClient(), // Quick Switch: impersonation for parents
+    usernameClient(), // Child (student) login via Pronote username
   ],
 });
 
@@ -111,6 +112,14 @@ export function useImpersonatedBy(): string | null {
  */
 export async function signIn(email: string, password: string) {
   return authClient.signIn.email({ email, password });
+}
+
+/**
+ * Connexion avec username/password (élèves — Pronote).
+ * Requiert le plugin usernameClient côté client et username côté serveur.
+ */
+export async function signInUsername(username: string, password: string) {
+  return authClient.signIn.username({ username, password });
 }
 
 /**
