@@ -223,6 +223,7 @@ class PronoteSyncService {
         childCount: count(pronoteChildResources.id),
       })
       .from(pronoteChildResources)
+      .where(eq(pronoteChildResources.parentUserId, userId))
       .groupBy(pronoteChildResources.credentialId);
 
     const countByCredentialId = new Map<string, number>(
