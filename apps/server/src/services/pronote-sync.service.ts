@@ -13,6 +13,16 @@ import { pronoteCredentials, pronoteChildResources } from '../db/schema.js';
 import { encrypt, decrypt } from '../lib/encryption.js';
 import { logger } from '../lib/observability.js';
 
+// Defined here to avoid importing from pronote-connect.service (which has a heavy
+// import chain that conflicts with the drizzle-orm mock in tests).
+// The route imports this via pronote-connect.service which re-exports it.
+export class PronoteCredentialForbiddenError extends Error {
+  constructor() {
+    super('This Pronote credential does not belong to the requesting user');
+    this.name = 'PronoteCredentialForbiddenError';
+  }
+}
+
 /**
  * Normalize an establishment URL for use as a deduplication key.
  * Strips trailing slashes and lowercases the host so that
@@ -248,6 +258,35 @@ class PronoteSyncService {
       establishmentUrl: c.establishmentUrl,
       childCount: countByCredentialId.get(c.id) ?? 0,
     }));
+  }
+
+  /**
+   * Delete a single Pronote credential by id.
+   * The credential's child resource mappings are removed by CASCADE (DB FK).
+   * Child user accounts are NOT touched — they keep their autonomous login.
+   *
+   * Returns true when deleted. Returns false when the id is not found (route maps 404).
+   * Throws PronoteCredentialForbiddenError when userId !== owner (route maps 403).
+   */
+  async deleteCredentialById(userId: string, credentialId: string): Promise<boolean> {
+    const credential = await this.getCredentialById(credentialId);
+    if (!credential) {
+      return false;
+    }
+    if (credential.userId !== userId) {
+      throw new PronoteCredentialForbiddenError();
+    }
+    await db
+      .delete(pronoteCredentials)
+      .where(eq(pronoteCredentials.id, credentialId));
+
+    logger.info('Pronote credential deleted by id', {
+      operation: 'pronote-sync:delete-by-id',
+      userId,
+      credentialId,
+    });
+
+    return true;
   }
 
   /**

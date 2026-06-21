@@ -52,13 +52,24 @@ type CredSummary = {
 
 let mockListCredentialSummaries = mock(async (_userId: string): Promise<CredSummary[]> => []);
 
+// PronoteCredentialForbiddenError is now exported from pronote-sync.service (source of truth)
+// and imported by the route — must be present in the mock.
+class PronoteCredentialForbiddenError extends Error {
+  constructor() {
+    super('This Pronote credential does not belong to the requesting user');
+    this.name = 'PronoteCredentialForbiddenError';
+  }
+}
+
 mock.module('../services/pronote-sync.service', () => ({
+  PronoteCredentialForbiddenError,
   pronoteSyncService: {
     get listCredentialSummaries() { return mockListCredentialSummaries; },
     // stubs for other route handlers
     upsertCredentials: mock(async () => ({ success: true })),
     getCredentials: mock(async () => null),
     deleteCredentials: mock(async () => true),
+    deleteCredentialById: mock(async () => true),
   },
 }));
 

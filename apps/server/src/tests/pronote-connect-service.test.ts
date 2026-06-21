@@ -32,7 +32,17 @@ const mockGetCredentialById = mock(
   })
 );
 
+// PronoteCredentialForbiddenError moved to pronote-sync.service (source of truth)
+// and re-exported by pronote-connect.service — must be present in the mock.
+class PronoteCredentialForbiddenErrorStub extends Error {
+  constructor() {
+    super('This Pronote credential does not belong to the requesting user');
+    this.name = 'PronoteCredentialForbiddenError';
+  }
+}
+
 mock.module('../services/pronote-sync.service', () => ({
+  PronoteCredentialForbiddenError: PronoteCredentialForbiddenErrorStub,
   pronoteSyncService: {
     upsertCredentials: mockUpsertCredentials,
     getCredentialById: mockGetCredentialById,

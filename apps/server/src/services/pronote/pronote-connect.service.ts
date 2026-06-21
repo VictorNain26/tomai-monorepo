@@ -6,7 +6,7 @@
  */
 
 import { pawnoteServerAdapter } from './pawnote-server.adapter.js';
-import { pronoteSyncService } from '../pronote-sync.service.js';
+import { pronoteSyncService, PronoteCredentialForbiddenError } from '../pronote-sync.service.js';
 import { pronoteDataService } from './pronote-data.service.js';
 import { parentService } from '../parent.service.js';
 import { pronoteChildResourcesRepository } from '../../db/repositories/pronote-child-resources.repository.js';
@@ -17,6 +17,9 @@ import { splitName, inferSchoolLevel, matchExistingChild } from '../../lib/prono
 import { logger } from '../../lib/observability.js';
 
 export type { DiscoveredResource };
+// PronoteCredentialForbiddenError originates in pronote-sync.service to avoid
+// a circular import. Re-exported here for backward compatibility.
+export { PronoteCredentialForbiddenError };
 
 export interface ActivationSelection {
   resourceId: number;
@@ -41,13 +44,6 @@ export class PronoteCredentialNotFoundError extends Error {
   constructor(credentialId: string) {
     super(`Pronote credential not found: ${credentialId}`);
     this.name = 'PronoteCredentialNotFoundError';
-  }
-}
-
-export class PronoteCredentialForbiddenError extends Error {
-  constructor() {
-    super('This Pronote credential does not belong to the requesting user');
-    this.name = 'PronoteCredentialForbiddenError';
   }
 }
 
