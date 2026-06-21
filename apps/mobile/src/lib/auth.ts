@@ -4,18 +4,12 @@
  * Uses @better-auth/expo with SecureStore for secure token storage.
  * This replaces the web-based auth from @repo/api for mobile.
  *
- * Quick Switch 2026: Uses Better Auth Admin plugin impersonation
- * - Parent can impersonate their children (server validates relationship)
- * - useSession() automatically updates when switching
- * - stopImpersonating() returns to parent session
- *
  * @see https://www.better-auth.com/docs/integrations/expo
- * @see https://www.better-auth.com/docs/plugins/admin
  */
 
 import { createAuthClient } from 'better-auth/react';
 import { expoClient } from '@better-auth/expo/client';
-import { adminClient, usernameClient } from 'better-auth/client/plugins';
+import { usernameClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
 import {
   GoogleSignin,
@@ -37,11 +31,6 @@ import type { IAppUser } from '@repo/api/types';
 
 export type { IAppUser };
 
-/** Session with impersonation metadata from Better Auth admin plugin */
-interface ImpersonatedSession {
-  impersonatedBy?: string;
-}
-
 // ============================================================================
 // AUTH CLIENT
 // ============================================================================
@@ -52,7 +41,7 @@ interface ImpersonatedSession {
  *
  * Plugins:
  * - expoClient: Secure storage + deep links for mobile
- * - adminClient: Quick Switch impersonation (parent → child)
+ * - usernameClient: Child (student) login via Pronote username
  */
 export const authClient = createAuthClient({
   baseURL: API_URL,
@@ -62,7 +51,6 @@ export const authClient = createAuthClient({
       storagePrefix: 'tomia',
       storage: SecureStore,
     }),
-    adminClient(), // Quick Switch: impersonation for parents
     usernameClient(), // Child (student) login via Pronote username
   ],
 });
@@ -74,10 +62,6 @@ export const authClient = createAuthClient({
 /**
  * Hook pour accéder à la session Better Auth.
  * Retourne { data, isPending, error, refetch }.
- *
- * Quick Switch: La session inclut `impersonatedBy` si en mode impersonation.
- * Après impersonation/stopImpersonating, appeler refetch() pour mettre à jour l'UI.
- * @see https://github.com/better-auth/better-auth/discussions/3860
  */
 export function useSession() {
   return authClient.useSession();
@@ -90,17 +74,6 @@ export function useSession() {
 export function useUser(): IAppUser | null {
   const { data: session } = useSession();
   return (session?.user as IAppUser | undefined) ?? null;
-}
-
-
-/**
- * Hook pour vérifier si on est en mode impersonation (Quick Switch actif).
- * Retourne l'ID du parent si on est en impersonation, null sinon.
- */
-export function useImpersonatedBy(): string | null {
-  const { data: session } = useSession();
-  // Better Auth admin plugin adds impersonatedBy to session
-  return (session?.session as ImpersonatedSession | undefined)?.impersonatedBy ?? null;
 }
 
 // ============================================================================
@@ -228,80 +201,3 @@ export async function resetPassword(token: string, newPassword: string) {
   });
 }
 
-// ============================================================================
-// QUICK SWITCH (Parent ↔ Child session swap)
-// Best Practice 2026: Better Auth Admin plugin impersonation
-// - Server validates parent-child relationship via impersonationAllowed hook
-// - Client uses built-in impersonateUser/stopImpersonating
-// - useSession() auto-updates when switching
-// ============================================================================
-
-/**
- * Vérifie si un restore parent est possible (en mode impersonation).
- * Utilise le flag impersonatedBy de Better Auth au lieu d'un token custom.
- */
-export async function hasParentSessionBackup(): Promise<boolean> {
-  try {
-    const session = await authClient.getSession();
-    // Check if session has impersonatedBy field (means we're impersonating)
-    return !!(session?.data?.session as ImpersonatedSession | undefined)?.impersonatedBy;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Restaure la session parent (arrête l'impersonation).
- * Better Auth gère automatiquement le retour à la session parent originale.
- *
- * Important: Le composant appelant doit appeler refetch() de useSession()
- * après cette opération pour mettre à jour l'état React.
- * @see https://github.com/better-auth/better-auth/discussions/3860
- */
-export async function restoreParentSession(): Promise<boolean> {
-  try {
-    const result = await authClient.admin.stopImpersonating();
-    return !result.error;
-  } catch {
-    return false;
-  }
-}
-
-
-/**
- * Lance une session enfant depuis le compte parent (Quick Switch).
- *
- * Better Auth Admin Plugin:
- * - Le serveur vérifie que le parent peut impersonner cet enfant spécifique
- * - La session parent est préservée automatiquement
- * - useSession() retourne l'enfant après impersonation
- * - stopImpersonating() restaure la session parent
- *
- * Important: Le composant appelant doit appeler refetch() de useSession()
- * après cette opération pour mettre à jour l'état React.
- * @see https://github.com/better-auth/better-auth/discussions/3860
- */
-export async function launchChildSession(childId: string): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  try {
-    const result = await authClient.admin.impersonateUser({
-      userId: childId,
-    });
-
-    if (result.error) {
-      return {
-        success: false,
-        error: result.error.message ?? 'Impossible de lancer la session enfant',
-      };
-    }
-
-    return { success: true };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erreur inattendue',
-    };
-  }
-}
