@@ -46,6 +46,14 @@ jest.mock('@/lib/auth', () => ({
   },
 }));
 
+// Mock pronote-store so we can control its state per test
+const mockGetState = jest.fn();
+jest.mock('@/stores/pronote-store', () => ({
+  usePronoteStore: {
+    getState: (...args: unknown[]) => mockGetState(...args),
+  },
+}));
+
 import EventSource from 'react-native-sse';
 import { useStreamManager, type StreamCallbacks } from '@/hooks/chat/useStreamManager';
 import { authClient } from '@/lib/auth';
@@ -86,12 +94,28 @@ const mockUser = {
 // TESTS
 // ============================================================================
 
+function buildPronoteState(overrides = {}) {
+  return {
+    isConnected: false,
+    homework: [],
+    grades: [],
+    timetable: [],
+    metadata: null,
+    resources: [],
+    resourceMappings: {},
+    errors: {},
+    ...overrides,
+  };
+}
+
 describe('useStreamManager', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockEventSourceInstance.addEventListener.mockReset();
     mockEventSourceInstance.removeAllEventListeners.mockReset();
     mockEventSourceInstance.close.mockReset();
+    // Default: empty store — no Pronote data cached
+    mockGetState.mockReturnValue(buildPronoteState());
   });
 
   it('returns startStream, stopStream, and cleanup functions', () => {
@@ -473,6 +497,84 @@ describe('useStreamManager', () => {
       expect(callbacks.setError).toHaveBeenCalledWith(
         expect.stringContaining('ne répond plus')
       );
+    });
+  });
+
+  describe('Pronote context gate (cache-data based)', () => {
+    it('omits pronoteContext when all cached arrays are empty', () => {
+      mockGetState.mockReturnValue(buildPronoteState({ homework: [], grades: [], timetable: [] }));
+
+      const callbacks = createMockCallbacks();
+      const { result } = renderHook(() => useStreamManager(callbacks));
+
+      act(() => {
+        result.current.startStream('assistant-1', 'Question', [], mockUser);
+      });
+
+      const body = JSON.parse((EventSource as jest.Mock).mock.calls[0][1].body);
+      expect(body.pronoteContext).toBeUndefined();
+    });
+
+    it('includes pronoteContext when homework is non-empty', () => {
+      mockGetState.mockReturnValue(
+        buildPronoteState({
+          homework: [{ id: 'hw1', subject: 'Maths', description: 'Ex 1', dueDate: '2026-06-22', done: false }],
+          grades: [],
+          timetable: [],
+        }),
+      );
+
+      const callbacks = createMockCallbacks();
+      const { result } = renderHook(() => useStreamManager(callbacks));
+
+      act(() => {
+        result.current.startStream('assistant-1', 'Question', [], mockUser);
+      });
+
+      const body = JSON.parse((EventSource as jest.Mock).mock.calls[0][1].body);
+      expect(body.pronoteContext).toBeDefined();
+    });
+
+    it('includes pronoteContext when grades is non-empty', () => {
+      mockGetState.mockReturnValue(
+        buildPronoteState({
+          homework: [],
+          grades: [{ id: 'g1', subject: 'Physique', value: 15, outOf: 20, date: '2026-06-01', description: 'Contrôle', average: 12 }],
+          timetable: [],
+        }),
+      );
+
+      const callbacks = createMockCallbacks();
+      const { result } = renderHook(() => useStreamManager(callbacks));
+
+      act(() => {
+        result.current.startStream('assistant-1', 'Question', [], mockUser);
+      });
+
+      const body = JSON.parse((EventSource as jest.Mock).mock.calls[0][1].body);
+      expect(body.pronoteContext).toBeDefined();
+    });
+
+    it('sends pronoteContext even when isConnected is false but cache has data', () => {
+      mockGetState.mockReturnValue(
+        buildPronoteState({
+          isConnected: false, // old flag false — should NOT gate anymore
+          homework: [{ id: 'hw2', subject: 'Français', description: 'Rédaction', dueDate: '2026-06-23', done: false }],
+          grades: [],
+          timetable: [],
+        }),
+      );
+
+      const callbacks = createMockCallbacks();
+      const { result } = renderHook(() => useStreamManager(callbacks));
+
+      act(() => {
+        result.current.startStream('assistant-1', 'Question', [], mockUser);
+      });
+
+      const body = JSON.parse((EventSource as jest.Mock).mock.calls[0][1].body);
+      // New gate: data present → context sent, regardless of isConnected
+      expect(body.pronoteContext).toBeDefined();
     });
   });
 });

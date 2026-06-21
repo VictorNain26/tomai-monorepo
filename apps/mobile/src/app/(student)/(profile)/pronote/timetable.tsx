@@ -26,7 +26,7 @@ import {
 import { Text } from '@/components/ui/text';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChatErrorBanner } from '@/components/chat';
-import { usePronote, useThemeColors } from '@/hooks';
+import { usePronote, usePronoteStatus, useThemeColors } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { bgColors, borderColors } from '@/lib/styles';
 
@@ -97,7 +97,9 @@ export default function TimetableScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const user = useUser();
-  const pronote = usePronote(user?.id ?? '');
+  const selfId = user?.id ?? '';
+  const pronote = usePronote(selfId);
+  const { data: status } = usePronoteStatus(selfId);
   const colors = useThemeColors();
 
   const onRefresh = useCallback(async () => {
@@ -170,7 +172,7 @@ export default function TimetableScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {timetable.length === 0 && !pronote.isConnected ? (
+        {timetable.length === 0 && !status?.hasPronote ? (
           // Loading skeleton
           <View className="gap-4 p-4">
             {[1, 2, 3].map((i) => (

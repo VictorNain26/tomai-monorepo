@@ -31,7 +31,7 @@ import { useToast } from '@/components/ui/toast';
 import { TokenUsageCard } from '@/components/dashboard';
 import { useUser, signOut } from '@/lib/auth';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { useStudentDashboard, usePronote, useThemeColors } from '@/hooks';
+import { useStudentDashboard, usePronote, usePronoteStatus, useThemeColors } from '@/hooks';
 import { bgColors, borderColors, shadows } from '@/lib/styles';
 
 // ============================================================================
@@ -62,8 +62,10 @@ export default function StudentProfileScreen() {
   const user = useUser();
   const { confirm, info } = useConfirm();
   const colors = useThemeColors();
+  const selfId = user?.id ?? '';
   const { usage, isLoadingUsage } = useStudentDashboard();
-  const pronote = usePronote(user?.id ?? '');
+  const pronote = usePronote(selfId);
+  const { data: status } = usePronoteStatus(selfId);
 
   async function handleLogout() {
     const confirmed = await confirm({
@@ -85,7 +87,7 @@ export default function StudentProfileScreen() {
   // Menu sections - updated paths for new structure
   const sections: MenuSection[] = [
     // Pronote section
-    ...(pronote.isConnected
+    ...(status?.hasPronote
       ? [
           {
             title: 'Pronote',
@@ -181,10 +183,10 @@ export default function StudentProfileScreen() {
             </View>
             <View className="flex-1">
               <Text variant="large">{user?.name ?? 'Élève'}</Text>
-              {pronote.isConnected && pronote.resources[0]?.className && (
+              {status?.hasPronote && status.className && (
                 <View className="mt-1 flex-row items-center gap-1">
                   <School color={colors.mutedForeground} size={14} />
-                  <Text variant="muted">{pronote.resources[0].className}</Text>
+                  <Text variant="muted">{status.className}</Text>
                 </View>
               )}
             </View>
