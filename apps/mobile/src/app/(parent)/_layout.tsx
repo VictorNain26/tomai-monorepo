@@ -27,6 +27,7 @@ export default function ParentLayout() {
     <Stack screenOptions={screenOptions}>
       <Stack.Screen name="profile-select" />
       <Stack.Screen name="onboarding-pronote" />
+      <Stack.Screen name="add-child" options={{ title: 'Ajouter un enfant' }} />
       <Stack.Screen name="tabs" />
     </Stack>
   );
