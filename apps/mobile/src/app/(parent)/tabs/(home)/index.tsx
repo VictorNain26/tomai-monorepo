@@ -134,11 +134,10 @@ export default function ParentDashboard() {
             {children.length} enfant{children.length > 1 ? 's' : ''}
           </Text>
         </View>
-        {/* TODO(Task 14): route to manage screen once pronote-manage is built */}
         <Button
           variant="ghost"
           size="sm"
-          onPress={() => router.push('/(parent)/pronote-connect')}
+          onPress={() => router.push('/(parent)/pronote-manage')}
           accessibilityLabel="Gérer Pronote"
         >
           <Text className="text-sm">Gérer Pronote</Text>
