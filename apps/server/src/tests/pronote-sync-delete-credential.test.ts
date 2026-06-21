@@ -41,7 +41,7 @@ mock.module('../middleware/rate-limit.middleware', () => ({
   RateLimitPresets: { pronote: {} },
 }));
 
-// Typed error classes (mirrored from pronote-connect.service)
+// Typed error classes (source of truth: pronote-sync.service)
 class PronoteCredentialNotFoundError extends Error {
   constructor(credentialId: string) {
     super(`Pronote credential not found: ${credentialId}`);
