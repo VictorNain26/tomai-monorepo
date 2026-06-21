@@ -24,13 +24,15 @@ class PronoteChildResourcesRepository {
     childUserId: string,
     credentialId: string,
     resourceId: number,
+    className: string | null,
+    establishmentName: string | null,
   ): Promise<void> {
     await db
       .insert(pronoteChildResources)
-      .values({ parentUserId, childUserId, credentialId, resourceId })
+      .values({ parentUserId, childUserId, credentialId, resourceId, className, establishmentName })
       .onConflictDoUpdate({
         target: [pronoteChildResources.parentUserId, pronoteChildResources.childUserId],
-        set: { credentialId, resourceId, updatedAt: new Date() },
+        set: { credentialId, resourceId, className, establishmentName, updatedAt: new Date() },
       });
   }
 

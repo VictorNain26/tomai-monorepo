@@ -95,7 +95,7 @@ mock.module('../db/repositories/users.repository', () => ({
 }));
 
 const mockUpsertMapping = mock(
-  async (_parentUserId: string, _childUserId: string, _credentialId: string, _resourceId: number): Promise<void> => {},
+  async (_parentUserId: string, _childUserId: string, _credentialId: string, _resourceId: number, _className: string | null, _establishmentName: string | null): Promise<void> => {},
 );
 
 const mockGetResourceIdsByCredential = mock(async (_credentialId: string): Promise<number[]> => []);
@@ -239,6 +239,15 @@ describe('PronoteConnectService.connectQr', () => {
       expect(err).toBeInstanceOf(Error);
     }
   });
+
+  it('passes establishmentName from first resource to upsertCredentials', async () => {
+    await pronoteConnectService.connectQr('user-001', { qr: FAKE_QR, pin: FAKE_PIN });
+
+    expect(mockUpsertCredentials).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [, input] = mockUpsertCredentials.mock.calls[0] as any;
+    expect(input.establishmentName).toBe('Collège Jean Moulin');
+  });
 });
 
 // ============================================
@@ -320,6 +329,7 @@ describe('PronoteConnectService.discover', () => {
 describe('PronoteConnectService.activate', () => {
   beforeEach(() => {
     mockGetCredentialById.mockClear();
+    mockListResources.mockClear();
     mockCreateChild.mockClear();
     mockIsParentOf.mockClear();
     mockDeleteById.mockClear();
@@ -545,6 +555,27 @@ describe('PronoteConnectService.activate', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const deletedId = (mockDeleteById.mock.calls[0] as any)[0];
     expect(deletedId).toBe('child-orphan');
+  });
+
+  it('(g2) passes className and establishmentName from discovered resources to upsertMapping', async () => {
+    // mockListResources already returns resources with className/establishmentName (used by discover internally)
+    await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 1,
+        firstName: 'Lucas',
+        lastName: 'Dupont',
+        schoolLevel: 'cinquieme',
+        username: 'lucasdupont',
+        password: 'password123',
+      },
+    ]);
+
+    expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const args = mockUpsertMapping.mock.calls[0] as any;
+    // args: [parentUserId, childUserId, credentialId, resourceId, className, establishmentName]
+    expect(args[4]).toBe('5ème B');
+    expect(args[5]).toBe('Collège Jean Moulin');
   });
 
   // I2 — linkToChildId path: no compensation when mapping fails (child was not created)

@@ -30,6 +30,7 @@ interface UpsertInput {
   token: string;
   metadata: string;
   tokenExpiresAt: string;
+  establishmentName?: string | null;
 }
 
 export interface CredentialOutput {
@@ -87,6 +88,7 @@ class PronoteSyncService {
       .values({
         userId,
         establishmentUrl,
+        establishmentName: input.establishmentName ?? null,
         encryptedToken,
         encryptedMetadata,
         tokenExpiresAt,
@@ -97,6 +99,7 @@ class PronoteSyncService {
           encryptedToken,
           encryptedMetadata,
           tokenExpiresAt,
+          establishmentName: input.establishmentName ?? null,
           updatedAt: new Date(),
         },
       })

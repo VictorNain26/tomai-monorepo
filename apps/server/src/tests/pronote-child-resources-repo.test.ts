@@ -86,6 +86,8 @@ describe('PronoteChildResourcesRepository', () => {
         CHILD_USER_ID,
         CREDENTIAL_ID,
         RESOURCE_ID,
+        null,
+        null,
       );
 
       expect(mockValues).toHaveBeenCalledTimes(1);

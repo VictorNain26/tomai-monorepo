@@ -210,7 +210,7 @@ beforeAll(async () => {
     .returning();
   if (!cred) throw new Error('Failed to insert probe credential');
 
-  await pronoteChildResourcesRepository.upsertMapping(parentId, childId, cred.id, 0);
+  await pronoteChildResourcesRepository.upsertMapping(parentId, childId, cred.id, 0, null, null);
 
   // Pre-warm the session cache so the route hits cache, bypassing loginToken
   // (which the demo rejects — see top-of-file comment).

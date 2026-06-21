@@ -92,6 +92,7 @@ class PronoteConnectService {
         accountKind: metadata.kind,
       }),
       tokenExpiresAt,
+      establishmentName: resources[0]?.establishmentName ?? null,
     });
 
     if (!upsertResult.success || !upsertResult.credentialId) {
@@ -189,6 +190,9 @@ class PronoteConnectService {
     if (!cred) throw new PronoteCredentialNotFoundError(credentialId);
     if (cred.userId !== parentUserId) throw new PronoteCredentialForbiddenError();
 
+    const allResources = await pronoteDataService.listResources(credentialId);
+    const resourceById = new Map(allResources.map((r) => [r.resourceId, r]));
+
     const activated: { resourceId: number; childId: string }[] = [];
     const failed: { resourceId: number; reason: string }[] = [];
 
@@ -214,11 +218,14 @@ class PronoteConnectService {
           childId = child.id;
         }
 
+        const res = resourceById.get(selection.resourceId);
         await pronoteChildResourcesRepository.upsertMapping(
           parentUserId,
           childId,
           credentialId,
           selection.resourceId,
+          res?.className ?? null,
+          res?.establishmentName ?? null,
         );
 
         activated.push({ resourceId: selection.resourceId, childId });
