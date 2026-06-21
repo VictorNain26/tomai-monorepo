@@ -173,8 +173,8 @@ export default function TimetableScreen() {
         }
       >
         {timetable.length === 0 && !status?.hasPronote ? (
-          // Loading skeleton
-          <View className="gap-4 p-4">
+          // Pronote not connected — placeholder shown until the user links their account
+          <View testID="pronote-not-connected-placeholder" className="gap-4 p-4">
             {[1, 2, 3].map((i) => (
               <View key={i}>
                 <Skeleton className="mb-2 h-5 w-32 rounded" />
