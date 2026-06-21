@@ -272,6 +272,7 @@ export default function PronoteConnectScreen() {
 
             <View className="border-t px-4 py-4" style={{ borderColor: colors.border }}>
               <Button
+                testID="pronote-activate-btn"
                 onPress={handleConfirm}
                 disabled={isPending || discovered.length === 0}
                 accessibilityLabel="Confirmer les accès et activer Pronote"

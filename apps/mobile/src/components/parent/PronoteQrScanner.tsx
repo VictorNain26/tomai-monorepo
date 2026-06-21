@@ -4,11 +4,17 @@
  * Camera-based QR code scanner step for Pronote connection.
  */
 
-import { View } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { CameraView } from 'expo-camera';
 import { ScanLine } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { bgColors } from '@/lib/styles';
+// E2E ONLY — payload used by the hidden injection tap target.
+import { E2E_QR_PAYLOAD } from '@/services/pronote/pronote-e2e-stubs';
+
+// Read at render time so RN's metro bundler can dead-code-eliminate the branch
+// in production builds where EXPO_PUBLIC_E2E is never injected.
+const IS_E2E = process.env.EXPO_PUBLIC_E2E === '1';
 
 interface PronoteQrScannerProps {
   onBarCodeScanned: (result: { data: string }) => void;
@@ -64,6 +70,18 @@ export function PronoteQrScanner({ onBarCodeScanned, error }: PronoteQrScannerPr
         <View className="mx-4 my-4 rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
           <Text className="text-center text-destructive">{error}</Text>
         </View>
+      )}
+
+      {/* E2E ONLY — hidden tap target that injects a fixed QR payload.
+          Rendered exclusively when EXPO_PUBLIC_E2E === '1' (preview builds only).
+          Production builds never set this flag so this element never renders. */}
+      {IS_E2E && (
+        <TouchableOpacity
+          testID="e2e-inject-qr"
+          accessibilityLabel="E2E inject QR"
+          style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+          onPress={() => onBarCodeScanned({ data: JSON.stringify(E2E_QR_PAYLOAD) })}
+        />
       )}
     </View>
   );
