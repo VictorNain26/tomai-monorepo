@@ -1,10 +1,14 @@
 /**
- * usePronote — per-domain error surfacing.
+ * usePronote — API-backed hook tests.
  *
- * Cross-contamination guard: concurrent fetches must not wipe each other's errors
- * because each domain owns its own key in the errors object.
+ * Verifies:
+ * 1. Per-domain error surfacing (cross-contamination guard).
+ * 2. fetchGrades(childId) targets the correct route.
+ * 3. connect() delegates to POST /api/pronote/connect/qr and updates store.
  */
+
 import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { getTreaty } from '@repo/api';
 
 jest.mock('react-native-mmkv', () => {
   const store = new Map<string, string>();
@@ -19,41 +23,62 @@ jest.mock('react-native-mmkv', () => {
   };
 });
 
-jest.mock('pawnote', () => ({
-  AccountKind: { PARENT: 0, STUDENT: 1 },
-  GradeKind: { Grade: 'Grade' },
-  assignmentsFromIntervals: jest.fn(),
-  gradesOverview: jest.fn(),
-  timetableFromIntervals: jest.fn(),
-  TabLocation: { Grades: 'Grades' },
-}));
-
-jest.mock('../../src/services/pronote/pronote-session', () => ({
-  pronoteSessionService: {
-    refreshSession: jest.fn(),
-    connectWithQrCode: jest.fn(),
-    disconnect: jest.fn(),
-  },
-}));
-
-import * as pawnote from 'pawnote';
-import { pronoteSessionService } from '../../src/services/pronote/pronote-session';
 import { usePronote } from '../../src/hooks/usePronote';
 import { usePronoteStore } from '../../src/stores/pronote-store';
 
-const mockRefresh = pronoteSessionService.refreshSession as jest.Mock;
-const mockGradesOverview = jest.mocked(pawnote.gradesOverview);
-const mockAssignments = jest.mocked(pawnote.assignmentsFromIntervals);
+const mockGetTreaty = getTreaty as jest.MockedFunction<typeof getTreaty>;
 
-/** Minimal SessionHandle mock: userResource.tabs.get('Grades') returns a period. */
-const mockPeriod = { id: 'p1', name: 'Trimestre 1' };
-const mockHandle = {
-  userResource: {
-    tabs: new Map([
-      ['Grades', { defaultPeriod: mockPeriod, periods: [mockPeriod] }],
-    ]),
-  },
+// ---------------------------------------------------------------------------
+// Helpers to build minimal treaty mocks
+// ---------------------------------------------------------------------------
+
+type GradeRaw = {
+  subject: string;
+  value: number | null;
+  scale: number;
+  date: string;
+  comment: string | null;
+  coefficient: number;
+  classAverage: number | null;
+  max: number | null;
+  min: number | null;
 };
+type HomeworkRaw = {
+  subject: string;
+  description: string;
+  dueDate: string;
+  done: boolean;
+};
+type LessonRaw = {
+  subject: string;
+  start: string;
+  end: string;
+  room: string | null;
+  canceled: boolean;
+};
+
+function makeChildrenApi(opts: {
+  childId: string;
+  gradesResult?: { data: { success: boolean; data: GradeRaw[] }; error: null } | { data: null; error: { status: number; value: { message: string } } };
+  homeworkResult?: { data: { success: boolean; data: HomeworkRaw[] }; error: null } | { data: null; error: { status: number; value: { message: string } } };
+  timetableResult?: { data: { success: boolean; data: LessonRaw[] }; error: null } | { data: null; error: { status: number; value: { message: string } } };
+}) {
+  const childrenFn = jest.fn((params: { childId: string }) => {
+    if (params.childId !== opts.childId) {
+      return { grades: { get: jest.fn().mockResolvedValue({ data: null, error: { status: 403, value: { message: 'Forbidden' } } }) } };
+    }
+    return {
+      grades: { get: jest.fn().mockResolvedValue(opts.gradesResult ?? { data: { success: true, data: [] }, error: null }) },
+      homework: { get: jest.fn().mockResolvedValue(opts.homeworkResult ?? { data: { success: true, data: [] }, error: null }) },
+      timetable: { get: jest.fn().mockResolvedValue(opts.timetableResult ?? { data: { success: true, data: [] }, error: null }) },
+    };
+  });
+  return childrenFn;
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 describe('usePronote error surfacing', () => {
   beforeEach(() => {
@@ -61,18 +86,23 @@ describe('usePronote error surfacing', () => {
     act(() => {
       usePronoteStore.setState({
         isConnected: true,
-        metadata: { instanceUrl: 'https://x.fr', username: 'u', deviceUuid: 'd', accountKind: 0 } as never,
+        metadata: null,
         lastGradesFetch: null,
         lastHomeworkFetch: null,
+        lastTimetableFetch: null,
         errors: { homework: null, grades: null, timetable: null },
       });
     });
   });
 
-  it('sets grades error when the gradesOverview data fetch throws (session ok, data fails)', async () => {
-    // Session refreshes successfully — real failure mode: data call fails.
-    mockRefresh.mockResolvedValueOnce(mockHandle);
-    mockGradesOverview.mockRejectedValueOnce(new Error('Pronote 500'));
+  it('sets grades error when grades endpoint returns an error', async () => {
+    const childrenFn = makeChildrenApi({
+      childId: 'user-1',
+      gradesResult: { data: null, error: { status: 500, value: { message: 'Pronote 500' } } },
+    });
+    mockGetTreaty.mockReturnValue({
+      api: { pronote: { children: childrenFn } },
+    } as unknown as ReturnType<typeof getTreaty>);
 
     const { result } = renderHook(() => usePronote('user-1'));
 
@@ -85,56 +115,54 @@ describe('usePronote error surfacing', () => {
     });
   });
 
-  it('clears grades error when a subsequent grades fetch succeeds after a previous failure', async () => {
-    // First call: session ok, data throws.
-    mockRefresh.mockResolvedValueOnce(mockHandle);
-    mockGradesOverview.mockRejectedValueOnce(new Error('Pronote 500'));
+  it('clears grades error when a subsequent grades fetch succeeds', async () => {
+    // First call: error
+    const errorResult = { data: null, error: { status: 500, value: { message: 'Pronote 500' } } } as const;
+    const successResult = { data: { success: true, data: [] }, error: null } as const;
+
+    const gradesMock = jest.fn()
+      .mockResolvedValueOnce(errorResult)
+      .mockResolvedValueOnce(successResult);
+
+    const childrenFn = jest.fn(() => ({ grades: { get: gradesMock } }));
+
+    mockGetTreaty.mockReturnValue({
+      api: { pronote: { children: childrenFn } },
+    } as unknown as ReturnType<typeof getTreaty>);
 
     const { result } = renderHook(() => usePronote('user-1'));
 
-    await act(async () => {
-      await result.current.fetchGrades();
-    });
+    await act(async () => { await result.current.fetchGrades(); });
     await waitFor(() => expect(result.current.errors.grades).not.toBeNull());
 
-    // Reset TTL guard so the second call isn't short-circuited.
-    act(() => {
-      usePronoteStore.setState({ lastGradesFetch: null });
-    });
+    // Reset TTL guard
+    act(() => { usePronoteStore.setState({ lastGradesFetch: null }); });
 
-    // Second call: session ok, data succeeds — storeSetError('grades', null) must fire.
-    mockRefresh.mockResolvedValueOnce(mockHandle);
-    mockGradesOverview.mockResolvedValueOnce({ grades: [], subjectsAverages: [] });
-
-    await act(async () => {
-      await result.current.fetchGrades();
-    });
-
-    await waitFor(() => {
-      expect(result.current.errors.grades).toBeNull();
-    });
+    await act(async () => { await result.current.fetchGrades(); });
+    await waitFor(() => { expect(result.current.errors.grades).toBeNull(); });
   });
 
-  /**
-   * Regression guard for the exact bug: homework fails while grades succeeds
-   * concurrently. Under the old single-field design, grades success called
-   * storeSetError(null) which wiped the homework error. With per-domain errors,
-   * each key is independent — grades success only clears errors.grades.
-   */
   it('does not wipe homework error when grades fetch succeeds concurrently', async () => {
-    // homework fetch: session ok, data throws
-    // grades fetch: session ok, data succeeds
-    // Both sessions resolve (two separate refreshSession calls).
-    mockRefresh
-      .mockResolvedValueOnce(mockHandle) // for fetchHomework
-      .mockResolvedValueOnce(mockHandle); // for fetchGrades
+    const homeworkGet = jest.fn().mockResolvedValue({
+      data: null,
+      error: { status: 500, value: { message: 'Homework 500' } },
+    });
+    const gradesGet = jest.fn().mockResolvedValue({
+      data: { success: true, data: [] },
+      error: null,
+    });
 
-    mockAssignments.mockRejectedValueOnce(new Error('Homework 500'));
-    mockGradesOverview.mockResolvedValueOnce({ grades: [], subjectsAverages: [] });
+    const childrenFn = jest.fn(() => ({
+      grades: { get: gradesGet },
+      homework: { get: homeworkGet },
+    }));
+
+    mockGetTreaty.mockReturnValue({
+      api: { pronote: { children: childrenFn } },
+    } as unknown as ReturnType<typeof getTreaty>);
 
     const { result } = renderHook(() => usePronote('user-1'));
 
-    // Run both fetches concurrently, mirroring the home screen onRefresh pattern.
     await act(async () => {
       await Promise.all([
         result.current.fetchHomework(),
@@ -143,10 +171,122 @@ describe('usePronote error surfacing', () => {
     });
 
     await waitFor(() => {
-      // Homework error must be set: the fetch failed.
       expect(result.current.errors.homework).not.toBeNull();
-      // Grades error must be null: the fetch succeeded and must not have wiped homework.
       expect(result.current.errors.grades).toBeNull();
     });
+  });
+});
+
+describe('usePronote fetchGrades childId routing', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    act(() => {
+      usePronoteStore.setState({
+        isConnected: true,
+        metadata: null,
+        lastGradesFetch: null,
+        lastHomeworkFetch: null,
+        lastTimetableFetch: null,
+        errors: { homework: null, grades: null, timetable: null },
+      });
+    });
+  });
+
+  it('calls children({childId}) with userId when no childId provided', async () => {
+    const childrenFn = jest.fn(() => ({
+      grades: { get: jest.fn().mockResolvedValue({ data: { success: true, data: [] }, error: null }) },
+    }));
+    mockGetTreaty.mockReturnValue({
+      api: { pronote: { children: childrenFn } },
+    } as unknown as ReturnType<typeof getTreaty>);
+
+    const { result } = renderHook(() => usePronote('self-user'));
+    await act(async () => { await result.current.fetchGrades(); });
+
+    expect(childrenFn).toHaveBeenCalledWith({ childId: 'self-user' });
+  });
+
+  it('calls children({childId}) with explicit childId when provided', async () => {
+    const childrenFn = jest.fn(() => ({
+      grades: { get: jest.fn().mockResolvedValue({ data: { success: true, data: [] }, error: null }) },
+    }));
+    mockGetTreaty.mockReturnValue({
+      api: { pronote: { children: childrenFn } },
+    } as unknown as ReturnType<typeof getTreaty>);
+
+    const { result } = renderHook(() => usePronote('parent-id'));
+    await act(async () => { await result.current.fetchGrades('child-abc'); });
+
+    expect(childrenFn).toHaveBeenCalledWith({ childId: 'child-abc' });
+  });
+});
+
+describe('usePronote connect', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    act(() => {
+      usePronoteStore.setState({
+        isConnected: false,
+        resources: [],
+        errors: { homework: null, grades: null, timetable: null },
+      });
+    });
+  });
+
+  it('calls POST /api/pronote/connect/qr and updates store on success', async () => {
+    const connectPost = jest.fn().mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          credentialId: 'cred-1',
+          resources: [{ resourceId: 1, name: 'Alice', className: '5A', establishmentName: 'Collège X' }],
+        },
+      },
+      error: null,
+    });
+
+    mockGetTreaty.mockReturnValue({
+      api: { pronote: { connect: { qr: { post: connectPost } } } },
+    } as unknown as ReturnType<typeof getTreaty>);
+
+    const { result } = renderHook(() => usePronote('user-1'));
+    const qrData = { jeton: 'tok', login: 'usr', url: 'https://school.fr/pronote/' };
+
+    let connectResult: { success: boolean } | undefined;
+    await act(async () => {
+      connectResult = await result.current.connect(qrData, '1234');
+    });
+
+    expect(connectPost).toHaveBeenCalledWith({
+      qr: { jeton: 'tok', login: 'usr', url: 'https://school.fr/pronote/' },
+      pin: '1234',
+    });
+    expect(connectResult?.success).toBe(true);
+
+    await waitFor(() => {
+      expect(result.current.isConnected).toBe(true);
+    });
+  });
+
+  it('returns success:false and does not update store when API errors', async () => {
+    const connectPost = jest.fn().mockResolvedValue({
+      data: null,
+      error: { status: 409, value: { message: 'QR expiré', code: 'pronote_reauth_required' } },
+    });
+
+    mockGetTreaty.mockReturnValue({
+      api: { pronote: { connect: { qr: { post: connectPost } } } },
+    } as unknown as ReturnType<typeof getTreaty>);
+
+    const { result } = renderHook(() => usePronote('user-1'));
+    const qrData = { jeton: 'tok', login: 'usr', url: 'https://school.fr/pronote/' };
+
+    let connectResult: { success: boolean } | undefined;
+    await act(async () => {
+      connectResult = await result.current.connect(qrData, '1234');
+    });
+
+    expect(connectResult?.success).toBe(false);
+    expect(result.current.isConnected).toBe(false);
   });
 });

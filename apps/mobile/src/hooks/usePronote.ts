@@ -1,32 +1,20 @@
 /**
- * usePronote - Unified device-first Pronote hook
- *
- * Replaces useParentPronote and useStudentPronote.
- * All data lives on-device (Zustand/MMKV); server only stores credentials backup.
+ * usePronote - Unified API-backed Pronote hook
  *
  * Data flow:
- * 1. QR scan -> pawnote login -> token stored in SecureStore
- * 2. Refresh: token -> pawnote session -> fetch homework/grades/timetable -> store
- * 3. Credentials synced to server as encrypted backup
+ * 1. QR scan -> POST /api/pronote/connect/qr (server stores encrypted token)
+ * 2. Fetch: GET /api/pronote/children/:childId/{grades,homework,timetable}
+ * 3. Normalized* server types -> PronoteXxx client types via pronote-mappers
  */
 
 import { useCallback, useMemo } from 'react';
-import {
-  AccountKind,
-  GradeKind,
-  assignmentsFromIntervals,
-  gradesOverview,
-  timetableFromIntervals,
-  TabLocation,
-  type SessionHandle,
-} from 'pawnote';
+import { getTreaty, unwrap } from '@repo/api';
 import { usePronoteStore } from '@/stores/pronote-store';
-import { pronoteSessionService } from '@/services/pronote/pronote-session';
+import { mapGrade, mapHomework, mapLesson } from '@/services/pronote/pronote-mappers';
 import type {
   QrCodeData,
-  PronoteHomework,
-  PronoteGrade,
-  PronoteTimetableEntry,
+  PronoteConnectionResult,
+  PronoteResource,
 } from '@/services/pronote/pronote-types';
 
 // Cache TTLs in milliseconds
@@ -39,18 +27,9 @@ function isCacheStale(lastFetch: string | null, ttl: number): boolean {
   return Date.now() - new Date(lastFetch).getTime() > ttl;
 }
 
-/** Get the current period from session handle (defaults to first available period) */
-function getCurrentPeriod(handle: SessionHandle) {
-  const gradesTab = handle.userResource.tabs.get(TabLocation.Grades);
-  if (gradesTab?.defaultPeriod) return gradesTab.defaultPeriod;
-  if (gradesTab?.periods && gradesTab.periods.length > 0) return gradesTab.periods[0];
-  return null;
-}
-
 export function usePronote(userId: string) {
   // Select individual fields to avoid re-renders on unrelated state changes
   const isConnected = usePronoteStore((s) => s.isConnected);
-  const metadata = usePronoteStore((s) => s.metadata);
   const resources = usePronoteStore((s) => s.resources);
   const resourceMappings = usePronoteStore((s) => s.resourceMappings);
   const homework = usePronoteStore((s) => s.homework);
@@ -70,144 +49,115 @@ export function usePronote(userId: string) {
   const storeReset = usePronoteStore((s) => s.reset);
 
   const connect = useCallback(
-    async (qrData: QrCodeData, pin: string) => {
-      const deviceUuid = `tomai-${userId}-${Date.now()}`;
-      const result = await pronoteSessionService.connectWithQrCode(
-        userId,
-        qrData,
-        pin,
-        deviceUuid,
-      );
+    async (qrData: QrCodeData, pin: string): Promise<PronoteConnectionResult> => {
+      try {
+        const response = await getTreaty().api.pronote.connect.qr.post({
+          qr: { jeton: qrData.jeton, login: qrData.login, url: qrData.url },
+          pin,
+        });
 
-      if (result.success && result.resources) {
-        const meta = {
-          instanceUrl: qrData.url,
-          username: qrData.login,
-          deviceUuid,
-          accountKind: result.accountKind ?? AccountKind.PARENT,
+        const raw = unwrap(response) as unknown as {
+          success: boolean;
+          data: {
+            credentialId: string;
+            resources: Array<{
+              resourceId: number;
+              name: string;
+              className: string | null;
+              establishmentName: string;
+            }>;
+          };
         };
 
-        storeSetConnected(meta);
-        storeSetResources(result.resources);
+        if (!raw?.success) {
+          return { success: false, error: 'Connexion échouée' };
+        }
 
+        const clientResources: PronoteResource[] = raw.data.resources.map((r) => ({
+          id: String(r.resourceId),
+          name: r.name,
+          className: r.className ?? undefined,
+        }));
+
+        storeSetConnected({
+          instanceUrl: qrData.url,
+          username: qrData.login,
+          deviceUuid: raw.data.credentialId,
+          accountKind: 7, // Parent (only parents use QR connect)
+        });
+        storeSetResources(clientResources);
+
+        return { success: true, resources: clientResources, accountKind: 7 };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+        return { success: false, error: msg };
       }
-
-      return result;
     },
-    [userId, storeSetConnected, storeSetResources],
+    [storeSetConnected, storeSetResources],
   );
 
   const disconnect = useCallback(async () => {
-    await pronoteSessionService.disconnect(userId);
     storeReset();
-  }, [userId, storeReset]);
+  }, [storeReset]);
+
+  const fetchGrades = useCallback(
+    async (childId?: string) => {
+      if (!isCacheStale(lastGradesFetch, GRADES_TTL)) return;
+
+      const targetId = childId ?? userId;
+      try {
+        storeSetError('grades', null);
+        const response = await getTreaty().api.pronote.children({ childId: targetId }).grades.get();
+        const data = unwrap(response);
+        const normalized = (data as { data: Parameters<typeof mapGrade>[0][] }).data;
+        storeSetGrades(normalized.map(mapGrade));
+      } catch (err) {
+        console.error('[Pronote] fetchGrades failed:', err);
+        storeSetError('grades', 'Impossible de charger les notes. Réessaie.');
+      }
+    },
+    [userId, lastGradesFetch, storeSetGrades, storeSetError],
+  );
 
   const fetchHomework = useCallback(
-    async () => {
-      if (!metadata) return;
+    async (childId?: string) => {
       if (!isCacheStale(lastHomeworkFetch, HOMEWORK_TTL)) return;
 
+      const targetId = childId ?? userId;
       try {
-        const handle = await pronoteSessionService.refreshSession(userId, metadata);
-        if (!handle) return;
         storeSetError('homework', null);
-
-        const now = new Date();
-        const from = new Date(now);
-        from.setDate(from.getDate() - 7);
-        const to = new Date(now);
-        to.setDate(to.getDate() + 14);
-
-        const assignments = await assignmentsFromIntervals(handle, from, to);
-        const hw: PronoteHomework[] = assignments.map((a) => ({
-          id: a.id,
-          subject: a.subject.name,
-          description: a.description,
-          dueDate: a.deadline.toISOString(),
-          done: a.done,
-          difficulty: a.difficulty ?? 0,
-        }));
-
-        storeSetHomework(hw);
+        const response = await getTreaty().api.pronote.children({ childId: targetId }).homework.get();
+        const data = unwrap(response);
+        const normalized = (data as { data: Parameters<typeof mapHomework>[0][] }).data;
+        storeSetHomework(normalized.map(mapHomework));
       } catch (err) {
         console.error('[Pronote] fetchHomework failed:', err);
         storeSetError('homework', 'Impossible de charger les devoirs. Réessaie.');
       }
     },
-    [userId, metadata, lastHomeworkFetch, storeSetHomework, storeSetError],
+    [userId, lastHomeworkFetch, storeSetHomework, storeSetError],
   );
 
-  const fetchGrades = useCallback(async () => {
-    if (!metadata) return;
-    if (!isCacheStale(lastGradesFetch, GRADES_TTL)) return;
-
-    try {
-      const handle = await pronoteSessionService.refreshSession(userId, metadata);
-      if (!handle) return;
-      storeSetError('grades', null);
-
-      const period = getCurrentPeriod(handle);
-      if (!period) return;
-
-      const overview = await gradesOverview(handle, period);
-
-      const g: PronoteGrade[] = overview.grades.map((gr) => ({
-        id: gr.id,
-        subject: gr.subject.name,
-        value: gr.value.kind === GradeKind.Grade ? gr.value.points : null,
-        outOf: gr.outOf.points,
-        coefficient: gr.coefficient,
-        date: gr.date.toISOString(),
-        description: gr.comment,
-        average: gr.average ? gr.average.points : undefined,
-        max: gr.max ? gr.max.points : undefined,
-        min: gr.min ? gr.min.points : undefined,
-      }));
-
-      storeSetGrades(g);
-    } catch (err) {
-      console.error('[Pronote] fetchGrades failed:', err);
-      storeSetError('grades', 'Impossible de charger les notes. Réessaie.');
-    }
-  }, [userId, metadata, lastGradesFetch, storeSetGrades, storeSetError]);
-
   const fetchTimetable = useCallback(
-    async () => {
-      if (!metadata) return;
+    async (childId?: string, day?: string) => {
       if (!isCacheStale(lastTimetableFetch, TIMETABLE_TTL)) return;
 
+      const targetId = childId ?? userId;
+      const dayParam = day ?? new Date().toISOString().slice(0, 10);
       try {
-        const handle = await pronoteSessionService.refreshSession(userId, metadata);
-        if (!handle) return;
         storeSetError('timetable', null);
-
-        const now = new Date();
-        const from = new Date(now);
-        from.setHours(0, 0, 0, 0);
-        const to = new Date(now);
-        to.setDate(to.getDate() + 7);
-
-        const result = await timetableFromIntervals(handle, from, to);
-        const tt: PronoteTimetableEntry[] = result.classes
-          .filter((c): c is typeof c & { is: 'lesson' } => c.is === 'lesson')
-          .map((e) => ({
-            id: e.id,
-            subject: e.subject?.name,
-            teacherNames: e.teacherNames,
-            classrooms: e.classrooms,
-            startDate: e.startDate.toISOString(),
-            endDate: e.endDate.toISOString(),
-            canceled: e.canceled,
-            status: e.status,
-          }));
-
-        storeSetTimetable(tt);
+        const response = await getTreaty().api.pronote
+          .children({ childId: targetId })
+          .timetable.get({ query: { day: dayParam } });
+        const data = unwrap(response);
+        const normalized = (data as { data: Parameters<typeof mapLesson>[0][] }).data;
+        storeSetTimetable(normalized.map(mapLesson));
       } catch (err) {
         console.error('[Pronote] fetchTimetable failed:', err);
         storeSetError('timetable', "Impossible de charger l'emploi du temps. Réessaie.");
       }
     },
-    [userId, metadata, lastTimetableFetch, storeSetTimetable, storeSetError],
+    [userId, lastTimetableFetch, storeSetTimetable, storeSetError],
   );
 
   const setResourceMapping = useCallback(
@@ -217,7 +167,7 @@ export function usePronote(userId: string) {
     [storeSetResourceMapping],
   );
 
-  // Computed values (matching old useStudentPronote API)
+  // Computed values
   const upcomingHomework = useMemo(
     () => homework.filter((h) => !h.done).length,
     [homework],

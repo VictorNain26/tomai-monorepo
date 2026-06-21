@@ -29,9 +29,9 @@ export default function ChildGradesScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await pronote.fetchGrades();
+    await pronote.fetchGrades(id);
     setRefreshing(false);
-  }, [pronote]);
+  }, [pronote, id]);
 
   return (
     <SafeAreaView className="flex-1 bg-background">
