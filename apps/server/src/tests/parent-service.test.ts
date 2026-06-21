@@ -132,12 +132,18 @@ mock.module('../db/connection', () => ({
         })),
       })),
     })),
+    update: mock(() => ({
+      set: mock(() => ({
+        where: mock(() => Promise.resolve()),
+      })),
+    })),
   },
 }));
 
 mock.module('../db/schema', () => ({
   studySessions: { userId: 'userId', subject: 'subject', startedAt: 'startedAt' },
   parentChild: { id: 'id', parentUserId: 'parentUserId', childUserId: 'childUserId' },
+  account: { userId: 'userId', providerId: 'providerId', password: 'password' },
 }));
 
 mock.module('../db/pool-limiter', () => ({
@@ -147,6 +153,7 @@ mock.module('../db/pool-limiter', () => ({
 mock.module('drizzle-orm', () => ({
   sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ type: 'sql', strings, values }),
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
+  and: (...args: unknown[]) => ({ type: 'and', args }),
   desc: (...args: unknown[]) => ({ type: 'desc', args }),
 }));
 

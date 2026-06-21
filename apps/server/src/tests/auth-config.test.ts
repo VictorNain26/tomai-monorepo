@@ -3,12 +3,12 @@
  *
  * Vérifie que la configuration auth expose les bonnes capacités :
  * - Google OAuth (social provider)
- * - Admin plugin (Quick Switch / impersonation / ban)
  * - Expo plugin (mobile deep links)
+ * - Username plugin (autonomous child login)
  * - Account linking (email/password + Google sur même email)
  *
- * Context: "unable to create user" bug causé par accountLinking manquant
- * et colonnes admin plugin absentes. Ces tests empêchent la régression.
+ * Context: "unable to create user" bug causé par accountLinking manquant.
+ * Ces tests empêchent la régression.
  */
 
 import { describe, it, expect, mock, beforeAll } from 'bun:test';
@@ -88,21 +88,9 @@ describe('Better Auth Configuration', () => {
     });
   });
 
-  describe('Admin plugin (Quick Switch / ban)', () => {
-    it('should expose banUser API method', () => {
-      expect(apiMethods).toContain('banUser');
-    });
-
-    it('should expose unbanUser API method', () => {
-      expect(apiMethods).toContain('unbanUser');
-    });
-
-    it('should expose impersonateUser API method', () => {
-      expect(apiMethods).toContain('impersonateUser');
-    });
-
-    it('should expose stopImpersonating API method', () => {
-      expect(apiMethods).toContain('stopImpersonating');
+  describe('Username plugin (autonomous child login)', () => {
+    it('should expose signInUsername API method', () => {
+      expect(apiMethods).toContain('signInUsername');
     });
   });
 

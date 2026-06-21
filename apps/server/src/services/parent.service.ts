@@ -8,6 +8,10 @@ import { parentChildRepository } from '../db/repositories/parent-child.repositor
 import { logger } from '../lib/observability';
 import { deleteFiles } from './storage/scaleway-storage.service';
 import { auth } from '../lib/auth';
+import { hashPassword } from 'better-auth/crypto';
+import { db } from '../db/connection';
+import { account } from '../db/schema';
+import { eq, and } from 'drizzle-orm';
 import type { SchoolLevel } from '../db/schema.js';
 import { ParentDashboardService } from './parent/parent-dashboard.service';
 import type { ChildInfo, ParentDashboardMetrics, StudentProgress, SessionSummary, SessionMessage } from './parent/parent-types';
@@ -149,7 +153,7 @@ export class ParentService {
     dateOfBirth?: string;
     schoolLevel?: string;
     password?: string;
-  }, requestHeaders?: Headers): Promise<ChildInfo> {
+  }, _requestHeaders?: Headers): Promise<ChildInfo> {
     try {
       const children = await this.getParentChildren(parentId);
       const child = children.find(c => c.id === childId);
@@ -173,12 +177,12 @@ export class ParentService {
       if (updateData.dateOfBirth !== undefined) updateObject.dateOfBirth = updateData.dateOfBirth;
       if (updateData.schoolLevel !== undefined) updateObject.schoolLevel = updateData.schoolLevel as SchoolLevel;
 
-      // Update password via Better Auth admin API (bcrypt hashing handled internally)
-      if (updateData.password && requestHeaders) {
-        await auth.api.setUserPassword({
-          body: { newPassword: updateData.password, userId: childId },
-          headers: requestHeaders,
-        });
+      // Update password: hash via Better Auth's own hasher, then write to credential account
+      if (updateData.password) {
+        const hashedPassword = await hashPassword(updateData.password);
+        await db.update(account)
+          .set({ password: hashedPassword })
+          .where(and(eq(account.userId, childId), eq(account.providerId, 'credential')));
       }
 
       const updatedChild = await usersRepository.update(childId, updateObject);

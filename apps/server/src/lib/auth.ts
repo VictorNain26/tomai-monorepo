@@ -3,24 +3,20 @@
  * Configuration propre et flexible basée sur la configuration centralisée
  *
  * Plugins:
- * - admin: Parent impersonation (Quick Switch) with parent-child verification
  * - expo: Mobile app support (deep links, secure storage)
  * - openAPI: API documentation
  * - mcp: Model Context Protocol
+ * - username: Autonomous child login
  */
 
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
-import { openAPI, mcp, admin, username } from "better-auth/plugins";
+import { openAPI, mcp, username } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { eq } from "drizzle-orm";
-
 import { db } from "../db/connection";
 import { user, session, account, verification } from "../db/schema";
-import { parentChildRepository } from "../db/repositories/parent-child.repository";
 import { env, isProduction, isDevelopment, getTrustedOrigins } from "../config/env";
 import { logger } from "./observability";
-import { canParentImpersonate } from "./impersonation-policy";
 
 // Validation des services requis pour l'authentification
 if (!env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET.length < 32) {
@@ -199,83 +195,5 @@ export const auth = betterAuth({
       : []),
     expo(),     // Mobile app support (deep links, secure storage)
     username(), // Autonomous child login: POST /api/auth/sign-in/username
-
-    // Admin plugin for Quick Switch (parent impersonation)
-    // Best Practice 2026: Built-in impersonation with custom authorization
-    admin({
-      // Default role for new users — must match user_role enum ('student' | 'parent' | 'admin')
-      // Without this, admin plugin defaults to "user" which violates the PostgreSQL enum
-      defaultRole: "parent",
-
-      // Session duration: 7 days (same as normal sessions)
-      impersonationSessionDuration: 7 * 24 * 60 * 60,
-
-      // Don't allow impersonating other parents
-      allowImpersonatingAdmins: false,
-
-      // Custom authorization: Only parents can impersonate their own children
-      // This hook runs BEFORE the impersonation happens
-      async impersonationAllowed(ctx: {
-        session?: { user: { id: string; role: string } };
-        body?: { userId?: string };
-      }) {
-        const requestingUser = ctx.session?.user;
-        const targetUserId = ctx.body?.userId;
-
-        if (!requestingUser || !targetUserId) {
-          logger.warn('Impersonation denied: missing user or target', {
-            operation: 'auth:impersonation:denied',
-            hasUser: !!requestingUser,
-            hasTarget: !!targetUserId,
-          });
-          return false;
-        }
-
-        // Only parents can impersonate
-        if (requestingUser.role !== 'parent') {
-          logger.warn('Impersonation denied: user is not a parent', {
-            operation: 'auth:impersonation:denied',
-            userId: requestingUser.id,
-            role: requestingUser.role,
-          });
-          return false;
-        }
-
-        // Verify target is a child of the requesting parent
-        const [targetUser] = await db
-          .select({ role: user.role })
-          .from(user)
-          .where(eq(user.id, targetUserId))
-          .limit(1);
-
-        if (!targetUser) {
-          logger.warn('Impersonation denied: target user not found', {
-            operation: 'auth:impersonation:denied',
-            parentId: requestingUser.id,
-            targetId: targetUserId,
-          });
-          return false;
-        }
-
-        const linked = await parentChildRepository.isLinked(requestingUser.id, targetUserId);
-        if (!canParentImpersonate(requestingUser.role, targetUser.role, linked)) {
-          logger.warn('Impersonation denied: target is not child of parent', {
-            operation: 'auth:impersonation:denied',
-            parentId: requestingUser.id,
-            targetId: targetUserId,
-            targetRole: targetUser.role,
-          });
-          return false;
-        }
-
-        logger.info('Impersonation allowed: parent switching to child', {
-          operation: 'auth:impersonation:allowed',
-          parentId: requestingUser.id,
-          childId: targetUserId,
-        });
-
-        return true;
-      },
-    }),
   ],
 });
