@@ -16,7 +16,6 @@ import {
   Clock,
   Flame,
   ChevronRight,
-  School,
   CheckCircle2,
   Link2,
 } from 'lucide-react-native';
@@ -188,29 +187,6 @@ export default function ChildDetailScreen() {
               </View>
             </Card>
           </View>
-
-          {/* Pronote not connected CTA */}
-          {!pronoteHook.isConnected && (
-            <Card>
-              <View className="items-center p-5">
-                <View
-                  className="mb-3 h-12 w-12 items-center justify-center rounded-full"
-                  style={{ backgroundColor: bgColors.primary[10] }}
-                >
-                  <School color={colors.primary} size={24} />
-                </View>
-                <Text className="mb-1 font-semibold">Connecter Pronote</Text>
-                <Text variant="muted" className="mb-3 text-center text-sm">
-                  Synchronisez les notes et devoirs de {child.firstName}
-                </Text>
-                <Button
-                  onPress={() => router.push(`/(parent)/tabs/(home)/pronote-connect?childId=${id}`)}
-                >
-                  <Text className="font-medium text-primary-foreground">Connecter</Text>
-                </Button>
-              </View>
-            </Card>
-          )}
 
           {/* Recent Grades */}
           {isMapped && recentGrades.length > 0 && (

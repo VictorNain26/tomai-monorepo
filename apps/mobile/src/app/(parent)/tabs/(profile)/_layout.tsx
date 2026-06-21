@@ -1,7 +1,7 @@
 /**
  * Parent Profile Stack - TomAI 2026
  *
- * Screens: Profile menu, Settings, Pricing, Pronote connect
+ * Screens: Profile menu, Settings, Pricing
  */
 
 import { Stack } from 'expo-router';
@@ -15,7 +15,6 @@ export default function ProfileLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="pricing" />
-      <Stack.Screen name="pronote-connect" />
     </Stack>
   );
 }

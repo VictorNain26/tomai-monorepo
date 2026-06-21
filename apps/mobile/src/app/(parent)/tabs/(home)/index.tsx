@@ -103,11 +103,11 @@ export default function ParentDashboard() {
             <Users color={colors.foreground} size={40} style={{ opacity: 0.4 }} />
           </View>
           <Text variant="large" className="mb-2 text-center">
-            Connectez Pronote pour ajouter vos enfants
+            Ajoutez un enfant pour commencer
           </Text>
-          <Button onPress={() => router.push('/(parent)/tabs/(home)/pronote-connect')} className="mt-4">
+          <Button onPress={() => router.push('/(parent)/add-child')} className="mt-4">
             <Text className="font-medium text-primary-foreground">
-              Connecter Pronote
+              Ajouter un enfant
             </Text>
           </Button>
         </View>

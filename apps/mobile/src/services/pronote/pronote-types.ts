@@ -63,3 +63,10 @@ export interface PronoteChatContext {
   recentGrades?: PronoteGrade[];
   todayTimetable?: PronoteTimetableEntry[];
 }
+
+export interface ChildPinData {
+  resource: PronoteResource;
+  schoolLevel: import('@/constants/levels').EducationLevelType;
+  pinType: 'pin' | 'password';
+  pinValue: string;
+}

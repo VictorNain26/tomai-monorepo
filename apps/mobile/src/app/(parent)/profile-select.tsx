@@ -145,7 +145,7 @@ export default function ProfileSelectScreen() {
   }
 
   if (children.length === 0) {
-    return <Redirect href="/(parent)/onboarding-pronote" />;
+    return <Redirect href="/(parent)/add-child" />;
   }
 
   // -- Switching overlay ------------------------------------------------------
