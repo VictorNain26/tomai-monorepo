@@ -37,6 +37,12 @@ export interface DiscoveredResource {
   establishmentName: string;
 }
 
+export interface PronoteChildStatus {
+  hasPronote: boolean;
+  establishmentName: string | null;
+  className: string | null;
+}
+
 export interface PronoteProvider {
   connect(input: { url: string; kind: number; username: string; token: string; deviceUuid: string }): Promise<ProviderSession>;
   getGrades(session: ProviderSession, resourceId: number): Promise<NormalizedGrade[]>;

@@ -19,9 +19,10 @@ import {
   PronoteNotConnectedError,
   PronoteMetadataError,
 } from '../services/pronote/pronote-data.service.js';
-import { pronoteChildResourcesRepository } from '../db/repositories/pronote-child-resources.repository.js';
 import { parentService } from '../services/parent.service.js';
 import { PronoteReauthRequired } from '../services/pronote/pawnote-server.adapter.js';
+import { pronoteChildResourcesRepository } from '../db/repositories/pronote-child-resources.repository.js';
+import type { PronoteChildStatus } from '../services/pronote/provider.types.js';
 
 const pronoteDataRateLimit = createRateLimitMiddleware(RateLimitPresets.pronote);
 
@@ -108,6 +109,17 @@ export const pronoteDataRoutes = new Elysia({ name: 'pronote-data-routes' })
       query: t.Object({ day: t.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}$' }) }),
     })
 
+    // GET /api/pronote/children/:childId/status
+    .get('/status', async ({ params, user, status }) => {
+      const { childId } = params;
+
+      const denied = await assertParentOrSelf(user.id, childId, status as StatusFn);
+      if (denied) return denied;
+
+      const data: PronoteChildStatus = await pronoteChildResourcesRepository.getStatusByChild(childId);
+      return { success: true, data };
+    })
+
     // PUT /api/pronote/children/:childId/resource — parent only
     .put('/resource', async ({ params, body, user, status }) => {
       const { childId } = params;
@@ -117,7 +129,7 @@ export const pronoteDataRoutes = new Elysia({ name: 'pronote-data-routes' })
         return status(403, { error: 'Access denied: only a parent can configure the resource mapping', code: 'forbidden' });
       }
 
-      await pronoteChildResourcesRepository.upsertMapping(user.id, childId, body.credentialId, body.resourceId);
+      await pronoteDataService.configureResource(user.id, childId, body.credentialId, body.resourceId);
       return { success: true };
     }, {
       body: t.Object({ credentialId: t.String({ format: 'uuid' }), resourceId: t.Number() }),

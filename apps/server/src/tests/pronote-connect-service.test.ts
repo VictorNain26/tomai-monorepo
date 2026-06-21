@@ -32,7 +32,17 @@ const mockGetCredentialById = mock(
   })
 );
 
+// PronoteCredentialForbiddenError moved to pronote-sync.service (source of truth)
+// and re-exported by pronote-connect.service — must be present in the mock.
+class PronoteCredentialForbiddenErrorStub extends Error {
+  constructor() {
+    super('This Pronote credential does not belong to the requesting user');
+    this.name = 'PronoteCredentialForbiddenError';
+  }
+}
+
 mock.module('../services/pronote-sync.service', () => ({
+  PronoteCredentialForbiddenError: PronoteCredentialForbiddenErrorStub,
   pronoteSyncService: {
     upsertCredentials: mockUpsertCredentials,
     getCredentialById: mockGetCredentialById,
@@ -95,15 +105,21 @@ mock.module('../db/repositories/users.repository', () => ({
 }));
 
 const mockUpsertMapping = mock(
-  async (_parentUserId: string, _childUserId: string, _credentialId: string, _resourceId: number): Promise<void> => {},
+  async (_parentUserId: string, _childUserId: string, _credentialId: string, _resourceId: number, _className: string | null, _establishmentName: string | null): Promise<void> => {},
 );
 
 const mockGetResourceIdsByCredential = mock(async (_credentialId: string): Promise<number[]> => []);
+
+// Returns null by default (no existing mapping)
+const mockGetMapping = mock(
+  async (_childUserId: string): Promise<{ parentUserId: string; credentialId: string; resourceId: number } | null> => null,
+);
 
 mock.module('../db/repositories/pronote-child-resources.repository', () => ({
   pronoteChildResourcesRepository: {
     upsertMapping: mockUpsertMapping,
     getResourceIdsByCredential: mockGetResourceIdsByCredential,
+    getMapping: mockGetMapping,
   },
 }));
 
@@ -239,6 +255,15 @@ describe('PronoteConnectService.connectQr', () => {
       expect(err).toBeInstanceOf(Error);
     }
   });
+
+  it('passes establishmentName from first resource to upsertCredentials', async () => {
+    await pronoteConnectService.connectQr('user-001', { qr: FAKE_QR, pin: FAKE_PIN });
+
+    expect(mockUpsertCredentials).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [, input] = mockUpsertCredentials.mock.calls[0] as any;
+    expect(input.establishmentName).toBe('Collège Jean Moulin');
+  });
 });
 
 // ============================================
@@ -320,10 +345,12 @@ describe('PronoteConnectService.discover', () => {
 describe('PronoteConnectService.activate', () => {
   beforeEach(() => {
     mockGetCredentialById.mockClear();
+    mockListResources.mockClear();
     mockCreateChild.mockClear();
     mockIsParentOf.mockClear();
     mockDeleteById.mockClear();
     mockUpsertMapping.mockClear();
+    mockGetMapping.mockClear();
   });
 
   it('(a) creates child and maps when no linkToChildId', async () => {
@@ -547,6 +574,27 @@ describe('PronoteConnectService.activate', () => {
     expect(deletedId).toBe('child-orphan');
   });
 
+  it('(g2) passes className and establishmentName from discovered resources to upsertMapping', async () => {
+    // mockListResources already returns resources with className/establishmentName (used by discover internally)
+    await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 1,
+        firstName: 'Lucas',
+        lastName: 'Dupont',
+        schoolLevel: 'cinquieme',
+        username: 'lucasdupont',
+        password: 'password123',
+      },
+    ]);
+
+    expect(mockUpsertMapping).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const args = mockUpsertMapping.mock.calls[0] as any;
+    // args: [parentUserId, childUserId, credentialId, resourceId, className, establishmentName]
+    expect(args[4]).toBe('5ème B');
+    expect(args[5]).toBe('Collège Jean Moulin');
+  });
+
   // I2 — linkToChildId path: no compensation when mapping fails (child was not created)
   it('(h) does NOT call deleteById when mapping fails for an existing linked child', async () => {
     mockUpsertMapping.mockRejectedValueOnce(new Error('DB constraint'));
@@ -566,6 +614,76 @@ describe('PronoteConnectService.activate', () => {
     expect(result.activated).toHaveLength(0);
     expect(result.failed).toHaveLength(1);
     expect(mockDeleteById).not.toHaveBeenCalled();
+  });
+
+  it('(j) link selection without username/password succeeds — activated, createChild not called', async () => {
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Emma',
+        lastName: 'Dupont',
+        schoolLevel: 'troisieme',
+        // no username, no password — link mode
+        linkToChildId: 'child-existing-1',
+      },
+    ]);
+
+    expect(mockCreateChild).not.toHaveBeenCalled();
+    expect(result.activated).toHaveLength(1);
+    expect(result.activated[0]).toEqual({ resourceId: 0, childId: 'child-existing-1' });
+    expect(result.failed).toHaveLength(0);
+  });
+
+  it('(k) create selection without username/password → failed[missing_credentials], createChild not called', async () => {
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 1,
+        firstName: 'Lucas',
+        lastName: 'Dupont',
+        schoolLevel: 'cinquieme',
+        // no username, no password — missing on create mode
+      },
+    ]);
+
+    expect(mockCreateChild).not.toHaveBeenCalled();
+    expect(result.activated).toHaveLength(0);
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0]).toEqual({ resourceId: 1, reason: 'missing_credentials' });
+  });
+
+  it('(i) linkToChildId already mapped → failed[already_mapped], no overwrite, isParentOf guard ran first', async () => {
+    // Pre-condition: child-existing-1 already has a mapping (different credential + resourceId)
+    mockGetMapping.mockResolvedValueOnce({
+      parentUserId: 'user-001',
+      credentialId: 'cred-other-999',
+      resourceId: 42,
+    });
+
+    const result = await pronoteConnectService.activate('user-001', 'cred-abc-123', [
+      {
+        resourceId: 0,
+        firstName: 'Emma',
+        lastName: 'Dupont',
+        schoolLevel: 'troisieme',
+        username: 'ignored',
+        password: 'ignored123',
+        linkToChildId: 'child-existing-1',
+      },
+    ]);
+
+    // isParentOf must have been checked before the already_mapped guard
+    expect(mockIsParentOf).toHaveBeenCalledWith('user-001', 'child-existing-1');
+
+    // Result: rejected with 'already_mapped', nothing written
+    expect(result.activated).toHaveLength(0);
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0]).toEqual({ resourceId: 0, reason: 'already_mapped' });
+
+    // upsertMapping must NOT have been called (no overwrite)
+    expect(mockUpsertMapping).not.toHaveBeenCalled();
+
+    // The mock returns the original mapping — verify getMapping was called with the child id
+    expect(mockGetMapping).toHaveBeenCalledWith('child-existing-1');
   });
 });
 

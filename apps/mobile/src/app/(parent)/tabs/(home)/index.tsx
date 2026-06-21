@@ -58,15 +58,14 @@ export default function ParentDashboard() {
       { hasPronote: boolean; averageGrade: number | null; homeworkCount: number }
     > = {};
     for (const child of children) {
-      const isMapped = pronote.resourceMappings[child.id] !== undefined;
       data[child.id] = {
-        hasPronote: isMapped,
-        averageGrade: isMapped ? computeAverageGrade(pronote.grades) : null,
-        homeworkCount: isMapped ? countUpcomingHomework(pronote.homework) : 0,
+        hasPronote: child.hasPronote,
+        averageGrade: child.hasPronote ? computeAverageGrade(pronote.grades) : null,
+        homeworkCount: child.hasPronote ? countUpcomingHomework(pronote.homework) : 0,
       };
     }
     return data;
-  }, [children, pronote.resourceMappings, pronote.grades, pronote.homework]);
+  }, [children, pronote.grades, pronote.homework]);
 
   const handleViewDetail = useCallback(
     (child: IChild) => {
@@ -110,6 +109,16 @@ export default function ParentDashboard() {
               Ajouter un enfant
             </Text>
           </Button>
+          <Button
+            variant="outline"
+            onPress={() => router.push('/(parent)/pronote-connect')}
+            className="mt-3"
+            accessibilityLabel="Connecter Pronote"
+          >
+            <Text className="font-medium">
+              Connecter Pronote
+            </Text>
+          </Button>
         </View>
       </SafeAreaView>
     );
@@ -125,6 +134,14 @@ export default function ParentDashboard() {
             {children.length} enfant{children.length > 1 ? 's' : ''}
           </Text>
         </View>
+        <Button
+          variant="ghost"
+          size="sm"
+          onPress={() => router.push('/(parent)/pronote-manage')}
+          accessibilityLabel="Gérer Pronote"
+        >
+          <Text className="text-sm">Gérer Pronote</Text>
+        </Button>
       </View>
 
       {/* Child cards list */}

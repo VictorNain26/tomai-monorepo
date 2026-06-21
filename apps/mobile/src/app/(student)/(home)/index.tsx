@@ -24,7 +24,7 @@ import {
   type GradeItem,
 } from '@/components/dashboard';
 import { ChatErrorBanner } from '@/components/chat';
-import { useStudentDashboard, usePronote, useThemeColors, useDueSummary } from '@/hooks';
+import { useStudentDashboard, usePronote, usePronoteStatus, useThemeColors, useDueSummary } from '@/hooks';
 import { useUser } from '@/lib/auth';
 import { bgColors } from '@/lib/styles';
 import { enrichSubjectKey } from '@/constants/subjects';
@@ -54,8 +54,10 @@ export default function StudentDashboard() {
 
   // Data hooks
   const user = useUser();
+  const selfId = user?.id ?? '';
   const { userName } = useStudentDashboard();
-  const pronote = usePronote(user?.id ?? '');
+  const pronote = usePronote(selfId);
+  const { data: status } = usePronoteStatus(selfId);
   const { data: dueSummary } = useDueSummary();
 
   // Refresh handler
@@ -156,8 +158,8 @@ export default function StudentDashboard() {
         {/* Header */}
         <View>
           <Text variant="h2">Bonjour {firstName}</Text>
-          {pronote.isConnected && pronote.resources[0]?.className && (
-            <Text variant="muted">{pronote.resources[0].className}</Text>
+          {status?.hasPronote && status.className && (
+            <Text variant="muted">{status.className}</Text>
           )}
           <Text variant="muted" className="mt-0.5">{tomMessage}</Text>
         </View>
@@ -192,8 +194,8 @@ export default function StudentDashboard() {
           </Pressable>
         )}
 
-        {/* Pronote sections - only when connected */}
-        {pronote.isConnected ? (
+        {/* Pronote sections - only when server confirms connection */}
+        {status?.hasPronote ? (
           <>
             <HomeworkUrgentCard
               homework={homeworkItems}

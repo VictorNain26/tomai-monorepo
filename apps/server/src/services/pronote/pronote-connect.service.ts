@@ -6,7 +6,7 @@
  */
 
 import { pawnoteServerAdapter } from './pawnote-server.adapter.js';
-import { pronoteSyncService } from '../pronote-sync.service.js';
+import { pronoteSyncService, PronoteCredentialForbiddenError } from '../pronote-sync.service.js';
 import { pronoteDataService } from './pronote-data.service.js';
 import { parentService } from '../parent.service.js';
 import { pronoteChildResourcesRepository } from '../../db/repositories/pronote-child-resources.repository.js';
@@ -17,14 +17,17 @@ import { splitName, inferSchoolLevel, matchExistingChild } from '../../lib/prono
 import { logger } from '../../lib/observability.js';
 
 export type { DiscoveredResource };
+// PronoteCredentialForbiddenError originates in pronote-sync.service to avoid
+// a circular import. Re-exported here for backward compatibility.
+export { PronoteCredentialForbiddenError };
 
 export interface ActivationSelection {
   resourceId: number;
   firstName: string;
   lastName: string;
   schoolLevel: SchoolLevel;
-  username: string;
-  password: string;
+  username?: string;
+  password?: string;
   linkToChildId?: string;
 }
 
@@ -41,13 +44,6 @@ export class PronoteCredentialNotFoundError extends Error {
   constructor(credentialId: string) {
     super(`Pronote credential not found: ${credentialId}`);
     this.name = 'PronoteCredentialNotFoundError';
-  }
-}
-
-export class PronoteCredentialForbiddenError extends Error {
-  constructor() {
-    super('This Pronote credential does not belong to the requesting user');
-    this.name = 'PronoteCredentialForbiddenError';
   }
 }
 
@@ -92,6 +88,7 @@ class PronoteConnectService {
         accountKind: metadata.kind,
       }),
       tokenExpiresAt,
+      establishmentName: resources[0]?.establishmentName ?? null,
     });
 
     if (!upsertResult.success || !upsertResult.credentialId) {
@@ -189,6 +186,9 @@ class PronoteConnectService {
     if (!cred) throw new PronoteCredentialNotFoundError(credentialId);
     if (cred.userId !== parentUserId) throw new PronoteCredentialForbiddenError();
 
+    const allResources = await pronoteDataService.listResources(credentialId);
+    const resourceById = new Map(allResources.map((r) => [r.resourceId, r]));
+
     const activated: { resourceId: number; childId: string }[] = [];
     const failed: { resourceId: number; reason: string }[] = [];
 
@@ -201,8 +201,20 @@ class PronoteConnectService {
           // C2: verify the child already belongs to this parent before mapping
           const owned = await parentService.isParentOf(parentUserId, selection.linkToChildId);
           if (!owned) throw new PronoteChildNotOwnedError(selection.linkToChildId);
+
+          // C3: reject if the child already has a Pronote mapping (no silent overwrite)
+          const existing = await pronoteChildResourcesRepository.getMapping(selection.linkToChildId);
+          if (existing) {
+            failed.push({ resourceId: selection.resourceId, reason: 'already_mapped' });
+            continue;
+          }
+
           childId = selection.linkToChildId;
         } else {
+          if (!selection.username || !selection.password) {
+            failed.push({ resourceId: selection.resourceId, reason: 'missing_credentials' });
+            continue;
+          }
           const child = await parentService.createChild(parentUserId, {
             firstName: selection.firstName,
             lastName: selection.lastName,
@@ -214,11 +226,14 @@ class PronoteConnectService {
           childId = child.id;
         }
 
+        const res = resourceById.get(selection.resourceId);
         await pronoteChildResourcesRepository.upsertMapping(
           parentUserId,
           childId,
           credentialId,
           selection.resourceId,
+          res?.className ?? null,
+          res?.establishmentName ?? null,
         );
 
         activated.push({ resourceId: selection.resourceId, childId });

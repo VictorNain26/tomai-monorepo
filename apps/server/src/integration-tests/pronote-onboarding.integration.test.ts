@@ -109,7 +109,6 @@ const canRun = demoReachable && dbReachable;
 // ============================================================
 
 const PROBE_PREFIX = `probe-onboarding-${Date.now()}`;
-const PROBE_CHILD_PREFIX = `probe-child-${Date.now()}`;
 
 let session: AdapterSession;
 let parentId: string;
@@ -223,7 +222,7 @@ describe.skipIf(!canRun)('Pronote onboarding e2e — discover → activate → r
   }, 30_000);
 
   it('activate — creates 1 child profile + Pronote mapping', async () => {
-    const childUsername = `${PROBE_CHILD_PREFIX}-u`;
+    const childUsername = `probe_child_${Date.now()}_u`;
     const childPassword = `ProbePass${Date.now().toString().slice(-4)}!`; // ≥8 chars
 
     const result = await pronoteConnectService.activate(parentId, credentialId, [

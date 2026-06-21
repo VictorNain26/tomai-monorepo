@@ -16,6 +16,7 @@ export {
   type IChild,
 } from './useParentDashboard';
 export { usePronote } from './usePronote';
+export { usePronoteStatus } from './usePronoteStatus';
 export {
   useTheme,
   type ThemeMode,

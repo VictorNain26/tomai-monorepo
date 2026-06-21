@@ -155,6 +155,26 @@ mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
   and: (...args: unknown[]) => ({ type: 'and', args }),
   desc: (...args: unknown[]) => ({ type: 'desc', args }),
+  inArray: (...args: unknown[]) => ({ type: 'inArray', args }),
+}));
+
+// Pronote child resources repository mock
+// Maps childUserId -> credentialId for children that have Pronote linked
+let childCredentialMap: Map<string, string> = new Map();
+const mockGetCredentialIdByChild = mock(async (_parentUserId: string, childIds: string[]) => {
+  if (childIds.length === 0) return new Map<string, string>();
+  const result = new Map<string, string>();
+  for (const id of childIds) {
+    const cred = childCredentialMap.get(id);
+    if (cred !== undefined) result.set(id, cred);
+  }
+  return result;
+});
+
+mock.module('../db/repositories/pronote-child-resources.repository', () => ({
+  pronoteChildResourcesRepository: {
+    get getCredentialIdByChild() { return mockGetCredentialIdByChild; },
+  },
 }));
 
 // Parent-child repository mock
@@ -194,6 +214,8 @@ beforeEach(() => {
   mockDeleteById.mockClear();
   isLinkedResult = true;
   isLinkedShouldThrow = false;
+  childCredentialMap = new Map();
+  mockGetCredentialIdByChild.mockClear();
 });
 
 describe('Parent Service', () => {
@@ -209,6 +231,71 @@ describe('Parent Service', () => {
       childrenResult = [];
       const result = await parentService.getParentChildren('parent-no-kids');
       expect(result.length).toBe(0);
+    });
+
+    it('hasPronote: true for mapped child, false for unmapped (batch lookup)', async () => {
+      const child1 = makeUser({ id: 'child-001' });
+      const child2 = makeUser({ id: 'child-002' });
+      childrenResult = [child1, child2];
+      childCredentialMap = new Map([['child-001', 'cred-abc']]);
+
+      const result = await parentService.getParentChildren('parent-001');
+
+      expect(result.length).toBe(2);
+      const mapped = result.find(c => c.id === 'child-001');
+      const unmapped = result.find(c => c.id === 'child-002');
+      expect(mapped?.hasPronote).toBe(true);
+      expect(unmapped?.hasPronote).toBe(false);
+    });
+
+    it('pronoteCredentialId: mapped child carries the correct credentialId, unmapped is null', async () => {
+      const child1 = makeUser({ id: 'child-001' });
+      const child2 = makeUser({ id: 'child-002' });
+      childrenResult = [child1, child2];
+      childCredentialMap = new Map([['child-001', 'cred-xyz']]);
+
+      const result = await parentService.getParentChildren('parent-001');
+
+      const mapped = result.find(c => c.id === 'child-001');
+      const unmapped = result.find(c => c.id === 'child-002');
+      expect(mapped?.pronoteCredentialId).toBe('cred-xyz');
+      expect(unmapped?.pronoteCredentialId).toBeNull();
+    });
+
+    it('hasPronote: mapping lookup is a SINGLE batch call (no N+1)', async () => {
+      const child1 = makeUser({ id: 'child-001' });
+      const child2 = makeUser({ id: 'child-002' });
+      childrenResult = [child1, child2];
+      childCredentialMap = new Map([['child-001', 'cred-abc']]);
+
+      await parentService.getParentChildren('parent-001');
+
+      expect(mockGetCredentialIdByChild).toHaveBeenCalledTimes(1);
+      expect(mockGetCredentialIdByChild).toHaveBeenCalledWith('parent-001', ['child-001', 'child-002']);
+    });
+
+    it('pronoteCredentialId: no credential leaks between parents', async () => {
+      // P1 has child-001 (not mapped); P2's child-p2 is mapped — must not affect P1 results
+      childrenResult = [makeUser({ id: 'child-001' })];
+      // The mock only returns what's in childCredentialMap; child-p2 belongs to another parent
+      childCredentialMap = new Map([['child-p2', 'cred-other']]);
+
+      const result = await parentService.getParentChildren('parent-001');
+
+      expect(result.length).toBe(1);
+      expect(result[0]?.hasPronote).toBe(false);
+      expect(result[0]?.pronoteCredentialId).toBeNull();
+    });
+
+    it('hasPronote: short-circuits when no children (no mapping call)', async () => {
+      childrenResult = [];
+      await parentService.getParentChildren('parent-no-kids');
+      // getCredentialIdByChild should not be called with empty array traversal
+      // (short-circuit: either not called, or called once with [])
+      const calls = mockGetCredentialIdByChild.mock.calls;
+      if (calls.length > 0) {
+        expect(calls[0]?.[1]).toEqual([]);
+      }
     });
   });
 

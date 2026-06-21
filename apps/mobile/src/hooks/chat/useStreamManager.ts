@@ -201,11 +201,15 @@ export function useStreamManager(callbacks: StreamCallbacks) {
           return;
         }
 
-        // Build pronote context from device store (non-reactive read)
+        // Build pronote context from device store (non-reactive read).
+        // Gate on cached data being present — not on isConnected — so that
+        // data already in cache is sent even if the connection flag lags.
         const pronoteState = usePronoteStore.getState();
-        const pronoteContext = pronoteState.isConnected
-          ? buildPronoteChatContext(pronoteState)
-          : undefined;
+        const hasData =
+          pronoteState.homework.length > 0 ||
+          pronoteState.grades.length > 0 ||
+          pronoteState.timetable.length > 0;
+        const pronoteContext = hasData ? buildPronoteChatContext(pronoteState) : undefined;
 
         const es = new EventSource(`${baseUrl}/api/chat/stream`, {
           headers: {

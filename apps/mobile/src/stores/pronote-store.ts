@@ -2,8 +2,6 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { createMMKV } from 'react-native-mmkv';
 import type {
-  PronoteMetadata,
-  PronoteResource,
   PronoteHomework,
   PronoteGrade,
   PronoteTimetableEntry,
@@ -27,10 +25,6 @@ const mmkvStorage: StateStorage = {
 type PronoteFetchKey = 'homework' | 'grades' | 'timetable';
 
 interface PronoteState {
-  isConnected: boolean;
-  metadata: PronoteMetadata | null;
-  resources: PronoteResource[];
-  resourceMappings: Record<string, number>;
   homework: PronoteHomework[];
   grades: PronoteGrade[];
   timetable: PronoteTimetableEntry[];
@@ -39,9 +33,6 @@ interface PronoteState {
   lastTimetableFetch: string | null;
   errors: { homework: string | null; grades: string | null; timetable: string | null };
 
-  setConnected: (metadata: PronoteMetadata) => void;
-  setResources: (resources: PronoteResource[]) => void;
-  setResourceMapping: (childId: string, resourceIndex: number) => void;
   setHomework: (homework: PronoteHomework[]) => void;
   setGrades: (grades: PronoteGrade[]) => void;
   setTimetable: (timetable: PronoteTimetableEntry[]) => void;
@@ -50,10 +41,6 @@ interface PronoteState {
 }
 
 const initialState = {
-  isConnected: false,
-  metadata: null,
-  resources: [],
-  resourceMappings: {},
   homework: [],
   grades: [],
   timetable: [],
@@ -67,17 +54,6 @@ export const usePronoteStore = create<PronoteState>()(
   persist(
     (set) => ({
       ...initialState,
-
-      setConnected: (metadata) =>
-        set({ isConnected: true, metadata }),
-
-      setResources: (resources) =>
-        set({ resources }),
-
-      setResourceMapping: (childId, resourceIndex) =>
-        set((state) => ({
-          resourceMappings: { ...state.resourceMappings, [childId]: resourceIndex },
-        })),
 
       setHomework: (homework) =>
         set({ homework, lastHomeworkFetch: new Date().toISOString() }),

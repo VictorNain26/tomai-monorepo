@@ -32,6 +32,7 @@ export const pronoteCredentials = pgTable(
     encryptedToken: text('encrypted_token').notNull(),
     encryptedMetadata: text('encrypted_metadata').notNull(),
     establishmentUrl: varchar('establishment_url', { length: 255 }).notNull(),
+    establishmentName: varchar('establishment_name', { length: 255 }),
     tokenExpiresAt: timestamp('token_expires_at', {
       withTimezone: true,
     }).notNull(),
@@ -82,6 +83,8 @@ export const pronoteChildResources = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     credentialId: uuid('credential_id'),
     resourceId: integer('resource_id').notNull(),
+    className: varchar('class_name', { length: 255 }),
+    establishmentName: varchar('establishment_name', { length: 255 }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -89,6 +92,10 @@ export const pronoteChildResources = pgTable(
     parentChildUnique: unique('pronote_child_resources_parent_child_unique').on(
       table.parentUserId,
       table.childUserId,
+    ),
+    credentialResourceUnique: unique('pronote_child_resources_credential_resource_unique').on(
+      table.credentialId,
+      table.resourceId,
     ),
     credentialFk: foreignKey({
       columns: [table.credentialId],

@@ -13,9 +13,13 @@ const mockValues = mock(() => ({
   onConflictDoUpdate: mockOnConflictDoUpdate,
 }));
 
-const mockSelectWhere = mock(() => {
+const mockSelectLimit = mock(() => {
   return selectResult ? [selectResult] : [];
 });
+
+const mockSelectWhere = mock(() => ({
+  limit: mockSelectLimit,
+}));
 
 const mockDeleteWhere = mock(async () => {
   deleteCalled = true;
@@ -49,6 +53,8 @@ mock.module('../db/schema', () => ({
 
 mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
+  inArray: (...args: unknown[]) => ({ type: 'inArray', args }),
+  and: (...args: unknown[]) => ({ type: 'and', args }),
 }));
 
 // Import after mocks
@@ -75,6 +81,7 @@ describe('PronoteChildResourcesRepository', () => {
     mockOnConflictDoUpdate.mockClear();
     mockValues.mockClear();
     mockSelectWhere.mockClear();
+    mockSelectLimit.mockClear();
     mockDeleteWhere.mockClear();
   });
 
@@ -86,6 +93,8 @@ describe('PronoteChildResourcesRepository', () => {
         CHILD_USER_ID,
         CREDENTIAL_ID,
         RESOURCE_ID,
+        null,
+        null,
       );
 
       expect(mockValues).toHaveBeenCalledTimes(1);

@@ -24,6 +24,8 @@ mock.module('../lib/encryption', () => ({
 
 // DB mock state
 let findResult: Record<string, unknown> | undefined = undefined;
+// Used by getCredentialById (awaits .where() directly, no .orderBy().limit() chain)
+let findByIdResult: Record<string, unknown> | undefined = undefined;
 let upsertCalled = false;
 let deleteCalled = false;
 let capturedOrderBy: unknown[] = [];
@@ -39,8 +41,17 @@ const mockOrderBy = mock((...args: unknown[]) => {
   return { limit: mockLimit };
 });
 
+// mockWhere returns a thenable (for getCredentialById which awaits .where() directly)
+// AND has .orderBy (for getCredentials which chains .orderBy().limit()).
 const mockWhere = mock(() => {
-  return { orderBy: mockOrderBy };
+  const rows = findByIdResult ? [findByIdResult] : [];
+  const thenable = {
+    orderBy: mockOrderBy,
+    then(resolve: (v: unknown[]) => unknown, reject?: (e: unknown) => unknown) {
+      return Promise.resolve(rows).then(resolve, reject);
+    },
+  };
+  return thenable;
 });
 
 const mockReturning = mock(() => {
@@ -60,11 +71,15 @@ const mockDeleteWhere = mock(async () => {
   deleteCalled = true;
 });
 
+// groupBy stub for listCredentialSummaries child-count query (returns empty array → childCount 0)
+const mockGroupBy = mock(() => Promise.resolve([]));
+
 mock.module('../db/connection', () => ({
   db: {
     select: mock(() => ({
       from: mock(() => ({
         where: mockWhere,
+        groupBy: mockGroupBy,
       })),
     })),
     insert: mock(() => ({
@@ -78,10 +93,24 @@ mock.module('../db/connection', () => ({
 
 mock.module('../db/schema', () => ({
   pronoteCredentials: {
+    id: 'id',
     userId: 'userId',
+    establishmentUrl: 'establishmentUrl',
+    establishmentName: 'establishmentName',
     encryptedToken: 'encryptedToken',
     encryptedMetadata: 'encryptedMetadata',
     tokenExpiresAt: 'tokenExpiresAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+  },
+  pronoteChildResources: {
+    id: 'id',
+    credentialId: 'credentialId',
+    parentUserId: 'parentUserId',
+    childUserId: 'childUserId',
+    resourceId: 'resourceId',
+    className: 'className',
+    establishmentName: 'establishmentName',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
   },
@@ -91,10 +120,11 @@ mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
   asc: (col: unknown) => ({ type: 'asc', col }),
   and: (...args: unknown[]) => args,
+  count: (col: unknown) => ({ fn: 'count', col }),
 }));
 
 // Import after mocks
-const { pronoteSyncService } = await import('../services/pronote-sync.service');
+const { pronoteSyncService, PronoteCredentialForbiddenError } = await import('../services/pronote-sync.service');
 
 // ============================================
 // Test data
@@ -116,6 +146,7 @@ const VALID_EXPIRES = '2026-04-10T12:00:00Z';
 describe('PronoteSyncService', () => {
   beforeEach(() => {
     findResult = undefined;
+    findByIdResult = undefined;
     upsertCalled = false;
     deleteCalled = false;
     capturedOrderBy = [];
@@ -129,6 +160,7 @@ describe('PronoteSyncService', () => {
     mockOnConflictDoUpdate.mockClear();
     mockOrderBy.mockClear();
     mockLimit.mockClear();
+    mockDeleteWhere.mockClear();
   });
 
   // ============================================
@@ -264,6 +296,49 @@ describe('PronoteSyncService', () => {
       const result = await pronoteSyncService.deleteCredentials(VALID_USER_ID);
       expect(result).toBe(true);
       expect(deleteCalled).toBe(true);
+    });
+  });
+
+  // ============================================
+  // deleteCredentialById
+  // ============================================
+
+  describe('deleteCredentialById', () => {
+    const CRED_ID = 'cred-abc-123';
+    const OWNER_USER_ID = 'owner-user-001';
+    const OTHER_USER_ID = 'other-user-002';
+
+    const OWNED_CREDENTIAL = {
+      id: CRED_ID,
+      userId: OWNER_USER_ID,
+      encryptedToken: `encrypted:${VALID_TOKEN}`,
+      encryptedMetadata: `encrypted:${VALID_METADATA}`,
+      tokenExpiresAt: new Date(VALID_EXPIRES),
+    };
+
+    it('matching owner → db.delete called once, returns true', async () => {
+      findByIdResult = OWNED_CREDENTIAL;
+
+      const result = await pronoteSyncService.deleteCredentialById(OWNER_USER_ID, CRED_ID);
+
+      expect(result).toBe(true);
+      expect(deleteCalled).toBe(true);
+    });
+
+    it('owner mismatch → throws PronoteCredentialForbiddenError, db.delete NOT called', async () => {
+      findByIdResult = OWNED_CREDENTIAL; // owned by OWNER_USER_ID, not OTHER_USER_ID
+
+      let thrown: unknown;
+      try {
+        await pronoteSyncService.deleteCredentialById(OTHER_USER_ID, CRED_ID);
+      } catch (err) {
+        thrown = err;
+      }
+      expect(thrown).toBeInstanceOf(PronoteCredentialForbiddenError);
+
+      // The key invariant: ownership is checked BEFORE deletion
+      expect(deleteCalled).toBe(false);
+      expect(mockDeleteWhere.mock.calls.length).toBe(0);
     });
   });
 });

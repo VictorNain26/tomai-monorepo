@@ -18,22 +18,17 @@ const { usePronoteStore } = require('@/stores/pronote-store');
 
 type StoreType = {
   getState: () => {
-    isConnected: boolean;
-    metadata: { instanceUrl: string; username: string; deviceUuid: string; accountKind: number } | null;
-    resources: { name: string; id: string; className?: string }[];
-    resourceMappings: Record<string, number>;
     homework: { id: string; subject: string }[];
     grades: { id: string; subject: string }[];
     timetable: { id: string; subject?: string }[];
     lastHomeworkFetch: string | null;
     lastGradesFetch: string | null;
     lastTimetableFetch: string | null;
-    setConnected: (metadata: Record<string, unknown>) => void;
-    setResources: (resources: { name: string; id: string }[]) => void;
-    setResourceMapping: (childId: string, resourceIndex: number) => void;
+    errors: { homework: string | null; grades: string | null; timetable: string | null };
     setHomework: (homework: { id: string; subject: string }[]) => void;
     setGrades: (grades: { id: string; subject: string }[]) => void;
     setTimetable: (timetable: { id: string }[]) => void;
+    setError: (key: 'homework' | 'grades' | 'timetable', message: string | null) => void;
     reset: () => void;
   };
 };
@@ -45,50 +40,6 @@ describe('usePronoteStore', () => {
     act(() => {
       store.getState().reset();
     });
-  });
-
-  it('should start disconnected', () => {
-    const state = store.getState();
-    expect(state.isConnected).toBe(false);
-    expect(state.metadata).toBeNull();
-    expect(state.resources).toEqual([]);
-  });
-
-  it('should set connected with metadata', () => {
-    act(() => {
-      store.getState().setConnected({
-        instanceUrl: 'https://demo.pronote.fr',
-        username: 'jean',
-        deviceUuid: 'dev-1',
-        accountKind: 6,
-      });
-    });
-
-    const state = store.getState();
-    expect(state.isConnected).toBe(true);
-    expect(state.metadata?.instanceUrl).toBe('https://demo.pronote.fr');
-  });
-
-  it('should set resources', () => {
-    act(() => {
-      store.getState().setResources([
-        { name: 'Jean', id: '1' },
-        { name: 'Marie', id: '2' },
-      ]);
-    });
-
-    expect(store.getState().resources).toHaveLength(2);
-  });
-
-  it('should set resource mapping', () => {
-    act(() => {
-      store.getState().setResourceMapping('child-1', 0);
-      store.getState().setResourceMapping('child-2', 1);
-    });
-
-    const mappings = store.getState().resourceMappings;
-    expect(mappings['child-1']).toBe(0);
-    expect(mappings['child-2']).toBe(1);
   });
 
   it('should cache homework with timestamp', () => {
@@ -129,25 +80,28 @@ describe('usePronoteStore', () => {
 
   it('should reset all state', () => {
     act(() => {
-      store.getState().setConnected({
-        instanceUrl: 'https://demo.pronote.fr',
-        username: 'jean',
-        deviceUuid: 'dev-1',
-        accountKind: 6,
-      });
       store.getState().setHomework([{ id: 'hw-1', subject: 'Maths' }]);
     });
 
-    expect(store.getState().isConnected).toBe(true);
+    expect(store.getState().homework).toHaveLength(1);
 
     act(() => {
       store.getState().reset();
     });
 
     const state = store.getState();
-    expect(state.isConnected).toBe(false);
-    expect(state.metadata).toBeNull();
     expect(state.homework).toEqual([]);
     expect(state.lastHomeworkFetch).toBeNull();
+  });
+
+  it('should set per-domain errors without cross-contamination', () => {
+    act(() => {
+      store.getState().setError('grades', 'Erreur notes');
+    });
+
+    const state = store.getState();
+    expect(state.errors.grades).toBe('Erreur notes');
+    expect(state.errors.homework).toBeNull();
+    expect(state.errors.timetable).toBeNull();
   });
 });
