@@ -27,6 +27,7 @@ export default function ParentLayout() {
     <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="add-child" options={{ title: 'Ajouter un enfant' }} />
+      <Stack.Screen name="pronote-connect" options={{ title: 'Connecter Pronote' }} />
       <Stack.Screen name="tabs" />
     </Stack>
   );

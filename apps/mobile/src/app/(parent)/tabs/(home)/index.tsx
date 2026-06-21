@@ -109,6 +109,16 @@ export default function ParentDashboard() {
               Ajouter un enfant
             </Text>
           </Button>
+          <Button
+            variant="outline"
+            onPress={() => router.push('/(parent)/pronote-connect')}
+            className="mt-3"
+            accessibilityLabel="Connecter Pronote"
+          >
+            <Text className="font-medium">
+              Connecter Pronote
+            </Text>
+          </Button>
         </View>
       </SafeAreaView>
     );
@@ -124,6 +134,15 @@ export default function ParentDashboard() {
             {children.length} enfant{children.length > 1 ? 's' : ''}
           </Text>
         </View>
+        {/* TODO(Task 14): route to manage screen once pronote-manage is built */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onPress={() => router.push('/(parent)/pronote-connect')}
+          accessibilityLabel="Gérer Pronote"
+        >
+          <Text className="text-sm">Gérer Pronote</Text>
+        </Button>
       </View>
 
       {/* Child cards list */}
