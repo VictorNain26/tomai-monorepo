@@ -58,15 +58,14 @@ export default function ParentDashboard() {
       { hasPronote: boolean; averageGrade: number | null; homeworkCount: number }
     > = {};
     for (const child of children) {
-      const isMapped = pronote.resourceMappings[child.id] !== undefined;
       data[child.id] = {
-        hasPronote: isMapped,
-        averageGrade: isMapped ? computeAverageGrade(pronote.grades) : null,
-        homeworkCount: isMapped ? countUpcomingHomework(pronote.homework) : 0,
+        hasPronote: child.hasPronote,
+        averageGrade: child.hasPronote ? computeAverageGrade(pronote.grades) : null,
+        homeworkCount: child.hasPronote ? countUpcomingHomework(pronote.homework) : 0,
       };
     }
     return data;
-  }, [children, pronote.resourceMappings, pronote.grades, pronote.homework]);
+  }, [children, pronote.grades, pronote.homework]);
 
   const handleViewDetail = useCallback(
     (child: IChild) => {

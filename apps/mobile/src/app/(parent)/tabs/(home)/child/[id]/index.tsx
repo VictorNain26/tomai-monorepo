@@ -27,6 +27,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/toast';
 import { DeleteChildModal } from '@/components/parent';
 import { useParentDashboard, useThemeColors, usePronote } from '@/hooks';
+import { usePronoteStatus } from '@/hooks/usePronoteStatus';
 import { useUser } from '@/lib/auth';
 import { getLevelLabel } from '@/constants/levels';
 import { computeAverageGrade, formatStudyTime, formatFrenchDate } from '@/lib/formatters';
@@ -54,12 +55,13 @@ export default function ChildDetailScreen() {
 
   const user = useUser();
   const pronoteHook = usePronote(user?.id ?? '');
+  const pronoteStatus = usePronoteStatus(id ?? '');
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const child = useMemo(() => children.find((c) => c.id === id), [children, id]);
   const childMetrics = useMemo(() => metrics.find((m) => m.studentId === id), [metrics, id]);
-  const isMapped = id ? pronoteHook.resourceMappings[id] !== undefined : false;
+  const isMapped = child?.hasPronote ?? false;
 
   const average = useMemo(
     () => (isMapped ? computeAverageGrade(pronoteHook.grades) : null),
@@ -129,7 +131,9 @@ export default function ChildDetailScreen() {
                 <>
                   {/* green-300 / amber-200: decorative badge icon always over primary gradient — theme-invariant */}
                   <CheckCircle2 color="#86efac" size={14} />
-                  <Text className="text-xs font-medium text-white">Pronote</Text>
+                  <Text className="text-xs font-medium text-white">
+                    {pronoteStatus.data?.className ?? 'Pronote'}
+                  </Text>
                 </>
               ) : (
                 <>
