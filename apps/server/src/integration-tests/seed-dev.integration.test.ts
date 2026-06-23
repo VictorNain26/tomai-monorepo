@@ -45,6 +45,15 @@ describe.skipIf(!dbReachable)('seedDev — deterministic, login-proven accounts'
       body: { username: 'dev.eleve', password: 'DevEleve123!' },
     });
     expect(childLogin?.user?.username).toBe('dev.eleve');
+
+    const { db } = await import('../db/connection');
+    const schema = await import('../db/schema');
+    const { eq } = await import('drizzle-orm');
+    const childDecks = await db
+      .select()
+      .from(schema.learningDecks)
+      .where(eq(schema.learningDecks.userId, childId));
+    expect(childDecks.length).toBeGreaterThan(0);
   });
 
   it('is idempotent — a second run does not duplicate and still proves login', async () => {

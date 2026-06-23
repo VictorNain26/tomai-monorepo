@@ -6,8 +6,11 @@
  * Usage: cd apps/server && bun run seed
  */
 
+import { eq } from 'drizzle-orm';
 import { isProduction } from '../config/env';
 import { auth } from '../lib/auth';
+import { db } from '../db/connection';
+import { learningDecks } from '../db/schema/learning-tools.schema';
 import { usersRepository } from '../db/repositories';
 import { parentChildRepository } from '../db/repositories/parent-child.repository';
 import type { SchoolLevel } from '../db/schema.js';
@@ -20,6 +23,7 @@ const SEED = {
   childPassword: 'DevEleve123!',
   childName: 'Dev Eleve',
   childSchoolLevel: 'troisieme',
+  demoDeckTitle: 'Deck de démo',
 };
 
 async function canLoginEmail(email: string, password: string): Promise<boolean> {
@@ -40,6 +44,21 @@ async function canLoginUsername(username: string, password: string): Promise<boo
   }
 }
 
+async function ensureChildHasDemoDeck(childId: string): Promise<void> {
+  const existing = await db
+    .select({ id: learningDecks.id })
+    .from(learningDecks)
+    .where(eq(learningDecks.userId, childId))
+    .limit(1);
+  if (existing.length > 0) return;
+  await db.insert(learningDecks).values({
+    userId: childId,
+    title: SEED.demoDeckTitle,
+    subject: 'mathématiques',
+    source: 'prompt',
+  });
+}
+
 export async function seedDev(): Promise<{ parentId: string; childId: string }> {
   if (isProduction()) {
     throw new Error('[seed] refusing to run in production');
@@ -55,6 +74,7 @@ export async function seedDev(): Promise<{ parentId: string; childId: string }> 
     (await canLoginUsername(SEED.childUsername, SEED.childPassword));
 
   if (healthy && existingParent && existingChild) {
+    await ensureChildHasDemoDeck(existingChild.id);
     return { parentId: existingParent.id, childId: existingChild.id };
   }
 
@@ -85,6 +105,8 @@ export async function seedDev(): Promise<{ parentId: string; childId: string }> 
     schoolLevel: SEED.childSchoolLevel as SchoolLevel,
   });
   await parentChildRepository.link(parent.user.id, child.user.id);
+
+  await ensureChildHasDemoDeck(child.user.id);
 
   // Prove both logins — throw on failure so the seed is never a false positive.
   const parentOk = await canLoginEmail(SEED.parentEmail, SEED.parentPassword);
