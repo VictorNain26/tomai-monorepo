@@ -1,4 +1,8 @@
 appId: fr.tomia.mobile
+# E2E SCOPE: onboarding UI only. QR scan / discovery / activation are STUBBED
+# (EXPO_PUBLIC_E2E=1). This flow does NOT verify real Pronote/ENT connectivity.
+# Real connectivity is covered (or its absence documented) by a separate server-side
+# Pronote demo-server integration check — see the e2e dev design spec.
 ---
 # Pronote onboarding wizard — E2E flow (preview-android only)
 #
