@@ -139,6 +139,7 @@ Extension CI (e2e contre backend éphémère) : **fast-follow**, hors scope imm�
 | RAG Cloud sans creds | **Pas de mode dégradé en e2e.** Le doctor strict échoue (exit ≠ 0) et `pnpm e2e:local` refuse de démarrer. Les creds réels sont une précondition assumée, pas un détail contournable. |
 | Seed lancé en prod | Garde-fou `NODE_ENV=production` → refus. |
 | `seed-dev.ts` importé par la chaîne `app.ts`/`server-lifecycle.ts` casse `api-endpoints.test.ts` (mock Drizzle partiel) | Script **isolé**, jamais importé par l'app runtime. Voir piège dans `.claude/rules/testing-and-commits.md`. |
+| **Pronote — loginToken et loginQrCode non couverts en e2e automatisé** | La connectivité Pronote réelle est couverte en deux couches : (1) `pronote-demo.integration.test.ts` (opt-in `PRONOTE_DEMO_E2E=1`) prouve `geolocation()` (unauthenticated, Index Education directory API) + `loginCredentials()` + lecture de notes contre le serveur de démo public (`demo.index-education.net`, `demonstration/pronotevs`) — sans base de données, ne peut jamais être silencieusement vert. (2) `pronote-real-account.integration.test.ts` (opt-in `PRONOTE_TEST_*`) prouve le cycle loginToken avec un vrai compte. **Gap résiduel documenté** : `loginQrCode` ne peut pas être prouvé en automatisé — il exige un QR scanné depuis un device mobile réel. Ce chemin est **vérifié manuellement avec un vrai compte lors de chaque release**. Le flow Maestro onboarding Pronote est UI-only (stubbé) et n'autorise aucune conclusion sur la connectivité Pronote réelle. |
 
 ## Tests
 
