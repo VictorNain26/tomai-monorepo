@@ -45,7 +45,8 @@
     "db:check": "bun --bun drizzle-kit check",
     "db:pull": "bun --bun drizzle-kit pull --config=drizzle.config.ts",
     "db:health": "bun -e \"import('./src/db/connection.js').then(m => m.healthCheck()).then(console.log)\"",
-    "rag:cache:invalidate": "bun run src/scripts/invalidate-cache.ts"
+    "rag:cache:invalidate": "bun run src/scripts/invalidate-cache.ts",
+    "seed": "bun run src/scripts/seed-dev.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",
