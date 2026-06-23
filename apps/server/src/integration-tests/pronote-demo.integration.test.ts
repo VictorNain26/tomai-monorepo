@@ -150,12 +150,16 @@ describe.skipIf(!RUN)('Pronote demo-server connectivity (real, DB-free)', () => 
       throw err;
     }
 
-    // The demo account always has grades; an empty array means the read path
-    // is broken (wrong period, wrong resource index, or silent API change).
+    // An empty array is indistinguishable from a stub — it is a false positive.
+    // NOTE: this opt-in test may fail during July–August school-holiday window
+    // when the demo account has no grades. A loud seasonal failure is acceptable;
+    // a silent green (empty array passing) is not.
     expect(Array.isArray(grades)).toBe(true);
-    // Log count without logging individual grades (may contain student data)
-    console.log(`[pronote-demo] getGrades OK — ${grades.length} grade(s) returned`);
-    // Not asserting > 0 because the demo may be between school terms;
-    // the important proof is that the call completed without error.
+    expect(grades.length).toBeGreaterThan(0);
+    // Assert the first grade carries a real NormalizedGrade.subject field
+    expect(grades[0]?.subject).toBeTruthy();
+    console.log(
+      `[pronote-demo] getGrades OK — ${grades.length} grade(s), first subject="${grades[0]?.subject}"`,
+    );
   }, 30_000);
 });
