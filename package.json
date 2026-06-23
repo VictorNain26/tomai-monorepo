@@ -34,6 +34,7 @@
     "db:push": "turbo run db:push --filter=tomai-server",
     "db:studio": "turbo run db:studio --filter=tomai-server",
     "seed": "pnpm --filter tomai-server seed",
+    "e2e:local": "node scripts/e2e-local.mjs",
     "postinstall": "lefthook install || true"
   },
   "devDependencies": {
