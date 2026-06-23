@@ -20,6 +20,19 @@ Sources doc-first :
 - Expo `Constants.expoConfig.hostUri` contient `LAN_IP:8081` en dev — [docs.expo.dev/versions/latest/sdk/constants](https://docs.expo.dev/versions/latest/sdk/constants/).
 - Better Auth Expo override d'Origin (`@better-auth/expo`) — vérifié dans `node_modules` + `apps/server/src/lib/auth.ts:196`.
 
+## Principe directeur — preuve réelle, zéro faux positif
+
+**Un signal vert ne vaut que si le vrai chemin s'est réellement exécuté et a été observé.** Trois interdits, sans exception, dans tout ce que ce chantier ajoute :
+
+1. **Pas de réponse mockée qui simule un système qui marche.** En dev/e2e, le chat appelle réellement Mistral, le RAG interroge réellement Qdrant Cloud + ai-service. On ne renvoie jamais une réponse fabriquée qui ferait croire que le pipeline a tourné.
+2. **Pas de fallback silencieux qui masque une dépendance manquante.** Si une dépendance du parcours e2e (Mistral, Qdrant, ai-service, DB) est absente ou répond mal, le test/diagnostic **échoue bruyamment** (exit code ≠ 0, message explicite). La résilience prod (répondre même si Qdrant tombe) reste légitime *en prod* mais ne doit **jamais** faire passer un test e2e au vert.
+3. **Pas de faux positif.** Un check `pnpm doctor` ou un flow Maestro vert ⇒ le vrai chemin a été parcouru et asserté sur la vraie réponse. Conséquences concrètes :
+   - En mode e2e strict, un `SKIP` ou un statut serveur `degraded` (ex. `MISTRAL_API_KEY` absent) compte comme **échec**, pas comme succès.
+   - Le seed **garantit** l'état attendu (et vérifie qu'un login réel passe) au lieu de skipper si le compte « existe déjà ».
+   - Tout stub résiduel (Pronote) est **étiqueté** comme ne validant pas l'intégration réelle, et doublé d'un vrai test d'intégration séparé — pas de trou non testé caché derrière un test vert.
+
+Ce principe prime sur la commodité : mieux vaut un e2e qui refuse de tourner sans creds réels qu'un e2e qui passe en trompe-l'œil.
+
 ## État actuel (références file:line)
 
 | Sujet | Fichier | Constat |
@@ -53,6 +66,8 @@ Conséquence, sans aucune config par dev :
 
 Le port backend (`3000`) est une constante partagée. `api.ts:17` et `auth.ts:20` perdent leur `localhost` codé en dur.
 
+L'URL résolue est **loggée au boot** (le fallback `localhost` n'est jamais silencieux) : sur un device, tomber sur `localhost` signale immédiatement que `hostUri` n'a pas fourni d'IP joignable, au lieu d'un échec réseau opaque plus loin.
+
 #### B. Backend joignable — vérification, ajustement minimal
 
 - Bind `0.0.0.0` : déjà OK.
@@ -68,7 +83,9 @@ Crée de façon **idempotente** (upsert par email/username) :
 - 1 **élève** lié, **login autonome** : username + mot de passe connus, `role student`, `schoolLevel troisieme`.
 - Données minimales pour itérer : 1 deck d'exemple (learning). Rien de plus (YAGNI).
 
-Voie (éprouvée) : `auth.api.signUpEmail` (hash PBKDF2 géré par Better Auth) → `usersRepository.update` (champs métier) → `parentChildRepository.link`. Idempotence : si l'email/username existe, ne pas recréer (et optionnellement réaligner le mot de passe).
+Voie (éprouvée) : `auth.api.signUpEmail` (hash PBKDF2 géré par Better Auth) → `usersRepository.update` (champs métier) → `parentChildRepository.link`.
+
+Idempotence qui **garantit l'état** (pas un skip masquant) : si le compte existe, réaligner mot de passe + champs métier au lieu de passer outre — sinon un compte dans un état faux ferait échouer le login e2e mystérieusement. En fin de seed, le script **vérifie** que parent et élève se loggent réellement (`auth.api.signInEmail` / `signInUsername`) et **échoue** sinon. Un seed qui ne prouve pas le login est un faux positif.
 
 Garde-fous :
 - **Refuse de tourner si `NODE_ENV=production`.**
@@ -83,7 +100,8 @@ Garde-fous :
 
 #### E. Diagnostic et doc
 
-- Étendre légèrement `pnpm doctor` : afficher l'IP LAN détectée et l'URL backend que le device utilisera, + confirmer que le RAG (Cloud) répond. (Un check « le device joint l'API » est impossible sans device ; on se borne à informer.)
+- **Mode e2e strict** du doctor (`pnpm doctor --e2e` ou équivalent) : `SKIP` et `degraded` deviennent des **échecs**. Il exige et **prouve par un vrai roundtrip** que chaque maillon du parcours répond : postgres, ai-service (`/health` avec modèles chargés), Qdrant Cloud (search réel), Mistral (le serveur ne doit pas être `degraded`), embed→Qdrant→rerank de bout en bout. Exit code ≠ 0 au moindre maillon absent. C'est la porte d'entrée de `pnpm e2e:local`.
+- `pnpm doctor` standard (non strict) garde son comportement actuel pour l'itération quotidienne, mais affiche en plus l'IP LAN détectée et l'URL backend que le device utilisera. (Un check « le device joint l'API » est impossible sans device branché ; on se borne à informer.)
 - Doc dev : section « Tester sur device physique » — paragraphe portable + une ligne troubleshooting (pare-feu du poste ; sous WSL, activer `networkingMode=mirrored`). Hors archi.
 
 ### Phase 2 — E2E automatisé réel (local)
@@ -95,9 +113,11 @@ Garde-fous :
 | Auth (parent + élève) | **réel** | déjà le cas |
 | Chat (SSE + RAG + Mistral) | **réel** | déjà le cas |
 | Learning (decks) | **réel** | déjà le cas |
-| Pronote QR / discovery / activation | **stub conservé** | dépend d'un vrai ENT/collège, non déterministe |
+| Pronote QR / discovery / activation | **stub, explicitement étiqueté** | dépend d'un vrai ENT/collège, non déterministe |
 
 Le seed (pièce C) fournit les comptes `E2E_*` → les flows Maestro existants tournent **tels quels** contre le backend local.
+
+**Anti-faux-positif sur Pronote.** Le flow Maestro stubbé valide l'UI d'onboarding, **pas** l'intégration Pronote réelle — et ça doit être visible : le flow est nommé/commenté sans ambiguïté (« onboarding UI, Pronote stubbé »), et il n'autorise aucune conclusion sur la connectivité Pronote. Pour fermer le trou, on ajoute un **vrai** test d'intégration serveur séparé : pawnote contre un serveur de démo Index Education réel (les démos publiques `*.index-education.net`), qui exécute réellement `loginQrCode` / lecture de notes. Il skippe proprement **et bruyamment** (log explicite « Pronote demo unreachable — integration NOT verified ») si la démo est injoignable — jamais un vert trompeur. Faisabilité du serveur de démo à confirmer en début de Phase 2 (doc-first pawnote) ; si infaisable, le trou est documenté noir sur blanc plutôt que masqué.
 
 #### G. Orchestration e2e locale — `pnpm e2e:local`
 
@@ -116,7 +136,7 @@ Extension CI (e2e contre backend éphémère) : **fast-follow**, hors scope imm�
 | Risque | Mitigation |
 |---|---|
 | Sous WSL en NAT, `hostUri` peut renvoyer l'IP NAT (172.x) au lieu du LAN | Réglage **côté poste** (mirrored). Expo détecte déjà l'IP LAN nativement sur macOS/Linux/Windows. **Pas de detection custom** (resterait OS-spécifique). |
-| RAG Cloud sans creds | Chat fonctionne en mode dégradé (sans contexte). Documenté. `pnpm doctor` le signale. |
+| RAG Cloud sans creds | **Pas de mode dégradé en e2e.** Le doctor strict échoue (exit ≠ 0) et `pnpm e2e:local` refuse de démarrer. Les creds réels sont une précondition assumée, pas un détail contournable. |
 | Seed lancé en prod | Garde-fou `NODE_ENV=production` → refus. |
 | `seed-dev.ts` importé par la chaîne `app.ts`/`server-lifecycle.ts` casse `api-endpoints.test.ts` (mock Drizzle partiel) | Script **isolé**, jamais importé par l'app runtime. Voir piège dans `.claude/rules/testing-and-commits.md`. |
 
@@ -136,7 +156,8 @@ Extension CI (e2e contre backend éphémère) : **fast-follow**, hors scope imm�
 
 ## Critères de succès
 
-1. Un dev sur n'importe quel OS lance `pnpm dev` + `pnpm dev:mobile`, ouvre l'app sur son téléphone, se logge avec les comptes seedés, et obtient une réponse de chat enrichie par le RAG — **sans éditer d'IP**.
-2. `pnpm seed` est idempotent et crée parent + élève login-able.
-3. `pnpm e2e:local` rejoue les flows Maestro contre le backend local seedé, au vert.
+1. Un dev sur n'importe quel OS lance `pnpm dev` + `pnpm dev:mobile`, ouvre l'app sur son téléphone, se logge avec les comptes seedés, et obtient une réponse de chat **réellement** enrichie par le RAG (vrai appel Qdrant + Mistral, observable) — **sans éditer d'IP**.
+2. `pnpm seed` est idempotent, garantit l'état, et **prouve** que parent + élève se loggent réellement (échoue sinon).
+3. `pnpm e2e:local` rejoue les flows Maestro contre le backend local seedé, au vert — et **refuse de démarrer** (exit ≠ 0) si une dépendance réelle du parcours manque, plutôt que de passer en trompe-l'œil.
 4. Aucune ligne de code OS-spécifique introduite.
+5. **Zéro faux positif** : chaque signal vert correspond à un vrai chemin parcouru ; chaque stub résiduel est étiqueté et doublé d'un vrai test ou d'un trou documenté.
