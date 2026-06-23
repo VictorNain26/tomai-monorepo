@@ -251,15 +251,15 @@ function checkRagRoundtrip(ctx) {
 // ─── Server curriculum-health check ─────────────────────────────────────────
 
 function checkServerRagHealth(ctx) {
-  return { name: 'server /api/curriculum-health (si lancé)', run: async () => {
+  return { name: 'server /curriculum-health (si lancé)', run: async () => {
     let res;
     try {
-      res = await ctx.fetchFn(`${ctx.config.serverUrl}/api/curriculum-health`, {});
+      res = await ctx.fetchFn(`${ctx.config.serverUrl}/curriculum-health`, {});
     } catch (e) {
       throw skip(`server non joignable sur ${ctx.config.serverUrl} (${e.cause?.code ?? e.code ?? e.message})`);
     }
-    if (res.status === 404) throw skip('route /api/curriculum-health non exposée (garde dev)');
-    if (!res.ok) throw new Error(`server /api/curriculum-health -> HTTP ${res.status} (server joignable mais en erreur)`);
+    if (res.status === 404) throw skip('route /curriculum-health non exposée (garde dev)');
+    if (!res.ok) throw new Error(`server /curriculum-health -> HTTP ${res.status} (server joignable mais en erreur)`);
     const body = await res.json();
     if (body.status !== 'healthy') throw new Error(`RAG dégradé côté server (qdrant=${body.qdrant}, aiService=${body.aiService})`);
   }};
