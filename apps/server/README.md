@@ -95,6 +95,7 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 | Variable | Description |
 |----------|-------------|
 | `AI_SERVICE_URL` | Service embeddings/rerank BGE-M3 (apps/ai-service) |
+| `RAG_RERANK_ENABLED` | `true`/`false` — défaut OFF en dev (cross-encoder CPU lent), ON en prod |
 | `QDRANT_URL` / `QDRANT_API_KEY` | Qdrant Cloud pour RAG |
 | `SCALEWAY_ACCESS_KEY` / `SCALEWAY_SECRET_KEY` | Scaleway Object Storage |
 | `SCALEWAY_BUCKET` / `SCALEWAY_REGION` | Bucket et region (fr-par) |

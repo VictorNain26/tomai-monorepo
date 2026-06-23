@@ -94,6 +94,7 @@ const EnvSchema = z.object({
   // du rerank est ∝ ce nombre. Défaut = prod/GPU (qualité) ; baisser en dev CPU
   // (ex. 8) accélère le rerank au prix d'un léger écart de classement.
   RAG_RERANK_CANDIDATES: z.coerce.number().int().positive().optional(),
+  RAG_RERANK_ENABLED: z.enum(['true', 'false']).optional(),
 
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(900000), // 15 min
@@ -177,6 +178,12 @@ export const isDevelopment = (): boolean => env.NODE_ENV === 'development';
  * Helper to check if running in Docker
  */
 export const isInDocker = (): boolean => inDocker;
+
+// Rerank defaults OFF in dev (CPU cross-encoder is slow locally) and ON in prod.
+export function isRerankEnabled(): boolean {
+  if (env.RAG_RERANK_ENABLED !== undefined) return env.RAG_RERANK_ENABLED === 'true';
+  return !isDevelopment();
+}
 
 /**
  * Resolve DATABASE_URL based on Docker context

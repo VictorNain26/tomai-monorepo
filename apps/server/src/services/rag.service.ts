@@ -19,7 +19,7 @@ import { qdrantService, type QdrantSearchResult } from './qdrant.service.js';
 import { aiServiceClient } from './ai-service.client.js';
 import { retrievalAuditRepository } from '../db/repositories/retrieval-audit.repository.js';
 import { logger } from '../lib/observability.js';
-import { env } from '../config/env.js';
+import { env, isRerankEnabled } from '../config/env.js';
 import type { EducationLevelType } from '../types/index.js';
 
 // Thresholds pour cosine similarity (0-1)
@@ -142,10 +142,11 @@ class RAGService {
       let strategy: 'qdrant-hybrid-rrf' | 'qdrant-hybrid-rrf+rerank-bge-m3' =
         'qdrant-hybrid-rrf';
 
-      // Stage 2: cross-encoder rerank via ai-service. En cas d'échec, on
-      // log et on garde l'ordre hybrid pour ne pas casser le chat (rerank =
-      // optimisation, pas dépendance dure du retrieval).
-      if (results.length > 1) {
+      // Stage 2: cross-encoder rerank via ai-service. Skipped when
+      // RAG_RERANK_ENABLED=false (default in dev — CPU cross-encoder times out
+      // locally). En cas d'échec, on log et on garde l'ordre hybrid pour ne
+      // pas casser le chat (rerank = optimisation, pas dépendance dure du retrieval).
+      if (isRerankEnabled() && results.length > 1) {
         try {
           const reranked = await aiServiceClient.rerank(
             options.query,
