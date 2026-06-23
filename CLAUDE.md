@@ -10,7 +10,7 @@ pnpm dev:mobile                   # Expo mobile (8081)
 pnpm typecheck && pnpm lint       # Validation (obligatoire avant commit)
 pnpm build                        # Build production
 pnpm seed                         # Seed DB : comptes parent + élève (dev-only)
-pnpm doctor:e2e                   # Vérifier portabilité : résolution IP, services
+pnpm doctor:e2e                   # Diagnostic strict : chaque dépendance réelle doit répondre (SKIP/degraded = échec)
 ```
 
 Backend nécessite Docker : `cd apps/server && docker compose up -d`
