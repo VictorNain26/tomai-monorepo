@@ -9,6 +9,8 @@ pnpm dev:web                      # Web app seule (3002)
 pnpm dev:mobile                   # Expo mobile (8081)
 pnpm typecheck && pnpm lint       # Validation (obligatoire avant commit)
 pnpm build                        # Build production
+pnpm seed                         # Seed DB : comptes parent + élève (dev-only)
+pnpm doctor:e2e                   # Vérifier portabilité : résolution IP, services
 ```
 
 Backend nécessite Docker : `cd apps/server && docker compose up -d`
