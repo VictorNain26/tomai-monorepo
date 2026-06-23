@@ -220,3 +220,53 @@ test('check server: PASS si 200 healthy', async () => {
   const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
   await byName(checks, 'server').run();
 });
+
+// ─── Strict mode ─────────────────────────────────────────────────────────────
+
+test('runChecks strict: un SKIP devient un FAIL (exitCode 1)', async () => {
+  const SKIP = Symbol.for('doctor.skip');
+  const checks = [
+    { name: 'ok', run: async () => {} },
+    { name: 'skipped', run: async () => { const e = new Error('server non lancé'); e[SKIP] = true; throw e; } },
+  ];
+  const lines = [];
+  const summary = await runChecks(checks, { log: (l) => lines.push(l), strict: true });
+  assert.equal(summary.failed, 1, 'le SKIP doit compter comme failed en mode strict');
+  assert.equal(summary.exitCode, 1);
+  assert.ok(lines.some((l) => l.includes('FAIL') && l.includes('e2e strict')), 'le message doit mentionner [e2e strict]');
+});
+
+test('runChecks non-strict: un SKIP ne compte pas comme FAIL (exitCode 0)', async () => {
+  const SKIP = Symbol.for('doctor.skip');
+  const checks = [
+    { name: 'ok', run: async () => {} },
+    { name: 'skipped', run: async () => { const e = new Error('server non lancé'); e[SKIP] = true; throw e; } },
+  ];
+  const summary = await runChecks(checks, { log: () => {} });
+  assert.equal(summary.failed, 0, 'le SKIP ne doit PAS compter comme failed en mode non-strict');
+  assert.equal(summary.exitCode, 0);
+});
+
+test('buildChecks e2e: ajoute le check mistral-key', async () => {
+  const ctx = { config: { ...CFG, mistralKey: 'mk-test' }, exec: () => ({}), fetchFn: async () => ({}) };
+  const checks = buildChecks(ctx, { full: true, e2e: true });
+  assert.ok(byName(checks, 'mistral'), 'le check mistral-key doit être présent quand e2e=true');
+});
+
+test('buildChecks non-e2e: pas de check mistral-key', async () => {
+  const ctx = { config: { ...CFG, mistralKey: 'mk-test' }, exec: () => ({}), fetchFn: async () => ({}) };
+  const checks = buildChecks(ctx, { full: true });
+  assert.equal(byName(checks, 'mistral'), undefined, 'le check mistral-key ne doit PAS être présent en mode non-e2e');
+});
+
+test('check mistral-key: FAIL si MISTRAL_API_KEY absent', async () => {
+  const ctx = { config: { ...CFG, mistralKey: undefined }, exec: () => ({}), fetchFn: async () => ({}) };
+  const checks = buildChecks(ctx, { full: true, e2e: true });
+  await assert.rejects(byName(checks, 'mistral').run(), /MISTRAL_API_KEY/);
+});
+
+test('check mistral-key: PASS si MISTRAL_API_KEY présent', async () => {
+  const ctx = { config: { ...CFG, mistralKey: 'sk-xxx' }, exec: () => ({}), fetchFn: async () => ({}) };
+  const checks = buildChecks(ctx, { full: true, e2e: true });
+  await byName(checks, 'mistral').run(); // ne lève pas
+});
