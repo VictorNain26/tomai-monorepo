@@ -75,7 +75,6 @@ const EnvSchema = z.object({
   MISTRAL_TTS_MODEL: z.string().default('voxtral-tts-latest'),
   MISTRAL_MAX_TOKENS: z.coerce.number().int().default(16384),
   MISTRAL_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
-  MISTRAL_TOP_P: z.coerce.number().min(0).max(1).default(0.95),
   MISTRAL_TIMEOUT: z.coerce.number().int().default(60000),
   MISTRAL_RETRY_ATTEMPTS: z.coerce.number().int().default(3),
   MISTRAL_RETRY_DELAY: z.coerce.number().int().default(1000),

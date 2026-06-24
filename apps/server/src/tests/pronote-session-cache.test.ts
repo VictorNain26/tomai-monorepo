@@ -17,4 +17,14 @@ describe('SessionCache', () => {
     cache.delete('user1');
     expect(cache.get('user1')).toBeNull();
   });
+
+  it('evicts the oldest entry once maxSize is exceeded', () => {
+    const cache = new SessionCache(60_000, () => 0, 2);
+    cache.set('a', { token: 'a', username: 'u' });
+    cache.set('b', { token: 'b', username: 'u' });
+    cache.set('c', { token: 'c', username: 'u' });
+    expect(cache.get('a')).toBeNull();
+    expect(cache.get('b')?.token).toBe('b');
+    expect(cache.get('c')?.token).toBe('c');
+  });
 });
