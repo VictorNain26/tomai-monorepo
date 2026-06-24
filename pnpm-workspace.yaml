@@ -15,10 +15,7 @@ publicHoistPattern:
 # installer leurs binaires natifs.
 allowBuilds:
   '@evilmartians/lefthook': true
-  '@prisma/engines': true
   esbuild: true
-  msgpackr-extract: false
-  prisma: true
   protobufjs: true
   sharp: true
 
@@ -55,6 +52,11 @@ overrides:
   # resolved versions made RN's global `Response` shadow node/undici's (which has
   # `.body`), breaking mobile typecheck on server source pulled via @repo/api.
   '@types/node': 25.9.1
+  # @expo/dom-webview stayed pinned at 55.0.3 in the lock (transitive optional peer of
+  # expo, never bumped). Its 55.x Android AAR references expo.modules.kotlin.types.
+  # AnyTypeProvider, a class removed by the expo-modules-core 56 type refactor →
+  # ClassNotFoundException crashes the app on boot. Force the SDK 56 line.
+  '@expo/dom-webview': 56.0.5
   # kysely 0.29 moved DEFAULT_MIGRATION_TABLE/_LOCK_TABLE to the `kysely/migration`
   # entry; better-auth's bundled kysely-adapter still imports them from the root,
   # breaking the bun server build. Known upstream bug, still open:
