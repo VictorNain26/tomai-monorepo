@@ -39,6 +39,7 @@ import {
 import { logger } from '../../lib/observability.js';
 import { withRetry } from '../../lib/retry.js';
 import type { CardGenerationParams, ParsedCard } from './types.js';
+import { env } from '../../config/env.js';
 
 // ADR-0001 : mistral-small pour génération templatée flashcards (qualité OK,
 // 3× moins cher que medium, escalade possible). JSON Schema strict.
@@ -234,7 +235,7 @@ export async function generateCards(
     const wrapped = await withRetry(
       async () => {
         const parsed = await generateStructured<{ cards: unknown[] }>({
-          model: 'mistral-small-latest',
+          model: env.MISTRAL_MODEL_LIGHT,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           maxTokens: 4096,

@@ -56,8 +56,9 @@ import {
   wrapCurriculumToolResult,
   getToolStatusLabel,
 } from './mistral-helpers.js';
+import { env } from '../../config/env.js';
 
-const MODEL = 'mistral-medium-latest';
+const MODEL = env.MISTRAL_MODEL;
 const TEMPERATURE = 0.6;
 const MAX_TOKENS = 1024;
 // Bump this constant whenever content under config/prompts/** or shared/pedagogy/**
@@ -209,6 +210,7 @@ class MistralChatService {
           tools: agentTools,
           promptCacheKey,
           parallelToolCalls: false,
+          reasoningEffort,
         });
 
         // Collect text + tool calls for this turn.

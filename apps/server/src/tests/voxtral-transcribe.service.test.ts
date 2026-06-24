@@ -14,7 +14,7 @@ const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
 mock.module('../config/env', () => ({
-  env: { MISTRAL_API_KEY: 'test-mistral-key' },
+  env: { MISTRAL_API_KEY: 'test-mistral-key', MISTRAL_STT_MODEL: 'voxtral-mini-latest' },
 }));
 
 // ============================================
