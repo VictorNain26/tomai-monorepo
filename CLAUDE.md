@@ -17,7 +17,7 @@ Backend nécessite Docker : `cd apps/server && docker compose up -d`
 
 ## Stack
 
-Détail par app (chargé à la demande via walk-up quand tu travailles dedans) : `apps/server/CLAUDE.md` (backend), `apps/mobile/CLAUDE.md` (mobile), `apps/web/CLAUDE.md` (web), `apps/ai-service/README.md` (service Python RAG).
+Détail par app (chargé à la demande via walk-up quand tu travailles dedans) : `apps/server/CLAUDE.md` (backend), `apps/mobile/CLAUDE.md` (mobile), `apps/web/CLAUDE.md` (web), `apps/ai-service/README.md` (service Python RAG), `apps/curriculum/CLAUDE.md` (indexation RAG des programmes officiels — app Python `uv` autonome, hors workspace pnpm/turbo).
 
 | Couche | Technologies |
 |--------|-------------|
