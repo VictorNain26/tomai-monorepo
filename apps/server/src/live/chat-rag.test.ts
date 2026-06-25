@@ -1,53 +1,79 @@
 /**
- * Live Chat+RAG — le flux PRODUIT complet : question d'élève → retrieval RAG du
- * programme (Qdrant + ai-service) → réponse pédagogique Mistral ancrée sur le
- * contexte récupéré. Valide la CHAÎNE entière contre les vrais services (le
- * tool-calling exact où Mistral décide d'appeler rag_search reste couvert en
- * unitaire par tool-executor.test.ts). LOCAL-ONLY (`bun run test:live`),
- * fail-closed.
+ * Live Chat+RAG — le VRAI flux produit : question d'élève → boucle agentique
+ * Mistral (`generateStreamChunks`) qui DÉCIDE d'appeler le tool
+ * `search_educational_content` → retrieval Qdrant + ai-service → réponse ancrée.
+ * On valide la chaîne via le backend, pas un enchaînement manuel : un RAG non
+ * déclenché (réponse « de mémoire ») fait échouer le test. LOCAL-ONLY
+ * (`bun run test:live`), fail-closed.
  */
 import { describe, it, expect } from 'bun:test';
-import { ragService } from '../services/rag.service';
-import { generateText } from '../lib/ai/mistral-client';
+import { mistralChatService } from '../services/chat/mistral-chat.service';
+import type { EducationLevelType } from '../types/index';
 import { HAS_MISTRAL, ragReachable } from './_creds';
 
 const ready = HAS_MISTRAL && (await ragReachable());
 
-describe('Chat + RAG live (full product flow)', () => {
+interface AgentTurn {
+  content: string;
+  usedRAG: boolean;
+  toolsUsed: string[];
+}
+
+/** Drive un tour de chat via le vrai flux backend et agrège le résultat. */
+async function runChatTurn(params: {
+  question: string;
+  niveau: EducationLevelType;
+  matiere: string;
+}): Promise<AgentTurn> {
+  let content = '';
+  let usedRAG = false;
+  let toolsUsed: string[] = [];
+
+  for await (const chunk of mistralChatService.generateStreamChunks({
+    userId: 'e2e-rag',
+    sessionId: 'e2e-rag-session',
+    userRole: 'student',
+    schoolLevel: params.niveau,
+    subject: params.matiere,
+    content: params.question,
+    conversationHistory: [],
+  })) {
+    if (chunk.type === 'content') {
+      content = chunk.content ?? content;
+    } else if (chunk.type === 'done') {
+      usedRAG = chunk.metadata?.usedRAG ?? false;
+      toolsUsed = chunk.metadata?.toolsUsed ?? [];
+    } else if (chunk.type === 'error') {
+      throw new Error(`stream error (${chunk.error?.code}): ${chunk.error?.message}`);
+    }
+  }
+
+  return { content, usedRAG, toolsUsed };
+}
+
+describe('Chat + RAG live (real agentic backend flow)', () => {
   it('Mistral key + RAG services reachable (fail-closed, no silent skip)', () => {
     expect(ready).toBe(true);
   });
 
-  it('answers a student question grounded in retrieved curriculum context', async () => {
-    const question = "Comment calculer le périmètre d'un cercle ?";
-
-    // 1. Le RAG récupère le vrai contexte du programme officiel.
-    const rag = await ragService.hybridSearch({
-      query: question,
+  it('Mistral triggers the RAG tool and answers grounded in the curriculum', async () => {
+    const turn = await runChatTurn({
+      question: "Comment calculer le périmètre d'un cercle ?",
       niveau: 'sixieme',
       matiere: 'mathematiques',
-      limit: 5,
-    });
-    expect(rag.semanticChunks.length).toBeGreaterThan(0);
-    expect(rag.context.length).toBeGreaterThan(0);
-
-    // 2. Mistral répond en s'appuyant sur ce contexte.
-    const answer = await generateText({
-      messages: [
-        {
-          role: 'system',
-          content:
-            "Tu es un tuteur pour collégiens. Réponds à la question en t'appuyant " +
-            `sur cet extrait de programme officiel :\n\n${rag.context}`,
-        },
-        { role: 'user', content: question },
-      ],
-      maxTokens: 200,
-      temperature: 0,
     });
 
-    // 3. La réponse est non vide et sur le sujet.
-    expect(answer.length).toBeGreaterThan(0);
-    expect(answer.toLowerCase()).toMatch(/cercle|périmètre|rayon|circonférence|π|pi/);
-  }, 45_000);
+    // Trajectoire : Mistral a DÉCIDÉ d'appeler le RAG dans le vrai flux produit.
+    expect(turn.usedRAG).toBe(true);
+    expect(turn.toolsUsed).toContain('search_educational_content');
+
+    // Réponse : non vide et ancrée sur le sujet (assertion non-LLM, déterministe).
+    expect(turn.content.length).toBeGreaterThan(0);
+    expect(turn.content.toLowerCase()).toMatch(/cercle|périmètre|rayon|circonférence|π|pi/);
+
+    console.log(
+      `[chat.agent] usedRAG=${turn.usedRAG} tools=[${turn.toolsUsed.join(',')}] ` +
+        `answerLen=${turn.content.length}`,
+    );
+  }, 90_000);
 });
