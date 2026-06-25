@@ -1,15 +1,13 @@
 import { describe, it, expect } from 'bun:test';
-import { env } from '../config/env';
 import { generateText, chatStream, type ChatStreamChunk } from '../lib/ai/mistral-client';
+import { HAS_MISTRAL } from './_creds';
 
-// e2e RÉEL contre l'API Mistral (api.mistral.ai). LOCAL-ONLY : hors CI et hors
-// test:integration (pas de conso d'API payante ni de dépendance externe sur les
-// PRs). Lancé via `bun run test:e2e` pour valider de visu les deux entrypoints
-// de prod : completion (`generateText`) et streaming (`chatStream`).
-// Fail-closed : si la clé manque, on ÉCHOUE — jamais de skip silencieux.
-const HAS_MISTRAL = !!env.MISTRAL_API_KEY && env.MISTRAL_API_KEY !== 'test-key';
+// Live contre l'API Mistral (api.mistral.ai). LOCAL-ONLY (`bun run test:live`),
+// hors CI : pas de conso d'API payante ni de dépendance externe sur les PRs.
+// Valide les deux entrypoints de prod : completion (`generateText`) et streaming
+// (`chatStream`). Fail-closed : si la clé manque, on ÉCHOUE — jamais de skip.
 
-describe('Mistral e2e (real API, local-only)', () => {
+describe('Chat (Mistral) live (real API)', () => {
   it('MISTRAL_API_KEY is configured (fail-closed, no silent skip)', () => {
     expect(HAS_MISTRAL).toBe(true);
   });

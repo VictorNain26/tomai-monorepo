@@ -1,9 +1,7 @@
 /**
- * e2e RAG — appels réels Qdrant + ai-service. LOCAL-ONLY : hors CI et hors
- * test:integration (dépendance services externes). Lancé via `bun run test:e2e`.
- * Fail-closed : si les creds/services manquent, on ÉCHOUE (pas de skip silencieux).
- *
- * Requires: QDRANT_URL, QDRANT_API_KEY, AI_SERVICE_URL
+ * Live RAG — appels réels Qdrant + ai-service. LOCAL-ONLY (`bun run test:live`),
+ * hors CI et hors test:integration. Fail-closed : si les services manquent, on
+ * ÉCHOUE (pas de skip silencieux). Requires: QDRANT_URL, QDRANT_API_KEY, AI_SERVICE_URL.
  */
 
 import { describe, it, expect } from 'bun:test';
@@ -12,28 +10,12 @@ import path from 'node:path';
 import { ragService } from '../services/rag.service';
 import { qdrantService } from '../services/qdrant.service';
 import { aiServiceClient } from '../services/ai-service.client';
+import { ragReachable } from './_creds';
 
-const ragVarsPresent = Boolean(
-  process.env.QDRANT_URL &&
-  process.env.QDRANT_API_KEY &&
-  process.env.AI_SERVICE_URL
-);
-
-// When vars are present, verify services are actually reachable before running.
-// This prevents spurious timeouts when the stack is configured but not running.
-async function checkServicesReachable(): Promise<boolean> {
-  if (!ragVarsPresent) return false;
-  const [qdrantOk, aiOk] = await Promise.all([
-    qdrantService.isAvailable().catch(() => false),
-    aiServiceClient.isAvailable().catch(() => false),
-  ]);
-  return qdrantOk && aiOk;
-}
-
-const ragCredsPresent = await checkServicesReachable();
+const ragCredsPresent = await ragReachable();
 
 if (!ragCredsPresent) {
-  console.error('[rag.e2e] Qdrant/ai-service injoignables — l’e2e va ÉCHOUER (fail-closed, pas de skip).');
+  console.error('[rag.live] Qdrant/ai-service injoignables — l’e2e va ÉCHOUER (fail-closed, pas de skip).');
 }
 
 // Golden set réel du curriculum (source de vérité, questions stratifiées avec
