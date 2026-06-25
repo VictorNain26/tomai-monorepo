@@ -38,7 +38,7 @@ export function PronoteStepIntro({ onContinue }: PronoteStepIntroProps) {
         Vos donnees Pronote restent sur votre appareil.
       </Text>
 
-      <Button onPress={onContinue} className="mt-8 w-full">
+      <Button testID="pronote-intro-continue" onPress={onContinue} className="mt-8 w-full">
         <Text className="font-semibold text-primary-foreground">
           Scanner le QR code
         </Text>

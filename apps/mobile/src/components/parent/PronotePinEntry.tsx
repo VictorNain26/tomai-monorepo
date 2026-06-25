@@ -79,6 +79,7 @@ export function PronotePinEntry({
       <View className="mb-6">
         <Text className="mb-2 font-medium">Code PIN a 4 chiffres</Text>
         <Input
+          testID="pronote-pin-input"
           placeholder="0000"
           value={pin}
           onChangeText={(text) => onPinChange(text.replace(/\D/g, '').slice(0, 4))}
@@ -98,6 +99,7 @@ export function PronotePinEntry({
 
       {/* Submit Button */}
       <Button
+        testID="pronote-pin-submit"
         onPress={onSubmit}
         disabled={pin.length !== 4 || isPending}
         className="mt-auto"

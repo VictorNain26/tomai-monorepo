@@ -78,6 +78,23 @@ jobs:
     name: Test
     needs: validate-tasks
     runs-on: ubuntu-latest
+    # Ephemeral pgvector service so DB-backed integration tests (incl. the
+    # Pronote onboarding e2e: discover -> activate -> getGrades) actually RUN
+    # in CI instead of skipping on an unreachable DB. Deterministic + isolated.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -93,18 +110,26 @@ jobs:
             pnpm turbo run test --affected
           fi
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://localhost:5432/test' }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
+      - name: Prepare integration DB (pgvector extension + migrations)
+        run: |
+          until pg_isready -h localhost -U postgres; do echo "waiting for postgres..."; sleep 1; done
+          PGPASSWORD=postgres psql -h localhost -U postgres -d test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          cd apps/server && bun run db:migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
       - name: Server integration tests
         run: cd apps/server && bun run test:integration
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://localhost:5432/test' }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
       - name: Server test coverage (report only)
         run: cd apps/server && bun run test:coverage
         continue-on-error: true
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://localhost:5432/test' }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
 
   # =============================================

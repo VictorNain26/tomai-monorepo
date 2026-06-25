@@ -194,15 +194,17 @@ export function PronoteResultStep({
         </View>
       )}
 
-      {/* Done */}
+      {/* Done — success path */}
       {!hasFailed && (
-        <Button
-          onPress={onDone}
-          className="mt-4"
-          accessibilityLabel="Terminer l'onboarding Pronote"
-        >
-          <Text className="font-semibold text-primary-foreground">Terminer</Text>
-        </Button>
+        <View testID="pronote-onboard-success">
+          <Button
+            onPress={onDone}
+            className="mt-4"
+            accessibilityLabel="Terminer l'onboarding Pronote"
+          >
+            <Text className="font-semibold text-primary-foreground">Terminer</Text>
+          </Button>
+        </View>
       )}
     </ScrollView>
   );

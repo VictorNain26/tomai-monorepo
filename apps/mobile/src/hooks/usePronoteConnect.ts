@@ -14,6 +14,19 @@
 import { useReducer, useCallback } from 'react';
 import { getTreaty } from '@repo/api';
 import type { ApiError } from '@repo/api';
+// E2E ONLY — imported unconditionally so the module graph is always valid,
+// but the actual stub paths are only reached when EXPO_PUBLIC_E2E === '1'.
+import {
+  E2E_CREDENTIAL_ID,
+  E2E_DISCOVERED,
+  E2E_ACTIVATE_RESULT,
+} from '@/services/pronote/pronote-e2e-stubs';
+
+// Read at call-time (not module-load-time) so test environments can set the
+// env variable after import. Production builds: always undefined → always false.
+function isE2E(): boolean {
+  return process.env.EXPO_PUBLIC_E2E === '1';
+}
 
 // ============================================================================
 // TYPES
@@ -225,6 +238,14 @@ export function usePronoteConnect(): UsePronoteConnectReturn {
     async (pin: string) => {
       if (!state.qrData) return;
 
+      // E2E ONLY: bypass live Pronote calls with deterministic fixtures.
+      if (isE2E()) {
+        dispatch({ type: 'connect-start' });
+        await Promise.resolve(); // yield so UI renders 'discovering' step
+        dispatch({ type: 'connect-success', credentialId: E2E_CREDENTIAL_ID, discovered: E2E_DISCOVERED });
+        return;
+      }
+
       dispatch({ type: 'connect-start' });
 
       try {
@@ -275,6 +296,14 @@ export function usePronoteConnect(): UsePronoteConnectReturn {
   const confirmSelections = useCallback(
     async (selections: ChildAccessSelection[]) => {
       if (!state.credentialId) return;
+
+      // E2E ONLY: return deterministic activation result.
+      if (isE2E()) {
+        dispatch({ type: 'activate-start', selections });
+        await Promise.resolve();
+        dispatch({ type: 'activate-success', results: E2E_ACTIVATE_RESULT });
+        return;
+      }
 
       dispatch({ type: 'activate-start', selections });
 

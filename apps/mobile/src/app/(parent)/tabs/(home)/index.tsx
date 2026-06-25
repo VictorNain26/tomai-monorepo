@@ -110,6 +110,7 @@ export default function ParentDashboard() {
             </Text>
           </Button>
           <Button
+            testID="pronote-connect-cta"
             variant="outline"
             onPress={() => router.push('/(parent)/pronote-connect')}
             className="mt-3"
