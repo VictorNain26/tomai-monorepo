@@ -12,7 +12,7 @@ import { env } from '../config/env.js';
 
 // Configuration
 const MISTRAL_API_KEY = env.MISTRAL_API_KEY ?? '';
-const EMBEDDING_MODEL = 'mistral-embed';
+const EMBEDDING_MODEL = env.MISTRAL_EMBED_MODEL;
 const EMBEDDING_DIM = 1024;
 const MISTRAL_TIMEOUT_MS = 30_000;
 

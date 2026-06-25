@@ -95,12 +95,34 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 | Variable | Description |
 |----------|-------------|
 | `AI_SERVICE_URL` | Service embeddings/rerank BGE-M3 (apps/ai-service) |
+| `RAG_RERANK_ENABLED` | `true`/`false` — défaut OFF en dev (cross-encoder CPU lent), ON en prod |
 | `QDRANT_URL` / `QDRANT_API_KEY` | Qdrant Cloud pour RAG |
 | `SCALEWAY_ACCESS_KEY` / `SCALEWAY_SECRET_KEY` | Scaleway Object Storage |
 | `SCALEWAY_BUCKET` / `SCALEWAY_REGION` | Bucket et region (fr-par) |
 | `PRONOTE_ENCRYPTION_KEY` | AES-256-GCM pour tokens Pronote |
 | `GLADIA_API_KEY` | Speech-to-Text |
 | `REVENUECAT_WEBHOOK_AUTH` | Webhooks RevenueCat (mobile IAP, required en prod) |
+
+### Dev seed (`pnpm seed`)
+
+Les variables ci-dessous peuplent la DB avec des comptes de test locaux (`pnpm seed`) et sont **refusées en production**. Présentes par défaut dans `.env.example` :
+
+| Variable | Valeur (défaut) | Usage |
+|----------|-----------------|-------|
+| `SEED_PARENT_PASSWORD` | `DevParent123!` | Login parent Tomia web |
+| `SEED_CHILD_USERNAME` | `dev.eleve` | Login enfant Tomia (accès autonome) |
+| `SEED_CHILD_PASSWORD` | `DevEleve123!` | Login enfant Tomia (accès autonome) |
+
+### Device → Backend (LAN)
+
+Le backend du monorepo tourne sur l'host (`pnpm dev` :3000). L'app mobile déduit
+son URL (`EXPO_PUBLIC_API_URL`) de la résolution DNS du device (même Wi-Fi) et
+loggue l'URL résolue au démarrage. Rien à configurer manuellement.
+
+L'**ai-service** (BGE-M3 embeddings/rerank) tourne côté Docker intra-réseau
+(`ai-service:8000`) mais est **inutilisable depuis l'host sans translation** : la
+variable `AI_SERVICE_URL` doit pointer `http://localhost:8001` (port remappé par
+Docker Compose à la `host`). `.env.example` le définit déjà.
 
 ## Architecture
 

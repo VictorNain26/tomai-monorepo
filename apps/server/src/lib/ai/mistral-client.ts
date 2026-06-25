@@ -114,6 +114,12 @@ interface ChatStreamOptions {
   tools?: SdkTool[];
   /** Disable parallel tool calls for deterministic sequential execution. */
   parallelToolCalls?: boolean;
+  /**
+   * Mistral reasoning mode. 'high' makes the model run a hidden thinking pass
+   * before answering (3-5x latency/cost); the thinking chunks are filtered out
+   * of the streamed text. Set by routeReasoningEffort (STEM, collège+, hard intent).
+   */
+  reasoningEffort?: 'none' | 'high';
 }
 
 export interface ChatStreamChunk {
@@ -328,6 +334,8 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
       tools: opts.tools,
       safePrompt: true,
       parallelToolCalls: opts.parallelToolCalls ?? false,
+      // Only escalate; 'none'/undefined leaves normal chat untouched (see HTTP path).
+      reasoningEffort: opts.reasoningEffort === 'high' ? 'high' : undefined,
     });
     let usage: ChatStreamChunk['usage'];
     for await (const event of stream) {
@@ -400,6 +408,9 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
     parallel_tool_calls: opts.parallelToolCalls ?? false,
   };
   if (opts.tools) body['tools'] = opts.tools;
+  // Only send the param when escalating: 'none' is the default, and sending it
+  // to a model that doesn't accept the field would break normal chat turns.
+  if (opts.reasoningEffort === 'high') body['reasoning_effort'] = 'high';
 
   const res = await fetch(`${MISTRAL_API_BASE}/chat/completions`, {
     method: 'POST',
@@ -440,7 +451,16 @@ export async function* chatStream(opts: ChatStreamOptions): AsyncIterable<ChatSt
           };
         }
         const delta = event.choices?.[0]?.delta;
-        if (delta?.content) yield { type: 'text', text: String(delta.content) };
+        if (delta?.content) {
+          // In reasoning mode Mistral streams content as typed chunks
+          // (thinking + text); keep only the answer text, drop the hidden thinking.
+          const text = typeof delta.content === 'string'
+            ? delta.content
+            : (delta.content as Array<{ type?: string; text?: string }>)
+                .map((c) => (c.type === 'text' ? (c.text ?? '') : ''))
+                .join('');
+          if (text) yield { type: 'text', text };
+        }
         for (const tc of delta?.tool_calls ?? []) {
           yield {
             type: 'tool_call',

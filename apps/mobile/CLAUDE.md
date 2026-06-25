@@ -91,6 +91,19 @@ Backend Elysia à `apps/server`. **Eden Treaty** via `@repo/api` (workspace pack
 - **Cache chiffré** : SQLite → SQLCipher (`@op-engineering/op-sqlite`) + TanStack persister wrapper AES (clés en SecureStore)
 - **a11y WCAG 2.1 AA** obligatoire (EAA en vigueur depuis juin 2025) : `accessibilityLabel`, `accessibilityRole`, contrast 4.5:1, targets ≥44×44pt
 
+## Tester sur un device physique (mobile ↔ backend local)
+
+`pnpm dev` (backend) + `pnpm dev:mobile` (Metro). L'app dérive l'URL du backend
+de l'IP par laquelle le device a joint Metro (`Constants.expoConfig.hostUri`),
+donc **rien à configurer** : device physique → IP LAN, émulateur Android →
+10.0.2.2, simulateur iOS → localhost. L'URL résolue est loggée au boot (`[API]`).
+
+Si le device ne joint pas le backend : vérifier le même Wi-Fi et le pare-feu du
+poste. **Sous WSL2**, le backend tourne dans la VM Linux — activer le réseau
+miroir : `%UserProfile%\.wslconfig` → `[wsl2]` `networkingMode=mirrored`, puis
+`wsl --shutdown` et ouvrir le port (Hyper-V firewall). C'est un réglage de poste,
+hors du repo.
+
 ## Troubleshooting
 
 | Symptôme | Solution |

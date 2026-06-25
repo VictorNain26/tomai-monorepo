@@ -10,8 +10,9 @@ import { generateText, type MistralMessage } from '../../lib/ai/mistral-client.j
 import { logger } from '../../lib/observability.js';
 import { withGenAiSpan } from '../../lib/otel/index.js';
 import type { ExtractionResult } from './document-extraction.service.js';
+import { env } from '../../config/env.js';
 
-const VISION_MODEL = 'mistral-medium-latest';
+const VISION_MODEL = env.MISTRAL_MODEL;
 const VISION_TEMPERATURE = 0.1;
 const VISION_MAX_TOKENS = 2048;
 const VISION_TIMEOUT_MS = 30_000;

@@ -66,19 +66,17 @@ Aucun SaaS hors UE.
 ```
 schema/
 ├── document.py        Pydantic Chunk + dérivation niveaux + MATIERE_LABELS
-├── bm25.py            Tokenizer FR + FNV-1a (parité stricte avec backend)
 ├── contextual.py      Préfixe contextuel hiérarchique (gratuit, sans LLM)
 └── retrieval.py       Accès Mistral/Qdrant partagé (embed, hybrid_search, L2 normalize)
 
 scripts/
 ├── extract_pdfs.py        PDF → markdown via pymupdf4llm (vrais H2)
-├── ingest.py              .md → chunks → embeddings L2 → sparse BM25 → upsert
+├── ingest.py              .md → chunks → embeddings L2 → sparse BGE-M3 → upsert
 ├── migrate_collection.py  Création collection (named vectors + indexes)
 ├── query.py               Test interactif retrieval (chunks bruts, pas de LLM)
 ├── evaluate.py            Métriques retrieval déterministes (chunk_id recall, MRR)
 ├── generate_golden.py     Génère le golden set document-grounded
 ├── audit_coverage.py      % titres BO indexés + `--list-missing` debug
-├── dump_bm25_fixture.py   Exporte fixture parité BM25 pour le backend TS
 └── veille_programmes.py   Détecte changements BO (data.gouv + Légifrance)
 
 data/

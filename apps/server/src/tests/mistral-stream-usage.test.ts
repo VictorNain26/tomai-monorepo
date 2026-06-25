@@ -51,3 +51,49 @@ describe('chatStream usage (HTTP direct path, promptCacheKey)', () => {
     expect(done?.usage).toEqual({ promptTokens: 120, completionTokens: 80, totalTokens: 200, cachedTokens: 0 });
   });
 });
+
+describe('chatStream reasoning_effort (HTTP direct path)', () => {
+  it('sends reasoning_effort:"high" in the body when escalated', async () => {
+    let sentBody: Record<string, unknown> = {};
+    globalThis.fetch = (async (_url: string, init: { body: string }) => {
+      sentBody = JSON.parse(init.body);
+      return new Response('data: [DONE]\n\n', { status: 200 });
+    }) as unknown as typeof fetch;
+    await collect(chatStream({
+      messages: [{ role: 'user', content: 'résous' }],
+      promptCacheKey: 'test-v1',
+      reasoningEffort: 'high',
+    }));
+    expect(sentBody['reasoning_effort']).toBe('high');
+  });
+
+  it('omits reasoning_effort when not escalated (none)', async () => {
+    let sentBody: Record<string, unknown> = {};
+    globalThis.fetch = (async (_url: string, init: { body: string }) => {
+      sentBody = JSON.parse(init.body);
+      return new Response('data: [DONE]\n\n', { status: 200 });
+    }) as unknown as typeof fetch;
+    await collect(chatStream({
+      messages: [{ role: 'user', content: 'salut' }],
+      promptCacheKey: 'test-v1',
+      reasoningEffort: 'none',
+    }));
+    expect(sentBody['reasoning_effort']).toBeUndefined();
+  });
+
+  it('drops thinking chunks and keeps only answer text', async () => {
+    const sse = [
+      'data: {"choices":[{"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"reflexion"}]},{"type":"text","text":"Reponse"}]}}]}',
+      'data: [DONE]',
+      '',
+    ].join('\n');
+    globalThis.fetch = (async () => new Response(sse, { status: 200 })) as unknown as typeof fetch;
+    const chunks = await collect(chatStream({
+      messages: [{ role: 'user', content: 'q' }],
+      promptCacheKey: 'test-v1',
+      reasoningEffort: 'high',
+    }));
+    const text = chunks.filter((c) => c.type === 'text').map((c) => c.text).join('');
+    expect(text).toBe('Reponse');
+  });
+});

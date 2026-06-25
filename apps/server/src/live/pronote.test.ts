@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'bun:test';
-import { loginWithCredentials } from './helpers/pronote-credentials-login.js';
+import { loginWithCredentials } from '../integration-tests/helpers/pronote-credentials-login.js';
 import {
   pawnoteServerAdapter,
   type AdapterSession,

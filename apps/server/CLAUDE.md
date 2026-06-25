@@ -63,18 +63,18 @@ Le type `App` (`typeof app`) est l'arbre de routes consommé par Eden Treaty cô
 - **Database** : PostgreSQL 16 pgvector + Drizzle ORM 0.45
 - **Cache** : MemoryCacheService (LRU in-memory avec TTL) — PAS de Redis
 - **Auth** : Better Auth 1.6 + Google OAuth + account linking + cookieCache (macro Elysia `authMacro`, cf. section Patterns)
-- **AI** : **Stack 100 % Mistral souveraine EU** — modèle par tâche (voir ADR-0001) :
+- **AI** : **Stack 100 % Mistral souveraine EU** — modèle par tâche, centralisés dans `config/env.ts` (`MISTRAL_MODEL_*`, aliases `-latest` + version réelle en commentaire) :
   - Embeddings (RAG) : `BAAI/bge-m3` dense+sparse via `apps/ai-service/` (Python, Koyeb fra)
   - Reranker (RAG) : `BAAI/bge-reranker-v2-m3` co-hosté dans `apps/ai-service/`
   - Embeddings (mémoire épisodique) : `mistral-embed` (1024D)
   - Chat tutorat principal : `mistral-medium-latest` (streaming + tools)
-  - Reasoning math complexe : `magistral-small-latest` (router conditionnel)
+  - Reasoning (STEM, collège+, intention difficile) : paramètre `reasoning_effort: high` sur le modèle chat, routé par `lib/ai/mistral-reasoning.ts` (magistral déprécié — le reasoning passe par un paramètre, plus par un modèle dédié)
   - Tâches simples (titre, classif, génération templatée) : `ministral-3b/8b` ou `mistral-small`
   - Extraction structurée nuancée (épisodes, analyses) : `mistral-medium-latest`
   - Vision (photos d'exercices) : `mistral-medium-latest` (multimodal natif depuis Pixtral fusion)
   - OCR documents : `mistral-ocr-25.12`
   - TTS : `voxtral-tts-26.03` (FR, voice cloning, EU)
-  - STT : Gladia (Paris, EU OK)
+  - STT : Voxtral (`voxtral-mini-latest`)
   - **Migration Gemini → Mistral terminée** : `@google/genai` retiré du
     `package.json`, aucun appel sortant Google côté runtime.
 - **RAG** : Qdrant Cloud + BGE-M3 dense+sparse (via `apps/ai-service/`) + hybrid RRF natif Qdrant + rerank cross-encoder.

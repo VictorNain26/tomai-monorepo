@@ -28,6 +28,7 @@ import { messagesRepository } from '../db/repositories/messages.repository.js';
 import { episodicMemoryRepository } from '../db/repositories/episodic-memory.repository.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
 import { logger } from '../lib/observability.js';
+import { env } from '../config/env.js';
 
 const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-05-18';
 
@@ -118,7 +119,7 @@ class EpisodicMemoryService {
       // JSON Schema strict garantit la forme. Prompt cache sur le prompt
       // d'extraction (templaté, subject seul varie via interpolation).
       const parsed = await generateStructured<ExtractedEpisode>({
-        model: 'mistral-medium-latest',
+        model: env.MISTRAL_MODEL,
         messages: [
           {
             role: 'user',

@@ -49,7 +49,7 @@ const MODEL_PRICING_USD_PER_MILLION: Record<string, { input: number; output: num
   'ministral-3b':      { input: 0.10,  output: 0.10  },
   'ministral-8b':      { input: 0.15,  output: 0.15  },
   'mistral-medium':    { input: 1.50,  output: 7.50  },
-  'mistral-small':     { input: 0.10,  output: 0.30  },
+  'mistral-small':     { input: 0.15,  output: 0.60  }, // Small 4 (mistral.ai/pricing 2026)
   'mistral-large':     { input: 0.50,  output: 1.50  },
 };
 

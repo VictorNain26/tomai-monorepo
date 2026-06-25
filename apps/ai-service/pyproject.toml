@@ -17,8 +17,8 @@ dependencies = [
     # custom : on wrap des libs matures.
     "FlagEmbedding>=1.3",          # BGE-M3 dense + sparse natif (lexical_weights)
     "sentence-transformers>=3.0",  # CrossEncoder pour bge-reranker-v2-m3
-    # PyTorch CPU (la version GPU est pull automatiquement si CUDA dispo,
-    # mais on cible CPU sur Koyeb eco-large par défaut)
+    # PyTorch — forcé en CPU via [tool.uv.index] pytorch-cpu (cf. plus bas) :
+    # la wheel PyPI par défaut embarque ~6 Go de CUDA inutiles sur Koyeb eco-large.
     "torch>=2.5",
     "numpy>=1.26",
 ]

@@ -13,6 +13,7 @@
 
 import { generateText, type MistralMessage } from '../../lib/ai/mistral-client.js';
 import { logger } from '../../lib/observability.js';
+import { env } from '../../config/env.js';
 import { documentExtractionService } from './document-extraction.service.js';
 import { ragService } from '../rag.service.js';
 import type { EducationLevelType } from '../../types/education.types.js';
@@ -41,7 +42,7 @@ export type {
   
 } from './document-types.js';
 
-const ANALYSIS_MODEL = 'mistral-medium-latest';
+const ANALYSIS_MODEL = env.MISTRAL_MODEL;
 const ANALYSIS_TEMPERATURE = 0.2;
 const ANALYSIS_MAX_TOKENS = 2048;
 const ANALYSIS_TIMEOUT_MS = 45_000;

@@ -16,8 +16,7 @@ import {
   isSuccessResponse,
   isCancelledResponse,
 } from '@react-native-google-signin/google-signin';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+import { resolveApiUrl } from './api-url';
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -44,7 +43,7 @@ export type { IAppUser };
  * - usernameClient: Child (student) login via Pronote username
  */
 export const authClient = createAuthClient({
-  baseURL: API_URL,
+  baseURL: resolveApiUrl(),
   plugins: [
     expoClient({
       scheme: 'tomia', // Must match app.config.js scheme

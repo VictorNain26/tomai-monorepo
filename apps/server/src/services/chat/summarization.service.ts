@@ -16,6 +16,7 @@ import { generateText } from '../../lib/ai/mistral-client.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { messagesRepository } from '../../db/repositories/messages.repository.js';
 import { logger } from '../../lib/observability.js';
+import { env } from '../../config/env.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -213,7 +214,7 @@ class SummarizationService {
       : `## CONVERSATION\n${messagesText}`;
 
     const text = await generateText({
-      model: 'mistral-small-latest',  // ADR-0001 D2 : sweet spot perf/coût
+      model: env.MISTRAL_MODEL_LIGHT,  // ADR-0001 D2 : sweet spot perf/coût
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },

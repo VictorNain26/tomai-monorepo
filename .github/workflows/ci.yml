@@ -196,3 +196,24 @@ jobs:
           fi
           echo "Migrations en sync avec schema.ts"
 
+  # =============================================
+  # Job 5: Expo native deps alignment (mobile)
+  # =============================================
+  # Catches native dependency drift before it reaches an EAS build. A stale
+  # transitive pin (e.g. @expo/dom-webview 55.x against expo-modules-core 56)
+  # compiles fine but crashes the app at runtime, so static `expo install
+  # --check` is the only cheap guard.
+  expo-deps:
+    name: Expo deps check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-monorepo
+        with:
+          turbo-cache-key: expo-deps
+      - name: Verify Expo SDK native deps alignment
+        working-directory: apps/mobile
+        run: npx expo install --check
+

@@ -69,13 +69,18 @@ const EnvSchema = z.object({
   SCALEWAY_REGION: z.string().default('fr-par'),
 
   // AI — Mistral (100% sovereign EU stack)
+  // Source unique des modèles. Aliases `-latest` : garantis stables par Mistral
+  // (jamais retirés, contrairement aux IDs datés) ; version réelle en commentaire.
   MISTRAL_API_KEY: z.string().optional(),
-  MISTRAL_MODEL: z.string().default('mistral-medium-latest'),
-  MISTRAL_REASONING_MODEL: z.string().default('magistral-medium-latest'),
-  MISTRAL_TTS_MODEL: z.string().default('voxtral-tts-latest'),
+  MISTRAL_MODEL: z.string().default('mistral-medium-latest'), // Medium 3.5 — chat, extraction épisodes, vision, analyse doc
+  MISTRAL_MODEL_CLASSIFY: z.string().default('ministral-8b-latest'), // Ministral 3 8B — classification d'intention
+  MISTRAL_MODEL_TITLE: z.string().default('ministral-3b-latest'), // Ministral 3 3B — titres auto, health-check
+  MISTRAL_MODEL_LIGHT: z.string().default('mistral-small-latest'), // Small 4 — résumés, génération de cartes
+  MISTRAL_EMBED_MODEL: z.string().default('mistral-embed'), // embeddings 1024D — mémoire épisodique
+  MISTRAL_STT_MODEL: z.string().default('voxtral-mini-latest'), // Voxtral — transcription (STT)
+  MISTRAL_TTS_MODEL: z.string().default('voxtral-tts-latest'), // Voxtral — synthèse vocale (TTS)
   MISTRAL_MAX_TOKENS: z.coerce.number().int().default(16384),
   MISTRAL_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
-  MISTRAL_TOP_P: z.coerce.number().min(0).max(1).default(0.95),
   MISTRAL_TIMEOUT: z.coerce.number().int().default(60000),
   MISTRAL_RETRY_ATTEMPTS: z.coerce.number().int().default(3),
   MISTRAL_RETRY_DELAY: z.coerce.number().int().default(1000),
@@ -94,6 +99,7 @@ const EnvSchema = z.object({
   // du rerank est ∝ ce nombre. Défaut = prod/GPU (qualité) ; baisser en dev CPU
   // (ex. 8) accélère le rerank au prix d'un léger écart de classement.
   RAG_RERANK_CANDIDATES: z.coerce.number().int().positive().optional(),
+  RAG_RERANK_ENABLED: z.enum(['true', 'false']).optional(),
 
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(900000), // 15 min
@@ -177,6 +183,14 @@ export const isDevelopment = (): boolean => env.NODE_ENV === 'development';
  * Helper to check if running in Docker
  */
 export const isInDocker = (): boolean => inDocker;
+
+// Rerank OFF par défaut : le cross-encoder bge-reranker-v2-m3 dépasse le timeout sur
+// instance CPU (mesuré 43-180s pour 20 candidats >> AI_SERVICE_TIMEOUT_MS=15s) → il
+// timeout et ne s'applique jamais, tout en coûtant l'attente. Opt-in explicite
+// (RAG_RERANK_ENABLED=true), à réactiver une fois le reranker servi sur GPU.
+export function isRerankEnabled(): boolean {
+  return env.RAG_RERANK_ENABLED === 'true';
+}
 
 /**
  * Resolve DATABASE_URL based on Docker context

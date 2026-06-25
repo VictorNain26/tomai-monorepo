@@ -20,7 +20,7 @@ import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
 
 const STT_ENDPOINT = 'https://api.mistral.ai/v1/audio/transcriptions';
-const STT_MODEL = 'voxtral-mini-latest';
+const STT_MODEL = env.MISTRAL_STT_MODEL;
 
 export interface VoxtralTranscribeResult {
   success: boolean;

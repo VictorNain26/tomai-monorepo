@@ -11,6 +11,7 @@
 import { generateText } from '../../lib/ai/mistral-client.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { logger } from '../../lib/observability.js';
+import { env } from '../../config/env.js';
 
 const AUTO_TITLE_PROMPT_VERSION = '2026-05-18';
 
@@ -58,7 +59,7 @@ class AutoTitleService {
         .replace('{assistantPreview}', assistantPreview);
 
       const raw = await generateText({
-        model: 'ministral-3b-latest',  // ADR-0001 : tâche triviale, modèle minimal
+        model: env.MISTRAL_MODEL_TITLE,  // ADR-0001 : tâche triviale, modèle minimal
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
         maxTokens: 64,

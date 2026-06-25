@@ -59,6 +59,7 @@ export function loadConfig({
     qdrantApiKey:    env('QDRANT_API_KEY'),
     pgContainer:     env('PG_CONTAINER')        ?? 'tomai-postgres-dev',
     composeFile:     join(rootDir, 'docker-compose.yml'),
+    mistralKey:      env('MISTRAL_API_KEY'),
   };
 }
 
@@ -69,10 +70,11 @@ const STATUS = { pass: '✓ PASS', fail: '✗ FAIL', skip: '~ SKIP' };
 /**
  * Exécute une liste de checks séquentiellement.
  * @param {Array<{name: string, run: () => Promise<void>}>} checks
- * @param {{ log?: (line: string) => void }} opts
+ * @param {{ log?: (line: string) => void, strict?: boolean }} opts
+ *   strict=true : un SKIP compte comme un FAIL (mode e2e — stack doit être 100 % up).
  * @returns {{ passed: number, failed: number, skipped: number, exitCode: number }}
  */
-export async function runChecks(checks, { log = console.log } = {}) {
+export async function runChecks(checks, { log = console.log, strict = false } = {}) {
   let passed = 0, failed = 0, skipped = 0;
 
   for (const check of checks) {
@@ -81,9 +83,12 @@ export async function runChecks(checks, { log = console.log } = {}) {
       log(`${STATUS.pass}  ${check.name}`);
       passed++;
     } catch (err) {
-      if (err[SKIP]) {
+      if (err[SKIP] && !strict) {
         log(`${STATUS.skip}  ${check.name} — ${err.message}`);
         skipped++;
+      } else if (err[SKIP]) {
+        log(`${STATUS.fail}  ${check.name} — [e2e strict] ${err.message}`);
+        failed++;
       } else {
         log(`${STATUS.fail}  ${check.name} — ${err.message}`);
         failed++;
@@ -246,25 +251,41 @@ function checkRagRoundtrip(ctx) {
 // ─── Server curriculum-health check ─────────────────────────────────────────
 
 function checkServerRagHealth(ctx) {
-  return { name: 'server /api/curriculum-health (si lancé)', run: async () => {
+  return { name: 'server /curriculum-health (si lancé)', run: async () => {
     let res;
     try {
-      res = await ctx.fetchFn(`${ctx.config.serverUrl}/api/curriculum-health`, {});
+      res = await ctx.fetchFn(`${ctx.config.serverUrl}/curriculum-health`, {});
     } catch (e) {
       throw skip(`server non joignable sur ${ctx.config.serverUrl} (${e.cause?.code ?? e.code ?? e.message})`);
     }
-    if (res.status === 404) throw skip('route /api/curriculum-health non exposée (garde dev)');
-    if (!res.ok) throw new Error(`server /api/curriculum-health -> HTTP ${res.status} (server joignable mais en erreur)`);
+    if (res.status === 404) throw skip('route /curriculum-health non exposée (garde dev)');
+    if (!res.ok) throw new Error(`server /curriculum-health -> HTTP ${res.status} (server joignable mais en erreur)`);
     const body = await res.json();
     if (body.status !== 'healthy') throw new Error(`RAG dégradé côté server (qdrant=${body.qdrant}, aiService=${body.aiService})`);
+  }};
+}
+
+// ─── Mistral key check (e2e only) ────────────────────────────────────────────
+
+/**
+ * Vérifie que MISTRAL_API_KEY est définie.
+ * Note : n'effectue PAS d'appel LLM (coûteux) — la preuve réelle est le flux Maestro chat.
+ * En mode strict, l'absence de la clé fait échouer le doctor plutôt que skipper.
+ */
+function checkMistralKey(ctx) {
+  return { name: 'mistral api-key présente (MISTRAL_API_KEY)', run: async () => {
+    if (!ctx.config.mistralKey) {
+      throw new Error('MISTRAL_API_KEY absente — définis-la dans apps/server/.env ou ton shell (la preuve LLM réelle = flux Maestro chat)');
+    }
   }};
 }
 
 /**
  * Construit la liste des checks. full=false -> sous-ensemble infra (pour le fail-fast `dev`).
  * full=true -> ajoute migrations, roundtrip RAG, server health.
+ * e2e=true -> ajoute le check mistral-key (SKIP interdit en mode strict).
  */
-export function buildChecks(ctx, { full } = { full: true }) {
+export function buildChecks(ctx, { full, e2e } = { full: true }) {
   const infra = [
     checkDockerDaemon(ctx),
     checkContainers(ctx),
@@ -272,5 +293,7 @@ export function buildChecks(ctx, { full } = { full: true }) {
     checkAiServiceHealth(ctx),
   ];
   if (!full) return infra;
-  return [...infra, checkMigrations(ctx), checkRagRoundtrip(ctx), checkServerRagHealth(ctx)];
+  const fullChecks = [...infra, checkMigrations(ctx), checkRagRoundtrip(ctx), checkServerRagHealth(ctx)];
+  if (!e2e) return fullChecks;
+  return [...fullChecks, checkMistralKey(ctx)];
 }

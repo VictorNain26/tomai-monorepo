@@ -19,6 +19,7 @@
 import { generateStructured } from '../../lib/ai/mistral-client.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
+import { env } from '../../config/env.js';
 
 const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-05-18';
 
@@ -104,7 +105,7 @@ class IntentClassifierService {
     const startTime = Date.now();
     try {
       const parsed = await generateStructured<{ intent?: string; confidence?: string }>({
-        model: 'ministral-8b-latest',  // ADR-0001 : classification 5 catégories, output 80 tokens
+        model: env.MISTRAL_MODEL_CLASSIFY,  // ADR-0001 : classification 5 catégories, output 80 tokens
         messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
         temperature: 0,
         maxTokens: 80,

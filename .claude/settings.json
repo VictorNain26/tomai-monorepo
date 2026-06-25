@@ -6,7 +6,13 @@
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./apps/server/.env)",
-      "Read(./apps/server/.env.*)"
+      "Read(./apps/server/.env.*)",
+      "Read(./apps/web/.env)",
+      "Read(./apps/web/.env.*)",
+      "Read(./apps/mobile/.env)",
+      "Read(./apps/mobile/.env.*)",
+      "Read(./apps/curriculum/.env)",
+      "Read(./apps/curriculum/.env.*)"
     ]
   },
 
