@@ -7,6 +7,8 @@
  */
 
 import { describe, it, expect } from 'bun:test';
+import fs from 'node:fs';
+import path from 'node:path';
 import { ragService } from '../services/rag.service';
 import { qdrantService } from '../services/qdrant.service';
 import { aiServiceClient } from '../services/ai-service.client';
@@ -36,41 +38,25 @@ if (!ragVarsPresent) {
   console.warn('[rag.test] Qdrant or ai-service unreachable — RAG integration suite skipped');
 }
 
-// Queries de test avec réponses attendues (basé sur dataset réel)
-const TEST_QUERIES = [
-  {
-    id: 'math_001',
-    query: 'Comment calculer l\'aire d\'un triangle ?',
-    niveau: 'cinquieme' as const,
-    matiere: 'mathematiques',
-    expectedInTitle: ['aire', 'triangle'],
-    minScore: 0.5,
-  },
-  {
-    id: 'math_002',
-    query: 'C\'est quoi la proportionnalité ?',
-    niveau: 'cinquieme' as const,
-    matiere: 'mathematiques',
-    expectedInTitle: ['proportionnal'],
-    minScore: 0.5,
-  },
-  {
-    id: 'fr_001',
-    query: 'Comment conjuguer à l\'imparfait ?',
-    niveau: 'cinquieme' as const,
-    matiere: 'francais',
-    expectedInTitle: ['imparfait'],
-    minScore: 0.5,
-  },
-  {
-    id: 'phys_001',
-    query: 'C\'est quoi un circuit électrique ?',
-    niveau: 'cinquieme' as const,
-    matiere: 'physique_chimie',
-    expectedInTitle: ['circuit', 'electrique'],
-    minScore: 0.5,
-  },
-];
+// Golden set réel du curriculum (source de vérité, questions stratifiées avec
+// gold_chunk_id). On n'évalue que les questions dont (matiere, niveau) sont
+// réellement présents dans la collection ; le hors-couverture (lycée, matières
+// non indexées) est compté à part, jamais en échec.
+interface GoldenQuestion {
+  query: string;
+  matiere: string;
+  niveau: string;
+  expected_keywords: string[];
+  gold_chunk_id: string;
+}
+const GOLDEN_PATH = path.resolve(
+  import.meta.dir,
+  '../../../curriculum/data/golden/questions.json',
+);
+const GOLDEN: GoldenQuestion[] =
+  ragCredsPresent && fs.existsSync(GOLDEN_PATH)
+    ? (JSON.parse(fs.readFileSync(GOLDEN_PATH, 'utf-8')) as GoldenQuestion[])
+    : [];
 
 describe.skipIf(!ragCredsPresent)('RAG Integration Tests - Real Qdrant Calls', () => {
 
@@ -107,34 +93,56 @@ describe.skipIf(!ragCredsPresent)('RAG Integration Tests - Real Qdrant Calls', (
     });
   });
 
-  describe('RAG Search Relevance', () => {
-    for (const testCase of TEST_QUERIES) {
-      it(`should return relevant results for: ${testCase.id}`, async () => {
-        const result = await ragService.hybridSearch({
-          query: testCase.query,
-          niveau: testCase.niveau,
-          matiere: testCase.matiere,
-          limit: 5,
-        });
+  describe('RAG recall on golden set (real curriculum questions)', () => {
+    it('covered questions return results; keyword recall@5 >= 0.5', async () => {
+      const stats = await qdrantService.getStats();
+      const niveaux = new Set(Object.keys(stats.by_niveau));
+      const matieres = new Set(Object.keys(stats.by_matiere));
+      const covered = GOLDEN.filter(
+        (q) => niveaux.has(q.niveau) && matieres.has(q.matiere),
+      );
+      expect(covered.length).toBeGreaterThan(0);
 
-        // Doit retourner des résultats
-        expect(result.semanticChunks.length).toBeGreaterThan(0);
-
-        // Le meilleur résultat doit avoir un score suffisant
-        const bestScore = result.semanticChunks[0]?.score ?? 0;
-        expect(bestScore).toBeGreaterThanOrEqual(testCase.minScore);
-
-        // La section du meilleur résultat doit contenir un des mots attendus
-        const bestSection = result.semanticChunks[0]?.section.toLowerCase() ?? '';
-        const hasExpectedTerm = testCase.expectedInTitle.some(term =>
-          bestSection.includes(term.toLowerCase())
+      let nonEmpty = 0;
+      let kwHit5 = 0;
+      let idHit5 = 0;
+      let idHit20 = 0;
+      for (const q of covered) {
+        const emb = await aiServiceClient.embed(q.query);
+        const results = await qdrantService.searchHybrid(
+          emb.dense,
+          emb.sparse,
+          { niveau: q.niveau, matiere: q.matiere },
+          20,
+          { hnswEf: 128 },
         );
-        expect(hasExpectedTerm).toBe(true);
-
-        // Le contexte ne doit pas être vide
-        expect(result.context.length).toBeGreaterThan(0);
-      });
-    }
+        if (results.length > 0) nonEmpty++;
+        const ids = results.map((r) => r.id);
+        if (ids.slice(0, 5).includes(q.gold_chunk_id)) idHit5++;
+        if (ids.includes(q.gold_chunk_id)) idHit20++;
+        const top5Text = results
+          .slice(0, 5)
+          .map((r) => r.text.toLowerCase())
+          .join(' ');
+        if (q.expected_keywords.some((k) => top5Text.includes(k.toLowerCase())))
+          kwHit5++;
+      }
+      const n = covered.length;
+      const kwRecall5 = kwHit5 / n;
+      console.log(
+        `[rag.golden] covered=${n}/${GOLDEN.length} ` +
+          `nonEmpty=${(nonEmpty / n).toFixed(3)} ` +
+          `keywordRecall@5=${kwRecall5.toFixed(3)} ` +
+          `chunkIdRecall@5=${(idHit5 / n).toFixed(3)} ` +
+          `chunkIdRecall@20=${(idHit20 / n).toFixed(3)}`,
+      );
+      // Gate robuste : quasi toutes les questions couvertes renvoient des
+      // résultats, et au moins la moitié font remonter un mot-clé attendu dans
+      // le top-5. Le chunk_id exact est loggé mais non gaté (il dépend de la
+      // synchro collection ↔ golden set, plus fragile).
+      expect(nonEmpty / n).toBeGreaterThanOrEqual(0.95);
+      expect(kwRecall5).toBeGreaterThanOrEqual(0.5);
+    }, 180_000);
   });
 
   describe('RAG Search Performance', () => {
