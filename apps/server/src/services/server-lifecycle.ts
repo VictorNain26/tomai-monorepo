@@ -6,6 +6,7 @@ import { db } from '../db/connection.js';
 import { sql } from 'drizzle-orm';
 import { validateEncryptionSetup } from '../lib/encryption.js';
 import { startRetentionPurgeScheduler } from './retention-purge.service.js';
+import { qdrantService } from './qdrant.service.js';
 
 let tokenResetInterval: ReturnType<typeof setInterval> | null = null;
 let stopRetentionPurge: (() => void) | null = null;
@@ -131,6 +132,27 @@ export async function initializeServices(): Promise<void> {
 
     startTokenResetCron();
     stopRetentionPurge = startRetentionPurgeScheduler();
+
+    // Traçabilité RAG : quelle collection Qdrant tourne réellement + sa taille,
+    // dans les logs de boot (sinon impossible de savoir sans lire le .env).
+    // RAG optionnel → on n'échoue pas le boot si Qdrant est injoignable.
+    if (env.QDRANT_URL) {
+      try {
+        const stats = await qdrantService.getStats();
+        logger.info('Qdrant collection ready', {
+          operation: 'services:init:qdrant',
+          collection: env.QDRANT_COLLECTION,
+          points: stats.total_points,
+          location: env.QDRANT_URL.startsWith('https://') ? 'cloud' : 'local',
+        });
+      } catch (error) {
+        logger.warn('Qdrant unreachable at startup (RAG degraded)', {
+          operation: 'services:init:qdrant:unreachable',
+          collection: env.QDRANT_COLLECTION,
+          _error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
 
     logger.info('All services initialized successfully', {
       operation: 'services:init:success',
