@@ -129,6 +129,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isStreaming = fa
       {/* Message Bubble + Actions */}
       <View className="max-w-[80%]">
         <Pressable
+          testID={!isUser && !isThinking ? 'chat-assistant-message' : undefined}
           onLongPress={handleLongPress}
           accessibilityRole="text"
           accessibilityHint="Appui long pour copier le message"
