@@ -44,7 +44,7 @@ Réponse :
 ### `POST /rerank`
 
 Format compatible HuggingFace TEI `/rerank` (le client backend
-`reranker.service.ts` peut être pointé indifféremment sur TEI ou ce service).
+`ai-service.client.ts` peut être pointé indifféremment sur TEI ou ce service).
 
 ```json
 {

@@ -2,7 +2,7 @@
 Wrapper bge-reranker-v2-m3 via sentence-transformers CrossEncoder.
 
 Réponse au format compatible HuggingFace TEI POST /rerank pour que le client
-backend (`apps/server/src/services/reranker.service.ts`) puisse l'appeler
+backend (`apps/server/src/services/ai-service.client.ts`) puisse l'appeler
 sans changer son code (TEI ou ce service = même contrat).
 
 Modèle : BAAI/bge-reranker-v2-m3 (568M params, MIT, multilingue FR/EN/DE/ES/IT).

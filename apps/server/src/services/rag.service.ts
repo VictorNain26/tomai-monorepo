@@ -64,7 +64,6 @@ interface HybridSearchResult {
   context: string;
   strategy: string;
   semanticChunks: SemanticChunk[];
-  microChunks: Array<{ id: string; score: number; text: string }>;
   averageSimilarity: number;
   searchTime: number;
   bestMatchSection?: string;
@@ -216,7 +215,6 @@ class RAGService {
         context,
         strategy,
         semanticChunks,
-        microChunks: [],
         averageSimilarity,
         searchTime,
         bestMatchSection: bestMatch?.section,
@@ -236,13 +234,6 @@ class RAGService {
 
       throw error;
     }
-  }
-
-  /**
-   * Alias pour compatibilité
-   */
-  async simpleSearch(options: HybridSearchOptions): Promise<HybridSearchResult> {
-    return this.hybridSearch(options);
   }
 
   /**
@@ -294,7 +285,6 @@ class RAGService {
       context: '',
       strategy: 'disabled',
       semanticChunks: [],
-      microChunks: [],
       averageSimilarity: 0,
       searchTime,
     };
