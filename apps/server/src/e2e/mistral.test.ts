@@ -2,14 +2,18 @@ import { describe, it, expect } from 'bun:test';
 import { env } from '../config/env';
 import { generateText, chatStream, type ChatStreamChunk } from '../lib/ai/mistral-client';
 
-// e2e RÉEL contre l'API Mistral (api.mistral.ai). On vérifie que le backend
-// parle de bout en bout au LLM via ses deux entrypoints de prod : completion
-// (`generateText`, utilisé pour titres/résumés) et streaming (`chatStream`,
-// utilisé par le chat). Skip si pas de vraie clé — on n'appelle jamais l'API
-// avec la 'test-key' injectée par les tests unitaires mockés.
+// e2e RÉEL contre l'API Mistral (api.mistral.ai). LOCAL-ONLY : hors CI et hors
+// test:integration (pas de conso d'API payante ni de dépendance externe sur les
+// PRs). Lancé via `bun run test:e2e` pour valider de visu les deux entrypoints
+// de prod : completion (`generateText`) et streaming (`chatStream`).
+// Fail-closed : si la clé manque, on ÉCHOUE — jamais de skip silencieux.
 const HAS_MISTRAL = !!env.MISTRAL_API_KEY && env.MISTRAL_API_KEY !== 'test-key';
 
-describe.skipIf(!HAS_MISTRAL)('Mistral e2e (real API)', () => {
+describe('Mistral e2e (real API, local-only)', () => {
+  it('MISTRAL_API_KEY is configured (fail-closed, no silent skip)', () => {
+    expect(HAS_MISTRAL).toBe(true);
+  });
+
   it('generateText returns a coherent completion', async () => {
     const out = await generateText({
       messages: [

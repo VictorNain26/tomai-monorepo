@@ -1,9 +1,9 @@
 /**
- * Tests d'intégration RAG - Appels réels Qdrant + ai-service
- * Vérifie que les réponses sont correctes et pertinentes
+ * e2e RAG — appels réels Qdrant + ai-service. LOCAL-ONLY : hors CI et hors
+ * test:integration (dépendance services externes). Lancé via `bun run test:e2e`.
+ * Fail-closed : si les creds/services manquent, on ÉCHOUE (pas de skip silencieux).
  *
- * Requires: QDRANT_URL, QDRANT_API_KEY, AI_SERVICE_URL (BGE-M3 + rerank)
- * Run: bun run test:integration
+ * Requires: QDRANT_URL, QDRANT_API_KEY, AI_SERVICE_URL
  */
 
 import { describe, it, expect } from 'bun:test';
@@ -32,10 +32,8 @@ async function checkServicesReachable(): Promise<boolean> {
 
 const ragCredsPresent = await checkServicesReachable();
 
-if (!ragVarsPresent) {
-  console.warn('[rag.test] QDRANT_URL / QDRANT_API_KEY / AI_SERVICE_URL absent — RAG integration suite skipped');
-} else if (!ragCredsPresent) {
-  console.warn('[rag.test] Qdrant or ai-service unreachable — RAG integration suite skipped');
+if (!ragCredsPresent) {
+  console.error('[rag.e2e] Qdrant/ai-service injoignables — l’e2e va ÉCHOUER (fail-closed, pas de skip).');
 }
 
 // Golden set réel du curriculum (source de vérité, questions stratifiées avec
@@ -58,7 +56,11 @@ const GOLDEN: GoldenQuestion[] =
     ? (JSON.parse(fs.readFileSync(GOLDEN_PATH, 'utf-8')) as GoldenQuestion[])
     : [];
 
-describe.skipIf(!ragCredsPresent)('RAG Integration Tests - Real Qdrant Calls', () => {
+describe('RAG e2e (real Qdrant + ai-service, local-only)', () => {
+
+  it('Qdrant + ai-service reachable (fail-closed, no silent skip)', () => {
+    expect(ragCredsPresent).toBe(true);
+  });
 
   describe('Service Availability', () => {
     it('should have Qdrant available', async () => {
@@ -103,11 +105,18 @@ describe.skipIf(!ragCredsPresent)('RAG Integration Tests - Real Qdrant Calls', (
       );
       expect(covered.length).toBeGreaterThan(0);
 
+      // Échantillon réparti déterministe : un e2e doit rester rapide (l'embed CPU
+      // est séquentiel, ~600 ms/question). Le bench complet des 189 questions vit
+      // dans apps/curriculum/scripts/evaluate.py.
+      const SAMPLE_SIZE = 50;
+      const step = Math.max(1, Math.ceil(covered.length / SAMPLE_SIZE));
+      const sample = covered.filter((_, i) => i % step === 0);
+
       let nonEmpty = 0;
       let kwHit5 = 0;
       let idHit5 = 0;
       let idHit20 = 0;
-      for (const q of covered) {
+      for (const q of sample) {
         const emb = await aiServiceClient.embed(q.query);
         const results = await qdrantService.searchHybrid(
           emb.dense,
@@ -127,10 +136,10 @@ describe.skipIf(!ragCredsPresent)('RAG Integration Tests - Real Qdrant Calls', (
         if (q.expected_keywords.some((k) => top5Text.includes(k.toLowerCase())))
           kwHit5++;
       }
-      const n = covered.length;
+      const n = sample.length;
       const kwRecall5 = kwHit5 / n;
       console.log(
-        `[rag.golden] covered=${n}/${GOLDEN.length} ` +
+        `[rag.golden] sample=${n}/${covered.length} (golden=${GOLDEN.length}) ` +
           `nonEmpty=${(nonEmpty / n).toFixed(3)} ` +
           `keywordRecall@5=${kwRecall5.toFixed(3)} ` +
           `chunkIdRecall@5=${(idHit5 / n).toFixed(3)} ` +
@@ -142,7 +151,7 @@ describe.skipIf(!ragCredsPresent)('RAG Integration Tests - Real Qdrant Calls', (
       // synchro collection ↔ golden set, plus fragile).
       expect(nonEmpty / n).toBeGreaterThanOrEqual(0.95);
       expect(kwRecall5).toBeGreaterThanOrEqual(0.5);
-    }, 180_000);
+    }, 90_000);
   });
 
   describe('RAG Search Performance', () => {
