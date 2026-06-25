@@ -184,10 +184,12 @@ export const isDevelopment = (): boolean => env.NODE_ENV === 'development';
  */
 export const isInDocker = (): boolean => inDocker;
 
-// Rerank defaults OFF in dev (CPU cross-encoder is slow locally) and ON in prod.
+// Rerank OFF par défaut : le cross-encoder bge-reranker-v2-m3 dépasse le timeout sur
+// instance CPU (mesuré 43-180s pour 20 candidats >> AI_SERVICE_TIMEOUT_MS=15s) → il
+// timeout et ne s'applique jamais, tout en coûtant l'attente. Opt-in explicite
+// (RAG_RERANK_ENABLED=true), à réactiver une fois le reranker servi sur GPU.
 export function isRerankEnabled(): boolean {
-  if (env.RAG_RERANK_ENABLED !== undefined) return env.RAG_RERANK_ENABLED === 'true';
-  return !isDevelopment();
+  return env.RAG_RERANK_ENABLED === 'true';
 }
 
 /**
