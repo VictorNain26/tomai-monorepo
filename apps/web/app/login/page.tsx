@@ -9,6 +9,7 @@ import { translateAuthError } from "@/lib/auth-errors";
 import { ROLE_HOME, resolveWebRole } from "@/lib/roles";
 
 type Mode = "signin" | "signup";
+type AccountType = "parent" | "student";
 
 function GoogleIcon() {
   return (
@@ -42,12 +43,18 @@ function GoogleIcon() {
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
+  const [accountType, setAccountType] = useState<AccountType>("parent");
   const [name, setName] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // L'inscription est réservée aux parents (le rôle student est créé par le
+  // parent via /api/parent/children). En connexion, le toggle choisit la voie :
+  // parent = email, élève = identifiant (plugin username Better Auth).
+  const isStudentLogin = mode === "signin" && accountType === "student";
 
   async function submitForm() {
     setError(null);
@@ -57,10 +64,10 @@ export default function LoginPage() {
       let result;
       if (mode === "signup") {
         result = await signUp.email({ email: identifier, password, name });
-      } else if (identifier.includes("@")) {
-        result = await signIn.email({ email: identifier, password });
-      } else {
+      } else if (accountType === "student") {
         result = await signIn.username({ username: identifier, password });
+      } else {
+        result = await signIn.email({ email: identifier, password });
       }
 
       if (result.error) {
@@ -103,13 +110,48 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">
-            {mode === "signin" ? "Connexion à Tom" : "Créer un compte"}
+            {mode === "signin" ? "Connexion à Tom" : "Créer un compte parent"}
           </CardTitle>
           <CardDescription>
-            {mode === "signin" ? "Accédez à votre espace." : "Inscrivez-vous pour commencer."}
+            {mode === "signin"
+              ? "Connectez-vous en tant que parent ou élève."
+              : "Créez votre compte pour suivre la scolarité de vos enfants."}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {mode === "signin" && (
+            <div
+              role="group"
+              aria-label="Type de compte"
+              className="mb-4 grid grid-cols-2 gap-2"
+            >
+              <Button
+                type="button"
+                variant={accountType === "parent" ? "default" : "outline"}
+                aria-pressed={accountType === "parent"}
+                disabled={isDisabled}
+                onClick={() => {
+                  setAccountType("parent");
+                  setError(null);
+                }}
+              >
+                Parent
+              </Button>
+              <Button
+                type="button"
+                variant={accountType === "student" ? "default" : "outline"}
+                aria-pressed={accountType === "student"}
+                disabled={isDisabled}
+                onClick={() => {
+                  setAccountType("student");
+                  setError(null);
+                }}
+              >
+                Élève
+              </Button>
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -120,7 +162,7 @@ export default function LoginPage() {
             {mode === "signup" && (
               <div className="flex flex-col gap-2">
                 <label htmlFor="name" className="text-sm font-medium">
-                  Nom
+                  Nom complet
                 </label>
                 <input
                   id="name"
@@ -129,23 +171,23 @@ export default function LoginPage() {
                   autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Votre nom"
+                  placeholder="Marie Dupont"
                   className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
             )}
             <div className="flex flex-col gap-2">
               <label htmlFor="identifier" className="text-sm font-medium">
-                {mode === "signin" ? "Email ou identifiant" : "Email"}
+                {isStudentLogin ? "Identifiant" : "Email"}
               </label>
               <input
                 id="identifier"
-                type="text"
+                type={isStudentLogin ? "text" : "email"}
                 required
-                autoComplete={mode === "signin" ? "username" : "email"}
+                autoComplete={isStudentLogin ? "username" : "email"}
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder={mode === "signin" ? "vous@exemple.fr ou identifiant" : "vous@exemple.fr"}
+                placeholder={isStudentLogin ? "ton.identifiant" : "marie.dupont@exemple.fr"}
                 aria-describedby={error ? "login-error" : undefined}
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
@@ -168,6 +210,13 @@ export default function LoginPage() {
               />
             </div>
 
+            {mode === "signup" && (
+              <p className="text-sm text-muted-foreground">
+                Inscription réservée aux parents. Vous ajouterez vos enfants ensuite
+                depuis votre espace.
+              </p>
+            )}
+
             {error && (
               <p id="login-error" role="alert" className="text-sm text-destructive">
                 {error}
@@ -188,40 +237,43 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-4 flex flex-col gap-4">
-            <div className="relative flex items-center gap-3">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs text-muted-foreground">ou</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
+          {!isStudentLogin && (
+            <div className="mt-4 flex flex-col gap-4">
+              <div className="relative flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">ou</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="w-full"
-              disabled={isDisabled}
-              aria-busy={googleLoading}
-              onClick={() => void signInWithGoogle()}
-            >
-              {googleLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  <span className="sr-only">Connexion Google en cours…</span>
-                </>
-              ) : (
-                <>
-                  <GoogleIcon />
-                  Continuer avec Google
-                </>
-              )}
-            </Button>
-          </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full"
+                disabled={isDisabled}
+                aria-busy={googleLoading}
+                onClick={() => void signInWithGoogle()}
+              >
+                {googleLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    <span className="sr-only">Connexion Google en cours…</span>
+                  </>
+                ) : (
+                  <>
+                    <GoogleIcon />
+                    Continuer avec Google
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
 
           <button
             type="button"
             onClick={() => {
               setMode(mode === "signin" ? "signup" : "signin");
+              setAccountType("parent");
               setError(null);
             }}
             className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground"

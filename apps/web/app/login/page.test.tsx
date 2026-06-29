@@ -5,9 +5,15 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const signInEmail = vi.fn();
+const signInUsername = vi.fn();
+const signInSocial = vi.fn();
 const signUpEmail = vi.fn();
 vi.mock("@/lib/auth-client", () => ({
-  signIn: { email: (...a: unknown[]) => signInEmail(...a) },
+  signIn: {
+    email: (...a: unknown[]) => signInEmail(...a),
+    username: (...a: unknown[]) => signInUsername(...a),
+    social: (...a: unknown[]) => signInSocial(...a),
+  },
   signUp: { email: (...a: unknown[]) => signUpEmail(...a) },
 }));
 
@@ -23,6 +29,8 @@ describe("LoginPage", () => {
   beforeEach(() => {
     push.mockClear();
     signInEmail.mockReset();
+    signInUsername.mockReset();
+    signInSocial.mockReset();
     signUpEmail.mockReset();
   });
 
@@ -52,5 +60,29 @@ describe("LoginPage", () => {
       expect(screen.getByRole("alert")).toHaveTextContent(/email ou mot de passe incorrect/i),
     );
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("student toggle routes login through signIn.username (not signIn.email)", async () => {
+    signInUsername.mockResolvedValueOnce({
+      data: { user: { role: "student" } },
+      error: null,
+    });
+
+    render(<LoginPage />);
+    fireEvent.click(screen.getByRole("button", { name: /^élève$/i }));
+    fireEvent.change(screen.getByLabelText(/identifiant/i), {
+      target: { value: "dev.eleve" },
+    });
+    fireEvent.change(screen.getByLabelText(/mot de passe/i), {
+      target: { value: "motdepasse123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /se connecter/i }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/student"));
+    expect(signInUsername).toHaveBeenCalledWith({
+      username: "dev.eleve",
+      password: "motdepasse123",
+    });
+    expect(signInEmail).not.toHaveBeenCalled();
   });
 });
