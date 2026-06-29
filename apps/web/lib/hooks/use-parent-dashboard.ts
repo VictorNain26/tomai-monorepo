@@ -35,7 +35,7 @@ export type ChildMetrics = DashboardResponse["metrics"][number];
 
 type EducationApi = ReturnType<typeof getTreaty>["api"]["education"];
 type LevelsResponse = ResponseData<EducationApi["levels"]["get"]>;
-type SchoolLevel = LevelsResponse["levels"][number];
+export type SchoolLevel = LevelsResponse["levels"][number];
 
 // ============================================================================
 // QUERY KEYS

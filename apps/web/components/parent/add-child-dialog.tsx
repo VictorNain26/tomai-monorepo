@@ -17,23 +17,17 @@ import {
   SelectValue,
   toast,
 } from "@repo/ui";
-import type { ICreateChildData } from "@/lib/hooks/use-parent-dashboard";
+import type { ICreateChildData, SchoolLevel } from "@/lib/hooks/use-parent-dashboard";
 import {
   validateChildForm,
   getLevelLabel,
   type ChildFormInput,
 } from "@/lib/validation/child";
 
-interface Level {
-  key: string;
-  ragAvailable: boolean;
-  subjectsCount: number;
-}
-
 interface AddChildDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  levels: Level[];
+  levels: SchoolLevel[];
   isCreating: boolean;
   createChild: (data: ICreateChildData) => Promise<unknown>;
 }
@@ -59,6 +53,7 @@ export function AddChildDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const levelKeys = levels.map((l) => l.key);
+  const defaultLevel = levelKeys[0] ?? "";
 
   function set<K extends keyof ChildFormInput>(key: K, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -83,7 +78,6 @@ export function AddChildDialog({
     e.preventDefault();
     setServerError(null);
 
-    const defaultLevel = levelKeys[0] ?? "";
     const input: ChildFormInput = {
       ...form,
       schoolLevel: form.schoolLevel || defaultLevel,
@@ -96,7 +90,7 @@ export function AddChildDialog({
     }
 
     try {
-      await createChild(result.data as ICreateChildData);
+      await createChild(result.data);
       toast.success(`${result.data.firstName} ${result.data.lastName} ajouté`);
       handleOpenChange(false);
     } catch (err) {
@@ -105,8 +99,6 @@ export function AddChildDialog({
       );
     }
   }
-
-  const defaultLevel = levelKeys[0] ?? "";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -216,7 +208,11 @@ export function AddChildDialog({
                 value={form.schoolLevel || defaultLevel}
                 onValueChange={(v) => set("schoolLevel", v)}
               >
-                <SelectTrigger id="add-level" aria-invalid={!!errors.schoolLevel}>
+                <SelectTrigger
+                  id="add-level"
+                  aria-invalid={!!errors.schoolLevel}
+                  aria-describedby={errors.schoolLevel ? "add-level-err" : undefined}
+                >
                   <SelectValue placeholder="Choisir…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -228,7 +224,9 @@ export function AddChildDialog({
                 </SelectContent>
               </Select>
               {errors.schoolLevel && (
-                <p className="text-xs text-destructive">{errors.schoolLevel}</p>
+                <p id="add-level-err" className="text-xs text-destructive">
+                  {errors.schoolLevel}
+                </p>
               )}
             </div>
           </div>

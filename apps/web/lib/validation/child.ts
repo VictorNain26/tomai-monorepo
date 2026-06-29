@@ -1,16 +1,7 @@
-export type SchoolLevelKey =
-  | "cp"
-  | "ce1"
-  | "ce2"
-  | "cm1"
-  | "cm2"
-  | "sixieme"
-  | "cinquieme"
-  | "quatrieme"
-  | "troisieme"
-  | "seconde"
-  | "premiere"
-  | "terminale";
+import type { ICreateChildData } from "@/lib/hooks/use-parent-dashboard";
+
+/** Derived from the Eden Treaty contract — single source of truth. */
+export type SchoolLevelKey = ICreateChildData["schoolLevel"];
 
 export const LEVEL_LABELS: Record<string, string> = {
   cp: "CP",
@@ -40,7 +31,9 @@ export type ChildFormInput = {
   schoolLevel: string;
 };
 
-export type ValidatedChildData = ChildFormInput;
+export type ValidatedChildData = Omit<ChildFormInput, "schoolLevel"> & {
+  schoolLevel: SchoolLevelKey;
+};
 
 export type ChildFormResult =
   | { ok: true; data: ValidatedChildData }
@@ -106,7 +99,8 @@ export function validateChildForm(
       username: input.username.trim().toLowerCase(),
       password: input.password,
       dateOfBirth: input.dateOfBirth,
-      schoolLevel: input.schoolLevel,
+      // levelKeys.includes check above guarantees the value is a valid SchoolLevelKey.
+      schoolLevel: input.schoolLevel as SchoolLevelKey,
     },
   };
 }

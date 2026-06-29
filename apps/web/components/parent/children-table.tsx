@@ -12,26 +12,17 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui";
-import type { IChild } from "@/lib/hooks/use-parent-dashboard";
+import type { IChild, SchoolLevel } from "@/lib/hooks/use-parent-dashboard";
 import { getLevelLabel, type SchoolLevelKey } from "@/lib/validation/child";
 import { EditChildDialog } from "./edit-child-dialog";
 import { ResetPasswordDialog } from "./reset-password-dialog";
 import { DeleteChildDialog } from "./delete-child-dialog";
 
-interface Level {
-  key: string;
-  ragAvailable: boolean;
-  subjectsCount: number;
-}
-
 type UpdateChildFn = (args: {
   childId: string;
   data: {
-    firstName?: string;
-    lastName?: string;
     password?: string;
     schoolLevel?: SchoolLevelKey;
-    dateOfBirth?: string;
   };
 }) => Promise<unknown>;
 
@@ -39,7 +30,7 @@ type DeleteChildFn = (childId: string) => Promise<unknown>;
 
 interface ChildrenTableProps {
   items: IChild[];
-  levels: Level[];
+  levels: SchoolLevel[];
   isLoading: boolean;
   isError: boolean;
   errorMessage: string | null;
@@ -175,7 +166,7 @@ export function ChildrenTable({
         open={resetChild !== null}
         onOpenChange={(open) => { if (!open) setResetChild(null); }}
         isUpdating={isUpdating}
-        updateChild={updateChild as (args: { childId: string; data: { password: string } }) => Promise<unknown>}
+        updateChild={updateChild}
       />
       <DeleteChildDialog
         child={deleteTarget}
