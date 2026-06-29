@@ -46,6 +46,11 @@ export function EditChildDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const levelKeys = levels.map((l) => l.key);
+  // The child's current level may not be ragAvailable (e.g. level added before
+  // RAG support). We still accept it to avoid blocking edits on unchanged data.
+  const currentLevelMissing =
+    !!child?.schoolLevel &&
+    !(levelKeys as string[]).includes(child.schoolLevel);
 
   function handleOpenChange(next: boolean) {
     if (!next) {
@@ -61,7 +66,11 @@ export function EditChildDialog({
     setServerError(null);
 
     const effective = schoolLevel || child.schoolLevel;
-    if (levelKeys.length > 0 && !(levelKeys as string[]).includes(effective)) {
+    const allowedKeys: string[] = [
+      ...levelKeys,
+      ...(child.schoolLevel ? [child.schoolLevel] : []),
+    ];
+    if (allowedKeys.length > 0 && !allowedKeys.includes(effective)) {
       setLevelError("Niveau scolaire invalide");
       return;
     }
@@ -112,6 +121,14 @@ export function EditChildDialog({
                 <SelectValue placeholder="Choisir…" />
               </SelectTrigger>
               <SelectContent>
+                {currentLevelMissing && child?.schoolLevel && (
+                  <SelectItem
+                    key={child.schoolLevel}
+                    value={child.schoolLevel}
+                  >
+                    {getLevelLabel(child.schoolLevel as SchoolLevelKey)}
+                  </SelectItem>
+                )}
                 {levels.map((l) => (
                   <SelectItem key={l.key} value={l.key}>
                     {getLevelLabel(l.key)}

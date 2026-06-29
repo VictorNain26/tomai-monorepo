@@ -9,11 +9,7 @@
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTreaty, unwrap, type ResponseData } from "@repo/api";
-import { useUser } from "@/lib/auth-client";
-
-// ============================================================================
-// TYPES — derived from the server contract (single source of truth)
-// ============================================================================
+import { useUserState } from "@/lib/auth-client";
 
 type ParentApi = ReturnType<typeof getTreaty>["api"]["parent"];
 
@@ -37,28 +33,15 @@ type EducationApi = ReturnType<typeof getTreaty>["api"]["education"];
 type LevelsResponse = ResponseData<EducationApi["levels"]["get"]>;
 export type SchoolLevel = LevelsResponse["levels"][number];
 
-// ============================================================================
-// QUERY KEYS
-// ============================================================================
-
 const queryKeys = {
   parent: {
     dashboard: ["parent", "dashboard"] as const,
-    children: ["parent", "children"] as const,
   },
   levels: ["education", "levels"] as const,
 };
 
-// ============================================================================
-// API FUNCTIONS
-// ============================================================================
-
 async function fetchDashboard(): Promise<DashboardResponse> {
   return unwrap(await getTreaty().api.parent.dashboard.get());
-}
-
-async function fetchChildren(): Promise<IChild[]> {
-  return unwrap(await getTreaty().api.parent.children.get());
 }
 
 async function fetchLevels(): Promise<SchoolLevel[]> {
@@ -90,25 +73,13 @@ async function deleteChildApi(childId: string): Promise<{ success: boolean }> {
   );
 }
 
-// ============================================================================
-// HOOK
-// ============================================================================
-
 export function useParentDashboard() {
   const queryClient = useQueryClient();
-  const user = useUser();
+  const { user, isPending: sessionPending } = useUserState();
 
   const dashboardQuery = useQuery({
     queryKey: queryKeys.parent.dashboard,
     queryFn: fetchDashboard,
-    enabled: !!user?.id,
-    staleTime: 60 * 1000,
-  });
-
-  const childrenQuery = useQuery({
-    queryKey: queryKeys.parent.children,
-    queryFn: fetchChildren,
-    select: (data): IChild[] => (Array.isArray(data) ? data : []),
     enabled: !!user?.id,
     staleTime: 60 * 1000,
   });
@@ -123,7 +94,6 @@ export function useParentDashboard() {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.parent.dashboard,
     });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.parent.children });
   }, [queryClient]);
 
   const createMutation = useMutation({
@@ -142,24 +112,19 @@ export function useParentDashboard() {
   });
 
   const dashboardData = dashboardQuery.data;
-  const children: IChild[] = dashboardData?.children ?? childrenQuery.data ?? [];
+  const children: IChild[] = dashboardData?.children ?? [];
   const metrics: ChildMetrics[] = dashboardData?.metrics ?? [];
 
   const totalSessions = metrics.reduce((sum, m) => sum + m.totalSessions, 0);
   const totalStudyTime = metrics.reduce((sum, m) => sum + m.totalStudyTime, 0);
   const activeChildren = children.filter((c) => c.isActive).length;
 
-  const errorMessage =
-    childrenQuery.error?.message ??
-    dashboardQuery.error?.message ??
-    null;
-
   return {
     children,
     childrenCount: children.length,
-    isLoading: childrenQuery.isLoading || dashboardQuery.isLoading,
-    isError: childrenQuery.isError || dashboardQuery.isError,
-    errorMessage,
+    isLoading: sessionPending || dashboardQuery.isLoading,
+    isError: dashboardQuery.isError,
+    errorMessage: dashboardQuery.error?.message ?? null,
 
     metrics,
     isLoadingMetrics: dashboardQuery.isLoading,

@@ -7,29 +7,17 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getTreaty, unwrap, type ResponseData } from "@repo/api";
-import { useUser } from "@/lib/auth-client";
-
-// ============================================================================
-// TYPES — derived from the server contract (single source of truth)
-// ============================================================================
+import { useUserState } from "@/lib/auth-client";
 
 type SubscriptionsApi = ReturnType<typeof getTreaty>["api"]["subscriptions"];
 export type SubscriptionStatusData = ResponseData<
   SubscriptionsApi["status"]["get"]
 >;
 
-// ============================================================================
-// QUERY KEYS
-// ============================================================================
-
 const queryKeys = {
   subscriptionStatus: (parentId: string) =>
     ["subscriptions", "status", parentId] as const,
 };
-
-// ============================================================================
-// API FUNCTION
-// ============================================================================
 
 async function fetchSubscriptionStatus(
   parentId: string
@@ -41,12 +29,8 @@ async function fetchSubscriptionStatus(
   );
 }
 
-// ============================================================================
-// HOOK
-// ============================================================================
-
 export function useSubscriptionStatus() {
-  const user = useUser();
+  const { user, isPending: sessionPending } = useUserState();
 
   const query = useQuery({
     queryKey: user?.id ? queryKeys.subscriptionStatus(user.id) : ([] as const),
@@ -57,7 +41,7 @@ export function useSubscriptionStatus() {
 
   return {
     data: query.data ?? null,
-    isLoading: query.isLoading,
+    isLoading: sessionPending || query.isLoading,
     isError: query.isError,
   };
 }

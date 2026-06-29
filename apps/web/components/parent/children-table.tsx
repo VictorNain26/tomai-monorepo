@@ -123,7 +123,7 @@ export function ChildrenTable({
                     variant="outline"
                     onClick={() => setEditChild(child)}
                     disabled={isUpdating || isDeleting}
-                    aria-label={`Modifier le profil de ${child.firstName} ${child.lastName}`}
+                    aria-label={`Modifier le niveau scolaire de ${child.firstName} ${child.lastName}`}
                   >
                     Modifier
                   </Button>

@@ -12,10 +12,6 @@ import {
 } from "@repo/ui";
 import type { IChild, ChildMetrics } from "@/lib/hooks/use-parent-dashboard";
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
 function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
@@ -27,18 +23,10 @@ function formatStudyTime(minutes: number): string {
   return m > 0 ? `${h}h${m}` : `${h}h`;
 }
 
-// ============================================================================
-// PROPS
-// ============================================================================
-
 interface ChildCardProps {
   child: IChild;
   metrics?: ChildMetrics;
 }
-
-// ============================================================================
-// COMPONENT
-// ============================================================================
 
 export function ChildCard({ child, metrics }: ChildCardProps) {
   const initials = getInitials(child.firstName, child.lastName);

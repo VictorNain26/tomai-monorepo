@@ -20,3 +20,9 @@ export const { signIn, signUp, signOut, useSession } = authClient;
 export function useUser() {
   return useSession().data?.user ?? null;
 }
+
+/** Returns the current user and whether the session is still resolving. */
+export function useUserState() {
+  const { data, isPending } = useSession();
+  return { user: data?.user ?? null, isPending };
+}

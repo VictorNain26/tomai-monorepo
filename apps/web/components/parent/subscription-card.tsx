@@ -11,10 +11,6 @@ import {
 } from "@repo/ui";
 import { useSubscriptionStatus } from "@/lib/hooks/use-subscription-status";
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
 function planLabel(plan: string): string {
   return plan === "premium" ? "Premium" : "Gratuit";
 }
@@ -33,10 +29,6 @@ function statusLabel(status: string): string {
       return status;
   }
 }
-
-// ============================================================================
-// COMPONENT
-// ============================================================================
 
 export function SubscriptionCard() {
   const { data, isLoading, isError } = useSubscriptionStatus();

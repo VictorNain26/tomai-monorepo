@@ -6,10 +6,6 @@ import { useParentDashboard } from "@/lib/hooks/use-parent-dashboard";
 import { ChildCard } from "@/components/parent/child-card";
 import { SubscriptionCard } from "@/components/parent/subscription-card";
 
-// ============================================================================
-// LOADING STATE
-// ============================================================================
-
 function DashboardSkeleton() {
   return (
     <div className="flex flex-col gap-6" aria-busy="true" aria-label="Chargement du tableau de bord">
@@ -25,10 +21,6 @@ function DashboardSkeleton() {
     </div>
   );
 }
-
-// ============================================================================
-// PAGE
-// ============================================================================
 
 export default function ParentDashboardPage() {
   const {
