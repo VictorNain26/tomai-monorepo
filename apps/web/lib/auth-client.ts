@@ -15,4 +15,8 @@ const baseURL = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
 const authClient = createAuthClient({ baseURL });
 
-export const { signIn, signUp, signOut } = authClient;
+export const { signIn, signUp, signOut, useSession } = authClient;
+
+export function useUser() {
+  return useSession().data?.user ?? null;
+}

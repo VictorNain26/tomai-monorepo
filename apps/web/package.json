@@ -15,8 +15,10 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@repo/api": "workspace:*",
     "@repo/tokens": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@tanstack/react-query": "^5.90.20",
     "better-auth": "^1.6.13",
     "lucide-react": "catalog:",
     "next": "^16.2.6",
