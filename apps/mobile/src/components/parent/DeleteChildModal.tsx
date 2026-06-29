@@ -16,7 +16,6 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { X, AlertTriangle, Trash2 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
@@ -79,7 +78,7 @@ export function DeleteChildModal({
         className="flex-1"
       >
         <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: bgColors.black[60] }}>
-          <SafeAreaView className="w-full max-w-sm">
+          <View className="w-full max-w-sm">
             <View className="rounded-2xl bg-card">
               {/* Header */}
               <View className="flex-row items-center justify-between border-b border-border p-4">
@@ -186,7 +185,7 @@ export function DeleteChildModal({
                 </View>
               </View>
             </View>
-          </SafeAreaView>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>

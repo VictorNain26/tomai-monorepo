@@ -17,7 +17,7 @@ import { useState, useCallback } from 'react';
 import { View, ScrollView, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -212,22 +212,22 @@ export default function PronoteManageScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background">
+      <Screen edges={['top', 'bottom']} className="items-center justify-center">
         <Text variant="muted">Chargement...</Text>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background px-6">
+      <Screen edges={['top', 'bottom']} className="items-center justify-center px-6">
         <Text className="mb-4 text-center text-destructive">
           Impossible de charger les établissements Pronote.
         </Text>
         <Button variant="outline" onPress={() => router.back()}>
           <Text>Retour</Text>
         </Button>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
@@ -235,7 +235,7 @@ export default function PronoteManageScreen() {
 
   if (credentials.length === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background px-6">
+      <Screen edges={['top', 'bottom']} className="items-center justify-center px-6">
         <Text variant="large" className="mb-2 text-center font-bold">
           Aucun établissement connecté
         </Text>
@@ -249,14 +249,14 @@ export default function PronoteManageScreen() {
         >
           <Text className="font-semibold text-primary-foreground">Connecter Pronote</Text>
         </Button>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   // ── Main list ───────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen edges={['top', 'bottom']}>
       <ScrollView
         className="flex-1 px-4"
         contentContainerClassName="py-5"
@@ -321,6 +321,6 @@ export default function PronoteManageScreen() {
           <Text className="font-medium">+ Connecter un autre établissement</Text>
         </Button>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

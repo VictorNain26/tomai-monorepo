@@ -62,9 +62,9 @@ jest.mock('@/components/ui/card', () => {
   return { Card: ({ children }: { children: React.ReactNode }) => <View>{children}</View> };
 });
 
-jest.mock('@/components/ui/safe-area-view', () => {
+jest.mock('@/components/ui/screen', () => {
   const { View } = require('react-native');
-  return { SafeAreaView: View };
+  return { Screen: View };
 });
 
 jest.mock('@/lib/styles', () => ({

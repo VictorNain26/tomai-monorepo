@@ -6,7 +6,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
@@ -44,7 +44,7 @@ export default function ChildHomeworkScreen() {
   }, [pronote, id]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <View className="flex-row items-center gap-3">
@@ -100,6 +100,6 @@ export default function ChildHomeworkScreen() {
       >
         <HomeworkView homework={filteredHomework} isLoading={refreshing} />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

@@ -10,7 +10,7 @@
  */
 
 import { View, ScrollView, RefreshControl, Pressable } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useState, useCallback, useMemo } from 'react';
 import { Link2, Brain } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -146,7 +146,7 @@ export default function StudentDashboard() {
   const firstName = userName?.split(' ')[0] ?? 'Élève';
 
   return (
-    <SafeAreaView testID="student-dashboard" className="flex-1 bg-background">
+    <Screen testID="student-dashboard">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -225,6 +225,6 @@ export default function StudentDashboard() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

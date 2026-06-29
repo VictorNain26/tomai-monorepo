@@ -45,9 +45,9 @@ jest.mock('@/components/chat', () => ({
   ChatErrorBanner: () => null,
 }));
 
-jest.mock('@/components/ui/safe-area-view', () => {
+jest.mock('@/components/ui/screen', () => {
   const { View } = require('react-native');
-  return { SafeAreaView: View };
+  return { Screen: View };
 });
 
 jest.mock('@/components/ui/skeleton', () => {
