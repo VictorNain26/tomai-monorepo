@@ -15,7 +15,7 @@ export function ChatMessageList({ messages }: { messages: ChatMessage[] }) {
     <div
       role="log"
       aria-label="Conversation"
-      className="flex flex-col gap-3 overflow-y-auto px-4 py-4"
+      className="flex flex-col gap-3 px-4 py-4"
     >
       {messages.map((message) => (
         <ChatMessageItem key={message.id} message={message} />

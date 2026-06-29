@@ -20,13 +20,13 @@ interface DashboardShellProps {
  */
 export function DashboardShell({ role, nav, children }: DashboardShellProps) {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-card p-4">
         <div className="mb-6 px-2">
           <p className="text-lg font-bold">Tom</p>
           <p className="text-sm text-muted-foreground">{ROLE_LABEL[role]}</p>
         </div>
-        <nav className="flex flex-1 flex-col gap-1">
+        <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
           {nav.map((item) => (
             <Link
               key={item.href}
@@ -39,7 +39,7 @@ export function DashboardShell({ role, nav, children }: DashboardShellProps) {
         </nav>
         <LogoutButton />
       </aside>
-      <main className="flex-1 p-8">{children}</main>
+      <main className="min-w-0 flex-1 overflow-y-auto p-8">{children}</main>
     </div>
   );
 }

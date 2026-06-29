@@ -12,6 +12,9 @@ async function getMermaid() {
       securityLevel: "strict",
       theme: "default",
       fontFamily: "inherit",
+      // Taille naturelle du schéma (sinon il est écrasé pour tenir dans la
+      // bulle, rendant les frises illisibles) ; le conteneur scrolle en X.
+      flowchart: { useMaxWidth: false },
     });
     initialized = true;
   }
@@ -58,7 +61,7 @@ export function MermaidDiagram({ chart }: { chart: string }) {
 
   return (
     <div
-      className="my-2 flex justify-center overflow-x-auto"
+      className="my-3 overflow-x-auto"
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
