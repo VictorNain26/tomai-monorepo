@@ -92,7 +92,12 @@ export default function LoginPage() {
     setError(null);
     setGoogleLoading(true);
     try {
-      const result = await signIn.social({ provider: "google", callbackURL: "/parent" });
+      // callbackURL must be absolute: Better Auth resolves a relative value
+      // against the auth server origin (:3000), not the web app (:3002).
+      const result = await signIn.social({
+        provider: "google",
+        callbackURL: `${window.location.origin}/parent`,
+      });
       if (result.error) {
         setError(translateAuthError(result.error));
       }
