@@ -14,7 +14,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,10 +24,14 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result =
-        mode === "signin"
-          ? await signIn.email({ email, password })
-          : await signUp.email({ email, password, name });
+      let result;
+      if (mode === "signup") {
+        result = await signUp.email({ email: identifier, password, name });
+      } else if (identifier.includes("@")) {
+        result = await signIn.email({ email: identifier, password });
+      } else {
+        result = await signIn.username({ username: identifier, password });
+      }
 
       if (result.error) {
         setError(translateAuthError(result.error));
@@ -84,17 +88,17 @@ export default function LoginPage() {
               </div>
             )}
             <div className="flex flex-col gap-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
+              <label htmlFor="identifier" className="text-sm font-medium">
+                {mode === "signin" ? "Email ou identifiant" : "Email"}
               </label>
               <input
-                id="email"
-                type="email"
+                id="identifier"
+                type="text"
                 required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="vous@exemple.fr"
+                autoComplete={mode === "signin" ? "username" : "email"}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder={mode === "signin" ? "vous@exemple.fr ou identifiant" : "vous@exemple.fr"}
                 aria-describedby={error ? "login-error" : undefined}
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />

@@ -10,10 +10,11 @@
  * @see https://www.better-auth.com/docs/concepts/client
  */
 import { createAuthClient } from "better-auth/react";
+import { usernameClient } from "better-auth/client/plugins";
 
 const baseURL = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
-const authClient = createAuthClient({ baseURL });
+const authClient = createAuthClient({ baseURL, plugins: [usernameClient()] });
 
 export const { signIn, signUp, signOut, useSession } = authClient;
 

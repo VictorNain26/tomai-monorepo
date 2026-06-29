@@ -2,6 +2,7 @@ import { DashboardShell, type NavItem } from "@/components/dashboard-shell";
 
 const nav: NavItem[] = [
   { href: "/student", label: "Accueil" },
+  { href: "/student/chat", label: "Chat" },
   { href: "/student/revisions", label: "Révisions" },
 ];
 
