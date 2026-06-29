@@ -13,6 +13,7 @@ import { chatSessionService } from './chat-session.service.js';
 import { chatMessageService } from './chat-message.service.js';
 import { sessionFilesRepository, studySessionsRepository } from '../../db/repositories/index.js';
 import { resolveEffectiveSubject, shouldPersistDetectedSubject } from './subject-resolution.js';
+import { STUDENT_SUBJECTS } from '../../config/prompts/adaptation/subjects.js';
 import { fileContextService } from './file-context.service.js';
 import { mistralChatService } from './mistral-chat.service.js';
 import { getLearningContext } from './mistral-helpers.js';
@@ -103,10 +104,17 @@ class ChatOrchestrationService {
     // session's stored subject then the client hint. Persist on the first
     // confident detection (anti-thrash) so the conversation gets a real subject.
     const detectedSubject = classifiedIntent.subject;
+    // Boundary validation : seul un sujet canonique du hint client peut servir
+    // de label de prompt ; tout free-form est ignoré (le sujet détecté est
+    // enum-safe et reste le signal primaire).
+    const requestedSubject =
+      request.subject && (STUDENT_SUBJECTS as readonly string[]).includes(request.subject)
+        ? request.subject
+        : undefined;
     const effectiveSubject = resolveEffectiveSubject({
       detected: detectedSubject,
       sessionSubject: sessionCtx.subject,
-      requested: request.subject,
+      requested: requestedSubject,
     });
     if (detectedSubject && shouldPersistDetectedSubject({ detected: detectedSubject, sessionSubject: sessionCtx.subject })) {
       void studySessionsRepository

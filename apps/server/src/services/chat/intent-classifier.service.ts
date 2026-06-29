@@ -35,7 +35,7 @@ export type StudentIntent =
 export interface ClassifiedIntent {
   intent: StudentIntent;
   confidence: 'low' | 'medium' | 'high';
-  subject?: StudentSubject;
+  subject: StudentSubject;
   /** Populated when the classifier itself failed — callers can log/alert. */
   error?: string;
 }
@@ -114,7 +114,7 @@ class IntentClassifierService {
     const startTime = Date.now();
     try {
       const parsed = await generateStructured<{ intent?: string; confidence?: string; subject?: string }>({
-        model: env.MISTRAL_MODEL_CLASSIFY,  // ADR-0001 : classification 5 catégories, output 80 tokens
+        model: env.MISTRAL_MODEL_CLASSIFY,  // ADR-0001 : classification intention + matière, output 96 tokens
         messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
         temperature: 0,
         maxTokens: 96,
@@ -159,7 +159,7 @@ class IntentClassifierService {
    * prompt when the classifier detected a risky intent. Returns `null` when
    * no reinforcement is needed.
    */
-  buildReinforcement(intent: ClassifiedIntent): string | null {
+  buildReinforcement(intent: Pick<ClassifiedIntent, 'intent' | 'confidence'>): string | null {
     if (intent.intent === 'solve-this-for-me' && intent.confidence !== 'low') {
       return `<critical_instruction>
 L'élève vient de demander que tu fasses l'exercice à sa place. Tu NE donnes PAS
