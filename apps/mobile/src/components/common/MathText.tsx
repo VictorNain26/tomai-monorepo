@@ -35,6 +35,30 @@ interface ParsedSegment {
 }
 
 // ============================================================================
+// DELIMITER NORMALIZATION
+// ============================================================================
+
+/**
+ * Le backend (Mistral) émet les maths en `\(…\)` / `\[…\]` alors que le parser
+ * ci-dessous ne lit que `$…$` / `$$…$$`. On convertit les délimiteurs, en
+ * laissant intacts les blocs de code (``` fences ```) et le code inline (`…`).
+ */
+export function normalizeMathDelimiters(input: string): string {
+  return input
+    .split(/(```[\s\S]*?```|`[^`\n]*`)/g)
+    .map((part, i) => (i % 2 === 0 ? convertDelimiters(part) : part))
+    .join('');
+}
+
+function convertDelimiters(text: string): string {
+  return text
+    .replace(/\\\[/g, () => '$$')
+    .replace(/\\\]/g, () => '$$')
+    .replace(/\\\(/g, () => '$')
+    .replace(/\\\)/g, () => '$');
+}
+
+// ============================================================================
 // MATH DETECTION
 // ============================================================================
 
@@ -42,19 +66,21 @@ interface ParsedSegment {
  * Check if text contains any LaTeX math expressions
  */
 export function containsMath(text: string): boolean {
+  const t = normalizeMathDelimiters(text);
   // Block math: $$...$$
-  if (/\$\$[\s\S]+?\$\$/.test(text)) return true;
+  if (/\$\$[\s\S]+?\$\$/.test(t)) return true;
   // Inline math: $...$ (not $$)
-  if (/(?<!\$)\$(?!\$).+?(?<!\$)\$(?!\$)/.test(text)) return true;
+  if (/(?<!\$)\$(?!\$).+?(?<!\$)\$(?!\$)/.test(t)) return true;
   // LaTeX commands
-  if (/\\(frac|sqrt|int|sum|prod|lim|sin|cos|tan|log|ln|exp|alpha|beta|gamma|delta|pi|theta|omega|infty|partial|nabla|vec|hat|bar|dot|ddot)\b/.test(text)) return true;
+  if (/\\(frac|sqrt|int|sum|prod|lim|sin|cos|tan|log|ln|exp|alpha|beta|gamma|delta|pi|theta|omega|infty|partial|nabla|vec|hat|bar|dot|ddot)\b/.test(t)) return true;
   return false;
 }
 
 /**
  * Parse text into segments of plain text and math
  */
-function parseContent(text: string): ParsedSegment[] {
+function parseContent(rawText: string): ParsedSegment[] {
+  const text = normalizeMathDelimiters(rawText);
   const segments: ParsedSegment[] = [];
   const mathRegex = /(\$\$[\s\S]+?\$\$)|(\$[^$\n]+?\$)/g;
 
