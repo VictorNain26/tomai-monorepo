@@ -135,6 +135,18 @@ export function useChat() {
       const ac = new AbortController();
       abortRef.current = ac;
 
+      function handleStreamError(msg: string) {
+        setError(msg);
+        // Remove the assistant placeholder if nothing was streamed yet
+        setMessages((prev) => {
+          const placeholder = prev.find((m) => m.id === assistantMessageId);
+          return placeholder?.content === ""
+            ? prev.filter((m) => m.id !== assistantMessageId)
+            : prev;
+        });
+        setIsStreaming(false);
+      }
+
       void streamChat(
         {
           content: trimmed,
@@ -151,17 +163,7 @@ export function useChat() {
             );
           },
           onStatus: (s) => setStreamStatus(s),
-          onError: (msg) => {
-            setError(msg);
-            // Remove the assistant placeholder if nothing was streamed yet
-            setMessages((prev) => {
-              const placeholder = prev.find((m) => m.id === assistantMessageId);
-              return placeholder?.content === ""
-                ? prev.filter((m) => m.id !== assistantMessageId)
-                : prev;
-            });
-            setIsStreaming(false);
-          },
+          onError: handleStreamError,
           onDone: () => {
             setIsStreaming(false);
             setStreamStatus("");
@@ -169,10 +171,11 @@ export function useChat() {
         },
         ac.signal
       ).catch((err: unknown) => {
-        if (err instanceof ChatStreamError) {
-          setError(err.message);
-        }
-        setIsStreaming(false);
+        const msg =
+          err instanceof ChatStreamError
+            ? err.message
+            : "Le chat est indisponible. Réessaie.";
+        handleStreamError(msg);
       });
     },
     [isStreaming, user]
@@ -197,8 +200,8 @@ export function useChat() {
               data.sessionId
             );
           }
-        } catch {
-          // Server reset failed — local state is still cleared below
+        } catch (err) {
+          console.error("[useChat] reset failed", err);
         }
       }
     })();

@@ -95,7 +95,7 @@ export default function LoginPage() {
                 id="identifier"
                 type="text"
                 required
-                autoComplete="username"
+                autoComplete={mode === "signin" ? "username" : "email"}
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder={mode === "signin" ? "vous@exemple.fr ou identifiant" : "vous@exemple.fr"}

@@ -1,7 +1,6 @@
 "use client";
 
-import { Skeleton } from "@repo/ui";
-import { Button } from "@repo/ui";
+import { Skeleton, Button } from "@repo/ui";
 import { useChat } from "@/lib/hooks/use-chat";
 import { ChatMessageList } from "@/components/student/chat/chat-message-list";
 import { ChatInput } from "@/components/student/chat/chat-input";
