@@ -29,12 +29,21 @@ type ChatStreamChunk =
   | ErrorChunk
   | DeckCreatedChunk;
 
+const VALID_TYPES = new Set([
+  "content",
+  "status",
+  "done",
+  "error",
+  "deck_created",
+]);
+
 function parseChunk(raw: unknown): ChatStreamChunk | null {
   if (
     typeof raw !== "object" ||
     raw === null ||
     !("type" in raw) ||
-    typeof (raw as Record<string, unknown>).type !== "string"
+    typeof (raw as Record<string, unknown>).type !== "string" ||
+    !VALID_TYPES.has((raw as Record<string, unknown>).type as string)
   ) {
     return null;
   }
@@ -60,9 +69,8 @@ export async function streamChat(
     : internalAbort.signal;
 
   // Propagate external abort into internal controller
-  signal.addEventListener("abort", () => internalAbort.abort(signal.reason), {
-    once: true,
-  });
+  const onExternalAbort = () => internalAbort.abort(signal.reason);
+  signal.addEventListener("abort", onExternalAbort, { once: true });
 
   const res = await fetch(`${getBaseUrl()}/api/chat/stream`, {
     method: "POST",
@@ -81,17 +89,24 @@ export async function streamChat(
   });
 
   if (!res.ok || !res.body) {
-    const err = await res.json().catch(() => null) as {
-      error?: { code?: string; message?: string };
-      usage?: unknown;
-    } | null;
-    const code = err?.error?.code;
+    const body: unknown = await res.json().catch(() => null);
+    const errorField =
+      typeof body === "object" &&
+      body !== null &&
+      "error" in body &&
+      typeof (body as Record<string, unknown>).error === "object"
+        ? ((body as Record<string, unknown>).error as Record<string, unknown>)
+        : null;
+    const code =
+      typeof errorField?.code === "string" ? errorField.code : undefined;
+    const serverMessage =
+      typeof errorField?.message === "string" ? errorField.message : undefined;
     const message =
       code === "QUOTA_EXCEEDED"
         ? "Quota de questions atteint."
         : code === "CONCURRENT_STREAM"
           ? "Une réponse est déjà en cours."
-          : (err?.error?.message ?? "Le chat est indisponible.");
+          : (serverMessage ?? "Le chat est indisponible.");
     throw new ChatStreamError(message, code);
   }
 
@@ -170,8 +185,12 @@ export async function streamChat(
         }
       }
     }
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") return;
+    throw err;
   } finally {
     cleanup();
+    signal.removeEventListener("abort", onExternalAbort);
     reader.releaseLock();
   }
 }
