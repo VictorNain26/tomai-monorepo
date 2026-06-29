@@ -3,8 +3,9 @@
  *
  * Best Practice 2026:
  * - Si pas de résumé → retourner l'historique tel quel (backward compatible)
- * - Si résumé disponible → injecter un message synthétique de résumé + historique récent
- * - Budget tokens géré par truncation intelligente (sentence-aware)
+ * - Si résumé disponible → retourner UNIQUEMENT la fenêtre verbatim récente (≤ RECENT_WINDOW_SIZE)
+ * - Le texte du résumé synthétique est injecté en amont (chat-message-assembler), PAS ici
+ * - Budget tokens géré par truncation intelligente
  */
 
 import type { IAIMessage, OptimizationContext } from './types.js';
@@ -19,8 +20,8 @@ const RECENT_WINDOW_SIZE = 10;
  * Optimise l'historique conversationnel avec le pattern SummaryBuffer.
  *
  * - Sans résumé: retourne l'historique tel quel (backward compatible)
- * - Avec résumé: [message résumé synthétique] + [N derniers messages verbatim]
- * - Budget tokens respecté via truncation intelligente
+ * - Avec résumé: retourne UNIQUEMENT la fenêtre verbatim récente (≤ RECENT_WINDOW_SIZE), tronquée au budget
+ * - Le résumé synthétique est injecté séparément en amont (chat-message-assembler)
  */
 export function optimizeConversationHistory(
   history: IAIMessage[],
