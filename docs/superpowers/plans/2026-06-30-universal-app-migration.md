@@ -6,6 +6,14 @@
 
 **Principe anti-conflit :** pas de coexistence longue de deux stacks conso. On construit l'universel **jusqu'à parité** pendant que `apps/web` continue de tourner, puis **un seul cutover** supprime `apps/web` + réconcilie la doc.
 
+## Périmètre tech : ce qu'on garde vs ce qu'on rebâtit
+
+On rebâtit **là où ça paie**, on garde **ce qui est déjà optimal** (revisiter une techno saine = temps perdu).
+
+- **Gardé (asset, pas legacy)** : backend Bun + Elysia + Drizzle + **Eden Treaty** (le partage de types end-to-end est ce qui rend l'universel DRY) ; AI/RAG souverain EU (Mistral, Qdrant, BGE-M3) ; monorepo Turborepo + pnpm ; `@repo/api`, `@repo/tokens` ; `@repo/ui` (shadcn) **pour la landing + futur B2B**.
+- **Rebâti à neuf (pas porté)** : le front conso. Vu la latitude « supprimer/reprendre », on **réécrit proprement** les écrans conso dans l'app universelle (plus net qu'un port ligne à ligne), puis suppression en bloc de `apps/web`.
+- **UI universelle** : **NativeWind + React Native Reusables** (équivalent shadcn pour RN, déjà la techno mobile, compile en CSS sur web) + `@repo/tokens` → un seul système de composants web + mobile.
+
 ---
 
 ## Phase 1 — `@repo/chat-core` (logique partagée) — *sans regret*
@@ -38,9 +46,9 @@
 
 ---
 
-## Phase 3 — Parité conso sur l'app universelle
+## Phase 3 — Parité conso sur l'app universelle (rebâtie à neuf)
 
-**Livrables :** migrer tous les écrans conso restants vers la cible web de l'app universelle, à **parité fonctionnelle** avec `apps/web` :
+**Livrables :** **rebâtir à neuf** (pas porter) les écrans conso dans l'app universelle, à **parité fonctionnelle** avec `apps/web` :
 - auth/login,
 - dashboard parent (Lot 1),
 - chat élève complet + liste de conversations (Lot 2),
