@@ -6,6 +6,7 @@ import { educationApiRoutes } from './education.routes';
 import { progressApiRoutes } from './progress.routes';
 import { pushTokenApiRoutes } from './push-token.routes';
 import { sessionFilesApiRoutes } from './session-files.routes';
+import { studentApiRoutes } from './student.routes';
 
 export const apiRoutes = new Elysia({ name: 'api-routes' })
 
@@ -24,4 +25,5 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
     .use(progressApiRoutes)
     .use(pushTokenApiRoutes)
     .use(sessionFilesApiRoutes)
+    .use(studentApiRoutes)
   );
