@@ -23,7 +23,7 @@ Sources : [Expo static rendering](https://docs.expo.dev/router/web/static-render
 2. **`apps/landing`** reste **Next.js** (marketing/SEO/RSC) — aucun overlap mobile, rien à mutualiser. Garde `@repo/ui` (shadcn).
 3. **Console B2B établissement** (futur) = **app Next.js dédiée** le jour venu (desktop dense : tables, reporting — là où RNW est faible). Pas d'overlap mobile.
 4. **Pronote** = module **natif-only** dans l'app universelle (gate plateforme). Les credentials chiffrés ne touchent jamais le web (plus sûr).
-5. **Logique partagée** dans `@repo/chat-core` (hooks headless TanStack Query, validation, formatage) + `@repo/api` + `@repo/tokens` existants.
+5. **Pas de nouveau package de logique partagée.** Un seul codebase = les hooks/écrans conso vivent dans l'app et sont **réutilisés tels quels** (`apps/mobile` les contient déjà). Les coutures plateforme (streaming SSE, storage) se gèrent **dans l'app** via la convention native Expo `.web.ts`/`.native.ts` — pas d'abstraction maison. On garde les packages partagés légitimes : `@repo/api` (types Eden), `@repo/tokens`.
 
 **`apps/web` (Next.js conso) est supprimé au cutover** — pas de coexistence longue.
 
@@ -32,7 +32,7 @@ Sources : [Expo static rendering](https://docs.expo.dev/router/web/static-render
 - **Devient legacy → supprimé au cutover (phase dédiée, pas laissé en place)** :
   - `apps/web` (toute l'app conso Next.js : auth/login, dashboard parent Lot 1, chat Lot 2).
   - Les usages de `@repo/ui` **dans la conso** (pas dans la landing : `@repo/ui` **reste** pour landing + futur B2B).
-- **L'app universelle** : `apps/mobile` gagne la cible web (Expo Router web, static rendering + métadonnées) et accueille les écrans conso migrés. Renommée **`apps/app`** au cutover (le nom « mobile » deviendrait trompeur = source de confusion future).
+- **L'app universelle** : `apps/mobile` (qui contient **déjà** tout le produit conso — hooks + écrans) gagne la cible web (Expo Router web, static rendering + métadonnées) ; ses écrans existants servent le web (**réutilisés, pas recréés**), avec adaptation responsive + coutures plateforme. Renommée **`apps/app`** au cutover (le nom « mobile » deviendrait trompeur = source de confusion future).
 - **Déploiement** : web Expo → Vercel ou EAS Hosting ; natif → EAS (inchangé). La landing → Vercel (inchangé).
 - **Doc réconciliée à l'état final (zéro contradiction)** : `apps/web/CLAUDE.md` supprimé ; `apps/mobile/CLAUDE.md` → `apps/app/CLAUDE.md` réécrit (universel, plus « jamais de composants partagés avec le web ») ; `CLAUDE.md` racine (table stack + walk-up) mis à jour ; specs/plans web obsolètes marqués *superseded* ; mémoires mises à jour. Pointeur vers cet ADR.
 - **Auth** : Better Auth cross-origin déjà en place côté web — à valider sur cible Expo-web (cookies/session) dès le pilote.
@@ -42,7 +42,7 @@ Sources : [Expo static rendering](https://docs.expo.dev/router/web/static-render
 - **RNW faible en desktop dense** → on n'y met **pas** le B2B (reste Next.js). Le conso (chat, cartes, dashboards simples) mappe bien sur RNW.
 - **Expo SSR/RSC alpha/preview** → sans impact : derrière auth, **static rendering** suffit ; le SEO vit dans la landing Next.js.
 - **a11y / interactions web complexes sur RNW** → à mesurer **au pilote** (gate go/no-go) avant la bascule complète.
-- **Coût de réécriture des écrans conso** → minimal **maintenant** (2 lots web seulement) ; chaque lot Next.js ajouté ensuite renchérit la bascule → fenêtre la moins chère = maintenant.
+- **Coût** → on ne réécrit **pas** le conso (les écrans mobile existent et sont réutilisés sur web) ; le coût = activer la cible web + adapter responsive/coutures plateforme + supprimer le doublon `apps/web`. Minimal **maintenant** (`apps/web` n'a que 2 lots) ; chaque lot Next.js ajouté ensuite renchérit la suppression du doublon → fenêtre la moins chère = maintenant.
 
 ## Alternatives écartées
 
