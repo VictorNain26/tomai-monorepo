@@ -1,17 +1,18 @@
 /**
- * useChat Hook (web)
+ * useChat Hook (web) — piloté par la conversation active (`sessionId`).
  *
- * Orchestrates session creation, history load, and SSE streaming for the
- * student chat. Session is created lazily on first user load; history is
- * fetched once and merged into local state. Streaming state is managed
- * locally so the UI can update incrementally without React Query involvement.
+ * La conversation active est fournie par le container (page chat) ; ce hook
+ * charge l'historique de cette conversation et gère le streaming SSE en state
+ * local pour un rendu incrémental. La création / rotation de conversation
+ * vit dans useConversations (non destructif).
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTreaty, unwrap } from "@repo/api";
+import { getTreaty, unwrap, type ResponseData } from "@repo/api";
 import { useUser } from "@/lib/auth-client";
 import { streamChat, ChatStreamError } from "@/lib/chat/stream-chat";
+import { chatQueryKeys } from "@/lib/chat/chat-keys";
 
 export type ChatMessage = {
   id: string;
@@ -28,30 +29,17 @@ type ExtendedUser = BaseUser & {
 };
 
 type ChatApi = ReturnType<typeof getTreaty>["api"]["chat"];
-type HistoryMessage = NonNullable<
-  Awaited<
-    ReturnType<ReturnType<ChatApi["session"]>["history"]["get"]>
-  >["data"]
->["messages"][number];
-
-const queryKeys = {
-  session: (userId: string) => ["chat", "session", userId] as const,
-  history: (sessionId: string) => ["chat", "history", sessionId] as const,
-};
-
-async function fetchOrCreateSession(): Promise<string> {
-  const data = unwrap(await getTreaty().api.chat.session.post());
-  return data.sessionId;
-}
+type SessionById = ReturnType<ChatApi["session"]>;
+type HistoryMessage = ResponseData<SessionById["history"]["get"]>["messages"][number];
 
 async function fetchHistory(sessionId: string): Promise<HistoryMessage[]> {
   const data = unwrap(
-    await getTreaty().api.chat.session({ id: sessionId }).history.get()
+    await getTreaty().api.chat.session({ id: sessionId }).history.get(),
   );
   return data.messages;
 }
 
-export function useChat() {
+export function useChat({ sessionId }: { sessionId: string | null }) {
   const user = useUser() as ExtendedUser | null;
   const queryClient = useQueryClient();
 
@@ -59,67 +47,57 @@ export function useChat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamStatus, setStreamStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  // Track which session's history has been synced into local state
   const [syncedSessionId, setSyncedSessionId] = useState<string | null>(null);
 
-  // Mutable refs: no re-render needed on change
-  const sessionIdRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // 1. getOrCreate session
-  const sessionQuery = useQuery({
-    queryKey: queryKeys.session(user?.id ?? ""),
-    queryFn: fetchOrCreateSession,
-    enabled: !!user?.id,
-    staleTime: Infinity,
-  });
-
-  const currentSessionId = sessionQuery.data ?? null;
-
-  useEffect(() => {
-    if (currentSessionId) {
-      sessionIdRef.current = currentSessionId;
-    }
-  }, [currentSessionId]);
-
-  // 2. Load history once we have a session ID
   const historyQuery = useQuery({
-    queryKey: queryKeys.history(currentSessionId ?? "__none__"),
-    queryFn: () => fetchHistory(currentSessionId!),
-    enabled: !!currentSessionId,
+    queryKey: chatQueryKeys.history(sessionId ?? "__none__"),
+    queryFn: () => fetchHistory(sessionId!),
+    enabled: !!sessionId,
     staleTime: Infinity,
   });
 
-  // Sync server history into local messages state.
-  // React 19 pattern: update state during render (not in useEffect) so the
-  // first render after data arrives already shows the history.
-  if (
-    historyQuery.data &&
-    currentSessionId &&
-    syncedSessionId !== currentSessionId
-  ) {
-    setSyncedSessionId(currentSessionId);
+  // Detect conversation switch during render and reset per-conversation state
+  // (React 19 pattern: batched state updates during render, avoids calling
+  // setState inside an effect — set-state-in-effect lint rule).
+  const [prevSessionId, setPrevSessionId] = useState<string | null>(null);
+  if (prevSessionId !== sessionId) {
+    setPrevSessionId(sessionId);
+    setMessages([]);
+    setSyncedSessionId(null);
+    setError(null);
+    setIsStreaming(false);
+    setStreamStatus("");
+  }
+
+  // Effect: side effect only — abort any in-flight SSE stream when the
+  // conversation switches (no setState here to satisfy set-state-in-effect).
+  useEffect(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, [sessionId]);
+
+  // Populate from server history once it arrives (React 19: state update during
+  // render so the first render after data lands already shows the history).
+  if (historyQuery.data && sessionId && syncedSessionId !== sessionId) {
+    setSyncedSessionId(sessionId);
     setMessages(
       historyQuery.data.map((m) => ({
         id: m.id,
         role: m.role as "user" | "assistant",
         content: m.content,
-      }))
+      })),
     );
   }
 
-  // Abort any in-flight stream on unmount
-  useEffect(() => {
-    return () => {
-      abortRef.current?.abort();
-    };
-  }, []);
+  // Abort on unmount
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const sendMessage = useCallback(
     (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || isStreaming || !user) return;
+      if (!trimmed || isStreaming || !user || !sessionId) return;
 
       const userMessageId = crypto.randomUUID();
       const assistantMessageId = crypto.randomUUID();
@@ -137,7 +115,6 @@ export function useChat() {
 
       function handleStreamError(msg: string) {
         setError(msg);
-        // Remove the assistant placeholder if nothing was streamed yet
         setMessages((prev) => {
           const placeholder = prev.find((m) => m.id === assistantMessageId);
           return placeholder?.content === ""
@@ -150,7 +127,7 @@ export function useChat() {
       void streamChat(
         {
           content: trimmed,
-          sessionId: sessionIdRef.current ?? undefined,
+          sessionId,
           schoolLevel: user.schoolLevel ?? "",
           firstName: user.firstName ?? undefined,
         },
@@ -158,8 +135,8 @@ export function useChat() {
           onContent: (full) => {
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantMessageId ? { ...m, content: full } : m
-              )
+                m.id === assistantMessageId ? { ...m, content: full } : m,
+              ),
             );
           },
           onStatus: (s) => setStreamStatus(s),
@@ -167,9 +144,18 @@ export function useChat() {
           onDone: () => {
             setIsStreaming(false);
             setStreamStatus("");
+            // Refresh the list (preview/subject/order) AND this conversation's
+            // history — otherwise the staleTime:Infinity cache keeps the
+            // pre-message history and the exchange vanishes on a revisit.
+            void queryClient.invalidateQueries({
+              queryKey: chatQueryKeys.conversations(),
+            });
+            void queryClient.invalidateQueries({
+              queryKey: chatQueryKeys.history(sessionId),
+            });
           },
         },
-        ac.signal
+        ac.signal,
       ).catch((err: unknown) => {
         const msg =
           err instanceof ChatStreamError
@@ -178,55 +164,17 @@ export function useChat() {
         handleStreamError(msg);
       });
     },
-    [isStreaming, user]
+    [isStreaming, user, sessionId, queryClient],
   );
-
-  const reset = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-
-    const sid = sessionIdRef.current;
-
-    void (async () => {
-      if (sid) {
-        try {
-          const data = unwrap(
-            await getTreaty().api.chat.session({ id: sid }).reset.post()
-          );
-          sessionIdRef.current = data.sessionId;
-          if (user?.id) {
-            queryClient.setQueryData(
-              queryKeys.session(user.id),
-              data.sessionId
-            );
-          }
-        } catch (err) {
-          console.error("[useChat] reset failed", err);
-        }
-      }
-    })();
-
-    setMessages([]);
-    setIsStreaming(false);
-    setStreamStatus("");
-    setError(null);
-    setSyncedSessionId(null);
-  }, [queryClient, user]);
 
   return {
     messages,
-    isLoading: sessionQuery.isLoading || historyQuery.isLoading,
+    isLoading: !!sessionId && historyQuery.isLoading,
     isStreaming,
     streamStatus,
     error:
       error ??
-      (historyQuery.error instanceof Error
-        ? historyQuery.error.message
-        : null) ??
-      (sessionQuery.error instanceof Error
-        ? sessionQuery.error.message
-        : null),
+      (historyQuery.error instanceof Error ? historyQuery.error.message : null),
     sendMessage,
-    reset,
   };
 }
