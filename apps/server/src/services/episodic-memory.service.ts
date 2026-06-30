@@ -27,6 +27,7 @@ import { studySessionsRepository } from '../db/repositories/study-sessions.repos
 import { messagesRepository } from '../db/repositories/messages.repository.js';
 import { episodicMemoryRepository } from '../db/repositories/episodic-memory.repository.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
+import { subjectProfileService } from './chat/subject-profile.service.js';
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
 
@@ -158,6 +159,22 @@ class EpisodicMemoryService {
         outcome: parsed.outcome,
         ttlUntil,
       });
+
+      // Lot 3 : agréger la sortie de l'épisode dans le profil mémoire matière.
+      // Fire-and-forget — un échec ici ne doit pas casser l'extraction épisodique.
+      void subjectProfileService
+        .aggregateFromEpisode({
+          userId,
+          subject: session.subject,
+          conceptsCovered: parsed.conceptsCovered ?? [],
+          outcome: parsed.outcome,
+        })
+        .catch((err) =>
+          logger.warn('Subject profile aggregation (post-episode) failed', {
+            operation: 'episodic:subject-profile',
+            _error: err instanceof Error ? err.message : String(err),
+          }),
+        );
 
       logger.info('Session episode stored', {
         operation: 'episodic:extract:stored',
