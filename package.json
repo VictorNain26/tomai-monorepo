@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@evilmartians/lefthook": "^2.1.9",
+    "playwright": "^1.61.1",
     "prettier": "^3.8.3",
     "turbo": "^2.9.16",
     "typescript": "6.0.3"
