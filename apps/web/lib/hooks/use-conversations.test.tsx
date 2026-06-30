@@ -12,8 +12,7 @@ vi.mock("@repo/api", () => ({
       chat: {
         conversations: { get: conversationsGet },
         session: Object.assign(
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          (_id: { id: string }) => ({ delete: sessionDelete }),
+          () => ({ delete: sessionDelete }),
           { new: { post: sessionNewPost } },
         ),
       },
