@@ -23,6 +23,7 @@ import { intentClassifierService, type ClassifiedIntent } from './intent-classif
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { costTrackingService } from '../cost-tracking.service.js';
 import { episodicMemoryService } from '../episodic-memory.service.js';
+import { subjectProfileService } from './subject-profile.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
@@ -126,6 +127,10 @@ class ChatOrchestrationService {
         }));
     }
 
+    const subjectMemoryBlock = effectiveSubject
+      ? await subjectProfileService.formatSubjectMemoryForPrompt(request.userId, effectiveSubject)
+      : null;
+
     const { attachedFileInfos, attachedFiles } = fileContext;
     // Primary file stays in the dedicated column for backward-compat readers;
     // the full list is persisted separately in messageMetadata via saveMessage
@@ -201,7 +206,7 @@ class ChatOrchestrationService {
     // only has one "prior knowledge" section to reason about. Learning
     // context (FSRS due cards) + episodes (past sessions) are complementary
     // pedagogical memory signals.
-    const mergedLearningContext = [learningContext, episodicContext]
+    const mergedLearningContext = [learningContext, episodicContext, subjectMemoryBlock]
       .filter((x): x is string => Boolean(x))
       .join('\n\n') || null;
 
