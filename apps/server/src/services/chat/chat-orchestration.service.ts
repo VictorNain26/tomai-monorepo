@@ -11,7 +11,9 @@
 
 import { chatSessionService } from './chat-session.service.js';
 import { chatMessageService } from './chat-message.service.js';
-import { sessionFilesRepository } from '../../db/repositories/index.js';
+import { sessionFilesRepository, studySessionsRepository } from '../../db/repositories/index.js';
+import { resolveEffectiveSubject, shouldPersistDetectedSubject } from './subject-resolution.js';
+import { STUDENT_SUBJECTS } from '../../config/prompts/adaptation/subjects.js';
 import { fileContextService } from './file-context.service.js';
 import { mistralChatService } from './mistral-chat.service.js';
 import { getLearningContext } from './mistral-helpers.js';
@@ -43,6 +45,7 @@ interface ChatStreamRequest {
 interface SessionContext {
   sessionId: string;
   conversationSummary: string | null;
+  subject: string | null;
   formattedHistory: Array<{
     role: 'user' | 'assistant';
     content: string;
@@ -97,6 +100,32 @@ class ChatOrchestrationService {
     const intentReinforcement = intentClassifierService.buildReinforcement(classifiedIntent);
     const episodicContext = episodicMemoryService.formatEpisodesForPrompt(relevantEpisodes);
 
+    // Subject: use the detected one (reliable) for the prompt, fall back to the
+    // session's stored subject then the client hint. Persist on the first
+    // confident detection (anti-thrash) so the conversation gets a real subject.
+    const detectedSubject = classifiedIntent.subject;
+    // Boundary validation : seul un sujet canonique du hint client peut servir
+    // de label de prompt ; tout free-form est ignoré (le sujet détecté est
+    // enum-safe et reste le signal primaire).
+    const requestedSubject =
+      request.subject && (STUDENT_SUBJECTS as readonly string[]).includes(request.subject)
+        ? request.subject
+        : undefined;
+    const effectiveSubject = resolveEffectiveSubject({
+      detected: detectedSubject,
+      sessionSubject: sessionCtx.subject,
+      requested: requestedSubject,
+    });
+    if (detectedSubject && shouldPersistDetectedSubject({ detected: detectedSubject, sessionSubject: sessionCtx.subject })) {
+      void studySessionsRepository
+        .updateSubject(sessionCtx.sessionId, detectedSubject)
+        .catch(err => logger.warn('Subject persist failed', {
+          operation: 'chat-orchestration:subject-persist',
+          sessionId: sessionCtx.sessionId,
+          _error: err instanceof Error ? err.message : String(err),
+        }));
+    }
+
     const { attachedFileInfos, attachedFiles } = fileContext;
     // Primary file stays in the dedicated column for backward-compat readers;
     // the full list is persisted separately in messageMetadata via saveMessage
@@ -123,7 +152,8 @@ class ChatOrchestrationService {
 
     logger.info('Chat context assembled', {
       userId: request.userId,
-      subject: request.subject,
+      subject: effectiveSubject,
+      detectedSubject,
       sessionId: sessionCtx.sessionId,
       level: request.schoolLevel,
       filesCount: request.fileIds.length,
@@ -181,6 +211,7 @@ class ChatOrchestrationService {
       attachedFiles: boundedAttachedFiles,
       schoolLevel: request.schoolLevel,
       firstName: request.firstName,
+      subject: effectiveSubject,
       sessionId: sessionCtx.sessionId,
       userRole: request.userRole,
       pronoteContext: request.pronoteContext,
@@ -259,6 +290,7 @@ class ChatOrchestrationService {
     return {
       sessionId,
       conversationSummary: sessionSummary?.conversationSummary ?? null,
+      subject: sessionSummary?.subject ?? null,
       formattedHistory,
     };
   }

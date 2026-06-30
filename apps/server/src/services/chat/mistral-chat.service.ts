@@ -57,6 +57,8 @@ import {
   getToolStatusLabel,
 } from './mistral-helpers.js';
 import { env } from '../../config/env.js';
+import { assembleChatMessages } from './chat-message-assembler.js';
+import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 
 const MODEL = env.MISTRAL_MODEL;
 const TEMPERATURE = 0.6;
@@ -143,26 +145,23 @@ class MistralChatService {
         : '';
       const historyMessages = this.buildHistoryMessages(params.conversationHistory, params.conversationSummary);
 
+      const truncatedSummary = params.conversationSummary
+        ? truncateToTokenBudget(params.conversationSummary, calculateBudget().summaryMaxTokens).text
+        : undefined;
+
       // The agentic loop appends assistant + tool messages to this array as it iterates.
-      const messages: MistralMessage[] = [
-        { role: 'system' as const, content: systemPrompt },
-        ...historyMessages,
-        ...(studentContextBlock ? [{ role: 'user' as const, content: studentContextBlock }] : []),
-        ...(pronoteBlock ? [{ role: 'user' as const, content: pronoteBlock }] : []),
-        ...(attachedFilesBlock ? [{ role: 'user' as const, content: attachedFilesBlock }] : []),
-        // Turn-specific pedagogical reinforcement injected as a trusted server-side
-        // instruction, placed just before the student message so it takes precedence
-        // (recency bias). Not wrapped in <student_message> — this is not student input.
-        ...(params.intentReinforcement
-          ? [{ role: 'user' as const, content: `[Consigne pour ce tour]\n${params.intentReinforcement}` }]
-          : []),
-        // Voice turn marker: trusted server-side note (not student input) that
-        // triggers the spoken-style rule in the stable <response_format> block.
-        ...(params.inputMode === 'voice'
-          ? [{ role: 'user' as const, content: "[VOCAL] Ce tour a été dicté à l'oral — réponds en style parlé, sans markdown." }]
-          : []),
-        { role: 'user' as const, content: userContent },
-      ];
+      // Assembly (incl. the <conversation_summary> block) lives in chat-message-assembler.
+      const messages: MistralMessage[] = assembleChatMessages({
+        systemPrompt,
+        conversationSummary: truncatedSummary,
+        historyMessages,
+        studentContextBlock,
+        pronoteBlock,
+        attachedFilesBlock,
+        intentReinforcement: params.intentReinforcement,
+        inputMode: params.inputMode,
+        userContent,
+      });
 
       // Single stable key: the cacheable system-prompt prefix (identity → safety)
       // is byte-identical across school levels and roles (verified), so keying by

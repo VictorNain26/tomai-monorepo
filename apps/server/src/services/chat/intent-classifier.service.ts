@@ -20,8 +20,9 @@ import { generateStructured } from '../../lib/ai/mistral-client.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
 import { env } from '../../config/env.js';
+import { STUDENT_SUBJECTS, type StudentSubject } from '../../config/prompts/adaptation/subjects.js';
 
-const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-05-18';
+const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-06-29-subject';
 
 export type StudentIntent =
   | 'solve-this-for-me'   // student asks the agent to complete an exercise
@@ -34,6 +35,7 @@ export type StudentIntent =
 export interface ClassifiedIntent {
   intent: StudentIntent;
   confidence: 'low' | 'medium' | 'high';
+  subject: StudentSubject;
   /** Populated when the classifier itself failed — callers can log/alert. */
   error?: string;
 }
@@ -61,8 +63,12 @@ const RESPONSE_SCHEMA = {
         type: 'string',
         enum: ['low', 'medium', 'high'],
       },
+      subject: {
+        type: 'string',
+        enum: STUDENT_SUBJECTS,
+      },
     },
-    required: ['intent', 'confidence'],
+    required: ['intent', 'confidence', 'subject'],
     additionalProperties: false,
   },
 } as const;
@@ -75,13 +81,16 @@ function buildPrompt(userMessage: string, levelLabel: string): string {
   const truncated = userMessage.length > 800 ? `${userMessage.slice(0, 800)}…` : userMessage;
   return `Tu classes l'intention d'un message d'élève français (niveau ${levelLabel}) envoyé à un tuteur scolaire.
 
-Choisis UNE étiquette :
+Choisis UNE étiquette pour l'intention :
 - "solve-this-for-me" : l'élève demande explicitement la solution/résultat ("donne-moi la réponse", "résous", "fais l'exo")
 - "check-my-answer" : l'élève propose une réponse/raisonnement et attend validation
 - "explain-concept" : l'élève veut comprendre une notion, pas une réponse à un exo précis
 - "clarify-question" : l'élève ne comprend pas l'énoncé ou demande reformulation
 - "chit-chat" : salutation, remerciement, question hors sujet scolaire
 - "unknown" : ambigu ou ne rentre dans aucune autre catégorie
+
+Choisis UNE matière parmi : mathematiques, francais, langues, sciences, histoire-geo, general.
+Utilise "general" si le message est hors-matière ou si la matière est indéterminable.
 
 Attribue une confiance (low/medium/high). Réponds en JSON strict.
 
@@ -96,19 +105,19 @@ class IntentClassifierService {
     // Short or empty messages: classification wastes a call. Empty is
     // structurally unknown, short greetings are obviously chit-chat.
     if (trimmed.length < 3) {
-      return { intent: 'unknown', confidence: 'low' };
+      return { intent: 'unknown', confidence: 'low', subject: 'general' };
     }
     if (trimmed.length < 15 && /^(bonjour|salut|coucou|hello|merci|ok|oui|non)/i.test(trimmed)) {
-      return { intent: 'chit-chat', confidence: 'high' };
+      return { intent: 'chit-chat', confidence: 'high', subject: 'general' };
     }
 
     const startTime = Date.now();
     try {
-      const parsed = await generateStructured<{ intent?: string; confidence?: string }>({
-        model: env.MISTRAL_MODEL_CLASSIFY,  // ADR-0001 : classification 5 catégories, output 80 tokens
+      const parsed = await generateStructured<{ intent?: string; confidence?: string; subject?: string }>({
+        model: env.MISTRAL_MODEL_CLASSIFY,  // ADR-0001 : classification intention + matière, output 96 tokens
         messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
         temperature: 0,
-        maxTokens: 80,
+        maxTokens: 96,
         schema: RESPONSE_SCHEMA,
         promptCacheKey: INTENT_CACHE_KEY,
         timeoutMs: 8_000,
@@ -120,15 +129,19 @@ class IntentClassifierService {
       const confidence = parsed.confidence === 'high' || parsed.confidence === 'medium' || parsed.confidence === 'low'
         ? parsed.confidence
         : 'low';
+      const subject = (STUDENT_SUBJECTS as readonly string[]).includes(parsed.subject ?? '')
+        ? (parsed.subject as StudentSubject)
+        : 'general';
 
       logger.debug('Intent classified', {
         operation: 'intent-classifier:classified',
         intent,
         confidence,
+        subject,
         durationMs: Date.now() - startTime,
       });
 
-      return { intent, confidence };
+      return { intent, confidence, subject };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       logger.error('Intent classifier failed', {
@@ -137,7 +150,7 @@ class IntentClassifierService {
         durationMs: Date.now() - startTime,
         severity: 'high' as const,
       });
-      return { intent: 'unknown', confidence: 'low', error: errorMessage };
+      return { intent: 'unknown', confidence: 'low', subject: 'general', error: errorMessage };
     }
   }
 
@@ -146,7 +159,7 @@ class IntentClassifierService {
    * prompt when the classifier detected a risky intent. Returns `null` when
    * no reinforcement is needed.
    */
-  buildReinforcement(intent: ClassifiedIntent): string | null {
+  buildReinforcement(intent: Pick<ClassifiedIntent, 'intent' | 'confidence'>): string | null {
     if (intent.intent === 'solve-this-for-me' && intent.confidence !== 'low') {
       return `<critical_instruction>
 L'élève vient de demander que tu fasses l'exercice à sa place. Tu NE donnes PAS
