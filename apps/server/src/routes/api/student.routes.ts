@@ -1,8 +1,10 @@
 import { Elysia, t } from 'elysia';
+import type { Static } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
 import { subjectProfileService } from '../../services/chat/subject-profile.service.js';
 import { AppError } from '../../lib/errors.js';
 import { logger } from '../../lib/observability.js';
+import type { StudentSubject } from '../../config/prompts/adaptation/subjects.js';
 
 const subjectUnion = t.Union([
   t.Literal('mathematiques'),
@@ -12,6 +14,12 @@ const subjectUnion = t.Union([
   t.Literal('histoire-geo'),
   t.Literal('general'),
 ]);
+
+// Garde-fou : l'union de route doit couvrir exactement l'enum matière.
+type _SubjectUnionMatchesEnum = Static<typeof subjectUnion> extends StudentSubject
+  ? StudentSubject extends Static<typeof subjectUnion> ? true : never
+  : never;
+export const _subjectUnionCheck: _SubjectUnionMatchesEnum = true;
 
 export const studentApiRoutes = new Elysia({ name: 'api-student' })
   .use(authMacro)
@@ -32,13 +40,17 @@ export const studentApiRoutes = new Elysia({ name: 'api-student' })
     }
   })
 
-  .patch('/student/memory', async ({ user, body }) => {
+  .patch('/student/memory', async ({ user, body, set }) => {
     try {
       const profile = await subjectProfileService.editMemory(user.id, body.subject, {
         masteryNotes: body.masteryNotes,
         difficulties: body.difficulties,
       });
-      return { success: true, profile };
+      if (!profile) {
+        set.status = 404;
+        return { success: false as const, error: 'Profil introuvable pour cette matière' };
+      }
+      return { success: true as const, profile };
     } catch (_error) {
       logger.error('Student memory edit failed', {
         operation: 'api:student:memory:patch',

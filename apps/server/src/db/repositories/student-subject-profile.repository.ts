@@ -5,7 +5,7 @@ import { studentSubjectProfiles, type StudentSubjectProfile } from '../schema';
 const MAX_CONCEPTS = 100;
 const MAX_DIFFICULTIES = 50;
 
-function mergeDedup(existing: string[], added: string[], cap: number): string[] {
+export function mergeDedup(existing: string[], added: string[], cap: number): string[] {
   const seen = new Set(existing.map((s) => s.toLowerCase()));
   const out = [...existing];
   for (const item of added) {

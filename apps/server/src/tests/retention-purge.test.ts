@@ -20,19 +20,19 @@ mock.module('drizzle-orm', () => ({
 
 let episodesDeleteResult: { rowCount?: number } = { rowCount: 0 };
 let auditDeleteResult: { rowCount?: number } = { rowCount: 0 };
+let profilesDeleteResult: { rowCount?: number } = { rowCount: 0 };
 let deleteCallCount = 0;
 
-// Each call to db.delete() alternates: first call = episodes, second = audit.
-// Track which table is being deleted by call order.
+// Call order: 1 = episodes, 2 = audit, 3 = subject profiles.
 const mockDb = {
   delete: mock(() => {
     deleteCallCount++;
     const callIndex = deleteCallCount;
     return {
       where: mock(() => {
-        return Promise.resolve(
-          callIndex === 1 ? episodesDeleteResult : auditDeleteResult,
-        );
+        if (callIndex === 1) return Promise.resolve(episodesDeleteResult);
+        if (callIndex === 2) return Promise.resolve(auditDeleteResult);
+        return Promise.resolve(profilesDeleteResult);
       }),
     };
   }),
@@ -41,6 +41,7 @@ const mockDb = {
 mock.module('../db/connection', () => ({ db: mockDb }));
 mock.module('../db/schema/learning.schema', () => ({
   sessionEpisodes: { ttlUntil: 'ttl_until' },
+  studentSubjectProfiles: { ttlUntil: 'ttl_until' },
 }));
 mock.module('../db/schema/audit.schema', () => ({
   retrievalAudit: { createdAt: 'created_at' },
@@ -54,6 +55,7 @@ const { purgeExpiredData, startRetentionPurgeScheduler } = await import(
 beforeEach(() => {
   episodesDeleteResult = { rowCount: 0 };
   auditDeleteResult = { rowCount: 0 };
+  profilesDeleteResult = { rowCount: 0 };
   deleteCallCount = 0;
   mockDb.delete.mockClear();
   mockLogger.info.mockClear();
@@ -66,36 +68,42 @@ afterEach(() => {
 
 describe('Retention Purge Service', () => {
   describe('purgeExpiredData', () => {
-    it('deletes expired episodes and old audit rows, returns both counts', async () => {
+    it('deletes expired episodes, audit rows and profiles, returns all counts', async () => {
       episodesDeleteResult = { rowCount: 7 };
       auditDeleteResult = { rowCount: 42 };
+      profilesDeleteResult = { rowCount: 5 };
 
       const result = await purgeExpiredData();
 
       expect(result.episodesDeleted).toBe(7);
       expect(result.auditRowsDeleted).toBe(42);
-      // Two delete calls: one per table
-      expect(mockDb.delete).toHaveBeenCalledTimes(2);
+      expect(result.profilesDeleted).toBe(5);
+      // Three delete calls: episodes + audit + subject profiles
+      expect(mockDb.delete).toHaveBeenCalledTimes(3);
     });
 
     it('handles zero deletions gracefully', async () => {
       episodesDeleteResult = { rowCount: 0 };
       auditDeleteResult = { rowCount: 0 };
+      profilesDeleteResult = { rowCount: 0 };
 
       const result = await purgeExpiredData();
 
       expect(result.episodesDeleted).toBe(0);
       expect(result.auditRowsDeleted).toBe(0);
+      expect(result.profilesDeleted).toBe(0);
     });
 
     it('handles missing rowCount (null/undefined) as 0', async () => {
       episodesDeleteResult = {};
       auditDeleteResult = {};
+      profilesDeleteResult = {};
 
       const result = await purgeExpiredData();
 
       expect(result.episodesDeleted).toBe(0);
       expect(result.auditRowsDeleted).toBe(0);
+      expect(result.profilesDeleted).toBe(0);
     });
 
     it('logs one info entry with both counts after a successful run', async () => {

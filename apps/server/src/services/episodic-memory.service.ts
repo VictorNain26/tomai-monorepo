@@ -161,20 +161,13 @@ class EpisodicMemoryService {
       });
 
       // Lot 3 : agréger la sortie de l'épisode dans le profil mémoire matière.
-      // Fire-and-forget — un échec ici ne doit pas casser l'extraction épisodique.
-      void subjectProfileService
-        .aggregateFromEpisode({
-          userId,
-          subject: session.subject,
-          conceptsCovered: parsed.conceptsCovered ?? [],
-          outcome: parsed.outcome,
-        })
-        .catch((err) =>
-          logger.warn('Subject profile aggregation (post-episode) failed', {
-            operation: 'episodic:subject-profile',
-            _error: err instanceof Error ? err.message : String(err),
-          }),
-        );
+      // Fire-and-forget — aggregateFromEpisode gère ses erreurs en interne (try/catch + warn).
+      void subjectProfileService.aggregateFromEpisode({
+        userId,
+        subject: session.subject,
+        conceptsCovered: parsed.conceptsCovered ?? [],
+        outcome: parsed.outcome,
+      });
 
       logger.info('Session episode stored', {
         operation: 'episodic:extract:stored',
