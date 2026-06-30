@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, Check } from 'lucide-react-native';
 
@@ -103,19 +103,19 @@ export default function DeckReviewScreen() {
   // Loading
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen>
         <View className="flex-1 items-center justify-center p-6">
           <Skeleton className="mb-4 h-8 w-48 rounded" />
           <Skeleton className="h-64 w-full rounded-xl" />
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   // Error
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen>
         <View className="flex-1 items-center justify-center p-6">
           <Text className="mb-4 text-destructive">
             {error.message ?? 'Erreur de chargement'}
@@ -124,14 +124,14 @@ export default function DeckReviewScreen() {
             <Text className="text-primary-foreground">Retour</Text>
           </Button>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   // No due cards
   if (totalCards === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen>
         <View className="flex-1 items-center justify-center p-6">
           <View
             className="mb-4 h-20 w-20 items-center justify-center rounded-full"
@@ -151,7 +151,7 @@ export default function DeckReviewScreen() {
             </Text>
           </Button>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
@@ -170,7 +170,7 @@ export default function DeckReviewScreen() {
 
   // Main review UI
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <TouchableOpacity
@@ -241,7 +241,7 @@ export default function DeckReviewScreen() {
           </Text>
         )}
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -273,7 +273,7 @@ function SessionComplete({
   ].filter((b) => b.count > 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       <View className="flex-1 items-center justify-center p-6">
         <Text className="mb-2 text-6xl">🎉</Text>
         <Text variant="h2" className="text-center">
@@ -316,6 +316,6 @@ function SessionComplete({
           )}
         </View>
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }

@@ -2,7 +2,6 @@ import { useMemo, type ComponentProps } from 'react';
 import { Easing } from 'react-native';
 import { Tabs } from 'expo-router';
 import type { NativeStackNavigationOptions } from 'expo-router';
-import type { MaterialTopTabNavigationOptions } from 'expo-router/js-top-tabs';
 import { useThemeColors } from '@/hooks';
 
 // Expo Router 56 decoupled from the standalone @react-navigation packages and
@@ -88,30 +87,4 @@ export function useTabBarConfig(): TabBarConfig {
   );
 
   return { tabColors, tabBarStyle };
-}
-
-/**
- * Material Top Tabs config for swipeable tab navigation.
- * Used by parent layout with tabBarPosition: 'bottom'.
- *
- * @see https://reactnavigation.org/docs/material-top-tab-navigator
- */
-export function useSwipeableTabConfig(): MaterialTopTabNavigationOptions {
-  const colors = useThemeColors();
-
-  return useMemo(
-    () => ({
-      tabBarShowIcon: true,
-      tabBarShowLabel: false,
-      tabBarActiveTintColor: colors.primary,
-      tabBarInactiveTintColor: colors.mutedForeground,
-      tabBarPressColor: 'transparent',
-      tabBarIndicatorStyle: { backgroundColor: colors.primary, height: 2 },
-      tabBarStyle: { backgroundColor: colors.background },
-      tabBarIconStyle: { width: 28, height: 28 },
-      swipeEnabled: true,
-      lazy: true,
-    }),
-    [colors.primary, colors.mutedForeground, colors.background]
-  );
 }

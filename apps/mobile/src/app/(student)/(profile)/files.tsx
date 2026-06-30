@@ -7,7 +7,7 @@
 
 import { View, TouchableOpacity } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -141,7 +141,7 @@ export default function FilesScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+    <Screen>
       {/* Header */}
       <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
         <TouchableOpacity
@@ -185,6 +185,6 @@ export default function FilesScreen() {
           refreshing={isLoading}
         />
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }

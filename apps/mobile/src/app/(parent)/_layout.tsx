@@ -4,7 +4,7 @@
  * Stack navigator wrapping:
  * - index: redirects to tabs (group entry point)
  * - add-child: manual child add screen (0 children empty-state)
- * - tabs: MaterialTopTabs shell (home + profile)
+ * - tabs: Bottom Tabs shell (home + profile)
  */
 
 import { useEffect } from 'react';

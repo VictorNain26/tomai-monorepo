@@ -9,7 +9,7 @@
  */
 
 import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useRouter } from 'expo-router';
 import {
   User,
@@ -161,7 +161,7 @@ export default function StudentProfileScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-4 py-5 gap-5"
@@ -264,6 +264,6 @@ export default function StudentProfileScreen() {
           TomIA v1.0.0
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

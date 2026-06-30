@@ -7,7 +7,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { View, ScrollView } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useRouter } from 'expo-router';
 import { Users } from 'lucide-react-native';
 
@@ -76,20 +76,20 @@ export default function ParentDashboard() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen>
         <View className="px-5 py-5 gap-4">
           <Skeleton className="h-8 w-48 rounded" />
           <Skeleton className="h-4 w-32 rounded" />
           <Skeleton className="h-40 w-full rounded-2xl" />
           <Skeleton className="h-40 w-full rounded-2xl" />
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   if (children.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen>
         <View className="px-5 py-5">
           <Text variant="h2">Bonjour, {userName}</Text>
           <Text variant="muted" className="mt-1">0 enfant</Text>
@@ -121,12 +121,12 @@ export default function ParentDashboard() {
             </Text>
           </Button>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView testID="parent-dashboard" className="flex-1 bg-background">
+    <Screen testID="parent-dashboard">
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
         <View>
@@ -168,6 +168,6 @@ export default function ParentDashboard() {
           );
         })}
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

@@ -1,50 +1,50 @@
 /**
  * Parent Tabs - TomAI 2026
  *
- * Swipeable tab navigation (Material Top Tabs at bottom position).
+ * Bottom Tabs (Expo Router), aligned with the student layout so a single tab-bar
+ * system is used across the app. React Navigation reserves the bottom safe-area
+ * inset automatically (no overlap with the system navigation bar).
  */
 
-import { withLayoutContext } from 'expo-router';
+import { View } from 'react-native';
+import { Tabs } from 'expo-router';
 import { Home, User } from 'lucide-react-native';
-import type { ParamListBase, TabNavigationState } from '@react-navigation/native';
-import {
-  createMaterialTopTabNavigator,
-  type MaterialTopTabNavigationOptions,
-  type MaterialTopTabNavigationEventMap,
-} from 'expo-router/js-top-tabs';
-import { useSwipeableTabConfig } from '@/lib/navigation';
-
-const { Navigator } = createMaterialTopTabNavigator();
-
-const MaterialTopTabs = withLayoutContext<
-  MaterialTopTabNavigationOptions,
-  typeof Navigator,
-  TabNavigationState<ParamListBase>,
-  MaterialTopTabNavigationEventMap
->(Navigator);
+import { useTabBarConfig, useTabScreenOptions } from '@/lib/navigation';
 
 export default function ParentTabsLayout() {
-  const swipeableOptions = useSwipeableTabConfig();
+  const { tabColors, tabBarStyle } = useTabBarConfig();
+  const tabOptions = useTabScreenOptions(tabColors.background);
 
   return (
-    <MaterialTopTabs
-      tabBarPosition="bottom"
-      screenOptions={swipeableOptions}
-    >
-      <MaterialTopTabs.Screen
-        name="(home)"
-        options={{
-          title: 'Accueil',
-          tabBarIcon: ({ color }) => <Home color={color} size={22} />,
+    <View className="flex-1">
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: tabColors.active,
+          tabBarInactiveTintColor: tabColors.inactive,
+          tabBarStyle,
+          tabBarShowLabel: false,
+          popToTopOnBlur: true,
+          ...tabOptions,
         }}
-      />
-      <MaterialTopTabs.Screen
-        name="(profile)"
-        options={{
-          title: 'Profil',
-          tabBarIcon: ({ color }) => <User color={color} size={22} />,
-        }}
-      />
-    </MaterialTopTabs>
+      >
+        <Tabs.Screen
+          name="(home)"
+          options={{
+            title: 'Accueil',
+            tabBarButtonTestID: 'parent-tab-home',
+            tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="(profile)"
+          options={{
+            title: 'Profil',
+            tabBarButtonTestID: 'parent-tab-profile',
+            tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          }}
+        />
+      </Tabs>
+    </View>
   );
 }

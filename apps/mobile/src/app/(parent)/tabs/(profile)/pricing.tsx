@@ -5,7 +5,7 @@
  */
 
 import { View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -66,7 +66,7 @@ export default function PricingScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       {/* Header */}
       <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
         <TouchableOpacity onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full">
@@ -205,7 +205,7 @@ export default function PricingScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
