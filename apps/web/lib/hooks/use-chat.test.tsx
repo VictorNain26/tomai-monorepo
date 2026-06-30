@@ -43,4 +43,21 @@ describe("useChat", () => {
     expect(result.current.messages).toHaveLength(0);
     expect(historyGet).not.toHaveBeenCalled();
   });
+
+  it("purges the previous conversation and loads the new one on switch", async () => {
+    historyGet
+      .mockReset()
+      .mockResolvedValueOnce({ data: { messages: [{ id: "mA", role: "assistant", content: "réponse A", timestamp: "x" }], hasOrphanMessage: false } })
+      .mockResolvedValueOnce({ data: { messages: [{ id: "mB", role: "user", content: "question B", timestamp: "x" }], hasOrphanMessage: false } });
+
+    const { result, rerender } = renderHook(
+      ({ sessionId }: { sessionId: string | null }) => useChat({ sessionId }),
+      { wrapper, initialProps: { sessionId: "sA" } },
+    );
+    await waitFor(() => expect(result.current.messages).toEqual([{ id: "mA", role: "assistant", content: "réponse A" }]));
+
+    rerender({ sessionId: "sB" });
+    await waitFor(() => expect(result.current.messages).toEqual([{ id: "mB", role: "user", content: "question B" }]));
+    expect(result.current.messages.some((m) => m.id === "mA")).toBe(false);
+  });
 });

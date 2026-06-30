@@ -71,7 +71,7 @@ export default function StudentChatPage() {
           type="button"
           aria-label="Fermer la liste"
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          className="fixed inset-0 z-30 bg-black/80 md:hidden"
         />
       )}
 
@@ -94,7 +94,7 @@ export default function StudentChatPage() {
           <div className="flex-1 overflow-y-auto">
             {!effectiveSessionId ? (
               <div className="flex h-full items-center justify-center px-4 py-8 text-center text-muted-foreground">
-                <p>Choisis une conversation ou démarre-en une nouvelle.</p>
+                <p>Démarre ta première conversation avec Tom.</p>
               </div>
             ) : isLoading ? (
               <div className="flex flex-col gap-3 px-4 py-4" aria-busy="true" aria-label="Chargement de la conversation">

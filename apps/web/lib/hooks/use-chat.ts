@@ -144,9 +144,14 @@ export function useChat({ sessionId }: { sessionId: string | null }) {
           onDone: () => {
             setIsStreaming(false);
             setStreamStatus("");
-            // Refresh the list so the new preview/subject/order shows up.
+            // Refresh the list (preview/subject/order) AND this conversation's
+            // history — otherwise the staleTime:Infinity cache keeps the
+            // pre-message history and the exchange vanishes on a revisit.
             void queryClient.invalidateQueries({
               queryKey: chatQueryKeys.conversations(),
+            });
+            void queryClient.invalidateQueries({
+              queryKey: chatQueryKeys.history(sessionId),
             });
           },
         },

@@ -49,7 +49,22 @@ export function useConversations() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteChatSession,
-    onSuccess: () => {
+    // Optimistic removal so the list (and the page's derived active session)
+    // updates synchronously — avoids a transient fetch on the just-deleted id.
+    onMutate: async (sessionId) => {
+      await queryClient.cancelQueries({ queryKey: chatQueryKeys.conversations() });
+      const previous = queryClient.getQueryData<Conversation[]>(chatQueryKeys.conversations());
+      queryClient.setQueryData<Conversation[]>(chatQueryKeys.conversations(), (old) =>
+        (old ?? []).filter((c) => c.id !== sessionId),
+      );
+      return { previous };
+    },
+    onError: (_err, _sessionId, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(chatQueryKeys.conversations(), context.previous);
+      }
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations() });
     },
   });
