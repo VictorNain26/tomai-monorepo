@@ -88,15 +88,16 @@ export function useThemeProvider(): ThemeContextValue {
         if (saved && ['light', 'dark', 'system'].includes(saved)) {
           const mode = saved as ThemeMode;
           setThemeModeState(mode);
-          // 'unspecified' = follow system preference
-          Appearance.setColorScheme(mode === 'system' ? 'unspecified' : mode);
+          // 'unspecified' = follow system preference. Appearance.setColorScheme
+          // n'existe pas sur RNW — sur web le thème vit dans le CSS/NativeWind.
+          if (Platform.OS !== 'web') Appearance.setColorScheme(mode === 'system' ? 'unspecified' : mode);
         } else {
           // No saved preference — apply dark default
-          Appearance.setColorScheme('dark');
+          if (Platform.OS !== 'web') Appearance.setColorScheme('dark');
         }
       } catch {
         // Ignore errors, apply dark default
-        Appearance.setColorScheme('dark');
+        if (Platform.OS !== 'web') Appearance.setColorScheme('dark');
       } finally {
         setIsLoading(false);
       }
@@ -107,8 +108,8 @@ export function useThemeProvider(): ThemeContextValue {
   // Set and persist theme mode via Appearance API
   const setThemeMode = useCallback(async (mode: ThemeMode) => {
     setThemeModeState(mode);
-    // null = follow system preference
-    Appearance.setColorScheme(mode === 'system' ? 'unspecified' : mode);
+    // null = follow system preference (no-op sur web — voir loadTheme)
+    if (Platform.OS !== 'web') Appearance.setColorScheme(mode === 'system' ? 'unspecified' : mode);
     try {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
     } catch {
