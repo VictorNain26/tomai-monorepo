@@ -265,6 +265,35 @@ export const sessionEpisodes = pgTable('session_episodes', {
     .using('hnsw', table.summaryEmbedding.op('vector_cosine_ops')),
 }));
 
+// Profil mémoire élève PAR MATIÈRE — agrégat pédagogique durable, distinct de
+// sessionEpisodes (par session, pgvector) et studentCognitiveProfiles (global).
+export const studentSubjectProfiles = pgTable('student_subject_profile', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  subject: varchar('subject', { length: 100 }).notNull(),
+  conceptsSeen: jsonb('concepts_seen').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  difficulties: jsonb('difficulties').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  masteryNotes: text('mastery_notes'),
+  sessionsCount: integer('sessions_count').notNull().default(0),
+  lastOutcome: varchar('last_outcome', { length: 32 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  ttlUntil: timestamp('ttl_until', { withTimezone: true }).notNull(),
+}, (table) => ({
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [user.id],
+    name: 'student_subject_profiles_user_id_fkey'
+  }).onDelete('cascade'),
+
+  userSubjectUnique: unique('uq_subject_profile_user_subject').on(table.userId, table.subject),
+  userIdIdx: index('idx_subject_profile_user').on(table.userId),
+  ttlIdx: index('idx_subject_profile_ttl').on(table.ttlUntil),
+}));
+
+export type StudentSubjectProfile = typeof studentSubjectProfiles.$inferSelect;
+export type NewStudentSubjectProfile = typeof studentSubjectProfiles.$inferInsert;
+
 // =============================================
 // RELATIONS
 // =============================================
