@@ -132,3 +132,25 @@ describe('RAGService — contexte LLM (scores RRF jamais affichés en %)', () =>
     expect(result.context).not.toContain('%');
   });
 });
+
+describe('RAGService — limites de recherche (pas de double amplification)', () => {
+  it('requests exactly topK fused results when rerank is disabled', async () => {
+    rerankEnabled = false;
+
+    await ragService.hybridSearch({ ...BASE_OPTIONS, limit: 5 });
+
+    // 4e argument de searchHybrid = limit fusionné. Avant fix : max(5*4,20)=20
+    // (puis re-amplifié ×4 en interne → prefetch 80 = 16× topK).
+    const call = mockSearchHybrid.mock.calls[0] as unknown[];
+    expect(call[3]).toBe(5);
+  });
+
+  it('requests the rerank candidate pool as fused limit when rerank is enabled', async () => {
+    rerankEnabled = true;
+
+    await ragService.hybridSearch({ ...BASE_OPTIONS, limit: 5 });
+
+    const call = mockSearchHybrid.mock.calls[0] as unknown[];
+    expect(call[3]).toBe(20); // max(5*4, 20) candidats pour le cross-encoder
+  });
+});
