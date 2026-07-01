@@ -22,13 +22,6 @@ import { logger } from '../lib/observability.js';
 import { env, isRerankEnabled } from '../config/env.js';
 import type { EducationLevelType } from '../types/index.js';
 
-// Thresholds pour cosine similarity (0-1)
-const RAG_THRESHOLDS = {
-  MIN_SCORE: 0.35,
-  GOOD_SCORE: 0.5,
-  EXCELLENT_SCORE: 0.7,
-} as const;
-
 // =============================================================================
 // Types
 // =============================================================================
@@ -123,7 +116,7 @@ class RAGService {
       // NOTE : on ne passe PAS scoreThreshold à searchHybrid. La fusion RRF
       // côté Qdrant retourne des scores de rang (1/(k+rank), magnitude dépendant
       // version serveur) qui ne sont PAS des cosine — aucun seuil cosine
-      // (RAG_THRESHOLDS.MIN_SCORE 0.35) n'est comparable. Le passer à
+      // absolu (type 0.35) n'est comparable. Le passer à
       // searchHybrid filtrerait tous les résultats. Le filtrage qualité se fait
       // a posteriori sur averageSimilarity (calculé depuis score Qdrant).
       //
@@ -269,13 +262,6 @@ class RAGService {
    */
   invalidateAvailabilityCache(): void {
     this.availabilityCache = null;
-  }
-
-  /**
-   * Retourne les thresholds
-   */
-  getThresholds() {
-    return RAG_THRESHOLDS;
   }
 
   // ===========================================================================
