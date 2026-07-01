@@ -114,3 +114,21 @@ describe('RAGService — rerank flag', () => {
     expect(result.strategy).toBe('qdrant-hybrid-rrf+rerank-bge-m3');
   });
 });
+
+describe('RAGService — contexte LLM (scores RRF jamais affichés en %)', () => {
+  it('builds context with rank markers and no percentage', async () => {
+    // Scores RRF réalistes (~1/(k+rank)) : le contexte ne doit JAMAIS les
+    // présenter comme des pourcentages de similarité.
+    mockSearchHybrid.mockImplementationOnce(async () => [
+      { id: 'c1', score: 0.016, text: 'chunk one', section: 'S1', matiere: 'maths', niveau: 'sixieme' },
+      { id: 'c2', score: 0.015, text: 'chunk two', section: 'S2', matiere: 'maths', niveau: 'sixieme' },
+    ]);
+
+    const result = await ragService.hybridSearch(BASE_OPTIONS);
+
+    expect(result.context).toContain('[1] S1 (sixieme - maths)');
+    expect(result.context).toContain('[2] S2 (sixieme - maths)');
+    expect(result.context).toContain('chunk one');
+    expect(result.context).not.toContain('%');
+  });
+});

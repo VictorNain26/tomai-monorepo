@@ -40,7 +40,6 @@ interface HybridSearchOptions {
   matiere?: string;
   competence?: string | null;
   limit?: number;
-  minSimilarity?: number;
   /**
    * Audit trail (RGPD article 30) — when both are provided, we persist a row
    * to `retrieval_audit` so we can answer "what did this user search" without
@@ -304,9 +303,10 @@ class RAGService {
   private buildContext(results: QdrantSearchResult[]): string {
     if (results.length === 0) return '';
 
+    // Scores RRF (~1/(k+rank)) non affichés : leur magnitude dépend de la
+    // version Qdrant et n'est pas une similarité — seul le rang est fiable.
     const contextParts = results.map((result, index) => {
-      const scorePercent = (result.score * 100).toFixed(0);
-      return `[${index + 1}] ${result.section} (${result.niveau} - ${result.matiere}) [${scorePercent}%]
+      return `[${index + 1}] ${result.section} (${result.niveau} - ${result.matiere})
 ${result.text}`;
     });
 
