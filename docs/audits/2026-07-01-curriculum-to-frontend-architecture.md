@@ -158,17 +158,18 @@ Victor a modifié le critère d'arbitrage après lecture : **le coût de migrati
 
 **L'ancien arbitrage n°1 (garder apps/web Next, universal-web = preview) est inversé.** Sous le critère « zéro duplication », la seule architecture cohérente est **une app Expo universelle unique** (iOS + Android + web), pattern prouvé en prod à grande échelle par [Bluesky](https://github.com/bluesky-social/social-app) (web+iOS+Android, un repo, react-native-web, gates `.web.tsx`) et X.com.
 
+**Cette décision est déjà actée par l'[ADR 0001](../adr/0001-universal-consumer-app.md) (PR #260, 2026-06-30)**, qui fait autorité sur la structure d'apps : app conso universelle renommée `apps/app` au cutover, landing Next conservée, console B2B future en Next dédié, Pronote natif-only, **pas de package de logique partagée** (reuse-first : les hooks/écrans du mobile existant servent le web tels quels, coutures plateforme via `.web.ts`/`.native.ts`). L'idée `@repo/chat-core` évoquée en première analyse est **abandonnée au profit de l'ADR** — avec une seule app, le code partagé, c'est l'app. Le présent audit ajoute à l'ADR la décision de la **couche chat** (ci-dessous), qui supprime même la couture streaming `.web.ts`/`.native.ts` que l'ADR prévoyait de gérer à la main.
+
 ```
 apps/
-  app/       ← Expo universel (remplace mobile + web) : role-aware (student)/(parent),
-               expo-router, output static/single (PAS de SSR alpha ni RSC expérimental),
-               NativeWind v5, modules natifs gated .native/.web
+  app/       ← Expo universel (ADR 0001, remplace mobile + web) : role-aware
+               (student)/(parent), expo-router, static rendering (PAS de SSR
+               alpha ni RSC expérimental), NativeWind v5, natif gated .native/.web
   landing/   ← Next, inchangée (SEO/SSG mûr, ne partage rien avec l'app)
   server/    ← Elysia/Bun
 packages/
-  chat-core/ ← enfin rempli : UIMessage typé + data parts (deck_created…) +
-               schémas Zod des tools + query keys + middleware prompt_cache_key
-  api/       ← Eden Treaty conservé pour le CRUD non-chat
+  api/       ← Eden Treaty conservé pour le CRUD non-chat ; héberge aussi les
+               types partagés du chat (UIMessage custom, data parts) si besoin
 ```
 
 **Couche chat standardisée sur Vercel AI SDK v5** — supprime le protocole custom des trois côtés :
@@ -176,7 +177,7 @@ packages/
 - Clients : un seul `useChat` (`@ai-sdk/react`), [officiellement supporté sur Expo](https://ai-sdk.dev/docs/getting-started/expo) et web.
 - `promptCacheKey` Mistral : non exposé par le provider → injecté via `fetch` custom du provider (le cache à 10 % du coût input est conservé).
 - `deck_created` → data parts typées du `UIMessage` (first-class v5).
-- Disparaissent : `chat-streaming-types.ts` (protocole maison), le contournement HTTP de `mistral-client.ts` (l'AI SDK remplace aussi l'ancien lot 3), `react-native-sse`, les 2 parseurs clients, les 2 jeux de query keys, les timeouts dupliqués — et **`apps/web` entièrement**.
+- Disparaissent : `chat-streaming-types.ts` (protocole maison), le contournement HTTP de `mistral-client.ts` (l'AI SDK remplace aussi l'ancien lot 3), `react-native-sse`, les 2 parseurs clients, les 2 jeux de query keys, les timeouts dupliqués — et **`apps/web` entièrement** (au cutover prévu par l'ADR 0001).
 
 **Le prix assumé (validé)** : le dashboard parent quitte shadcn/ui pour react-native-web + NativeWind. Écart réel surtout sur les composants riches (tables) ; NativeWind v5 garde la syntaxe Tailwind et Bluesky prouve que du web dense en RNW tient en prod.
 
@@ -189,8 +190,8 @@ Remplace le plan du rapport principal. L'app n'étant pas en prod, aucun chemin 
 1. **Lot 1 — P0 scoring/flashcards** (inchangé) : gate `card-generate` sur `hasValidResults`, rangs au lieu de `[X%]`, suppression seuils morts, séparation prefetch/limit.
 2. **Lot 2 — Sécu deps** (inchangé) : Better Auth 1.6.23 + dédup, provenance npm vérifiée.
 3. **Lot 3 — ai-service embed-only** : suppression complète du rerank (service + client + env + rag.service), FP16/instance tranché, volume HF Koyeb vérifié, timeout embed chat borné. + les 2 A/B sandbox (IDF, sparse vs BM25).
-4. **Lot 4 — Chat sur AI SDK v5 (serveur d'abord)** : `streamText`/`toUIMessageStreamResponse` sur Elysia, tools Zod, middleware `prompt_cache_key`, `onFinish` persistance, OTel GenAI sur le streaming ; `@repo/chat-core` rempli (UIMessage, data parts, query keys). Rend obsolète l'ancien lot 3 (contournement HTTP).
-5. **Lot 5 — App universelle** : `apps/mobile` → `apps/app`, web-gates complets (RevenueCat Web Billing, sqlite no-op web, Pronote webview), écrans parent portés sous `(parent)`, `useChat` branché des deux rôles, **suppression d'`apps/web`**.
+4. **Lot 4 — Chat sur AI SDK v5 (serveur d'abord)** : `streamText`/`toUIMessageStreamResponse` sur Elysia, tools Zod, middleware `prompt_cache_key`, `onFinish` persistance, OTel GenAI sur le streaming ; types partagés (UIMessage custom, data parts) exportés via `@repo/api`. Rend obsolète l'ancien lot 3 (contournement HTTP). Pas de package chat-core (ADR 0001).
+5. **Lot 5 — App universelle** : suivre la roadmap de l'ADR 0001 (`docs/superpowers/plans/2026-06-30-universal-app-migration.md`) — cible web + pilote 1 écran (gate go/no-go), parité conso, puis cutover (`apps/mobile` → `apps/app`, **suppression d'`apps/web`**, réconciliation doc), avec `useChat` branché des deux rôles.
 6. **Lot 6 — Cycle de vie index curriculum** (inchangé) : delete-by-source_file, veille bouclée en .md structuré, vrai sous-titre dans `payload.section`, retrait du tokenizer Mistral.
 7. **Lot 7 — Retrieval déterministe** : tool RAG forcé (`toolChoice` AI SDK) sur intention scolaire.
 
