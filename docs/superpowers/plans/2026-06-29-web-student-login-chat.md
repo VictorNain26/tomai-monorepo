@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED (2026-07-01)** — `apps/web` est legacy : décision [ADR 0001](../../adr/0001-universal-consumer-app.md) (app conso universelle Expo, PR #260) + audit `docs/audits/2026-07-01-curriculum-to-frontend-architecture.md`. Aucun nouveau lot web Next ; suppression d'apps/web au cutover. Document conservé comme trace historique.
+
 # Web — parcours élève : login (username) + chat SSE — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
