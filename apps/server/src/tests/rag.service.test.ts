@@ -14,14 +14,6 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
-mock.module('../config/env', () => ({
-  env: {
-    NODE_ENV: 'development',
-    QDRANT_ENABLED: 'true',
-  },
-  isDevelopment: () => true,
-}));
-
 // qdrantService mock
 const mockSearchHybrid = mock(async () => [
   { id: 'c1', score: 0.8, text: 'chunk one', section: 'S1', matiere: 'maths', niveau: 'sixieme' },

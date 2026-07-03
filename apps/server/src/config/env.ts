@@ -94,7 +94,8 @@ const EnvSchema = z.object({
   // AI Service (BGE-M3 embeddings)
   AI_SERVICE_URL: z.string().optional(),
   AI_SERVICE_TOKEN: z.string().optional(),
-  // Borne le pire cas du chemin chat (embed query) : 2 tentatives × 8 s + retry 1,5 s ≈ 17,5 s.
+  // Borne le pire cas du chemin chat (embed query) : le client fait UN fetch par appel ;
+  // le retry vit dans chat/tool-executor.ts (1 retry, délai 1,5 s) → pire cas ≈ 2×8 s + 1,5 s.
   // Le rerank (seul appel long) a été supprimé — audit 2026-07-01 lot 3.
   AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().default(8000),
 
