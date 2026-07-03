@@ -2,7 +2,7 @@
 # tomai-ai-service — Dockerfile (2026)
 # Multi-stage: builder + runtime slim
 # Runtime: Python 3.12-slim
-# Models: BGE-M3 (~2.4 GB) + bge-reranker-v2-m3 (~1.1 GB)
+# Models: BGE-M3 (~2.4 GB), downloaded at first boot into HF_HOME
 # Target: Koyeb eco-large (4 GB RAM, CPU)
 # ============================================================
 
@@ -51,7 +51,7 @@ USER ai
 EXPOSE 8000
 
 # Healthcheck — Koyeb appellera GET /health
-# start-period long car le boot précharge les 2 modèles (~3.5 GB → 30-60s)
+# start-period long car le boot précharge le modèle BGE-M3 (~2.4 GB → 30-60s)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 

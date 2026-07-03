@@ -4,7 +4,6 @@
  * Architecture mai 2026 (post-migration BGE-M3) :
  * - Embed query via `tomai-ai-service` (BGE-M3 dense + sparse natif single pass)
  * - Hybrid search Qdrant : prefetch dense + sparse → fusion RRF native
- * - Stage 2 : rerank bge-reranker-v2-m3 (via le même ai-service)
  *
  * Pré-requis collection Qdrant : ingérée avec BGE-M3 (dense 1024D cosine +
  * sparse natif lexical_weights). Voir `apps/curriculum/scripts/ingest.py` et la
@@ -19,7 +18,6 @@ import { qdrantService, type QdrantSearchResult } from './qdrant.service.js';
 import { aiServiceClient } from './ai-service.client.js';
 import { retrievalAuditRepository } from '../db/repositories/retrieval-audit.repository.js';
 import { logger } from '../lib/observability.js';
-import { env, isRerankEnabled } from '../config/env.js';
 import type { EducationLevelType } from '../types/index.js';
 
 // =============================================================================
@@ -83,8 +81,7 @@ class RAGService {
    * Pipeline :
    * 1. Embed query via ai-service (BGE-M3 dense + sparse natif, single pass)
    * 2. Qdrant Query API : prefetch dense + sparse → fusion RRF native
-   * 3. Rerank bge-reranker-v2-m3 (via ai-service)
-   * 4. Construction du contexte structuré pour le LLM
+   * 3. Construction du contexte structuré pour le LLM
    */
   async hybridSearch(options: HybridSearchOptions): Promise<HybridSearchResult> {
     const startTime = Date.now();
@@ -103,15 +100,9 @@ class RAGService {
       const querySparse = queryEmbed.sparse;
 
       const topK = options.limit ?? 5;
-      // Limite FUSIONNÉE demandée à searchHybrid (qui amplifie déjà en interne
-      // le prefetch par branche : max(limit*4, 20)) :
-      // - sans rerank : on veut exactement topK résultats fusionnés ;
-      // - avec rerank : on élargit au pool de candidats du cross-encoder
-      //   (RAG_RERANK_CANDIDATES, défaut max(topK*4, 20)) qui re-trie puis
-      //   coupe à topK. Passer max(topK*4, 20) ici causait une double
-      //   amplification (16× topK de prefetch au lieu de 4×).
-      const candidateK = env.RAG_RERANK_CANDIDATES ?? Math.max(topK * 4, 20);
-      const fusedLimit = isRerankEnabled() ? candidateK : topK;
+      // Limite fusionnée demandée à Qdrant = topK exactement (le prefetch par
+      // branche est dérivé en interne par searchHybrid : max(limit*4, 20)).
+      const fusedLimit = topK;
 
       // NOTE : on ne passe PAS scoreThreshold à searchHybrid. La fusion RRF
       // côté Qdrant retourne des scores de rang (1/(k+rank), magnitude dépendant
@@ -133,36 +124,9 @@ class RAGService {
         { hnswEf: 128 },
       );
 
-      let strategy: 'qdrant-hybrid-rrf' | 'qdrant-hybrid-rrf+rerank-bge-m3' =
-        'qdrant-hybrid-rrf';
+      const strategy = 'qdrant-hybrid-rrf' as const;
 
-      // Stage 2: cross-encoder rerank via ai-service. Skipped when
-      // RAG_RERANK_ENABLED=false (default in dev — CPU cross-encoder times out
-      // locally). En cas d'échec, on log et on garde l'ordre hybrid pour ne
-      // pas casser le chat (rerank = optimisation, pas dépendance dure du retrieval).
-      if (isRerankEnabled() && results.length > 1) {
-        try {
-          const reranked = await aiServiceClient.rerank(
-            options.query,
-            results.map((r) => r.text),
-            topK,
-          );
-          // `reranked[i].index` réfère à la position dans `results` qu'on a envoyée
-          results = reranked
-            .map((r) => results[r.index])
-            .filter((r): r is QdrantSearchResult => r !== undefined)
-            .slice(0, topK);
-          strategy = 'qdrant-hybrid-rrf+rerank-bge-m3';
-        } catch (err) {
-          logger.warn('Rerank failed, falling back to hybrid order', {
-            operation: 'rag-search:rerank-fallback',
-            _error: err instanceof Error ? err.message : String(err),
-          });
-          if (results.length > topK) results = results.slice(0, topK);
-        }
-      } else if (results.length > topK) {
-        results = results.slice(0, topK);
-      }
+      if (results.length > topK) results = results.slice(0, topK);
 
       const semanticChunks = results.length > 0 ? this.toSemanticChunks(results) : [];
       const bestMatch = results[0];

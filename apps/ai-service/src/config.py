@@ -12,12 +12,11 @@ import os
 # Modèles — défauts alignés sur ce qui est mesuré côté curriculum
 # (docs/ARCHITECTURE.md §Décision benchmark embedder).
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-m3")
-RERANK_MODEL = os.getenv("RERANK_MODEL", "BAAI/bge-reranker-v2-m3")
 
-# fp16 = ~2× moins de RAM, perte recall négligeable. Activé si CUDA dispo OU
-# si la variable d'env force. Sur CPU Koyeb on garde fp32 par défaut (fp16 sur
-# CPU peut être instable selon l'instance).
-USE_FP16 = os.getenv("USE_FP16", "auto").lower()
+# fp16 = ~2× moins de RAM, perte recall négligeable. Opt-in explicite : sur CPU
+# Koyeb on garde fp32 par défaut (fp16 sur CPU peut être instable selon
+# l'instance).
+USE_FP16 = os.getenv("USE_FP16", "false").lower()
 
 # Cache HuggingFace persistant entre redéploiements si volume monté.
 # Sur Koyeb sans volume, le modèle est re-téléchargé à chaque deploy.
@@ -44,12 +43,12 @@ def validate_config() -> None:
     """Fail-fast au boot : en production, refuse de démarrer sans API_TOKEN.
 
     Aligné sur le backend Bun (`environment.config.ts`) qui fail-fast sur les
-    secrets prod manquants. Évite d'exposer /embed et /rerank publiquement par
-    une simple variable d'env oubliée.
+    secrets prod manquants. Évite d'exposer /embed publiquement par une simple
+    variable d'env oubliée.
     """
     if is_production() and not API_TOKEN:
         raise RuntimeError(
             "API_TOKEN is required in production (ENVIRONMENT=production) but is "
-            "missing or empty. Set API_TOKEN to protect /embed and /rerank, or "
-            "set ENVIRONMENT to a non-production value for local development."
+            "missing or empty. Set API_TOKEN to protect /embed, or set "
+            "ENVIRONMENT to a non-production value for local development."
         )

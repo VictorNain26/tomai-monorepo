@@ -37,37 +37,10 @@ class EmbedResponse(BaseModel):
     embeddings: list[EmbedItem]
 
 
-# ── Rerank ───────────────────────────────────────────────────────────────────
-
-
-class RerankRequest(BaseModel):
-    """Requête rerank — compat avec HuggingFace TEI POST /rerank."""
-
-    query: str = Field(..., min_length=1, max_length=2048)
-    texts: list[str] = Field(..., min_length=1, max_length=128)
-    top_n: int | None = Field(
-        None, ge=1, description="Si défini, ne retourne que les top_n résultats."
-    )
-
-
-class RerankItem(BaseModel):
-    """1 résultat reranké. `index` réfère à la position dans `texts` envoyé."""
-
-    index: int
-    score: float
-
-
-class RerankResponse(BaseModel):
-    model: str
-    results: list[RerankItem]
-
-
 # ── Health ───────────────────────────────────────────────────────────────────
 
 
 class HealthResponse(BaseModel):
     status: str
     embed_model: str
-    rerank_model: str
     embed_loaded: bool
-    rerank_loaded: bool

@@ -154,7 +154,7 @@ function checkQdrantHealthz(ctx) {
 }
 
 function checkAiServiceHealth(ctx) {
-  return { name: 'ai-service /health (modèles chargés)', run: async () => {
+  return { name: 'ai-service /health (modèle embed chargé)', run: async () => {
     const url = `${ctx.config.aiServiceUrl}/health`;
     let res;
     try {
@@ -164,8 +164,8 @@ function checkAiServiceHealth(ctx) {
     }
     if (!res.ok) throw new Error(`ai-service ${url} -> HTTP ${res.status}`);
     const body = await res.json();
-    if (body.embed_loaded !== true || body.rerank_loaded !== true) {
-      throw new Error(`modèles non chargés (status='${body.status}', embed=${body.embed_loaded}, rerank=${body.rerank_loaded})`);
+    if (body.embed_loaded !== true) {
+      throw new Error(`modèle non chargé (status='${body.status}', embed=${body.embed_loaded})`);
     }
   }};
 }

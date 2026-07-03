@@ -27,14 +27,6 @@ describe('evaluateRagGate', () => {
     expect(result).toEqual({ ok: true });
   });
 
-  it('passes with rerank strategy too', () => {
-    const result = evaluateRagGate({
-      strategy: 'qdrant-hybrid-rrf+rerank-bge-m3',
-      semanticChunks: [chunk(0.92)],
-    });
-    expect(result).toEqual({ ok: true });
-  });
-
   it('returns 503 when the RAG service is disabled', () => {
     const result = evaluateRagGate({ strategy: 'disabled', semanticChunks: [] });
     expect(result).toEqual({ ok: false, reason: 'rag_disabled', httpStatus: 503 });
