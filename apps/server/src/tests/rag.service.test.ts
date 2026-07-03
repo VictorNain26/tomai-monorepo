@@ -114,3 +114,43 @@ describe('RAGService — rerank flag', () => {
     expect(result.strategy).toBe('qdrant-hybrid-rrf+rerank-bge-m3');
   });
 });
+
+describe('RAGService — contexte LLM (scores RRF jamais affichés en %)', () => {
+  it('builds context with rank markers and no percentage', async () => {
+    // Scores RRF réalistes (~1/(k+rank)) : le contexte ne doit JAMAIS les
+    // présenter comme des pourcentages de similarité.
+    mockSearchHybrid.mockImplementationOnce(async () => [
+      { id: 'c1', score: 0.016, text: 'chunk one', section: 'S1', matiere: 'maths', niveau: 'sixieme' },
+      { id: 'c2', score: 0.015, text: 'chunk two', section: 'S2', matiere: 'maths', niveau: 'sixieme' },
+    ]);
+
+    const result = await ragService.hybridSearch(BASE_OPTIONS);
+
+    expect(result.context).toContain('[1] S1 (sixieme - maths)');
+    expect(result.context).toContain('[2] S2 (sixieme - maths)');
+    expect(result.context).toContain('chunk one');
+    expect(result.context).not.toContain('%');
+  });
+});
+
+describe('RAGService — limites de recherche (pas de double amplification)', () => {
+  it('requests exactly topK fused results when rerank is disabled', async () => {
+    rerankEnabled = false;
+
+    await ragService.hybridSearch({ ...BASE_OPTIONS, limit: 5 });
+
+    // 4e argument de searchHybrid = limit fusionné. Avant fix : max(5*4,20)=20
+    // (puis re-amplifié ×4 en interne → prefetch 80 = 16× topK).
+    const call = mockSearchHybrid.mock.calls[0] as unknown[];
+    expect(call[3]).toBe(5);
+  });
+
+  it('requests the rerank candidate pool as fused limit when rerank is enabled', async () => {
+    rerankEnabled = true;
+
+    await ragService.hybridSearch({ ...BASE_OPTIONS, limit: 5 });
+
+    const call = mockSearchHybrid.mock.calls[0] as unknown[];
+    expect(call[3]).toBe(20); // max(5*4, 20) candidats pour le cross-encoder
+  });
+});

@@ -315,7 +315,6 @@ class DocumentAnalysisService {
         query: truncated,
         niveau: schoolLevel,
         limit: 5,
-        minSimilarity: 0.6,
         auditUserId: auditUserId ?? null,
       });
 
@@ -324,7 +323,7 @@ class DocumentAnalysisService {
       }
 
       const context = response.semanticChunks
-        .map((c, i) => `[Source ${i + 1} - Score: ${c.score.toFixed(2)}]\n${c.text}`)
+        .map((c, i) => `[Source ${i + 1}]\n${c.text}`)
         .join('\n\n---\n\n');
 
       return { found: true, chunksCount: response.semanticChunks.length, context };
