@@ -154,7 +154,7 @@ function checkQdrantHealthz(ctx) {
 }
 
 function checkAiServiceHealth(ctx) {
-  return { name: 'ai-service /health (modèles chargés)', run: async () => {
+  return { name: 'ai-service /health (modèle embed chargé)', run: async () => {
     const url = `${ctx.config.aiServiceUrl}/health`;
     let res;
     try {
