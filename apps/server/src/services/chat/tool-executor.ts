@@ -185,11 +185,13 @@ async function executeRagSearch(
     auditSessionId: context.sessionId,
   });
 
+  // averageScore/per-chunk RRF scores are intentionally left out: they are the
+  // input to wrapCurriculumToolResult, which strips them so no rank artefact
+  // (~0.016) reaches the LLM as if it were a similarity/confidence signal.
   return {
     found: result.semanticChunks.length > 0,
     context: result.context,
     resultsCount: result.semanticChunks.length,
-    averageScore: result.averageSimilarity,
     bestMatchSection: result.bestMatchSection,
     bestMatchMatiere: result.bestMatchMatiere,
     chunks: result.semanticChunks,
