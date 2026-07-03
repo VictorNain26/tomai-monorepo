@@ -91,15 +91,12 @@ const EnvSchema = z.object({
   QDRANT_COLLECTION: z.string().default('tomai_educational'),
   QDRANT_ENABLED: z.enum(['true', 'false']).default('false'),
 
-  // AI Service (Python FastAPI, Koyeb fra) — embeddings + reranking
+  // AI Service (BGE-M3 embeddings)
   AI_SERVICE_URL: z.string().optional(),
   AI_SERVICE_TOKEN: z.string().optional(),
-  AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().default(15000),
-  // Candidats récupérés (Qdrant) puis reranké (cross-encoder) par query. Le coût
-  // du rerank est ∝ ce nombre. Défaut = prod/GPU (qualité) ; baisser en dev CPU
-  // (ex. 8) accélère le rerank au prix d'un léger écart de classement.
-  RAG_RERANK_CANDIDATES: z.coerce.number().int().positive().optional(),
-  RAG_RERANK_ENABLED: z.enum(['true', 'false']).optional(),
+  // Borne le pire cas du chemin chat (embed query) : 2 tentatives × 8 s + retry 1,5 s ≈ 17,5 s.
+  // Le rerank (seul appel long) a été supprimé — audit 2026-07-01 lot 3.
+  AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().default(8000),
 
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(900000), // 15 min
@@ -183,14 +180,6 @@ export const isDevelopment = (): boolean => env.NODE_ENV === 'development';
  * Helper to check if running in Docker
  */
 export const isInDocker = (): boolean => inDocker;
-
-// Rerank OFF par défaut : le cross-encoder bge-reranker-v2-m3 dépasse le timeout sur
-// instance CPU (mesuré 43-180s pour 20 candidats >> AI_SERVICE_TIMEOUT_MS=15s) → il
-// timeout et ne s'applique jamais, tout en coûtant l'attente. Opt-in explicite
-// (RAG_RERANK_ENABLED=true), à réactiver une fois le reranker servi sur GPU.
-export function isRerankEnabled(): boolean {
-  return env.RAG_RERANK_ENABLED === 'true';
-}
 
 /**
  * Resolve DATABASE_URL based on Docker context

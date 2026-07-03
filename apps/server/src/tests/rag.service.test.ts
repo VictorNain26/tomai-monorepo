@@ -1,6 +1,7 @@
 /**
  * Tests unitaires - RAG Service (services/rag.service.ts)
- * Focused on RAG_RERANK_ENABLED flag: when disabled, rerank must not be called.
+ * Hybrid RRF retrieval : troncature à topK et scores RRF jamais présentés
+ * comme des pourcentages de similarité dans le contexte LLM.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
@@ -13,17 +14,12 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
-// Rerank flag — controlled per test via rerankEnabled
-let rerankEnabled = false;
 mock.module('../config/env', () => ({
   env: {
     NODE_ENV: 'development',
-    RAG_RERANK_CANDIDATES: undefined,
-    RAG_RERANK_ENABLED: undefined,
     QDRANT_ENABLED: 'true',
   },
   isDevelopment: () => true,
-  isRerankEnabled: () => rerankEnabled,
 }));
 
 // qdrantService mock
@@ -42,10 +38,6 @@ mock.module('../services/qdrant.service', () => ({
 }));
 
 // aiServiceClient mock
-const mockRerank = mock(async () => [
-  { index: 1, score: 0.95 },
-  { index: 0, score: 0.88 },
-]);
 const mockEmbed = mock(async () => ({
   dense: new Array(1024).fill(0.1),
   sparse: { indices: [1, 2], values: [0.5, 0.5] },
@@ -56,7 +48,6 @@ mock.module('../services/ai-service.client', () => ({
   aiServiceClient: {
     isAvailable: mockAiAvailable,
     embed: mockEmbed,
-    rerank: mockRerank,
   },
 }));
 
@@ -78,40 +69,17 @@ const BASE_OPTIONS = {
 };
 
 beforeEach(() => {
-  rerankEnabled = false;
-  mockRerank.mockClear();
   mockSearchHybrid.mockClear();
   mockEmbed.mockClear();
   ragService.invalidateAvailabilityCache();
 });
 
-describe('RAGService — rerank flag', () => {
-  it('does NOT call rerank when isRerankEnabled() is false', async () => {
-    rerankEnabled = false;
-
-    const result = await ragService.hybridSearch(BASE_OPTIONS);
-
-    expect(mockRerank).not.toHaveBeenCalled();
-    expect(result.strategy).toBe('qdrant-hybrid-rrf');
-  });
-
-  it('truncates results to topK when rerank is disabled', async () => {
-    rerankEnabled = false;
-
+describe('RAGService — hybrid RRF', () => {
+  it('truncates results to topK (mock returns more than the requested limit)', async () => {
     const result = await ragService.hybridSearch({ ...BASE_OPTIONS, limit: 2 });
 
-    // 3 hybrid results, topK=2 → must truncate to 2 without rerank
     expect(result.semanticChunks.length).toBe(2);
     expect(result.strategy).toBe('qdrant-hybrid-rrf');
-  });
-
-  it('calls rerank and returns +rerank strategy when isRerankEnabled() is true', async () => {
-    rerankEnabled = true;
-
-    const result = await ragService.hybridSearch(BASE_OPTIONS);
-
-    expect(mockRerank).toHaveBeenCalledTimes(1);
-    expect(result.strategy).toBe('qdrant-hybrid-rrf+rerank-bge-m3');
   });
 });
 
@@ -134,23 +102,12 @@ describe('RAGService — contexte LLM (scores RRF jamais affichés en %)', () =>
 });
 
 describe('RAGService — limites de recherche (pas de double amplification)', () => {
-  it('requests exactly topK fused results when rerank is disabled', async () => {
-    rerankEnabled = false;
-
+  it('requests exactly topK fused results', async () => {
     await ragService.hybridSearch({ ...BASE_OPTIONS, limit: 5 });
 
     // 4e argument de searchHybrid = limit fusionné. Avant fix : max(5*4,20)=20
     // (puis re-amplifié ×4 en interne → prefetch 80 = 16× topK).
     const call = mockSearchHybrid.mock.calls[0] as unknown[];
     expect(call[3]).toBe(5);
-  });
-
-  it('requests the rerank candidate pool as fused limit when rerank is enabled', async () => {
-    rerankEnabled = true;
-
-    await ragService.hybridSearch({ ...BASE_OPTIONS, limit: 5 });
-
-    const call = mockSearchHybrid.mock.calls[0] as unknown[];
-    expect(call[3]).toBe(20); // max(5*4, 20) candidats pour le cross-encoder
   });
 });
