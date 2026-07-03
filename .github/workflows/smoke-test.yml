@@ -46,9 +46,8 @@ jobs:
             exit 1
           fi
           embed_ok=$(jq -r '.embed_loaded' /tmp/ai-health.json)
-          rerank_ok=$(jq -r '.rerank_loaded' /tmp/ai-health.json)
-          if [ "$embed_ok" != "true" ] || [ "$rerank_ok" != "true" ]; then
-            echo "::error::Models not loaded: embed=$embed_ok rerank=$rerank_ok"
+          if [ "$embed_ok" != "true" ]; then
+            echo "::error::Model not loaded: embed=$embed_ok"
             exit 1
           fi
-          echo "✅ AI-service healthy (BGE-M3 + reranker loaded)"
+          echo "✅ AI-service healthy (BGE-M3 loaded)"

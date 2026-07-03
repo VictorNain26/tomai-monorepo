@@ -84,7 +84,7 @@ test('check conteneurs: PASS si les 3 healthy', async () => {
 });
 
 test('check ai-service /health: FAIL si embed_loaded false', async () => {
-  const fetchFn = async () => ({ ok: true, status: 200, json: async () => ({ status: 'loading', embed_loaded: false, rerank_loaded: true }) });
+  const fetchFn = async () => ({ ok: true, status: 200, json: async () => ({ status: 'loading', embed_loaded: false }) });
   const checks = buildChecks(ctxWith({ fetchFn }), { full: false });
   await assert.rejects(byName(checks, 'ai-service').run(), /embed/);
 });

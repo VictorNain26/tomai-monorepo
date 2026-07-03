@@ -22,13 +22,13 @@ Détail par app (chargé à la demande via walk-up quand tu travailles dedans) :
 | Couche | Technologies |
 |--------|-------------|
 | Backend | Bun 1.3, Elysia.js 1.4, PostgreSQL 16 pgvector, Drizzle ORM |
-| AI service | Python FastAPI (uv) — embeddings BGE-M3 dense+sparse + reranker pour le RAG |
+| AI service | Python FastAPI (uv) — embeddings BGE-M3 dense+sparse pour le RAG |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion — vitrine marketing/SEO |
 | Web | Next.js 16, TailwindCSS 4, shadcn/ui — produit web role-aware (parents/élèves/établissement) |
 | Mobile | Expo SDK 56, React Native 0.85, React 19.2, NativeWind v5, React Native Reusables |
 | Auth | Better Auth 1.6 + Google OAuth + account linking |
 | AI | Mistral (chat `medium-latest`, embeddings 1024D, vision Pixtral, OCR, TTS Voxtral), Gladia (STT) — stack 100 % EU |
-| RAG | Qdrant Cloud + BGE-M3 hybrid (via `apps/ai-service`) + rerank cross-encoder |
+| RAG | Qdrant Cloud + BGE-M3 hybrid (via `apps/ai-service`) |
 | Monorepo | Turborepo, pnpm workspaces, `@repo/api` (Eden Treaty types), `@repo/tokens` (design system partagé Tailwind v4) |
 | Deploy | Vercel (landing + web), Koyeb (server + ai-service), EAS (mobile) |
 | Observabilité | Sentry (crash/perf), PostHog (analytics + flags + session replay) — en cours d'install |
