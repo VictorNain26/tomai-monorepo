@@ -102,7 +102,27 @@ if (!dbReachable) {
   console.warn('[pronote-onboarding.integration] DB unreachable — all tests will be skipped');
 }
 
-const canRun = demoReachable && dbReachable;
+// The HEAD probe only proves the host answers — the demo can be up yet broken
+// at login (PageUnavailableError observed 2026-07). Probe the real login
+// top-level so describe.skipIf reflects actual usability, not mere liveness.
+const probedSession =
+  demoReachable && dbReachable
+    ? await loginWithCredentials({
+        url: DEMO_URL,
+        kind: DEMO_KIND,
+        username: DEMO_USERNAME,
+        password: DEMO_PASSWORD,
+        deviceUuid: 'tom-onboarding-e2e',
+      }).catch((err: unknown) => {
+        console.warn(
+          '[pronote-onboarding.integration] Demo login failed — all tests will be skipped',
+          err,
+        );
+        return null;
+      })
+    : null;
+
+const canRun = demoReachable && dbReachable && probedSession !== null;
 
 // ============================================================
 // Test state
@@ -122,21 +142,9 @@ let activatedChildId: string | null = null;
 beforeAll(async () => {
   if (!canRun) return;
 
-  // 1. Login against the demo (loginCredentials path — token-based auth is not tested here).
-  //    Wrap in try/catch: a network failure here should produce a clean skip, not an opaque
-  //    error with parentId uninitialised.
-  try {
-    session = await loginWithCredentials({
-      url: DEMO_URL,
-      kind: DEMO_KIND,
-      username: DEMO_USERNAME,
-      password: DEMO_PASSWORD,
-      deviceUuid: 'tom-onboarding-e2e',
-    });
-  } catch (err) {
-    console.warn('[pronote-onboarding.integration] loginWithCredentials failed — skipping', err);
-    return;
-  }
+  // 1. Session already established by the top-level login probe
+  if (!probedSession) return;
+  session = probedSession;
 
   // 2. Seed: parent user in DB
   const parentEmail = `${PROBE_PREFIX}-parent@example.test`;
