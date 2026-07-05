@@ -42,7 +42,6 @@ mock.module('../config/env', () => ({
     MISTRAL_MAX_TOKENS: 16384,
     MISTRAL_TIMEOUT: 60000,
     MISTRAL_RETRY_ATTEMPTS: 3,
-    MISTRAL_RETRY_DELAY: 1000,
     MISTRAL_TTS_MODEL: 'voxtral-tts-latest',
     MISTRAL_REASONING_MODEL: 'magistral-medium-latest',
     QUOTA_ENFORCEMENT_ENABLED: true,

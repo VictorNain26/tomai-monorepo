@@ -33,8 +33,6 @@ mock.module('../lib/ai/mistral-client', () => ({
     return mockStructuredResponse;
   }),
   generateText: mock(async () => 'not-used-here'),
-  chatStream: mock(async function* () { yield { type: 'done' as const }; }),
-  setMistralClient: mock(() => {}),
 }));
 
 // Import after mocks

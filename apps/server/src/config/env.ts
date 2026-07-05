@@ -83,7 +83,10 @@ const EnvSchema = z.object({
   MISTRAL_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
   MISTRAL_TIMEOUT: z.coerce.number().int().default(60000),
   MISTRAL_RETRY_ATTEMPTS: z.coerce.number().int().default(3),
-  MISTRAL_RETRY_DELAY: z.coerce.number().int().default(1000),
+  // Wall-clock budget for one streamText() chat call (all agentic steps
+  // included) — replaces the old two-tier setup/chunk timeout pair now that
+  // the AI SDK manages the tool loop as a single continuous stream.
+  CHAT_STREAM_TIMEOUT_MS: z.coerce.number().int().default(120000),
 
   // RAG — Qdrant Cloud + BGE-M3 embeddings via ai-service
   QDRANT_URL: z.string().optional(),

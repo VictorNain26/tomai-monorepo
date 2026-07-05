@@ -4,6 +4,8 @@
  * Platform-agnostic types used by both Web and Mobile.
  */
 
+export type { TomChatMessage, TomDataParts, DeckCreatedData } from 'tomai-server/app';
+
 /**
  * Utilisateur applicatif — source unique du contrat, miroir de l'enum
  * PostgreSQL `user_role` ('parent' | 'student' | 'admin'). `admin` existe via

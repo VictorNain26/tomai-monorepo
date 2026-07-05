@@ -26,7 +26,6 @@ mock.module('../config/env', () => ({
     MISTRAL_MAX_TOKENS: 16384,
     MISTRAL_TIMEOUT: 60000,
     MISTRAL_RETRY_ATTEMPTS: 3,
-    MISTRAL_RETRY_DELAY: 1000,
     NODE_ENV: 'test',
   },
 }));
@@ -40,15 +39,13 @@ let mockStructuredResponse: { intent?: string; confidence?: string } | Error = {
 
 // Mock COMPLET du wrapper Mistral (toutes les exports) pour ne pas casser
 // d'autres tests qui partagent le même module-mock cache Bun et importeraient
-// `generateText` ou `chatStream`.
+// `generateText`.
 mock.module('../lib/ai/mistral-client', () => ({
   generateStructured: mock(async () => {
     if (mockStructuredResponse instanceof Error) throw mockStructuredResponse;
     return mockStructuredResponse;
   }),
   generateText: mock(async () => 'not-used-here'),
-  chatStream: mock(async function* () { yield { type: 'done' as const }; }),
-  setMistralClient: mock(() => {}),
 }));
 
 // Import after mocks
