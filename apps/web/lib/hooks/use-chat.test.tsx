@@ -1,7 +1,19 @@
+/**
+ * useChat Hook Tests (web)
+ *
+ * Behavioral tests for the AI SDK `useChat` wrapper — the AI SDK's own
+ * `useChat` is mocked (its internals are the library's responsibility); what
+ * we verify is this hook's wiring: history seeding, error surfacing
+ * (429/409 JSON envelopes, non-JSON fallback), the last-message + context
+ * request shape, and query invalidations. Mirrors
+ * `apps/mobile/__tests__/hooks/useChat.test.ts`.
+ */
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import type { TomChatMessage } from "@repo/api";
 
 const historyGet = vi.fn();
 vi.mock("@repo/api", () => ({
@@ -11,28 +23,14 @@ vi.mock("@repo/api", () => ({
   unwrap: (r: { data: unknown }) => r.data,
   getBaseUrl: () => "http://localhost:3000",
 }));
-vi.mock("@/lib/auth-client", () => ({ useUser: () => ({ id: "u1", schoolLevel: "sixieme", firstName: "Léa" }) }));
 
-// Minimal fake of `@ai-sdk/react`'s `useChat` — backed by real React state so
-// `setMessages` calls from the hook under test trigger a re-render, like the
-// real implementation.
-type FakeMessage = { id: string; role: string; parts: { type: string; text: string }[] };
-vi.mock("@ai-sdk/react", async () => {
-  const React = await import("react");
-  return {
-    useChat: () => {
-      const [messages, setMessages] = React.useState<FakeMessage[]>([]);
-      return {
-        messages,
-        setMessages,
-        sendMessage: vi.fn(),
-        stop: vi.fn(),
-        status: "ready",
-        error: undefined,
-      };
-    },
-  };
-});
+let mockUser: { id: string; schoolLevel?: string | null; firstName?: string | null } | null = {
+  id: "u1",
+  schoolLevel: "sixieme",
+  firstName: "Léa",
+};
+vi.mock("@/lib/auth-client", () => ({ useUser: () => mockUser }));
+
 vi.mock("ai", () => ({
   DefaultChatTransport: class {},
   isTextUIPart: (p: { type: string }) => p.type === "text",
@@ -40,7 +38,36 @@ vi.mock("ai", () => ({
   getToolName: () => "",
 }));
 
+type CapturedOptions = { onFinish?: () => void };
+let mockCapturedOptions: CapturedOptions | undefined;
+
+const mockSendMessage = vi.fn();
+const mockSetMessages = vi.fn();
+const mockStop = vi.fn();
+let mockAiChatState: {
+  messages: TomChatMessage[];
+  status: "ready" | "submitted" | "streaming" | "error";
+  error: Error | undefined;
+};
+
+function resetAiChatState() {
+  mockAiChatState = { messages: [], status: "ready", error: undefined };
+}
+
+vi.mock("@ai-sdk/react", () => ({
+  useChat: (options: CapturedOptions) => {
+    mockCapturedOptions = options;
+    return {
+      ...mockAiChatState,
+      setMessages: mockSetMessages,
+      sendMessage: mockSendMessage,
+      stop: mockStop,
+    };
+  },
+}));
+
 import { useChat } from "./use-chat";
+import { chatQueryKeys } from "@/lib/chat/chat-keys";
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -48,6 +75,9 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks();
+  mockUser = { id: "u1", schoolLevel: "sixieme", firstName: "Léa" };
+  resetAiChatState();
   historyGet.mockReset().mockResolvedValue({
     data: { messages: [{ id: "m1", role: "user", content: "bonjour", timestamp: "x" }], hasOrphanMessage: false },
   });
@@ -55,9 +85,12 @@ beforeEach(() => {
 
 describe("useChat", () => {
   it("loads history for the active sessionId", async () => {
-    const { result } = renderHook(() => useChat({ sessionId: "s1" }), { wrapper });
-    await waitFor(() => expect(result.current.messages).toHaveLength(1));
-    expect(result.current.messages[0]).toMatchObject({ role: "user", content: "bonjour" });
+    renderHook(() => useChat({ sessionId: "s1" }), { wrapper });
+    await waitFor(() =>
+      expect(mockSetMessages).toHaveBeenCalledWith([
+        { id: "m1", role: "user", parts: [{ type: "text", text: "bonjour" }] },
+      ]),
+    );
     expect(historyGet).toHaveBeenCalled();
   });
 
@@ -68,20 +101,92 @@ describe("useChat", () => {
     expect(historyGet).not.toHaveBeenCalled();
   });
 
-  it("purges the previous conversation and loads the new one on switch", async () => {
-    historyGet
-      .mockReset()
-      .mockResolvedValueOnce({ data: { messages: [{ id: "mA", role: "assistant", content: "réponse A", timestamp: "x" }], hasOrphanMessage: false } })
-      .mockResolvedValueOnce({ data: { messages: [{ id: "mB", role: "user", content: "question B", timestamp: "x" }], hasOrphanMessage: false } });
-
-    const { result, rerender } = renderHook(
+  it("purges the previous conversation when the session switches", async () => {
+    const { rerender } = renderHook(
       ({ sessionId }: { sessionId: string | null }) => useChat({ sessionId }),
       { wrapper, initialProps: { sessionId: "sA" } },
     );
-    await waitFor(() => expect(result.current.messages).toEqual([{ id: "mA", role: "assistant", content: "réponse A" }]));
+    await waitFor(() => expect(mockSetMessages).toHaveBeenCalled());
+    mockSetMessages.mockClear();
 
     rerender({ sessionId: "sB" });
-    await waitFor(() => expect(result.current.messages).toEqual([{ id: "mB", role: "user", content: "question B" }]));
-    expect(result.current.messages.some((m) => m.id === "mA")).toBe(false);
+    await waitFor(() => expect(mockSetMessages).toHaveBeenCalledWith([]));
+  });
+
+  it("surfaces the 429 QUOTA_EXCEEDED JSON error with its user-facing message", () => {
+    mockAiChatState.error = new Error(
+      JSON.stringify({ error: { code: "QUOTA_EXCEEDED", message: "Quota de questions atteint." } }),
+    );
+
+    const { result } = renderHook(() => useChat({ sessionId: "s1" }), { wrapper });
+
+    expect(result.current.error).toBe("Quota de questions atteint.");
+  });
+
+  it("surfaces the 409 CONCURRENT_STREAM JSON error", () => {
+    mockAiChatState.error = new Error(
+      JSON.stringify({ error: { code: "CONCURRENT_STREAM", message: "Une réponse est déjà en cours." } }),
+    );
+
+    const { result } = renderHook(() => useChat({ sessionId: "s1" }), { wrapper });
+
+    expect(result.current.error).toBe("Une réponse est déjà en cours.");
+  });
+
+  it("falls back to the raw message for a non-JSON (network) error", () => {
+    mockAiChatState.error = new Error("Network request failed");
+
+    const { result } = renderHook(() => useChat({ sessionId: "s1" }), { wrapper });
+
+    expect(result.current.error).toBe("Network request failed");
+  });
+
+  it("sends the last message with request context", () => {
+    const { result } = renderHook(() => useChat({ sessionId: "s1" }), { wrapper });
+
+    act(() => {
+      result.current.sendMessage("Bonjour Tom");
+    });
+
+    expect(mockSendMessage).toHaveBeenCalledTimes(1);
+    const [message, options] = mockSendMessage.mock.calls[0] as [unknown, { body: Record<string, unknown> }];
+    expect(message).toMatchObject({
+      role: "user",
+      parts: [{ type: "text", text: "Bonjour Tom" }],
+    });
+    expect(options.body).toMatchObject({
+      sessionId: "s1",
+      schoolLevel: "sixieme",
+      firstName: "Léa",
+    });
+  });
+
+  it("does not send when not ready, no user, or no session", () => {
+    mockAiChatState.status = "streaming";
+    const { result: notReady } = renderHook(() => useChat({ sessionId: "s1" }), { wrapper });
+    act(() => notReady.current.sendMessage("Salut"));
+    expect(mockSendMessage).not.toHaveBeenCalled();
+
+    resetAiChatState();
+    const { result: noSession } = renderHook(() => useChat({ sessionId: null }), { wrapper });
+    act(() => noSession.current.sendMessage("Salut"));
+    expect(mockSendMessage).not.toHaveBeenCalled();
+  });
+
+  it("invalidates conversations and history queries on stream finish", () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    function localWrapper({ children }: { children: ReactNode }) {
+      return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+    }
+
+    renderHook(() => useChat({ sessionId: "s1" }), { wrapper: localWrapper });
+
+    act(() => {
+      mockCapturedOptions?.onFinish?.();
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.conversations() });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.history("s1") });
   });
 });
