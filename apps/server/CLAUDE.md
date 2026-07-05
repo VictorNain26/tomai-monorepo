@@ -20,7 +20,7 @@ Le backend tourne sur l'**host** via `pnpm dev`, pas en conteneur (pas de clash 
 
 L'index curriculum (programmes officiels) vit sur **Qdrant Cloud, partagé dev + prod** — pas d'ingestion par dev. Le backend lit la collection via `QDRANT_URL`/`QDRANT_API_KEY`/`QDRANT_COLLECTION` (**config d'env**, jamais un défaut code : défaut neutre `tomai_educational`, valeur réelle dans `.env`) ; `QDRANT_ENABLED=true` requis côté serveur (défaut code `false`). Séparation dev/prod **portée par le scheme d'URL** : `qdrant.service.ts` n'exige une clé que pour `https://` (Cloud), le Qdrant local (`http://`) tourne sans auth ; en prod un fail-fast dans `env.ts` exige la clé si `QDRANT_ENABLED=true`. Gabarit des vars : `.env.example`.
 
-`pnpm dev` (racine) lève quand même la stack locale **Qdrant** (`:6333`) + **ai-service** BGE-M3 (`:8001`) + Postgres : l'ai-service embed les **queries** au runtime, le Qdrant local sert `pnpm doctor` (roundtrip embed→search isolé) et le dev 100 % offline. 1er boot ai-service : ~3,5 Go de modèles (cache `tomai_ai_service_hf_cache`).
+`pnpm dev` (racine) lève quand même la stack locale **Qdrant** (`:6333`) + **ai-service** BGE-M3 (`:8001`) + Postgres : l'ai-service embed les **queries** au runtime, le Qdrant local sert `pnpm doctor` (roundtrip embed→search isolé) et le dev 100 % offline. 1er boot ai-service : ~2,4 Go de modèle (cache `tomai_ai_service_hf_cache`).
 
 `pnpm doctor` (racine) diagnostique l'infra RAG (conteneurs, qdrant, ai-service, migrations, roundtrip). PASS/FAIL/SKIP par check, exit 0 seulement si tout passe.
 
@@ -65,7 +65,6 @@ Le type `App` (`typeof app`) est l'arbre de routes consommé par Eden Treaty cô
 - **Auth** : Better Auth 1.6 + Google OAuth + account linking + cookieCache (macro Elysia `authMacro`, cf. section Patterns)
 - **AI** : **Stack 100 % Mistral souveraine EU** — modèle par tâche, centralisés dans `config/env.ts` (`MISTRAL_MODEL_*`, aliases `-latest` + version réelle en commentaire) :
   - Embeddings (RAG) : `BAAI/bge-m3` dense+sparse via `apps/ai-service/` (Python, Koyeb fra)
-  - Reranker (RAG) : `BAAI/bge-reranker-v2-m3` co-hosté dans `apps/ai-service/`
   - Embeddings (mémoire épisodique) : `mistral-embed` (1024D)
   - Chat tutorat principal : `mistral-medium-latest` (streaming + tools)
   - Reasoning (STEM, collège+, intention difficile) : paramètre `reasoning_effort: high` sur le modèle chat, routé par `lib/ai/mistral-reasoning.ts` (magistral déprécié — le reasoning passe par un paramètre, plus par un modèle dédié)
@@ -77,7 +76,7 @@ Le type `App` (`typeof app`) est l'arbre de routes consommé par Eden Treaty cô
   - STT : Voxtral (`voxtral-mini-latest`)
   - **Migration Gemini → Mistral terminée** : `@google/genai` retiré du
     `package.json`, aucun appel sortant Google côté runtime.
-- **RAG** : Qdrant Cloud + BGE-M3 dense+sparse (via `apps/ai-service/`) + hybrid RRF natif Qdrant + rerank cross-encoder.
+- **RAG** : Qdrant Cloud + BGE-M3 dense+sparse (via `apps/ai-service/`) + hybrid RRF natif Qdrant.
   Curriculum index dans repo séparé `tomai-curriculum/` (voir son CLAUDE.md).
 - **Paiement** : RevenueCat uniquement (mobile IAP, source unique de facturation). Webhooks protégés par secret partagé `REVENUECAT_WEBHOOK_AUTH` (≥32 chars, comparaison timing-safe)
 - **Storage** : Scaleway S3 (presigned URLs, RGPD fr-par)
@@ -90,7 +89,7 @@ Le type `App` (`typeof app`) est l'arbre de routes consommé par Eden Treaty cô
 
 - `generateText({ messages, model, temperature, maxTokens, promptCacheKey, timeoutMs })` — completion non-streaming
 - `generateStructured<T>({ ..., schema })` — JSON Schema strict (élimine retry parsing)
-- `chatStream({ messages, tools, ... })` — streaming SSE pour le chat
+- Chat streaming : `streamChat` dans `src/services/chat/ai-chat.service.ts` (Vercel AI SDK `streamText`), exposé via `/api/chat/stream` (UI Message Stream)
 
 Best practices token (cf ADR-0001 D4) :
 - `prompt_cache_key` versionné sur tout service à system prompt stable (-90 % cached tokens)
@@ -110,12 +109,12 @@ Best practices token (cf ADR-0001 D4) :
 
 ### Modules principaux
 
-- **Chat** (`src/services/chat/`) : orchestration Mistral, summarization, tool execution, token budget, SSE streaming, intent classifier (ministral-8b), mémoire épisodique pgvector (mistral-medium extraction).
+- **Chat** (`src/services/chat/`) : orchestration Mistral, summarization, tool execution, token budget, streaming via Vercel AI SDK (UI Message Stream), intent classifier (ministral-8b), mémoire épisodique pgvector (mistral-medium extraction).
 - **Billing** (`src/services/billing/`) : `BillingService` unique, piloté par les webhooks RevenueCat (`src/routes/revenuecat-webhook-*.ts`). Mutations idempotentes sur `family_billing` + `user_subscriptions`. Idempotence stockée dans `webhook_events` (TTL 7 jours).
 - **Learning** : FSRS (spaced repetition), decks, cards (génération `mistral-small` + JSON Schema), generations. Logique extraite en `LearningService` + `learningCardsRepository`/`learningDecksRepository` ; routes fines → service → repo, mutations multi-tables en transaction (cf. `services/learning/`).
 - **Subscription** (`src/routes/subscription/`) : routes lecture seule — `GET /api/subscriptions/status` (état famille + enfants) et `GET /api/subscriptions/usage` (tokens). Les achats/annulations passent par RevenueCat côté mobile ; le backend ne fait AUCUN appel provider sortant.
 - **Quota** : token quota windowed (5h rolling + daily cap) derrière flag `QUOTA_ENFORCEMENT_ENABLED`
-- **RAG** : recherche unifiée Qdrant hybrid native (dense BGE-M3 + sparse BGE-M3 + fusion RRF) + reranker `bge-reranker-v2-m3` cross-encoder. Embeddings + rerank servis par `apps/ai-service/` (Python FastAPI, Koyeb fra). Pas de Cohere (souveraineté EU). Déploiement : `apps/ai-service/README.md`.
+- **RAG** : recherche unifiée Qdrant hybrid native (dense BGE-M3 + sparse BGE-M3 + fusion RRF). Embeddings servis par `apps/ai-service/` (Python FastAPI, Koyeb fra). Pas de Cohere (souveraineté EU). Déploiement : `apps/ai-service/README.md`.
 - **Pronote** : auth QR code, devoirs, notes, emploi du temps (SSRF protection)
 - **Storage** : upload presigned Scaleway, confirmation. Multimodal chat consomme directement le blob Scaleway (base64 inline pour photos, `extractedText` côté record pour PDFs). Pas de cache fichier externe (Mistral n'a pas d'équivalent à Gemini Files API).
 

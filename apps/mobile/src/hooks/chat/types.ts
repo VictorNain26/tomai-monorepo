@@ -40,40 +40,6 @@ export interface ChatFileAttachment {
   preview?: string;
 }
 
-/** Backend SSE stream chunk (from gemini-chat.service.ts GeminiStreamChunk) */
-export interface StreamChunk {
-  type: 'content' | 'done' | 'error' | 'status' | 'deck_created';
-  id: string;
-  model?: string;
-  timestamp?: number;
-  delta?: string;
-  content?: string;
-  role?: 'assistant';
-  finishReason?: 'stop' | 'length' | 'error';
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
-  metadata?: {
-    sessionId?: string;
-    usedRAG?: boolean;
-  };
-  error?: {
-    message: string;
-    code?: string;
-  };
-  /** Status message during tool calls (heartbeat) */
-  status?: string;
-  /** Deck created event from generate_flashcards tool */
-  deck?: {
-    deckId: string;
-    title: string;
-    cardCount: number;
-    subject: string;
-  };
-}
-
 /** Deck created during chat via generate_flashcards tool */
 export interface CreatedDeck {
   deckId: string;

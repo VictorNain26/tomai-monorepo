@@ -4,7 +4,6 @@
  * Architecture mai 2026 (post-migration BGE-M3) :
  * - Embed query via `tomai-ai-service` (BGE-M3 dense + sparse natif single pass)
  * - Hybrid search Qdrant : prefetch dense + sparse → fusion RRF native
- * - Stage 2 : rerank bge-reranker-v2-m3 (via le même ai-service)
  *
  * Pré-requis collection Qdrant : ingérée avec BGE-M3 (dense 1024D cosine +
  * sparse natif lexical_weights). Voir `apps/curriculum/scripts/ingest.py` et la
@@ -19,15 +18,7 @@ import { qdrantService, type QdrantSearchResult } from './qdrant.service.js';
 import { aiServiceClient } from './ai-service.client.js';
 import { retrievalAuditRepository } from '../db/repositories/retrieval-audit.repository.js';
 import { logger } from '../lib/observability.js';
-import { env, isRerankEnabled } from '../config/env.js';
 import type { EducationLevelType } from '../types/index.js';
-
-// Thresholds pour cosine similarity (0-1)
-const RAG_THRESHOLDS = {
-  MIN_SCORE: 0.35,
-  GOOD_SCORE: 0.5,
-  EXCELLENT_SCORE: 0.7,
-} as const;
 
 // =============================================================================
 // Types
@@ -40,7 +31,6 @@ interface HybridSearchOptions {
   matiere?: string;
   competence?: string | null;
   limit?: number;
-  minSimilarity?: number;
   /**
    * Audit trail (RGPD article 30) — when both are provided, we persist a row
    * to `retrieval_audit` so we can answer "what did this user search" without
@@ -91,8 +81,7 @@ class RAGService {
    * Pipeline :
    * 1. Embed query via ai-service (BGE-M3 dense + sparse natif, single pass)
    * 2. Qdrant Query API : prefetch dense + sparse → fusion RRF native
-   * 3. Rerank bge-reranker-v2-m3 (via ai-service)
-   * 4. Construction du contexte structuré pour le LLM
+   * 3. Construction du contexte structuré pour le LLM
    */
   async hybridSearch(options: HybridSearchOptions): Promise<HybridSearchResult> {
     const startTime = Date.now();
@@ -111,17 +100,14 @@ class RAGService {
       const querySparse = queryEmbed.sparse;
 
       const topK = options.limit ?? 5;
-      // Stage 2 rerank toujours activé en post-migration (synergie infra :
-      // même service Python que l'embed, latence supplémentaire marginale).
-      // Prefetch 4× topK pour donner au cross-encoder de la matière à réordonner.
-      // Override env (RAG_RERANK_CANDIDATES) : baisser en dev CPU pour accélérer
-      // le rerank (coût ∝ candidats), garder haut en prod GPU pour la qualité.
-      const prefetchK = env.RAG_RERANK_CANDIDATES ?? Math.max(topK * 4, 20);
+      // Limite fusionnée demandée à Qdrant = topK exactement (le prefetch par
+      // branche est dérivé en interne par searchHybrid : max(limit*4, 20)).
+      const fusedLimit = topK;
 
       // NOTE : on ne passe PAS scoreThreshold à searchHybrid. La fusion RRF
-      // côté Qdrant retourne des scores petits (1/(k+rank), k=60 → top-1 ≈ 0.016)
-      // qui ne sont PAS comparables à la cosine similarity (~0.5-0.9). Le seuil
-      // RAG_THRESHOLDS.MIN_SCORE 0.35 est calibré cosine ; le passer à
+      // côté Qdrant retourne des scores de rang (1/(k+rank), magnitude dépendant
+      // version serveur) qui ne sont PAS des cosine — aucun seuil cosine
+      // absolu (type 0.35) n'est comparable. Le passer à
       // searchHybrid filtrerait tous les résultats. Le filtrage qualité se fait
       // a posteriori sur averageSimilarity (calculé depuis score Qdrant).
       //
@@ -134,40 +120,13 @@ class RAGService {
         queryDense,
         querySparse,
         { niveau: options.niveau, matiere: options.matiere },
-        prefetchK,
+        fusedLimit,
         { hnswEf: 128 },
       );
 
-      let strategy: 'qdrant-hybrid-rrf' | 'qdrant-hybrid-rrf+rerank-bge-m3' =
-        'qdrant-hybrid-rrf';
+      const strategy = 'qdrant-hybrid-rrf' as const;
 
-      // Stage 2: cross-encoder rerank via ai-service. Skipped when
-      // RAG_RERANK_ENABLED=false (default in dev — CPU cross-encoder times out
-      // locally). En cas d'échec, on log et on garde l'ordre hybrid pour ne
-      // pas casser le chat (rerank = optimisation, pas dépendance dure du retrieval).
-      if (isRerankEnabled() && results.length > 1) {
-        try {
-          const reranked = await aiServiceClient.rerank(
-            options.query,
-            results.map((r) => r.text),
-            topK,
-          );
-          // `reranked[i].index` réfère à la position dans `results` qu'on a envoyée
-          results = reranked
-            .map((r) => results[r.index])
-            .filter((r): r is QdrantSearchResult => r !== undefined)
-            .slice(0, topK);
-          strategy = 'qdrant-hybrid-rrf+rerank-bge-m3';
-        } catch (err) {
-          logger.warn('Rerank failed, falling back to hybrid order', {
-            operation: 'rag-search:rerank-fallback',
-            _error: err instanceof Error ? err.message : String(err),
-          });
-          if (results.length > topK) results = results.slice(0, topK);
-        }
-      } else if (results.length > topK) {
-        results = results.slice(0, topK);
-      }
+      if (results.length > topK) results = results.slice(0, topK);
 
       const semanticChunks = results.length > 0 ? this.toSemanticChunks(results) : [];
       const bestMatch = results[0];
@@ -269,13 +228,6 @@ class RAGService {
     this.availabilityCache = null;
   }
 
-  /**
-   * Retourne les thresholds
-   */
-  getThresholds() {
-    return RAG_THRESHOLDS;
-  }
-
   // ===========================================================================
   // Private helpers
   // ===========================================================================
@@ -304,9 +256,10 @@ class RAGService {
   private buildContext(results: QdrantSearchResult[]): string {
     if (results.length === 0) return '';
 
+    // Scores RRF (~1/(k+rank)) non affichés : leur magnitude dépend de la
+    // version Qdrant et n'est pas une similarité — seul le rang est fiable.
     const contextParts = results.map((result, index) => {
-      const scorePercent = (result.score * 100).toFixed(0);
-      return `[${index + 1}] ${result.section} (${result.niveau} - ${result.matiere}) [${scorePercent}%]
+      return `[${index + 1}] ${result.section} (${result.niveau} - ${result.matiere})
 ${result.text}`;
     });
 

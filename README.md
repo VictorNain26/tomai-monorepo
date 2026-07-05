@@ -27,7 +27,7 @@ apps/
 ├── web/         # Next.js 16 — produit web role-aware (port 3002)
 ├── landing/     # Next.js 16 — site vitrine SEO (port 3001)
 ├── mobile/      # Expo SDK 56 — app iOS/Android (port 8081)
-└── ai-service/  # Python FastAPI — embeddings BGE-M3 + reranker (RAG)
+└── ai-service/  # Python FastAPI — embeddings BGE-M3 (RAG)
 
 packages/
 ├── api/             # Client Eden Treaty typé (contrat serveur → clients)
@@ -45,7 +45,7 @@ packages/
 | Mobile | Expo SDK 56, React Native 0.85, NativeWind v5 |
 | Auth | Better Auth 1.6 + Google OAuth |
 | AI | Mistral (chat, vision, OCR, TTS Voxtral), Gladia (STT) — stack 100 % EU |
-| RAG | Qdrant Cloud + BGE-M3 hybrid (via `apps/ai-service`) + rerank cross-encoder |
+| RAG | Qdrant Cloud + BGE-M3 hybrid (via `apps/ai-service`) |
 | Paiements | RevenueCat (mobile IAP, source unique de facturation) |
 | Stockage | Scaleway S3 (RGPD, fr-par) |
 | Deploy | Vercel (landing + web), Koyeb (server + ai-service), EAS (mobile) |

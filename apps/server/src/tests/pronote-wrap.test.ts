@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { wrapPronoteData } from '../services/chat/mistral-helpers';
-import type { PronoteContext } from '../services/chat/chat-streaming-types';
+import type { PronoteContext } from '../services/chat/ai-chat.service';
 
 describe('wrapPronoteData', () => {
   it('returns null when no context is provided', () => {

@@ -1,12 +1,11 @@
 """
-FastAPI app exposant BGE-M3 (embed) et bge-reranker-v2-m3 (rerank).
+FastAPI app exposant BGE-M3 (embed).
 
-Lifespan préchargé les deux modèles au startup → pas de cold start sur la
+Lifespan préchargé le modèle au startup → pas de cold start sur la
 première requête utilisateur (juste un cold start au container boot).
 
 Endpoints :
 - POST /embed   — BGE-M3 dense + sparse natif
-- POST /rerank  — bge-reranker-v2-m3 (compat TEI POST /rerank)
 - GET  /health  — readiness probe
 """
 
@@ -19,43 +18,36 @@ import anyio
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
-from .config import API_TOKEN, EMBED_MODEL, RERANK_MODEL, validate_config
+from .config import API_TOKEN, EMBED_MODEL, validate_config
 from .embed import encode as embed_encode
 from .embed import is_loaded as embed_loaded
 from .embed import load_model as embed_load
-from .rerank import is_loaded as rerank_loaded
-from .rerank import load_model as rerank_load
-from .rerank import rerank as rerank_run
 from .schemas import (
     EmbedRequest,
     EmbedResponse,
     HealthResponse,
-    RerankRequest,
-    RerankResponse,
 )
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """Valide la config puis précharge les modèles au startup (singleton)."""
+    """Valide la config puis précharge le modèle au startup (singleton)."""
     validate_config()
     embed_load()
-    rerank_load()
     yield
 
 
 app = FastAPI(
     title="tomai-ai-service",
     version="0.1.0",
-    description="Embed (BGE-M3) + Rerank (bge-reranker-v2-m3) for Tom RAG backend.",
+    description="Embed (BGE-M3 dense+sparse) for Tom RAG backend.",
     lifespan=lifespan,
 )
 
-# Sérialise l'inférence par modèle : BGEM3FlagModel et CrossEncoder ne sont pas
-# documentés thread-safe, et le threadpool FastAPI peut lancer plusieurs threads.
+# Sérialise l'inférence par modèle : BGEM3FlagModel n'est pas documenté
+# thread-safe, et le threadpool FastAPI peut lancer plusieurs threads.
 # Le lock (event-loop-bound) est acquis avant l'offload run_in_threadpool.
 _embed_lock = anyio.Lock()
-_rerank_lock = anyio.Lock()
 
 
 def _require_token(authorization: str | None = Header(default=None)) -> None:
@@ -75,11 +67,9 @@ def _require_token(authorization: str | None = Header(default=None)) -> None:
 async def health() -> HealthResponse:
     """Readiness probe — used by Koyeb healthcheck."""
     return HealthResponse(
-        status="ok" if embed_loaded() and rerank_loaded() else "loading",
+        status="ok" if embed_loaded() else "loading",
         embed_model=EMBED_MODEL,
-        rerank_model=RERANK_MODEL,
         embed_loaded=embed_loaded(),
-        rerank_loaded=rerank_loaded(),
     )
 
 
@@ -89,11 +79,3 @@ async def embed(req: EmbedRequest) -> EmbedResponse:
     async with _embed_lock:
         items = await run_in_threadpool(embed_encode, req.texts)
     return EmbedResponse(model=EMBED_MODEL, embeddings=items)
-
-
-@app.post("/rerank", response_model=RerankResponse, dependencies=[Depends(_require_token)])
-async def rerank(req: RerankRequest) -> RerankResponse:
-    """bge-reranker-v2-m3 — compat format HuggingFace TEI POST /rerank."""
-    async with _rerank_lock:
-        results = await run_in_threadpool(rerank_run, req.query, req.texts, req.top_n)
-    return RerankResponse(model=RERANK_MODEL, results=results)

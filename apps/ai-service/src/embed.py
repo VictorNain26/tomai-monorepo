@@ -20,18 +20,9 @@ _model_lock = Lock()
 
 
 def _resolve_fp16() -> bool:
-    """fp16=auto → True si CUDA dispo, False sinon (CPU)."""
-    if USE_FP16 in ("true", "1", "yes"):
-        return True
-    if USE_FP16 in ("false", "0", "no"):
-        return False
-    # auto
-    try:
-        import torch
-
-        return torch.cuda.is_available()
-    except ImportError:
-        return False
+    # Explicite uniquement : FP16 opt-in via USE_FP16=true. Pas de détection
+    # auto — sur CPU le comportement doit être déterministe (audit lot 3).
+    return USE_FP16 in ("true", "1", "yes")
 
 
 def load_model() -> None:

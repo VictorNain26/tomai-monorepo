@@ -52,7 +52,7 @@ Backend Elysia à `apps/server`. **Eden Treaty** via `@repo/api` (workspace pack
 
 - Client initialisé dans `src/lib/api.ts` : `EXPO_PUBLIC_API_URL`, `cookieProvider` injectant la session Better Auth, timeouts (30s général / 60s upload / 120s chat).
 - **Auth** : Better Auth + `@better-auth/expo` plugin. Session stockée en `expo-secure-store` (Keychain/Keystore). Deep links `tomia://` pour retour OAuth.
-- **Chat SSE** : `react-native-sse` dans `src/hooks/useChat.ts`. Backoff exponentiel + gestion 429 `QUOTA_EXCEEDED` et `CONCURRENT_STREAM`.
+- **Chat** : `@ai-sdk/react`'s `useChat` + `DefaultChatTransport` dans `src/hooks/useChat.ts` (server-authoritative history, `/api/chat/stream`). Gestion 429 `QUOTA_EXCEEDED` et 409 `CONCURRENT_STREAM`.
 - **Upload** : presigned URLs Scaleway (`POST /api/upload/presign` → PUT S3 direct → `POST /api/upload/confirm/:id`). Voir `src/hooks/usePresignedUpload.ts`.
 - **Data fetching** : TanStack Query v5 + persister AsyncStorage (`TOMIA_QUERY_CACHE`, gcTime 24h, staleTime 5min, retry 2× exponentiel) + NetInfo pour `onlineManager`.
 

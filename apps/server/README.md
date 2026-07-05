@@ -40,7 +40,7 @@ Documentation interactive auto-generee disponible en dev :
 | Auth | Better Auth 1.6 + Google OAuth |
 | AI Chat | Mistral (`mistral-medium-latest`, streaming + tools) |
 | Embeddings | BGE-M3 (RAG, via ai-service) + `mistral-embed` 1024D (mémoire) |
-| RAG | Qdrant Cloud hybrid (BGE-M3 dense+sparse + RRF) + reranker BGE |
+| RAG | Qdrant Cloud hybrid (BGE-M3 dense+sparse + RRF) |
 | Stockage | Scaleway Object Storage (S3, RGPD France) |
 | STT | Gladia |
 | TTS | Voxtral (`voxtral-tts-26.03`, EU) |
@@ -94,8 +94,7 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 
 | Variable | Description |
 |----------|-------------|
-| `AI_SERVICE_URL` | Service embeddings/rerank BGE-M3 (apps/ai-service) |
-| `RAG_RERANK_ENABLED` | `true`/`false` — défaut OFF en dev (cross-encoder CPU lent), ON en prod |
+| `AI_SERVICE_URL` | Service embeddings BGE-M3 (apps/ai-service) |
 | `QDRANT_URL` / `QDRANT_API_KEY` | Qdrant Cloud pour RAG |
 | `SCALEWAY_ACCESS_KEY` / `SCALEWAY_SECRET_KEY` | Scaleway Object Storage |
 | `SCALEWAY_BUCKET` / `SCALEWAY_REGION` | Bucket et region (fr-par) |
@@ -119,7 +118,7 @@ Le backend du monorepo tourne sur l'host (`pnpm dev` :3000). L'app mobile dédui
 son URL (`EXPO_PUBLIC_API_URL`) de la résolution DNS du device (même Wi-Fi) et
 loggue l'URL résolue au démarrage. Rien à configurer manuellement.
 
-L'**ai-service** (BGE-M3 embeddings/rerank) tourne côté Docker intra-réseau
+L'**ai-service** (BGE-M3 embeddings) tourne côté Docker intra-réseau
 (`ai-service:8000`) mais est **inutilisable depuis l'host sans translation** : la
 variable `AI_SERVICE_URL` doit pointer `http://localhost:8001` (port remappé par
 Docker Compose à la `host`). `.env.example` le définit déjà.
@@ -149,7 +148,7 @@ src/
 ├── services/                   # Business logic
 │   ├── chat/                   # Mistral streaming, summarization, tools
 │   ├── storage/                # Scaleway S3
-│   ├── rag.service.ts          # RAG unifie (Qdrant hybrid + rerank)
+│   ├── rag.service.ts          # RAG unifie (Qdrant hybrid)
 │   ├── pronote.service.ts      # Pawnote wrapper + SSRF protection
 │   ├── fsrs.service.ts         # Spaced repetition
 │   └── token-quota.service.ts  # Quotas tokens IA

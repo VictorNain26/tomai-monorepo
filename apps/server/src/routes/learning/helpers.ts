@@ -56,6 +56,29 @@ export function getUserLevel(
   return schoolLevel as EducationLevelType;
 }
 
+export type RagGateResult =
+  | { ok: true }
+  | { ok: false; reason: 'rag_disabled'; httpStatus: 503 }
+  | { ok: false; reason: 'no_results'; httpStatus: 400 };
+
+/**
+ * Gate de génération : on génère dès que le programme officiel répond.
+ * Volontairement AUCUN seuil sur les scores : en fusion RRF ce sont des
+ * scores de rang (~1/(k+rank)), pas des similarités — toute comparaison
+ * absolue est un bug (audit 2026-07-01, P0 n°1).
+ */
+export function evaluateRagGate(
+  ragResult: { strategy: string; semanticChunks: readonly unknown[] },
+): RagGateResult {
+  if (ragResult.strategy === 'disabled') {
+    return { ok: false, reason: 'rag_disabled', httpStatus: 503 };
+  }
+  if (ragResult.semanticChunks.length === 0) {
+    return { ok: false, reason: 'no_results', httpStatus: 400 };
+  }
+  return { ok: true };
+}
+
 /**
  * Subject labels for French UI
  * Aligned with Qdrant matières and frontend SUBJECT_METADATA

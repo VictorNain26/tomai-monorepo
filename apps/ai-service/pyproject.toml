@@ -1,7 +1,7 @@
 [project]
 name = "tomai-ai-service"
 version = "0.1.0"
-description = "HTTP service exposing BGE-M3 (dense+sparse) and bge-reranker-v2-m3 for the Tom RAG backend."
+description = "HTTP service exposing BGE-M3 (dense+sparse) for the Tom RAG backend."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
@@ -12,11 +12,10 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
     "pydantic>=2.9",
-    # Modèles ML — libs officielles BAAI / sentence-transformers (cf. choix archi
+    # Modèles ML — lib officielle BAAI FlagEmbedding (cf. choix archi
     # documenté dans docs/ARCHITECTURE.md du curriculum). Aucune dépendance
     # custom : on wrap des libs matures.
     "FlagEmbedding>=1.3",          # BGE-M3 dense + sparse natif (lexical_weights)
-    "sentence-transformers>=3.0",  # CrossEncoder pour bge-reranker-v2-m3
     # PyTorch — forcé en CPU via [tool.uv.index] pytorch-cpu (cf. plus bas) :
     # la wheel PyPI par défaut embarque ~6 Go de CUDA inutiles sur Koyeb eco-large.
     "torch>=2.5",

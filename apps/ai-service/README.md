@@ -1,20 +1,18 @@
 # tomai-ai-service
 
-Service HTTP Python qui sert **BGE-M3 (dense + sparse natif)** et
-**bge-reranker-v2-m3** pour le backend Tom RAG.
+Service HTTP Python qui sert **BGE-M3 (dense + sparse natif)** pour le
+backend Tom RAG.
 
 ## Pourquoi ce service existe
 
-Le backend Bun (`apps/server`) a besoin pour chaque requête utilisateur :
-
-1. **Embed query → dense + sparse cohérents** pour le hybrid search Qdrant
-2. **Rerank des top-N candidats** pour booster la précision
+Le backend Bun (`apps/server`) a besoin, pour chaque requête utilisateur,
+d'**embed query → dense + sparse cohérents** pour le hybrid search Qdrant.
 
 Le sparse natif BGE-M3 (`lexical_weights`) n'existe que dans la lib
 Python `FlagEmbedding` officielle BAAI. Aucun serveur HTTP OSS mature ne
 l'expose (audit fait mai 2026 : TEI, Infinity, Xinference → tous **non**).
-Donc on monte ce micro-service custom — 150 lignes de glue HTTP autour
-de libs matures (FlagEmbedding + sentence-transformers).
+Donc on monte ce micro-service custom — glue HTTP autour de la lib
+mature FlagEmbedding.
 
 Justification chiffrée : `tomai-curriculum/docs/ARCHITECTURE.md §Décision
 benchmark embedder`. Sans le sparse natif, on perd -3.7 pp recall@5.
@@ -41,51 +39,24 @@ Réponse :
 }
 ```
 
-### `POST /rerank`
-
-Format compatible HuggingFace TEI `/rerank` (le client backend
-`ai-service.client.ts` peut être pointé indifféremment sur TEI ou ce service).
-
-```json
-{
-  "query": "Pythagore",
-  "texts": ["chunk 1", "chunk 2", "chunk 3"],
-  "top_n": 5
-}
-```
-
-Réponse :
-
-```json
-{
-  "model": "BAAI/bge-reranker-v2-m3",
-  "results": [
-    { "index": 1, "score": 0.92 },
-    { "index": 0, "score": 0.81 }
-  ]
-}
-```
-
 ### `GET /health`
 
 Readiness probe utilisée par Koyeb.
 
-## Modèles co-hostés
+## Modèle
 
 | Modèle | Lib | Taille | RAM (FP32) |
 |---|---|---|---|
 | `BAAI/bge-m3` | FlagEmbedding | 2.4 GB | ~3 GB |
-| `BAAI/bge-reranker-v2-m3` | sentence-transformers | 1.1 GB | ~2 GB |
 
-**Total RAM runtime** : ~5 GB avec FP32, ~3 GB avec FP16.
+**Total RAM runtime** : ~3 GB FP32, ~1.5 GB FP16.
 
 ## Configuration (env vars)
 
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `EMBED_MODEL` | `BAAI/bge-m3` | HF model id pour embed |
-| `RERANK_MODEL` | `BAAI/bge-reranker-v2-m3` | HF model id pour rerank |
-| `USE_FP16` | `auto` | `auto`/`true`/`false`. `auto` = True si CUDA |
+| `USE_FP16` | `false` | `true`/`false` — FP16 opt-in (~2× moins de RAM). Pas de détection auto. |
 | `HF_HOME` | `/data/hf_cache` | Cache modèles HF (persistant si volume monté) |
 | `ENVIRONMENT` | `development` | `production` active le fail-fast au boot (cf. ci-dessous) |
 | `API_TOKEN` | (vide) | Si défini, exige `Authorization: Bearer <token>` (comparaison constant-time). **Obligatoire en production.** |
@@ -95,7 +66,7 @@ Readiness probe utilisée par Koyeb.
 
 Quand `ENVIRONMENT=production`, le service **refuse de démarrer** si `API_TOKEN`
 est absent ou vide (`RuntimeError` au boot, comme le fail-fast secrets du backend
-Bun). Cela évite d'exposer `/embed` et `/rerank` publiquement à cause d'une
+Bun). Cela évite d'exposer `/embed` publiquement à cause d'une
 variable oubliée — on ne se repose pas uniquement sur le VPC privé Koyeb.
 
 En dev (`ENVIRONMENT` non défini ou ≠ `production`), `API_TOKEN` reste optionnel :
@@ -126,7 +97,7 @@ curl -X POST http://localhost:8000/embed \
   -d '{"texts":["Théorème de Pythagore"]}'
 ```
 
-Le **premier appel** déclenche le téléchargement HuggingFace (~3.5 GB).
+Le **premier appel** déclenche le téléchargement HuggingFace (~2.4 GB).
 Cache dans `~/.cache/huggingface/` (override via `HF_HOME`).
 
 Alternative : `docker compose up ai-service` depuis `apps/server/`
