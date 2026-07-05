@@ -91,17 +91,23 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     const resolvedSchoolLevel = schoolLevel ?? (isEducationLevel(user.schoolLevel) ? user.schoolLevel : 'sixieme');
     const userRole = user.role === 'parent' ? 'parent' : 'student';
 
-    let turnCtx: Awaited<ReturnType<typeof chatOrchestrationService.resolveSessionContext>>;
+    let turnCtx: Awaited<ReturnType<typeof chatOrchestrationService.prepareTurn>>;
     try {
-      turnCtx = await chatOrchestrationService.resolveSessionContext({
+      turnCtx = await chatOrchestrationService.prepareTurn({
         userId: user.id,
         sessionId,
         requestedSubject: subject,
+        content: safeContent,
+        fileIds,
+        schoolLevel: resolvedSchoolLevel,
       });
       await chatOrchestrationService.persistUserTurn({
         sessionId: turnCtx.sessionId,
         content: safeContent,
         inputMode,
+        fileIds,
+        attachedFileInfo: turnCtx.attachedFileInfo,
+        attachedFileInfos: turnCtx.attachedFileInfos,
       });
     } catch (error) {
       releaseStream();
@@ -145,6 +151,12 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           pronoteContext,
           conversationSummary: turnCtx.conversationSummary,
           conversationHistory: turnCtx.conversationHistory,
+          cognitiveProfileSummary: turnCtx.cognitiveProfileSummary,
+          learningContext: turnCtx.mergedLearningContext,
+          intentReinforcement: turnCtx.intentReinforcement,
+          classifiedIntent: turnCtx.classifiedIntent,
+          files: turnCtx.files,
+          attachedFiles: turnCtx.attachedFiles,
           inputMode,
           tools,
         });
@@ -162,6 +174,9 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
             model: env.MISTRAL_MODEL,
             usage,
             startTime,
+            attachedFileInfo: turnCtx.attachedFileInfo,
+            attachedFileInfos: turnCtx.attachedFileInfos,
+            classifiedIntent: turnCtx.classifiedIntent,
           });
         } catch (error) {
           logger.error('Chat turn persistence failed', {

@@ -67,17 +67,25 @@ class ChatOrchestrationError extends Error {
   }
 }
 
-const resolveSessionContext = mock(async (_req: unknown) => ({
+const prepareTurn = mock(async (_req: unknown) => ({
   sessionId: 'session-001',
   subject: undefined,
   conversationSummary: null,
   conversationHistory: [],
+  cognitiveProfileSummary: null,
+  mergedLearningContext: null,
+  intentReinforcement: null,
+  classifiedIntent: { intent: 'unknown', confidence: 'low', subject: 'general' },
+  files: [],
+  attachedFiles: [],
+  attachedFileInfo: null,
+  attachedFileInfos: undefined,
 }));
 const persistUserTurn = mock(async (_params: unknown) => {});
 const finishTurn = mock(async (_params: unknown) => {});
 
 mock.module('../services/chat/chat-orchestration.service', () => ({
-  chatOrchestrationService: { resolveSessionContext, persistUserTurn, finishTurn },
+  chatOrchestrationService: { prepareTurn, persistUserTurn, finishTurn },
   ChatOrchestrationError,
 }));
 
@@ -140,7 +148,7 @@ describe('POST /api/chat/stream', () => {
     currentUser = null;
     quotaAllowed = true;
     checkQuota.mockClear();
-    resolveSessionContext.mockClear();
+    prepareTurn.mockClear();
     persistUserTurn.mockClear();
     finishTurn.mockClear();
     streamChatImpl = () => ({
