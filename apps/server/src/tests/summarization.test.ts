@@ -86,7 +86,6 @@ mock.module('../config/env', () => ({
     MISTRAL_MAX_TOKENS: 16384,
     MISTRAL_TIMEOUT: 60000,
     MISTRAL_RETRY_ATTEMPTS: 3,
-    MISTRAL_RETRY_DELAY: 1000,
     NODE_ENV: 'test',
   },
 }));
