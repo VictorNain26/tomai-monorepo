@@ -52,7 +52,9 @@ mock.module('../services/chat/file-context.service', () => ({
   },
 }));
 
+const actualMistralHelpers = await import('../services/chat/mistral-helpers');
 mock.module('../services/chat/mistral-helpers', () => ({
+  ...actualMistralHelpers,
   getLearningContext: mock(async () => null),
 }));
 
