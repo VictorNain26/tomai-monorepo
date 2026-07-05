@@ -22,6 +22,8 @@ import {
 const mockColors: ThemeColors = {
   primary: '#2563EB',
   primaryForeground: '#FFFFFF',
+  secondary: '#F1F5F9',
+  secondaryForeground: '#0F172A',
   success: '#059669',
   successForeground: '#FFFFFF',
   warning: '#D97706',
