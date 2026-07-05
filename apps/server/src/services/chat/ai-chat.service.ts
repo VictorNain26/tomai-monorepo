@@ -84,7 +84,7 @@ function buildHistoryMessages(
     )
     .map((msg): MistralMessage => {
       if (msg.role === 'assistant') {
-        return { role: 'assistant', content: msg.content, toolCalls: undefined };
+        return { role: 'assistant', content: msg.content };
       }
       return { role: 'user', content: wrapUserMessage(msg.content) };
     });

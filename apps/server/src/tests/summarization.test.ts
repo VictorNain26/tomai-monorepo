@@ -75,8 +75,6 @@ let mistralResponse = 'Mocked summary text';
 mock.module('../lib/ai/mistral-client', () => ({
   generateText: mock(async () => mistralResponse),
   generateStructured: mock(async () => ({})),
-  chatStream: mock(async function* () { yield { type: 'done' as const }; }),
-  setMistralClient: mock(() => {}),
 }));
 
 // Env config mock — config Mistral nécessaire au chargement du client
