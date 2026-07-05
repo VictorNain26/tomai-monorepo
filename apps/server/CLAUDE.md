@@ -89,7 +89,7 @@ Le type `App` (`typeof app`) est l'arbre de routes consommé par Eden Treaty cô
 
 - `generateText({ messages, model, temperature, maxTokens, promptCacheKey, timeoutMs })` — completion non-streaming
 - `generateStructured<T>({ ..., schema })` — JSON Schema strict (élimine retry parsing)
-- `chatStream({ messages, tools, ... })` — streaming SSE pour le chat
+- Chat streaming : `streamChat` dans `src/services/chat/ai-chat.service.ts` (Vercel AI SDK `streamText`), exposé via `/api/chat/stream` (UI Message Stream)
 
 Best practices token (cf ADR-0001 D4) :
 - `prompt_cache_key` versionné sur tout service à system prompt stable (-90 % cached tokens)
