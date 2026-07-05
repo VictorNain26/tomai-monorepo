@@ -9,11 +9,35 @@ vi.mock("@repo/api", () => ({
     api: { chat: { session: () => ({ history: { get: historyGet } }) } },
   }),
   unwrap: (r: { data: unknown }) => r.data,
+  getBaseUrl: () => "http://localhost:3000",
 }));
 vi.mock("@/lib/auth-client", () => ({ useUser: () => ({ id: "u1", schoolLevel: "sixieme", firstName: "Léa" }) }));
-vi.mock("@/lib/chat/stream-chat", () => ({
-  streamChat: vi.fn(),
-  ChatStreamError: class extends Error {},
+
+// Minimal fake of `@ai-sdk/react`'s `useChat` — backed by real React state so
+// `setMessages` calls from the hook under test trigger a re-render, like the
+// real implementation.
+type FakeMessage = { id: string; role: string; parts: { type: string; text: string }[] };
+vi.mock("@ai-sdk/react", async () => {
+  const React = await import("react");
+  return {
+    useChat: () => {
+      const [messages, setMessages] = React.useState<FakeMessage[]>([]);
+      return {
+        messages,
+        setMessages,
+        sendMessage: vi.fn(),
+        stop: vi.fn(),
+        status: "ready",
+        error: undefined,
+      };
+    },
+  };
+});
+vi.mock("ai", () => ({
+  DefaultChatTransport: class {},
+  isTextUIPart: (p: { type: string }) => p.type === "text",
+  isToolUIPart: () => false,
+  getToolName: () => "",
 }));
 
 import { useChat } from "./use-chat";

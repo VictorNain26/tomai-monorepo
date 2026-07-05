@@ -1,18 +1,34 @@
 /**
  * useChat Hook (web) — piloté par la conversation active (`sessionId`).
  *
- * La conversation active est fournie par le container (page chat) ; ce hook
- * charge l'historique de cette conversation et gère le streaming SSE en state
- * local pour un rendu incrémental. La création / rotation de conversation
- * vit dans useConversations (non destructif).
+ * Thin wrapper around `@ai-sdk/react`'s `useChat`: TanStack Query history
+ * seeds the initial messages, `sendMessage` attaches the request context
+ * (session, school level, first name) and the server is authoritative on
+ * history — only the last `UIMessage` is ever sent
+ * (`prepareSendMessagesRequest`).
+ *
+ * The public surface (`ChatMessage[]` with flat `content`) is preserved for
+ * the screen — the AI SDK `TomChatMessage[]` (`.parts`) lives entirely
+ * inside this hook. La création / rotation de conversation vit dans
+ * useConversations (non destructif).
+ *
+ * @see ../chat/ui-message.ts
  */
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useChat as useAiChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTreaty, unwrap, type ResponseData } from "@repo/api";
+import { getBaseUrl, getTreaty, unwrap, type ResponseData } from "@repo/api";
+import type { TomChatMessage } from "@repo/api";
 import { useUser } from "@/lib/auth-client";
-import { streamChat, ChatStreamError } from "@/lib/chat/stream-chat";
 import { chatQueryKeys } from "@/lib/chat/chat-keys";
+import {
+  toTomChatMessage,
+  extractText,
+  parseTransportErrorMessage,
+  deriveStreamStatus,
+} from "@/lib/chat/ui-message";
 
 export type ChatMessage = {
   id: string;
@@ -43,13 +59,29 @@ export function useChat({ sessionId }: { sessionId: string | null }) {
   const user = useUser() as ExtendedUser | null;
   const queryClient = useQueryClient();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamStatus, setStreamStatus] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [syncedSessionId, setSyncedSessionId] = useState<string | null>(null);
+  const clearedSessionRef = useRef<string | null>(null);
+  const syncedHistoryRef = useRef<string | null>(null);
 
-  const abortRef = useRef<AbortController | null>(null);
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport<TomChatMessage>({
+        api: `${getBaseUrl()}/api/chat/stream`,
+        credentials: "include",
+        prepareSendMessagesRequest: ({ messages, body }) => ({
+          body: { message: messages.at(-1), ...body },
+        }),
+      }),
+    [],
+  );
+
+  const aiChat = useAiChat<TomChatMessage>({
+    transport,
+    onFinish: () => {
+      if (!sessionId) return;
+      void queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations() });
+      void queryClient.invalidateQueries({ queryKey: chatQueryKeys.history(sessionId) });
+    },
+  });
 
   const historyQuery = useQuery({
     queryKey: chatQueryKeys.history(sessionId ?? "__none__"),
@@ -58,122 +90,73 @@ export function useChat({ sessionId }: { sessionId: string | null }) {
     staleTime: Infinity,
   });
 
-  // Detect conversation switch during render and reset per-conversation state
-  // (React 19 pattern: batched state updates during render, avoids calling
-  // setState inside an effect — set-state-in-effect lint rule).
-  const [prevSessionId, setPrevSessionId] = useState<string | null>(null);
-  if (prevSessionId !== sessionId) {
-    setPrevSessionId(sessionId);
-    setMessages([]);
-    setSyncedSessionId(null);
-    setError(null);
-    setIsStreaming(false);
-    setStreamStatus("");
-  }
-
-  // Effect: side effect only — abort any in-flight SSE stream when the
-  // conversation switches (no setState here to satisfy set-state-in-effect).
+  // Reset per-conversation chat state and abort any in-flight stream when
+  // the active session switches (guarded so re-runs triggered by `aiChat`
+  // identity churn during streaming are no-ops).
   useEffect(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-  }, [sessionId]);
+    if (clearedSessionRef.current === sessionId) return;
+    clearedSessionRef.current = sessionId;
+    void aiChat.stop();
+    aiChat.setMessages([]);
+  }, [sessionId, aiChat]);
 
-  // Populate from server history once it arrives (React 19: state update during
-  // render so the first render after data lands already shows the history).
-  if (historyQuery.data && sessionId && syncedSessionId !== sessionId) {
-    setSyncedSessionId(sessionId);
-    setMessages(
-      historyQuery.data.map((m) => ({
-        id: m.id,
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
+  // Populate from server history once it arrives, once per session.
+  useEffect(() => {
+    if (!historyQuery.data || !sessionId) return;
+    if (syncedHistoryRef.current === sessionId) return;
+    syncedHistoryRef.current = sessionId;
+
+    const seeded = historyQuery.data
+      .filter(
+        (m): m is HistoryMessage & { role: "user" | "assistant" } =>
+          m.role === "user" || m.role === "assistant",
+      )
+      .map((m) => toTomChatMessage({ id: m.id, role: m.role, content: m.content }));
+    if (seeded.length > 0) aiChat.setMessages(seeded);
+  }, [historyQuery.data, sessionId, aiChat]);
+
+  // Abort on unmount — the ref is kept current via its own effect (never
+  // mutated during render) so the unmount effect can close over `[]` deps.
+  const aiChatRef = useRef(aiChat);
+  useEffect(() => {
+    aiChatRef.current = aiChat;
+  });
+  useEffect(() => () => void aiChatRef.current.stop(), []);
+
+  function sendMessage(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || aiChat.status !== "ready" || !user || !sessionId) return;
+
+    void aiChat.sendMessage(
+      { role: "user", parts: [{ type: "text", text: trimmed }] },
+      {
+        body: {
+          sessionId,
+          schoolLevel: user.schoolLevel ?? undefined,
+          firstName: user.firstName ?? undefined,
+        },
+      },
     );
   }
 
-  // Abort on unmount
-  useEffect(() => () => abortRef.current?.abort(), []);
+  const messages: ChatMessage[] = aiChat.messages
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => ({
+      id: m.id,
+      role: m.role as "user" | "assistant",
+      content: extractText(m.parts),
+    }));
 
-  const sendMessage = useCallback(
-    (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed || isStreaming || !user || !sessionId) return;
-
-      const userMessageId = crypto.randomUUID();
-      const assistantMessageId = crypto.randomUUID();
-
-      setMessages((prev) => [
-        ...prev,
-        { id: userMessageId, role: "user", content: trimmed },
-        { id: assistantMessageId, role: "assistant", content: "" },
-      ]);
-      setIsStreaming(true);
-      setError(null);
-
-      const ac = new AbortController();
-      abortRef.current = ac;
-
-      function handleStreamError(msg: string) {
-        setError(msg);
-        setMessages((prev) => {
-          const placeholder = prev.find((m) => m.id === assistantMessageId);
-          return placeholder?.content === ""
-            ? prev.filter((m) => m.id !== assistantMessageId)
-            : prev;
-        });
-        setIsStreaming(false);
-      }
-
-      void streamChat(
-        {
-          content: trimmed,
-          sessionId,
-          schoolLevel: user.schoolLevel ?? "",
-          firstName: user.firstName ?? undefined,
-        },
-        {
-          onContent: (full) => {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMessageId ? { ...m, content: full } : m,
-              ),
-            );
-          },
-          onStatus: (s) => setStreamStatus(s),
-          onError: handleStreamError,
-          onDone: () => {
-            setIsStreaming(false);
-            setStreamStatus("");
-            // Refresh the list (preview/subject/order) AND this conversation's
-            // history — otherwise the staleTime:Infinity cache keeps the
-            // pre-message history and the exchange vanishes on a revisit.
-            void queryClient.invalidateQueries({
-              queryKey: chatQueryKeys.conversations(),
-            });
-            void queryClient.invalidateQueries({
-              queryKey: chatQueryKeys.history(sessionId),
-            });
-          },
-        },
-        ac.signal,
-      ).catch((err: unknown) => {
-        const msg =
-          err instanceof ChatStreamError
-            ? err.message
-            : "Le chat est indisponible. Réessaie.";
-        handleStreamError(msg);
-      });
-    },
-    [isStreaming, user, sessionId, queryClient],
-  );
+  const isStreaming = aiChat.status === "streaming" || aiChat.status === "submitted";
+  const transportError = aiChat.error ? parseTransportErrorMessage(aiChat.error) : null;
 
   return {
     messages,
     isLoading: !!sessionId && historyQuery.isLoading,
     isStreaming,
-    streamStatus,
+    streamStatus: isStreaming ? deriveStreamStatus(aiChat.messages.at(-1)) : "",
     error:
-      error ??
+      transportError ??
       (historyQuery.error instanceof Error ? historyQuery.error.message : null),
     sendMessage,
   };
