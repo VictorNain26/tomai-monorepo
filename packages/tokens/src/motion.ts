@@ -1,3 +1,9 @@
+/**
+ * Tokens motion — miroir TS des variables --duration-* de theme.css
+ * (cohérence garantie par motion.test.ts). Les easings reprennent les
+ * courbes standard Tailwind (ease-out / ease-in-out) pour Reanimated,
+ * qui ne lit pas le CSS.
+ */
 export const motionDurations = {
   fast: 150,
   base: 250,
