@@ -30,7 +30,10 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
 
 function CardTitle({ className, ...props }: React.ComponentProps<"h3">) {
   return (
-    <h3 className={cn("font-semibold leading-none tracking-tight", className)} {...props} />
+    <h3
+      className={cn("font-heading font-semibold leading-none tracking-tight", className)}
+      {...props}
+    />
   );
 }
 

@@ -34,12 +34,15 @@ describe('Button', () => {
 
   it('does not fire onPress while loading', () => {
     const onPress = jest.fn();
-    const { getByText, rerender } = render(<Button onPress={onPress}>Envoyer</Button>);
+    const { getByText, getByRole, rerender } = render(<Button onPress={onPress}>Envoyer</Button>);
     fireEvent.press(getByText('Envoyer'));
     expect(onPress).toHaveBeenCalledTimes(1);
 
     rerender(<Button onPress={onPress} isLoading>Envoyer</Button>);
     // en loading le label est remplacé par le spinner et le Pressable est disabled
     expect(() => getByText('Envoyer')).toThrow();
+
+    fireEvent.press(getByRole('button'));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });
