@@ -45,7 +45,13 @@ import {
   fetchHistory,
   resetChatSession,
 } from './chat/api';
-import { toTomChatMessage, extractText, buildPronoteChatContext, parseTransportErrorMessage } from './chat/ui-message';
+import {
+  toTomChatMessage,
+  extractText,
+  buildPronoteChatContext,
+  parseTransportErrorMessage,
+  deriveStreamStatus,
+} from './chat/ui-message';
 import { useOfflineCache } from './useOfflineCache';
 import { useNetworkStatus } from './useNetworkStatus';
 
@@ -341,6 +347,7 @@ export function useChat({
   const isStreaming = aiChat.status === 'streaming';
   const isLoading = aiChat.status === 'submitted' || isStreaming || sessionQuery.isLoading;
   const transportError = aiChat.error ? parseTransportErrorMessage(aiChat.error) : null;
+  const streamStatus = isStreaming ? deriveStreamStatus(aiChat.messages.at(-1)) : null;
 
   return {
     messages,
@@ -350,7 +357,7 @@ export function useChat({
     isLoading,
     isStreaming,
     isOnline,
-    streamStatus: null,
+    streamStatus,
     error:
       localError ??
       transportError ??

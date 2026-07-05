@@ -8,7 +8,7 @@
  * request body sent to `/api/chat/stream`.
  */
 
-import { isTextUIPart } from 'ai';
+import { isTextUIPart, isToolUIPart, getToolName } from 'ai';
 import type { TomChatMessage } from '@repo/api';
 import type {
   PronoteHomework,
@@ -82,4 +82,41 @@ export function parseTransportErrorMessage(error: Error): string {
     // Not JSON (network failure, timeout...) — fall through to raw message.
   }
   return error.message || 'Erreur de connexion au serveur';
+}
+
+/** Same French labels the legacy SSE route used (`mistral-helpers.ts`'s `getToolStatusLabel`). */
+export function getToolStatusLabel(name: string): string {
+  switch (name) {
+    case 'search_educational_content':
+      return 'Recherche dans les programmes...';
+    case 'generate_flashcards':
+      return 'Création de flashcards...';
+    case 'get_student_profile':
+      return 'Analyse du profil...';
+    case 'update_student_profile':
+      return 'Mémorisation...';
+    case 'get_app_help':
+      return 'Consultation du guide...';
+    default:
+      return 'Traitement en cours...';
+  }
+}
+
+const TOOL_STATES_WITHOUT_OUTPUT = new Set(['input-streaming', 'input-available']);
+
+/**
+ * Derive the "Recherche dans les programmes..."-style status from the
+ * in-flight assistant message's tool parts — the last tool part still
+ * awaiting output, mapped to its French label. `null` when no tool call is
+ * active (the screen falls back to the generic "Tom réfléchit").
+ */
+export function deriveStreamStatus(message: TomChatMessage | undefined): string | null {
+  if (!message || message.role !== 'assistant') return null;
+
+  const activeToolPart = [...message.parts]
+    .reverse()
+    .find((part) => isToolUIPart(part) && TOOL_STATES_WITHOUT_OUTPUT.has(part.state));
+
+  if (!activeToolPart || !isToolUIPart(activeToolPart)) return null;
+  return getToolStatusLabel(getToolName(activeToolPart));
 }
