@@ -295,5 +295,8 @@ export { app };
 // Eden Treaty type export - Type-safety end-to-end frontend/backend
 export type App = typeof app;
 
+// UI message wire types for chat clients (AI SDK UIMessage) - type-only
+export type { TomChatMessage, TomDataParts, DeckCreatedData } from './services/chat/chat-ui-message.js';
+
 // Re-export initializeServices from server-lifecycle
 export { initializeServices } from './services/server-lifecycle.js';

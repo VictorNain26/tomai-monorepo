@@ -20,7 +20,7 @@ import { sql, eq, and } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { learningCards, learningDecks } from '../../db/schema.js';
 import { logger } from '../../lib/observability.js';
-import type { PronoteContext } from './chat-streaming-types.js';
+import type { PronoteContext } from './ai-chat.service.js';
 
 export const MAX_TOOL_ITERATIONS = 5;
 
