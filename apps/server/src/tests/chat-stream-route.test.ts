@@ -26,10 +26,13 @@ mock.module('../config/env', () => ({
 // authMacro — inject a mutable user into every guarded request
 let currentUser: Record<string, unknown> | null = null;
 
+interface MacroResolveContext {
+  status: (code: number) => unknown;
+}
+
 const authMacroMock = new Elysia({ name: 'auth-macro' }).macro({
   auth: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolve(ctx: any) {
+    resolve(ctx: MacroResolveContext) {
       if (!currentUser) {
         return ctx.status(401) as never;
       }
