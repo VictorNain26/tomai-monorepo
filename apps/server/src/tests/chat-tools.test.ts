@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect, mock } from 'bun:test';
+import type { TomMetadata } from '../services/chat/chat-ui-message';
 
 // ============================================
 // MOCKS — tool-executor.ts is the single delegation point
@@ -32,6 +33,16 @@ const baseContext = {
   userRole: 'student' as const,
   emitDeckCreated: mock(() => {}),
 };
+
+describe('TomMetadata', () => {
+  it('types speakable as a boolean (wire parity with ChatStreamChunk.metadata.speakable)', () => {
+    // Compile-time assertion: fails to typecheck if `speakable` is missing or
+    // typed as anything but boolean. The runtime assertion below is
+    // incidental — the check that matters is `bun run typecheck`.
+    const metadata: TomMetadata = { speakable: true };
+    expect(metadata.speakable).toBe(true);
+  });
+});
 
 describe('buildChatTools', () => {
   it('exposes exactly the 5 declared tool keys', () => {

@@ -22,6 +22,13 @@ export type TomDataParts = {
 export interface TomMetadata {
   usedRAG?: boolean;
   toolsUsed?: string[];
+  /**
+   * Hint for the client: false when the answer holds a diagram/code/table
+   * (not worth reading aloud). Boolean, not string — matches the existing
+   * wire shape (`ChatStreamChunk.metadata.speakable` in
+   * chat-streaming-types.ts).
+   */
+  speakable?: boolean;
 }
 
 /** Tom's UIMessage shape: metadata + data parts + typed tool set. */
