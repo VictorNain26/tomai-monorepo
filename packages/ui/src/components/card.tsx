@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/utils";
 
 const cardVariants = cva(
-  "rounded-xl border border-border bg-card text-card-foreground shadow-sm",
+  "rounded-2xl border border-border bg-card text-card-foreground shadow-sm",
   {
     variants: {
       variant: {
@@ -30,7 +30,10 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
 
 function CardTitle({ className, ...props }: React.ComponentProps<"h3">) {
   return (
-    <h3 className={cn("font-semibold leading-none tracking-tight", className)} {...props} />
+    <h3
+      className={cn("font-heading font-semibold leading-none tracking-tight", className)}
+      {...props}
+    />
   );
 }
 

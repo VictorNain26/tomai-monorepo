@@ -10,6 +10,8 @@ import { useTheme } from './useTheme';
 export interface ThemeColors {
   primary: string;
   primaryForeground: string;
+  secondary: string;
+  secondaryForeground: string;
   success: string;
   successForeground: string;
   warning: string;
@@ -29,6 +31,8 @@ function toThemeColors(tokens: Record<ColorToken, string>): ThemeColors {
   return {
     primary: tokens['--color-primary'],
     primaryForeground: tokens['--color-primary-foreground'],
+    secondary: tokens['--color-secondary'],
+    secondaryForeground: tokens['--color-secondary-foreground'],
     success: tokens['--color-success'],
     successForeground: tokens['--color-success-foreground'],
     warning: tokens['--color-warning'],
