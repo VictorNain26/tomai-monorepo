@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import { generateText } from 'ai';
-import { mistralProvider } from '../lib/ai/provider.js';
+
+// En CI il n'y a pas de .env : sans clé, @ai-sdk/mistral jette LoadAPIKeyError
+// avant même d'appeler le fetch faké. Poser la clé factice AVANT l'import du
+// provider (env.ts lit process.env au chargement du module).
+process.env.MISTRAL_API_KEY ??= 'test-api-key';
+const { mistralProvider } = await import('../lib/ai/provider.js');
 
 function fakeMistralResponse() {
   return new Response(
