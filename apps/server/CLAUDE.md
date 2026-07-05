@@ -109,7 +109,7 @@ Best practices token (cf ADR-0001 D4) :
 
 ### Modules principaux
 
-- **Chat** (`src/services/chat/`) : orchestration Mistral, summarization, tool execution, token budget, SSE streaming, intent classifier (ministral-8b), mémoire épisodique pgvector (mistral-medium extraction).
+- **Chat** (`src/services/chat/`) : orchestration Mistral, summarization, tool execution, token budget, streaming via Vercel AI SDK (UI Message Stream), intent classifier (ministral-8b), mémoire épisodique pgvector (mistral-medium extraction).
 - **Billing** (`src/services/billing/`) : `BillingService` unique, piloté par les webhooks RevenueCat (`src/routes/revenuecat-webhook-*.ts`). Mutations idempotentes sur `family_billing` + `user_subscriptions`. Idempotence stockée dans `webhook_events` (TTL 7 jours).
 - **Learning** : FSRS (spaced repetition), decks, cards (génération `mistral-small` + JSON Schema), generations. Logique extraite en `LearningService` + `learningCardsRepository`/`learningDecksRepository` ; routes fines → service → repo, mutations multi-tables en transaction (cf. `services/learning/`).
 - **Subscription** (`src/routes/subscription/`) : routes lecture seule — `GET /api/subscriptions/status` (état famille + enfants) et `GET /api/subscriptions/usage` (tokens). Les achats/annulations passent par RevenueCat côté mobile ; le backend ne fait AUCUN appel provider sortant.
