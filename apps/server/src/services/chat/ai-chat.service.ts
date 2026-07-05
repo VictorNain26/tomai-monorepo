@@ -35,6 +35,7 @@ import {
   wrapPronoteData,
   wrapStudentContext,
   wrapAttachedFiles,
+  MAX_TOOL_ITERATIONS,
 } from './mistral-helpers.js';
 import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 import { env } from '../../config/env.js';
@@ -43,9 +44,6 @@ import type { StreamGenerationParams, AttachedFile } from './chat-streaming-type
 
 /** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
 const PROMPT_CACHE_VERSION = '2026-06-14-voicefmt';
-
-/** Max agentic steps (model -> tool -> model...) per turn. */
-const MAX_TOOL_ITERATIONS = 5;
 
 export interface ChatStreamParams extends StreamGenerationParams {
   tools: ToolSet;
