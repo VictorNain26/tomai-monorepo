@@ -3,8 +3,7 @@ import type { TomChatTools } from './chat-tools.js';
 
 /**
  * Payload for the `deck-created` transient data part, emitted when
- * `generate_flashcards` persists a new deck (mirrors the legacy
- * `ChatStreamChunk.deck` shape in `chat-streaming-types.ts`).
+ * `generate_flashcards` persists a new deck.
  */
 export interface DeckCreatedData {
   deckId: string;
@@ -24,9 +23,7 @@ export interface TomMetadata {
   toolsUsed?: string[];
   /**
    * Hint for the client: false when the answer holds a diagram/code/table
-   * (not worth reading aloud). Boolean, not string — matches the existing
-   * wire shape (`ChatStreamChunk.metadata.speakable` in
-   * chat-streaming-types.ts).
+   * (not worth reading aloud). Boolean, not string.
    */
   speakable?: boolean;
 }

@@ -35,7 +35,7 @@ const baseContext = {
 };
 
 describe('TomMetadata', () => {
-  it('types speakable as a boolean (wire parity with ChatStreamChunk.metadata.speakable)', () => {
+  it('types speakable as a boolean', () => {
     // Compile-time assertion: fails to typecheck if `speakable` is missing or
     // typed as anything but boolean. The runtime assertion below is
     // incidental — the check that matters is `bun run typecheck`.

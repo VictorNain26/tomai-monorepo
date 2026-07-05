@@ -33,7 +33,7 @@ import { logger } from '../../lib/observability.js';
 import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js';
 import type { LanguageModelUsage } from 'ai';
 import type { EducationLevelType } from '../../types/index.js';
-import type { AttachedFile } from './chat-streaming-types.js';
+import type { AttachedFile } from './ai-chat.service.js';
 import type { AttachedFileInfo, AttachedFileForPrompt } from './file-context-types.js';
 
 const MAX_ENRICHED_CONTENT_CHARS = 50_000;

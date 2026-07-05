@@ -39,10 +39,75 @@ import {
 import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 import { env } from '../../config/env.js';
 import type { MistralMessage, MistralContentPart } from '../../lib/ai/mistral-client.js';
-import type { StreamGenerationParams, AttachedFile } from './chat-streaming-types.js';
+import type { EducationLevelType } from '../../types/index.js';
+import type { AttachedFileForPrompt } from './file-context-types.js';
 
 /** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
 const PROMPT_CACHE_VERSION = '2026-06-14-voicefmt';
+
+export interface AttachedFile {
+  /** Inline base64 payload for multimodal user messages (Mistral vision). */
+  base64?: string;
+  mimeType: string;
+  contentType: 'image' | 'document';
+}
+
+export interface PronoteContext {
+  homework?: Array<{ subject: string; description: string; dueDate: string; done: boolean }>;
+  recentGrades?: Array<{ subject: string; value: number | null; outOf: number; date: string }>;
+  todayTimetable?: Array<{ subject: string; startDate: string; endDate: string; canceled: boolean }>;
+}
+
+interface HistoricalFileRef {
+  mimeType?: string;
+}
+
+interface ClassifiedIntent {
+  intent: string;
+  confidence: 'low' | 'medium' | 'high';
+  error?: string;
+}
+
+export interface StreamGenerationParams {
+  userId: string;
+  content: string;
+  subject?: string;
+  schoolLevel: EducationLevelType;
+  firstName?: string;
+  sessionId: string;
+  cognitiveProfileSummary?: string | null;
+  learningContext?: string | null;
+  conversationSummary?: string | null;
+  userRole: 'student' | 'parent';
+  pronoteContext?: PronoteContext;
+  files?: AttachedFile[];
+  /**
+   * Attached-document analyses (OCR of the student's files). Injected as a
+   * SEPARATE `<attached_file>` fenced block, never concatenated into the
+   * student message — otherwise stripPromptTags would remove the fence.
+   */
+  attachedFiles?: AttachedFileForPrompt[];
+  /**
+   * Turn-specific reinforcement block injected by the intent classifier.
+   * When non-null, prepended to the system prompt to force a stricter
+   * socratic stance (e.g. on "solve this for me" requests).
+   */
+  intentReinforcement?: string | null;
+  /** Classified intent for reasoning effort routing (CCA Sprint 1). */
+  classifiedIntent?: ClassifiedIntent;
+  /**
+   * Input channel declared by the user's gesture (mic vs keyboard), never
+   * inferred by the model. When 'voice', a turn note is injected so Tom answers
+   * in a spoken style. Defaults to 'text'.
+   */
+  inputMode?: 'text' | 'voice';
+  conversationHistory: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+    attachedFile?: HistoricalFileRef | null;
+  }>;
+}
 
 export interface ChatStreamParams extends StreamGenerationParams {
   tools: ToolSet;
