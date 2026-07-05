@@ -13,7 +13,7 @@ Décisions structurantes de référence :
   app Expo (iOS + Android + web) remplace `apps/mobile` + `apps/web` ; renommage
   `apps/mobile` → `apps/app` au cutover ; landing conservée ; B2B en Next.js dédié plus tard.
 - [Audit 2026-07-01 (addendum)](../audits/2026-07-01-curriculum-to-frontend-architecture.md) :
-  ai-service embed-only (rerank supprimé), chat sur Vercel AI SDK v5, pas de package de
+  ai-service embed-only (rerank supprimé), chat sur Vercel AI SDK (ai v7), pas de package de
   logique partagée, stack backend/RAG conservée.
 
 ## 1. Contexte & acteurs
@@ -67,7 +67,7 @@ graph TB
     CURRICULUM["curriculum<br/>indexation (uv, hors workspace)"]
 
     LANDING -- "POST /api/waitlist (seul contrat)" --> SERVER
-    APP -- "Eden Treaty + AI SDK v5 + Better Auth" --> SERVER
+    APP -- "Eden Treaty + AI SDK + Better Auth" --> SERVER
     B2B -.-> SERVER
     SERVER --> PG
     SERVER -- "embed queries" --> AISVC
@@ -158,7 +158,7 @@ Trois contrats client↔serveur, chacun avec un rôle exclusif :
 
 1. **Eden Treaty** (`@repo/api`) — tout le CRUD typé bout-en-bout. Les types sont dérivés
    du contrat serveur (`ResponseData<...>`), jamais redéfinis côté client.
-2. **Vercel AI SDK v5** 🔄 Lot 4 — le chat streaming : `streamText()` +
+2. **Vercel AI SDK** — le chat streaming : `streamText()` +
    `toUIMessageStreamResponse()` côté Elysia, un unique `useChat` (`@ai-sdk/react`) sur
    toutes les plateformes, événements métier (`deck_created`) en data parts typées.
    Remplace le protocole SSE maison et ses deux parseurs dupliqués (`react-native-sse`
@@ -168,7 +168,7 @@ Trois contrats client↔serveur, chacun avec un rôle exclusif :
    Le point dur du Lot 5 : valider les cookies cross-origin Better Auth sur cible Expo web
    au pilote.
 
-### 4.1 Flux chat avec RAG (cible Lot 4 + Lot 7)
+### 4.1 Flux chat avec RAG (cible Lot 7 pour le `toolChoice` forcé)
 
 ```mermaid
 sequenceDiagram
@@ -309,7 +309,7 @@ Seule section à mettre à jour à chaque merge de lot.
 | 1 | Scoring RAG/flashcards cassés → gate `hasValidResults`, rangs | 1 | ✅ mergé (#262) |
 | 2 | Deps sécu (Better Auth 1.6.23) | 2 | ✅ mergé (#265) |
 | 3 | ai-service avec rerank + risque OOM → embed-only FP16 | 3 | ✅ mergé (#266) |
-| 4 | SSE maison + 2 parseurs dupliqués → Vercel AI SDK v5 (serveur puis clients) | 4 | ⬜ à faire |
+| 4 | SSE maison + 2 parseurs dupliqués → Vercel AI SDK (serveur puis clients) | 4 | ✅ mergé (#268) |
 | 5 | `apps/mobile` natif + `apps/web` doublon → `apps/app` universelle, suppression `apps/web`, renommage | 5 | ⬜ à faire (ADR + plan écrits) |
 | 6 | Orphelins d'index à l'update → delete-by-`source_file`, `payload.section` | 6 | ⬜ à faire |
 | 7 | RAG au bon vouloir du modèle → `toolChoice` forcé sur intent scolaire | 7 | ⬜ à faire |
