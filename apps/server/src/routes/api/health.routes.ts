@@ -126,10 +126,45 @@ export const apiHealthRoutes = new Elysia({ name: 'api-health-check' })
       latency: cacheHealth.latency,
     };
 
-    checks.ai = {
-      status: 'healthy',
-      provider: 'mistral'
-    };
+    if (env.AI_SERVICE_URL) {
+      try {
+        const start = Date.now();
+        const res = await fetch(`${env.AI_SERVICE_URL}/health`, {
+          signal: AbortSignal.timeout(2000),
+          headers: env.AI_SERVICE_TOKEN ? { Authorization: `Bearer ${env.AI_SERVICE_TOKEN}` } : {},
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        checks.aiService = { status: 'healthy', latency: Date.now() - start };
+      } catch (error) {
+        checks.aiService = {
+          status: 'unhealthy',
+          error: error instanceof Error ? error.message : 'unreachable',
+        };
+        if (overallStatus === 'healthy') overallStatus = 'degraded';
+      }
+    } else {
+      checks.aiService = { status: 'not_configured' };
+    }
+
+    if (env.QDRANT_ENABLED === 'true' && env.QDRANT_URL) {
+      try {
+        const start = Date.now();
+        const res = await fetch(`${env.QDRANT_URL}/healthz`, {
+          signal: AbortSignal.timeout(2000),
+          headers: env.QDRANT_API_KEY ? { 'api-key': env.QDRANT_API_KEY } : {},
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        checks.qdrant = { status: 'healthy', latency: Date.now() - start };
+      } catch (error) {
+        checks.qdrant = {
+          status: 'unhealthy',
+          error: error instanceof Error ? error.message : 'unreachable',
+        };
+        if (overallStatus === 'healthy') overallStatus = 'degraded';
+      }
+    } else {
+      checks.qdrant = { status: 'not_configured' };
+    }
 
     const body = {
       status: overallStatus,
