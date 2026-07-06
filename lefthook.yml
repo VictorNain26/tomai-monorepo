@@ -24,11 +24,6 @@ pre-commit:
       glob: "**/*.{ts,tsx}"
       run: pnpm exec eslint --max-warnings 0 {staged_files}
 
-    - name: lint-web
-      root: "apps/web/"
-      glob: "**/*.{ts,tsx}"
-      run: pnpm exec eslint --max-warnings 0 {staged_files}
-
     - name: lint-ai-service
       root: "apps/ai-service/"
       glob: "**/*.py"

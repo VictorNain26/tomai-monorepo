@@ -1,7 +1,8 @@
-# Design system Tom — contrat des trois surfaces
+# Design system Tom — contrat des deux surfaces
 
-Source de vérité du design unifié entre `apps/landing` (DOM), l'app universelle
-Expo (`apps/mobile`, web produit + mobile) et `apps/web` (jusqu'au cutover).
+Source de vérité du design unifié entre `apps/landing` (DOM) et l'app
+universelle Expo (`apps/mobile`, web produit + mobile). `apps/web` a été
+supprimée (ADR 0001, chapitre web fermé).
 Spec d'origine : `docs/superpowers/specs/2026-07-05-design-system-unifie-design.md`.
 
 ## Règle zéro : tout passe par `@repo/tokens`
@@ -60,7 +61,7 @@ universelle).
 - **Formulaires** : label toujours visible (jamais placeholder seul),
   validation au blur, champ en erreur jamais vidé, clavier adapté
   (`inputmode`/`autocomplete` DOM, `keyboardType`/`textContentType` RN).
-- **Dark mode** : disponible et persistant sur les trois surfaces
+- **Dark mode** : disponible et persistant sur les deux surfaces
   (`.dark` + `theme-dark.css` web, variables runtime NativeWind mobile).
 - **Motion** : durées/easings via tokens ; `prefers-reduced-motion` (web) et
   `AccessibilityInfo.isReduceMotionEnabled` (RN) respectés — fallback opacité.
