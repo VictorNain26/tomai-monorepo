@@ -212,7 +212,7 @@ export function getDatabaseUrl(): string {
  * Build CORS origins list (HTTP/HTTPS only)
  * - Includes BETTER_AUTH_URL + FRONTEND_URL (if set)
  * - Adds CORS_ORIGINS comma-separated list
- * - Dev: adds localhost:3000/3001/3002
+ * - Dev: adds localhost:3000/3001
  * Single source of truth for HTTP origins — no mobile schemes here
  */
 export function getCorsOrigins(): string[] {
@@ -238,7 +238,6 @@ export function getCorsOrigins(): string[] {
   if (isDevelopment()) {
     origins.add('http://localhost:3000'); // server
     origins.add('http://localhost:3001'); // landing
-    origins.add('http://localhost:3002'); // web app
   }
 
   return Array.from(origins);

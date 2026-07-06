@@ -34,8 +34,8 @@ services:
       - DOCKER_CONTAINER=true
       # Database (internal Docker network)
       - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
-      # CORS (landing:3001 + web:3002)
-      - CORS_ORIGINS=http://localhost:3001,http://localhost:3002
+      # CORS (landing:3001)
+      - CORS_ORIGINS=http://localhost:3001
       # Container-network override (diffère de apps/server/.env en host)
       - BETTER_AUTH_URL=http://localhost:3000
       # AI Service : hostname interne du réseau Docker (l'env_file pointe :8001 host)

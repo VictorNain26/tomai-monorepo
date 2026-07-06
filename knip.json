@@ -16,16 +16,6 @@
       ],
       "project": ["src/**/*.ts", "scripts/**/*.ts"]
     },
-    "apps/web": {
-      "entry": ["proxy.ts"],
-      "project": [
-        "app/**/*.{ts,tsx}",
-        "components/**/*.{ts,tsx}",
-        "lib/**/*.{ts,tsx}",
-        "proxy.ts"
-      ],
-      "ignoreDependencies": ["tailwindcss", "@repo/tokens"]
-    },
     "apps/mobile": {
       "entry": [
         "src/app/**/*.{ts,tsx}",

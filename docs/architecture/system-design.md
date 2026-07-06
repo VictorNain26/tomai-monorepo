@@ -91,8 +91,8 @@ graph TB
 | `apps/ai-service` | FastAPI (uv), FlagEmbedding BGE-M3 | Koyeb | ✅ embed-only (Lot 3) |
 | `apps/curriculum` | Python uv, hors workspace pnpm/turbo | Exécution locale/CI (batch) | ✅ en place |
 
-`apps/web` (Next.js produit) existe encore mais est **legacy** : supprimée en bloc au
-cutover du Lot 5, sans portage (sous-ensemble strict du mobile — cf. ADR 0001).
+`apps/web` (Next.js produit) a été **supprimée** (2026-07-06, chantier hardening lot 8),
+sans portage : sous-ensemble strict du mobile, remplacée par l'app universelle (ADR 0001).
 
 **Packages workspace** :
 

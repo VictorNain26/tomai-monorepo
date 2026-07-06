@@ -7,7 +7,7 @@ Backend Bun + Elysia.js pour tutorat socratique adaptatif.
 ```bash
 # Stack dev — depuis la RACINE du monorepo (compose remonté à la racine) :
 pnpm setup                        # one-time : env + secret + postgres + migrations + modèles
-pnpm dev                          # infra Docker + server (host) :3000 + web + landing
+pnpm dev                          # infra Docker + server (host) :3000 + landing
 # Depuis apps/server :
 bun run typecheck && bun run lint # Validation
 bun run test                      # Tests Bun runner
@@ -35,7 +35,7 @@ L'index curriculum (programmes officiels) vit sur **Qdrant Cloud, partagé dev +
 #    NODE_ENV=development
 #    BETTER_AUTH_SECRET=<openssl rand -base64 32>
 #    BETTER_AUTH_URL=http://localhost:3000
-#    CORS_ORIGINS=http://localhost:3001,http://localhost:3002
+#    CORS_ORIGINS=http://localhost:3001
 #    DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
 #    DATABASE_URL_EXTERNAL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
 docker compose up -d postgres
