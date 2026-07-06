@@ -286,7 +286,8 @@ function checkMistralReal(ctx) {
     });
     if (!res.ok) throw new Error(`mistral chat -> HTTP ${res.status} (clé invalide, quota ou panne API)`);
     const body = await res.json();
-    if (!body?.choices?.length) throw new Error('mistral chat: réponse sans choices');
+    const message = body?.choices?.[0]?.message;
+    if (typeof message?.content !== 'string') throw new Error('mistral chat: réponse sans message.content (shape inattendue)');
   }};
 }
 

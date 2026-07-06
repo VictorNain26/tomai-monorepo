@@ -272,7 +272,16 @@ test('check mistral chat réel: FAIL si HTTP non-ok (clé invalide)', async () =
 });
 
 test('check mistral chat réel: PASS si la complétion renvoie des choices', async () => {
-  const ctx = { config: { ...CFG, mistralKey: 'sk-xxx' }, exec: () => ({}), fetchFn: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: 'pong' } }] }) }) };
+  let sentBody = null;
+  const ctx = {
+    config: { ...CFG, mistralKey: 'sk-xxx' },
+    exec: () => ({}),
+    fetchFn: async (url, opts) => {
+      sentBody = opts?.body ? JSON.parse(opts.body) : null;
+      return { ok: true, json: async () => ({ choices: [{ message: { content: 'pong' } }] }) };
+    },
+  };
   const checks = buildChecks(ctx, { full: true, e2e: true });
   await byName(checks, 'mistral').run(); // ne lève pas
+  assert.equal(sentBody?.model, 'ministral-3b-latest', 'doit envoyer le modèle pinné ministral-3b-latest');
 });
