@@ -1,6 +1,7 @@
-# TomAI - Docker build check (server)
-# Vérifie que l'image production du backend build réellement — attrape les
-# références mortes (ex: package retiré du workspace mais encore COPY).
+# TomAI - Docker build check (server + ai-service)
+# Vérifie que les images production du backend et du service IA buildent
+# réellement — attrape les références mortes (ex: package retiré du workspace
+# mais encore COPY).
 
 name: Docker
 
@@ -9,6 +10,7 @@ on:
     branches: [main]
     paths:
       - 'apps/server/**'
+      - 'apps/ai-service/**'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'package.json'
@@ -19,6 +21,7 @@ on:
     branches: [main]
     paths:
       - 'apps/server/**'
+      - 'apps/ai-service/**'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'package.json'
@@ -42,3 +45,12 @@ jobs:
 
       - name: Build production image
         run: docker build --target production -f apps/server/Dockerfile .
+
+  build-ai-service:
+    name: Build ai-service image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Build ai-service image
+        run: docker build -f apps/ai-service/Dockerfile apps/ai-service
