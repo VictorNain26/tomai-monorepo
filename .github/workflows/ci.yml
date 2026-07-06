@@ -217,3 +217,34 @@ jobs:
         working-directory: apps/mobile
         run: npx expo install --check
 
+  # =============================================
+  # Job 6: Mobile Metro bundle export (mobile)
+  # =============================================
+  # Compiles the Metro bundle: catches bundling errors (bad imports, missing
+  # native modules) before they reach an EAS build. Always reports a status
+  # (skip internally on mobile-untouched PRs, like `migrations`) so it can be
+  # a required check without blocking non-mobile PRs.
+  mobile-bundle:
+    name: Mobile bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-monorepo
+        with:
+          turbo-cache-key: mobile-bundle
+      - name: Check mobile changed
+        id: changed
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ]; then
+            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/mobile/' 'packages/')
+          else
+            DIFF="forced-on-main"
+          fi
+          [ -n "$DIFF" ] && echo "changed=true" >> "$GITHUB_OUTPUT" || echo "changed=false" >> "$GITHUB_OUTPUT"
+      - name: Export bundle
+        if: steps.changed.outputs.changed == 'true'
+        working-directory: apps/mobile
+        run: pnpm bundle:check
+
