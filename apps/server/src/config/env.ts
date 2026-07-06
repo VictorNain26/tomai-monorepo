@@ -155,6 +155,17 @@ function parseEnv(): EnvType {
       prodChecks.push('AI_SERVICE_TOKEN is required when AI_SERVICE_URL is set (production)');
     }
 
+    // RAG is a product requirement in production, not an optional degrade path:
+    // a boot with RAG unconfigured must fail loudly here, not surface as a
+    // silent "healthy" /health with checks.aiService/qdrant = not_configured.
+    if (!result.data.AI_SERVICE_URL) {
+      prodChecks.push('AI_SERVICE_URL is required (production) — RAG must be configured, not silently disabled');
+    }
+
+    if (result.data.QDRANT_ENABLED !== 'true') {
+      prodChecks.push('QDRANT_ENABLED must be "true" (production) — RAG must be configured, not silently disabled');
+    }
+
     // Prod RAG runs on Qdrant Cloud, which is authenticated. Local dev Qdrant
     // is keyless, so this requirement is production-only.
     if (result.data.QDRANT_ENABLED === 'true' && !result.data.QDRANT_API_KEY) {
