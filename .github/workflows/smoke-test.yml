@@ -14,8 +14,8 @@ jobs:
           for i in $(seq 1 40); do
             sleep 30
             body=$(curl -sS https://api.tomia.fr/health || true)
-            commit=$(echo "$body" | jq -r '.commit // "unreachable"')
-            status=$(echo "$body" | jq -r '.status // "unreachable"')
+            commit=$(echo "$body" | jq -r '.commit // "unreachable"' 2>/dev/null || echo "unreachable")
+            status=$(echo "$body" | jq -r '.status // "unreachable"' 2>/dev/null || echo "unreachable")
             echo "attempt $i/40: commit=$commit status=$status (want ${GITHUB_SHA} healthy)"
             if [ "$commit" = "unknown" ]; then
               echo "::error::deployed commit is 'unknown' — Koyeb build is missing --build-arg GIT_COMMIT_SHA=\$GITHUB_SHA, configure it in the Koyeb build settings"
