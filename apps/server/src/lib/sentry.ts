@@ -21,7 +21,23 @@
 
 import * as Sentry from '@sentry/elysia';
 
+import type { ErrorEvent } from '@sentry/elysia';
+
 let initialized = false;
+
+/**
+ * `sendDefaultPii: false` only strips the IP on spans — request headers
+ * (Authorization, Better Auth session cookie) and query_string still land
+ * on error events by default, unacceptable for an app used by minors.
+ */
+export function scrubRequestData(event: ErrorEvent): ErrorEvent {
+  if (event.request) {
+    delete event.request.headers;
+    delete event.request.cookies;
+    delete event.request.query_string;
+  }
+  return event;
+}
 
 export function setupSentry(): void {
   if (initialized) return;
@@ -36,6 +52,7 @@ export function setupSentry(): void {
     release: process.env['GIT_COMMIT_SHA'] ?? 'unknown',
     tracesSampleRate: 0.1,
     skipOpenTelemetrySetup: true,
+    beforeSend: scrubRequestData,
   });
 }
 
