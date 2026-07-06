@@ -1,5 +1,10 @@
 /**
- * /health — checks réels ai-service + Qdrant.
+ * GET /health — seul endpoint canonique, checks réels ai-service + Qdrant.
+ *
+ * `apiHealthRoutes` (routes/api/health.routes.ts) est monté à la racine de
+ * l'app (voir routes/api/index.ts) — c'est ce endpoint que le HEALTHCHECK du
+ * Dockerfile interroge. L'ancienne implémentation inline dans app.ts (mistral
+ * key presence only) a été supprimée pour éviter deux `/health` divergents.
  *
  * Position produit : DB down => unhealthy (503) ; ai-service/qdrant down => degraded
  * (200, l'app reste utilisable en mode dégradé) ; non configuré => not_configured,
