@@ -30,11 +30,6 @@ import { requestIdMiddleware } from './middleware/request-id.middleware.js';
 import { errorHandlerMiddleware } from './middleware/error-handler.middleware.js';
 import { createRateLimitMiddleware, RateLimitPresets } from './middleware/rate-limit.middleware.js';
 
-// Database (pour health checks)
-import { db } from './db/connection.js';
-import { sql } from 'drizzle-orm';
-import { cacheService } from './services/memory-cache.service.js';
-
 const isDev = isDevelopment();
 
 // Application Elysia avec architecture modulaire
@@ -135,71 +130,9 @@ const app = new Elysia({ name: 'tomai-server' })
     };
   })
 
-  .get('/health', async ({ set }) => {
-    const checks: Record<string, { status: string; latency?: number; error?: string; provider?: string }> = {};
-    let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-
-    // 1. Database Check (CRITIQUE)
-    try {
-      const start = Date.now();
-      await db.execute(sql`SELECT 1`);
-      checks.database = {
-        status: 'healthy',
-        latency: Date.now() - start
-      };
-    } catch (error) {
-      checks.database = {
-        status: 'unhealthy',
-        error: error instanceof Error ? error.message : 'Database connection failed'
-      };
-      overallStatus = 'unhealthy';  // Database critique → unhealthy
-    }
-
-    // 2. Cache Check (in-memory, always healthy)
-    const cacheHealth = cacheService.healthCheck();
-    checks.cache = {
-      status: cacheHealth.status,
-      latency: cacheHealth.latency,
-    };
-
-    // 3. AI Service Check — Mistral key presence only, no API roundtrip to
-    // avoid rate-limit noise on the global health endpoint. The dedicated
-    // /health/ai endpoint below probes the actual API with a tiny call.
-    const mistralModel = env.MISTRAL_MODEL;
-    const hasMistralKey = !!env.MISTRAL_API_KEY;
-
-    if (!hasMistralKey) {
-      checks.ai = {
-        status: 'unhealthy',
-        error: 'MISTRAL_API_KEY not configured',
-        provider: mistralModel,
-      };
-      if (overallStatus === 'healthy') {
-        overallStatus = 'degraded';
-      }
-    } else {
-      checks.ai = {
-        status: 'healthy',
-        provider: mistralModel,
-      };
-    }
-
-    // 4. Set HTTP Status Code
-    if (overallStatus === 'unhealthy') {
-      set.status = 503;  // Service Unavailable
-    } else {
-      set.status = 200;  // OK (healthy ou degraded)
-    }
-
-    return {
-      status: overallStatus,
-      timestamp: new Date().toISOString(),
-      version: env.APP_VERSION,
-      environment: env.NODE_ENV,
-      deployment: env.DEPLOYMENT_ID ?? 'local',
-      checks
-    };
-  })
+  // GET /health is mounted below via apiRoutes (routes/api/health.routes.ts) —
+  // it is the single canonical health endpoint (Dockerfile HEALTHCHECK target),
+  // with real dependency checks (database, cache, ai-service, qdrant).
 
   // Diagnostic AI endpoint - probes the actual Mistral API with a tiny call.
   // Separated from /health so the main health response stays cheap and
