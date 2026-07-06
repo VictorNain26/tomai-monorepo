@@ -7,6 +7,9 @@ node_modules
 
 # Local env files
 .env
+*.pem
+*.key
+*.p12
 .env.local
 .env.development.local
 .env.test.local
