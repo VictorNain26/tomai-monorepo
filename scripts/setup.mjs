@@ -15,7 +15,7 @@ function run(cmd, args, opts = {}) {
 }
 
 // 1. .env depuis .env.example (idempotent)
-for (const app of ["apps/server", "apps/curriculum"]) {
+for (const app of [".", "apps/server", "apps/curriculum"]) {
   const env = `${app}/.env`;
   const example = `${app}/.env.example`;
   if (!existsSync(env) && existsSync(example)) {

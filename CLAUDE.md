@@ -31,7 +31,7 @@ Détail par app (chargé à la demande via walk-up quand tu travailles dedans) :
 | RAG | Qdrant Cloud + BGE-M3 hybrid (via `apps/ai-service`) |
 | Monorepo | Turborepo, pnpm workspaces, `@repo/api` (Eden Treaty types), `@repo/tokens` (design system partagé Tailwind v4) |
 | Deploy | Vercel (landing + web), Koyeb (server + ai-service), EAS (mobile) |
-| Observabilité | Sentry (crash/perf), PostHog (analytics + flags + session replay) — en cours d'install |
+| Observabilité | OpenTelemetry (server, OTLP en prod) + logger structuré ; Sentry/PostHog non installés (chantier planifié) |
 
 ## Git workflow
 
@@ -52,4 +52,4 @@ Garde-fous déterministes :
 
 - PR vers main : CodeRabbit Free (automatique)
 - `/review` localement avant push
-- E2E Maestro en preview Android sur PR (signal, pas gate)
+- E2E Maestro en preview Android sur PR via EAS Workflows (apps/mobile/.eas/workflows/preview-android.yml) — signal, pas gate
