@@ -247,26 +247,32 @@ test('runChecks non-strict: un SKIP ne compte pas comme FAIL (exitCode 0)', asyn
   assert.equal(summary.exitCode, 0);
 });
 
-test('buildChecks e2e: ajoute le check mistral-key', async () => {
-  const ctx = { config: { ...CFG, mistralKey: 'mk-test' }, exec: () => ({}), fetchFn: async () => ({}) };
+test('buildChecks e2e: ajoute le check mistral chat réel', async () => {
+  const ctx = { config: { ...CFG, mistralKey: 'mk-test' }, exec: () => ({}), fetchFn: async () => ({ ok: true, json: async () => ({ choices: [{}] }) }) };
   const checks = buildChecks(ctx, { full: true, e2e: true });
-  assert.ok(byName(checks, 'mistral'), 'le check mistral-key doit être présent quand e2e=true');
+  assert.ok(byName(checks, 'mistral'), 'le check mistral doit être présent quand e2e=true');
 });
 
-test('buildChecks non-e2e: pas de check mistral-key', async () => {
+test('buildChecks non-e2e: pas de check mistral', async () => {
   const ctx = { config: { ...CFG, mistralKey: 'mk-test' }, exec: () => ({}), fetchFn: async () => ({}) };
   const checks = buildChecks(ctx, { full: true });
-  assert.equal(byName(checks, 'mistral'), undefined, 'le check mistral-key ne doit PAS être présent en mode non-e2e');
+  assert.equal(byName(checks, 'mistral'), undefined, 'le check mistral ne doit PAS être présent en mode non-e2e');
 });
 
-test('check mistral-key: FAIL si MISTRAL_API_KEY absent', async () => {
+test('check mistral chat réel: FAIL si MISTRAL_API_KEY absent', async () => {
   const ctx = { config: { ...CFG, mistralKey: undefined }, exec: () => ({}), fetchFn: async () => ({}) };
   const checks = buildChecks(ctx, { full: true, e2e: true });
   await assert.rejects(byName(checks, 'mistral').run(), /MISTRAL_API_KEY/);
 });
 
-test('check mistral-key: PASS si MISTRAL_API_KEY présent', async () => {
-  const ctx = { config: { ...CFG, mistralKey: 'sk-xxx' }, exec: () => ({}), fetchFn: async () => ({}) };
+test('check mistral chat réel: FAIL si HTTP non-ok (clé invalide)', async () => {
+  const ctx = { config: { ...CFG, mistralKey: 'sk-invalid' }, exec: () => ({}), fetchFn: async () => ({ ok: false, status: 401 }) };
+  const checks = buildChecks(ctx, { full: true, e2e: true });
+  await assert.rejects(byName(checks, 'mistral').run(), /HTTP 401/);
+});
+
+test('check mistral chat réel: PASS si la complétion renvoie des choices', async () => {
+  const ctx = { config: { ...CFG, mistralKey: 'sk-xxx' }, exec: () => ({}), fetchFn: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: 'pong' } }] }) }) };
   const checks = buildChecks(ctx, { full: true, e2e: true });
   await byName(checks, 'mistral').run(); // ne lève pas
 });

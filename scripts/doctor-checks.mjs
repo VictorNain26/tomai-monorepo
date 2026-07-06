@@ -265,18 +265,28 @@ function checkServerRagHealth(ctx) {
   }};
 }
 
-// ─── Mistral key check (e2e only) ────────────────────────────────────────────
+// ─── Mistral chat check (e2e only) ───────────────────────────────────────────
 
-/**
- * Vérifie que MISTRAL_API_KEY est définie.
- * Note : n'effectue PAS d'appel LLM (coûteux) — la preuve réelle est le flux Maestro chat.
- * En mode strict, l'absence de la clé fait échouer le doctor plutôt que skipper.
- */
-function checkMistralKey(ctx) {
-  return { name: 'mistral api-key présente (MISTRAL_API_KEY)', run: async () => {
+// Preuve réelle du chemin LLM : un chat completion 1 token sur le modèle le
+// moins cher. Coût par run ≈ négligeable ; échoue sur clé invalide, quota
+// épuisé ou panne API — ce qu'une simple présence de clé ne prouve pas.
+function checkMistralReal(ctx) {
+  return { name: 'mistral chat réel (ministral-3b, 1 token)', run: async () => {
     if (!ctx.config.mistralKey) {
-      throw new Error('MISTRAL_API_KEY absente — définis-la dans apps/server/.env ou ton shell (la preuve LLM réelle = flux Maestro chat)');
+      throw new Error('MISTRAL_API_KEY absente — définis-la dans apps/server/.env ou ton shell');
     }
+    const res = await ctx.fetchFn('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${ctx.config.mistralKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'ministral-3b-latest',
+        messages: [{ role: 'user', content: 'ping' }],
+        max_tokens: 1,
+      }),
+    });
+    if (!res.ok) throw new Error(`mistral chat -> HTTP ${res.status} (clé invalide, quota ou panne API)`);
+    const body = await res.json();
+    if (!body?.choices?.length) throw new Error('mistral chat: réponse sans choices');
   }};
 }
 
@@ -295,5 +305,5 @@ export function buildChecks(ctx, { full, e2e } = { full: true }) {
   if (!full) return infra;
   const fullChecks = [...infra, checkMigrations(ctx), checkRagRoundtrip(ctx), checkServerRagHealth(ctx)];
   if (!e2e) return fullChecks;
-  return [...fullChecks, checkMistralKey(ctx)];
+  return [...fullChecks, checkMistralReal(ctx)];
 }
