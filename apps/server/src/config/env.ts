@@ -114,6 +114,7 @@ const EnvSchema = z.object({
   QUOTA_ENFORCEMENT_ENABLED: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
 
   // Observability
+  GIT_COMMIT_SHA: z.string().default('unknown'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   DEBUG: z.string().optional(),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),

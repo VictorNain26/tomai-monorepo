@@ -170,6 +170,7 @@ export const apiHealthRoutes = new Elysia({ name: 'api-health-check' })
       status: overallStatus,
       timestamp: new Date().toISOString(),
       version: env.APP_VERSION,
+      commit: env.GIT_COMMIT_SHA,
       environment: env.NODE_ENV,
       deployment: env.DEPLOYMENT_ID ?? 'local',
       checks,
