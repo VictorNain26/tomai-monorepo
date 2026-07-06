@@ -15,6 +15,7 @@ publicHoistPattern:
 # installer leurs binaires natifs.
 allowBuilds:
   '@evilmartians/lefthook': true
+  '@sentry/cli': true
   esbuild: true
   protobufjs: true
   sharp: true

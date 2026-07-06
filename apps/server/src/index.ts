@@ -14,6 +14,9 @@
 import { setupOtel } from './lib/otel/otel.js';
 setupOtel();
 
+import { setupSentry, Sentry } from './lib/sentry.js';
+setupSentry();
+
 const { app, initializeServices } = await import('./app');
 const { logger } = await import('./lib/observability.js');
 const { env } = await import('./config/env.js');
@@ -109,7 +112,11 @@ process.on('uncaughtException', (error) => {
     stack: error.stack,
     severity: 'critical' as const
   });
-  process.exit(1);
+  Sentry.captureException(error);
+  void (async () => {
+    await Sentry.flush(2000);
+    process.exit(1);
+  })();
 });
 
 process.on('unhandledRejection', (reason) => {
@@ -118,7 +125,11 @@ process.on('unhandledRejection', (reason) => {
     _error: reason instanceof Error ? reason.message : String(reason),
     severity: 'critical' as const
   });
-  process.exit(1);
+  Sentry.captureException(reason);
+  void (async () => {
+    await Sentry.flush(2000);
+    process.exit(1);
+  })();
 });
 
 // Démarrer le serveur

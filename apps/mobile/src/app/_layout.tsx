@@ -29,9 +29,14 @@ import { ThemeProvider, RevenueCatProvider } from '@/components/providers';
 import { ToastProvider } from '@/components/ui/toast';
 import { ConfirmDialogProvider } from '@/components/ui/confirm-dialog';
 import { useSession, useUser } from '@/lib/auth';
+import { Sentry, setupSentry } from '@/lib/sentry';
 
 // Start dev debug server (port 8347) for remote error access
 startDevLogServer();
+
+// No-op locally (no EXPO_PUBLIC_SENTRY_DSN) — active on preview/production
+// EAS builds only.
+setupSentry();
 
 // Keep splash screen visible while loading
 SplashScreen.preventAutoHideAsync();
@@ -151,4 +156,4 @@ function RootNavigator() {
   );
 }
 
-export default RootLayout;
+export default Sentry.wrap(RootLayout);
