@@ -132,7 +132,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         url: 'https://de.sentry.io/',
         organization: 'home-drx',
         project: 'tomai-mobile',
-        note: 'Uses SENTRY_AUTH_TOKEN (EAS secret) to authenticate with Sentry.',
+        // Auth: SENTRY_AUTH_TOKEN (secret EAS) lu par le plugin au build.
       },
     ],
   ],
