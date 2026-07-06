@@ -2,7 +2,8 @@
  * E2E stubs for the Pronote onboarding UI flow (EXPO_PUBLIC_E2E=1, preview only).
  * These deterministic fixtures replace QR scan / discovery / activation so the
  * UI can be driven by Maestro. They DO NOT exercise real Pronote connectivity —
- * that is verified separately by the server demo-server integration smoke.
+ * that is verified separately by the server live test (apps/server/src/live/pronote.test.ts),
+ * which exercises a real Pronote account via PRONOTE_TEST_* env vars.
  */
 
 // E2E ONLY — deterministic fixtures for Maestro preview-android flows.
