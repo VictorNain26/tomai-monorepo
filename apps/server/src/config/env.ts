@@ -114,6 +114,7 @@ const EnvSchema = z.object({
   QUOTA_ENFORCEMENT_ENABLED: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
 
   // Observability
+  GIT_COMMIT_SHA: z.string().default('unknown'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   DEBUG: z.string().optional(),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
@@ -152,6 +153,17 @@ function parseEnv(): EnvType {
 
     if (result.data.AI_SERVICE_URL && !result.data.AI_SERVICE_TOKEN) {
       prodChecks.push('AI_SERVICE_TOKEN is required when AI_SERVICE_URL is set (production)');
+    }
+
+    // RAG is a product requirement in production, not an optional degrade path:
+    // a boot with RAG unconfigured must fail loudly here, not surface as a
+    // silent "healthy" /health with checks.aiService/qdrant = not_configured.
+    if (!result.data.AI_SERVICE_URL) {
+      prodChecks.push('AI_SERVICE_URL is required (production) — RAG must be configured, not silently disabled');
+    }
+
+    if (result.data.QDRANT_ENABLED !== 'true') {
+      prodChecks.push('QDRANT_ENABLED must be "true" (production) — RAG must be configured, not silently disabled');
     }
 
     // Prod RAG runs on Qdrant Cloud, which is authenticated. Local dev Qdrant

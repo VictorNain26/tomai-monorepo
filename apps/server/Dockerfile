@@ -101,6 +101,13 @@ FROM base AS production
 
 WORKDIR /app
 
+# Build args for deployment tracing — ARG/ENV du stage `build` ne se propagent
+# PAS ici (stage indépendant issu de `base`), donc on les redéclare.
+ARG GIT_COMMIT_SHA=unknown
+ARG BUILD_DATE=unknown
+ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
+ENV BUILD_DATE=${BUILD_DATE}
+
 # node_modules vient du stage `build` (= même résolution que pour le bundling)
 # au lieu du stage `deps` (--prod), pour éliminer le drift entre l'install qui
 # a vu le code compiler et celui qui sert le runtime. Coût: ~30 MB de devDeps

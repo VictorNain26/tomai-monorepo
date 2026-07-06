@@ -7,35 +7,28 @@ on:
 jobs:
   wait-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
-      - name: Backend health check (with retry)
+      - name: Wait for THIS commit to be live and healthy
         run: |
-          max_attempts=12
-          attempt=0
-          wait_seconds=30
-          while [ $attempt -lt $max_attempts ]; do
-            attempt=$((attempt + 1))
-            echo "Attempt $attempt/$max_attempts: waiting ${wait_seconds}s before checking..."
-            sleep $wait_seconds
-
-            response=$(curl -sS -o /tmp/health.json -w "%{http_code}" https://api.tomia.fr/health)
-            if [ "$response" = "200" ]; then
-              db_status=$(jq -r '.checks.database.status' /tmp/health.json)
-              if [ "$db_status" = "healthy" ]; then
-                echo "✅ Backend healthy"
-                exit 0
-              else
-                echo "DB unhealthy ($db_status), retrying..."
-              fi
-            else
-              echo "HTTP $response, retrying..."
+          for i in $(seq 1 40); do
+            sleep 30
+            body=$(curl -sS https://api.tomia.fr/health || true)
+            commit=$(echo "$body" | jq -r '.commit // "unreachable"' 2>/dev/null || echo "unreachable")
+            status=$(echo "$body" | jq -r '.status // "unreachable"' 2>/dev/null || echo "unreachable")
+            echo "attempt $i/40: commit=$commit status=$status (want ${GITHUB_SHA} healthy)"
+            if [ "$commit" = "unknown" ]; then
+              echo "::error::deployed commit is 'unknown' — Koyeb build is missing --build-arg GIT_COMMIT_SHA=\$GITHUB_SHA, configure it in the Koyeb build settings"
+              exit 1
+            fi
+            if [ "$commit" = "${GITHUB_SHA}" ] && [ "$status" = "healthy" ]; then
+              echo "✅ deployed commit is live and fully healthy"; exit 0
+            fi
+            if [ "$commit" = "${GITHUB_SHA}" ] && [ "$status" != "healthy" ]; then
+              echo "::error::new version live but $status"; echo "$body" | jq .; exit 1
             fi
           done
-
-          echo "::error::Backend /health failed after 12 attempts (total ~6 min)"
-          cat /tmp/health.json 2>/dev/null || echo "(no response body)"
-          exit 1
+          echo "::error::commit ${GITHUB_SHA} never became live+healthy in 20min"; exit 1
 
       - name: AI-service health check
         run: |

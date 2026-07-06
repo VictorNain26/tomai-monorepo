@@ -22,6 +22,7 @@ const mockEnv: Record<string, unknown> = {
   APP_VERSION: 'test',
   NODE_ENV: 'test',
   DEPLOYMENT_ID: undefined,
+  GIT_COMMIT_SHA: 'abc1234',
   AI_SERVICE_URL: undefined,
   AI_SERVICE_TOKEN: undefined,
   QDRANT_URL: undefined,
@@ -64,6 +65,7 @@ async function callHealth() {
   const response = await app.handle(new Request('http://localhost/health'));
   const body = (await response.json()) as {
     status: string;
+    commit: string;
     checks: Record<string, { status: string; latency?: number; error?: string }>;
   };
   return { response, body };
@@ -89,6 +91,12 @@ describe('GET /health', () => {
     expect(response.status).toBe(200);
     expect(body.status).toBe('healthy');
     expect(body.checks.aiService).toEqual({ status: 'not_configured' });
+  });
+
+  it('exposes the deployed commit sha so the smoke test can gate on it', async () => {
+    const { body } = await callHealth();
+
+    expect(body.commit).toBe('abc1234');
   });
 
   it('reports ai-service healthy with latency when configured and reachable', async () => {
