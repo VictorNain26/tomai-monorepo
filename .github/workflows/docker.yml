@@ -37,13 +37,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The workflow-level `paths:` filter above is a union of both jobs' inputs
+  # (so either job's edits still trigger the run) — each job then does its
+  # own internal changed-check (pattern from ci.yml's `migrations` job) so a
+  # PR touching only one app doesn't pay for the other's build.
   build-server:
     name: Build server production image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-
+        with:
+          fetch-depth: 0
+      - name: Check if server image inputs changed
+        id: check
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ]; then
+            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/server/' 'pnpm-lock.yaml' 'pnpm-workspace.yaml' 'package.json' '.npmrc' 'tsconfig.base.json' '.github/workflows/docker.yml')
+          else
+            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'apps/server/' 'pnpm-lock.yaml' 'pnpm-workspace.yaml' 'package.json' '.npmrc' 'tsconfig.base.json' '.github/workflows/docker.yml')
+          fi
+          [ -n "$DIFF" ] && echo "changed=true" >> "$GITHUB_OUTPUT" || echo "changed=false" >> "$GITHUB_OUTPUT"
       - name: Build production image
+        if: steps.check.outputs.changed == 'true'
         run: docker build --target production -f apps/server/Dockerfile .
 
   build-ai-service:
@@ -51,6 +66,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-
+        with:
+          fetch-depth: 0
+      - name: Check if ai-service image inputs changed
+        id: check
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ]; then
+            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/ai-service/' '.github/workflows/docker.yml')
+          else
+            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'apps/ai-service/' '.github/workflows/docker.yml')
+          fi
+          [ -n "$DIFF" ] && echo "changed=true" >> "$GITHUB_OUTPUT" || echo "changed=false" >> "$GITHUB_OUTPUT"
       - name: Build ai-service image
+        if: steps.check.outputs.changed == 'true'
         run: docker build -f apps/ai-service/Dockerfile apps/ai-service
