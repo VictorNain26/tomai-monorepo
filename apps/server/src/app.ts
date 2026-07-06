@@ -6,6 +6,7 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import { swagger } from '@elysiajs/swagger';
+import { withElysia } from '@sentry/elysia';
 
 // Auth et configuration
 import { auth } from './lib/auth.js';
@@ -33,7 +34,10 @@ import { createRateLimitMiddleware, RateLimitPresets } from './middleware/rate-l
 const isDev = isDevelopment();
 
 // Application Elysia avec architecture modulaire
-const app = new Elysia({ name: 'tomai-server' })
+// Sentry.withElysia wraps first — a no-op when Sentry.init() never ran
+// (no SENTRY_DSN) since @sentry/core spans/captureException are no-ops
+// without a client. https://github.com/getsentry/sentry-javascript/tree/master/packages/elysia
+const app = withElysia(new Elysia({ name: 'tomai-server' }))
 
   // Request ID + Global Error Handler (avant tout le reste)
   .use(requestIdMiddleware)
