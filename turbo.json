@@ -28,7 +28,8 @@
         "!.next/cache/**",
         "dist/**",
         "build/**"
-      ]
+      ],
+      "env": ["NEXT_RUNTIME", "VERCEL_ENV", "SENTRY_AUTH_TOKEN"]
     },
     "build:types": {
       "dependsOn": ["^build:types"],
