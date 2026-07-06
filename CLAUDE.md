@@ -29,7 +29,7 @@ Détail par app (chargé à la demande via walk-up quand tu travailles dedans) :
 | RAG | Qdrant Cloud + BGE-M3 hybrid (via `apps/ai-service`) |
 | Monorepo | Turborepo, pnpm workspaces, `@repo/api` (Eden Treaty types), `@repo/tokens` (design system partagé Tailwind v4) |
 | Deploy | Vercel (landing), Koyeb (server + ai-service), EAS (mobile natif ; web Expo → Vercel ou EAS Hosting, ADR 0001) |
-| Observabilité | OpenTelemetry (server, OTLP en prod) + logger structuré ; Sentry/PostHog non installés (chantier planifié) |
+| Observabilité | OpenTelemetry (server, OTLP en prod) + logger structuré ; Sentry actif (server, landing, mobile) ; PostHog non installé (chantier séparé) |
 
 ## Git workflow
 
