@@ -50,9 +50,6 @@ yarn-error.log*
 
 # Misc
 .DS_Store
-*.pem
-*.key
-*.p12
 lint_report.json
 
 # Claude Code - local files only
