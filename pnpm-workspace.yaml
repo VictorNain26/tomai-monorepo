@@ -89,3 +89,39 @@ overrides:
   uuid: '>=11.1.1'
   postcss: '>=8.5.10'
   brace-expansion: '>=5.0.6'
+  # `pnpm audit --prod --audit-level high` fixes (2026-07-06 review). Patch/minor
+  # bumps of transitive deps via override; drop once the parent packages bump.
+  # @grpc/grpc-js <1.14.4: malformed request/compressed message can crash the
+  # process (via @opentelemetry/sdk-node's otlp-grpc exporters).
+  '@grpc/grpc-js': '1.14.4'
+  # protobufjs <=7.6.0: DoS via unbounded Any expansion during JSON conversion
+  # (via @grpc/grpc-js>@grpc/proto-loader). Pinned exact (not >=) — protobufjs
+  # 8.x is a major bump @grpc/proto-loader doesn't support yet.
+  protobufjs: '7.6.1'
+  # undici <6.27.0: WebSocket client DoS via fragment count bypass, via
+  # @qdrant/js-client-rest (direct prod dependency of the server).
+  '@qdrant/js-client-rest>undici': '6.27.0'
+  # undici <7.28.0: TLS bypass in SOCKS5 ProxyAgent, cross-origin request
+  # routing, and WebSocket DoS — via jsdom (vitest's DOM shim), test tooling
+  # pulled into the prod tree as an optional peer of better-auth (never
+  # invoked at runtime).
+  'jsdom>undici': '7.28.0'
+  # linkify-it <=5.0.0: quadratic complexity DoS in #match, via
+  # markdown-it (react-native-markdown-display's parser, mobile prod dep).
+  # Pinned exact (not >=), consistent with the other overrides in this block.
+  'markdown-it>linkify-it': '5.0.2'
+
+# `pnpm audit` findings tolerated after review (2026-07-06). Validated against
+# https://pnpm.io/cli/audit#auditconfigignoreghsas (pnpm 11): since v11, pnpm
+# audit filters by GitHub advisory ID (GHSA), not CVE — `auditConfig.ignoreCves`
+# is no longer recognized.
+auditConfig:
+  ignoreGhsas:
+    # GHSA-w7jw-789q-3m8p — shell-quote quote() does not escape newlines in
+    # object .op values (critical). Chain: react-native>react-devtools-core>
+    # shell-quote — react-devtools-core is the RN dev-menu bridge to React
+    # DevTools, never bundled/invoked in a production release build. Patched
+    # at 1.8.4 but pinned deep inside react-native's own dependency tree (not
+    # a direct or easily overridable dep); dev-tooling, non exposé au runtime
+    # prod. Reviewed 2026-07-06.
+    - GHSA-w7jw-789q-3m8p

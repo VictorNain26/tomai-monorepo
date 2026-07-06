@@ -18,6 +18,7 @@
     "workflow:prod:android": "eas workflow:run .eas/workflows/production-android.yml",
     "workflow:prod:ios": "eas workflow:run .eas/workflows/production-ios.yml",
     "typecheck": "tsc --noEmit",
+    "bundle:check": "expo export --platform android --output-dir /tmp/expo-export-ci",
     "lint": "eslint . --max-warnings 0",
     "test": "jest",
     "test:watch": "jest --watch",
