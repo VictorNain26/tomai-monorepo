@@ -64,7 +64,7 @@
     "@opentelemetry/sdk-trace-base": "^2.7.1",
     "@opentelemetry/semantic-conventions": "^1.41.1",
     "@qdrant/js-client-rest": "^1.18.0",
-    "@sentry/elysia": "^10.63.0",
+    "@sentry/elysia": "10.63.0",
     "@sinclair/typebox": "^0.34.0",
     "ai": "7.0.14",
     "better-auth": "^1.6.23",

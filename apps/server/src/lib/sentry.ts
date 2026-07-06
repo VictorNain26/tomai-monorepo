@@ -39,8 +39,4 @@ export function setupSentry(): void {
   });
 }
 
-export function isSentryEnabled(): boolean {
-  return Boolean(process.env['SENTRY_DSN']);
-}
-
 export { Sentry };
