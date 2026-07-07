@@ -1,6 +1,9 @@
 packages:
   - apps/*
   - packages/*
+  # Python-only apps (uv, no package.json) — never real pnpm packages.
+  - '!apps/curriculum'
+  - '!apps/ai-service'
 
 # pnpm 11 reads these from here, NOT from .npmrc (where they are silently
 # ignored). RN 0.85's @react-native/jest-preset needs @babel/generator at
