@@ -63,13 +63,7 @@ function CardCompactContent({ className, ...props }: ViewProps) {
   return <View className={cn('p-4', className)} {...props} />;
 }
 
-export {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-  CardCompact,
-  CardCompactContent,
-};
+export { Card };
+/** @public — design-system parity with packages/ui's Card subcomponents (not yet consumed by a mobile screen). */
+export { CardHeader, CardTitle, CardDescription, CardContent, CardFooter };
+export { CardCompact, CardCompactContent };

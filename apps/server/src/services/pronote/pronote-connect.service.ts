@@ -16,6 +16,7 @@ import type { SchoolLevel } from '../../db/schema.js';
 import { splitName, inferSchoolLevel, matchExistingChild } from '../../lib/pronote-onboarding.js';
 import { logger } from '../../lib/observability.js';
 
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type { DiscoveredResource };
 // PronoteCredentialForbiddenError originates in pronote-sync.service to avoid
 // a circular import. Re-exported here for backward compatibility.
@@ -31,6 +32,7 @@ export interface ActivationSelection {
   linkToChildId?: string;
 }
 
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface DiscoveredChild extends DiscoveredResource {
   suggested: {
     firstName: string;
@@ -47,7 +49,7 @@ export class PronoteCredentialNotFoundError extends Error {
   }
 }
 
-export class PronoteChildNotOwnedError extends Error {
+class PronoteChildNotOwnedError extends Error {
   constructor(childId: string) {
     super(`Child ${childId} does not belong to the requesting parent`);
     this.name = 'PronoteChildNotOwnedError';

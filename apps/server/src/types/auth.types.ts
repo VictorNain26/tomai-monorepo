@@ -6,9 +6,3 @@ import type { ElysiaAuthenticatedUser } from './index.js';
 
 // Alias pour compatibilité avec les imports existants
 export type User = ElysiaAuthenticatedUser;
-
-export type {
-  ElysiaAuthenticatedUser,
-  
-  
-} from './index.js';

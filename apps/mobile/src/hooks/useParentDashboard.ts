@@ -20,7 +20,7 @@ type ParentApi = ReturnType<typeof getTreaty>['api']['parent'];
 export type IChild = ResponseData<ParentApi['children']['get']>[number];
 
 /** Payload to create a child — derived from the post body parameter. */
-export type ICreateChildData = NonNullable<Parameters<ParentApi['children']['post']>[0]>;
+type ICreateChildData = NonNullable<Parameters<ParentApi['children']['post']>[0]>;
 
 /** Payload to update a child — derived from the PATCH body parameter. */
 type IUpdateChildData = NonNullable<Parameters<ReturnType<ParentApi['children']>['patch']>[0]>;

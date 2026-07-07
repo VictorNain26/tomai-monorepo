@@ -197,7 +197,41 @@ jobs:
           echo "Migrations en sync avec schema.ts"
 
   # =============================================
-  # Job 5: Expo native deps alignment (mobile)
+  # Job 5: Dead code (knip)
+  # =============================================
+  # Cross-cutting (spans every workspace), so no paths filter — runs on every PR.
+  dead-code:
+    name: Dead code (knip)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-monorepo
+        with:
+          turbo-cache-key: knip
+      - name: Run knip
+        run: pnpm exec knip
+
+  # =============================================
+  # Job 6: Monorepo lint (sherif)
+  # =============================================
+  # Version-pinned per https://github.com/QuiiBz/sherif README ("Run it by
+  # specifying a version instead of latest") to avoid CI drift on new releases.
+  # Reads pnpm-workspace.yaml directly, no install needed — just Node/npx.
+  monorepo-lint:
+    name: Monorepo lint (sherif)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      - name: Run sherif
+        run: npx sherif@1.13.0
+
+  # =============================================
+  # Job 7: Expo native deps alignment (mobile)
   # =============================================
   # Catches native dependency drift before it reaches an EAS build. A stale
   # transitive pin (e.g. @expo/dom-webview 55.x against expo-modules-core 56)
@@ -218,7 +252,7 @@ jobs:
         run: npx expo install --check
 
   # =============================================
-  # Job 6: Mobile Metro bundle export (mobile)
+  # Job 8: Mobile Metro bundle export (mobile)
   # =============================================
   # Compiles the Metro bundle: catches bundling errors (bad imports, missing
   # native modules) before they reach an EAS build. Always reports a status

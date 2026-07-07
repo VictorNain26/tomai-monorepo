@@ -26,6 +26,7 @@ export interface StructuredToolError {
  * Successful tool result — discriminated union for full type safety.
  * `ok: true` signals success; callers can't mix error and success fields.
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface ToolSuccess<T = unknown> {
   ok: true;
   data: T;

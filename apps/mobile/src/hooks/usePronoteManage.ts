@@ -28,7 +28,7 @@ export interface PronoteCredentialSummary {
   childCount: number;
 }
 
-export interface ResyncResult {
+interface ResyncResult {
   added: { resourceId: number }[];
   stillMapped: number[];
 }

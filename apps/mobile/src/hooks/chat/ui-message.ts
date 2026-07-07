@@ -85,7 +85,7 @@ export function parseTransportErrorMessage(error: Error): string {
 }
 
 /** Same French labels the legacy SSE route used (`mistral-helpers.ts`'s `getToolStatusLabel`). */
-export function getToolStatusLabel(name: string): string {
+function getToolStatusLabel(name: string): string {
   switch (name) {
     case 'search_educational_content':
       return 'Recherche dans les programmes...';

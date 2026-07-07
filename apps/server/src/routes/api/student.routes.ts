@@ -19,6 +19,7 @@ const subjectUnion = t.Union([
 type _SubjectUnionMatchesEnum = Static<typeof subjectUnion> extends StudentSubject
   ? StudentSubject extends Static<typeof subjectUnion> ? true : never
   : never;
+/** @public — compile-time-only assertion; exported so it can't be tree-shaken/reported as an unused local. */
 export const _subjectUnionCheck: _SubjectUnionMatchesEnum = true;
 
 export const studentApiRoutes = new Elysia({ name: 'api-student' })

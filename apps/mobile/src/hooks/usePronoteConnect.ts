@@ -32,7 +32,7 @@ function isE2E(): boolean {
 // TYPES
 // ============================================================================
 
-export interface QrData {
+interface QrData {
   jeton: string;
   login: string;
   url: string;
@@ -77,7 +77,7 @@ interface ActivationResult {
   failed: { resourceId: number; reason: string }[];
 }
 
-export type OnboardingStep =
+type OnboardingStep =
   | 'intro'
   | 'scan'
   | 'pin'
@@ -86,7 +86,7 @@ export type OnboardingStep =
   | 'activating'
   | 'result';
 
-export interface PronoteConnectState {
+interface PronoteConnectState {
   step: OnboardingStep;
   qrData: QrData | null;
   pin: string | null;

@@ -1,0 +1,35 @@
+# Lint GitHub Actions workflow files (syntax, expressions, shellcheck).
+# Docker image method, per https://github.com/rhysd/actionlint/blob/main/docs/usage.md
+# ("Use actionlint on GitHub Actions" > Docker option). SHA-pinned like the
+# rest of the repo. Scoped to workflow changes only (cross-cutting is a
+# non-goal here, unlike knip): docker.yml's paths pattern.
+
+name: Actionlint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: actionlint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    name: Actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Check workflow files
+        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+        with:
+          args: -color

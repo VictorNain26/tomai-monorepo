@@ -9,10 +9,8 @@
  *
  * Keeps the genuinely useful helpers:
  * - MAX_TOOL_ITERATIONS  : same agentic loop bound (5 iterations).
- * - Streaming timeouts   : same setup + per-chunk guards, just renamed.
  * - wrapUserMessage      : prompt-injection defence (delimiter wrap), still
  *                          necessary regardless of provider.
- * - getToolStatusLabel   : UI status string for tool invocation.
  * - getLearningContext   : reads FSRS due-cards + weak subjects from pg.
  */
 
@@ -23,13 +21,6 @@ import { logger } from '../../lib/observability.js';
 import type { PronoteContext } from './ai-chat.service.js';
 
 export const MAX_TOOL_ITERATIONS = 5;
-
-/**
- * Timeouts for Mistral chat streaming. The setup timeout guards the initial
- * API handshake; the chunk timeout catches streams that stall mid-response.
- */
-export const CHAT_STREAM_SETUP_TIMEOUT_MS = 90_000;
-export const CHAT_STREAM_CHUNK_TIMEOUT_MS = 60_000;
 
 /**
  * Every delimiter tag used by the prompt template (fences for untrusted content
@@ -179,17 +170,6 @@ export function wrapAttachedFiles(
     });
 
   return blocks.join('\n\n');
-}
-
-export function getToolStatusLabel(name: string): string {
-  switch (name) {
-    case 'search_educational_content': return 'Recherche dans les programmes...';
-    case 'generate_flashcards': return 'Création de flashcards...';
-    case 'get_student_profile': return 'Analyse du profil...';
-    case 'update_student_profile': return 'Mémorisation...';
-    case 'get_app_help': return "Consultation du guide...";
-    default: return 'Traitement en cours...';
-  }
 }
 
 export async function getLearningContext(userId: string): Promise<string | null> {

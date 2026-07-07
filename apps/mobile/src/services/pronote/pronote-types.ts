@@ -4,19 +4,6 @@ export interface QrCodeData {
   url: string;
 }
 
-export interface PronoteMetadata {
-  instanceUrl: string;
-  username: string;
-  deviceUuid: string;
-  accountKind: 6 | 7 | 8; // AccountKind: STUDENT=6, PARENT=7, TEACHER=8
-}
-
-export interface PronoteResource {
-  name: string;
-  id: string;
-  className?: string;
-}
-
 export interface PronoteHomework {
   id: string;
   subject: string;
@@ -51,22 +38,8 @@ export interface PronoteTimetableEntry {
   status?: string;
 }
 
-export interface PronoteConnectionResult {
-  success: boolean;
-  error?: string;
-  resources?: PronoteResource[];
-  accountKind?: 6 | 7 | 8;
-}
-
 export interface PronoteChatContext {
   homework?: PronoteHomework[];
   recentGrades?: PronoteGrade[];
   todayTimetable?: PronoteTimetableEntry[];
-}
-
-export interface ChildPinData {
-  resource: PronoteResource;
-  schoolLevel: import('@/constants/levels').EducationLevelType;
-  pinType: 'pin' | 'password';
-  pinValue: string;
 }
