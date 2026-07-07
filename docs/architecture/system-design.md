@@ -98,8 +98,8 @@ sans portage : sous-ensemble strict du mobile, remplacée par l'app universelle 
 
 | Package | Rôle | Consommateurs |
 |---------|------|---------------|
-| `@repo/api` | Client Eden Treaty typé (`treaty<App>`) + `initializeApi`/`unwrap`/`setUnauthorizedHandler` | app universelle (web legacy en transition) |
-| `@repo/tokens` | Design tokens Tailwind v4 (thème clair/sombre), consommés par CSS web et NativeWind | landing, app, web legacy |
+| `@repo/api` | Client Eden Treaty typé (`treaty<App>`) + `initializeApi`/`unwrap`/`setUnauthorizedHandler` | app universelle |
+| `@repo/tokens` | Design tokens Tailwind v4 (thème clair/sombre), consommés par CSS web et NativeWind | landing, app |
 | `@repo/ui` | Primitives shadcn/DOM | landing, futur B2B — **jamais** l'app universelle |
 
 ## 3. Frontends
@@ -113,8 +113,8 @@ d'intégration serveur est la Server Action `joinWaitlist` → `POST /api/waitli
 fonctionnalité « produit » qui la tenterait appartient à l'app universelle. Cette frontière
 empêche la landing de dériver vers un mini-produit.
 
-Écart connu : aucune analytics installée alors que la cible est PostHog privacy-first
-(cf. [§7.2](#72-observabilité)).
+Écart connu : aucune analytics installée (Sentry couvre les erreurs, pas l'analytics)
+alors que la cible est PostHog privacy-first (cf. [§7.2](#72-observabilité)).
 
 ### 3.2 App universelle (`apps/app`) 🔄 Lot 5
 
@@ -149,8 +149,8 @@ Une seule app Expo Router pour parents et élèves, trois cibles : iOS, Android,
 
 ### 3.3 B2B établissement (futur, hors périmètre)
 
-App Next.js dédiée réutilisant `@repo/ui` + `@repo/tokens`. Le stub `/school` d'`apps/web`
-disparaît avec elle ; rien n'est migré vers l'app universelle.
+App Next.js dédiée réutilisant `@repo/ui` + `@repo/tokens`. Le stub `/school` a disparu
+avec la suppression d'`apps/web` ; rien n'est migré vers l'app universelle.
 
 ## 4. Contrats & flux
 
@@ -285,15 +285,19 @@ graph LR
 
 ### 7.2 Observabilité
 
-Cible : **Sentry** (crash/perf, les 4 apps) + **PostHog EU** (analytics privacy-first,
-feature flags, session replay). Statut : **à installer** — aucun des deux n'est présent,
-et la landing n'a aucune analytics (écart avec les règles marketing privacy-first).
-À câbler au plus tard pendant le Lot 5 (le pilote web a besoin de télémétrie pour le
-go/no-go).
+Cible : **Sentry** (crash/perf) + **PostHog EU** (analytics privacy-first, feature
+flags, session replay).
+
+- **Sentry : ✅ actif** (chantier hardening 2026-07-06, PR #272-279) sur server
+  (`@sentry/elysia`), landing (`@sentry/nextjs`) et mobile (`@sentry/react-native`),
+  région EU, scrub PII mineurs testé.
+- **PostHog : ⬜ à installer** (chantier séparé) — la landing n'a toujours aucune
+  analytics (écart avec les règles marketing privacy-first). À câbler au plus tard
+  pendant le Lot 5 (le pilote web a besoin de télémétrie pour le go/no-go).
 
 ### 7.3 Environnements & CI
 
-- Dev : Docker (Postgres) + `pnpm dev` (landing 3001, web 3002, server 3000, Expo 8081,
+- Dev : Docker (Postgres) + `pnpm dev` (landing 3001, server 3000, Expo 8081,
   ai-service 8001). `pnpm doctor:e2e` = diagnostic strict (toute dépendance réelle doit
   répondre, SKIP/degraded = échec). Qdrant Cloud partagé dev/prod (pas d'instance locale).
 - CI : lint + typecheck (`--max-warnings 0`), tests unitaires + intégration server
@@ -310,10 +314,10 @@ Seule section à mettre à jour à chaque merge de lot.
 | 2 | Deps sécu (Better Auth 1.6.23) | 2 | ✅ mergé (#265) |
 | 3 | ai-service avec rerank + risque OOM → embed-only FP16 | 3 | ✅ mergé (#266) |
 | 4 | SSE maison + 2 parseurs dupliqués → Vercel AI SDK (serveur puis clients) | 4 | ✅ mergé (#268) |
-| 5 | `apps/mobile` natif + `apps/web` doublon → `apps/app` universelle, suppression `apps/web`, renommage | 5 | ⬜ à faire (ADR + plan écrits) |
+| 5 | `apps/mobile` natif seul → `apps/app` universelle (web Expo + renommage) | 5 | ⬜ à faire (ADR + plan écrits) — `apps/web` déjà supprimée (2026-07-06, hardening lot 8) |
 | 6 | Orphelins d'index à l'update → delete-by-`source_file`, `payload.section` | 6 | ⬜ à faire |
 | 7 | RAG au bon vouloir du modèle → `toolChoice` forcé sur intent scolaire | 7 | ⬜ à faire |
-| 8 | Zéro observabilité → Sentry + PostHog EU (dont analytics landing) | — | ⬜ à câbler (au plus tard pendant Lot 5) |
+| 8 | Zéro observabilité → Sentry + PostHog EU (dont analytics landing) | — | 🔶 Sentry ✅ (hardening 2026-07-06, #272-279) ; PostHog ⬜ (au plus tard pendant Lot 5) |
 
 Après cutover Lot 5 : réconcilier ce doc (renommages `apps/app`), le `CLAUDE.md` racine
 et supprimer les specs web supersedées (Phase 4 du plan de migration).
