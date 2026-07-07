@@ -1,5 +1,8 @@
 # Tester l'app de bout en bout en dev — mobile ↔ backend ↔ RAG
 
+> **STATUT (2026-07-07) : LIVRÉ** via le plan jumeau (PR #253). Photo de design
+> datée : les références à `apps/web` sont caduques (supprimée le 2026-07-06).
+
 **Date** : 2026-06-23
 **Statut** : design validé, prêt pour plan d'implémentation
 **Scope** : permettre à n'importe quel dev de lancer le stack complet en local et de tester le parcours réel de l'app mobile contre backend + RAG réels — à la main et via une suite e2e automatisée.

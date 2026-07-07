@@ -1,9 +1,10 @@
 # Plan maître — Refonte system prompt + Chantier vocal
 
-> **STATUT (2026-07-07)** : Phase 1 (refonte system prompt) livrée depuis. Phase 2
-> (vocal batch Gladia→Voxtral) **SUPERSEDED** par le futur chantier « conversation
-> vocale temps réel » (Voxtral Realtime) — conserver comme matière (endpoints,
-> bug nettoyage TTS), ne pas exécuter tel quel.
+> **STATUT (2026-07-07)** : Phase 1 (refonte system prompt) livrée. Phase 2 livrée
+> pour l'essentiel : STT migré Gladia→Voxtral (commit 61ca090, Gladia retiré),
+> `inputMode: text | voice` câblé jusqu'au prompt. Reste non livré : V4 (nettoyage
+> markdown/KaTeX avant TTS) — repris par le futur chantier « conversation vocale
+> temps réel » (Voxtral Realtime). Ne pas exécuter tel quel.
 
 **Date** : 2026-06-14
 **Règles** (consigne Victor) : étape par étape, cohérence, vérifier à la source si incertain (doc-first + test via la vraie route `POST /api/chat/stream`), **zéro dette technique**, tout testé end-to-end.

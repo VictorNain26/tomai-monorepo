@@ -34,8 +34,7 @@ Pré-lancement (waitlist), zéro utilisateur en production.
 
 | Système | Rôle |
 |---------|------|
-| Mistral | Chat (`medium-latest`), embeddings 1024D, vision Pixtral, OCR, TTS Voxtral |
-| Gladia | STT |
+| Mistral | Chat (`medium-latest`), embeddings 1024D, vision Pixtral, OCR, TTS + STT Voxtral |
 | Qdrant Cloud | Index vectoriel RAG — source de vérité unique (dev + prod) |
 | Pronote | Vie scolaire (notes/devoirs/EDT) via `pawnote`, **serveur uniquement** |
 | Google OAuth | Sign-in parents |
@@ -60,7 +59,6 @@ graph TB
     subgraph Externes["Services externes (EU)"]
         QDRANT[("Qdrant Cloud")]
         MISTRAL["Mistral"]
-        GLADIA["Gladia STT"]
         S3["Scaleway S3"]
         PRONOTE["Pronote"]
     end
@@ -73,7 +71,6 @@ graph TB
     SERVER -- "embed queries" --> AISVC
     SERVER -- "search hybride RRF" --> QDRANT
     SERVER --> MISTRAL
-    SERVER --> GLADIA
     SERVER -- "presigned URLs" --> S3
     APP -- "upload direct" --> S3
     SERVER -- "pawnote (tokens chiffrés)" --> PRONOTE
@@ -274,7 +271,7 @@ graph LR
 
 ### 7.1 Sécurité & RGPD
 
-- **Souveraineté EU** : tous les providers IA et données sont EU (Mistral, Gladia, Qdrant
+- **Souveraineté EU** : tous les providers IA et données sont EU (Mistral, Qdrant
   région EU, Scaleway). Critère éliminatoire pour tout nouveau provider.
 - **Mineurs** : comptes élèves créés/gérés par le parent (username, pas d'email),
   reset de mot de passe par le parent, isolation des données par utilisateur au signOut

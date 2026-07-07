@@ -1,5 +1,8 @@
 # Chat — modèle de conversation & mémoire élève (design A+)
 
+> **STATUT (2026-07-07) : LIVRÉ** via les lots chat 1 et 3 (PR #256, #259) —
+> les problèmes décrits au présent sont corrigés depuis. Photo de design datée.
+
 Date : 2026-06-29
 Statut : design approuvé (go utilisateur). Lot 1 spécifié en détail ; lots 2-3 cadrés.
 Branche de départ : à créer par lot.

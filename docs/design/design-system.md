@@ -1,8 +1,8 @@
 # Design system Tom — contrat des deux surfaces
 
 Source de vérité du design unifié entre `apps/landing` (DOM) et l'app
-universelle Expo (`apps/mobile`, web produit + mobile). `apps/web` a été
-supprimée (ADR 0001, chapitre web fermé).
+universelle Expo (`apps/mobile` — natif aujourd'hui, cible web produit + mobile
+au Lot 5). `apps/web` a été supprimée (ADR 0001, chapitre web fermé).
 Spec d'origine : `docs/superpowers/specs/2026-07-05-design-system-unifie-design.md`.
 
 ## Règle zéro : tout passe par `@repo/tokens`
