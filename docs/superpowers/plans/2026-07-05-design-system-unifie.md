@@ -1,5 +1,7 @@
 # Design System Unifié — Implementation Plan
 
+> **STATUT : LIVRÉ** — mergé (PR #270, #271). Document conservé comme trace d'exécution ; ne pas exécuter.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Uniformiser le design des trois surfaces (landing, web, mobile/app universelle) via `@repo/tokens` comme unique source de vérité + contrat de parité des composants homonymes.

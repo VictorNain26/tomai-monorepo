@@ -1,5 +1,7 @@
 # Chat Lot 3 — Profil mémoire élève par matière Implementation Plan
 
+> **STATUT : LIVRÉ** — mergé le 2026-06-30 (PR #259). Document conservé comme trace d'exécution ; ne pas exécuter.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** Persister un profil mémoire de l'élève **par matière** (concepts vus, difficultés récurrentes, notes de maîtrise), l'alimenter depuis l'extraction épisodique existante, et l'injecter comme bloc compact dans le contexte chat — sans casser le cache prompt partagé.

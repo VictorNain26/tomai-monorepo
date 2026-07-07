@@ -1,5 +1,7 @@
 # E2E Dev Environment (mobile ↔ backend ↔ RAG) Implementation Plan
 
+> **STATUT : LIVRÉ** — mergé le 2026-06-27 (PR #253). Document conservé comme trace d'exécution ; ne pas exécuter.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let any developer, on any OS, run the full stack locally and test the real mobile journey (login → chat with RAG → learning) against the real backend + RAG — manually and via an automated Maestro suite — with no hardcoded IP and zero false positives.

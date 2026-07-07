@@ -1,5 +1,7 @@
 # Chat Lot 1 — Injection du résumé & détection de matière (Implementation Plan)
 
+> **STATUT : LIVRÉ** — mergé le 2026-06-29 (PR #256). Document conservé comme trace d'exécution ; ne pas exécuter.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Réparer l'injection du résumé de conversation dans le contexte Mistral (bug : le résumé est calculé mais filtré avant l'appel) et ajouter une détection de matière réelle persistée sur la session.

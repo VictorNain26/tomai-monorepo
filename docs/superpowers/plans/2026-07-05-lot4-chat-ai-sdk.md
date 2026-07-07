@@ -1,5 +1,7 @@
 # Lot 4 — Chat sur Vercel AI SDK — Implementation Plan
 
+> **STATUT : LIVRÉ** — mergé le 2026-07-05 (PR #268). Document conservé comme trace d'exécution ; ne pas exécuter.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Remplacer le protocole SSE maison du chat par le Vercel AI SDK (`streamText` + UI Message Stream) côté serveur, basculer les deux clients sur `useChat`, et supprimer le contournement HTTP de `mistral-client.ts`.

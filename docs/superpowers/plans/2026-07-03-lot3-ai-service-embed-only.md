@@ -1,5 +1,7 @@
 # Lot 3 — ai-service embed-only (suppression du rerank) — Implementation Plan
 
+> **STATUT : LIVRÉ** — mergé (PR #266). Document conservé comme trace d'exécution ; ne pas exécuter.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Supprimer entièrement le reranker bge-reranker-v2-m3 (jamais actif en prod, inutilisable sur CPU, cause de l'OOM latent) : `apps/ai-service` devient embed-only (BGE-M3 dense+sparse conservé tel quel), le serveur perd le stage-2 et ses flags, et `USE_FP16` devient explicite (plus de `auto`).

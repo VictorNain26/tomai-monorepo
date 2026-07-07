@@ -1,5 +1,7 @@
 # Lot 1 — RAG scoring P0 + déblocage génération flashcards — Implementation Plan
 
+> **STATUT : LIVRÉ** — mergé le 2026-07-01 (PR #262). Document conservé comme trace d'exécution ; ne pas exécuter.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rendre la couche scoring RAG cohérente avec la fusion RRF (scores ~0.016, pas cosine) : débloquer la génération de flashcards (400 systématique aujourd'hui), supprimer les pseudo-pourcentages montrés au LLM, supprimer le paramètre mort `minSimilarity`, et corriger la double amplification prefetch (16× au lieu de 4×).
