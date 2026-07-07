@@ -197,7 +197,24 @@ jobs:
           echo "Migrations en sync avec schema.ts"
 
   # =============================================
-  # Job 5: Expo native deps alignment (mobile)
+  # Job 5: Dead code (knip)
+  # =============================================
+  # Cross-cutting (spans every workspace), so no paths filter — runs on every PR.
+  dead-code:
+    name: Dead code (knip)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-monorepo
+        with:
+          turbo-cache-key: knip
+      - name: Run knip
+        run: pnpm exec knip
+
+  # =============================================
+  # Job 6: Expo native deps alignment (mobile)
   # =============================================
   # Catches native dependency drift before it reaches an EAS build. A stale
   # transitive pin (e.g. @expo/dom-webview 55.x against expo-modules-core 56)
@@ -218,7 +235,7 @@ jobs:
         run: npx expo install --check
 
   # =============================================
-  # Job 6: Mobile Metro bundle export (mobile)
+  # Job 7: Mobile Metro bundle export (mobile)
   # =============================================
   # Compiles the Metro bundle: catches bundling errors (bad imports, missing
   # native modules) before they reach an EAS build. Always reports a status
