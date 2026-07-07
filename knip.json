@@ -2,13 +2,29 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["scripts/*.mjs"],
-      "project": ["scripts/**/*.mjs"],
-      "ignoreBinaries": ["uv", "eslint"]
+      "entry": [
+        "scripts/*.mjs"
+      ],
+      "project": [
+        "scripts/**/*.mjs"
+      ],
+      "ignoreBinaries": [
+        "uv",
+        "eslint"
+      ]
     },
     "apps/server": {
-      "entry": ["src/app.ts", "scripts/**/*.ts", "src/tests/**/*.test.ts"],
-      "project": ["src/**/*.ts", "scripts/**/*.ts"]
+      "entry": [
+        "src/app.ts",
+        "scripts/**/*.ts",
+        "src/tests/**/*.test.ts",
+        "src/integration-tests/**/*.test.ts",
+        "src/live/**/*.test.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "scripts/**/*.ts"
+      ]
     },
     "apps/mobile": {
       "entry": [
@@ -16,18 +32,31 @@
         "__mocks__/**/*.{ts,tsx}",
         "scripts/**/*.{ts,js,mjs}"
       ],
-      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,js,mjs}"],
-      "ignoreDependencies": ["@babel/generator"],
-      "ignoreBinaries": ["eas"]
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "scripts/**/*.{ts,js,mjs}"
+      ],
+      "ignoreDependencies": [
+        "@babel/generator"
+      ],
+      "ignoreBinaries": [
+        "eas"
+      ]
     },
     "packages/api": {
-      "project": ["src/**/*.ts"]
+      "project": [
+        "src/**/*.ts"
+      ]
     },
     "packages/tokens": {
-      "project": ["src/**/*.ts"]
+      "project": [
+        "src/**/*.ts"
+      ]
     },
     "packages/ui": {
-      "project": ["src/**/*.{ts,tsx}"]
+      "project": [
+        "src/**/*.{ts,tsx}"
+      ]
     }
   }
 }

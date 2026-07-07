@@ -65,8 +65,9 @@ check alone.
 pnpm run test:scripts
 ```
 
-(Bun/Node test runner over `scripts/*.test.mjs` — `dev.mjs`, `doctor.mjs`,
-`doctor-checks.mjs`, `e2e-local.mjs`, `setup.mjs`.)
+(Node test runner over `scripts/*.test.mjs` — covers `doctor-checks.mjs` and
+`e2e-local.mjs` only; `dev.mjs`/`doctor.mjs`/`setup.mjs` have no dedicated
+tests — their proof is the real execution paths above.)
 
 ## Before writing down a command
 
