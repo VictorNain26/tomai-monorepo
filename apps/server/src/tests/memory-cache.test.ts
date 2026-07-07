@@ -11,8 +11,8 @@ const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
 // Import the service to test
-// The singleton memoryCacheService has side effects (setInterval), so we test via fresh import
-const { memoryCacheService: service } = await import('../services/memory-cache.service');
+// The singleton cacheService has side effects (setInterval), so we test via fresh import
+const { cacheService: service } = await import('../services/memory-cache.service');
 
 // Clean up between tests
 beforeEach(() => {

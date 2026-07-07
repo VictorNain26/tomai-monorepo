@@ -12,7 +12,7 @@ export const HAS_MISTRAL =
   !!env.MISTRAL_API_KEY && env.MISTRAL_API_KEY !== 'test-key';
 
 /** Vars RAG configurées (Qdrant Cloud + ai-service). */
-export const RAG_VARS_PRESENT = Boolean(
+const RAG_VARS_PRESENT = Boolean(
   process.env.QDRANT_URL && process.env.QDRANT_API_KEY && process.env.AI_SERVICE_URL,
 );
 

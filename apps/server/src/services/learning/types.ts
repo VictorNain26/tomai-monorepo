@@ -17,16 +17,19 @@ import type { EducationLevelType } from '../../types/index.js';
 /**
  * Type de carte pédagogique (explication de concept)
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type PedagogicalCardType = 'concept';
 
 /**
  * Types de cartes universels (toutes matières)
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type UniversalCardType = 'flashcard' | 'qcm' | 'vrai_faux';
 
 /**
  * Types de cartes pour les langues (français LV, anglais, espagnol, allemand, italien)
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type LanguageCardType =
   | 'matching'        // Relier mot ↔ traduction
   | 'fill_blank'      // Texte à trous (conjugaison, vocabulaire)
@@ -35,12 +38,14 @@ export type LanguageCardType =
 /**
  * Types de cartes pour les mathématiques et physique-chimie
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type MathScienceCardType =
   | 'calculation';    // Calcul avec étapes intermédiaires
 
 /**
  * Types de cartes pour l'histoire-géographie
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type HistoryGeoCardType =
   | 'timeline'        // Ordonner événements chronologiquement
   | 'matching_era'    // Relier événement ↔ époque/personnage
@@ -49,6 +54,7 @@ export type HistoryGeoCardType =
 /**
  * Types de cartes pour les SVT
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type SVTCardType =
   | 'classification'  // Classer éléments dans catégories
   | 'process_order';  // Ordonner étapes d'un processus
@@ -56,6 +62,7 @@ export type SVTCardType =
 /**
  * Types de cartes pour le français
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type FrenchCardType =
   | 'fill_blank'           // Texte à trous (grammaire)
   | 'grammar_transform';   // Transformer phrase (temps, voix, etc.)
@@ -64,6 +71,7 @@ export type FrenchCardType =
  * Types de cartes pour sciences cognitives (2025)
  * Basé sur recherches Éduscol/DRANE
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type CognitiveCardType =
   | 'reformulation';       // Élaboration active - reformuler avec ses mots
 
@@ -262,6 +270,7 @@ interface ReformulationContent {
 /**
  * Union de tous les contenus possibles
  */
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type CardContent =
   | ConceptContent
   | FlashcardContent
