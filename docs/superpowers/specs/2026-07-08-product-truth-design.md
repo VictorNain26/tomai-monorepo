@@ -26,6 +26,11 @@ mémoire de session.
   comme acquis tant que Victor n'a pas tranché — le doc distingue toujours le
   *décidé* du *contesté*. Premier cas identifié : l'abonnement (IAP mobile-only
   hérité d'avant l'app universelle ↔ besoin de s'abonner sur web ET mobile).
+- **Nommage** (Victor, 2026-07-08) : le branding complet est à revoir — le nom
+  de l'app n'est pas choisi ; **« Tom » désigne uniquement l'IA/mascotte** avec
+  laquelle l'élève parle. Le doc désigne le produit de façon neutre (« l'app »),
+  réserve « Tom » au chatbot, et porte « nom de l'app : à trancher (chantier
+  branding, avec mascotte) » comme décision ouverte dans la matrice.
 
 ## Structure du document
 
