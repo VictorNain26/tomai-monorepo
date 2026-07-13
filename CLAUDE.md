@@ -25,7 +25,7 @@ Détail par app (chargé à la demande via walk-up quand tu travailles dedans) :
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion — vitrine marketing/SEO |
 | Mobile | Expo SDK 56, React Native 0.85, React 19.2, NativeWind v5, React Native Reusables — app universelle (mobile + web, ADR 0001) |
 | Auth | Better Auth 1.6 + Google OAuth + account linking |
-| AI | Mistral (chat `medium-latest`, embeddings 1024D, vision Pixtral, OCR, TTS Voxtral), Gladia (STT) — stack 100 % EU |
+| AI | Mistral (chat `medium-latest`, embeddings 1024D, vision Pixtral, OCR, TTS + STT Voxtral) — stack 100 % EU |
 | RAG | Qdrant Cloud + BGE-M3 hybrid (via `apps/ai-service`) |
 | Monorepo | Turborepo, pnpm workspaces, `@repo/api` (Eden Treaty types), `@repo/tokens` (design system partagé Tailwind v4) |
 | Deploy | Vercel (landing), Koyeb (server + ai-service), EAS (mobile natif ; web Expo → Vercel ou EAS Hosting, ADR 0001) |
