@@ -1,5 +1,10 @@
 # Migration app conso universelle — Roadmap phasée
 
+> **MISE À JOUR 2026-07-07** : `apps/web` a été supprimée en avance de phase
+> (2026-07-06, chantier hardening lot 8, sans portage). Les étapes « suppression
+> `apps/web` » et « parité vérifiée contre `apps/web` » sont caduques : la parité
+> se vérifie désormais contre les parcours produit de l'app native existante.
+>
 > Référence décision : `docs/adr/0001-universal-consumer-app.md`. Ce document séquence l'exécution. **Chaque phase = une PR qui passe au vert ; l'app reste fonctionnelle tout du long ; le legacy n'est supprimé qu'au cutover.** Chaque phase reçoit son plan tâche-par-tâche détaillé quand on l'attaque.
 
 **But :** produit conso (parents/élèves) servi par **une seule app Expo Router universelle** (iOS/Android/web), landing en Next.js, Pronote natif-only — **zéro legacy, zéro doc contradictoire à l'état final**.
@@ -59,10 +64,10 @@
 ## Phase 4 — Réconciliation de la doc (zéro contradiction)
 
 **Livrables :** la doc reflète l'état final, plus aucune trace de l'ancien modèle « web ≠ mobile / RNW écarté » :
-- **Supprimer** `apps/web/CLAUDE.md`.
+- ~~**Supprimer** `apps/web/CLAUDE.md`.~~ *(fait — parti avec `apps/web`, 2026-07-06)*
 - **Réécrire** `apps/mobile/CLAUDE.md` → `apps/app/CLAUDE.md` : app universelle (iOS/Android/web), plus de « jamais de composants partagés avec le web », cible web Expo, Pronote natif-only.
 - **`CLAUDE.md` racine** : table stack (Web = Expo universel, plus Next.js conso), commandes/ports, walk-up.
-- **Specs/plans web obsolètes** marqués *superseded by ADR 0001* (`2026-06-29-web-parcours-parent-eleve-design.md`, `2026-06-30-web-chat-lot2-conversations.md`, autres `web-*`).
+- ~~**Specs/plans web obsolètes** marqués *superseded by ADR 0001*.~~ *(fait — supprimés le 2026-07-07, récupérables via git)*
 - **Mémoires** mises à jour → pointer l'ADR, retirer les affirmations devenues fausses.
 - **`.claude/rules/`** : vérifier qu'aucune règle ne contredit le pivot.
 
