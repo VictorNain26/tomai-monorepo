@@ -13,6 +13,9 @@ import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Text } from '@/components/ui/text';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { containsMath, parseContent } from './math-parsing';
+
+export { containsMath };
 
 // ============================================================================
 // TYPES
@@ -27,76 +30,6 @@ interface MathTextProps {
   textColor?: string;
   /** Font size in pixels (default: 16) */
   fontSize?: number;
-}
-
-interface ParsedSegment {
-  type: 'text' | 'inline-math' | 'block-math';
-  content: string;
-}
-
-// ============================================================================
-// MATH DETECTION
-// ============================================================================
-
-/**
- * Check if text contains any LaTeX math expressions
- */
-export function containsMath(text: string): boolean {
-  // Block math: $$...$$
-  if (/\$\$[\s\S]+?\$\$/.test(text)) return true;
-  // Inline math: $...$ (not $$)
-  if (/(?<!\$)\$(?!\$).+?(?<!\$)\$(?!\$)/.test(text)) return true;
-  // LaTeX commands
-  if (/\\(frac|sqrt|int|sum|prod|lim|sin|cos|tan|log|ln|exp|alpha|beta|gamma|delta|pi|theta|omega|infty|partial|nabla|vec|hat|bar|dot|ddot)\b/.test(text)) return true;
-  return false;
-}
-
-/**
- * Parse text into segments of plain text and math
- */
-function parseContent(text: string): ParsedSegment[] {
-  const segments: ParsedSegment[] = [];
-  const mathRegex = /(\$\$[\s\S]+?\$\$)|(\$[^$\n]+?\$)/g;
-
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = mathRegex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      const textBefore = text.slice(lastIndex, match.index);
-      if (textBefore.trim()) {
-        segments.push({ type: 'text', content: textBefore });
-      }
-    }
-
-    const fullMatch = match[0];
-    if (fullMatch.startsWith('$$') && fullMatch.endsWith('$$')) {
-      segments.push({
-        type: 'block-math',
-        content: fullMatch.slice(2, -2).trim(),
-      });
-    } else {
-      segments.push({
-        type: 'inline-math',
-        content: fullMatch.slice(1, -1).trim(),
-      });
-    }
-
-    lastIndex = match.index + fullMatch.length;
-  }
-
-  if (lastIndex < text.length) {
-    const textAfter = text.slice(lastIndex);
-    if (textAfter.trim()) {
-      segments.push({ type: 'text', content: textAfter });
-    }
-  }
-
-  if (segments.length === 0) {
-    segments.push({ type: 'text', content: text });
-  }
-
-  return segments;
 }
 
 // ============================================================================

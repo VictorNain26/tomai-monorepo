@@ -50,7 +50,7 @@ describe('RAG e2e (real Qdrant + ai-service, local-only)', () => {
       expect(available).toBe(true);
     });
 
-    it('should have ai-service available (BGE-M3 + rerank)', async () => {
+    it('should have ai-service available (BGE-M3 embeddings)', async () => {
       const available = await aiServiceClient.isAvailable();
       expect(available).toBe(true);
     });

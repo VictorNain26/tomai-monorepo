@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type DocumentType = 'exercice' | 'cours' | 'devoir' | 'correction' | 'document' | 'non-educatif';
 
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type SubjectType =
   | 'mathematiques' | 'francais' | 'anglais' | 'espagnol' | 'allemand'
   | 'histoire' | 'geographie' | 'emc' | 'svt' | 'physique-chimie'

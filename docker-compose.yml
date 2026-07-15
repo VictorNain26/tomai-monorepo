@@ -34,8 +34,8 @@ services:
       - DOCKER_CONTAINER=true
       # Database (internal Docker network)
       - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
-      # CORS (landing:3001 + web:3002)
-      - CORS_ORIGINS=http://localhost:3001,http://localhost:3002
+      # CORS (landing:3001)
+      - CORS_ORIGINS=http://localhost:3001
       # Container-network override (diffère de apps/server/.env en host)
       - BETTER_AUTH_URL=http://localhost:3000
       # AI Service : hostname interne du réseau Docker (l'env_file pointe :8001 host)
@@ -78,7 +78,7 @@ services:
       start_period: 60s
 
   # ===========================================
-  # tomai-ai-service — BGE-M3 dense+sparse + bge-reranker-v2-m3
+  # tomai-ai-service — BGE-M3 dense+sparse embeddings (embed-only)
   # Doc : apps/ai-service/README.md
   # ===========================================
   ai-service:
@@ -93,14 +93,13 @@ services:
       - "8001:8000"  # 8001 côté host pour éviter collision avec backend
     environment:
       - EMBED_MODEL=BAAI/bge-m3
-      - RERANK_MODEL=BAAI/bge-reranker-v2-m3
-      - USE_FP16=auto
+      - USE_FP16=false
       - HF_HOME=/data/hf_cache
       - HF_TOKEN=${HF_TOKEN:-}  # optionnel : download modèles plus rapide
       - PORT=8000
       - API_TOKEN=${AI_SERVICE_TOKEN:-}
     volumes:
-      # Cache HF persistant : évite re-download ~3.5 GB à chaque restart
+      # Cache HF persistant : évite re-download ~2.4 GB à chaque restart
       - ai_service_hf_cache:/data/hf_cache
     networks:
       - tomai-dev
@@ -108,14 +107,14 @@ services:
     deploy:
       resources:
         limits:
-          memory: 6GB  # marge confortable pour FP32 BGE-M3 + bge-reranker
+          memory: 4GB  # BGE-M3 FP32 ~2.5-3 GB + marge (embed-only)
           cpus: '2.0'
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 300s  # 1er boot = download modèles ~3,5 Go ; ensuite cache volume
+      start_period: 300s  # 1er boot = download modèle ~2,4 Go ; ensuite cache volume
 
   # ===========================================
   # Qdrant — vector DB locale (RAG dev sans Qdrant Cloud)

@@ -1,12 +1,17 @@
 /**
- * ChatOrchestrationService - Pipeline complet du chat streaming
+ * ChatOrchestrationService - Pipeline chat streaming (AI SDK)
  *
  * Responsabilites:
- * 1. Assembler le contexte (fichiers, profil cognitif, learning)
- * 2. Gerer la session + historique
- * 3. Persister les messages (user avant stream, assistant apres)
- * 4. Orchestrer le streaming Mistral
- * 5. Post-processing (tokens, summarization)
+ * 1. Resoudre/creer la session + charger historique + resume
+ * 2. Assembler le contexte enrichi (fichiers multimodaux, profil cognitif,
+ *    contexte d'apprentissage, classification d'intention, memoire
+ *    episodique, memoire de matiere) exactement comme le pipeline SSE legacy
+ * 3. Persister le message user AVANT le streaming (+ associer les fichiers)
+ * 4. Post-processing apres le streaming (`onFinish`) : sauver le message
+ *    assistant, comptabiliser tokens/cout, declencher summarization et
+ *    auto-titrage en fire-and-forget — SAUTE entierement si le stream n'a
+ *    produit aucun contenu (miroir du pipeline legacy, qui ne postProcess
+ *    que sur un chunk `done`, jamais sur une erreur en cours de stream).
  */
 
 import { chatSessionService } from './chat-session.service.js';
@@ -15,7 +20,6 @@ import { sessionFilesRepository, studySessionsRepository } from '../../db/reposi
 import { resolveEffectiveSubject, shouldPersistDetectedSubject } from './subject-resolution.js';
 import { STUDENT_SUBJECTS } from '../../config/prompts/adaptation/subjects.js';
 import { fileContextService } from './file-context.service.js';
-import { mistralChatService } from './mistral-chat.service.js';
 import { getLearningContext } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
@@ -26,55 +30,109 @@ import { episodicMemoryService } from '../episodic-memory.service.js';
 import { subjectProfileService } from './subject-profile.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
 import { logger } from '../../lib/observability.js';
+import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js';
+import type { LanguageModelUsage } from 'ai';
 import type { EducationLevelType } from '../../types/index.js';
-import type { ChatStreamChunk, PronoteContext } from './chat-streaming-types.js';
+import type { AttachedFile } from './ai-chat.service.js';
+import type { AttachedFileInfo, AttachedFileForPrompt } from './file-context-types.js';
 
-interface ChatStreamRequest {
+const MAX_ENRICHED_CONTENT_CHARS = 50_000;
+
+interface PrepareTurnRequest {
   userId: string;
-  content: string;
   sessionId?: string;
-  subject?: string;
-  schoolLevel: EducationLevelType;
-  firstName?: string;
+  requestedSubject?: string;
+  content: string;
   fileIds: string[];
-  userRole: 'student' | 'parent';
-  pronoteContext?: PronoteContext;
-  /** Input channel declared by the user's gesture (mic vs keyboard). */
-  inputMode?: 'text' | 'voice';
+  schoolLevel: EducationLevelType;
 }
 
-interface SessionContext {
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
+export interface ChatTurnContext {
   sessionId: string;
+  subject?: string;
   conversationSummary: string | null;
-  subject: string | null;
-  formattedHistory: Array<{
+  conversationHistory: Array<{
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
   }>;
+  cognitiveProfileSummary: string | null;
+  /** Learning context (FSRS due cards) + episodic memory + subject memory, merged into one block. */
+  mergedLearningContext: string | null;
+  intentReinforcement: string | null;
+  classifiedIntent: ClassifiedIntent;
+  /** Multimodal files (images) for Mistral vision, ready for `streamChat`'s `files` param. */
+  files: AttachedFile[];
+  /** Bounded document analyses (OCR), ready for `streamChat`'s `attachedFiles` param. */
+  attachedFiles: AttachedFileForPrompt[];
+  attachedFileInfo: AttachedFileInfo | null;
+  attachedFileInfos?: AttachedFileInfo[];
 }
 
-const MAX_ENRICHED_CONTENT_CHARS = 50_000;
+interface PersistUserTurnParams {
+  sessionId: string;
+  content: string;
+  inputMode?: 'text' | 'voice';
+  fileIds: string[];
+  attachedFileInfo: AttachedFileInfo | null;
+  attachedFileInfos?: AttachedFileInfo[];
+}
+
+interface FinishTurnParams {
+  sessionId: string;
+  userId: string;
+  userContent: string;
+  responseMessage: TomChatMessage;
+  model: string;
+  usage: LanguageModelUsage | undefined;
+  startTime: number;
+  attachedFileInfo: AttachedFileInfo | null;
+  attachedFileInfos?: AttachedFileInfo[];
+  classifiedIntent: ClassifiedIntent;
+}
 
 class ChatOrchestrationService {
   /**
-   * Pipeline principal : assemble le contexte, persiste, stream, post-process.
-   * Retourne un AsyncGenerator de ChatStreamChunk.
+   * Resout (ou cree) la session, charge historique + resume, puis assemble
+   * le contexte enrichi (fichiers, profil cognitif, learning, intention,
+   * memoire episodique/matiere) exactement comme le pipeline SSE legacy
+   * (`orchestrateStream` Phases 1-2). Jette `ChatOrchestrationError` si le
+   * `sessionId` fourni n'existe pas ou n'appartient pas a l'utilisateur.
    */
-  async *orchestrateStream(request: ChatStreamRequest): AsyncGenerator<ChatStreamChunk> {
-    const startTime = Date.now();
+  async prepareTurn(request: PrepareTurnRequest): Promise<ChatTurnContext> {
+    let sessionId: string;
 
-    // Phase 1: Session
-    const sessionCtx = await this.resolveSession(request);
+    if (request.sessionId?.trim()) {
+      const session = await chatSessionService.getSession(request.sessionId);
+      if (!session || session.userId !== request.userId) {
+        throw new ChatOrchestrationError('Session not found or access denied', 403);
+      }
+      sessionId = request.sessionId;
+    } else {
+      sessionId = await chatSessionService.getOrCreateActiveSession(request.userId);
+    }
 
-    // Phase 2: Context assembly (parallel)
-    // Intent classification runs in parallel with context assembly so it
-    // adds no end-to-end latency on the critical path. Max ~8s (its own
-    // timeout) bounded; classification failures fall back to intent='unknown'
-    // (logged at high severity — not a silent fallback).
-    //
-    // Episodic memory retrieval is also parallelized. It queries pgvector
-    // for past sessions (TTL-aware, cosine similarity) and returns [] on
+    const sessionSummary = await chatSessionService.getSessionWithSummary(sessionId);
+
+    const sessionHistory = await chatMessageService.getSessionHistory(sessionId, {
+      limit: 20,
+      afterMessageId: sessionSummary?.summaryUpToMessageId ?? undefined,
+    });
+
+    const conversationHistory = sessionHistory
+      .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+      .map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: msg.createdAt.toISOString(),
+      }));
+
+    // Context assembly (parallel) — intent classification and episodic
+    // memory run alongside file/profile/learning context assembly so none
+    // of them add end-to-end latency on the critical path. Classification
+    // failures fall back to intent='unknown' (logged at high severity in
+    // the service, not a silent fallback); episodic memory returns [] on
     // miss/error with its own logging.
     const [
       fileContext,
@@ -89,7 +147,7 @@ class ChatOrchestrationService {
         content: request.content,
         schoolLevel: request.schoolLevel,
         userId: request.userId,
-        sessionId: sessionCtx.sessionId,
+        sessionId,
       }),
       fileContextService.prepareMultimodalFiles(request.fileIds),
       cognitiveProfileService.getProfileSummary(request.userId),
@@ -105,24 +163,21 @@ class ChatOrchestrationService {
     // session's stored subject then the client hint. Persist on the first
     // confident detection (anti-thrash) so the conversation gets a real subject.
     const detectedSubject = classifiedIntent.subject;
-    // Boundary validation : seul un sujet canonique du hint client peut servir
-    // de label de prompt ; tout free-form est ignoré (le sujet détecté est
-    // enum-safe et reste le signal primaire).
     const requestedSubject =
-      request.subject && (STUDENT_SUBJECTS as readonly string[]).includes(request.subject)
-        ? request.subject
+      request.requestedSubject && (STUDENT_SUBJECTS as readonly string[]).includes(request.requestedSubject)
+        ? request.requestedSubject
         : undefined;
     const effectiveSubject = resolveEffectiveSubject({
       detected: detectedSubject,
-      sessionSubject: sessionCtx.subject,
+      sessionSubject: sessionSummary?.subject ?? null,
       requested: requestedSubject,
     });
-    if (detectedSubject && shouldPersistDetectedSubject({ detected: detectedSubject, sessionSubject: sessionCtx.subject })) {
+    if (detectedSubject && shouldPersistDetectedSubject({ detected: detectedSubject, sessionSubject: sessionSummary?.subject ?? null })) {
       void studySessionsRepository
-        .updateSubject(sessionCtx.sessionId, detectedSubject)
+        .updateSubject(sessionId, detectedSubject)
         .catch(err => logger.warn('Subject persist failed', {
           operation: 'chat-orchestration:subject-persist',
-          sessionId: sessionCtx.sessionId,
+          sessionId,
           _error: err instanceof Error ? err.message : String(err),
         }));
     }
@@ -132,9 +187,6 @@ class ChatOrchestrationService {
       : null;
 
     const { attachedFileInfos, attachedFiles } = fileContext;
-    // Primary file stays in the dedicated column for backward-compat readers;
-    // the full list is persisted separately in messageMetadata via saveMessage
-    // below (audit F-8: previously files 2..N were silently dropped).
     const attachedFileInfo = attachedFileInfos[0] ?? null;
     const hasMultipleFiles = attachedFileInfos.length > 1;
 
@@ -155,11 +207,15 @@ class ChatOrchestrationService {
       return f;
     });
 
+    const mergedLearningContext = [learningContext, episodicContext, subjectMemoryBlock]
+      .filter((x): x is string => Boolean(x))
+      .join('\n\n') || null;
+
     logger.info('Chat context assembled', {
       userId: request.userId,
       subject: effectiveSubject,
       detectedSubject,
-      sessionId: sessionCtx.sessionId,
+      sessionId,
       level: request.schoolLevel,
       filesCount: request.fileIds.length,
       multimodalFilesCount: multimodalFiles.length,
@@ -170,165 +226,79 @@ class ChatOrchestrationService {
       operation: 'chat-orchestration:context-ready',
     });
 
-    // Phase 3: Persist user message BEFORE streaming.
-    // Skip session re-check: resolveSession above already verified ownership.
-    await chatMessageService.saveMessage(
-      sessionCtx.sessionId,
-      'user',
-      request.content,
-      {
-        ...(attachedFileInfo && {
-          attachedFile: attachedFileInfo,
-          ...(hasMultipleFiles && { attachedFiles: attachedFileInfos }),
-        }),
-        ...(request.inputMode && { inputMode: request.inputMode }),
-      },
-      { verifySessionExists: false },
-    );
-
-    if (request.fileIds.length > 0) {
-      await Promise.all(
-        request.fileIds.map(fId => sessionFilesRepository.attach(sessionCtx.sessionId, fId)),
-      );
-    }
-
-    // Phase 4: Yield thinking status
-    yield {
-      type: 'status' as const,
-      id: `ack_${Date.now()}`,
-      model: 'mistral-medium-latest',
-      timestamp: Date.now(),
-      status: 'Tom réfléchit…',
-    };
-
-    // Phase 5: Stream from Mistral
-    // Merge episodic context into learning context so mistralChatService
-    // only has one "prior knowledge" section to reason about. Learning
-    // context (FSRS due cards) + episodes (past sessions) are complementary
-    // pedagogical memory signals.
-    const mergedLearningContext = [learningContext, episodicContext, subjectMemoryBlock]
-      .filter((x): x is string => Boolean(x))
-      .join('\n\n') || null;
-
-    const streamGenerator = mistralChatService.generateStreamChunks({
-      userId: request.userId,
-      content: request.content,
-      attachedFiles: boundedAttachedFiles,
-      schoolLevel: request.schoolLevel,
-      firstName: request.firstName,
+    return {
+      sessionId,
       subject: effectiveSubject,
-      sessionId: sessionCtx.sessionId,
-      userRole: request.userRole,
-      pronoteContext: request.pronoteContext,
+      conversationSummary: sessionSummary?.conversationSummary ?? null,
+      conversationHistory,
       cognitiveProfileSummary,
-      learningContext: mergedLearningContext,
-      conversationSummary: sessionCtx.conversationSummary,
-      conversationHistory: sessionCtx.formattedHistory,
+      mergedLearningContext,
       intentReinforcement,
       classifiedIntent,
-      inputMode: request.inputMode,
       files: multimodalFiles.map(f => ({
         base64: f.base64,
         mimeType: f.mimeType,
         contentType: f.contentType,
       })),
-    });
-
-    let fullContent = '';
-
-    for await (const chunk of streamGenerator) {
-      if (chunk.type === 'content') {
-        fullContent = chunk.content ?? fullContent;
-        yield chunk;
-      } else if (chunk.type === 'done') {
-        // Phase 6: Post-processing
-        await this.postProcess({
-          sessionId: sessionCtx.sessionId,
-          userId: request.userId,
-          userContent: request.content,
-          fullContent,
-          chunk,
-          startTime,
-          attachedFileInfo,
-          attachedFileInfos: hasMultipleFiles ? attachedFileInfos : undefined,
-          classifiedIntent,
-        });
-        yield chunk;
-      } else {
-        // status, deck_created, error — forward as-is
-        yield chunk;
-      }
-    }
-  }
-
-  /**
-   * Resolve ou cree la session, charge l'historique et le resume.
-   */
-  private async resolveSession(request: ChatStreamRequest): Promise<SessionContext> {
-    let sessionId: string;
-
-    if (request.sessionId?.trim()) {
-      const session = await chatSessionService.getSession(request.sessionId);
-      if (!session || session.userId !== request.userId) {
-        throw new ChatOrchestrationError('Session not found or access denied', 403);
-      }
-      sessionId = request.sessionId;
-    } else {
-      sessionId = await chatSessionService.getOrCreateActiveSession(request.userId);
-    }
-
-    const sessionSummary = await chatSessionService.getSessionWithSummary(sessionId);
-
-    const sessionHistory = await chatMessageService.getSessionHistory(sessionId, {
-      limit: 20,
-      afterMessageId: sessionSummary?.summaryUpToMessageId ?? undefined,
-    });
-
-    const formattedHistory = sessionHistory
-      .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-      .map(msg => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-        timestamp: msg.createdAt.toISOString(),
-      }));
-
-    return {
-      sessionId,
-      conversationSummary: sessionSummary?.conversationSummary ?? null,
-      subject: sessionSummary?.subject ?? null,
-      formattedHistory,
+      attachedFiles: boundedAttachedFiles,
+      attachedFileInfo,
+      attachedFileInfos: hasMultipleFiles ? attachedFileInfos : undefined,
     };
   }
 
   /**
-   * Post-processing apres streaming : save message, tokens, summarization.
+   * Persiste le message utilisateur AVANT le streaming et associe les
+   * fichiers a la session (comportement inchange vis-a-vis du pipeline
+   * legacy).
    */
-  private async postProcess(params: {
-    sessionId: string;
-    userId: string;
-    userContent: string;
-    fullContent: string;
-    chunk: ChatStreamChunk;
-    startTime: number;
-    attachedFileInfo: {
-      fileName: string;
-      fileId?: string;
-      mimeType?: string;
-      fileSizeBytes?: number;
-    } | null;
-    attachedFileInfos?: Array<{
-      fileName: string;
-      fileId?: string;
-      mimeType?: string;
-      fileSizeBytes?: number;
-    }>;
-    classifiedIntent?: ClassifiedIntent;
-  }): Promise<void> {
-    const { sessionId, userId, userContent, fullContent, chunk, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
-    const tokensUsed = chunk.usage?.totalTokens ?? 0;
+  async persistUserTurn(params: PersistUserTurnParams): Promise<void> {
+    await chatMessageService.saveMessage(
+      params.sessionId,
+      'user',
+      params.content,
+      {
+        ...(params.attachedFileInfo && {
+          attachedFile: params.attachedFileInfo,
+          ...(params.attachedFileInfos && { attachedFiles: params.attachedFileInfos }),
+        }),
+        ...(params.inputMode && { inputMode: params.inputMode }),
+      },
+      { verifySessionExists: false },
+    );
+
+    if (params.fileIds.length > 0) {
+      await Promise.all(
+        params.fileIds.map(fId => sessionFilesRepository.attach(params.sessionId, fId)),
+      );
+    }
+  }
+
+  /**
+   * Post-processing apres le streaming (branche sur `onFinish` du UI
+   * Message Stream) : sauve le message assistant, comptabilise
+   * tokens/cout, et declenche summarization + auto-titrage en
+   * fire-and-forget. Miroir du `postProcess` du pipeline legacy — qui
+   * n'etait invoque QUE sur un chunk `done` (jamais sur une erreur en
+   * cours de stream). Ici, meme garde : si le stream n'a produit aucun
+   * contenu, on ne persiste rien et on ne compte ni tokens ni cout.
+   */
+  async finishTurn(params: FinishTurnParams): Promise<void> {
+    const { sessionId, userId, userContent, responseMessage, model, usage, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
+    const fullContent = extractTextFromParts(responseMessage.parts);
+
+    if (fullContent.length === 0) {
+      logger.warn('Streaming produced no content, skipping persistence', {
+        userId,
+        sessionId,
+        operation: 'chat-orchestration:empty-response',
+      });
+      return;
+    }
+
+    const tokensUsed = usage?.totalTokens ?? 0;
 
     await chatMessageService.saveMessage(sessionId, 'assistant', fullContent, {
-      aiModel: chunk.model,
+      aiModel: model,
       tokensUsed,
       responseTimeMs: Date.now() - startTime,
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
@@ -339,33 +309,26 @@ class ChatOrchestrationService {
     if (tokensUsed > 0) {
       await tokenQuotaService.incrementTokenUsage(userId, tokensUsed);
 
-      // Cost accounting: compute cents from model pricing and persist a
-      // cost_tracking row. This populates the table that
-      // progress.service.getCostTracking already reads for dashboards.
-      if (chunk.usage) {
-        await costTrackingService.record({
-          userId,
-          sessionId,
-          aiModel: chunk.model,
-          operation: 'chat',
-          tokensInput: chunk.usage.promptTokens,
-          tokensOutput: chunk.usage.completionTokens,
-          cachedTokens: chunk.usage.cachedTokens,
-        });
-      }
+      await costTrackingService.record({
+        userId,
+        sessionId,
+        aiModel: model,
+        operation: 'chat',
+        tokensInput: usage?.inputTokens ?? 0,
+        tokensOutput: usage?.outputTokens ?? 0,
+        cachedTokens: usage?.inputTokenDetails?.cacheReadTokens ?? 0,
+      });
     }
 
     logger.info('Streaming message saved', {
       userId,
       sessionId,
-      messageId: chunk.id,
       tokensUsed,
-      model: chunk.model,
+      model,
       responseTimeMs: Date.now() - startTime,
       operation: 'chat-orchestration:save',
     });
 
-    // Background tasks (fire-and-forget)
     summarizationService.summarizeIfNeeded(sessionId).catch(err => {
       logger.error('Background summarization failed', {
         _error: err instanceof Error ? err.message : String(err),

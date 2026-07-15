@@ -16,11 +16,12 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@repo/tokens": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "@sentry/nextjs": "^10.63.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "catalog:",
     "next": "^16.2.6",
-    "@repo/tokens": "workspace:*",
-    "@repo/ui": "workspace:*",
     "next-themes": "^0.4.6",
     "react": "catalog:",
     "react-dom": "catalog:"

@@ -15,6 +15,7 @@
 
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { sql } from 'drizzle-orm';
 import postgres from 'postgres';
 import { resolveDatabaseUrl } from '../config/database-url.js';
 
@@ -55,14 +56,25 @@ export async function runMigrations(): Promise<void> {
   const db = drizzle(migrationClient);
 
   try {
-    // Ensure required Postgres extensions exist before running migrations
-    // that reference them (pgvector for session_episodes.summary_embedding).
-    // Idempotent: IF NOT EXISTS means this is safe on every boot.
-    await migrationClient.unsafe('CREATE EXTENSION IF NOT EXISTS vector;');
-    console.log('Postgres extensions verified (vector)');
+    // Several Koyeb instances can boot in parallel, each running this script.
+    // pg_advisory_lock is session-scoped: with `max: 1` this connection holds
+    // exactly one session, so only one instance proceeds at a time — the
+    // others block here until the lock holder finishes and releases it, then
+    // find nothing left to do (no double CREATE EXTENSION / migration race).
+    await db.execute(sql`SELECT pg_advisory_lock(hashtext('drizzle_migrate'))`);
 
-    await migrate(db, { migrationsFolder: './drizzle' });
-    console.log('Migrations completed successfully');
+    try {
+      // Ensure required Postgres extensions exist before running migrations
+      // that reference them (pgvector for session_episodes.summary_embedding).
+      // Idempotent: IF NOT EXISTS means this is safe on every boot.
+      await migrationClient.unsafe('CREATE EXTENSION IF NOT EXISTS vector;');
+      console.log('Postgres extensions verified (vector)');
+
+      await migrate(db, { migrationsFolder: './drizzle' });
+      console.log('Migrations completed successfully');
+    } finally {
+      await db.execute(sql`SELECT pg_advisory_unlock(hashtext('drizzle_migrate'))`);
+    }
   } catch (error) {
     console.error('Migration failed:', error);
     process.exit(1);

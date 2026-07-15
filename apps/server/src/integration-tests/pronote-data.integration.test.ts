@@ -123,7 +123,27 @@ if (!dbReachable) {
   console.warn('[pronote-data.integration] DB unreachable — all tests will be skipped');
 }
 
-const canRun = demoReachable && dbReachable;
+// The HEAD probe only proves the host answers — the demo can be up yet broken
+// at login (PageUnavailableError observed 2026-07). Probe the real login
+// top-level so describe.skipIf reflects actual usability, not mere liveness.
+const probedSession =
+  demoReachable && dbReachable
+    ? await loginWithCredentials({
+        url: DEMO_URL,
+        kind: DEMO_KIND,
+        username: DEMO_USERNAME,
+        password: DEMO_PASSWORD,
+        deviceUuid: DEMO_DEVICE_UUID,
+      }).catch((err: unknown) => {
+        console.warn(
+          '[pronote-data.integration] Demo login failed — all tests will be skipped',
+          err,
+        );
+        return null;
+      })
+    : null;
+
+const canRun = demoReachable && dbReachable && probedSession !== null;
 
 // ============================================================
 // Test state
@@ -147,16 +167,10 @@ const testApp = new Elysia().use(pronoteDataRoutes);
 // ============================================================
 
 beforeAll(async () => {
-  if (!canRun) return;
+  if (!canRun || !probedSession) return;
 
-  // Authenticate against the demo
-  session = await loginWithCredentials({
-    url: DEMO_URL,
-    kind: DEMO_KIND,
-    username: DEMO_USERNAME,
-    password: DEMO_PASSWORD,
-    deviceUuid: DEMO_DEVICE_UUID,
-  });
+  // Session already established by the top-level login probe
+  session = probedSession;
 
   // Seed DB: parent user
   const parentEmail = `${PROBE_PREFIX}-parent@example.test`;

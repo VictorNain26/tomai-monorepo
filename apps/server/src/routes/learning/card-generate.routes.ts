@@ -9,7 +9,7 @@ import {
   isGenerationError,
 } from '../../services/learning/index';
 import { learningService } from '../../services/learning/learning.service';
-import { getUserLevel } from './helpers';
+import { getUserLevel, evaluateRagGate } from './helpers';
 
 export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
   .use(authMacro)
@@ -75,22 +75,18 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           limit: 20,
         });
 
-        const ragThresholds = ragService.getThresholds();
-
         logger.info('RAG context retrieved', {
           operation: 'learning:generate:rag',
           userId: user.id,
           strategy: ragResult.strategy,
           chunksFound: ragResult.semanticChunks.length,
           avgSimilarity: ragResult.averageSimilarity.toFixed(3),
-          threshold: ragThresholds.GOOD_SCORE,
         });
 
-        const hasValidResults = ragResult.semanticChunks.length > 0;
-        const hasGoodSimilarity = ragResult.averageSimilarity >= ragThresholds.GOOD_SCORE;
-        const isRagDisabled = ragResult.strategy === 'disabled';
+        const gate = evaluateRagGate(ragResult);
 
-        if (isRagDisabled || !hasValidResults || !hasGoodSimilarity) {
+        if (!gate.ok) {
+          const isRagDisabled = gate.reason === 'rag_disabled';
           const errorReason = isRagDisabled
             ? 'Service RAG temporairement indisponible'
             : isFullDomaineMode
@@ -103,12 +99,10 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
             topic: topic ?? null,
             mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
             level,
-            reason: isRagDisabled ? 'rag_disabled' : 'insufficient_context',
+            reason: gate.reason,
             chunksFound: ragResult.semanticChunks.length,
-            avgSimilarity: ragResult.averageSimilarity.toFixed(3),
-            threshold: ragThresholds.GOOD_SCORE,
           });
-          return status(isRagDisabled ? 503 : 400, {
+          return status(gate.httpStatus, {
             error: errorReason,
             message: isRagDisabled
               ? 'Le service de programmes officiels est temporairement indisponible. Réessaie dans quelques minutes.'

@@ -1,9 +1,12 @@
 // Metro config for Expo SDK 55 monorepo
-const { getDefaultConfig } = require('expo/metro-config');
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 const { withNativewind } = require('nativewind/metro');
 
+// getSentryExpoConfig wraps expo/metro-config's getDefaultConfig and assigns
+// unique Debug IDs to bundles/source maps for Sentry symbolication.
+// @see https://docs.sentry.io/platforms/react-native/guides/expo/sourcemaps/uploading/expo/
 /** @type {import('expo/metro-config').MetroConfig} */
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname);
 
 // Package exports enabled by default since Expo SDK 53+
 // No manual unstable_enablePackageExports needed

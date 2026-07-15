@@ -52,7 +52,7 @@ Backend Elysia à `apps/server`. **Eden Treaty** via `@repo/api` (workspace pack
 
 - Client initialisé dans `src/lib/api.ts` : `EXPO_PUBLIC_API_URL`, `cookieProvider` injectant la session Better Auth, timeouts (30s général / 60s upload / 120s chat).
 - **Auth** : Better Auth + `@better-auth/expo` plugin. Session stockée en `expo-secure-store` (Keychain/Keystore). Deep links `tomia://` pour retour OAuth.
-- **Chat SSE** : `react-native-sse` dans `src/hooks/useChat.ts`. Backoff exponentiel + gestion 429 `QUOTA_EXCEEDED` et `CONCURRENT_STREAM`.
+- **Chat** : `@ai-sdk/react`'s `useChat` + `DefaultChatTransport` dans `src/hooks/useChat.ts` (server-authoritative history, `/api/chat/stream`). Gestion 429 `QUOTA_EXCEEDED` et 409 `CONCURRENT_STREAM`.
 - **Upload** : presigned URLs Scaleway (`POST /api/upload/presign` → PUT S3 direct → `POST /api/upload/confirm/:id`). Voir `src/hooks/usePresignedUpload.ts`.
 - **Data fetching** : TanStack Query v5 + persister AsyncStorage (`TOMIA_QUERY_CACHE`, gcTime 24h, staleTime 5min, retry 2× exponentiel) + NetInfo pour `onlineManager`.
 
@@ -79,10 +79,20 @@ Backend Elysia à `apps/server`. **Eden Treaty** via `@repo/api` (workspace pack
 - **E2E** : Maestro dans `e2e/*.yaml`. 4 flows : auth-student, auth-parent, chat-send-message, learning-flashcard. Requiert compte test staging + secrets EAS (`E2E_STUDENT_USERNAME`, etc.).
 - `testID` obligatoires sur éléments critiques (login form, dashboards, chat input/send, deck list)
 
-## Observabilité (à installer — voir spec SP3)
+## Observabilité
 
-- **Sentry** RN SDK v8 : crashs, perfs, source maps EAS
-- **PostHog** RN 3.2+ : analytics + feature flags + session replay (dev build requis, iOS 13+/Android 26+)
+- **Sentry** (`@sentry/react-native` ~7.11.0, résolu par `expo install` pour SDK 56) : installé.
+  `Sentry.init` conditionnel strict sur `EXPO_PUBLIC_SENTRY_DSN` dans `src/lib/sentry.ts`
+  (no-op en dev local, actif seulement sur builds EAS preview/production où le secret est défini) ;
+  `environment` dérivé d'`extra.appEnv` (`app.config.ts`, lui-même depuis `APP_ENV`) avec fallback
+  `__DEV__`. `Sentry.wrap` sur le composant racine (`src/app/_layout.tsx`). Plugin
+  `@sentry/react-native/expo` dans `app.config.ts` (org `home-drx`, project `tomai-mobile`, région EU
+  `https://de.sentry.io/`) + `getSentryExpoConfig` dans `metro.config.js` : sourcemaps auto-uploadés
+  au build EAS via `SENTRY_AUTH_TOKEN` (secret EAS), rien à faire côté CI locale.
+  Pas de session replay ni de capture d'écran (RGPD mineurs, app élèves) — `tracesSampleRate: 0.1`
+  seulement, aucune intégration replay ajoutée. **Dep native → rebuild dev client requis**
+  (`pnpm build:dev`) après ce changement.
+- **PostHog** RN 3.2+ : analytics + feature flags + session replay — chantier séparé, à installer (dev build requis, iOS 13+/Android 26+)
 
 ## Sécurité & conformité (à installer — voir spec SP4)
 

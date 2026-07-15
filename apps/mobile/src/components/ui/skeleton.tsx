@@ -7,6 +7,7 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
+import { motionDurations } from '@repo/tokens';
 import { cn } from '@/lib/utils';
 
 interface SkeletonProps {
@@ -22,7 +23,7 @@ function Skeleton({
   style,
   width,
   height,
-  borderRadius = 8,
+  borderRadius,
 }: SkeletonProps) {
   const opacity = useSharedValue(0.5);
 
@@ -30,8 +31,8 @@ function Skeleton({
     opacity.set(
       withRepeat(
         withSequence(
-          withTiming(1, { duration: 750 }),
-          withTiming(0.5, { duration: 750 })
+          withTiming(1, { duration: motionDurations.pulse }),
+          withTiming(0.5, { duration: motionDurations.pulse })
         ),
         -1,
         false
@@ -45,13 +46,10 @@ function Skeleton({
 
   return (
     <Animated.View
-      className={cn('bg-muted', className)}
+      className={cn('rounded-md bg-muted', className)}
       style={[
-        {
-          width,
-          height,
-          borderRadius,
-        },
+        { width, height },
+        borderRadius !== undefined ? { borderRadius } : null,
         animatedStyle,
         style,
       ]}

@@ -1,9 +1,8 @@
 /**
  * Client HTTP du service Python tomai-ai-service.
  *
- * Centralise les 2 appels qu'on fait au service AI :
+ * Centralise l'appel qu'on fait au service AI :
  * - `embed(text)` → BGE-M3 dense (1024D) + sparse (`{indices, values}` Qdrant)
- * - `rerank(query, texts, topN)` → bge-reranker-v2-m3 (compat TEI)
  *
  * Pourquoi un service Python séparé ? Le sparse natif BGE-M3 (lexical_weights)
  * n'est exposé que par la lib Python FlagEmbedding officielle BAAI. Aucun
@@ -52,11 +51,6 @@ interface EmbedResponse {
   }>;
 }
 
-interface RerankResponse {
-  model: string;
-  results: Array<{ index: number; score: number }>;
-}
-
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (AI_SERVICE_TOKEN) headers['Authorization'] = `Bearer ${AI_SERVICE_TOKEN}`;
@@ -66,7 +60,7 @@ function authHeaders(): Record<string, string> {
 function requireUrl(): string {
   if (!AI_SERVICE_URL) {
     throw new Error(
-      'AI_SERVICE_URL is required. The Python ai-service (BGE-M3 + rerank) ' +
+      'AI_SERVICE_URL is required. The Python ai-service (BGE-M3 embeddings) ' +
         'is the only source of dense + sparse vectors aligned with the Qdrant index. ' +
         'See apps/ai-service/README.md.',
     );
@@ -107,46 +101,6 @@ class AIServiceClient {
           outputTokens: item.dense.length,
         });
         return item;
-      },
-    );
-  }
-
-  /**
-   * Re-classe les candidats via bge-reranker-v2-m3.
-   * Format de retour aligné sur HuggingFace TEI /rerank (compat ancien client).
-   */
-  async rerank(
-    query: string,
-    texts: string[],
-    topN?: number,
-  ): Promise<Array<{ index: number; score: number }>> {
-    if (texts.length === 0) return [];
-    const url = requireUrl();
-    return withGenAiSpan(
-      {
-        operation: 'execute_tool',
-        provider: 'mistral_ai',
-        model: 'BAAI/bge-reranker-v2-m3',
-        serverAddress: new URL(url).host,
-      },
-      async (recordResponse) => {
-        const response = await fetch(`${url}/rerank`, {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify({ query, texts, top_n: topN ?? null }),
-          signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS) as RequestInit['signal'],
-        });
-        if (!response.ok) {
-          const body = await response.text();
-          throw new Error(`ai-service rerank ${response.status}: ${body.slice(0, 200)}`);
-        }
-        const data = (await response.json()) as RerankResponse;
-        recordResponse({
-          model: data.model,
-          inputTokens: texts.length,
-          outputTokens: data.results.length,
-        });
-        return data.results;
       },
     );
   }

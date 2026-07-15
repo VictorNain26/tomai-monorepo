@@ -9,10 +9,8 @@
  *
  * Keeps the genuinely useful helpers:
  * - MAX_TOOL_ITERATIONS  : same agentic loop bound (5 iterations).
- * - Streaming timeouts   : same setup + per-chunk guards, just renamed.
  * - wrapUserMessage      : prompt-injection defence (delimiter wrap), still
  *                          necessary regardless of provider.
- * - getToolStatusLabel   : UI status string for tool invocation.
  * - getLearningContext   : reads FSRS due-cards + weak subjects from pg.
  */
 
@@ -20,16 +18,9 @@ import { sql, eq, and } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { learningCards, learningDecks } from '../../db/schema.js';
 import { logger } from '../../lib/observability.js';
-import type { PronoteContext } from './chat-streaming-types.js';
+import type { PronoteContext } from './ai-chat.service.js';
 
 export const MAX_TOOL_ITERATIONS = 5;
-
-/**
- * Timeouts for Mistral chat streaming. The setup timeout guards the initial
- * API handshake; the chunk timeout catches streams that stall mid-response.
- */
-export const CHAT_STREAM_SETUP_TIMEOUT_MS = 90_000;
-export const CHAT_STREAM_CHUNK_TIMEOUT_MS = 60_000;
 
 /**
  * Every delimiter tag used by the prompt template (fences for untrusted content
@@ -119,18 +110,21 @@ interface RagToolResult {
   found?: boolean;
   context?: string;
   resultsCount?: number;
-  averageScore?: number;
   bestMatchSection?: string;
   bestMatchMatiere?: string;
-  chunks?: Array<{ score?: number; section?: string; matiere?: string; text?: string }>;
+  chunks?: Array<{ section?: string; matiere?: string; text?: string }>;
 }
 
 /**
  * Build the `tool` message content for a RAG search result: the curriculum text
  * (untrusted) is tag-stripped and wrapped in a `<curriculum_excerpt>` fence the
- * system prompt treats as data, while the metadata (found, score, sections)
+ * system prompt treats as data, while the metadata (found, counts, sections)
  * stays as plain JSON outside the fence. Replaces a raw `JSON.stringify` that
  * would have let a poisoned chunk read as an instruction.
+ *
+ * RRF fusion scores are deliberately NOT serialized: they are rank artefacts
+ * (~0.016), not similarities, so a model reading them could wrongly infer "low
+ * confidence". Ranking is conveyed by chunk order alone.
  */
 export function wrapCurriculumToolResult(result: unknown): string {
   if (typeof result !== 'object' || result === null) {
@@ -140,11 +134,9 @@ export function wrapCurriculumToolResult(result: unknown): string {
   const metadata = {
     found: rag.found,
     resultsCount: rag.resultsCount,
-    averageScore: rag.averageScore,
     bestMatchSection: rag.bestMatchSection,
     bestMatchMatiere: rag.bestMatchMatiere,
     chunks: (rag.chunks ?? []).map((c) => ({
-      score: c.score,
       section: c.section,
       matiere: c.matiere,
     })),
@@ -178,17 +170,6 @@ export function wrapAttachedFiles(
     });
 
   return blocks.join('\n\n');
-}
-
-export function getToolStatusLabel(name: string): string {
-  switch (name) {
-    case 'search_educational_content': return 'Recherche dans les programmes...';
-    case 'generate_flashcards': return 'Création de flashcards...';
-    case 'get_student_profile': return 'Analyse du profil...';
-    case 'update_student_profile': return 'Mémorisation...';
-    case 'get_app_help': return "Consultation du guide...";
-    default: return 'Traitement en cours...';
-  }
 }
 
 export async function getLearningContext(userId: string): Promise<string | null> {

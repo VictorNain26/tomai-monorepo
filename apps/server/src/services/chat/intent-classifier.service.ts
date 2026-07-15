@@ -24,6 +24,7 @@ import { STUDENT_SUBJECTS, type StudentSubject } from '../../config/prompts/adap
 
 const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-06-29-subject';
 
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export type StudentIntent =
   | 'solve-this-for-me'   // student asks the agent to complete an exercise
   | 'check-my-answer'     // student has an answer, wants validation

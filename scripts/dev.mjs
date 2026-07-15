@@ -27,7 +27,7 @@ if (infra.exitCode !== 0) {
   process.exit(1);
 }
 
-console.log("[dev] ai-service chauffe en arrière-plan ; lancement des apps (server, web, landing)…");
+console.log("[dev] ai-service chauffe en arrière-plan ; lancement des apps (server, landing)…");
 const turbo = spawn("pnpm", ["exec", "turbo", "run", "dev", "--filter=!tom-mobile"], {
   stdio: "inherit",
 });

@@ -54,5 +54,14 @@ server.listen(PORT, async () => {
   errors.slice(0, 25).forEach((e) => console.log("  - " + e.slice(0, 280)));
   await browser.close();
   server.close();
+  // Gate : React monté + zéro crash JS + navigation OK. Les erreurs console
+  // réseau (fetch vers l'API absente en export statique : CORS…) restent des
+  // warnings — elles ne disent rien du bundle web lui-même.
+  const fatal = errors.filter((e) => e.startsWith("pageerror:") || e.startsWith("goto:"));
+  if (rootChildren <= 0 || fatal.length > 0) {
+    console.log("SMOKE: FAIL", rootChildren <= 0 ? "(React not mounted)" : "(fatal errors)");
+    process.exit(1);
+  }
+  console.log("SMOKE: PASS");
   process.exit(0);
 });

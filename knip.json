@@ -1,30 +1,33 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["scripts/*.mjs"],
-      "project": ["scripts/**/*.mjs"]
+      "entry": [
+        "scripts/*.mjs"
+      ],
+      "project": [
+        "scripts/**/*.mjs"
+      ],
+      "ignoreBinaries": [
+        "uv",
+        "eslint"
+      ]
     },
     "apps/server": {
       "entry": [
-        "src/index.ts",
         "src/app.ts",
-        "src/db/migrate.ts",
-        "drizzle.config.ts",
         "scripts/**/*.ts",
-        "src/tests/**/*.test.ts"
+        "src/tests/**/*.test.ts",
+        "src/integration-tests/**/*.test.ts",
+        "src/live/**/*.test.ts"
       ],
-      "project": ["src/**/*.ts", "scripts/**/*.ts"]
-    },
-    "apps/web": {
-      "entry": ["proxy.ts"],
       "project": [
-        "app/**/*.{ts,tsx}",
-        "components/**/*.{ts,tsx}",
-        "lib/**/*.{ts,tsx}",
-        "proxy.ts"
+        "src/**/*.ts",
+        "scripts/**/*.ts"
       ],
-      "ignoreDependencies": ["tailwindcss", "@repo/tokens"]
+      "ignoreBinaries": [
+        "dist/index.js"
+      ]
     },
     "apps/mobile": {
       "entry": [
@@ -32,20 +35,31 @@
         "__mocks__/**/*.{ts,tsx}",
         "scripts/**/*.{ts,js,mjs}"
       ],
-      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,js}"],
-      "ignoreDependencies": ["react-native-pager-view", "@babel/core", "@babel/generator"]
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "scripts/**/*.{ts,js,mjs}"
+      ],
+      "ignoreDependencies": [
+        "@babel/generator"
+      ],
+      "ignoreBinaries": [
+        "eas"
+      ]
     },
     "packages/api": {
-      "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts"]
+      "project": [
+        "src/**/*.ts"
+      ]
     },
     "packages/tokens": {
-      "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts"]
+      "project": [
+        "src/**/*.ts"
+      ]
     },
     "packages/ui": {
-      "entry": ["src/index.ts"],
-      "project": ["src/**/*.{ts,tsx}"]
+      "project": [
+        "src/**/*.{ts,tsx}"
+      ]
     }
   }
 }
