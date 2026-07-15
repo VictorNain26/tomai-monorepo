@@ -81,4 +81,33 @@ describe('parseContent', () => {
   it('returns a single text segment when there is no math', () => {
     expect(parseContent('juste du texte')).toEqual([{ type: 'text', content: 'juste du texte' }]);
   });
+
+  it('does not pair a literal lone $ with backslash-delimited math', () => {
+    const segments = parseContent('coûte 5$ et \\(x\\) ici');
+    expect(segments).toEqual([
+      { type: 'text', content: 'coûte 5$ et ' },
+      { type: 'inline-math', content: 'x' },
+      { type: 'text', content: ' ici' },
+    ]);
+  });
+
+  it('does not parse math inside inline code', () => {
+    expect(parseContent('le code `$x$` reste brut')).toEqual([
+      { type: 'text', content: 'le code `$x$` reste brut' },
+    ]);
+  });
+
+  it('does not parse math inside a fenced code block', () => {
+    const input = 'avant\n```\nprix = "$x$"\n```\naprès';
+    expect(parseContent(input)).toEqual([{ type: 'text', content: input }]);
+  });
+
+  it('parses mixed dollar and backslash math in the same message', () => {
+    expect(parseContent('somme $a + b$ puis \\[c^2\\]')).toEqual([
+      { type: 'text', content: 'somme ' },
+      { type: 'inline-math', content: 'a + b' },
+      { type: 'text', content: ' puis ' },
+      { type: 'block-math', content: 'c^2' },
+    ]);
+  });
 });
