@@ -77,6 +77,9 @@ async function askAndDidCallRagTool(question: string): Promise<boolean> {
     // Un seul step : on observe la décision de premier tour, pas la synthèse
     // finale après résultat d'outil (hors scope de ce test).
     stopWhen: stepCountIs(1),
+    // temperature 0 (prod : 0.7) : on mesure la policy de décision, pas sa
+    // variance. parallelToolCalls (désactivé en prod) est sans effet ici :
+    // seule compte la présence de l'appel RAG, pas les appels concurrents.
     temperature: 0,
     abortSignal: AbortSignal.timeout(45_000),
   });
