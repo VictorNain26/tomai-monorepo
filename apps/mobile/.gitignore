@@ -13,4 +13,4 @@ expo-env.d.ts
 
 # Signing keys
 *.jks
-*.keystore
+*.keystoreweb-smoke.png
