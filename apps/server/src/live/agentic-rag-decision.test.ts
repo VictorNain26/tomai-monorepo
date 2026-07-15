@@ -1,12 +1,13 @@
 /**
  * Live Agentic RAG Decision — le chat est agentique : c'est Mistral qui décide
  * d'appeler (ou non) l'outil RAG `search_educational_content` selon la
- * question, rien dans le code ne force cet appel. Ni `tool-executor.test.ts`
- * (mocke `rag.service`, teste la mécanique d'exécution) ni
- * `chat-rag.test.ts` (appelle `ragService.hybridSearch` directement, teste le
- * grounding) ne couvrent cette DÉCISION. Ce fichier la teste, contre le vrai
- * Mistral, avec la vraie définition d'outil de production (description +
- * inputSchema importées de `chat-tools.ts`, jamais recopiées à la main).
+ * question, rien dans le code ne force cet appel. `tool-executor.test.ts`
+ * (mocke `rag.service`) teste la mécanique d'exécution ; `chat-rag.test.ts`
+ * couvre le flux chat agentique complet (déclenchement + grounding, services
+ * RAG réels requis). Ce fichier isole la DÉCISION seule : plus rapide, sans
+ * dépendre de Qdrant/ai-service, avec la vraie définition d'outil de
+ * production (description + inputSchema importées de `chat-tools.ts`, jamais
+ * recopiées à la main).
  *
  * Ciblé sur la décision, pas un harnais chat complet : pas de session/élève
  * seedés en DB, `execute` est un stub qui enregistre l'appel (on n'observe

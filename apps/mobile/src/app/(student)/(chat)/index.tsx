@@ -204,6 +204,7 @@ export default function ConversationsScreen() {
 
       {/* FAB - New conversation */}
       <TouchableOpacity
+        testID="chat-new-conversation"
         onPress={handleNewConversation}
         disabled={isCreating}
         activeOpacity={0.8}

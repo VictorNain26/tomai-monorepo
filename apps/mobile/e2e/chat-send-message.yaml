@@ -18,17 +18,26 @@ appId: fr.tomia.mobile
       id: "student-dashboard"
     timeout: 10000
 
-# Navigate to chat (tab label = "Tom")
-- tapOn: "Tom"
+# Navigate to chat tab, then start a new conversation (empty state has no input)
+- tapOn:
+    id: "student-tab-chat"
+- tapOn:
+    id: "chat-new-conversation"
 
 # Send message
 - tapOn:
     id: "chat-input"
 - inputText: "Bonjour, explique-moi le theoreme de Pythagore"
+- hideKeyboard
 - tapOn:
     id: "chat-send-button"
 
-# Wait for AI response (SSE streaming, generous timeout)
+# Wait for Tom's response to render (RAG agentic + Mistral, SSE streaming).
+# Assert the assistant bubble appears rather than a specific word: the LLM
+# output is non-deterministic and the markdown text is not reliably matchable.
+# chat-assistant-message is set on EVERY assistant message (fine for this
+# single-turn visible check); a multi-turn flow must select by index.
 - extendedWaitUntil:
-    visible: "triangle"
-    timeout: 30000
+    visible:
+      id: "chat-assistant-message"
+    timeout: 60000
