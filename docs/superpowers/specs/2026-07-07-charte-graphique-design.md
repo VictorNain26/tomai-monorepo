@@ -1,12 +1,16 @@
-# Charte graphique Tom — direction artistique définitive
+# Charte graphique de l'app — direction artistique définitive
 
 Date : 2026-07-07. Statut : spec validée en brainstorming, en attente de relecture.
 
+« Tom » désigne uniquement l'IA/mascotte ; le nom de l'app est à trancher
+(chantier branding séparé) — cette charte reste neutre sur le nom produit.
+
 ## Objectif
 
-Trancher la direction artistique définitive de Tom (le chantier « DA future »
+Trancher la direction artistique définitive de l'app (le chantier « DA future »
 prévu par le design system unifié) et la livrer sous forme de charte graphique :
-fondations visuelles + composants clés, **pas** de design de pages.
+fondations visuelles + composants clés, **pas** de design de pages — à la seule
+exception des 2 écrans de démonstration listés plus bas.
 
 ## Décisions de cadrage (tranchées avec Victor)
 
@@ -43,9 +47,10 @@ fondations visuelles + composants clés, **pas** de design de pages.
    construite sur des variables CSS nommées comme les tokens de
    `@repo/tokens`. Boucle de validation avec Victor dans le navigateur.
 2. **PR `@repo/tokens`** une fois la direction validée : swap des valeurs
-   (couleurs, typo si elle change, motion/rayons si ajustés), miroirs TS mis
-   à jour (tests existants), parité vérifiée sur les composants homonymes
-   (`packages/ui` et `apps/mobile/src/components/ui`).
+   (couleurs, typo si elle change, espacements/rayons/motion si ajustés),
+   miroirs TS mis à jour (tests existants), parité vérifiée sur les composants
+   homonymes (`packages/ui` et `apps/mobile/src/components/ui`) en relisant
+   leurs variants côte à côte.
 3. **Documentation** : `docs/design/design-system.md` mis à jour (la section
    tokens reflète la DA tranchée), plus une page charte
    `docs/design/charte-graphique.md` si le contenu déborde du contrat
