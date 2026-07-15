@@ -1,12 +1,12 @@
 /**
  * Live Chat+RAG — le VRAI flux produit : question d'élève → boucle agentique
- * Mistral (`generateStreamChunks`) qui DÉCIDE d'appeler (ou non) le tool
- * `search_educational_content` → retrieval Qdrant + ai-service → réponse ancrée.
+ * Mistral (`streamChat` + `buildChatTools`, comme `chat-message.routes.ts`) qui
+ * DÉCIDE d'appeler (ou non) `search_educational_content` → retrieval réel
+ * Qdrant + ai-service → réponse ancrée.
  *
  * La décision N'EST PAS hardcodée : aucune règle en code ne force le tool, c'est
  * Mistral qui émet (ou non) le `tool_call`. Sa fiabilité vient de la policy du
- * system prompt (`config/prompts/core/rag-policy.ts` : « pour TOUTE question
- * scolaire, appelle search_educational_content »), pas d'un `if`.
+ * system prompt, pas d'un `if`.
  *
  * On valide la décision dans les DEUX sens, en MULTI-ESSAIS à seuil (pass^k)
  * pour être stable malgré la nature stochastique du modèle :
@@ -16,7 +16,8 @@
  * LOCAL-ONLY (`bun run test:live`), fail-closed.
  */
 import { describe, it, expect } from 'bun:test';
-import { mistralChatService } from '../services/chat/mistral-chat.service';
+import { streamChat } from '../services/chat/ai-chat.service';
+import { buildChatTools } from '../services/chat/chat-tools';
 import type { EducationLevelType } from '../types/index';
 import { HAS_MISTRAL, ragReachable } from './_creds';
 
@@ -38,11 +39,15 @@ async function runChatTurn(params: {
   niveau: EducationLevelType;
   matiere?: string;
 }): Promise<AgentTurn> {
-  let content = '';
-  let usedRAG = false;
-  let toolsUsed: string[] = [];
+  const tools = buildChatTools({
+    userId: 'e2e-rag',
+    sessionId: 'e2e-rag-session',
+    schoolLevel: params.niveau,
+    userRole: 'student',
+    emitDeckCreated: () => {},
+  });
 
-  for await (const chunk of mistralChatService.generateStreamChunks({
+  const result = streamChat({
     userId: 'e2e-rag',
     sessionId: 'e2e-rag-session',
     userRole: 'student',
@@ -50,18 +55,18 @@ async function runChatTurn(params: {
     ...(params.matiere ? { subject: params.matiere } : {}),
     content: params.question,
     conversationHistory: [],
-  })) {
-    if (chunk.type === 'content') {
-      content = chunk.content ?? content;
-    } else if (chunk.type === 'done') {
-      usedRAG = chunk.metadata?.usedRAG ?? false;
-      toolsUsed = chunk.metadata?.toolsUsed ?? [];
-    } else if (chunk.type === 'error') {
-      throw new Error(`stream error (${chunk.error?.code}): ${chunk.error?.message}`);
-    }
-  }
+    tools,
+  });
 
-  return { content, usedRAG, toolsUsed };
+  const content = await result.text;
+  const steps = await result.steps;
+  const toolsUsed = steps.flatMap((step) => step.toolCalls.map((call) => call.toolName));
+
+  return {
+    content,
+    usedRAG: toolsUsed.includes('search_educational_content'),
+    toolsUsed,
+  };
 }
 
 async function runTrials(
