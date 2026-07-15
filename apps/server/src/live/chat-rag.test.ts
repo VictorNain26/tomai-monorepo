@@ -47,6 +47,8 @@ async function runChatTurn(params: {
     emitDeckCreated: () => {},
   });
 
+  // Params minimaux : les champs prod restants (intentReinforcement, files,
+  // pronoteContext…) sont optionnels — on teste le tour nu, pas leurs effets.
   const result = streamChat({
     userId: 'e2e-rag',
     sessionId: 'e2e-rag-session',
