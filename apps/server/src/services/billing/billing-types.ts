@@ -2,12 +2,12 @@
  * Billing service input types — RevenueCat-driven flows.
  */
 
-export interface BillingPeriod {
+interface BillingPeriod {
   start: Date;
   end: Date;
 }
 
-export interface BillingSource {
+interface BillingSource {
   provider: 'revenuecat';
   customerId: string;
   productId: string;

@@ -7,7 +7,7 @@
 
 import { useCallback } from 'react';
 import { View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { Plus, MessageCircle, Trash2 } from 'lucide-react-native';
@@ -162,7 +162,7 @@ export default function ConversationsScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       <View className="border-b border-border px-4 pb-3 pt-2">
         <Text className="text-2xl font-bold text-foreground">Conversations</Text>
       </View>
@@ -217,6 +217,6 @@ export default function ConversationsScreen() {
           <Plus size={24} color={colors.primaryForeground} />
         )}
       </TouchableOpacity>
-    </SafeAreaView>
+    </Screen>
   );
 }

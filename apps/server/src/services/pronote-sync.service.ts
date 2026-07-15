@@ -50,6 +50,7 @@ interface UpsertInput {
   establishmentName?: string | null;
 }
 
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface CredentialOutput {
   token: string;
   metadata: string;

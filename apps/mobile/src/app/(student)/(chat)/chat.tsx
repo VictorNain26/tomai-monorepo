@@ -17,7 +17,7 @@
 
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, FlatList, Platform } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FileText, BarChart3 } from 'lucide-react-native';
@@ -282,7 +282,7 @@ export default function ChatScreen() {
   }, [contextInfo.type, colors.warning, colors.primary, colors.destructive]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+    <Screen>
       <ChatHeader
         contextBadge={contextBadge}
         currentSessionId={currentSessionId}
@@ -350,6 +350,6 @@ export default function ChatScreen() {
         onClose={() => setShowClasseur(false)}
         sessionId={currentSessionId}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }

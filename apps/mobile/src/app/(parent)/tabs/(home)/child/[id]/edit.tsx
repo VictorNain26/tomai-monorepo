@@ -14,7 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -96,7 +96,7 @@ export default function EditChildScreen() {
   // Loading state
   if (isLoadingChildren || isLoadingLevels || !id) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen>
         <View className="flex-row items-center gap-3 border-b border-border px-4 py-3">
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-6 w-32 rounded" />
@@ -105,28 +105,28 @@ export default function EditChildScreen() {
           <Skeleton className="mb-4 h-20 w-full rounded-xl" />
           <Skeleton className="h-20 w-full rounded-xl" />
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   // Child not found
   if (!child) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen>
         <View className="flex-1 items-center justify-center p-6">
           <Text className="text-destructive">Enfant non trouvé</Text>
           <Button onPress={() => router.back()} className="mt-4">
             <Text className="text-primary-foreground">Retour</Text>
           </Button>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   const fullName = `${child.firstName} ${child.lastName}`;
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <View className="flex-row items-center gap-3">
@@ -237,6 +237,6 @@ export default function EditChildScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </Screen>
   );
 }

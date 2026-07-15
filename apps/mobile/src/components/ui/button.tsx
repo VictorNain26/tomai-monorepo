@@ -30,6 +30,7 @@ const buttonVariants = cva(
         default: 'bg-primary',
         destructive: 'bg-destructive',
         outline: 'border border-border bg-background active:bg-accent',
+        secondary: 'bg-secondary active:opacity-90',
         ghost: 'active:bg-accent',
       },
       size: {
@@ -52,6 +53,7 @@ const buttonTextVariants = cva('font-semibold text-center', {
       default: 'text-primary-foreground',
       destructive: 'text-destructive-foreground',
       outline: 'text-foreground',
+      secondary: 'text-secondary-foreground',
       ghost: 'text-foreground',
     },
     size: {
@@ -129,6 +131,7 @@ function Button({
     switch (variant) {
       case 'default': return colors.primaryForeground;
       case 'destructive': return colors.destructiveForeground;
+      case 'secondary': return colors.secondaryForeground;
       case 'outline':
       case 'ghost': return colors.primary;
       default: return colors.primaryForeground;
@@ -136,7 +139,8 @@ function Button({
   };
 
   // Variants that need active opacity feedback
-  const needsActiveOpacity = variant === 'default' || variant === 'destructive';
+  const needsActiveOpacity =
+    variant === 'default' || variant === 'destructive' || variant === 'secondary';
 
   return (
     <TextClassContext value={textClass}>

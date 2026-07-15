@@ -232,7 +232,4 @@ class MemoryCacheService {
 // Singleton Export
 // =============================================
 
-export const memoryCacheService = new MemoryCacheService();
-
-// Alias pour compatibilité avec l'ancien redisCacheService
-export const cacheService = memoryCacheService;
+export const cacheService = new MemoryCacheService();

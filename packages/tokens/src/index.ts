@@ -7,3 +7,4 @@
  * par `colors.test.ts`.
  */
 export { darkColors, lightColors, type ColorToken } from "./colors";
+export { motionDurations, motionEasings } from "./motion";

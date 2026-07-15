@@ -42,19 +42,6 @@ export const userRelations = relations(user, ({ many, one }) => ({
   }),
 }));
 
-export const parentChildRelations = relations(parentChild, ({ one }) => ({
-  parent: one(user, {
-    fields: [parentChild.parentUserId],
-    references: [user.id],
-    relationName: 'pc_parent',
-  }),
-  child: one(user, {
-    fields: [parentChild.childUserId],
-    references: [user.id],
-    relationName: 'pc_child',
-  }),
-}));
-
 export const studySessionsRelations = relations(studySessions, ({ one, many }) => ({
   user: one(user, {
     fields: [studySessions.userId],

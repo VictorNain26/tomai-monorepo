@@ -13,7 +13,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from src.schemas import EmbedItem, RerankItem, SparseVector
+from src.schemas import EmbedItem, SparseVector
 
 
 def _fake_embed(texts: list[str]) -> list[EmbedItem]:
@@ -26,22 +26,13 @@ def _fake_embed(texts: list[str]) -> list[EmbedItem]:
     ]
 
 
-def _fake_rerank(query: str, texts: list[str], top_n: int | None = None) -> list[RerankItem]:
-    # Mirror the real rerank.rerank top_n slicing so the endpoint's pass-through is tested.
-    items = [RerankItem(index=i, score=1.0 - i * 0.1) for i in range(len(texts))]
-    return items[:top_n] if top_n is not None else items
-
-
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     """TestClient avec lifespan déclenchée et modèles ML mockés (pas de download)."""
     with (
         patch("src.embed.load_model"),
-        patch("src.rerank.load_model"),
         patch("src.embed.is_loaded", return_value=True),
-        patch("src.rerank.is_loaded", return_value=True),
         patch("src.main.embed_encode", side_effect=_fake_embed),
-        patch("src.main.rerank_run", side_effect=_fake_rerank),
     ):
         from src.main import app
 
@@ -55,7 +46,6 @@ def test_health_returns_status(client: TestClient) -> None:
     data = r.json()
     assert data["status"] == "ok"
     assert data["embed_model"] == "BAAI/bge-m3"
-    assert data["rerank_model"] == "BAAI/bge-reranker-v2-m3"
 
 
 def test_embed_returns_dense_and_sparse(client: TestClient) -> None:
@@ -69,17 +59,10 @@ def test_embed_returns_dense_and_sparse(client: TestClient) -> None:
     assert "values" in data["embeddings"][0]["sparse"]
 
 
-def test_rerank_returns_sorted_results(client: TestClient) -> None:
-    r = client.post(
-        "/rerank",
-        json={"query": "pythagore", "texts": ["a", "b", "c"], "top_n": 2},
-    )
-    assert r.status_code == 200
-    data = r.json()
-    assert data["model"] == "BAAI/bge-reranker-v2-m3"
-    # top_n=2 over 3 texts must come back as exactly 2 — proves the endpoint forwards top_n.
-    assert len(data["results"]) == 2
-    assert all("index" in item and "score" in item for item in data["results"])
+def test_rerank_endpoint_is_gone(client: TestClient) -> None:
+    """Le service est embed-only : /rerank n'existe plus (404)."""
+    resp = client.post("/rerank", json={"query": "q", "texts": ["a"], "top_n": 1})
+    assert resp.status_code == 404
 
 
 def test_health_no_auth_required_even_with_token(client: TestClient) -> None:
@@ -169,23 +152,3 @@ def test_embed_offloads_to_threadpool(client: TestClient) -> None:
     # le premier argument positionnel est bien embed_encode (identité, pas __name__,
     # car le callable est le mock posé par la fixture — MagicMock n'a pas __name__)
     assert spy.call_args.args[0] is main_mod.embed_encode
-
-
-def test_rerank_offloads_to_threadpool(client: TestClient) -> None:
-    """Garde-fou: le handler /rerank doit router l'inférence CPU-bound via
-    run_in_threadpool (sinon il bloque l'event loop sous --workers 1).
-    On espionne run_in_threadpool tout en le laissant s'exécuter réellement."""
-    # Local imports: same reason as test_embed_offloads_to_threadpool above.
-    from fastapi.concurrency import run_in_threadpool
-
-    import src.main as main_mod
-
-    with patch("src.main.run_in_threadpool", wraps=run_in_threadpool) as spy:
-        r = client.post(
-            "/rerank",
-            json={"query": "pythagore", "texts": ["a", "b"], "top_n": 2},
-        )
-    assert r.status_code == 200
-    assert spy.call_count == 1
-    # le premier argument positionnel est bien rerank_run (identité)
-    assert spy.call_args.args[0] is main_mod.rerank_run

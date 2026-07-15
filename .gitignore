@@ -7,6 +7,9 @@ node_modules
 
 # Local env files
 .env
+*.pem
+*.key
+*.p12
 .env.local
 .env.development.local
 .env.test.local
@@ -47,9 +50,6 @@ yarn-error.log*
 
 # Misc
 .DS_Store
-*.pem
-*.key
-*.p12
 lint_report.json
 
 # Claude Code - local files only

@@ -1,21 +1,40 @@
 /**
  * useChat Hook - React Native
  *
- * SSE streaming hook with error-first design.
- * No silent fallbacks: every failure is surfaced to the user.
+ * Thin wrapper around `@ai-sdk/react`'s `useChat`: TanStack Query history
+ * seeds the initial messages, `sendMessage` attaches the request context
+ * (session, school level, Pronote snapshot...), and the server is
+ * authoritative on history — only the last `UIMessage` is ever sent
+ * (`prepareSendMessagesRequest`).
  *
- * Stream logic extracted to useStreamManager for maintainability.
+ * The public surface (`ChatMessage[]` with flat `content`/`attachedFile`) is
+ * preserved for the screen and `useOfflineCache` (SQLite), both untouched by
+ * this migration — the AI SDK `TomChatMessage[]` (`.parts`) lives entirely
+ * inside this hook.
  *
- * @see ./chat/useStreamManager.ts
+ * `attachedFile` bookkeeping is derived from query/cache data plus a small
+ * "sent this session" state map (populated synchronously in the `sendMessage`
+ * handler, never in an effect body) — this avoids reading refs during render
+ * (`react-hooks/refs`) and avoids syncing external data via `setState` inside
+ * an effect (`react-hooks/set-state-in-effect`).
+ *
+ * @see ./chat/ui-message.ts
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useChat as useAiChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { fetch as expoFetch } from 'expo/fetch';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useUser, type IAppUser } from '@/lib/auth';
+import { getBaseUrl } from '@repo/api';
+import type { TomChatMessage, TomDataParts } from '@repo/api';
+import { useUser, authClient } from '@/lib/auth';
+import { usePronoteStore } from '@/stores/pronote-store';
 
 import type {
   ChatMessage,
   ChatFileAttachment,
+  AttachedFileInfo,
   CreatedDeck,
   UseChatOptions,
   UseChatReturn,
@@ -26,17 +45,44 @@ import {
   fetchHistory,
   resetChatSession,
 } from './chat/api';
-import { useStreamManager } from './chat/useStreamManager';
+import {
+  toTomChatMessage,
+  extractText,
+  buildPronoteChatContext,
+  parseTransportErrorMessage,
+  deriveStreamStatus,
+} from './chat/ui-message';
 import { useOfflineCache } from './useOfflineCache';
 import { useNetworkStatus } from './useNetworkStatus';
 
 // Re-export types for consumers
 export type { ChatMessage, ChatFileAttachment } from './chat/types';
 
-/** Generate a unique message ID (Hermes-safe, no crypto global) */
-function generateMessageId(role: 'user' | 'assistant'): string {
-  const hex = () => Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0');
-  return `${role}-${Date.now()}-${hex()}${hex()}-${hex()}`;
+/** Request body context sent alongside the last message (server rebuilds history). */
+function buildContextBody(
+  currentSessionId: string | null,
+  schoolLevel: string | undefined,
+  firstName: string,
+  fileIds: string[],
+) {
+  const pronoteState = usePronoteStore.getState();
+  const hasData =
+    pronoteState.homework.length > 0 ||
+    pronoteState.grades.length > 0 ||
+    pronoteState.timetable.length > 0;
+  const pronoteContext = hasData ? buildPronoteChatContext(pronoteState) : undefined;
+
+  return {
+    sessionId: currentSessionId ?? undefined,
+    schoolLevel,
+    firstName,
+    fileIds,
+    pronoteContext,
+  };
+}
+
+function generateMessageId(): string {
+  return `user-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function useChat({
@@ -44,60 +90,64 @@ export function useChat({
 }: UseChatOptions = {}): UseChatReturn {
   const queryClient = useQueryClient();
   const user = useUser();
-
-  // State
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [pendingAttachments, setPendingAttachments] = useState<ChatFileAttachment[]>([]);
-  const [createdDecks, setCreatedDecks] = useState<CreatedDeck[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamStatus, setStreamStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  // Refs for stable values
-  const sessionIdRef = useRef<string | null>(initialSessionId ?? null);
-  const pendingAttachmentsRef = useRef<ChatFileAttachment[]>([]);
-
-  // Track which session has been synced (state for render-time conditional, not ref)
-  const [syncedSessionId, setSyncedSessionId] = useState<string | null>(null);
-
-  // Retry: store last request for replay on failure
-  const lastRequestRef = useRef<{ content: string; attachments: ChatFileAttachment[] } | null>(null);
-
-  // Attachment clearing: defer until server confirms receipt
-  const pendingClearRef = useRef<ChatFileAttachment[] | null>(null);
-
-  // Offline support
   const { isOnline } = useNetworkStatus();
   const { cacheMessages, getCachedMessages } = useOfflineCache();
 
-  // Keep ref in sync with state for use in callbacks
+  const [pendingAttachments, setPendingAttachments] = useState<ChatFileAttachment[]>([]);
+  const [createdDecks, setCreatedDecks] = useState<CreatedDeck[]>([]);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // Attachments/timestamps for messages sent or cache-loaded this session —
+  // only ever written from event handlers or promise callbacks, never from a
+  // bare effect body (see file header).
+  const [sentAttachedFiles, setSentAttachedFiles] = useState<Record<string, AttachedFileInfo>>({});
+  const [cachedMessagesById, setCachedMessagesById] = useState<Record<string, ChatMessage>>({});
+
+  const pendingAttachmentsRef = useRef<ChatFileAttachment[]>([]);
+  const lastFileIdsRef = useRef<string[]>([]);
+  const syncedSessionIdRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(initialSessionId ?? null);
+
   useEffect(() => {
     pendingAttachmentsRef.current = pendingAttachments;
   }, [pendingAttachments]);
 
-  // Stream manager (SSE logic extracted)
-  const { startStream, stopStream, cleanup } = useStreamManager({
-    setMessages,
-    setCreatedDecks,
-    setIsLoading,
-    setIsStreaming,
-    setError,
-    setStreamStatus,
-    setPendingAttachments,
-    pendingAttachmentsRef,
-    pendingClearRef,
-    sessionIdRef,
-    onStreamDone: (currentSessionId) => {
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport<TomChatMessage>({
+        api: `${getBaseUrl()}/api/chat/stream`,
+        // React Native has no browser cookie jar — the session cookie must be
+        // injected manually (same mechanism as the Eden Treaty client, see
+        // `src/lib/api.ts`).
+        credentials: 'omit',
+        headers: (): Record<string, string> => {
+          const cookie = authClient.getCookie();
+          return cookie ? { Cookie: cookie } : {};
+        },
+        fetch: expoFetch as unknown as typeof globalThis.fetch,
+        prepareSendMessagesRequest: ({ messages, body }) => ({
+          body: { message: messages.at(-1), ...body },
+        }),
+      }),
+    [],
+  );
+
+  const aiChat = useAiChat<TomChatMessage>({
+    transport,
+    onData: (dataPart) => {
+      if (dataPart.type === 'data-deck-created') {
+        const deck = dataPart.data as TomDataParts['deck-created'];
+        setCreatedDecks((prev) => [...prev, deck]);
+        queryClient.invalidateQueries({ queryKey: ['learning', 'decks'] });
+      }
+    },
+    onFinish: () => {
       queryClient.invalidateQueries({
-        queryKey: chatQueryKeys.history(currentSessionId ?? ''),
+        queryKey: chatQueryKeys.history(sessionIdRef.current ?? ''),
       });
     },
-    onDeckCreated: () => {
-      queryClient.invalidateQueries({ queryKey: ['learning', 'decks'] });
-    },
-    onSessionChanged: (newSessionId) => {
-      queryClient.setQueryData(chatQueryKeys.session(), newSessionId);
+    onError: (err) => {
+      setLocalError(parseTransportErrorMessage(err));
     },
   });
 
@@ -124,129 +174,121 @@ export function useChat({
   // Load cached messages while waiting for server (offline-first)
   useEffect(() => {
     if (!currentSessionId) return;
-    if (syncedSessionId === currentSessionId) return;
+    if (syncedSessionIdRef.current === currentSessionId) return;
     if (historyQuery.data) return; // Server data available, no need for cache
 
-    getCachedMessages(currentSessionId).then(cached => {
-      if (cached && cached.length > 0) {
-        setMessages(prev => prev.length === 0 ? cached : prev);
+    getCachedMessages(currentSessionId).then((cached) => {
+      if (cached && cached.length > 0 && aiChat.messages.length === 0) {
+        aiChat.setMessages(cached.map(toTomChatMessage));
+        setCachedMessagesById(Object.fromEntries(cached.map((m) => [m.id, m])));
       }
     });
-  }, [currentSessionId, syncedSessionId, historyQuery.data, getCachedMessages]);
+  }, [currentSessionId, historyQuery.data, getCachedMessages, aiChat]);
 
-  // React 19 "storing information from previous renders" pattern:
-  // Sync server history into local state during render (not in useEffect).
-  // This avoids the set-state-in-effect anti-pattern while ensuring
-  // messages are available on the first render after data arrives.
-  if (
-    historyQuery.data &&
-    syncedSessionId !== currentSessionId &&
-    currentSessionId
-  ) {
-    setSyncedSessionId(currentSessionId);
-    if (historyQuery.data.messages.length > 0) {
-      setMessages(historyQuery.data.messages);
-      if (historyQuery.data.hasOrphanMessage) {
-        setError('La réponse précédente a été interrompue. Appuie sur Réessayer.');
-      }
-    }
-  }
-
-  // Side effects after history sync (SQLite caching, retry ref update)
+  // Sync server history into the AI SDK chat state once per session.
   useEffect(() => {
-    if (!syncedSessionId || !historyQuery.data) return;
+    if (!historyQuery.data || !currentSessionId) return;
+    if (syncedSessionIdRef.current === currentSessionId) return;
+    syncedSessionIdRef.current = currentSessionId;
 
-    cacheMessages(syncedSessionId, historyQuery.data.messages);
-
-    if (historyQuery.data.hasOrphanMessage) {
-      const lastMsg = historyQuery.data.messages.at(-1);
-      if (lastMsg) {
-        lastRequestRef.current = { content: lastMsg.content, attachments: [] };
-      }
+    if (historyQuery.data.messages.length > 0) {
+      aiChat.setMessages(historyQuery.data.messages.map(toTomChatMessage));
     }
-  }, [syncedSessionId, historyQuery.data, cacheMessages]);
+    cacheMessages(currentSessionId, historyQuery.data.messages);
+  }, [historyQuery.data, currentSessionId, cacheMessages, aiChat]);
 
-  // Cleanup on unmount
-  useEffect(() => cleanup, [cleanup]);
+  const orphanError = historyQuery.data?.hasOrphanMessage
+    ? 'La réponse précédente a été interrompue. Appuie sur Réessayer.'
+    : null;
 
-  /** Core send logic (used by sendMessage and retry) */
-  const executeSend = useCallback(
-    (content: string, attachments: ChatFileAttachment[], addUserMessage: boolean) => {
-      if (!user) return;
+  // History (server-authoritative) takes precedence over the offline cache,
+  // which in turn takes precedence over nothing — merged with a `useMemo` so
+  // this never needs a ref/effect round-trip.
+  const attachedFileByMessageId = useMemo(() => {
+    const map: Record<string, AttachedFileInfo> = {};
+    for (const m of Object.values(cachedMessagesById)) {
+      if (m.attachedFile) map[m.id] = m.attachedFile;
+    }
+    for (const m of historyQuery.data?.messages ?? []) {
+      if (m.attachedFile) map[m.id] = m.attachedFile;
+    }
+    return { ...map, ...sentAttachedFiles };
+  }, [cachedMessagesById, historyQuery.data, sentAttachedFiles]);
 
-      // Store for retry
-      lastRequestRef.current = { content, attachments };
+  const timestampByMessageId = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const [id, m] of Object.entries(cachedMessagesById)) map[id] = m.timestamp;
+    for (const m of historyQuery.data?.messages ?? []) map[m.id] = m.timestamp;
+    return map;
+  }, [cachedMessagesById, historyQuery.data]);
 
-      // Defer attachment clearing until server confirms
-      if (attachments.length > 0) {
-        pendingClearRef.current = attachments;
-        setPendingAttachments([]);
-        pendingAttachmentsRef.current = [];
-      }
-
-      // Add user message optimistically (skip on retry — already in list)
-      if (addUserMessage) {
-        const userMessage: ChatMessage = {
-          id: generateMessageId('user'),
-          role: 'user',
-          content: content || 'Document',
-          timestamp: new Date().toISOString(),
-          attachedFile: attachments.length > 0 ? {
-            fileName: attachments[0].fileName,
-            fileId: attachments[0].fileId,
-            mimeType: attachments[0].mimeType,
-            preview: attachments[0].preview,
-          } : undefined,
-        };
-        setMessages((prev) => [...prev, userMessage]);
-      }
-
-      // Prepare assistant placeholder
-      const assistantId = generateMessageId('assistant');
-      const assistantMessage: ChatMessage = {
-        id: assistantId,
-        role: 'assistant',
-        content: '',
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      // Start SSE stream
-      startStream(assistantId, content, attachments, user as IAppUser);
-    },
-    [user, startStream]
-  );
-
-  // Public sendMessage
   const sendMessage = useCallback(
     (content: string) => {
       const trimmed = content.trim();
-      if (!trimmed && pendingAttachmentsRef.current.length === 0) return;
-      executeSend(trimmed, [...pendingAttachmentsRef.current], true);
+      const attachments = pendingAttachmentsRef.current;
+      if (!trimmed && attachments.length === 0) return;
+      if (!user) return;
+
+      if (!authClient.getCookie()) {
+        setLocalError('Session expirée — reconnecte-toi.');
+        return;
+      }
+
+      const fileIds = attachments.map((a) => a.fileId);
+      lastFileIdsRef.current = fileIds;
+
+      const messageId = generateMessageId();
+      if (attachments[0]) {
+        const [first] = attachments;
+        setSentAttachedFiles((prev) => ({
+          ...prev,
+          [messageId]: {
+            fileName: first.fileName,
+            fileId: first.fileId,
+            mimeType: first.mimeType,
+            preview: first.preview,
+          },
+        }));
+      }
+
+      setLocalError(null);
+      setCreatedDecks([]);
+      if (attachments.length > 0) {
+        setPendingAttachments([]);
+      }
+
+      void aiChat.sendMessage(
+        {
+          id: messageId,
+          role: 'user',
+          parts: [{ type: 'text', text: trimmed || 'Document' }],
+        },
+        {
+          body: buildContextBody(
+            sessionIdRef.current,
+            user.schoolLevel,
+            user.name?.split(' ')[0] ?? 'Eleve',
+            fileIds,
+          ),
+        },
+      );
     },
-    [executeSend]
+    [user, aiChat],
   );
 
-  // Retry last failed message
   const retry = useCallback(() => {
-    const last = lastRequestRef.current;
-    if (!last) return;
-
-    // Remove the failed assistant message (last in list)
-    setMessages((prev) => {
-      const lastMsg = prev[prev.length - 1];
-      if (lastMsg?.role === 'assistant') return prev.slice(0, -1);
-      return prev;
+    if (!user) return;
+    setLocalError(null);
+    void aiChat.regenerate({
+      body: buildContextBody(
+        sessionIdRef.current,
+        user.schoolLevel,
+        user.name?.split(' ')[0] ?? 'Eleve',
+        lastFileIdsRef.current,
+      ),
     });
+  }, [user, aiChat]);
 
-    setError(null);
-    executeSend(last.content, last.attachments, false);
-  }, [executeSend]);
-
-  // Stop streaming (stopStream is already stable via useCallback in useStreamManager)
-  const stop = stopStream;
-
-  // Attachment management
   const addAttachment = useCallback((attachment: ChatFileAttachment) => {
     setPendingAttachments((prev) => [...prev, attachment]);
   }, []);
@@ -263,40 +305,66 @@ export function useChat({
     setCreatedDecks([]);
   }, []);
 
-  // Reset session
   const resetSession = useCallback(async (): Promise<string | null> => {
     if (!sessionIdRef.current) return null;
 
     try {
       const data = await resetChatSession(sessionIdRef.current);
+      queryClient.removeQueries({ queryKey: chatQueryKeys.history(sessionIdRef.current) });
       sessionIdRef.current = data.sessionId;
-      setSyncedSessionId(null);
-      lastRequestRef.current = null;
-      setMessages([]);
-      setError(null);
+      syncedSessionIdRef.current = null;
+      lastFileIdsRef.current = [];
+      setSentAttachedFiles({});
+      setCachedMessagesById({});
+      aiChat.setMessages([]);
+      aiChat.clearError();
+      setLocalError(null);
 
       queryClient.setQueryData(chatQueryKeys.session(), data.sessionId);
-      queryClient.removeQueries({
-        queryKey: chatQueryKeys.history(sessionIdRef.current ?? ''),
-      });
 
       return data.sessionId;
     } catch {
-      setError('Impossible de reinitialiser la conversation');
+      setLocalError('Impossible de réinitialiser la conversation');
       return null;
     }
-  }, [queryClient]);
+  }, [queryClient, aiChat]);
+
+  // Derive the flat `ChatMessage[]` surface from the AI SDK's `TomChatMessage[]`.
+  const messages = useMemo<ChatMessage[]>(
+    () =>
+      aiChat.messages
+        .filter((m) => m.role !== 'system')
+        .map((m) => ({
+          id: m.id,
+          role: m.role as 'user' | 'assistant',
+          content: extractText(m.parts),
+          timestamp: timestampByMessageId[m.id] ?? new Date().toISOString(),
+          attachedFile: attachedFileByMessageId[m.id] ?? null,
+        })),
+    [aiChat.messages, timestampByMessageId, attachedFileByMessageId],
+  );
+
+  const isStreaming = aiChat.status === 'streaming';
+  const isLoading = aiChat.status === 'submitted' || isStreaming || sessionQuery.isLoading;
+  const transportError = aiChat.error ? parseTransportErrorMessage(aiChat.error) : null;
+  const streamStatus = isStreaming ? deriveStreamStatus(aiChat.messages.at(-1)) : null;
 
   return {
     messages,
     pendingAttachments,
     createdDecks,
     currentSessionId,
-    isLoading: isLoading || sessionQuery.isLoading,
+    isLoading,
     isStreaming,
     isOnline,
     streamStatus,
-    error: error ?? historyQuery.error?.message ?? sessionQuery.error?.message ?? null,
+    error:
+      localError ??
+      transportError ??
+      orphanError ??
+      historyQuery.error?.message ??
+      sessionQuery.error?.message ??
+      null,
     sendMessage,
     retry,
     addAttachment,
@@ -304,6 +372,6 @@ export function useChat({
     clearPendingAttachments,
     clearCreatedDecks,
     resetSession,
-    stop,
+    stop: aiChat.stop,
   };
 }

@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -120,7 +120,7 @@ export default function CreateDeckScreen() {
   const stepNumber = step === 'subject' ? 1 : 2;
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       {/* Loading overlay during generation */}
       {generateMutation.isPending && (
         <View className="absolute inset-0 z-50 items-center justify-center" style={{ backgroundColor: colors.background + 'E6' /* 90% */ }}>
@@ -294,6 +294,6 @@ export default function CreateDeckScreen() {
           )}
 
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

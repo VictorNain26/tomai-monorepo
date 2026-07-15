@@ -34,6 +34,7 @@ export const lightColors = {
   "--color-ring": "#2563EB",
   "--color-violet": "#7C3AED",
   "--color-violet-foreground": "#FFFFFF",
+  "--color-overlay": "#000000",
 } as const;
 
 export type ColorToken = keyof typeof lightColors;
@@ -66,4 +67,5 @@ export const darkColors: Record<ColorToken, string> = {
   "--color-ring": "#3B82F6",
   "--color-violet": "#8B5CF6",
   "--color-violet-foreground": "#FFFFFF",
+  "--color-overlay": "#000000",
 } as const;

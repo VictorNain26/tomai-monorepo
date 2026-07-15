@@ -55,15 +55,21 @@ mock.module('../lib/auth', () => ({
   },
 }));
 
-// Config env: mock MISTRAL_API_KEY so the /health endpoint can flip to
-// `degraded` in tests when MISTRAL_API_KEY is missing.
-let hasMistralKey = true;
+// Config env — AI_SERVICE_URL/QDRANT_ENABLED mutable so /health degraded-path
+// tests can flip the ai-service/qdrant checks (routes/api/health.routes.ts,
+// mounted at root — see routes/api/index.ts).
+let aiServiceUrl: string | undefined = undefined;
 mock.module('../config/env', () => ({
   env: {
     NODE_ENV: 'test',
-    get MISTRAL_API_KEY() { return hasMistralKey ? 'test-key' : ''; },
+    MISTRAL_API_KEY: 'test-key',
     BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
     BETTER_AUTH_URL: 'http://localhost:3000',
+    get AI_SERVICE_URL() { return aiServiceUrl; },
+    AI_SERVICE_TOKEN: undefined,
+    QDRANT_ENABLED: 'false',
+    QDRANT_URL: undefined,
+    QDRANT_API_KEY: undefined,
   },
   isDevelopment: () => false,
   isProduction: () => true,
@@ -278,7 +284,7 @@ const { app } = await import('../app');
 
 beforeEach(() => {
   dbHealthy = true;
-  hasMistralKey = true;
+  aiServiceUrl = undefined;
   authUser = null;
 });
 
@@ -297,23 +303,33 @@ describe('API Endpoints', () => {
   });
 
   describe('GET /health', () => {
-    it('should return healthy when all services OK', async () => {
+    it('should return healthy when all services OK (root path — canonical, not /api/health)', async () => {
       const res = await app.handle(new Request('http://localhost/health'));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.status).toBe('healthy');
       expect(data.checks.database.status).toBe('healthy');
       expect(data.checks.cache.status).toBe('healthy');
-      expect(data.checks.ai.status).toBe('healthy');
+      expect(data.checks.aiService.status).toBe('not_configured');
+      expect(data.checks.qdrant.status).toBe('not_configured');
     });
 
-    it('should return degraded when Mistral key missing', async () => {
-      hasMistralKey = false;
-      const res = await app.handle(new Request('http://localhost/health'));
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.status).toBe('degraded');
-      expect(data.checks.ai.status).toBe('unhealthy');
+    it('should return degraded (200) when ai-service is configured but unreachable', async () => {
+      aiServiceUrl = 'http://ai-service:8001';
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = (async () => {
+        throw new Error('fetch failed');
+      }) as unknown as typeof fetch;
+
+      try {
+        const res = await app.handle(new Request('http://localhost/health'));
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.status).toBe('degraded');
+        expect(data.checks.aiService.status).toBe('unhealthy');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
     });
 
     it('should return unhealthy 503 when database down', async () => {
@@ -332,6 +348,11 @@ describe('API Endpoints', () => {
       expect(data).toHaveProperty('environment');
       expect(data.timestamp).toBeDefined();
       expect(data).toHaveProperty('deployment');
+    });
+
+    it('no longer exposes a duplicate /api/health (single canonical endpoint)', async () => {
+      const res = await app.handle(new Request('http://localhost/api/health'));
+      expect(res.status).toBe(404);
     });
   });
 

@@ -150,35 +150,6 @@ export function getWeekLabel(weekOffset: number): string {
 }
 
 // ============================================================================
-// NAME HELPER
-// ============================================================================
-
-/**
- * Split a Pronote resource name ("LASTNAME Firstname") into firstName and
- * lastName. Pronote capitalises the last name by convention, so `parts[0]`
- * is the family name and the remainder is the given name(s).
- *
- * Single-token names fall back to using the token as the first name.
- */
-export function splitPronoteName(fullName: string): { firstName: string; lastName: string } {
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length === 1) {
-    return { firstName: parts[0] ?? fullName, lastName: '' };
-  }
-  const lastName = parts[0] ?? '';
-  const firstName = parts.slice(1).join(' ');
-  return { firstName, lastName };
-}
-
-/**
- * Build the canonical "LASTNAME Firstname" comparison key used by
- * PronoteChildImport to detect already-imported children.
- */
-export function toPronoteDedupeKey(child: { firstName: string; lastName: string }): string {
-  return `${child.lastName} ${child.firstName}`.trim();
-}
-
-// ============================================================================
 // QR CODE HELPERS
 // ============================================================================
 

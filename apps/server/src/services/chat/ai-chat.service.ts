@@ -1,0 +1,288 @@
+/**
+ * AiChatService — chat streaming on Vercel AI SDK `streamText`.
+ *
+ * Runs the agentic loop (stream, collect tool calls, execute them, push
+ * results back, loop) via `streamText`'s built-in tool loop. This service is
+ * intentionally thin: assembling the prompt and configuring the call is all
+ * it does — no parsing, no manual iteration.
+ *
+ * Prompt cache
+ *   One `prompt_cache_key` shared by every student so the stable
+ *   system-prompt prefix gets Mistral's 90 % cached-tokens discount. Bump
+ *   `PROMPT_CACHE_VERSION` whenever the system prompt's structure changes
+ *   (not its content) — the cache is keyed on a stable prefix, so an
+ *   unbumped version after a structural change serves stale-shaped context.
+ */
+
+import {
+  streamText,
+  isStepCount,
+  type ToolSet,
+  type ModelMessage,
+  type LanguageModel,
+  type TextPart,
+  type FilePart,
+} from 'ai';
+import { mistralProvider } from '../../lib/ai/provider.js';
+import { routeReasoningEffort } from '../../lib/ai/mistral-reasoning.js';
+import { buildSystemPrompt } from '../../config/prompts/index.js';
+import { getLevelText } from '../../config/education/index.js';
+import { optimizeConversationHistory } from '../../utils/conversation/index.js';
+import { assembleChatMessages } from './chat-message-assembler.js';
+import {
+  wrapUserMessage,
+  wrapPronoteData,
+  wrapStudentContext,
+  wrapAttachedFiles,
+  MAX_TOOL_ITERATIONS,
+} from './mistral-helpers.js';
+import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
+import { env } from '../../config/env.js';
+import type { MistralMessage, MistralContentPart } from '../../lib/ai/mistral-client.js';
+import type { EducationLevelType } from '../../types/index.js';
+import type { AttachedFileForPrompt } from './file-context-types.js';
+
+/** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
+const PROMPT_CACHE_VERSION = '2026-06-14-voicefmt';
+
+export interface AttachedFile {
+  /** Inline base64 payload for multimodal user messages (Mistral vision). */
+  base64?: string;
+  mimeType: string;
+  contentType: 'image' | 'document';
+}
+
+export interface PronoteContext {
+  homework?: Array<{ subject: string; description: string; dueDate: string; done: boolean }>;
+  recentGrades?: Array<{ subject: string; value: number | null; outOf: number; date: string }>;
+  todayTimetable?: Array<{ subject: string; startDate: string; endDate: string; canceled: boolean }>;
+}
+
+interface HistoricalFileRef {
+  mimeType?: string;
+}
+
+interface ClassifiedIntent {
+  intent: string;
+  confidence: 'low' | 'medium' | 'high';
+  error?: string;
+}
+
+/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
+export interface StreamGenerationParams {
+  userId: string;
+  content: string;
+  subject?: string;
+  schoolLevel: EducationLevelType;
+  firstName?: string;
+  sessionId: string;
+  cognitiveProfileSummary?: string | null;
+  learningContext?: string | null;
+  conversationSummary?: string | null;
+  userRole: 'student' | 'parent';
+  pronoteContext?: PronoteContext;
+  files?: AttachedFile[];
+  /**
+   * Attached-document analyses (OCR of the student's files). Injected as a
+   * SEPARATE `<attached_file>` fenced block, never concatenated into the
+   * student message — otherwise stripPromptTags would remove the fence.
+   */
+  attachedFiles?: AttachedFileForPrompt[];
+  /**
+   * Turn-specific reinforcement block injected by the intent classifier.
+   * When non-null, prepended to the system prompt to force a stricter
+   * socratic stance (e.g. on "solve this for me" requests).
+   */
+  intentReinforcement?: string | null;
+  /** Classified intent for reasoning effort routing (CCA Sprint 1). */
+  classifiedIntent?: ClassifiedIntent;
+  /**
+   * Input channel declared by the user's gesture (mic vs keyboard), never
+   * inferred by the model. When 'voice', a turn note is injected so Tom answers
+   * in a spoken style. Defaults to 'text'.
+   */
+  inputMode?: 'text' | 'voice';
+  conversationHistory: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+    attachedFile?: HistoricalFileRef | null;
+  }>;
+}
+
+export interface ChatStreamParams extends StreamGenerationParams {
+  tools: ToolSet;
+  /**
+   * Test seam: inject a mock `LanguageModel` (e.g. `MockLanguageModelV4`
+   * from `ai/test`) instead of the real Mistral provider. Never set in
+   * production call sites.
+   */
+  model?: LanguageModel;
+}
+
+function buildSystemPromptForChat(params: {
+  level: StreamGenerationParams['schoolLevel'];
+  subject?: string;
+  firstName?: string;
+}): string {
+  const levelText = getLevelText(params.level);
+  return buildSystemPrompt({
+    level: params.level,
+    levelText,
+    subject: params.subject,
+    firstName: params.firstName,
+  });
+}
+
+function buildHistoryMessages(
+  history: StreamGenerationParams['conversationHistory'],
+  conversationSummary?: string | null,
+): MistralMessage[] {
+  if (!history || history.length === 0) return [];
+
+  const optimized = optimizeConversationHistory(history, { conversationSummary });
+
+  return optimized
+    .filter(
+      (msg): msg is typeof msg & { role: 'assistant' | 'user'; content: string } =>
+        msg.role !== 'system' && msg.content !== null && msg.content !== undefined,
+    )
+    .map((msg): MistralMessage => {
+      if (msg.role === 'assistant') {
+        return { role: 'assistant', content: msg.content };
+      }
+      return { role: 'user', content: wrapUserMessage(msg.content) };
+    });
+}
+
+function buildUserContent(content: string, files?: AttachedFile[]): string | MistralContentPart[] {
+  const wrapped = wrapUserMessage(content);
+  if (!files || files.length === 0) return wrapped;
+
+  const imageParts = files
+    .filter((f) => f.contentType === 'image' && f.base64)
+    .map((f) => ({
+      type: 'image_url' as const,
+      imageUrl: { url: `data:${f.mimeType};base64,${f.base64}` },
+    }));
+
+  if (imageParts.length === 0) return wrapped;
+  return [{ type: 'text' as const, text: wrapped }, ...imageParts];
+}
+
+function requireStringContent(content: unknown, role: 'system' | 'assistant'): string {
+  if (typeof content !== 'string') {
+    throw new Error(`Expected plain string content for "${role}" message in AI SDK conversion`);
+  }
+  return content;
+}
+
+function toUserPart(part: MistralContentPart): TextPart | FilePart {
+  if (part.type === 'text') return { type: 'text', text: part.text };
+  const url = typeof part.imageUrl === 'string' ? part.imageUrl : part.imageUrl.url;
+  return { type: 'file', mediaType: 'image', data: new URL(url) };
+}
+
+/**
+ * Converts the vendor-neutral `MistralMessage[]` assembly into AI SDK
+ * `{ system, messages }`. Split out because `streamText` rejects a `system`
+ * role inside `messages` by default (`allowSystemInMessages: false`) — the
+ * system prompt must travel through the dedicated `system` option instead.
+ * `assembleChatMessages` always puts the system prompt first (see its own
+ * doc comment), so this never silently drops a system message elsewhere in
+ * the array.
+ */
+function toModelPrompt(messages: MistralMessage[]): { system: string; messages: ModelMessage[] } {
+  const [first, ...rest] = messages;
+  if (!first || first.role !== 'system') {
+    throw new Error('Expected the first assembled message to carry the system prompt');
+  }
+  return {
+    system: requireStringContent(first.content, 'system'),
+    messages: rest.map(toModelMessage),
+  };
+}
+
+function toModelMessage(message: MistralMessage): ModelMessage {
+  if (message.role === 'assistant') {
+    return { role: 'assistant', content: requireStringContent(message.content, 'assistant') };
+  }
+  if (message.role === 'user') {
+    const content = message.content as string | MistralContentPart[];
+    return {
+      role: 'user',
+      content: typeof content === 'string' ? content : content.map(toUserPart),
+    };
+  }
+  // assembleChatMessages only ever emits system/user/assistant — a 'tool' or
+  // second 'system' message would mean a caller bypassed the assembler.
+  throw new Error(`Unsupported message role for AI SDK conversion: ${message.role}`);
+}
+
+/**
+ * Streams the assistant's response for one chat turn, running the agentic
+ * tool loop internally (`stopWhen: isStepCount(MAX_TOOL_ITERATIONS)`).
+ */
+export function streamChat(params: ChatStreamParams): ReturnType<typeof streamText> {
+  const systemPrompt = buildSystemPromptForChat({
+    level: params.schoolLevel,
+    subject: params.subject,
+    firstName: params.firstName,
+  });
+
+  const userContent = buildUserContent(params.content, params.files);
+  const pronoteBlock = wrapPronoteData(params.pronoteContext);
+  const studentContextBlock = wrapStudentContext(params.cognitiveProfileSummary, params.learningContext);
+  const attachedFilesBlock = params.attachedFiles?.length
+    ? wrapAttachedFiles(params.attachedFiles)
+    : '';
+  const historyMessages = buildHistoryMessages(params.conversationHistory, params.conversationSummary);
+
+  const truncatedSummary = params.conversationSummary
+    ? truncateToTokenBudget(params.conversationSummary, calculateBudget().summaryMaxTokens).text
+    : params.conversationSummary;
+
+  const { system, messages } = toModelPrompt(
+    assembleChatMessages({
+      systemPrompt,
+      conversationSummary: truncatedSummary,
+      historyMessages,
+      studentContextBlock,
+      pronoteBlock,
+      attachedFilesBlock,
+      intentReinforcement: params.intentReinforcement,
+      inputMode: params.inputMode,
+      userContent,
+    }),
+  );
+
+  const reasoningEffort = routeReasoningEffort({
+    schoolLevel: params.schoolLevel,
+    subject: params.subject,
+    intent: params.classifiedIntent?.intent,
+  });
+
+  const cacheKey = `chat-${PROMPT_CACHE_VERSION}`;
+  const model = params.model ?? mistralProvider(cacheKey)(env.MISTRAL_MODEL);
+
+  return streamText({
+    model,
+    system,
+    messages,
+    tools: params.tools,
+    stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
+    temperature: env.MISTRAL_TEMPERATURE,
+    maxOutputTokens: env.MISTRAL_MAX_TOKENS,
+    providerOptions: {
+      mistral: {
+        parallelToolCalls: false,
+        reasoningEffort,
+      },
+    },
+    telemetry: {
+      isEnabled: true,
+      functionId: 'chat-stream',
+    },
+    abortSignal: AbortSignal.timeout(env.CHAT_STREAM_TIMEOUT_MS),
+  });
+}

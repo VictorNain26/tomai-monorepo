@@ -5,7 +5,7 @@
  */
 
 import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -90,25 +90,25 @@ export default function ChildDetailScreen() {
 
   if (isLoadingChildren || !id) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen edges={['bottom']}>
         <View className="px-4 py-6">
           <Skeleton className="mb-4 h-40 w-full rounded-2xl" />
           <Skeleton className="h-20 w-full rounded-xl" />
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   if (!child) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen edges={['bottom']}>
         <View className="flex-1 items-center justify-center p-6">
           <Text className="text-destructive">Enfant non trouve</Text>
           <Button onPress={() => router.back()} className="mt-4">
             <Text className="text-primary-foreground">Retour</Text>
           </Button>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
@@ -116,7 +116,7 @@ export default function ChildDetailScreen() {
   const levelLabel = getLevelLabel(child.schoolLevel);
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
+    <Screen edges={['bottom']}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Hero Header */}
         {/* Dégradé décoratif d'en-tête, volontairement theme-invariant : les icônes badge (#86efac, #fde68a) ci-dessous sont calibrées contre ces stops. */}
@@ -321,6 +321,6 @@ export default function ChildDetailScreen() {
         childUsername={child.username}
         isDeleting={isDeleting}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }

@@ -123,6 +123,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     'expo-updates',
     '@react-native-google-signin/google-signin',
+    [
+      '@sentry/react-native/expo',
+      {
+        // "home-drx" is an EU-region org: route sourcemap-upload API calls
+        // through the EU domain (default is sentry.io/US).
+        // @see https://docs.sentry.io/organization/data-storage-location/ (EU: de.sentry.io)
+        url: 'https://de.sentry.io/',
+        organization: 'home-drx',
+        project: 'tomai-mobile',
+        // Auth: SENTRY_AUTH_TOKEN (secret EAS) lu par le plugin au build.
+      },
+    ],
   ],
 
   // EAS Updates configuration
@@ -152,5 +164,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     eas: {
       projectId: EAS_PROJECT_ID,
     },
+    // APP_ENV isn't EXPO_PUBLIC_-prefixed, so Expo doesn't inline it into the
+    // JS bundle — expose it via `extra` so runtime code (Sentry environment
+    // tag) can read it through expo-constants.
+    appEnv: process.env['APP_ENV'] ?? 'development',
   },
 });

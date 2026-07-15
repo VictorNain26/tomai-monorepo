@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -126,7 +126,7 @@ export default function TimetableScreen() {
   }, [timetable]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <View className="flex-row items-center gap-3">
@@ -298,6 +298,6 @@ export default function TimetableScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

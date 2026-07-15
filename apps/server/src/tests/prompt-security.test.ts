@@ -63,6 +63,24 @@ describe('wrapCurriculumToolResult', () => {
     });
     expect(out).not.toContain('CHUNK_RAW_TEXT');
   });
+
+  it('ne sérialise aucun score RRF (ni averageScore ni score par chunk) vers le modèle', () => {
+    // Les scores de fusion RRF (~0.016) sont des rangs, pas des similarités :
+    // un LLM qui les lit pourrait conclure à tort à une "faible confiance".
+    const out = wrapCurriculumToolResult({
+      found: true,
+      context: 'Le théorème de Pythagore...',
+      resultsCount: 1,
+      averageScore: 0.016,
+      chunks: [{ score: 0.016, section: 'Géométrie', matiere: 'maths', text: 'raw' }],
+    });
+    expect(out).not.toContain('averageScore');
+    expect(out).not.toContain('"score"');
+    expect(out).not.toContain('0.016');
+    // Le rang implicite (ordre) + les métadonnées utiles restent.
+    expect(out).toContain('"section":"Géométrie"');
+    expect(out).toContain('"matiere":"maths"');
+  });
 });
 
 describe('wrapAttachedFiles', () => {

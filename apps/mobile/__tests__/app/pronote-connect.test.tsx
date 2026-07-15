@@ -146,10 +146,6 @@ jest.mock('@/lib/pronote-helpers', () => ({
     }
   },
   extractEstablishment: () => 'lycee-moulin',
-  splitPronoteName: (name: string) => {
-    const parts = name.split(' ');
-    return { firstName: parts[1] ?? '', lastName: parts[0] ?? '' };
-  },
 }));
 
 // ─── Import screen (AFTER mocks) ─────────────────────────────────────────────

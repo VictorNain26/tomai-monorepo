@@ -15,7 +15,7 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "^build:types"],
       "inputs": [
         "$TURBO_DEFAULT$",
         ".env.production",
@@ -28,7 +28,8 @@
         "!.next/cache/**",
         "dist/**",
         "build/**"
-      ]
+      ],
+      "env": ["NEXT_RUNTIME", "VERCEL_ENV", "SENTRY_AUTH_TOKEN"]
     },
     "build:types": {
       "dependsOn": ["^build:types"],

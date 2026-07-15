@@ -5,7 +5,7 @@
  */
 
 import { View, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { Screen } from '@/components/ui/screen';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { BookOpen, Plus } from 'lucide-react-native';
@@ -37,7 +37,7 @@ export default function LearningScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       <ScrollView
         testID="deck-list"
         className="flex-1 px-4 py-6"
@@ -133,6 +133,6 @@ export default function LearningScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

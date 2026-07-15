@@ -180,6 +180,16 @@ class StudySessionsRepository {
     return session;
   }
 
+  async updateSubject(id: string, subject: string): Promise<StudySession | undefined> {
+    const [session] = await db
+      .update(studySessions)
+      .set({ subject, updatedAt: sql`NOW()` })
+      .where(eq(studySessions.id, id))
+      .returning();
+
+    return session;
+  }
+
   async getSessionStats(userId: string): Promise<{
     totalSessions: number;
     totalMinutes: number;

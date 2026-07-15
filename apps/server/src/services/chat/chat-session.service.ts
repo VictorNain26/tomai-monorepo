@@ -216,6 +216,7 @@ export class ChatSessionService {
   async getSessionWithSummary(sessionId: string): Promise<{
     conversationSummary: string | null;
     summaryUpToMessageId: string | null;
+    subject: string | null;
   } | null> {
     try {
       const validSessionId = safeUUID(sessionId);
@@ -227,6 +228,7 @@ export class ChatSessionService {
       return {
         conversationSummary: session.conversationSummary ?? null,
         summaryUpToMessageId: session.summaryUpToMessageId ?? null,
+        subject: session.subject ?? null,
       };
     } catch (_error) {
       logger.error('Error getting session summary', {

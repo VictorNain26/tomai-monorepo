@@ -6,10 +6,14 @@ import { educationApiRoutes } from './education.routes';
 import { progressApiRoutes } from './progress.routes';
 import { pushTokenApiRoutes } from './push-token.routes';
 import { sessionFilesApiRoutes } from './session-files.routes';
+import { studentApiRoutes } from './student.routes';
 
 export const apiRoutes = new Elysia({ name: 'api-routes' })
 
   .use(healthApiRoutes)
+  // Mounted at root (not under /api): GET /health is the single canonical
+  // health endpoint, polled by the Dockerfile HEALTHCHECK.
+  .use(apiHealthRoutes)
 
   .onParse(async ({ request }, contentType) => {
     if (contentType === 'application/json') {
@@ -17,11 +21,11 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
     }
   })
   .group('/api', (app) => app
-    .use(apiHealthRoutes)
     .use(chatSessionApiRoutes)
     .use(parentApiRoutes)
     .use(educationApiRoutes)
     .use(progressApiRoutes)
     .use(pushTokenApiRoutes)
     .use(sessionFilesApiRoutes)
+    .use(studentApiRoutes)
   );

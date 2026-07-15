@@ -55,4 +55,12 @@
   --color-ring: #2563EB;
   --color-violet: #7C3AED;
   --color-violet-foreground: #FFFFFF;
+  --color-overlay: #000000;
+
+  /* Motion — fast: micro-feedback (press, toggle) ; base: transitions
+   * standard ; slow: entrées d'écran ; pulse: demi-cycle skeleton. */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --duration-pulse: 1000ms;
 }

@@ -42,4 +42,9 @@ export {
 } from './client';
 
 // Shared Types (platform-agnostic)
-export { type IAppUser } from './types';
+export {
+  type IAppUser,
+  type TomChatMessage,
+  type TomDataParts,
+  type DeckCreatedData,
+} from './types';
