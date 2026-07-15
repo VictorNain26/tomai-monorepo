@@ -1,6 +1,14 @@
 # Audit d'architecture — chaîne curriculum → frontend
 
-Date : 2026-07-01. Méthode : 5 segments audités en parallèle (code réel + vérification doc-first, sources citées), synthèse et revue adversariale par l'orchestrateur. Cadrage validé : audit + recommandations, mobile + web, « tout est discutable », contraintes RGPD/EU-only strict et solo dev. Design : `docs/superpowers/specs/2026-07-01-curriculum-to-frontend-audit-design.md`.
+> **STATUT (2026-07-07)** : feuille de route active, mais photo au 2026-07-01 —
+> le suivi à jour des lots vit dans `docs/architecture/system-design.md` §8.
+> Livrés depuis : lot 1 (#262), lot 2 (#265), lot 3 ai-service embed-only (#266),
+> lot 4 chat AI SDK (#268) ; `apps/web` supprimée en avance de phase (2026-07-06,
+> hardening lot 8) ; Sentry actif partout. Attention : l'« ancien arbitrage n°1 »
+> (garder apps/web) est inversé par l'addendum du même document — seule la
+> version addendum (app universelle, ADR 0001) fait foi.
+
+Date : 2026-07-01. Méthode : 5 segments audités en parallèle (code réel + vérification doc-first, sources citées), synthèse et revue adversariale par l'orchestrateur. Cadrage validé : audit + recommandations, mobile + web, « tout est discutable », contraintes RGPD/EU-only strict et solo dev. Design : `2026-07-01-curriculum-to-frontend-audit-design.md` (supprimé, historique git).
 
 Les deux affirmations les plus lourdes ont été re-vérifiées de visu par l'orchestrateur (pas seulement par les sous-agents) : le SDK Mistral 2.2.5 installé expose `promptCacheKey`/`reasoningEffort` (`node_modules/.pnpm/@mistralai+mistralai@2.2.5/.../chatcompletionstreamrequest.d.ts:99,105`), et le gate flashcards compare des scores RRF à un seuil cosine (`card-generate.routes.ts:90-93`).
 
