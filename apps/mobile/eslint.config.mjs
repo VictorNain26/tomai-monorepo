@@ -40,7 +40,7 @@ export default [
   // Node script (Playwright web smoke) — Node globals + `document` utilisé
   // dans les callbacks page.evaluate (exécutés dans le navigateur)
   {
-    files: ['web-smoke.mjs'],
+    files: ['scripts/web-smoke.mjs'],
     languageOptions: {
       globals: {
         console: 'readonly',

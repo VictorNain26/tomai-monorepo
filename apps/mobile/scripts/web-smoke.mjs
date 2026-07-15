@@ -4,8 +4,9 @@ import { readFileSync, existsSync, statSync } from "node:fs";
 import { join, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const DIST = join(dirname(fileURLToPath(import.meta.url)), "dist");
-const OUT = join(dirname(fileURLToPath(import.meta.url)), "web-smoke.png");
+const APP_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const DIST = join(APP_ROOT, "dist");
+const OUT = join(APP_ROOT, "web-smoke.png");
 const PORT = 8088;
 const MIME = {
   ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript",
