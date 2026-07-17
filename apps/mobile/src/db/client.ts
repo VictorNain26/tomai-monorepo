@@ -11,6 +11,7 @@
 
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
+import { Platform } from 'react-native';
 import * as schema from './schema';
 
 // ============================================================================
@@ -198,6 +199,11 @@ async function runMigrations(): Promise<void> {
  * Call this at app startup BEFORE using the database.
  */
 export async function initializeDatabase(): Promise<void> {
+  // Pas de SQLite offline sur web : op-sqlite/expo-sqlite WASM requiert
+  // SharedArrayBuffer (headers COOP/COEP). Le cache offline est une feature
+  // mobile ; sur web on no-op proprement (le web a son propre cache réseau).
+  if (Platform.OS === 'web') return;
+
   console.log('[DB] Initializing SQLite database...');
 
   try {

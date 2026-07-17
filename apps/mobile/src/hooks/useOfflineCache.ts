@@ -9,17 +9,22 @@
  */
 
 import { useCallback } from 'react';
+import { Platform } from 'react-native';
 import { eq } from 'drizzle-orm';
 import { getDatabase } from '@/db/client';
 import { chatMessages } from '@/db/schema';
 import type { ChatMessage } from './chat/types';
 
+// Pas de SQLite sur web (cf. initializeDatabase dans db/client.ts) : les
+// migrations n'y tournent jamais, chaque accès lèverait puis serait avalé
+// par le catch — gate explicite plutôt que bruit console à chaque message.
 export function useOfflineCache() {
   /**
    * Cache messages from server into SQLite.
    * Called after successful history fetch.
    */
   const cacheMessages = useCallback(async (sessionId: string, messages: ChatMessage[]) => {
+    if (Platform.OS === 'web') return;
     try {
       const db = getDatabase();
 
@@ -52,6 +57,7 @@ export function useOfflineCache() {
    * Returns null if no cache exists.
    */
   const getCachedMessages = useCallback(async (sessionId: string): Promise<ChatMessage[] | null> => {
+    if (Platform.OS === 'web') return null;
     try {
       const db = getDatabase();
       const rows = await db

@@ -59,6 +59,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
   },
 
+  // Web configuration (universal target — produit authentifié = SPA ; le SEO
+  // vit dans apps/landing Next.js, pas ici).
+  web: {
+    bundler: 'metro',
+    output: 'single',
+    favicon: './assets/icon.png',
+  },
+
   // Plugins configuration
   plugins: [
     'expo-router',
