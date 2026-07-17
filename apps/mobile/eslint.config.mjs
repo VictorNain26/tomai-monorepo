@@ -37,6 +37,18 @@ export default [
       ],
     },
   },
+  // Node script (Playwright web smoke) — Node globals + `document` utilisé
+  // dans les callbacks page.evaluate (exécutés dans le navigateur)
+  {
+    files: ['scripts/web-smoke.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        document: 'readonly',
+      },
+    },
+  },
   // Test files configuration
   {
     files: ['**/__tests__/**/*', '**/*.test.ts', '**/*.test.tsx', 'jest.setup.js', '__mocks__/**/*'],

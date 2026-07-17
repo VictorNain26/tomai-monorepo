@@ -4,7 +4,7 @@
  * Displays Free vs Premium plans using RevenueCat for in-app purchases.
  */
 
-import { View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { Screen } from '@/components/ui/screen';
 import { useRouter } from 'expo-router';
 import {
@@ -129,8 +129,17 @@ export default function PricingScreen() {
           />
         </View>
 
-        {/* Purchase Button */}
-        {!subscription.isPro && (
+        {/* Purchase Button — RevenueCat n'est pas configuré sur web (IAP
+            natif uniquement) : état explicite plutôt qu'un bouton mort. */}
+        {!subscription.isPro && Platform.OS === 'web' && (
+          <View className="mt-6 items-center rounded-lg border border-border p-4">
+            <Text variant="muted" className="text-center text-sm">
+              L'abonnement Premium se souscrit depuis l'application mobile
+              (App Store / Google Play).
+            </Text>
+          </View>
+        )}
+        {!subscription.isPro && Platform.OS !== 'web' && (
           <View className="mt-6">
             <Button
               onPress={handlePurchase}
