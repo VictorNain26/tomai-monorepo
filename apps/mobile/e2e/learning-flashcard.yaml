@@ -18,8 +18,9 @@ appId: fr.tomia.mobile
       id: "student-dashboard"
     timeout: 10000
 
-# Navigate to learning (tab label)
-- tapOn: "Révisions"
+# Navigate to learning tab
+- tapOn:
+    id: "student-tab-learning"
 
 # Wait for deck list
 - extendedWaitUntil:

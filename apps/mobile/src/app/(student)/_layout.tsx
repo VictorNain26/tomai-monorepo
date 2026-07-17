@@ -61,6 +61,7 @@ export default function StudentLayout() {
             name="(home)"
             options={{
               title: 'Accueil',
+              tabBarButtonTestID: 'student-tab-home',
               tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
             }}
           />
@@ -70,6 +71,7 @@ export default function StudentLayout() {
             name="(chat)"
             options={{
               title: 'Tom',
+              tabBarButtonTestID: 'student-tab-chat',
               tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} />,
             }}
           />
@@ -79,6 +81,7 @@ export default function StudentLayout() {
             name="(learning)"
             options={{
               title: 'Révisions',
+              tabBarButtonTestID: 'student-tab-learning',
               tabBarIcon: ({ color, size }) => (
                 <BookOpen color={color} size={size} />
               ),
@@ -92,6 +95,7 @@ export default function StudentLayout() {
             name="(profile)"
             options={{
               title: 'Profil',
+              tabBarButtonTestID: 'student-tab-profile',
               tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
             }}
           />
