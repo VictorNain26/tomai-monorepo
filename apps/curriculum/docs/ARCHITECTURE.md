@@ -269,6 +269,81 @@ Workflow hebdomadaire (lundi 8h UTC) :
 
 Sortie programmatique : `data/raw/.veille_changes.json`.
 
+## Audit de contenu du corpus (2026-08-21)
+
+Mesuré sur les 5 266 chunks réellement produits par le pipeline, avant
+réindexation. Objectif : vérifier avant de figer un index, puisqu'une
+correction coûte ~2 h 20 de réingestion.
+
+### Volumétrie
+
+| Grandeur | Valeur |
+|---|---|
+| Points à indexer | 5 266 |
+| Textes **uniques** à embedder | 1 651 (facteur de duplication 3,19× par expansion multi-niveaux) |
+| Textes partagés entre plusieurs matières | 45 (préambules communs des langues vivantes) |
+
+Le facteur 3,19× est voulu : un chunk de cycle est dupliqué en un point par
+niveau, mais l'embedding n'est calculé qu'une fois (cf. §Contextual prefix).
+
+### Taille des chunks, mesurée avec le tokenizer BGE-M3
+
+C'est la mesure qui manquait : `ingest.py` règle `chunk_size=400` en **tokens
+Mistral**, héritage de l'époque `mistral-embed`, alors que l'embedder est
+BGE-M3 (tokenizer XLM-RoBERTa). Échantillon de 300 textes uniques, tokenisés
+avec le tokenizer réel du modèle :
+
+| | min | p10 | médiane | p90 | max |
+|---|---|---|---|---|---|
+| Texte brut | 30 | 95 | **259** | 346 | 860 |
+| Texte embeddé (+ préfixe) | 50 | 118 | **284** | 369 | 893 |
+
+- La cible nominale de 400 tokens Mistral produit des chunks de ~260 tokens
+  BGE-M3 : l'unité de réglage n'est pas celle du modèle.
+- 4,7 % dépassent 512 tokens ; **aucun** n'approche la limite de 8 192 de
+  BGE-M3.
+- Le préfixe contextuel coûte 23 tokens en médiane, soit 8,1 % du chunk.
+
+Référence : le consensus re-validé en février 2026 place la zone utile entre
+**256 et 512 tokens**. Le corpus est donc dans la fourchette, à son extrémité
+basse — il y a de la marge, mais pas de défaut.
+
+### Overlap : absent, et c'est défendable
+
+`RecursiveChunker` est configuré sans `chunk_overlap`. Ce n'est pas un oubli à
+corriger par réflexe : une analyse systématique de janvier 2026 (SPLADE +
+Mistral-8B sur Natural Questions) ne mesure **aucun bénéfice** au recouvrement,
+seulement un surcoût d'indexation. À traiter comme un paramètre à mesurer, pas
+comme un défaut obligatoire.
+
+### Artefacts d'extraction
+
+| Constat | Part du corpus |
+|---|---|
+| Contient un tableau markdown | 14,4 % |
+| **Fragments de tableau sans en-tête** (anti-pattern) | **0,8 % — 13 chunks** |
+| Contient des `<br>` issus de l'extraction PDF | 21,0 % |
+| Très court (< 150 caractères) | 2,7 % |
+
+La bonne pratique 2026 sur les tableaux — conserver l'en-tête avec chaque
+fragment — est respectée dans 218 cas sur 231. Les 13 fragments orphelins sont
+négligeables.
+
+**Hypothèse testée et écartée** : les `<br>` n'expliquent pas les matières
+faibles du benchmark. L'allemand a 9 % de `<br>` et le **meilleur**
+`cid_recall@5` (0,933) ; l'italien 17 % et le **pire** (0,625). Aucune
+corrélation.
+
+### Conclusion
+
+Rien ne justifiait de modifier le pipeline avant la réindexation. Les deux
+paramètres discutables — taille de chunk exprimée dans le mauvais tokenizer, et
+`Modifier.IDF` appliqué à du sparse appris — sont **des candidats d'A/B, pas des
+correctifs** : la baseline `cid_recall@5 = 0,894` a été mesurée avec exactement
+ces chunks et cette configuration. Les changer en même temps que la
+réindexation détruirait la comparabilité et reviendrait à livrer un changement
+non mesuré.
+
 ## Couverture réelle du corpus
 
 L'enum `Matiere` et le `contract.json` décrivent le **vocabulaire autorisé**,
