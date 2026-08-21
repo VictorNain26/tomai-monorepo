@@ -61,6 +61,7 @@ export function loadConfig({
     serverUrl:       env('SERVER_HEALTH_URL')    ?? 'http://localhost:3000',
     dbUrl:           env('DATABASE_URL'),
     qdrantApiKey:    env('QDRANT_API_KEY'),
+    qdrantCollection: env('QDRANT_COLLECTION') ?? 'tomai_educational',
     pgContainer:     env('PG_CONTAINER')        ?? 'tomai-postgres-dev',
     composeFile:     join(rootDir, 'docker-compose.yml'),
     mistralKey:      env('MISTRAL_API_KEY'),
@@ -218,7 +219,6 @@ function checkMigrations(ctx) {
 
 // ─── RAG roundtrip check ─────────────────────────────────────────────────────
 
-const SMOKE_COLLECTION = '_doctor_smoke';
 
 function qdrantHeaders(ctx) {
   const h = { 'Content-Type': 'application/json' };
@@ -228,44 +228,55 @@ function qdrantHeaders(ctx) {
 
 function checkRagRoundtrip(ctx) {
   return { name: 'roundtrip RAG réel (embed → qdrant → search)', run: async () => {
-    if (!ctx.config.aiServiceToken) throw new Error('AI_SERVICE_TOKEN absent — roundtrip RAG impossible (renseigne apps/server/.env)');
-    const { qdrantUrl, aiServiceUrl, aiServiceToken } = ctx.config;
+    const { qdrantUrl, aiServiceUrl, aiServiceToken, qdrantCollection } = ctx.config;
+    if (!aiServiceToken) throw new Error('AI_SERVICE_TOKEN absent — roundtrip RAG impossible (renseigne apps/server/.env)');
 
-    // 1. embed réel
+    // 1. Embed réel via l'ai-service. On exige dense ET sparse : le hybrid
+    //    search en a besoin des deux, et un sparse manquant est précisément le
+    //    genre de panne qui passerait inaperçue avec un dense valide.
     const emb = await ctx.fetchFn(`${aiServiceUrl}/embed`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${aiServiceToken}` },
-      body: JSON.stringify({ texts: ['doctor smoke test'] }),
+      body: JSON.stringify({ texts: ['théorème de Pythagore'] }),
     });
     if (!emb.ok) throw new Error(`embed -> HTTP ${emb.status}`);
-    const dense = (await emb.json())?.embeddings?.[0]?.dense;
+    const item = (await emb.json())?.embeddings?.[0];
+    const dense = item?.dense;
     if (!Array.isArray(dense) || dense.length === 0) throw new Error('embed: dense vide ou absent');
+    const sparse = item?.sparse;
+    if (!Array.isArray(sparse?.indices) || !Array.isArray(sparse?.values)) {
+      throw new Error('embed: sparse absent — le hybrid search Qdrant serait impossible');
+    }
 
-    const base = `${qdrantUrl}/collections/${SMOKE_COLLECTION}`;
-    try {
-      // 2. (re)create collection jetable, dim = taille du dense réel
-      await ctx.fetchFn(base, { method: 'DELETE', headers: qdrantHeaders(ctx) }); // idempotence si résidu
-      const created = await ctx.fetchFn(base, { method: 'PUT', headers: qdrantHeaders(ctx),
-        body: JSON.stringify({ vectors: { size: dense.length, distance: 'Cosine' } }) });
-      if (!created.ok) throw new Error(`create collection -> HTTP ${created.status}`);
-
-      // 3. upsert
-      const up = await ctx.fetchFn(`${base}/points?wait=true`, { method: 'PUT', headers: qdrantHeaders(ctx),
-        body: JSON.stringify({ points: [{ id: 1, vector: dense }] }) });
-      if (!up.ok) throw new Error(`upsert -> HTTP ${up.status}`);
-
-      // 4. search
-      const se = await ctx.fetchFn(`${base}/points/search`, { method: 'POST', headers: qdrantHeaders(ctx),
-        body: JSON.stringify({ vector: dense, limit: 1 }) });
-      if (!se.ok) throw new Error(`search -> HTTP ${se.status}`);
-      const hits = (await se.json())?.result ?? [];
-      if (hits.length === 0 || hits[0].id !== 1) throw new Error('search: le point upserté n\'est pas revenu');
-    } finally {
-      // 5. cleanup (toujours, même en cas d'échec partiel)
-      await ctx.fetchFn(base, { method: 'DELETE', headers: qdrantHeaders(ctx) }).catch(() => {});
+    // 2. Recherche hybride sur la VRAIE collection, en lecture seule.
+    //    Le serveur ne fait que lire Qdrant (count, scroll, query) : un
+    //    roundtrip qui créerait une collection jetable forcerait sa clé à
+    //    porter des droits d'écriture dont il n'a pas l'usage. Interroger la
+    //    collection réelle prouve davantage — dimensions compatibles, clé
+    //    valide, index peuplé — en demandant moins.
+    const res = await ctx.fetchFn(`${qdrantUrl}/collections/${qdrantCollection}/points/query`, {
+      method: 'POST',
+      headers: qdrantHeaders(ctx),
+      body: JSON.stringify({
+        prefetch: [
+          { query: dense, using: 'dense', limit: 5 },
+          { query: sparse, using: 'bm25', limit: 5 },
+        ],
+        query: { fusion: 'rrf' },
+        limit: 3,
+        with_payload: true,
+      }),
+    });
+    if (!res.ok) throw new Error(`hybrid search -> HTTP ${res.status}`);
+    const points = (await res.json())?.result?.points ?? [];
+    if (points.length === 0) {
+      throw new Error(
+        `hybrid search sur '${qdrantCollection}' : aucun résultat — collection vide ou mal nommée`,
+      );
     }
   }};
 }
+
 
 // ─── Server curriculum-health check ─────────────────────────────────────────
 

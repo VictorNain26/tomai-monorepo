@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runChecks, loadConfig, buildChecks } from './doctor-checks.mjs';
 
-const CFG = { qdrantUrl: 'http://q:6333', qdrantApiKey: '', aiServiceUrl: 'http://ai:8001', aiServiceToken: 't', serverUrl: 'http://s:3000' };
+const CFG = { qdrantUrl: 'http://q:6333', qdrantApiKey: '', qdrantCollection: 'test_coll', aiServiceUrl: 'http://ai:8001', aiServiceToken: 't', serverUrl: 'http://s:3000' };
 
 function ctxWith({ exec, fetchFn, config }) {
   return { config: config ?? CFG, exec: exec ?? (() => ({ ok: true, stdout: '' })), fetchFn: fetchFn ?? (async () => ({ ok: true, status: 200, json: async () => ({}) })) };
@@ -178,31 +178,29 @@ test('check rag: FAIL si embed renvoie un dense vide', async () => {
   await assert.rejects(byName(checks, 'roundtrip').run(), /embed|dense/i);
 });
 
-test('check rag: PASS quand embed + upsert + search retournent le point', async () => {
-  const calls = [];
-  const fetchFn = async (url, opts) => {
-    calls.push(`${opts?.method ?? 'GET'} ${url}`);
-    if (url.includes('/embed')) return { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: Array(1024).fill(0.01), sparse: { indices: [], values: [] } }] }) };
-    if (url.includes('/points/search')) return { ok: true, status: 200, json: async () => ({ status: 'ok', result: [{ id: 1, score: 1.0 }] }) };
-    return { ok: true, status: 200, json: async () => ({ result: true, status: 'ok' }) };
+test('check rag: PASS quand la recherche hybride renvoie des points', async () => {
+  const fetchFn = async (url) => {
+    if (url.includes('/embed')) return { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: Array(1024).fill(0.01), sparse: { indices: [7], values: [0.9] } }] }) };
+    return { ok: true, status: 200, json: async () => ({ result: { points: [{ id: 'abc', payload: { text: 'Pythagore' } }] } }) };
+  };
+  const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
+  await byName(checks, 'roundtrip').run(); // ne lève pas
+});
+
+test('check rag: interroge la collection configurée, pas une collection jetable', async () => {
+  const urls = [];
+  const fetchFn = async (url) => {
+    urls.push(url);
+    if (url.includes('/embed')) return { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: [0.1], sparse: { indices: [1], values: [0.5] } }] }) };
+    return { ok: true, status: 200, json: async () => ({ result: { points: [{ id: 'abc' }] } }) };
   };
   const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
   await byName(checks, 'roundtrip').run();
-  assert.equal(calls.at(-1)?.startsWith('DELETE'), true, 'le dernier appel doit être le DELETE de cleanup');
-});
 
-test('check rag: la collection est supprimée même si la search échoue (cleanup en finally)', async () => {
-  const calls = [];
-  const fetchFn = async (url, opts) => {
-    calls.push(`${opts?.method ?? 'GET'} ${url}`);
-    if (url.includes('/embed')) return { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: Array(1024).fill(0.01), sparse: { indices: [], values: [] } }] }) };
-    if (url.includes('/points/search')) return { ok: false, status: 500, text: async () => 'boom' };
-    return { ok: true, status: 200, json: async () => ({ result: true, status: 'ok' }) };
-  };
-  const checks = buildChecks({ config: CFG, exec: () => ({}), fetchFn }, { full: true });
-  await assert.rejects(byName(checks, 'roundtrip').run());
-  const deleteCount = calls.filter((c) => c.startsWith('DELETE')).length;
-  assert.ok(deleteCount >= 2, `doit y avoir au moins 2 DELETE (pre-flight + finally cleanup), got ${deleteCount}`);
+  const qdrant = urls.filter((u) => u.includes('/collections/'));
+  assert.ok(qdrant.every((u) => u.includes(CFG.qdrantCollection)),
+    `doit viser ${CFG.qdrantCollection}, vu : ${qdrant.join(', ')}`);
+  assert.ok(!qdrant.some((u) => u.includes('smoke')), 'plus aucune collection jetable');
 });
 
 test('check server: SKIP si connexion refusée (server non lancé)', async () => {
@@ -302,4 +300,42 @@ test('check mistral chat réel: PASS si la complétion renvoie des choices', asy
   const checks = buildChecks(ctx, { full: true, e2e: true });
   await byName(checks, 'mistral').run(); // ne lève pas
   assert.equal(sentBody?.model, 'ministral-3b-latest', 'doit envoyer le modèle pinné ministral-3b-latest');
+});
+
+
+// ── Roundtrip RAG en lecture seule ───────────────────────────────────────────
+// Le serveur n'écrit jamais dans Qdrant (count, scroll, query, getCollection).
+// Un roundtrip qui crée une collection forcerait sa clé à porter des droits
+// d'écriture inutiles. Il interroge donc la vraie collection, sans rien écrire.
+
+test('roundtrip: n\'émet aucune écriture vers Qdrant', async () => {
+  const methodes = [];
+  const fetchFn = async (url, init = {}) => {
+    if (url.includes('/embed')) {
+      return { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: [0.1, 0.2], sparse: { indices: [1], values: [0.5] } }] }) };
+    }
+    methodes.push(init.method ?? 'GET');
+    return { ok: true, status: 200, json: async () => ({ result: { points: [{ id: 'x', payload: { text: 't' } }] } }) };
+  };
+  const checks = buildChecks(ctxWith({ fetchFn }), { full: true });
+  await byName(checks, 'roundtrip').run();
+
+  assert.deepEqual([...new Set(methodes)], ['POST'],
+    'seule la requête de recherche est permise — PUT/DELETE exigeraient une clé en écriture');
+});
+
+test('roundtrip: FAIL si la vraie collection ne renvoie rien', async () => {
+  const fetchFn = async (url) => url.includes('/embed')
+    ? { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: [0.1], sparse: { indices: [1], values: [0.5] } }] }) }
+    : { ok: true, status: 200, json: async () => ({ result: { points: [] } }) };
+  const checks = buildChecks(ctxWith({ fetchFn }), { full: true });
+  await assert.rejects(byName(checks, 'roundtrip').run(), /aucun résultat|vide/i);
+});
+
+test('roundtrip: FAIL si le sparse manque (hybrid impossible)', async () => {
+  const fetchFn = async (url) => url.includes('/embed')
+    ? { ok: true, status: 200, json: async () => ({ embeddings: [{ dense: [0.1] }] }) }
+    : { ok: true, status: 200, json: async () => ({ result: { points: [] } }) };
+  const checks = buildChecks(ctxWith({ fetchFn }), { full: true });
+  await assert.rejects(byName(checks, 'roundtrip').run(), /sparse/i);
 });
