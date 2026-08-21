@@ -34,12 +34,25 @@ import {
 let sdk: NodeSDK | null = null;
 let started = false;
 
-function buildHeaders(raw: string | undefined): Record<string, string> | undefined {
+/**
+ * Parse `OTEL_EXPORTER_OTLP_HEADERS` (format OTLP `k1=v1,k2=v2`).
+ *
+ * Découpe sur le PREMIER `=` seulement : une valeur peut légitimement en
+ * contenir. C'est le cas de tout `Authorization: Basic <base64>`, le base64
+ * étant padé avec `=` — découper sur tous les `=` tronque le credential et
+ * produit un 401 silencieux à l'export.
+ *
+ * @internal exporté pour le test `src/tests/otel-headers.test.ts`.
+ */
+export function buildHeaders(raw: string | undefined): Record<string, string> | undefined {
   if (!raw) return undefined;
   const headers: Record<string, string> = {};
   for (const pair of raw.split(',')) {
-    const [k, v] = pair.split('=');
-    if (k && v) headers[k.trim()] = v.trim();
+    const separator = pair.indexOf('=');
+    if (separator <= 0) continue;
+    const key = pair.slice(0, separator).trim();
+    const value = pair.slice(separator + 1).trim();
+    if (key && value) headers[key] = value;
   }
   return Object.keys(headers).length ? headers : undefined;
 }
