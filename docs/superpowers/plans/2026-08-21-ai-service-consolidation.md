@@ -56,11 +56,28 @@ dizaine » comme l'estimait l'audit.
 
 **Objectif :** savoir ce que fait le service en production. Rien de plus.
 
-**Décision d'arbitrage (Victor, 2026-08-21) :** aucun backend OTLP n'est
-provisionné — `OTEL_EXPORTER_OTLP_ENDPOINT` n'apparaît ni dans les `.env.example`
-ni dans la configuration de déploiement. Donc **Sentry + logs structurés**, pas
-d'OpenTelemetry qui émettrait des spans vers le vide. L'OTel s'ajoutera le jour
-où une destination existera.
+**Décision d'arbitrage (Victor, 2026-08-21) :** aucun backend OTLP n'était
+provisionné, donc **Sentry + logs structurés** plutôt qu'un OpenTelemetry qui
+émettrait des spans vers le vide.
+
+> **Révisé le 2026-08-21 (fin de journée) : la destination existe désormais.**
+> Un projet Langfuse Cloud EU (`tomai`) a été créé, et Victor a tranché de
+> passer sur Langfuse. Cela **ne change pas A1**, qui reste livré tel quel, pour
+> deux raisons :
+>
+> 1. Les cinq questions de l'ai-service sont déjà répondues par ses logs
+>    structurés — c'est prouvé, le tableau de sérialisation a été reconstitué
+>    depuis `docker logs` sans outil externe.
+> 2. Un exporteur OTLP ajouterait une **dépendance sortante** à un service dont
+>    l'ADR 0002 fait un point d'honneur à n'en avoir aucune, pour un gain
+>    marginal : Langfuse est bâti pour des générations LLM, l'ai-service
+>    n'en produit aucune.
+>
+> **La cible de Langfuse est `apps/server`**, où l'instrumentation GenAI existe
+> déjà et où l'export ne coûte que deux variables d'environnement. Corréler les
+> deux (propagation du contexte de trace du serveur vers l'ai-service) est une
+> évolution réelle mais distincte — à ouvrir quand un besoin la justifie, pas
+> par principe.
 
 Contenu :
 

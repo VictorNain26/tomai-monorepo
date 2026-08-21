@@ -169,6 +169,14 @@ scraper provisionné, et l'ADR 0002 garde la surface d'API fermée), pas de
 dashboard ni de seuil d'alerte avant que la phase A2 n'ait établi une baseline
 sur l'instance réelle.
 
+**Et pas d'export OpenTelemetry**, alors qu'une destination existe désormais
+(Langfuse Cloud EU). C'est délibéré : les logs structurés répondent déjà aux
+cinq questions du service — le tableau de sérialisation ci-dessus a été
+reconstitué depuis `docker logs` seuls — et un exporteur ajouterait une
+dépendance sortante à un service qui n'en a aucune (ADR 0002). Langfuse est
+conçu pour tracer des générations LLM ; ce service n'en produit pas. La cible
+de Langfuse est `apps/server`.
+
 **Le texte embeddé n'apparaît dans aucun signal** — ni en succès, ni en erreur,
 ni dans la réponse HTTP d'échec. C'est une contrainte de périmètre (ADR 0002)
 tenue par deux tests dédiés.
