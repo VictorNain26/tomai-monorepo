@@ -3,6 +3,10 @@
 Service HTTP Python qui sert **BGE-M3 (dense + sparse natif)** pour le
 backend Tom RAG.
 
+> **Périmètre : `docs/adr/0002-ai-service-scope.md`.** Le service vectorise du
+> texte, et rien d'autre : sans état, agnostique du domaine, sans dépendance
+> sortante. Avant d'ajouter quoi que ce soit ici, lire l'ADR.
+
 ## Pourquoi ce service existe
 
 Le backend Bun (`apps/server`) a besoin, pour chaque requête utilisateur,
@@ -76,24 +80,38 @@ Conséquence : **le débit d'un conteneur est celui d'une inférence en série**
 et une requête lente retarde toutes les suivantes. Il n'y a pas de dynamic
 batching.
 
-Le levier de débit est donc la réplication horizontale (ou un serveur avec
-batching dynamique), pas l'augmentation des workers dans un conteneur — qui
-multiplierait la RAM par le nombre de workers, chacun chargeant son propre
-modèle.
+Le levier de débit est donc la réplication horizontale (ou un micro-batching
+qui regroupe les requêtes concurrentes en un forward pass — le batch amortit
+d'un facteur 3,4, cf. §Performance), pas l'augmentation des workers dans un
+conteneur : chaque worker rechargerait 2,4 Go de modèle dans 4 Go de RAM.
 
-## Performance — ce qui est mesuré et ce qui ne l'est pas
+Ce comportement est **mesuré**, pas déduit du code — voir §Performance.
 
-| Grandeur | Valeur | Statut |
-|---|---|---|
-| Embed 1 query, CPU | ~544 ms | Mesuré 2026-06-25, conteneur local WSL, FP32 |
-| Chunk 400 tokens à l'ingestion, CPU 2 cœurs | ~9 s | Mesuré 2026-06-13 |
-| `searchHybrid` bout en bout (embed + Qdrant) | ~400 ms | Mesuré via `src/live/rag.test.ts` |
-| Latence sur l'instance Koyeb réelle | — | **Jamais mesurée** |
-| Débit maximum (requêtes/s) | — | **Jamais mesuré** |
+## Performance — mesuré le 2026-08-21
 
-Aucun chiffre de latence prod n'existe à ce jour : le service n'émet ni
-traces ni métriques (voir §Observabilité). Toute décision de tuning
-(FP16, réplication, batching) doit attendre une baseline mesurée.
+Conteneur `tomai-ai-service-dev` : **2 vCPU, 4 Go, FP32**, modèle en cache.
+Protocole et tableau complet : `docs/adr/0002-ai-service-scope.md`.
+
+| Grandeur | Mesure |
+|---|---|
+| Embed 1 texte, à chaud, p50 | **577 ms** (min 523, max 678, n=12) |
+| Premier appel après inactivité | ~3,5 s |
+| Débit maximum d'un conteneur | **~1,7 requête/s** |
+| Batch : 1 → 8 → 32 textes | 454 → 166 → **133 ms/texte** (×3,4) |
+| Sortie | dense 1024D, norme L2 = 1,000000 ; sparse creux |
+
+**Sérialisation prouvée**, pas déduite : le wall-clock croît linéairement avec
+la concurrence (521 / 1 153 / 1 734 / 3 245 ms pour 1 / 2 / 4 / 8 requêtes
+simultanées) et la requête la plus lente voit toujours une latence égale au
+wall-clock total — les appels font la queue.
+
+Ce qui reste inconnu : la latence sur l'**instance Koyeb réelle** (le type
+provisionné n'est pas vérifiable depuis le dépôt) et l'effet du FP16 sur la
+latence. C'est l'objet de la phase A2 du plan de consolidation.
+
+Pour mémoire, mesures antérieures conservées : ~9 s par chunk de 400 tokens à
+l'ingestion sur 2 cœurs (2026-06-13), `searchHybrid` bout en bout ~400 ms via
+`src/live/rag.test.ts`.
 
 ## Configuration (env vars)
 
@@ -126,8 +144,15 @@ absent = endpoints publics, pratique pour le smoke test local.
 l'écart le plus coûteux du service : il est une dépendance dure de chaque
 recherche RAG et c'est le seul composant dont on ne sait rien en production.
 
-Chantier en cours de traitement — cf. `docs/audits/2026-08-21-rag-agent-ia.md`
-(constat P1-6).
+Chantier en cours : phase A1 de
+`docs/superpowers/plans/2026-08-21-ai-service-consolidation.md` (déclenché par
+le constat P1-6 de `docs/audits/2026-08-21-rag-agent-ia.md`). Arbitrage retenu :
+**Sentry + logs structurés**, pas d'OpenTelemetry tant qu'aucun collecteur OTLP
+n'est provisionné.
+
+Contrainte issue du périmètre (ADR 0002) : le texte embeddé ne doit **jamais**
+être attaché à un log, une trace ou un événement d'erreur — longueurs, comptes,
+durées et codes seulement.
 
 ## Modèle : empreinte mémoire
 

@@ -175,8 +175,14 @@ S'y ajoutent trois contraintes de débit cumulées :
   ~50–150 ms/requête d'après le README) ;
 - une instance Koyeb `eco-medium`, sans réplique.
 
-Le plafond théorique est de l'ordre de la dizaine de requêtes/s, et toute requête
-lente bloque toutes les autres. Le lock est justifié (`BGEM3FlagModel` n'est pas
+Mesuré le 2026-08-21 sur 2 vCPU : **577 ms par requête à chaud, ~1,7 req/s de
+débit maximum**, et un wall-clock qui croît linéairement avec la concurrence
+(521 / 1 153 / 1 734 / 3 245 ms pour 1 / 2 / 4 / 8 requêtes simultanées). Toute
+requête lente bloque les suivantes.
+
+> Correction : cette section estimait initialement « de l'ordre de la dizaine de
+> requêtes/s ». La mesure donne 1,7 — un ordre de grandeur d'écart. Protocole et
+> chiffres complets dans `docs/adr/0002-ai-service-scope.md`. Le lock est justifié (`BGEM3FlagModel` n'est pas
 documenté thread-safe) mais la réponse correcte à ce constat est la réplication
 horizontale, pas la sérialisation d'un singleton.
 
