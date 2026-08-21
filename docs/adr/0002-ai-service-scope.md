@@ -125,6 +125,38 @@ documenté thread-safe.
 > requêtes par seconde ». La mesure donne **1,7 req/s** sur 2 vCPU, soit un
 > ordre de grandeur d'écart. L'estimation était fausse.
 
+## Amendement du 2026-08-21 — l'export de télémétrie est dans le périmètre
+
+> Cet ADR a servi, le jour même de sa rédaction, à refuser un exporteur
+> OpenTelemetry vers Langfuse au motif « aucune dépendance sortante ». **C'était
+> une sur-application de la règle**, et l'amendement le corrige explicitement
+> plutôt que de laisser une décision changer en silence.
+
+La quatrième propriété — « ne parle à aucun autre service » — vise les
+dépendances **fonctionnelles** : celles sans lesquelles le service ne peut pas
+rendre son service. Un exporteur de télémétrie n'en est pas une :
+
+- il est **hors du chemin de réponse** : l'export est asynchrone et par lots,
+  une destination injoignable n'empêche pas `/embed` de répondre ;
+- il ne crée **aucun couplage de données** : aucun schéma partagé, aucun
+  contrat à maintenir avec un autre service du produit ;
+- le tableau « Dans le périmètre » listait déjà « observabilité de son propre
+  travail » — exporter ce qu'on observe en fait partie.
+
+Le besoin qui a fait bouger la ligne est concret : aujourd'hui, pour savoir
+pourquoi la question d'un élève a été lente, il faut lire les logs du conteneur
+sur la plateforme d'hébergement et les croiser à la main avec la trace du
+serveur. Deux systèmes, deux horloges, aucune corrélation. C'est un défaut
+d'exploitation réel, pas un confort.
+
+**Reste inchangé, et non négociable** : le texte embeddé n'est attaché à aucun
+signal — log, span ou erreur. Un exporteur élargit la destination, jamais le
+contenu.
+
+**Reste interdit** : tout appel sortant dont dépend la production du résultat
+(base, index, LLM, service tiers). La distinction est là : le service peut
+*raconter* ce qu'il fait, il ne peut pas *demander de l'aide* pour le faire.
+
 ## Conséquences
 
 1. **Le levier de débit est la réplication ou le micro-batching**, jamais
