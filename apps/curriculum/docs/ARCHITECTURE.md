@@ -125,8 +125,13 @@ Implémentation : `schema/contextual.py:build_contextual_text()`.
 
 ## Index Qdrant
 
-Collection unique : `tomai_educational` (variable d'env `QDRANT_COLLECTION`).
-Pas de versioning dans le nom — migration via `--recreate` si schéma immuable.
+Collection unique, nommée par `QDRANT_COLLECTION` (défaut neutre
+`tomai_educational` ; la valeur réelle est posée par l'environnement et peut
+différer). Pas de versioning dans le nom — migration via `--recreate` si le
+schéma est immuable. Un pattern blue-green par alias reste à construire le
+jour où une mise à jour destructive sera nécessaire (les points obsolètes ne
+sont aujourd'hui jamais supprimés : les IDs étant des `uuid5` du texte, un
+texte modifié crée un point et laisse l'ancien orphelin).
 
 Config (`scripts/migrate_collection.py`) :
 
@@ -156,12 +161,13 @@ Configurations supportées (`embed_model`, `sparse_method`) :
 Source de vérité pour `embed_query`, `embed_batch`, `encode_with_sparse`,
 `sparse_query`, `hybrid_search`. Aucune duplication dans les scripts.
 
-## BM25 sparse — legacy / chemin de migration
+## BM25 sparse maison — migration terminée
 
-> **Cible production = sparse natif BGE-M3** via FlagEmbedding (single
-> forward pass dense+sparse). Le BM25 maison décrit ci-dessous reste
-> implémenté pour : (a) la transition pendant que le backend
-> migre, (b) l'option `--sparse-method=bm25` pour bench A/B.
+> **La migration est finie** : la production utilise le sparse natif BGE-M3
+> des deux côtés (ingestion et query). Le BM25 FNV-1a maison décrit
+> ci-dessous n'a plus de consommateur — le backend ne tokenise plus rien
+> localement. Il ne subsiste que pour l'option `--sparse-method=bm25` des
+> bench A/B historiques, et est candidat à la suppression.
 
 Quand `sparse_method="bm25"` : Qdrant ne tokenise pas côté serveur — il
 reçoit `{indices: u32[], values: f32[]}` et calcule l'IDF. Pour que l'IDF
@@ -263,6 +269,21 @@ Workflow hebdomadaire (lundi 8h UTC) :
 
 Sortie programmatique : `data/raw/.veille_changes.json`.
 
+## Couverture réelle du corpus
+
+L'enum `Matiere` et le `contract.json` décrivent le **vocabulaire autorisé**,
+pas ce qui est effectivement indexé. À ce jour la collection ne contient que
+du **collège** : les fichiers de `data/raw/` couvrent le cycle 3 (6e), le
+cycle 4 et les langues vivantes collège. Aucune source lycée n'est ingérée,
+donc `seconde`/`premiere`/`terminale` et les matières lycée
+(`philosophie`, `ses`, `nsi`, `snt`, `hggsp`, `hlp`) sont déclarables mais
+vides. Le golden set d'évaluation est collège-only lui aussi — le
+`cid_recall@5 = 0,894` ne dit rien du lycée.
+
+Conséquence côté backend : tout niveau ou toute matière exposé à l'agent
+sans contrepartie dans le corpus renvoie zéro résultat en silence. Le
+contrat doit être vérifié dans les deux sens.
+
 ## Sources officielles
 
 | Matière / niveau | Fichier source | BO |
@@ -326,10 +347,11 @@ Gains adoption sur les matières bloquantes :
 Régressions résiduelles à surveiller : technologie (-0.222), italien
 (n=8 trop petit pour conclure).
 
-Procédure de bascule : la collection `tomai_educational_bge_native`
-(sandbox du bench) devient la collection prod via alias Qdrant.
-L'ancienne `tomai_educational` (mistral-embed) reste en backup nommée
-`tomai_educational_legacy_mistral` le temps que le backend migre.
+Bascule effectuée : le backend a migré, il n'existe plus qu'une seule
+collection servie, dont le nom vient de `QDRANT_COLLECTION` (défaut neutre
+`tomai_educational` dans le code, valeur réelle posée par l'environnement).
+`tomai_educational_bge_native` et `..._legacy_mistral` étaient des noms de
+travail du bench, pas des collections vivantes.
 
 ## Pistes restantes (sans engagement prématuré)
 
@@ -344,53 +366,56 @@ L'ancienne `tomai_educational` (mistral-embed) reste en backup nommée
    (50 questions chacun) pour départager bruit statistique vs vraie
    régression structurelle de BGE-M3 sur ces matières.
 
-## Recommandations à traiter côté backend
+## Recommandations backend — état au 2026-08-21
 
-Le **runtime** (chemin emprunté à chaque question d'élève) appartient au
-backend. Les recommandations ci-dessous sont issues de la recherche état
-de l'art mai 2026 mais ne peuvent **pas** être benchmarkées utilement ici
-(la mesure offline en Python sur CPU local n'est ni représentative de la
-latence prod ni de l'implémentation TS finale).
+Cette section listait, en mai 2026, deux recommandations issues de la
+recherche état de l'art. **Les deux sont tranchées.** Elle est conservée
+comme trace de décision, pas comme feuille de route.
 
-### #1 — Exécuter BGE-M3 côté backend (impose un service Python)
+### #1 — Exécuter BGE-M3 côté backend · **FAIT**
 
-**Bloquant suite à la décision benchmark embedder du 2026-05-23.** Le
-sparse natif BGE-M3 est appris (learned sparse via FlagEmbedding), donc
-non reproductible en TS pur — contrairement au BM25 FNV-1a qu'on avait.
+Le sparse natif BGE-M3 est appris, donc non reproductible en TS pur. La
+recommandation était de monter un service Python. C'est fait :
+`apps/ai-service` (FastAPI + FlagEmbedding) sert `/embed` (dense + sparse,
+un seul forward pass), déployé sur Koyeb, appelé par `rag.service.ts` côté
+backend et par `src/clients/ai_service.py` côté curriculum. Le tokenizer
+BM25 maison a disparu des deux côtés.
 
-Options à arbitrer côté backend :
+### #2 — Reranker de second étage · **ÉCARTÉ le 2026-07-01, sur mesure**
 
-- **Service Python embed local** (FastAPI + FlagEmbedding) sur Scaleway,
-  appelé par `rag.service.ts` en HTTP. Latence ~50-150 ms / query (CPU).
-- **Endpoint Scaleway Inference** dédié BGE-M3 (GPU = ~10 ms / query
-  mais coût mensuel fixe).
-- **Hugging Face Inference Endpoints** souverain EU (réseau US si
-  acheminé mal — à vérifier juridiquement).
+> La version précédente de cette section recommandait `mxbai-rerank-large-v2`
+> et écartait `bge-reranker` pour « origine Chine, souveraineté discutable ».
+> **Ce critère était faux et n'est pas celui qui a tranché** : des poids
+> self-hostés n'exfiltrent aucune donnée, et l'embedder de production est
+> lui-même un modèle BAAI. Le texte est corrigé ici pour que la décision ne
+> soit pas rouverte sur de mauvaises bases.
 
-Pas d'implémentation TS pur possible : BGE-M3 nécessite l'inférence du
-transformeur pour produire dense + sparse cohérents.
+Ce qui a réellement tranché :
 
-### #2 — Reranker de second étage (gain additionnel attendu)
+- **Le meilleur modèle était `bge-reranker-v2-m3`** (Apache 2.0, MIRACL
+  69,32 en multilingue, le plus léger des trois évalués — devant
+  `jina-reranker-v3`, écarté pour sa licence CC-BY-NC incompatible avec un
+  produit payant, et devant `Qwen3-Reranker` 4B/8B, trop lourd).
+- **La latence CPU l'a disqualifié** : 43 à 180 s pour 20 candidats sur
+  l'instance de test (mesure du 2026-06-25 ; 15-19 s pour 25 chunks en
+  sentence-transformers comme en TEI-candle). Face au timeout de quelques
+  secondes du client backend, le rerank aurait timeouté systématiquement —
+  coût pur, aucun effet sur le classement.
+- **Les options managées sont exclues pour la souveraineté des données**,
+  pas des poids : Jina appartient à Elastic (US, CLOUD Act), Cohere est US,
+  le « rerank » Scaleway est une similarité cosinus d'embeddings et non un
+  cross-encoder, ni OVH ni Mistral n'exposent de reranker.
+- **La rentabilité n'est pas démontrée sur ce corpus** : quelques milliers
+  de chunks, hybrid déjà tuné, top-k 5.
 
-Anthropic Contextual Retrieval mesure −67 % failure rate avec rerank
-contre −49 % sans. Sur notre corpus la baseline post-BGE-M3 est déjà à
-0.894 cid_recall ; le rerank apportera surtout du gain sur les matières
-résiduelles faibles (italien, technologie).
+Conséquence : `apps/ai-service` est **embed-only** (l'endpoint `/rerank` est
+supprimé, un test de non-régression garde la porte fermée) et y a gagné
+~2 GB de RAM.
 
-**Candidat recommandé** :
-[`mxbai-rerank-large-v2`](https://www.mixedbread.com/docs/models/reranking/mxbai-rerank-large-v2)
-(Mixedbread, Berlin/EU). Apache 2.0, 1.5B params, 100+ langues incluant
-DE/ES/IT, BEIR nDCG@10 57.49.
-
-Alternatives écartées : Jina v3 = CC-BY-NC (licence commerciale Jina
-obligatoire), BGE = origine Chine (souveraineté discutable), Cohere = US.
-
-Synergie : si #1 expose déjà un service Python pour BGE-M3, ajouter
-`mxbai-rerank` dans le même service mutualise l'infra.
-
-**À mesurer côté backend** : latence prod (cible <300 ms total avec
-hybrid_search + rerank), gain `chunk_id_recall@5` en conditions réelles,
-coût (self-host Scaleway H100 vs API Mixedbread EU).
+Rouvrir le sujet suppose de résoudre **la latence** en premier — ONNX/INT8
+généré à la main (`bge-reranker-v2-m3` n'a pas d'ONNX publié) ou GPU à
+Tensor Cores — et de mesurer le gain réel de `cid_recall@5` sur le golden
+set. Pas de rediscuter la licence ni l'origine.
 
 ## Références
 
