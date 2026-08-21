@@ -1,36 +1,25 @@
 #!/usr/bin/env python3
 """
-Évaluation RETRIEVAL du RAG curriculum — métriques déterministes.
+Évaluation du retrieval — mesure la qualité de l'INDEX, rien d'autre.
 
-Mesure UNIQUEMENT la qualité de l'INDEX (chunk_id recall, MRR, keyword recall),
-pas la qualité des réponses LLM. La couche LLM (faithfulness, hallucination,
-style socratique) est la responsabilité du backend (tomai-monorepo/apps/server).
-Voir docs/ARCHITECTURE.md.
+Aucun appel LLM, aucun jugement : le `gold_chunk_id` de chaque question est
+l'UUID5 du chunk qui l'a produite, donc « a-t-on retrouvé le bon chunk ? » se
+vérifie par comparaison d'identifiants. Déterministe, reproductible, gratuit —
+ce qui en fait un garde-fou de non-régression utilisable en CI.
 
-Deux signaux complémentaires, sans appel LLM :
-
-  - **[primary] chunk_id recall@k** : le `gold_chunk_id` (UUID5 du chunk
-    source) est-il dans le top-k ? Disponible pour les questions générées
-    par `generate_golden.py` (document-grounded). Signal propre, immune
-    aux faux positifs lexicaux. Référence : arXiv 2510.21440 (Redefining
-    Retrieval Evaluation), CoFE-RAG arXiv 2410.12248.
-
-  - **[secondary] keyword recall@k** : fraction des `expected_keywords`
-    présents dans n'importe quel chunk du top-k (sous-chaîne casefold).
-    Robuste si les keywords sont extraits du chunk (cas généré) ; biaisé
-    si keywords "supposés" (cas seed humain — surestime le recall).
-    Conservé pour comparaison historique et pour les golden sets seed.
-
-Format golden (`data/golden/questions.json`) — schema Pydantic
-`schema.golden.GoldenQuestion` :
-  {"query": "...", "matiere": "...", "niveau": "...",
-   "expected_keywords": [...], "gold_chunk_id": "...", "gold_section": "...",
-   "gold_source_file": "..."}
+Les métriques sont calculées par `ranx` (cf. schema/evaluation.py). Ce script
+n'est que le harnais : charger le golden set, exécuter la recherche, traduire,
+afficher — et sauvegarder le run pour pouvoir comparer des configurations.
 
 Usage :
-  uv run python scripts/evaluate.py                                # golden défaut
-  uv run python scripts/evaluate.py --questions=path/to.json
-  uv run python scripts/evaluate.py --top-k=10 --by-matiere
+  uv run python scripts/evaluate.py                       # évaluation simple
+  uv run python scripts/evaluate.py --by-matiere          # détail par matière
+  uv run python scripts/evaluate.py --fusion dbsf --save-run runs/dbsf.json
+  uv run python scripts/evaluate.py --compare runs/rrf.json runs/dbsf.json
+
+La dernière forme est la raison d'être de `ranx` : elle dit si l'écart entre
+deux configurations est **statistiquement significatif**, au lieu de laisser
+comparer deux nombres à l'œil.
 """
 
 from __future__ import annotations
@@ -38,323 +27,161 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from schema import (
-    DEFAULT_TOP_K,
-    hybrid_search,
-)
+from dotenv import load_dotenv  # noqa: E402
+
+from schema.evaluation import METRIC_NAMES, build_qrels, build_run, score  # noqa: E402
+from schema.retrieval import hybrid_search  # noqa: E402
+
+load_dotenv()
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-load_dotenv()
-
-BASE = Path(__file__).parent.parent
-GOLDEN_DIR = BASE / "data" / "golden"
+GOLDEN_PATH = Path(__file__).resolve().parent.parent / "data" / "golden" / "questions.json"
 
 
-def _score_question(q: dict, chunks: list[Any]) -> dict:
+def load_questions(path: Path) -> list[dict[str, Any]]:
+    """Charge le golden set et attribue un identifiant stable à chaque question.
+
+    Le fichier ne porte pas de champ `id` — l'index de la question dans le
+    fichier fait office d'identifiant. Il est stable tant que le fichier n'est
+    pas réordonné, ce qui suffit : un run n'est comparable qu'à un run produit
+    sur le même golden set.
     """
-    Calcule les métriques retrieval pour une question + ses chunks retournés.
-
-    Deux signaux complémentaires :
-
-    - `chunk_id_hit_rank` : rang du `gold_chunk_id` attendu dans le top-k.
-      Disponible uniquement pour les questions document-grounded (générées
-      via `scripts/generate_golden.py`). C'est le signal propre, sans
-      faux positif keyword (CoFE-RAG arXiv 2410.12248).
-
-    - `recall_at_k` sur keywords : fraction des `expected_keywords` présents
-      dans n'importe quel chunk du top-k (sous-chaîne casefold). Sert de
-      métrique secondaire de robustesse — robuste aux faux positifs si les
-      keywords sont extraits du chunk (cas généré) ; bruité si keywords
-      "supposés" (cas seed humain).
-    """
-    expected = q.get("expected_keywords", [])
-    gold_id = q.get("gold_chunk_id")
-
-    if not expected and not gold_id:
-        return {
-            "query": q["query"],
-            "matiere": q.get("matiere", "—"),
-            "niveau": q.get("niveau", "—"),
-            "n_keywords": 0,
-            "hits": 0,
-            "recall_at_k": None,
-            "all_keywords_found": None,
-            "first_hit_rank": None,
-            "mrr": None,
-            "chunk_id_hit_rank": None,
-            "chunk_id_mrr": None,
-            "skipped": True,
-        }
-
-    # Keyword recall (compat avec golden set seed sans chunk_id)
-    chunk_texts = [c.text for c in chunks]
-    norm_chunks = [c.lower() for c in chunk_texts]
-    expected_lc = [k.lower() for k in expected]
-
-    hits = sum(1 for k in expected_lc if any(k in c for c in norm_chunks)) if expected_lc else 0
-    recall = (hits / len(expected_lc)) if expected_lc else None
-
-    first_rank: int | None = None
-    for i, c in enumerate(norm_chunks):
-        if expected_lc and any(k in c for k in expected_lc):
-            first_rank = i + 1
-            break
-
-    # Chunk-id recall (signal propre quand dispo)
-    chunk_id_hit_rank: int | None = None
-    if gold_id:
-        for i, c in enumerate(chunks):
-            cid = getattr(c, "payload", {}).get("id") if hasattr(c, "payload") else None
-            # Le payload Qdrant ne stocke pas l'ID — il est dans `r.id` côté
-            # response.points. On le retrouve via `c.payload` si stocké ou
-            # via `getattr(c, "id", None)` selon la shape HybridResult.
-            cid = cid or getattr(c, "id", None)
-            if cid and str(cid) == gold_id:
-                chunk_id_hit_rank = i + 1
-                break
-
-    return {
-        "query": q["query"],
-        "matiere": q.get("matiere", "—"),
-        "niveau": q.get("niveau", "—"),
-        "n_keywords": len(expected_lc),
-        "hits": hits,
-        "recall_at_k": round(recall, 3) if recall is not None else None,
-        "all_keywords_found": (hits == len(expected_lc)) if expected_lc else None,
-        "first_hit_rank": first_rank,
-        "mrr": round(1.0 / first_rank, 3) if first_rank else 0.0,
-        "chunk_id_hit_rank": chunk_id_hit_rank,
-        "chunk_id_mrr": round(1.0 / chunk_id_hit_rank, 3)
-        if chunk_id_hit_rank
-        else (0.0 if gold_id else None),
-        "skipped": False,
-    }
-
-
-def run_evaluation(
-    questions_file: str | None,
-    top_k: int,
-    by_matiere: bool,
-    fusion: str = "rrf",
-    output_suffix: str = "",
-    collection: str | None = None,
-) -> None:
-    if questions_file:
-        path = Path(questions_file)
-    else:
-        path = GOLDEN_DIR / "questions.json"
-
-    if not path.exists():
-        print(f"✗ Fichier golden absent : {path}", file=sys.stderr)
-        sys.exit(1)
-
     questions = json.loads(path.read_text(encoding="utf-8"))
-    print(f"Golden set : {path.name} ({len(questions)} questions)")
+    if isinstance(questions, dict):
+        questions = questions.get("questions", [])
+    return [{**q, "id": f"q{i:04d}"} for i, q in enumerate(questions)]
 
-    # Compat avec ancien format (question → query)
-    for q in questions:
-        if "query" not in q and "question" in q:
-            q["query"] = q["question"]
 
-    print(f"Top-k      : {top_k}")
-    print(f"Fusion     : {fusion}")
-    if collection:
-        print(f"Collection : {collection}")
-    print()
-
-    results = []
-    skipped = 0
-    for i, q in enumerate(questions, 1):
-        # Pause courte pour rester sous le rate limit d'ai-service (~1 req/s)
-        if i > 1:
-            time.sleep(0.8)
-
+def execute_searches(
+    questions: list[dict[str, Any]], top_k: int, fusion: str, collection: str | None
+) -> dict[str, list[str]]:
+    """Exécute la recherche pour chaque question → identifiants classés."""
+    results: dict[str, list[str]] = {}
+    for position, question in enumerate(questions, start=1):
         chunks = hybrid_search(
-            q["query"],
+            question["query"],
             top_k=top_k,
-            matiere=q.get("matiere"),
-            niveau=q.get("niveau"),
-            fusion=fusion,
+            matiere=question.get("matiere"),
+            niveau=question.get("niveau"),
             collection=collection,
+            fusion=fusion,
         )
-        r = _score_question(q, chunks)
-        results.append(r)
+        results[question["id"]] = [c.id for c in chunks if c.id]
+        print(f"\r  {position}/{len(questions)} questions…", end="", flush=True)
+    print()
+    return results
 
-        if r["skipped"]:
-            skipped += 1
-            status = "·"
-        elif r["all_keywords_found"]:
-            status = "✓"
-        elif r["hits"] > 0:
-            status = "~"
-        else:
-            status = "✗"
+
+def print_scores(title: str, scores: dict[str, float], count: int) -> None:
+    print(f"\n{title}  ({count} questions)")
+    for name in METRIC_NAMES:
+        key = next(k for k in scores if k.startswith(f"{name}@"))
+        print(f"  {key:<14} {scores[key]:.3f}")
+
+
+def report_by_matiere(
+    questions: list[dict[str, Any]],
+    results: dict[str, list[str]],
+    top_k: int,
+) -> None:
+    par_matiere: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for question in questions:
+        par_matiere[question.get("matiere", "—")].append(question)
+
+    print(f"\n{'matière':<24}{'questions':>10}{'hit_rate':>10}{'mrr':>8}{'ndcg':>8}")
+    print("─" * 60)
+    for matiere, group in sorted(par_matiere.items()):
+        subset = {q["id"]: results[q["id"]] for q in group}
+        scores = score(build_qrels(group), build_run(subset), k=top_k)
         print(
-            f"  [{i:3}/{len(questions)}] {status} "
-            f"recall={r['recall_at_k'] if r['recall_at_k'] is not None else '—'} "
-            f"rank={r['first_hit_rank'] if r['first_hit_rank'] else '—'} "
-            f"| {q['query'][:60]}"
+            f"{matiere:<24}{len(group):>10}"
+            f"{scores[f'hit_rate@{top_k}']:>10.3f}"
+            f"{scores[f'mrr@{top_k}']:>8.3f}"
+            f"{scores[f'ndcg@{top_k}']:>8.3f}"
         )
 
-    scorable = [r for r in results if not r["skipped"]]
-    if not scorable:
-        print("\n✗ Aucune question scorable (manquent 'expected_keywords').", file=sys.stderr)
-        sys.exit(1)
 
-    # Separate sets for keyword-only vs chunk_id-grounded scoring.
-    kw_scorable = [r for r in scorable if r["recall_at_k"] is not None]
-    cid_scorable = [
-        r
-        for r in scorable
-        if r["chunk_id_hit_rank"] is not None or (r.get("chunk_id_mrr") is not None)
-    ]
+def compare_runs(paths: list[Path], top_k: int) -> None:
+    """Compare des runs sauvegardés, avec test de significativité."""
+    from ranx import Qrels, Run, compare
 
-    print("\n" + "─" * 70)
-    print(f"AGRÉGATS GLOBAUX (top-{top_k}, {len(scorable)}/{len(results)} scorables)")
-    print("─" * 70)
-    # [primary] chunk_id recall affiché EN PREMIER — métrique propre,
-    # document-grounded (arXiv 2510.21440, CoFE-RAG arXiv 2410.12248).
-    if cid_scorable:
-        cid_hits = sum(1 for r in cid_scorable if r["chunk_id_hit_rank"])
-        cid_recall = cid_hits / len(cid_scorable)
-        cid_mrr = sum(r["chunk_id_mrr"] for r in cid_scorable) / len(cid_scorable)
-        print(
-            f"  [PRIMARY] chunk_id Recall@{top_k} : {cid_recall:.3f} "
-            f"({cid_hits}/{len(cid_scorable)})"
-        )
-        print(f"  [PRIMARY] chunk_id MRR        : {cid_mrr:.3f}")
-    else:
-        cid_recall = cid_mrr = 0.0
-        print(
-            f"  [PRIMARY] chunk_id Recall@{top_k} : N/A "
-            "(régénérer le golden via scripts/generate_golden.py)"
-        )
-    if kw_scorable:
-        avg_recall = sum(r["recall_at_k"] for r in kw_scorable) / len(kw_scorable)
-        avg_mrr = sum(r["mrr"] for r in kw_scorable) / len(kw_scorable)
-        n_all = sum(1 for r in kw_scorable if r["all_keywords_found"])
-        n_any = sum(1 for r in kw_scorable if r["hits"] > 0)
-        print(f"  [secondary] keyword Recall@{top_k}: {avg_recall:.3f}")
-        print(f"  [secondary] keyword MRR       : {avg_mrr:.3f}")
-        print(
-            f"  [secondary] All kw @{top_k}       : {n_all}/{len(kw_scorable)} "
-            f"({n_all / len(kw_scorable):.0%})"
-        )
-        print(
-            f"  [secondary] ≥1 kw @{top_k}        : {n_any}/{len(kw_scorable)} "
-            f"({n_any / len(kw_scorable):.0%})"
-        )
-    else:
-        avg_recall = avg_mrr = 0.0
-        n_all = n_any = 0
-    if skipped:
-        print(f"  Skippées (no keywords / no gold_chunk_id) : {skipped}")
+    questions = load_questions(GOLDEN_PATH)
+    qrels = Qrels(build_qrels(questions))
 
-    if by_matiere:
-        print("\n" + "─" * 70)
-        print(f"VENTILATION PAR MATIÈRE (top-{top_k})")
-        print("─" * 70)
-        by_mat: dict[str, list[dict]] = defaultdict(list)
-        for r in scorable:
-            by_mat[r["matiere"]].append(r)
-        for mat in sorted(by_mat):
-            rs = by_mat[mat]
-            kw_rs = [r for r in rs if r["recall_at_k"] is not None]
-            cid_rs = [
-                r
-                for r in rs
-                if r["chunk_id_hit_rank"] is not None or r.get("chunk_id_mrr") is not None
-            ]
-            mat_kw = sum(r["recall_at_k"] for r in kw_rs) / len(kw_rs) if kw_rs else 0.0
-            mat_cid = (
-                sum(1 for r in cid_rs if r["chunk_id_hit_rank"]) / len(cid_rs) if cid_rs else 0.0
-            )
-            mat_mrr = sum(r["mrr"] for r in kw_rs) / len(kw_rs) if kw_rs else 0.0
-            print(
-                f"  {mat:<22} | n={len(rs):3} | cid_recall={mat_cid:.3f} "
-                f"| kw_recall={mat_kw:.3f} | mrr={mat_mrr:.3f}"
-            )
+    runs = []
+    for path in paths:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        runs.append(Run(build_run(payload["results"]), name=payload.get("name", path.stem)))
 
-    GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
-    out_name = f"retrieval_eval{output_suffix}.json"
-    out = GOLDEN_DIR / out_name
-    out.write_text(
-        json.dumps(
-            {
-                "top_k": top_k,
-                "fusion": fusion,
-                "collection": collection,
-                "n_total": len(results),
-                "n_scorable": len(scorable),
-                # [primary] chunk_id metrics first (document-grounded signal propre)
-                "n_chunk_id_scorable": len(cid_scorable),
-                "chunk_id_recall_at_k": cid_recall,
-                "chunk_id_mrr": cid_mrr,
-                # [secondary] keyword metrics (biaisé sur seed sets)
-                "n_kw_scorable": len(kw_scorable),
-                "kw_avg_recall_at_k": avg_recall,
-                "kw_mrr": avg_mrr,
-                "kw_all_keywords_count": n_all,
-                "results": results,
-            },
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
+    report = compare(
+        qrels=qrels,
+        runs=runs,
+        metrics=[f"{name}@{top_k}" for name in METRIC_NAMES],
+        max_p=0.05,
+        stat_test="fisher",
     )
-    print(f"\n✓ Résultats exportés : {out}")
+    print(report)
+    print(
+        "\nUn exposant signale une différence statistiquement significative "
+        "(p < 0,05, test de randomisation de Fisher).\n"
+        "Sans exposant, l'écart observé ne se distingue pas du bruit."
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--questions", default=None, help="JSON de questions")
+    parser.add_argument("--top-k", type=int, default=5, help="Rang de coupure (défaut 5)")
+    parser.add_argument("--by-matiere", action="store_true", help="Détail par matière")
+    parser.add_argument("--fusion", default="rrf", choices=["rrf", "dbsf"])
+    parser.add_argument("--collection", help="Override la collection cible")
+    parser.add_argument("--save-run", type=Path, help="Sauvegarde le run pour --compare")
+    parser.add_argument("--name", help="Nom du run dans le rapport de comparaison")
     parser.add_argument(
-        "--top-k",
-        type=int,
-        default=DEFAULT_TOP_K,
-        help=f"Nombre de chunks récupérés (défaut {DEFAULT_TOP_K})",
-    )
-    parser.add_argument(
-        "--by-matiere",
-        action="store_true",
-        help="Ventile les métriques par matière",
-    )
-    parser.add_argument(
-        "--fusion",
-        choices=["rrf", "dbsf"],
-        default="rrf",
-        help="Méthode de fusion hybrid search (rrf par défaut, dbsf = "
-        "Distribution-Based Score Fusion Qdrant 1.11+).",
-    )
-    parser.add_argument(
-        "--output-suffix",
-        default="",
-        help="Suffixe pour le fichier de sortie (ex: '-dbsf' → retrieval_eval-dbsf.json)",
-    )
-    parser.add_argument(
-        "--collection",
-        default=None,
-        help="Override la collection Qdrant cible (sinon QDRANT_COLLECTION env).",
+        "--compare", nargs="+", type=Path, metavar="RUN", help="Compare des runs sauvegardés"
     )
     args = parser.parse_args()
 
-    run_evaluation(
-        args.questions,
-        args.top_k,
-        args.by_matiere,
-        fusion=args.fusion,
-        output_suffix=args.output_suffix,
-        collection=args.collection,
-    )
+    if args.compare:
+        compare_runs(args.compare, args.top_k)
+        return
+
+    questions = load_questions(GOLDEN_PATH)
+    qrels = build_qrels(questions)
+    print(f"Golden set : {len(questions)} questions, {len(qrels)} notables")
+    print(f"Config     : fusion={args.fusion}, top_k={args.top_k}")
+
+    results = execute_searches(questions, args.top_k, args.fusion, args.collection)
+    scores = score(qrels, build_run(results), k=args.top_k)
+
+    print_scores("RÉSULTAT GLOBAL", scores, len(qrels))
+    if args.by_matiere:
+        report_by_matiere(questions, results, args.top_k)
+
+    if args.save_run:
+        args.save_run.parent.mkdir(parents=True, exist_ok=True)
+        args.save_run.write_text(
+            json.dumps(
+                {
+                    "name": args.name or args.save_run.stem,
+                    "fusion": args.fusion,
+                    "top_k": args.top_k,
+                    "scores": scores,
+                    "results": results,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        print(f"\nRun sauvegardé : {args.save_run}")
 
 
 if __name__ == "__main__":

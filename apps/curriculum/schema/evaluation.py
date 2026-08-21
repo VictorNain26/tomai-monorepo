@@ -39,11 +39,23 @@ def build_qrels(questions: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
     ne sont pas notables : elles sont **écartées**, jamais comptées comme des
     échecs — sinon le score baisse mécaniquement avec leur nombre.
     """
-    qrels = {
-        question["id"]: {question["gold_chunk_id"]: 1}
-        for question in questions
-        if question.get("gold_chunk_id")
-    }
+    notables = [q for q in questions if q.get("gold_chunk_id")]
+
+    sans_id = [q for q in notables if not q.get("id")]
+    if sans_id:
+        raise ValueError(
+            f"{len(sans_id)} question(s) sans identifiant. Le golden set du dépôt "
+            "n'en porte pas : c'est au harnais d'attribuer un `id` stable avant "
+            "d'appeler build_qrels."
+        )
+
+    qrels = {q["id"]: {q["gold_chunk_id"]: 1} for q in notables}
+    if len(qrels) != len(notables):
+        raise ValueError(
+            f"{len(notables) - len(qrels)} identifiants dupliqués : les questions "
+            "concernées s'écraseraient et le score porterait sur moins de "
+            "questions qu'annoncé."
+        )
     if not qrels:
         raise ValueError(
             "Le golden set ne contient aucune question notable : aucune n'a de "

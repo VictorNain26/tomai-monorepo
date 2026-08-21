@@ -154,3 +154,89 @@ describe('buildChatTools', () => {
     });
   });
 });
+
+// ============================================
+// Contraintes de schéma — migrées depuis tool-declarations.test.ts
+//
+// Ces bornes étaient asserted sur `agentTools`, un jeu de déclarations que
+// plus aucun chemin de production ne consommait. Elles sont désormais
+// vérifiées sur les schémas Zod réellement envoyés au modèle, donc une dérive
+// de la contrainte est visible.
+// ============================================
+
+describe('contraintes des schémas Zod', () => {
+  const tools = buildChatTools(baseContext);
+
+  const parse = (name: string, input: unknown) =>
+    (tools[name]!.inputSchema as { safeParse: (v: unknown) => { success: boolean } }).safeParse(input);
+
+  describe('generate_flashcards.cardCount', () => {
+    const base = { topic: 'Pythagore', subject: 'mathematiques' };
+
+    it('refuse en dessous de 3', () => {
+      expect(parse('generate_flashcards', { ...base, cardCount: 2 }).success).toBe(false);
+    });
+
+    it('refuse au-dessus de 10', () => {
+      expect(parse('generate_flashcards', { ...base, cardCount: 11 }).success).toBe(false);
+    });
+
+    it('accepte les bornes 3 et 10', () => {
+      expect(parse('generate_flashcards', { ...base, cardCount: 3 }).success).toBe(true);
+      expect(parse('generate_flashcards', { ...base, cardCount: 10 }).success).toBe(true);
+    });
+
+    it('accepte son absence (valeur par défaut côté exécuteur)', () => {
+      expect(parse('generate_flashcards', base).success).toBe(true);
+    });
+  });
+
+  describe('update_student_profile — longueurs maximales', () => {
+    const base = { observation: 'Confond les groupes verbaux.', subject: 'francais' };
+
+    it('refuse une observation de plus de 250 caractères', () => {
+      expect(parse('update_student_profile', { ...base, observation: 'a'.repeat(251) }).success).toBe(false);
+      expect(parse('update_student_profile', { ...base, observation: 'a'.repeat(250) }).success).toBe(true);
+    });
+
+    it('refuse une force de plus de 100 caractères', () => {
+      expect(parse('update_student_profile', { ...base, strength: 'a'.repeat(101) }).success).toBe(false);
+      expect(parse('update_student_profile', { ...base, strength: 'a'.repeat(100) }).success).toBe(true);
+    });
+
+    it('refuse une faiblesse de plus de 100 caractères', () => {
+      expect(parse('update_student_profile', { ...base, weakness: 'a'.repeat(101) }).success).toBe(false);
+      expect(parse('update_student_profile', { ...base, weakness: 'a'.repeat(100) }).success).toBe(true);
+    });
+
+    it('laisse la matière libre — une observation peut porter sur une matière hors RAG', () => {
+      expect(parse('update_student_profile', { ...base, subject: 'education_musicale' }).success).toBe(true);
+    });
+
+    it('refuse un style d\'apprentissage hors énumération', () => {
+      expect(parse('update_student_profile', { ...base, preferredStyle: 'telepathique' }).success).toBe(false);
+      expect(parse('update_student_profile', { ...base, preferredStyle: 'visuel' }).success).toBe(true);
+    });
+  });
+});
+
+describe('RAG_SUBJECTS', () => {
+  it('expose des slugs non vides et sans doublon', async () => {
+    const { RAG_SUBJECTS } = await import('../services/chat/rag-subjects');
+    expect(RAG_SUBJECTS.length).toBeGreaterThan(0);
+    expect(RAG_SUBJECTS.every(s => s.trim().length > 0)).toBe(true);
+    expect(new Set(RAG_SUBJECTS).size).toBe(RAG_SUBJECTS.length);
+  });
+
+  it('sert d\'énumération aux deux outils qui filtrent par matière', async () => {
+    const { RAG_SUBJECTS } = await import('../services/chat/rag-subjects');
+    const tools = buildChatTools(baseContext);
+    const parse = (name: string, input: unknown) =>
+      (tools[name]!.inputSchema as { safeParse: (v: unknown) => { success: boolean } }).safeParse(input);
+
+    for (const matiere of RAG_SUBJECTS) {
+      expect(parse('search_educational_content', { query: 'q', niveau: 'troisieme', matiere }).success).toBe(true);
+      expect(parse('generate_flashcards', { topic: 't', subject: matiere }).success).toBe(true);
+    }
+  });
+});

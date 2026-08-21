@@ -117,3 +117,24 @@ class TestScore:
         result = score(qrels={"q1": {"gold": 1}}, run=build_run({"q1": ["gold"]}), k=5)
 
         assert set(result) == {"hit_rate@5", "mrr@5", "ndcg@5", "recall@5"}
+
+
+class TestBuildQrelsIdentifiants:
+    def test_refuse_une_question_sans_identifiant(self) -> None:
+        """Le golden set du dépôt n'a PAS de champ `id` — c'est au harnais
+        d'en attribuer un stable. Sans ce garde-fou, l'absence se manifestait
+        par un KeyError opaque au milieu d'une évaluation de plusieurs minutes.
+        """
+        with pytest.raises(ValueError, match="sans identifiant"):
+            build_qrels([{"gold_chunk_id": "chunk-a"}])
+
+    def test_refuse_des_identifiants_dupliques(self) -> None:
+        """Deux questions partageant un id s'écraseraient silencieusement,
+        et le score serait calculé sur moins de questions qu'annoncé."""
+        with pytest.raises(ValueError, match="identifiants dupliqués"):
+            build_qrels(
+                [
+                    {"id": "q1", "gold_chunk_id": "chunk-a"},
+                    {"id": "q1", "gold_chunk_id": "chunk-b"},
+                ]
+            )

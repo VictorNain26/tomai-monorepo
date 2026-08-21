@@ -1,7 +1,7 @@
 /**
  * Chat Tools — AI SDK `tool()` wrappers around the existing tool-executor.
  *
- * Zod input schemas mirror `tool-declarations.ts` verbatim (names,
+ * Zod input schemas are the single source of truth for what the model sees (names,
  * descriptions, enums are prompt engineering — do not reword). Execution is
  * delegated to `executeTool` (tool-executor.ts): no business logic is
  * duplicated here.
@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { tool, type ToolSet, type InferUITools } from 'ai';
 import { executeTool, isDeckCreatedResult } from './tool-executor.js';
 import { wrapCurriculumToolResult } from './mistral-helpers.js';
-import { RAG_SUBJECTS } from './tool-declarations.js';
+import { RAG_SUBJECTS } from './rag-subjects.js';
 import { EDUCATION_LEVELS } from '../../lib/education-levels.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { DeckCreatedData } from './chat-ui-message.js';
