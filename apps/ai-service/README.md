@@ -139,20 +139,46 @@ absent = endpoints publics, pratique pour le smoke test local.
 
 ## Observabilité
 
-**Aucune à ce jour.** Ni Sentry, ni OpenTelemetry, ni métriques — alors que
-`apps/server`, `apps/landing` et `apps/mobile` sont instrumentés. C'est
-l'écart le plus coûteux du service : il est une dépendance dure de chaque
-recherche RAG et c'est le seul composant dont on ne sait rien en production.
+Un enregistrement structuré JSON par appel `/embed`, sur stdout, plus Sentry
+pour les erreurs. Portée délibérément étroite : cinq questions, rien d'autre
+(cf. `docs/superpowers/plans/2026-08-21-ai-service-consolidation.md`).
 
-Chantier en cours : phase A1 de
-`docs/superpowers/plans/2026-08-21-ai-service-consolidation.md` (déclenché par
-le constat P1-6 de `docs/audits/2026-08-21-rag-agent-ia.md`). Arbitrage retenu :
-**Sentry + logs structurés**, pas d'OpenTelemetry tant qu'aucun collecteur OTLP
-n'est provisionné.
+```json
+{"event": "embed", "model": "BAAI/bge-m3", "texts": 1, "chars": 27,
+ "inflight": 2, "status": "ok", "lock_wait_ms": 450.363,
+ "inference_ms": 410.412, "duration_ms": 860.825}
+```
 
-Contrainte issue du périmètre (ADR 0002) : le texte embeddé ne doit **jamais**
-être attaché à un log, une trace ou un événement d'erreur — longueurs, comptes,
-durées et codes seulement.
+Le champ qui porte tout le reste est le couple **`lock_wait_ms` /
+`inference_ms`** : un total seul ne permet pas de choisir entre « il faut plus
+de débit » et « il faut plus de CPU ». Exemple réel, rafale de 8 requêtes
+simultanées lue dans les logs du conteneur :
+
+| `inflight` | `lock_wait_ms` | `inference_ms` | `duration_ms` |
+|---|---|---|---|
+| 1 | 0 | 450 | 451 |
+| 2 | 450 | 410 | 861 |
+| 4 | 1 225 | 367 | 1 592 |
+| 8 | 2 756 | 404 | 3 160 |
+
+L'inférence reste plate, l'attente croît linéairement : sous charge, le temps
+part en file d'attente, pas en calcul.
+
+**Ce que l'instrumentation ne fait pas** : pas d'endpoint `/metrics` (aucun
+scraper provisionné, et l'ADR 0002 garde la surface d'API fermée), pas de
+dashboard ni de seuil d'alerte avant que la phase A2 n'ait établi une baseline
+sur l'instance réelle.
+
+**Le texte embeddé n'apparaît dans aucun signal** — ni en succès, ni en erreur,
+ni dans la réponse HTTP d'échec. C'est une contrainte de périmètre (ADR 0002)
+tenue par deux tests dédiés.
+
+| Variable | Rôle |
+|---|---|
+| `SENTRY_DSN` | Absent (dev, CI) = aucune initialisation, aucun réseau. Présent = Sentry armé au boot, `send_default_pii=false`. |
+
+Coût mesuré : p50 595 ms contre 577 ms avant instrumentation, soit +3,1 % —
+sous le budget de 5 % qu'on s'était fixé.
 
 ## Modèle : empreinte mémoire
 

@@ -12,17 +12,11 @@ from __future__ import annotations
 
 from threading import Lock
 
-from .config import EMBED_MODEL, USE_FP16
+from .config import EMBED_MODEL, use_fp16
 from .schemas import EmbedItem, SparseVector
 
 _model = None
 _model_lock = Lock()
-
-
-def _resolve_fp16() -> bool:
-    # Explicite uniquement : FP16 opt-in via USE_FP16=true. Pas de détection
-    # auto — sur CPU le comportement doit être déterministe (audit lot 3).
-    return USE_FP16 in ("true", "1", "yes")
 
 
 def load_model() -> None:
@@ -33,7 +27,7 @@ def load_model() -> None:
             return
         from FlagEmbedding import BGEM3FlagModel
 
-        _model = BGEM3FlagModel(EMBED_MODEL, use_fp16=_resolve_fp16())
+        _model = BGEM3FlagModel(EMBED_MODEL, use_fp16=use_fp16())
 
 
 def is_loaded() -> bool:

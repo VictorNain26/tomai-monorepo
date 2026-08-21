@@ -22,7 +22,7 @@ observabilité.
 |---|---|---|
 | A0 | Remise à niveau doc + mémoire | ✅ fait le 2026-08-21 (`9521c0b`) |
 | A0bis | Contrat de périmètre (ADR 0002) + mesures de référence | ✅ fait le 2026-08-21 |
-| A1 | Observabilité : Sentry Python + logs structurés | à faire |
+| A1 | Observabilité : Sentry Python + logs structurés | ✅ fait le 2026-08-21 |
 | A2 | Baseline de charge reproductible | à faire |
 | A3 | Concurrence et dimensionnement, décidés sur A2 | à faire |
 | A4 | Montée de versions sous garde-fou | à faire |
@@ -77,6 +77,41 @@ Contenu :
 
 Critère de fin : sur une charge concurrente locale, les logs permettent de
 retrouver le tableau de sérialisation de l'ADR 0002 sans instrumentation externe.
+
+### Résultat — les quatre critères sont tenus
+
+1. **Reconstitution depuis les logs seuls** : oui. Rafale de 8 requêtes
+   simultanées, lue dans `docker logs` sans aucun outil externe —
+   `lock_wait_ms` 0 → 2 756 ms (linéaire), `inference_ms` 450 → 404 ms
+   (plate, amplitude 84 ms).
+2. **Budget de latence** : p50 595 ms contre 577 ms, soit **+3,1 %** — sous
+   les 5 % (seuil 606 ms).
+3. **Erreur observable sans fuite** : `status: "error"` + `error_type`, jamais
+   le message d'exception ni le texte. La réponse HTTP est un 500 opaque.
+4. **Test anti-fuite** : deux tests, chemin nominal et chemin d'erreur.
+
+25 tests au vert (13 nouveaux), écrits **avant** l'implémentation et vus
+échouer pour la bonne raison.
+
+### Ce que A1 a déjà appris, et qui oriente A3
+
+Le discriminant est tranché : **sous charge, le temps supplémentaire part
+intégralement en file d'attente, jamais en inférence**. L'inférence est plate
+à ~395 ms quel que soit le nombre de requêtes simultanées.
+
+Conséquence pour A3 : le problème est le **débit**, pas le CPU. Le
+micro-batching et la réplication sont les bons leviers ; FP16 et une instance
+plus puissante ne répondraient pas au bon problème. A2 reste nécessaire pour
+mesurer cela sur l'instance réelle, mais la direction n'est plus une
+supposition.
+
+### Trou trouvé et bouché pendant le lot
+
+`emit_record` écrivait sur un logger applicatif en INFO. Uvicorn n'appelle pas
+`basicConfig` : sans handler attaché, l'enregistrement était construit,
+sérialisé, puis silencieusement jeté. Les tests qui interceptaient `emit_record`
+ne pouvaient pas le voir. Un test dédié (`test_emitted_record_actually_reaches_the_log_stream`)
+capture désormais la sortie réelle.
 
 **Action hors code, pour Victor :** provisionner le DSN. Recommandation — un
 projet Sentry dédié `tomai-ai-service` plutôt que la réutilisation de celui du

@@ -39,6 +39,12 @@ def is_production() -> bool:
     return ENVIRONMENT == "production"
 
 
+def use_fp16() -> bool:
+    """FP16 résolu en booléen. Opt-in explicite, jamais de détection auto :
+    sur CPU le comportement doit être déterministe."""
+    return USE_FP16 in ("true", "1", "yes")
+
+
 def validate_config() -> None:
     """Fail-fast au boot : en production, refuse de démarrer sans API_TOKEN.
 

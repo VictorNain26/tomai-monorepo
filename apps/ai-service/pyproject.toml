@@ -20,6 +20,8 @@ dependencies = [
     # la wheel PyPI par défaut embarque ~6 Go de CUDA inutiles sur Koyeb eco-large.
     "torch>=2.5",
     "numpy>=1.26",
+    # Remontée d'erreurs — région EU, aucun PII (le service n'en reçoit pas).
+    "sentry-sdk[fastapi]>=2.68",
 ]
 
 [dependency-groups]

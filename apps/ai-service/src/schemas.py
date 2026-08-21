@@ -44,3 +44,4 @@ class HealthResponse(BaseModel):
     status: str
     embed_model: str
     embed_loaded: bool
+    use_fp16: bool = Field(..., description="Précision réellement active sur l'instance déployée.")
