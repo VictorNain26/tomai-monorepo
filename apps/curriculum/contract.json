@@ -60,5 +60,24 @@
     "nsi",
     "hggsp",
     "hlp"
+  ],
+  "matieres_indexees": [
+    "allemand",
+    "anglais",
+    "arts_plastiques",
+    "education_musicale",
+    "emc",
+    "eps",
+    "espagnol",
+    "francais",
+    "histoire_des_arts",
+    "histoire_geo",
+    "italien",
+    "langues_vivantes",
+    "mathematiques",
+    "physique_chimie",
+    "sciences_technologie",
+    "svt",
+    "technologie"
   ]
 }

@@ -15,7 +15,10 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build", "^build:types"],
+      "dependsOn": [
+        "^build",
+        "^build:types"
+      ],
       "inputs": [
         "$TURBO_DEFAULT$",
         ".env.production",
@@ -29,11 +32,19 @@
         "dist/**",
         "build/**"
       ],
-      "env": ["NEXT_RUNTIME", "VERCEL_ENV", "SENTRY_AUTH_TOKEN"]
+      "env": [
+        "NEXT_RUNTIME",
+        "VERCEL_ENV",
+        "SENTRY_AUTH_TOKEN"
+      ]
     },
     "build:types": {
-      "dependsOn": ["^build:types"],
-      "outputs": ["dist/types/**"]
+      "dependsOn": [
+        "^build:types"
+      ],
+      "outputs": [
+        "dist/types/**"
+      ]
     },
     "dev": {
       "cache": false,
@@ -55,7 +66,10 @@
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^typecheck", "^build:types"],
+      "dependsOn": [
+        "^typecheck",
+        "^build:types"
+      ],
       "inputs": [
         "$TURBO_DEFAULT$",
         "tsconfig.json",
@@ -82,11 +96,20 @@
         "jest.config.*",
         "__tests__/**",
         "**/*.test.ts",
-        "**/*.test.tsx"
+        "**/*.test.tsx",
+        "../curriculum/contract.json"
       ],
-      "outputs": ["coverage/**"],
-      "env": ["NODE_ENV", "CI"],
-      "passThroughEnv": ["DATABASE_URL", "BETTER_AUTH_SECRET"]
+      "outputs": [
+        "coverage/**"
+      ],
+      "env": [
+        "NODE_ENV",
+        "CI"
+      ],
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET"
+      ]
     }
   }
 }
