@@ -3,9 +3,10 @@
 Service HTTP Python qui sert **BGE-M3 (dense + sparse natif)** pour le
 backend Tom RAG.
 
-> **Périmètre : `docs/adr/0002-ai-service-scope.md`.** Le service vectorise du
-> texte, et rien d'autre : sans état, agnostique du domaine, sans dépendance
-> sortante. Avant d'ajouter quoi que ce soit ici, lire l'ADR.
+> **`docs/adr/0002-ai-service-scope.md`** décrit comment le service fonctionne
+> et donne les quatre questions à poser avant d'y ajouter quoi que ce soit.
+> Elles portent sur le *quoi* ; le *comment* — batching, précision, concurrence,
+> observabilité — reste ouvert et se tranche ici.
 
 ## Pourquoi ce service existe
 
@@ -200,27 +201,18 @@ service déterministe à un service économe mais variable.
 
 ## Rerank — pourquoi il n'y en a pas
 
-Question tranchée le 2026-07-01, sur mesure et non sur préférence. Le
-raisonnement complet, pour éviter de rouvrir le sujet sur de mauvaises bases :
+Tranché le 2026-07-01 **sur mesure, pas sur préférence** : `bge-reranker-v2-m3`
+était le meilleur candidat (Apache 2.0, MIRACL 69,32) et il n'a pas été écarté
+pour son origine. Il est tombé sur la latence CPU mesurée — 43 à 180 s pour
+20 candidats, contre un timeout client de quelques secondes. En production, il
+aurait timeouté systématiquement : coût pur, zéro effet.
 
-- Le meilleur modèle candidat était **`bge-reranker-v2-m3`** (Apache 2.0,
-  MIRACL 69,32 en multilingue, le plus léger des trois évalués). Il n'a
-  **pas** été écarté pour son origine : des poids self-hostés n'exfiltrent
-  aucune donnée.
-- Il a été écarté sur la **latence CPU mesurée** : 43 à 180 s pour 20
-  candidats sur l'instance de test (2026-06-25), contre un
-  `AI_SERVICE_TIMEOUT_MS` de quelques secondes côté backend. En production
-  CPU, le rerank aurait timeouté systématiquement — coût pur, zéro effet.
-- Les alternatives managées sont exclues pour la souveraineté des **données** :
-  Jina appartient à Elastic (US, CLOUD Act), Cohere est US, le « rerank »
-  Scaleway est une similarité cosinus d'embeddings et non un cross-encoder,
-  et ni OVH ni Mistral n'exposent de reranker.
-- Sur ce corpus (quelques milliers de chunks, hybrid tuné, top-k 5), la
-  littérature 2026 ne montre pas de rentabilité au rerank.
+Rouvrir suppose donc de résoudre **la latence** d'abord (ONNX/INT8 généré à la
+main, ou GPU à Tensor Cores), puis de mesurer le gain réel sur le golden set.
+Pas de rediscuter la licence ni l'origine du modèle.
 
-Rouvrir le sujet suppose donc de résoudre d'abord **la latence** — ONNX/INT8
-généré à la main (bge-reranker-v2-m3 n'a pas d'ONNX publié) ou GPU à Tensor
-Cores — pas de rediscuter la licence ou l'origine du modèle.
+Raisonnement complet, alternatives managées comprises :
+`apps/curriculum/docs/ARCHITECTURE.md` §Recommandations backend.
 
 ## Déploiement Koyeb
 

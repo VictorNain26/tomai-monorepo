@@ -1,186 +1,181 @@
-# ADR 0002 — Périmètre de `apps/ai-service` : vectoriser du texte, rien d'autre
+# ADR 0002 — Ce que fait `apps/ai-service`, et comment savoir si une idée y a sa place
 
-- **Statut** : Accepté
+- **Statut** : Accepté, amendé le 2026-08-21
 - **Date** : 2026-08-21
 - **Décideur** : Victor (tech lead)
-- **Portée** : responsabilités et frontières du service Python `apps/ai-service`
+- **Portée** : raison d'être et frontières du service Python `apps/ai-service`
 
-## Contexte
+## Pourquoi ce service existe
 
-`apps/ai-service` a été monté pour une raison unique et étroite : le sparse
-appris de BGE-M3 (`lexical_weights`) n'est exposé que par la lib Python
-officielle BAAI `FlagEmbedding`, sans équivalent TS/Node (audit mai 2026 :
-TEI sert un SPLADE différent, Infinity et Xinference ne l'exposent pas). Le
-backend Bun ne pouvait donc pas produire lui-même un vecteur creux cohérent
-avec l'index.
+Le hybrid search de Qdrant a besoin, pour chaque question d'élève, d'un vecteur
+**dense** et d'un vecteur **creux** produits par le même modèle que l'index.
+BGE-M3 sait faire les deux en un seul passage, mais son sparse appris
+(`lexical_weights`) n'est exposé que par la lib Python officielle BAAI
+`FlagEmbedding`. Aucun équivalent TS/Node ne le reproduit — TEI sert un SPLADE
+différent, Infinity et Xinference ne l'exposent pas (audit mai 2026).
 
-C'est un **pont de runtime**, pas un service métier. Mais un service qui
-existe attire du travail : au premier semestre 2026, un endpoint `/rerank`
-y avait été ajouté, puis retiré le 2026-07-01 faute de tenir la latence.
-Sans frontière écrite, le même glissement se reproduira — et c'est
-précisément le risque au moment d'ouvrir un chantier de consolidation.
+Le backend Bun ne pouvait donc pas produire lui-même un vecteur cohérent avec
+l'index. D'où un service Python, minimal, dont c'est l'unique justification.
 
-Cet ADR fige la frontière avant que le code ne soit modifié.
+C'est un **pont de runtime**, pas un service métier. Cette distinction porte
+tout le reste de l'ADR.
 
-## Décision
+## Comment il marche
 
-> **`apps/ai-service` transforme du texte en vecteurs BGE-M3 (dense + sparse
-> appris). Il est sans état, agnostique du domaine, et ne parle à aucun autre
-> service.**
+Un seul chemin, quatre étapes.
 
-Toute évolution qui viole une de ces quatre propriétés sort du périmètre et
-appartient à `apps/server` (runtime produit) ou `apps/curriculum` (pipeline
-de données).
+```
+POST /embed  { "texts": [...] }
+   │
+   ├─ 1. Authentification de service
+   │     Bearer partagé, comparaison constant-time. Pas d'identité
+   │     utilisateur — le service ne sait pas qui pose la question.
+   │
+   ├─ 2. Mise en file
+   │     Un verrou global sérialise l'inférence : BGEM3FlagModel n'est pas
+   │     documenté thread-safe. L'attente est mesurée séparément du calcul,
+   │     parce que les deux appellent des réponses opposées (§Ce qu'on sait).
+   │
+   ├─ 3. Inférence, hors de l'event loop
+   │     run_in_threadpool → BGE-M3 → dense_vecs + lexical_weights,
+   │     un seul forward pass pour les deux.
+   │
+   └─ 4. Traduction
+         lexical_weights {token_id: poids} → {indices[], values[]}
+         C'est la représentation générique d'un vecteur creux ; le nom du
+         vecteur nommé côté index (`bm25`) n'apparaît pas ici.
 
-### Dans le périmètre
+GET /health  → modèle chargé, identité du modèle, précision (FP16 ou non)
+```
 
-| Responsabilité | Pourquoi elle est ici |
-|---|---|
-| Charger et détenir le modèle BGE-M3 | C'est la raison d'être du service |
-| Produire `dense` (1024D, L2-normé) + `sparse` (`{indices, values}`) | Le contrat de sortie |
-| Politique de concurrence et de batching | Propriété du processus qui détient le modèle |
-| Cycle de vie : préchargement au boot, readiness | Personne d'autre ne peut l'observer |
-| Authentification **de service** (bearer partagé) | Protège l'endpoint, sans notion d'utilisateur |
-| Observabilité de son propre travail | Un service non instrumenté n'est pas exploitable |
+Le modèle est préchargé au démarrage (`lifespan`), avant qu'uvicorn n'accepte
+la première connexion. Conséquence utile : le port ne s'ouvre qu'une fois le
+service réellement prêt, et un healthcheck qui répond est un healthcheck qui
+dit vrai.
 
-### Hors périmètre — et pourquoi
+## La frontière, et comment l'appliquer
 
-| Interdit | Raison | Propriétaire réel |
+> **Le service transforme du texte en vecteurs. Il ne sait rien du produit
+> qu'il sert.**
+
+Plutôt qu'une liste d'interdits — forcément incomplète, et qui vieillit mal —
+voici les **quatre questions** à poser à toute idée qui voudrait entrer ici.
+Une seule réponse « oui » suffit à la faire sortir du périmètre.
+
+| Question | Si oui, alors… | Va plutôt dans |
 |---|---|---|
-| Accès à Qdrant (lecture ou écriture) | Le service produit des vecteurs, il ne les range pas. Y toucher le rendrait dépendant du schéma de payload. | `apps/server`, `apps/curriculum` |
-| Logique de recherche : fusion, filtres, seuils, top-k | Le service ne sait pas ce qu'est une recherche. | `rag.service.ts` |
-| Chunking, préfixe contextuel, extraction PDF | Il reçoit du texte déjà découpé et déjà préfixé. | `apps/curriculum` |
-| Tout appel à un LLM : génération, rerank, classification | Le service ne génère rien. C'est exactement ce qui a été retiré en juillet. | `apps/server` |
-| Connaissance du domaine scolaire : matière, niveau, cycle, chunk | Il embedde du texte, point. | partout ailleurs |
-| Identité utilisateur, quotas, RGPD, données élève | Il porte un bearer de service, pas une identité. | `apps/server` |
-| Persistance, cache applicatif, file d'attente | Sans état par construction : toute mémoire le rendrait non remplaçable. | — |
+| Est-ce que ça garde un état entre deux requêtes ? | le service cesse d'être remplaçable et redéployable à chaud | `apps/server` |
+| Est-ce que ça a besoin de connaître le domaine scolaire — une matière, un niveau, un chunk, un élève ? | le service devient couplé au produit et suit ses évolutions | `apps/server`, `apps/curriculum` |
+| Est-ce que **produire la réponse** dépend d'un appel sortant ? | le service hérite de la disponibilité d'un tiers sur son chemin critique | `apps/server` |
+| Est-ce que ça fait autre chose que vectoriser — ranger, chercher, générer, juger ? | ce n'est plus un pont, c'est un service métier | selon le cas |
 
-### Conséquence directe sur l'observabilité
+**Ce que ces questions laissent volontairement ouvert** : tout ce qui concerne
+*comment* le service vectorise. Batching, quantification, précision, format de
+sortie, politique de concurrence, choix de modèle, manière de s'observer — ce
+sont des questions internes, et les trancher est précisément le travail du
+service. La frontière protège le *quoi*, pas le *comment*.
 
-Puisque aucune donnée personnelle ne peut légitimement atteindre ce service,
-son instrumentation n'a **aucun scrubbing PII à faire** — contrairement à
-`apps/server`. Le seul contenu sensible qui transite est le texte de la
-requête élève au moment de l'embed de query : il ne doit donc **jamais** être
-attaché à une trace, un log ou un événement d'erreur. Longueurs, comptes,
-durées et codes d'erreur uniquement.
+### Deux cas qui ont déjà servi de test
 
-C'est une frontière plus simple à tenir qu'un scrubbing, et elle découle du
-périmètre plutôt que d'une règle ajoutée.
+**`/rerank`, ajouté puis retiré en juillet 2026.** Quatrième question : reranker
+n'est pas vectoriser, c'est juger une pertinence. Le périmètre l'aurait
+signalé ; c'est la latence mesurée (43 à 180 s pour 20 candidats) qui a
+tranché. Les deux allaient dans le même sens.
 
-## État vérifié au 2026-08-21
+**Un exporteur de télémétrie, refusé puis accepté le même jour.** J'ai d'abord
+invoqué « aucune dépendance sortante » — troisième question. Mais elle
+demande si *produire la réponse* en dépend, et un export est asynchrone,
+par lots, hors du chemin critique : une destination injoignable n'empêche pas
+`/embed` de répondre. La réponse était donc non, et le refus était une
+sur-application de la règle.
 
-Le périmètre décrit ci-dessus n'est pas un objectif : c'est l'état réel, mesuré
-et vérifié avant rédaction.
+C'est la raison de la formulation actuelle : une liste d'interdits invite à
+chercher si l'idée y figure ; une question invite à comprendre pourquoi.
 
-**Agnosticité du domaine** — recherche de `matiere|niveau|cycle|qdrant|mistral|chunk|eleve|student|postgres|collection`
-sur `src/` : 5 occurrences, **toutes dans des commentaires ou docstrings**,
-zéro dans le code exécuté. Le seul couplage nominal restant est la mention
-« format Qdrant SparseVector » dans `schemas.py` et `embed.py` : `{indices,
-values}` est la représentation générique d'un vecteur creux, et le nom du
-named vector (`bm25`) vit côté serveur. Le couplage est cosmétique, pas
-structurel.
+## La seule règle qui ne se discute pas
 
-**Dépendances sortantes** — `fastapi`, `pydantic`, `anyio`, `FlagEmbedding`,
-`torch`, `numpy`, plus la stdlib. Aucun client base de données, aucun appel
-HTTP sortant. Le service est une fonction pure avec un modèle en mémoire.
+**Le texte reçu n'est attaché à aucun signal** — log, span, trace, ou événement
+d'erreur. Longueurs, comptes, durées, types d'erreur : oui. Contenu : jamais.
 
-**Surface d'API** — deux routes : `POST /embed`, `GET /health`. Un test de
-non-régression (`test_rerank_endpoint_is_gone`) garde `/rerank` fermé.
+Elle ne découle pas d'un principe d'architecture mais du produit : les textes
+qui passent ici sont des questions d'enfants. Aucune commodité d'exploitation
+ne la relativise. Deux tests la tiennent, sur le chemin nominal et sur le
+chemin d'erreur — c'est celui-là qui fuit d'habitude, en faisant remonter
+l'entrée dans le message d'exception.
 
-**Consommateurs** — deux, et seulement deux :
-`apps/server/src/services/ai-service.client.ts` (un texte à la fois, embed de
-query) et `apps/curriculum/src/clients/ai_service.py` (batch, ingestion).
+Corollaire agréable : puisque aucune identité utilisateur n'atteint ce service,
+son instrumentation n'a **aucun masquage à faire**. Une frontière est plus
+simple à tenir qu'un filtre.
 
-## Mesures de référence (2026-08-21)
+## Ce qu'on sait du service, mesuré
 
-Conteneur de dev `tomai-ai-service-dev` : **2 vCPU, 4 Go, FP32**, modèle en
-cache. Ce sont les premières mesures du service ; elles remplacent les
-estimations qui circulaient jusqu'ici.
+Conteneur de dev, 2 vCPU, 4 Go, FP32, modèle en cache. Premières mesures
+réelles ; elles remplacent des estimations qui circulaient sans source.
 
 | Grandeur | Mesure |
 |---|---|
-| Embed 1 texte, à chaud, p50 | **577 ms** (min 523, max 678, écart-type 59, n=12) |
+| Embed d'une query courte, à chaud | **577 ms** (p50, n=12) |
 | Premier appel après inactivité | ~3,5 s |
-| Débit maximum d'un conteneur | **~1,7 requête/s** |
-| Amortissement du batch | 454 ms/texte à n=1 → 166 à n=8 → **133 à n=32** (×3,4) |
+| Débit d'un conteneur | **~1,7 requête/s** |
+| Empreinte mémoire sous charge | **1,15 Gio** en FP32 |
+| Batch : 1 → 8 → 32 textes courts | 454 → 166 → 133 ms/texte |
+| Chunk long (~1 600 caractères) | ~3 s/texte — le temps croît avec la longueur |
 | Sortie | dense 1024D, norme L2 = 1,000000 ; sparse creux |
 
-**Sérialisation confirmée par la mesure.** Wall-clock en fonction du nombre de
-requêtes concurrentes, contre une baseline à chaud de 577 ms :
+**La sérialisation est prouvée, pas déduite.** Wall-clock selon la concurrence :
 
-| Concurrence | Wall-clock | Rapport au p50 | Latence max observée |
-|---|---|---|---|
-| 1 | 521 ms | 0,90 | 521 ms |
-| 2 | 1 153 ms | 2,00 | 1 152 ms |
-| 4 | 1 734 ms | 3,00 | 1 731 ms |
-| 8 | 3 245 ms | 5,62 | 3 237 ms |
+| Requêtes simultanées | 1 | 2 | 4 | 8 |
+|---|---|---|---|---|
+| Wall-clock | 521 ms | 1 153 ms | 1 734 ms | 3 245 ms |
 
-La croissance est linéaire et la requête la plus lente voit systématiquement
-une latence égale au wall-clock total : les appels font la queue. C'est
-l'effet combiné de `--workers 1` (Dockerfile) et du `anyio.Lock` global
-(`main.py`), ce dernier étant nécessaire car `BGEM3FlagModel` n'est pas
-documenté thread-safe.
+Croissance linéaire, et la requête la plus lente voit toujours une latence
+égale au wall-clock total : les appels font la queue.
 
-> Correction : l'audit du 2026-08-21 estimait « de l'ordre de la dizaine de
-> requêtes par seconde ». La mesure donne **1,7 req/s** sur 2 vCPU, soit un
-> ordre de grandeur d'écart. L'estimation était fausse.
+**Ce que ça dit, et c'est le plus utile** : sous charge, le temps supplémentaire
+part *intégralement* en attente, jamais en inférence — celle-ci reste plate
+autour de 395 ms. Le goulot est le **débit**, pas le CPU. Micro-batching et
+réplication répondent au bon problème ; FP16 et une instance plus puissante
+répondent au mauvais.
 
-## Amendement du 2026-08-21 — l'export de télémétrie est dans le périmètre
+> Deux estimations corrigées par ces mesures : l'audit annonçait « une dizaine
+> de requêtes/s » (c'est 1,7) et le README « ~3 Go de RAM » (c'est 1,15 Gio).
 
-> Cet ADR a servi, le jour même de sa rédaction, à refuser un exporteur
-> OpenTelemetry vers Langfuse au motif « aucune dépendance sortante ». **C'était
-> une sur-application de la règle**, et l'amendement le corrige explicitement
-> plutôt que de laisser une décision changer en silence.
+## État vérifié, pas déclaré
 
-La quatrième propriété — « ne parle à aucun autre service » — vise les
-dépendances **fonctionnelles** : celles sans lesquelles le service ne peut pas
-rendre son service. Un exporteur de télémétrie n'en est pas une :
+- **Agnosticité du domaine** — recherche de `matiere|niveau|cycle|qdrant|mistral|chunk|eleve|student|postgres|collection`
+  sur `src/` : 5 occurrences, **toutes en commentaire**, zéro dans le code
+  exécuté.
+- **Dépendances** — `fastapi`, `pydantic`, `anyio`, `FlagEmbedding`, `torch`,
+  `numpy`, plus la stdlib. Aucun client base, aucun appel HTTP sortant sur le
+  chemin de réponse.
+- **Surface** — deux routes, `POST /embed` et `GET /health`. Un test de
+  non-régression garde `/rerank` fermé.
+- **Consommateurs** — deux : `apps/server` (une query à la fois) et
+  `apps/curriculum` (batch, à l'ingestion).
 
-- il est **hors du chemin de réponse** : l'export est asynchrone et par lots,
-  une destination injoignable n'empêche pas `/embed` de répondre ;
-- il ne crée **aucun couplage de données** : aucun schéma partagé, aucun
-  contrat à maintenir avec un autre service du produit ;
-- le tableau « Dans le périmètre » listait déjà « observabilité de son propre
-  travail » — exporter ce qu'on observe en fait partie.
+## Quand rouvrir cet ADR
 
-Le besoin qui a fait bouger la ligne est concret : aujourd'hui, pour savoir
-pourquoi la question d'un élève a été lente, il faut lire les logs du conteneur
-sur la plateforme d'hébergement et les croiser à la main avec la trace du
-serveur. Deux systèmes, deux horloges, aucune corrélation. C'est un défaut
-d'exploitation réel, pas un confort.
+Il a déjà été amendé une fois, le jour de sa rédaction. C'est normal et ça
+doit rester possible. Trois situations le justifieraient :
 
-**Reste inchangé, et non négociable** : le texte embeddé n'est attaché à aucun
-signal — log, span ou erreur. Un exporteur élargit la destination, jamais le
-contenu.
-
-**Reste interdit** : tout appel sortant dont dépend la production du résultat
-(base, index, LLM, service tiers). La distinction est là : le service peut
-*raconter* ce qu'il fait, il ne peut pas *demander de l'aide* pour le faire.
-
-## Conséquences
-
-1. **Le levier de débit est la réplication ou le micro-batching**, jamais
-   l'augmentation des workers dans un conteneur : chaque worker rechargerait
-   2,4 Go de modèle dans 4 Go de RAM.
-2. Le batch amortit d'un facteur 3,4. Un micro-batching qui regrouperait les
-   requêtes concurrentes en un seul forward pass est donc le gain le plus
-   important disponible — et il reste dans le périmètre, puisque la politique
-   de batching appartient au processus qui détient le modèle.
-3. Toute proposition d'ajout au service se teste contre les quatre propriétés
-   de la décision. Si elle en casse une, elle est refusée ou déplacée.
-4. Cet ADR est le garde-fou du chantier de consolidation en cours
-   (`docs/superpowers/plans/2026-08-21-ai-service-consolidation.md`).
+- **Un consommateur tiers apparaît.** Le contrat de sortie devient public et
+  mérite un versionnage explicite.
+- **Le modèle change.** Le service existe pour le sparse appris de BGE-M3 ; si
+  un embedder plus adapté émerge — ou si un serveur mature expose enfin ce
+  sparse — la raison d'être change et l'ADR avec.
+- **Une des quatre questions gêne une évolution manifestement saine.** C'est le
+  signal que la question est mal formulée, pas que l'évolution est mauvaise.
+  L'épisode de l'exporteur en est l'exemple : la règle avait raison sur le
+  principe et tort sur ce cas.
 
 ## Alternatives écartées
 
-- **Remplacer le service par TEI (HuggingFace)** : TEI apporte le dynamic
-  batching et la maintenance, mais sert un SPLADE différent du sparse appris
-  BGE-M3 — il ne produit pas le vecteur attendu par l'index. Il n'a pas non
-  plus d'authentification native, alors que le service actuel porte un bearer.
-- **Réintégrer l'embedding dans `apps/server`** : impossible, c'est la raison
-  d'être du service (pas d'implémentation TS du sparse appris).
-- **Élargir le service à un « service IA » généraliste** (rerank, génération,
-  OCR) : c'est le glissement que cet ADR interdit. Chaque ajout couple un
-  cycle de vie de modèle supplémentaire au chemin chaud du RAG, et l'épisode
-  `/rerank` a montré le coût — 2 Go de RAM et une latence inexploitable pour
-  zéro effet en production.
+- **TEI (HuggingFace)** — apporte le dynamic batching et la maintenance, mais
+  sert un SPLADE différent du sparse appris BGE-M3 : il ne produit pas le
+  vecteur attendu par l'index. Pas d'authentification native non plus.
+- **Réintégrer l'embedding dans `apps/server`** — impossible, c'est la raison
+  d'être du service.
+- **En faire un « service IA » généraliste** (rerank, génération, OCR) — chaque
+  ajout couple un cycle de vie de modèle supplémentaire au chemin chaud du RAG.
+  L'épisode `/rerank` en a montré le coût : 2 Go de RAM et une latence
+  inexploitable, pour zéro effet en production.

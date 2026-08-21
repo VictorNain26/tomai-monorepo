@@ -1,9 +1,9 @@
 # Consolidation `apps/ai-service` — plan phasé
 
-> **Périmètre gardé par `docs/adr/0002-ai-service-scope.md`.** Toute tâche de ce
-> plan se teste contre les quatre propriétés de l'ADR — sans état, agnostique du
-> domaine, sans dépendance sortante, vectorisation seule. Une tâche qui en casse
-> une sort du plan, elle ne le fait pas évoluer.
+> **Périmètre : `docs/adr/0002-ai-service-scope.md`.** Chaque tâche se teste
+> contre les quatre questions de l'ADR. Elles portent sur *ce que fait* le
+> service ; tout ce qui touche à *comment* il le fait — concurrence, précision,
+> batching, observabilité — est ouvert, et c'est précisément l'objet de ce lot.
 
 **But :** rendre le service **observable, mesuré et dimensionné**, sans élargir
 d'un pouce ce qu'il fait. Aucune fonctionnalité nouvelle.

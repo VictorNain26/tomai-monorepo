@@ -60,10 +60,11 @@ Langfuse : `@langfuse/vercel-ai-sdk` + enregistrement du span processor.
 
 ## L2 — ai-service
 
-Autorisé par l'**amendement du 2026-08-21 à l'ADR 0002** : un exporteur de
-télémétrie est hors du chemin de réponse, ne crée aucun couplage de données, et
-« l'observabilité de son propre travail » était déjà listée dans le périmètre.
-Le refus initial était une sur-application de la règle.
+Dans le périmètre : la troisième question de l'ADR 0002 demande si *produire la
+réponse* dépend d'un appel sortant. Un export est asynchrone et par lots — une
+destination injoignable n'empêche pas `/embed` de répondre. La réponse est non.
+Le refus initial était une sur-application de la règle, et l'ADR le documente
+comme cas d'école.
 
 - `opentelemetry-sdk` + exporteur OTLP HTTP vers l'endpoint Langfuse.
 - Un span par `/embed`, portant **exactement les champs déjà mesurés** par
