@@ -23,7 +23,7 @@ observabilité.
 | A0 | Remise à niveau doc + mémoire | ✅ fait le 2026-08-21 (`9521c0b`) |
 | A0bis | Contrat de périmètre (ADR 0002) + mesures de référence | ✅ fait le 2026-08-21 |
 | A1 | Observabilité : Sentry Python + logs structurés | ✅ fait le 2026-08-21 |
-| A2 | Baseline de charge reproductible | à faire |
+| A2 | Baseline de charge reproductible | 🔴 **bloqué** — aucune instance déployée |
 | A3 | Concurrence et dimensionnement, décidés sur A2 | à faire |
 | A4 | Montée de versions sous garde-fou | à faire |
 
@@ -118,7 +118,21 @@ projet Sentry dédié `tomai-ai-service` plutôt que la réutilisation de celui 
 serveur : volumes, quotas et destinataires d'alerte différents. Le code est
 identique dans les deux cas.
 
-## A2 — Baseline de charge
+## A2 — Baseline de charge · BLOQUÉ
+
+> **Vérifié le 2026-08-21 : il n'y a pas d'instance à mesurer.**
+> `https://tomai-ai-service-tomia-fd296bf5.koyeb.app/health` renvoie la page
+> Koyeb « No active service ». `https://api.tomia.fr/health` renvoie 404. Le
+> cluster Qdrant Cloud référencé répond 404 sur toutes ses routes, y compris
+> `/` — son ID est inconnu de l'ingress, donc il est supprimé. La collection
+> locale existe avec le bon schéma mais contient **0 point**.
+>
+> Le CI le signalait : `smoke-test.yml` pingue `api.tomia.fr` à chaque push sur
+> main et n'a **jamais réussi sur les 60 derniers runs, depuis le 2026-06-13**.
+>
+> A2 ne peut pas démarrer avant une remise en route de l'infrastructure, qui
+> est un chantier d'ops distinct de ce lot. La baseline sur conteneur local
+> (2 vCPU, cf. ADR 0002) reste valide et suffit à orienter A3.
 
 **Objectif :** un chiffre reproductible, sur l'instance réelle, pas sur un
 conteneur de dev.
