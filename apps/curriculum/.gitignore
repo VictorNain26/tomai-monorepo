@@ -79,3 +79,4 @@ data/raw/*.pdf
 
 # Eval runs historiques (résultats horodatés)
 eval_runs/
+runs/

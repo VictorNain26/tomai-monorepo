@@ -400,6 +400,54 @@ couche `qdrant.service.ts` + `rag.service.ts`. **Contrats critiques** :
   dédié (cf. §Recommandations backend).
 - **Nom de collection** partagé via variable d'env `QDRANT_COLLECTION`.
 
+## Réindexation vérifiée (2026-08-21)
+
+Le cluster Qdrant Cloud précédent avait été supprimé par la politique
+d'inactivité du free tier. Après recréation et réingestion complète, la
+mesure confirme que la restauration est **fidèle et non approximative**.
+
+| | benchmark 2026-05-23 | après réindexation | écart |
+|---|---|---|---|
+| hit_rate@5 | 0,894 | **0,894** | 0,000 |
+| MRR@5 | 0,739 | **0,737** | −0,002 |
+| nDCG@5 | — | **0,777** | nouvelle métrique |
+
+Les cinq matières citées dans le benchmark de mai sont reproduites **au
+millième près** : allemand 0,933, espagnol 0,714, italien 0,625, anglais 0,750,
+arts plastiques 0,923.
+
+Volumétrie : 5 266 points envoyés, **5 238 comptés**. L'écart de 28 est
+l'idempotence à l'œuvre — les IDs étant `uuid5(matière:niveau:texte)`, des
+textes strictement identiques dans le même couple matière/niveau partagent un
+ID et s'écrasent.
+
+### Détail par matière — ce que le benchmark de mai ne montrait pas
+
+| Parfaites (1,000) | Faibles |
+|---|---|
+| mathematiques, histoire_geo, physique_chimie, svt, eps, education_musicale | technologie 0,667 · italien 0,625 · espagnol 0,714 · anglais 0,750 |
+
+`sciences_technologie` affiche 0,750 sur **4 questions seulement** — trop peu
+pour conclure. La régression « technologie » signalée en mai est confirmée.
+
+**Constat qui déborde sur le backend** : `histoire_geo` et `physique_chimie`
+obtiennent un retrieval **parfait**. Ce sont pourtant les deux matières que
+l'agent ne peut pas atteindre, puisqu'il demande `histoire`, `geographie` et
+`physique-chimie` (constat P0-1). L'index est irréprochable et le contrat de
+l'agent jette le résultat.
+
+Baseline de référence sauvegardée pour les comparaisons futures — RRF contre
+DBSF, IDF activé ou non, taille de chunk :
+
+```bash
+uv run python scripts/evaluate.py --fusion dbsf --save-run runs/dbsf.json
+uv run python scripts/evaluate.py --compare runs/rrf-2026-08-21.json runs/dbsf.json
+```
+
+La seconde commande dit si l'écart est **statistiquement significatif**
+(randomisation de Fisher, p < 0,05) — c'est ce qui manquait pour trancher ces
+A/B sans conclure sur du bruit.
+
 ## Décision benchmark embedder (2026-05-23)
 
 Trois configurations mesurées sur 189 questions document-grounded
