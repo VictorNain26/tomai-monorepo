@@ -51,7 +51,11 @@ export function loadConfig({
   const env = (key) => processEnv[key] ?? serverEnv[key];
 
   return {
-    qdrantUrl:       env('QDRANT_URL')         ?? 'http://localhost:6333',
+    // Pas de repli localhost : l'index curriculum vit sur Qdrant Cloud, seule
+    // source de vérité (dev comme prod). Un défaut ferait passer une config
+    // absente pour un service joignable, et le RAG répondrait « rien trouvé »
+    // au lieu d'échouer franchement.
+    qdrantUrl:       env('QDRANT_URL'),
     aiServiceUrl:    env('AI_SERVICE_URL')      ?? 'http://localhost:8001',
     aiServiceToken:  env('AI_SERVICE_TOKEN'),
     serverUrl:       env('SERVER_HEALTH_URL')    ?? 'http://localhost:3000',
@@ -112,7 +116,9 @@ export function defaultExec(cmd, args) {
 
 // ─── Check implementations ───────────────────────────────────────────────────
 
-const REQUIRED_SERVICES = ['postgres', 'qdrant', 'ai-service'];
+// Services attendus dans `docker compose ps`. Qdrant n'en fait plus partie :
+// l'index est hébergé sur Qdrant Cloud, il n'y a plus de conteneur local.
+const REQUIRED_SERVICES = ['postgres', 'ai-service'];
 
 function checkDockerDaemon(ctx) {
   return { name: 'docker daemon', run: async () => {
@@ -138,7 +144,20 @@ function checkContainers(ctx) {
 
 function checkQdrantHealthz(ctx) {
   return { name: 'qdrant /healthz', run: async () => {
-    const url = `${ctx.config.qdrantUrl}/healthz`;
+    const { qdrantUrl, qdrantApiKey } = ctx.config;
+    if (!qdrantUrl) {
+      throw new Error(
+        "QDRANT_URL absente d'apps/server/.env — l'index vit sur Qdrant Cloud, " +
+        'il n\'y a pas de repli local. Voir apps/server/.env.example.',
+      );
+    }
+    if (qdrantUrl.startsWith('https://') && !qdrantApiKey) {
+      throw new Error(
+        'QDRANT_API_KEY absente alors que QDRANT_URL pointe sur Qdrant Cloud — ' +
+        'le cluster refusera chaque requête.',
+      );
+    }
+    const url = `${qdrantUrl}/healthz`;
     let res;
     try {
       // Qdrant Cloud secures /healthz once an API key is set: an unauthenticated

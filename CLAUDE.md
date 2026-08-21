@@ -12,7 +12,13 @@ pnpm seed                         # Seed DB : comptes parent + élève (dev-only
 pnpm doctor:e2e                   # Diagnostic strict : chaque dépendance réelle doit répondre (SKIP/degraded = échec)
 ```
 
-Backend nécessite Docker : `cd apps/server && docker compose up -d`
+Backend nécessite Docker : `docker compose up -d` (postgres + ai-service).
+
+**Qdrant Cloud est obligatoire pour démarrer.** L'index curriculum n'a pas de
+repli local : `QDRANT_URL` et `QDRANT_API_KEY` doivent être dans
+`apps/server/.env` et `apps/curriculum/.env`, sinon `pnpm doctor` échoue avec un
+message explicite. Un index local partiel ferait passer un RAG cassé pour un RAG
+qui marche — c'est arrivé.
 
 ## Stack
 

@@ -4,8 +4,8 @@ import { runChecks, loadConfig, buildChecks } from './doctor-checks.mjs';
 
 const CFG = { qdrantUrl: 'http://q:6333', qdrantApiKey: '', aiServiceUrl: 'http://ai:8001', aiServiceToken: 't', serverUrl: 'http://s:3000' };
 
-function ctxWith({ exec, fetchFn }) {
-  return { config: CFG, exec: exec ?? (() => ({ ok: true, stdout: '' })), fetchFn: fetchFn ?? (async () => ({ ok: true, status: 200, json: async () => ({}) })) };
+function ctxWith({ exec, fetchFn, config }) {
+  return { config: config ?? CFG, exec: exec ?? (() => ({ ok: true, stdout: '' })), fetchFn: fetchFn ?? (async () => ({ ok: true, status: 200, json: async () => ({}) })) };
 }
 function byName(checks, name) { return checks.find((c) => c.name.includes(name)); }
 
@@ -46,11 +46,24 @@ test('runChecks: un SKIP est visible et ne compte pas comme FAIL', async () => {
   assert.ok(lines.some((l) => l.includes('SKIP') && l.includes('server non lancé')));
 });
 
-test('loadConfig: défauts localhost quand rien fourni', () => {
+test('loadConfig: pas de repli localhost pour Qdrant — le Cloud est obligatoire', () => {
   const cfg = loadConfig({ processEnv: {}, readEnvFile: () => ({}) });
-  assert.equal(cfg.qdrantUrl, 'http://localhost:6333');
+  assert.equal(cfg.qdrantUrl, undefined,
+    'un repli localhost laisserait croire que le RAG marche alors qu il pointe sur un index vide');
+  // Les services conteneurisés gardent leur défaut : eux tournent bien en local.
   assert.equal(cfg.aiServiceUrl, 'http://localhost:8001');
   assert.equal(cfg.serverUrl, 'http://localhost:3000');
+});
+
+test('check qdrant: FAIL explicite si QDRANT_URL absente', async () => {
+  const checks = buildChecks(ctxWith({ config: { ...CFG, qdrantUrl: undefined } }), { full: false });
+  await assert.rejects(byName(checks, 'qdrant').run(), /QDRANT_URL/);
+});
+
+test('check qdrant: FAIL explicite si la clé manque sur une URL Cloud', async () => {
+  const cloud = { ...CFG, qdrantUrl: 'https://xxx.cloud.qdrant.io', qdrantApiKey: '' };
+  const checks = buildChecks(ctxWith({ config: cloud }), { full: false });
+  await assert.rejects(byName(checks, 'qdrant').run(), /QDRANT_API_KEY/);
 });
 
 test('loadConfig: .env server prioritaire sur défaut, processEnv prioritaire sur .env', () => {
@@ -62,23 +75,28 @@ test('loadConfig: .env server prioritaire sur défaut, processEnv prioritaire su
   assert.equal(cfg.aiServiceToken, 'from-shell');
 });
 
-test('check conteneurs: FAIL si qdrant absent du ps', async () => {
+test('check conteneurs: qdrant n est plus attendu en local', async () => {
   const psJson = ['{"Service":"postgres","Health":"healthy","State":"running"}',
                   '{"Service":"ai-service","Health":"healthy","State":"running"}'].join('\n');
   const checks = buildChecks(ctxWith({ exec: () => ({ ok: true, stdout: psJson }) }), { full: false });
-  await assert.rejects(byName(checks, 'conteneurs').run(), /qdrant/);
+  await byName(checks, 'conteneurs').run(); // ne lève pas : l index vit sur le Cloud
+});
+
+test('check conteneurs: FAIL si ai-service absent', async () => {
+  const psJson = ['{"Service":"postgres","Health":"healthy","State":"running"}'].join('\n');
+  const checks = buildChecks(ctxWith({ exec: () => ({ ok: true, stdout: psJson }) }), { full: false });
+  await assert.rejects(byName(checks, 'conteneurs').run(), /ai-service/);
 });
 
 test('check conteneurs: FAIL si un service non healthy', async () => {
   const psJson = ['{"Service":"postgres","Health":"starting","State":"running"}',
-                  '{"Service":"qdrant","Health":"healthy","State":"running"}',
                   '{"Service":"ai-service","Health":"healthy","State":"running"}'].join('\n');
   const checks = buildChecks(ctxWith({ exec: () => ({ ok: true, stdout: psJson }) }), { full: false });
   await assert.rejects(byName(checks, 'conteneurs').run(), /postgres/);
 });
 
-test('check conteneurs: PASS si les 3 healthy', async () => {
-  const psJson = ['postgres','qdrant','ai-service'].map((s) => `{"Service":"${s}","Health":"healthy","State":"running"}`).join('\n');
+test('check conteneurs: PASS si les 2 healthy', async () => {
+  const psJson = ['postgres','ai-service'].map((s) => `{"Service":"${s}","Health":"healthy","State":"running"}`).join('\n');
   const checks = buildChecks(ctxWith({ exec: () => ({ ok: true, stdout: psJson }) }), { full: false });
   await byName(checks, 'conteneurs').run(); // ne lève pas
 });
