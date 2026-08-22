@@ -13,75 +13,32 @@ peut pas porter — les contraintes d'accès et l'historique des relevés.
 Les PDF sont téléchargés par `scripts/fetch_sources.py` dans `data/raw/pdf/`,
 ignoré par git : ils se régénèrent depuis le manifeste.
 
-## Accessibilité des sources — vérifié le 2026-08-22
+## D'où vient la vérité — vérifié le 2026-08-22
 
-| Hôte | Usage | État |
+**Le fonds JORF de Légifrance, en open data, décide de ce que le corpus
+contient.** Décision et preuves : `docs/adr/0003-legifrance-source-de-verite-du-corpus.md`.
+
+| Hôte | Rôle | État |
 |---|---|---|
-| `cache.media.education.gouv.fr` | PDF des liens data.gouv (lycée) | ✅ HTTP 200 |
-| `www.education.gouv.fr/sites/default/files/…` | PDF des réformes récentes | ✅ HTTP 200 |
-| `eduscol.education.fr` — pages HTML | surveillance | ❌ 403 Cloudflare |
-| `www.education.gouv.fr` — pages HTML, **flux RSS du BO** | surveillance | ❌ **403 Cloudflare** |
-| `www.legifrance.gouv.fr` — site web | surveillance | ❌ 403 Cloudflare |
-| **API PISTE / Légifrance** | **signal de fraîcheur** | ✅ officielle et hors Cloudflare — mais **identifiants inexistants** |
-| API `data.education.gouv.fr` | catalogue des programmes | ✅ 200, mais **gelée à la rentrée 2021** |
+| `echanges.dila.gouv.fr/OPENDATA/JORF/` | **la règle** : quels programmes, quelles classes, quelle rentrée, quelles abrogations | ✅ 200, **sans authentification**, incréments quotidiens |
+| `cache.media.education.gouv.fr` · `www.education.gouv.fr/sites/…` | **le contenu** : les PDF des annexes | ✅ 200 |
+| `data.education.gouv.fr` (API) | annuaire d'URL pour les programmes anciens | ⚠ **gelée à la rentrée 2021**, aveugle aux abrogations |
+| `www.education.gouv.fr/bo/…`, `eduscol`, `legifrance.gouv.fr` — pages HTML | — | ❌ 403 Cloudflare, en-têtes de navigateur complets compris |
+| API PISTE | même fonds que l'open data | ❌ écartée : compte, CGU, souscription, quota, deux secrets |
 
-**On peut tout télécharger, on ne peut pas surveiller par le web.** Le seul
-signal de fraîcheur exploitable est Légifrance via PISTE : les arrêtés créent et
-abrogent les programmes. Filtrer sur NOR préfixe `MENE` + type arrêté.
+**On peut tout télécharger, on ne peut rien surveiller par le web** — sauf
+Légifrance, qui se surveille par ses incréments quotidiens.
 
-⚠ **`PISTE_CLIENT_ID` et `PISTE_CLIENT_SECRET` n'existent nulle part** — ni en
-local, ni en secrets GitHub (vérifié le 2026-08-22 : le dépôt n'en porte que
-trois, aucun PISTE). La moitié Légifrance de la veille n'a donc jamais tourné,
-et le workflow hebdomadaire sort vert en imprimant « aucun changement ». C'est
-l'explication complète des réformes 2024, 2025 et 2026 manquées.
+**Légifrance porte la règle, pas le contenu.** Le nota des arrêtés le dit :
+« le présent arrêté et ses annexes seront consultables au Bulletin officiel de
+l'éducation nationale ». Les PDF s'y téléchargent, mais leur nom
+(`ensel621_annexe3.pdf`) ne se déduit ni de l'arrêté ni de la date du BO. Une
+table associe donc un NOR à ses URL d'annexes : seul travail manuel du
+dispositif, borné et déclenché par la détection.
 
 **Aucun miroir tiers.** Les programmes de langues du BO 2025 étaient lus sur
 `reforme.education`, un site privé ; ils sont désormais pris sur
 `education.gouv.fr` (`ensel621_annexe1..25.pdf`, 13 langues × collège et lycée).
-
-## Manques identifiés au 2026-08-22
-
-| Document | Référence | État |
-|---|---|---|
-| Français cycle 3 | BO 2025 · NOR MENE2504620A (17-04-2025) | ❌ absent |
-| Mathématiques cycle 3 | BO 2025 · même arrêté | ❌ absent |
-| Français cycle 4 | BO 2026 · NOR MENE2602912A (05-03-2026) | ❌ absent |
-
-Les autres matières du collège (physique-chimie, SVT, histoire-géo, arts
-plastiques, éducation musicale, EPS) sont **inchangées depuis BO2020** et
-couvertes par les deux documents de cycle. Le **lycée est entièrement absent** de
-l'index : voir le CSV data.gouv ci-dessous, qui le couvre par discipline.
-
-## Catalogue officiel (API)
-
-| Cache | API | Mis à jour |
-|-------|-----|------------|
-| `catalogue_second_degre.json` | `https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-programmes-enseignement-2nd-degre/records` | 02/02/2026 |
-
-> Régénéré par `scripts/refresh_catalogue.py`. 688 enregistrements, 334
-> programmes en vigueur, tous avec un lien de contenu direct.
->
-> `tests/test_catalogue.py` compare le cache à l'API (marqueur `network`) :
-> une copie figée sans ce test est exactement ce qui nous a fait rater trois
-> réformes.
->
-> **Excellent pour le lycée** : 279 lignes en périmètre général+technologique →
-> 118 PDF uniques, par discipline, contenu vérifié.
->
-> **Périmé pour le collège** : aucune entrée pour la rentrée 2022 ou après. La
-> « mise à jour du 02/02/2026 » est un rafraîchissement de métadonnées — le jeu
-> vivant est identique à cette copie, vérifié. Les réformes 2024/2025/2026 du
-> collège n'y sont pas, et le collège y est décrit par cycle entier, pas par
-> discipline.
-
-## Veille automatique (Légifrance PISTE)
-
-Générés par `scripts/veille_programmes.py` (GitHub Action hebdomadaire) :
-- `.veille_state.json` : IDs JOs déjà vus, date dernier check
-- `.veille_changes.json` : arrêtés programme détectés au dernier run
-
-Credentials → GitHub Secrets `PISTE_CLIENT_ID` / `PISTE_CLIENT_SECRET`.
-
 
 ## Régénérer le corpus
 

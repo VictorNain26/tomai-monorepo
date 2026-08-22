@@ -5,14 +5,17 @@ Le contrat porte **deux choses distinctes**, et les confondre coûte cher :
 
 - `matieres` / `niveaux` / `cycles` : le **vocabulaire autorisé**, figé par
   `schema/document.py`. Ce qu'un chunk a le droit de déclarer.
-- `matieres_indexees` : la **couverture réelle**, lue dans la collection
-  vivante. Ce qui a effectivement du contenu.
+- `matieres_indexees` et `niveaux_indexes` : la **couverture réelle**, lue dans
+  la collection vivante. Ce qui a effectivement du contenu.
+- `couverture` : le détail par couple `(niveau, matière)`. C'est ce qui permet
+  au backend de refuser une combinaison vide au lieu de la chercher.
 
-L'écart entre les deux est normal — le vocabulaire anticipe le lycée que le
-corpus ne couvre pas encore. Mais c'est `matieres_indexees` que le backend doit
-exposer à l'agent : proposer une matière vide ne provoque aucune erreur, juste
+L'écart entre les deux peut exister, et c'est la couverture qui fait foi côté
+backend : proposer une matière ou un niveau vide ne provoque aucune erreur, juste
 zéro résultat, et l'agent conclut « le programme ne dit rien » puis répond de
-mémoire (constat P0-1 de l'audit du 2026-08-21).
+mémoire (constat P0-1 de l'audit du 2026-08-21). Le correctif de juillet avait
+fermé la dimension matière et laissé celle du niveau ouverte — d'où
+`niveaux_indexes`.
 
 Usage : uv run python scripts/export_contract.py
         uv run python scripts/export_contract.py --offline   # sans Qdrant
@@ -31,24 +34,25 @@ CONTRACT_PATH = Path(__file__).resolve().parent.parent / "contract.json"
 CONTRACT_VERSION = 1
 
 
-def read_indexed_matieres() -> list[str]:
-    """Matières ayant au moins un point dans la collection vivante."""
+def read_coverage() -> dict:
+    """Couverture réelle de la collection vivante, par matière, niveau et couple."""
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from dotenv import load_dotenv
 
-    from schema.retrieval import get_collection_name, get_qdrant_client
+    from scripts.coverage_report import matrice_reelle
 
     load_dotenv()
-    client = get_qdrant_client()
-    collection = get_collection_name()
-    return sorted(
-        m.value
-        for m in Matiere
-        if client.count(
-            collection_name=collection,
-            count_filter={"must": [{"key": "matiere", "match": {"value": m.value}}]},
-        ).count
-        > 0
-    )
+    matrice = matrice_reelle()
+    return {
+        "matieres_indexees": sorted({matiere for _, matiere in matrice}),
+        "niveaux_indexes": sorted({niveau for niveau, _ in matrice}),
+        "couverture": {
+            niveau: sorted(m for n, m in matrice if n == niveau)
+            for niveau in sorted({n for n, _ in matrice})
+        },
+    }
 
 
 def build_vocabulary() -> dict:
@@ -71,8 +75,22 @@ def build_vocabulary() -> dict:
         "version": CONTRACT_VERSION,
         "collection": {
             "name": "tomai_educational",
-            "dense": {"name": "dense", "size": 1024, "distance": "Cosine"},
-            "sparse": {"name": "bm25", "modifier": "idf"},
+            # Le modèle fait partie du contrat : un index construit par un modèle
+            # et interrogé par un autre renvoie des résultats faux SANS erreur.
+            # C'est la seule panne de cette chaîne qui ne se signale pas.
+            "dense": {
+                "name": "dense",
+                "size": 1024,
+                "distance": "Cosine",
+                "provider": "ovh-ai-endpoints",
+                "model": "Qwen3-Embedding-8B",
+                # Matryoshka : le modèle rend 4096D nativement, tronqué et
+                # renormalisé à 1024 côté OVH. La dimension fait donc partie du
+                # contrat au même titre que le modèle.
+                "dimensions": 1024,
+            },
+            # Calculé par Qdrant (Cloud Inference), pas par nous.
+            "sparse": {"name": "bm25", "modifier": "idf", "provider": "qdrant-cloud-inference"},
         },
         "payload_keys": sorted(sample.to_qdrant_payload().keys()),
         "cycles": [c.value for c in Cycle],
@@ -92,20 +110,21 @@ def main() -> None:
 
     if args.offline:
         existant = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
-        matieres_indexees = existant.get("matieres_indexees")
+        couverture = {
+            cle: existant.get(cle) for cle in ("matieres_indexees", "niveaux_indexes", "couverture")
+        }
     else:
-        matieres_indexees = read_indexed_matieres()
+        couverture = read_coverage()
 
     contract = build_vocabulary()
-    contract["matieres_indexees"] = matieres_indexees
+    contract.update(couverture)
     CONTRACT_PATH.write_text(
         json.dumps(contract, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     print(
         f"✓ contract.json écrit "
-        f"({len(contract['matieres'])} matières au vocabulaire, "
-        f"{len(contract['matieres_indexees'] or [])} réellement indexées, "
-        f"{len(contract['niveaux'])} niveaux)"
+        f"({len(contract['matieres_indexees'] or [])}/{len(contract['matieres'])} matières et "
+        f"{len(contract['niveaux_indexes'] or [])}/{len(contract['niveaux'])} niveaux couverts)"
     )
 
 

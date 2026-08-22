@@ -5,11 +5,15 @@
     "dense": {
       "name": "dense",
       "size": 1024,
-      "distance": "Cosine"
+      "distance": "Cosine",
+      "provider": "ovh-ai-endpoints",
+      "model": "Qwen3-Embedding-8B",
+      "dimensions": 1024
     },
     "sparse": {
       "name": "bm25",
-      "modifier": "idf"
+      "modifier": "idf",
+      "provider": "qdrant-cloud-inference"
     }
   },
   "payload_keys": [
@@ -79,5 +83,83 @@
     "sciences_technologie",
     "svt",
     "technologie"
-  ]
+  ],
+  "niveaux_indexes": [
+    "cinquieme",
+    "quatrieme",
+    "sixieme",
+    "troisieme"
+  ],
+  "couverture": {
+    "cinquieme": [
+      "allemand",
+      "anglais",
+      "arts_plastiques",
+      "education_musicale",
+      "emc",
+      "eps",
+      "espagnol",
+      "francais",
+      "histoire_des_arts",
+      "histoire_geo",
+      "italien",
+      "langues_vivantes",
+      "mathematiques",
+      "physique_chimie",
+      "svt",
+      "technologie"
+    ],
+    "quatrieme": [
+      "allemand",
+      "anglais",
+      "arts_plastiques",
+      "education_musicale",
+      "emc",
+      "eps",
+      "espagnol",
+      "francais",
+      "histoire_des_arts",
+      "histoire_geo",
+      "italien",
+      "langues_vivantes",
+      "mathematiques",
+      "physique_chimie",
+      "svt",
+      "technologie"
+    ],
+    "sixieme": [
+      "allemand",
+      "anglais",
+      "arts_plastiques",
+      "education_musicale",
+      "emc",
+      "eps",
+      "espagnol",
+      "francais",
+      "histoire_des_arts",
+      "histoire_geo",
+      "italien",
+      "langues_vivantes",
+      "mathematiques",
+      "sciences_technologie"
+    ],
+    "troisieme": [
+      "allemand",
+      "anglais",
+      "arts_plastiques",
+      "education_musicale",
+      "emc",
+      "eps",
+      "espagnol",
+      "francais",
+      "histoire_des_arts",
+      "histoire_geo",
+      "italien",
+      "langues_vivantes",
+      "mathematiques",
+      "physique_chimie",
+      "svt",
+      "technologie"
+    ]
+  }
 }

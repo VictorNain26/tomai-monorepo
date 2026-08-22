@@ -164,6 +164,11 @@ BO_POST_2021: tuple[Programme, ...] = tuple(
             )
         )
     ]
+    # Cadres communs de langues vivantes 2025. Ils remplacent le programme
+    # « Langues vivantes » que le catalogue sert encore : celui-ci date de 2019
+    # et le catalogue, gelé en 2021, ignore son abrogation.
+    + _bo(f"{_BASE_BO}/ensel621_annexe24.pdf", _REF_LV, _NOR_LV, ("langues_vivantes",), _LV_COLLEGE)
+    + _bo(f"{_BASE_BO}/ensel621_annexe25.pdf", _REF_LV, _NOR_LV, ("langues_vivantes",), _LV_LYCEE)
     + _bo(f"{_BASE_BO}/ensel620_annexe1.pdf", _REF_C3, _NOR_C3, ("francais",), {"sixieme": 2025})
     + _bo(
         f"{_BASE_BO}/ensel620_annexe2-v2.pdf",

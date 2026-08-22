@@ -66,12 +66,24 @@ def main() -> None:
             echecs.append((url, str(e)))
             print(f"  [{i}/{len(urls)}] ✗ {e}")
 
+    # Ce que le manifeste ne déclare plus n'a rien à faire ici : un programme
+    # abrogé qui traîne sur le disque finit par être ingéré « parce qu'il était
+    # là ». C'est ainsi que le corpus précédent a accumulé des fichiers dont
+    # plus personne ne savait d'où ils venaient.
+    attendus = {nom_fichier(url) for url in urls}
+    obsoletes = [f for f in DESTINATION.glob("*.pdf") if f.name not in attendus]
+    for fichier in obsoletes:
+        fichier.unlink()
+        print(f"  ⌫ obsolète, supprimé : {fichier.name}")
+
     if echecs:
         print(f"\n{len(echecs)} échec(s) :")
         for url, message in echecs:
             print(f"  {url}\n    {message}")
         sys.exit(1)
     print(f"\n{len(urls)} PDF disponibles dans {DESTINATION}")
+    if obsoletes:
+        print(f"{len(obsoletes)} fichier(s) obsolète(s) supprimé(s)")
 
 
 if __name__ == "__main__":

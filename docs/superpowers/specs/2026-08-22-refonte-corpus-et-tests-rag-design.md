@@ -45,58 +45,53 @@ sont que des *sections* dans les deux documents de cycle BO2020.
 ce ratio vaut structurellement ×3,35 : la métrique affiche « 100 % » tant qu'on
 ne perd pas plus des deux tiers du corpus.
 
-## Ce que la vérification des sources a établi
+## D'où vient la vérité — vérifié le 2026-08-22
 
-Tout ce qui suit a été mesuré le 2026-08-22 contre les serveurs réels.
+**Le fonds JORF de Légifrance, en open data, décide de ce que le corpus doit
+contenir.** Décision et preuves complètes :
+`docs/adr/0003-legifrance-source-de-verite-du-corpus.md`.
 
-**L'API officielle existe et elle est utilisable.**
-`data.education.gouv.fr` (Opendatasoft Explore v2.1), dataset
-`fr-en-programmes-enseignement-2nd-degre` : 688 enregistrements, 334 en vigueur,
-avec pour chacun la discipline, le niveau, la voie, l'URL du PDF, la rentrée
-d'entrée en vigueur et la rentrée d'abrogation.
+`https://echanges.dila.gouv.fr/OPENDATA/JORF/` — **sans authentification**, dump
+global de 1,67 Go et incréments quotidiens jusqu'au jour même. On y retrouve
+tous nos arrêtés (`MENE2018714A`, `MENE2504620A`, `MENE2504621A`), le calendrier
+d'application **par niveau** en toutes lettres, les abrogations même partielles,
+et les liens de citation entre textes.
 
-**Elle est gelée à la rentrée 2021.** `group_by` sur l'entrée en vigueur :
-11 entrées en 2021, **aucune après**. Pour le collège elle ne porte que 10
-lignes, dont 3 en vigueur. La « mise à jour du 2026-02-02 » affichée par
-data.gouv ne concerne que les métadonnées.
+Trois sources ont été écartées, chacune pour une raison factuelle :
 
-**Les réformes postérieures touchent aussi le lycée.** Les programmes de langues
-vivantes du BO n°22 du 29-5-2025 (NOR `MENE2504621A`) comptent 25 annexes —
-13 langues × collège **et** lycée général et technologique. L'API sert donc
-aujourd'hui des programmes de langues **abrogés** pour le lycée.
+| Écartée | Pourquoi |
+|---|---|
+| API PISTE | même fonds Légifrance, mais compte, CGU, souscription, quota et deux secrets. Ces prérequis n'ont jamais été remplis : la veille n'a **jamais** tourné et sortait verte |
+| API `data.education.gouv.fr` comme autorité | **gelée à la rentrée 2021** — et donc aveugle aux abrogations postérieures. Reste un annuaire d'URL pour les programmes anciens |
+| scraper le BO | 403 sur tout HTML, y compris avec des en-têtes de navigateur complets |
 
-**L'entrée en vigueur est échelonnée par niveau.** C'est le fait le plus
-structurant, et il invalide toute liste de sources non datée :
+**Légifrance porte la règle, pas le contenu.** Le texte d'un arrêté fait
+quelques kilo-octets et renvoie explicitement au Bulletin officiel pour ses
+annexes. Les PDF s'y téléchargent, mais leur nom ne se déduit de rien. Aucune
+source unique ne donne les deux : c'est un fait sur les sources, pas un choix.
+
+Une table associe donc un NOR aux URL de ses annexes. C'est le seul travail
+manuel du dispositif, borné à quelques arrêtés par an, et **déclenché** par la
+détection au lieu d'être subi.
+
+**Ce que la bascule a déjà rattrapé** : trois arrêtés d'avril 2026 qu'aucune
+source précédente ne connaissait, dont `MENE2608631A` — EPS et
+histoire-géographie du cycle 3, applicables **en sixième à la rentrée 2027**.
+
+## Le calendrier est échelonné par niveau
+
+C'est le fait le plus structurant, et il invalide toute liste non datée :
 
 | Réforme | 6e / 2de | 5e / 1re-Tle | 4e | 3e |
 |---|---|---|---|---|
-| Langues vivantes (NOR MENE2504621A) | 2025 | 2026 | 2027 | 2028 |
-| Français et maths cycle 4 (2026) | — | 2026 | 2027 | 2028 |
+| Langues vivantes (`MENE2504621A`) | 2025 | 2026 | 2027 | 2028 |
+| Français et maths cycle 4 (`MENE2602912A`) | — | 2026 | 2027 | 2028 |
+| EPS et histoire-géo cycle 3 (`MENE2608631A`) | 2027 | — | — | — |
 
 À la rentrée 2026, un élève de 4e suit **encore le programme BO2020**. Un
 manifeste qui associerait le nouveau programme à « cycle 4 » lui servirait un
-texte qui ne s'applique pas à lui.
-
-**Aucune page HTML n'est accessible par machine.** `education.gouv.fr`,
-`eduscol.education.fr` et `legifrance.gouv.fr` renvoient **403 (Cloudflare)** sur
-toute requête automatisée, agent compris. Les PDF, eux, se téléchargent tous en
-200. **On peut tout télécharger, on ne peut rien surveiller par le web.**
-
-Conséquence directe : le texte des arrêtés — qui porte le calendrier officiel et
-la liste des abrogations — n'est vérifiable que par l'**API PISTE de
-Légifrance**.
-
-**Et ces identifiants n'existent nulle part.** `gh secret list` sur le dépôt ne
-renvoie que `ANTHROPIC_API_KEY`, `DATABASE_URL` et `KOYEB_API_TOKEN` :
-`PISTE_CLIENT_ID` et `PISTE_CLIENT_SECRET` ne sont ni en secrets GitHub — malgré
-ce que prétendait la note de chantier — ni dans `apps/curriculum/.env`. La moitié
-Légifrance de la veille n'a donc **jamais** été branchée, et le workflow
-« Veille BO » sort **vert** chaque lundi en imprimant « ✓ Aucun changement
-détecté ». C'est l'explication complète des trois réformes manquées : le seul
-capteur de fraîcheur n'a jamais été alimenté, et son silence passait pour une
-bonne nouvelle.
-
-Les obtenir est donc un **prérequis du lot**, pas un bonus.
+texte qui ne s'applique pas à lui. Ces dates ne sont plus recopiées : elles se
+lisent dans l'article d'application de l'arrêté.
 
 ## Périmètre retenu
 
@@ -226,26 +221,25 @@ fonctionnent, non indexés), capacité plafonnée vers 20 000 points, et
 
 ### E — Veille des réformes
 
-Sans elle, l'impératif n'est pas tenu. Le seul signal exploitable est l'**API
-PISTE de Légifrance** : officielle, authentifiée, hors Cloudflare.
+Sans elle, l'impératif n'est pas tenu. Elle scanne les **incréments quotidiens
+du fonds JORF** et signale tout arrêté de programme dont le NOR n'est pas déjà
+traité par le manifeste.
 
 Trois exigences, qui sont la raison de son échec passé :
 
-1. **Elle échoue bruyamment.** L'implémentation actuelle retourne `None` sur tout
-   échec de sous-processus — `curl` ou `pdftotext` absents compris, deux
-   dépendances système déclarées nulle part — puis imprime « ✓ Aucun changement
-   détecté » et sort en 0.
-2. **Elle n'utilise plus `subprocess`.** `httpx` est déjà une dépendance, et le
-   secret PISTE transite aujourd'hui par `argv` de `curl`, donc lisible par tout
-   utilisateur de la machine (`ps`, `/proc/*/cmdline`).
-3. **Elle ne crie pas au loup.** Comparer un NOR aux références du manifeste ne
-   suffit pas : les entrées venues de l'API portent « arrêté du 19-7-2019 - J.O.
-   du 23-7-2019 », sans NOR. Le manifeste porte donc une liste explicite de NOR
-   traités, alimentée par la table datée.
+1. **Elle échoue bruyamment.** L'implémentation précédente retournait `None` sur
+   tout échec de sous-processus — `curl` ou `pdftotext` absents compris, deux
+   dépendances système déclarées nulle part — puis imprimait « ✓ Aucun changement
+   détecté » et sortait en 0.
+2. **Elle ne dépend d'aucun secret.** L'open data DILA se consulte sans compte.
+   C'est ce qui la rend exécutable : la version PISTE ne l'a jamais été, faute
+   d'identifiants que personne n'avait créés.
+3. **Elle ne crie pas au loup.** La comparaison se fait sur les NOR que le
+   manifeste porte, pas sur des références en texte libre.
 
-Son premier usage est un **rattrapage** : rejouer les arrêtés `MENE` depuis
-septembre 2021 pour révéler les réformes que la table daterait mal. C'est le seul
-moyen d'obtenir l'exhaustivité, les pages du BO étant inaccessibles.
+Son premier usage est un **rattrapage** : rejouer le fonds depuis 2021 pour
+révéler tout ce que les sources précédentes ont laissé passer. Il a déjà commencé
+à donner des résultats avant même d'être écrit.
 
 ### F — Évaluation qualité
 
@@ -317,12 +311,10 @@ varient de ±1 point.
 
 ## Risques
 
-**Le calendrier d'entrée en vigueur n'est pas vérifiable par machine
-aujourd'hui.** Les dates du tableau ci-dessus viennent de sources secondaires
-concordantes ; la source primaire est l'arrêté, inaccessible sans PISTE. Tant que
-les identifiants manquent, le manifeste porte ces dates avec leur origine écrite,
-et la veille ne peut pas les confirmer. **C'est le risque principal, et il bloque
-la réindexation** : le calendrier décide quel programme est servi à quel niveau.
+**Le lien entre un arrêté et ses annexes reste manuel.** Légifrance dit quel
+programme s'applique et quand ; il ne dit pas où trouver le PDF, et le BO est
+fermé aux machines. Un humain relève ces URL à chaque nouvel arrêté détecté.
+C'est borné et déclenché, mais c'est le point où le dispositif attend quelqu'un.
 
 Même règle pour les NOR. 38 des 41 que porte le manifeste sont **dérivés** du
 catalogue officiel (champ `lien_vers_le_texte_officiel`, `…?numjo=MENE…`), trois
@@ -330,9 +322,10 @@ sont lus dans un BO et listés dans `NOR_A_CONFIRMER`, et celui de la technologi
 cycle 4 reste **inconnu** plutôt qu'approximé. `test_aucun_nor_sans_origine`
 échoue sur tout NOR qui ne vient ni de l'un ni de l'autre.
 
-**L'exhaustivité des réformes post-2021 n'est pas garantie** avant le premier
-rattrapage PISTE. On connaît celles de 2024, 2025 et 2026 ; on ne peut pas
-prouver qu'il n'y en a pas d'autres.
+**L'exhaustivité dépend du rattrapage sur le fonds JORF.** Il est faisable —
+le dump global se parcourt sans authentification — mais tant qu'il n'a pas été
+joué en entier, on ne peut pas affirmer que le manifeste est complet. Un premier
+scan partiel a déjà trouvé trois arrêtés inconnus.
 
 **La qualité d'extraction des 78 PDF du lycée n'est pas éprouvée.** 15 d'entre
 eux ont été échantillonnés : 15/15 téléchargés et extraits, 22 pages et

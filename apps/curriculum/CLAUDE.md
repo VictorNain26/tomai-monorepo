@@ -40,16 +40,40 @@ uv run pytest -m network -q     # compare le cache du catalogue à l'API officie
 uv run pytest -m qdrant -q      # couverture réelle contre le cluster
 ```
 
-## Le manifeste, et pourquoi il est daté
+## D'où vient la vérité
+
+**Le fonds JORF de Légifrance, en open data, décide de ce que le corpus
+contient** — `docs/adr/0003-legifrance-source-de-verite-du-corpus.md`.
+
+`https://echanges.dila.gouv.fr/OPENDATA/JORF/`, **sans authentification** : dump
+global et incréments quotidiens. On y lit, pour chaque arrêté de programme, les
+classes concernées, la rentrée d'application **niveau par niveau**, et les
+abrogations — y compris partielles (« les parties relatives à l'EPS […] sont
+supprimées »).
+
+Ce qui est écarté, et pourquoi :
+
+- **l'API PISTE** : même fonds, mais compte, CGU, souscription, quota et deux
+  secrets. Ces prérequis n'ont jamais été remplis — la moitié Légifrance de la
+  veille n'a jamais tourné, et le workflow sortait vert. L'open data supprime
+  cette dépendance ;
+- **`data.education.gouv.fr` comme autorité** : **gelée à la rentrée 2021**,
+  donc aveugle aux abrogations postérieures. Elle reste un annuaire d'URL pour
+  les programmes anciens encore applicables ;
+- **scraper le BO** : 403 sur tout HTML, en-têtes de navigateur complets
+  compris.
+
+**Légifrance porte la règle, pas le contenu.** Les programmes eux-mêmes sont en
+annexes au Bulletin officiel, dont les pages sont fermées aux machines ; les PDF
+se téléchargent mais leur nom ne se déduit de rien. Une table associe donc un NOR
+à ses URL d'annexes : c'est le seul travail manuel, borné à quelques arrêtés par
+an, et **déclenché** par la détection.
+
+## Le manifeste est daté
 
 `schema/programmes.py` décrit **ce qui doit exister dans l'index**, une entrée
 par couple (matière, niveau), avec la rentrée à partir de laquelle elle
-s'applique. Deux moitiés :
-
-| moitié | couvre | fraîcheur |
-|---|---|---|
-| API `data.education.gouv.fr` (`fr-en-programmes-enseignement-2nd-degre`) | lycée général | **gelée à la rentrée 2021** |
-| table `BO_POST_2021` | réformes 2024-2026, collège et lycée | tenue à la main, NOR cités |
+s'applique.
 
 Les programmes récents entrent en vigueur **niveau par niveau** : à la rentrée
 2026, la 5e suit le nouveau programme de français et la 4e l'ancien. D'où
@@ -131,11 +155,8 @@ modèle, sinon la requête cherche dans un autre espace vectoriel.
 
 `OVH_AI_ENDPOINTS_TOKEN`, `OVH_EMBED_MODEL`, `QDRANT_URL`, `QDRANT_API_KEY`,
 `QDRANT_COLLECTION` (défaut `tomai_educational`, qui est un **alias**),
-`MISTRAL_API_KEY` (juge de l'évaluation qualité), `PISTE_CLIENT_ID` /
-`PISTE_CLIENT_SECRET`.
+`MISTRAL_API_KEY` (juge de l'évaluation qualité).
 
-**Les identifiants PISTE n'existent pas encore** — ni en local ni en secrets
-GitHub (vérifié le 2026-08-22). C'est la seule voie vers le texte des arrêtés,
-`education.gouv.fr`, `eduscol` et `legifrance` renvoyant 403 sur tout HTML. Sans
-eux, la veille des réformes ne tourne pas et le calendrier d'entrée en vigueur
-inscrit dans `schema/programmes.py` reste non vérifié.
+**Aucune clé n'est nécessaire pour la veille** : l'open data DILA se consulte
+sans authentification. C'était le point de fragilité de la version précédente,
+qui attendait des identifiants PISTE que personne n'avait créés.
