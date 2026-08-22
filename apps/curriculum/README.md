@@ -8,7 +8,7 @@ Qdrant). La couche LLM (chat socratique, prompting, hallucination eval) est
 la responsabilité du backend `tomai-monorepo/apps/server`. Source de vérité
 architecture : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-**Souveraineté EU stricte** : embeddings BGE-M3 self-host (ai-service) + Qdrant Cloud (fr-par).
+**Souveraineté EU stricte** : embeddings denses OVHcloud AI Endpoints (Gravelines, « data is not stored or shared ») + Qdrant Cloud. Aucun modèle auto-hébergé.
 Aucun SaaS hors UE.
 
 > **Index = Qdrant Cloud, source unique de vérité** (partagée dev + prod). Ce
@@ -26,10 +26,10 @@ Aucun SaaS hors UE.
 | Niveaux couverts | 6e, 5e, 4e, 3e (collège complet) |
 | Matières | 16 (tronc commun + LV + arts + EPS + sciences-techno) |
 | Coverage sections BO | **100 %** sur toutes les matières (audit 2026-05-18, sans faux positif) |
-| Retrieval baseline | `chunk_id_recall@5 = **0.894**` / MRR=**0.739** sur 189 questions document-grounded — BGE-M3 dense + sparse natif via FlagEmbedding |
+| Retrieval baseline | golden set maison = **non-régression uniquement** (tâche *known-item*, questions générées depuis les chunks). Qualité du modèle : voir MTEB-French. Qualité du pipeline : voir Alloprof. |
 | Tests | 82 pass · ruff clean |
 
-### Baseline par matière (top-5, golden 189 questions, BGE-M3 + sparse natif)
+### Baseline par matière (top-5, golden 189 questions, dense OVH + BM25 Qdrant)
 
 | Matière | n | cid_recall@5 | MRR |
 |---|---|---|---|
@@ -46,20 +46,15 @@ Aucun SaaS hors UE.
 | technologie | 9 | 0.667 | 0.781 |
 | italien | 8 | 0.625 | 0.875 |
 
-**Findings** :
-- Switch d'embedder réalisé suite au bench du 2026-05-23 : BGE-M3 (BAAI,
-  MIT, self-host Scaleway) remplace mistral-embed. Justification chiffrée
-  dans `docs/ARCHITECTURE.md §Décision benchmark embedder`.
-- Gains majeurs : **allemand** 0.60→0.93 (+0.33), **espagnol** 0.43→0.71
-  (+0.28), **arts_plastiques** 0.69→0.92 (+0.23). MRR global +0.16.
-- Italien (n=8) et technologie restent les 2 matières à investiguer
-  (golden ciblé requis pour départager bruit vs vraie régression).
+**Findings** (relevé de mai 2026, embedder de l'époque) :
+- Gains du switch d'embedder : **allemand** 0.60→0.93 (+0.33), **espagnol**
+  0.43→0.71 (+0.28), **arts_plastiques** 0.69→0.92 (+0.23). MRR global +0.16.
+- Italien (n=8) et technologie restent les 2 matières faibles. Un golden ciblé
+  hériterait du même biais de provenance : à reprendre avec de vraies questions.
 
-> **Note backend** : le switch BGE-M3 + sparse natif (learned sparse via
-> FlagEmbedding) obsolète le tokenizer BM25 maison FNV-1a précédemment
-> reproductible en TS pur. Le backend doit exécuter BGE-M3 pour ses
-> queries via un service Python ou un endpoint dédié. Cf. ARCHITECTURE.md
-> §Recommandations backend pour les options détaillées.
+> **Où on en est** : l'embedder est `Qwen3-Embedding-8B` @1024D servi par
+> OVHcloud AI Endpoints, et le vecteur creux est le `bm25` calculé par Qdrant.
+> Raisonnement complet : `docs/adr/0002-embeddings-manages.md`.
 
 ## Architecture
 
@@ -71,7 +66,7 @@ schema/
 
 scripts/
 ├── extract_pdfs.py        PDF → markdown via pymupdf4llm (vrais H2)
-├── ingest.py              .md → chunks → embeddings L2 → sparse BGE-M3 → upsert
+├── ingest.py              .md → chunks → dense OVH → upsert (bm25 calculé par Qdrant)
 ├── migrate_collection.py  Création collection (named vectors + indexes)
 ├── query.py               Test interactif retrieval (chunks bruts, pas de LLM)
 ├── evaluate.py            Métriques retrieval déterministes (chunk_id recall, MRR)
@@ -91,11 +86,11 @@ docs/audits/               Rapports coverage horodatés
 
 Pipeline de build de l'index Cloud. À lancer quand le **contenu** change, pas en
 setup dev. `QDRANT_URL` pointe le Qdrant Cloud (`https://` + `QDRANT_API_KEY`) ;
-l'ai-service local (`AI_SERVICE_URL=http://localhost:8001`) fait l'embedding.
+OVH AI Endpoints fait l'embedding dense ; Qdrant calcule le creux.
 
 ```bash
 # 1. Setup
-cp .env.example .env       # QDRANT_URL (Cloud https), QDRANT_API_KEY, AI_SERVICE_URL, MISTRAL_API_KEY
+cp .env.example .env       # QDRANT_URL (Cloud https), QDRANT_API_KEY, OVH_AI_ENDPOINTS_TOKEN, MISTRAL_API_KEY
 uv sync --all-extras
 
 # 2. Extraire les PDFs en markdown (idempotent)
@@ -105,8 +100,8 @@ uv run python scripts/extract_pdfs.py
 uv run python scripts/migrate_collection.py
 
 # 4. Ingérer (chunking + embeddings + upsert)
-#    EMBED_BATCH_SIZE=16 si l'ai-service tourne sur CPU peu de cœurs (évite le
-#    timeout 300s d'/embed) ; débrider le conteneur : docker update --cpus 8 tomai-ai-service-dev
+#    ~5 min pour le corpus complet (~0,03 €). Lots plafonnés à 25 entrées :
+#    c'est une limite DURE d'OVH (HTTP 400 au-delà), pas un réglage de confort.
 EMBED_BATCH_SIZE=16 uv run python scripts/ingest.py
 
 # 5. Tester le retrieval
@@ -158,7 +153,10 @@ GitHub Actions :
 
 - **Éduscol** : <https://eduscol.education.gouv.fr/>
 - **Bulletin Officiel** : <https://www.education.gouv.fr/pid285/bulletin_officiel.html>
-- **Manifest data.gouv** : `data/raw/programmes_second_degre_datagouv.json`
+- **Catalogue officiel** : API `data.education.gouv.fr`, dataset
+  `fr-en-programmes-enseignement-2nd-degre` — cache local
+  `data/raw/catalogue_second_degre.json`, régénéré par
+  `scripts/refresh_catalogue.py`
 - **Légifrance PISTE** : <https://piste.gouv.fr> (option, pour veille temps réel)
 
 Inventaire détaillé des fichiers et URLs : `data/raw/sources_officielles.md`.

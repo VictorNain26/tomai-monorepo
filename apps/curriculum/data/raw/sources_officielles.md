@@ -63,14 +63,18 @@ Source : mirror reforme.education (education.gouv.fr bloque curl via Cloudflare)
 | `programme_allemand_college_BO2025.txt` | Allemand | `https://reforme.education/app/uploads/2025/05/prog-college-allemand.pdf` |
 | `programme_italien_college_BO2025.txt` | Italien | `https://reforme.education/app/uploads/2025/05/prog-college-italien.pdf` |
 
-## Dataset data.gouv.fr
+## Catalogue officiel (API)
 
-| Fichier | URL | Mis à jour |
-|---------|-----|------------|
-| `programmes_second_degre_datagouv.json` | `https://www.data.gouv.fr/api/1/datasets/programmes-denseignement-du-second-degre/` | 02/02/2026 |
+| Cache | API | Mis à jour |
+|-------|-----|------------|
+| `catalogue_second_degre.json` | `https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-programmes-enseignement-2nd-degre/records` | 02/02/2026 |
 
-> ⚠️ **C'est un CSV, pas du JSON**, malgré son extension. 688 lignes, 334
+> Régénéré par `scripts/refresh_catalogue.py`. 688 enregistrements, 334
 > programmes en vigueur, tous avec un lien de contenu direct.
+>
+> `tests/test_catalogue.py` compare le cache à l'API (marqueur `network`) :
+> une copie figée sans ce test est exactement ce qui nous a fait rater trois
+> réformes.
 >
 > **Excellent pour le lycée** : 279 lignes en périmètre général+technologique →
 > 118 PDF uniques, par discipline, contenu vérifié.

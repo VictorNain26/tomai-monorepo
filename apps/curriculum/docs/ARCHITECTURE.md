@@ -3,6 +3,21 @@
 Source de vérité unique sur l'architecture du pipeline RAG des programmes
 officiels Éduscol.
 
+> ## État courant
+>
+> | Moitié de la recherche | Qui la produit |
+> |---|---|
+> | dense, 1024D | **OVHcloud AI Endpoints**, `Qwen3-Embedding-8B` tronqué par MRL |
+> | creux, `bm25` | **Qdrant Cloud Inference**, calculé côté serveur |
+>
+> **Aucun modèle n'est hébergé ni chargé par ce dépôt.** Raisonnement complet :
+> `docs/adr/0002-embeddings-manages.md`.
+>
+> Les sections datées plus bas (audit de contenu, mesures de chunk) sont des
+> relevés d'époque : elles disent ce qui a été mesuré, quand, et avec quel
+> outillage.
+
+
 ## Scope
 
 Ce repo gère **uniquement l'index RAG** : extraction PDF → markdown →
@@ -25,8 +40,9 @@ Frontière non négociable :
 
 Toute la stack passe par des fournisseurs ou modèles EU-déployables :
 
-- **Embeddings** : `BAAI/bge-m3` (1024D, dense + sparse natif via FlagEmbedding)
-  Auto-hébergeable sur Scaleway (souverain de facto, poids MIT)
+- **Embeddings denses** : `Qwen3-Embedding-8B` servi par OVHcloud AI Endpoints
+  (Gravelines), tronqué à 1024D par Matryoshka. Rien n'est auto-hébergé.
+- **Vecteur creux** : `bm25` calculé par Qdrant Cloud Inference, côté serveur.
 - **Génération offline du golden set** : `mistral-large-latest`
 - **Index vectoriel** : Qdrant Cloud, région `fr-par`
 - **Veille** : data.gouv.fr + Légifrance (PISTE)
@@ -49,9 +65,13 @@ data/raw/*.md
        │                           Mistral, cascade règles markdown
        ├─ expand_for_niveaux()     duplique 1 chunk × N niveaux du cycle
        ├─ validate_chunks()        Pydantic Chunk → payload Qdrant
-       ├─ encode_with_sparse()     BGE-M3 dense+sparse single forward pass
-       │                           (préfixe contextuel hiérarchique sans LLM)
-       └─ upsert_to_qdrant()       named {dense, bm25}, idempotent
+       ├─ ovh_embeddings.embed()   dense via OVH (préfixe contextuel
+       │                           hiérarchique sans LLM ; documents SANS
+       │                           instruction, celle-ci est réservée aux
+       │                           requêtes)
+       └─ upsert_to_qdrant()       named {dense, bm25}, le creux étant envoyé
+                                   en models.Document → Qdrant le vectorise.
+                                   Idempotent :
                                    uuid5(NAMESPACE_URL, sha256(matière:niveau:text))
 ```
 
@@ -150,52 +170,27 @@ Config (`scripts/migrate_collection.py`) :
 - Fusion RRF native via `models.FusionQuery(fusion=models.Fusion.RRF)`
 - Filtres exact-match sur `matiere`, `niveau`, `cycle` (KEYWORD indexes)
 
-Configurations supportées (`embed_model`, `sparse_method`) :
+La configuration n'est plus un couple de modèles à choisir : le dense vient
+d'OVH (`OVH_EMBED_MODEL` + `OVH_EMBED_DIMENSIONS`) et le creux est toujours le
+`bm25` de Qdrant. Le modèle et la dimension **doivent** correspondre à ceux qui
+ont bâti l'index — `contract.json` → `collection.dense` en est la source de
+vérité, et un test l'impose des deux côtés.
 
-- `("BAAI/bge-m3", "BAAI/bge-m3")` — **cible production** depuis le bench
-  du 2026-05-23 (single forward pass FlagEmbedding, cid_recall=0.894)
-- `("BAAI/bge-m3", "bm25")` — dense BGE-M3, sparse BM25 maison (compat backend)
-- `("mistral-embed", "bm25")` — config historique, conservée pour migration
-
-`schema/retrieval.py` est l'**unique** point d'accès embed + Qdrant.
-Source de vérité pour `embed_query`, `embed_batch`, `encode_with_sparse`,
-`sparse_query`, `hybrid_search`. Aucune duplication dans les scripts.
-
-## BM25 sparse maison — migration terminée
-
-> **La migration est finie** : la production utilise le sparse natif BGE-M3
-> des deux côtés (ingestion et query). Le BM25 FNV-1a maison décrit
-> ci-dessous n'a plus de consommateur — le backend ne tokenise plus rien
-> localement. Il ne subsiste que pour l'option `--sparse-method=bm25` des
-> bench A/B historiques, et est candidat à la suppression.
-
-Quand `sparse_method="bm25"` : Qdrant ne tokenise pas côté serveur — il
-reçoit `{indices: u32[], values: f32[]}` et calcule l'IDF. Pour que l'IDF
-soit cohérent, le **même** algorithme de tokenisation + hash doit être
-utilisé à l'ingestion (ce repo) ET à la query (backend
-`tomai-monorepo/apps/server/src/services/rag.service.ts`).
-
-Algorithme (`schema/bm25.py`) :
-
-- Regex `[a-zàâäéèêëïîôùûüÿœæç0-9]+` (lettres FR + ligatures + chiffres)
-- Lowercase
-- Hash FNV-1a 32-bit, masqué 31-bit positif (`& 0x7fffffff`)
-
-Sans parité stricte, l'IDF Qdrant est cassée silencieusement — même mot
-indexé à un indice, queryé à un autre → recall écroulé.
-
-Validation : `tests/test_bm25.py` (14 tests) + fixture export
-`scripts/dump_bm25_fixture.py` consommée par le test TS côté monorepo.
+`schema/retrieval.py` est l'**unique** point d'accès recherche + Qdrant, et
+`src/clients/ovh_embeddings.py` l'unique point d'accès embedding.
+`hybrid_search(retrieval_mode=...)` permet d'isoler une branche pour la
+mesurer. `HNSW_EF` y est aligné sur celui du serveur : une évaluation qui
+explore autrement mesure une configuration que personne ne déploie.
 
 ## L2 normalize
 
-- **BGE-M3 (FlagEmbedding)** : produit du L2 natif (l'attribut `dense_vecs`
-  est déjà normé). Aucune normalisation client-side nécessaire.
-- **sentence-transformers** : `normalize_embeddings=True` (utilisé partout
-  dans `_embed_sentence_transformer`).
-- **mistral-embed (API)** : ne garantit pas la normalisation L2. La
-  fonction `schema/retrieval.py:l2_normalize()` est appliquée systémati-
-  quement après chaque appel API Mistral (config legacy uniquement).
+- **OVH AI Endpoints** : renvoie des vecteurs L2-normés (norme vérifiée à
+  1,000000), y compris **après troncature MRL** — OVH tronque puis renormalise
+  côté serveur. Aucune normalisation ni troncature à faire chez nous.
+  Exception à connaître : `bge-multilingual-gemma2` renvoie du **non normé**
+  (norme ~177) ; Qdrant en distance Cosine le gère, mais il faut le savoir.
+`l2_normalize()` reste dans `schema/retrieval.py` comme utilitaire pur, testé,
+au cas où un fournisseur renverrait du non normé.
 
 Sans normalisation, `Distance.COSINE` Qdrant est instable.
 
@@ -273,7 +268,12 @@ Sortie programmatique : `data/raw/.veille_changes.json`.
 
 Mesuré sur les 5 266 chunks réellement produits par le pipeline, avant
 réindexation. Objectif : vérifier avant de figer un index, puisqu'une
-correction coûte ~2 h 20 de réingestion.
+correction coûtait alors ~2 h 20 de réingestion.
+
+> **Ce coût a été divisé par 25.** Depuis la bascule sur les embeddings
+> managés, une réindexation complète prend **~5 minutes** et coûte quelques
+> centimes. Vérifier avant de figer reste une bonne habitude, mais ce n'est
+> plus une décision — réindexer est devenu une pause café.
 
 ### Volumétrie
 
@@ -286,12 +286,15 @@ correction coûte ~2 h 20 de réingestion.
 Le facteur 3,19× est voulu : un chunk de cycle est dupliqué en un point par
 niveau, mais l'embedding n'est calculé qu'une fois (cf. §Contextual prefix).
 
-### Taille des chunks, mesurée avec le tokenizer BGE-M3
+### Taille des chunks
 
-C'est la mesure qui manquait : `ingest.py` règle `chunk_size=400` en **tokens
-Mistral**, héritage de l'époque `mistral-embed`, alors que l'embedder est
-BGE-M3 (tokenizer XLM-RoBERTa). Échantillon de 300 textes uniques, tokenisés
-avec le tokenizer réel du modèle :
+> ⚠️ **Nombres à refaire.** Ils ont été relevés avec un tokenizer différent de
+> celui en service. Le raisonnement tient — **l'unité de réglage n'est pas
+> celle du modèle** — mais les valeurs ne décrivent plus l'index. À reprendre
+> avec le tokenizer de `Qwen3-Embedding` avant de toucher `chunk_size`.
+
+`ingest.py` règle `chunk_size=400` en **tokens Mistral**, héritage d'un
+embedder précédent. Échantillon de 300 textes uniques :
 
 | | min | p10 | médiane | p90 | max |
 |---|---|---|---|---|---|
@@ -299,9 +302,9 @@ avec le tokenizer réel du modèle :
 | Texte embeddé (+ préfixe) | 50 | 118 | **284** | 369 | 893 |
 
 - La cible nominale de 400 tokens Mistral produit des chunks de ~260 tokens
-  BGE-M3 : l'unité de réglage n'est pas celle du modèle.
-- 4,7 % dépassent 512 tokens ; **aucun** n'approche la limite de 8 192 de
-  BGE-M3.
+  du modèle : l'unité de réglage n'est pas celle du modèle.
+- 4,7 % dépassent 512 tokens ; `Qwen3-Embedding` en accepte 32 768, donc la
+  marge est large.
 - Le préfixe contextuel coûte 23 tokens en médiane, soit 8,1 % du chunk.
 
 Référence : le consensus re-validé en février 2026 place la zone utile entre
@@ -370,7 +373,9 @@ contrat doit être vérifié dans les deux sens.
 | Langues vivantes collège | `programme_{anglais,espagnol,allemand,italien}_college_BO2025.md` | 29/05/2025 |
 
 URLs + procédure de régénération : `data/raw/sources_officielles.md`.
-Inventaire de référence : `data/raw/programmes_second_degre_datagouv.json`.
+Catalogue officiel : API `data.education.gouv.fr` (dataset
+`fr-en-programmes-enseignement-2nd-degre`), mis en cache dans
+`data/raw/catalogue_second_degre.json` par `scripts/refresh_catalogue.py`.
 
 ## Audit coverage
 
@@ -394,9 +399,10 @@ couche `qdrant.service.ts` + `rag.service.ts`. **Contrats critiques** :
 - **Payload Qdrant** stable : `text, section, matiere, niveau, cycle,
   source_file, chunk_index`. Tout ajout/retrait de champ doit être planifié
   avec le backend.
-- **Embedding query** : doit utiliser `BAAI/bge-m3` via FlagEmbedding
-  (single forward pass dense+sparse). Plus de tokenizer BM25 maison —
-  le backend doit exposer un service Python embed ou appeler un endpoint
+- **Embedding query** : doit utiliser le **même modèle ET la même dimension**
+  que l'index (`contract.json` → `collection.dense`), avec l'instruction de
+  requête. Le creux n'est plus produit côté client : Qdrant le calcule.
+  Historique (périmé) — le backend devait appeler un service Python ou un endpoint
   dédié (cf. §Recommandations backend).
 - **Nom de collection** partagé via variable d'env `QDRANT_COLLECTION`.
 
@@ -448,97 +454,35 @@ La seconde commande dit si l'écart est **statistiquement significatif**
 (randomisation de Fisher, p < 0,05) — c'est ce qui manquait pour trancher ces
 A/B sans conclure sur du bruit.
 
-## Décision benchmark embedder (2026-05-23)
-
-Trois configurations mesurées sur 189 questions document-grounded
-(top-5, RRF fusion) :
-
-| Configuration | cid_recall@5 | MRR | min par matière |
-|---|---|---|---|
-| mistral-embed + BM25 maison (baseline) | 0.810 | 0.576 | 0.429 (espagnol) |
-| BGE-M3 + BM25 maison | 0.857 | 0.654 | 0.583 (anglais) |
-| **BGE-M3 + BGE-M3 sparse natif** (adopté) | **0.894** | **0.739** | **0.625 (italien)** |
-
-Gains adoption sur les matières bloquantes :
-
-- allemand : 0.600 → **0.933** (+0.333)
-- espagnol : 0.429 → **0.714** (+0.285)
-- arts_plastiques : 0.692 → **0.923** (+0.231)
-- anglais : 0.750 stable (récupéré après régression intermédiaire)
-- MRR global : 0.576 → **0.739** (+0.163, ranking nettement meilleur)
-
-Régressions résiduelles à surveiller : technologie (-0.222), italien
-(n=8 trop petit pour conclure).
-
-Bascule effectuée : le backend a migré, il n'existe plus qu'une seule
-collection servie, dont le nom vient de `QDRANT_COLLECTION` (défaut neutre
-`tomai_educational` dans le code, valeur réelle posée par l'environnement).
-`tomai_educational_bge_native` et `..._legacy_mistral` étaient des noms de
-travail du bench, pas des collections vivantes.
-
 ## Pistes restantes (sans engagement prématuré)
 
-1. **`chunk_size` 400 → 512 tokens** — consensus 2025-2026 (Vecta, Firecrawl,
-   PreMAI). Gain attendu ~2-5 %. À tester sur la nouvelle baseline BGE-M3.
-2. ~~**`Fusion.RRF` → `Fusion.DBSF`** (Qdrant 1.11+)~~ — **mesuré** sur
-   mistral-embed : inconclusif (gagne DE/ES, régresse français). À retester
-   sur BGE-M3 + sparse natif maintenant qu'on a une nouvelle baseline.
-3. **Bump `pymupdf4llm`** à la dernière release ([github.com/pymupdf/pymupdf4llm/releases](https://github.com/pymupdf/pymupdf4llm/releases))
+> Toutes ces pistes supposent de pouvoir **mesurer un écart de 2-3 points**.
+> Or notre golden set a un plancher de bruit de ±1 point et un biais de
+> provenance (questions générées depuis les chunks à retrouver). **L'instrument
+> passe donc avant les pistes** — les classer par gain espéré sans savoir les
+> mesurer, c'est choisir au hasard avec méthode.
+
+1. **Reranking** — le plus gros levier identifié, et il ne dépend pas de
+   l'embedder : `hit_rate@20 = 0,984` contre `hit_rate@5 = 0,894`. Le bon chunk
+   est déjà récupéré dans 98,4 % des cas mais n'atteint le top-5 que 89,4 % du
+   temps : **~9 points sont réordonnables**. Aucun reranker chez OVH à ce jour
+   (demande ouverte sur leur roadmap) ; EUrouter, GreenPT et Jina en proposent.
+2. **BM25 aide-t-il vraiment sur ce corpus ?** Observation non concluante mais
+   nette : sur « calculer la longueur de l'hypoténuse », le dense place le bon
+   chunk en #1 et **la fusion RRF le fait chuter en #3**, parce que le chunk
+   pertinent ne contient pas le mot « hypoténuse ». Désaccord de vocabulaire
+   classique. Une anecdote ne justifie pas de toucher à l'architecture — mais
+   `hybrid_search(retrieval_mode=...)` permet de le mesurer.
+3. **`chunk_size` 400 → 512 tokens** — consensus 2025-2026. À reprendre en
+   mesurant d'abord avec le tokenizer de `Qwen3-Embedding` (cf. §Taille des
+   chunks, dont les nombres sont périmés).
+4. **`Fusion.RRF` → `Fusion.DBSF`** — mesuré une fois, inconclusif. À
+   retester sur la configuration actuelle.
+5. **Bump `pymupdf4llm`** ([releases](https://github.com/pymupdf/pymupdf4llm/releases))
    pour gains perf et extras `[layout]`.
-4. **Investiguer technologie + italien** — re-générer un golden ciblé
-   (50 questions chacun) pour départager bruit statistique vs vraie
-   régression structurelle de BGE-M3 sur ces matières.
-
-## Recommandations backend — état au 2026-08-21
-
-Cette section listait, en mai 2026, deux recommandations issues de la
-recherche état de l'art. **Les deux sont tranchées.** Elle est conservée
-comme trace de décision, pas comme feuille de route.
-
-### #1 — Exécuter BGE-M3 côté backend · **FAIT**
-
-Le sparse natif BGE-M3 est appris, donc non reproductible en TS pur. La
-recommandation était de monter un service Python. C'est fait :
-`apps/ai-service` (FastAPI + FlagEmbedding) sert `/embed` (dense + sparse,
-un seul forward pass), déployé sur Koyeb, appelé par `rag.service.ts` côté
-backend et par `src/clients/ai_service.py` côté curriculum. Le tokenizer
-BM25 maison a disparu des deux côtés.
-
-### #2 — Reranker de second étage · **ÉCARTÉ le 2026-07-01, sur mesure**
-
-> La version précédente de cette section recommandait `mxbai-rerank-large-v2`
-> et écartait `bge-reranker` pour « origine Chine, souveraineté discutable ».
-> **Ce critère était faux et n'est pas celui qui a tranché** : des poids
-> self-hostés n'exfiltrent aucune donnée, et l'embedder de production est
-> lui-même un modèle BAAI. Le texte est corrigé ici pour que la décision ne
-> soit pas rouverte sur de mauvaises bases.
-
-Ce qui a réellement tranché :
-
-- **Le meilleur modèle était `bge-reranker-v2-m3`** (Apache 2.0, MIRACL
-  69,32 en multilingue, le plus léger des trois évalués — devant
-  `jina-reranker-v3`, écarté pour sa licence CC-BY-NC incompatible avec un
-  produit payant, et devant `Qwen3-Reranker` 4B/8B, trop lourd).
-- **La latence CPU l'a disqualifié** : 43 à 180 s pour 20 candidats sur
-  l'instance de test (mesure du 2026-06-25 ; 15-19 s pour 25 chunks en
-  sentence-transformers comme en TEI-candle). Face au timeout de quelques
-  secondes du client backend, le rerank aurait timeouté systématiquement —
-  coût pur, aucun effet sur le classement.
-- **Les options managées sont exclues pour la souveraineté des données**,
-  pas des poids : Jina appartient à Elastic (US, CLOUD Act), Cohere est US,
-  le « rerank » Scaleway est une similarité cosinus d'embeddings et non un
-  cross-encoder, ni OVH ni Mistral n'exposent de reranker.
-- **La rentabilité n'est pas démontrée sur ce corpus** : quelques milliers
-  de chunks, hybrid déjà tuné, top-k 5.
-
-Conséquence : `apps/ai-service` est **embed-only** (l'endpoint `/rerank` est
-supprimé, un test de non-régression garde la porte fermée) et y a gagné
-~2 GB de RAM.
-
-Rouvrir le sujet suppose de résoudre **la latence** en premier — ONNX/INT8
-généré à la main (`bge-reranker-v2-m3` n'a pas d'ONNX publié) ou GPU à
-Tensor Cores — et de mesurer le gain réel de `cid_recall@5` sur le golden
-set. Pas de rediscuter la licence ni l'origine.
+6. **Investiguer technologie + italien** — matières faibles depuis mai. Le
+   golden ciblé (50 questions chacun) hériterait du même biais de provenance :
+   à faire avec des questions réelles, pas générées.
 
 ## Références
 

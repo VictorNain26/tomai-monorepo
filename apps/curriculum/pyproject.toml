@@ -36,6 +36,13 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["schema", "scripts", "src"]
 
+[tool.pytest.ini_options]
+addopts = "-m 'not network and not qdrant'"
+markers = [
+  "network: appelle une API publique (data.education.gouv.fr, PISTE)",
+  "qdrant: interroge le vrai cluster Qdrant Cloud (clé requise)",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
