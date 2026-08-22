@@ -147,3 +147,57 @@ DISCIPLINES_EXCLUES: dict[str, str] = {
 # tous deux mappés. Vide aujourd'hui : les treize lignes concernées relèvent
 # toutes de l'enseignement agricole, déjà exclu par discipline.
 URLS_EXCLUES: dict[str, str] = {}
+
+
+# ── Titres de section des documents de cycle ─────────────────────────────────
+# Les deux documents BO2020 portent toutes les matières non réformées dans un
+# seul PDF, sous des titres de 15 pt. Ces titres ne sont pas les libellés du
+# catalogue : le document dit « Histoire et géographie » là où le catalogue dit
+# « Histoire-géographie ». D'où cette table, distincte de DISCIPLINE_VERS_SLUG.
+#
+# Une section peut alimenter PLUSIEURS slugs. C'est le cas des langues vivantes
+# du cycle 4 : jusqu'aux rentrées 2027 (4e) et 2028 (3e), le programme d'anglais
+# applicable à ces niveaux EST cette section commune — les programmes par langue
+# de 2025 ne les concernent pas encore. Ne pas la dupliquer laisserait un élève
+# de 4e sans aucun résultat sur « anglais ».
+SECTION_VERS_SLUGS: dict[str, tuple[str, ...]] = {
+    "Français": ("francais",),
+    "Mathématiques": ("mathematiques",),
+    "Histoire et géographie": ("histoire_geo",),
+    "Sciences et technologie": ("sciences_technologie",),
+    "Physique-Chimie": ("physique_chimie",),
+    "Sciences de la vie et de la Terre": ("svt",),
+    "Technologie": ("technologie",),
+    "Arts plastiques": ("arts_plastiques",),
+    "Éducation musicale": ("education_musicale",),
+    "Histoire des arts": ("histoire_des_arts",),
+    "Éducation physique et sportive": ("eps",),
+    "Enseignement moral et civique": ("emc",),
+    "Langues vivantes (étrangères ou régionales)": (
+        "langues_vivantes",
+        "anglais",
+        "espagnol",
+        "allemand",
+        "italien",
+    ),
+}
+
+_VOLET = "volet transversal, pas une matière"
+
+SECTIONS_IGNOREES: dict[str, str] = {
+    "Programme d’enseignement du cycle de consolidation": "titre du document",
+    "Programme d’enseignement du cycle des approfondissements": "titre du document",
+    "(cycle 3)": "suite du titre du document",
+    "(cycle 4)": "suite du titre du document",
+    "Volet 1 : les spécificités du cycle de consolidation (cycle 3)": _VOLET,
+    "Volet 1 : Les spécificités du cycle des approfondissements (cycle 4)": _VOLET,
+    "Volet 2 : contributions essentielles des différents enseignements": _VOLET,
+    "Volet 2 : Contributions essentielles des différents enseignements": _VOLET,
+    "au socle commun": "suite du titre du volet 2",
+    "et champs éducatifs au socle commun": "suite du titre du volet 2",
+    "Volet 3 : les enseignements (cycle 3)": "en-tête du volet, pas une matière",
+    "Volet 3 : les enseignements (cycle 4)": "en-tête du volet, pas une matière",
+    "Volet 3 : Les enseignements (cycle 4)": "en-tête du volet, pas une matière",
+    "Éducation aux médias et à l'information": "enseignement transversal absent de l'enum Matiere",
+    "Éducation aux médias et à l’information": "enseignement transversal absent de l'enum Matiere",
+}

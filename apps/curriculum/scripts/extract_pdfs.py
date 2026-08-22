@@ -20,7 +20,12 @@ import argparse
 import sys
 from pathlib import Path
 
+import pymupdf
 import pymupdf4llm
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from schema.mapping import SECTION_VERS_SLUGS, SECTIONS_IGNOREES  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -35,6 +40,55 @@ def extract_one(pdf_path: Path, output_md: Path) -> tuple[int, int]:
     output_md.write_text(md, encoding="utf-8")
     n_h2 = md.count("\n## ")
     return len(md), n_h2
+
+
+# Les documents de cycle BO2020 titrent leurs matières en 15 pt et leurs
+# sous-sections en 14 pt. Le repère est typographique parce qu'il est le seul
+# fiable : les titres n'ont ni numérotation ni casse distinctive, et « Français »
+# apparaît des dizaines de fois dans le corps du texte.
+TAILLE_TITRE_MATIERE = 15.0
+
+
+def lignes_typees(chemin_pdf: Path) -> list[tuple[float, str]]:
+    """Lignes du PDF avec la taille de police maximale de chacune."""
+    lignes: list[tuple[float, str]] = []
+    for page in pymupdf.open(chemin_pdf):
+        for bloc in page.get_text("dict")["blocks"]:
+            for ligne in bloc.get("lines", []):
+                texte = "".join(s["text"] for s in ligne["spans"]).strip()
+                if texte:
+                    lignes.append((round(max(s["size"] for s in ligne["spans"]), 1), texte))
+    return lignes
+
+
+def decouper_par_matiere(lignes: list[tuple[float, str]]) -> dict[str, str]:
+    """Découpe un document de cycle en une entrée par matière.
+
+    Une section inconnue LÈVE : si le ministère ajoute un enseignement, son
+    contenu ne doit pas se retrouver silencieusement collé à la matière
+    précédente. Il faut alors trancher dans `schema/mapping.py` — mapper ou
+    ignorer avec un motif.
+    """
+    parties: dict[str, list[str]] = {}
+    courants: tuple[str, ...] = ()
+    for taille, texte in lignes:
+        if taille >= TAILLE_TITRE_MATIERE:
+            if texte in SECTIONS_IGNOREES:
+                courants = ()
+                continue
+            slugs = SECTION_VERS_SLUGS.get(texte)
+            if slugs is None:
+                raise ValueError(
+                    f"section inconnue dans un document de cycle : {texte!r} — "
+                    "la mapper ou l'ignorer explicitement dans schema/mapping.py"
+                )
+            courants = slugs
+            for slug in slugs:
+                parties.setdefault(slug, [])
+            continue
+        for slug in courants:
+            parties[slug].append(texte)
+    return {slug: "\n".join(lignes_slug) for slug, lignes_slug in parties.items()}
 
 
 def main() -> None:
