@@ -1,8 +1,41 @@
 # Sources officielles des programmes scolaires
 
+> **Le corpus doit être complet ET à jour des réformes.** Toute l'application
+> repose dessus : un tuteur qui cite un programme abrogé enseigne du faux à un
+> enfant. Ce fichier est la carte des sources — le tenir juste fait partie du
+> produit, pas de la documentation.
+
 Fichiers `.txt` extraits avec `pdftotext -enc UTF-8 -layout`.  
 PDFs exclus du repo git (`.gitignore`), `.txt` seuls versionnés.  
 PDFs régénérables via les URLs ci-dessous.
+
+## Accessibilité des sources — vérifié le 2026-08-22
+
+| Hôte | Usage | État |
+|---|---|---|
+| `cache.media.education.gouv.fr` | PDF des liens data.gouv (lycée) | ✅ HTTP 200 |
+| `www.education.gouv.fr/sites/default/files/…` | PDF des réformes récentes | ✅ HTTP 200 |
+| `reforme.education` | miroir tiers (langues BO2025) | ✅ HTTP 200 |
+| `www.education.gouv.fr` — pages HTML, **flux RSS du BO** | surveillance | ❌ **403 Cloudflare** |
+| `www.legifrance.gouv.fr` — site web | surveillance | ❌ 403 Cloudflare |
+| **API PISTE / Légifrance** | **signal de fraîcheur** | ✅ officielle, authentifiée, hors Cloudflare |
+
+**On peut tout télécharger, on ne peut pas surveiller par le web.** Le seul
+signal de fraîcheur exploitable est Légifrance via PISTE : les arrêtés créent et
+abrogent les programmes. Filtrer sur NOR préfixe `MENE` + type arrêté.
+
+## Manques identifiés au 2026-08-22
+
+| Document | Référence | État |
+|---|---|---|
+| Français cycle 3 | BO 2025 · NOR MENE2504620A (17-04-2025) | ❌ absent |
+| Mathématiques cycle 3 | BO 2025 · même arrêté | ❌ absent |
+| Français cycle 4 | BO 2026 · NOR MENE2602912A (05-03-2026) | ❌ absent |
+
+Les autres matières du collège (physique-chimie, SVT, histoire-géo, arts
+plastiques, éducation musicale, EPS) sont **inchangées depuis BO2020** et
+couvertes par les deux documents de cycle. Le **lycée est entièrement absent** de
+l'index : voir le CSV data.gouv ci-dessous, qui le couvre par discipline.
 
 ## Cycle 3 (CM1-CM2-6ème)
 
@@ -35,6 +68,18 @@ Source : mirror reforme.education (education.gouv.fr bloque curl via Cloudflare)
 | Fichier | URL | Mis à jour |
 |---------|-----|------------|
 | `programmes_second_degre_datagouv.json` | `https://www.data.gouv.fr/api/1/datasets/programmes-denseignement-du-second-degre/` | 02/02/2026 |
+
+> ⚠️ **C'est un CSV, pas du JSON**, malgré son extension. 688 lignes, 334
+> programmes en vigueur, tous avec un lien de contenu direct.
+>
+> **Excellent pour le lycée** : 279 lignes en périmètre général+technologique →
+> 118 PDF uniques, par discipline, contenu vérifié.
+>
+> **Périmé pour le collège** : aucune entrée pour la rentrée 2022 ou après. La
+> « mise à jour du 02/02/2026 » est un rafraîchissement de métadonnées — le jeu
+> vivant est identique à cette copie, vérifié. Les réformes 2024/2025/2026 du
+> collège n'y sont pas, et le collège y est décrit par cycle entier, pas par
+> discipline.
 
 ## Veille automatique (Légifrance PISTE)
 

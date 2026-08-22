@@ -5,6 +5,16 @@
 - **Périmètre** : `apps/curriculum` **uniquement**. Les conséquences côté
   `apps/server` sont identifiées ici mais traitées dans un lot distinct.
 
+## L'impératif
+
+**Le corpus doit être complet et à jour des réformes.** Toute l'application
+repose dessus : un tuteur qui cite un programme abrogé enseigne du faux à un
+enfant, et rien dans la chaîne ne le signalerait.
+
+Ce n'est donc pas un rattrapage ponctuel. Le lot doit produire **un système qui
+reste à jour**, et le critère de réussite n'est pas « le corpus est complet
+aujourd'hui » mais « on saura quand il ne l'est plus ».
+
 ## Le problème, mesuré
 
 L'index contient **5 238 points pour 1 564 textes uniques**, et voici leur
@@ -60,6 +70,19 @@ autre public.
 entrées, dont 334 en vigueur, toutes avec un lien de contenu direct**. Il est
 dans le dépôt depuis le début et n'a jamais été utilisé : les neuf fichiers
 markdown actuels ont été collectés à la main.
+
+**Mais il ne peut pas être l'unique source, et c'est vérifié** : le jeu de
+données vivant est identique à notre copie — 688 lignes, **aucune entrée pour la
+rentrée 2022 ou après**. La « mise à jour du 2026-02-02 » affichée par data.gouv
+est un rafraîchissement de métadonnées, pas de contenu. Les réformes collège de
+2024, 2025 et 2026 en sont absentes.
+
+Le manifeste a donc **deux sources** :
+
+| Source | Couvre | État |
+|---|---|---|
+| CSV data.gouv | **lycée** : 279 lignes → 118 PDF, par discipline | complet et vérifié |
+| table datée avec référence BO | **collège** : 2 documents de cycle + 9 par discipline | à tenir à jour par la veille |
 
 ```
 CSV data.gouv (334)  ──filtre périmètre──▶  MANIFESTE  ──▶  téléchargement
@@ -162,6 +185,34 @@ significativité de Fisher.
 BM25 aide-t-il ou nuit-il ? un reranker récupère-t-il les points identifiés ? —
 et **jamais à annoncer une qualité absolue**.
 
+### F — Veille des réformes
+
+C'est l'étage qui manque, et sans lui l'impératif n'est pas tenu.
+
+**Contrainte d'accès, vérifiée** : `education.gouv.fr` et `legifrance.gouv.fr`
+renvoient **403 (Cloudflare)** sur toute requête automatisée — le flux RSS du BO
+est donc inexploitable par machine. En revanche **tous les PDF se téléchargent**
+(`cache.media.education.gouv.fr`, `www.education.gouv.fr/sites/…`, miroirs) en
+HTTP 200. **On peut tout télécharger, on ne peut pas surveiller par le web.**
+
+Le seul signal exploitable est l'**API PISTE de Légifrance** : officielle,
+authentifiée, hors Cloudflare, identifiants déjà présents en secrets GitHub. Les
+arrêtés créent et abrogent les programmes ; les deux réformes ratées portent les
+NOR `MENE2504620A` et `MENE2602912A`, qu'un filtre sur le préfixe `MENE` + type
+arrêté aurait attrapées.
+
+Trois exigences sur cette veille, qui sont la raison de son échec passé :
+
+1. **Elle échoue bruyamment.** L'implémentation actuelle retourne `None` sur
+   tout échec de sous-processus — y compris `curl` ou `pdftotext` absents, deux
+   dépendances système déclarées nulle part — puis imprime « ✓ Aucun changement
+   détecté » et sort en 0. Un détecteur de changement qui se tait quand il est
+   cassé est pire qu'absent.
+2. **Elle n'utilise plus `subprocess`.** `httpx` est déjà une dépendance ; le
+   secret PISTE transite aujourd'hui par `argv` de `curl`, donc lisible par tout
+   utilisateur de la machine (`ps`, `/proc/*/cmdline`).
+3. **Elle est testée.** Le module fait 395 lignes et n'a aucun test.
+
 ## Ce qui est supprimé
 
 ```
@@ -204,6 +255,9 @@ varient de ±1 point (HNSW approximatif et égalités RRF).
 
 1. Le test de couverture passe : chaque case `(niveau × matière)` du manifeste a
    du contenu indexé, collège et lycée général et technologique.
+1bis. La veille détecte un arrêté de programme publié depuis le dernier run, et
+   **échoue** si elle ne peut pas conclure — jamais de « aucun changement » par
+   défaut. Vérifiable en rejouant les NOR `MENE2504620A` et `MENE2602912A`.
 2. Aucune ligne du CSV dans le périmètre n'est ni mappée ni explicitement exclue.
 3. `chunk_point_id` a **un** point de définition, et le test l'importe au lieu de
    le réécrire.
@@ -217,7 +271,12 @@ varient de ±1 point (HNSW approximatif et égalités RRF).
 
 ## Risques
 
-**Le volume du lycée est inconnu.** 103 programmes environ dans le périmètre,
+**Les manques collège sont identifiés précisément** : français cycle 3 (BO 2025),
+maths cycle 3 (BO 2025), français cycle 4 (BO 2026). Les autres matières sont
+inchangées depuis BO2020 et couvertes par les documents de cycle. Ce n'est donc
+plus un inconnu.
+
+**Le volume du lycée est connu mais son extraction ne l'est pas.** 103 programmes environ dans le périmètre,
 contre 9 documents aujourd'hui. La qualité d'extraction des PDF officiels n'a
 pas été éprouvée sur ces documents. C'est le risque principal, et il est de
 nature « données », pas « code ».
