@@ -71,7 +71,7 @@ scripts/
 ├── query.py               Test interactif retrieval (chunks bruts, pas de LLM)
 ├── evaluate.py            Métriques retrieval déterministes (chunk_id recall, MRR)
 ├── generate_golden.py     Génère le golden set document-grounded
-├── audit_coverage.py      % titres BO indexés + `--list-missing` debug
+├── coverage_report.py     Couples (niveau × matière) attendus vs indexés
 └── veille_programmes.py   Détecte changements BO (data.gouv + Légifrance)
 
 data/
@@ -111,8 +111,7 @@ uv run python scripts/query.py "Théorème de Pythagore" --matiere=mathematiques
 uv run python scripts/generate_golden.py --target=300
 
 # 7. Vérifier la qualité
-uv run python scripts/audit_coverage.py              # coverage par matière
-uv run python scripts/audit_coverage.py --list-missing  # titres BO non couverts
+uv run python scripts/coverage_report.py             # sort en 1 sur toute case vide
 uv run python scripts/evaluate.py --by-matiere       # chunk_id recall + MRR
 
 # 8. Veille BO

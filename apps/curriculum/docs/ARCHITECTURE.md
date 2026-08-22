@@ -377,19 +377,19 @@ Catalogue officiel : API `data.education.gouv.fr` (dataset
 `fr-en-programmes-enseignement-2nd-degre`), mis en cache dans
 `data/raw/catalogue_second_degre.json` par `scripts/refresh_catalogue.py`.
 
-## Audit coverage
+## Couverture du corpus
 
-`scripts/audit_coverage.py` vérifie que les titres de sections des BO
-officiels sont présents dans la collection. Deux signaux :
+`scripts/coverage_report.py` compare deux choses indépendantes : la matrice
+`(niveau × matière)` que le manifeste déclare en vigueur (`schema/programmes.py`)
+et celle que l'index contient. Une case attendue et vide fait sortir le script
+en 1.
 
-- **Couverture texte** : `chars_indexés / chars_source`
-- **Couverture sections** : % des titres extraits du BO présents dans ≥1 chunk
-
-Diagnostic : `--list-missing` liste les titres BO non couverts.
-Rapport horodaté : `docs/audits/coverage_YYYY-MM-DD.md`.
-
-Dernière mesure (2026-05-18) : 100 % texte indexé sur toutes les matières,
-couverture sections BO 79 % (maths) à 100 % (SVT, EMC).
+Il remplace `audit_coverage.py`, dont la métrique
+`min(chars_indexés / chars_source, 100 %)` comparait l'index à lui-même : avec
+l'expansion multi-niveaux ce ratio vaut structurellement ×3,35, donc l'indicateur
+affichait « 100 % » tant qu'on ne perdait pas deux tiers du corpus. Le rapport
+commité du 2026-05-18 en est la preuve : `228 447/76 344`, annoncé « ✅ 100 % »,
+alors que le lycée était vide.
 
 ## Frontière des contrats avec le backend
 

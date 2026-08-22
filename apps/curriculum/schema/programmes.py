@@ -172,6 +172,9 @@ _MATIERES_CYCLE_4 = (
     "espagnol",
     "allemand",
     "italien",
+    # Le document de cycle 4 porte aussi une partie « Langues vivantes »
+    # commune, indépendante de la langue étudiée.
+    "langues_vivantes",
     "arts_plastiques",
     "education_musicale",
     "histoire_des_arts",
