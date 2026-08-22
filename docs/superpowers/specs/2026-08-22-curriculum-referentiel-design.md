@@ -99,6 +99,20 @@ rationnels      | fractions égales…     | notion d'inverse   | multiple/divis
 
 Couverture : français, mathématiques, EMC et langues vivantes, du CP à la 3e.
 
+**Et cette borne à la 3e n'est pas un trou** : le problème du cycle n'existe pas
+au lycée. Mesuré sur ScoLOMFR — nœuds de lycée, CAP et voie professionnelle
+portés par une **année ou une série** : **4 882**. Nœuds de lycée étiquetés par
+**cycle** : **0**. Au-delà de la 3e, la source est déjà annuelle et sensible à la
+série (373 points en 2de professionnelle, 173 en terminale générale, 24 en
+terminale STMG, 19 en 1re STI2D, jusqu'à S2TMD). Les deux sources sont donc
+exactement complémentaires : les repères couvrent la zone où ScoLOMFR raisonne
+par cycle, et s'arrêtent là où il raisonne par année.
+
+Le périmètre du référentiel va donc de la maternelle à la terminale, CAP et
+baccalauréat professionnel compris, avec les séries technologiques distinguées —
+`voie` et `serie` sont des champs de premier ordre, sans quoi « première » ne
+sépare pas la générale, la STMG et la professionnelle.
+
 **Contrainte d'accès vérifiée** : les pages HTML éduscol répondent **403** aux
 machines (curl et WebFetch, en-têtes de navigateur complets). L'endpoint
 `https://eduscol.education.fr/document/<id>/download` **répond 200** et sert le
