@@ -1,19 +1,16 @@
-# Corpus piloté par manifeste et test de couverture — Plan 1/3
+# Corpus piloté par un manifeste daté et test de couverture — Plan 1/3
 
-> **Pour les agents d'exécution :** SOUS-COMPÉTENCE REQUISE — utiliser
+> **Pour les agents d'exécution :** SOUS-COMPÉTENCE REQUISE —
 > `superpowers:subagent-driven-development` (recommandé) ou
-> `superpowers:executing-plans` pour dérouler ce plan tâche par tâche. Les étapes
-> utilisent des cases à cocher (`- [ ]`).
+> `superpowers:executing-plans`. Les étapes utilisent des cases à cocher.
 
-**But :** produire un corpus **complet et à jour** des programmes officiels
-(collège + lycée général et technologique), avec un test qui échoue tant qu'il
-ne l'est pas.
+**But :** produire un corpus **complet et à jour des réformes** (collège + lycée
+général), avec un test qui échoue tant qu'il ne l'est pas.
 
-**Architecture :** un *manifeste* dérivé de deux sources officielles décrit ce
-qui **doit** exister ; l'index Qdrant décrit ce qui **existe** ; un test compare
-les deux. Aucune des deux moitiés n'est écrite à la main — c'est ce qui
-distingue ce dispositif de la métrique actuelle, qui compare l'index à lui-même
-et ne peut donc pas échouer.
+**Architecture :** un *manifeste daté* dérivé de deux sources officielles décrit
+ce qui **doit** exister à une rentrée donnée ; l'index Qdrant décrit ce qui
+**existe** ; un test compare les deux. Aucune des deux moitiés n'est écrite à la
+main.
 
 **Stack :** Python 3.12, `uv`, `httpx`, `pymupdf`, `chonkie`, `qdrant-client`,
 `pydantic`. Aucune dépendance nouvelle.
@@ -22,19 +19,26 @@ et ne peut donc pas échouer.
 
 ## Contraintes globales
 
-- **Périmètre** : collège (cycle 3, cycle 4) + lycée **général et technologique**.
-  La voie professionnelle est hors périmètre.
-- **Impératif** : le corpus doit être complet **et à jour des réformes**. Toute
-  l'app repose dessus.
-- **Aucune ligne du périmètre ne peut être ignorée en silence** : soit mappée
-  vers un slug, soit exclue **avec un motif écrit**. Un test échoue sinon.
-- **`education.gouv.fr` et `legifrance.gouv.fr` renvoient 403 (Cloudflare)** sur
-  les pages HTML. Les PDF, eux, se téléchargent (HTTP 200 vérifié). Ne jamais
-  scraper ces sites ; utiliser les URL de PDF directes.
-- **Modèle d'embedding** : `Qwen3-Embedding-8B` @1024D via OVH — ne pas y
-  toucher (`docs/adr/0002-embeddings-manages.md`).
+- **Périmètre** : collège (cycle 3, cycle 4) + lycée **général**. Les voies
+  technologique et professionnelle sont hors périmètre — notre payload ne porte
+  pas la série, et mélanger STMG avec la voie générale sous `premiere`
+  remplacerait un silence par une confusion.
+- **Le manifeste est daté.** Une entrée vaut pour un couple (matière, niveau) à
+  partir d'une rentrée donnée. Les réformes 2025 et 2026 entrent en vigueur
+  **échelonnées par niveau** : à la rentrée 2026, un élève de 4e suit encore le
+  programme BO2020. Ne jamais associer un programme à un cycle entier.
+- **Aucune ligne du périmètre ne peut être ignorée en silence** : soit mappée,
+  soit exclue **avec un motif écrit**. Un test échoue sinon, un autre échoue si
+  le périmètre se vide.
+- **Aucune page HTML officielle n'est accessible** (403 Cloudflare sur
+  `education.gouv.fr`, `eduscol`, `legifrance`). Les PDF se téléchargent en 200.
+  Ne jamais scraper ; utiliser les URL de PDF directes, toutes vérifiées ici.
+- **Aucun miroir tiers.** Les URL non officielles sont interdites, même si elles
+  répondent.
+- **Modèle d'embedding** : `Qwen3-Embedding-8B` @1024D via OVH — ne pas y toucher
+  (`docs/adr/0002-embeddings-manages.md`).
 - **Qualité** : `uv run ruff check . && uv run ruff format --check .` et
-  `uv run pytest -q` doivent passer avant chaque commit.
+  `uv run pytest -q` passent avant chaque commit.
 - Toutes les commandes s'exécutent depuis `apps/curriculum/`.
 
 ---
@@ -42,18 +46,16 @@ et ne peut donc pas échouer.
 ### Tâche 1 : Un seul point de définition pour l'identifiant de chunk
 
 L'identifiant `uuid5(matière:niveau:texte)` relie l'index, le manifeste et
-l'évaluation. Il existe aujourd'hui en **quatre copies** (`scripts/ingest.py:450`,
+l'évaluation. Il existe en **quatre copies** (`scripts/ingest.py:450`,
 `scripts/generate_golden.py:156`, `tests/test_ingest.py:292`,
 `tests/test_golden.py:86`) et le test censé le verrouiller **réécrit la formule**
 au lieu d'importer la source. Si quelqu'un ajoute un champ au seed, les tests
 restent verts et la réindexation crée des identifiants neufs.
 
-**Fichiers :**
-- Modifier : `schema/document.py`, `schema/__init__.py`, `scripts/ingest.py`
-- Test : `tests/test_document_id.py` (créer)
+**Fichiers :** modifier `schema/document.py`, `schema/__init__.py`,
+`scripts/ingest.py` ; créer `tests/test_document_id.py`.
 
-**Interfaces :**
-- Produit : `chunk_point_id(matiere: str, niveau: str, text: str) -> str`
+**Interface produite :** `chunk_point_id(matiere: str, niveau: str, text: str) -> str`
 
 - [ ] **Étape 1 : écrire le test qui échoue**
 
@@ -61,9 +63,12 @@ restent verts et la réindexation crée des identifiants neufs.
 # tests/test_document_id.py
 """L'identifiant de point est le lien entre l'index et tout le reste.
 
-Ces tests importent la SEULE définition. Une copie qui diverge doit casser
-ici, pas six mois plus tard sur un index à moitié orphelin.
+Ces tests importent la SEULE définition. Une copie qui diverge doit casser ici,
+pas six mois plus tard sur un index à moitié orphelin.
 """
+
+import uuid
+from pathlib import Path
 
 from schema import chunk_point_id
 
@@ -95,38 +100,35 @@ def test_le_texte_fait_partie_de_l_identite():
 
 
 def test_forme_uuid_acceptee_par_qdrant():
-    import uuid
-    valeur = chunk_point_id("svt", "sixieme", "La respiration cellulaire")
-    assert uuid.UUID(valeur)
+    assert uuid.UUID(chunk_point_id("svt", "sixieme", "La respiration cellulaire"))
 
 
 def test_ingest_utilise_la_fonction_partagee():
-    """Garde-fou contre la réapparition d'une copie : `ingest` ne doit plus
-    contenir de calcul d'uuid5 en propre."""
-    from pathlib import Path
+    """Garde-fou contre la réapparition d'une copie."""
     source = Path(__file__).resolve().parent.parent / "scripts" / "ingest.py"
-    contenu = source.read_text(encoding="utf-8")
-    assert "uuid5" not in contenu, "ingest.py recalcule un identifiant au lieu d'importer chunk_point_id"
+    assert "uuid5" not in source.read_text(encoding="utf-8"), (
+        "ingest.py recalcule un identifiant au lieu d'importer chunk_point_id"
+    )
 ```
 
-- [ ] **Étape 2 : lancer le test et vérifier qu'il échoue**
+- [ ] **Étape 2 : vérifier l'échec**
 
-Commande : `uv run pytest tests/test_document_id.py -q`
-Attendu : ÉCHEC — `ImportError: cannot import name 'chunk_point_id'`
+`uv run pytest tests/test_document_id.py -q` → `ImportError: cannot import name 'chunk_point_id'`
 
-- [ ] **Étape 3 : écrire l'implémentation minimale**
+- [ ] **Étape 3 : implémenter**
 
-Ajouter à la fin de `schema/document.py` :
+Ajouter à la fin de `schema/document.py` (`import hashlib` en tête si absent ;
+`uuid` y est déjà) :
 
 ```python
 def chunk_point_id(matiere: str, niveau: str, text: str) -> str:
     """Identifiant stable et idempotent d'un point Qdrant.
 
     Dérivé du CONTENU seul : réingérer ne crée pas de doublon, et modifier un
-    texte crée un point neuf. La matière et le niveau font partie du seed
-    parce que le même texte existe légitimement plusieurs fois — les préambules
-    pédagogiques sont identiques entre langues vivantes, et un chunk de cycle
-    est dupliqué sur les niveaux du cycle.
+    texte crée un point neuf. La matière et le niveau font partie du seed parce
+    que le même texte existe légitimement plusieurs fois — les préambules
+    pédagogiques sont identiques entre langues vivantes, et un chunk de cycle est
+    dupliqué sur les niveaux du cycle.
 
     SEULE définition de cette formule. La réécrire ailleurs romprait le lien
     entre l'index et le manifeste sans qu'aucun test ne le voie.
@@ -136,35 +138,16 @@ def chunk_point_id(matiere: str, niveau: str, text: str) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, digest))
 ```
 
-En tête de `schema/document.py`, ajouter si absent : `import hashlib` et
-`import uuid`.
+Dans `schema/__init__.py`, ajouter `chunk_point_id` à l'import depuis `.document`
+**et** à `__all__` (ordre alphabétique).
 
-Dans `schema/__init__.py`, ajouter `chunk_point_id` à l'import depuis
-`.document` **et** à `__all__` (ordre alphabétique).
+- [ ] **Étape 4 : brancher `ingest.py`**
 
-- [ ] **Étape 4 : brancher `ingest.py` sur la fonction partagée**
+Remplacer le bloc de calcul (autour de la ligne 445) par
+`point_id = chunk_point_id(matiere, niveau, text)`, ajouter l'import, retirer
+`hashlib`/`uuid` s'ils ne servent plus (ruff le signalera).
 
-Dans `scripts/ingest.py`, remplacer le bloc de calcul (autour de la ligne 445) :
-
-```python
-        id_seed = f"{matiere}:{niveau}:{text}"
-        text_hash = hashlib.sha256(id_seed.encode("utf-8")).hexdigest()
-        point_id = str(_uuid.uuid5(_uuid.NAMESPACE_URL, text_hash))
-```
-
-par :
-
-```python
-        point_id = chunk_point_id(matiere, niveau, text)
-```
-
-Ajouter `chunk_point_id` à l'import `from schema import ...` en tête de fichier.
-Retirer les imports `hashlib` et `uuid` s'ils ne servent plus (ruff le signalera).
-
-- [ ] **Étape 5 : lancer les tests et vérifier qu'ils passent**
-
-Commande : `uv run pytest tests/test_document_id.py -q && uv run ruff check .`
-Attendu : 6 passed, ruff sans erreur
+- [ ] **Étape 5 : vérifier** — `uv run pytest tests/test_document_id.py -q && uv run ruff check .` → 6 passed
 
 - [ ] **Étape 6 : commit**
 
@@ -175,20 +158,187 @@ git commit -m "refactor: give the chunk point id a single definition"
 
 ---
 
-### Tâche 2 : Table de correspondance, et la règle du zéro silence
+### Tâche 2 : Le catalogue officiel vient de l'API, plus d'une copie figée
 
-Le CSV officiel porte **103 disciplines** et **32 niveaux** ; notre schéma en a
-24 et 7. La table qui les relie est exactement l'endroit d'où venait le bug P0-1
-(l'agent demandait `histoire`, l'index portait `histoire_geo`).
+`data/raw/programmes_second_degre_datagouv.json` est une copie CSV commitée. Le
+jeu est publié par une **API** : `data.education.gouv.fr`, Explore v2.1, dataset
+`fr-en-programmes-enseignement-2nd-degre` (688 enregistrements). Une copie figée
+dans le dépôt ne peut pas signaler qu'elle a vieilli ; un cache daté, comparé à
+l'API par un test, le peut.
 
-**Fichiers :**
-- Créer : `schema/mapping.py`, `tests/test_mapping.py`
+**Fichiers :** créer `scripts/refresh_catalogue.py`, `tests/test_catalogue.py` ;
+supprimer `data/raw/programmes_second_degre_datagouv.json`.
 
-**Interfaces :**
-- Produit : `DISCIPLINE_VERS_SLUG: dict[str, str]`,
-  `NIVEAU_VERS_NIVEAUX: dict[str, tuple[str, ...]]`,
-  `DISCIPLINES_EXCLUES: dict[str, str]` (libellé → motif),
-  `NIVEAUX_EXCLUS: dict[str, str]`
+**Interface produite :** `charger_catalogue() -> list[dict]`,
+`telecharger_catalogue() -> list[dict]`
+
+- [ ] **Étape 1 : écrire le test qui échoue**
+
+```python
+# tests/test_catalogue.py
+"""Le catalogue officiel, et la preuve qu'il n'a pas vieilli sans qu'on le voie.
+
+Le jeu de données est GELÉ à la rentrée 2021 (vérifié : 11 entrées en 2021, zéro
+après). Ce n'est pas un défaut du code, c'est un fait sur la source — et c'est
+exactement pourquoi le manifeste a une seconde moitié.
+"""
+
+import pytest
+
+from scripts.refresh_catalogue import CHAMPS_ATTENDUS, charger_catalogue
+
+
+def test_le_cache_est_present_et_substantiel():
+    lignes = charger_catalogue()
+    assert len(lignes) >= 600, f"catalogue anormalement court : {len(lignes)}"
+
+
+def test_les_champs_attendus_sont_tous_la():
+    """Une colonne renommée en amont doit casser ici, pas produire un manifeste
+    vide qui passerait tous les autres tests au vert."""
+    manquants = CHAMPS_ATTENDUS - set(charger_catalogue()[0])
+    assert not manquants, f"champs absents du catalogue : {manquants}"
+
+
+@pytest.mark.network
+def test_le_cache_est_identique_a_l_api():
+    """Rougit quand le ministère publie. C'est le signal qu'on attend depuis
+    2021 : il ne s'est encore jamais déclenché."""
+    from scripts.refresh_catalogue import telecharger_catalogue
+
+    distant = telecharger_catalogue()
+    local = charger_catalogue()
+    assert len(distant) == len(local), (
+        f"l'API renvoie {len(distant)} lignes, le cache en a {len(local)} — "
+        "relancer scripts/refresh_catalogue.py et vérifier ce qui a changé"
+    )
+```
+
+- [ ] **Étape 2 : vérifier l'échec** — `uv run pytest tests/test_catalogue.py -q` → module absent
+
+- [ ] **Étape 3 : implémenter**
+
+```python
+#!/usr/bin/env python3
+"""Catalogue officiel des programmes du second degré.
+
+Source : API Opendatasoft du ministère (Explore v2.1), dataset
+`fr-en-programmes-enseignement-2nd-degre`. 688 enregistrements, 334 en vigueur.
+
+Le cache est commité pour que les tests et l'ingestion tournent sans réseau ;
+`tests/test_catalogue.py::test_le_cache_est_identique_a_l_api` rougit quand
+l'amont bouge. Une copie figée sans ce test serait exactement le dispositif qui
+nous a fait rater trois réformes.
+
+Usage : uv run python scripts/refresh_catalogue.py
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import httpx
+
+BASE = Path(__file__).resolve().parent.parent
+CACHE = BASE / "data" / "raw" / "catalogue_second_degre.json"
+API = (
+    "https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/"
+    "fr-en-programmes-enseignement-2nd-degre/records"
+)
+TIMEOUT_S = 60.0
+CHAMPS_ATTENDUS = {
+    "descriptif",
+    "voie",
+    "niveau_d_enseignement",
+    "discipline",
+    "texte_officiel",
+    "contenu_sur_le_site",
+    "entre_en_vigueur_a_la_rentree",
+    "abroge_a_la_rentree",
+}
+
+
+def telecharger_catalogue() -> list[dict]:
+    """Pagination complète. Lève sur toute réponse non 200."""
+    lignes: list[dict] = []
+    offset = 0
+    while True:
+        reponse = httpx.get(API, params={"limit": 100, "offset": offset}, timeout=TIMEOUT_S)
+        if reponse.status_code != 200:
+            raise RuntimeError(f"API catalogue → HTTP {reponse.status_code} : {reponse.text[:200]}")
+        charge = reponse.json()
+        lignes.extend(charge["results"])
+        offset += 100
+        if offset >= charge["total_count"]:
+            return lignes
+
+
+def charger_catalogue() -> list[dict]:
+    return json.loads(CACHE.read_text(encoding="utf-8"))
+
+
+def main() -> None:
+    lignes = telecharger_catalogue()
+    ancien = len(charger_catalogue()) if CACHE.exists() else 0
+    CACHE.write_text(json.dumps(lignes, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"{len(lignes)} enregistrements écrits dans {CACHE} (avant : {ancien})")
+    if ancien and ancien != len(lignes):
+        print("⚠ le nombre d'entrées a changé — vérifier ce que le ministère a publié")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Déclarer les marqueurs dans `pyproject.toml`. **Ne pas réutiliser `integration`**,
+qui existe déjà dans `tests/conftest.py` avec un autre sens (« lit les vrais
+fichiers, sans appel réseau ») :
+
+```toml
+[tool.pytest.ini_options]
+addopts = "-m 'not network and not qdrant'"
+markers = [
+  "network: appelle une API publique (data.education.gouv.fr, PISTE)",
+  "qdrant: interroge le vrai cluster Qdrant Cloud (clé requise)",
+]
+```
+
+`uv run pytest -q` reste donc hors-ligne ; `uv run pytest -m network -q` et
+`-m qdrant` s'appellent explicitement.
+
+- [ ] **Étape 4 : produire le cache et supprimer la copie figée**
+
+```bash
+uv run python scripts/refresh_catalogue.py
+git rm data/raw/programmes_second_degre_datagouv.json
+```
+
+- [ ] **Étape 5 : vérifier** — `uv run pytest tests/test_catalogue.py -q` puis
+`uv run pytest tests/test_catalogue.py -m network -q` → tout passe
+
+- [ ] **Étape 6 : commit**
+
+```bash
+git add scripts/refresh_catalogue.py tests/test_catalogue.py pyproject.toml data/raw/catalogue_second_degre.json
+git commit -m "feat: read the official programme catalogue from its API, not a frozen copy"
+```
+
+---
+
+### Tâche 3 : Table de correspondance, et la règle du zéro silence
+
+L'API porte 59 libellés de discipline sur le périmètre ; notre schéma en a 24. La
+table qui les relie est exactement l'endroit d'où venait le bug P0-1 (l'agent
+demandait `histoire`, l'index portait `histoire_geo`).
+
+**Fichiers :** créer `schema/mapping.py`, `tests/test_mapping.py`.
+
+**Interfaces produites :** `lignes_du_perimetre(lignes) -> list[dict]`,
+`DISCIPLINE_VERS_SLUG`, `DISCIPLINES_EXCLUES`, `NIVEAU_VERS_NIVEAU`,
+`NIVEAUX_EXCLUS`, `URLS_EXCLUES`
 
 - [ ] **Étape 1 : écrire le test qui échoue**
 
@@ -196,37 +346,40 @@ Le CSV officiel porte **103 disciplines** et **32 niveaux** ; notre schéma en a
 # tests/test_mapping.py
 """Aucune ligne du périmètre ne peut disparaître en silence.
 
-Une discipline officielle ni mappée ni exclue est un trou dans le corpus que
-rien d'autre ne signalerait : Qdrant ne renvoie pas d'erreur pour un filtre
-qui ne matche rien, il renvoie zéro résultat.
+Une discipline officielle ni mappée ni exclue est un trou dans le corpus que rien
+d'autre ne signalerait : Qdrant ne renvoie pas d'erreur pour un filtre qui ne
+matche rien, il renvoie zéro résultat.
 """
-
-import csv
-from pathlib import Path
 
 from schema.mapping import (
     DISCIPLINE_VERS_SLUG,
     DISCIPLINES_EXCLUES,
-    NIVEAU_VERS_NIVEAUX,
+    NIVEAU_VERS_NIVEAU,
     NIVEAUX_EXCLUS,
+    URLS_EXCLUES,
     lignes_du_perimetre,
 )
+from scripts.refresh_catalogue import charger_catalogue
 
-CSV = Path(__file__).resolve().parent.parent / "data" / "raw" / "programmes_second_degre_datagouv.json"
+
+def _perimetre():
+    return lignes_du_perimetre(charger_catalogue())
 
 
-def _lignes():
-    with CSV.open(encoding="utf-8-sig") as f:
-        return list(csv.DictReader(f, delimiter=";"))
+def test_le_perimetre_n_est_pas_vide():
+    """Le garde-fou du garde-fou : une colonne renommée en amont ferait passer
+    tous les autres tests au vert sur un périmètre vide."""
+    lignes = _perimetre()
+    assert len(lignes) >= 90, f"périmètre anormalement petit : {len(lignes)} lignes"
 
 
 def test_chaque_discipline_du_perimetre_est_mappee_ou_exclue():
     manquantes = sorted(
         {
-            r["Discipline"].strip()
-            for r in lignes_du_perimetre(_lignes())
-            if r["Discipline"].strip() not in DISCIPLINE_VERS_SLUG
-            and r["Discipline"].strip() not in DISCIPLINES_EXCLUES
+            (r["discipline"] or "").strip()
+            for r in _perimetre()
+            if (r["discipline"] or "").strip() not in DISCIPLINE_VERS_SLUG
+            and (r["discipline"] or "").strip() not in DISCIPLINES_EXCLUES
         }
     )
     assert not manquantes, f"disciplines ni mappées ni exclues : {manquantes}"
@@ -235,386 +388,448 @@ def test_chaque_discipline_du_perimetre_est_mappee_ou_exclue():
 def test_chaque_niveau_du_perimetre_est_mappe_ou_exclu():
     manquants = sorted(
         {
-            r["Niveau d'enseignement"].strip()
-            for r in lignes_du_perimetre(_lignes())
-            if r["Niveau d'enseignement"].strip() not in NIVEAU_VERS_NIVEAUX
-            and r["Niveau d'enseignement"].strip() not in NIVEAUX_EXCLUS
+            (r["niveau_d_enseignement"] or "").strip()
+            for r in _perimetre()
+            if (r["niveau_d_enseignement"] or "").strip() not in NIVEAU_VERS_NIVEAU
+            and (r["niveau_d_enseignement"] or "").strip() not in NIVEAUX_EXCLUS
         }
     )
     assert not manquants, f"niveaux ni mappés ni exclus : {manquants}"
 
 
+def test_chaque_ligne_sans_pdf_est_exclue_avec_un_motif():
+    """12 lignes du périmètre ne pointent pas un PDF. Les filtrer en silence
+    serait la même faute que celle qu'on répare, en plus discret."""
+    orphelines = sorted(
+        {
+            (r["descriptif"] or "").strip()
+            for r in _perimetre()
+            if not (r["contenu_sur_le_site"] or "").strip().lower().endswith(".pdf")
+            and (r["descriptif"] or "").strip() not in URLS_EXCLUES
+        }
+    )
+    assert not orphelines, f"lignes sans PDF ni motif d'exclusion : {orphelines}"
+
+
 def test_toute_exclusion_porte_un_motif_non_vide():
-    for table in (DISCIPLINES_EXCLUES, NIVEAUX_EXCLUS):
+    for table in (DISCIPLINES_EXCLUES, NIVEAUX_EXCLUS, URLS_EXCLUES):
         vides = [k for k, motif in table.items() if not motif.strip()]
         assert not vides, f"exclusions sans motif : {vides}"
 
 
 def test_les_slugs_cibles_existent_dans_le_schema():
     from schema import Matiere
-    connus = {m.value for m in Matiere}
-    inconnus = sorted(set(DISCIPLINE_VERS_SLUG.values()) - connus)
+
+    inconnus = sorted(set(DISCIPLINE_VERS_SLUG.values()) - {m.value for m in Matiere})
     assert not inconnus, f"slugs absents de l'enum Matiere : {inconnus}"
 
 
 def test_les_niveaux_cibles_existent_dans_le_schema():
     from schema import NiveauCollege, NiveauLycee
+
     connus = {n.value for n in NiveauCollege} | {n.value for n in NiveauLycee}
-    cibles = {n for tup in NIVEAU_VERS_NIVEAUX.values() for n in tup}
-    inconnus = sorted(cibles - connus)
+    inconnus = sorted(set(NIVEAU_VERS_NIVEAU.values()) - connus)
     assert not inconnus, f"niveaux absents des enums : {inconnus}"
 ```
 
-- [ ] **Étape 2 : lancer le test et vérifier qu'il échoue**
+- [ ] **Étape 2 : vérifier l'échec** — `ModuleNotFoundError: schema.mapping`
 
-Commande : `uv run pytest tests/test_mapping.py -q`
-Attendu : ÉCHEC — `ModuleNotFoundError: No module named 'schema.mapping'`
-
-- [ ] **Étape 3 : créer le squelette du module**
+- [ ] **Étape 3 : créer le squelette**
 
 ```python
 # schema/mapping.py
 """Correspondance entre les libellés officiels et nos slugs.
 
-Le CSV data.gouv porte 103 disciplines et 32 niveaux ; notre schéma en a 24 et
-7. Cette table fait le pont — et c'est précisément l'endroit où un décalage
-devient invisible : Qdrant ne renvoie pas d'erreur pour un filtre qui ne matche
-rien, il renvoie zéro résultat, et l'agent conclut que le programme ne dit rien.
+L'API porte 59 disciplines sur le périmètre ; notre schéma en a 24. Cette table
+fait le pont — et c'est précisément là qu'un décalage devient invisible : Qdrant
+ne renvoie pas d'erreur pour un filtre qui ne matche rien, il renvoie zéro
+résultat, et l'agent conclut que le programme ne dit rien.
 
 RÈGLE : toute entrée du périmètre est soit mappée, soit exclue AVEC UN MOTIF.
-`tests/test_mapping.py` échoue sinon. Si le ministère publie une discipline
-l'an prochain, le test rougit au lieu de la laisser disparaître.
+`tests/test_mapping.py` échoue sinon. Si le ministère publie une discipline l'an
+prochain, le test rougit au lieu de la laisser disparaître.
+
+PÉRIMÈTRE : collège + lycée GÉNÉRAL. La voie technologique est exclue parce que
+notre payload ne porte pas la série : indexer le programme de maths STMG sous
+`premiere` le servirait à un élève de première générale.
 """
 
 from __future__ import annotations
 
-# Périmètre produit : collège + lycée général et technologique.
-VOIES_RETENUES = frozenset({"Générale", "Technologique", "Générale et technologique"})
 NIVEAUX_COLLEGE = frozenset({"Collège", "Cycle 3", "Cycle 4"})
+NIVEAUX_LYCEE_GENERAL = frozenset(
+    {"Seconde générale et technologique", "Première générale", "Terminale générale"}
+)
 
 
 def lignes_du_perimetre(lignes: list[dict]) -> list[dict]:
-    """Filtre les entrées en vigueur du périmètre produit.
+    """Entrées en vigueur du périmètre produit.
 
-    « Abrogé à la rentrée » vaut `-` quand le texte est toujours en vigueur :
-    tester la vacuité seule exclurait tout le jeu de données.
+    « Abrogé à la rentrée » vaut `-` ou `None` quand le texte est toujours en
+    vigueur : tester la vacuité seule exclurait tout le jeu de données.
     """
     retenues = []
     for r in lignes:
-        if (r.get("Abrogé à la rentrée") or "").strip() not in ("", "-"):
+        if (r.get("abroge_a_la_rentree") or "-").strip() not in ("", "-"):
             continue
-        niveau = (r.get("Niveau d'enseignement") or "").strip()
-        voie = (r.get("Voie") or "").strip()
-        if niveau in NIVEAUX_COLLEGE or voie in VOIES_RETENUES:
+        niveau = (r.get("niveau_d_enseignement") or "").strip()
+        if niveau in NIVEAUX_COLLEGE or niveau in NIVEAUX_LYCEE_GENERAL:
             retenues.append(r)
     return retenues
 
 
+NIVEAU_VERS_NIVEAU: dict[str, str] = {
+    "Seconde générale et technologique": "seconde",
+    "Première générale": "premiere",
+    "Terminale générale": "terminale",
+}
+
+NIVEAUX_EXCLUS: dict[str, str] = {
+    # Le collège n'est décrit dans l'API que par des documents de cycle sans
+    # discipline. Ils sont déclarés explicitement dans schema/programmes.py,
+    # avec la liste des matières qu'ils portent.
+    "Collège": "documents de cycle, déclarés dans schema/programmes.py",
+    "Cycle 3": "document multi-matières, déclaré dans schema/programmes.py",
+    "Cycle 4": "document multi-matières, déclaré dans schema/programmes.py",
+}
+
 DISCIPLINE_VERS_SLUG: dict[str, str] = {}
 DISCIPLINES_EXCLUES: dict[str, str] = {}
-NIVEAU_VERS_NIVEAUX: dict[str, tuple[str, ...]] = {}
-NIVEAUX_EXCLUS: dict[str, str] = {}
+URLS_EXCLUES: dict[str, str] = {}
 ```
 
-- [ ] **Étape 4 : remplir les tables jusqu'à ce que le test passe**
+- [ ] **Étape 4 : remplir les tables jusqu'au vert**
 
-**Le test EST la liste de travail.** Il n'y a rien à deviner : il affiche les
-libellés non traités. Boucle à répéter jusqu'au vert :
+**Le test EST la liste de travail.** Il affiche les libellés non traités :
 
 ```bash
 uv run pytest tests/test_mapping.py::test_chaque_discipline_du_perimetre_est_mappee_ou_exclue -q
-# → AssertionError: disciplines ni mappées ni exclues : ['Arts', 'Biochimie…', …]
 ```
 
-Pour chaque libellé affiché, appliquer cette règle de décision :
+Règle de décision pour chaque libellé affiché :
 
 | Le libellé désigne… | Action |
 |---|---|
 | une matière du produit (`Matiere`) | `DISCIPLINE_VERS_SLUG[libellé] = "slug"` |
-| une spécialité de série technologique sans équivalent (« Biotechnologies », « Analyse et méthode en design », « Agronomie-Economie-Territoires »…) | `DISCIPLINES_EXCLUES[libellé] = "spécialité de série technologique sans équivalent produit"` |
-| un enseignement optionnel ou facultatif dont la matière existe déjà (« Enseignement optionnel d'arts ») | mapper vers le slug de la matière |
-| `-` (ligne sans discipline : programme de cycle entier) | `DISCIPLINES_EXCLUES["-"] = "document multi-matières, ventilé à l'extraction"` |
+| un enseignement optionnel dont la matière existe (« Enseignement optionnel d'arts ») | mapper vers le slug de la matière |
+| une spécialité sans équivalent produit (« Pratiques sociales et culturelles », « Biotechnologies ») | `DISCIPLINES_EXCLUES[libellé] = "spécialité sans équivalent dans l'enum Matiere"` |
+| une langue que le produit ne porte pas (breton, russe, chinois…) | `DISCIPLINES_EXCLUES[libellé] = "langue hors périmètre produit"` |
 
-Relancer après chaque poignée d'entrées. Même boucle pour les niveaux avec
-`test_chaque_niveau_du_perimetre_est_mappe_ou_exclu`.
+Même boucle pour les niveaux et pour les lignes sans PDF
+(`test_chaque_ligne_sans_pdf_est_exclue_avec_un_motif` affiche leur descriptif ;
+les motifs typiques : « contenu publié en page HTML, inaccessible (403) », « lien
+mort »).
 
 **Ne pas étendre l'enum `Matiere` ici.** Si une matière du produit manque
-vraiment (ex. « philosophie » absente de l'enum), l'ajouter est une décision de
-schéma : la noter et la traiter en fin de tâche, en une seule fois, avec le test
+vraiment, le noter et traiter en fin de plan, en une fois, avec
 `test_les_slugs_cibles_existent_dans_le_schema` comme garde-fou.
 
-Décisions déjà tranchées, à reporter telles quelles :
-
-```python
-NIVEAU_VERS_NIVEAUX = {
-    # Le collège est décrit par cycle dans le CSV : un document couvre
-    # plusieurs niveaux, d'où le tuple.
-    "Cycle 3": ("sixieme",),          # CM1/CM2 sont hors produit (primaire)
-    "Cycle 4": ("cinquieme", "quatrieme", "troisieme"),
-    "Collège": ("sixieme", "cinquieme", "quatrieme", "troisieme"),
-    "Seconde générale et technologique": ("seconde",),
-    "Première générale": ("premiere",),
-    "Terminale générale": ("terminale",),
-    # Séries technologiques : le niveau produit est le même, la série est une
-    # spécialisation que notre schéma ne porte pas.
-    "Première STMG": ("premiere",),
-    "Terminale STMG": ("terminale",),
-    # Les autres séries technologiques (STI2D, STL, STD2A, STHR, ST2S, S2TMD)
-    # suivent le même principe : le niveau produit est premiere/terminale, la
-    # série est une spécialisation que notre schéma ne porte pas.
-}
-
-NIVEAUX_EXCLUS = {
-    "Seconde professionnelle": "voie professionnelle hors périmètre produit",
-    "Première professionnelle": "voie professionnelle hors périmètre produit",
-    "Terminale professionnelle": "voie professionnelle hors périmètre produit",
-    "Première année de CAP": "voie professionnelle hors périmètre produit",
-    "Terminale L": "série supprimée par la réforme du lycée de 2019",
-    "Terminale S": "série supprimée par la réforme du lycée de 2019",
-    "Terminale ES": "série supprimée par la réforme du lycée de 2019",
-    "Première L": "série supprimée par la réforme du lycée de 2019",
-    "Première S": "série supprimée par la réforme du lycée de 2019",
-    "Sections internationales italiennes au collège": "public spécifique hors produit",
-}
-```
-
-Pour les disciplines, la règle de décision : mapper vers le slug existant
-lorsque l'enseignement correspond à une matière du produit ; exclure avec motif
-lorsqu'il s'agit d'une spécialité de série technologique sans équivalent
-(« Biotechnologies », « Analyse et méthode en design »…). **Ne pas étendre l'enum
-`Matiere` dans cette tâche** : si une matière manque vraiment, le noter et
-traiter en fin de plan.
-
-- [ ] **Étape 5 : lancer les tests et vérifier qu'ils passent**
-
-Commande : `uv run pytest tests/test_mapping.py -q && uv run ruff check .`
-Attendu : 5 passed
+- [ ] **Étape 5 : vérifier** — `uv run pytest tests/test_mapping.py -q && uv run ruff check .` → 7 passed
 
 - [ ] **Étape 6 : commit**
 
 ```bash
 git add schema/mapping.py tests/test_mapping.py
-git commit -m "feat: map official programme labels to our slugs, with no silent drops"
+git commit -m "map official programme labels to our slugs, with no silent drops"
 ```
 
 ---
 
-### Tâche 3 : Le manifeste
+### Tâche 4 : Le manifeste daté
 
-**Fichiers :**
-- Créer : `schema/sources.py`, `tests/test_sources.py`
+Le cœur du lot. **Une entrée = un couple (matière, niveau) applicable à partir
+d'une rentrée.** Les réformes entrent en vigueur échelonnées : à la rentrée 2026,
+la 5e suit le nouveau programme de français et la 4e l'ancien. Un manifeste qui
+raisonnerait par cycle servirait à un élève de 4e un texte qui ne s'applique pas
+à lui.
 
-**Interfaces :**
-- Produit : `SourceProgramme` (dataclass gelée : `slug_matiere: str`,
-  `niveaux: tuple[str, ...]`, `url: str`, `reference: str`, `origine: str`),
-  `charger_manifeste() -> list[SourceProgramme]`,
-  `matrice_attendue() -> set[tuple[str, str]]` (couples niveau × matière)
+**Fichiers :** créer `schema/programmes.py`, `tests/test_programmes.py`.
+
+**Interfaces produites :** `Programme` (dataclass gelée), `manifeste()`,
+`en_vigueur(rentree) -> dict[tuple[str, str], Programme]`,
+`matrice_attendue(rentree) -> set[tuple[str, str]]`, `NOR_TRAITES`,
+`RENTREE_COURANTE`
 
 - [ ] **Étape 1 : écrire le test qui échoue**
 
 ```python
-# tests/test_sources.py
-"""Le manifeste dit ce qui DOIT exister. C'est la moitié du test de couverture
-que l'index ne peut pas fournir."""
+# tests/test_programmes.py
+"""Le manifeste dit ce qui DOIT exister, et à partir de quand.
 
-from schema.sources import SourceProgramme, charger_manifeste, matrice_attendue
+Le datage n'est pas un raffinement : les réformes 2025 et 2026 s'appliquent
+niveau par niveau sur quatre rentrées. Servir le nouveau programme de français à
+un élève de 4e en 2026 serait lui enseigner un texte qui ne le concerne pas.
+"""
+
+from schema.programmes import (
+    RENTREE_COURANTE,
+    en_vigueur,
+    manifeste,
+    matrice_attendue,
+)
 
 
-def test_le_manifeste_couvre_le_college_et_le_lycee():
-    niveaux = {n for s in charger_manifeste() for n in s.niveaux}
+def test_le_manifeste_couvre_le_college_et_le_lycee_general():
+    niveaux = {p.niveau for p in manifeste()}
     assert {"sixieme", "cinquieme", "quatrieme", "troisieme"} <= niveaux
     assert {"seconde", "premiere", "terminale"} <= niveaux
 
 
-def test_les_reformes_recentes_du_college_sont_presentes():
-    """Elles ne sont PAS dans le CSV data.gouv, qui s'arrête à la rentrée 2021.
-    Leur absence ici ferait régresser le collège de six ans."""
-    refs = {s.reference for s in charger_manifeste()}
-    assert any("MENE2504620A" in r for r in refs), "français/maths cycle 3 BO2025 absent"
-    assert any("MENE2602912A" in r for r in refs), "français/maths cycle 4 BO2026 absent"
+def test_un_programme_futur_n_est_pas_servi_avant_sa_rentree():
+    """Français cycle 4 : 5e en 2026, 4e en 2027, 3e en 2028."""
+    assert en_vigueur(2026)[("quatrieme", "francais")].vigueur == 2020
+    assert en_vigueur(2027)[("quatrieme", "francais")].vigueur == 2026
+
+
+def test_la_reforme_deja_applicable_remplace_l_ancienne():
+    assert en_vigueur(2026)[("cinquieme", "francais")].vigueur == 2026
+    assert en_vigueur(2025)[("cinquieme", "francais")].vigueur == 2020
+
+
+def test_les_langues_du_lycee_ne_sont_plus_celles_de_l_api():
+    """Le programme de langues 2025 couvre AUSSI le lycée : l'API, gelée en 2021,
+    sert un texte abrogé."""
+    entree = en_vigueur(2026)[("seconde", "anglais")]
+    assert entree.vigueur == 2025
+    assert entree.nor == "MENE2504621A"
 
 
 def test_chaque_entree_porte_une_url_et_une_reference():
-    for s in charger_manifeste():
-        assert s.url.startswith("http"), f"URL invalide : {s}"
-        assert s.reference.strip(), f"référence vide : {s}"
+    for p in manifeste():
+        assert p.url.startswith("https://"), f"URL invalide : {p}"
+        assert p.reference.strip(), f"référence vide : {p}"
+        assert p.origine in {"api", "bo"}
+
+
+def test_aucune_url_de_miroir_tiers():
+    """Un programme officiel ne se lit que sur un domaine officiel."""
+    autorises = ("education.gouv.fr", "cache.media.education.gouv.fr")
+    for p in manifeste():
+        assert any(d in p.url for d in autorises), f"domaine non officiel : {p.url}"
 
 
 def test_la_matrice_attendue_est_un_produit_niveau_matiere():
-    matrice = matrice_attendue()
+    matrice = matrice_attendue(RENTREE_COURANTE)
     assert ("terminale", "philosophie") in matrice
     assert ("cinquieme", "mathematiques") in matrice
-    assert all(isinstance(c, tuple) and len(c) == 2 for c in matrice)
+    assert ("sixieme", "histoire_geo") in matrice, (
+        "les matières des documents de cycle doivent être attendues, sinon "
+        "elles ne sont vérifiées nulle part"
+    )
 
 
-def test_aucun_doublon_niveau_matiere_url():
-    vus = set()
-    for s in charger_manifeste():
-        for n in s.niveaux:
-            cle = (n, s.slug_matiere, s.url)
-            assert cle not in vus, f"doublon : {cle}"
-            vus.add(cle)
+def test_un_seul_programme_par_couple_a_une_rentree_donnee():
+    for couple, p in en_vigueur(RENTREE_COURANTE).items():
+        assert p.vigueur <= RENTREE_COURANTE, f"{couple} : programme futur servi"
 ```
 
-- [ ] **Étape 2 : lancer le test et vérifier qu'il échoue**
+- [ ] **Étape 2 : vérifier l'échec** — `ModuleNotFoundError: schema.programmes`
 
-Commande : `uv run pytest tests/test_sources.py -q`
-Attendu : ÉCHEC — `ModuleNotFoundError: No module named 'schema.sources'`
-
-- [ ] **Étape 3 : écrire l'implémentation**
+- [ ] **Étape 3 : implémenter**
 
 ```python
-# schema/sources.py
-"""Le manifeste : ce qui DOIT exister dans l'index.
+# schema/programmes.py
+"""Le manifeste : ce qui DOIT exister dans l'index, et à partir de quelle rentrée.
 
-Deux sources, et c'est nécessaire :
+Deux moitiés, et c'est nécessaire :
 
-- le CSV data.gouv couvre le **lycée** par discipline, complet et vérifié ;
-- il est **périmé pour le collège** (aucune entrée après la rentrée 2021, la
-  « maj 2026-02-02 » n'est qu'un rafraîchissement de métadonnées), et il y
-  décrit le collège par cycle entier plutôt que par matière.
+- l'API du ministère couvre le lycée général, mais elle est GELÉE à la rentrée
+  2021 (vérifié : 11 entrées en 2021, aucune après) ;
+- la table BO ci-dessous porte tout ce qui a été publié depuis, avec son NOR et
+  son calendrier d'application.
 
-D'où la table `COLLEGE` ci-dessous, tenue à jour par la veille des arrêtés.
+Le calendrier est le point délicat. Les programmes récents entrent en vigueur
+NIVEAU PAR NIVEAU, sur quatre rentrées. `en_vigueur(rentree)` retient, pour
+chaque couple (niveau, matière), l'entrée la plus récente déjà applicable — le
+remplacement d'un programme par un autre n'est donc pas un cas particulier.
+
+SOURCE DU CALENDRIER : les arrêtés eux-mêmes ne sont pas lisibles par machine
+(403 Cloudflare sur education.gouv.fr et legifrance.gouv.fr). Les dates viennent
+de sources secondaires concordantes et sont À CONFIRMER par le rattrapage PISTE
+(plan 2). Toute correction se fait ici, en un seul endroit.
 """
 
 from __future__ import annotations
 
-import csv
-from dataclasses import dataclass
-from pathlib import Path
+from dataclasses import dataclass, field
 
-from .mapping import (
-    DISCIPLINE_VERS_SLUG,
-    NIVEAU_VERS_NIVEAUX,
-    lignes_du_perimetre,
-)
+from .mapping import DISCIPLINE_VERS_SLUG, NIVEAU_VERS_NIVEAU, lignes_du_perimetre
 
-CSV_DATAGOUV = Path(__file__).resolve().parent.parent / "data" / "raw" / "programmes_second_degre_datagouv.json"
+# Rentrée de référence. À avancer chaque été — c'est ce qui fait basculer un
+# niveau vers un programme réformé.
+RENTREE_COURANTE = 2026
+
+COLLEGE = ("sixieme", "cinquieme", "quatrieme", "troisieme")
+CYCLE_3 = ("sixieme",)
+CYCLE_4 = ("cinquieme", "quatrieme", "troisieme")
+LYCEE = ("seconde", "premiere", "terminale")
 
 
 @dataclass(frozen=True, slots=True)
-class SourceProgramme:
-    slug_matiere: str
-    niveaux: tuple[str, ...]
+class Programme:
+    matiere: str
+    niveau: str
     url: str
     reference: str
-    origine: str  # "datagouv" | "college"
+    vigueur: int
+    origine: str  # "api" | "bo"
+    nor: str | None = None
 
 
-# Programmes du collège. Le CSV ne les porte pas à jour : les réformes de 2024,
-# 2025 et 2026 lui sont postérieures. Chaque entrée cite son arrêté pour que la
-# veille puisse détecter son abrogation.
-COLLEGE: tuple[SourceProgramme, ...] = (
-    SourceProgramme("francais", ("sixieme",),
-        "https://www.education.gouv.fr/sites/default/files/ensel620_annexe1.pdf",
-        "BO 2025 · NOR MENE2504620A", "college"),
-    SourceProgramme("mathematiques", ("sixieme",),
-        "https://www.education.gouv.fr/sites/default/files/ensel620_annexe2-v2.pdf",
-        "BO 2025 · NOR MENE2504620A", "college"),
-    SourceProgramme("francais", ("cinquieme", "quatrieme", "troisieme"),
-        "https://www.education.gouv.fr/sites/default/files/document/Annexe 1 – Programme de français pour le cycle 4-480713.pdf",
-        "BO 2026 · NOR MENE2602912A", "college"),
-    SourceProgramme("mathematiques", ("cinquieme", "quatrieme", "troisieme"),
-        "https://www.education.gouv.fr/sites/default/files/document/Annexe 2 – Programme de mathématiques pour le cycle 4-480716.pdf",
-        "BO 2026 · NOR MENE2602912A", "college"),
-    SourceProgramme("technologie", ("cinquieme", "quatrieme", "troisieme"),
-        "https://www.education.gouv.fr/sites/default/files/document/Annexe — Programme de technologie du cycle 4-368016.pdf",
-        "BO 2024", "college"),
-    # Langues vivantes, arrêté du 5-5-2025 (NOR MENE2504621A). education.gouv.fr
-    # bloque les requêtes automatisées sur ses pages ; miroir utilisé.
-    SourceProgramme("anglais", ("cinquieme", "quatrieme", "troisieme"),
-        "https://reforme.education/app/uploads/2025/05/prog-college-anglais.pdf",
-        "BO 2025 · NOR MENE2504621A", "college"),
-    SourceProgramme("espagnol", ("cinquieme", "quatrieme", "troisieme"),
-        "https://reforme.education/app/uploads/2025/05/prog-college-espagnol.pdf",
-        "BO 2025 · NOR MENE2504621A", "college"),
-    SourceProgramme("allemand", ("cinquieme", "quatrieme", "troisieme"),
-        "https://reforme.education/app/uploads/2025/05/prog-college-allemand.pdf",
-        "BO 2025 · NOR MENE2504621A", "college"),
-    SourceProgramme("italien", ("cinquieme", "quatrieme", "troisieme"),
-        "https://reforme.education/app/uploads/2025/05/prog-college-italien.pdf",
-        "BO 2025 · NOR MENE2504621A", "college"),
-    # Documents de cycle BO2020 : ils portent les matières NON réformées
-    # (physique-chimie, SVT, histoire-géo, arts, musique, EPS, EMC). Le
-    # découpage par matière se fait à l'extraction (tâche 6).
-    SourceProgramme("_cycle3", ("sixieme",),
+def _bo(
+    url: str,
+    reference: str,
+    nor: str,
+    matieres: tuple[str, ...],
+    calendrier: dict[str, int],
+) -> list[Programme]:
+    """Développe un document du BO en une entrée par (matière, niveau).
+
+    `calendrier` porte la rentrée d'application POUR CHAQUE NIVEAU : c'est ce qui
+    distingue « la 5e applique le nouveau programme en 2026 » de « le cycle 4
+    l'applique ».
+    """
+    return [
+        Programme(matiere, niveau, url, reference, rentree, "bo", nor)
+        for matiere in matieres
+        for niveau, rentree in calendrier.items()
+    ]
+
+
+# ── Programmes publiés depuis le gel de l'API (rentrée 2022 et après) ─────────
+# URL vérifiées le 2026-08-22 : HTTP 200 et signature %PDF.
+
+_LV_COLLEGE = {"sixieme": 2025, "cinquieme": 2026, "quatrieme": 2027, "troisieme": 2028}
+_LV_LYCEE = {"seconde": 2025, "premiere": 2026, "terminale": 2026}
+_CYCLE4_2026 = {"cinquieme": 2026, "quatrieme": 2027, "troisieme": 2028}
+
+_BASE_BO = "https://www.education.gouv.fr/sites/default/files"
+_REF_LV = "BO n°22 du 29-5-2025 · NOR MENE2504621A"
+_NOR_LV = "MENE2504621A"
+
+BO_POST_2021: tuple[Programme, ...] = tuple(
+    # Langues vivantes 2025 — 25 annexes, 13 langues × collège et lycée. Le
+    # produit n'en porte que quatre ; les autres sont exclues par mapping.
+    _bo(f"{_BASE_BO}/ensel621_annexe3.pdf", _REF_LV, _NOR_LV, ("anglais",), _LV_COLLEGE)
+    + _bo(f"{_BASE_BO}/ensel621_annexe4.pdf", _REF_LV, _NOR_LV, ("anglais",), _LV_LYCEE)
+    + _bo(f"{_BASE_BO}/ensel621_annexe1.pdf", _REF_LV, _NOR_LV, ("allemand",), _LV_COLLEGE)
+    + _bo(f"{_BASE_BO}/ensel621_annexe2.pdf", _REF_LV, _NOR_LV, ("allemand",), _LV_LYCEE)
+    + _bo(f"{_BASE_BO}/ensel621_annexe9.pdf", _REF_LV, _NOR_LV, ("espagnol",), _LV_COLLEGE)
+    + _bo(f"{_BASE_BO}/ensel621_annexe10.pdf", _REF_LV, _NOR_LV, ("espagnol",), _LV_LYCEE)
+    + _bo(f"{_BASE_BO}/ensel621_annexe13.pdf", _REF_LV, _NOR_LV, ("italien",), _LV_COLLEGE)
+    + _bo(f"{_BASE_BO}/ensel621_annexe14.pdf", _REF_LV, _NOR_LV, ("italien",), _LV_LYCEE)
+    # Français et mathématiques du cycle 3 — applicables en 6e dès 2025.
+    + _bo(f"{_BASE_BO}/ensel620_annexe1.pdf", "BO 2025 · NOR MENE2504620A",
+          "MENE2504620A", ("francais",), {"sixieme": 2025})
+    + _bo(f"{_BASE_BO}/ensel620_annexe2-v2.pdf", "BO 2025 · NOR MENE2504620A",
+          "MENE2504620A", ("mathematiques",), {"sixieme": 2025})
+    # Français et mathématiques du cycle 4 — 5e en 2026, 4e en 2027, 3e en 2028.
+    + _bo(f"{_BASE_BO}/document/Annexe 1 – Programme de français pour le cycle 4-480713.pdf",
+          "BO 2026 · NOR MENE2602912A", "MENE2602912A", ("francais",), _CYCLE4_2026)
+    + _bo(f"{_BASE_BO}/document/Annexe 2 – Programme de mathématiques pour le cycle 4-480716.pdf",
+          "BO 2026 · NOR MENE2602912A", "MENE2602912A", ("mathematiques",), _CYCLE4_2026)
+    # Technologie du cycle 4 — calendrier À CONFIRMER (PISTE, plan 2).
+    + _bo(f"{_BASE_BO}/document/Annexe — Programme de technologie du cycle 4-368016.pdf",
+          "BO 2024", "MENE2400000A", ("technologie",),
+          {"cinquieme": 2024, "quatrieme": 2024, "troisieme": 2024})
+)
+
+# ── Documents multi-matières du collège (BO 2020) ─────────────────────────────
+# Ils portent les matières NON réformées. Les déclarer ici est ce qui permet au
+# test de couverture de les attendre : une matière noyée dans un document de
+# 98 pages ne serait sinon vérifiée nulle part.
+
+_MATIERES_CYCLE_3 = (
+    "francais", "mathematiques", "histoire_geo", "sciences_technologie",
+    "langues_vivantes", "arts_plastiques", "education_musicale",
+    "histoire_des_arts", "eps", "emc",
+)
+_MATIERES_CYCLE_4 = (
+    "francais", "mathematiques", "histoire_geo", "physique_chimie", "svt",
+    "technologie", "anglais", "espagnol", "allemand", "italien",
+    "arts_plastiques", "education_musicale", "histoire_des_arts", "eps", "emc",
+)
+
+CYCLES_BO2020: tuple[Programme, ...] = tuple(
+    _bo(
         "https://cache.media.education.gouv.fr/file/31/88/7/ensel714_annexe2_1312887.pdf",
-        "BO 2020", "college"),
-    SourceProgramme("_cycle4", ("cinquieme", "quatrieme", "troisieme"),
+        "BO n°31 du 30-7-2020 (cycle 3)", "MENE2018714A", _MATIERES_CYCLE_3,
+        dict.fromkeys(CYCLE_3, 2020),
+    )
+    + _bo(
         "https://cache.media.education.gouv.fr/file/31/89/1/ensel714_annexe3_1312891.pdf",
-        "BO 2020", "college"),
+        "BO n°31 du 30-7-2020 (cycle 4)", "MENE2018714A", _MATIERES_CYCLE_4,
+        dict.fromkeys(CYCLE_4, 2020),
+    )
+)
+
+NOR_TRAITES: frozenset[str] = frozenset(
+    p.nor for p in BO_POST_2021 + CYCLES_BO2020 if p.nor
 )
 
 
-def _depuis_datagouv() -> list[SourceProgramme]:
-    with CSV_DATAGOUV.open(encoding="utf-8-sig") as f:
-        lignes = list(csv.DictReader(f, delimiter=";"))
+def _depuis_api() -> list[Programme]:
+    """Lycée général, depuis le catalogue officiel."""
+    from scripts.refresh_catalogue import charger_catalogue
 
-    sources: list[SourceProgramme] = []
-    vus: set[tuple] = set()
-    for r in lignes_du_perimetre(lignes):
-        discipline = r["Discipline"].strip()
-        niveau_officiel = r["Niveau d'enseignement"].strip()
-        slug = DISCIPLINE_VERS_SLUG.get(discipline)
-        niveaux = NIVEAU_VERS_NIVEAUX.get(niveau_officiel)
-        url = (r["Contenu"] or "").strip()
-        if not slug or not niveaux or not url.lower().endswith(".pdf"):
-            continue  # exclusions déjà validées par tests/test_mapping.py
-        cle = (slug, niveaux, url)
-        if cle in vus:
-            continue  # le même PDF sert plusieurs séries technologiques
-        vus.add(cle)
-        sources.append(SourceProgramme(slug, niveaux, url, r["Texte officiel"].strip() or "data.gouv", "datagouv"))
-    return sources
+    programmes: list[Programme] = []
+    for r in lignes_du_perimetre(charger_catalogue()):
+        slug = DISCIPLINE_VERS_SLUG.get((r["discipline"] or "").strip())
+        niveau = NIVEAU_VERS_NIVEAU.get((r["niveau_d_enseignement"] or "").strip())
+        url = (r["contenu_sur_le_site"] or "").strip()
+        if not slug or not niveau or not url.lower().endswith(".pdf"):
+            continue  # exclusions validées par tests/test_mapping.py
+        vigueur = int(str(r["entre_en_vigueur_a_la_rentree"] or "0").split(".")[0])
+        programmes.append(
+            Programme(slug, niveau, url, (r["texte_officiel"] or "").strip(), vigueur, "api")
+        )
+    return programmes
 
 
-def charger_manifeste() -> list[SourceProgramme]:
-    """Tout ce qui doit être ingéré, collège et lycée."""
-    return list(COLLEGE) + _depuis_datagouv()
+def manifeste() -> list[Programme]:
+    """Tout ce qui a été publié, toutes époques confondues."""
+    return list(BO_POST_2021) + list(CYCLES_BO2020) + _depuis_api()
 
 
-def matrice_attendue() -> set[tuple[str, str]]:
-    """Couples (niveau, matière) qui doivent avoir du contenu indexé.
+def en_vigueur(rentree: int = RENTREE_COURANTE) -> dict[tuple[str, str], Programme]:
+    """Le programme applicable à chaque couple (niveau, matière) à cette rentrée.
 
-    Les entrées `_cycle3` / `_cycle4` sont exclues : ce sont des documents
-    multi-matières dont la ventilation se décide à l'extraction, pas ici.
+    Le plus récent déjà entré en vigueur gagne. C'est ce tri qui remplace
+    l'ancien programme par le nouveau, niveau par niveau, sans cas particulier.
     """
-    return {
-        (niveau, s.slug_matiere)
-        for s in charger_manifeste()
-        if not s.slug_matiere.startswith("_")
-        for niveau in s.niveaux
-    }
+    retenus: dict[tuple[str, str], Programme] = {}
+    for p in manifeste():
+        if p.vigueur > rentree:
+            continue
+        cle = (p.niveau, p.matiere)
+        if cle not in retenus or p.vigueur > retenus[cle].vigueur:
+            retenus[cle] = p
+    return retenus
+
+
+def matrice_attendue(rentree: int = RENTREE_COURANTE) -> set[tuple[str, str]]:
+    """Couples (niveau, matière) qui doivent avoir du contenu indexé."""
+    return set(en_vigueur(rentree))
 ```
 
-- [ ] **Étape 4 : lancer les tests et vérifier qu'ils passent**
-
-Commande : `uv run pytest tests/test_sources.py -q && uv run ruff check .`
-Attendu : 5 passed
+- [ ] **Étape 4 : vérifier** — `uv run pytest tests/test_programmes.py -q && uv run ruff check .` → 8 passed
 
 - [ ] **Étape 5 : commit**
 
 ```bash
-git add schema/sources.py tests/test_sources.py
-git commit -m "feat: derive the corpus manifest from official sources"
+git add schema/programmes.py tests/test_programmes.py
+git commit -m "feat: derive a dated corpus manifest from the official sources"
 ```
 
 ---
 
-### Tâche 4 : Le test de couverture
+### Tâche 5 : Le test de couverture
 
 L'instrument. Il doit **échouer immédiatement** — c'est ce qui définit « fini »
 pour les tâches suivantes.
 
-**Fichiers :**
-- Créer : `scripts/coverage_report.py`, `tests/test_coverage.py`
-- Supprimer : `scripts/audit_coverage.py`
-
-**Interfaces :**
-- Consomme : `matrice_attendue()` (tâche 3), `get_qdrant_client()`,
-  `get_collection_name()`
-- Produit : `matrice_reelle() -> dict[tuple[str, str], int]`,
-  `cases_manquantes() -> list[tuple[str, str]]`
+**Fichiers :** créer `scripts/coverage_report.py`, `tests/test_coverage.py` ;
+supprimer `scripts/audit_coverage.py`.
 
 - [ ] **Étape 1 : écrire le test qui échoue**
 
@@ -625,17 +840,16 @@ pour les tâches suivantes.
 Ce test compare deux choses INDÉPENDANTES : ce que le manifeste dit qui doit
 exister, et ce que l'index contient. L'ancienne métrique comparait l'index à
 lui-même et bornait le résultat à 100 % — elle ne pouvait pas échouer.
-
-Marqué `integration` : il interroge Qdrant Cloud.
 """
 
 import pytest
 
+from schema.programmes import matrice_attendue
 from scripts.coverage_report import cases_manquantes, matrice_reelle
-from schema.sources import matrice_attendue
+
+pytestmark = pytest.mark.qdrant
 
 
-@pytest.mark.integration
 def test_toute_case_attendue_a_du_contenu():
     manquantes = cases_manquantes()
     assert not manquantes, (
@@ -644,36 +858,32 @@ def test_toute_case_attendue_a_du_contenu():
     )
 
 
-@pytest.mark.integration
 def test_l_index_ne_contient_rien_hors_manifeste():
-    """Un couple indexé mais absent du manifeste signale un slug inventé ou un
-    reliquat d'une ingestion antérieure."""
+    """Un couple indexé mais absent du manifeste signale un slug inventé, un
+    programme abrogé ou un reliquat d'ingestion."""
     hors = sorted(set(matrice_reelle()) - matrice_attendue())
     assert not hors, f"couples indexés hors manifeste : {hors}"
 
 
-@pytest.mark.integration
 def test_aucune_case_n_est_squelettique():
-    """Une case à 1 ou 2 chunks trahit une extraction ratée, pas une couverture."""
+    """Une case à un ou deux chunks trahit une extraction ratée, pas une
+    couverture."""
     maigres = {c: n for c, n in matrice_reelle().items() if 0 < n < 3}
     assert not maigres, f"couples à moins de 3 chunks : {maigres}"
 ```
 
-- [ ] **Étape 2 : lancer le test et vérifier qu'il échoue**
+- [ ] **Étape 2 : vérifier l'échec** — module absent
 
-Commande : `uv run pytest tests/test_coverage.py -q -m integration`
-Attendu : ÉCHEC — `ModuleNotFoundError: No module named 'scripts.coverage_report'`
-
-- [ ] **Étape 3 : écrire l'implémentation**
+- [ ] **Étape 3 : implémenter**
 
 ```python
-# scripts/coverage_report.py
+#!/usr/bin/env python3
 """Couverture réelle de l'index, par couple (niveau, matière).
 
 Remplace `audit_coverage.py`, dont la métrique était bornée par
 `min(indexed / source * 100, 100.0)`. Avec l'expansion multi-niveaux ce ratio
-vaut structurellement ×3 : l'indicateur affichait « 100 % » tant qu'on ne
-perdait pas plus des deux tiers du corpus.
+vaut structurellement ×3 : l'indicateur affichait « 100 % » tant qu'on ne perdait
+pas plus des deux tiers du corpus.
 
 Ici il n'y a pas de ratio à borner : une case a du contenu, ou elle n'en a pas.
 """
@@ -688,8 +898,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv  # noqa: E402
 
+from schema.programmes import matrice_attendue  # noqa: E402
 from schema.retrieval import get_collection_name, get_qdrant_client  # noqa: E402
-from schema.sources import matrice_attendue  # noqa: E402
 
 load_dotenv()
 
@@ -702,7 +912,8 @@ def matrice_reelle(collection: str | None = None) -> dict[tuple[str, str], int]:
     offset = None
     while True:
         points, offset = client.scroll(
-            nom, limit=1000, offset=offset, with_payload=["niveau", "matiere"], with_vectors=False
+            nom, limit=1000, offset=offset,
+            with_payload=["niveau", "matiere"], with_vectors=False,
         )
         for p in points:
             compte[(p.payload.get("niveau"), p.payload.get("matiere"))] += 1
@@ -711,7 +922,6 @@ def matrice_reelle(collection: str | None = None) -> dict[tuple[str, str], int]:
 
 
 def cases_manquantes(collection: str | None = None) -> list[tuple[str, str]]:
-    """Couples attendus par le manifeste et absents de l'index."""
     reelle = matrice_reelle(collection)
     return sorted(c for c in matrice_attendue() if reelle.get(c, 0) == 0)
 
@@ -719,14 +929,19 @@ def cases_manquantes(collection: str | None = None) -> list[tuple[str, str]]:
 def main() -> None:
     reelle = matrice_reelle()
     attendue = matrice_attendue()
-    manquantes = [c for c in attendue if reelle.get(c, 0) == 0]
+    manquantes = sorted(c for c in attendue if reelle.get(c, 0) == 0)
+    hors = sorted(set(reelle) - attendue)
 
     print(f"attendu : {len(attendue)} couples (niveau × matière)")
     print(f"couvert : {len(attendue) - len(manquantes)}")
     print(f"manquant: {len(manquantes)}\n")
-    for niveau, matiere in sorted(manquantes):
+    for niveau, matiere in manquantes:
         print(f"  ✗ {niveau:<12} {matiere}")
-    if manquantes:
+    if hors:
+        print(f"\n{len(hors)} couple(s) indexés hors manifeste :")
+        for niveau, matiere in hors:
+            print(f"  ? {niveau:<12} {matiere}")
+    if manquantes or hors:
         sys.exit(1)
 
 
@@ -734,47 +949,32 @@ if __name__ == "__main__":
     main()
 ```
 
-Déclarer le marqueur dans `pyproject.toml` :
+- [ ] **Étape 4 : constater l'échec ATTENDU**
 
-```toml
-[tool.pytest.ini_options]
-markers = ["integration: interroge Qdrant Cloud (réseau + clé requis)"]
-```
-
-- [ ] **Étape 4 : lancer le test et constater l'échec ATTENDU**
-
-Commande : `uv run pytest tests/test_coverage.py -q -m integration`
-Attendu : ÉCHEC listant les couples manquants — dont les 3 niveaux du lycée pour
-toutes les matières. **C'est le résultat correct** : l'instrument fonctionne et
-mesure un corpus incomplet.
+`uv run pytest tests/test_coverage.py -q -m qdrant` → échec listant les couples
+manquants, dont les trois niveaux du lycée pour toutes les matières. **C'est le
+résultat correct** : l'instrument fonctionne et mesure un corpus incomplet.
 
 - [ ] **Étape 5 : supprimer la métrique remplacée**
 
 ```bash
 git rm scripts/audit_coverage.py
+git rm docs/audits/coverage_2026-05-18.md   # rapport « ✅ 100 % » sur 228 447/76 344
 ```
-
-Retirer aussi le rapport commité `docs/audits/coverage_2026-05-18.md` s'il
-existe : il affiche `228 447/76 344` annoncé « ✅ 100 % ».
 
 - [ ] **Étape 6 : commit**
 
 ```bash
-git add scripts/coverage_report.py tests/test_coverage.py pyproject.toml
+git add scripts/coverage_report.py tests/test_coverage.py
 git commit -m "feat: make corpus coverage a test that can actually fail"
 ```
 
 ---
 
-### Tâche 5 : Téléchargement piloté par le manifeste
+### Tâche 6 : Téléchargement piloté par le manifeste
 
-**Fichiers :**
-- Créer : `scripts/fetch_sources.py`
-- Modifier : `data/raw/.gitignore` (ajouter `*.pdf` s'il n'y est pas)
-
-**Interfaces :**
-- Consomme : `charger_manifeste()` (tâche 3)
-- Produit : des PDF dans `data/raw/pdf/`, nommés depuis un hash stable de l'URL
+**Fichiers :** créer `scripts/fetch_sources.py`, `tests/test_fetch_sources.py`,
+`data/raw/.gitignore`.
 
 - [ ] **Étape 1 : écrire le test qui échoue**
 
@@ -782,8 +982,9 @@ git commit -m "feat: make corpus coverage a test that can actually fail"
 # tests/test_fetch_sources.py
 """Le téléchargement doit échouer bruyamment.
 
-Un téléchargeur qui avale ses erreurs produit un corpus partiel que le test de
-couverture signalera — mais plusieurs étapes trop tard, et sans dire pourquoi.
+`education.gouv.fr` renvoie une page Cloudflare en 403 sur ses pages HTML ; un
+téléchargeur permissif écrirait cette page dans un fichier `.pdf` que
+l'extraction traiterait comme un programme vide.
 """
 
 import pytest
@@ -818,25 +1019,23 @@ def test_un_contenu_non_pdf_leve(monkeypatch, tmp_path):
         telecharger_un("https://ex.fr/x.pdf", tmp_path)
 ```
 
-- [ ] **Étape 2 : lancer le test et vérifier qu'il échoue**
+- [ ] **Étape 2 : vérifier l'échec** — module absent
 
-Commande : `uv run pytest tests/test_fetch_sources.py -q`
-Attendu : ÉCHEC — module absent
-
-- [ ] **Étape 3 : écrire l'implémentation**
+- [ ] **Étape 3 : implémenter**
 
 ```python
-# scripts/fetch_sources.py
-"""Télécharge les PDF listés par le manifeste.
+#!/usr/bin/env python3
+"""Télécharge les PDF que le manifeste déclare en vigueur.
 
-Échoue bruyamment, et c'est le point : `education.gouv.fr` renvoie du HTML
-Cloudflare (403) sur ses pages, et un téléchargeur permissif écrirait cette
-page d'erreur dans un fichier `.pdf` que l'extraction traiterait comme un
-programme vide.
+Échoue bruyamment : un fichier manquant ou tronqué doit se voir ici, pas trois
+étapes plus loin sous la forme d'une case de couverture vide.
+
+Usage : uv run python scripts/fetch_sources.py [--rentree 2026]
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import sys
 import urllib.parse
@@ -846,15 +1045,15 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from schema.sources import charger_manifeste  # noqa: E402
+from schema.programmes import RENTREE_COURANTE, en_vigueur  # noqa: E402
 
 DESTINATION = Path(__file__).resolve().parent.parent / "data" / "raw" / "pdf"
 TIMEOUT_S = 120.0
 
 
 def nom_fichier(url: str) -> str:
-    """Nom stable dérivé de l'URL. Les URL officielles contiennent des espaces
-    et des tirets cadratins ; un hash évite d'en dépendre."""
+    """Nom stable dérivé de l'URL. Les URL officielles contiennent des espaces et
+    des tirets cadratins ; un hash évite d'en dépendre."""
     return hashlib.sha256(url.encode("utf-8")).hexdigest()[:16] + ".pdf"
 
 
@@ -872,21 +1071,24 @@ def telecharger_un(url: str, destination: Path) -> Path:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--rentree", type=int, default=RENTREE_COURANTE)
+    args = parser.parse_args()
+
     DESTINATION.mkdir(parents=True, exist_ok=True)
-    sources = charger_manifeste()
-    urls = sorted({s.url for s in sources})
-    print(f"{len(sources)} entrées de manifeste → {len(urls)} PDF uniques\n")
+    programmes = en_vigueur(args.rentree)
+    urls = sorted({p.url for p in programmes.values()})
+    print(f"rentrée {args.rentree} : {len(programmes)} couples → {len(urls)} PDF uniques\n")
 
     echecs = []
     for i, url in enumerate(urls, start=1):
-        chemin = DESTINATION / nom_fichier(url)
-        if chemin.exists():
+        if (DESTINATION / nom_fichier(url)).exists():
             print(f"  [{i}/{len(urls)}] déjà présent")
             continue
         try:
             telecharger_un(url, DESTINATION)
             print(f"  [{i}/{len(urls)}] ✓ {url[:90]}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - on veut la liste complète des échecs
             echecs.append((url, str(e)))
             print(f"  [{i}/{len(urls)}] ✗ {e}")
 
@@ -902,19 +1104,19 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Étape 4 : supprimer le corpus collecté à la main**
-
-Les 18 fichiers `.md`/`.txt` de `data/raw/` ont été rassemblés un par un. Le
-manifeste les régénère tous. **Les garder inviterait à en réutiliser un
-silencieusement**, et on ne saurait plus lequel vient d'où.
+- [ ] **Étape 4 : ignorer les PDF, puis supprimer le corpus collecté à la main**
 
 ```bash
+printf 'pdf/\n' > data/raw/.gitignore
 git rm data/raw/programme_*.md data/raw/programme_*.txt
 ```
 
-`data/raw/` ne doit plus contenir que : `programmes_second_degre_datagouv.json`
-(le CSV source), `sources_officielles.md` (la carte des sources), les fichiers
-d'état de la veille, et le dossier `pdf/` produit par ce script.
+Les 18 fichiers ont été rassemblés un par un et ne sont traçables à aucune
+source. Le manifeste les régénère ; les garder inviterait à en réutiliser un
+silencieusement.
+
+`data/raw/` ne doit plus contenir que `catalogue_second_degre.json`,
+`sources_officielles.md`, les fichiers d'état de la veille, et `pdf/` (ignoré).
 
 - [ ] **Étape 5 : lancer les tests puis le téléchargement réel**
 
@@ -923,32 +1125,26 @@ uv run pytest tests/test_fetch_sources.py -q
 uv run python scripts/fetch_sources.py
 ```
 
-Attendu : 3 passed, puis ~129 PDF téléchargés sans échec.
+Attendu : 3 passed, puis ~80 PDF téléchargés sans échec.
 
 - [ ] **Étape 6 : commit**
 
 ```bash
-git add -A scripts/fetch_sources.py tests/test_fetch_sources.py data/raw/
-git commit -m "feat: fetch every programme the manifest lists, and drop the hand-picked ones"
+git add scripts/fetch_sources.py tests/test_fetch_sources.py data/raw/.gitignore
+git commit -m "feat: fetch every programme the manifest declares in force"
 ```
 
 ---
 
-### Tâche 6 : Extraction et découpage par matière
+### Tâche 7 : Extraction et découpage par matière
 
-Le point dur du plan. Les deux documents de cycle BO2020 (98 pages pour le
-cycle 3) contiennent **toutes les matières non réformées** dans un seul PDF.
-C'est leur non-découpage qui produit le déséquilibre actuel : 984 chunks
-d'allemand contre 282 de mathématiques.
+Le point dur. Les deux documents de cycle BO2020 (98 pages pour le cycle 3)
+contiennent **toutes les matières non réformées** dans un seul PDF. C'est leur
+non-découpage qui produit le déséquilibre actuel : 984 chunks d'allemand contre
+282 de mathématiques.
 
-**Fichiers :**
-- Modifier : `scripts/extract_pdfs.py`
-- Créer : `tests/test_extraction.py`, `tests/fixtures/cycle3_extrait.txt`
-
-**Interfaces :**
-- Consomme : `charger_manifeste()`, `nom_fichier()` (tâche 5)
-- Produit : `extraire(chemin_pdf: Path) -> str`,
-  `decouper_par_matiere(texte: str) -> dict[str, str]`
+**Fichiers :** modifier `scripts/extract_pdfs.py` ; créer
+`tests/test_extraction.py`, `tests/fixtures/cycle3_extrait.txt`.
 
 - [ ] **Étape 1 : constituer la fixture**
 
@@ -956,9 +1152,9 @@ d'allemand contre 282 de mathématiques.
 uv run python -c "
 import pymupdf, pathlib
 from scripts.fetch_sources import nom_fichier
-src = pathlib.Path('data/raw/pdf') / nom_fichier('https://cache.media.education.gouv.fr/file/31/88/7/ensel714_annexe2_1312887.pdf')
-doc = pymupdf.open(src)
-texte = '\n'.join(p.get_text() for p in doc[:12])
+url='https://cache.media.education.gouv.fr/file/31/88/7/ensel714_annexe2_1312887.pdf'
+src = pathlib.Path('data/raw/pdf') / nom_fichier(url)
+texte = '\n'.join(p.get_text() for p in pymupdf.open(src)[:12])
 pathlib.Path('tests/fixtures/cycle3_extrait.txt').write_text(texte, encoding='utf-8')
 print(len(texte), 'caractères')
 "
@@ -983,31 +1179,34 @@ from scripts.extract_pdfs import decouper_par_matiere
 FIXTURE = Path(__file__).parent / "fixtures" / "cycle3_extrait.txt"
 
 
+def _parties():
+    return decouper_par_matiere(FIXTURE.read_text(encoding="utf-8"))
+
+
 def test_le_decoupage_trouve_plusieurs_matieres():
-    parties = decouper_par_matiere(FIXTURE.read_text(encoding="utf-8"))
+    parties = _parties()
     assert len(parties) >= 2, f"une seule matière détectée : {list(parties)}"
 
 
 def test_chaque_partie_est_substantielle():
-    for slug, texte in decouper_par_matiere(FIXTURE.read_text(encoding="utf-8")).items():
+    for slug, texte in _parties().items():
         assert len(texte) > 500, f"{slug} : {len(texte)} caractères seulement"
 
 
 def test_les_slugs_produits_existent_dans_le_schema():
     from schema import Matiere
-    connus = {m.value for m in Matiere}
-    produits = set(decouper_par_matiere(FIXTURE.read_text(encoding="utf-8")))
-    assert produits <= connus, f"slugs inconnus : {sorted(produits - connus)}"
+
+    produits = set(_parties())
+    assert produits <= {m.value for m in Matiere}, (
+        f"slugs inconnus : {sorted(produits - {m.value for m in Matiere})}"
+    )
 ```
 
-- [ ] **Étape 3 : lancer le test et vérifier qu'il échoue**
+- [ ] **Étape 3 : vérifier l'échec** — `decouper_par_matiere` n'existe pas
 
-Commande : `uv run pytest tests/test_extraction.py -q`
-Attendu : ÉCHEC — `decouper_par_matiere` n'existe pas
+- [ ] **Étape 4 : implémenter**
 
-- [ ] **Étape 4 : implémenter le découpage**
-
-Inspecter d'abord la structure réelle du document :
+Inspecter d'abord la structure réelle :
 
 ```bash
 grep -nE "^(Volet|Partie|[A-ZÉÈÀ][A-Za-zÉèêîï' -]{4,60})$" tests/fixtures/cycle3_extrait.txt | head -40
@@ -1015,13 +1214,14 @@ grep -nE "^(Volet|Partie|[A-ZÉÈÀ][A-Za-zÉèêîï' -]{4,60})$" tests/fixture
 
 Écrire `decouper_par_matiere(texte)` dans `scripts/extract_pdfs.py` : repérer les
 titres de section correspondant à des matières via `MATIERE_LABELS`
-(`schema/document.py`), découper aux frontières, renvoyer `{slug: texte}`.
-Les sections hors matière (« Volet 1 : les spécificités du cycle ») sont ignorées.
+(`schema/document.py`), découper aux frontières, renvoyer `{slug: texte}`. Les
+sections hors matière (« Volet 1 : les spécificités du cycle ») sont ignorées.
 
-- [ ] **Étape 5 : lancer les tests et vérifier qu'ils passent**
+**Vérifier que les matières trouvées couvrent celles déclarées par le manifeste**
+pour ce document (`_MATIERES_CYCLE_3`). Un écart signale soit un titre non
+reconnu, soit une matière déclarée à tort.
 
-Commande : `uv run pytest tests/test_extraction.py -q && uv run ruff check .`
-Attendu : 3 passed
+- [ ] **Étape 5 : vérifier** — `uv run pytest tests/test_extraction.py -q && uv run ruff check .` → 3 passed
 
 - [ ] **Étape 6 : commit**
 
@@ -1032,15 +1232,10 @@ git commit -m "feat: split cycle programmes by subject instead of indexing them 
 
 ---
 
-### Tâche 7 : Ingestion sur le manifeste, sans orphelins
+### Tâche 8 : Ingestion sur le manifeste, sans orphelins
 
-**Fichiers :**
-- Modifier : `scripts/ingest.py`
-- Créer : `tests/test_ingest_orphelins.py`
-
-**Interfaces :**
-- Consomme : `charger_manifeste()`, `chunk_point_id()`, `decouper_par_matiere()`
-- Produit : `supprimer_source(source_file: str) -> int`
+**Fichiers :** modifier `scripts/ingest.py`, `scripts/migrate_collection.py` ;
+créer `tests/test_ingest_orphelins.py`.
 
 - [ ] **Étape 1 : écrire le test qui échoue**
 
@@ -1049,8 +1244,8 @@ git commit -m "feat: split cycle programmes by subject instead of indexing them 
 """Réingérer une source ne doit pas laisser ses anciens chunks derrière.
 
 Les identifiants dérivent du contenu : un texte modifié crée un point NEUF et
-l'ancien reste servable. Des chunks périmés continueraient d'être présentés à
-des élèves comme le programme officiel.
+l'ancien reste servable. Des chunks périmés continueraient d'être présentés à des
+élèves comme le programme officiel.
 """
 
 from qdrant_client import QdrantClient, models
@@ -1066,10 +1261,12 @@ def test_supprimer_source_retire_uniquement_ses_points():
         vectors_config={"dense": models.VectorParams(size=2, distance=models.Distance.COSINE)},
     )
     client.upsert("t", points=[
-        models.PointStruct(id=chunk_point_id("maths", "sixieme", "a"), vector={"dense": [0.1, 0.2]},
-                           payload={"source_file": "vieux", "matiere": "maths", "niveau": "sixieme"}),
-        models.PointStruct(id=chunk_point_id("maths", "sixieme", "b"), vector={"dense": [0.3, 0.4]},
-                           payload={"source_file": "autre", "matiere": "maths", "niveau": "sixieme"}),
+        models.PointStruct(
+            id=chunk_point_id("mathematiques", "sixieme", "a"), vector={"dense": [0.1, 0.2]},
+            payload={"source_file": "vieux", "matiere": "mathematiques", "niveau": "sixieme"}),
+        models.PointStruct(
+            id=chunk_point_id("mathematiques", "sixieme", "b"), vector={"dense": [0.3, 0.4]},
+            payload={"source_file": "autre", "matiere": "mathematiques", "niveau": "sixieme"}),
     ], wait=True)
 
     supprimer_source("vieux", client=client, collection="t")
@@ -1079,10 +1276,7 @@ def test_supprimer_source_retire_uniquement_ses_points():
     assert restants[0].payload["source_file"] == "autre"
 ```
 
-- [ ] **Étape 2 : lancer le test et vérifier qu'il échoue**
-
-Commande : `uv run pytest tests/test_ingest_orphelins.py -q`
-Attendu : ÉCHEC — `cannot import name 'supprimer_source'`
+- [ ] **Étape 2 : vérifier l'échec** — `cannot import name 'supprimer_source'`
 
 - [ ] **Étape 3 : implémenter la suppression**
 
@@ -1090,19 +1284,19 @@ Attendu : ÉCHEC — `cannot import name 'supprimer_source'`
 def supprimer_source(source_file: str, *, client=None, collection: str | None = None) -> None:
     """Retire tous les points issus d'un fichier source.
 
-    Appelé AVANT de réingérer ce fichier : les identifiants dérivant du
-    contenu, un texte modifié produirait un point neuf en laissant l'ancien
-    servable indéfiniment.
+    Appelé AVANT de réingérer ce fichier : les identifiants dérivant du contenu,
+    un texte modifié produirait un point neuf en laissant l'ancien servable
+    indéfiniment.
     """
     from qdrant_client import models
 
-    cli = client or get_qdrant_client()
-    nom = collection or COLLECTION
-    cli.delete(
-        collection_name=nom,
+    (client or get_qdrant_client()).delete(
+        collection_name=collection or get_collection_name(),
         points_selector=models.FilterSelector(
             filter=models.Filter(must=[
-                models.FieldCondition(key="source_file", match=models.MatchValue(value=source_file))
+                models.FieldCondition(
+                    key="source_file", match=models.MatchValue(value=source_file)
+                )
             ])
         ),
         wait=True,
@@ -1111,50 +1305,57 @@ def supprimer_source(source_file: str, *, client=None, collection: str | None = 
 
 - [ ] **Étape 4 : remplacer `SOURCES` par le manifeste**
 
-Dans `scripts/ingest.py`, supprimer la constante `SOURCES: list[dict]` et
-parcourir `charger_manifeste()`. Pour chaque source : appeler
-`supprimer_source(...)` avant l'upsert, puis ingérer. Pour les entrées
-`_cycle3` / `_cycle4`, passer par `decouper_par_matiere()` et produire un lot
-par matière.
+Dans `scripts/ingest.py` : supprimer la constante `SOURCES: list[dict]`
+(ligne 151) et parcourir `en_vigueur()`. Pour chaque programme, appeler
+`supprimer_source(...)` avant l'upsert. Les documents multi-matières passent par
+`decouper_par_matiere()` et produisent un lot par matière.
 
-- [ ] **Étape 5 : lancer toute la suite**
+`source_file` reste le **nom du PDF** (`nom_fichier(url)`) : c'est la clé de
+`supprimer_source`, et elle doit désigner un fichier, pas un slug.
 
-Commande : `uv run pytest -q && uv run ruff check . && uv run ruff format --check .`
-Attendu : tout passe (hors tests `integration`, qui exigent Qdrant)
+- [ ] **Étape 5 : rendre la réindexation atomique**
 
-- [ ] **Étape 6 : réindexer et vérifier la couverture**
+Dans `scripts/migrate_collection.py` : utiliser `get_qdrant_client()` au lieu de
+fabriquer son propre client (ligne 53 — il omet `cloud_inference=True`), et
+créer une collection **neuve** horodatée, puis basculer l'alias
+`tomai_educational` dessus une fois l'ingestion terminée
+(`client.update_collection_aliases`). Réindexer en place laisserait le serveur
+servir un index à moitié vide pendant l'opération, et un index mixte si elle
+échoue.
+
+- [ ] **Étape 6 : lancer toute la suite**
+
+`uv run pytest -q && uv run ruff check . && uv run ruff format --check .`
+
+- [ ] **Étape 7 : réindexer et vérifier la couverture**
 
 ```bash
-uv run python scripts/migrate_collection.py
-uv run python scripts/ingest.py
-uv run python scripts/coverage_report.py
+uv run python scripts/migrate_collection.py     # collection neuve
+uv run python scripts/ingest.py                 # ~0,25 € d'embeddings OVH
+uv run python scripts/coverage_report.py        # doit sortir en 0
+uv run python scripts/migrate_collection.py --promote   # bascule d'alias
 ```
 
-Attendu : `coverage_report.py` sort en 0 — **aucun couple manquant**. C'est le
-critère de fin du plan.
+Attendu : aucun couple manquant, aucun couple hors manifeste. **C'est le critère
+de fin du plan.**
 
-- [ ] **Étape 7 : commit**
+- [ ] **Étape 8 : commit**
 
 ```bash
-git add scripts/ingest.py tests/test_ingest_orphelins.py
-git commit -m "feat: drive ingestion from the manifest and delete orphans on update"
+git add scripts/ingest.py scripts/migrate_collection.py tests/test_ingest_orphelins.py
+git commit -m "feat: drive ingestion from the manifest, with no orphans and an atomic swap"
 ```
 
 ---
 
-### Tâche 8 : Retirer le sous-système d'évaluation périmé
+### Tâche 9 : Retirer l'évaluation périmée et publier la couverture par niveau
 
-Le golden set est irréparable par conception : ses questions sont générées **à
-partir des chunks qu'il faut retrouver**, il n'a qu'un document pertinent par
-question, sa pertinence est binaire, et deux exécutions identiques varient de
-±1 point. Il est remplacé au plan 3.
-
-**Fichiers :**
-- Supprimer : `data/golden/questions.json`, `scripts/generate_golden.py`,
-  `scripts/evaluate.py`, `scripts/evaluate_judged.py`, `schema/golden.py`,
-  `schema/evaluation.py`, `tests/test_golden.py`, `tests/test_evaluation.py`
-- Modifier : `schema/__init__.py`, `apps/curriculum/CLAUDE.md`,
-  `apps/curriculum/README.md`
+**Fichiers :** supprimer `data/golden/questions.json`,
+`scripts/generate_golden.py`, `scripts/evaluate.py`, `scripts/evaluate_judged.py`,
+`schema/golden.py`, `schema/evaluation.py`, `tests/test_golden.py`,
+`tests/test_evaluation.py` ; modifier `schema/__init__.py`,
+`scripts/export_contract.py`, `tests/test_contract.py`, `contract.json`,
+`CLAUDE.md`, `README.md`.
 
 - [ ] **Étape 1 : supprimer**
 
@@ -1166,27 +1367,32 @@ git rm data/golden/questions.json scripts/generate_golden.py scripts/evaluate.py
 
 - [ ] **Étape 2 : nettoyer les exports**
 
-Dans `schema/__init__.py`, retirer `GoldenQuestion`, `GoldenSet` de l'import et
-de `__all__`. Retirer aussi `EMBEDDING_DIM` et `l2_normalize`, exportés et
-utilisés nulle part — `contract.json` porte déjà la dimension.
+Dans `schema/__init__.py`, retirer `GoldenQuestion`, `GoldenSet` et
+`EMBEDDING_DIM` de l'import et de `__all__`. **Garder `l2_normalize`** :
+`tests/test_ingest.py:323` le teste.
 
-- [ ] **Étape 3 : lancer toute la suite**
+- [ ] **Étape 3 : exposer la couverture par niveau dans le contrat**
 
-Commande : `uv run pytest -q && uv run ruff check .`
-Attendu : tout passe, aucun import cassé
+`contract.json` porte `matieres_indexees` mais rien par niveau. Ajouter
+`niveaux_indexes` dans `scripts/export_contract.py`, dérivé de
+`matrice_reelle()`, et l'assertion correspondante dans `tests/test_contract.py`.
+C'est ce dont le lot serveur aura besoin pour fermer la dimension niveau comme
+`RAG_SUBJECTS` a fermé la dimension matière.
 
-- [ ] **Étape 4 : mettre la documentation en accord**
+- [ ] **Étape 4 : lancer toute la suite** — `uv run pytest -q && uv run ruff check .`
 
-Dans `CLAUDE.md` et `README.md` de `apps/curriculum`, retirer les commandes et
-sections qui décrivent le golden set, et remplacer par le nouveau dispositif :
-`scripts/coverage_report.py` pour la complétude, l'évaluation qualité renvoyée
-au plan 3.
+- [ ] **Étape 5 : mettre la documentation en accord**
 
-- [ ] **Étape 5 : commit**
+Dans `apps/curriculum/CLAUDE.md` et `README.md` : retirer les commandes du golden
+set, décrire le manifeste daté, `refresh_catalogue.py`, `fetch_sources.py` et
+`coverage_report.py`, et renvoyer l'évaluation qualité au plan 3.
+
+- [ ] **Étape 6 : commit**
 
 ```bash
-git add -A schema/__init__.py CLAUDE.md README.md
-git commit -m "refactor: drop the golden set and the metrics built on it"
+git add -A schema/__init__.py scripts/export_contract.py tests/test_contract.py \
+          contract.json CLAUDE.md README.md
+git commit -m "refactor: drop the golden set and publish per-level coverage in the contract"
 ```
 
 ---
@@ -1194,22 +1400,24 @@ git commit -m "refactor: drop the golden set and the metrics built on it"
 ## Critères de fin du plan
 
 1. `uv run python scripts/coverage_report.py` sort en **0** : chaque couple
-   (niveau × matière) du manifeste a du contenu indexé, collège et lycée.
-2. `uv run pytest -q` passe, marqueur `integration` compris quand Qdrant est
-   joignable.
-3. `chunk_point_id` a **un** point de définition, et `tests/test_document_id.py`
-   échoue si une copie réapparaît dans `ingest.py`.
-4. Aucune ligne du CSV dans le périmètre n'est ni mappée ni explicitement exclue.
-5. Réingérer une source ne laisse aucun orphelin.
-6. Le déséquilibre est corrigé : plus aucune matière du collège ne compte moins
-   de chunks que ce que son volume de programme justifie — vérifiable par
-   `scripts/coverage_report.py`.
+   (niveau × matière) du manifeste en vigueur a du contenu indexé, et rien n'est
+   indexé hors manifeste.
+2. `uv run pytest -q` passe hors ligne ; `-m network` et `-m qdrant` passent
+   quand les accès sont disponibles.
+3. `en_vigueur(2026)` sert BO2020 à la 4e et BO2026 à la 5e pour le français.
+4. Aucune ligne du périmètre n'est ni mappée ni explicitement exclue, et le
+   périmètre ne peut pas se vider sans faire rougir un test.
+5. `chunk_point_id` a **un** point de définition.
+6. Réingérer une source ne laisse aucun orphelin ; la réindexation complète passe
+   par une collection neuve et une bascule d'alias.
+7. `contract.json` expose la couverture par niveau.
 
 ## Ce que ce plan ne fait pas
 
 - **Tests de recherche sur Qdrant en mode local** → plan 2
-- **Veille des réformes via l'API PISTE** → plan 2 (l'impératif de fraîcheur
-  n'est pas tenu tant qu'il n'est pas livré)
-- **Évaluation qualité (RAGAS + ranx)** → plan 3
+- **Veille des réformes via l'API PISTE** → plan 2. L'impératif de fraîcheur
+  n'est pas tenu tant qu'elle n'est pas livrée, et le calendrier d'entrée en
+  vigueur inscrit dans `schema/programmes.py` reste non vérifié jusque-là.
+- **Évaluation qualité (RAGAS + ranx)** → plan 3, après le corpus.
 - **Adaptation d'`apps/server`** : fermer la dimension niveau côté agent et
-  aligner les niveaux d'inscription → lot serveur distinct
+  aligner les niveaux d'inscription → lot serveur distinct.

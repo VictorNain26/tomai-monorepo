@@ -17,7 +17,9 @@ par Mistral. Les métriques et le test de significativité viennent de `ranx`.
 installés**. Aucune dépendance nouvelle.
 
 **Spec :** `docs/superpowers/specs/2026-08-22-refonte-corpus-et-tests-rag-design.md`
-**Prérequis :** plans 1 et 2 livrés
+**Prérequis :** plans 1 et 2 livrés, **et le corpus neuf réindexé**. Mesurer un
+corpus qu'on s'apprête à remplacer n'apprend rien : ce plan vient en dernier, et
+pas avant que `scripts/coverage_report.py` sorte en 0.
 
 ## Contraintes globales
 
@@ -26,7 +28,11 @@ installés**. Aucune dépendance nouvelle.
   les scores et masque les écarts fins
   ([arXiv 2412.17156](https://arxiv.org/pdf/2412.17156)). La limite doit être
   écrite dans le script et dans sa sortie.
-- **Jamais en CI.** Chaque exécution consomme des appels LLM. Lancée à la main.
+- **Jamais en CI, et le coût est connu.** 60 questions × 3 configurations ×
+  top-5 donnent de l'ordre de **900 couples uniques à juger** ; `ContextRelevance`
+  est un double juge, donc **~1 800 appels Mistral**, émis en séquentiel. Compter
+  une bonne heure et surveiller le rate-limit. Toujours commencer par
+  `--limit 10` pour vérifier la chaîne avant de payer le passage complet.
 - **Ne pas réécrire de juge maison.** `ContextRelevance` existe, sa signature est
   vérifiée : `ascore(user_input: str, retrieved_contexts: list[str])` — ni
   `response` ni `reference`, ce qui convient à un dépôt *retrieval-only*.
@@ -341,6 +347,16 @@ def main() -> None:
     qrels = asyncio.run(juger(questions, runs, textes))
 
     from ranx import Qrels, Run, compare
+
+    # Les questions dont AUCUN chunk n'a été jugé pertinent sont retirées : ranx
+    # ne sait pas noter une requête sans jugement positif. Elles disparaissent
+    # donc des métriques — ce sont pourtant les échecs les plus intéressants,
+    # d'où leur comptage explicite ci-dessous.
+    sans_pertinent = [q for q, n in qrels.items() if not n]
+    if sans_pertinent:
+        print(f"\n⚠ {len(sans_pertinent)}/{len(qrels)} questions sans aucun chunk jugé "
+              f"pertinent — exclues des métriques, à lire comme des échecs complets")
+
     rapport = compare(
         qrels=Qrels({q: n for q, n in qrels.items() if n}),
         runs=[Run(r, name=nom) for nom, r in runs.items()],
@@ -434,7 +450,7 @@ git commit -m "docs: settle the sparse-branch and reranker questions with measur
    trois configurations, avec test de significativité.
 2. Aucun chunk n'est jugé deux fois pour une même question.
 3. La sortie du script **écrit sa propre limite** : classement relatif, pas note
-   absolue.
+   absolue, et nombre de questions sans aucun chunk pertinent.
 4. `docs/constats-ouverts.md` porte une réponse mesurée sur BM25 et sur le
    plafond d'un reranker.
 5. Aucune dépendance ajoutée ; l'évaluation ne tourne pas en CI.
