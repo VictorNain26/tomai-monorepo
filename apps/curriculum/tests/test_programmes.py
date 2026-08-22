@@ -83,3 +83,27 @@ def test_un_couple_ne_porte_qu_une_generation_de_programme():
         generations.setdefault((p.niveau, p.matiere), set()).add(p.vigueur)
     melanges = {c: v for c, v in generations.items() if len(v) > 1}
     assert not melanges, f"couples servant deux générations : {melanges}"
+
+
+def test_aucun_nor_sans_origine():
+    """La garde contre l'invention.
+
+    Un NOR n'entre dans le manifeste que s'il est prouvé par le catalogue
+    officiel, ou listé dans NOR_A_CONFIRMER avec l'endroit où il a été lu. Un
+    NOR inventé enverrait la veille chercher un arrêté qui n'existe pas, et
+    laisserait le vrai passer.
+    """
+    from schema.programmes import NOR_A_CONFIRMER, nors_du_catalogue
+
+    portes = {p.nor for p in manifeste() if p.nor}
+    sans_origine = portes - set(NOR_A_CONFIRMER) - nors_du_catalogue()
+    assert not sans_origine, f"NOR sans origine documentée : {sorted(sans_origine)}"
+
+
+def test_les_documents_de_cycle_portent_le_nor_du_catalogue():
+    """Preuve de première main : le catalogue officiel donne l'arrêté du 17-7-2020."""
+    from schema.programmes import nors_du_catalogue
+
+    nors = {p.nor for p in programmes_pour("sixieme", "histoire_geo", 2026)}
+    assert nors <= nors_du_catalogue()
+    assert nors != {None}

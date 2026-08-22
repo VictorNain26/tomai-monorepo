@@ -21,7 +21,9 @@ de sources secondaires concordantes et sont À CONFIRMER par le rattrapage PISTE
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+from functools import cache
 
 from .mapping import DISCIPLINE_VERS_SLUG, NIVEAU_VERS_NIVEAU, lignes_du_perimetre
 
@@ -31,6 +33,56 @@ RENTREE_COURANTE = 2026
 
 CYCLE_3 = ("sixieme",)
 CYCLE_4 = ("cinquieme", "quatrieme", "troisieme")
+
+# Le catalogue officiel porte le NOR de chaque arrêté dans son lien Légifrance
+# (`…UnTexteDeJorf?numjo=MENE2018714A`) : c'est une preuve de première main, et
+# la seule dont on dispose puisque ni le BO ni Légifrance ne répondent aux
+# requêtes automatisées.
+_MOTIF_NOR = re.compile(r"numjo=([A-Z]{4}\d{7}[A-Z])")
+
+# NOR lus dans un Bulletin officiel mais JAMAIS vérifiés contre le texte de
+# l'arrêté. Le rattrapage PISTE (plan 2, tâche 5) les confirme ou les corrige.
+# Rien d'autre n'a le droit d'entrer dans le manifeste : `test_programmes.py`
+# échoue sur tout NOR qui ne vient ni du catalogue ni de cette table.
+NOR_A_CONFIRMER: dict[str, str] = {
+    "MENE2504620A": (
+        "français et mathématiques cycle 3, BO du 17-4-2025 — data/raw/sources_officielles.md"
+    ),
+    "MENE2504621A": (
+        "langues vivantes, arrêté du 5-5-2025, BO n°22 du 29-5-2025 — "
+        "data/raw/sources_officielles.md"
+    ),
+    "MENE2602912A": (
+        "français et mathématiques cycle 4, BO du 5-3-2026 — data/raw/sources_officielles.md"
+    ),
+}
+
+
+@cache
+def nors_du_catalogue() -> frozenset[str]:
+    """Les NOR que le catalogue officiel prouve lui-même."""
+    from scripts.refresh_catalogue import charger_catalogue
+
+    trouves = (
+        _MOTIF_NOR.search(r.get("lien_vers_le_texte_officiel") or "") for r in charger_catalogue()
+    )
+    return frozenset(m.group(1) for m in trouves if m)
+
+
+def _nor_pour_url(url: str) -> str | None:
+    """NOR de la ligne du catalogue qui sert ce document.
+
+    Écrire le NOR à la main serait une affirmation ; le lire ici en est une
+    dérivation.
+    """
+    from scripts.refresh_catalogue import charger_catalogue
+
+    for r in charger_catalogue():
+        if (r.get("contenu_sur_le_site") or "").strip().replace("http://", "https://", 1) == url:
+            trouve = _MOTIF_NOR.search(r.get("lien_vers_le_texte_officiel") or "")
+            if trouve:
+                return trouve.group(1)
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +99,7 @@ class Programme:
 def _bo(
     url: str,
     reference: str,
-    nor: str,
+    nor: str | None,
     matieres: tuple[str, ...],
     calendrier: dict[str, int],
 ) -> list[Programme]:
@@ -134,11 +186,14 @@ BO_POST_2021: tuple[Programme, ...] = tuple(
         ("mathematiques",),
         _CYCLE4_2026,
     )
-    # Technologie du cycle 4 : calendrier À CONFIRMER par le rattrapage PISTE.
+    # Technologie du cycle 4. Le BO du 29-2-2024 est la seule référence dont on
+    # dispose : ce programme est postérieur au gel du catalogue, son annexe PDF
+    # ne cite aucun arrêté, et le BO est inaccessible par machine. NOR et
+    # calendrier restent donc inconnus — le rattrapage PISTE les établira.
     + _bo(
         f"{_BASE_BO}/document/Annexe — Programme de technologie du cycle 4-368016.pdf",
-        "BO du 29-2-2024 (technologie cycle 4)",
-        "MENE2404000A",
+        "BO du 29-2-2024 (technologie cycle 4) · NOR inconnu",
+        None,
         ("technologie",),
         dict.fromkeys(CYCLE_4, 2024),
     )
@@ -182,24 +237,33 @@ _MATIERES_CYCLE_4 = (
     "emc",
 )
 
-CYCLES_BO2020: tuple[Programme, ...] = tuple(
-    _bo(
-        "https://cache.media.education.gouv.fr/file/31/88/7/ensel714_annexe2_1312887.pdf",
-        "BO n°31 du 30-7-2020 (cycle 3)",
-        "MENE2018714A",
-        _MATIERES_CYCLE_3,
-        dict.fromkeys(CYCLE_3, 2020),
-    )
-    + _bo(
-        "https://cache.media.education.gouv.fr/file/31/89/1/ensel714_annexe3_1312891.pdf",
-        "BO n°31 du 30-7-2020 (cycle 4)",
-        "MENE2018714A",
-        _MATIERES_CYCLE_4,
-        dict.fromkeys(CYCLE_4, 2020),
-    )
-)
+_URL_CYCLE_3 = "https://cache.media.education.gouv.fr/file/31/88/7/ensel714_annexe2_1312887.pdf"
+_URL_CYCLE_4 = "https://cache.media.education.gouv.fr/file/31/89/1/ensel714_annexe3_1312891.pdf"
 
-NOR_TRAITES: frozenset[str] = frozenset(p.nor for p in BO_POST_2021 + CYCLES_BO2020 if p.nor)
+
+def _cycles_bo2020() -> tuple[Programme, ...]:
+    """Les deux documents de cycle, dont le catalogue porte l'arrêté et le NOR."""
+    return tuple(
+        _bo(
+            _URL_CYCLE_3,
+            "Arrêté du 17-7-2020, J.O. du 28-7-2020 (cycle 3)",
+            _nor_pour_url(_URL_CYCLE_3),
+            _MATIERES_CYCLE_3,
+            dict.fromkeys(CYCLE_3, 2020),
+        )
+        + _bo(
+            _URL_CYCLE_4,
+            "Arrêté du 17-7-2020, J.O. du 28-7-2020 (cycle 4)",
+            _nor_pour_url(_URL_CYCLE_4),
+            _MATIERES_CYCLE_4,
+            dict.fromkeys(CYCLE_4, 2020),
+        )
+    )
+
+
+def nor_traites() -> frozenset[str]:
+    """NOR que le manifeste porte déjà — ce que la veille ne doit PAS signaler."""
+    return frozenset(p.nor for p in manifeste() if p.nor)
 
 
 def _depuis_api() -> list[Programme]:
@@ -218,15 +282,24 @@ def _depuis_api() -> list[Programme]:
         # raison d'être téléchargé sans chiffrement.
         url = url.replace("http://", "https://", 1)
         vigueur = int(str(r.get("entre_en_vigueur_a_la_rentree") or "0").split(".")[0])
+        nor = _MOTIF_NOR.search(r.get("lien_vers_le_texte_officiel") or "")
         programmes.append(
-            Programme(slug, niveau, url, (r.get("texte_officiel") or "").strip(), vigueur, "api")
+            Programme(
+                slug,
+                niveau,
+                url,
+                (r.get("texte_officiel") or "").strip(),
+                vigueur,
+                "api",
+                nor.group(1) if nor else None,
+            )
         )
     return programmes
 
 
 def manifeste() -> list[Programme]:
     """Tout ce qui a été publié, toutes époques confondues."""
-    return list(BO_POST_2021) + list(CYCLES_BO2020) + _depuis_api()
+    return list(BO_POST_2021) + list(_cycles_bo2020()) + _depuis_api()
 
 
 def en_vigueur(rentree: int = RENTREE_COURANTE) -> list[Programme]:

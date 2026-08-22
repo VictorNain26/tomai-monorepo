@@ -84,9 +84,19 @@ toute requête automatisée, agent compris. Les PDF, eux, se téléchargent tous
 
 Conséquence directe : le texte des arrêtés — qui porte le calendrier officiel et
 la liste des abrogations — n'est vérifiable que par l'**API PISTE de
-Légifrance**. Ses identifiants ne sont aujourd'hui qu'en secrets GitHub ;
-`PISTE_CLIENT_ID` et `PISTE_CLIENT_SECRET` sont absents de
-`apps/curriculum/.env`. C'est un prérequis, pas un bonus.
+Légifrance**.
+
+**Et ces identifiants n'existent nulle part.** `gh secret list` sur le dépôt ne
+renvoie que `ANTHROPIC_API_KEY`, `DATABASE_URL` et `KOYEB_API_TOKEN` :
+`PISTE_CLIENT_ID` et `PISTE_CLIENT_SECRET` ne sont ni en secrets GitHub — malgré
+ce que prétendait la note de chantier — ni dans `apps/curriculum/.env`. La moitié
+Légifrance de la veille n'a donc **jamais** été branchée, et le workflow
+« Veille BO » sort **vert** chaque lundi en imprimant « ✓ Aucun changement
+détecté ». C'est l'explication complète des trois réformes manquées : le seul
+capteur de fraîcheur n'a jamais été alimenté, et son silence passait pour une
+bonne nouvelle.
+
+Les obtenir est donc un **prérequis du lot**, pas un bonus.
 
 ## Périmètre retenu
 
@@ -311,7 +321,14 @@ varient de ±1 point.
 aujourd'hui.** Les dates du tableau ci-dessus viennent de sources secondaires
 concordantes ; la source primaire est l'arrêté, inaccessible sans PISTE. Tant que
 les identifiants manquent, le manifeste porte ces dates avec leur origine écrite,
-et la veille ne peut pas les confirmer. **C'est le risque principal.**
+et la veille ne peut pas les confirmer. **C'est le risque principal, et il bloque
+la réindexation** : le calendrier décide quel programme est servi à quel niveau.
+
+Même règle pour les NOR. 38 des 41 que porte le manifeste sont **dérivés** du
+catalogue officiel (champ `lien_vers_le_texte_officiel`, `…?numjo=MENE…`), trois
+sont lus dans un BO et listés dans `NOR_A_CONFIRMER`, et celui de la technologie
+cycle 4 reste **inconnu** plutôt qu'approximé. `test_aucun_nor_sans_origine`
+échoue sur tout NOR qui ne vient ni de l'un ni de l'autre.
 
 **L'exhaustivité des réformes post-2021 n'est pas garantie** avant le premier
 rattrapage PISTE. On connaît celles de 2024, 2025 et 2026 ; on ne peut pas

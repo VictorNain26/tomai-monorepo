@@ -18,8 +18,11 @@ nouvelle — `fastembed` est délibérément écarté.
 
 **Spec :** `docs/superpowers/specs/2026-08-22-refonte-corpus-et-tests-rag-design.md`
 **Prérequis :** plan 1 livré, et `PISTE_CLIENT_ID` / `PISTE_CLIENT_SECRET`
-présents dans `apps/curriculum/.env` (ils ne sont aujourd'hui qu'en secrets
-GitHub — sans eux, les tâches 3 à 5 sont bloquées).
+créés puis placés dans `apps/curriculum/.env` **et** dans les secrets du dépôt.
+Vérifié le 2026-08-22 : ils n'existent **ni** en secrets GitHub (`gh secret list`
+ne renvoie que `ANTHROPIC_API_KEY`, `DATABASE_URL`, `KOYEB_API_TOKEN`) **ni** en
+local. La moitié Légifrance de la veille n'a donc jamais tourné, et le workflow
+sort vert chaque lundi. Sans ces clés, les tâches 3 à 5 sont bloquées.
 
 ## Contraintes globales
 
@@ -30,7 +33,18 @@ GitHub — sans eux, les tâches 3 à 5 sont bloquées).
   peut rien surveiller par le web.**
 - **Le seul signal de fraîcheur est l'API PISTE**, et c'est aussi la **seule voie
   vers le texte des arrêtés** — donc vers le calendrier d'entrée en vigueur que
-  `schema/programmes.py` porte aujourd'hui sans preuve primaire.
+  `schema/programmes.py` porte aujourd'hui sans preuve primaire, et vers le NOR
+  de la technologie cycle 4, laissé à `None`.
+- **Obtention des clés** : compte sur <https://piste.gouv.fr/registration>, puis
+  onglet APPLICATIONS → « Créer une application » → « Générer » un ID OAuth
+  (client_id + client_secret), puis « Consentement CGU API » pour l'API
+  Légifrance, puis « Demande de souscription à une API » sur le canal
+  PRODUCTION. Jeton :
+  `POST https://oauth.piste.gouv.fr/api/oauth/token`,
+  `grant_type=client_credentials&client_id=…&client_secret=…&scope=openid`,
+  `Content-Type: application/x-www-form-urlencoded`. Quota par défaut : 20
+  requêtes/seconde. Source : guide utilisateur PISTE, §6 à §10
+  (<https://piste.gouv.fr/images/com_apiportal/documentation/UserGuide_navigation_FR.pdf>).
 - **Jamais `subprocess`** pour du réseau : le secret PISTE transite aujourd'hui
   par `argv` de `curl`, donc lisible par tout utilisateur de la machine (`ps`,
   `/proc/*/cmdline`).
@@ -447,7 +461,7 @@ Le piège à éviter : comparer un NOR aux `reference` du manifeste ne marche pa
 Les entrées venues de l'API portent « arrêté du 19-7-2019 - J.O. du 23-7-2019 »,
 **sans NOR** — tout arrêté remonté serait donc « non traité », la veille sortirait
 en 1 à chaque exécution, et on réapprendrait à ignorer l'alerte. La comparaison se
-fait sur `schema.programmes.NOR_TRAITES`.
+fait sur `schema.programmes.nor_traites()`.
 
 - [ ] **Étape 1 : écrire le test qui échoue**
 
@@ -467,10 +481,10 @@ from scripts.veille_programmes import arretes_non_traites, main
 
 
 def test_un_arrete_deja_traite_est_ignore():
-    from schema.programmes import NOR_TRAITES
+    from schema.programmes import nor_traites
 
     arretes = [{"nor": "MENE2504620A", "title": "…cycle 3"}]
-    assert arretes_non_traites(arretes, NOR_TRAITES) == []
+    assert arretes_non_traites(arretes, nor_traites()) == []
 
 
 def test_un_arrete_inconnu_est_signale():
@@ -494,10 +508,10 @@ def test_la_veille_leve_si_elle_ne_peut_pas_conclure(monkeypatch):
 def test_les_reformes_du_manifeste_ne_declenchent_pas_d_alerte():
     """Non-régression sur le cri au loup : le manifeste connaît ces NOR, la
     veille doit rester silencieuse."""
-    from schema.programmes import NOR_TRAITES
+    from schema.programmes import nor_traites
 
-    arretes = [{"nor": n, "title": "…"} for n in NOR_TRAITES]
-    assert arretes_non_traites(arretes, NOR_TRAITES) == []
+    arretes = [{"nor": n, "title": "…"} for n in nor_traites()]
+    assert arretes_non_traites(arretes, nor_traites()) == []
 ```
 
 - [ ] **Étape 2 : vérifier l'échec** — `cannot import name 'arretes_non_traites'`
@@ -533,7 +547,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv  # noqa: E402
 
-from schema.programmes import NOR_TRAITES  # noqa: E402
+from schema.programmes import nor_traites  # noqa: E402
 from src.clients.piste import chercher_arretes  # noqa: E402
 
 load_dotenv()
@@ -561,7 +575,7 @@ def main() -> None:
                 raise RuntimeError(f"{ETAT} illisible : {e}") from e
 
     arretes = chercher_arretes(depuis)  # lève si l'API ne répond pas
-    nouveaux = arretes_non_traites(arretes, set(NOR_TRAITES))
+    nouveaux = arretes_non_traites(arretes, nor_traites())
 
     ETAT.write_text(json.dumps({"dernier_run": date.today().isoformat()}), encoding="utf-8")
 
@@ -611,7 +625,7 @@ uv run python scripts/veille_programmes.py --depuis 2021-09-01
 
 Attendu : une liste d'arrêtés `MENE` non traités. Les deux réformes connues
 (`MENE2504620A`, `MENE2602912A`) ne doivent **pas** y figurer — elles sont déjà
-dans `NOR_TRAITES`. Tout le reste est du travail réel.
+dans `nor_traites()`. Tout le reste est du travail réel.
 
 - [ ] **Étape 2 : trancher chaque arrêté**
 
