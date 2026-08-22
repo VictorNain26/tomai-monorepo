@@ -546,9 +546,15 @@ raisonnerait par cycle servirait à un élève de 4e un texte qui ne s'applique 
 **Fichiers :** créer `schema/programmes.py`, `tests/test_programmes.py`.
 
 **Interfaces produites :** `Programme` (dataclass gelée), `manifeste()`,
-`en_vigueur(rentree) -> dict[tuple[str, str], Programme]`,
+`en_vigueur(rentree) -> list[Programme]`,
+`programmes_pour(niveau, matiere, rentree) -> list[Programme]`,
 `matrice_attendue(rentree) -> set[tuple[str, str]]`, `NOR_TRAITES`,
 `RENTREE_COURANTE`
+
+`en_vigueur` renvoie une **liste**, pas un dictionnaire indexé par couple : une
+matière peut légitimement être décrite par plusieurs documents au même niveau
+(la spécialité et l'option d'arts, par exemple). N'en garder qu'un en perdrait
+un — ce qui serait la même perte silencieuse que celle qu'on répare.
 
 - [ ] **Étape 1 : écrire le test qui échoue**
 
@@ -566,6 +572,7 @@ from schema.programmes import (
     en_vigueur,
     manifeste,
     matrice_attendue,
+    programmes_pour,
 )
 
 
@@ -577,21 +584,21 @@ def test_le_manifeste_couvre_le_college_et_le_lycee_general():
 
 def test_un_programme_futur_n_est_pas_servi_avant_sa_rentree():
     """Français cycle 4 : 5e en 2026, 4e en 2027, 3e en 2028."""
-    assert en_vigueur(2026)[("quatrieme", "francais")].vigueur == 2020
-    assert en_vigueur(2027)[("quatrieme", "francais")].vigueur == 2026
+    assert [p.vigueur for p in programmes_pour("quatrieme", "francais", 2026)] == [2020]
+    assert {p.nor for p in programmes_pour("quatrieme", "francais", 2027)} == {"MENE2602912A"}
 
 
 def test_la_reforme_deja_applicable_remplace_l_ancienne():
-    assert en_vigueur(2026)[("cinquieme", "francais")].vigueur == 2026
-    assert en_vigueur(2025)[("cinquieme", "francais")].vigueur == 2020
+    assert {p.nor for p in programmes_pour("cinquieme", "francais", 2026)} == {"MENE2602912A"}
+    assert [p.vigueur for p in programmes_pour("cinquieme", "francais", 2025)] == [2020]
 
 
 def test_les_langues_du_lycee_ne_sont_plus_celles_de_l_api():
     """Le programme de langues 2025 couvre AUSSI le lycée : l'API, gelée en 2021,
     sert un texte abrogé."""
-    entree = en_vigueur(2026)[("seconde", "anglais")]
-    assert entree.vigueur == 2025
-    assert entree.nor == "MENE2504621A"
+    entrees = programmes_pour("seconde", "anglais", 2026)
+    assert entrees
+    assert {p.nor for p in entrees} == {"MENE2504621A"}
 
 
 def test_chaque_entree_porte_une_url_et_une_reference():
@@ -618,9 +625,13 @@ def test_la_matrice_attendue_est_un_produit_niveau_matiere():
     )
 
 
-def test_un_seul_programme_par_couple_a_une_rentree_donnee():
-    for couple, p in en_vigueur(RENTREE_COURANTE).items():
-        assert p.vigueur <= RENTREE_COURANTE, f"{couple} : programme futur servi"
+def test_un_couple_ne_porte_qu_une_generation_de_programme():
+    """Deux documents peuvent couvrir le même couple — jamais deux générations."""
+    generations: dict[tuple[str, str], set[int]] = {}
+    for p in en_vigueur(RENTREE_COURANTE):
+        generations.setdefault((p.niveau, p.matiere), set()).add(p.vigueur)
+    melanges = {c: v for c, v in generations.items() if len(v) > 1}
+    assert not melanges, f"couples servant deux générations : {melanges}"
 ```
 
 - [ ] **Étape 2 : vérifier l'échec** — `ModuleNotFoundError: schema.programmes`
@@ -791,25 +802,29 @@ def manifeste() -> list[Programme]:
     return list(BO_POST_2021) + list(CYCLES_BO2020) + _depuis_api()
 
 
-def en_vigueur(rentree: int = RENTREE_COURANTE) -> dict[tuple[str, str], Programme]:
-    """Le programme applicable à chaque couple (niveau, matière) à cette rentrée.
+def en_vigueur(rentree: int = RENTREE_COURANTE) -> list[Programme]:
+    """Les programmes applicables à cette rentrée.
 
-    Le plus récent déjà entré en vigueur gagne. C'est ce tri qui remplace
-    l'ancien programme par le nouveau, niveau par niveau, sans cas particulier.
+    Pour chaque couple (niveau, matière), seule la génération la plus récente
+    déjà entrée en vigueur est retenue — mais TOUS ses documents le sont : une
+    matière peut être décrite par plusieurs PDF.
     """
-    retenus: dict[tuple[str, str], Programme] = {}
-    for p in manifeste():
-        if p.vigueur > rentree:
-            continue
+    applicables = [p for p in manifeste() if p.vigueur <= rentree]
+    generation: dict[tuple[str, str], int] = {}
+    for p in applicables:
         cle = (p.niveau, p.matiere)
-        if cle not in retenus or p.vigueur > retenus[cle].vigueur:
-            retenus[cle] = p
-    return retenus
+        generation[cle] = max(generation.get(cle, 0), p.vigueur)
+    return [p for p in applicables if generation[(p.niveau, p.matiere)] == p.vigueur]
+
+
+def programmes_pour(niveau: str, matiere: str, rentree: int = RENTREE_COURANTE) -> list[Programme]:
+    """Ce qu'un élève de ce niveau doit voir pour cette matière, à cette rentrée."""
+    return [p for p in en_vigueur(rentree) if p.niveau == niveau and p.matiere == matiere]
 
 
 def matrice_attendue(rentree: int = RENTREE_COURANTE) -> set[tuple[str, str]]:
     """Couples (niveau, matière) qui doivent avoir du contenu indexé."""
-    return set(en_vigueur(rentree))
+    return {(p.niveau, p.matiere) for p in en_vigueur(rentree)}
 ```
 
 - [ ] **Étape 4 : vérifier** — `uv run pytest tests/test_programmes.py -q && uv run ruff check .` → 8 passed
@@ -1077,7 +1092,7 @@ def main() -> None:
 
     DESTINATION.mkdir(parents=True, exist_ok=True)
     programmes = en_vigueur(args.rentree)
-    urls = sorted({p.url for p in programmes.values()})
+    urls = sorted({p.url for p in programmes})
     print(f"rentrée {args.rentree} : {len(programmes)} couples → {len(urls)} PDF uniques\n")
 
     echecs = []
