@@ -902,7 +902,21 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Étape 4 : lancer les tests puis le téléchargement réel**
+- [ ] **Étape 4 : supprimer le corpus collecté à la main**
+
+Les 18 fichiers `.md`/`.txt` de `data/raw/` ont été rassemblés un par un. Le
+manifeste les régénère tous. **Les garder inviterait à en réutiliser un
+silencieusement**, et on ne saurait plus lequel vient d'où.
+
+```bash
+git rm data/raw/programme_*.md data/raw/programme_*.txt
+```
+
+`data/raw/` ne doit plus contenir que : `programmes_second_degre_datagouv.json`
+(le CSV source), `sources_officielles.md` (la carte des sources), les fichiers
+d'état de la veille, et le dossier `pdf/` produit par ce script.
+
+- [ ] **Étape 5 : lancer les tests puis le téléchargement réel**
 
 ```bash
 uv run pytest tests/test_fetch_sources.py -q
@@ -911,11 +925,11 @@ uv run python scripts/fetch_sources.py
 
 Attendu : 3 passed, puis ~129 PDF téléchargés sans échec.
 
-- [ ] **Étape 5 : commit**
+- [ ] **Étape 6 : commit**
 
 ```bash
-git add scripts/fetch_sources.py tests/test_fetch_sources.py data/raw/.gitignore
-git commit -m "feat: fetch every programme the manifest lists, and fail loudly"
+git add -A scripts/fetch_sources.py tests/test_fetch_sources.py data/raw/
+git commit -m "feat: fetch every programme the manifest lists, and drop the hand-picked ones"
 ```
 
 ---
@@ -1073,7 +1087,7 @@ Attendu : ÉCHEC — `cannot import name 'supprimer_source'`
 - [ ] **Étape 3 : implémenter la suppression**
 
 ```python
-def supprimer_source(source_file: str, *, client=None, collection: str | None = None) -> int:
+def supprimer_source(source_file: str, *, client=None, collection: str | None = None) -> None:
     """Retire tous les points issus d'un fichier source.
 
     Appelé AVANT de réingérer ce fichier : les identifiants dérivant du
@@ -1093,7 +1107,6 @@ def supprimer_source(source_file: str, *, client=None, collection: str | None = 
         ),
         wait=True,
     )
-    return 1
 ```
 
 - [ ] **Étape 4 : remplacer `SOURCES` par le manifeste**
