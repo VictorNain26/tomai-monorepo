@@ -13,9 +13,7 @@ Exécution :
 
 from __future__ import annotations
 
-import hashlib
 import os
-import uuid
 from pathlib import Path
 
 import pytest
@@ -280,41 +278,6 @@ def test_validate_chunks_fails_on_invalid_niveau():
 
     with pytest.raises(ValueError):
         validate_chunks([_valid_chunk(niveau="maternelle")])
-
-
-# ── Idempotence ID (uuid5 inclut matière + niveau + text) ───────────────────
-
-
-def _make_id(matiere: str, niveau: str, text: str) -> str:
-    """Reproduit le calcul d'ID utilisé par upsert_to_qdrant."""
-    seed = f"{matiere}:{niveau}:{text}"
-    h = hashlib.sha256(seed.encode("utf-8")).hexdigest()
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, h))
-
-
-def test_id_stable_same_triple():
-    """Même (matière, niveau, text) → même UUID."""
-    assert _make_id("mathematiques", "cinquieme", "Les puissances de dix.") == _make_id(
-        "mathematiques", "cinquieme", "Les puissances de dix."
-    )
-
-
-def test_id_differs_per_niveau():
-    """Même text + matière, niveau différent → UUIDs distincts."""
-    text = "Texte commun cycle 4."
-    assert _make_id("svt", "cinquieme", text) != _make_id("svt", "quatrieme", text)
-
-
-def test_id_differs_per_matiere_for_shared_text():
-    """
-    Texte commun entre matières (préambules pédagogiques langues college) →
-    UUIDs distincts. Sans matière dans le seed, le dernier upsert écrasait les
-    autres (bug détecté lors de l'audit `--list-missing` : sections
-    'Le cahier', 'Composante pragmatique' absentes du filtre matiere=anglais).
-    """
-    text = "L'apprentissage repose sur divers outils, parmi lesquels le cahier."
-    ids = {_make_id(m, "cinquieme", text) for m in ["anglais", "espagnol", "allemand", "italien"]}
-    assert len(ids) == 4, "Chaque matière doit avoir son propre UUID pour un texte partagé"
 
 
 # ── L2 normalize ─────────────────────────────────────────────────────────────

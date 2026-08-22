@@ -7,6 +7,7 @@ from .document import (
     Niveau,
     NiveauCollege,
     NiveauLycee,
+    chunk_point_id,
     cycle_from_niveau,
     derive_niveaux_from_file,
 )
@@ -38,6 +39,7 @@ __all__ = [
     "NiveauCollege",
     "NiveauLycee",
     "build_contextual_text",
+    "chunk_point_id",
     "cycle_from_niveau",
     "derive_niveaux_from_file",
     "get_collection_name",

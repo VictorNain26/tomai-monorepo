@@ -8,8 +8,9 @@ Flux :
     → chunk_text()            # markdown + tokenizer mistral-common
     → expand_for_niveaux()
     → validate_chunks()
-    → ai_service.embed()      # dense + sparse natif BGE-M3 via ai-service /embed
-    → upsert_to_qdrant()      # named vectors {dense, bm25} + uuid5 idempotent
+    → ovh_embeddings.embed()  # dense via OVH AI Endpoints ; le creux est
+                              # calculé par Qdrant (Cloud Inference, `bm25`)
+    → upsert_to_qdrant()      # named vectors {dense, bm25} + id idempotent
 
 Usage :
   uv run python scripts/ingest.py
@@ -21,12 +22,10 @@ Usage :
 from __future__ import annotations
 
 import argparse
-import hashlib
 import os
 import re
 import sys
 import time
-import uuid as _uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -37,10 +36,12 @@ from schema import (
     NiveauCollege,
     NiveauLycee,
     build_contextual_text,
+    chunk_point_id,
     derive_niveaux_from_file,
     get_qdrant_client,
 )
-from src.clients import ai_service
+from schema.retrieval import SPARSE_MODEL
+from src.clients import ovh_embeddings
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -412,12 +413,12 @@ def validate_chunks(chunks: list[dict]) -> list[dict]:
 def upsert_to_qdrant(
     payloads: list[dict],
     dense_vectors: list[list[float]],
-    sparse_vectors: list[ai_service.SparseVector],
+    sparse_texts: list[str],
 ) -> int:
     """
     Upsert dans la collection cible (named vectors `dense` + sparse `bm25`).
 
-    - ID stable : uuid5(NAMESPACE_URL, sha256(matière:niveau:text))
+    - ID stable : chunk_point_id() (schema/document.py)
       → idempotent : re-run = pas de doublons, modif text = nouveau point.
     """
     from qdrant_client import models
@@ -437,27 +438,19 @@ def upsert_to_qdrant(
         niveau = payload["niveau"]
         matiere = payload["matiere"]
 
-        # ID stable incluant matière + niveau pour distinguer :
-        # - les duplications cycle (même texte × N niveaux du cycle)
-        # - les textes COMMUNS entre matières (préambules pédagogiques langues
-        #   college sont identiques entre EN/ES/DE/IT — sans matière dans
-        #   le seed, le dernier upsert écraserait les précédents et seul
-        #   le filtre matière=italien retrouverait ces chunks).
-        id_seed = f"{matiere}:{niveau}:{text}"
-        text_hash = hashlib.sha256(id_seed.encode("utf-8")).hexdigest()
-        point_id = str(_uuid.uuid5(_uuid.NAMESPACE_URL, text_hash))
+        point_id = chunk_point_id(matiere, niveau, text)
 
-        sparse_vec = models.SparseVector(
-            indices=sparse_vectors[i].indices,
-            values=sparse_vectors[i].values,
-        )
+        # Le creux est calculé par Qdrant à l'écriture, sur le MÊME texte que le
+        # dense (contextualisé) : deux branches qui verraient des contenus
+        # différents ne chercheraient plus dans le même document.
+        sparse_doc = models.Document(text=sparse_texts[i], model=SPARSE_MODEL)
 
         points.append(
             models.PointStruct(
                 id=point_id,
                 vector={
                     "dense": dense_vec,
-                    "bm25": sparse_vec,
+                    "bm25": sparse_doc,
                 },
                 payload=payload,
             )
@@ -465,7 +458,8 @@ def upsert_to_qdrant(
 
     # Batch upsert par chunks de UPSERT_BATCH_SIZE points. Sans batching,
     # un payload >20 MB peut faire timeout sur Qdrant Cloud (write op).
-    # uuid5 garantit l'idempotence : retry sans craindre les doublons.
+    # L'identifiant dérivé du contenu garantit l'idempotence : retry sans
+    # craindre les doublons.
     upserted = 0
     for i in range(0, len(points), UPSERT_BATCH_SIZE):
         batch = points[i : i + UPSERT_BATCH_SIZE]
@@ -603,20 +597,22 @@ def main() -> None:
                 unique_texts[text] = len(embed_inputs)
                 embed_inputs.append(build_contextual_text(chunk_for_prefix))
 
-        # Dense + sparse natif BGE-M3 via ai-service (porte unique).
+        # Dense via OVH ; documents embeddés BRUTS (aucune instruction : elle
+        # est réservée aux requêtes, cf. src/clients/ovh_embeddings.py).
+        model = ovh_embeddings.model_name()
         print(
-            f"  Embedding ({len(embed_inputs)} textes uniques via ai-service /embed)…",
+            f"  Embedding ({len(embed_inputs)} textes uniques via OVH {model})…",
             end=" ",
             flush=True,
         )
-        unique_items = ai_service.embed(embed_inputs)
-        print(f"{len(unique_items)} vecteurs")
+        unique_vectors = ovh_embeddings.embed(embed_inputs)
+        print(f"{len(unique_vectors)} vecteurs")
 
-        dense_vectors = [unique_items[unique_texts[p["text"]]].dense for p in payloads]
-        sparse_vectors = [unique_items[unique_texts[p["text"]]].sparse for p in payloads]
+        dense_vectors = [unique_vectors[unique_texts[p["text"]]] for p in payloads]
+        sparse_texts = [embed_inputs[unique_texts[p["text"]]] for p in payloads]
 
         print(f"  Upsert {len(payloads)} points…", end=" ", flush=True)
-        n = upsert_to_qdrant(payloads, dense_vectors, sparse_vectors)
+        n = upsert_to_qdrant(payloads, dense_vectors, sparse_texts)
         print(f"✓ ({n} points dans '{COLLECTION}')")
         total_points += n
 

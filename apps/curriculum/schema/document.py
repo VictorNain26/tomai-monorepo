@@ -11,6 +11,7 @@ Voir docs/ARCHITECTURE.md pour les décisions architecturales.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import uuid
 from enum import Enum
@@ -241,3 +242,20 @@ class Chunk(BaseModel):
             "section": self.section,
             "chunk_index": self.chunk_index,
         }
+
+
+def chunk_point_id(matiere: str, niveau: str, text: str) -> str:
+    """Identifiant stable et idempotent d'un point Qdrant.
+
+    Dérivé du CONTENU seul : réingérer ne crée pas de doublon, et modifier un
+    texte crée un point neuf. La matière et le niveau font partie du seed parce
+    que le même texte existe légitimement plusieurs fois — les préambules
+    pédagogiques sont identiques entre langues vivantes, et un chunk de cycle est
+    dupliqué sur les niveaux du cycle.
+
+    SEULE définition de cette formule. La réécrire ailleurs romprait le lien
+    entre l'index et le manifeste sans qu'aucun test ne le voie.
+    """
+    seed = f"{matiere}:{niveau}:{text}"
+    digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, digest))
