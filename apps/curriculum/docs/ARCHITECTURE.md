@@ -43,9 +43,9 @@ Toute la stack passe par des fournisseurs ou modèles EU-déployables :
 - **Embeddings denses** : `Qwen3-Embedding-8B` servi par OVHcloud AI Endpoints
   (Gravelines), tronqué à 1024D par Matryoshka. Rien n'est auto-hébergé.
 - **Vecteur creux** : `bm25` calculé par Qdrant Cloud Inference, côté serveur.
-- **Génération offline du golden set** : `mistral-large-latest`
 - **Index vectoriel** : Qdrant Cloud, région `fr-par`
-- **Veille** : data.gouv.fr + Légifrance (PISTE)
+- **Catalogue des programmes** : API `data.education.gouv.fr` (ministère)
+- **Veille des arrêtés** : Légifrance via l'API PISTE
 
 Aucun appel sortant vers OpenAI, Anthropic, Cohere, Google, Voyage.
 
@@ -194,57 +194,32 @@ au cas où un fournisseur renverrait du non normé.
 
 Sans normalisation, `Distance.COSINE` Qdrant est instable.
 
-## Evaluation retrieval
+## Évaluation
 
-`scripts/evaluate.py` mesure la qualité de l'INDEX uniquement. Aucun appel
-LLM. Métriques déterministes, ~10 s par 60 questions.
+Deux questions distinctes, deux instruments.
 
-Deux signaux complémentaires :
+**Le corpus est-il complet ?** `scripts/coverage_report.py` compare la matrice
+`(niveau × matière)` que le manifeste déclare en vigueur à celle que contient
+l'index. Une case attendue et vide fait sortir le script en 1. C'est une mesure
+de **couverture**, pas de qualité.
 
-- **[primary] chunk_id Recall@k** : le `gold_chunk_id` (UUID5 du chunk
-  source) est-il dans le top-k ? Disponible pour les questions générées
-  par `generate_golden.py` (document-grounded). Signal propre, immune aux
-  faux positifs lexicaux.
-  - Référence : [arXiv 2510.21440](https://arxiv.org/abs/2510.21440)
-    (Redefining Retrieval Evaluation in the Era of LLMs),
-    [CoFE-RAG arXiv 2410.12248](https://arxiv.org/abs/2410.12248).
-- **[secondary] keyword Recall@k** : fraction des `expected_keywords`
-  présents dans le top-k (sous-chaîne casefold). Surestime systématiquement
-  vs human-judged relevance. Conservé pour comparaison historique et
-  golden sets seed (sans `gold_chunk_id`).
+**Quelle configuration de recherche est la meilleure ?** Méthode TREC — pooling
+des résultats de plusieurs configurations, jugement de pertinence par
+`ragas.ContextRelevance` (double juge, servi par Mistral), métriques et test de
+significativité par `ranx`. Lancée à la main, jamais en CI, et elle ne produit
+qu'un **classement relatif** : les juges LLM sont plus indulgents que les
+humains ([arXiv 2412.17156](https://arxiv.org/pdf/2412.17156)).
 
-Toute eval LLM-judge (Faithfulness, hallucination, style socratique) est
-backend.
+Le **golden set a été supprimé le 2026-08-22** et ne doit pas être reconstruit
+sous la même forme. Ses questions étaient générées par un LLM à partir des
+chunks qu'il fallait retrouver — or les retrievers neuronaux sont biaisés en
+faveur des textes générés par LLM
+([arXiv 2310.20501](https://arxiv.org/pdf/2310.20501)) — il n'avait qu'un
+document pertinent par question, une pertinence binaire, et deux exécutions
+identiques variaient de ±1 point.
 
-## Golden set
-
-`data/golden/questions.json` — schema Pydantic `schema.golden.GoldenQuestion`.
-Cible 300 questions stratifiées par `(matière × niveau)`.
-
-Génération document-grounded via `scripts/generate_golden.py` :
-
-1. **Context sampling** : tirage stratifié par strate `(matière × niveau)`
-   pour garantir une couverture équilibrée
-2. **QA generation** : Mistral large génère 1 question + 3-5 keywords
-   extraits textuellement du chunk, via `response_format` JSON Schema strict
-3. **Anti-hallucination filter** : Pydantic vérifie que ≥2 keywords sont
-   effectivement présents dans le chunk source. Sinon la question est
-   rejetée.
-4. **`gold_chunk_id`** calculé localement avec la même formule UUID5
-   `(matière, niveau, text)` que `ingest.upsert_to_qdrant` — garantit que
-   le chunk attendu est bien celui en base.
-
-Alignement avec l'état de l'art :
-
-- [RAGalyst arXiv 2511.04502](https://arxiv.org/abs/2511.04502) — pipeline
-  agentique document-grounded, single-hop only.
-- [RAGAS TestsetGenerator](https://docs.ragas.io/en/stable/concepts/test_data_generation/rag/)
-  — knowledge graph + synthesizers. Notre approche est plus légère (pas de
-  knowledge graph), suffisante pour un corpus déjà structuré.
-
-Hard negatives (PrismRAG arXiv 2507.18857) : **hors scope curriculum**.
-Mesurent la résilience de la **génération** (le LLM doit ignorer un
-distracteur). Mesure runtime → backend.
+Toute évaluation LLM-judge de la génération (fidélité, hallucination, style
+socratique) appartient au backend.
 
 ## Veille programmes Éduscol
 
@@ -349,18 +324,20 @@ non mesuré.
 
 ## Couverture réelle du corpus
 
-L'enum `Matiere` et le `contract.json` décrivent le **vocabulaire autorisé**,
-pas ce qui est effectivement indexé. À ce jour la collection ne contient que
-du **collège** : les fichiers de `data/raw/` couvrent le cycle 3 (6e), le
-cycle 4 et les langues vivantes collège. Aucune source lycée n'est ingérée,
-donc `seconde`/`premiere`/`terminale` et les matières lycée
-(`philosophie`, `ses`, `nsi`, `snt`, `hggsp`, `hlp`) sont déclarables mais
-vides. Le golden set d'évaluation est collège-only lui aussi — le
-`cid_recall@5 = 0,894` ne dit rien du lycée.
+L'enum `Matiere` et le `contract.json` décrivent le **vocabulaire autorisé** ;
+`matieres_indexees`, `niveaux_indexes` et `couverture` décrivent ce qui a
+effectivement du contenu. Les deux ne coïncident pas forcément, et c'est la
+couverture qui fait foi côté backend : tout niveau ou toute matière exposé à
+l'agent sans contrepartie dans le corpus renvoie zéro résultat **en silence**,
+et l'agent en conclut que le programme officiel ne dit rien.
 
-Conséquence côté backend : tout niveau ou toute matière exposé à l'agent
-sans contrepartie dans le corpus renvoie zéro résultat en silence. Le
-contrat doit être vérifié dans les deux sens.
+Le corpus a été refait le 2026-08-22 pour couvrir le collège **et** le lycée
+général, à partir d'un manifeste daté (`schema/programmes.py`). Avant cette
+refonte, `seconde`, `premiere` et `terminale` étaient déclarables et vides —
+alors que le schéma d'inscription les acceptait déjà.
+
+`scripts/coverage_report.py` est l'instrument qui le vérifie, et il peut
+échouer : c'est ce qui le distingue de la métrique qu'il remplace.
 
 ## Sources officielles
 
@@ -442,25 +419,19 @@ l'agent ne peut pas atteindre, puisqu'il demande `histoire`, `geographie` et
 `physique-chimie` (constat P0-1). L'index est irréprochable et le contrat de
 l'agent jette le résultat.
 
-Baseline de référence sauvegardée pour les comparaisons futures — RRF contre
-DBSF, IDF activé ou non, taille de chunk :
-
-```bash
-uv run python scripts/evaluate.py --fusion dbsf --save-run runs/dbsf.json
-uv run python scripts/evaluate.py --compare runs/rrf-2026-08-21.json runs/dbsf.json
-```
-
-La seconde commande dit si l'écart est **statistiquement significatif**
-(randomisation de Fisher, p < 0,05) — c'est ce qui manquait pour trancher ces
-A/B sans conclure sur du bruit.
+Ces chiffres datent de l'ancien corpus et de l'ancien golden set : ils sont
+conservés comme trace, pas comme référence. Les comparaisons futures — RRF
+contre DBSF, branche lexicale activée ou non, taille de chunk — passeront par
+le dispositif décrit au §Évaluation, avec un test de significativité (`ranx`,
+randomisation de Fisher, p < 0,05).
 
 ## Pistes restantes (sans engagement prématuré)
 
 > Toutes ces pistes supposent de pouvoir **mesurer un écart de 2-3 points**.
-> Or notre golden set a un plancher de bruit de ±1 point et un biais de
-> provenance (questions générées depuis les chunks à retrouver). **L'instrument
-> passe donc avant les pistes** — les classer par gain espéré sans savoir les
-> mesurer, c'est choisir au hasard avec méthode.
+> Le golden set qui servait à ça a été supprimé (biais de provenance, ±1 point
+> de bruit) et son remplaçant n'est pas encore livré. **L'instrument passe donc
+> avant les pistes** — les classer par gain espéré sans savoir les mesurer,
+> c'est choisir au hasard avec méthode.
 
 1. **Reranking** — le plus gros levier identifié, et il ne dépend pas de
    l'embedder : `hit_rate@20 = 0,984` contre `hit_rate@5 = 0,894`. Le bon chunk
@@ -480,9 +451,9 @@ A/B sans conclure sur du bruit.
    retester sur la configuration actuelle.
 5. **Bump `pymupdf4llm`** ([releases](https://github.com/pymupdf/pymupdf4llm/releases))
    pour gains perf et extras `[layout]`.
-6. **Investiguer technologie + italien** — matières faibles depuis mai. Le
-   golden ciblé (50 questions chacun) hériterait du même biais de provenance :
-   à faire avec des questions réelles, pas générées.
+6. **Investiguer technologie + italien** — matières faibles depuis mai, sur un
+   corpus depuis remplacé. À reprendre avec de vraies questions d'élèves, pas
+   des questions générées depuis les chunks à retrouver.
 
 ## Références
 

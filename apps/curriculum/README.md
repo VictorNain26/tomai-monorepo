@@ -22,39 +22,22 @@ Aucun SaaS hors UE.
 
 | Indicateur | Valeur |
 |---|---|
-| Collection Qdrant | `tomai_educational` (5238 points uniques) |
-| Niveaux couverts | 6e, 5e, 4e, 3e (collège complet) |
-| Matières | 16 (tronc commun + LV + arts + EPS + sciences-techno) |
-| Coverage sections BO | **100 %** sur toutes les matières (audit 2026-05-18, sans faux positif) |
-| Retrieval baseline | golden set maison = **non-régression uniquement** (tâche *known-item*, questions générées depuis les chunks). Qualité du modèle : voir MTEB-French. Qualité du pipeline : voir Alloprof. |
-| Tests | 82 pass · ruff clean |
+| Collection Qdrant | alias `tomai_educational` → collection horodatée |
+| Périmètre | collège complet + lycée **général** (voies techno et pro exclues) |
+| Manifeste | 150 entrées publiées, **114 couples (niveau × matière)** en vigueur à la rentrée 2026 |
+| Sources | 56 PDF officiels, téléchargés depuis le manifeste |
+| Couverture | `scripts/coverage_report.py` — sort en 1 sur toute case attendue et vide |
+| Fraîcheur | ⚠ veille des réformes **non branchée** : les identifiants PISTE n'existent pas encore |
 
-### Baseline par matière (top-5, golden 189 questions, dense OVH + BM25 Qdrant)
+Le corpus n'est plus une liste de fichiers rassemblés à la main. Un manifeste
+**daté** (`schema/programmes.py`) dit ce qui doit exister pour une rentrée
+donnée, l'index dit ce qui existe, et un test compare les deux. C'est ce qui
+manquait : l'ancienne métrique comparait l'index à lui-même et bornait le
+résultat à 100 %, si bien qu'un lycée entièrement absent passait pour couvert.
 
-| Matière | n | cid_recall@5 | MRR |
-|---|---|---|---|
-| eps, histoire_geo, mathematiques, education_musicale, physique_chimie, svt | 71 | **1.000** | 0.83-1.00 |
-| allemand | 15 | 0.933 | 0.811 |
-| arts_plastiques | 13 | 0.923 | 0.923 |
-| langues_vivantes | 10 | 0.900 | 0.883 |
-| emc | 11 | 0.909 | 1.000 |
-| francais | 16 | 0.875 | 0.771 |
-| histoire_des_arts | 13 | 0.846 | 0.833 |
-| anglais | 12 | 0.750 | 0.794 |
-| sciences_technologie | 4 | 0.750 | 1.000 |
-| espagnol | 7 | 0.714 | 0.857 |
-| technologie | 9 | 0.667 | 0.781 |
-| italien | 8 | 0.625 | 0.875 |
-
-**Findings** (relevé de mai 2026, embedder de l'époque) :
-- Gains du switch d'embedder : **allemand** 0.60→0.93 (+0.33), **espagnol**
-  0.43→0.71 (+0.28), **arts_plastiques** 0.69→0.92 (+0.23). MRR global +0.16.
-- Italien (n=8) et technologie restent les 2 matières faibles. Un golden ciblé
-  hériterait du même biais de provenance : à reprendre avec de vraies questions.
-
-> **Où on en est** : l'embedder est `Qwen3-Embedding-8B` @1024D servi par
-> OVHcloud AI Endpoints, et le vecteur creux est le `bm25` calculé par Qdrant.
-> Raisonnement complet : `docs/adr/0002-embeddings-manages.md`.
+> **Embedder** : `Qwen3-Embedding-8B` @1024D servi par OVHcloud AI Endpoints,
+> vecteur creux `bm25` calculé par Qdrant. Raisonnement complet :
+> `docs/adr/0002-embeddings-manages.md`.
 
 ## Architecture
 
@@ -69,14 +52,13 @@ scripts/
 ├── ingest.py              .md → chunks → dense OVH → upsert (bm25 calculé par Qdrant)
 ├── migrate_collection.py  Création collection (named vectors + indexes)
 ├── query.py               Test interactif retrieval (chunks bruts, pas de LLM)
-├── evaluate.py            Métriques retrieval déterministes (chunk_id recall, MRR)
-├── generate_golden.py     Génère le golden set document-grounded
+├── refresh_catalogue.py   Catalogue officiel (API du ministère) → cache local
+├── fetch_sources.py       Télécharge les PDF que le manifeste déclare en vigueur
 ├── coverage_report.py     Couples (niveau × matière) attendus vs indexés
-└── veille_programmes.py   Détecte changements BO (data.gouv + Légifrance)
+└── veille_programmes.py   Détecte les arrêtés de programme (Légifrance/PISTE)
 
 data/
-├── raw/                   PDFs + markdowns sources + manifest data.gouv
-└── golden/                Questions de test + résultats eval (versionnés)
+└── raw/                   catalogue officiel (commité) + pdf/ (ignoré, régénérable)
 
 docs/ARCHITECTURE.md       Source de vérité unique sur l'architecture
 docs/audits/               Rapports coverage horodatés
@@ -107,14 +89,10 @@ EMBED_BATCH_SIZE=16 uv run python scripts/ingest.py
 # 5. Tester le retrieval
 uv run python scripts/query.py "Théorème de Pythagore" --matiere=mathematiques --niveau=quatrieme
 
-# 6. Générer le golden set document-grounded (one-shot offline)
-uv run python scripts/generate_golden.py --target=300
-
-# 7. Vérifier la qualité
+# 6. Vérifier la couverture
 uv run python scripts/coverage_report.py             # sort en 1 sur toute case vide
-uv run python scripts/evaluate.py --by-matiere       # chunk_id recall + MRR
 
-# 8. Veille BO
+# 7. Veille des réformes (nécessite PISTE_CLIENT_ID / PISTE_CLIENT_SECRET)
 uv run python scripts/veille_programmes.py
 ```
 

@@ -23,24 +23,27 @@ from __future__ import annotations
 
 import argparse
 import os
-import re
 import sys
 import time
 from pathlib import Path
 
+import pymupdf4llm
 from dotenv import load_dotenv
 
 from schema import (
+    MATIERE_LABELS,
     Chunk,
     Matiere,
     NiveauCollege,
     NiveauLycee,
     build_contextual_text,
     chunk_point_id,
-    derive_niveaux_from_file,
     get_qdrant_client,
 )
+from schema.programmes import DOCUMENTS_A_DECOUPER, RENTREE_COURANTE, en_vigueur
 from schema.retrieval import SPARSE_MODEL
+from scripts.extract_pdfs import decouper_par_matiere, lignes_typees
+from scripts.fetch_sources import nom_fichier
 from src.clients import ovh_embeddings
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -50,6 +53,7 @@ load_dotenv()
 
 BASE = Path(__file__).parent.parent
 RAW = BASE / "data" / "raw"
+PDF_SOURCES = RAW / "pdf"
 
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "tomai_educational")
 
@@ -57,222 +61,69 @@ COLLECTION = os.environ.get("QDRANT_COLLECTION", "tomai_educational")
 # seule requête. 200 points × ~5 KB ≈ 1 MB par batch — confortable.
 UPSERT_BATCH_SIZE = 200
 
-# ── Sources : fichier → matière + extraction section ─────────────────────────
+# ── Sources : dérivées du manifeste ──────────────────────────────────────────
 
 
-def _markdown_matiere_sources(
-    file: str,
-    document_order: list[tuple[Matiere | None, str]],
-    *,
-    exclude: set[Matiere] | None = None,
-) -> list[dict]:
+def sources_du_manifeste(rentree: int = RENTREE_COURANTE) -> list[dict]:
+    """Une source = un document × une matière, avec les niveaux qu'elle couvre.
+
+    Remplace la constante `SOURCES` écrite à la main, qui était jusqu'ici
+    l'unique définition de « ce qu'on indexe » — et donc invérifiable. Ici, ce
+    qui est ingéré et ce que le test de couverture attend viennent du même
+    manifeste.
     """
-    Génère les SOURCES pour un fichier markdown multi-matières.
+    par_document: dict[tuple[str, str], set[str]] = {}
+    for programme in en_vigueur(rentree):
+        par_document.setdefault((programme.url, programme.matiere), set()).add(programme.niveau)
 
-    Chaque entrée extrait la section comprise entre `## **Matière**` et le
-    `## **MatièreSuivante**` (calculé depuis l'ORDRE RÉEL du document, pour
-    que section_end pointe sur la bonne frontière même si une matière est
-    exclue de l'extraction).
-
-    Args
-    ----
-    file : nom du fichier source (sans extension).
-    document_order : [(Matiere | None, label), ...] dans l'ordre exact des
-        `## **Titre**` markdown. Une matière=None marque une section présente
-        dans le doc mais qu'on ne veut pas indexer (sentinelle pour section_end
-        seulement).
-    exclude : matières listées dans document_order à NE PAS matérialiser
-        (typique : version BO obsolète remplacée par un fichier dédié plus
-        récent). Conservées dans document_order pour calculer section_end.
-    """
-    exclude = exclude or set()
     sources = []
-    for i, (matiere, label) in enumerate(document_order):
-        if matiere is None or matiere in exclude:
-            continue
-        start = rf"^## \*\*{re.escape(label)}\*\*"
-        # section_end = la prochaine entrée du document_order (peu importe
-        # qu'elle soit exclue ou non — on veut juste savoir où s'arrête la
-        # section courante dans le PDF).
-        if i + 1 < len(document_order):
-            next_labels = [re.escape(lbl) for _, lbl in document_order[i + 1 :]]
-            end: str | None = r"^## \*\*(?:" + "|".join(next_labels) + r")\*\*"
-        else:
-            end = None
+    for (url, matiere), niveaux in sorted(par_document.items()):
+        enum_matiere = Matiere(matiere)
         sources.append(
             {
-                "file": file,
-                "matiere": matiere,
-                "section_pattern": start,
-                "section_end": end,
-                "blank_line_after_header": False,  # markdown H2 = pas d'ambiguïté TOC
-                "section_name": label,
+                "url": url,
+                "file": nom_fichier(url),
+                "matiere": enum_matiere,
+                "niveaux": sorted(niveaux),
+                "section_name": MATIERE_LABELS[enum_matiere],
+                # Seuls les documents de cycle se découpent. Un autre document
+                # partagé par deux matières est le programme de chacune d'elles.
+                "a_decouper": url in DOCUMENTS_A_DECOUPER,
             }
         )
     return sources
 
 
-# Matières du programme cycle 3 BO 2020 — ordre des `## **Titre**` dans le .md
-_CYCLE3_DOCUMENT_ORDER: list[tuple[Matiere | None, str]] = [
-    (Matiere.FRANCAIS, "Français"),
-    (Matiere.LANGUES_VIVANTES, "Langues vivantes (étrangères ou régionales)"),
-    (Matiere.ARTS_PLASTIQUES, "Arts plastiques"),
-    (Matiere.EDUCATION_MUSICALE, "Éducation musicale"),
-    (Matiere.HISTOIRE_DES_ARTS, "Histoire des arts"),
-    (Matiere.EDUCATION_PHYSIQUE_SPORTIVE, "Éducation physique et sportive"),
-    (Matiere.EMC, "Enseignement moral et civique"),
-    (Matiere.HISTOIRE_GEO, "Histoire et géographie"),
-    (Matiere.SCIENCES_TECHNOLOGIE, "Sciences et technologie"),
-    (Matiere.MATHEMATIQUES, "Mathématiques"),
-]
-
-# Matières du programme cycle 4 BO 2020 — ordre EXACT du document .md
-# (utilisé pour calculer section_end). Maths & Techno présents dans la liste
-# mais exclus de l'extraction (superseded par programme_maths_cycle4_BO2026 et
-# programme_technologie_cycle4_BO2024 — sinon doublon).
-_CYCLE4_DOCUMENT_ORDER: list[tuple[Matiere | None, str]] = [
-    (Matiere.FRANCAIS, "Français"),
-    (Matiere.LANGUES_VIVANTES, "Langues vivantes (étrangères ou régionales)"),
-    (Matiere.ARTS_PLASTIQUES, "Arts plastiques"),
-    (Matiere.EDUCATION_MUSICALE, "Éducation musicale"),
-    (Matiere.HISTOIRE_DES_ARTS, "Histoire des arts"),
-    (Matiere.EDUCATION_PHYSIQUE_SPORTIVE, "Éducation physique et sportive"),
-    (Matiere.EMC, "Enseignement moral et civique"),
-    (Matiere.HISTOIRE_GEO, "Histoire et géographie"),
-    (Matiere.PHYSIQUE_CHIMIE, "Physique-Chimie"),
-    (Matiere.SVT, "Sciences de la vie et de la Terre"),
-    (Matiere.TECHNOLOGIE, "Technologie"),  # exclu, sentinelle section_end
-    (Matiere.MATHEMATIQUES, "Mathématiques"),  # exclu, sentinelle section_end
-]
-_CYCLE4_EXCLUDE: set[Matiere] = {Matiere.TECHNOLOGIE, Matiere.MATHEMATIQUES}
-
-
-SOURCES: list[dict] = [
-    # ── Fichiers mono-matière (tout le fichier — .md préféré au .txt) ──
-    {
-        "file": "programme_maths_cycle4_BO2026",
-        "matiere": Matiere.MATHEMATIQUES,
-        "section_pattern": None,
-        "section_name": "Mathématiques",
-    },
-    {
-        "file": "programme_technologie_cycle4_BO2024",
-        "matiere": Matiere.TECHNOLOGIE,
-        "section_pattern": None,
-        "section_name": "Technologie",
-    },
-    {
-        "file": "programme_anglais_college_BO2025",
-        "matiere": Matiere.ANGLAIS,
-        "section_pattern": None,
-        "section_name": "Anglais",
-    },
-    {
-        "file": "programme_espagnol_college_BO2025",
-        "matiere": Matiere.ESPAGNOL,
-        "section_pattern": None,
-        "section_name": "Espagnol",
-    },
-    {
-        "file": "programme_allemand_college_BO2025",
-        "matiere": Matiere.ALLEMAND,
-        "section_pattern": None,
-        "section_name": "Allemand",
-    },
-    {
-        "file": "programme_italien_college_BO2025",
-        "matiere": Matiere.ITALIEN,
-        "section_pattern": None,
-        "section_name": "Italien",
-    },
-    # ── Programmes BO 2020 multi-matières (extraction par H2 markdown) ──
-    *_markdown_matiere_sources(
-        "programme_cycle4_BO2020",
-        _CYCLE4_DOCUMENT_ORDER,
-        exclude=_CYCLE4_EXCLUDE,
-    ),
-    *_markdown_matiere_sources("programme_cycle3_BO2020", _CYCLE3_DOCUMENT_ORDER),
-]
-
-
 # ── Extraction texte ─────────────────────────────────────────────────────────
 
 
-def extract_section(
-    text: str,
-    start_pattern: str,
-    end_pattern: str | None,
-    blank_line_after_header: bool = False,
-) -> str:
+def texte_de_la_source(source: dict) -> str:
+    """Texte d'une source, découpé si le document porte plusieurs matières.
+
+    Les PDF mono-matière passent par `pymupdf4llm`, qui restitue les titres en
+    `##` — ce sont les points de coupe prioritaires du chunker.
     """
-    Extrait une section entre start_pattern et end_pattern.
-
-    lstrip('\\x0c').rstrip() au lieu de strip() :
-    - Retire les form feeds (\\x0c) pdftotext sans toucher les espaces de début
-    - Les faux positifs indentés dans les tableaux ne matchent plus
-      (ex: "         Histoire" dans une colonne ne matche pas r"^Histoire")
-
-    blank_line_after_header=True : ignore les occurrences du start_pattern qui
-    ne sont PAS suivies d'une ligne vide (= entrées de table des matières).
-    """
-    lines = text.split("\n")
-    in_section = False
-    section_lines: list[str] = []
-
-    for i, line in enumerate(lines):
-        check = line.lstrip("\x0c").rstrip()
-        if not in_section:
-            if re.match(start_pattern, check):
-                if blank_line_after_header:
-                    next_check = lines[i + 1].strip() if i + 1 < len(lines) else ""
-                    if next_check:
-                        continue  # ligne suivante non vide → entrée de TOC
-                in_section = True
-                section_lines.append(line)
-        else:
-            if end_pattern and re.match(end_pattern, check):
-                break
-            section_lines.append(line)
-
-    return "\n".join(section_lines)
-
-
-def load_source_text(source: dict) -> str:
-    """
-    Charge et extrait le texte d'une source. Préfère .md (pymupdf4llm — vraies
-    sections H2) à .txt (pdftotext — flat). Lève une erreur si section
-    introuvable.
-    """
-    md_path = RAW / f"{source['file']}.md"
-    txt_path = RAW / f"{source['file']}.txt"
-    if md_path.exists():
-        path = md_path
-    elif txt_path.exists():
-        path = txt_path
-    else:
+    chemin = PDF_SOURCES / source["file"]
+    if not chemin.exists():
         raise FileNotFoundError(
-            f"Aucun fichier source pour {source['file']} (cherché .md puis .txt dans {RAW})"
+            f"{chemin.name} absent pour {source['section_name']} — "
+            f"lancer scripts/fetch_sources.py ({source['url'][:80]})"
         )
 
-    # errors='replace' : pdftotext peut produire des octets invalides en UTF-8
-    text = path.read_text(encoding="utf-8", errors="replace")
-
-    if source.get("section_pattern"):
-        extracted = extract_section(
-            text,
-            source["section_pattern"],
-            source.get("section_end"),
-            blank_line_after_header=source.get("blank_line_after_header", False),
-        )
-        if len(extracted.strip()) < 200:
+    if source["a_decouper"]:
+        parties = decouper_par_matiere(lignes_typees(chemin))
+        texte = parties.get(source["matiere"].value, "")
+        if len(texte.strip()) < 200:
             raise ValueError(
-                f"Section '{source['section_name']}' introuvable dans {path.name} "
-                f"(pattern: {source['section_pattern']}). "
-                f"Vérifier le formatage du fichier source."
+                f"section '{source['section_name']}' absente ou vide dans "
+                f"{chemin.name} — le manifeste la déclare pourtant"
             )
-        return extracted.strip()
+        return texte.strip()
 
-    return text.strip()
+    texte = pymupdf4llm.to_markdown(str(chemin), page_chunks=False)
+    if len(texte.strip()) < 200:
+        raise ValueError(f"{chemin.name} : extraction vide ({len(texte)} caractères)")
+    return texte.strip()
 
 
 # ── Chunking : RecursiveChunker avec tokenizer Mistral ───────────────────────
@@ -357,23 +208,22 @@ def chunk_text(text: str, source: dict) -> list[dict]:
 # ── Expansion multi-niveaux ──────────────────────────────────────────────────
 
 
-def expand_for_niveaux(chunks: list[dict]) -> list[dict]:
-    """
-    Pour chaque chunk : duplique 1× par niveau du cycle dérivé du fichier source.
+def expand_for_niveaux(chunks: list[dict], niveaux: list[str]) -> list[dict]:
+    """Duplique chaque chunk une fois par niveau que la source couvre.
 
-    Un même texte (même embed) → N payloads distincts avec niveau différent.
-    L'ID Qdrant inclut le niveau pour garantir l'unicité de point.
+    Les niveaux viennent du MANIFESTE, qui les date : la même section de cycle 4
+    peut valoir pour la 4e et la 3e cette année et plus l'an prochain, quand la
+    réforme les atteindra. Les dériver du nom de fichier, comme avant, rendait ce
+    glissement impossible à exprimer.
 
-    Le préfixe contextuel n'inclut PAS le niveau → un seul embed par texte,
-    réutilisé pour toutes les variantes de niveau.
+    Un seul embedding par texte : le préfixe contextuel n'inclut pas le niveau.
     """
     expanded = []
     for chunk in chunks:
-        _cycle, niveaux = derive_niveaux_from_file(chunk["source_file"])
         for niveau in niveaux:
-            new = dict(chunk)
-            new["niveau"] = niveau.value
-            expanded.append(new)
+            nouveau = dict(chunk)
+            nouveau["niveau"] = niveau
+            expanded.append(nouveau)
     return expanded
 
 
@@ -405,6 +255,34 @@ def validate_chunks(chunks: list[dict]) -> list[dict]:
         )
         validated.append(chunk.to_qdrant_payload())
     return validated
+
+
+# ── Suppression des orphelins ────────────────────────────────────────────────
+
+
+def supprimer_source(source_file: str, *, client=None, collection: str | None = None) -> None:
+    """Retire tous les points issus d'un fichier source.
+
+    Appelé AVANT de réingérer ce fichier : les identifiants dérivant du contenu,
+    un texte modifié produirait un point neuf en laissant l'ancien servable
+    indéfiniment — un élève lirait alors un programme abrogé sans que rien ne le
+    signale.
+    """
+    from qdrant_client import models
+
+    (client or get_qdrant_client()).delete(
+        collection_name=collection or COLLECTION,
+        points_selector=models.FilterSelector(
+            filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="source_file", match=models.MatchValue(value=source_file)
+                    )
+                ]
+            )
+        ),
+        wait=True,
+    )
 
 
 # ── Upsert Qdrant (named vectors + sparse BM25) ──────────────────────────────
@@ -506,6 +384,12 @@ def main() -> None:
     parser.add_argument("--matiere", help="Filtre sur une matière (ex: mathematiques)")
     parser.add_argument("--status", action="store_true", help="État collection Qdrant")
     parser.add_argument(
+        "--rentree",
+        type=int,
+        default=RENTREE_COURANTE,
+        help="Rentrée de référence : décide quel programme s'applique à quel niveau",
+    )
+    parser.add_argument(
         "--collection",
         default=None,
         help=(
@@ -525,21 +409,29 @@ def main() -> None:
         show_status()
         return
 
-    sources = SOURCES
+    toutes = sources_du_manifeste(args.rentree)
+    sources = toutes
     if args.matiere:
-        sources = [s for s in SOURCES if s["matiere"].value == args.matiere]
+        sources = [s for s in toutes if s["matiere"].value == args.matiere]
         if not sources:
-            available = sorted({s["matiere"].value for s in SOURCES})
+            available = sorted({s["matiere"].value for s in toutes})
             print(f"Matière '{args.matiere}' inconnue. Disponibles : {available}")
             sys.exit(1)
 
+    print(
+        f"rentrée {args.rentree} : {len(sources)} sources "
+        f"({len({s['file'] for s in sources})} documents)"
+    )
+
     total_points = 0
     errors: list[str] = []
+    fichiers_purges: set[str] = set()
 
     for source in sources:
-        print(f"\n▶ {source['section_name']} ({source['matiere'].value})")
+        niveaux = ", ".join(source["niveaux"])
+        print(f"\n▶ {source['section_name']} ({source['matiere'].value}) — {niveaux}")
         try:
-            text = load_source_text(source)
+            text = texte_de_la_source(source)
         except (FileNotFoundError, ValueError) as e:
             print(f"  ✗ {e}", file=sys.stderr)
             errors.append(source["matiere"].value)
@@ -548,7 +440,7 @@ def main() -> None:
         chunks = chunk_text(text, source)
         print(f"  {len(chunks)} chunks bruts")
 
-        expanded = expand_for_niveaux(chunks)
+        expanded = expand_for_niveaux(chunks, source["niveaux"])
         print(f"  {len(expanded)} chunks après expansion multi-niveaux")
 
         if args.dry_run:
@@ -571,6 +463,12 @@ def main() -> None:
         if not expanded:
             errors.append(source["matiere"].value)
             continue
+
+        if not args.dry_run and source["file"] not in fichiers_purges:
+            # Les identifiants dérivent du contenu : sans cette purge, un texte
+            # modifié créerait un point neuf en laissant l'ancien servable.
+            supprimer_source(source["file"])
+            fichiers_purges.add(source["file"])
 
         print("  Validation…", end=" ", flush=True)
         payloads = validate_chunks(expanded)

@@ -1,8 +1,13 @@
 """Couche d'accès Qdrant + recherche hybride.
 
-L'embedding (dense + sparse BGE-M3) est délégué au service `ai-service /embed`
-via `src.clients.ai_service` — plus aucun modèle chargé localement (dédup #203).
-`get_mistral_client` reste pour l'authoring offline du golden set (LLM, pas embed).
+Les deux moitiés de la recherche sont déléguées, et à deux endroits différents :
+
+- **dense** → OVH AI Endpoints (Gravelines), via `src.clients.ovh_embeddings` ;
+- **creux** → Qdrant lui-même (Cloud Inference, modèle `bm25`). On envoie le
+  TEXTE dans un `models.Document` et le serveur le vectorise.
+
+Aucun modèle n'est chargé ni hébergé par ce dépôt. `get_mistral_client` reste
+pour le juge de l'évaluation qualité (LLM, pas embed).
 """
 
 from __future__ import annotations
@@ -14,13 +19,35 @@ from typing import Any
 DEFAULT_TOP_K = 5
 EMBEDDING_DIM = 1024
 DEFAULT_COLLECTION = "tomai_educational"
+RETRIEVAL_MODES = ("hybrid", "dense", "sparse")
+
+# Modèle creux calculé par Qdrant. `bm25` est illimité et gratuit, et c'est le
+# seul modèle creux du catalogue Cloud Inference utilisable en français
+# (`splade-pp-en-v1` est anglais-only, et rejeté par le serveur pour ce corpus).
+SPARSE_MODEL = "bm25"
+
+# Profondeur de parcours HNSW. DOIT rester identique à celle du serveur
+# (apps/server/src/services/rag.service.ts) : une évaluation qui explore moins
+# — ou plus — que la production mesure une configuration que personne ne
+# déploie, et l'écart est invisible puisque les deux répondent.
+HNSW_EF = 128
+
+# Instruction appliquée aux REQUÊTES uniquement, jamais aux documents :
+# l'asymétrie est celle que documente Qwen3-Embedding, qui annonce 1 à 5 % de
+# rappel en plus et recommande d'adapter la consigne au scénario ET à la langue.
+# Doit rester identique au défaut du serveur (apps/server/src/config/env.ts),
+# sinon l'évaluation mesure une configuration que la production n'utilise pas.
+DEFAULT_QUERY_INSTRUCTION = (
+    "Étant donné la question d'un élève, retrouve le passage du programme "
+    "scolaire officiel qui permet d'y répondre"
+)
 
 _mistral_client = None
 _qdrant_client = None
 
 
 def get_mistral_client():
-    """Singleton lazy du client Mistral (LLM — authoring golden set uniquement)."""
+    """Singleton lazy du client Mistral (LLM — juge de l évaluation qualité)."""
     global _mistral_client
     if _mistral_client is None:
         from mistralai import Mistral
@@ -46,7 +73,12 @@ def get_qdrant_client():
         # le Qdrant local de dev (http) tourne sans auth (api_key=None).
         if url.startswith("https://") and not api_key:
             raise RuntimeError("QDRANT_API_KEY requis pour Qdrant Cloud (URL https)")
-        _qdrant_client = QdrantClient(url=url, api_key=api_key or None, check_compatibility=True)
+        # cloud_inference=True : autorise l'envoi de `models.Document`, que le
+        # serveur vectorise. Sans ce drapeau le client refuse localement, avant
+        # même d'émettre la requête.
+        _qdrant_client = QdrantClient(
+            url=url, api_key=api_key or None, check_compatibility=True, cloud_inference=True
+        )
     return _qdrant_client
 
 
@@ -86,18 +118,30 @@ def hybrid_search(
     collection: str | None = None,
     prefetch_multiplier: int = 4,
     fusion: str = "rrf",
+    retrieval_mode: str = "hybrid",
+    instruction: str | None = None,
 ) -> list[HybridResult]:
-    """Hybrid search Qdrant : prefetch dense + sparse (via ai-service) → fusion RRF/DBSF.
+    """Recherche Qdrant : hybride par défaut, ou une seule branche pour la mesure.
+
+    `retrieval_mode` n'existe pas pour être utilisé en production — il sert à
+    mesurer ce que chaque branche apporte. C'est la seule façon de répondre à
+    « le sparse appris vaut-il le service qui le produit ? » sans réindexer.
 
     Source : https://qdrant.tech/documentation/search/hybrid-queries/
     """
     from qdrant_client import models
 
-    from src.clients import ai_service
+    from src.clients import ovh_embeddings
 
-    item = ai_service.embed([query])[0]
-    dense = item.dense
-    sparse = models.SparseVector(indices=item.sparse.indices, values=item.sparse.values)
+    # L'instruction ne s'applique qu'aux requêtes (exigence Qwen3-Embedding) ;
+    # les documents sont embeddés bruts à l'ingestion.
+    instruction = (
+        instruction
+        if instruction is not None
+        else os.environ.get("OVH_QUERY_INSTRUCTION", DEFAULT_QUERY_INSTRUCTION)
+    )
+    dense = ovh_embeddings.embed([query], instruction=instruction or None)[0]
+    sparse = models.Document(text=query, model=SPARSE_MODEL)
 
     must = []
     if matiere:
@@ -108,23 +152,37 @@ def hybrid_search(
         must.append(models.FieldCondition(key="cycle", match=models.MatchValue(value=cycle)))
     query_filter = models.Filter(must=must) if must else None
 
-    prefetch_limit = max(top_k * prefetch_multiplier, 20)
-    fusion_modes = {"rrf": models.Fusion.RRF, "dbsf": models.Fusion.DBSF}
-    if fusion not in fusion_modes:
-        raise ValueError(f"fusion must be one of {sorted(fusion_modes)} (got {fusion!r})")
+    if retrieval_mode not in RETRIEVAL_MODES:
+        raise ValueError(
+            f"retrieval_mode must be one of {list(RETRIEVAL_MODES)} (got {retrieval_mode!r})"
+        )
 
     client = get_qdrant_client()
-    response = client.query_points(
-        collection_name=collection or get_collection_name(),
-        prefetch=[
-            models.Prefetch(query=dense, using="dense", limit=prefetch_limit),
-            models.Prefetch(query=sparse, using="bm25", limit=prefetch_limit),
-        ],
-        query=models.FusionQuery(fusion=fusion_modes[fusion]),
-        query_filter=query_filter,
-        limit=top_k,
-        with_payload=True,
-    )
+    common = {
+        "collection_name": collection or get_collection_name(),
+        "query_filter": query_filter,
+        "limit": top_k,
+        "with_payload": True,
+        "search_params": models.SearchParams(hnsw_ef=HNSW_EF),
+    }
+
+    if retrieval_mode == "dense":
+        response = client.query_points(query=dense, using="dense", **common)
+    elif retrieval_mode == "sparse":
+        response = client.query_points(query=sparse, using="bm25", **common)
+    else:
+        prefetch_limit = max(top_k * prefetch_multiplier, 20)
+        fusion_modes = {"rrf": models.Fusion.RRF, "dbsf": models.Fusion.DBSF}
+        if fusion not in fusion_modes:
+            raise ValueError(f"fusion must be one of {sorted(fusion_modes)} (got {fusion!r})")
+        response = client.query_points(
+            prefetch=[
+                models.Prefetch(query=dense, using="dense", limit=prefetch_limit),
+                models.Prefetch(query=sparse, using="bm25", limit=prefetch_limit),
+            ],
+            query=models.FusionQuery(fusion=fusion_modes[fusion]),
+            **common,
+        )
 
     return [
         HybridResult(

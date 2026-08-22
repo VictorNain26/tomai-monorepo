@@ -3,14 +3,20 @@
 Administration de la collection Qdrant.
 
 Config canonique :
-- Vecteurs nommés `dense` (1024D cosine, BGE-M3) + `bm25` (sparse, Modifier.IDF)
+- Vecteurs nommés `dense` (dimension sondée depuis le modèle, cosine) +
+  `bm25` (sparse, Modifier.IDF, calculé par Qdrant)
 - Quantization scalar int8 always_ram (4× compression RAM, <1% perte recall)
 - Payload indexes KEYWORD sur : niveau, matiere, cycle, source_file
 
-Collection unique : `tomai_educational` (configurable via QDRANT_COLLECTION).
+`QDRANT_COLLECTION` (défaut `tomai_educational`) est un ALIAS : il pointe une
+collection horodatée. Une réindexation complète se fait donc dans une collection
+NEUVE, puis bascule l'alias — réindexer en place laisserait le serveur servir un
+index à moitié vide pendant l'opération, et un index mixte si elle échoue.
 
 Usage :
   uv run python scripts/migrate_collection.py             # crée si absente
+  uv run python scripts/migrate_collection.py --nouvelle  # collection neuve pour réindexer
+  uv run python scripts/migrate_collection.py --promote X # bascule l'alias sur X
   uv run python scripts/migrate_collection.py --recreate  # drop+create (DESTRUCTIF)
   uv run python scripts/migrate_collection.py --status    # état des collections
 
@@ -23,10 +29,17 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
+from datetime import date
+from pathlib import Path
 
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient, models
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from schema.retrieval import get_qdrant_client  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -39,20 +52,82 @@ PAYLOAD_INDEX_FIELDS = ("niveau", "matiere", "cycle", "source_file")
 
 
 def get_client() -> QdrantClient:
-    url = os.environ.get("QDRANT_URL")
-    api_key = os.environ.get("QDRANT_API_KEY")
-    if not url:
-        raise RuntimeError("QDRANT_URL est obligatoire (.env)")
-    # Sépare dev/prod par le scheme : Qdrant Cloud (https) exige une clé ;
-    # le Qdrant local de dev (http) tourne sans auth (api_key=None).
-    if url.startswith("https://") and not api_key:
-        raise RuntimeError("QDRANT_API_KEY requis pour Qdrant Cloud (URL https)")
-    # check_compatibility=True : warn si client/server diffèrent — drift catch.
-    return QdrantClient(url=url, api_key=api_key or None, check_compatibility=True)
+    """Accesseur unique (schema/retrieval.py).
+
+    Fabriquer un client ici en dupliquait la configuration, et celui-ci omettait
+    `cloud_inference=True` — le drapeau sans lequel Qdrant refuse de vectoriser
+    nos `models.Document` côté serveur.
+    """
+    return get_qdrant_client()
 
 
-def create_collection(client: QdrantClient, recreate: bool = False) -> None:
+def collection_pointee(client: QdrantClient) -> str | None:
+    """Collection que l'alias désigne aujourd'hui."""
+    for alias in client.get_aliases().aliases:
+        if alias.alias_name == COLLECTION_NAME:
+            return alias.collection_name
+    return None
+
+
+def nom_de_collection_neuve(client: QdrantClient) -> str:
+    """Nom horodaté dérivé de la collection en service."""
+    actuelle = collection_pointee(client) or COLLECTION_NAME
+    base = re.sub(r"_\d{8}$", "", actuelle)
+    return f"{base}_{date.today():%Y%m%d}"
+
+
+def promouvoir(client: QdrantClient, cible: str) -> None:
+    """Bascule l'alias sur `cible`, en une opération atomique.
+
+    C'est le moment où la nouvelle indexation devient visible du serveur. Elle
+    ne doit l'être qu'une fois complète : le test de couverture est le feu vert.
+    """
+    if cible not in {c.name for c in client.get_collections().collections}:
+        raise RuntimeError(f"collection '{cible}' inexistante")
+    ancienne = collection_pointee(client)
+    operations = []
+    if ancienne:
+        operations.append(
+            models.DeleteAliasOperation(delete_alias=models.DeleteAlias(alias_name=COLLECTION_NAME))
+        )
+    operations.append(
+        models.CreateAliasOperation(
+            create_alias=models.CreateAlias(collection_name=cible, alias_name=COLLECTION_NAME)
+        )
+    )
+    client.update_collection_aliases(change_aliases_operations=operations)
+    print(f"✓ alias '{COLLECTION_NAME}' : {ancienne or '(aucune)'} → {cible}")
+    if ancienne:
+        print(f"  '{ancienne}' reste en place — la supprimer une fois la bascule vérifiée")
+
+
+def probe_dense_dim() -> int:
+    """Dimension réelle du modèle d'embedding configuré, demandée au fournisseur.
+
+    Sondée plutôt que codée en dur : une table de correspondance modèle→dimension
+    se périme en silence, et une collection créée à la mauvaise dimension ne se
+    découvre qu'à l'ingestion, après coup.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from src.clients import ovh_embeddings
+
+    model = ovh_embeddings.model_name()
+    dim = len(ovh_embeddings.embed(["sonde de dimension"], model=model)[0])
+    print(f"  · {model} → {dim}D (sondé)")
+    return dim
+
+
+def create_collection(
+    client: QdrantClient,
+    recreate: bool = False,
+    dense_dim: int | None = None,
+    nom: str | None = None,
+) -> None:
     """Crée la collection avec la config cible. Idempotent sauf si recreate=True."""
+    global COLLECTION_NAME
+    if nom:
+        COLLECTION_NAME = nom
+    dense_dim = dense_dim or probe_dense_dim()
     existing = {c.name for c in client.get_collections().collections}
 
     if COLLECTION_NAME in existing:
@@ -71,7 +146,7 @@ def create_collection(client: QdrantClient, recreate: bool = False) -> None:
         collection_name=COLLECTION_NAME,
         vectors_config={
             "dense": models.VectorParams(
-                size=1024,  # BGE-M3 (1024D)
+                size=dense_dim,
                 distance=models.Distance.COSINE,
                 on_disk=False,  # corpus <1M points, RAM OK
             ),
@@ -92,7 +167,7 @@ def create_collection(client: QdrantClient, recreate: bool = False) -> None:
             ),
         ),
     )
-    print(f"  ✓ {COLLECTION_NAME} créée (dense 1024D cosine + sparse bm25 IDF + int8)")
+    print(f"  ✓ {COLLECTION_NAME} créée (dense {dense_dim}D cosine + sparse bm25 IDF + int8)")
     _ensure_payload_indexes(client)
 
 
@@ -143,7 +218,16 @@ def show_status(client: QdrantClient) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--recreate", action="store_true", help="Drop + create (destructif)")
+    parser.add_argument(
+        "--nouvelle",
+        action="store_true",
+        help="Crée une collection neuve horodatée, pour réindexer sans toucher au service",
+    )
+    parser.add_argument("--promote", metavar="COLLECTION", help="Bascule l'alias sur COLLECTION")
     parser.add_argument("--status", action="store_true", help="Affiche état des collections")
+    parser.add_argument(
+        "--dim", type=int, help="Dimension dense (défaut : sondée depuis OVH_EMBED_MODEL)"
+    )
     args = parser.parse_args()
 
     client = get_client()
@@ -152,8 +236,24 @@ def main() -> None:
         show_status(client)
         return
 
+    if args.promote:
+        promouvoir(client, args.promote)
+        return
+
+    if args.nouvelle:
+        nom = nom_de_collection_neuve(client)
+        create_collection(client, dense_dim=args.dim, nom=nom)
+        print(
+            f"\n▶ Réindexer dedans :\n"
+            f"    QDRANT_COLLECTION={nom} uv run python scripts/ingest.py\n"
+            f"    QDRANT_COLLECTION={nom} uv run python scripts/coverage_report.py\n"
+            f"  puis, une fois vert :\n"
+            f"    uv run python scripts/migrate_collection.py --promote {nom}"
+        )
+        return
+
     # Défaut : créer la collection canonique (idempotent)
-    create_collection(client, recreate=args.recreate)
+    create_collection(client, recreate=args.recreate, dense_dim=args.dim)
 
 
 if __name__ == "__main__":

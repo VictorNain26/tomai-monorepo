@@ -1,9 +1,9 @@
 # Curriculum (apps/curriculum)
 
-Pipeline RAG éducatif : programmes officiels Éduscol → chunking → embedding
-**dense `Qwen3-Embedding-8B` via OVH AI Endpoints** → index Qdrant (alias
-`tomai_educational` → collection `tomai_qwen3`), dont le **vecteur creux BM25
-est calculé par Qdrant lui-même** (Cloud Inference). Ce repo gère **uniquement l'index RAG** ; la couche LLM
+Pipeline RAG éducatif : manifeste daté → PDF officiels → découpage par matière →
+chunking → embedding **dense `Qwen3-Embedding-8B` via OVH AI Endpoints** → index
+Qdrant (alias `tomai_educational` → collection horodatée), dont le **vecteur
+creux BM25 est calculé par Qdrant lui-même** (Cloud Inference). Ce repo gère **uniquement l'index RAG** ; la couche LLM
 (chat, prompting, tutorat) appartient exclusivement à `apps/server`.
 
 > Origine : repo `VictorNain26/tomai-curriculum` (archivé en lecture seule),
@@ -19,21 +19,47 @@ Pas de workspace uv, pas de package pnpm, pas de tâche turbo. Outillage `uv` lo
 cd apps/curriculum
 uv sync --all-extras                                # install (deps + extras dev/eval)
 
-# Pipeline (nécessite OVH_AI_ENDPOINTS_TOKEN + Qdrant ; cf. .env.example)
-uv run python scripts/migrate_collection.py         # crée la collection (dimension SONDÉE depuis le modèle)
-uv run python scripts/ingest.py                     # chunk + embed OVH + upsert (bm25 calculé par Qdrant)
-uv run python scripts/export_contract.py            # régénère contract.json
+# Corpus (nécessite OVH_AI_ENDPOINTS_TOKEN + Qdrant ; cf. .env.example)
+uv run python scripts/refresh_catalogue.py          # catalogue officiel → data/raw/catalogue_second_degre.json
+uv run python scripts/fetch_sources.py              # télécharge les PDF que le manifeste déclare en vigueur
+uv run python scripts/coverage_report.py            # couples (niveau × matière) sans contenu — sort en 1 si trou
+
+# Réindexation complète, sans interruption de service
+uv run python scripts/migrate_collection.py --nouvelle          # collection neuve horodatée
+QDRANT_COLLECTION=<neuve> uv run python scripts/ingest.py       # chunk + embed OVH + upsert
+QDRANT_COLLECTION=<neuve> uv run python scripts/coverage_report.py   # feu vert
+uv run python scripts/migrate_collection.py --promote <neuve>   # bascule d'alias
+
+uv run python scripts/export_contract.py            # régénère contract.json (couverture réelle incluse)
 uv run python scripts/query.py "Pythagore" --matiere=mathematiques --niveau=quatrieme
 
-# Diagnostic / éval
-uv run python scripts/coverage_report.py            # couples (niveau × matière) sans contenu
-uv run python scripts/evaluate.py --by-matiere      # golden set maison — NON-RÉGRESSION seulement
-uv run python scripts/evaluate.py --compare runs/a.json runs/b.json   # + test de significativité
-
-# Qualité
+# Qualité (les tests réseau et Qdrant sont hors du run par défaut)
 uv run ruff check . && uv run ruff format --check .
 uv run pytest -q
+uv run pytest -m network -q     # compare le cache du catalogue à l'API officielle
+uv run pytest -m qdrant -q      # couverture réelle contre le cluster
 ```
+
+## Le manifeste, et pourquoi il est daté
+
+`schema/programmes.py` décrit **ce qui doit exister dans l'index**, une entrée
+par couple (matière, niveau), avec la rentrée à partir de laquelle elle
+s'applique. Deux moitiés :
+
+| moitié | couvre | fraîcheur |
+|---|---|---|
+| API `data.education.gouv.fr` (`fr-en-programmes-enseignement-2nd-degre`) | lycée général | **gelée à la rentrée 2021** |
+| table `BO_POST_2021` | réformes 2024-2026, collège et lycée | tenue à la main, NOR cités |
+
+Les programmes récents entrent en vigueur **niveau par niveau** : à la rentrée
+2026, la 5e suit le nouveau programme de français et la 4e l'ancien. D'où
+`en_vigueur(rentree)`, qui retient la génération la plus récente applicable —
+associer un programme à un cycle entier servirait à un élève de 4e un texte qui
+ne le concerne pas. `RENTREE_COURANTE` est à avancer chaque été.
+
+Périmètre : **collège + lycée général**. La voie technologique est hors
+périmètre parce que le payload ne porte pas la série : indexer le programme de
+maths STMG sous `premiere` le servirait à un élève de première générale.
 
 ## Embedding
 
@@ -67,15 +93,16 @@ Pièges vérifiés sur l'API réelle, pas déduits :
 |---|---|---|
 | Le modèle est-il bon ? | **MTEB / MTEB-French** (publié) | référence, pas re-mesuré ici |
 | Notre embedder tient-il sur du scolaire français ? | `benchmark_mteb.py` → **AlloprofRetrieval** | **mesure de qualité** |
-| Ai-je cassé quelque chose ? | `evaluate.py` → golden set maison | **non-régression uniquement** |
+| Le corpus est-il complet ? | `coverage_report.py` → manifeste vs index | **couverture, pas qualité** |
+| Quelle configuration de recherche est la meilleure ? | RAGAS + `ranx` (plan 3, à venir) | comparaison relative |
 
-**Le golden set maison ne mesure pas la qualité, et ne doit pas être présenté
-comme tel.** Ses questions sont générées par un LLM *à partir des chunks qu'il
-faut retrouver* — or les retrievers neuronaux sont biaisés en faveur des textes
-générés par LLM ([arXiv 2310.20501](https://arxiv.org/pdf/2310.20501)), il n'y
-a qu'un seul document pertinent par question, et deux exécutions identiques
-varient de ±1 point (HNSW approximatif + égalités RRF). C'est un bon détecteur
-de casse ; ce n'est pas un baromètre.
+**Le golden set maison a été supprimé le 2026-08-22**, et ne doit pas être
+reconstruit sous la même forme : ses questions étaient générées par un LLM *à
+partir des chunks qu'il fallait retrouver* — or les retrievers neuronaux sont
+biaisés en faveur des textes générés par LLM
+([arXiv 2310.20501](https://arxiv.org/pdf/2310.20501)) — il n'avait qu'un seul
+document pertinent par question, et deux exécutions identiques variaient de
+±1 point (HNSW approximatif + égalités RRF).
 
 `AlloprofRetrieval` (MTEB-French, [arXiv 2405.20468](https://arxiv.org/abs/2405.20468))
 est ce qui s'en rapproche le plus tout en étant honnête : 2 316 vraies questions
@@ -103,5 +130,12 @@ modèle, sinon la requête cherche dans un autre espace vectoriel.
 ## Env
 
 `OVH_AI_ENDPOINTS_TOKEN`, `OVH_EMBED_MODEL`, `QDRANT_URL`, `QDRANT_API_KEY`,
-`QDRANT_COLLECTION` (défaut `tomai_educational`), `MISTRAL_API_KEY` (authoring du
-golden set uniquement), `PISTE_*` (veille BO, optionnel).
+`QDRANT_COLLECTION` (défaut `tomai_educational`, qui est un **alias**),
+`MISTRAL_API_KEY` (juge de l'évaluation qualité), `PISTE_CLIENT_ID` /
+`PISTE_CLIENT_SECRET`.
+
+**Les identifiants PISTE n'existent pas encore** — ni en local ni en secrets
+GitHub (vérifié le 2026-08-22). C'est la seule voie vers le texte des arrêtés,
+`education.gouv.fr`, `eduscol` et `legifrance` renvoyant 403 sur tout HTML. Sans
+eux, la veille des réformes ne tourne pas et le calendrier d'entrée en vigueur
+inscrit dans `schema/programmes.py` reste non vérifié.

@@ -27,91 +27,6 @@ def load_fixture(name: str) -> str:
     return (FIXTURES / name).read_text(encoding="utf-8")
 
 
-# ── extract_section ───────────────────────────────────────────────────────────
-
-
-def test_extract_section_ignores_indented_false_positive():
-    """'Histoire' indenté dans un tableau ne doit pas stopper la section Français."""
-    from scripts.ingest import extract_section
-
-    text = load_fixture("sample_cycle4_frag.txt")
-    result = extract_section(text, r"^Français\s*$", r"^Histoire\s*$", blank_line_after_header=True)
-
-    assert "développer des compétences de lecture" in result
-    assert "narratifs, descriptifs, argumentatifs" in result
-
-
-def test_extract_section_finds_real_header_after_indented_false_positive():
-    from scripts.ingest import extract_section
-
-    text = load_fixture("sample_cycle4_frag.txt")
-    result = extract_section(text, r"^Histoire\s*$", None, blank_line_after_header=True)
-
-    assert "L'enseignement de l'histoire" in result
-
-
-def test_extract_section_blank_line_skips_toc_entry():
-    from scripts.ingest import extract_section
-
-    toc_text = "Français\nLangues vivantes\nAutre sujet\n\nFrançais\n\nVrai contenu pédagogique."
-    result = extract_section(toc_text, r"^Français\s*$", None, blank_line_after_header=True)
-
-    assert "Vrai contenu pédagogique" in result
-    assert "Langues vivantes" not in result
-
-
-def test_extract_section_handles_formfeed_prefix():
-    from scripts.ingest import extract_section
-
-    text = "Section précédente.\n\x0cPhysique-Chimie\n\nContenu de physique.\n"
-    result = extract_section(text, r"^Physique-Chimie", None)
-    assert "Contenu de physique" in result
-
-
-def test_extract_section_returns_empty_when_pattern_not_found():
-    from scripts.ingest import extract_section
-
-    result = extract_section("texte sans header.", r"^Mathématiques\s*$", None)
-    assert result == ""
-
-
-def test_extract_section_stops_at_end_pattern():
-    from scripts.ingest import extract_section
-
-    text = load_fixture("sample_cycle4_frag.txt")
-    result = extract_section(text, r"^Français\s*$", r"^Histoire\s*$")
-    assert "L'enseignement de l'histoire" not in result
-
-
-# ── load_source_text ──────────────────────────────────────────────────────────
-
-
-def test_load_source_text_raises_on_missing_file():
-    from scripts.ingest import load_source_text
-
-    source = {
-        "file": "fichier_inexistant_99",
-        "matiere": Matiere.MATHEMATIQUES,
-        "section_pattern": None,
-        "section_name": "Test",
-    }
-    with pytest.raises(FileNotFoundError, match="fichier_inexistant_99"):
-        load_source_text(source)
-
-
-def test_load_source_text_raises_on_section_not_found():
-    from scripts.ingest import load_source_text
-
-    source = {
-        "file": "programme_maths_cycle4_BO2026",
-        "matiere": Matiere.MATHEMATIQUES,
-        "section_pattern": r"^SECTION_QUI_NEXISTE_PAS_9999",
-        "section_name": "Section fictive",
-    }
-    with pytest.raises(ValueError, match="introuvable"):
-        load_source_text(source)
-
-
 # ── chunk_text (RecursiveChunker + tokenizer Mistral) ────────────────────────
 
 
@@ -145,73 +60,42 @@ def test_chunk_text_produces_chunks():
 # ── expand_for_niveaux ───────────────────────────────────────────────────────
 
 
-def test_expand_for_niveaux_cycle4_triples_chunks():
-    """Un fichier cycle4 → 3 niveaux → chaque chunk dupliqué 3×."""
+def _chunk_de_base(**overrides) -> dict:
+    base = {
+        "text": "Texte pédagogique sur les mathématiques du cycle 4 de collège en France.",
+        "source_file": "a1b2c3d4e5f60718.pdf",
+        "matiere": Matiere.MATHEMATIQUES.value,
+        "section": "Mathématiques",
+        "chunk_index": 0,
+    }
+    return {**base, **overrides}
+
+
+def test_expand_for_niveaux_duplique_par_niveau():
     from scripts.ingest import expand_for_niveaux
 
-    base = [
-        {
-            "text": "Texte pédagogique sur les mathématiques du cycle 4 de collège en France.",
-            "source_file": "programme_maths_cycle4_BO2026",
-            "matiere": Matiere.MATHEMATIQUES.value,
-            "section": "Nombres",
-            "chunk_index": 0,
-        }
-    ]
-    expanded = expand_for_niveaux(base)
-
+    expanded = expand_for_niveaux([_chunk_de_base()], ["cinquieme", "quatrieme", "troisieme"])
     assert len(expanded) == 3
-    niveaux = sorted(c["niveau"] for c in expanded)
-    assert niveaux == ["cinquieme", "quatrieme", "troisieme"][::1] or set(niveaux) == {
-        "cinquieme",
-        "quatrieme",
-        "troisieme",
-    }
+    assert {c["niveau"] for c in expanded} == {"cinquieme", "quatrieme", "troisieme"}
 
 
-def test_expand_for_niveaux_college_quadruples_chunks():
-    """Un fichier college (langues) couvre les 4 niveaux collège."""
+def test_expand_for_niveaux_suit_le_manifeste_et_non_le_nom_de_fichier():
+    """La même source peut couvrir trois niveaux cette année et un seul l'an
+    prochain, quand une réforme atteint les autres. C'est le manifeste qui le
+    dit, pas le nom du fichier."""
     from scripts.ingest import expand_for_niveaux
 
-    base = [
-        {
-            "text": "Apprentissage de l'anglais au collège, du A1 au A2+ selon le CECRL européen.",
-            "source_file": "programme_anglais_college_BO2025",
-            "matiere": Matiere.ANGLAIS.value,
-            "section": "Anglais",
-            "chunk_index": 0,
-        }
-    ]
-    expanded = expand_for_niveaux(base)
-
-    assert len(expanded) == 4
-    assert set(c["niveau"] for c in expanded) == {
-        "sixieme",
-        "cinquieme",
-        "quatrieme",
-        "troisieme",
-    }
+    expanded = expand_for_niveaux([_chunk_de_base()], ["quatrieme"])
+    assert [c["niveau"] for c in expanded] == ["quatrieme"]
 
 
 def test_expand_preserves_chunk_text_and_section():
     """L'expansion ne modifie ni text ni section, seul niveau diffère."""
     from scripts.ingest import expand_for_niveaux
 
-    base = [
-        {
-            "text": "Texte commun du cycle 4 partagé entre les trois niveaux du collège.",
-            "source_file": "programme_maths_cycle4_BO2026",
-            "matiere": Matiere.MATHEMATIQUES.value,
-            "section": "Nombres",
-            "chunk_index": 0,
-        }
-    ]
-    expanded = expand_for_niveaux(base)
-
-    texts = {c["text"] for c in expanded}
-    sections = {c["section"] for c in expanded}
-    assert len(texts) == 1
-    assert len(sections) == 1
+    expanded = expand_for_niveaux([_chunk_de_base()], ["cinquieme", "quatrieme"])
+    assert len({c["text"] for c in expanded}) == 1
+    assert len({c["section"] for c in expanded}) == 1
 
 
 # ── validate_chunks ───────────────────────────────────────────────────────────
@@ -300,28 +184,34 @@ def test_l2_normalize_raises_on_zero_vector():
         l2_normalize([0.0, 0.0, 0.0])
 
 
-# ── Sources catalog ───────────────────────────────────────────────────────────
+# ── Sources dérivées du manifeste ────────────────────────────────────────────
 
 
-def test_sources_uses_matiere_enums():
-    """SOURCES contient des Matiere (enum), pas des strings."""
-    from scripts.ingest import SOURCES
+def test_les_sources_viennent_du_manifeste():
+    """Plus de constante écrite à la main : ce qui est ingéré et ce que le test
+    de couverture attend viennent de la même source."""
+    from scripts.ingest import sources_du_manifeste
 
-    for s in SOURCES:
-        assert isinstance(s["matiere"], Matiere), (
-            f"SOURCES[{s['file']}] doit utiliser Matiere enum, pas string."
-        )
+    sources = sources_du_manifeste()
+    assert sources
+    for s in sources:
+        assert isinstance(s["matiere"], Matiere)
+        assert s["niveaux"], f"{s['file']} sans niveau"
+        assert s["file"].endswith(".pdf")
 
 
-def test_sources_files_cover_college():
-    """Toutes les sources se dérivent vers au moins un niveau collège (6e→3e)."""
-    from schema import derive_niveaux_from_file
-    from scripts.ingest import SOURCES
+def test_les_sources_couvrent_college_et_lycee():
+    from scripts.ingest import sources_du_manifeste
 
-    college_niveaux = {"sixieme", "cinquieme", "quatrieme", "troisieme"}
-    for s in SOURCES:
-        _cycle, niveaux = derive_niveaux_from_file(s["file"])
-        nv_values = {n.value for n in niveaux}
-        assert nv_values & college_niveaux, (
-            f"Source {s['file']} ne couvre aucun niveau collège (niveaux={nv_values})"
-        )
+    niveaux = {n for s in sources_du_manifeste() for n in s["niveaux"]}
+    assert {"sixieme", "cinquieme", "quatrieme", "troisieme"} <= niveaux
+    assert {"seconde", "premiere", "terminale"} <= niveaux
+
+
+def test_seuls_les_documents_de_cycle_sont_decoupes():
+    """Un PDF partagé par deux matières n'est pas forcément un document de
+    cycle : le programme de spécialité d'arts en sert deux et s'ingère entier."""
+    from scripts.ingest import sources_du_manifeste
+
+    a_decouper = {s["url"] for s in sources_du_manifeste() if s["a_decouper"]}
+    assert len(a_decouper) == 2, f"attendu les deux documents de cycle, trouvé {a_decouper}"

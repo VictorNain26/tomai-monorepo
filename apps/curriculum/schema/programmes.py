@@ -261,6 +261,13 @@ def _cycles_bo2020() -> tuple[Programme, ...]:
     )
 
 
+# Seuls ces documents se découpent par matière : ce sont les deux programmes de
+# cycle, qui titrent leurs matières en 15 pt. Les autres documents partagés par
+# plusieurs matières — le programme de spécialité d'arts, par exemple — sont le
+# programme de chacune d'elles et s'ingèrent entiers.
+DOCUMENTS_A_DECOUPER: frozenset[str] = frozenset({_URL_CYCLE_3, _URL_CYCLE_4})
+
+
 def nor_traites() -> frozenset[str]:
     """NOR que le manifeste porte déjà — ce que la veille ne doit PAS signaler."""
     return frozenset(p.nor for p in manifeste() if p.nor)

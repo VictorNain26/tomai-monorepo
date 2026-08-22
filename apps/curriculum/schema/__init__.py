@@ -11,11 +11,9 @@ from .document import (
     cycle_from_niveau,
     derive_niveaux_from_file,
 )
-from .golden import GoldenQuestion, GoldenSet
 from .retrieval import (
     DEFAULT_COLLECTION,
     DEFAULT_TOP_K,
-    EMBEDDING_DIM,
     HybridResult,
     get_collection_name,
     get_mistral_client,
@@ -27,12 +25,9 @@ from .retrieval import (
 __all__ = [
     "DEFAULT_COLLECTION",
     "DEFAULT_TOP_K",
-    "EMBEDDING_DIM",
     "MATIERE_LABELS",
     "Chunk",
     "Cycle",
-    "GoldenQuestion",
-    "GoldenSet",
     "HybridResult",
     "Matiere",
     "Niveau",
