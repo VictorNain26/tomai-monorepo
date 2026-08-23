@@ -11,7 +11,7 @@ pnpm dev                          # infra Docker + server:3000 + landing:3001
 pnpm dev:mobile                   # Expo (8081), terminal séparé
 pnpm dev:down                     # arrêt de l'infra
 pnpm typecheck && pnpm lint       # validation, obligatoire avant commit
-pnpm test                         # server (Bun) + mobile (Jest)
+pnpm test                         # tous les tests du workspace
 pnpm doctor                       # diagnostic de la stack
 pnpm doctor:e2e                   # diagnostic strict : un SKIP ou un degraded = échec
 pnpm seed                         # comptes parent + élève, dev uniquement
