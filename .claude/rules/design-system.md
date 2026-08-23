@@ -1,3 +1,12 @@
+---
+description: Design system — chargé uniquement sur les fichiers d'interface
+paths:
+  - "apps/landing/**/*.{ts,tsx,css}"
+  - "apps/mobile/**/*.{ts,tsx,css}"
+  - "packages/ui/**/*.{ts,tsx,css}"
+  - "packages/tokens/**/*.{ts,css}"
+---
+
 # Design system — règles d'application
 
 Contrat complet : `docs/design/design-system.md`. Ici : ce qui s'applique à
