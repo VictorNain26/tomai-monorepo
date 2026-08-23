@@ -316,8 +316,11 @@ leur trace est dans l'historique git et les PR citées.
 | `apps/mobile` est natif seul ; la cible web (react-native-web) n'est pas activée, et le renommage `apps/mobile` → `apps/app` n'a pas eu lieu | ADR 0001 | ⬜ non démarré. `apps/web` a été supprimée le 2026-07-06 sans attendre la parité, donc il n'y a aujourd'hui **aucun produit web** — seulement la landing. Point dur identifié : cookies cross-origin Better Auth sur Expo web |
 | Réindexation du corpus : pas de `delete-by-source_file`, donc des points orphelins survivent à une mise à jour ; `payload.section` n'est pas renseigné | audit 2026-07-01 (lot 6) | ⬜ non démarré |
 | Le RAG dépend du bon vouloir du modèle : pas de `toolChoice` forcé sur intention scolaire | audit 2026-07-01 (lot 7) | ⬜ non démarré |
-| Aucune analytics installée — la landing n'a aucune télémétrie produit | règles marketing privacy-first | ⬜ non démarré. Sentry couvre les erreurs (server, landing, mobile, région EU) mais pas l'usage. Cible : PostHog EU |
+| Aucune analytics installée — la landing n'a aucune télémétrie produit | règles marketing privacy-first | ⬜ non démarré. Sentry couvre les erreurs (server, landing, mobile) mais pas l'usage. Cible : PostHog EU |
 | A/B `Modifier.IDF` on/off jamais mené sur le retrieval sparse | audit 2026-07-01 | ⬜ non démarré |
+| Durcissement mobile absent : ni App Integrity (App Attest / Play Integrity), ni SSL pinning sur `/api/auth/*` et `/api/subscriptions/*`, ni cache SQLite chiffré (SQLCipher + persister AES, clés en SecureStore) | spec SP4 | ⬜ non démarré. L'app manipule des credentials d'enfants mineurs : c'est l'écart ouvert le plus sensible |
+| Accessibilité WCAG 2.1 AA non vérifiée sur l'app (labels, rôles, contraste 4.5:1, cibles ≥ 44 px) | European Accessibility Act, en vigueur depuis juin 2025 | ⬜ non démarré. Obligation légale, pas un confort |
+| Expo Router : l'auth-gating ne passe pas par `Stack.Protected`, et les écrans data-driven n'utilisent pas `useLoaderData` | patterns Expo Router v7 | ⬜ non démarré. Dette de forme, sans impact utilisateur |
 
 Mettre cette section à jour à chaque merge qui ferme ou ouvre un écart. Quand un écart
 se ferme, le retirer d'ici — ne pas le convertir en ligne « ✅ » : le corps du document
