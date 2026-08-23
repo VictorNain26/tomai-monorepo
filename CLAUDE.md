@@ -53,15 +53,27 @@ propres au monorepo, à vérifier explicitement :
 
 ## Garde-fous déterministes
 
-Ils s'exécutent que Claude le veuille ou non :
+Ils s'exécutent que Claude le veuille ou non. Chacun a une portée précise, et la
+connaître évite de croire couvert ce qui ne l'est pas :
 
-- **`.claude/hooks/block-destructive-db.sh`** (PreToolUse) : refuse `DROP DATABASE`
-  et `db:push` visant prod/staging.
+- **`.claude/hooks/block-destructive-db.sh`** (PreToolUse) : refuse la suppression de
+  base ou de schéma, et `drizzle-kit push` dès qu'il vise autre chose qu'une base
+  locale — config `*prod*`/`*staging*`, `DATABASE_URL` non locale, ou mention de
+  prod/staging. Il ne se déclenche que sur une vraie invocation, pas sur une commande
+  qui mentionne ces chaînes. C'est un garde-anti-accident : un contournement
+  volontaire (chaîne cassée, script intermédiaire) passe, et ce n'est pas son objet.
 - **`.claude/hooks/mark-typescript-edit.sh`** + **`require-validation-before-stop.sh`**
-  (PostToolUse + Stop) : si la session a édité du TypeScript et le laisse non commité,
-  elle ne peut pas s'arrêter. Le marqueur est consommé, donc le blocage joue une fois.
-- **`permissions.deny`** : lecture des `.env` interdite (les `.env.example` restent
-  lisibles, ce sont des gabarits).
+  (PostToolUse + Stop) : la session ne peut pas s'arrêter sur du TypeScript **qu'elle a
+  elle-même édité** et laissé non commité. Le blocage ne porte que sur ces fichiers-là,
+  jamais sur ce que l'arbre contenait déjà. **Portée** : seules les éditions via Edit et
+  Write arment le marqueur — du TypeScript écrit par heredoc, `sed` ou un codegen y
+  échappe.
+- **`permissions.deny`** : lecture des `.env` interdite, `.env.example` volontairement
+  lisible (c'est un gabarit). La liste est une **énumération de suffixes**, pas un
+  catch-all : le langage de permissions n'admet aucune exception dans une règle `deny`
+  ([doc](https://code.claude.com/docs/en/permissions)), donc un `.env.*` global
+  bloquerait aussi les gabarits. Un suffixe inhabituel qui porterait des secrets doit
+  être ajouté à la main.
 - **lefthook** : lint + typecheck en pre-commit, tests + build en pre-push.
 
 Ne jamais contourner un hook qui échoue (`--no-verify` est deny-listé) : traiter la cause.

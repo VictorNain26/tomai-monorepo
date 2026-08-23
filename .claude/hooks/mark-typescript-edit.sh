@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# PostToolUse(Edit|Write) — note que CETTE session a touché du TypeScript.
+# PostToolUse(Edit|Write) — note QUELS fichiers TypeScript cette session a touchés.
 #
-# Le marqueur est ce qui permet au hook Stop de distinguer « la session a édité
-# du code » de « le dépôt avait déjà des modifications en cours ». Sans lui, le
-# garde-fou se déclenche sur du travail que la session n'a jamais touché.
+# Le marqueur stocke les chemins, pas seulement le fait qu'il y a eu une édition :
+# c'est ce qui permet au hook Stop de ne parler que du travail de la session, et
+# pas de ce que l'arbre contenait déjà.
+#
+# Portée assumée : seules les éditions passant par Edit/Write sont vues. Du
+# TypeScript écrit par un heredoc, un sed ou un codegen n'arme rien.
 set -uo pipefail
 
 input=$(cat)
@@ -16,7 +19,22 @@ case "$path" in
   *) exit 0 ;;
 esac
 
-session=$(printf '%s' "$input" | jq -r '.session_id // "unknown"')
-: >"${TMPDIR:-/tmp}/claude-ts-edited-${session}" 2>/dev/null || true
+# Hors du dépôt (script jetable dans /tmp) : rien à valider ni à commiter.
+repo="${CLAUDE_PROJECT_DIR:-}"
+[ -n "$repo" ] || exit 0
+case "$path" in
+  "$repo"/*) ;;
+  *) exit 0 ;;
+esac
+
+session=$(printf '%s' "$input" | jq -r '.session_id // empty')
+case "$session" in
+  '' | */* | .*) exit 0 ;; # jamais de séparateur ni de . initial dans le nom de fichier
+esac
+
+marker="${TMPDIR:-/tmp}/claude-ts-edited-${session}"
+if ! printf '%s\n' "${path#"$repo"/}" >>"$marker" 2>/dev/null; then
+  printf '%s\n' '{"systemMessage":"Impossible d écrire le marqueur d édition TypeScript : le garde-fou de validation avant arrêt est inactif."}'
+fi
 
 exit 0

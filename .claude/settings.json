@@ -17,13 +17,24 @@
 
   "permissions": {
     "deny": [
-      "Read(./.env)",
-      "Read(./**/.env)",
-      "Read(./**/.env.local)",
-      "Read(./**/.env.development)",
-      "Read(./**/.env.production)",
-      "Read(./**/.env.staging)",
-      "Read(./**/.env.test)"
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.development)",
+      "Read(.env.production)",
+      "Read(.env.staging)",
+      "Read(.env.test)",
+      "Read(.env.*.local)",
+      "Read(.env.backup)",
+      "Read(.env.bak)",
+      "Read(.env.old)",
+      "Read(.env.orig)",
+      "Read(.env.save)",
+      "Read(.env.keys)",
+      "Read(.env.prod)",
+      "Read(.env.dev)",
+      "Read(.env.ci)",
+      "Read(.env.secret)",
+      "Read(.env.secrets)"
     ]
   },
 
@@ -34,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-destructive-db.sh",
+            "command": "\"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-destructive-db.sh\"",
             "timeout": 10
           }
         ]
@@ -46,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/mark-typescript-edit.sh",
+            "command": "\"${CLAUDE_PROJECT_DIR}/.claude/hooks/mark-typescript-edit.sh\"",
             "timeout": 10
           }
         ]
@@ -57,7 +68,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/require-validation-before-stop.sh",
+            "command": "\"${CLAUDE_PROJECT_DIR}/.claude/hooks/require-validation-before-stop.sh\"",
             "timeout": 15
           }
         ]

@@ -3,15 +3,20 @@
 #
 # Les commandes destructives génériques (rm -rf, git reset --hard, force push…)
 # sont déjà refusées par permissions.deny dans les settings utilisateur. Ce hook
-# ne garde que le risque propre au dépôt, qu'aucune règle de permission ne sait
-# exprimer : `db:push` écrase le schéma sans migration, donc il ne doit jamais
-# viser autre chose qu'une base locale.
+# ne garde que le risque propre au dépôt : `drizzle-kit push` écrase le schéma
+# sans migration, et il ne doit jamais viser autre chose qu'une base locale.
+#
+# Le filtre porte sur la FORME de l'invocation, pas sur la simple présence d'une
+# chaîne : sans ça, un `grep db:push` ou un `echo` mentionnant prod se faisait
+# refuser. Un garde-fou qui bloque la lecture finit par être désactivé.
 set -uo pipefail
 
 input=$(cat)
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "hook block-destructive-db: jq absent, garde-fou DB inactif" >&2
+  # stdout, pas stderr : sur un PreToolUse en exit 0, stderr ne remonte qu'au
+  # journal de debug — l'absence du garde-fou serait donc silencieuse.
+  printf '%s\n' '{"systemMessage":"jq est absent : le garde-fou base de données de ce dépôt est INACTIF. Installe jq."}'
   exit 0
 fi
 
@@ -29,13 +34,37 @@ deny() {
   exit 0
 }
 
-if printf '%s' "$command" | grep -qiE '\bdrop[[:space:]]+database\b'; then
-  deny "DROP DATABASE refusé. Pour repartir d'une base propre en local : docker compose down -v puis pnpm setup."
+# `--` obligatoire : plusieurs motifs commencent par un tiret, que grep prendrait
+# sinon pour une option.
+has() { printf '%s' "$command" | grep -qE -- "$1"; }
+
+# Suppression de base ou de schéma. Comme pour `push`, on exige une vraie
+# invocation d'un client base de données : sans ça, un message de commit ou un
+# grep qui mentionne la phrase se fait refuser.
+if printf '%s' "$command" | grep -qiE '(^|[;&|][[:space:]]*)([[:alnum:]_]+=[^[:space:]]*[[:space:]]+)*(sudo[[:space:]]+)?dropdb\b' ||
+   { printf '%s' "$command" | grep -qiE '\bdrop[[:space:]]+(database|schema)\b' &&
+     printf '%s' "$command" | grep -qE '\b(psql|pg_dump|mysql|drizzle-kit|db:)'; }; then
+  deny "Suppression de base ou de schéma refusée. Pour repartir d'une base locale propre : docker compose down -v puis pnpm setup."
 fi
 
-if printf '%s' "$command" | grep -qE 'db:push' &&
-   printf '%s' "$command" | grep -qiE '(prod|production|staging)'; then
-  deny "db:push est réservé au dev local (il synchronise le schéma sans migration). Pour prod/staging : bun run db:generate puis db:migrate."
+# `push` de drizzle-kit, sous ses deux formes d'appel réelles dans ce dépôt :
+# le script du package, ou un appel direct au binaire.
+if has '(bun|pnpm|npm|yarn|npx|bunx)[[:space:]]+run[[:space:]]+db:push' ||
+   has 'drizzle-kit[[:space:]]+push'; then
+
+  # Un fichier de config dédié prod/staging — apps/server/drizzle.config.prod.ts existe.
+  if has '--config[= ][^[:space:]]*(prod|staging)'; then
+    deny "drizzle-kit push avec une config prod/staging est refusé : il écrase le schéma sans migration. Utilise bun run db:generate puis db:migrate."
+  fi
+
+  # DATABASE_URL forcée en ligne vers autre chose qu'une base locale.
+  if has 'DATABASE_URL=' && ! has 'DATABASE_URL=[^[:space:]]*(localhost|127\.0\.0\.1)'; then
+    deny "drizzle-kit push avec une DATABASE_URL non locale est refusé : il écrase le schéma sans migration. Utilise bun run db:generate puis db:migrate."
+  fi
+
+  if printf '%s' "$command" | grep -qiE '(prod|production|staging)'; then
+    deny "drizzle-kit push visant prod/staging est refusé : il écrase le schéma sans migration. Utilise bun run db:generate puis db:migrate."
+  fi
 fi
 
 exit 0
