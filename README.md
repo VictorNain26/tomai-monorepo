@@ -29,9 +29,10 @@ habituelle :
 - `docker-compose.yml` embarque un **Qdrant local** (`:6333`), démarré par défaut et
   attendu par `pnpm dev`.
 - Le serveur, lui, ne pointe nulle part tant que `QDRANT_URL` est vide dans
-  `apps/server/.env` — c'est le défaut de `.env.example`. Renseigner `QDRANT_URL` +
-  `QDRANT_API_KEY` + `QDRANT_COLLECTION` et `QDRANT_ENABLED=true` pour viser
-  **Qdrant Cloud**, l'index de référence partagé dev/prod, déjà ingéré.
+  `apps/server/.env` — c'est le défaut de `.env.example`. Renseigner `QDRANT_URL`,
+  `QDRANT_API_KEY` et `QDRANT_COLLECTION` (les trois seules vides ; `QDRANT_ENABLED`
+  est déjà à `true` dans le gabarit) pour viser **Qdrant Cloud**, l'index de référence
+  partagé dev/prod, déjà ingéré.
 
 Sans ces variables, `/health` rapporte le check qdrant en `not_configured` : le
 serveur reste `healthy`, mais le RAG est simplement absent. Pour viser le Qdrant
@@ -46,7 +47,9 @@ apps/
 ├── landing/      # Next.js — vitrine SEO (3001)
 ├── mobile/       # Expo — app parents et élèves (8081)
 ├── ai-service/   # FastAPI (uv) — embeddings BGE-M3 pour le RAG (8001)
-└── curriculum/   # Python uv — indexation des programmes officiels (hors workspace pnpm)
+└── curriculum/   # Python uv — indexation des programmes officiels
+
+(ai-service et curriculum sont des apps Python : hors workspace pnpm, exclues de turbo)
 
 packages/
 ├── api/             # Client Eden Treaty typé — le contrat serveur → clients
@@ -61,7 +64,7 @@ packages/
 |--------|-------------|
 | Backend | Bun 1.3, Elysia 1.4, PostgreSQL 16 + pgvector, Drizzle ORM 0.45 |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion, `@repo/ui` (shadcn) |
-| Mobile | Expo SDK 56, React Native 0.85, NativeWind 5 |
+| Mobile | Expo SDK 56, React Native 0.85, NativeWind 5 (preview) |
 | Auth | Better Auth 1.6 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |
 | IA | Mistral — chat, vision Pixtral, OCR, TTS et STT Voxtral. Stack 100 % EU |
@@ -69,15 +72,15 @@ packages/
 | Vie scolaire | Pronote via `pawnote`, **serveur uniquement** (lib GPL, tokens rotatifs) |
 | Paiements | RevenueCat — IAP natif, source unique de facturation |
 | Stockage | Scaleway S3 (fr-par), uploads par URL présignée |
-| Observabilité | Sentry (server, landing, mobile), région EU. Pas d'analytics installée |
+| Observabilité | Sentry initialisé sur server, landing et mobile. La région dépend du DSN, absent du dépôt. Pas d'analytics installée |
 | Monorepo | Turborepo, pnpm workspaces |
-| Déploiement | Vercel (landing), Koyeb (server, ai-service), EAS (mobile) |
+| Déploiement | Cibles : Vercel (landing), Koyeb (server, ai-service), EAS (mobile). Aucune config d'infra n'est versionnée ici, et rien n'est déployé aujourd'hui |
 
 ## Commandes
 
 ```bash
 pnpm typecheck && pnpm lint   # validation, obligatoire avant commit
-pnpm test                     # server (Bun) + mobile (Jest)
+pnpm test                     # server (Bun), mobile (Jest), tokens (Bun)
 pnpm build                    # build production
 pnpm seed                     # comptes parent + élève, dev uniquement
 pnpm db:generate              # migrations Drizzle, pour la prod

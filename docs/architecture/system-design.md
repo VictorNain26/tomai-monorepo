@@ -125,8 +125,10 @@ n'est pas activée (§8).
 
 - **Pas de package de logique partagée** (`@repo/chat-core` abandonné) : avec une seule
   app, le code partagé, *c'est* l'app. Hooks et écrans existants servent le web tels quels.
-- **Coutures plateforme** via la convention `.web.ts` / `.native.ts` (streaming, storage,
-  auth token) — jamais de `Platform.OS` disséminé dans la logique métier.
+- **Coutures plateforme** : la convention visée est `.web.ts` / `.native.ts`, mais elle
+  n'est **pas** en place — un seul fichier la suit (`RevenueCatProvider.web.tsx`), et
+  `Platform.OS` apparaît 21 fois dans 13 fichiers, y compris hors UI (`db/client.ts`,
+  `hooks/useOfflineCache.ts`). À reprendre si la cible web est activée.
 - **Navigation** : expo-router (typed routes), groupes `(auth)` / `(parent)` / `(student)`,
   gating par `Stack.Protected`.
 - **État** : TanStack Query (server state) + Zustand (client state), séparation stricte.
@@ -258,9 +260,10 @@ graph LR
 
 - **ai-service = embed-only** (Lot 3, ✅) : il n'existe que parce qu'aucun provider managé
   EU n'expose le sparse natif BGE-M3 (`lexical_weights`). Pas de rerank (aucune option EU
-  viable, corpus trop petit — décision 2026-07-01). FP16, instance unique, timeout embed.
-- **Retrieval** : hybride dense+sparse fusionné par RRF côté server, chunks injectés
-  délimités dans le system prompt. Gate `hasValidResults` + rangs (Lot 1, ✅).
+  viable, corpus trop petit — décision 2026-07-01). FP32 par défaut (`USE_FP16=false` — le CPU Koyeb ne gagne rien en FP16), instance unique, timeout embed.
+- **Retrieval** : hybride dense+sparse, fusion RRF **native à Qdrant** via la Query API
+  (prefetch dense + sparse ; stratégie `qdrant-hybrid-rrf`), chunks injectés
+  délimités dans le system prompt. Gate `evaluateRagGate` (`apps/server/src/routes/learning/helpers.ts`) + rangs.
 - **Écart ouvert — cycle de vie de l'index** (§8) : réindexation par `delete-by-source_file`
   (élimine les orphelins à l'update), vrai `payload.section`, procédure de veille en `.md`,
   retrait du tokenizer Mistral côté curriculum.
@@ -288,14 +291,14 @@ flags, session replay).
 
 - **Sentry : ✅ actif** (chantier hardening 2026-07-06, PR #272-279) sur server
   (`@sentry/elysia`), landing (`@sentry/nextjs`) et mobile (`@sentry/react-native`),
-  région EU, scrub PII mineurs testé.
+  scrub PII mineurs testé. La région est portée par le DSN, qui ne vit pas dans le dépôt.
 - **PostHog : ⬜ à installer** (chantier séparé) — la landing n'a toujours aucune
   analytics (écart avec les règles marketing privacy-first).
 
 ### 7.3 Environnements & CI
 
-- Dev : Docker (Postgres) + `pnpm dev` (landing 3001, server 3000, Expo 8081,
-  ai-service 8001). `pnpm doctor:e2e` = diagnostic strict (toute dépendance réelle doit
+- Dev : Docker (postgres + qdrant + ai-service, tous démarrés par défaut) + `pnpm dev`
+  (landing 3001, server 3000, Expo 8081, ai-service 8001, qdrant 6333). `pnpm doctor:e2e` = diagnostic strict (toute dépendance réelle doit
   répondre, SKIP/degraded = échec). `docker-compose.yml` embarque un Qdrant local que
   `pnpm dev` attend, mais le serveur ne vise un index que si `QDRANT_URL` est renseignée —
   vide par défaut, l'index de référence étant Qdrant Cloud, partagé dev et prod (cf. `README.md`).

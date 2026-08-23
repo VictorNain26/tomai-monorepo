@@ -37,8 +37,9 @@ universelle).
 
 1. **Homonyme = même noyau de variants/sizes.**
    Button : `default | destructive | outline | secondary | ghost` ;
-   extensions DOM-only : `link`, `premium` ; sizes : vocabulaire commun
-   (`sm | default | lg | icon`), hauteurs par plateforme.
+   extensions DOM-only : `link`, `premium` ; sizes : noyau commun
+   (`sm | default | icon`), hauteurs par plateforme, plus `lg`/`xl` DOM-only et
+   `icon-sm` RN-only — écart constaté, à réduire quand on retouchera Button.
    Avatar : sizes `sm (32) | md (40) | lg (48) | xl (64)`.
    Card : sous-composants `Header | Title | Description | Content | Footer`
    des deux côtés (`CardCompact` RN-only).

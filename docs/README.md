@@ -33,8 +33,9 @@ là parce que l'intention tient toujours — pas parce que le travail est en cou
 
 ## Supprimé le 2026-08-23
 
-Trois documents portaient « superseded » dans leur propre en-tête. Une doc périmée
-qu'on lit induit en erreur plus qu'une doc absente ; l'historique git les garde.
+Trois documents se déclaraient eux-mêmes périmés — « roadmap superseded » pour les
+deux audits, « caduques » pour le plan. Une doc périmée qu'on lit induit en erreur
+plus qu'une doc absente ; l'historique git les garde.
 
 - `audits/2026-06-14-audit-backend-produit.md` — P0 tous livrés (#237, #245, #246).
 - `audits/2026-06-14-audit-system-prompt.md` — failles traitées depuis.
