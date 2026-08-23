@@ -51,4 +51,6 @@ Sources : [Expo static rendering](https://docs.expo.dev/router/web/static-render
 
 ## Garde-fou d'exécution
 
-Aucun état cassé intermédiaire : `apps/web` **reste fonctionnel** jusqu'à ce que l'app universelle atteigne la **parité** ; alors **un seul cutover** supprime le legacy + réconcilie la doc. Détail séquencé : `docs/superpowers/plans/2026-06-30-universal-app-migration.md`.
+Aucun état cassé intermédiaire : `apps/web` **reste fonctionnel** jusqu'à ce que l'app universelle atteigne la **parité** ; alors **un seul cutover** supprime le legacy + réconcilie la doc.
+
+> **Note d'exécution (2026-08-23)** — ce garde-fou n'a pas été suivi : `apps/web` a été supprimée le 2026-07-06 (chantier hardening) **avant** que l'app Expo atteigne la parité web, au motif qu'elle n'était qu'un sous-ensemble strict du mobile. La décision de l'ADR reste valide ; seule sa séquence a changé. Le plan de migration détaillé a été supprimé une fois périmé — l'état courant vit dans `docs/architecture/system-design.md`.

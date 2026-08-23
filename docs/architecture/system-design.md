@@ -1,18 +1,20 @@
 # System design — TomIA
 
-> **Doc de référence vivant.** Décrit l'**architecture cible** du système. Tout écart
-> transitoire entre l'existant et la cible porte un marqueur `🔄 Lot N` (feuille de route :
-> [audit 2026-07-01](../audits/2026-07-01-curriculum-to-frontend-architecture.md)).
-> Les « pourquoi » des décisions vivent dans les ADR et l'audit — jamais paraphrasés ici.
-> La section [8. État vs cible](#8-état-vs-cible) se met à jour à chaque merge de lot ;
-> le reste du doc est stable.
+> **Doc de référence vivant.** Décrit l'architecture **telle qu'elle est aujourd'hui**.
+> Ce qui est décidé mais pas encore construit est isolé dans la section
+> [8. Écarts ouverts](#8-écarts-ouverts) — jamais glissé dans le corps du document.
+> Les « pourquoi » vivent dans les ADR et l'audit, jamais paraphrasés ici.
+>
+> Stack, versions et démarrage : `README.md`. Instructions aux agents : `CLAUDE.md`.
 
 Décisions structurantes de référence :
 
 - [ADR 0001 — App conso universelle](../adr/0001-universal-consumer-app.md) : une seule
-  app Expo (iOS + Android + web) remplace `apps/mobile` + `apps/web` ; renommage
-  `apps/mobile` → `apps/app` au cutover ; landing conservée ; B2B en Next.js dédié plus tard.
-- [Audit 2026-07-01 (addendum)](../audits/2026-07-01-curriculum-to-frontend-architecture.md) :
+  app Expo (iOS + Android + web) remplace `apps/mobile` + `apps/web` ; landing conservée ;
+  B2B en Next.js dédié plus tard. `apps/web` a été supprimée le 2026-07-06 ; la cible web
+  de l'app Expo n'est pas activée, et le renommage `apps/mobile` → `apps/app` que prévoyait
+  l'ADR **n'a pas eu lieu** : le répertoire s'appelle toujours `apps/mobile`.
+- [Audit 2026-07-01](../audits/2026-07-01-curriculum-to-frontend-architecture.md) :
   ai-service embed-only (rerank supprimé), chat sur Vercel AI SDK (ai v7), pas de package de
   logique partagée, stack backend/RAG conservée.
 
@@ -48,7 +50,7 @@ Pré-lancement (waitlist), zéro utilisateur en production.
 graph TB
     subgraph Clients
         LANDING["landing<br/>Next.js 16 — Vercel"]
-        APP["app (universelle) 🔄 Lot 5<br/>Expo — iOS/Android via EAS,<br/>web via Vercel"]
+        APP["apps/mobile<br/>Expo — iOS/Android via EAS<br/>(cible web non activée)"]
         B2B["b2b (futur)<br/>Next.js dédié"]
     end
     subgraph Backend["Backend — Koyeb"]
@@ -78,12 +80,12 @@ graph TB
     CURRICULUM -- "upsert points" --> QDRANT
 ```
 
-**Conteneurs applicatifs cibles** :
+**Conteneurs applicatifs** :
 
 | Conteneur | Stack | Déploiement | Statut |
 |-----------|-------|-------------|--------|
 | `apps/landing` | Next.js 16, Tailwind 4, Framer Motion | Vercel (auto sur push) | ✅ en place |
-| `apps/app` | Expo SDK 56, expo-router, NativeWind v5 | EAS (natif) + Vercel (export web statique) | 🔄 Lot 5 — aujourd'hui `apps/mobile`, natif seul |
+| `apps/mobile` | Expo SDK 56, expo-router, NativeWind v5 | EAS (natif) | ✅ natif ; cible web décidée, non activée (§8) |
 | `apps/server` | Elysia 1.4 / Bun 1.3, Drizzle | Koyeb | ✅ en place |
 | `apps/ai-service` | FastAPI (uv), FlagEmbedding BGE-M3 | Koyeb | ✅ embed-only (Lot 3) |
 | `apps/curriculum` | Python uv, hors workspace pnpm/turbo | Exécution locale/CI (batch) | ✅ en place |
@@ -95,9 +97,9 @@ sans portage : sous-ensemble strict du mobile, remplacée par l'app universelle 
 
 | Package | Rôle | Consommateurs |
 |---------|------|---------------|
-| `@repo/api` | Client Eden Treaty typé (`treaty<App>`) + `initializeApi`/`unwrap`/`setUnauthorizedHandler` | app universelle |
-| `@repo/tokens` | Design tokens Tailwind v4 (thème clair/sombre), consommés par CSS web et NativeWind | landing, app |
-| `@repo/ui` | Primitives shadcn/DOM | landing, futur B2B — **jamais** l'app universelle |
+| `@repo/api` | Client Eden Treaty typé (`treaty<App>`) + `initializeApi`/`unwrap`/`setUnauthorizedHandler` | `apps/mobile` |
+| `@repo/tokens` | Design tokens Tailwind v4 (thème clair/sombre), consommés par CSS web et NativeWind | landing, mobile |
+| `@repo/ui` | Primitives shadcn/DOM | landing, futur B2B — **jamais** `apps/mobile` |
 
 ## 3. Frontends
 
@@ -113,12 +115,11 @@ empêche la landing de dériver vers un mini-produit.
 Écart connu : aucune analytics installée (Sentry couvre les erreurs, pas l'analytics)
 alors que la cible est PostHog privacy-first (cf. [§7.2](#72-observabilité)).
 
-### 3.2 App universelle (`apps/app`) 🔄 Lot 5
+### 3.2 App conso (`apps/mobile`)
 
-Une seule app Expo Router pour parents et élèves, trois cibles : iOS, Android, web
-(react-native-web). Roadmap d'exécution :
-[plan de migration](../superpowers/plans/2026-06-30-universal-app-migration.md)
-(pilote chat web → parité → cutover atomique → réconciliation doc).
+Une seule app Expo Router pour parents et élèves. Aujourd'hui iOS et Android ;
+la troisième cible, le web (react-native-web), est décidée par l'ADR 0001 mais
+n'est pas activée (§8).
 
 **Principes** :
 
@@ -162,10 +163,10 @@ Trois contrats client↔serveur, chacun avec un rôle exclusif :
    côté mobile, `fetch` brut côté web).
 3. **Better Auth** — routes `/api/auth/*` hors Eden. Sessions : expo-secure-store (natif),
    cookies (web). Plugins : `usernameClient` (élèves), Google (idToken natif / OAuth web).
-   Le point dur du Lot 5 : valider les cookies cross-origin Better Auth sur cible Expo web
-   au pilote.
+   Point dur connu si la cible web est activée : valider les cookies cross-origin Better Auth
+   sur Expo web.
 
-### 4.1 Flux chat avec RAG (cible Lot 7 pour le `toolChoice` forcé)
+### 4.1 Flux chat avec RAG
 
 ```mermaid
 sequenceDiagram
@@ -176,7 +177,7 @@ sequenceDiagram
     participant M as Mistral
 
     C->>S: POST /api/chat (UIMessage stream protocol)
-    S->>S: intent scolaire → toolChoice forcé 🔄 Lot 7
+    S->>S: décide d'appeler le tool RAG (non forcé — cf. §8)
     S->>A: POST /embed (query BGE-M3 dense+sparse)
     A-->>S: vecteurs
     S->>Q: search hybride RRF
@@ -260,10 +261,10 @@ graph LR
   viable, corpus trop petit — décision 2026-07-01). FP16, instance unique, timeout embed.
 - **Retrieval** : hybride dense+sparse fusionné par RRF côté server, chunks injectés
   délimités dans le system prompt. Gate `hasValidResults` + rangs (Lot 1, ✅).
-- 🔄 **Lot 6 — cycle de vie de l'index** : réindexation par `delete-by-source_file`
+- **Écart ouvert — cycle de vie de l'index** (§8) : réindexation par `delete-by-source_file`
   (élimine les orphelins à l'update), vrai `payload.section`, procédure de veille en `.md`,
   retrait du tokenizer Mistral côté curriculum.
-- 🔄 **Lot 7 — retrieval déterministe** : `toolChoice` forcé sur intent scolaire (le RAG
+- **Écart ouvert — retrieval déterministe** (§8) : `toolChoice` forcé sur intent scolaire (le RAG
   ne dépend plus du bon vouloir du modèle).
 - A/B restant à mener : `Modifier.IDF` on/off.
 
@@ -289,32 +290,32 @@ flags, session replay).
   (`@sentry/elysia`), landing (`@sentry/nextjs`) et mobile (`@sentry/react-native`),
   région EU, scrub PII mineurs testé.
 - **PostHog : ⬜ à installer** (chantier séparé) — la landing n'a toujours aucune
-  analytics (écart avec les règles marketing privacy-first). À câbler au plus tard
-  pendant le Lot 5 (le pilote web a besoin de télémétrie pour le go/no-go).
+  analytics (écart avec les règles marketing privacy-first).
 
 ### 7.3 Environnements & CI
 
 - Dev : Docker (Postgres) + `pnpm dev` (landing 3001, server 3000, Expo 8081,
   ai-service 8001). `pnpm doctor:e2e` = diagnostic strict (toute dépendance réelle doit
-  répondre, SKIP/degraded = échec). Qdrant Cloud partagé dev/prod (pas d'instance locale).
+  répondre, SKIP/degraded = échec). `docker-compose.yml` embarque un Qdrant local que
+  `pnpm dev` attend, mais le serveur ne vise un index que si `QDRANT_URL` est renseignée —
+  vide par défaut, l'index de référence étant Qdrant Cloud, partagé dev et prod (cf. `README.md`).
 - CI : lint + typecheck (`--max-warnings 0`), tests unitaires + intégration server
   (gating), E2E Maestro en preview Android sur PR (signal, pas gate).
 - Git : `main` seule branche permanente, branches courtes, merge commit uniquement.
 
-## 8. État vs cible
+## 8. Écarts ouverts
 
-Seule section à mettre à jour à chaque merge de lot.
+Ce qui est décidé mais pas construit. Les lots déjà livrés ne figurent plus ici :
+leur trace est dans l'historique git et les PR citées.
 
-| # | Écart existant → cible | Lot | Statut |
-|---|------------------------|-----|--------|
-| 1 | Scoring RAG/flashcards cassés → gate `hasValidResults`, rangs | 1 | ✅ mergé (#262) |
-| 2 | Deps sécu (Better Auth 1.6.23) | 2 | ✅ mergé (#265) |
-| 3 | ai-service avec rerank + risque OOM → embed-only FP16 | 3 | ✅ mergé (#266) |
-| 4 | SSE maison + 2 parseurs dupliqués → Vercel AI SDK (serveur puis clients) | 4 | ✅ mergé (#268) |
-| 5 | `apps/mobile` natif seul → `apps/app` universelle (web Expo + renommage) | 5 | ⬜ à faire (ADR + plan écrits) — `apps/web` déjà supprimée (2026-07-06, hardening lot 8) |
-| 6 | Orphelins d'index à l'update → delete-by-`source_file`, `payload.section` | 6 | ⬜ à faire |
-| 7 | RAG au bon vouloir du modèle → `toolChoice` forcé sur intent scolaire | 7 | ⬜ à faire |
-| 8 | Zéro observabilité → Sentry + PostHog EU (dont analytics landing) | — | 🔶 Sentry ✅ (hardening 2026-07-06, #272-279) ; PostHog ⬜ (au plus tard pendant Lot 5) |
+| Écart | Décidé par | État au 2026-08-23 |
+|-------|-----------|--------------------|
+| `apps/mobile` est natif seul ; la cible web (react-native-web) n'est pas activée, et le renommage `apps/mobile` → `apps/app` n'a pas eu lieu | ADR 0001 | ⬜ non démarré. `apps/web` a été supprimée le 2026-07-06 sans attendre la parité, donc il n'y a aujourd'hui **aucun produit web** — seulement la landing. Point dur identifié : cookies cross-origin Better Auth sur Expo web |
+| Réindexation du corpus : pas de `delete-by-source_file`, donc des points orphelins survivent à une mise à jour ; `payload.section` n'est pas renseigné | audit 2026-07-01 (lot 6) | ⬜ non démarré |
+| Le RAG dépend du bon vouloir du modèle : pas de `toolChoice` forcé sur intention scolaire | audit 2026-07-01 (lot 7) | ⬜ non démarré |
+| Aucune analytics installée — la landing n'a aucune télémétrie produit | règles marketing privacy-first | ⬜ non démarré. Sentry couvre les erreurs (server, landing, mobile, région EU) mais pas l'usage. Cible : PostHog EU |
+| A/B `Modifier.IDF` on/off jamais mené sur le retrieval sparse | audit 2026-07-01 | ⬜ non démarré |
 
-Après cutover Lot 5 : réconcilier ce doc (renommages `apps/app`), le `CLAUDE.md` racine
-et supprimer les specs web supersedées (Phase 4 du plan de migration).
+Mettre cette section à jour à chaque merge qui ferme ou ouvre un écart. Quand un écart
+se ferme, le retirer d'ici — ne pas le convertir en ligne « ✅ » : le corps du document
+décrit alors la réalité, ce qui suffit.

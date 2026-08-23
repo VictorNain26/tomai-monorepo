@@ -1,9 +1,10 @@
 # Design system Tom — contrat des deux surfaces
 
-Source de vérité du design unifié entre `apps/landing` (DOM) et l'app
-universelle Expo (`apps/mobile` — natif aujourd'hui, cible web produit + mobile
-au Lot 5). `apps/web` a été supprimée (ADR 0001, chapitre web fermé).
-Spec d'origine : `2026-07-05-design-system-unifie-design.md` (supprimée, historique git).
+Source de vérité du design unifié entre `apps/landing` (DOM) et `apps/mobile`
+(Expo, natif aujourd'hui ; la cible web est décidée mais non activée, cf.
+`docs/architecture/system-design.md` §8). `apps/web` a été supprimée
+(ADR 0001, chapitre web fermé). Spec d'origine :
+`2026-07-05-design-system-unifie-design.md`, supprimée — disponible dans l'historique git.
 
 ## Règle zéro : tout passe par `@repo/tokens`
 
