@@ -108,6 +108,7 @@ Les variables ci-dessous peuplent la DB avec des comptes de test locaux (`pnpm s
 
 | Variable | Valeur (défaut) | Usage |
 |----------|-----------------|-------|
+| `SEED_PARENT_EMAIL` | `dev.parent@tomai.local` | Login parent Tomia web |
 | `SEED_PARENT_PASSWORD` | `DevParent123!` | Login parent Tomia web |
 | `SEED_CHILD_USERNAME` | `dev.eleve` | Login enfant Tomia (accès autonome) |
 | `SEED_CHILD_PASSWORD` | `DevEleve123!` | Login enfant Tomia (accès autonome) |
