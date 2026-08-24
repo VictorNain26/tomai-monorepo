@@ -7,7 +7,6 @@
  * CCA Sprint 1 safety: structured tool errors.
  */
 
-import { ragService } from '../rag.service.js';
 import { generateCards, type CardGenerationResult } from '../learning/card-generator.service.js';
 import { learningService } from '../learning/learning.service.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
@@ -48,17 +47,9 @@ export function isDeckCreatedResult(value: unknown): value is DeckCreatedToolRes
   );
 }
 
-/** Tools that make network calls and benefit from a single retry */
-const RETRYABLE_TOOLS = new Set([
-  'search_educational_content',
-]);
-
-const RETRY_DELAY_MS = 1500;
-
 /**
  * Execute un outil et retourne le résultat structuré.
  * Ne throw jamais — les erreurs sont encapsulées dans ToolResult.
- * Les outils réseau (RAG) bénéficient d'1 retry automatique.
  * CCA Sprint 1 safety: structured ToolResult<T> | ToolError.
  */
 export async function executeTool(
@@ -77,49 +68,18 @@ export async function executeTool(
   try {
     return await executeToolOnce(toolName, args, context);
   } catch (error) {
-    // Retry once for network-dependent tools
-    if (RETRYABLE_TOOLS.has(toolName)) {
-      logger.warn('Tool execution failed, retrying once', {
-        operation: 'tool-executor:retry',
-        toolName,
-        userId: context.userId,
-        _error: error instanceof Error ? error.message : String(error),
-      });
-
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-
-      try {
-        return await executeToolOnce(toolName, args, context);
-      } catch (retryError) {
-        logger.error('Tool execution failed after retry', {
-          operation: 'tool-executor:retry-failed',
-          toolName,
-          userId: context.userId,
-          _error: retryError instanceof Error ? retryError.message : String(retryError),
-          durationMs: Date.now() - startTime,
-          severity: 'high' as const,
-        });
-        // Transient error: rate limit, timeout, 5xx — safe to retry.
-        return makeToolError(
-          'transient',
-          `${toolName} failed after retry. The AI can safely retry this request.`,
-        );
-      }
-    } else {
-      logger.error('Tool execution failed', {
-        operation: 'tool-executor:error',
-        toolName,
-        userId: context.userId,
-        _error: error instanceof Error ? error.message : String(error),
-        durationMs: Date.now() - startTime,
-        severity: 'high' as const,
-      });
-      // Non-transient error: assume business logic failure.
-      return makeToolError(
-        'business',
-        `Erreur lors de l'exécution de ${toolName}. Indique à l'élève que tu n'as pas pu vérifier dans les programmes officiels.`,
-      );
-    }
+    logger.error('Tool execution failed', {
+      operation: 'tool-executor:error',
+      toolName,
+      userId: context.userId,
+      _error: error instanceof Error ? error.message : String(error),
+      durationMs: Date.now() - startTime,
+      severity: 'high' as const,
+    });
+    return makeToolError(
+      'business',
+      `Erreur lors de l'exécution de ${toolName}.`,
+    );
   }
 }
 
@@ -130,9 +90,6 @@ async function executeToolOnce(
   context: ToolExecutionContext
 ): Promise<object> {
   switch (toolName) {
-    case 'search_educational_content':
-      return await executeRagSearch(args, context);
-
     case 'generate_flashcards':
       return await executeGenerateFlashcards(args, context);
 
@@ -154,51 +111,6 @@ async function executeToolOnce(
 // TOOL IMPLEMENTATIONS
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function executeRagSearch(
-  args: Record<string, unknown>,
-  context: ToolExecutionContext,
-): Promise<object> {
-  const startTime = Date.now();
-  const query = typeof args.query === 'string' ? args.query : '';
-  // Fall back to the student's actual level (never a hardcoded '6eme', which is
-  // not even a valid curriculum value and silently matches zero points). Omit
-  // the matiere filter when unspecified rather than forcing a 'general' that
-  // matches nothing — the student studies every subject.
-  const niveau = typeof args.niveau === 'string' ? (args.niveau as EducationLevelType) : context.schoolLevel;
-  const matiere = typeof args.matiere === 'string' ? args.matiere : undefined;
-  const limit = typeof args.limit === 'number' ? args.limit : 5;
-
-  const isAvailable = await ragService.isAvailable();
-  if (!isAvailable) {
-    return makeToolError(
-      'transient',
-      'Le service de recherche est temporairement indisponible. Indique à l\'élève que tu ne peux pas vérifier dans les programmes officiels actuellement.',
-    );
-  }
-
-  const result = await ragService.hybridSearch({
-    query,
-    niveau,
-    matiere,
-    limit,
-    auditUserId: context.userId,
-    auditSessionId: context.sessionId,
-  });
-
-  // averageScore/per-chunk RRF scores are intentionally left out: they are the
-  // input to wrapCurriculumToolResult, which strips them so no rank artefact
-  // (~0.016) reaches the LLM as if it were a similarity/confidence signal.
-  return {
-    found: result.semanticChunks.length > 0,
-    context: result.context,
-    resultsCount: result.semanticChunks.length,
-    bestMatchSection: result.bestMatchSection,
-    bestMatchMatiere: result.bestMatchMatiere,
-    chunks: result.semanticChunks,
-    searchTimeMs: Date.now() - startTime,
-  };
-}
-
 async function executeGenerateFlashcards(
   args: Record<string, unknown>,
   context: ToolExecutionContext
@@ -212,34 +124,10 @@ async function executeGenerateFlashcards(
   const requestedCount = typeof args.cardCount === 'number' ? args.cardCount : 5;
   const cardCount = Math.min(Math.max(requestedCount, 3), maxChatCards);
 
-  // Fetch RAG context for the flashcard topic
-  let ragContext = '';
-  const isAvailable = await ragService.isAvailable();
-  if (isAvailable) {
-    try {
-      const ragResult = await ragService.hybridSearch({
-        query: topic,
-        niveau: context.schoolLevel,
-        matiere: subject,
-        limit: 3,
-        auditUserId: context.userId,
-        auditSessionId: context.sessionId,
-      });
-      ragContext = ragResult.context;
-    } catch (err) {
-      logger.warn('RAG unavailable for flashcards, continuing without context', {
-        operation: 'tool-executor:flashcards-rag',
-        _error: err instanceof Error ? err.message : String(err),
-        userId: context.userId,
-      });
-    }
-  }
-
   const result = await generateCards({
     topic,
     subject,
     level: context.schoolLevel,
-    ragContext,
     cardCount,
   });
 

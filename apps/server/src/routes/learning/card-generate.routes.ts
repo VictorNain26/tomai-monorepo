@@ -1,7 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
 import { logger } from '../../lib/observability';
-import { ragService } from '../../services/rag.service';
 import { checkQuota, checkDeckQuota, incrementDeckUsage } from '../../services/token-quota.service';
 import { getLevelConfig } from '../../config/learning-config.js';
 import {
@@ -9,7 +8,7 @@ import {
   isGenerationError,
 } from '../../services/learning/index';
 import { learningService } from '../../services/learning/learning.service';
-import { getUserLevel, evaluateRagGate } from './helpers';
+import { getUserLevel } from './helpers';
 
 export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
   .use(authMacro)
@@ -68,57 +67,6 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           level,
         });
 
-        const ragResult = await ragService.hybridSearch({
-          query: `${searchQuery} ${subject}`,
-          niveau: level,
-          matiere: subject,
-          limit: 20,
-        });
-
-        logger.info('RAG context retrieved', {
-          operation: 'learning:generate:rag',
-          userId: user.id,
-          strategy: ragResult.strategy,
-          chunksFound: ragResult.semanticChunks.length,
-          avgSimilarity: ragResult.averageSimilarity.toFixed(3),
-        });
-
-        const gate = evaluateRagGate(ragResult);
-
-        if (!gate.ok) {
-          const isRagDisabled = gate.reason === 'rag_disabled';
-          const errorReason = isRagDisabled
-            ? 'Service RAG temporairement indisponible'
-            : isFullDomaineMode
-              ? 'Domaine non trouvé dans ton programme'
-              : 'Thème non trouvé dans ton programme';
-
-          logger.warn('RAG validation failed - cannot generate without official context', {
-            operation: 'learning:generate:rag-validation-failed',
-            userId: user.id, subject, domaine,
-            topic: topic ?? null,
-            mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
-            level,
-            reason: gate.reason,
-            chunksFound: ragResult.semanticChunks.length,
-          });
-          return status(gate.httpStatus, {
-            error: errorReason,
-            message: isRagDisabled
-              ? 'Le service de programmes officiels est temporairement indisponible. Réessaie dans quelques minutes.'
-              : `Je n'ai pas trouvé "${searchQuery}" dans le programme de ${subject} pour ton niveau. Cela peut arriver si le thème n'est pas au programme ou si l'orthographe est différente.`,
-            suggestions: isRagDisabled
-              ? ['Réessaie dans quelques minutes']
-              : [
-                  'Vérifie l\'orthographe du thème',
-                  'Essaie avec des mots-clés plus simples',
-                  'Choisis un chapitre de ton livre scolaire',
-                ],
-            code: isRagDisabled ? 'RAG_SERVICE_UNAVAILABLE' : 'TOPIC_NOT_IN_CURRICULUM',
-            level, subject,
-          });
-        }
-
         const levelConfig = getLevelConfig(level);
         const cardCount = isFullDomaineMode
           ? levelConfig.cardsPerSession
@@ -133,7 +81,6 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
 
         const generationResult = await generateCards({
           topic: searchQuery, subject, level,
-          ragContext: ragResult.context,
           cardCount, domaine,
         });
 
@@ -151,9 +98,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
 
         const generatedCards = generationResult.cards;
 
-        const deckTitle = isFullDomaineMode
-          ? domaine
-          : (ragResult.bestMatchSection ?? topic ?? domaine);
+        const deckTitle = isFullDomaineMode ? domaine : (topic ?? domaine);
         const deckDescription = isFullDomaineMode
           ? `Révision complète du domaine "${domaine}" - ${generatedCards.length} cartes`
           : `Cartes sur "${topic}" (${domaine})`;
@@ -164,7 +109,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
             title: deckTitle,
             description: deckDescription,
             subject,
-            source: 'rag_program',
+            source: 'prompt',
             sourcePrompt: isFullDomaineMode ? domaine : topic,
             schoolLevel: level,
           },
@@ -189,7 +134,6 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           deck: newDeck,
           cards: insertedCards,
           metadata: {
-            ragStrategy: ragResult.strategy,
             tokensUsed: generationResult.tokensUsed,
             decksRemainingToday: deckUsage.decksRemainingToday,
             decksRemainingThisMonth: deckUsage.decksRemainingThisMonth,

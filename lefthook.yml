@@ -24,16 +24,6 @@ pre-commit:
       glob: "**/*.{ts,tsx}"
       run: pnpm exec eslint --max-warnings 0 {staged_files}
 
-    - name: lint-ai-service
-      root: "apps/ai-service/"
-      glob: "**/*.py"
-      run: uv run ruff check {staged_files} && uv run ruff format --check {staged_files}
-
-    - name: lint-curriculum
-      root: "apps/curriculum/"
-      glob: "**/*.py"
-      run: uv run ruff check {staged_files} && uv run ruff format --check {staged_files}
-
     - name: typecheck
       run: pnpm turbo run typecheck --affected --output-logs=errors-only
 

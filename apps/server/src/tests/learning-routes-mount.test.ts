@@ -5,9 +5,9 @@
  * mounted as SIBLINGS in routes/learning/index.ts. Nesting two same-prefix
  * Elysia instances via `.use()` stacks the prefix and produces
  * `/api/learning/api/learning/...` — a 404 on the real paths (the original bug
- * that shipped subjects/topics/chapters/generate at doubled paths).
+ * that shipped subjects/generate at doubled paths).
  *
- * We mock the load-time-heavy boundaries (env, db, auth, AI/RAG/quota services)
+ * We mock the load-time-heavy boundaries (env, db, auth, AI/quota services)
  * so we can import the real barrel and assert on the registered paths.
  */
 
@@ -66,8 +66,6 @@ describe('learning route mounting', () => {
   it('exposes the discovery + generate endpoints at the single-prefix path', () => {
     for (const expected of [
       '/api/learning/subjects',
-      '/api/learning/topics',
-      '/api/learning/chapters',
       '/api/learning/generate',
       '/api/learning/decks',
       '/api/learning/review',

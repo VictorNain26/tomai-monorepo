@@ -136,7 +136,7 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
 
   // GET /health is mounted below via apiRoutes (routes/api/health.routes.ts) —
   // it is the single canonical health endpoint (Dockerfile HEALTHCHECK target),
-  // with real dependency checks (database, cache, ai-service, qdrant).
+  // with real dependency checks (database, cache).
 
   // Diagnostic AI endpoint - probes the actual Mistral API with a tiny call.
   // Separated from /health so the main health response stays cheap and

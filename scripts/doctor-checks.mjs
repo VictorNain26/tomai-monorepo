@@ -11,8 +11,6 @@ import { join } from 'node:path';
 // ─── SKIP helper ────────────────────────────────────────────────────────────
 
 export const SKIP = Symbol.for('doctor.skip');
-/** Lève une erreur SKIP : check non applicable, affiché mais non-FAIL. */
-export function skip(reason) { const e = new Error(reason); e[SKIP] = true; return e; }
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -51,12 +49,8 @@ export function loadConfig({
   const env = (key) => processEnv[key] ?? serverEnv[key];
 
   return {
-    qdrantUrl:       env('QDRANT_URL')         ?? 'http://localhost:6333',
-    aiServiceUrl:    env('AI_SERVICE_URL')      ?? 'http://localhost:8001',
-    aiServiceToken:  env('AI_SERVICE_TOKEN'),
     serverUrl:       env('SERVER_HEALTH_URL')    ?? 'http://localhost:3000',
     dbUrl:           env('DATABASE_URL'),
-    qdrantApiKey:    env('QDRANT_API_KEY'),
     pgContainer:     env('PG_CONTAINER')        ?? 'tomai-postgres-dev',
     composeFile:     join(rootDir, 'docker-compose.yml'),
     mistralKey:      env('MISTRAL_API_KEY'),
@@ -112,7 +106,7 @@ export function defaultExec(cmd, args) {
 
 // ─── Check implementations ───────────────────────────────────────────────────
 
-const REQUIRED_SERVICES = ['postgres', 'qdrant', 'ai-service'];
+const REQUIRED_SERVICES = ['postgres'];
 
 function checkDockerDaemon(ctx) {
   return { name: 'docker daemon', run: async () => {
@@ -132,40 +126,6 @@ function checkContainers(ctx) {
       if (!row) throw new Error(`service '${svc}' absent (pas démarré) — lance 'pnpm dev' ou 'docker compose up -d'`);
       if (row.Health && row.Health !== 'healthy') throw new Error(`service '${svc}' non healthy (Health='${row.Health}')`);
       if (row.State !== 'running') throw new Error(`service '${svc}' non running (State='${row.State}')`);
-    }
-  }};
-}
-
-function checkQdrantHealthz(ctx) {
-  return { name: 'qdrant /healthz', run: async () => {
-    const url = `${ctx.config.qdrantUrl}/healthz`;
-    let res;
-    try {
-      // Qdrant Cloud secures /healthz once an API key is set: an unauthenticated
-      // probe returns 403. Send the api-key header (same as every other Qdrant
-      // call here) so the check validates reachability AND a valid key — a wrong
-      // key must fail the doctor, not slip through an unauthenticated probe.
-      res = await ctx.fetchFn(url, { headers: qdrantHeaders(ctx) });
-    } catch (e) {
-      throw new Error(`qdrant ${url} injoignable (${e.cause?.code ?? e.message})`);
-    }
-    if (!res.ok) throw new Error(`qdrant ${url} -> HTTP ${res.status}`);
-  }};
-}
-
-function checkAiServiceHealth(ctx) {
-  return { name: 'ai-service /health (modèle embed chargé)', run: async () => {
-    const url = `${ctx.config.aiServiceUrl}/health`;
-    let res;
-    try {
-      res = await ctx.fetchFn(url, {});
-    } catch (e) {
-      throw new Error(`ai-service ${url} injoignable (${e.cause?.code ?? e.message})`);
-    }
-    if (!res.ok) throw new Error(`ai-service ${url} -> HTTP ${res.status}`);
-    const body = await res.json();
-    if (body.embed_loaded !== true) {
-      throw new Error(`modèle non chargé (status='${body.status}', embed=${body.embed_loaded})`);
     }
   }};
 }
@@ -197,74 +157,6 @@ function checkMigrations(ctx) {
   }};
 }
 
-// ─── RAG roundtrip check ─────────────────────────────────────────────────────
-
-const SMOKE_COLLECTION = '_doctor_smoke';
-
-function qdrantHeaders(ctx) {
-  const h = { 'Content-Type': 'application/json' };
-  if (ctx.config.qdrantApiKey) h['api-key'] = ctx.config.qdrantApiKey;
-  return h;
-}
-
-function checkRagRoundtrip(ctx) {
-  return { name: 'roundtrip RAG réel (embed → qdrant → search)', run: async () => {
-    if (!ctx.config.aiServiceToken) throw new Error('AI_SERVICE_TOKEN absent — roundtrip RAG impossible (renseigne apps/server/.env)');
-    const { qdrantUrl, aiServiceUrl, aiServiceToken } = ctx.config;
-
-    // 1. embed réel
-    const emb = await ctx.fetchFn(`${aiServiceUrl}/embed`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${aiServiceToken}` },
-      body: JSON.stringify({ texts: ['doctor smoke test'] }),
-    });
-    if (!emb.ok) throw new Error(`embed -> HTTP ${emb.status}`);
-    const dense = (await emb.json())?.embeddings?.[0]?.dense;
-    if (!Array.isArray(dense) || dense.length === 0) throw new Error('embed: dense vide ou absent');
-
-    const base = `${qdrantUrl}/collections/${SMOKE_COLLECTION}`;
-    try {
-      // 2. (re)create collection jetable, dim = taille du dense réel
-      await ctx.fetchFn(base, { method: 'DELETE', headers: qdrantHeaders(ctx) }); // idempotence si résidu
-      const created = await ctx.fetchFn(base, { method: 'PUT', headers: qdrantHeaders(ctx),
-        body: JSON.stringify({ vectors: { size: dense.length, distance: 'Cosine' } }) });
-      if (!created.ok) throw new Error(`create collection -> HTTP ${created.status}`);
-
-      // 3. upsert
-      const up = await ctx.fetchFn(`${base}/points?wait=true`, { method: 'PUT', headers: qdrantHeaders(ctx),
-        body: JSON.stringify({ points: [{ id: 1, vector: dense }] }) });
-      if (!up.ok) throw new Error(`upsert -> HTTP ${up.status}`);
-
-      // 4. search
-      const se = await ctx.fetchFn(`${base}/points/search`, { method: 'POST', headers: qdrantHeaders(ctx),
-        body: JSON.stringify({ vector: dense, limit: 1 }) });
-      if (!se.ok) throw new Error(`search -> HTTP ${se.status}`);
-      const hits = (await se.json())?.result ?? [];
-      if (hits.length === 0 || hits[0].id !== 1) throw new Error('search: le point upserté n\'est pas revenu');
-    } finally {
-      // 5. cleanup (toujours, même en cas d'échec partiel)
-      await ctx.fetchFn(base, { method: 'DELETE', headers: qdrantHeaders(ctx) }).catch(() => {});
-    }
-  }};
-}
-
-// ─── Server curriculum-health check ─────────────────────────────────────────
-
-function checkServerRagHealth(ctx) {
-  return { name: 'server /curriculum-health (si lancé)', run: async () => {
-    let res;
-    try {
-      res = await ctx.fetchFn(`${ctx.config.serverUrl}/curriculum-health`, {});
-    } catch (e) {
-      throw skip(`server non joignable sur ${ctx.config.serverUrl} (${e.cause?.code ?? e.code ?? e.message})`);
-    }
-    if (res.status === 404) throw skip('route /curriculum-health non exposée (garde dev)');
-    if (!res.ok) throw new Error(`server /curriculum-health -> HTTP ${res.status} (server joignable mais en erreur)`);
-    const body = await res.json();
-    if (body.status !== 'healthy') throw new Error(`RAG dégradé côté server (qdrant=${body.qdrant}, aiService=${body.aiService})`);
-  }};
-}
-
 // ─── Mistral chat check (e2e only) ───────────────────────────────────────────
 
 // Preuve réelle du chemin LLM : un chat completion 1 token sur le modèle le
@@ -293,18 +185,16 @@ function checkMistralReal(ctx) {
 
 /**
  * Construit la liste des checks. full=false -> sous-ensemble infra (pour le fail-fast `dev`).
- * full=true -> ajoute migrations, roundtrip RAG, server health.
- * e2e=true -> ajoute le check mistral-key (SKIP interdit en mode strict).
+ * full=true -> ajoute les migrations.
+ * e2e=true -> ajoute le check mistral réel (SKIP interdit en mode strict).
  */
 export function buildChecks(ctx, { full, e2e } = { full: true }) {
   const infra = [
     checkDockerDaemon(ctx),
     checkContainers(ctx),
-    checkQdrantHealthz(ctx),
-    checkAiServiceHealth(ctx),
   ];
   if (!full) return infra;
-  const fullChecks = [...infra, checkMigrations(ctx), checkRagRoundtrip(ctx), checkServerRagHealth(ctx)];
+  const fullChecks = [...infra, checkMigrations(ctx)];
   if (!e2e) return fullChecks;
   return [...fullChecks, checkMistralReal(ctx)];
 }

@@ -1,36 +1,20 @@
 /**
  * Tests anti-régression — tool-declarations.ts
  *
- * Vérifie que les outils RAG exposent un enum non vide sur les champs
- * matiere/subject, et que les contraintes numériques sont présentes.
+ * Vérifie que les outils exposent un enum non vide sur le champ subject,
+ * et que les contraintes numériques sont présentes.
  * Entièrement déterministe (zéro mock réseau).
  */
 
 import { describe, it, expect } from 'bun:test';
-import { agentTools, RAG_SUBJECTS } from '../services/chat/tool-declarations';
+import { agentTools, SUBJECT_SLUGS } from '../services/chat/tool-declarations';
 
-describe('RAG_SUBJECTS', () => {
+describe('SUBJECT_SLUGS', () => {
   it('exporte 13 slugs non vides', () => {
-    expect(RAG_SUBJECTS.length).toBe(13);
-    for (const slug of RAG_SUBJECTS) {
+    expect(SUBJECT_SLUGS.length).toBe(13);
+    for (const slug of SUBJECT_SLUGS) {
       expect(slug.length).toBeGreaterThan(0);
     }
-  });
-});
-
-describe('search_educational_content', () => {
-  const tool = agentTools.find(t => t.function.name === 'search_educational_content');
-
-  it('existe dans agentTools', () => {
-    expect(tool).toBeDefined();
-  });
-
-  it('matiere expose un enum identique à RAG_SUBJECTS', () => {
-    const props = tool!.function.parameters.properties as Record<string, unknown>;
-    const matiereProp = props['matiere'] as { enum?: unknown[] };
-    expect(Array.isArray(matiereProp.enum)).toBe(true);
-    expect(matiereProp.enum!.length).toBe(RAG_SUBJECTS.length);
-    expect(matiereProp.enum).toEqual([...RAG_SUBJECTS]);
   });
 });
 
@@ -41,12 +25,12 @@ describe('generate_flashcards', () => {
     expect(tool).toBeDefined();
   });
 
-  it('subject expose un enum identique à RAG_SUBJECTS', () => {
+  it('subject expose un enum identique à SUBJECT_SLUGS', () => {
     const props = tool!.function.parameters.properties as Record<string, unknown>;
     const subjectProp = props['subject'] as { enum?: unknown[] };
     expect(Array.isArray(subjectProp.enum)).toBe(true);
-    expect(subjectProp.enum!.length).toBe(RAG_SUBJECTS.length);
-    expect(subjectProp.enum).toEqual([...RAG_SUBJECTS]);
+    expect(subjectProp.enum!.length).toBe(SUBJECT_SLUGS.length);
+    expect(subjectProp.enum).toEqual([...SUBJECT_SLUGS]);
   });
 
   it('cardCount a minimum:3 et maximum:10', () => {

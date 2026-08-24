@@ -1,19 +1,12 @@
 /**
- * GenAI + Vector DB span helpers — OpenTelemetry semconv (Development for
- * `gen_ai.*`, stable for `db.*`).
- *
- * Two thin wrappers:
+ * GenAI span helper — OpenTelemetry semconv (Development for `gen_ai.*`).
  *
  *   withGenAiSpan({ operation, model, request }, fn)
  *     — wraps a Mistral / Anthropic / OpenAI-shaped call. The fn returns a
  *       response that may carry usage + finish_reasons + id; we mirror those
  *       on the span as `gen_ai.response.*` and `gen_ai.usage.*`.
  *
- *   withDbSpan({ system, operation, collection }, fn)
- *     — wraps a vector DB call (Qdrant / pgvector). Stable `db.*` attribute
- *       namespace; uses `db.query.summary` as the span name format.
- *
- * Both swallow the tracer error path (`recordException` + ERROR status) but
+ * It swallows the tracer error path (`recordException` + ERROR status) but
  * always re-throw — observability never changes program behaviour.
  *
  * `gen_ai.input.messages` / `gen_ai.output.messages` are deliberately NOT
@@ -43,11 +36,6 @@ const ATTR_GEN_AI_INPUT_MESSAGES = 'gen_ai.input.messages';
 const ATTR_GEN_AI_OUTPUT_MESSAGES = 'gen_ai.output.messages';
 const ATTR_SERVER_ADDRESS = 'server.address';
 
-const ATTR_DB_SYSTEM_NAME = 'db.system.name';
-const ATTR_DB_OPERATION_NAME = 'db.operation.name';
-const ATTR_DB_COLLECTION_NAME = 'db.collection.name';
-const ATTR_DB_QUERY_SUMMARY = 'db.query.summary';
-const ATTR_DB_RESPONSE_RETURNED_ROWS = 'db.response.returned_rows';
 
 type GenAiOperation = 'chat' | 'embeddings' | 'text_completion' | 'execute_tool';
 
@@ -111,56 +99,6 @@ export async function withGenAiSpan<T>(
             span.setAttribute(ATTR_GEN_AI_USAGE_OUTPUT_TOKENS, facts.outputTokens);
           if (facts.captureOutput)
             span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, facts.captureOutput);
-        };
-        return await fn(recordResponse);
-      } catch (err) {
-        span.recordException(err as Error);
-        span.setStatus({
-          code: SpanStatusCode.ERROR,
-          message: err instanceof Error ? err.message : String(err),
-        });
-        throw err;
-      } finally {
-        span.end();
-      }
-    },
-  );
-}
-
-interface DbSpanInput {
-  /** Stable db.system.name — "qdrant", "postgresql", etc. */
-  system: string;
-  /** "search", "upsert", "delete", "scroll"... */
-  operation: string;
-  collection: string;
-  serverAddress?: string;
-}
-
-/**
- * Wrap a vector / SQL DB call. The fn receives a `recordResponse` callback
- * to post the returned row count once the query completes.
- */
-export async function withDbSpan<T>(
-  input: DbSpanInput,
-  fn: (record: (rows: number) => void) => Promise<T>,
-): Promise<T> {
-  const summary = `${input.operation} ${input.collection}`;
-  return tracer.startActiveSpan(
-    summary,
-    {
-      kind: SpanKind.CLIENT,
-      attributes: {
-        [ATTR_DB_SYSTEM_NAME]: input.system,
-        [ATTR_DB_OPERATION_NAME]: input.operation,
-        [ATTR_DB_COLLECTION_NAME]: input.collection,
-        [ATTR_DB_QUERY_SUMMARY]: summary,
-        ...(input.serverAddress && { [ATTR_SERVER_ADDRESS]: input.serverAddress }),
-      },
-    },
-    async (span) => {
-      try {
-        const recordResponse = (rows: number) => {
-          span.setAttribute(ATTR_DB_RESPONSE_RETURNED_ROWS, rows);
         };
         return await fn(recordResponse);
       } catch (err) {

@@ -19,7 +19,7 @@ verified it — say so explicitly instead of asserting success.
 ## Server (apps/server)
 
 ```bash
-docker compose up -d postgres qdrant ai-service
+docker compose up -d postgres
 cd apps/server && bun run dev &   # host, :3000 — NOT the `backend` compose profile
 curl -sS http://localhost:3000/health | python3 -m json.tool
 ```
@@ -30,7 +30,7 @@ e.g. `MISTRAL_API_KEY` absent in a minimal local `.env`). `"unhealthy"` is a
 failure, full stop.
 
 Then run the strict end-to-end doctor from the repo root — it fails loud
-(no SKIP/degraded silently accepted) on every real dependency:
+(no SKIP silently accepted) on every real dependency:
 
 ```bash
 pnpm doctor:e2e

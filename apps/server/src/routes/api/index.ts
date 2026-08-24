@@ -1,5 +1,5 @@
 import { Elysia } from 'elysia';
-import { healthApiRoutes, apiHealthRoutes } from './health.routes';
+import { apiHealthRoutes } from './health.routes';
 import { chatSessionApiRoutes } from './chat-session.routes';
 import { parentApiRoutes } from './parent.routes';
 import { educationApiRoutes } from './education.routes';
@@ -10,7 +10,6 @@ import { studentApiRoutes } from './student.routes';
 
 export const apiRoutes = new Elysia({ name: 'api-routes' })
 
-  .use(healthApiRoutes)
   // Mounted at root (not under /api): GET /health is the single canonical
   // health endpoint, polled by the Dockerfile HEALTHCHECK.
   .use(apiHealthRoutes)

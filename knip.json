@@ -9,7 +9,6 @@
         "scripts/**/*.mjs"
       ],
       "ignoreBinaries": [
-        "uv",
         "eslint"
       ]
     },

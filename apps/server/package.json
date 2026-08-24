@@ -46,7 +46,6 @@
     "db:check": "bun --bun drizzle-kit check",
     "db:pull": "bun --bun drizzle-kit pull --config=drizzle.config.ts",
     "db:health": "bun -e \"import('./src/db/connection.js').then(m => m.healthCheck()).then(console.log)\"",
-    "rag:cache:invalidate": "bun run src/scripts/invalidate-cache.ts",
     "seed": "bun run src/scripts/seed-dev.ts"
   },
   "dependencies": {
@@ -63,7 +62,6 @@
     "@opentelemetry/sdk-node": "^0.218.0",
     "@opentelemetry/sdk-trace-base": "^2.7.1",
     "@opentelemetry/semantic-conventions": "^1.41.1",
-    "@qdrant/js-client-rest": "^1.18.0",
     "@sentry/elysia": "10.63.0",
     "@sinclair/typebox": "^0.34.0",
     "ai": "7.0.15",

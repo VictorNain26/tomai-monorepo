@@ -3,7 +3,7 @@
  *
  * Fetches subjects, token usage, and recent sessions for student dashboard.
  * Subject metadata (name, description, emoji, color) is enriched client-side
- * since backend RAG only returns { key, ragAvailable }.
+ * since the backend only returns { key, available }.
  */
 
 import { useQuery } from '@tanstack/react-query';

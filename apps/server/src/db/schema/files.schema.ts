@@ -47,7 +47,7 @@ export const files = pgTable('files', {
 
   // Contexte éducatif (résultat d'analyse)
   educationalContext: jsonb('educational_context').default(sql`'{}'::jsonb`),
-  // Structure: { analysisContext, extractedText, documentType, subject, hadRAG, classification, ragContext, metrics }
+  // Structure: { analysisContext, extractedText, documentType, subject, classification, metrics }
 
   // Statut et métadonnées
   status: fileStatusEnum('status').notNull().default('pending'),

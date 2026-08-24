@@ -88,20 +88,6 @@ const EnvSchema = z.object({
   // the AI SDK manages the tool loop as a single continuous stream.
   CHAT_STREAM_TIMEOUT_MS: z.coerce.number().int().default(120000),
 
-  // RAG — Qdrant Cloud + BGE-M3 embeddings via ai-service
-  QDRANT_URL: z.string().optional(),
-  QDRANT_API_KEY: z.string().optional(),
-  QDRANT_COLLECTION: z.string().default('tomai_educational'),
-  QDRANT_ENABLED: z.enum(['true', 'false']).default('false'),
-
-  // AI Service (BGE-M3 embeddings)
-  AI_SERVICE_URL: z.string().optional(),
-  AI_SERVICE_TOKEN: z.string().optional(),
-  // Borne le pire cas du chemin chat (embed query) : le client fait UN fetch par appel ;
-  // le retry vit dans chat/tool-executor.ts (1 retry, délai 1,5 s) → pire cas ≈ 2×8 s + 1,5 s.
-  // Le rerank (seul appel long) a été supprimé — audit 2026-07-01 lot 3.
-  AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().default(8000),
-
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(900000), // 15 min
   RATE_LIMIT_MAX_REQUESTS_API: z.coerce.number().int().default(100),
@@ -149,27 +135,6 @@ function parseEnv(): EnvType {
 
     if (!result.data.PRONOTE_ENCRYPTION_KEY) {
       prodChecks.push('PRONOTE_ENCRYPTION_KEY is required (production)');
-    }
-
-    if (result.data.AI_SERVICE_URL && !result.data.AI_SERVICE_TOKEN) {
-      prodChecks.push('AI_SERVICE_TOKEN is required when AI_SERVICE_URL is set (production)');
-    }
-
-    // RAG is a product requirement in production, not an optional degrade path:
-    // a boot with RAG unconfigured must fail loudly here, not surface as a
-    // silent "healthy" /health with checks.aiService/qdrant = not_configured.
-    if (!result.data.AI_SERVICE_URL) {
-      prodChecks.push('AI_SERVICE_URL is required (production) — RAG must be configured, not silently disabled');
-    }
-
-    if (result.data.QDRANT_ENABLED !== 'true') {
-      prodChecks.push('QDRANT_ENABLED must be "true" (production) — RAG must be configured, not silently disabled');
-    }
-
-    // Prod RAG runs on Qdrant Cloud, which is authenticated. Local dev Qdrant
-    // is keyless, so this requirement is production-only.
-    if (result.data.QDRANT_ENABLED === 'true' && !result.data.QDRANT_API_KEY) {
-      prodChecks.push('QDRANT_API_KEY is required when QDRANT_ENABLED=true (production)');
     }
 
     if (prodChecks.length > 0) {

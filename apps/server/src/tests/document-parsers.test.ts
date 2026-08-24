@@ -113,7 +113,6 @@ describe('createErrorResult', () => {
     expect(result.classification.documentType).toBe('non-educatif');
     expect(result.classification.subject).toBe('inconnu');
     expect(result.classification.confidence).toBe('low');
-    expect(result.classification.needsRAG).toBe(false);
     expect(result.analysis).toBe('');
     expect(result.metrics.extractionTimeMs).toBe(200);
     expect(result.metrics.analysisTimeMs).toBe(0);

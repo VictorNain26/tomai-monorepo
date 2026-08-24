@@ -9,8 +9,7 @@ paths:
 
 # Design system — règles d'application
 
-Contrat complet : `docs/design/design-system.md`. Ici : ce qui s'applique à
-chaque PR touchant de l'UI.
+Ce qui s'applique à chaque PR touchant de l'UI.
 
 - **Tokens uniquement** : aucune couleur, durée, rayon ou taille littérale
   dans composants et écrans — classes utilitaires issues de `@repo/tokens`

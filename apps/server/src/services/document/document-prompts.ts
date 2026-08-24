@@ -10,7 +10,6 @@ const LEVEL_NAMES: Record<EducationLevelType, string> = {
 
 export function buildSystemPrompt(
   schoolLevel: EducationLevelType,
-  ragContext: string,
   userQuestion?: string
 ): string {
   const levelText = LEVEL_NAMES[schoolLevel] ?? schoolLevel;
@@ -38,15 +37,6 @@ Tu DOIS répondre UNIQUEMENT avec un JSON valide au format suivant:
 - Ton professionnel et bienveillant
 - Pour les exercices: guide par questions socratiques, NE DONNE PAS la solution directement
 - Pour les cours: explique les concepts clés avec exemples`;
-
-  if (ragContext) {
-    prompt += `
-
-## PROGRAMMES OFFICIELS (RÉFÉRENCE)
-${ragContext}
-
-**IMPORTANT**: Base ton analyse sur ces programmes officiels.`;
-  }
 
   if (userQuestion) {
     prompt += `

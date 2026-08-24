@@ -112,7 +112,6 @@ class FileContextService {
         extractedText?: string;
         documentType?: string;
         subject?: string;
-        hadRAG?: boolean;
       } | null;
 
       // Utiliser l'analyse en cache si disponible
@@ -123,7 +122,6 @@ class FileContextService {
           fileName: file.fileName,
           documentType: eduContext.documentType,
           subject: eduContext.subject,
-          hadRAG: eduContext.hadRAG
         };
       }
 
@@ -142,7 +140,6 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
           fileName: file.fileName,
           documentType: eduContext.documentType,
           subject: eduContext.subject,
-          hadRAG: eduContext.hadRAG
         };
       }
 
@@ -196,7 +193,6 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
           fileName: file.fileName,
           documentType: analysisResult.classification.documentType,
           subject: analysisResult.classification.subject,
-          hadRAG: !!analysisResult.rag?.found
         };
       }
 

@@ -13,11 +13,11 @@ function run(cmd, args) {
   }
 }
 
-console.log("[dev] démarrage de l'infra (postgres, qdrant, ai-service)…");
+console.log("[dev] démarrage de l'infra (postgres)…");
 run("docker", ["compose", "up", "-d"]);
 
-console.log("[dev] attente postgres + qdrant (healthy)…");
-run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "120", "postgres", "qdrant"]);
+console.log("[dev] attente postgres (healthy)…");
+run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "120", "postgres"]);
 
 console.log("[dev] vérification infra (fail-fast) avant de lancer les apps…");
 const ctx = { config: loadConfig(), exec: defaultExec, fetchFn: fetch };
@@ -27,7 +27,7 @@ if (infra.exitCode !== 0) {
   process.exit(1);
 }
 
-console.log("[dev] ai-service chauffe en arrière-plan ; lancement des apps (server, landing)…");
+console.log("[dev] lancement des apps (server, landing)…");
 const turbo = spawn("pnpm", ["exec", "turbo", "run", "dev", "--filter=!tom-mobile"], {
   stdio: "inherit",
 });

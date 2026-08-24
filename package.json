@@ -24,8 +24,6 @@
     "test": "turbo run test",
     "test:server": "turbo run test --filter=tomai-server",
     "test:mobile": "turbo run test --filter=tom-mobile",
-    "test:py": "cd apps/curriculum && uv run pytest -q",
-    "lint:py": "cd apps/curriculum && uv run ruff check . && uv run ruff format --check .",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "turbo run db:generate --filter=tomai-server",

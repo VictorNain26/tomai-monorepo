@@ -21,7 +21,6 @@ type GenerateDeckRequest = NonNullable<Parameters<LearningApi['generate']['post'
 export type GenerateDeckResponse = ResponseData<LearningApi['generate']['post']>;
 
 export type LearningSubject = ResponseData<LearningApi['subjects']['get']>['subjects'][number];
-type LearningDomaine = ResponseData<LearningApi['topics']['get']>['domaines'][number];
 
 /** School level accepted by the discovery endpoints (from the contract). */
 type LevelQuery = NonNullable<Parameters<LearningApi['subjects']['get']>[0]>['query'];
@@ -59,13 +58,6 @@ async function fetchSubjects(niveau: SchoolLevel): Promise<LearningSubject[]> {
     await getTreaty().api.learning.subjects.get({ query: { niveau } })
   );
   return subjects;
-}
-
-async function fetchTopics(matiere: string, niveau: SchoolLevel): Promise<LearningDomaine[]> {
-  const { domaines } = unwrap(
-    await getTreaty().api.learning.topics.get({ query: { matiere, niveau } })
-  );
-  return domaines;
 }
 
 async function generateDeck(data: GenerateDeckRequest): Promise<GenerateDeckResponse> {
@@ -109,15 +101,6 @@ export function useLearningSubjects(niveau: SchoolLevel) {
     queryKey: ['learning', 'subjects', niveau] as const,
     queryFn: () => fetchSubjects(niveau),
     enabled: !!niveau,
-    staleTime: 10 * 60 * 1000,
-  });
-}
-
-export function useLearningTopics(matiere: string, niveau: SchoolLevel) {
-  return useQuery({
-    queryKey: ['learning', 'topics', matiere, niveau] as const,
-    queryFn: () => fetchTopics(matiere, niveau),
-    enabled: !!matiere && !!niveau,
     staleTime: 10 * 60 * 1000,
   });
 }

@@ -326,8 +326,6 @@ export interface CardGenerationParams {
   subject: string;
   /** Niveau scolaire de l'élève */
   level: EducationLevelType;
-  /** Contexte RAG (programme officiel) */
-  ragContext: string;
   /** Nombre de cartes à générer */
   cardCount: number;
   /** Domaine parent optionnel pour contexte enrichi */

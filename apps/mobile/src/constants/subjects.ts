@@ -2,7 +2,7 @@
  * Subject Metadata - Donnees UI pour les matieres scolaires
  *
  * Source de verite frontend pour l'affichage (icon, color, description).
- * Le backend RAG retourne uniquement les cles des matieres disponibles.
+ * Le backend retourne uniquement les cles des matieres disponibles.
  */
 
 // =============================================================================
@@ -108,7 +108,7 @@ export function getSubjectStyles(color: SubjectColor) {
 }
 
 // =============================================================================
-// Subject Metadata (cles RAG backend)
+// Subject Metadata (cles backend)
 // =============================================================================
 
 export const SUBJECT_METADATA: Record<string, SubjectMetadata> = {

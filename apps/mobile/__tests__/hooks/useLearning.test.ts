@@ -15,7 +15,6 @@ import {
   useDeck,
   useGenerateDeck,
   useLearningSubjects,
-  useLearningTopics,
   type LearningDeck,
   type LearningCard,
   type GenerateDeckResponse,
@@ -69,9 +68,6 @@ function mockTreatyApi(overrides: Record<string, unknown>) {
         ),
         subjects: {
           get: jest.fn().mockResolvedValue({ data: { subjects: [] }, error: null }),
-        },
-        topics: {
-          get: jest.fn().mockResolvedValue({ data: { domaines: [] }, error: null }),
         },
         generate: {
           post: jest.fn().mockResolvedValue({ data: null, error: { status: 500, value: 'Error' } }),
@@ -191,7 +187,6 @@ describe('useGenerateDeck', () => {
       deck: mockDeck,
       cards: [mockCard],
       metadata: {
-        ragStrategy: 'hybrid',
         tokensUsed: 1500,
         decksRemainingToday: 3,
         decksRemainingThisMonth: 10,
@@ -313,79 +308,5 @@ describe('useLearningSubjects', () => {
     expect(result.current.fetchStatus).toBe('idle');
 
     queryClient.clear();
-  });
-});
-
-describe('useLearningTopics', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should fetch topics for subject and level', async () => {
-    const topicsGet = jest.fn().mockResolvedValueOnce({
-      data: {
-        matiere: 'mathematiques',
-        niveau: 'quatrieme',
-        domaines: [
-          {
-            domaine: 'Algèbre',
-            themes: ['Équations', 'Inéquations', 'Systèmes'],
-          },
-        ],
-        totalTopics: 3,
-      },
-      error: null,
-    });
-    mockGetTreaty.mockReturnValue({
-      api: {
-        learning: {
-          topics: { get: topicsGet },
-        },
-      },
-    } as unknown as ReturnType<typeof getTreaty>);
-
-    const { wrapper, queryClient } = createTestWrapper();
-    const { result } = renderHook(
-      () => useLearningTopics('mathematiques', 'quatrieme'),
-      { wrapper }
-    );
-
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(result.current.data).toHaveLength(1);
-    expect(result.current.data?.[0].domaine).toBe('Algèbre');
-    expect(result.current.data?.[0].themes).toHaveLength(3);
-
-    queryClient.clear();
-  });
-
-  it('should not fetch when matiere or niveau is empty', async () => {
-    mockTreatyApi({});
-    const treaty = mockGetTreaty();
-
-    const { wrapper: wrapper1, queryClient: qc1 } = createTestWrapper();
-    const { result: result1 } = renderHook(() => useLearningTopics('', 'quatrieme'), {
-      wrapper: wrapper1,
-    });
-    await act(async () => {
-      await Promise.resolve();
-    });
-    expect(result1.current.fetchStatus).toBe('idle');
-    qc1.clear();
-
-    const { wrapper: wrapper2, queryClient: qc2 } = createTestWrapper();
-    const { result: result2 } = renderHook(() => useLearningTopics('mathematiques', undefined), {
-      wrapper: wrapper2,
-    });
-    await act(async () => {
-      await Promise.resolve();
-    });
-    expect(result2.current.fetchStatus).toBe('idle');
-    qc2.clear();
-
-    // Neither partial-arg combination may reach the API.
-    expect(treaty.api.learning.topics.get).not.toHaveBeenCalled();
   });
 });

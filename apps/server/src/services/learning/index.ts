@@ -13,7 +13,6 @@
  *   topic: 'Proportionnalité',
  *   subject: 'Mathématiques',
  *   level: 'cinquieme',
- *   ragContext: '...',
  *   cardCount: 15
  * });
  *

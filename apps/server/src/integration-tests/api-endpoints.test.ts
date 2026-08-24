@@ -55,21 +55,12 @@ mock.module('../lib/auth', () => ({
   },
 }));
 
-// Config env — AI_SERVICE_URL/QDRANT_ENABLED mutable so /health degraded-path
-// tests can flip the ai-service/qdrant checks (routes/api/health.routes.ts,
-// mounted at root — see routes/api/index.ts).
-let aiServiceUrl: string | undefined = undefined;
 mock.module('../config/env', () => ({
   env: {
     NODE_ENV: 'test',
     MISTRAL_API_KEY: 'test-key',
     BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
     BETTER_AUTH_URL: 'http://localhost:3000',
-    get AI_SERVICE_URL() { return aiServiceUrl; },
-    AI_SERVICE_TOKEN: undefined,
-    QDRANT_ENABLED: 'false',
-    QDRANT_URL: undefined,
-    QDRANT_API_KEY: undefined,
   },
   isDevelopment: () => false,
   isProduction: () => true,
@@ -111,7 +102,7 @@ mock.module('../services/token-quota.service', () => ({
 // Retention purge — its real module pulls the Drizzle schemas, whose
 // `relations` import the partial drizzle-orm mock above doesn't provide.
 mock.module('../services/retention-purge.service', () => ({
-  purgeExpiredData: mock(async () => ({ episodesDeleted: 0, auditRowsDeleted: 0 })),
+  purgeExpiredData: mock(async () => ({ episodesDeleted: 0, profilesDeleted: 0 })),
   startRetentionPurgeScheduler: () => () => {},
 }));
 
@@ -253,7 +244,6 @@ import * as billingSchema from '../db/schema/billing.schema';
 import * as filesSchema from '../db/schema/files.schema';
 import * as learningToolsSchema from '../db/schema/learning-tools.schema';
 import * as notificationsSchema from '../db/schema/notifications.schema';
-import * as auditSchema from '../db/schema/audit.schema';
 mock.module('../db/schema', () => ({
   ...authSchema,
   ...learningSchema,
@@ -262,7 +252,6 @@ mock.module('../db/schema', () => ({
   ...filesSchema,
   ...learningToolsSchema,
   ...notificationsSchema,
-  ...auditSchema,
   // Override only the table used by the push-token route tested here
   devicePushTokens: { token: 'token', userId: 'userId' },
 }));
@@ -284,7 +273,6 @@ const { app } = await import('../app');
 
 beforeEach(() => {
   dbHealthy = true;
-  aiServiceUrl = undefined;
   authUser = null;
 });
 
@@ -310,26 +298,6 @@ describe('API Endpoints', () => {
       expect(data.status).toBe('healthy');
       expect(data.checks.database.status).toBe('healthy');
       expect(data.checks.cache.status).toBe('healthy');
-      expect(data.checks.aiService.status).toBe('not_configured');
-      expect(data.checks.qdrant.status).toBe('not_configured');
-    });
-
-    it('should return degraded (200) when ai-service is configured but unreachable', async () => {
-      aiServiceUrl = 'http://ai-service:8001';
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = (async () => {
-        throw new Error('fetch failed');
-      }) as unknown as typeof fetch;
-
-      try {
-        const res = await app.handle(new Request('http://localhost/health'));
-        expect(res.status).toBe(200);
-        const data = await res.json();
-        expect(data.status).toBe('degraded');
-        expect(data.checks.aiService.status).toBe('unhealthy');
-      } finally {
-        globalThis.fetch = originalFetch;
-      }
     });
 
     it('should return unhealthy 503 when database down', async () => {

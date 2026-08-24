@@ -91,9 +91,7 @@ export async function updateFileAnalysis(
       extractedText: result.extraction.text,
       documentType: result.classification.documentType,
       subject: result.classification.subject,
-      hadRAG: !!result.rag?.found,
       classification: result.classification,
-      ragContext: result.rag?.context,
       metrics: result.metrics,
     };
 

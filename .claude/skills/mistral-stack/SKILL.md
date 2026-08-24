@@ -25,7 +25,6 @@ que les identifiants seuls ne portent pas.
 | TTS | `voxtral-tts-latest` | FR, voice cloning, EU |
 | STT | `voxtral-mini-latest` | EU |
 | Embeddings mémoire épisodique | `mistral-embed` (1024D) | — |
-| Embeddings RAG curriculum | BGE-M3 via `apps/ai-service` | Aucun provider managé EU n'expose le sparse natif (`lexical_weights`) |
 
 **Jamais `mistral-large` par défaut** : à réserver aux cas où medium a échoué, constaté.
 

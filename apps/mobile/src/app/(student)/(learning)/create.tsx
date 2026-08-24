@@ -1,7 +1,7 @@
 /**
  * Create Deck Screen - AI Generation
  *
- * 2-step form: Subject -> Domain/Theme -> AI generates deck
+ * 2-step form: Subject -> Theme typed by the student -> AI generates deck
  * Uses backend /api/learning/generate for AI card generation
  */
 
@@ -19,17 +19,17 @@ import {
   Book,
   FolderOpen,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
 import { shadows, bgColors } from '@/lib/styles';
 import {
   useGenerateDeck,
   useLearningSubjects,
-  useLearningTopics,
   type LearningSubject,
   type SchoolLevel,
 } from '@/hooks/useLearning';
@@ -56,9 +56,9 @@ export default function CreateDeckScreen() {
 
   const [step, setStep] = useState<Step>('subject');
   const [selectedSubject, setSelectedSubject] = useState<LearningSubject | null>(null);
+  const [theme, setTheme] = useState('');
 
   const subjectsQuery = useLearningSubjects(niveau);
-  const topicsQuery = useLearningTopics(selectedSubject?.id ?? '', niveau);
   const generateMutation = useGenerateDeck();
 
   // Handle subject selection
@@ -67,18 +67,18 @@ export default function CreateDeckScreen() {
     setStep('theme');
   };
 
-  // Handle theme selection - triggers AI generation
-  const handleSelectTheme = async (domaine: string, theme?: string) => {
-    if (!selectedSubject) return;
+  // Theme typed by the student - triggers AI generation
+  const handleGenerate = async () => {
+    const trimmed = theme.trim();
+    if (!selectedSubject || !trimmed) return;
 
     try {
       const result = await generateMutation.mutateAsync({
         subject: selectedSubject.id,
-        domaine,
-        topic: theme,
+        domaine: trimmed,
       });
 
-      toast.success('Deck généré !', `${result.cards.length} cartes créées sur "${theme ?? domaine}"`);
+      toast.success('Deck généré !', `${result.cards.length} cartes créées sur "${trimmed}"`);
       // Navigate to deck detail - updated path for new structure
       router.replace(`/(student)/(learning)/${result.deck.id}`);
     } catch (error) {
@@ -111,6 +111,7 @@ export default function CreateDeckScreen() {
     if (step === 'theme') {
       setStep('subject');
       setSelectedSubject(null);
+      setTheme('');
     } else {
       router.back();
     }
@@ -223,73 +224,31 @@ export default function CreateDeckScreen() {
                 </View>
               </View>
 
-              {topicsQuery.isLoading && (
-                <View className="gap-3">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-24 w-full rounded-xl" />
-                  ))}
-                </View>
-              )}
+              <Input
+                label="Thème à réviser"
+                placeholder="Ex. le théorème de Pythagore"
+                value={theme}
+                onChangeText={setTheme}
+                maxLength={200}
+                autoFocus
+                disabled={generateMutation.isPending}
+                accessibilityLabel="Thème à réviser"
+                accessibilityHint="Saisis le thème sur lequel générer des cartes"
+                helperText="Sois précis : l'IA génère les cartes à partir de ce que tu écris."
+                onSubmitEditing={handleGenerate}
+                returnKeyType="go"
+              />
 
-              {topicsQuery.error && (
-                <View className="rounded-xl p-4" style={{ backgroundColor: bgColors.destructive[10] }}>
-                  <Text className="text-center text-destructive">
-                    Erreur de chargement des thèmes
-                  </Text>
-                </View>
-              )}
+              <Button
+                className="mt-4"
+                onPress={handleGenerate}
+                disabled={theme.trim().length === 0}
+                isLoading={generateMutation.isPending}
+                accessibilityLabel="Générer le deck"
+              >
+                <Text>Générer mes cartes</Text>
+              </Button>
 
-              {topicsQuery.data && topicsQuery.data.length === 0 && (
-                <View className="items-center py-8">
-                  <Text variant="muted">Aucun thème disponible</Text>
-                </View>
-              )}
-
-              {topicsQuery.data && topicsQuery.data.length > 0 && (
-                <View className="gap-4" pointerEvents={generateMutation.isPending ? 'none' : 'auto'}>
-                  {topicsQuery.data.map((domaine) => (
-                    <View
-                      key={domaine.domaine}
-                      className="rounded-xl bg-card"
-                      style={generateMutation.isPending ? { opacity: 0.5 } : undefined}
-                    >
-                      {/* Domaine header - clickable for whole domaine */}
-                      <TouchableOpacity
-                        onPress={() => handleSelectTheme(domaine.domaine)}
-                        disabled={generateMutation.isPending}
-                        className="flex-row items-center justify-between border-b border-border p-4"
-                        activeOpacity={0.7}
-                      >
-                        <Text className="flex-1 font-semibold">{domaine.domaine}</Text>
-                        <View className="flex-row items-center gap-2">
-                          <Text variant="muted" className="text-sm">
-                            {domaine.themes.length} thèmes
-                          </Text>
-                          <Sparkles color={colors.success} size={16} />
-                        </View>
-                      </TouchableOpacity>
-
-                      {/* Individual themes */}
-                      {domaine.themes.map((theme, index) => (
-                        <TouchableOpacity
-                          key={theme}
-                          onPress={() => handleSelectTheme(domaine.domaine, theme)}
-                          disabled={generateMutation.isPending}
-                          className={`flex-row items-center justify-between px-4 py-3 ${
-                            index !== domaine.themes.length - 1
-                              ? 'border-b border-border'
-                              : ''
-                          }`}
-                          activeOpacity={0.7}
-                        >
-                          <Text className="flex-1 text-sm">{theme}</Text>
-                          <ChevronRight color={colors.mutedForeground} size={16} />
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  ))}
-                </View>
-              )}
             </>
           )}
 
