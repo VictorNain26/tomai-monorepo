@@ -4,7 +4,6 @@
  */
 
 import { generateIdentityCore, generateStudentContext } from './core/identity.js';
-import { generateRAGSourceOfTruth } from './core/rag-policy.js';
 import { generateSafetyGuardrails } from './core/safety.js';
 import { generateAttachmentsPolicy } from './core/attachments.js';
 import { generateVisualizationPolicy } from './core/visualization.js';
@@ -26,7 +25,7 @@ interface SystemPromptParams {
  *
  * Ordre : [BLOCS STABLES] puis [BLOCS DYNAMIQUES]. Mistral applique un cache
  * de préfixe explicite (prompt_cache_key) sur les tokens d'input stables.
- * Placer identityCore + pedagogy + RAG policy + safety EN PREMIER maximise la
+ * Placer identityCore + pedagogy + safety EN PREMIER maximise la
  * portion cachable. Le contexte élève et les adaptations niveau/matière
  * arrivent après — ils changent d'un appel à l'autre mais ne cassent pas le
  * préfixe stable.
@@ -41,7 +40,6 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
     generateChatbotPedagogyPrompt(),
     generateVisualizationPolicy(),
     generateResponseFormatPolicy(),
-    generateRAGSourceOfTruth(),
     generateAttachmentsPolicy(),
     generateSafetyGuardrails(),
     // ——— DYNAMIC (spécifique à l'élève / au tour) ———

@@ -133,7 +133,7 @@ const cardGenerationSchema = {
  * Tokens estimés: ~1000-1200
  */
 function buildPrompt(params: CardGenerationParams): string {
-  const { topic, subject, level, cardCount, ragContext, domaine } = params;
+  const { topic, subject, level, cardCount, domaine } = params;
   const requiresKaTeX = subjectRequiresKaTeX(subject);
   const cycle = getEducationCycle(level);
   const recommendedTypes = getRecommendedCardTypes(subject).slice(0, 8);
@@ -160,11 +160,6 @@ ${getTemplatesForTypes(recommendedTypes)}`);
   // 5. KaTeX si matière scientifique
   if (requiresKaTeX) {
     parts.push(KATEX_INSTRUCTIONS);
-  }
-
-  // 6. Contexte RAG (programme officiel)
-  if (ragContext?.trim()) {
-    parts.push(`## PROGRAMME OFFICIEL\n${ragContext}`);
   }
 
   // 7. Instructions finales de génération

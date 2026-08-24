@@ -183,12 +183,6 @@
       "reviewers": ["VictorNain26"]
     },
     {
-      "description": "Qdrant client is the RAG vector store — isolate for visibility.",
-      "matchPackageNames": ["@qdrant/**"],
-      "groupName": "qdrant",
-      "labels": ["dependencies", "rag"]
-    },
-    {
       "description": "GitHub Actions: pin to digest, group together.",
       "matchManagers": ["github-actions"],
       "groupName": "github-actions",

@@ -29,18 +29,3 @@ jobs:
             fi
           done
           echo "::error::commit ${GITHUB_SHA} never became live+healthy in 20min"; exit 1
-
-      - name: AI-service health check
-        run: |
-          response=$(curl -sS -o /tmp/ai-health.json -w "%{http_code}" https://tomai-ai-service-tomia-fd296bf5.koyeb.app/health)
-          if [ "$response" != "200" ]; then
-            echo "::error::ai-service /health returned HTTP $response"
-            cat /tmp/ai-health.json
-            exit 1
-          fi
-          embed_ok=$(jq -r '.embed_loaded' /tmp/ai-health.json)
-          if [ "$embed_ok" != "true" ]; then
-            echo "::error::Model not loaded: embed=$embed_ok"
-            exit 1
-          fi
-          echo "✅ AI-service healthy (BGE-M3 loaded)"

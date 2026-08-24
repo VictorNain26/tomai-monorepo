@@ -1,6 +1,6 @@
 # ============================================================
 # TomAI — Docker Compose (infra de développement du monorepo)
-# Défaut       : postgres + qdrant + ai-service
+# Défaut       : postgres
 # Backend (opt-in, iso-prod) : docker compose --profile backend up -d
 # Outils       : docker compose --profile tools up -d
 # Orchestration dev : `pnpm dev` (à la racine)
@@ -38,14 +38,9 @@ services:
       - CORS_ORIGINS=http://localhost:3001
       # Container-network override (diffère de apps/server/.env en host)
       - BETTER_AUTH_URL=http://localhost:3000
-      # AI Service : hostname interne du réseau Docker (l'env_file pointe :8001 host)
-      - AI_SERVICE_URL=http://ai-service:8000
-      # RAG Qdrant (QDRANT_URL / QDRANT_API_KEY / QDRANT_COLLECTION) + secrets
-      # (BETTER_AUTH_SECRET, GOOGLE_*, MISTRAL_API_KEY, AI_SERVICE_TOKEN,
-      # PRONOTE_ENCRYPTION_KEY, REVENUECAT_WEBHOOK_AUTH) viennent d'env_file : l'index
-      # curriculum vit sur Qdrant Cloud (source unique de vérité). Les lister en ${VAR}
-      # ici les écraserait (environment > env_file). Offline sans Cloud : poser
-      # QDRANT_URL=http://qdrant:6333 dans apps/server/.env.
+      # Les secrets (BETTER_AUTH_SECRET, GOOGLE_*, MISTRAL_API_KEY,
+      # PRONOTE_ENCRYPTION_KEY, REVENUECAT_WEBHOOK_AUTH) viennent d'env_file :
+      # les lister en ${VAR} ici les écraserait (environment > env_file).
     env_file:
       - apps/server/.env
     volumes:
@@ -57,10 +52,6 @@ services:
       - ./apps/server/drizzle.config.ts:/app/apps/server/drizzle.config.ts:ro
     depends_on:
       postgres:
-        condition: service_healthy
-      ai-service:
-        condition: service_healthy
-      qdrant:
         condition: service_healthy
     networks:
       - tomai-dev
@@ -76,68 +67,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  # ===========================================
-  # tomai-ai-service — BGE-M3 dense+sparse embeddings (embed-only)
-  # Doc : apps/ai-service/README.md
-  # ===========================================
-  ai-service:
-    # Image pré-buildée en CI → GHCR (torch CPU ~1,9 Go). Le dev PULL l'image.
-    # Si elle est absente du registry, `up` ÉCHOUE clairement — aucun build
-    # silencieux. Pour itérer sur le service (build local explicite) :
-    #   docker compose -f docker-compose.yml -f docker-compose.build.yml build ai-service
-    image: ghcr.io/victornain26/tomai-ai-service:latest
-    pull_policy: missing
-    container_name: tomai-ai-service-dev
-    ports:
-      - "8001:8000"  # 8001 côté host pour éviter collision avec backend
-    environment:
-      - EMBED_MODEL=BAAI/bge-m3
-      - USE_FP16=false
-      - HF_HOME=/data/hf_cache
-      - HF_TOKEN=${HF_TOKEN:-}  # optionnel : download modèles plus rapide
-      - PORT=8000
-      - API_TOKEN=${AI_SERVICE_TOKEN:-}
-    volumes:
-      # Cache HF persistant : évite re-download ~2.4 GB à chaque restart
-      - ai_service_hf_cache:/data/hf_cache
-    networks:
-      - tomai-dev
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 4GB  # BGE-M3 FP32 ~2.5-3 GB + marge (embed-only)
-          cpus: '2.0'
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 300s  # 1er boot = download modèle ~2,4 Go ; ensuite cache volume
-
-  # ===========================================
-  # Qdrant — vector DB locale (RAG dev sans Qdrant Cloud)
-  # Doc : https://qdrant.tech/documentation/guides/installation/
-  # ===========================================
-  qdrant:
-    image: qdrant/qdrant:v1.18.2  # aligné sur qdrant-client>=1.18 (apps/curriculum)
-    container_name: tomai-qdrant-dev
-    ports:
-      - "6333:6333"  # REST API
-      - "6334:6334"  # gRPC
-    volumes:
-      - qdrant_dev_data:/qdrant/storage
-    networks:
-      - tomai-dev
-    restart: unless-stopped
-    healthcheck:
-      # L'image Qdrant n'embarque ni curl ni wget : sonde TCP via bash /dev/tcp.
-      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
 
   # ===========================================
   # PostgreSQL 16 + pgvector
@@ -218,10 +147,6 @@ services:
 volumes:
   postgres_dev_data:
     name: tomai_postgres_dev_data
-  ai_service_hf_cache:
-    name: tomai_ai_service_hf_cache
-  qdrant_dev_data:
-    name: tomai_qdrant_dev_data
 
 # ===========================================
 # Réseau isolé development

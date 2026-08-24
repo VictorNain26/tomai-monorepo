@@ -1,31 +1,23 @@
 /**
- * Education Service - Récupération des matières disponibles dans le RAG
+ * Education Service — niveaux et matières proposés à l'élève.
  *
- * Source de vérité: Qdrant Cloud (appels directs)
- * Cache: In-memory LRU (1h TTL) pour mono-instance
+ * Source de vérité : la table statique ci-dessous. Elle listait auparavant ce
+ * que contenait l'index Qdrant du curriculum ; l'index a été supprimé, la liste
+ * reste le contrat que l'app consomme.
  *
  * L'enrichissement UI (emoji, color, description) est fait côté frontend.
  */
 
-import { qdrantService } from './qdrant.service.js';
-import { cacheService } from './memory-cache.service.js';
-import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/index.js';
 
 // =============================================================================
-// Types - Réponses RAG uniquement (pas de UI metadata)
+// Types
 // =============================================================================
 
-interface RagSubject {
-  key: string;
-  ragAvailable: boolean;
-  chunksCount?: number;
-}
-
 /** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
-export interface RagLevel {
+export interface AvailableLevel {
   key: EducationLevelType;
-  ragAvailable: boolean;
+  available: boolean;
   subjectsCount: number;
 }
 
@@ -33,137 +25,56 @@ export interface RagLevel {
 // Constantes
 // =============================================================================
 
-const ALL_LEVELS: EducationLevelType[] = [
-  'cp', 'ce1', 'ce2', 'cm1', 'cm2',
-  'sixieme', 'cinquieme', 'quatrieme', 'troisieme',
-  'seconde', 'premiere', 'terminale',
-];
+const COLLEGE_SUBJECTS = [
+  'mathematiques',
+  'francais',
+  'physique_chimie',
+  'svt',
+  'histoire_geo',
+  'anglais',
+  'espagnol',
+  'allemand',
+  'italien',
+  'technologie',
+] as const;
+
+/**
+ * Matières couvertes par niveau. Élémentaire et lycée sont déclarés mais vides :
+ * aucune matière n'y a jamais été servie, et une liste inventée ferait croire à
+ * un contenu qui n'existe pas.
+ */
+const SUBJECTS_BY_LEVEL: Record<EducationLevelType, readonly string[]> = {
+  cp: [],
+  ce1: [],
+  ce2: [],
+  cm1: [],
+  cm2: [],
+  sixieme: COLLEGE_SUBJECTS,
+  cinquieme: COLLEGE_SUBJECTS,
+  quatrieme: COLLEGE_SUBJECTS,
+  troisieme: COLLEGE_SUBJECTS,
+  seconde: [],
+  premiere: [],
+  terminale: [],
+};
 
 // =============================================================================
 // Service
 // =============================================================================
 
 class EducationService {
-  private readonly CACHE_TTL = 3600; // 1 heure
-
-  /**
-   * Retourne les niveaux disponibles dans le RAG
-   */
-  async getAvailableLevels(): Promise<RagLevel[]> {
-    const cacheKey = 'education:levels:all';
-
-    const cached = cacheService.get<RagLevel[]>('education:', cacheKey);
-    if (cached) {
-      logger.info('Cache hit for education levels', {
-        operation: 'education:levels:cache-hit',
-        severity: 'low' as const,
-      });
-      return cached;
-    }
-
-    const stats = await qdrantService.getStats();
-    const qdrantLevels = Object.keys(stats.by_niveau);
-
-    // Parallel fan-out: enrich all available levels with their subject counts
-    // in one batch of concurrent Qdrant calls instead of 12 sequential awaits.
-    const levels: RagLevel[] = await Promise.all(
-      ALL_LEVELS.map(async (levelKey) => {
-        const ragAvailable = qdrantLevels.includes(levelKey);
-        const subjectsCount = ragAvailable
-          ? (await this.getSubjectsForLevel(levelKey, true)).length
-          : 0;
-        return { key: levelKey, ragAvailable, subjectsCount };
-      }),
-    );
-
-    cacheService.set('education:', cacheKey, levels, this.CACHE_TTL);
-
-    logger.info('Education levels retrieved from Qdrant', {
-      operation: 'education:levels:success',
-      totalLevels: levels.length,
-      ragAvailable: levels.filter((l) => l.ragAvailable).length,
-      severity: 'low' as const,
-    });
-
-    return levels;
-  }
-
-  /**
-   * Retourne les matières disponibles dans le RAG pour un niveau
-   * FILTRE par niveau - retourne uniquement les matières ayant du contenu pour ce niveau
-   */
-  async getSubjectsForLevel(
-    level: EducationLevelType,
-    skipCache = false
-  ): Promise<RagSubject[]> {
-    const cacheKey = `education:subjects:${level}`;
-
-    if (!skipCache) {
-      const cached = cacheService.get<RagSubject[]>('education:', cacheKey);
-      if (cached) {
-        logger.info('Cache hit for education subjects', {
-          operation: 'education:subjects:cache-hit',
-          level,
-          severity: 'low' as const,
-        });
-        return cached;
-      }
-    }
-
-    // Récupérer les matières FILTRÉES par niveau depuis Qdrant
-    const matieresForLevel = await qdrantService.getMatieresForNiveau(level);
-    const matiereKeys = Object.keys(matieresForLevel);
-
-    const subjects: RagSubject[] = matiereKeys.map((subjectKey) => ({
-      key: subjectKey,
-      ragAvailable: true,
-      chunksCount: matieresForLevel[subjectKey],
+  /** Niveaux exposés à l'app, avec le nombre de matières de chacun. */
+  getAvailableLevels(): AvailableLevel[] {
+    return (Object.keys(SUBJECTS_BY_LEVEL) as EducationLevelType[]).map((key) => ({
+      key,
+      available: SUBJECTS_BY_LEVEL[key].length > 0,
+      subjectsCount: SUBJECTS_BY_LEVEL[key].length,
     }));
-
-    if (!skipCache) {
-      cacheService.set('education:', cacheKey, subjects, this.CACHE_TTL);
-    }
-
-    logger.info('Subjects retrieved from Qdrant for level', {
-      operation: 'education:subjects:success',
-      level,
-      count: subjects.length,
-      subjects: subjects.map((s) => s.key),
-      severity: 'low' as const,
-    });
-
-    return subjects;
   }
 
-  /**
-   * Invalide le cache pour un niveau
-   */
-  invalidateCacheForLevel(level: EducationLevelType): void {
-    cacheService.delete('education:', `education:subjects:${level}`);
-    cacheService.delete('education:', 'education:levels:all');
-    qdrantService.invalidateCache();
-
-    logger.info('Cache invalidated for level', {
-      operation: 'education:cache:invalidate',
-      level,
-      severity: 'low' as const,
-    });
-  }
-
-  /**
-   * Invalide tout le cache éducation
-   */
-  invalidateAllCache(): void {
-    for (const level of ALL_LEVELS) {
-      cacheService.delete('education:', `education:subjects:${level}`);
-    }
-    cacheService.delete('education:', 'education:levels:all');
-    qdrantService.invalidateCache();
-
-    logger.info('All education cache invalidated', {
-      operation: 'education:cache:invalidate-all',
-      severity: 'low' as const,
-    });
+  /** Matières d'un niveau. Tableau vide si le niveau n'est pas couvert. */
+  getSubjectsForLevel(level: EducationLevelType): readonly string[] {
+    return SUBJECTS_BY_LEVEL[level] ?? [];
   }
 }
 

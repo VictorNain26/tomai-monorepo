@@ -40,16 +40,13 @@ Dockerfile  text eol=lf
 *.sh        text eol=lf
 *.bash      text eol=lf
 
-# ── Python (ai-service) ─────────────────────────────────────────────────
-*.py        text eol=lf
-*.pyi       text eol=lf
+# ── TOML config ─────────────────────────────────────────────────────────
 *.toml      text eol=lf
 
 # ── Lock files: LF, no auto-merge (regenerate via package manager) ──────
 package-lock.json text eol=lf
 pnpm-lock.yaml    text eol=lf
 yarn.lock         text eol=lf
-uv.lock           text eol=lf
 
 # ── Windows-only scripts: keep CRLF (cmd.exe/PowerShell parse these) ────
 *.bat       text eol=crlf

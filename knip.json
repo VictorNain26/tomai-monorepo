@@ -9,7 +9,6 @@
         "scripts/**/*.mjs"
       ],
       "ignoreBinaries": [
-        "uv",
         "eslint"
       ]
     },
@@ -24,9 +23,6 @@
       "project": [
         "src/**/*.ts",
         "scripts/**/*.ts"
-      ],
-      "ignoreBinaries": [
-        "dist/index.js"
       ]
     },
     "apps/mobile": {

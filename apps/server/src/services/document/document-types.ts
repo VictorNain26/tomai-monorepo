@@ -20,12 +20,6 @@ export const ClassificationSchema = z.object({
   detectedLevel: z.string().optional()
 });
 
-export interface RAGQueryResult {
-  found: boolean;
-  chunksCount: number;
-  context: string;
-}
-
 export interface DocumentAnalysisResult {
   success: boolean;
 
@@ -39,11 +33,8 @@ export interface DocumentAnalysisResult {
     documentType: DocumentType;
     subject: SubjectType;
     confidence: 'high' | 'medium' | 'low';
-    needsRAG: boolean;
     description: string;
   };
-
-  rag?: RAGQueryResult;
 
   analysis: string;
 

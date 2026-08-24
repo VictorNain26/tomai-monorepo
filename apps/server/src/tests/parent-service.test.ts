@@ -54,11 +54,7 @@ mock.module('../services/storage/scaleway-storage.service', () => ({
   deleteFiles: mockDeleteFiles,
 }));
 
-// RGPD art.17 — pseudonymization repo mock + call-order tracking so we can
-// assert the audit trail is anonymized BEFORE the user row is erased.
-const callSequence: string[] = [];
-const mockPseudonymize = mock(async () => { callSequence.push('pseudonymize'); return 3; });
-const mockDeleteById = mock(async () => { callSequence.push('delete'); return deleteResult; });
+const mockDeleteById = mock(async () => deleteResult);
 
 mock.module('../db/repositories', () => ({
   usersRepository: {
@@ -67,9 +63,6 @@ mock.module('../db/repositories', () => ({
     update: mock(async () => updateResult),
     deleteById: mockDeleteById,
     findById: mock(async () => findByIdResult),
-  },
-  retrievalAuditRepository: {
-    pseudonymizeByUserId: mockPseudonymize,
   },
   filesRepository: {
     listByUserId: mockListByUserId,
@@ -209,8 +202,6 @@ beforeEach(() => {
   mockListByUserId.mockClear();
   mockLogger.error.mockClear();
   mockLogger.info.mockClear();
-  callSequence.length = 0;
-  mockPseudonymize.mockClear();
   mockDeleteById.mockClear();
   isLinkedResult = true;
   isLinkedShouldThrow = false;
@@ -382,15 +373,6 @@ describe('Parent Service', () => {
       findByIdResult = null; // Post-delete check returns null (deleted)
       await parentService.deleteChild('parent-001', 'child-001');
       // Should not throw
-    });
-
-    it('pseudonymizes the retrieval audit trail BEFORE erasing the user (RGPD art.17)', async () => {
-      findByIdResult = null;
-      await parentService.deleteChild('parent-001', 'child-001');
-      expect(mockPseudonymize).toHaveBeenCalledWith('child-001');
-      // Defensive order: never leave an identifiable audit row pointing at a
-      // user that has already been deleted.
-      expect(callSequence.indexOf('pseudonymize')).toBeLessThan(callSequence.indexOf('delete'));
     });
 
     it('should throw for non-child', async () => {

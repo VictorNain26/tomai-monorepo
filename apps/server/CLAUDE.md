@@ -63,22 +63,6 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
   `X-Frame-Options: DENY`, nosniff, Permissions-Policy restrictive.
 - **Rate limiting** : preset global, renforcé sur les credentials Pronote.
 
-## RAG
-
-L'index curriculum vit sur **Qdrant Cloud, partagé dev et prod** — pas d'ingestion
-par développeur. Le backend le lit via `QDRANT_URL` / `QDRANT_API_KEY` /
-`QDRANT_COLLECTION`, **toujours par configuration**, jamais par un défaut en dur.
-`QDRANT_ENABLED=true` est requis côté serveur.
-
-La séparation dev/prod est portée par le **scheme d'URL** : `qdrant.service.ts`
-n'exige une clé que pour `https://` (Cloud) ; le Qdrant local (`http://`) tourne
-sans auth. En prod, `env.ts` fail-fast si la clé manque.
-
-La recherche est hybride dense + sparse avec **fusion RRF native à Qdrant** (Query
-API), pas côté serveur. Les embeddings sont servis par `apps/ai-service`.
-Reconstruire l'index est un job rare, pas une étape de setup : voir
-`apps/curriculum/README.md`.
-
 ## Migrations
 
 Source de vérité : `src/db/schema.ts`. Règles détaillées dans

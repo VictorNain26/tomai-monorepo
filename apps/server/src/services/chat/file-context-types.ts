@@ -13,7 +13,6 @@ export interface FileAnalysisResult {
   fileName: string;
   documentType?: string;
   subject?: string;
-  hadRAG?: boolean;
 }
 
 /**

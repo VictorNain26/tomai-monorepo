@@ -31,4 +31,4 @@ doit être mocké dans ce fichier (pattern : voir le mock de `retention-purge.se
 
 ## Scopes de commit conventionnels
 
-`chat`, `server`, `landing`, `mobile`, `ci`, `db`, `auth`, `rag`. Toujours stager les fichiers explicitement (jamais `git add .`).
+`chat`, `server`, `landing`, `mobile`, `ci`, `db`, `auth`. Toujours stager les fichiers explicitement (jamais `git add .`).

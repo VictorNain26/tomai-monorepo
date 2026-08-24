@@ -62,7 +62,7 @@ async function fetchChildren(): Promise<IChild[]> {
 
 async function fetchLevels(): Promise<SchoolLevel[]> {
   const { levels } = unwrap(await getTreaty().api.education.levels.get());
-  return levels.filter((l) => l.ragAvailable);
+  return levels.filter((l) => l.available);
 }
 
 async function createChildApi(data: ICreateChildData): Promise<IChild> {

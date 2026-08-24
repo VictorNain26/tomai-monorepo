@@ -10,9 +10,7 @@
 import { z } from 'zod';
 import { tool, type ToolSet, type InferUITools } from 'ai';
 import { executeTool, isDeckCreatedResult } from './tool-executor.js';
-import { wrapCurriculumToolResult } from './mistral-helpers.js';
-import { RAG_SUBJECTS } from './tool-declarations.js';
-import { EDUCATION_LEVELS } from '../../lib/education-levels.js';
+import { SUBJECT_SLUGS } from './tool-declarations.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { DeckCreatedData } from './chat-ui-message.js';
 
@@ -24,27 +22,11 @@ export interface ChatToolContext {
   emitDeckCreated: (data: DeckCreatedData) => void;
 }
 
-const searchEducationalContentSchema = z.object({
-  query: z
-    .string()
-    .describe(
-      'Reformule la question de manière précise pour la recherche. Ex: "théorème de Pythagore démonstration" au lieu de "aide moi avec mon exo de maths"',
-    ),
-  niveau: z
-    .enum(EDUCATION_LEVELS)
-    .describe("Le niveau scolaire de l'élève (fourni dans le contexte)"),
-  matiere: z.enum(RAG_SUBJECTS).describe('La matière normalisée (slug Qdrant)'),
-  limit: z
-    .number()
-    .optional()
-    .describe('Nombre de résultats (3 pour question précise, 5 par défaut, 8 pour sujet large)'),
-});
-
 const generateFlashcardsSchema = z.object({
   topic: z
     .string()
     .describe('Le sujet précis des cartes. Ex: "théorème de Pythagore", "conjugaison du passé composé"'),
-  subject: z.enum(RAG_SUBJECTS).describe('La matière (slug Qdrant)'),
+  subject: z.enum(SUBJECT_SLUGS).describe('La matière'),
   cardCount: z
     .number()
     .min(3)
@@ -91,7 +73,7 @@ const getAppHelpSchema = z.object({
     ),
 });
 
-/** 5 outils exposés à l'agent chat, au format AI SDK `ToolSet`. */
+/** 4 outils exposés à l'agent chat, au format AI SDK `ToolSet`. */
 export function buildChatTools(ctx: ChatToolContext): ToolSet {
   const executionContext = {
     userId: ctx.userId,
@@ -101,19 +83,6 @@ export function buildChatTools(ctx: ChatToolContext): ToolSet {
   };
 
   return {
-    search_educational_content: tool({
-      description:
-        "Recherche dans les programmes officiels français (Éduscol). Retourne des extraits avec source et pertinence. Intègre les résultats dans ta réponse sans citer Éduscol. Ne l'utilise pas pour salutations, Pronote, ou si tu as déjà le contexte d'un appel précédent.",
-      inputSchema: searchEducationalContentSchema,
-      execute: async (input) => {
-        const result = await executeTool('search_educational_content', input, executionContext);
-        // Curriculum text is untrusted third-party content: fenced so the
-        // model never reads a poisoned chunk as instruction (see
-        // wrapCurriculumToolResult doc).
-        return wrapCurriculumToolResult(result);
-      },
-    }),
-
     generate_flashcards: tool({
       description:
         'Génère des cartes de révision (flashcards, QCM, vrai/faux) sur un sujet. TOUJOURS demander confirmation avant de générer ("Veux-tu que je crée des cartes ?").',

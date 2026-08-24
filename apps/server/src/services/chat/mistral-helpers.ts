@@ -29,7 +29,7 @@ export const MAX_TOOL_ITERATIONS = 5;
  * text read as a system instruction.
  */
 const TEMPLATE_TAGS =
-  /<\/?(?:student_message|pronote_data|student_context|attached_file|curriculum_excerpt|identity|tone|transparency|pedagogy|visualization|response_format|safety|rag_policy|level_adaptation|subject_specifics)\b[^>]*>/gi;
+  /<\/?(?:student_message|pronote_data|student_context|attached_file|identity|tone|transparency|pedagogy|visualization|response_format|safety|level_adaptation|subject_specifics)\b[^>]*>/gi;
 
 /** Remove all template delimiter tags from untrusted content. */
 export function stripPromptTags(content: string): string {
@@ -99,55 +99,6 @@ export function wrapStudentContext(
   // out of the fence and have trailing text read as outside-the-block input.
   const body = stripPromptTags(parts.join('\n\n'));
   return `<student_context>\n${body}\n</student_context>`;
-}
-
-/**
- * Shape of the `search_educational_content` tool result that carries untrusted
- * curriculum text. The official-programme corpus is third-party data: a forged
- * or poisoned chunk must never be read as an instruction.
- */
-interface RagToolResult {
-  found?: boolean;
-  context?: string;
-  resultsCount?: number;
-  bestMatchSection?: string;
-  bestMatchMatiere?: string;
-  chunks?: Array<{ section?: string; matiere?: string; text?: string }>;
-}
-
-/**
- * Build the `tool` message content for a RAG search result: the curriculum text
- * (untrusted) is tag-stripped and wrapped in a `<curriculum_excerpt>` fence the
- * system prompt treats as data, while the metadata (found, counts, sections)
- * stays as plain JSON outside the fence. Replaces a raw `JSON.stringify` that
- * would have let a poisoned chunk read as an instruction.
- *
- * RRF fusion scores are deliberately NOT serialized: they are rank artefacts
- * (~0.016), not similarities, so a model reading them could wrongly infer "low
- * confidence". Ranking is conveyed by chunk order alone.
- */
-export function wrapCurriculumToolResult(result: unknown): string {
-  if (typeof result !== 'object' || result === null) {
-    return JSON.stringify(result);
-  }
-  const rag = result as RagToolResult;
-  const metadata = {
-    found: rag.found,
-    resultsCount: rag.resultsCount,
-    bestMatchSection: rag.bestMatchSection,
-    bestMatchMatiere: rag.bestMatchMatiere,
-    chunks: (rag.chunks ?? []).map((c) => ({
-      section: c.section,
-      matiere: c.matiere,
-    })),
-  };
-
-  const excerpt = stripPromptTags(rag.context ?? '');
-  const fence = excerpt
-    ? `\n<curriculum_excerpt>\n${excerpt}\n</curriculum_excerpt>`
-    : '';
-
-  return `${JSON.stringify(metadata)}${fence}`;
 }
 
 /**

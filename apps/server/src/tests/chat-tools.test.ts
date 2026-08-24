@@ -45,41 +45,14 @@ describe('TomMetadata', () => {
 });
 
 describe('buildChatTools', () => {
-  it('exposes exactly the 5 declared tool keys', () => {
+  it('exposes exactly the 4 declared tool keys', () => {
     const tools = buildChatTools(baseContext);
     expect(Object.keys(tools).sort()).toEqual([
       'generate_flashcards',
       'get_app_help',
       'get_student_profile',
-      'search_educational_content',
       'update_student_profile',
     ]);
-  });
-
-  describe('search_educational_content.inputSchema', () => {
-    it('rejects an out-of-enum niveau', () => {
-      const tools = buildChatTools(baseContext);
-      const schema = tools.search_educational_content.inputSchema as { parse: (v: unknown) => unknown };
-      expect(() =>
-        schema.parse({ query: 'test', niveau: 'licence', matiere: 'mathematiques' }),
-      ).toThrow();
-    });
-
-    it('accepts a valid niveau from the declared enum', () => {
-      const tools = buildChatTools(baseContext);
-      const schema = tools.search_educational_content.inputSchema as { parse: (v: unknown) => unknown };
-      expect(() =>
-        schema.parse({ query: 'test', niveau: 'sixieme', matiere: 'mathematiques' }),
-      ).not.toThrow();
-    });
-
-    it('rejects an out-of-enum matiere', () => {
-      const tools = buildChatTools(baseContext);
-      const schema = tools.search_educational_content.inputSchema as { parse: (v: unknown) => unknown };
-      expect(() =>
-        schema.parse({ query: 'test', niveau: 'sixieme', matiere: 'latin' }),
-      ).toThrow();
-    });
   });
 
   describe('generate_flashcards.execute', () => {
@@ -126,31 +99,6 @@ describe('buildChatTools', () => {
       );
 
       expect(emitDeckCreated).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('search_educational_content.execute', () => {
-    it('fences the executor result via wrapCurriculumToolResult', async () => {
-      executeToolResult = {
-        found: true,
-        context: 'Le théorème de Pythagore énonce...',
-        resultsCount: 1,
-        bestMatchSection: 'Géométrie',
-        bestMatchMatiere: 'mathematiques',
-        chunks: [{ section: 'Géométrie', matiere: 'mathematiques' }],
-      };
-      const tools = buildChatTools(baseContext);
-      const tool = tools.search_educational_content;
-      if (!tool.execute) throw new Error('search_educational_content must have an execute function');
-
-      const output = await tool.execute(
-        { query: 'pythagore', niveau: 'quatrieme', matiere: 'mathematiques' },
-        { toolCallId: 'call-3', messages: [], context: undefined },
-      );
-
-      expect(typeof output).toBe('string');
-      expect(output as string).toContain('<curriculum_excerpt>');
-      expect(output as string).toContain('Le théorème de Pythagore énonce...');
     });
   });
 });

@@ -6,9 +6,9 @@
  * @see https://orm.drizzle.team/docs/drizzle-kit-migrate
  *
  * OpenTelemetry is initialised here before any service-tier module is
- * imported so the global tracer is in place when mistral-client / qdrant
- * are first evaluated. The application imports go through dynamic import
- * to preserve that ordering under ESM hoisting.
+ * imported so the global tracer is in place when mistral-client is first
+ * evaluated. The application imports go through dynamic import to preserve
+ * that ordering under ESM hoisting.
  */
 
 import { setupOtel } from './lib/otel/otel.js';

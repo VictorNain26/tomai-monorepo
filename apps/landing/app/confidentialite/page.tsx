@@ -100,8 +100,6 @@ export default function ConfidentialitePage() {
                 photos, documents et messages vocaux.</li>
               <li><strong>Koyeb</strong> (Union européenne — Francfort) — hébergement du
                 serveur applicatif et de la base de données.</li>
-              <li><strong>Qdrant</strong> — index des programmes scolaires officiels servant à
-                la recherche pédagogique ; aucune donnée d&apos;élève n&apos;y est stockée.</li>
               <li><strong>Vercel</strong> (États-Unis) — hébergement du site vitrine et de
                 l&apos;application web.</li>
               <li><strong>RevenueCat</strong> (États-Unis) — gestion des abonnements : ne

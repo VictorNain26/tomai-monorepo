@@ -1,8 +1,8 @@
 /**
  * Document Analysis Service — Mistral stack (Phase 2B).
  *
- * Text path  : extraction (PDF/docx via document-extraction.service) + RAG
- *              context + mistral-medium-latest analysis (single completion,
+ * Text path  : extraction (PDF/docx via document-extraction.service) +
+ *              mistral-medium-latest analysis (single completion,
  *              prompt-cached system instruction).
  * Image path : multimodal Mistral medium (vision fusioné Pixtral, cf
  *              ADR-0001 §D7). Photo encodée base64 → `image_url` part inline.
@@ -15,7 +15,6 @@ import { generateText, type MistralMessage } from '../../lib/ai/mistral-client.j
 import { logger } from '../../lib/observability.js';
 import { env } from '../../config/env.js';
 import { documentExtractionService } from './document-extraction.service.js';
-import { ragService } from '../rag.service.js';
 import type { EducationLevelType } from '../../types/education.types.js';
 import {
   buildSystemPrompt as buildDocSystemPrompt,
@@ -26,7 +25,6 @@ import {
 import type {
   DocumentAnalysisResult,
   DocumentAnalysisOptions,
-  RAGQueryResult,
 } from './document-types.js';
 import {
   parseAnalysisResponse,
@@ -92,12 +90,9 @@ class DocumentAnalysisService {
         operation: 'document-extraction-complete',
       });
 
-      const ragResult = await this.queryRAG(extraction.text, schoolLevel, userId);
-
       const analysisStart = Date.now();
       const { classification, analysis } = await this.analyzeText(
         extraction.text,
-        ragResult.context,
         schoolLevel,
         userQuestion,
       );
@@ -108,7 +103,6 @@ class DocumentAnalysisService {
         fileName,
         documentType: classification.documentType,
         subject: classification.subject,
-        hadRAG: ragResult.found,
         totalTimeMs,
         operation: 'document-analysis-complete',
       });
@@ -122,12 +116,8 @@ class DocumentAnalysisService {
         },
         classification: {
           ...classification,
-          needsRAG:
-            classification.documentType !== 'non-educatif' &&
-            classification.subject !== 'inconnu',
           description: `Document ${classification.documentType} en ${classification.subject}`,
         },
-        rag: ragResult.found ? ragResult : undefined,
         analysis,
         metrics: { totalTimeMs, extractionTimeMs, analysisTimeMs, tokensUsed: 0 },
       };
@@ -166,15 +156,9 @@ class DocumentAnalysisService {
 
     try {
       const analysisStart = Date.now();
-      // No OCR text upfront — use the user question as RAG query if present,
-      // otherwise skip RAG (the previous "document scolaire image" string
-      // returned irrelevant top-k that biased the pedagogical framing).
-      const ragResult = await this.queryRAG(userQuestion ?? null, schoolLevel, userId);
-
       const { classification, analysis, extractedText } = await this.analyzeImageWithVision(
         base64Data,
         mimeType,
-        ragResult.context,
         schoolLevel,
         userQuestion,
       );
@@ -199,12 +183,8 @@ class DocumentAnalysisService {
         },
         classification: {
           ...classification,
-          needsRAG:
-            classification.documentType !== 'non-educatif' &&
-            classification.subject !== 'inconnu',
           description: `Image ${classification.documentType} en ${classification.subject}`,
         },
-        rag: ragResult.found ? ragResult : undefined,
         analysis,
         metrics: { totalTimeMs, extractionTimeMs: 0, analysisTimeMs, tokensUsed: 0 },
       };
@@ -226,7 +206,6 @@ class DocumentAnalysisService {
 
   private async analyzeText(
     documentText: string,
-    ragContext: string,
     schoolLevel: EducationLevelType,
     userQuestion?: string,
   ) {
@@ -235,7 +214,7 @@ class DocumentAnalysisService {
         ? documentText.substring(0, 4000) + '\n...[texte tronqué]'
         : documentText;
 
-    const systemPrompt = buildDocSystemPrompt(schoolLevel, ragContext, userQuestion);
+    const systemPrompt = buildDocSystemPrompt(schoolLevel, userQuestion);
     const userPrompt = buildDocUserPrompt(truncatedText, schoolLevel, userQuestion);
 
     const messages: MistralMessage[] = [
@@ -258,11 +237,10 @@ class DocumentAnalysisService {
   private async analyzeImageWithVision(
     base64Data: string,
     mimeType: string,
-    ragContext: string,
     schoolLevel: EducationLevelType,
     userQuestion?: string,
   ) {
-    const systemPrompt = buildDocSystemPrompt(schoolLevel, ragContext, userQuestion);
+    const systemPrompt = buildDocSystemPrompt(schoolLevel, userQuestion);
     const userTextPrompt = buildDocImagePrompt(schoolLevel, userQuestion);
     const dataUrl = `data:${mimeType};base64,${base64Data}`;
 
@@ -287,52 +265,6 @@ class DocumentAnalysisService {
     });
 
     return parseImageAnalysisResponse(responseText);
-  }
-
-  private async queryRAG(
-    queryText: string | null,
-    schoolLevel: EducationLevelType,
-    auditUserId?: string,
-  ): Promise<RAGQueryResult> {
-    if (!queryText || queryText.trim().length < 10) {
-      return { found: false, chunksCount: 0, context: '' };
-    }
-
-    try {
-      const isAvailable = await ragService.isAvailable();
-      if (!isAvailable) {
-        logger.warn('RAG service unavailable for document analysis', {
-          operation: 'document-analysis:rag-unavailable',
-        });
-        return { found: false, chunksCount: 0, context: '' };
-      }
-
-      const truncated = queryText.length > 500 ? queryText.substring(0, 500) : queryText;
-
-      // Matière omise volontairement : le document peut être en histoire,
-      // français, sciences… La similarité vectorielle filtre.
-      const response = await ragService.hybridSearch({
-        query: truncated,
-        niveau: schoolLevel,
-        limit: 5,
-        auditUserId: auditUserId ?? null,
-      });
-
-      if (response.semanticChunks.length === 0) {
-        return { found: false, chunksCount: 0, context: '' };
-      }
-
-      const context = response.semanticChunks
-        .map((c, i) => `[Source ${i + 1}]\n${c.text}`)
-        .join('\n\n---\n\n');
-
-      return { found: true, chunksCount: response.semanticChunks.length, context };
-    } catch (error) {
-      logger.warn('RAG query failed, continuing without context', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return { found: false, chunksCount: 0, context: '' };
-    }
   }
 }
 

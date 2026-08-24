@@ -1,12 +1,11 @@
 /**
  * Tool Declarations — Mistral / OpenAI tools format.
  *
- * 5 outils disponibles pour l'agent socratique :
- * 1. search_educational_content - RAG Éduscol
- * 2. generate_flashcards        - Génération de cartes
- * 3. get_student_profile        - Profil cognitif
- * 4. update_student_profile     - Mise à jour observation pédagogique
- * 5. get_app_help               - Guide d'utilisation de l'app
+ * 4 outils disponibles pour l'agent socratique :
+ * 1. generate_flashcards        - Génération de cartes
+ * 2. get_student_profile        - Profil cognitif
+ * 3. update_student_profile     - Mise à jour observation pédagogique
+ * 4. get_app_help               - Guide d'utilisation de l'app
  *
  * Format : `{ type: 'function', function: { name, description, parameters } }`
  * — accepté tel quel par `client.chat.complete/stream` du SDK Mistral et par
@@ -14,11 +13,8 @@
  * OpenAI tools, donc portable.
  */
 
-/**
- * Slugs de matières indexés dans Qdrant. Source unique — tout slug hors liste
- * retourne 0 résultat en silence. Ne pas modifier sans re-indexer la collection.
- */
-export const RAG_SUBJECTS = [
+/** Slugs de matières acceptés par les outils. Source unique. */
+export const SUBJECT_SLUGS = [
   'mathematiques', 'francais', 'anglais', 'espagnol', 'allemand',
   'histoire', 'geographie', 'physique-chimie', 'svt', 'technologie',
   'ses', 'philosophie', 'nsi',
@@ -32,45 +28,6 @@ interface MistralTool {
     parameters: Record<string, unknown>;
   };
 }
-
-const searchEducationalContentTool: MistralTool = {
-  type: 'function',
-  function: {
-    name: 'search_educational_content',
-    description:
-      "Recherche dans les programmes officiels français (Éduscol). Retourne des extraits avec source et pertinence. Intègre les résultats dans ta réponse sans citer Éduscol. Ne l'utilise pas pour salutations, Pronote, ou si tu as déjà le contexte d'un appel précédent.",
-    parameters: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description:
-            'Reformule la question de manière précise pour la recherche. Ex: "théorème de Pythagore démonstration" au lieu de "aide moi avec mon exo de maths"',
-        },
-        niveau: {
-          type: 'string',
-          enum: [
-            'cp', 'ce1', 'ce2', 'cm1', 'cm2',
-            'sixieme', 'cinquieme', 'quatrieme', 'troisieme',
-            'seconde', 'premiere', 'terminale',
-          ],
-          description: "Le niveau scolaire de l'élève (fourni dans le contexte)",
-        },
-        matiere: {
-          type: 'string',
-          enum: [...RAG_SUBJECTS],
-          description: 'La matière normalisée (slug Qdrant)',
-        },
-        limit: {
-          type: 'number',
-          description: 'Nombre de résultats (3 pour question précise, 5 par défaut, 8 pour sujet large)',
-        },
-      },
-      required: ['query', 'niveau', 'matiere'],
-      additionalProperties: false,
-    },
-  },
-};
 
 const generateFlashcardsTool: MistralTool = {
   type: 'function',
@@ -87,8 +44,8 @@ const generateFlashcardsTool: MistralTool = {
         },
         subject: {
           type: 'string',
-          enum: [...RAG_SUBJECTS],
-          description: 'La matière (slug Qdrant)',
+          enum: [...SUBJECT_SLUGS],
+          description: 'La matière',
         },
         cardCount: {
           type: 'number',
@@ -188,7 +145,6 @@ const getAppHelpTool: MistralTool = {
 
 /** Tous les outils exposés à l'agent chat. */
 export const agentTools: MistralTool[] = [
-  searchEducationalContentTool,
   generateFlashcardsTool,
   getStudentProfileTool,
   updateStudentProfileTool,

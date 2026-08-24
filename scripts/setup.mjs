@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Bootstrap one-time idempotent du dev local :
 // .env depuis .env.example, génération du secret, postgres + extension vector +
-// migrations, préchauffe des modèles ai-service. Relançable sans effet de bord.
+// migrations. Relançable sans effet de bord.
 import { spawnSync } from "node:child_process";
 import { existsSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
@@ -15,7 +15,7 @@ function run(cmd, args, opts = {}) {
 }
 
 // 1. .env depuis .env.example (idempotent)
-for (const app of [".", "apps/server", "apps/curriculum"]) {
+for (const app of ["apps/server"]) {
   const env = `${app}/.env`;
   const example = `${app}/.env.example`;
   if (!existsSync(env) && existsSync(example)) {
@@ -47,9 +47,5 @@ run("docker", ["exec", "tomai-postgres-dev", "psql", "-U", "tomai_dev", "-d", "t
   "-c", "CREATE EXTENSION IF NOT EXISTS vector;"]);
 console.log("[setup] migrations Drizzle…");
 run("bun", ["run", "db:migrate"], { cwd: "apps/server" });
-
-// 4. Pull + boot ai-service (image privée GHCR ; modèles ~3,5 Go au 1er run)
-console.log("[setup] ai-service : pull image GHCR (requiert `docker login ghcr.io`) + modèles…");
-run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "600", "ai-service"]);
 
 console.log("\n[setup] terminé. Lance `pnpm dev`.");

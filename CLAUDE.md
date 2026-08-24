@@ -13,19 +13,18 @@ pnpm dev:down                     # arrêt de l'infra
 pnpm typecheck && pnpm lint       # validation, obligatoire avant commit
 pnpm test                         # tous les tests du workspace
 pnpm doctor                       # diagnostic de la stack
-pnpm doctor:e2e                   # diagnostic strict : un SKIP ou un degraded = échec
+pnpm doctor:e2e                   # diagnostic strict : un SKIP = échec
 pnpm seed                         # comptes parent + élève, dev uniquement
 ```
 
 L'infra Docker vit à la **racine** (`docker-compose.yml`, pas dans `apps/server`).
-`pnpm dev` la démarre et attend que postgres et qdrant soient `healthy` avant de
-lancer les apps : si l'infra est incomplète, les apps ne démarrent pas.
+`pnpm dev` la démarre et attend que postgres soit `healthy` avant de lancer les
+apps : si l'infra est incomplète, les apps ne démarrent pas.
 
 ## Où travailler
 
 Chaque app porte sa propre doc, chargée à la demande quand tu ouvres un fichier
-dedans : `apps/server/CLAUDE.md`, `apps/mobile/CLAUDE.md`, `apps/landing/CLAUDE.md`,
-`apps/curriculum/CLAUDE.md`, `apps/ai-service/README.md`.
+dedans : `apps/server/CLAUDE.md`, `apps/mobile/CLAUDE.md`, `apps/landing/CLAUDE.md`.
 
 Les conventions transverses vivent dans `.claude/rules/` et se chargent seules —
 ne pas les importer. `database-migrations.md` et `design-system.md` sont scopées par
@@ -80,6 +79,5 @@ Ne jamais contourner un hook qui échoue (`--no-verify` est deny-listé) : trait
 
 ## Review externe
 
-- PR vers `main` : CodeRabbit Free, automatique (`.coderabbit.yaml`).
 - E2E Maestro en preview Android sur PR via EAS Workflows
   (`apps/mobile/.eas/workflows/preview-android.yml`) — signal, pas gate.

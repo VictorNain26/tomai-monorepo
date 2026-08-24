@@ -98,7 +98,6 @@ export function createErrorResult(
       documentType: 'non-educatif',
       subject: 'inconnu',
       confidence: 'low',
-      needsRAG: false,
       description: 'Erreur'
     },
     analysis: '',

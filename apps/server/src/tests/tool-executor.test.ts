@@ -1,6 +1,6 @@
 /**
  * Tests unitaires - Tool Executor (services/chat/tool-executor.ts)
- * Mock: RAG, learning, DB, logger
+ * Mock: learning, DB, logger
  *
  * Note: mock.module paths resolve from the test file location (src/tests/)
  */
@@ -14,28 +14,6 @@ import { createMockLogger } from './_helpers/mock-logger';
 
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
-
-// RAG service mock — tool-executor imports from '../rag.service.js' (from src/services/chat/)
-// Resolves to src/services/rag.service.ts
-let ragAvailable = true;
-let ragResult: Record<string, unknown> | null = {
-  semanticChunks: [{ text: 'chunk1', section: 'Nombres et calculs', matiere: 'mathematiques', niveau: 'cinquieme' }],
-  context: 'RAG context text',
-  averageSimilarity: 0.85,
-  bestMatchSection: 'Nombres et calculs',
-  bestMatchMatiere: 'mathematiques',
-};
-
-let lastHybridSearchArgs: Record<string, unknown> | null = null;
-mock.module('../services/rag.service', () => ({
-  ragService: {
-    isAvailable: mock(async () => ragAvailable),
-    hybridSearch: mock(async (opts: Record<string, unknown>) => {
-      lastHybridSearchArgs = opts;
-      return ragResult;
-    }),
-  },
-}));
 
 // Cognitive profile — src/services/cognitive-profile.service.ts
 let profileResult: Record<string, unknown> | null = {
@@ -61,8 +39,12 @@ let cardGenResult: Record<string, unknown> = {
   count: 2,
 };
 
+let cardGenThrows = false;
 mock.module('../services/learning/card-generator.service', () => ({
-  generateCards: mock(async () => cardGenResult),
+  generateCards: mock(async () => {
+    if (cardGenThrows) throw new Error('mistral unreachable');
+    return cardGenResult;
+  }),
 }));
 
 // FSRS — src/services/fsrs.service.ts
@@ -117,22 +99,7 @@ const baseContext = {
 };
 
 beforeEach(() => {
-  ragAvailable = true;
-  lastHybridSearchArgs = null;
-  ragResult = {
-    semanticChunks: [{ text: 'chunk1', section: 'Nombres et calculs', matiere: 'mathematiques', niveau: 'cinquieme' }],
-    context: 'RAG context text',
-    averageSimilarity: 0.85,
-    bestMatchSection: 'Nombres et calculs',
-    bestMatchMatiere: 'mathematiques',
-  };
-  profileResult = {
-    strengths: ['calcul'],
-    weaknesses: ['fractions'],
-    preferredStyle: 'visual',
-    observations: [{ observation: 'Progresse bien' }],
-    lastUpdatedByAgent: new Date('2025-06-15'),
-  };
+  cardGenThrows = false;
   cardGenResult = {
     cards: [
       { cardType: 'front_back', content: { front: 'Q1', back: 'A1' } },
@@ -143,39 +110,6 @@ beforeEach(() => {
 });
 
 describe('Tool Executor', () => {
-  describe('search_educational_content', () => {
-    it('should return RAG results when available', async () => {
-      const result = await executeTool('search_educational_content', {
-        query: 'fractions', niveau: 'troisieme', matiere: 'mathematiques',
-      }, baseContext) as Record<string, unknown>;
-      expect(result.found).toBe(true);
-      expect(result.context).toBe('RAG context text');
-      expect(result.resultsCount).toBe(1);
-    });
-
-    it('defaults niveau to the student school level and omits matiere when args are absent', async () => {
-      await executeTool('search_educational_content', { query: 'les fractions' }, {
-        ...baseContext,
-        schoolLevel: 'sixieme',
-      });
-      // Bug: a hardcoded '6eme' default never matches the index ('sixieme'),
-      // and matiere='general' matches zero points — both silently empty the RAG.
-      expect(lastHybridSearchArgs?.niveau).toBe('sixieme');
-      expect(lastHybridSearchArgs?.matiere).toBeUndefined();
-    });
-
-    it('should return serviceUnavailable when RAG is down', async () => {
-      ragAvailable = false;
-      const result = await executeTool('search_educational_content', {
-        query: 'fractions', niveau: 'troisieme', matiere: 'mathematiques',
-      }, baseContext) as Record<string, unknown>;
-      // CCA Sprint 1: errors are now structured with isError flag
-      expect(result.isError).toBe(true);
-      expect(result.errorCategory).toBe('transient');
-      expect(result.message).toContain('temporairement indisponible');
-    });
-  });
-
   describe('unknown tool', () => {
     it('should return error for unknown tool name', async () => {
       const result = await executeTool('get_student_homework', {}, baseContext) as Record<string, unknown>;
@@ -194,8 +128,7 @@ describe('Tool Executor', () => {
       expect(result.deckId).toBeDefined();
     });
 
-    it('should fallback when RAG is down', async () => {
-      ragAvailable = false;
+    it('should generate without a topic context', async () => {
       const result = await executeTool('generate_flashcards', {
         topic: 'Fractions', subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
@@ -241,13 +174,12 @@ describe('Tool Executor', () => {
 
   describe('Error encapsulation', () => {
     it('should never throw - encapsulates errors in return value', async () => {
-      ragAvailable = true;
-      ragResult = null; // Force error in hybridSearch
-      const result = await executeTool('search_educational_content', {
-        query: 'test', niveau: 'troisieme', matiere: 'maths',
+      cardGenThrows = true;
+      const result = await executeTool('generate_flashcards', {
+        topic: 'Fractions', subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
       expect(result.isError).toBe(true);
-      expect(result.errorCategory).toBe('transient');
+      expect(result.errorCategory).toBe('business');
     });
   });
 });
