@@ -16,7 +16,7 @@ This project pins **sonnet**, overriding the generic `haiku` default of the user
 
 ## Monorepo rules (you run in an isolated context — these are not optional)
 
-- **Validate before reporting done**: server `cd apps/server && bun run typecheck && bun run lint && bun run test`; mobile `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`; landing/web `pnpm typecheck && pnpm lint`. (Full conventions: `.claude/rules/testing-and-commits.md`.)
+- **Validate before reporting done**: server `cd apps/server && bun run typecheck && bun run lint && bun run test`; mobile `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`; landing `pnpm typecheck && pnpm lint`. (Full conventions: `.claude/rules/testing-and-commits.md`.)
 - **TDD** (superpowers:test-driven-development): write the failing test first, watch it fail, then implement.
 - **Git**: stage files explicitly (never `git add .` / `-A`); conventional commits; **never** `git commit --amend` (deny-listed — make a new commit to fix); never `--no-verify`.
 - **Scope**: touch only the files the task names. Out-of-scope discovery → report it, don't drift.

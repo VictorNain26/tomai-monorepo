@@ -1,26 +1,22 @@
 # Landing Tom
 
-Landing page Next.js 16 statique SEO. TailwindCSS 4 + Framer Motion.
-
-## Commandes
+Vitrine marketing et SEO, statique. Next.js + Tailwind + Framer Motion ; versions
+dans le `README.md` racine.
 
 ```bash
-pnpm dev          # Port 3001
-pnpm typecheck    # TypeScript strict
-pnpm lint         # ESLint zero warnings
-pnpm build        # Production
+pnpm dev          # :3001
+pnpm typecheck
+pnpm lint         # zéro warning
+pnpm build
 ```
-
-## Architecture composants
-
-- **`components/atoms/`** : composants reutilisables sans etat (Logo, FadeIn, SectionHeader)
-- **`components/molecules/`** : combinaisons d'atomes (NavLinks, HeroMockup)
-- **`components/sections/`** : sections completes de page (Hero, Features, Pricing, FAQ, CTA)
-- **`components/layout/`** : Header, Footer partages
-- **`components/ui/`** : shadcn/ui uniquement
 
 ## Contraintes
 
-- JAMAIS de composants UI custom : utiliser shadcn/ui (`@/components/ui/`)
-- JAMAIS de CSS custom ni styles inline : TailwindCSS uniquement
-- Deploy via Vercel (auto sur push). JAMAIS `pnpm install --force` dans vercel.json.
+- **Frontière stricte** : la landing ne consomme **jamais** Eden Treaty ni l'auth.
+  Son unique point d'intégration serveur est la Server Action `joinWaitlist` →
+  `POST /api/waitlist`. Toute fonctionnalité « produit » qui la tenterait
+  appartient à l'app Expo — c'est ce qui l'empêche de dériver en second produit.
+- **Aucun composant UI custom** : passer par shadcn (`@/components/ui/`).
+- **Aucun CSS custom ni style inline** : Tailwind et les tokens `@repo/tokens`.
+- Déploiement Vercel automatique au push. **Jamais `pnpm install --force`** dans
+  `vercel.json` : ça masque les conflits de résolution au lieu de les régler.

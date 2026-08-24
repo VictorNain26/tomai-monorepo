@@ -13,11 +13,11 @@ function run(cmd, args) {
   }
 }
 
-console.log("[dev] démarrage de l'infra (postgres, qdrant, ai-service)…");
+console.log("[dev] démarrage de l'infra (postgres, ai-service)…");
 run("docker", ["compose", "up", "-d"]);
 
-console.log("[dev] attente postgres + qdrant (healthy)…");
-run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "120", "postgres", "qdrant"]);
+console.log("[dev] attente postgres (healthy)…");
+run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "120", "postgres"]);
 
 console.log("[dev] vérification infra (fail-fast) avant de lancer les apps…");
 const ctx = { config: loadConfig(), exec: defaultExec, fetchFn: fetch };

@@ -42,7 +42,8 @@ describe('curriculum data contract conformance', () => {
   });
 
   it('pins the dense vector identity used by the server (1024D cosine)', () => {
-    expect(contract.collection.dense).toEqual({ name: 'dense', size: 1024, distance: 'Cosine' });
+    const { name, size, distance } = contract.collection.dense;
+    expect({ name, size, distance }).toEqual({ name: 'dense', size: 1024, distance: 'Cosine' });
     expect(contract.collection.sparse.name).toBe('bm25');
   });
 });

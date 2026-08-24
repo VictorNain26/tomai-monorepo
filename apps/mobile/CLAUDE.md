@@ -1,129 +1,70 @@
 # Mobile Tom
 
-App Expo SDK 56 + React Native 0.85 + React 19.2. NativeWind v5 + React Native Reusables.
+App Expo Router pour parents et élèves. Stack et versions : `README.md` racine.
+Device physique, rebuild du dev client, WSL2, Metro : skill `/mobile-device`.
 
-## Workflow dev
-
-```bash
-pnpm dev              # Lance Metro + Dev Client (quotidien)
-pnpm build:dev        # Rebuild dev client Android (smart : skip si fingerprint identique)
-pnpm typecheck        # TypeScript strict (zero `any`)
-pnpm lint             # ESLint zero warnings
-pnpm test             # Tests jest-expo
-pnpm test:coverage    # Couverture Jest
-```
-
-**Dev Client sur téléphone physique Android** : l'app utilise Google Sign-In, RevenueCat, expo-camera, expo-sqlite, expo-crypto qui nécessitent du code natif. Expo Go ne suffit pas.
-
-### Quand rebuilder ?
-
-| Changement | Commande |
-|------------|----------|
-| Code JS/TS uniquement | Rien, hot-reload auto |
-| Nouvelle dep native (ex: expo-crypto, op-sqlite) | `pnpm build:dev` |
-| Config `app.config.ts` | `pnpm build:dev` |
-
-## CI/CD (EAS Workflows)
+## Commandes
 
 ```bash
-pnpm workflow:preview:android     # Preview Android (auto sur PR vers main)
-pnpm workflow:preview:ios         # Preview iOS
-pnpm workflow:prod:android        # Production Android + submit Play Store
-pnpm workflow:prod:ios            # Production iOS + submit App Store
+pnpm dev              # Metro + dev client
+pnpm build:dev        # rebuild du dev client Android (saute si l'empreinte native n'a pas bougé)
+pnpm typecheck        # strict, zéro `any`
+pnpm lint             # zéro warning
+pnpm test             # jest-expo
+pnpm bundle:check     # export de bundle Metro — ce que la CI vérifie
 ```
 
-OTA updates via EAS Update. `runtimeVersion: fingerprint` en prod, `1.0.0-dev` en preview (pour éviter divergence Windows/Linux pnpm). Bsdiff patch support activé (réduit taille updates via diffing bytecode Hermes).
-
-## Architecture
-
-- **`src/app/`** : Expo Router v7 file-based avec groupes `(auth)`, `(student)`, `(parent)`
-- **`src/components/ui/`** : React Native Reusables uniquement (primitives `@rn-primitives/*`)
-- **`src/components/providers/`** : Theme, RevenueCat, Query, Toast, ConfirmDialog
-- **`src/hooks/`** : hooks React Query (source de vérité types) — un hook par domaine métier
-- **`src/services/`** : services métier (audio, pronote)
-- **`src/lib/`** : config (auth, api, query-client, navigation, notifications)
-- **`src/stores/`** : Zustand (client state uniquement — pronote, child-access)
-- **`src/db/`** : Drizzle + expo-sqlite (cache offline)
-- **`e2e/`** : flows Maestro (auth, chat, learning)
-
-## Intégration server
-
-Backend Elysia à `apps/server`. **Eden Treaty** via `@repo/api` (workspace package) donne la type-safety e2e.
-
-- Client initialisé dans `src/lib/api.ts` : `EXPO_PUBLIC_API_URL`, `cookieProvider` injectant la session Better Auth, timeouts (30s général / 60s upload / 120s chat).
-- **Auth** : Better Auth + `@better-auth/expo` plugin. Session stockée en `expo-secure-store` (Keychain/Keystore). Deep links `tomia://` pour retour OAuth.
-- **Chat** : `@ai-sdk/react`'s `useChat` + `DefaultChatTransport` dans `src/hooks/useChat.ts` (server-authoritative history, `/api/chat/stream`). Gestion 429 `QUOTA_EXCEEDED` et 409 `CONCURRENT_STREAM`.
-- **Upload** : presigned URLs Scaleway (`POST /api/upload/presign` → PUT S3 direct → `POST /api/upload/confirm/:id`). Voir `src/hooks/usePresignedUpload.ts`.
-- **Data fetching** : TanStack Query v5 + persister AsyncStorage (`TOMIA_QUERY_CACHE`, gcTime 24h, staleTime 5min, retry 2× exponentiel) + NetInfo pour `onlineManager`.
-
-## Patterns React / Expo 2026
-
-- `experiments.typedRoutes: true` actif → utiliser les types générés pour `<Link href>` / `router.push`
-- **React 19** : pas de `forwardRef` (ref = prop), `use()` au lieu de `useContext()`, `<Ctx value={}>` au lieu de `<Ctx.Provider>`
-- **React Compiler** : **bloqué** par incompatibilité Expo Router (issue #35100). Mémorisation manuelle (`useMemo`/`useCallback`) où utile, sinon laisser React runtime.
-- **Stack.Protected** : à adopter pour auth-gating (voir `src/app/index.tsx` pour migration)
-- **`useLoaderData`** : à adopter sur écrans data-driven (pattern Expo Router v7)
+EAS Workflows : `pnpm workflow:preview:android|ios`, `pnpm workflow:prod:android|ios`.
+OTA via EAS Update, `runtimeVersion: fingerprint` en prod et `1.0.0-dev` en preview
+— cette divergence est volontaire, elle évite un décalage d'empreinte entre
+Windows et Linux.
 
 ## Contraintes
 
-- **JAMAIS** de StyleSheet custom si NativeWind suffit
-- **JAMAIS** de composants dupliqués avec le web → utiliser `@repo/api`
-- UI via React Native Reusables uniquement (`@/components/ui/`)
-- State : TanStack Query (server state) + Zustand (client state) — jamais mixer
-- TypeScript strict, zéro `any` (vérifié en CI)
-- **400 lignes max** par fichier (tous les écrans respectent la règle — vérifié 2026-04-21)
+- **UI exclusivement React Native Reusables** (`@/components/ui/`), jamais de
+  `StyleSheet` custom quand NativeWind suffit.
+- **`@repo/ui` (DOM) n'entre jamais ici** — c'est la frontière de l'ADR 0001.
+- **État** : TanStack Query pour le server state, Zustand pour le client state.
+  Ne jamais mélanger les deux.
+- **TypeScript strict, zéro `any`**, vérifié en CI.
+- **400 lignes maximum par fichier.**
+- `testID` obligatoire sur tout élément que l'E2E doit atteindre : formulaire de
+  connexion, dashboards, saisie et envoi du chat, liste de decks.
 
-## Testing
+## Patterns React 19 / Expo
 
-- **Unit** : `jest-expo` + `@testing-library/react-native`. Tests dans `__tests__/<path>/<name>.test.ts`.
-- **E2E** : Maestro dans `e2e/*.yaml`. 4 flows : auth-student, auth-parent, chat-send-message, learning-flashcard. Requiert compte test staging + secrets EAS (`E2E_STUDENT_USERNAME`, etc.).
-- `testID` obligatoires sur éléments critiques (login form, dashboards, chat input/send, deck list)
+- **Pas de `forwardRef`** : `ref` est une prop. `use()` remplace `useContext()`,
+  `<Ctx value={}>` remplace `<Ctx.Provider>`.
+- **React Compiler bloqué** par une incompatibilité Expo Router (issue #35100) :
+  mémoriser à la main où c'est utile, laisser faire le runtime ailleurs.
+- `experiments.typedRoutes` est actif → utiliser les types générés pour
+  `<Link href>` et `router.push`.
+
+## Intégration serveur
+
+Eden Treaty via `@repo/api` donne la type-safety de bout en bout. Le client est
+initialisé dans `src/lib/api.ts` : `EXPO_PUBLIC_API_URL`, `cookieProvider`
+injectant la session Better Auth, timeouts 30 s / 60 s upload / 120 s chat.
+
+- **Auth** : Better Auth + `@better-auth/expo`, session en `expo-secure-store`
+  (Keychain / Keystore), deep links `tomia://` pour le retour OAuth.
+- **Chat** : `useChat` de `@ai-sdk/react` avec `DefaultChatTransport`, historique
+  porté par le serveur. Traiter explicitement 429 `QUOTA_EXCEEDED` et 409
+  `CONCURRENT_STREAM` — ce sont des états produit, pas des erreurs réseau.
+- **Upload** : présigné Scaleway (`presign` → PUT S3 direct → `confirm`).
+- **Cache** : TanStack Query + persister AsyncStorage, NetInfo pour
+  `onlineManager`. Purger le cache au signOut : isolation des données par
+  utilisateur, exigence RGPD mineurs.
+
+## Tests
+
+Unitaires jest-expo dans `__tests__/<path>/<name>.test.ts`. E2E Maestro dans
+`e2e/*.yaml` — quatre flows : auth élève, auth parent, envoi de message,
+flashcard. Ils exigent un compte de test staging et les secrets EAS.
 
 ## Observabilité
 
-- **Sentry** (`@sentry/react-native` ~7.11.0, résolu par `expo install` pour SDK 56) : installé.
-  `Sentry.init` conditionnel strict sur `EXPO_PUBLIC_SENTRY_DSN` dans `src/lib/sentry.ts`
-  (no-op en dev local, actif seulement sur builds EAS preview/production où le secret est défini) ;
-  `environment` dérivé d'`extra.appEnv` (`app.config.ts`, lui-même depuis `APP_ENV`) avec fallback
-  `__DEV__`. `Sentry.wrap` sur le composant racine (`src/app/_layout.tsx`). Plugin
-  `@sentry/react-native/expo` dans `app.config.ts` (org `home-drx`, project `tomai-mobile`, région EU
-  `https://de.sentry.io/`) + `getSentryExpoConfig` dans `metro.config.js` : sourcemaps auto-uploadés
-  au build EAS via `SENTRY_AUTH_TOKEN` (secret EAS), rien à faire côté CI locale.
-  Pas de session replay ni de capture d'écran (RGPD mineurs, app élèves) — `tracesSampleRate: 0.1`
-  seulement, aucune intégration replay ajoutée. **Dep native → rebuild dev client requis**
-  (`pnpm build:dev`) après ce changement.
-- **PostHog** RN 3.2+ : analytics + feature flags + session replay — chantier séparé, à installer (dev build requis, iOS 13+/Android 26+)
-
-## Sécurité & conformité (à installer — voir spec SP4)
-
-- **App Integrity** : `expo-app-integrity` (App Attest iOS + Play Integrity Android) — obligatoire pour flows paiement/credentials
-- **SSL pinning** : scope minimal (`/api/auth/*` et `/api/subscriptions/*`) via `react-native-ssl-public-key-pinning`
-- **Cache chiffré** : SQLite → SQLCipher (`@op-engineering/op-sqlite`) + TanStack persister wrapper AES (clés en SecureStore)
-- **a11y WCAG 2.1 AA** obligatoire (EAA en vigueur depuis juin 2025) : `accessibilityLabel`, `accessibilityRole`, contrast 4.5:1, targets ≥44×44pt
-
-## Tester sur un device physique (mobile ↔ backend local)
-
-`pnpm dev` (backend) + `pnpm dev:mobile` (Metro). L'app dérive l'URL du backend
-de l'IP par laquelle le device a joint Metro (`Constants.expoConfig.hostUri`),
-donc **rien à configurer** : device physique → IP LAN, émulateur Android →
-10.0.2.2, simulateur iOS → localhost. L'URL résolue est loggée au boot (`[API]`).
-
-Si le device ne joint pas le backend : vérifier le même Wi-Fi et le pare-feu du
-poste. **Sous WSL2**, le backend tourne dans la VM Linux — activer le réseau
-miroir : `%UserProfile%\.wslconfig` → `[wsl2]` `networkingMode=mirrored`, puis
-`wsl --shutdown` et ouvrir le port (Hyper-V firewall). C'est un réglage de poste,
-hors du repo.
-
-## Troubleshooting
-
-| Symptôme | Solution |
-|---|---|
-| Metro ne démarre pas | `npx expo start --dev-client --clear` |
-| Port 8081 occupé | `npx kill-port 8081` |
-| Téléphone ne se connecte pas | vérifier même réseau Wi-Fi |
-| NativeWind v5 className ignoré sur `SafeAreaView` | Utiliser le wrapper CSS `@/components/ui/safe-area-view` (le polyfill global ne wrappe que `SafeAreaProvider`) |
-| Metro `unstable_enablePackageExports` erreur | Ne PAS override — SDK 53+ gère les `conditionNames` correctement |
-
-## Sources officielles
-
-[Expo SDK 56](https://docs.expo.dev), [Expo Router v7](https://docs.expo.dev/router/introduction/), [React Native Reusables](https://rnr-docs.vercel.app), [NativeWind v5](https://www.nativewind.dev/v5), [TanStack Query v5](https://tanstack.com/query/v5), [Better Auth](https://better-auth.com), [Maestro](https://maestro.mobile.dev)
+`Sentry.init` est conditionné strictement à `EXPO_PUBLIC_SENTRY_DSN`
+(`src/lib/sentry.ts`) : no-op en dev local, actif seulement sur les builds EAS où
+le secret existe. **Ni session replay ni capture d'écran** — RGPD mineurs, c'est
+une décision produit, pas un oubli de configuration.
