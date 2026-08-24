@@ -9,6 +9,7 @@ Le workflow TDD (Red-Green-Refactor) est géré par **superpowers:test-driven-de
 | Server | Bun test runner | `cd apps/server && bun run test` |
 | Mobile | jest-expo | `cd apps/mobile && pnpm test` |
 | Landing | — | Pas de tests (site statique) |
+| `packages/tokens` | Bun test runner | `pnpm --filter @repo/tokens test` |
 
 ## Localisation des tests
 

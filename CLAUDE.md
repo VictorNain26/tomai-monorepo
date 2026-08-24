@@ -1,53 +1,85 @@
 # Monorepo Tom
 
+Assistant scolaire socratique pour élèves français, avec supervision parentale.
+Stack, structure et démarrage : `README.md` — pas de duplication ici.
+
 ## Commandes
 
 ```bash
-pnpm install                      # Installation
-pnpm dev                          # Landing:3001 + Server:3000
-pnpm dev:mobile                   # Expo mobile (8081)
-pnpm typecheck && pnpm lint       # Validation (obligatoire avant commit)
-pnpm build                        # Build production
-pnpm seed                         # Seed DB : comptes parent + élève (dev-only)
-pnpm doctor:e2e                   # Diagnostic strict : chaque dépendance réelle doit répondre (SKIP/degraded = échec)
+pnpm install                      # Node 22+, pnpm 11+
+pnpm dev                          # infra Docker + server:3000 + landing:3001
+pnpm dev:mobile                   # Expo (8081), terminal séparé
+pnpm dev:down                     # arrêt de l'infra
+pnpm typecheck && pnpm lint       # validation, obligatoire avant commit
+pnpm test                         # tous les tests du workspace
+pnpm doctor                       # diagnostic de la stack
+pnpm doctor:e2e                   # diagnostic strict : un SKIP ou un degraded = échec
+pnpm seed                         # comptes parent + élève, dev uniquement
 ```
 
-Backend nécessite Docker : `cd apps/server && docker compose up -d`
+L'infra Docker vit à la **racine** (`docker-compose.yml`, pas dans `apps/server`).
+`pnpm dev` la démarre et attend que postgres et qdrant soient `healthy` avant de
+lancer les apps : si l'infra est incomplète, les apps ne démarrent pas.
 
-## Stack
+## Où travailler
 
-Détail par app (chargé à la demande via walk-up quand tu travailles dedans) : `apps/server/CLAUDE.md` (backend), `apps/mobile/CLAUDE.md` (mobile), `apps/ai-service/README.md` (service Python RAG), `apps/curriculum/CLAUDE.md` (indexation RAG des programmes officiels — app Python `uv` autonome, hors workspace pnpm/turbo).
+Chaque app porte sa propre doc, chargée à la demande quand tu ouvres un fichier
+dedans : `apps/server/CLAUDE.md`, `apps/mobile/CLAUDE.md`, `apps/landing/CLAUDE.md`,
+`apps/curriculum/CLAUDE.md`, `apps/ai-service/README.md`.
 
-| Couche | Technologies |
-|--------|-------------|
-| Backend | Bun 1.3, Elysia.js 1.4, PostgreSQL 16 pgvector, Drizzle ORM |
-| AI service | Python FastAPI (uv) — embeddings BGE-M3 dense+sparse pour le RAG |
-| Landing | Next.js 16, TailwindCSS 4, Framer Motion — vitrine marketing/SEO |
-| Mobile | Expo SDK 56, React Native 0.85, React 19.2, NativeWind v5, React Native Reusables — app universelle (mobile + web, ADR 0001) |
-| Auth | Better Auth 1.6 + Google OAuth + account linking |
-| AI | Mistral (chat `medium-latest`, embeddings 1024D, vision Pixtral, OCR, TTS + STT Voxtral) — stack 100 % EU |
-| RAG | Qdrant Cloud + BGE-M3 hybrid (via `apps/ai-service`) |
-| Monorepo | Turborepo, pnpm workspaces, `@repo/api` (Eden Treaty types), `@repo/tokens` (design system partagé Tailwind v4) |
-| Deploy | Vercel (landing), Koyeb (server + ai-service), EAS (mobile natif ; web Expo → Vercel ou EAS Hosting, ADR 0001) |
-| Observabilité | OpenTelemetry (server, OTLP en prod) + logger structuré ; Sentry actif (server, landing, mobile) ; PostHog non installé (chantier séparé) |
+Les conventions transverses vivent dans `.claude/rules/` et se chargent seules —
+ne pas les importer. `database-migrations.md` et `design-system.md` sont scopées par
+chemin : elles n'arrivent en contexte que sur les fichiers concernés.
 
-## Git workflow
+## Git
 
-- **`main`** : seule branche permanente. JAMAIS de push direct — branche de travail courte → PR vers `main`
-- **Merge commit uniquement** : JAMAIS squash merge
+- **`main`** est la seule branche permanente. Jamais de push direct : branche courte → PR.
+- **Merge commit uniquement**, jamais de squash.
+- Stager les fichiers explicitement, jamais `git add .`.
 
-## Enforcement
+## Revue avant merge
 
-Le workflow (TDD, review, validation) est géré par **superpowers skills** (auto-invoqués). Les conventions monorepo vivent dans `.claude/rules/` — chargées automatiquement par Claude Code (pas besoin de les importer).
+`/code-review` (natif) couvre correction et qualité. S'y ajoutent quatre exigences
+propres au monorepo, à vérifier explicitement :
 
-Garde-fous déterministes :
-- **Stop hook** (exit 2) : force validation + commit avant de quitter
-- **PreToolUse hook** : bloque commandes destructives (`rm -rf /`, `DROP DATABASE`, `db:push` en prod)
-- **Permission deny** : interdit la lecture de `.env` et secrets
-- **lefthook** : lint + typecheck (pre-commit), tests + build (pre-push)
+- **Contrat Eden** — une modification dans `packages/api/` doit rester rétrocompatible
+  pour les clients ; les types viennent du serveur, jamais redéfinis côté client.
+- **Frontières workspace** — imports via les packages `@repo/*`, aucune dépendance
+  circulaire. `@repo/ui` (DOM) n'entre jamais dans `apps/mobile` (ADR 0001).
+- **Taille de fichier** — au-delà de ~400 lignes, le fichier fait trop de choses.
+- **Test associé** — tout service, helper ou validation modifié a son `*.test.ts`
+  couvrant le cas nominal et les cas limites. Pas de test décoratif (mocks massifs,
+  assertions triviales).
 
-## Review IA
+## Garde-fous déterministes
 
-- PR vers main : CodeRabbit Free (automatique)
-- `/review` localement avant push
-- E2E Maestro en preview Android sur PR via EAS Workflows (apps/mobile/.eas/workflows/preview-android.yml) — signal, pas gate
+Ils s'exécutent que Claude le veuille ou non. Chacun a une portée précise, et la
+connaître évite de croire couvert ce qui ne l'est pas :
+
+- **`.claude/hooks/block-destructive-db.sh`** (PreToolUse) : refuse la suppression de
+  base ou de schéma, et `drizzle-kit push` dès qu'il vise autre chose qu'une base
+  locale — config `*prod*`/`*staging*`, `DATABASE_URL` non locale, ou mention de
+  prod/staging. Il ne se déclenche que sur une vraie invocation, pas sur une commande
+  qui mentionne ces chaînes. C'est un garde-anti-accident : un contournement
+  volontaire (chaîne cassée, script intermédiaire) passe, et ce n'est pas son objet.
+- **`.claude/hooks/mark-typescript-edit.sh`** + **`require-validation-before-stop.sh`**
+  (PostToolUse + Stop) : la session ne peut pas s'arrêter sur du TypeScript **qu'elle a
+  elle-même édité** et laissé non commité. Le blocage ne porte que sur ces fichiers-là,
+  jamais sur ce que l'arbre contenait déjà. **Portée** : seules les éditions via Edit et
+  Write arment le marqueur — du TypeScript écrit par heredoc, `sed` ou un codegen y
+  échappe.
+- **`permissions.deny`** : lecture des `.env` interdite, `.env.example` volontairement
+  lisible (c'est un gabarit). La liste est une **énumération de suffixes**, pas un
+  catch-all : le langage de permissions n'admet aucune exception dans une règle `deny`
+  ([doc](https://code.claude.com/docs/en/permissions)), donc un `.env.*` global
+  bloquerait aussi les gabarits. Un suffixe inhabituel qui porterait des secrets doit
+  être ajouté à la main.
+- **lefthook** : lint + typecheck en pre-commit, tests + build en pre-push.
+
+Ne jamais contourner un hook qui échoue (`--no-verify` est deny-listé) : traiter la cause.
+
+## Review externe
+
+- PR vers `main` : CodeRabbit Free, automatique (`.coderabbit.yaml`).
+- E2E Maestro en preview Android sur PR via EAS Workflows
+  (`apps/mobile/.eas/workflows/preview-android.yml`) — signal, pas gate.

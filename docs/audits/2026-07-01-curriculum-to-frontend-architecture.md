@@ -199,7 +199,7 @@ Remplace le plan du rapport principal. L'app n'étant pas en prod, aucun chemin 
 2. **Lot 2 — Sécu deps** (inchangé) : Better Auth 1.6.23 + dédup, provenance npm vérifiée.
 3. **Lot 3 — ai-service embed-only** : suppression complète du rerank (service + client + env + rag.service), FP16/instance tranché, volume HF Koyeb vérifié, timeout embed chat borné. + les 2 A/B sandbox (IDF, sparse vs BM25).
 4. **Lot 4 — Chat sur AI SDK v5 (serveur d'abord)** : `streamText`/`toUIMessageStreamResponse` sur Elysia, tools Zod, middleware `prompt_cache_key`, `onFinish` persistance, OTel GenAI sur le streaming ; types partagés (UIMessage custom, data parts) exportés via `@repo/api`. Rend obsolète l'ancien lot 3 (contournement HTTP). Pas de package chat-core (ADR 0001).
-5. **Lot 5 — App universelle** : suivre la roadmap de l'ADR 0001 (`docs/superpowers/plans/2026-06-30-universal-app-migration.md`) — cible web + pilote 1 écran (gate go/no-go), parité conso, puis cutover (`apps/mobile` → `apps/app`, **suppression d'`apps/web`**, réconciliation doc), avec `useChat` branché des deux rôles.
+5. **Lot 5 — App universelle** : suivre la roadmap de l'ADR 0001 (`docs/adr/0001-universal-consumer-app.md`) — cible web + pilote 1 écran (gate go/no-go), parité conso, puis cutover (`apps/mobile` → `apps/app`, **suppression d'`apps/web`**, réconciliation doc), avec `useChat` branché des deux rôles.
 6. **Lot 6 — Cycle de vie index curriculum** (inchangé) : delete-by-source_file, veille bouclée en .md structuré, vrai sous-titre dans `payload.section`, retrait du tokenizer Mistral.
 7. **Lot 7 — Retrieval déterministe** : tool RAG forcé (`toolChoice` AI SDK) sur intention scolaire.
 

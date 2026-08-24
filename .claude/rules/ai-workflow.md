@@ -1,36 +1,35 @@
-# Workflow IA — modèle par rôle (équilibre coût/perf)
+# Workflow IA — ce que ce projet change
 
-Comment répartir le travail entre l'orchestrateur et les sous-agents, et **quel modèle + quel effort** pour chaque rôle. Complète (ne remplace pas) le workflow superpowers et `.claude/rules/testing-and-commits.md`.
+La convention générale (modèle et effort par rôle, quand déléguer, cycle
+plan → implémentation → revue) vit dans `~/.claude/CLAUDE.md` et le frontmatter
+de `~/.claude/agents/`. Ce fichier ne garde que les **écarts propres au monorepo**.
 
-## Principe
+## Agents définis ici
 
-Le coût d'une **erreur de jugement** (mauvaise archi, bug raté en revue) écrase les tokens économisés. Donc : downgrader agressivement l'**exécution** et la **recherche** ; garder le premium sur le **jugement** (design, revue adversariale, décisions irréversibles).
+| Agent | Modèle | Effort | Pourquoi il existe |
+|-------|--------|--------|--------------------|
+| `implementer` | sonnet | medium | Surcharge le `haiku` de l'agent user-level. Les tâches du dépôt touchent des routes Elysia typées, le schéma Drizzle, les types Eden Treaty : il y faut du jugement d'intégration. Pour un vrai travail mécanique (renommage, formatage), l'orchestrateur peut repasser `model: haiku` à l'appel. |
+| `spec-reviewer` | sonnet | medium | Premier étage de revue : conformité à la spec, avant la revue de qualité. N'existe pas au niveau user. |
 
-## Modèle par rôle
+## Agents réutilisés tels quels
 
-| Rôle | Agent | Modèle | Effort |
-|------|-------|--------|--------|
-| Orchestration en **conception** (brainstorm, design, plan, décisions) | session | **opus** | xhigh |
-| Orchestration en **exécution** (plan figé) | session | **sonnet** (via `/model`) | high (via `/effort`) |
-| Planification | `planner` (user-level) | opus | high |
-| Implémentation cadrée | `implementer` (projet) | **sonnet** ; `haiku` (trivial) | medium ; low (trivial) |
-| Revue de conformité spec | `spec-reviewer` (projet) | sonnet | medium |
-| Revue de qualité de code | `code-reviewer` (user-level) | sonnet | medium |
-| Revue archi / sécu / contrats | `architecture-reviewer` (user-level) | opus | xhigh |
-| Exploration / recherche read-only | `Explore` (built-in) | inherit ; `haiku` (gros volume) | low |
+`planner` (opus/high), `code-reviewer` (opus/high), `Explore` (built-in) — définis
+au niveau user, **ne pas les redéfinir ici**.
 
-`model:` et `effort:` vivent dans le frontmatter de chaque agent (source de vérité) ; sans `effort:`, l'agent hérite de l'effort de la session. La convention générale est au user-level (`~/.claude/CLAUDE.md` + `~/.claude/agents/`) — ce tableau ne garde que les valeurs résolues côté projet. Réutilise les agents user-level et le built-in **tels quels** — ne pas les recréer dans le projet.
+La revue d'architecture n'a pas d'agent dédié : ses critères vivent dans
+`~/.claude/rules/architecture-review.md`, règle path-scopée qui se charge d'elle-même
+sur tout fichier de code. Pour un checkpoint archi explicite, lancer `code-reviewer`
+en lui donnant ces critères comme cadrage.
 
-## Le levier (non-évident)
+## Le levier
 
-Ce qui *permet* l'exécution économe (sonnet/haiku), c'est la **qualité du cadrage amont**. Un agent peu coûteux sur une tâche floue invente, et l'orchestrateur brûle plus à rattraper qu'il n'a économisé. **Investir dans le plan** (`writing-plans`, en opus) est le multiplicateur : un plan tâche-par-tâche rend le travail exécutable par des agents sonnet/haiku sans supervision lourde.
+Ce qui rend l'exécution en sonnet fiable, c'est le **cadrage amont**. Un agent peu
+coûteux sur une tâche floue invente, et le rattrapage coûte plus que l'économie.
+Investir dans le plan est le multiplicateur, pas le choix de modèle.
 
-## Quand déléguer vs faire soi-même
+## Déléguer ou faire soi-même
 
-- **Déléguer** quand la tâche est isolable **et** substantielle (préserve le contexte de l'orchestrateur, isole le bruit).
-- **Faire en direct** les micro-tâches (≤ quelques lignes) : l'overhead de briefer un sous-agent dépasse le gain.
-- **Paralléliser** les tâches indépendantes (gain de wall-clock, même coût en tokens).
-
-## Cycle d'exécution d'un plan
-
-`plan (opus) → implementer (sonnet) → spec-reviewer (sonnet) → code-reviewer (sonnet) → checkpoint archi/sécu (architecture-reviewer, opus) sur les points chauds uniquement`.
+- **Déléguer** si la tâche est isolable *et* substantielle : ça préserve le contexte
+  de l'orchestrateur et isole le bruit.
+- **En direct** pour les micro-tâches (quelques lignes) : briefer coûte plus que faire.
+- **Paralléliser** les tâches indépendantes : même coût en tokens, moins de temps.

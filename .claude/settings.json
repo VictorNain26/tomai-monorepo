@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "$schema": "https://www.schemastore.org/claude-code-settings.json",
 
   "enabledPlugins": {
     "expo@claude-plugins-official": true,
@@ -17,14 +17,24 @@
 
   "permissions": {
     "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(./apps/server/.env)",
-      "Read(./apps/server/.env.*)",
-      "Read(./apps/mobile/.env)",
-      "Read(./apps/mobile/.env.*)",
-      "Read(./apps/curriculum/.env)",
-      "Read(./apps/curriculum/.env.*)"
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.development)",
+      "Read(.env.production)",
+      "Read(.env.staging)",
+      "Read(.env.test)",
+      "Read(.env.*.local)",
+      "Read(.env.backup)",
+      "Read(.env.bak)",
+      "Read(.env.old)",
+      "Read(.env.orig)",
+      "Read(.env.save)",
+      "Read(.env.keys)",
+      "Read(.env.prod)",
+      "Read(.env.dev)",
+      "Read(.env.ci)",
+      "Read(.env.secret)",
+      "Read(.env.secrets)"
     ]
   },
 
@@ -35,18 +45,31 @@
         "hooks": [
           {
             "type": "command",
-            "command": "INPUT=$(cat); CMD=$(echo \"$INPUT\" | grep -o '\"command\":\"[^\"]*\"' | head -1 | sed 's/\"command\":\"//;s/\"//'); echo \"$CMD\" | grep -qE '(rm -rf /|DROP DATABASE|db:push.*(prod|staging))' && echo 'Blocked: destructive command detected' >&2 && exit 2 || exit 0"
+            "command": "\"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-destructive-db.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR}/.claude/hooks/mark-typescript-edit.sh\"",
+            "timeout": 10
           }
         ]
       }
     ],
     "Stop": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "{ git diff --name-only -- '*.ts' '*.tsx'; git diff --cached --name-only -- '*.ts' '*.tsx'; git ls-files --others --exclude-standard -- '*.ts' '*.tsx'; } | head -1 | grep -q '.' && echo 'Uncommitted .ts/.tsx changes detected. Run validation, review, and commit before stopping.' >&2 && exit 2 || exit 0"
+            "command": "\"${CLAUDE_PROJECT_DIR}/.claude/hooks/require-validation-before-stop.sh\"",
+            "timeout": 15
           }
         ]
       }
