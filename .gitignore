@@ -58,8 +58,5 @@ lint_report.json
 **/.claude/todos/
 **/.claude/credentials.json
 
-# Local documentation (apps/server/CLAUDE.md L220-226)
-apps/server/docs/
-
 # Claude Code worktrees
 .claude/worktrees/
