@@ -67,12 +67,14 @@ connaître évite de croire couvert ce qui ne l'est pas :
   jamais sur ce que l'arbre contenait déjà. **Portée** : seules les éditions via Edit et
   Write arment le marqueur — du TypeScript écrit par heredoc, `sed` ou un codegen y
   échappe.
-- **`permissions.deny`** : lecture des `.env` interdite, `.env.example` volontairement
-  lisible (c'est un gabarit). La liste est une **énumération de suffixes**, pas un
-  catch-all : le langage de permissions n'admet aucune exception dans une règle `deny`
-  ([doc](https://code.claude.com/docs/en/permissions)), donc un `.env.*` global
-  bloquerait aussi les gabarits. Un suffixe inhabituel qui porterait des secrets doit
-  être ajouté à la main.
+- **`permissions.deny`** : lecture des `.env` interdite **à toute profondeur** — un nom
+  de fichier nu suit la sémantique gitignore, donc `Read(.env)` couvre aussi
+  `apps/server/.env` ([doc](https://code.claude.com/docs/en/permissions)).
+  `.env.example` reste volontairement lisible (c'est un gabarit), d'où une
+  **énumération de suffixes** plutôt qu'un `.env.*` qui bloquerait aussi les gabarits :
+  une règle `deny` n'admet aucune exception. Un suffixe inhabituel qui porterait des
+  secrets doit être ajouté à la main. Les porteurs de clés — `*.keystore`, `*.jks`,
+  `*.p8`, `*.p12`, `*.pem` — sont bloqués par des règles distinctes.
 - **lefthook** : lint + typecheck en pre-commit, tests + build en pre-push.
 
 Ne jamais contourner un hook qui échoue (`--no-verify` est deny-listé) : traiter la cause.
