@@ -3,7 +3,7 @@
  *
  * Called fire-and-forget après la première réponse assistant.
  *
- * Modèle : `ministral-3-3b` (cf ADR-0001). Output ~15 tokens, latence min,
+ * Modèle : `ministral-3-3b`. Output ~15 tokens, latence min,
  * coût ≈ $0.0000015/req. Bien suffisant pour un titre de 50 chars.
  * Prompt cache actif pour le préfixe d'instruction stable.
  */
@@ -59,7 +59,7 @@ class AutoTitleService {
         .replace('{assistantPreview}', assistantPreview);
 
       const raw = await generateText({
-        model: env.MISTRAL_MODEL_TITLE,  // ADR-0001 : tâche triviale, modèle minimal
+        model: env.MISTRAL_MODEL_TITLE,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
         maxTokens: 64,
