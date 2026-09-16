@@ -22,9 +22,9 @@ const APP_GUIDE: Record<AppHelpTopic, { student: string; parent: string }> = {
 - Consulter tes devoirs, notes et emploi du temps Pronote (connecte par ton parent)
 - Creer des flashcards pour reviser avec repetition espacee
 - Envoyer des photos, documents ou messages vocaux
-Tom utilise les programmes officiels de l'Education nationale pour t'aider.`,
+Tom adapte ses explications a ta classe.`,
     parent: `Tom est un assistant scolaire pour votre enfant. L'application permet :
-- Un tutorat adapte au niveau scolaire, base sur les programmes Eduscol
+- Un tutorat adapte au niveau scolaire
 - L'acces aux devoirs, notes et emploi du temps via Pronote (connexion par le parent)
 - La creation de flashcards de revision avec repetition espacee
 - L'envoi de photos d'exercices et de messages vocaux
@@ -49,13 +49,12 @@ Depuis Accueil, vous pouvez ajouter des enfants, voir leur progression et connec
 - Tape ta question dans la zone de texte en bas
 - Tu peux joindre un fichier avec le bouton "+" (photo, document, ou depuis ton classeur)
 - Tu peux aussi dicter ton message avec le bouton micro (dictee vocale)
-- Tom cherche dans les programmes officiels avant de te repondre
 - Il peut consulter tes devoirs et notes Pronote si tu le demandes
 - Demande "revise-moi sur..." pour creer des flashcards
 Tom ne donne pas les reponses directement : il te guide pour que tu comprennes.`,
     parent: `Le chat est l'interface principale de votre enfant avec Tom :
 - Tom utilise une approche socratique : il guide sans donner les reponses
-- Les reponses sont basees sur les programmes officiels (Eduscol)
+- Les explications sont adaptees au niveau scolaire de votre enfant
 - Votre enfant peut envoyer des photos, documents ou messages vocaux
 - Tom peut consulter Pronote pour contextualiser son aide
 - Les flashcards sont generees automatiquement sur demande`,
