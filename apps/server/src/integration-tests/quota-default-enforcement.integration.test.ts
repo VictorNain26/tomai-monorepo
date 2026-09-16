@@ -1,19 +1,29 @@
 import { describe, it, expect } from 'bun:test';
+import { sql } from 'drizzle-orm';
 import { checkQuota, checkDeckQuota } from '../services/quota/quota-functions.js';
 import { QUOTA_CONFIG } from '../services/quota/quota-config.js';
 
 /**
- * Audit F-3 (2026-04-21): quotaEnforcementEnabled flipped to `true` by default.
- * Deployments that need to disable enforcement must set
- * `QUOTA_ENFORCEMENT_ENABLED=false` explicitly.
+ * Integration test — quota enforcement is ON by default
+ * (QUOTA_ENFORCEMENT_ENABLED defaults to `true` in config/env.ts).
  *
- * These tests document the NEW default behaviour: without a subscription row
- * and without DB access, checkQuota/checkDeckQuota fail open to free-plan
- * limits (not unlimited access). The bypass branch is exercised by manually
- * setting the env var before import; we don't re-test it here.
+ * A user with no `user_subscriptions` row gets free-plan limits at zero
+ * usage, read from the migrated DB — not unlimited access.
  */
 
-describe('checkQuota (enforcement enabled by default)', () => {
+async function checkDbReachable(): Promise<boolean> {
+  try {
+    const { db } = await import('../db/connection');
+    await db.execute(sql`SELECT 1`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const dbReachable = await checkDbReachable();
+
+describe.skipIf(!dbReachable)('checkQuota (enforcement enabled by default)', () => {
   it('returns allowed=true for brand-new users with free plan limits', async () => {
     const result = await checkQuota('new-user-id');
 
@@ -34,20 +44,20 @@ describe('checkQuota (enforcement enabled by default)', () => {
   });
 });
 
-describe('checkDeckQuota (enforcement enabled by default)', () => {
+describe.skipIf(!dbReachable)('checkDeckQuota (enforcement enabled by default)', () => {
   it('returns allowed=true for users with free plan', async () => {
     const result = await checkDeckQuota('any-user-id');
 
     expect(result.allowed).toBe(true);
   });
 
-  it('reports free-plan deck limits (not unlimited)', async () => {
+  it('reports the configured deck limits, not the unlimited bypass', async () => {
     const result = await checkDeckQuota('test');
 
     // Free plan currently has no deck quota, so these come back as the
-    // premium daily/monthly defaults from QUOTA_CONFIG for a brand-new user
-    // (matches the checkQuotaReal fail-open path).
-    expect(result.dailyLimit).toBeGreaterThan(0);
-    expect(result.monthlyLimit).toBeGreaterThan(0);
+    // premium daily/monthly defaults from QUOTA_CONFIG for a user without a
+    // subscription row.
+    expect(result.dailyLimit).toBe(QUOTA_CONFIG.premium.dailyDecks);
+    expect(result.monthlyLimit).toBe(QUOTA_CONFIG.premium.monthlyDecks);
   });
 });

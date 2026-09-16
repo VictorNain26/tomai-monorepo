@@ -1,9 +1,9 @@
 /**
  * Tests unitaires - quota enforcement (feature flag ON path)
  *
- * The default test suite runs with the flag OFF (see quota-bypass.test.ts).
- * This file exercises the real DB-backed quota logic by setting the env var
- * BEFORE importing the quota modules.
+ * Forces the flag ON through the env module and mocks the subscription
+ * repository, so the quota logic runs without a DB. The DB-backed default
+ * path lives in integration-tests/quota-default-enforcement.integration.test.ts.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
