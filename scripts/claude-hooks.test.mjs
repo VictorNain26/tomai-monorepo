@@ -24,6 +24,8 @@ const blocked = [
   ['drizzle-kit push visant staging', 'drizzle-kit push --config=drizzle.config.staging.ts'],
   ['dropdb', 'dropdb tomai_dev'],
   ['drop database via psql', 'psql -U tomai_dev -c "DROP DATABASE tomai_dev"'],
+  ['drop database après une autre requête SQL', 'psql -U tomai_dev -c "SELECT 1; DROP DATABASE tomai_dev"'],
+  ['drop schema après un \\c', 'psql -d postgres -c "\\c tomai_dev; DROP SCHEMA public CASCADE;"'],
 ];
 
 for (const [label, command] of blocked) {
