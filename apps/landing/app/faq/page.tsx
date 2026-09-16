@@ -3,7 +3,7 @@ import { FAQ } from "@/components/sections/faq";
 
 export const metadata: Metadata = {
   title: "Questions fréquentes",
-  description: "Retrouvez les réponses aux questions les plus fréquentes sur TomIA : méthode socratique, programmes Éduscol, suivi parental, tarifs et compatibilité Pronote.",
+  description: "Retrouvez les réponses aux questions les plus fréquentes sur TomIA : méthode socratique, niveaux et matières, suivi parental, tarifs et compatibilité Pronote.",
   alternates: {
     canonical: "/faq",
   },
