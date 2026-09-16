@@ -23,7 +23,7 @@ export const FAQS = [
   },
   {
     question: "TomIA s'adapte-t-il au niveau de mon enfant ?",
-    answer: "Oui. Du CP à la Terminale, TomIA adapte son vocabulaire, la longueur de ses explications et la notation mathématique à l'âge et à la classe de votre enfant. Il couvre 13 matières : Maths, Français, Histoire, Géographie, SVT, Physique-Chimie, Anglais, Philosophie…",
+    answer: "Oui. TomIA s'adresse aux collégiens, de la 6e à la 3e : il adapte son vocabulaire, la longueur de ses explications et la notation mathématique à la classe de votre enfant. Il couvre 10 matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Technologie, Anglais, Espagnol, Allemand et Italien.",
     icon: BookOpen,
   },
   {
@@ -33,7 +33,7 @@ export const FAQS = [
   },
   {
     question: "Puis-je annuler à tout moment ?",
-    answer: "Oui, l'abonnement est sans engagement. Vous pouvez annuler en un clic depuis votre espace parent, sans frais ni justification. L'offre gratuite, avec un volume d'échanges limité chaque jour, reste accessible sans limite de durée.",
+    answer: "Oui, l'abonnement est sans engagement. L'abonnement se souscrit dans l'application via l'App Store ou Google Play, et s'annule à tout moment depuis les réglages d'abonnement de votre store, sans justification. L'offre gratuite, avec un volume d'échanges limité chaque jour, reste accessible sans limite de durée.",
     icon: CreditCard,
   },
   {
