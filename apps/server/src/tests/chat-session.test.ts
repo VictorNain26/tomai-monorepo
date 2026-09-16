@@ -118,8 +118,16 @@ mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
 }));
 
-mock.module('../storage/scaleway-storage.service', () => ({
+mock.module('../services/storage/scaleway-storage.service', () => ({
   deleteFile: mock(async () => {}),
+}));
+
+// The real service pulls schema symbols this file's partial `../db/schema`
+// mock does not provide.
+mock.module('../services/episodic-memory.service', () => ({
+  episodicMemoryService: {
+    extractAndStore: mock(async () => {}),
+  },
 }));
 
 // safeUUID: pass through valid UUIDs, return null for invalid
@@ -131,19 +139,13 @@ mock.module('../utils/uuid', () => ({
   },
 }));
 
-// NOTE: Known Bun test resolver issue with this file.
-// The transitive import chain chat-session.service → episodic-memory.service →
-// ../db/schema.js fails to resolve sessionEpisodes/messages/studySessions at
-// test time even though `bun -e "import('./src/db/schema').then(...)"` works
-// at runtime. mock.module of the episodic service + schema barrel was
-// attempted but Bun's test resolver doesn't intercept relative-path imports
-// consistently. Tracked as follow-up; tests validated via `bun -e` stub for
-// the moment and by the surrounding suite (tool-executor.test, progress.test
-// etc. cover overlapping session/message behaviour).
-
 // Import after mocks
 const { ChatSessionService } = await import('../services/chat/chat-session.service');
 const { ChatMessageService } = await import('../services/chat/chat-message.service');
+
+function rejection(promise: Promise<unknown>): Promise<unknown> {
+  return promise.then(() => undefined, (error: unknown) => error);
+}
 
 const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
 const VALID_UUID_2 = '550e8400-e29b-41d4-a716-446655440001';
@@ -195,7 +197,7 @@ describe('ChatSessionService', () => {
         () => Promise.reject(new Error('DB connection lost'))
       );
 
-      expect(sessionService.getOrCreateActiveSession('user-err')).rejects.toThrow();
+      expect(await rejection(sessionService.getOrCreateActiveSession('user-err'))).toBeInstanceOf(Error);
       expect(mockLogger.error).toHaveBeenCalled();
 
       // Restore
@@ -322,12 +324,12 @@ describe('ChatSessionService', () => {
     });
 
     it('should throw for invalid UUID', async () => {
-      expect(sessionService.deleteSession('bad-id')).rejects.toThrow();
+      expect(await rejection(sessionService.deleteSession('bad-id'))).toBeInstanceOf(Error);
     });
 
     it('should throw when session belongs to different user', async () => {
       findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'other-user' });
-      expect(sessionService.deleteSession(VALID_UUID, 'user-001')).rejects.toThrow();
+      expect(await rejection(sessionService.deleteSession(VALID_UUID, 'user-001'))).toBeInstanceOf(Error);
     });
 
     it('should delete without userId check when userId not provided', async () => {
@@ -349,17 +351,17 @@ describe('ChatSessionService', () => {
     });
 
     it('should throw for invalid UUID', async () => {
-      expect(sessionService.resetSession('invalid', 'user-001')).rejects.toThrow();
+      expect(await rejection(sessionService.resetSession('invalid', 'user-001'))).toBeInstanceOf(Error);
     });
 
     it('should throw when session not found', async () => {
       findByIdResult = null;
-      expect(sessionService.resetSession(VALID_UUID, 'user-001')).rejects.toThrow();
+      expect(await rejection(sessionService.resetSession(VALID_UUID, 'user-001'))).toBeInstanceOf(Error);
     });
 
     it('should throw when session belongs to different user', async () => {
       findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'other-user' });
-      expect(sessionService.resetSession(VALID_UUID, 'user-001')).rejects.toThrow();
+      expect(await rejection(sessionService.resetSession(VALID_UUID, 'user-001'))).toBeInstanceOf(Error);
     });
   });
 
@@ -379,7 +381,7 @@ describe('ChatSessionService', () => {
 
     it('should throw when user has no school level', async () => {
       findUserByIdResult = makeUser({ id: 'user-001', schoolLevel: null });
-      expect(sessionService.getUserById('user-001')).rejects.toThrow();
+      expect(await rejection(sessionService.getUserById('user-001'))).toBeInstanceOf(Error);
     });
 
     it('should include firstName when present', async () => {
@@ -409,7 +411,7 @@ describe('ChatSessionService', () => {
     });
 
     it('should throw for invalid UUID', async () => {
-      expect(
+      expect(await rejection(
         sessionService.updateSessionWithFiles('invalid', {
           fileName: 'test.pdf',
           analysis: 'test',
@@ -417,12 +419,12 @@ describe('ChatSessionService', () => {
           size: 100,
           uploadedAt: '2025-01-01',
         })
-      ).rejects.toThrow();
+      )).toBeInstanceOf(Error);
     });
 
     it('should throw when session not found', async () => {
       findByIdResult = null;
-      expect(
+      expect(await rejection(
         sessionService.updateSessionWithFiles(VALID_UUID, {
           fileName: 'test.pdf',
           analysis: 'test',
@@ -430,7 +432,7 @@ describe('ChatSessionService', () => {
           size: 100,
           uploadedAt: '2025-01-01',
         })
-      ).rejects.toThrow();
+      )).toBeInstanceOf(Error);
     });
   });
 
@@ -497,16 +499,16 @@ describe('ChatMessageService', () => {
     });
 
     it('should throw for invalid session ID', async () => {
-      expect(
+      expect(await rejection(
         messageService.saveMessage('invalid', 'user', 'Hello', {})
-      ).rejects.toThrow();
+      )).toBeInstanceOf(Error);
     });
 
     it('should throw when session not found', async () => {
       findByIdResult = null;
-      expect(
+      expect(await rejection(
         messageService.saveMessage(VALID_UUID, 'user', 'Hello', {})
-      ).rejects.toThrow();
+      )).toBeInstanceOf(Error);
     });
 
     it('should handle attached file metadata', async () => {

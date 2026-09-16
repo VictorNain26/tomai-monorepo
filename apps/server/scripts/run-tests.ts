@@ -22,22 +22,8 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const serverRoot = resolve(scriptDir, "..");
 const testDir = resolve(serverRoot, targetDirArg ?? "src/tests");
 
-// Files that fail due to Bun-specific test resolver bugs (not code bugs).
-// Each entry must include a tracking note so the list doesn't silently rot.
-const SKIPPED_FILES = new Set([
-  // `chat-session.service` statically imports `episodic-memory.service`, which
-  // imports `sessionEpisodes` from the schema barrel. Bun's test resolver
-  // fails to propagate re-exported symbols through two levels of
-  // `export *` even though the runtime import works (verified via `bun -e`).
-  // Behaviour is covered by tool-executor.test + progress.test.
-  // TODO: revisit after the next Bun version bump or harness refactor.
-  "chat-session.test.ts",
-]);
-
 const glob = new Glob("*.test.ts");
-const testFiles = [...glob.scanSync(testDir)]
-  .filter((file) => !SKIPPED_FILES.has(file))
-  .sort();
+const testFiles = [...glob.scanSync(testDir)].sort();
 
 const relativeDir = targetDirArg ?? "src/tests";
 
