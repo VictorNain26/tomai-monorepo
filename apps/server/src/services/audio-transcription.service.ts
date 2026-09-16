@@ -21,7 +21,6 @@ interface TranscriptionResult {
   success: boolean;
   transcription?: string;
   detectedLanguage?: string;
-  duration?: number; // Durée estimée en secondes
   _error?: string;
 }
 
@@ -87,7 +86,6 @@ class AudioTranscriptionService {
         success: true,
         transcription: sttResult.transcription,
         detectedLanguage: sttResult.detectedLanguage ?? targetLanguage,
-        duration: sttResult.duration,
       };
 
       logger.info('Audio transcription completed (Voxtral STT)', {
