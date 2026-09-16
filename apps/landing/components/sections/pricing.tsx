@@ -7,7 +7,7 @@ import { SectionHeader } from "../atoms/section-header";
 const FREE_FEATURES = [
   "Français, Maths, Anglais",
   "Du CP à la Terminale",
-  "5 questions par jour",
+  "Volume d'échanges limité chaque jour",
   "Aide aux devoirs",
   "Suivi des matières travaillées",
 ];
@@ -15,7 +15,7 @@ const FREE_FEATURES = [
 const PREMIUM_FEATURES = [
   "Toutes les matières",
   "Du CP à la Terminale",
-  "Questions illimitées",
+  "5 fois plus d'échanges par jour",
   "Fiches de révision + répétition espacée",
   "Tableau de bord parental complet",
   "Intégration Pronote",

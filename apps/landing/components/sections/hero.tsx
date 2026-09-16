@@ -39,8 +39,8 @@ export function Hero() {
             <span>RGPD</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span>🇫🇷</span>
-            <span>Hébergé en France</span>
+            <span>🇪🇺</span>
+            <span>Hébergé en Europe</span>
           </div>
           <span>Gratuit pour commencer</span>
         </div>
