@@ -23,7 +23,7 @@ Windows et Linux.
 
 - **UI exclusivement React Native Reusables** (`@/components/ui/`), jamais de
   `StyleSheet` custom quand NativeWind suffit.
-- **`@repo/ui` (DOM) n'entre jamais ici** — c'est la frontière de l'ADR 0001.
+- **`@repo/ui` (DOM) n'entre jamais ici** — ses composants rendent du DOM, pas des vues natives.
 - **État** : TanStack Query pour le server state, Zustand pour le client state.
   Ne jamais mélanger les deux.
 - **TypeScript strict, zéro `any`**, vérifié en CI.
