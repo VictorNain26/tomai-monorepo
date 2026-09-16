@@ -41,9 +41,14 @@ has() { printf '%s' "$command" | grep -qE -- "$1"; }
 # Suppression de base ou de schéma. Comme pour `push`, on exige une vraie
 # invocation d'un client base de données : sans ça, un message de commit ou un
 # grep qui mentionne la phrase se fait refuser.
+#
+# Le client et le `drop` doivent appartenir à la MÊME invocation : `[^&|]*`
+# interdit de traverser `&&`, `||` ou un pipe. Deux tests séparés sur la
+# commande entière refusaient `grep "drop database" docs/ && bun run db:push`,
+# où aucun drop n'a lieu. `;` n'est pas un séparateur ici : il sépare aussi les
+# requêtes d'un `psql -c "SELECT 1; DROP DATABASE x"`, qui doit rester bloqué.
 if printf '%s' "$command" | grep -qiE '(^|[;&|][[:space:]]*)([[:alnum:]_]+=[^[:space:]]*[[:space:]]+)*(sudo[[:space:]]+)?dropdb\b' ||
-   { printf '%s' "$command" | grep -qiE '\bdrop[[:space:]]+(database|schema)\b' &&
-     printf '%s' "$command" | grep -qE '\b(psql|pg_dump|mysql|drizzle-kit|db:)'; }; then
+   printf '%s' "$command" | grep -qiE '\b(psql|pg_dump|mysql|drizzle-kit|db:)[^&|]*\bdrop[[:space:]]+(database|schema)\b'; then
   deny "Suppression de base ou de schéma refusée. Pour repartir d'une base locale propre : docker compose down -v puis pnpm setup."
 fi
 

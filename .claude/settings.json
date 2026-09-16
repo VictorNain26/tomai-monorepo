@@ -3,16 +3,7 @@
 
   "enabledPlugins": {
     "expo@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "marketing@knowledge-work-plugins": true
-  },
-  "extraKnownMarketplaces": {
-    "knowledge-work-plugins": {
-      "source": {
-        "source": "github",
-        "repo": "anthropics/knowledge-work-plugins"
-      }
-    }
+    "typescript-lsp@claude-plugins-official": true
   },
 
   "permissions": {
@@ -34,7 +25,13 @@
       "Read(.env.dev)",
       "Read(.env.ci)",
       "Read(.env.secret)",
-      "Read(.env.secrets)"
+      "Read(.env.secrets)",
+
+      "Read(**/*.keystore)",
+      "Read(**/*.jks)",
+      "Read(**/*.p8)",
+      "Read(**/*.p12)",
+      "Read(**/*.pem)"
     ]
   },
 
