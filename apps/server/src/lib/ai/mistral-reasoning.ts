@@ -10,6 +10,7 @@
  */
 
 import type { EducationLevelType } from '../../types/index.js';
+import type { StudentSubject } from '../../config/prompts/adaptation/subjects.js';
 
 type ReasoningEffort = 'none' | 'high';
 
@@ -23,15 +24,13 @@ const COLLEGE_AND_UP: ReadonlySet<EducationLevelType> = new Set<EducationLevelTy
 ]);
 
 /**
- * STEM-heavy subjects where reasoning helps the tutor produce better
- * explanations and checks. Math, physics-chemistry, biology, technology, CS.
+ * STEM subject families where reasoning helps the tutor produce better
+ * explanations and checks. Typed against the intent classifier's taxonomy:
+ * the chat turn's subject is one of those families, never a fine-grained slug.
  */
-const STEM_SUBJECTS: ReadonlySet<string> = new Set<string>([
+const STEM_SUBJECTS: ReadonlySet<string> = new Set<StudentSubject>([
   'mathematiques',
-  'physique-chimie',
-  'svt',
-  'technologie',
-  'nsi',
+  'sciences',
 ]);
 
 /** Student intents where extra reasoning genuinely helps. */
