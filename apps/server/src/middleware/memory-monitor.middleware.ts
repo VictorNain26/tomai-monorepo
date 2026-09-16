@@ -197,9 +197,6 @@ class MemoryMonitor {
         global.gc();
       }
 
-      // 2. RAG service uses in-memory cache
-      // Cache is managed by memory-cache.service
-
       logger.info('Emergency cleanup completed', {
         operation: 'memory:emergency-cleanup-completed'
       });
@@ -221,9 +218,6 @@ class MemoryMonitor {
     });
 
     try {
-      // RAG service - cache géré par memory-cache.service
-      // In-memory LRU cache for mono-instance
-
       // Forcer GC si disponible
       if (global.gc) {
         global.gc();

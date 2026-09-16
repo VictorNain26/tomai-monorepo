@@ -5,7 +5,7 @@ export default function ConfidentialitePage() {
   return (
     <PageLayout
       title="Politique de Confidentialité"
-      description="Dernière mise à jour : 11 juin 2026"
+      description="Dernière mise à jour : 16 septembre 2026"
     >
       <div className="relative mt-12">
         <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-blue-600/20 rounded-[2.5rem] blur-xl opacity-50" />
@@ -93,9 +93,8 @@ export default function ConfidentialitePage() {
             </p>
             <ul>
               <li><strong>Mistral AI</strong> (France) — modèles d&apos;intelligence
-                artificielle : traite les messages, photos d&apos;exercices et transcriptions le
-                temps de générer la réponse.</li>
-              <li><strong>Gladia</strong> (France) — transcription des messages vocaux.</li>
+                artificielle : traite les messages, photos d&apos;exercices et messages vocaux
+                (transcription) le temps de générer la réponse.</li>
               <li><strong>Scaleway</strong> (France, données stockées à Paris) — stockage des
                 photos, documents et messages vocaux.</li>
               <li><strong>Koyeb</strong> (Union européenne — Francfort) — hébergement du

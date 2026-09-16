@@ -58,5 +58,4 @@ subsiste au runtime. Si une piste de code suggère le contraire, c'est un vestig
 ## Sources
 
 [Mistral API](https://docs.mistral.ai/api/) ·
-[Modèles](https://docs.mistral.ai/getting-started/models/models_overview/) ·
-[BGE-M3](https://huggingface.co/BAAI/bge-m3)
+[Modèles](https://docs.mistral.ai/getting-started/models/models_overview/)

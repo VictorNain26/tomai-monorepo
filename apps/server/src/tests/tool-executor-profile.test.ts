@@ -17,14 +17,6 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
-// RAG (needed because the module imports it, even if we don't call those paths here)
-mock.module('../services/rag.service', () => ({
-  ragService: {
-    isAvailable: mock(async () => true),
-    hybridSearch: mock(async () => ({ semanticChunks: [], context: '', averageSimilarity: 0 })),
-  },
-}));
-
 // Cognitive profile — this is what we actually care about.
 interface Profile {
   strengths: string[] | null;
@@ -115,7 +107,6 @@ describe('executeUpdateProfile()', () => {
         observation: '',
         subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      // CCA Sprint 1: errors now use isError + errorCategory
       expect(result.isError).toBe(true);
       expect(result.message).toContain("Observation ou matière manquante");
       expect(updateProfileSpy).not.toHaveBeenCalled();

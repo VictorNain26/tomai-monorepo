@@ -109,22 +109,16 @@ describe('Token Budget Service', () => {
       expect(budget.historyMaxTokens).toBe(Math.floor(11116 * 0.55));
     });
 
-    it('should allocate 20% to RAG', () => {
-      const budget = calculateBudget();
-      expect(budget.ragMaxTokens).toBe(Math.floor(11116 * 0.20));
-    });
-
     it('should allocate 10% to current message', () => {
       const budget = calculateBudget();
       expect(budget.currentMessageMaxTokens).toBe(Math.floor(11116 * 0.10));
     });
 
-    it('should have allocations that sum close to total', () => {
+    it('should never allocate more than the available tokens', () => {
       const budget = calculateBudget();
       const sum = budget.summaryMaxTokens + budget.historyMaxTokens +
-                  budget.ragMaxTokens + budget.currentMessageMaxTokens;
-      // Floor rounding may lose a few tokens, but should be within 4
-      expect(budget.availableTokens - sum).toBeLessThanOrEqual(4);
+                  budget.currentMessageMaxTokens;
+      expect(sum).toBeLessThanOrEqual(budget.availableTokens);
     });
   });
 });

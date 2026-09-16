@@ -115,7 +115,7 @@ class IntentClassifierService {
     const startTime = Date.now();
     try {
       const parsed = await generateStructured<{ intent?: string; confidence?: string; subject?: string }>({
-        model: env.MISTRAL_MODEL_CLASSIFY,  // ADR-0001 : classification intention + matière, output 96 tokens
+        model: env.MISTRAL_MODEL_CLASSIFY,
         messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
         temperature: 0,
         maxTokens: 96,

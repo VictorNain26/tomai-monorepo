@@ -34,7 +34,7 @@ export const deckSourceEnum = pgEnum('deck_source', ['prompt', 'conversation', '
  * Learning Decks - Collections de cartes de révision
  *
  * Un "deck" est une collection thématique de cartes.
- * Organisé par matière et adapté au niveau scolaire pour validation RAG.
+ * Organisé par matière et adapté au niveau scolaire.
  */
 export const learningDecks = pgTable('learning_decks', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -50,7 +50,7 @@ export const learningDecks = pgTable('learning_decks', {
   sourceId: varchar('source_id', { length: 255 }), // sessionId, documentId, ou programId
   sourcePrompt: text('source_prompt'), // Prompt original si source='prompt'
 
-  // Contexte éducatif (pour validation RAG)
+  // Contexte éducatif
   schoolLevel: schoolLevelEnum('school_level'),
 
   // Compteur de cartes

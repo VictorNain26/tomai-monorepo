@@ -2,7 +2,7 @@
  * Mistral Embeddings Service
  *
  * Génère des embeddings avec Mistral API (1024 dimensions).
- * Utilisé pour la recherche vectorielle RAG.
+ * Utilisé par la mémoire épisodique (recherche vectorielle pgvector).
  */
 
 import { Mistral } from '@mistralai/mistralai';

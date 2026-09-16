@@ -1,5 +1,5 @@
 /**
- * Structured tool error — CCA Sprint 1 safety.
+ * Structured tool error.
  *
  * Replaces ad-hoc `{error: true, message: '…'}` pattern with a discriminated
  * union that lets the model decide between retry / reformulate / escalate

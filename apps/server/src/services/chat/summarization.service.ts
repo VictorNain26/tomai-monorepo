@@ -6,7 +6,7 @@
  * - Incrémental : fusionne l'ancien résumé avec les nouveaux échanges
  * - Asynchrone (fire-and-forget) pour ne pas bloquer le streaming
  *
- * Modèle : `mistral-small-latest` (cf ADR-0001). Tâche templatée, qualité
+ * Modèle : `mistral-small-latest`. Tâche templatée, qualité
  * suffisante, ~3× moins cher que medium. Escalade vers medium si qualité
  * insuffisante mesurée en prod.
  * Prompt cache actif (system prompt stable invariant inter-sessions).
@@ -214,7 +214,7 @@ class SummarizationService {
       : `## CONVERSATION\n${messagesText}`;
 
     const text = await generateText({
-      model: env.MISTRAL_MODEL_LIGHT,  // ADR-0001 D2 : sweet spot perf/coût
+      model: env.MISTRAL_MODEL_LIGHT,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },

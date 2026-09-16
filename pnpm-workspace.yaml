@@ -43,8 +43,6 @@ catalog:
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - tinyexec
-  # Security update: next >=16.2.11 (GHSA advisories on 16.0.0..16.2.10).
-  - next@16.2.12
 
 # Migré depuis package.json#pnpm.overrides — pnpm 11 ne lit plus le champ "pnpm"
 # du package.json. Toutes les overrides doivent vivre ici.
@@ -121,12 +119,16 @@ overrides:
   'nanoid@5': '>=5.1.16'
   # js-yaml >=4.0.0 <4.3.1: prototype pollution via crafted YAML. Same split —
   # 3.14.2 is outside the advisory range and stays untouched.
-  'js-yaml@4': '4.3.1'
+  # Raised to 4.3.2 for GHSA-2883-xcg3-v3hh (>=4.0.0 <4.3.2).
+  'js-yaml@4': '4.3.2'
   # js-yaml <3.15.1: quadratic CPU on merge-key chains and !!omap resolution.
   # The 3.x copy comes from jest tooling, but the gate audits the prod tree.
-  'js-yaml@3': '>=3.15.1'
+  # Caret, not >=: an open range let this copy resolve to 4.3.1 and stay
+  # exposed to GHSA-2883-xcg3-v3hh after the 4.x line was patched.
+  'js-yaml@3': '^3.15.1'
   # sharp <0.35.0: out-of-bounds read in the bundled libvips.
-  sharp: '>=0.35.0'
+  # Floor raised to 0.35.4 for GHSA-rgj7-g3m4-5g8c (<0.35.4), via next.
+  sharp: '>=0.35.4'
   # fast-uri >=3.0.0 <3.1.5: ReDoS in the URI parser (via @sentry/nextjs>ajv).
   fast-uri: '>=3.1.5'
   # shell-quote <=1.8.4: quote() fails to escape newlines. Distinct from the
@@ -134,6 +136,18 @@ overrides:
   shell-quote: '>=1.8.5'
   # @opentelemetry/propagator-jaeger <2.9.0: unbounded baggage parsing.
   '@opentelemetry/propagator-jaeger': '>=2.9.0'
+  # `pnpm audit --prod --audit-level high` fixes (2026-09-16). All transitive.
+  # @xmldom/xmldom 0.8.x <0.8.15 and 0.9.x <0.9.12: XML injection / parser
+  # advisories (GHSA-w2rr-34g9-rvrj, GHSA-4w3w-2rp5-g8jm, GHSA-c7q8-3ch8-vqpv,
+  # GHSA-27p8-2357-5qqv, GHSA-8344-3jmq-59r6, GHSA-x4fp-j954-r2f4,
+  # GHSA-965w-775f-mr7g, GHSA-93r5-fhx6-vmg9, GHSA-6mj3-qw4j-hgrw,
+  # GHSA-g53g-w8rj-fmg7, GHSA-3px3-54cx-rmw9, GHSA-vr34-hp96-76pp), via
+  # @expo/config-plugins (@expo/plist and xcode>plist). Each line keeps its minor.
+  '@xmldom/xmldom@0.8': '0.8.15'
+  '@xmldom/xmldom@0.9': '0.9.12'
+  # browserslist <=4.28.6: GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g (via
+  # @babel/helper-compilation-targets under @sentry/nextjs).
+  browserslist: '^4.28.7'
 
 # `pnpm audit` findings tolerated after review (2026-07-06). Validated against
 # https://pnpm.io/cli/audit#auditconfigignoreghsas (pnpm 11): since v11, pnpm

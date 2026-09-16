@@ -17,9 +17,8 @@ export type TomDataParts = {
   'deck-created': DeckCreatedData;
 };
 
-/** Per-message metadata surfaced to the client (RAG usage, tools invoked). */
+/** Per-message metadata surfaced to the client (tools invoked). */
 export interface TomMetadata {
-  usedRAG?: boolean;
   toolsUsed?: string[];
   /**
    * Hint for the client: false when the answer holds a diagram/code/table
