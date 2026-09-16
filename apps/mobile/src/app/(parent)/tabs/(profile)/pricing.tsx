@@ -26,21 +26,16 @@ import { bgColors, borderColors } from '@/lib/styles';
 // ============================================================================
 
 const FREE_FEATURES = [
-  { text: '10 questions/jour', included: true },
-  { text: 'Historique 7 jours', included: true },
-  { text: 'Aide aux devoirs basique', included: true },
-  { text: 'Accès illimité', included: false },
-  { text: 'Cartes mémo avancées', included: false },
-  { text: 'Support prioritaire', included: false },
+  { text: "Volume d'échanges limité chaque jour", included: true },
+  { text: 'Aide aux devoirs, méthode socratique', included: true },
+  { text: 'Connexion Pronote', included: true },
+  { text: 'Fiches de révision', included: false },
 ];
 
 const PREMIUM_FEATURES = [
-  { text: 'Questions illimitées', included: true },
-  { text: 'Historique complet', included: true },
-  { text: 'Aide aux devoirs avancée', included: true },
-  { text: 'Accès illimité', included: true },
-  { text: 'Cartes mémo avancées', included: true },
-  { text: 'Support prioritaire', included: true },
+  { text: 'Tout le plan Gratuit', included: true },
+  { text: "5 fois plus d'échanges par jour", included: true },
+  { text: 'Fiches de révision + répétition espacée', included: true },
 ];
 
 // ============================================================================

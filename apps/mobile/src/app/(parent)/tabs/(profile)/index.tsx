@@ -167,7 +167,7 @@ export default function ParentProfileScreen() {
                 <Text variant="large">Passez Premium</Text>
               </View>
               <Text variant="muted" className="mb-3">
-                Accès illimité pour vos enfants, flashcards avancées et plus encore.
+                5 fois plus d'échanges par jour et les fiches de révision pour vos enfants.
               </Text>
               <Button onPress={() => router.push('/(parent)/tabs/(profile)/pricing')}>
                 Voir les offres
