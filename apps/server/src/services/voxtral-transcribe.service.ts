@@ -1,17 +1,11 @@
 /**
  * Voxtral STT Service — Mistral speech-to-text souveraine EU.
  *
- * Remplace Gladia (retiré). Appelle directement
- * POST https://api.mistral.ai/v1/audio/transcriptions via multipart/form-data.
- * La clé Mistral existante (MISTRAL_API_KEY) est réutilisée — aucune clé tierce.
+ * Appelle directement POST https://api.mistral.ai/v1/audio/transcriptions via
+ * multipart/form-data, avec la clé MISTRAL_API_KEY — aucune clé tierce.
  *
- * Réponse Mistral : { model: string, text: string }
- * Champs Gladia non fournis par Voxtral (signalés aux appelants) :
- *   - words/confidence : pas de timecodes ni de score par mot → pronunciationAnalysis
- *     sera ignoré faute de données (audio-transcription.service.ts l'ignore déjà
- *     quand words est vide).
- *   - detectedLanguage : on renvoie la langue forcée à la transcription.
- *   - duration : non fourni, renvoyé undefined.
+ * Réponse Mistral : { model: string, text: string }. Voxtral ne détecte pas la
+ * langue : detectedLanguage renvoie la langue forcée à la transcription.
  *
  * @see https://docs.mistral.ai/capabilities/audio/
  */
@@ -28,18 +22,6 @@ export interface VoxtralTranscribeResult {
   transcription?: string;
   /** Langue passée à la requête (Voxtral ne détecte pas automatiquement). */
   detectedLanguage?: string;
-  /**
-   * Toujours undefined : Voxtral ne renvoie pas de durée.
-   * Présent pour compatibilité avec l'ancienne interface Gladia.
-   */
-  duration?: number;
-  /**
-   * Toujours undefined : Voxtral ne fournit pas de score de confiance global.
-   * L'analyse de prononciation dans audio-transcription.service ne sera pas
-   * calculée (words vide → branche ignorée).
-   */
-  words?: never;
-  confidence?: never;
   error?: string;
 }
 

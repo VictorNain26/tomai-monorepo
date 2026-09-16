@@ -76,7 +76,7 @@ export default function CguPage() {
 
             <h3>7. Responsabilité</h3>
             <p>
-              TomIA est un outil d&apos;aide aux devoirs utilisant l&apos;intelligence artificielle. Les contenus éducatifs sont alignés sur les programmes officiels Éduscol mais ne sauraient se substituer à l&apos;enseignement scolaire. TomIA s&apos;efforce de fournir des informations fiables mais ne garantit pas l&apos;exactitude, la complétude et l&apos;actualité de toutes les informations diffusées.
+              TomIA est un outil d&apos;aide aux devoirs utilisant l&apos;intelligence artificielle. Ses réponses, générées par un modèle d&apos;intelligence artificielle et adaptées au niveau scolaire déclaré, ne sauraient se substituer à l&apos;enseignement scolaire. TomIA s&apos;efforce de fournir des informations fiables mais ne garantit pas l&apos;exactitude, la complétude et l&apos;actualité de toutes les informations diffusées.
             </p>
 
             <h3>8. Droit applicable</h3>
