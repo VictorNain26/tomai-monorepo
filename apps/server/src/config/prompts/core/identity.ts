@@ -5,7 +5,7 @@
  * - generateIdentityCore : stable entre tous les élèves (rôle, ton,
  *   transparence) → fait partie du préfixe cachable (facturé ~10% en cache hit).
  * - generateStudentContext : spécifique à l'élève (nom, niveau, matière),
- *   placé APRÈS les blocs stables (pedagogy/RAG/safety) pour ne pas casser
+ *   placé APRÈS les blocs stables (pedagogy/safety) pour ne pas casser
  *   le préfixe partagé.
  */
 

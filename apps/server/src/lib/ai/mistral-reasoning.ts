@@ -1,5 +1,5 @@
 /**
- * Mistral reasoningEffort routing — CCA Sprint 1 safety.
+ * Mistral reasoningEffort routing.
  *
  * For STEM subjects at college level and above, when the student signals
  * they're actively problem-solving (via intent classification), route to

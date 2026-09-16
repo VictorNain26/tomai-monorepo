@@ -4,7 +4,6 @@
  * Chaque outil retourne un objet JSON sérialisable avec un type structuré
  * (ToolResult<T> = success | error). Les erreurs sont catégorisées pour
  * permettre à l'agent de décider du retry. Jamais de throw.
- * CCA Sprint 1 safety: structured tool errors.
  */
 
 import { generateCards, type CardGenerationResult } from '../learning/card-generator.service.js';
@@ -50,7 +49,6 @@ export function isDeckCreatedResult(value: unknown): value is DeckCreatedToolRes
 /**
  * Execute un outil et retourne le résultat structuré.
  * Ne throw jamais — les erreurs sont encapsulées dans ToolResult.
- * CCA Sprint 1 safety: structured ToolResult<T> | ToolError.
  */
 export async function executeTool(
   toolName: string,

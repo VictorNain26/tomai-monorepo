@@ -4,8 +4,8 @@
  * Text path  : extraction (PDF/docx via document-extraction.service) +
  *              mistral-medium-latest analysis (single completion,
  *              prompt-cached system instruction).
- * Image path : multimodal Mistral medium (vision fusioné Pixtral, cf
- *              ADR-0001 §D7). Photo encodée base64 → `image_url` part inline.
+ * Image path : multimodal Mistral medium (vision fusionnée Pixtral).
+ *              Photo encodée base64 → `image_url` part inline.
  *
  * Pas de prompt cache sur le user message (contenu variable par fichier).
  * Cache key = système + version pour amortir le préfixe pédagogique stable.

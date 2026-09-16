@@ -15,7 +15,6 @@
  * target 30k tokens of input to leave room for cached prompt sections
  * (9k system prompt + tools) and output tokens (16k). Recalibrated for
  * Mistral from legacy values (formerly 25k for a 32k window).
- * CCA Sprint 1 safety: confirmed for mistral-medium-latest v0.14.1+.
  */
 const TARGET_BUDGET_TOKENS = 30_000;
 
@@ -48,8 +47,6 @@ interface TokenBudget {
   summaryMaxTokens: number;
   /** Budget alloué à l'historique récent (55%) */
   historyMaxTokens: number;
-  /** Budget alloué au contexte RAG (20%) */
-  ragMaxTokens: number;
   /** Budget alloué au message courant (10%) */
   currentMessageMaxTokens: number;
 }
@@ -117,7 +114,6 @@ export function calculateBudget(): TokenBudget {
     availableTokens,
     summaryMaxTokens: Math.floor(availableTokens * 0.15),
     historyMaxTokens: Math.floor(availableTokens * 0.55),
-    ragMaxTokens: Math.floor(availableTokens * 0.20),
     currentMessageMaxTokens: Math.floor(availableTokens * 0.10),
   };
 }

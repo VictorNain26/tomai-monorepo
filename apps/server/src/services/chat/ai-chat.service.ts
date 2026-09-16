@@ -94,7 +94,7 @@ export interface StreamGenerationParams {
    * socratic stance (e.g. on "solve this for me" requests).
    */
   intentReinforcement?: string | null;
-  /** Classified intent for reasoning effort routing (CCA Sprint 1). */
+  /** Classified intent for reasoning effort routing. */
   classifiedIntent?: ClassifiedIntent;
   /**
    * Input channel declared by the user's gesture (mic vs keyboard), never

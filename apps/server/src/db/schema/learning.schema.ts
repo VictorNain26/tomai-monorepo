@@ -216,7 +216,7 @@ export const costTracking = pgTable('cost_tracking', {
  * Table session_episodes - Mémoire épisodique long-terme
  *
  * Une ligne par session close, avec un résumé compressé + l'embedding 1024D
- * de ce résumé (Mistral Embed, même espace vectoriel que Qdrant). Permet de
+ * de ce résumé (Mistral Embed). Permet de
  * retrouver les sessions passées pertinentes pour le tour courant via
  * similarité cosinus côté Postgres (pgvector).
  *
