@@ -1,7 +1,7 @@
 /**
  * useVoiceInput Hook
  *
- * Records audio and transcribes it using the backend Gladia service.
+ * Records audio and transcribes it through the backend (Voxtral STT).
  * Uses expo-audio (SDK 55) for recording.
  *
  * @see https://docs.expo.dev/versions/latest/sdk/audio/

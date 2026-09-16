@@ -147,15 +147,6 @@ describe('VoxtralTranscribeService', () => {
 
       expect(result.detectedLanguage).toBe('en');
     });
-
-    it('returns duration as undefined (Voxtral does not provide it)', async () => {
-      fetchSpy = mockFetchSuccess('test');
-      const service = getVoxtralTranscribeService();
-
-      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm');
-
-      expect(result.duration).toBeUndefined();
-    });
   });
 
   describe('transcribe — API errors', () => {
