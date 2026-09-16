@@ -1,9 +1,7 @@
 /**
  * Education Service — niveaux et matières proposés à l'élève.
  *
- * Source de vérité : la table statique ci-dessous. Elle listait auparavant ce
- * que contenait l'index Qdrant du curriculum ; l'index a été supprimé, la liste
- * reste le contrat que l'app consomme.
+ * Source de vérité : la table statique ci-dessous, contrat que l'app consomme.
  *
  * L'enrichissement UI (emoji, color, description) est fait côté frontend.
  */

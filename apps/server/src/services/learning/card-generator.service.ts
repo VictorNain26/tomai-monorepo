@@ -41,7 +41,7 @@ import { withRetry } from '../../lib/retry.js';
 import type { CardGenerationParams, ParsedCard } from './types.js';
 import { env } from '../../config/env.js';
 
-// ADR-0001 : mistral-small pour génération templatée flashcards (qualité OK,
+// mistral-small pour génération templatée flashcards (qualité OK,
 // 3× moins cher que medium, escalade possible). JSON Schema strict.
 // Prompt cache sur l'instruction de base + adaptations cycle/sujet.
 const CARD_GENERATOR_PROMPT_VERSION = '2026-05-18';
@@ -223,9 +223,8 @@ export async function generateCards(
 
     const prompt = buildPrompt(params);
 
-    // ADR-0001 D2 : mistral-small pour génération templatée. JSON Schema
-    // strict natif Mistral. Zod
-    // valide ensuite la forme métier (discriminatedUnion sur cardType).
+    // JSON Schema strict natif Mistral. Zod valide ensuite la forme métier
+    // (discriminatedUnion sur cardType).
     // Prompt cache sur le préfixe pédagogique stable (templates + matière).
     const wrapped = await withRetry(
       async () => {

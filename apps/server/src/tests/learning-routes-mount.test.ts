@@ -32,8 +32,6 @@ const authMacro = new Elysia({ name: 'auth-macro-mock' }).macro({
 mock.module('../lib/auth-macro', () => ({ authMacro }));
 
 // Service singletons referenced by the route modules — stubbed (no I/O at load).
-mock.module('../services/rag.service', () => ({ ragService: {} }));
-mock.module('../services/qdrant.service', () => ({ qdrantService: {} }));
 mock.module('../services/education.service', () => ({ educationService: {} }));
 mock.module('../services/token-quota.service', () => ({
   checkQuota: async () => ({ plan: 'premium' }),

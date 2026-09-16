@@ -32,7 +32,7 @@ appId: fr.tomia.mobile
 - tapOn:
     id: "chat-send-button"
 
-# Wait for Tom's response to render (RAG agentic + Mistral, SSE streaming).
+# Wait for Tom's response to render (Mistral, SSE streaming).
 # Assert the assistant bubble appears rather than a specific word: the LLM
 # output is non-deterministic and the markdown text is not reliably matchable.
 # chat-assistant-message is set on EVERY assistant message (fine for this

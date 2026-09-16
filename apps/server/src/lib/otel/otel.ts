@@ -13,7 +13,7 @@
  *
  * GenAI conventions are still in Development (SemConv 1.41). We import the
  * incubating attribute keys explicitly in `spans.ts` to keep the typed
- * surface stable as the spec moves. See the audit P1-9 entry for context.
+ * surface stable as the spec moves.
  */
 
 import { NodeSDK } from '@opentelemetry/sdk-node';
