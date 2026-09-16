@@ -9,6 +9,17 @@ import { render, fireEvent } from '@testing-library/react-native';
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
+jest.mock('@/hooks/useAvailableLevels', () => ({
+  useAvailableLevels: () => ({
+    levels: ['sixieme', 'cinquieme', 'quatrieme', 'troisieme'].map((key) => ({
+      key,
+      available: true,
+      subjectsCount: 10,
+    })),
+    isLoading: false,
+  }),
+}));
+
 jest.mock('@/hooks/useThemeColors', () => ({
   useThemeColors: () => ({
     primary: '#2563EB',
@@ -109,5 +120,28 @@ describe('ChildCredentialsFields', () => {
       <ChildCredentialsFields {...makeProps()} />
     );
     expect(getByTestId('add-child-level-picker')).toBeTruthy();
+  });
+
+  it('offers only the levels the server serves', () => {
+    const { getAllByRole, queryByLabelText } = render(
+      <ChildCredentialsFields {...makeProps()} />
+    );
+    expect(getAllByRole('tab').map((tab) => tab.props.accessibilityLabel)).toEqual([
+      'Niveau 6ème',
+      'Niveau 5ème',
+      'Niveau 4ème',
+      'Niveau 3ème',
+    ]);
+    expect(queryByLabelText('Niveau CP')).toBeNull();
+    expect(queryByLabelText('Niveau Terminale')).toBeNull();
+  });
+
+  it('calls onChange with the picked level', () => {
+    const onChange = jest.fn();
+    const { getByLabelText } = render(
+      <ChildCredentialsFields {...makeProps({ onChange })} />
+    );
+    fireEvent.press(getByLabelText('Niveau 4ème'));
+    expect(onChange).toHaveBeenCalledWith('schoolLevel', 'quatrieme');
   });
 });

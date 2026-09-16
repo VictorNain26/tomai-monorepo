@@ -9,6 +9,7 @@ import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTreaty, unwrap, type ResponseData } from '@repo/api';
 import { useUser } from '@/lib/auth';
+import { useAvailableLevels } from './useAvailableLevels';
 
 // ============================================================================
 // TYPES — derived from the server contract (single source of truth)
@@ -28,10 +29,6 @@ type IUpdateChildData = NonNullable<Parameters<ReturnType<ParentApi['children']>
 type DashboardResponse = ResponseData<ParentApi['dashboard']['get']>;
 export type ChildMetrics = DashboardResponse['metrics'][number];
 
-type EducationApi = ReturnType<typeof getTreaty>['api']['education'];
-type LevelsResponse = ResponseData<EducationApi['levels']['get']>;
-type SchoolLevel = LevelsResponse['levels'][number];
-
 // ============================================================================
 // QUERY KEYS
 // ============================================================================
@@ -41,7 +38,6 @@ const queryKeys = {
     dashboard: ['parent', 'dashboard'] as const,
     children: ['parent', 'children'] as const,
   },
-  levels: ['education', 'levels'] as const,
 };
 
 // ============================================================================
@@ -58,11 +54,6 @@ async function fetchChildren(): Promise<IChild[]> {
   return unwrap(
     await getTreaty().api.parent.children.get()
   );
-}
-
-async function fetchLevels(): Promise<SchoolLevel[]> {
-  const { levels } = unwrap(await getTreaty().api.education.levels.get());
-  return levels.filter((l) => l.available);
 }
 
 async function createChildApi(data: ICreateChildData): Promise<IChild> {
@@ -114,11 +105,7 @@ export function useParentDashboard() {
     staleTime: 60 * 1000,
   });
 
-  const levelsQuery = useQuery({
-    queryKey: queryKeys.levels,
-    queryFn: fetchLevels,
-    staleTime: 10 * 60 * 1000,
-  });
+  const { levels, isLoading: isLoadingLevels } = useAvailableLevels();
 
   const invalidateParentData = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.parent.dashboard });
@@ -161,8 +148,8 @@ export function useParentDashboard() {
     totalStudyTime,
     activeChildren,
 
-    levels: levelsQuery.data ?? [],
-    isLoadingLevels: levelsQuery.isLoading,
+    levels,
+    isLoadingLevels,
 
     isLoading: childrenQuery.isLoading || dashboardQuery.isLoading,
     isError: childrenQuery.isError || dashboardQuery.isError,

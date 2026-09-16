@@ -93,6 +93,17 @@ jest.mock('@/components/parent/PronotePinEntry', () => ({
 
 // ─── Other deps ──────────────────────────────────────────────────────────────
 
+jest.mock('@/hooks/useAvailableLevels', () => ({
+  useAvailableLevels: () => ({
+    levels: ['sixieme', 'cinquieme', 'quatrieme', 'troisieme'].map((key) => ({
+      key,
+      available: true,
+      subjectsCount: 10,
+    })),
+    isLoading: false,
+  }),
+}));
+
 jest.mock('@/hooks/useParentDashboard', () => ({
   useParentDashboard: () => ({
     children: [],

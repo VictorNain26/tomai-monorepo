@@ -19,6 +19,17 @@ import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
 const mockCreateChild = jest.fn();
 const mockBack = jest.fn();
 
+jest.mock('@/hooks/useAvailableLevels', () => ({
+  useAvailableLevels: () => ({
+    levels: ['sixieme', 'cinquieme', 'quatrieme', 'troisieme'].map((key) => ({
+      key,
+      available: true,
+      subjectsCount: 10,
+    })),
+    isLoading: false,
+  }),
+}));
+
 jest.mock('@/hooks/useParentDashboard', () => ({
   useParentDashboard: () => ({
     createChild: mockCreateChild,
