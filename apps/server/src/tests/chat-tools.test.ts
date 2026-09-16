@@ -1,14 +1,15 @@
 /**
  * Tests unitaires - Chat Tools (services/chat/chat-tools.ts)
  *
- * Verifies the AI SDK `tool()` wrapping: the 5 tool keys, the Zod input
- * schemas (mirroring tool-declarations.ts enums), and that generate_flashcards
- * calls `emitDeckCreated` on a deck_created result. Delegation to the
+ * Verifies the AI SDK `tool()` wrapping: the 4 tool keys, the JSON Schema the
+ * model receives for each input, and that generate_flashcards calls
+ * `emitDeckCreated` on a deck_created result. Delegation to the
  * underlying tool-executor is mocked, not re-tested here (see
  * tool-executor.test.ts).
  */
 
 import { describe, it, expect, mock } from 'bun:test';
+import { asSchema, type ToolSet } from 'ai';
 import type { TomMetadata } from '../services/chat/chat-ui-message';
 
 // ============================================
@@ -24,7 +25,7 @@ mock.module('../services/chat/tool-executor', () => ({
     typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'deck_created',
 }));
 
-const { buildChatTools } = await import('../services/chat/chat-tools');
+const { buildChatTools, SUBJECT_SLUGS } = await import('../services/chat/chat-tools');
 
 const baseContext = {
   userId: 'user-001',
@@ -53,6 +54,45 @@ describe('buildChatTools', () => {
       'get_student_profile',
       'update_student_profile',
     ]);
+  });
+
+  describe('input JSON Schema', () => {
+    const tools: ToolSet = buildChatTools(baseContext);
+
+    async function propertiesOf(name: string): Promise<Record<string, Record<string, unknown>>> {
+      const schema = await asSchema(tools[name]?.inputSchema).jsonSchema;
+      return schema.properties as Record<string, Record<string, unknown>>;
+    }
+
+    it('exports 13 non-empty subject slugs', () => {
+      expect(SUBJECT_SLUGS.length).toBe(13);
+      for (const slug of SUBJECT_SLUGS) {
+        expect(slug.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('generate_flashcards.subject is the SUBJECT_SLUGS enum', async () => {
+      const props = await propertiesOf('generate_flashcards');
+      expect(props.subject?.enum).toEqual([...SUBJECT_SLUGS]);
+    });
+
+    it('generate_flashcards.cardCount is bounded to 3..10', async () => {
+      const props = await propertiesOf('generate_flashcards');
+      expect(props.cardCount?.minimum).toBe(3);
+      expect(props.cardCount?.maximum).toBe(10);
+    });
+
+    it('update_student_profile.subject is free text (no enum)', async () => {
+      const props = await propertiesOf('update_student_profile');
+      expect(props.subject?.enum).toBeUndefined();
+    });
+
+    it('update_student_profile bounds observation, strength and weakness', async () => {
+      const props = await propertiesOf('update_student_profile');
+      expect(props.observation?.maxLength).toBe(250);
+      expect(props.strength?.maxLength).toBe(100);
+      expect(props.weakness?.maxLength).toBe(100);
+    });
   });
 
   describe('generate_flashcards.execute', () => {

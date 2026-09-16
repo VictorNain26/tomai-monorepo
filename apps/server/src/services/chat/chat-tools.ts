@@ -1,18 +1,23 @@
 /**
  * Chat Tools — AI SDK `tool()` wrappers around the existing tool-executor.
  *
- * Zod input schemas mirror `tool-declarations.ts` verbatim (names,
- * descriptions, enums are prompt engineering — do not reword). Execution is
- * delegated to `executeTool` (tool-executor.ts): no business logic is
+ * Names, descriptions and enums of the Zod input schemas are prompt
+ * engineering — do not reword. Execution is delegated to `executeTool` (tool-executor.ts): no business logic is
  * duplicated here.
  */
 
 import { z } from 'zod';
 import { tool, type ToolSet, type InferUITools } from 'ai';
 import { executeTool, isDeckCreatedResult } from './tool-executor.js';
-import { SUBJECT_SLUGS } from './tool-declarations.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { DeckCreatedData } from './chat-ui-message.js';
+
+/** Slugs de matières acceptés par les outils. Source unique. */
+export const SUBJECT_SLUGS = [
+  'mathematiques', 'francais', 'anglais', 'espagnol', 'allemand',
+  'histoire', 'geographie', 'physique-chimie', 'svt', 'technologie',
+  'ses', 'philosophie', 'nsi',
+] as const;
 
 export interface ChatToolContext {
   userId: string;
