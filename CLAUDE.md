@@ -44,7 +44,7 @@ propres au monorepo, à vérifier explicitement :
 - **Contrat Eden** — une modification dans `packages/api/` doit rester rétrocompatible
   pour les clients ; les types viennent du serveur, jamais redéfinis côté client.
 - **Frontières workspace** — imports via les packages `@repo/*`, aucune dépendance
-  circulaire. `@repo/ui` (DOM) n'entre jamais dans `apps/mobile` (ADR 0001).
+  circulaire. `@repo/ui` (DOM) n'entre jamais dans `apps/mobile`.
 - **Taille de fichier** — au-delà de ~400 lignes, le fichier fait trop de choses.
 - **Test associé** — tout service, helper ou validation modifié a son `*.test.ts`
   couvrant le cas nominal et les cas limites. Pas de test décoratif (mocks massifs,

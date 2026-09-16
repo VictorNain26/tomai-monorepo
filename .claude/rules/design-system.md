@@ -19,7 +19,7 @@ Ce qui s'applique à chaque PR touchant de l'UI.
   `apps/mobile/src/components/ui` (RN) expose le même noyau de
   variants/sizes. Modifier un côté = vérifier l'autre. Noyau Button :
   `default | destructive | outline | secondary | ghost` (DOM-only : `link`,
-  `premium`). Jamais de composant partagé DOM/RN (ADR 0001).
+  `premium`). Jamais de composant partagé DOM/RN.
 - **États complets** sur tout interactif : disabled, loading, pressed (RN) /
   hover + active (DOM), focus visible, error. Pas de happy-path only.
 - **A11y AA** : cibles ≥ 44 px tactile, labels (`accessibilityLabel` /
