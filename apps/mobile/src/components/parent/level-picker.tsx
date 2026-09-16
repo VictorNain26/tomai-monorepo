@@ -1,15 +1,15 @@
 /**
  * LevelPicker — inline school-level selector for add-child form.
  *
- * Displays all EducationLevelType values as a scrollable row of pressable chips.
+ * Displays the levels the server serves (same source as child edition) as a
+ * scrollable row of pressable chips.
  * Extracted from add-child.tsx to keep that file ≤400 lines.
  */
 
 import { ScrollView, Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { LEVEL_LABELS, type EducationLevelType } from '@/constants/levels';
-
-const LEVELS = Object.keys(LEVEL_LABELS) as EducationLevelType[];
+import { getLevelLabel, type EducationLevelType } from '@/constants/levels';
+import { useAvailableLevels } from '@/hooks/useAvailableLevels';
 
 interface LevelPickerProps {
   value: EducationLevelType;
@@ -17,6 +17,8 @@ interface LevelPickerProps {
 }
 
 export function LevelPicker({ value, onChange }: LevelPickerProps) {
+  const { levels } = useAvailableLevels();
+
   return (
     <View className="gap-1.5">
       <Text variant="small" className="text-foreground">
@@ -30,13 +32,13 @@ export function LevelPicker({ value, onChange }: LevelPickerProps) {
         accessibilityRole="tablist"
         testID="add-child-level-picker"
       >
-        {LEVELS.map((level) => {
+        {levels.map(({ key: level }) => {
           const selected = level === value;
           return (
             <Pressable
               key={level}
               onPress={() => onChange(level)}
-              accessibilityLabel={`Niveau ${LEVEL_LABELS[level]}`}
+              accessibilityLabel={`Niveau ${getLevelLabel(level)}`}
               accessibilityRole="tab"
               accessibilityState={{ selected }}
               className={[
@@ -50,7 +52,7 @@ export function LevelPicker({ value, onChange }: LevelPickerProps) {
                 variant="small"
                 className={selected ? 'text-primary-foreground' : 'text-foreground'}
               >
-                {LEVEL_LABELS[level]}
+                {getLevelLabel(level)}
               </Text>
             </Pressable>
           );
