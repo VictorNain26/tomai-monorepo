@@ -6,13 +6,13 @@ import { FadeIn } from "../atoms/fade-in";
 
 const STATS = [
   {
-    value: 13,
+    value: 10,
     label: "matières couvertes",
     icon: BookOpen,
   },
   {
-    value: 12,
-    label: "niveaux scolaires",
+    value: 4,
+    label: "niveaux du collège",
     icon: GraduationCap,
   },
   {

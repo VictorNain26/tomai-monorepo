@@ -38,7 +38,7 @@ const FEATURES = [
   {
     title: "Adapté à chaque niveau",
     description:
-      "Du CP à la Terminale, 13 matières : Maths, Français, Histoire, Géographie, SVT, Physique-Chimie, Anglais, Philosophie… Les explications suivent l'âge et la classe.",
+      "De la 6e à la 3e, 10 matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Technologie, Anglais, Espagnol, Allemand et Italien. Les explications suivent la classe de votre enfant.",
     icon: BookOpen,
     color: "text-violet",
     bg: "bg-violet/10",

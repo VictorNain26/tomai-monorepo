@@ -5,21 +5,18 @@ import { Button } from "@repo/ui";
 import { SectionHeader } from "../atoms/section-header";
 
 const FREE_FEATURES = [
-  "Français, Maths, Anglais",
-  "Du CP à la Terminale",
+  "Collège, de la 6e à la 3e",
+  "10 matières",
   "Volume d'échanges limité chaque jour",
-  "Aide aux devoirs",
-  "Suivi des matières travaillées",
+  "Aide aux devoirs, méthode socratique",
+  "Connexion Pronote",
+  "Espace parent",
 ];
 
 const PREMIUM_FEATURES = [
-  "Toutes les matières",
-  "Du CP à la Terminale",
+  "Tout le plan Gratuit",
   "5 fois plus d'échanges par jour",
   "Fiches de révision + répétition espacée",
-  "Tableau de bord parental complet",
-  "Intégration Pronote",
-  "Support prioritaire",
 ];
 
 export function Pricing() {
@@ -85,9 +82,6 @@ export function Pricing() {
               <p className="text-sm text-primary font-medium mt-1">
                 Moins de 0,50€ par jour
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                +5€/mois par enfant supplémentaire
-              </p>
             </div>
 
             <ul className="space-y-4 mb-8">
@@ -109,7 +103,7 @@ export function Pricing() {
             {/* Guarantee badge */}
             <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
               <ShieldCheck className="h-4 w-4 text-success" />
-              <span>Satisfait ou remboursé</span>
+              <span>Paiement et résiliation via l&apos;App Store ou Google Play</span>
             </div>
           </div>
         </div>

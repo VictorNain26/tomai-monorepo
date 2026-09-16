@@ -26,7 +26,7 @@ export function CTA() {
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <BookOpen className="h-4 w-4 text-primary" />
-              <span>Du CP à la Terminale, 13 matières</span>
+              <span>Collège, de la 6e à la 3e, 10 matières</span>
             </div>
           </div>
         </div>

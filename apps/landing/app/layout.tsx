@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
     template: "%s | TomIA",
   },
-  description: "TomIA est un assistant IA pour les élèves du CP à la Terminale. Il guide votre enfant avec la méthode socratique, sans donner les réponses, avec des explications adaptées à sa classe.",
+  description: "TomIA est un assistant IA pour les collégiens, de la 6e à la 3e. Il guide votre enfant avec la méthode socratique, sans donner les réponses, avec des explications adaptées à sa classe.",
   applicationName: "TomIA",
   category: "education",
   keywords: [
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     "aide aux devoirs", "aide devoirs IA",
     "soutien scolaire", "soutien scolaire IA",
     "tuteur IA français", "méthode socratique IA",
-    "collège", "lycée", "CP", "Terminale",
+    "collège", "6e", "5e", "4e", "3e",
     "application éducative", "app scolaire",
   ],
   authors: [{ name: "TomIA" }],
@@ -49,14 +49,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_FR",
     title: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
-    description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, explications adaptées au niveau, sans donner les réponses.",
+    description: "Assistant IA pour collégiens, de la 6e à la 3e. Méthode socratique, explications adaptées au niveau, sans donner les réponses.",
     siteName: "TomIA",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
-    description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, explications adaptées au niveau, sans donner les réponses.",
+    description: "Assistant IA pour collégiens, de la 6e à la 3e. Méthode socratique, explications adaptées au niveau, sans donner les réponses.",
   },
   metadataBase: new URL("https://tomia.fr"),
   alternates: {
@@ -87,7 +87,7 @@ const jsonLd = [
     applicationCategory: "EducationApplication",
     operatingSystem: "iOS, Android",
     inLanguage: "fr",
-    description: "Assistant IA de tutorat pour élèves du CP à la Terminale. Méthode socratique, explications adaptées au niveau.",
+    description: "Assistant IA de tutorat pour collégiens, de la 6e à la 3e. Méthode socratique, explications adaptées au niveau.",
     offers: [
       {
         "@type": "Offer",
