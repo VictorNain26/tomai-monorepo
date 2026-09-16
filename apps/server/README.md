@@ -13,8 +13,8 @@ cp .env.example .env
 # - GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
 # - MISTRAL_API_KEY
 
-# 3. Demarrer (PostgreSQL + Backend avec hot-reload)
-docker compose up -d
+# 3. Demarrer depuis la racine du monorepo (PostgreSQL Docker + backend :3000 sur l'host)
+pnpm dev
 
 # 4. Verifier
 curl http://localhost:3000/health
@@ -39,20 +39,19 @@ Documentation interactive auto-generee disponible en dev :
 | Cache | MemoryCacheService (LRU in-memory avec TTL) |
 | Auth | Better Auth 1.6 + Google OAuth |
 | AI Chat | Mistral (`mistral-medium-latest`, streaming + tools) |
-| Embeddings | BGE-M3 (RAG, via ai-service) + `mistral-embed` 1024D (mémoire) |
-| RAG | Qdrant Cloud hybrid (BGE-M3 dense+sparse + RRF) |
+| Embeddings | `mistral-embed` 1024D (mémoire épisodique, pgvector) |
 | Stockage | Scaleway Object Storage (S3, RGPD France) |
-| STT | Gladia |
-| TTS | Voxtral (`voxtral-tts-26.03`, EU) |
+| STT | Voxtral (`voxtral-mini-latest`, EU) |
+| TTS | Voxtral (`voxtral-tts-latest`, EU) |
 | Paiements | RevenueCat (mobile IAP, source unique) |
 | Pronote | Pawnote 1.6 + AES-256-GCM |
 
 ## Commands
 
 ```bash
-# Dev
-docker compose up -d              # Stack complete avec hot-reload
-docker compose logs -f backend    # Logs
+# Dev (depuis la racine du monorepo)
+pnpm dev                          # PostgreSQL Docker + backend avec hot-reload
+docker compose --profile backend up -d  # Backend conteneurise (image iso-prod, opt-in)
 
 # Validation
 bun run typecheck                 # TypeScript strict
@@ -73,7 +72,7 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 
 | Service | Port | Description |
 |---------|------|-------------|
-| backend | 3000 | API Elysia.js avec hot-reload |
+| backend | 3000 | API Elysia.js conteneurisee (profile: backend) |
 | postgres | 5432 | PostgreSQL 16 + pgvector |
 | drizzle-studio | 4983 | UI Database (profile: tools) |
 | adminer | 8080 | Client SQL (profile: tools) |
@@ -88,18 +87,15 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 | `BETTER_AUTH_URL` | URL backend (http://localhost:3000) |
 | `GOOGLE_CLIENT_ID` | OAuth Google |
 | `GOOGLE_CLIENT_SECRET` | OAuth Google |
-| `MISTRAL_API_KEY` | API Mistral (chat, embeddings, vision, OCR, TTS) |
+| `MISTRAL_API_KEY` | API Mistral (chat, embeddings, vision, OCR, STT, TTS) |
 
 ### Optional
 
 | Variable | Description |
 |----------|-------------|
-| `AI_SERVICE_URL` | Service embeddings BGE-M3 (apps/ai-service) |
-| `QDRANT_URL` / `QDRANT_API_KEY` | Qdrant Cloud pour RAG |
 | `SCALEWAY_ACCESS_KEY` / `SCALEWAY_SECRET_KEY` | Scaleway Object Storage |
 | `SCALEWAY_BUCKET` / `SCALEWAY_REGION` | Bucket et region (fr-par) |
 | `PRONOTE_ENCRYPTION_KEY` | AES-256-GCM pour tokens Pronote |
-| `GLADIA_API_KEY` | Speech-to-Text |
 | `REVENUECAT_WEBHOOK_AUTH` | Webhooks RevenueCat (mobile IAP, required en prod) |
 
 ### Dev seed (`pnpm seed`)
@@ -119,11 +115,6 @@ Le backend du monorepo tourne sur l'host (`pnpm dev` :3000). L'app mobile dédui
 son URL (`EXPO_PUBLIC_API_URL`) de la résolution DNS du device (même Wi-Fi) et
 loggue l'URL résolue au démarrage. Rien à configurer manuellement.
 
-L'**ai-service** (BGE-M3 embeddings) tourne côté Docker intra-réseau
-(`ai-service:8000`) mais est **inutilisable depuis l'host sans translation** : la
-variable `AI_SERVICE_URL` doit pointer `http://localhost:8001` (port remappé par
-Docker Compose à la `host`). `.env.example` le définit déjà.
-
 ## Architecture
 
 ```
@@ -141,7 +132,7 @@ src/
 ├── routes/                     # API endpoints
 │   ├── chat-message.routes.ts  # SSE streaming
 │   ├── file-upload.routes.ts   # Upload Scaleway
-│   ├── pronote.routes.ts       # Integration Pronote
+│   ├── pronote-*.routes.ts     # Integration Pronote (connexion, donnees, sync)
 │   ├── tts.routes.ts           # Text-to-Speech
 │   ├── learning/               # Decks, cartes, FSRS
 │   ├── revenuecat-webhook.*.ts # Webhooks RevenueCat (source de vérité)
@@ -149,10 +140,10 @@ src/
 ├── services/                   # Business logic
 │   ├── chat/                   # Mistral streaming, summarization, tools
 │   ├── storage/                # Scaleway S3
-│   ├── rag.service.ts          # RAG unifie (Qdrant hybrid)
-│   ├── pronote.service.ts      # Pawnote wrapper + SSRF protection
-│   ├── fsrs.service.ts         # Spaced repetition
-│   └── token-quota.service.ts  # Quotas tokens IA
+│   ├── pronote/                # Pawnote adapter, connexion, donnees
+│   ├── quota/                  # Quotas tokens IA
+│   ├── voxtral-*.service.ts    # STT / TTS Mistral
+│   └── fsrs.service.ts         # Spaced repetition
 └── types/                      # Types TypeScript
 ```
 
@@ -162,5 +153,5 @@ Multi-stage : base (Bun + Node + pnpm) → deps → build (typecheck + lint + bu
 
 ```bash
 # Entrypoint : migrations auto avant demarrage
-docker-entrypoint.sh → bun run src/db/migrate.ts → bun --smol dist/index.js
+docker-entrypoint.sh → bun dist/migrate.js → bun --smol dist/index.js
 ```

@@ -11,7 +11,7 @@ export function Hero() {
         {/* Credibility badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
           <GraduationCap className="h-4 w-4" />
-          <span>Conforme aux programmes de l&apos;Éducation nationale</span>
+          <span>Du CP à la Terminale, 13 matières</span>
         </div>
 
         <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-foreground leading-[1.15] mb-6 max-w-4xl [text-wrap:balance]">
@@ -39,8 +39,8 @@ export function Hero() {
             <span>RGPD</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span>🇫🇷</span>
-            <span>Hébergé en France</span>
+            <span>🇪🇺</span>
+            <span>Hébergé en Europe</span>
           </div>
           <span>Gratuit pour commencer</span>
         </div>

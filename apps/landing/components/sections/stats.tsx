@@ -6,8 +6,7 @@ import { FadeIn } from "../atoms/fade-in";
 
 const STATS = [
   {
-    value: 30,
-    suffix: "+",
+    value: 13,
     label: "matières couvertes",
     icon: BookOpen,
   },
