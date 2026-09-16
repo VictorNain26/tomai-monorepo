@@ -14,12 +14,12 @@ const FAQS = [
   },
   {
     question: "Quelle différence avec ChatGPT ou Photomath ?",
-    answer: "ChatGPT et Photomath donnent les réponses — votre enfant oublie demain. TomIA pose les bonnes questions pour faire comprendre durablement. En plus, TomIA connaît les programmes officiels, se connecte à Pronote, et vous donne un tableau de bord parental. C'est un tuteur, pas un moteur de réponses.",
+    answer: "ChatGPT et Photomath donnent les réponses — votre enfant oublie demain. TomIA pose les bonnes questions pour faire comprendre durablement. En plus, TomIA adapte ses explications au niveau de la classe, se connecte à Pronote, et vous donne un tableau de bord parental. C'est un tuteur, pas un moteur de réponses.",
     icon: MessageSquareX,
   },
   {
     question: "TomIA est-il compatible avec Pronote ?",
-    answer: "Oui, TomIA se connecte à Pronote pour voir l'emploi du temps réel, les devoirs du jour et les chapitres en cours. L'accompagnement est personnalisé au programme exact de la classe de votre enfant.",
+    answer: "Oui, TomIA se connecte à Pronote pour voir l'emploi du temps du jour, les devoirs de la semaine et les dernières notes. L'accompagnement part de ce que votre enfant a réellement à faire.",
     icon: GraduationCap,
   },
   {
@@ -28,8 +28,8 @@ const FAQS = [
     icon: BarChart3,
   },
   {
-    question: "Les contenus sont-ils alignés sur les programmes scolaires ?",
-    answer: "Oui, TomIA est entraîné sur les programmes officiels Éduscol, du CP à la Terminale. Il couvre toutes les matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Anglais, Philosophie…",
+    question: "TomIA s'adapte-t-il au niveau de mon enfant ?",
+    answer: "Oui. Du CP à la Terminale, TomIA adapte son vocabulaire, la longueur de ses explications et la notation mathématique à l'âge et à la classe de votre enfant. Il couvre 13 matières : Maths, Français, Histoire, Géographie, SVT, Physique-Chimie, Anglais, Philosophie…",
     icon: BookOpen,
   },
   {

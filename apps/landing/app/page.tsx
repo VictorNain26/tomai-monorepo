@@ -29,10 +29,10 @@ const faqJsonLd = {
     },
     {
       "@type": "Question",
-      name: "Les contenus sont-ils alignés sur les programmes scolaires ?",
+      name: "TomIA s'adapte-t-il au niveau de mon enfant ?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Oui, TomIA est entraîné sur 415 programmes officiels Éduscol, du CP à la Terminale. Il couvre toutes les matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Anglais...",
+        text: "Oui. Du CP à la Terminale, TomIA adapte son vocabulaire, la longueur de ses explications et la notation mathématique à l'âge et à la classe de votre enfant. Il couvre 13 matières : Maths, Français, Histoire, Géographie, SVT, Physique-Chimie, Anglais, Philosophie…",
       },
     },
     {
@@ -64,7 +64,7 @@ const faqJsonLd = {
       name: "TomIA est-il compatible avec Pronote ?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Oui, TomIA peut se connecter à Pronote pour récupérer automatiquement l'emploi du temps, les devoirs et les notes de votre enfant. Cela permet à TomIA de personnaliser son accompagnement en fonction du programme réel de la classe.",
+        text: "Oui, TomIA se connecte à Pronote pour voir l'emploi du temps du jour, les devoirs de la semaine et les dernières notes. L'accompagnement part de ce que votre enfant a réellement à faire.",
       },
     },
   ],

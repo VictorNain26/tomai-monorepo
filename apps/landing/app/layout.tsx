@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
     template: "%s | TomIA",
   },
-  description: "TomIA est un assistant IA pour les élèves du CP à la Terminale. Il guide votre enfant avec la méthode socratique, sans donner les réponses. Aligné sur les programmes Éduscol.",
+  description: "TomIA est un assistant IA pour les élèves du CP à la Terminale. Il guide votre enfant avec la méthode socratique, sans donner les réponses, avec des explications adaptées à sa classe.",
   applicationName: "TomIA",
   category: "education",
   keywords: [
@@ -49,14 +49,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_FR",
     title: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
-    description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, programmes Éduscol, sans donner les réponses.",
+    description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, explications adaptées au niveau, sans donner les réponses.",
     siteName: "TomIA",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
-    description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, programmes Éduscol, sans donner les réponses.",
+    description: "Assistant IA pour élèves du CP à la Terminale. Méthode socratique, explications adaptées au niveau, sans donner les réponses.",
   },
   metadataBase: new URL("https://tomia.fr"),
   alternates: {
@@ -87,7 +87,7 @@ const jsonLd = [
     applicationCategory: "EducationApplication",
     operatingSystem: "iOS, Android",
     inLanguage: "fr",
-    description: "Assistant IA de tutorat pour élèves du CP à la Terminale. Méthode socratique, programmes Éduscol.",
+    description: "Assistant IA de tutorat pour élèves du CP à la Terminale. Méthode socratique, explications adaptées au niveau.",
     offers: [
       {
         "@type": "Offer",

@@ -30,15 +30,15 @@ const FEATURES = [
   {
     title: "Connecté à Pronote",
     description:
-      "TomIA voit l'emploi du temps, les devoirs et les chapitres en cours. L'aide est personnalisée au programme exact de la classe.",
+      "TomIA voit l'emploi du temps du jour, les devoirs de la semaine et les dernières notes. L'aide part de ce que votre enfant a réellement à faire.",
     icon: Plug,
     color: "text-violet",
     bg: "bg-violet/10",
   },
   {
-    title: "Aligné sur les programmes officiels",
+    title: "Adapté à chaque niveau",
     description:
-      "Du CP à la Terminale, toutes les matières : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Anglais, Philosophie…",
+      "Du CP à la Terminale, 13 matières : Maths, Français, Histoire, Géographie, SVT, Physique-Chimie, Anglais, Philosophie… Les explications suivent l'âge et la classe.",
     icon: BookOpen,
     color: "text-violet",
     bg: "bg-violet/10",
