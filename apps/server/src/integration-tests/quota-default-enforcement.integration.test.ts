@@ -51,13 +51,13 @@ describe.skipIf(!dbReachable)('checkDeckQuota (enforcement enabled by default)',
     expect(result.allowed).toBe(true);
   });
 
-  it('reports free-plan deck limits (not unlimited)', async () => {
+  it('reports the configured deck limits, not the unlimited bypass', async () => {
     const result = await checkDeckQuota('test');
 
     // Free plan currently has no deck quota, so these come back as the
     // premium daily/monthly defaults from QUOTA_CONFIG for a user without a
     // subscription row.
-    expect(result.dailyLimit).toBeGreaterThan(0);
-    expect(result.monthlyLimit).toBeGreaterThan(0);
+    expect(result.dailyLimit).toBe(QUOTA_CONFIG.premium.dailyDecks);
+    expect(result.monthlyLimit).toBe(QUOTA_CONFIG.premium.monthlyDecks);
   });
 });
