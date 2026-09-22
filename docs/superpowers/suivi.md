@@ -12,34 +12,17 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 - **Dernière mise à jour :** 2026-09-22
 - **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** démarrer la PR D (`plans/2026-09-22-lot-0-d-bugs.md`, branche
-  `fix/server-and-tooling-bugs`) avec le skill `superpowers:subagent-driven-development`.
+- **Prochaine action :** démarrer la PR E1 (`plans/2026-09-22-lot-0-e-code-reinvente.md`,
+  branche `refactor/replace-custom-ai-calls`) avec le skill
+  `superpowers:subagent-driven-development`.
 
 ## Reporté depuis les PR A et B
 
 Constats hors périmètre de A, à traiter dans la PR indiquée :
 
-- **PR D** : textes de la landing qui annoncent une app iOS/Android et un paiement App Store /
-  Google Play (`cgu/page.tsx`, `confidentialite/page.tsx`, `faq-data.ts`, `features.tsx`,
-  `pricing.tsx`). Routes `PUT|GET|DELETE /api/pronote/credentials` décrites « device-first »
-  et commentaires du même âge (`pronote.schema.ts:18`, `pronote-sync.service.ts:5`) ; `GET`
-  renvoie les identifiants déchiffrés au client. `tool-executor.test.ts` et
-  `chat-tools.test.ts` échouent quand on les lance ensemble (pollution du registre de modules
-  Bun, déjà présente sur `main`).
 - **PR B** : l'override `'nanoid@5'` résout `nanoid@6` et son commentaire est faux ;
   `.vscode/extensions.json` recommande encore `ruff`/`python`. La copie en `ArrayBuffer` de
   `encryption.ts:51-53,72-73` est à revérifier.
-- **PR D (depuis la PR B)** : `pnpm setup` lance la commande native de pnpm, pas
-  `scripts/setup.mjs` : le parcours du nouveau dev est cassé (`README.md:10`,
-  `.claude/skills/dev-bootstrap/SKILL.md`, `scripts/dev.mjs:26`, `scripts/doctor*.mjs`,
-  `.claude/hooks/block-destructive-db.sh:52`) ; remplacer par `pnpm run setup`.
-- **PR D (depuis la PR B)** : le workflow Renovate reste vert quand le token est refusé
-  (401 `bad-credentials` → `"result": "external-host-error"`, exit 0, constaté le 2026-09-22
-  sur le run 35727149916). Un token expiré passerait inaperçu : faire échouer le job sur ce
-  résultat (option à vérifier dans la doc Renovate avant d'écrire la config).
-- **PR D (depuis la PR B)** : `vulnerabilityAlerts.schedule` de `.github/renovate.json` est
-  sans effet (Renovate ignore toujours `schedule` pour les correctifs de sécurité, doc
-  `configuration-options` § `vulnerabilityAlerts`) : le retirer.
 - **Surveillance** : le graphe de dépendances GitHub liste encore `apps/curriculum/uv.lock` et
   `apps/ai-service/uv.lock` (supprimés en `8f5011f`, 0 dépendance) et y rattachait de nouvelles
   alertes (#317 créée le 2026-09-19). Les 70 alertes ont été classées `inaccurate` le
@@ -91,7 +74,7 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 | A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | mergée | #308 |
 | B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | mergée | #309 |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | mergée | #313 |
-| D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | à faire | — |
+| D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | en revue | — |
 | E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | à faire | — |
 | E2 — Infra serveur et outillage | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-infra` | à faire | — |
 
@@ -163,3 +146,26 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   corrigés, `pnpm doctor` étendu au modèle et à l'endpoint Mistral, suite live 6/6.
 - **2026-09-22** — PR C mergée (#313, merge commit). Reste la demande de Zero Data Retention
   (bloquant avant tout utilisateur réel).
+- **2026-09-22** — PR D (bugs avec tests de non-régression) implémentée : 19 tâches. Par
+  thème — serveur : arrêt gracieux ordonné, id de requête et enveloppe d'erreur globale,
+  bornes de quota calculées en Europe/Paris, purge de rétention qui rapporte les vrais
+  compteurs, retrait du sweep horaire de quota, parseur JSON natif d'Elysia, retrait de la
+  vérification de session orpheline et du cache de cookie de session, configuration OTLP
+  laissée à l'exporteur, gate de validation qui échoue si la matrice échoue, `PG_CONTAINER`
+  honoré par le doctor, UUID validés à la frontière de route, routes de credentials
+  device-first supprimées ; landing : images distantes non proxyables stoppées, en-têtes de
+  sécurité et métadonnées SEO corrigés, réponse de la waitlist vérifiée en statut et en
+  corps, textes qui décrivent un service web plutôt qu'une app de store ; CI : job Renovate en
+  échec si le token est refusé, parcours nouveau dev pointé sur `pnpm run setup` ;
+  outillage : lanceur de tests maison remplacé par `bun test --isolate` partout, mocks
+  `tool-executor`/`chat-tools` isolés. Décisions à garder : date-fns conservé bien que Bun
+  1.4.2 expose désormais `Temporal` (typage TypeScript 6.0 non vérifié) — à réévaluer ;
+  `apps/server/scripts/run-tests.ts` (lanceur custom) remplacé par `bun test --isolate`
+  natif ; les erreurs de validation répondent maintenant 400 avec l'enveloppe
+  `{ error: { code, message }, requestId }` au lieu du 422 par défaut d'Elysia (changement de
+  contrat pour de futurs clients) ; le `cookieCache` de better-auth retiré, donc un compte
+  supprimé perd l'accès immédiatement ; `needsMonthlyReset` utilise toujours
+  `Intl.DateTimeFormat` alors que les bornes jour/semaine sont passées à date-fns (suivi de
+  cohérence) ; `apps/landing/lib/actions/waitlist.ts` porte désormais une vraie logique de
+  branchement mais la landing n'a pas de lanceur de tests
+  (`.claude/rules/testing-and-commits.md` : « Pas de tests ») — choix délibéré à revisiter.
