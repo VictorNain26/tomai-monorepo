@@ -15,7 +15,7 @@ Arrêt de l'infra : `pnpm dev:down`. Documentation d'API en dev :
 http://localhost:3000/swagger
 
 `pnpm dev` démarre l'infra puis **attend que postgres soit `healthy`** avant de
-lancer les apps ; si l'infra est incomplète, rien ne démarre. `pnpm doctor` donne
+lancer les apps ; si l'infra est incomplète, rien ne démarre. `pnpm run doctor` donne
 le détail, `pnpm doctor:e2e` la version stricte où un `SKIP` compte comme un échec.
 
 ## Structure

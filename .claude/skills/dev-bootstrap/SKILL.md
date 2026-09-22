@@ -69,7 +69,7 @@ L'image backend iso-prod reste disponible en opt-in via
 ## Diagnostic
 
 ```bash
-pnpm doctor        # PASS/FAIL/SKIP par dépendance
+pnpm run doctor    # PASS/FAIL/SKIP par dépendance
 pnpm doctor:e2e    # strict : un SKIP compte comme un échec
 ```
 

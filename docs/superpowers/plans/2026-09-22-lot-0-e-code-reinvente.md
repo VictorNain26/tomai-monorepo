@@ -1708,7 +1708,7 @@ export function parseEnvFile(path) {
 }
 ```
 
-- [ ] `pnpm test:scripts && pnpm doctor` : exit 0 (le second avec l'infra démarrée).
+- [ ] `pnpm test:scripts && pnpm run doctor` : exit 0 (le second avec l'infra démarrée).
 - [ ] Commit, un `git add` par fichier ; `refactor(ci): parse .env with node:util parseEnv in doctor`,
   suivi de la ligne Co-Authored-By.
 

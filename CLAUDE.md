@@ -18,7 +18,7 @@ pnpm dev:down                     # arrêt de l'infra
 pnpm typecheck && pnpm lint       # obligatoire avant tout commit
 pnpm test                         # tests serveur, aussi obligatoires si le serveur change
 pnpm test:scripts                 # tests de scripts/ et des hooks Claude
-pnpm doctor                       # diagnostic de la stack
+pnpm run doctor                   # diagnostic de la stack
 pnpm doctor:e2e                   # diagnostic strict : un SKIP = échec
 pnpm seed                         # comptes parent + élève, dev uniquement
 ```
