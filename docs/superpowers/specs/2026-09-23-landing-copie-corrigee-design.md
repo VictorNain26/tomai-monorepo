@@ -32,7 +32,7 @@ Critères de réussite :
 | Grille | Peinte par chaque section, défile avec elle, calée sur le bord gauche du contenu | calque `fixed` + `mask-image` radial |
 | Marge | Trait `annotation` plein 2 px sur une verticale, peint par chaque section, visible aussi en mobile | `fixed`, `md+`, 70 % |
 | Papier | Blanc neutre ; objets posés sur la page, pas de bandes de fond | crème + bandes sable |
-| Rythme vertical | Hauteurs de ligne et espacements verticaux multiples de 8 px ; Capsize | libre |
+| Rythme vertical | Hauteurs de ligne et espacements verticaux multiples de 8 px ; ligne de base calée par l'unité `lh` et les métriques Capsize | libre |
 | Header | En-tête de copie, replié en intercalaires au scroll | barre en verre dépoli |
 | Icônes | Jeu maison de 13 icônes au trait ; `lucide-react` retiré de la landing | 34 usages lucide |
 | Annotations | Cursive Playwrite France Traditionnelle | Fraunces italique |
@@ -55,32 +55,42 @@ ne dit « jamais la réponse » sans préciser « de ton exercice ».
 | `secondary`, `muted`, `accent` | `#F3F5FB` | 15,40 / 6,06 / 8,51 / 5,38 / 5,42 |
 | `note` (nouveau) + `note-foreground` `#1D1D22` | `#FFF3B0` | 14,95 / 5,88 / 8,26 / 5,22 / 5,26 |
 | `highlight` | `#F9E08B` inchangé | `annotation` dessus 4,48 : **interdit** |
-| `border`, `input` | dérivés de `primary` (`color-mix`), plus de sable | — |
+| `border` | `#D9DFF0` (bleu de carreau, décoratif) | — |
+| `input` | `#7F8BB8` | 3,25:1 sur `background` (≥ 3:1, WCAG 1.4.11) |
 
 Les ratios sont ceux de l'audit ; le test `packages/tokens/contrast.test.mjs` les prouve
-(paires ajoutées pour `note`, `secondary`, `card`). Les autres tokens Bic sont inchangés.
+(paires ajoutées pour `note`, et `input` au seuil 3:1 des contrôles). Les autres tokens Bic sont inchangés.
 
 ### Réglure et marge (`apps/landing/app/globals.css`)
 
 - `--cell: 2rem`, `--rule: 0.5rem`.
 - `@utility bg-seyes` : verticales fortes tous les `--cell`, horizontales fortes tous les
   `--cell`, interlignes fines tous les `--rule` ; fortes ≈ `#C9D3EE`, fines ≈ `#E3E8F6`,
-  obtenues par `color-mix` de `primary` ; `background-position-x:
-  max(0px, calc((100% - 80rem) / 2))` pour caler la grille sur le bord du conteneur.
+  obtenues par `color-mix` de `primary`. Les verticales sont peintes par un pseudo-élément
+  dont `left` vaut `calage − 40 cellules`, avec `calage = max(0px, (100% − 78rem) / 2)` :
+  les pourcentages de `left` se rapportent à la largeur de la section, ceux de
+  `background-position` non. La section est en `overflow-x: clip` et `isolation: isolate`.
 - La marge est un pseudo-élément de `bg-seyes` : 2 px `annotation` plein, posé sur la
   verticale d'index 1 (mobile), 2 (md), 3 (lg) à partir du calage.
-- `@utility container` (plus de classe hors couche) : `max-w-7xl`, paddings en cellules :
-  gauche = colonne de marge + 1 cellule, droite = 1 cellule (mobile) / 2 (md+).
+- `@utility container` : `max-width: 78rem` (39 cellules), centré ; padding gauche =
+  marge + ½ cellule en mobile (48 px), marge + 1 cellule en md (96 px) et lg (128 px) ;
+  padding droit 16 px (mobile), 64 px (md+).
 - Le calque `bg-notebook` `fixed` et la marge `fixed` de `layout.tsx` sont supprimés.
 - Cartes : `ring` ou ombre, jamais `border` (1 px décalerait les lignes).
 
 ### Typographie
 
-- Échelle (taille/hauteur de ligne, px) : corps 16/24, chapeau 18/32, `h3` 24/32,
-  `h2` 40/48, `h1` 64/80 (lg 80/80, xl 96/96).
-- Classes générées une fois avec Capsize (`@capsizecss/core` en dépendance de dev,
-  métriques de `@capsizecss/metrics`) pour poser la ligne de base sur une ligne ; le
-  résultat est du CSS statique dans `globals.css`, aucune dépendance runtime.
+- Hauteurs de ligne (px) : `text-xs` 16, `sm`/`base` 24, `lg`/`xl`/`2xl` 32, `3xl` 40,
+  `4xl` 48, `5xl` 56, `6xl` 64, `7xl` 80, `8xl` 96. Les utilitaires `leading-*` sont
+  retirés de la landing.
+- Les tailles de texte existantes sont conservées ; leurs hauteurs de ligne (`--text-*--line-height`)
+  passent à des multiples de 8 dans le `@theme` de la landing.
+- Ligne de base posée sur le bas de chaque ligne par une règle unique :
+  `top: calc(0.5lh − var(--ink-ad) × 0.5em)` sur les blocs de texte, avec
+  `--ink-ad = (ascent − |descent|) / unitsPerEm` lu dans `@capsizecss/metrics` 4.3.0
+  (Figtree 0,700 ; Fraunces 0,723). L'unité `lh` est Baseline « Widely Available »
+  (Chrome 109, Firefox 120, Safari 16.4 —
+  https://web-platform-dx.github.io/web-features-explorer/features/lh/). Aucune dépendance.
 - Espacements verticaux pairs uniquement (`mt-2`, `py-6`, `space-y-4`…).
 - Images, champs et boutons arrondissent leur hauteur au multiple de 8 (boutons 48 px).
 
@@ -190,14 +200,14 @@ Inchangées : tokens uniquement (hors constantes de l'OG image), thème clair, s
 statique, frontière landing (seule intégration serveur : `joinWaitlist`), primitives
 interactives via `@repo/ui`, cibles 44 px, contraste AA, fichiers < 400 lignes,
 collège 6e → 3e, `BRAND_NAME`, pas de dépendance runtime nouvelle. Les outils hors ligne
-(perfect-freehand, roughjs, Capsize) servent à produire du SVG ou du CSS commité ; leurs
+(perfect-freehand, roughjs) servent à produire du SVG ou du CSS commité ; leurs
 scripts de génération vivent dans `apps/landing/scripts/` et sont relançables.
 
 ## 6. Livraison
 
 Cinq PR courtes, empilées sur `feat/landing-cahier-annote-pages` :
 
-1. Fondations : tokens, Seyès et marge, `@utility container`, typographie Capsize, pages
+1. Fondations : tokens, Seyès et marge, `@utility container`, rythme vertical, pages
    légales, footer, contact et promesses.
 2. Header et icônes.
 3. Primitives d'écriture, cercles réparés, Playwrite.
