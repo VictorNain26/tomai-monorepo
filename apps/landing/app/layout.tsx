@@ -85,7 +85,7 @@ const jsonLd = [
     "@type": "SoftwareApplication",
     name: "TomIA",
     applicationCategory: "EducationApplication",
-    operatingSystem: "iOS, Android",
+    operatingSystem: "Web",
     inLanguage: "fr",
     description: "Assistant IA de tutorat pour collégiens, de la 6e à la 3e. Méthode socratique, explications adaptées au niveau.",
     offers: [
