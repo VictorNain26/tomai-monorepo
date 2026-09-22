@@ -29,3 +29,8 @@ jobs:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_ONBOARDING: 'false'
           LOG_LEVEL: info
+          # Renovate always logs the exit code a repo result maps to, but only
+          # actually exits with it when this flag is set (docs.renovatebot.com/
+          # self-hosted-configuration/#exitcodeforerrors) — otherwise a rejected
+          # token ends the run with exit 0.
+          RENOVATE_EXIT_CODE_FOR_ERRORS: 'true'
