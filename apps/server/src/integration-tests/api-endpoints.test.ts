@@ -394,6 +394,19 @@ describe('API Endpoints', () => {
     });
   });
 
+  describe('Malformed JSON body', () => {
+    it('answers 400 with the error envelope', async () => {
+      const res = await app.handle(new Request(
+        'http://localhost/api/chat/session/0199a3c4-7b1e-7d2a-9f00-123456789abc/files',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{bad' },
+      ));
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error.code).toBe('VALIDATION_ERROR');
+      expect(data.requestId).toBeTruthy();
+    });
+  });
+
   describe('Unknown routes', () => {
     it('should return 404 for unknown route', async () => {
       const res = await app.handle(new Request('http://localhost/api/nonexistent'));

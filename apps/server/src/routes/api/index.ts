@@ -13,11 +13,6 @@ export const apiRoutes = new Elysia({ name: 'api-routes' })
   // health endpoint, polled by the Dockerfile HEALTHCHECK.
   .use(apiHealthRoutes)
 
-  .onParse(async ({ request }, contentType) => {
-    if (contentType === 'application/json') {
-      return JSON.parse(await request.text());
-    }
-  })
   .group('/api', (app) => app
     .use(chatSessionApiRoutes)
     .use(parentApiRoutes)
