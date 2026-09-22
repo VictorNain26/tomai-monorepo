@@ -170,6 +170,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
     },
     async (recordResponse) => {
+      const abortSignal = AbortSignal.timeout(timeoutMs);
       const call = async (messages: ModelMessage[]) => {
         const result = await aiGenerateText({
           model: mistralProvider()(model),
@@ -179,7 +180,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
           temperature,
           maxOutputTokens: maxTokens,
           maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
-          abortSignal: AbortSignal.timeout(timeoutMs),
+          abortSignal,
           providerOptions: {
             mistral: {
               safePrompt: true,

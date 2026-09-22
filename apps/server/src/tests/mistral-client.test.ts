@@ -144,6 +144,31 @@ describe('generateStructured', () => {
     expect(calls).toBe(2);
   });
 
+  it('bounds the first call and the retry with one timeout', async () => {
+    let calls = 0;
+    globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+      calls += 1;
+      const content = calls === 1 ? JSON.stringify({ intent: 'nope' }) : JSON.stringify({ intent: 'chit-chat' });
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, 150);
+        init?.signal?.addEventListener('abort', () => {
+          clearTimeout(timer);
+          reject(init.signal?.reason as Error);
+        });
+      });
+      return new Response(JSON.stringify(chatCompletion(content)), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const rejection = await generateStructured({ messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent', timeoutMs: 250 })
+      .catch((error: unknown) => error);
+
+    expect(calls).toBe(2);
+    expect(rejection).toBeInstanceOf(Error);
+    expect(NoObjectGeneratedError.isInstance(rejection)).toBe(false);
+  });
+
   it('sends prompt_cache_key on the wire body', async () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
