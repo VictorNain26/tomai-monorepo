@@ -6,9 +6,7 @@
  * - Incrémental : fusionne l'ancien résumé avec les nouveaux échanges
  * - Asynchrone (fire-and-forget) pour ne pas bloquer le streaming
  *
- * Modèle : `mistral-small-latest`. Tâche templatée, qualité
- * suffisante, ~3× moins cher que medium. Escalade vers medium si qualité
- * insuffisante mesurée en prod.
+ * Tâche templatée, modèle de chat par défaut.
  * Prompt cache actif (system prompt stable invariant inter-sessions).
  */
 
@@ -16,7 +14,6 @@ import { generateText } from '../../lib/ai/mistral-client.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { messagesRepository } from '../../db/repositories/messages.repository.js';
 import { logger } from '../../lib/observability.js';
-import { env } from '../../config/env.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -214,7 +211,6 @@ class SummarizationService {
       : `## CONVERSATION\n${messagesText}`;
 
     const text = await generateText({
-      model: env.MISTRAL_MODEL_LIGHT,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },

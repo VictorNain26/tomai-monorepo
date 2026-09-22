@@ -39,10 +39,7 @@ import {
 import { logger } from '../../lib/observability.js';
 import { withRetry } from '../../lib/retry.js';
 import type { CardGenerationParams, ParsedCard } from './types.js';
-import { env } from '../../config/env.js';
 
-// mistral-small pour génération templatée flashcards (qualité OK,
-// 3× moins cher que medium, escalade possible). JSON Schema strict.
 // Prompt cache sur l'instruction de base + adaptations cycle/sujet.
 const CARD_GENERATOR_PROMPT_VERSION = '2026-05-18';
 const CARD_GENERATOR_CACHE_KEY = `card-generator-${CARD_GENERATOR_PROMPT_VERSION}`;
@@ -229,7 +226,6 @@ export async function generateCards(
     const wrapped = await withRetry(
       async () => {
         const parsed = await generateStructured<{ cards: unknown[] }>({
-          model: env.MISTRAL_MODEL_LIGHT,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           maxTokens: 4096,

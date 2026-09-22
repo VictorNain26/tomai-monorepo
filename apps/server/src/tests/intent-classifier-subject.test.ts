@@ -18,7 +18,7 @@ mock.module('../lib/observability', () => ({
 }));
 
 mock.module('../config/env', () => ({
-  env: { MISTRAL_MODEL_CLASSIFY: 'ministral-8b-latest' },
+  env: { MISTRAL_MODEL: 'mistral-small-2603' },
 }));
 
 let mockStructuredResponse: { intent?: string; confidence?: string; subject?: string } | Error = {

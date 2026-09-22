@@ -1,7 +1,7 @@
 /**
  * Intent classifier — pre-generation pedagogical intent detection.
  *
- * Runs a lightweight Mistral pass (ministral-8b, 80 output tokens max) BEFORE
+ * Runs a lightweight Mistral pass (80 output tokens max) BEFORE
  * the main chat generation to detect high-risk pedagogical
  * patterns and inject a reinforcing instruction into the system prompt.
  *
@@ -19,7 +19,6 @@
 import { generateStructured } from '../../lib/ai/mistral-client.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
-import { env } from '../../config/env.js';
 import { STUDENT_SUBJECTS, type StudentSubject } from '../../config/prompts/adaptation/subjects.js';
 
 const INTENT_CLASSIFIER_PROMPT_VERSION = '2026-06-29-subject';
@@ -115,7 +114,6 @@ class IntentClassifierService {
     const startTime = Date.now();
     try {
       const parsed = await generateStructured<{ intent?: string; confidence?: string; subject?: string }>({
-        model: env.MISTRAL_MODEL_CLASSIFY,
         messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
         temperature: 0,
         maxTokens: 96,

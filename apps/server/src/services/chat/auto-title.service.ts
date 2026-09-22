@@ -3,15 +3,13 @@
  *
  * Called fire-and-forget après la première réponse assistant.
  *
- * Modèle : `ministral-3-3b`. Output ~15 tokens, latence min,
- * coût ≈ $0.0000015/req. Bien suffisant pour un titre de 50 chars.
+ * Output ~15 tokens, latence minimale.
  * Prompt cache actif pour le préfixe d'instruction stable.
  */
 
 import { generateText } from '../../lib/ai/mistral-client.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { logger } from '../../lib/observability.js';
-import { env } from '../../config/env.js';
 
 const AUTO_TITLE_PROMPT_VERSION = '2026-05-18';
 
@@ -59,7 +57,6 @@ class AutoTitleService {
         .replace('{assistantPreview}', assistantPreview);
 
       const raw = await generateText({
-        model: env.MISTRAL_MODEL_TITLE,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
         maxTokens: 64,

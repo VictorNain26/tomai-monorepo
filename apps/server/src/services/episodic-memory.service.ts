@@ -116,7 +116,7 @@ class EpisodicMemoryService {
         .join('\n\n')
         .slice(0, 20_000);
 
-      // mistral-medium : extraction structurée FR nuancée.
+      // Extraction structurée FR.
       // JSON Schema strict garantit la forme. Prompt cache sur le prompt
       // d'extraction (templaté, subject seul varie via interpolation).
       const parsed = await generateStructured<ExtractedEpisode>({
