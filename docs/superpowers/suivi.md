@@ -12,13 +12,12 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 - **Dernière mise à jour :** 2026-09-22
 - **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** continuer la PR B (branche `build/upgrade-all-deps`) à la première
-  tâche sans ligne `complete` dans son registre SDD
-  `.superpowers/sdd/2026-09-22-lot-0-b-dependances/progress.md` (git-ignoré, local).
-  Exécution : skill `superpowers:subagent-driven-development` sur
-  `plans/2026-09-22-lot-0-b-dependances.md` ; briefs et règles déjà extraits dans ce dossier.
+- **Prochaine action :** merger la PR B (build/upgrade-all-deps) une fois la CI verte, en
+  vérifiant dans le log que `pnpm/action-setup` installe bien pnpm 12.5.1 ; puis démarrer la
+  PR C (`plans/2026-09-22-lot-0-c-mistral-small-4.md`, branche `feat/mistral-small-4`) avec
+  le skill `superpowers:subagent-driven-development`.
 
-## Reporté depuis la PR A
+## Reporté depuis les PR A et B
 
 Constats hors périmètre de A, à traiter dans la PR indiquée :
 
@@ -32,6 +31,15 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 - **PR B** : l'override `'nanoid@5'` résout `nanoid@6` et son commentaire est faux ;
   `.vscode/extensions.json` recommande encore `ruff`/`python`. La copie en `ArrayBuffer` de
   `encryption.ts:51-53,72-73` est à revérifier.
+- **PR D (depuis la PR B)** : `pnpm setup` lance la commande native de pnpm, pas
+  `scripts/setup.mjs` : le parcours du nouveau dev est cassé (`README.md:10`,
+  `.claude/skills/dev-bootstrap/SKILL.md`, `scripts/dev.mjs:26`, `scripts/doctor*.mjs`,
+  `.claude/hooks/block-destructive-db.sh:52`) ; remplacer par `pnpm run setup`.
+- **PR E (depuis la PR B)** : champs morts `IAppUser.parentId` (`packages/api/src/types.ts:23`)
+  et `ElysiaAuthenticatedUser.parentId` (`apps/server/src/types/index.ts:17`), exemple périmé
+  `pool-limiter.ts:57` ; `react@19.2.3` et un second `next` résolus comme peers optionnels de
+  better-auth côté serveur (`pnpm dedupe` à tenter) ; indice knip sur `ignoreBinaries` de
+  `apps/server/knip.json`.
 - **Lot 3** : colonnes RevenueCat de `family_billing`, enum `billing_status` et commentaires
   de `billing.schema.ts` (dont `:179`) ; `app-guide-data.ts` à réécrire avec la navigation
   web. Le code de `BillingService` et `plan-cache` se retrouve avec
@@ -50,7 +58,7 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 | Docs : specs, roadmap, plan du lot 0, ce suivi | — | `docs/rewrite-specs-and-plans` | mergée | #306 |
 | B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | mergée | #307 |
 | A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | mergée | #308 |
-| B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | en cours : B.2-B.7 faites et relues | — |
+| B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | terminée, PR à ouvrir | — |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | à faire | — |
 | D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | à faire | — |
 | E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | à faire | — |
@@ -112,3 +120,6 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   B.6 (Postgres 18 + pgvector 0.8.6, Bun 1.4 ; volume local neuf
   `tomai_postgres18_dev_data`) et B.7 (overrides obsolètes retirés, seul reste un plancher
   esbuild ciblé sur drizzle-kit) faites et relues.
+- **2026-09-22** — PR B : B.8 (Renovate auto-hébergé) faite et relue ; relecture finale
+  sans finding bloquant ; validation de fin de PR verte (`outdated` : seuls TypeScript 7 et
+  `@types/node` 26, écarts voulus).

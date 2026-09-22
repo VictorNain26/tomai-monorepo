@@ -1,6 +1,6 @@
 # Lot 0, PR B — Toutes les dépendances et l'outillage à la dernière version
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Index du lot, contraintes globales, ordre des PR et étapes manuelles :** `docs/superpowers/plans/2026-09-22-lot-0-assainissement.md` — à lire avant ce plan.
 
@@ -61,14 +61,14 @@ Breaking changes lus, et leur effet ici :
 - actions/cache v5 (Node 24), v6 (ESM). L'input `save-always` porte un `deprecationMessage` : « save-always does not work as intended and will be removed in a future release » (`action.yml` du tag v6.1.0, lignes 29-36). Il est retiré : le cache turbo est alors sauvé en fin de job réussi, comportement par défaut, et le cache distant (`TURBO_TOKEN`) reste la source principale.
 - gitleaks-action v3 : runtime Node 24 seulement, « No changes to inputs, outputs, or behavior » ([v3.0.0](https://github.com/gitleaks/gitleaks-action/releases/tag/v3.0.0)).
 
-- [ ] **Constater l'état obsolète.**
+- [x] **Constater l'état obsolète.**
   ```bash
   cd /home/ordiv/projets/tomai-monorepo
   grep -rn "save-always\|# v4\.\|# v2\.1\.2\|# v2\.3\.9" .github
   ```
   Attendu : 10 lignes ou plus (checkout v4.3.1 partout, setup-node v4.4.0, cache v4.3.0 + `save-always`, setup-bun v2.1.2, gitleaks v2.3.9).
 
-- [ ] **Réécrire `.github/actions/setup-monorepo/action.yml` lignes 15-32** :
+- [x] **Réécrire `.github/actions/setup-monorepo/action.yml` lignes 15-32** :
   ```yaml
   runs:
     using: composite
@@ -95,7 +95,7 @@ Breaking changes lus, et leur effet ici :
   ```
   (`bun-version` passe à 1.4 dans B.6, avec le runtime.)
 
-- [ ] **Remplacer toutes les occurrences de checkout et setup-node dans les workflows :**
+- [x] **Remplacer toutes les occurrences de checkout et setup-node dans les workflows :**
   ```bash
   cd /home/ordiv/projets/tomai-monorepo
   sed -i 's|actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1|actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1|' .github/workflows/*.yml
@@ -105,14 +105,14 @@ Breaking changes lus, et leur effet ici :
   sed -i 's|anthropics/claude-code-action@36a69b6a90b850823f86de06fdfd56264772ad98 # v1|anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1|' .github/workflows/claude-code.yml
   ```
 
-- [ ] **Vérifier.**
+- [x] **Vérifier.**
   ```bash
   grep -rn "save-always\|# v4\.\|# v2\.1\.2\|# v2\.3\.9\|36a69b6a\|7cad2bc2" .github; echo "exit=$?"
   docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color; echo "exit=$?"
   ```
   Attendu : `grep` sans sortie, `exit=1`. actionlint `exit=0`.
 
-- [ ] **Commit.**
+- [x] **Commit.**
   ```bash
   git add .github/actions/setup-monorepo/action.yml
   git add .github/workflows/ci.yml
@@ -129,7 +129,7 @@ Breaking changes lus, et leur effet ici :
   Co-Authored-By: Claude <noreply@anthropic.com>"
   ```
 
-- [ ] **Pousser la branche et lire la CI** : `git push -u origin build/upgrade-all-deps`, ouvrir la PR en draft, puis `gh pr checks --watch` doit passer tous les checks au vert.
+- [x] **Pousser la branche et lire la CI** : `git push -u origin build/upgrade-all-deps`, ouvrir la PR en draft, puis `gh pr checks --watch` doit passer tous les checks au vert.
 
 ---
 
@@ -153,7 +153,7 @@ Décisions :
 - **TypeScript reste en 6.0.3** (dernière 6.0.x). `typescript-eslint@8.70.1` (latest) déclare `typescript: ">=4.8.4 <6.1.0"` (`npm view typescript-eslint@8.70.1 peerDependencies`). Le mainteneur l'explique sur [typescript-eslint#12518](https://github.com/typescript-eslint/typescript-eslint/issues/12518) : « typescript-eslint isn't compatible with TS 7 at this time, because there is no TS 7 API ». Suivi : [#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940). Le montage côte à côte TS 6 + TS 7 est écarté : deux compilateurs, et la compatibilité de `next build`, knip et `build:types` avec TS 7 n'est pas vérifiée.
 - turbo 2.9.16→2.11.2 : les notes [v2.10.0](https://github.com/vercel/turborepo/releases/tag/v2.10.0) et [v2.11.0](https://github.com/vercel/turborepo/releases/tag/v2.11.0) ne listent que des retraits internes (tbx, panics, devtools flag), aucun changement de `turbo.json`. knip 6.24→6.37, prettier 3.8→3.9, lefthook 2.1.9→2.1.14 sont des mineures.
 
-- [ ] **Voir l'échec attendu sous pnpm 12 avant correction.**
+- [x] **Voir l'échec attendu sous pnpm 12 avant correction.**
   ```bash
   cd /home/ordiv/projets/tomai-monorepo
   npm pkg set packageManager=pnpm@12.5.1 engines.node=">=24" engines.pnpm=">=12"
@@ -161,7 +161,7 @@ Décisions :
   ```
   Attendu : `ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS` sur `auditConfig`, `exit≠0`. Si pnpm 12 ne signale qu'un avertissement, noter la sortie exacte dans la PR et poursuivre : le renommage reste dû, puisque le nom est déprécié.
 
-- [ ] **Renommer la section audit de `pnpm-workspace.yaml`** (fin de fichier). La PR A retire les GHSA propres au mobile (`GHSA-w7jw-789q-3m8p` via react-native, `GHSA-w3rx-r6r6-pgpr`/`GHSA-5p2g-fcmc-qvqq` via metro). Contrôle : `grep -n "GHSA-" pnpm-workspace.yaml`. S'il ne reste aucune GHSA ignorée, supprimer tout le bloc `auditConfig` et son commentaire. Sinon, remplacer :
+- [x] **Renommer la section audit de `pnpm-workspace.yaml`** (fin de fichier). La PR A retire les GHSA propres au mobile (`GHSA-w7jw-789q-3m8p` via react-native, `GHSA-w3rx-r6r6-pgpr`/`GHSA-5p2g-fcmc-qvqq` via metro). Contrôle : `grep -n "GHSA-" pnpm-workspace.yaml`. S'il ne reste aucune GHSA ignorée, supprimer tout le bloc `auditConfig` et son commentaire. Sinon, remplacer :
   ```yaml
   auditConfig:
     ignoreGhsas:
@@ -173,7 +173,7 @@ Décisions :
   ```
   et, dans le commentaire au-dessus, remplacer la référence `https://pnpm.io/cli/audit#auditconfigignoreghsas (pnpm 11)` par `https://pnpm.io/cli/audit (audit.ignore, renamed from auditConfig.ignoreGhsas in pnpm 11.16)`.
 
-- [ ] **Mettre à jour `package.json` lignes 36-47 :**
+- [x] **Mettre à jour `package.json` lignes 36-47 :**
   ```json
     "devDependencies": {
       "@evilmartians/lefthook": "^2.1.14",
@@ -189,7 +189,7 @@ Décisions :
     "packageManager": "pnpm@12.5.1"
   ```
 
-- [ ] **Dockerfile, étape `base` (lignes 4 et 13-24) :**
+- [x] **Dockerfile, étape `base` (lignes 4 et 13-24) :**
   ```dockerfile
   # Runtime: Bun 1.3 | Package Manager: pnpm 12
   ```
@@ -208,9 +208,9 @@ Décisions :
       && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
   ```
 
-- [ ] **Doc :** `README.md:9` et `CLAUDE.md:9`, remplacer `# Node 22+, pnpm 11+` par `# Node 24+, pnpm 12+`.
+- [x] **Doc :** `README.md:9` et `CLAUDE.md:9`, remplacer `# Node 22+, pnpm 11+` par `# Node 24+, pnpm 12+`.
 
-- [ ] **Installer avec pnpm 12 et mettre l'outillage à jour :**
+- [x] **Installer avec pnpm 12 et mettre l'outillage à jour :**
   ```bash
   corepack disable pnpm 2>/dev/null; npm install -g pnpm@12.5.1 && pnpm --version
   pnpm install
@@ -220,7 +220,7 @@ Décisions :
   ```
   Attendu : `pnpm --version` → `12.5.1`, `pnpm install` exit 0, sans `ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS`. `pnpm-lock.yaml` régénéré. Si `minimumReleaseAge: 1440` refuse une version publiée il y a moins de 24 h, prendre la précédente : la règle de supply-chain prime.
 
-- [ ] **Valider.**
+- [x] **Valider.**
   ```bash
   pnpm typecheck; echo "typecheck=$?"
   pnpm lint; echo "lint=$?"
@@ -231,7 +231,7 @@ Décisions :
   ```
   Attendu : les six codes à 0. Si knip 6.37 signale de nouveaux fichiers ou exports inutilisés, les traiter dans la PR E (suppression de code), pas ici : en ce cas, lister la sortie dans la description de la PR B et ne commiter que la montée.
 
-- [ ] **Commit.**
+- [x] **Commit.**
   ```bash
   git add package.json
   git add pnpm-workspace.yaml
@@ -282,7 +282,7 @@ Décisions :
 | `@typescript-eslint/*`, `typescript-eslint` | 8.60.0 | ^8.70.1 | mineures | Peer TS `<6.1.0` compatible avec 6.0.3 |
 | `eslint` (catalog), `globals`, `@eslint/compat`, `@next/eslint-plugin-next` | 10.4.1, 17.6.0, 2.1.0, 16.2.6 | ^10.11.0, ^17.12.0, ^2.1.1, ^16.3.5 | mineures | `packages/eslint-config` déclare `eslint: ^10.4.0` en dur : passé à `catalog:` pour une seule source |
 
-- [ ] **Monter les versions :**
+- [x] **Monter les versions :**
   ```bash
   cd /home/ordiv/projets/tomai-monorepo
   pnpm update -r --latest @ai-sdk/mistral @mistralai/mistralai elysia zod \
@@ -298,13 +298,13 @@ Décisions :
   ```
   Attendu : exit 0. `grep -n '"ai"\|"@sentry/elysia"\|"elysia"\|"better-auth"' apps/server/package.json` montre `^7.0.10x`, `10.75.1`, `^1.4.30`, et `better-auth` inchangé (traité en B.4).
 
-- [ ] **Revérifier l'absence de verrou dans le migrateur Drizzle 0.45.3** (règle `database-migrations.md`) :
+- [x] **Revérifier l'absence de verrou dans le migrateur Drizzle 0.45.3** (règle `database-migrations.md`) :
   ```bash
   grep -n "advisory\|pg_advisory_lock" node_modules/drizzle-orm/pg-core/dialect.js; echo "exit=$?"
   ```
   Attendu : `exit=1` (pas de verrou). L'advisory lock de `apps/server/src/db/migrate.ts` reste nécessaire. Dans `.claude/rules/database-migrations.md`, remplacer « `drizzle-orm` 0.45.2 ne pose aucun verrou » par « `drizzle-orm` 0.45.3 ne pose aucun verrou ».
 
-- [ ] **Valider le serveur et le contrat Eden :**
+- [x] **Valider le serveur et le contrat Eden :**
   ```bash
   cd apps/server
   bun run typecheck; echo "typecheck=$?"
@@ -316,7 +316,7 @@ Décisions :
   ```
   Attendu : tous les codes à 0. Pour prouver que le contrat n'a pas bougé, générer `dist/types/app.d.ts` sur `main` (`git worktree add /tmp/main-wt main && cd /tmp/main-wt && pnpm install && pnpm --filter tomai-server build:types`) puis `diff /tmp/main-wt/apps/server/dist/types/app.d.ts apps/server/dist/types/app.d.ts`. Attendu : aucune différence de routes. Une différence limitée aux types internes d'une dépendance se documente dans la PR.
 
-- [ ] **Commit.**
+- [x] **Commit.**
   ```bash
   git add apps/server/package.json
   git add packages/tokens/package.json
@@ -358,7 +358,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
 - `openAPI` et `username` : toujours exportés en 1.7.5.
 - Plugin Expo (`getCookie()` asynchrone) : supprimé par la PR A. Contrôle : `grep -n "expo" apps/server/src/lib/auth.ts` doit être vide.
 
-- [ ] **Monter et voir l'échec.**
+- [x] **Monter et voir l'échec.**
   ```bash
   cd /home/ordiv/projets/tomai-monorepo
   grep -n "expo" apps/server/src/lib/auth.ts; echo "expo-grep=$?"   # attendu 1 (PR A)
@@ -367,7 +367,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   Attendu : `error TS2305: Module '"better-auth/plugins"' has no exported member 'mcp'.` sur `src/lib/auth.ts:13`, `exit=2`.
 
-- [ ] **Retirer le plugin MCP de `auth.ts`.** En-tête (lignes 1-10), remplacer le bloc de commentaire par :
+- [x] **Retirer le plugin MCP de `auth.ts`.** En-tête (lignes 1-10), remplacer le bloc de commentaire par :
   ```typescript
   /**
    * Better Auth Configuration - Production Ready
@@ -394,9 +394,9 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
     ],
   ```
 
-- [ ] **Voir passer le typecheck :** `bun run typecheck; echo "exit=$?"`. Attendu : `exit=0`.
+- [x] **Voir passer le typecheck :** `bun run typecheck; echo "exit=$?"`. Attendu : `exit=0`.
 
-- [ ] **Comparer le schéma attendu par 1.7 au schéma Drizzle** (codebase-first, `.claude/rules/database-migrations.md`) :
+- [x] **Comparer le schéma attendu par 1.7 au schéma Drizzle** (codebase-first, `.claude/rules/database-migrations.md`) :
   ```bash
   cd apps/server
   docker compose -f ../../docker-compose.yml up -d postgres
@@ -405,7 +405,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   CLI documentée sur [better-auth.com/docs/concepts/cli](https://better-auth.com/docs/concepts/cli) (`generate --config --output --yes`). Comparer les tables `user`, `session`, `account`, `verification` de `/tmp/better-auth-1.7-schema.ts` à `src/db/schema/auth.schema.ts`. Règle : toute colonne ou index présent dans la sortie générée et absent de `auth.schema.ts` est porté à l'identique (nom SQL, type, nullabilité) dans `auth.schema.ts`. Les champs propres à TomAI (`firstName`, `role`, `loginCount`…) et les index `idx_*` existants sont gardés. Si l'écart est nul, passer à l'étape de validation. Ce résultat n'a pas pu être vérifié à la rédaction (voir notes) : c'est cette étape qui le tranche.
 
-- [ ] **Si le schéma change : doublons puis migration.**
+- [x] **Si le schéma change : doublons puis migration.**
   ```bash
   docker exec tomai-postgres-dev psql -U tomai_dev -d tomai_dev -c \
     'SELECT provider_id, account_id, count(*) FROM account GROUP BY 1, 2 HAVING count(*) > 1;'
@@ -415,7 +415,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   Attendu : requête sans ligne, un fichier `drizzle/00NN_*.sql` généré (jamais édité à la main), `db:check` exit 0. Requête du guide de montée, avec les noms de colonnes snake_case de `auth.schema.ts:110-111`.
 
-- [ ] **Valider.**
+- [x] **Valider.**
   ```bash
   bun run lint; echo "lint=$?"
   bun run test; echo "test=$?"
@@ -424,7 +424,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   Attendu : quatre codes à 0. `auth-macro.test.ts` et les tests d'intégration auth couvrent la connexion email, username et la session. Puis prouver le parcours réel, serveur lancé par `pnpm dev` : `curl -si -X POST localhost:3000/api/auth/sign-in/username -H 'content-type: application/json' -d '{"username":"<élève seed>","password":"<mot de passe seed>"}'` doit renvoyer `200` et un `set-cookie: better-auth.session_token=…`. Le compte vient de `pnpm seed` (`apps/server/src/scripts/seed-dev.ts`).
 
-- [ ] **Commit.**
+- [x] **Commit.**
   ```bash
   git add apps/server/package.json
   git add apps/server/src/lib/auth.ts
@@ -461,7 +461,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
 - **`@types/node` → ^24.13.6, pas 26.** Les types décrivent le runtime minimal : Node 24 en CI (`.nvmrc`), dans Docker (nodesource 24) et sur Vercel (24.x max). Les types 25/26 exposent des API absentes de Node 24. L'override racine `'@types/node': 25.9.1` n'avait qu'une raison mobile (collision `Response` RN/undici) : il est retiré en B.7. `bun-types` déclare `@types/node: "*"`, sans contrainte.
 - lucide-react 1.17→1.47, Radix (patchs), `sonner`, `tailwind-merge` 3.7, Tailwind 4.3.3, `@sentry/nextjs` 10.75.1 (peer `next ^16.0.0-0`), `postcss` : mineures et patchs.
 
-- [ ] **Remplacer framer-motion et voir l'échec.**
+- [x] **Remplacer framer-motion et voir l'échec.**
   ```bash
   cd /home/ordiv/projets/tomai-monorepo
   pnpm --filter landing remove framer-motion
@@ -470,7 +470,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   Attendu : `TS2307: Cannot find module 'framer-motion'` sur les 6 fichiers, `exit=2`.
 
-- [ ] **Changer les imports :**
+- [x] **Changer les imports :**
   ```bash
   sed -i 's|from "framer-motion";|from "motion/react";|' \
     apps/landing/components/sections/faq.tsx \
@@ -483,7 +483,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   Attendu : `exit=1`. Résultat, par exemple `faq.tsx:4` : `import { motion, AnimatePresence } from "motion/react";`.
 
-- [ ] **Catalog (`pnpm-workspace.yaml`)**, entrées après retrait de `react-test-renderer` par la PR A :
+- [x] **Catalog (`pnpm-workspace.yaml`)**, entrées après retrait de `react-test-renderer` par la PR A :
   ```yaml
   catalog:
     '@radix-ui/react-slot': ^1.3.3
@@ -501,7 +501,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   Le commentaire « Pinned to React 19.2.3 — the version Expo SDK 56 bundles… » est supprimé. `eslint: ^10.11.0` est déjà posé en B.3 si `pnpm update` a réécrit le catalog : ne garder qu'une entrée.
 
-- [ ] **Autres montées :**
+- [x] **Autres montées :**
   ```bash
   pnpm update -r --latest @sentry/nextjs @tailwindcss/postcss postcss next next-themes \
     @radix-ui/react-alert-dialog @radix-ui/react-avatar @radix-ui/react-dialog \
@@ -510,9 +510,9 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   pnpm install
   ```
 
-- [ ] **Doc :** `README.md:42`, remplacer `Framer Motion` par `Motion 13`.
+- [x] **Doc :** `README.md:42`, remplacer `Framer Motion` par `Motion 13`.
 
-- [ ] **Valider, build compris, et voir la page.**
+- [x] **Valider, build compris, et voir la page.**
   ```bash
   pnpm --filter landing typecheck; echo "typecheck=$?"
   pnpm --filter landing lint; echo "lint=$?"
@@ -522,7 +522,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   Attendu : cinq codes à 0. Ensuite `pnpm dev:landing`, puis ouvrir `http://localhost:3001`. Vérifier que la FAQ s'ouvre et se ferme (AnimatePresence), que le texte rotatif du hero change, que les compteurs s'animent au scroll (`useInView`) et que la console ne montre aucune erreur. Preuve de visu, pas seulement le build.
 
-- [ ] **Commit.**
+- [x] **Commit.**
   ```bash
   git add apps/landing/package.json
   git add apps/landing/components/sections/faq.tsx
@@ -565,7 +565,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
 - **Postgres 18 + pgvector 0.8.6.** pgvector reste nécessaire (`session_episodes.summary_embedding vector(1024)`, `learning.schema.ts:238`, index HNSW). Dernier tag stable : `0.8.6-pg18` ; `postgres:19` n'est qu'en beta (`19beta3`). Changement d'image : « The `PGDATA` environment variable of the image was changed to be version specific in PostgreSQL 18 and above. For 18 it is `/var/lib/postgresql/18/docker` … The defined `VOLUME` was changed in 18 and above to `/var/lib/postgresql` » ([Docker Hub postgres](https://hub.docker.com/_/postgres), [docker-library/postgres#1259](https://github.com/docker-library/postgres/pull/1259)). Un volume PG16 n'est pas lisible par PG18. L'app n'est pas en prod ; on crée donc **un volume neuf, sous un nom neuf**, pour qu'aucune base PG16 ne soit montée par erreur, et on supprime l'ancien à la main.
 - Compatibilité Drizzle et postgres.js avec PG18 : aucune matrice de versions publiée. Le client parle le protocole v3, stable depuis PG 7.4. C'est `test:integration` sur PG18 en CI qui fait la preuve.
 
-- [ ] **`docker-compose.yml` :**
+- [x] **`docker-compose.yml` :**
   - lignes 71-75 :
     ```yaml
     # ===========================================
@@ -585,17 +585,17 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
         name: tomai_postgres18_dev_data
     ```
   - ligne 109 : `image: oven/bun:1.4-alpine`
-- [ ] **`.github/workflows/ci.yml:86`** : `image: pgvector/pgvector:0.8.6-pg18`.
-- [ ] **`action.yml`** : `bun-version: "1.4"`.
-- [ ] **`apps/server/Dockerfile`** : ligne 4 `# Runtime: Bun 1.4 | Package Manager: pnpm 12`, ligne 9 `FROM oven/bun:1.4-slim AS base`, ligne 146 `org.opencontainers.image.base.name="oven/bun:1.4-slim"`.
-- [ ] **Doc :** `README.md:41` → `Bun 1.4, Elysia 1.4, PostgreSQL 18 + pgvector, Drizzle ORM 0.45`. `apps/server/README.md:35` → `Bun 1.4`, lignes 37 et 76 → `PostgreSQL 18 + pgvector`. Dans `.claude/skills/dev-bootstrap/SKILL.md`, après la ligne `docker compose down -v`, ajouter :
+- [x] **`.github/workflows/ci.yml:86`** : `image: pgvector/pgvector:0.8.6-pg18`.
+- [x] **`action.yml`** : `bun-version: "1.4"`.
+- [x] **`apps/server/Dockerfile`** : ligne 4 `# Runtime: Bun 1.4 | Package Manager: pnpm 12`, ligne 9 `FROM oven/bun:1.4-slim AS base`, ligne 146 `org.opencontainers.image.base.name="oven/bun:1.4-slim"`.
+- [x] **Doc :** `README.md:41` → `Bun 1.4, Elysia 1.4, PostgreSQL 18 + pgvector, Drizzle ORM 0.45`. `apps/server/README.md:35` → `Bun 1.4`, lignes 37 et 76 → `PostgreSQL 18 + pgvector`. Dans `.claude/skills/dev-bootstrap/SKILL.md`, après la ligne `docker compose down -v`, ajouter :
   ```markdown
   Depuis Postgres 18 (lot 0), le volume s'appelle `tomai_postgres18_dev_data`. Un
   ancien volume `tomai_postgres_dev_data` (PG16) est illisible par PG18 : le
   supprimer avec `docker volume rm tomai_postgres_dev_data`, puis `pnpm setup`.
   ```
 
-- [ ] **Bascule locale (étape manuelle, destructrice pour les données locales, à confirmer avec l'utilisateur avant exécution) :**
+- [x] **Bascule locale (étape manuelle, destructrice pour les données locales, à confirmer avec l'utilisateur avant exécution) :**
   ```bash
   cd /home/ordiv/projets/tomai-monorepo
   pnpm dev:down
@@ -606,7 +606,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   Attendu : `setup=0`, `18.x` et `0.8.6`.
 
-- [ ] **Valider sur la vraie stack :**
+- [x] **Valider sur la vraie stack :**
   ```bash
   cd apps/server && bun run test && bun run test:integration; echo "exit=$?"
   cd ../.. && pnpm doctor:e2e; echo "doctor=$?"
@@ -614,7 +614,7 @@ Breaking changes de la 1.7 ([release v1.7.0](https://github.com/better-auth/bett
   ```
   Attendu : trois codes à 0. `pnpm doctor:e2e` sort en échec au moindre SKIP. Puis `pnpm dev` et `curl -s localhost:3000/health`, qui doit renvoyer un statut `healthy` avec la base joignable.
 
-- [ ] **Commit.**
+- [x] **Commit.**
   ```bash
   git add docker-compose.yml
   git add .github/workflows/ci.yml
@@ -658,18 +658,18 @@ Décisions préétablies, étayées par un motif vérifié :
 
 Protocole pour chaque override « à tester » : on le retire, puis on mesure. Il ne revient que si la mesure l'exige.
 
-- [ ] **Retirer d'un bloc** les overrides des lignes « supprimé » et « à tester », avec leurs commentaires, dans `pnpm-workspace.yaml`. Garder `allowBuilds`, `catalog`, `minimumReleaseAge: 1440`.
+- [x] **Retirer d'un bloc** les overrides des lignes « supprimé » et « à tester », avec leurs commentaires, dans `pnpm-workspace.yaml`. Garder `allowBuilds`, `catalog`, `minimumReleaseAge: 1440`.
   ```bash
   pnpm install; echo "install=$?"
   pnpm audit --prod --audit-level high; echo "audit=$?"
   ```
-- [ ] **Si `audit≠0`**, pour chaque advisory listée : `pnpm why -r <paquet>` identifie le parent. Si une version plus récente du parent corrige, la monter. Sinon, réintroduire **ce seul** override avec un commentaire au format existant : GHSA, chemin, et « drop once <parent> bumps ». Relancer jusqu'à `audit=0`. Aucune GHSA n'est ajoutée à `audit.ignore` sans analyse écrite dans le commentaire (chemin, exposition runtime), comme pour les entrées existantes.
-- [ ] **Vérifier `pnpm outdated -r` :**
+- [x] **Si `audit≠0`**, pour chaque advisory listée : `pnpm why -r <paquet>` identifie le parent. Si une version plus récente du parent corrige, la monter. Sinon, réintroduire **ce seul** override avec un commentaire au format existant : GHSA, chemin, et « drop once <parent> bumps ». Relancer jusqu'à `audit=0`. Aucune GHSA n'est ajoutée à `audit.ignore` sans analyse écrite dans le commentaire (chemin, exposition runtime), comme pour les entrées existantes.
+- [x] **Vérifier `pnpm outdated -r` :**
   ```bash
   pnpm outdated -r; echo "exit=$?"
   ```
   Attendu : exactement deux lignes, `typescript 6.0.3 → 7.0.x` (bloqué par le peer `typescript-eslint <6.1.0`, voir B.2) et `@types/node 24.x → 26.x` (suit le runtime Node 24, voir B.5). Toute autre ligne se monte, sauf si le paquet a été publié il y a moins de 24 h (`minimumReleaseAge`), à noter dans la PR.
-- [ ] **Validation complète de fin de PR :**
+- [x] **Validation complète de fin de PR :**
   ```bash
   pnpm typecheck; echo "typecheck=$?"
   pnpm lint; echo "lint=$?"
@@ -681,7 +681,7 @@ Protocole pour chaque override « à tester » : on le retire, puis on mesure. I
   pnpm audit --prod --audit-level high; echo "audit=$?"
   ```
   Attendu : tous à 0.
-- [ ] **Commit.**
+- [x] **Commit.**
   ```bash
   git add pnpm-workspace.yaml
   git add pnpm-lock.yaml
@@ -715,7 +715,7 @@ Protocole pour chaque override « à tester » : on le retire, puis on mesure. I
 
 **Correctif : Renovate auto-hébergé dans un workflow planifié.** Un workflow planifié qui échoue envoie une notification à l'auteur du cron ([GitHub Docs, Notifications for workflow runs](https://docs.github.com/en/actions/concepts/workflows-and-actions/notifications-for-workflow-runs)). Un arrêt devient donc visible sous 24 h. L'action officielle est [`renovatebot/github-action`](https://github.com/renovatebot/github-action) (v46.3.3, SHA `9fea9f0fbf80401026d11d03911d62b1f70fef1f`). Les options self-hosted passent par des variables `RENOVATE_*` ([self-hosted configuration](https://docs.renovatebot.com/self-hosted-configuration/), ex. `RENOVATE_ONBOARDING`).
 
-- [ ] **Créer `.github/workflows/renovate.yml` :**
+- [x] **Créer `.github/workflows/renovate.yml` :**
   ```yaml
   # Self-hosted Renovate: a failed scheduled run notifies the cron author,
   # unlike the hosted app that stopped silently in June 2026.
@@ -751,7 +751,7 @@ Protocole pour chaque override « à tester » : on le retire, puis on mesure. I
   ```
   Le run est quotidien : la config limite déjà la création de branches à `before 9am on monday`, tandis que les alertes de vulnérabilité (`at any time`) et les cases cochées du dashboard sont traitées chaque jour.
 
-- [ ] **Réécrire `.github/renovate.json`.** Par rapport à l'existant : règles mobiles retirées (expo, react-navigation, react-native, rn-primitives, revenuecat, tanstack), groupe react sans `react-test-renderer`, `:maintainLockFilesMonthly` retiré (contredit par `lockFileMaintenance.schedule` hebdomadaire), et deux contraintes explicites qui transforment les écarts documentés en règles :
+- [x] **Réécrire `.github/renovate.json`.** Par rapport à l'existant : règles mobiles retirées (expo, react-navigation, react-native, rn-primitives, revenuecat, tanstack), groupe react sans `react-test-renderer`, `:maintainLockFilesMonthly` retiré (contredit par `lockFileMaintenance.schedule` hebdomadaire), et deux contraintes explicites qui transforment les écarts documentés en règles :
   ```json
   {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
@@ -859,14 +859,14 @@ Protocole pour chaque override « à tester » : on le retire, puis on mesure. I
   ```
   Les blocs `minor`/`patch` de premier niveau sont retirés : ils dupliquaient la règle `matchUpdateTypes: [minor, patch, pin, digest]`.
 
-- [ ] **Valider la config.**
+- [x] **Valider la config.**
   ```bash
   npx --yes --package renovate@latest -- renovate-config-validator --strict .github/renovate.json; echo "exit=$?"
   docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color; echo "actionlint=$?"
   ```
   Attendu : « Config validated successfully », `exit=0`, `actionlint=0`.
 
-- [ ] **Commit.**
+- [x] **Commit.**
   ```bash
   git add .github/renovate.json
   git add .github/workflows/renovate.yml
@@ -883,7 +883,7 @@ Protocole pour chaque override « à tester » : on le retire, puis on mesure. I
   Co-Authored-By: Claude <noreply@anthropic.com>"
   ```
 
-- [ ] **Étapes manuelles (utilisateur, sur GitHub) :**
+- [x] **Étapes manuelles (utilisateur, sur GitHub) :**
   1. Créer un token classique ([github.com/settings/tokens](https://github.com/settings/tokens)) avec les scopes `repo` (ou `public_repo`, le dépôt étant public) et `workflow`. `workflow` est requis pour que Renovate modifie `.github/workflows/*` (README de l'action, « Special token requirements when using the github-actions manager »). L'ajouter en secret de dépôt : `gh secret set RENOVATE_TOKEN`.
   2. Désactiver l'app hébergée pour ce dépôt, sinon deux Renovate ouvriraient les mêmes PR : Settings → Integrations → GitHub Apps → Renovate → Configure → retirer `tomai-monorepo`. Au passage, noter ce que montrait la page (app présente ou non), puis consulter [developer.mend.io/github/VictorNain26/tomai-monorepo](https://developer.mend.io/github/VictorNain26/tomai-monorepo) pour confirmer la cause de l'arrêt de juin.
   3. Après le merge : `gh workflow run renovate.yml`, puis `gh run watch`. Attendu : run vert, puis une issue « Dependency Dashboard » ouverte qui ne liste que les deux blocages documentés dans « Awaiting Schedule » ou « Pending Approval ». **Ne plus fermer le dashboard** : c'est le tableau de bord de Renovate, pas une tâche.
@@ -896,7 +896,7 @@ Les plugins vivent dans `~/.claude/plugins`, hors dépôt. Aucun fichier du dép
 
 Commandes documentées ([Discover plugins, « Manage marketplaces » et « Configure auto-updates »](https://code.claude.com/docs/en/discover-plugins), [Plugins reference, `claude plugin update` et `claude plugin marketplace update`](https://code.claude.com/docs/en/plugins-reference)) :
 
-- [ ] Dans un terminal (hors session Claude Code) :
+- [x] Dans un terminal (hors session Claude Code) :
   ```bash
   claude plugin marketplace update
   claude plugin update superpowers@claude-plugins-official
@@ -918,8 +918,8 @@ Commandes documentées ([Discover plugins, « Manage marketplaces » et « Confi
   claude plugin update cloudflare@cloudflare
   ```
   (Liste tirée de `~/.claude/plugins/installed_plugins.json` le 2026-09-22.) Dans une session ouverte, lancer ensuite `/reload-plugins`.
-- [ ] Optionnel : `claude plugin uninstall expo@claude-plugins-official`. Le plugin Expo ne sert plus une fois `apps/mobile` supprimé. Ses skills alourdissent le contexte à chaque session, et il continuera d'apparaître sous « Not used recently » dans `/plugin`.
-- [ ] Auto-update : `claude-plugins-official` a l'auto-update activé par défaut. Les marketplaces tierces (`cloudflare`, `knowledge-work-plugins`) ne l'ont pas. Pour l'activer : `/plugin` → Marketplaces → choisir la marketplace → **Enable auto-update**.
+- [x] Optionnel : `claude plugin uninstall expo@claude-plugins-official`. Le plugin Expo ne sert plus une fois `apps/mobile` supprimé. Ses skills alourdissent le contexte à chaque session, et il continuera d'apparaître sous « Not used recently » dans `/plugin`.
+- [x] Auto-update : `claude-plugins-official` a l'auto-update activé par défaut. Les marketplaces tierces (`cloudflare`, `knowledge-work-plugins`) ne l'ont pas. Pour l'activer : `/plugin` → Marketplaces → choisir la marketplace → **Enable auto-update**.
 
 ---
 
