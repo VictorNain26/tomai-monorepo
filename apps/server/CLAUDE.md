@@ -57,8 +57,6 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 - **Pronote** : lib GPL `pawnote` et tokens **serveur uniquement**, jamais côté
   client. Credentials chiffrés AES-256-GCM, PBKDF2 600K itérations, **salt
   aléatoire de 16 octets par enregistrement** préfixé au ciphertext.
-- **Webhooks RevenueCat** : secret partagé comparé en timing-safe, fail-fast au
-  boot si absent ou < 32 caractères en prod. Idempotence via `webhook_events`.
 - **CORS** : whitelist en prod, `credentials: true`. **Headers** : HSTS,
   `X-Frame-Options: DENY`, nosniff, Permissions-Policy restrictive.
 - **Rate limiting** : preset global, renforcé sur les credentials Pronote.
@@ -73,8 +71,8 @@ auto au déploiement.
 ## Tests
 
 Runner Bun, tests dans `src/tests/<service>.test.ts`. Couverture attendue sur ce
-qui casse silencieusement : webhooks (signature, idempotence, rejeu), billing,
-quotas, round-trip de chiffrement, transactions multi-tables.
+qui casse silencieusement : quotas, round-trip de chiffrement, transactions
+multi-tables.
 
 Piège connu : `src/integration-tests/api-endpoints.test.ts` mocke `drizzle-orm`
 partiellement. Tout nouveau module tiré par la chaîne `app.ts` /

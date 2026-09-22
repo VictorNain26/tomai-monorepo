@@ -7,21 +7,17 @@ Le workflow TDD (Red-Green-Refactor) est géré par **superpowers:test-driven-de
 | App | Runner | Commande |
 |-----|--------|----------|
 | Server | Bun test runner | `cd apps/server && bun run test` |
-| Mobile | jest-expo | `cd apps/mobile && pnpm test` |
 | Landing | — | Pas de tests (site statique) |
-| `packages/tokens` | Bun test runner | `pnpm --filter @repo/tokens test` |
 
 ## Localisation des tests
 
 | App | Pattern | Exemple |
 |-----|---------|---------|
 | Server | `src/tests/<service>.test.ts` | `src/tests/encryption.test.ts` |
-| Mobile | `__tests__/<path>/<name>.test.ts` | `__tests__/lib/pronote-helpers.test.ts` |
 
 ## Validation obligatoire avant commit
 
 - Server : `cd apps/server && bun run typecheck && bun run lint && bun run test`
-- Mobile : `cd apps/mobile && pnpm typecheck && pnpm lint && pnpm test`
 - Landing : `cd apps/landing && pnpm typecheck && pnpm lint`
 
 **Avant push server, AUSSI `bun run test:integration`** (gating en CI). Piège connu :
@@ -31,4 +27,4 @@ doit être mocké dans ce fichier (pattern : voir le mock de `retention-purge.se
 
 ## Scopes de commit conventionnels
 
-`chat`, `server`, `landing`, `mobile`, `ci`, `db`, `auth`. Toujours stager les fichiers explicitement (jamais `git add .`).
+`chat`, `server`, `landing`, `ci`, `db`, `auth`. Toujours stager les fichiers explicitement (jamais `git add .`).

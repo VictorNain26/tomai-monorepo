@@ -43,7 +43,7 @@ Documentation interactive auto-generee disponible en dev :
 | Stockage | Scaleway Object Storage (S3, RGPD France) |
 | STT | Voxtral (`voxtral-mini-latest`, EU) |
 | TTS | Voxtral (`voxtral-tts-latest`, EU) |
-| Paiements | RevenueCat (mobile IAP, source unique) |
+| Paiements | Aucun branché (paiement web au lot 3) |
 | Pronote | Pawnote 1.6 + AES-256-GCM |
 
 ## Commands
@@ -96,7 +96,6 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 | `SCALEWAY_ACCESS_KEY` / `SCALEWAY_SECRET_KEY` | Scaleway Object Storage |
 | `SCALEWAY_BUCKET` / `SCALEWAY_REGION` | Bucket et region (fr-par) |
 | `PRONOTE_ENCRYPTION_KEY` | AES-256-GCM pour tokens Pronote |
-| `REVENUECAT_WEBHOOK_AUTH` | Webhooks RevenueCat (mobile IAP, required en prod) |
 
 ### Dev seed (`pnpm seed`)
 
@@ -108,12 +107,6 @@ Les variables ci-dessous peuplent la DB avec des comptes de test locaux (`pnpm s
 | `SEED_PARENT_PASSWORD` | `DevParent123!` | Login parent Tomia web |
 | `SEED_CHILD_USERNAME` | `dev.eleve` | Login enfant Tomia (accès autonome) |
 | `SEED_CHILD_PASSWORD` | `DevEleve123!` | Login enfant Tomia (accès autonome) |
-
-### Device → Backend (LAN)
-
-Le backend du monorepo tourne sur l'host (`pnpm dev` :3000). L'app mobile déduit
-son URL (`EXPO_PUBLIC_API_URL`) de la résolution DNS du device (même Wi-Fi) et
-loggue l'URL résolue au démarrage. Rien à configurer manuellement.
 
 ## Architecture
 
@@ -135,8 +128,7 @@ src/
 │   ├── pronote-*.routes.ts     # Integration Pronote (connexion, donnees, sync)
 │   ├── tts.routes.ts           # Text-to-Speech
 │   ├── learning/               # Decks, cartes, FSRS
-│   ├── revenuecat-webhook.*.ts # Webhooks RevenueCat (source de vérité)
-│   └── subscription/           # Status lecture seule (DB + RC)
+│   └── subscription/           # Status lecture seule (DB)
 ├── services/                   # Business logic
 │   ├── chat/                   # Mistral streaming, summarization, tools
 │   ├── storage/                # Scaleway S3
