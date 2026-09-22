@@ -1,10 +1,8 @@
 /**
  * Subscription Routes Module
  *
- * Family-based subscription status for TomAI (RevenueCat-driven billing).
- * Purchases, renewals and cancellations are handled by the mobile client
- * through RevenueCat; the server only serves read views + listens to
- * RevenueCat webhooks to update family_billing.
+ * Read-only family subscription status. No payment provider is wired: the
+ * web payment flow arrives with lot 3.
  *
  * Only PARENTS can view their subscription status.
  */

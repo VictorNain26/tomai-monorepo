@@ -6,12 +6,14 @@ Stack, structure et démarrage : `README.md` — pas de duplication ici.
 **Travaux en cours : `docs/superpowers/suivi.md`** — avancement, bloquants, prochaine
 action. Le lire avant de reprendre, le mettre à jour dans la PR qui fait avancer.
 
+Lors d'une compaction, préserver : PR en cours, branche, chemin du registre SDD
+(`.superpowers/sdd/<plan>/progress.md`), dernière tâche terminée, décisions ouvertes.
+
 ## Commandes
 
 ```bash
 pnpm install                      # Node 22+, pnpm 11+
 pnpm dev                          # infra Docker + server:3000 + landing:3001
-pnpm dev:mobile                   # Expo (8081), terminal séparé
 pnpm dev:down                     # arrêt de l'infra
 pnpm typecheck && pnpm lint       # validation, obligatoire avant commit
 pnpm test                         # tous les tests du workspace
@@ -27,7 +29,7 @@ apps : si l'infra est incomplète, les apps ne démarrent pas.
 ## Où travailler
 
 Chaque app porte sa propre doc, chargée à la demande quand tu ouvres un fichier
-dedans : `apps/server/CLAUDE.md`, `apps/mobile/CLAUDE.md`, `apps/landing/CLAUDE.md`.
+dedans : `apps/server/CLAUDE.md`, `apps/landing/CLAUDE.md`.
 
 Les conventions transverses vivent dans `.claude/rules/` et se chargent seules —
 ne pas les importer. `database-migrations.md` et `design-system.md` sont scopées par
@@ -47,7 +49,7 @@ propres au monorepo, à vérifier explicitement :
 - **Contrat Eden** — une modification dans `packages/api/` doit rester rétrocompatible
   pour les clients ; les types viennent du serveur, jamais redéfinis côté client.
 - **Frontières workspace** — imports via les packages `@repo/*`, aucune dépendance
-  circulaire. `@repo/ui` (DOM) n'entre jamais dans `apps/mobile`.
+  circulaire.
 - **Taille de fichier** — au-delà de ~400 lignes, le fichier fait trop de choses.
 - **Test associé** — tout service, helper ou validation modifié a son `*.test.ts`
   couvrant le cas nominal et les cas limites. Pas de test décoratif (mocks massifs,
@@ -81,8 +83,3 @@ connaître évite de croire couvert ce qui ne l'est pas :
 - **lefthook** : lint + typecheck en pre-commit, tests + build en pre-push.
 
 Ne jamais contourner un hook qui échoue (`--no-verify` est deny-listé) : traiter la cause.
-
-## Review externe
-
-- E2E Maestro en preview Android sur PR via EAS Workflows
-  (`apps/mobile/.eas/workflows/preview-android.yml`) — signal, pas gate.

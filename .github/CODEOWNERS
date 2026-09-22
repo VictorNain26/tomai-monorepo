@@ -8,9 +8,6 @@
 # Landing
 /apps/landing/ @VictorNain26
 
-# Mobile
-/apps/mobile/ @VictorNain26
-
 # CI/CD and security-critical
 /.github/ @VictorNain26
 /apps/server/Dockerfile @VictorNain26

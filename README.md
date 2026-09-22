@@ -9,7 +9,6 @@ et intégration Pronote. Pré-lancement : aucun utilisateur en production.
 pnpm install                 # Node 22+, pnpm 11+
 pnpm setup                   # .env, BETTER_AUTH_SECRET, postgres, migrations Drizzle
 pnpm dev                     # infra Docker + server :3000 + landing :3001
-pnpm dev:mobile              # Expo (8081), terminal séparé
 ```
 
 Arrêt de l'infra : `pnpm dev:down`. Documentation d'API en dev :
@@ -24,13 +23,12 @@ le détail, `pnpm doctor:e2e` la version stricte où un `SKIP` compte comme un �
 ```
 apps/
 ├── server/       # Bun + Elysia — API backend (3000)
-├── landing/      # Next.js — vitrine SEO (3001)
-└── mobile/       # Expo — app parents et élèves (8081)
+└── landing/      # Next.js — vitrine SEO (3001)
 
 packages/
 ├── api/             # Client Eden Treaty typé — le contrat serveur → clients
-├── ui/              # Primitives shadcn (DOM) — landing uniquement, jamais l'app Expo
-├── tokens/          # Design tokens Tailwind v4 partagés
+├── ui/              # Primitives shadcn (DOM)
+├── tokens/          # Design tokens CSS (Tailwind v4) partagés
 └── eslint-config/   # Config ESLint partagée
 ```
 
@@ -40,22 +38,21 @@ packages/
 |--------|-------------|
 | Backend | Bun 1.3, Elysia 1.4, PostgreSQL 16 + pgvector, Drizzle ORM 0.45 |
 | Landing | Next.js 16, TailwindCSS 4, Framer Motion, `@repo/ui` (shadcn) |
-| Mobile | Expo SDK 56, React Native 0.85, NativeWind 5 (preview) |
 | Auth | Better Auth 1.6 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |
 | IA | Mistral — chat, vision Pixtral, OCR, TTS et STT Voxtral. Stack 100 % EU |
 | Vie scolaire | Pronote via `pawnote`, **serveur uniquement** (lib GPL, tokens rotatifs) |
-| Paiements | RevenueCat — IAP natif, source unique de facturation |
+| Paiements | Aucun branché. Paiement web prévu au lot 3 |
 | Stockage | Scaleway S3 (fr-par), uploads par URL présignée |
-| Observabilité | Sentry initialisé sur server, landing et mobile. La région dépend du DSN, absent du dépôt. Pas d'analytics installée |
+| Observabilité | Sentry initialisé sur server et landing. La région dépend du DSN, absent du dépôt. Pas d'analytics installée |
 | Monorepo | Turborepo, pnpm workspaces |
-| Déploiement | Cibles : Vercel (landing), Koyeb (server), EAS (mobile). Aucune config d'infra n'est versionnée ici, et rien n'est déployé aujourd'hui |
+| Déploiement | Cibles : Vercel (landing), Koyeb (server). Aucune config d'infra n'est versionnée ici, et rien n'est déployé aujourd'hui |
 
 ## Commandes
 
 ```bash
 pnpm typecheck && pnpm lint   # validation, obligatoire avant commit
-pnpm test                     # server (Bun), mobile (Jest), tokens (Bun)
+pnpm test                     # server (Bun)
 pnpm build                    # build production
 pnpm seed                     # comptes parent + élève, dev uniquement
 pnpm db:generate              # migrations Drizzle, pour la prod
@@ -73,4 +70,4 @@ et merge commit — jamais de squash.
 instructions destinées aux agents.
 
 Chaque app a sa propre doc : [server](./apps/server/CLAUDE.md) ·
-[mobile](./apps/mobile/CLAUDE.md) · [landing](./apps/landing/CLAUDE.md)
+[landing](./apps/landing/CLAUDE.md)

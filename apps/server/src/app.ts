@@ -17,7 +17,6 @@ import { apiRoutes } from './routes/api/index.js';
 import { chatMessageRoutes } from './routes/chat-message.routes.js';
 import { fileUploadRoutes } from './routes/file-upload.routes.js';
 import { statusRoutes } from './routes/subscription/index.js';
-import { revenuecatWebhookRoutes } from './routes/revenuecat-webhook.routes.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { learningRoutes } from './routes/learning/index.js';
 import { waitlistRoutes } from './routes/waitlist.routes.js';
@@ -63,7 +62,7 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
       'X-Start-Time',
       'Content-Type',
       // Set-Cookie intentionally NOT exposed: JavaScript must not be able to read
-      // session cookies cross-origin (mobile uses authClient.getCookie from SecureStore).
+      // session cookies cross-origin.
     ],
     maxAge: 86400 // 24h pour les preflight requests (optimisation)
   }))
@@ -94,10 +93,7 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
   }) : new Elysia())
 
   // Rate Limiting Global - Protection DDoS et brute-force
-  // Webhooks are exempted: they carry their own shared-secret auth + idempotency
-  // and arrive in bursts from a shared provider IP pool (RevenueCat) that the
-  // per-IP limiter would otherwise 429, dropping billing events.
-  .onBeforeHandle(createRateLimitMiddleware({ ...RateLimitPresets.api, skipPaths: ['/webhooks/'] }))
+  .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.api))
 
   // Better Auth integration - Mount at root, Better Auth handles /api/auth basePath
   // IMPORTANT: .mount() at root lets Better Auth manage all /api/auth/* routes
@@ -121,7 +117,6 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
           api: '/api',
           auth: '/api/auth',
           subscriptions: '/api/subscriptions',
-          webhooks: '/webhooks/revenuecat',
           swagger: '/swagger'
         }
       };
@@ -217,7 +212,6 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
   .use(chatMessageRoutes)   // Messages chat HTTP simple
   .use(fileUploadRoutes)  // Upload: Scaleway + PostgreSQL (RGPD France)
   .use(statusRoutes)        // Subscription status + token usage (DB-driven)
-  .use(revenuecatWebhookRoutes) // Webhooks RevenueCat (single source of subscription truth)
   .use(ttsRoutes)           // Text-to-Speech (Voxtral TTS — voxtral-tts-26.03)
   .use(learningRoutes)      // Outils de révision - decks, cards, discovery, AI generation, FSRS
   .use(waitlistRoutes)      // Waitlist - Landing page email collection

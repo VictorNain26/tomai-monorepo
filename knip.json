@@ -28,29 +28,7 @@
         "dist/index.js"
       ]
     },
-    "apps/mobile": {
-      "entry": [
-        "src/app/**/*.{ts,tsx}",
-        "__mocks__/**/*.{ts,tsx}",
-        "scripts/**/*.{ts,js,mjs}"
-      ],
-      "project": [
-        "src/**/*.{ts,tsx}",
-        "scripts/**/*.{ts,js,mjs}"
-      ],
-      "ignoreDependencies": [
-        "@babel/generator"
-      ],
-      "ignoreBinaries": [
-        "eas"
-      ]
-    },
     "packages/api": {
-      "project": [
-        "src/**/*.ts"
-      ]
-    },
-    "packages/tokens": {
       "project": [
         "src/**/*.ts"
       ]

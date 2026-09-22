@@ -12,7 +12,6 @@ export * from './schema/pronote.schema';
 export * from './schema/billing.schema';
 export * from './schema/files.schema';
 export * from './schema/learning-tools.schema';
-export * from './schema/notifications.schema';
 export {
   userRelations,
   studySessionsRelations,

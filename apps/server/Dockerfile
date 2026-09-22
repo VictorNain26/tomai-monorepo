@@ -31,7 +31,7 @@ RUN groupadd --gid 1001 tomai && \
 FROM base AS deps
 
 # Monorepo workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json ./apps/server/
 
 # Production deps only
@@ -47,7 +47,7 @@ ARG BUILD_DATE=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 ENV BUILD_DATE=${BUILD_DATE}
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json ./apps/server/
 
 # Full install (dev + prod) for build
@@ -74,7 +74,7 @@ FROM base AS development
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json ./apps/server/
 
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \

@@ -74,4 +74,3 @@ export * from './pronote.schema';
 export * from './billing.schema';
 export * from './files.schema';
 export * from './learning-tools.schema';
-export * from './notifications.schema';

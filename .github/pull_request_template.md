@@ -15,4 +15,3 @@
 - [ ] `pnpm typecheck && pnpm lint` passes locally
 - [ ] No secrets committed (`git diff --cached`)
 - [ ] Migrations generated if schema changed (`cd apps/server && bun run db:generate`)
-- [ ] Tested on mobile if UI change

@@ -5,7 +5,7 @@
  * without triggering the full env schema validation (which requires prod secrets).
  *
  * Used in two contexts:
- * 1. migrate.ts: Runs before app boot, doesn't have BETTER_AUTH_SECRET, REVENUECAT_WEBHOOK_AUTH, etc.
+ * 1. migrate.ts: Runs before app boot, doesn't have BETTER_AUTH_SECRET, PRONOTE_ENCRYPTION_KEY, etc.
  * 2. connection.ts: Uses the singleton env, but delegates here to avoid duplication
  */
 

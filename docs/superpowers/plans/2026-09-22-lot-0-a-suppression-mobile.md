@@ -1,6 +1,6 @@
 # Lot 0, PR A — Suppression de apps/mobile et du billing RevenueCat
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Index du lot, contraintes globales, ordre des PR et étapes manuelles :** `docs/superpowers/plans/2026-09-22-lot-0-assainissement.md` — à lire avant ce plan.
 
@@ -82,24 +82,24 @@ Toutes les modifications de cette tâche sont des retraits d'entrées dans des c
 existantes ; aucune nouvelle option n'est introduite (turbo, lefthook, knip, renovate,
 GitHub Actions).
 
-- [ ] **Preuve qu'aucun autre workspace n'importe l'app.**
+- [x] **Preuve qu'aucun autre workspace n'importe l'app.**
   `git grep -n "tom-mobile\|apps/mobile" -- ':!apps/mobile' ':!pnpm-lock.yaml'`
   Attendu : uniquement les fichiers de config/doc listés dans cette tâche et en A.7
   (`package.json`, `scripts/dev.mjs`, `scripts/e2e-local*.mjs`, `knip.json`, `lefthook.yml`,
   `.github/*`, `apps/server/scripts/generate-eden-types.ts`, `CLAUDE.md`, `README.md`,
   `.claude/*`, `packages/api/src/index.ts`, `packages/tokens/theme.css`). Aucun import de code.
 
-- [ ] **Supprimer l'app et le script E2E Maestro** (retrait versionné, l'historique git le garde) :
+- [x] **Supprimer l'app et le script E2E Maestro** (retrait versionné, l'historique git le garde) :
   ```bash
   git rm -r -q apps/mobile scripts/e2e-local.mjs scripts/e2e-local.test.mjs
   ```
   Puis, **après confirmation explicite de l'utilisateur** (suppression hors git :
   `node_modules`, `.expo`, builds natifs, `.env` locale) : `rm -rf apps/mobile`.
 
-- [ ] **`package.json`** : supprimer les lignes 14-16 (`dev:mobile`, `dev:mobile:ios`,
+- [x] **`package.json`** : supprimer les lignes 14-16 (`dev:mobile`, `dev:mobile:ios`,
   `dev:mobile:android`), 20 (`build:mobile`), 26 (`test:mobile`), 33 (`e2e:local`).
 
-- [ ] **`turbo.json`** : supprimer les tâches `dev:ios` et `dev:android` (lignes 42-49) et
+- [x] **`turbo.json`** : supprimer les tâches `dev:ios` et `dev:android` (lignes 42-49) et
   réduire les `inputs` de `test` aux seuls fichiers qui existent encore (plus de Jest, plus
   de `.test.tsx` hors mobile — vérifié : `git ls-files | grep -v ^apps/mobile/ | grep -E '\.test\.tsx$|__tests__|jest\.config'` est vide) :
   ```json
@@ -114,21 +114,21 @@ GitHub Actions).
       }
   ```
 
-- [ ] **`lefthook.yml`** : supprimer le job `lint-mobile` (lignes 17-21, bloc et ligne vide).
+- [x] **`lefthook.yml`** : supprimer le job `lint-mobile` (lignes 17-21, bloc et ligne vide).
 
-- [ ] **`scripts/dev.mjs`** : ligne 3, remplacer `apps host (Turbo, mobile exclu)` par
+- [x] **`scripts/dev.mjs`** : ligne 3, remplacer `apps host (Turbo, mobile exclu)` par
   `apps host (Turbo)` ; ligne 31 :
   ```js
   const turbo = spawn("pnpm", ["exec", "turbo", "run", "dev"], {
   ```
 
-- [ ] **`knip.json`** : supprimer le bloc `"apps/mobile": { … }` (lignes 31-47).
+- [x] **`knip.json`** : supprimer le bloc `"apps/mobile": { … }` (lignes 31-47).
 
-- [ ] **`.github/workflows/ci.yml`** : supprimer les jobs 7 `expo-deps` et 8 `mobile-bundle`
+- [x] **`.github/workflows/ci.yml`** : supprimer les jobs 7 `expo-deps` et 8 `mobile-bundle`
   (lignes 233-283, de la bannière `# Job 7` à la fin du fichier). Le fichier se termine
   alors sur le job `monorepo-lint` (ligne 231).
 
-- [ ] **`.github/renovate.json`** : supprimer `"**/.expo/**",` (l. 25) ; supprimer les
+- [x] **`.github/renovate.json`** : supprimer `"**/.expo/**",` (l. 25) ; supprimer les
   `packageRules` « Group all Expo packages », « React Navigation », « React Native core »,
   « RN Reusables primitives » (l. 94-120), « TanStack Query » (l. 126-130, `@tanstack/*`
   n'est importé que par le mobile : `git grep -n "@tanstack" -- apps/server apps/landing packages`
@@ -141,26 +141,26 @@ GitHub Actions).
       }
   ```
 
-- [ ] **`.github/CODEOWNERS`** : supprimer le bloc `# Mobile` (l. 11-13).
-  **`.github/pull_request_template.md`** : supprimer `- [ ] Tested on mobile if UI change` (l. 18).
+- [x] **`.github/CODEOWNERS`** : supprimer le bloc `# Mobile` (l. 11-13).
+  **`.github/pull_request_template.md`** : supprimer `- [x] Tested on mobile if UI change` (l. 18).
   **`.gitignore`** : supprimer le bloc `# Expo` (l. 39-44 : `.expo/`, `.expo-shared/`,
   `web-build/`, `.metro-health-check*` et la ligne vide en trop).
   **`.dockerignore`** : supprimer `# Mobile` / `**/.expo/` et la ligne vide (l. 23-25).
   **`.vscode/extensions.json`** : supprimer `"expo.vscode-expo-tools"` et la virgule de la
   ligne 7.
 
-- [ ] **Lockfile :** `pnpm install` à la racine. Attendu : exit 0, l'importer `apps/mobile`
+- [x] **Lockfile :** `pnpm install` à la racine. Attendu : exit 0, l'importer `apps/mobile`
   disparaît de `pnpm-lock.yaml`. (Simulé le 2026-09-22 sur une copie du dépôt :
   `pnpm install --lockfile-only` → exit 0, ~9 000 lignes retirées, aucun changement de
   version hors suffixes de peers.)
 
-- [ ] **Validation :**
+- [x] **Validation :**
   ```bash
   pnpm typecheck && pnpm lint && pnpm test && pnpm run test:scripts && pnpm exec knip && npx sherif@1.13.0
   ```
   Attendu : exit 0 pour chaque commande.
 
-- [ ] **Commit :**
+- [x] **Commit :**
   ```bash
   git add package.json turbo.json lefthook.yml knip.json scripts/dev.mjs pnpm-lock.yaml
   git add .github/workflows/ci.yml .github/renovate.json .github/CODEOWNERS .github/pull_request_template.md
@@ -207,7 +207,7 @@ que `billing.service.ts` ; `webhook-idempotence.service.ts` n'a que le handler (
 `/webhooks/` (`app.ts:100`). Conséquence assumée : plus rien n'écrit un plan premium tant que
 le lot 3 n'a pas branché le paiement web (aucun utilisateur, app hors production).
 
-- [ ] **Preuve de périmètre avant suppression :**
+- [x] **Preuve de périmètre avant suppression :**
   ```bash
   cd apps/server && grep -rn "revenuecat-webhook\|services/billing\|plan-cache\|webhook-idempotence\|skipPaths\|revenueCatWebhookSchema\|makeRevenueCatEvent" src --include=*.ts | grep -v "^src/routes/revenuecat-webhook\|^src/services/billing/\|^src/services/webhook-idempotence\|^src/lib/plan-cache\|^src/tests/revenuecat-webhook\|^src/tests/webhook-idempotence\|^src/tests/billing.service"
   ```
@@ -215,12 +215,12 @@ le lot 3 n'a pas branché le paiement web (aucun utilisateur, app hors productio
   `tests/rate-limit.test.ts` (194-215), `schemas/validation.ts:159`, `tests/_helpers/fixtures.ts:108`,
   `integration-tests/api-endpoints.test.ts:233`. Ce sont les points modifiés ci-dessous.
 
-- [ ] **Supprimer les modules :**
+- [x] **Supprimer les modules :**
   ```bash
   git rm -q apps/server/src/routes/revenuecat-webhook.routes.ts apps/server/src/routes/revenuecat-webhook.handler.ts apps/server/src/routes/revenuecat-webhook-events.ts apps/server/src/services/webhook-idempotence.service.ts apps/server/src/services/billing/index.ts apps/server/src/services/billing/billing.service.ts apps/server/src/services/billing/billing-types.ts apps/server/src/lib/plan-cache.ts apps/server/src/tests/revenuecat-webhook.test.ts apps/server/src/tests/webhook-idempotence.test.ts apps/server/src/tests/billing.service.test.ts
   ```
 
-- [ ] **`app.ts`** : supprimer l'import ligne 20 (`revenuecatWebhookRoutes`), la ligne 124
+- [x] **`app.ts`** : supprimer l'import ligne 20 (`revenuecatWebhookRoutes`), la ligne 124
   (`webhooks: '/webhooks/revenuecat',`), la ligne 220 (`.use(revenuecatWebhookRoutes) …`).
   Remplacer les lignes 96-100 par :
   ```ts
@@ -228,28 +228,28 @@ le lot 3 n'a pas branché le paiement web (aucun utilisateur, app hors productio
     .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.api))
   ```
 
-- [ ] **`middleware/rate-limit.middleware.ts`** : supprimer de `RateLimitConfig` les lignes
+- [x] **`middleware/rate-limit.middleware.ts`** : supprimer de `RateLimitConfig` les lignes
   15-17 (commentaire + `skipPaths?: string[];`) et, dans `rateLimitMiddleware`, le bloc
   lignes 108-116 (commentaire `// Exempt configured path prefixes…`, le
   `if (finalConfig.skipPaths?.length) { … }` et la ligne vide 116).
   **`tests/rate-limit.test.ts`** : supprimer le `describe('createRateLimitMiddleware — skipPaths (webhook exemption)', …)`
   (lignes 193-219, ligne vide 193 comprise ; le fichier se termine ligne 192 sur `});`).
 
-- [ ] **`config/env.ts`** : supprimer les lignes 58-59 (commentaire + `REVENUECAT_WEBHOOK_AUTH`)
+- [x] **`config/env.ts`** : supprimer les lignes 58-59 (commentaire + `REVENUECAT_WEBHOOK_AUTH`)
   et 132-134 (le `if (!result.data.REVENUECAT_WEBHOOK_AUTH) { … }` et la ligne vide qui suit).
   **`config/database-url.ts:8`** :
   ```ts
    * 1. migrate.ts: Runs before app boot, doesn't have BETTER_AUTH_SECRET, PRONOTE_ENCRYPTION_KEY, etc.
   ```
 
-- [ ] **`schemas/validation.ts`** : supprimer le bloc « SCHÉMAS WEBHOOK REVENUECAT » (de la
+- [x] **`schemas/validation.ts`** : supprimer le bloc « SCHÉMAS WEBHOOK REVENUECAT » (de la
   bannière ligne 141 à la fermeture `});` ligne 183, plus les lignes vides 184-185).
   **`tests/_helpers/fixtures.ts`** : supprimer `makeRevenueCatEvent` (lignes 108-136 et la
   ligne vide 137).
   **`integration-tests/api-endpoints.test.ts`** : supprimer la ligne 233
   (`mock.module('../routes/revenuecat-webhook.routes', …)`).
 
-- [ ] **`routes/subscription/index.ts`** lignes 1-10 :
+- [x] **`routes/subscription/index.ts`** lignes 1-10 :
   ```ts
   /**
    * Subscription Routes Module
@@ -265,7 +265,7 @@ le lot 3 n'a pas branché le paiement web (aucun utilisateur, app hors productio
    * GET /api/subscriptions/status - Get subscription status (DB-driven)
   ```
 
-- [ ] **`apps/server/.env.example`** : supprimer le bloc « Payments — RevenueCat webhooks »
+- [x] **`apps/server/.env.example`** : supprimer le bloc « Payments — RevenueCat webhooks »
   (lignes 63-69, bannière, commentaires, `REVENUECAT_WEBHOOK_AUTH=` et ligne vide).
   **`docker-compose.yml`** lignes 41-43 :
   ```yaml
@@ -274,7 +274,7 @@ le lot 3 n'a pas branché le paiement web (aucun utilisateur, app hors productio
         # les lister en ${VAR} ici les écraserait (environment > env_file).
   ```
 
-- [ ] **Contenu d'aide de l'agent (`get_app_help`) — test qui échoue.**
+- [x] **Contenu d'aide de l'agent (`get_app_help`) — test qui échoue.**
   `apps/server/src/config/app-guide/app-guide-data.ts` alimente l'outil `get_app_help`
   (`services/chat/tool-executor.ts:182` → `getAppHelpContent(topic, role)`), que la description
   de l'outil rend obligatoire pour toute question sur l'app (`chat-tools.ts:123-126`). Il affirme
@@ -332,12 +332,12 @@ le lot 3 n'a pas branché le paiement web (aucun utilisateur, app hors productio
   `it.each` : `apps/server/node_modules/bun-types/test.d.ts:569-571` (`each<…>(table): Test<…>`
   sur l'interface `Test`, l. 468).
 
-- [ ] **Voir l'échec :** `cd apps/server && bun test src/tests/app-guide-data.test.ts`
+- [x] **Voir l'échec :** `cd apps/server && bun test src/tests/app-guide-data.test.ts`
   Attendu : échecs sur `navigation/*` (onglet), `flashcards/*` (onglet, badge), `files/student`
   (appareil photo, galerie), `subscription/parent` (App Store, Play Store), `profile/parent`
   (onglet) et les deux tests « pas encore disponible en ligne ».
 
-- [ ] **Implémentation — `app-guide-data.ts`.** Le client web n'existe pas encore (lot 3) : le
+- [x] **Implémentation — `app-guide-data.ts`.** Le client web n'existe pas encore (lot 3) : le
   texte décrit des espaces et des fonctions, pas une disposition d'écran, et ne promet aucun
   parcours de paiement. Remplacer les entrées suivantes de `APP_GUIDE` (le reste du fichier est
   inchangé) :
@@ -403,18 +403,18 @@ le lot 3 n'a pas branché le paiement web (aucun utilisateur, app hors productio
   `Depuis l'espace Accueil vous pouvez :` et `- Gerer votre abonnement (gratuit ou Premium)` par
   `- Voir votre formule (gratuite ; Premium pas encore disponible en ligne)`.
 
-- [ ] **Voir passer :** `cd apps/server && bun test src/tests/app-guide-data.test.ts` → tous verts.
+- [x] **Voir passer :** `cd apps/server && bun test src/tests/app-guide-data.test.ts` → tous verts.
   Puis `bun test src/tests/tool-executor.test.ts src/tests/chat-tools.test.ts` → verts (ils
   mockent le contenu, inchangés).
 
-- [ ] **Validation serveur :**
+- [x] **Validation serveur :**
   ```bash
   cd apps/server && bun run typecheck && bun run lint && bun run test && bun run test:integration
   ```
   (`test:integration` exige postgres : `docker compose up -d --wait postgres` à la racine et
   `DATABASE_URL` de `apps/server/.env`.) Attendu : exit 0 partout.
 
-- [ ] **Commit :**
+- [x] **Commit :**
   ```bash
   git add apps/server/src/app.ts apps/server/src/middleware/rate-limit.middleware.ts apps/server/src/tests/rate-limit.test.ts
   git add apps/server/src/config/env.ts apps/server/src/config/database-url.ts apps/server/src/schemas/validation.ts
@@ -456,7 +456,7 @@ Doc-first :
 - `auth.options` — `better-auth@1.6.23` `dist/types/auth.d.mts:9-12` (`options: Options`) ;
   `trustedOrigins?: string[] | …` — `@better-auth/core@1.6.23` `dist/types/init-options.d.mts:1116`.
 
-- [ ] **Test qui échoue** — ajouter à la fin du `describe('Better Auth Configuration', …)` de
+- [x] **Test qui échoue** — ajouter à la fin du `describe('Better Auth Configuration', …)` de
   `apps/server/src/tests/auth-config.test.ts` (avant la dernière ligne `});`) :
   ```ts
     describe('Web-only client surface', () => {
@@ -471,15 +471,15 @@ Doc-first :
     });
   ```
 
-- [ ] **Voir l'échec :** `cd apps/server && bun test src/tests/auth-config.test.ts`
+- [x] **Voir l'échec :** `cd apps/server && bun test src/tests/auth-config.test.ts`
   Attendu : 2 échecs — `trustedOrigins` reçoit `[…, 'tomia://', 'exp://']` (mock de
   `getTrustedOrigins` l. 53) et `apiMethods` contient `expoAuthorizationProxy`.
 
-- [ ] **Constat de départ sur le contrat Eden :**
+- [x] **Constat de départ sur le contrat Eden :**
   `cd apps/server && bun run build:types && grep -c "push-token" dist/types/app.d.ts; grep -c "expo-authorization-proxy" dist/types/lib/auth.d.ts`
   Attendu : `2` puis `1` (vérifié le 2026-09-22).
 
-- [ ] **Implémentation.**
+- [x] **Implémentation.**
   Supprimer :
   ```bash
   git rm -q apps/server/src/routes/api/push-token.routes.ts apps/server/src/db/repositories/push-tokens.repository.ts apps/server/scripts/generate-eden-types.ts
@@ -563,7 +563,7 @@ Doc-first :
   `expo`/`@expo/*` qu'il tirait — `pnpm why @xmldom/xmldom` le montre aujourd'hui via
   `@better-auth/expo → expo-constants → expo`).
 
-- [ ] **Voir passer :**
+- [x] **Voir passer :**
   ```bash
   cd apps/server && bun test src/tests/auth-config.test.ts
   bun run build:types && grep -c "push-token" dist/types/app.d.ts; grep -c "expo-authorization-proxy" dist/types/lib/auth.d.ts
@@ -571,7 +571,7 @@ Doc-first :
   ```
   Attendu : tests auth verts ; `0` et `0` pour les deux `grep -c` ; exit 0 pour le reste.
 
-- [ ] **Commit :**
+- [x] **Commit :**
   ```bash
   git add apps/server/src/routes/api/index.ts apps/server/src/lib/auth.ts apps/server/src/config/env.ts apps/server/src/app.ts
   git add apps/server/src/db/schema/auth.schema.ts apps/server/src/tests/auth-config.test.ts apps/server/src/integration-tests/api-endpoints.test.ts
@@ -612,14 +612,14 @@ importé que par le mobile (NativeWind, Reanimated) ; la landing ne consomme que
 (`apps/landing/app/globals.css:2-3`). `eslint-config/react` n'était importé que par
 `apps/mobile/eslint.config.mjs`.
 
-- [ ] **Preuve d'absence de consommateur :**
+- [x] **Preuve d'absence de consommateur :**
   ```bash
   git grep -n "UPLOAD_CONFIG\|cookieProvider\|uploadTimeout\|chatTimeout\|defaultTimeout" -- ':!packages/api'
   git grep -n "lightColors\|darkColors\|motionDurations\|motionEasings\|@repo/eslint-config/react\b" -- ':!packages/tokens' ':!packages/eslint-config'
   ```
   Attendu : aucune ligne.
 
-- [ ] **`packages/api/src/config.ts`** (fichier complet) :
+- [x] **`packages/api/src/config.ts`** (fichier complet) :
   ```ts
   /**
    * @repo/api - Configuration API injectable
@@ -683,7 +683,7 @@ importé que par le mobile (NativeWind, Reanimated) ; la landing ne consomme que
   }
   ```
 
-- [ ] **`packages/api/src/client.ts`** : supprimer la ligne 5 (` * Compatible Web (Vite) et Mobile (React Native/Expo).`)
+- [x] **`packages/api/src/client.ts`** : supprimer la ligne 5 (` * Compatible Web (Vite) et Mobile (React Native/Expo).`)
   et la ligne ` *` vide qui la précède ; supprimer la section « CONFIGURATION UPLOAD »
   (bannière + `UPLOAD_CONFIG`, lignes 25-56 et la ligne vide qui suit) ; remplacer l'appel
   `treaty` (lignes 93-111) par :
@@ -701,7 +701,7 @@ importé que par le mobile (NativeWind, Reanimated) ; la landing ne consomme que
     });
   ```
 
-- [ ] **`packages/api/src/index.ts`** lignes 1-20 :
+- [x] **`packages/api/src/index.ts`** lignes 1-20 :
   ```ts
   /**
    * @repo/api - Platform-agnostic API package
@@ -723,7 +723,7 @@ importé que par le mobile (NativeWind, Reanimated) ; la landing ne consomme que
   et supprimer `UPLOAD_CONFIG,` (ligne 37).
   **`packages/api/src/types.ts:4`** : ` * Platform-agnostic types shared by the clients.`
 
-- [ ] **`@repo/tokens`** :
+- [x] **`@repo/tokens`** :
   ```bash
   git rm -q packages/tokens/src/index.ts packages/tokens/src/colors.ts packages/tokens/src/colors.test.ts packages/tokens/src/motion.ts packages/tokens/src/motion.test.ts packages/tokens/tsconfig.json
   ```
@@ -758,20 +758,20 @@ importé que par le mobile (NativeWind, Reanimated) ; la landing ne consomme que
   `knip.json` : supprimer le bloc `"packages/tokens": { "project": ["src/**/*.ts"] }` et la
   virgule du bloc précédent.
 
-- [ ] **`@repo/eslint-config`** : `git rm -q packages/eslint-config/react.js` ; dans
+- [x] **`@repo/eslint-config`** : `git rm -q packages/eslint-config/react.js` ; dans
   `packages/eslint-config/package.json`, supprimer `"./react": "./react.js"` (ligne 10) et
   la virgule finale de la ligne 9.
 
-- [ ] **Lockfile :** `pnpm install` (le package `@repo/tokens` perd `bun-types` et `typescript`).
+- [x] **Lockfile :** `pnpm install` (le package `@repo/tokens` perd `bun-types` et `typescript`).
 
-- [ ] **Validation :**
+- [x] **Validation :**
   ```bash
   pnpm typecheck && pnpm lint && pnpm test && pnpm --filter landing build && pnpm exec knip
   ```
   Attendu : exit 0. Le build landing prouve que `@import "@repo/tokens/theme.css"` se résout
   toujours par l'`exports` restant.
 
-- [ ] **Commit :**
+- [x] **Commit :**
   ```bash
   git add packages/api/src/config.ts packages/api/src/client.ts packages/api/src/index.ts packages/api/src/types.ts
   git add packages/tokens/package.json packages/tokens/theme.css packages/tokens/theme-dark.css
@@ -829,7 +829,7 @@ Résultat de la simulation : `pnpm install --lockfile-only` exit 0 ; seul change
 `lightningcss` 1.30.1 → 1.32.0 ; une seule entrée `@types/node@25.9.1` ;
 `pnpm audit --prod --audit-level high` exit 0 (1 low, 4 moderate).
 
-- [ ] **`pnpm-workspace.yaml`** (fichier complet) :
+- [x] **`pnpm-workspace.yaml`** (fichier complet) :
   ```yaml
   packages:
     - apps/*
@@ -927,14 +927,14 @@ Résultat de la simulation : `pnpm install --lockfile-only` exit 0 ; seul change
     browserslist: '^4.28.7'
   ```
 
-- [ ] **`.npmrc`** : `git rm -q .npmrc`.
+- [x] **`.npmrc`** : `git rm -q .npmrc`.
   **`apps/server/Dockerfile`** lignes 34, 50 et 77 :
   ```dockerfile
   COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
   ```
   **`.github/workflows/docker.yml`** : supprimer `- '.npmrc'` des filtres `paths` (lignes 14 et 24).
 
-- [ ] **Lockfile et contrôles :**
+- [x] **Lockfile et contrôles :**
   ```bash
   pnpm install
   grep -cE "^  '@types/node@" pnpm-lock.yaml
@@ -944,7 +944,7 @@ Résultat de la simulation : `pnpm install --lockfile-only` exit 0 ; seul change
   Attendu : install exit 0 ; `2` (une version, présente dans `packages:` et `snapshots:`) ;
   `lightningcss@1.32.0:` ; audit exit 0.
 
-- [ ] **Validation :**
+- [x] **Validation :**
   ```bash
   pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm exec knip && npx sherif@1.13.0
   docker build --target production -f apps/server/Dockerfile .
@@ -952,7 +952,7 @@ Résultat de la simulation : `pnpm install --lockfile-only` exit 0 ; seul change
   Attendu : exit 0 partout (le build landing couvre la montée de `lightningcss`, le build
   Docker couvre le retrait de `.npmrc`).
 
-- [ ] **Commit :**
+- [x] **Commit :**
   ```bash
   git add pnpm-workspace.yaml pnpm-lock.yaml apps/server/Dockerfile .github/workflows/docker.yml
   git commit -m "build: drop pnpm settings that only served the Expo toolchain
@@ -985,7 +985,7 @@ Règle appliquée : `.claude/rules/database-migrations.md` — source de vérit�
 backup avant migration destructive. L'app n'est pas en production et aucune base déployée
 n'existe : il n'y a rien à sauvegarder, à confirmer par l'utilisateur avant d'appliquer.
 
-- [ ] **Preuve : aucun lecteur ni écrivain restant** (après A.2 et A.3) :
+- [x] **Preuve : aucun lecteur ni écrivain restant** (après A.2 et A.3) :
   ```bash
   cd apps/server && grep -rn "devicePushTokens\|DevicePushToken\|webhookEvents\|WebhookEvent\|WebhookSource\|device_push_tokens\|webhook_events" src scripts --include=*.ts
   ```
@@ -993,7 +993,7 @@ n'existe : il n'y a rien à sauvegarder, à confirmer par l'utilisateur avant d'
   `family_billing` (et ses colonnes `revenuecat_*`) reste lu par `subscription.repository.ts` :
   il n'est pas touché.
 
-- [ ] **Schéma :**
+- [x] **Schéma :**
   ```bash
   git rm -q apps/server/src/db/schema/notifications.schema.ts
   ```
@@ -1003,7 +1003,7 @@ n'existe : il n'y a rien à sauvegarder, à confirmer par l'utilisateur avant d'
   le JSDoc de `waitlist_entries`) et le bloc de types lignes 261-264
   (`// Webhook Events Types …`, `WebhookEvent`, `NewWebhookEvent`, `WebhookSource`, ligne vide).
 
-- [ ] **Migration :**
+- [x] **Migration :**
   ```bash
   cd apps/server && bun run db:generate
   cat drizzle/0027_*.sql
@@ -1018,14 +1018,14 @@ n'existe : il n'y a rien à sauvegarder, à confirmer par l'utilisateur avant d'
   produit ; ne rien retoucher à la main. Toute autre instruction signale une dérive
   schéma/migrations préexistante : s'arrêter et la remonter.
 
-- [ ] **Appliquer en local et vérifier :**
+- [x] **Appliquer en local et vérifier :**
   ```bash
   cd apps/server && bun run db:migrate && bun run db:check
   bun run typecheck && bun run lint && bun run test && bun run test:integration
   ```
   Attendu : exit 0 partout.
 
-- [ ] **Commit :**
+- [x] **Commit :**
   ```bash
   git add apps/server/src/db/schema.ts apps/server/src/db/schema/index.ts apps/server/src/db/schema/billing.schema.ts
   git add apps/server/drizzle/meta/_journal.json
@@ -1055,12 +1055,12 @@ https://code.claude.com/docs/en/settings. On retire le plugin `expo@claude-plugi
 Les `deny` `Read(**/*.keystore|*.jks|*.p8|*.p12|*.pem)` restent : ce sont des protections de
 secrets génériques, sans coût.
 
-- [ ] **`CLAUDE.md`** : supprimer la ligne 11 (`pnpm dev:mobile …`) ; ligne 27 :
+- [x] **`CLAUDE.md`** : supprimer la ligne 11 (`pnpm dev:mobile …`) ; ligne 27 :
   `dedans : \`apps/server/CLAUDE.md\`, \`apps/landing/CLAUDE.md\`.` ; ligne 47 :
   `  circulaire.` (supprimer la phrase `@repo/ui` / `apps/mobile`) ; supprimer la section
   « Review externe » (lignes 81-85, avec la ligne vide qui la précède).
 
-- [ ] **`README.md`** :
+- [x] **`README.md`** :
   - supprimer la ligne 12 (`pnpm dev:mobile …`) et la ligne 28 (`└── mobile/ …`), et changer la
     ligne 27 en `└── landing/      # Next.js — vitrine SEO (3001)` ;
   - ligne 32 : `├── ui/              # Primitives shadcn (DOM)` ;
@@ -1072,7 +1072,7 @@ secrets génériques, sans coût.
   - ligne 58 : `pnpm test                     # server (Bun)` ;
   - lignes 75-76 : `Chaque app a sa propre doc : [server](./apps/server/CLAUDE.md) · [landing](./apps/landing/CLAUDE.md)`.
 
-- [ ] **`apps/server/CLAUDE.md`** : supprimer le point « Webhooks RevenueCat » (lignes 60-61) ;
+- [x] **`apps/server/CLAUDE.md`** : supprimer le point « Webhooks RevenueCat » (lignes 60-61) ;
   lignes 76-77 :
   ```md
   qui casse silencieusement : quotas, round-trip de chiffrement, transactions
@@ -1083,16 +1083,16 @@ secrets génériques, sans coût.
   (lignes 112-116) et la ligne 138 (`revenuecat-webhook.*.ts`) ; ligne 139 :
   `│   └── subscription/           # Status lecture seule (DB)`.
 
-- [ ] **`apps/landing/CLAUDE.md`** lignes 17-18 :
+- [x] **`apps/landing/CLAUDE.md`** lignes 17-18 :
   ```md
     `POST /api/waitlist`. Toute fonctionnalité « produit » qui la tenterait
     appartient au client applicatif — c'est ce qui l'empêche de dériver en second produit.
   ```
 
-- [ ] **`.claude/settings.json`** : supprimer la ligne 5 (`"expo@claude-plugins-official": true,`).
+- [x] **`.claude/settings.json`** : supprimer la ligne 5 (`"expo@claude-plugins-official": true,`).
   **`.claude/skills/mobile-device/`** : `git rm -q .claude/skills/mobile-device/SKILL.md`.
 
-- [ ] **`.claude/rules/design-system.md`** :
+- [x] **`.claude/rules/design-system.md`** :
   - supprimer la ligne 5 (`- "apps/mobile/**/*.{ts,tsx,css}"`) ; ligne 7 :
     `  - "packages/tokens/**/*.css"` ;
   - lignes 15-17 : `  dans composants et écrans — classes utilitaires issues de \`@repo/tokens\`
@@ -1104,11 +1104,11 @@ secrets génériques, sans coût.
   - ligne 25-26 : `- **A11y AA** : cibles ≥ 44 px, labels (\`aria-*\` / \`<label>\`), contraste 4.5:1.` ;
   - ligne 31 : `  micro-motion) sans infantiliser.`
 
-- [ ] **`.claude/rules/testing-and-commits.md`** : supprimer les lignes 10 (`| Mobile | jest-expo …`),
+- [x] **`.claude/rules/testing-and-commits.md`** : supprimer les lignes 10 (`| Mobile | jest-expo …`),
   12 (`| packages/tokens | …`), 19 (`| Mobile | __tests__ …`), 24 (`- Mobile : …`) ; ligne 34 :
   ``chat`, `server`, `landing`, `ci`, `db`, `auth`. Toujours stager …`` (retirer `mobile`).
 
-- [ ] **`.claude/skills/verify/SKILL.md`** : ligne 9 `real surface — server, landing, scripts — and pastes the actual` ;
+- [x] **`.claude/skills/verify/SKILL.md`** : ligne 9 `real surface — server, landing, scripts — and pastes the actual` ;
   supprimer la section « Mobile (apps/mobile) » (lignes 49-61, jusqu'à la ligne vide avant
   « Scripts ») ; lignes 68-70 :
   ```md
@@ -1117,10 +1117,10 @@ secrets génériques, sans coût.
   tests — their proof is the real execution paths above.)
   ```
 
-- [ ] **Vérification :** `pnpm run test:scripts` (le test des hooks lit `.claude/`) → exit 0 ;
+- [x] **Vérification :** `pnpm run test:scripts` (le test des hooks lit `.claude/`) → exit 0 ;
   `python3 -m json.tool .claude/settings.json >/dev/null` → exit 0.
 
-- [ ] **Commit :**
+- [x] **Commit :**
   ```bash
   git add CLAUDE.md README.md apps/server/CLAUDE.md apps/server/README.md apps/landing/CLAUDE.md
   git add .claude/settings.json .claude/rules/design-system.md .claude/rules/testing-and-commits.md .claude/skills/verify/SKILL.md
@@ -1136,7 +1136,7 @@ secrets génériques, sans coût.
 **Files:** aucun (sauf correction si un reste injustifié apparaît : il rejoint la tâche
 concernée par un nouveau commit).
 
-- [ ] **Validation de fin de PR** (racine, codes de sortie lus un par un) :
+- [x] **Validation de fin de PR** (racine, codes de sortie lus un par un) :
   ```bash
   CI=true pnpm install --frozen-lockfile
   pnpm typecheck && pnpm lint && pnpm test
@@ -1150,7 +1150,7 @@ concernée par un nouveau commit).
   ```
   Attendu : exit 0 partout ; `git status --short drizzle/` vide (schéma et migrations en phase).
 
-- [ ] **Recherche des restes.** La commande suggérée `grep -rn "apps/mobile\|expo\|RevenueCat\|revenuecat"`
+- [x] **Recherche des restes.** La commande suggérée `grep -rn "apps/mobile\|expo\|RevenueCat\|revenuecat"`
   ne sert à rien telle quelle : `expo` est une sous-chaîne de `export` et renvoie des milliers
   de lignes. Commande retenue :
   ```bash
@@ -1169,7 +1169,7 @@ concernée par un nouveau commit).
 
   Tout autre résultat est un oubli : le corriger dans la tâche concernée, nouveau commit.
 
-- [ ] **Push et PR :** `git push -u origin chore/remove-mobile-app`, PR vers `main`.
+- [x] **Push et PR :** `git push -u origin chore/remove-mobile-app`, PR vers `main`.
   Merge commit (chaque commit de tâche se relit seul). Avant le merge : l'étape manuelle
   du ruleset décrite en tête de section.
 

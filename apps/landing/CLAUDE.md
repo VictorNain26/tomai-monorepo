@@ -15,7 +15,7 @@ pnpm build
 - **Frontière stricte** : la landing ne consomme **jamais** Eden Treaty ni l'auth.
   Son unique point d'intégration serveur est la Server Action `joinWaitlist` →
   `POST /api/waitlist`. Toute fonctionnalité « produit » qui la tenterait
-  appartient à l'app Expo — c'est ce qui l'empêche de dériver en second produit.
+  appartient au client applicatif — c'est ce qui l'empêche de dériver en second produit.
 - **Aucun composant UI custom** : passer par shadcn (`@/components/ui/`).
 - **Aucun CSS custom ni style inline** : Tailwind et les tokens `@repo/tokens`.
 - Déploiement Vercel automatique au push. **Jamais `pnpm install --force`** dans

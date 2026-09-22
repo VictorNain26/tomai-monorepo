@@ -32,15 +32,14 @@ Depuis votre espace, vous gerez les enfants, l'abonnement et la connexion Pronot
   },
 
   navigation: {
-    student: `L'application a 4 onglets en bas de l'ecran :
+    student: `L'application est organisee en quatre espaces :
 - Accueil : ton tableau de bord avec suggestions personnalisees
-- Tom : ta conversation avec l'assistant (ecran principal)
-- Revisions : tes decks de flashcards et cartes a reviser
-- Profil : tes informations, Pronote, classeur de fichiers et parametres
-L'onglet Revisions affiche un badge avec le nombre de cartes a revoir.`,
-    parent: `L'application parent a 2 onglets :
-- Accueil : tableau de bord avec la liste de vos enfants, leurs statistiques et la gestion Pronote
-- Profil : parametres du compte, gestion de l'abonnement
+- Tom : ta conversation avec l'assistant (espace principal)
+- Revisions : tes decks de flashcards et le nombre de cartes a revoir
+- Profil : tes informations, Pronote, classeur de fichiers et parametres`,
+    parent: `L'espace parent est organise en deux parties :
+- Accueil : la liste de vos enfants, leurs statistiques et la gestion Pronote
+- Profil : parametres du compte et abonnement
 Depuis Accueil, vous pouvez ajouter des enfants, voir leur progression et connecter Pronote.`,
   },
 
@@ -63,17 +62,17 @@ Tom ne donne pas les reponses directement : il te guide pour que tu comprennes.`
   flashcards: {
     student: `Les flashcards t'aident a reviser efficacement :
 - Tom cree des cartes quand tu demandes de reviser un sujet
-- Tes cartes apparaissent dans l'onglet Revisions
+- Tes cartes apparaissent dans l'espace Revisions
 - Le systeme de repetition espacee te montre les cartes au bon moment
 - Apres chaque carte, indique si c'etait facile ou difficile
 - Les cartes que tu rates reviennent plus souvent
-- Tu peux aussi creer tes propres decks depuis l'onglet Revisions
-Le badge sur l'onglet t'indique combien de cartes sont a revoir.`,
+- Tu peux aussi creer tes propres decks depuis l'espace Revisions
+L'espace Revisions t'indique combien de cartes sont a revoir.`,
     parent: `Le systeme de flashcards utilise la repetition espacee (algorithme FSRS) :
 - Les cartes sont creees depuis les conversations ou manuellement par l'enfant
 - Chaque carte s'adapte au rythme de memorisation de l'enfant
 - Les matieres en difficulte (basees sur les notes Pronote) sont priorisees
-- L'enfant voit ses decks dans l'onglet Revisions avec un badge de cartes dues`,
+- L'enfant retrouve ses decks et ses cartes dues dans l'espace Revisions`,
   },
 
   pronote: {
@@ -82,7 +81,7 @@ Une fois connecte, tu peux :
 - Voir tes devoirs, notes et emploi du temps dans Profil
 - Demander a Tom "quels sont mes devoirs ?" ou "quelles sont mes notes ?"
 - Tom utilise tes vrais devoirs pour t'aider de facon personnalisee
-Si Pronote n'est pas connecte, demande a ton parent de le faire depuis son application.`,
+Si Pronote n'est pas connecte, demande a ton parent de le faire depuis son espace.`,
     parent: `Pour connecter le Pronote de votre enfant :
 - Depuis Accueil, selectionnez un enfant puis "Connecter Pronote"
 - Scannez le QR code genere depuis l'interface web de Pronote
@@ -94,7 +93,7 @@ Tom peut ensuite acceder aux devoirs, notes et emploi du temps pour personnalise
 
   files: {
     student: `Tu peux envoyer des fichiers a Tom dans le chat :
-- Appuie sur le bouton "+" pour choisir : appareil photo, galerie, document ou classeur
+- Joins une photo, un document ou un fichier de ton classeur a ton message
 - Formats acceptes : photos (JPG, PNG, WebP, HEIC), documents (PDF, Word, texte)
 - Tom analyse l'image ou le document et t'aide dessus
 - Tes fichiers sont sauvegardes dans "Mon Classeur" (Profil > Mon Classeur)
@@ -111,15 +110,13 @@ Les fichiers sont stockes sur des serveurs en France (RGPD) et restent prives.`,
   subscription: {
     student: `Ton abonnement Tom :
 - La version gratuite a un nombre limite de messages par jour
-- L'abonnement Premium offre un acces illimite et toutes les fonctionnalites
-- Demande a tes parents si tu veux passer en Premium
-Tu peux voir ton abonnement dans Profil.`,
-    parent: `Gestion de l'abonnement Tom :
+- L'abonnement Premium n'est pas encore disponible en ligne
+Tu peux voir ton utilisation dans Profil.`,
+    parent: `Abonnement Tom :
 - Version gratuite : nombre de messages limite par jour
-- Premium : acces illimite, toutes les fonctionnalites
-- L'abonnement se gere depuis Profil > Abonnement
-- Paiement securise via App Store ou Play Store
-- Un seul abonnement couvre tous les enfants rattaches a votre compte`,
+- L'abonnement Premium n'est pas encore disponible en ligne : il n'existe aujourd'hui aucun moyen de paiement
+- Un seul abonnement couvrira tous les enfants rattaches a votre compte
+Ne propose aucune demarche de paiement : il n'y en a pas encore.`,
   },
 
   profile: {
@@ -131,9 +128,9 @@ Tu peux voir ton abonnement dans Profil.`,
 - Te deconnecter
 Ton niveau scolaire aide Tom a adapter ses explications a ton programme.`,
     parent: `Dans votre profil vous pouvez :
-- Gerer votre abonnement (gratuit ou Premium)
+- Voir votre formule (gratuite ; Premium pas encore disponible en ligne)
 - Modifier les parametres de l'application
-Depuis l'onglet Accueil vous pouvez :
+Depuis l'espace Accueil vous pouvez :
 - Gerer les enfants rattaches a votre compte
 - Modifier le niveau scolaire de chaque enfant
 - Connecter Pronote pour chaque enfant

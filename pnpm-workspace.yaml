@@ -2,13 +2,6 @@ packages:
   - apps/*
   - packages/*
 
-# pnpm 11 reads these from here, NOT from .npmrc (where they are silently
-# ignored). RN 0.85's @react-native/jest-preset needs @babel/generator at
-# runtime but doesn't declare it; hoist Babel internals to the root so it
-# resolves under pnpm.
-publicHoistPattern:
-  - '@babel/*'
-
 # Supply-chain protection: chaque package qui veut exécuter un build script
 # doit être listé explicitement (pnpm 11 strictDepBuilds=true par défaut).
 # Tous les packages ici sont des libs officielles/matures qu'on trust pour
@@ -28,34 +21,19 @@ catalog:
   clsx: ^2.1.1
   eslint: ^10.4.1
   lucide-react: ^1.17.0
-  # Pinned to React 19.2.3 — the version Expo SDK 56 bundles. Keep aligned with
-  # the SDK's react pin so expo-doctor stays green and mobile uses one react.
   react: 19.2.3
   react-dom: 19.2.3
-  # Keep strictly in sync with `react` (@testing-library/react-native compares them).
-  react-test-renderer: 19.2.3
   tailwind-merge: ^3.6.0
   tailwindcss: ^4.3.0
   typescript: 6.0.3
 
 # Supply-chain protection: bloque l'install de packages publiés depuis <24h
-# (défaut pnpm 11). Override ciblé pour les libs transitive qu'on connait OK.
+# (défaut pnpm 11).
 minimumReleaseAge: 1440
-minimumReleaseAgeExclude:
-  - tinyexec
 
 # Migré depuis package.json#pnpm.overrides — pnpm 11 ne lit plus le champ "pnpm"
 # du package.json. Toutes les overrides doivent vivre ici.
 overrides:
-  # Pin a single @types/node across the workspace: hoisted node-linker + multiple
-  # resolved versions made RN's global `Response` shadow node/undici's (which has
-  # `.body`), breaking mobile typecheck on server source pulled via @repo/api.
-  '@types/node': 25.9.1
-  # @expo/dom-webview stayed pinned at 55.0.3 in the lock (transitive optional peer of
-  # expo, never bumped). Its 55.x Android AAR references expo.modules.kotlin.types.
-  # AnyTypeProvider, a class removed by the expo-modules-core 56 type refactor →
-  # ClassNotFoundException crashes the app on boot. Force the SDK 56 line.
-  '@expo/dom-webview': 56.0.5
   # kysely 0.29 moved DEFAULT_MIGRATION_TABLE/_LOCK_TABLE to the `kysely/migration`
   # entry; better-auth's bundled kysely-adapter still imports them from the root,
   # breaking the bun server build. Known upstream bug, still open:
@@ -63,29 +41,17 @@ overrides:
   # Pin to the latest 0.28.x (last line that re-exports them from root) and drop
   # this override once better-auth ships the fix.
   kysely: 0.28.17
-  lightningcss: 1.30.1
   esbuild: '>=0.25.0'
   fast-xml-parser: '>=5.3.8'
   rollup: '>=4.59.0'
-  tar: '>=7.5.8'
-  qs: '>=6.14.2'
-  lodash-es: '>=4.17.23'
-  '@isaacs/brace-expansion': '>=5.0.1'
-  markdown-it: '>=12.3.2'
   'eslint>minimatch': '>=3.1.4'
   'eslint-plugin-react>minimatch': '>=3.1.4'
   'glob>minimatch': '>=10.2.3'
   '@typescript-eslint/typescript-estree>minimatch': '>=9.0.7'
   'eslint>ajv': '>=6.14.0 <7.0.0'
-  'expo-build-properties>ajv': '>=8.18.0'
-  hono: '>=4.12.7'
-  '@hono/node-server': '>=1.19.10'
   file-type: '>=21.3.1'
   underscore: '>=1.13.8'
-  '@tootallnate/once': '>=3.0.1'
-  lodash: '>=4.17.23'
   # CVE fixes for transitive deps (GitHub Dependabot alerts). Drop once parents bump.
-  uuid: '>=11.1.1'
   postcss: '>=8.5.18'
   brace-expansion: '>=5.0.9'
   # `pnpm audit --prod --audit-level high` fixes (2026-07-06 review). Patch/minor
@@ -97,15 +63,6 @@ overrides:
   # (via @grpc/grpc-js>@grpc/proto-loader). Pinned exact (not >=) — protobufjs
   # 8.x is a major bump @grpc/proto-loader doesn't support yet.
   protobufjs: '7.6.1'
-  # undici <7.28.0: TLS bypass in SOCKS5 ProxyAgent, cross-origin request
-  # routing, and WebSocket DoS — via jsdom (vitest's DOM shim), test tooling
-  # pulled into the prod tree as an optional peer of better-auth (never
-  # invoked at runtime).
-  'jsdom>undici': '7.28.0'
-  # linkify-it <=5.0.0: quadratic complexity DoS in #match, via
-  # markdown-it (react-native-markdown-display's parser, mobile prod dep).
-  # Pinned exact (not >=), consistent with the other overrides in this block.
-  'markdown-it>linkify-it': '5.0.2'
   # `pnpm audit --prod --audit-level high` fixes (2026-08-24). Advisories
   # published after the 2026-07-17 green run; all transitive. Scoped by version
   # range where a package resolves to several majors and only one is affected
@@ -117,59 +74,21 @@ overrides:
   # nanoid >=4.0.0 <5.1.16: non-secure generators loop forever on a negative
   # size. Hits the 5.x copy (via @elysiajs/swagger), so both lines need a floor.
   'nanoid@5': '>=5.1.16'
-  # js-yaml >=4.0.0 <4.3.1: prototype pollution via crafted YAML. Same split —
-  # 3.14.2 is outside the advisory range and stays untouched.
-  # Raised to 4.3.2 for GHSA-2883-xcg3-v3hh (>=4.0.0 <4.3.2).
-  'js-yaml@4': '4.3.2'
-  # js-yaml <3.15.1: quadratic CPU on merge-key chains and !!omap resolution.
-  # The 3.x copy comes from jest tooling, but the gate audits the prod tree.
-  # Caret, not >=: an open range let this copy resolve to 4.3.1 and stay
-  # exposed to GHSA-2883-xcg3-v3hh after the 4.x line was patched.
-  'js-yaml@3': '^3.15.1'
   # sharp <0.35.0: out-of-bounds read in the bundled libvips.
   # Floor raised to 0.35.4 for GHSA-rgj7-g3m4-5g8c (<0.35.4), via next.
   sharp: '>=0.35.4'
   # fast-uri >=3.0.0 <3.1.5: ReDoS in the URI parser (via @sentry/nextjs>ajv).
   fast-uri: '>=3.1.5'
-  # shell-quote <=1.8.4: quote() fails to escape newlines. Distinct from the
-  # ignored GHSA-w7jw-789q-3m8p below, and this one is fixable by override.
-  shell-quote: '>=1.8.5'
   # @opentelemetry/propagator-jaeger <2.9.0: unbounded baggage parsing.
   '@opentelemetry/propagator-jaeger': '>=2.9.0'
   # `pnpm audit --prod --audit-level high` fixes (2026-09-16). All transitive.
-  # @xmldom/xmldom 0.8.x <0.8.15 and 0.9.x <0.9.12: XML injection / parser
-  # advisories (GHSA-w2rr-34g9-rvrj, GHSA-4w3w-2rp5-g8jm, GHSA-c7q8-3ch8-vqpv,
+  # @xmldom/xmldom 0.8.x <0.8.15: XML injection / parser advisories
+  # (GHSA-w2rr-34g9-rvrj, GHSA-4w3w-2rp5-g8jm, GHSA-c7q8-3ch8-vqpv,
   # GHSA-27p8-2357-5qqv, GHSA-8344-3jmq-59r6, GHSA-x4fp-j954-r2f4,
   # GHSA-965w-775f-mr7g, GHSA-93r5-fhx6-vmg9, GHSA-6mj3-qw4j-hgrw,
   # GHSA-g53g-w8rj-fmg7, GHSA-3px3-54cx-rmw9, GHSA-vr34-hp96-76pp), via
-  # @expo/config-plugins (@expo/plist and xcode>plist). Each line keeps its minor.
+  # mammoth (DOCX extraction, server).
   '@xmldom/xmldom@0.8': '0.8.15'
-  '@xmldom/xmldom@0.9': '0.9.12'
   # browserslist <=4.28.6: GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g (via
   # @babel/helper-compilation-targets under @sentry/nextjs).
   browserslist: '^4.28.7'
-
-# `pnpm audit` findings tolerated after review (2026-07-06). Validated against
-# https://pnpm.io/cli/audit#auditconfigignoreghsas (pnpm 11): since v11, pnpm
-# audit filters by GitHub advisory ID (GHSA), not CVE — `auditConfig.ignoreCves`
-# is no longer recognized.
-auditConfig:
-  ignoreGhsas:
-    # GHSA-w7jw-789q-3m8p — shell-quote quote() does not escape newlines in
-    # object .op values (critical). Chain: react-native>react-devtools-core>
-    # shell-quote — react-devtools-core is the RN dev-menu bridge to React
-    # DevTools, never bundled/invoked in a production release build. Patched
-    # at 1.8.4 but pinned deep inside react-native's own dependency tree (not
-    # a direct or easily overridable dep); dev-tooling, non exposé au runtime
-    # prod. Reviewed 2026-07-06.
-    - GHSA-w7jw-789q-3m8p
-    # GHSA-w3rx-r6r6-pgpr / GHSA-5p2g-fcmc-qvqq — image-size DoS via infinite
-    # loops in the ICNS, JXL and HEIF parsers. No fix exists to override to:
-    # both advisories require >=2.0.3, and 2.0.3 is unpublished (npm 404, the
-    # latest release is 2.0.2). The resolved copy is 1.2.1, pulled by metro —
-    # the React Native bundler, build tooling that never ships in a release
-    # bundle. It only parses repo-controlled assets at build time, never
-    # attacker-supplied images at runtime. Revisit when image-size 2.0.3 ships.
-    # Reviewed 2026-08-24.
-    - GHSA-w3rx-r6r6-pgpr
-    - GHSA-5p2g-fcmc-qvqq

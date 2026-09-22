@@ -1,7 +1,7 @@
 /**
  * @repo/api - Shared Types
  *
- * Platform-agnostic types used by both Web and Mobile.
+ * Platform-agnostic types shared by the clients.
  */
 
 export type { TomChatMessage, TomDataParts, DeckCreatedData } from 'tomai-server/app';

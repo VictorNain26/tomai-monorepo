@@ -105,36 +105,6 @@ export function makeMessage(overrides?: Partial<MessageData>): MessageData {
   };
 }
 
-export function makeRevenueCatEvent(
-  type: string,
-  overrides?: Partial<{
-    id: string;
-    app_user_id: string;
-    product_id: string;
-    subscriber_attributes: Record<string, { value: string; updated_at_ms: number }>;
-  }>
-) {
-  return {
-    api_version: '4.0',
-    event: {
-      type,
-      id: overrides?.id ?? `rc_evt_${Date.now()}`,
-      app_id: 'app_test',
-      app_user_id: overrides?.app_user_id ?? 'parent-001',
-      original_app_user_id: overrides?.app_user_id ?? 'parent-001',
-      aliases: [],
-      product_id: overrides?.product_id ?? 'tom_premium_monthly',
-      entitlement_ids: ['premium'],
-      event_timestamp_ms: BASE_DATE.getTime(),
-      purchased_at_ms: BASE_DATE.getTime(),
-      expiration_at_ms: BASE_DATE.getTime() + 30 * 24 * 60 * 60 * 1000,
-      store: 'APP_STORE',
-      environment: 'PRODUCTION' as const,
-      subscriber_attributes: overrides?.subscriber_attributes,
-    },
-  };
-}
-
 interface CognitiveProfileData {
   id: string;
   userId: string;

@@ -6,7 +6,7 @@ description: Use when about to claim a change works — proves it by actually dr
 # Verify
 
 Tests passing is not proof a feature works end to end. This skill drives the
-real surface — server, landing, mobile, scripts — and pastes the actual
+real surface — server, landing, scripts — and pastes the actual
 output as evidence. Never write "should work", "this should fix it", or
 report success without having run the commands below and read their output.
 
@@ -46,27 +46,14 @@ curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:3001
 
 Assert `200`.
 
-## Mobile (apps/mobile)
-
-```bash
-pnpm --filter tom-mobile bundle:check
-```
-
-This is the Metro bundle-export CI uses to catch bundling/import errors
-without a device. For anything that needs a real screen (navigation, gesture,
-native module), there is no substitute for a device: point the user at
-`pnpm e2e:local` (root script, Maestro flows against the Android emulator/dev
-client) rather than claiming visual/interaction behavior works from a bundle
-check alone.
-
 ## Scripts (root `scripts/*.mjs`)
 
 ```bash
 pnpm run test:scripts
 ```
 
-(Node test runner over `scripts/*.test.mjs` — covers `doctor-checks.mjs` and
-`e2e-local.mjs` only; `dev.mjs`/`doctor.mjs`/`setup.mjs` have no dedicated
+(Node test runner over `scripts/*.test.mjs` — covers `doctor-checks.mjs` and the
+`.claude/hooks` scripts; `dev.mjs`/`doctor.mjs`/`setup.mjs` have no dedicated
 tests — their proof is the real execution paths above.)
 
 ## Before writing down a command

@@ -12,7 +12,6 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'package.json'
-      - '.npmrc'
       - 'tsconfig.base.json'
       - '.github/workflows/docker.yml'
   pull_request:
@@ -22,7 +21,6 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'package.json'
-      - '.npmrc'
       - 'tsconfig.base.json'
       - '.github/workflows/docker.yml'
 

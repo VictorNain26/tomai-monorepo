@@ -39,14 +39,6 @@
       "cache": false,
       "persistent": true
     },
-    "dev:ios": {
-      "cache": false,
-      "persistent": true
-    },
-    "dev:android": {
-      "cache": false,
-      "persistent": true
-    },
     "lint": {
       "inputs": [
         "$TURBO_DEFAULT$",
@@ -79,10 +71,7 @@
     "test": {
       "inputs": [
         "$TURBO_DEFAULT$",
-        "jest.config.*",
-        "__tests__/**",
-        "**/*.test.ts",
-        "**/*.test.tsx"
+        "**/*.test.ts"
       ],
       "outputs": ["coverage/**"],
       "env": ["NODE_ENV", "CI"],
