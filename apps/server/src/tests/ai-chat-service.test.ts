@@ -2,7 +2,7 @@
  * Tests unitaires — AiChatService (services/chat/ai-chat.service.ts)
  *
  * Verifies the streamText wiring against a `MockLanguageModelV4` (the
- * interface version @ai-sdk/mistral@4.0.5 implements — confirmed in
+ * interface version @ai-sdk/mistral@4.0.48 implements — confirmed in
  * node_modules/@ai-sdk/mistral/dist/index.d.ts): the system prompt lands as
  * the first prompt message, `stopWhen: isStepCount(5)` caps the agentic loop,
  * and text chunks stream out in order. No network call, no real tool
@@ -123,6 +123,36 @@ describe('streamChat', () => {
     }
 
     expect(received).toEqual(['Bonjour ', 'le monde']);
+  });
+
+  it('never forwards reasoning chunks through toUIMessageStream({ sendReasoning: false }) — a real serialized stream, not just the option value', async () => {
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunkDelayInMs: 0,
+          initialDelayInMs: 0,
+          chunks: [
+            { type: 'stream-start', warnings: [] },
+            { type: 'reasoning-start', id: 'r1' },
+            { type: 'reasoning-delta', id: 'r1', delta: 'thinking...' },
+            { type: 'reasoning-end', id: 'r1' },
+            { type: 'text-start', id: 't1' },
+            { type: 'text-delta', id: 't1', delta: 'Bonjour' },
+            { type: 'text-end', id: 't1' },
+            finishStreamPart(),
+          ],
+        }),
+      }),
+    });
+
+    const result = streamChat({ ...baseParams, tools: noopTools, model });
+    const chunks: Array<{ type: string }> = [];
+    for await (const chunk of result.toUIMessageStream({ sendReasoning: false })) {
+      chunks.push(chunk as { type: string });
+    }
+
+    expect(chunks.some((c) => c.type.startsWith('reasoning'))).toBe(false);
+    expect(chunks.some((c) => c.type === 'text-delta')).toBe(true);
   });
 });
 
