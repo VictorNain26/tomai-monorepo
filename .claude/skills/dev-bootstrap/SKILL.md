@@ -9,11 +9,11 @@ description: Démarrer le monorepo depuis un clone neuf, ou réparer une stack l
 
 ```bash
 pnpm install
-pnpm setup             # .env, BETTER_AUTH_SECRET, postgres, migrations
+pnpm run setup         # .env, BETTER_AUTH_SECRET, postgres, migrations
 pnpm dev
 ```
 
-`pnpm setup` (`scripts/setup.mjs`) enchaîne ces étapes dans l'ordre. Le reste de
+`pnpm run setup` (`scripts/setup.mjs`) enchaîne ces étapes dans l'ordre. Le reste de
 cette skill sert quand il échoue, ou pour comprendre ce qu'il fait.
 
 ## Le piège : `db:migrate`, jamais `db:push`, sur une base neuve
@@ -24,7 +24,7 @@ schéma directement. Sur une base vierge, un `db:push` donne donc un schéma cor
 et un serveur qui refuse quand même de démarrer, ce qui est le symptôme le plus
 déroutant de la stack.
 
-Séquence manuelle si `pnpm setup` a échoué en route (commandes `docker` depuis la
+Séquence manuelle si `pnpm run setup` a échoué en route (commandes `docker` depuis la
 racine, `bun run` depuis `apps/server`) :
 
 ```bash
@@ -76,7 +76,7 @@ pnpm doctor:e2e    # strict : un SKIP compte comme un échec
 
 ```bash
 docker compose down -v   # détruit les volumes, donc les données locales
-pnpm setup
+pnpm run setup
 ```
 
 Depuis Postgres 18 (lot 0), le volume s'appelle `tomai_postgres18_dev_data`. Un

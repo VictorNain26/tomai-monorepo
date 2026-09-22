@@ -152,10 +152,10 @@ function psqlScalar(ctx, sql) {
 function checkMigrations(ctx) {
   return { name: 'postgres: extension vector + migrations Drizzle à jour', run: async () => {
     const hasVector = psqlScalar(ctx, "SELECT count(*) FROM pg_extension WHERE extname='vector';");
-    if (hasVector === '0') throw new Error("extension 'vector' absente — lance 'pnpm setup'");
+    if (hasVector === '0') throw new Error("extension 'vector' absente — lance 'pnpm run setup'");
     const applied = Number(psqlScalar(ctx, 'SELECT count(*) FROM drizzle.__drizzle_migrations;'));
     const expected = ctx.journalEntries ?? countJournalEntries();
-    if (applied < expected) throw new Error(`migrations en retard: ${applied}/${expected} appliquées — lance 'pnpm setup' (ou 'bun run db:migrate' dans apps/server)`);
+    if (applied < expected) throw new Error(`migrations en retard: ${applied}/${expected} appliquées — lance 'pnpm run setup' (ou 'bun run db:migrate' dans apps/server)`);
   }};
 }
 

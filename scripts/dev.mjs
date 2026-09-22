@@ -23,7 +23,7 @@ console.log("[dev] vérification infra (fail-fast) avant de lancer les apps…")
 const ctx = { config: loadConfig(), exec: defaultExec, fetchFn: fetch };
 const infra = await runChecks(buildChecks(ctx, { full: false }));
 if (infra.exitCode !== 0) {
-  console.error("[dev] infra incomplète — apps non lancées. Lance `pnpm doctor` pour le détail, puis `pnpm setup`/`docker compose up -d`.");
+  console.error("[dev] infra incomplète — apps non lancées. Lance `pnpm doctor` pour le détail, puis `pnpm run setup`/`docker compose up -d`.");
   process.exit(1);
 }
 

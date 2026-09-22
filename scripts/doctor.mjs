@@ -13,7 +13,7 @@ const summary = await runChecks(buildChecks(ctx, { full: true, e2e }), { strict:
 if (summary.exitCode !== 0) {
   const hint = e2e
     ? '\n[doctor:e2e] des checks ont échoué. Lance `pnpm dev` et vérifie que toutes les dépendances sont up avant un run e2e.'
-    : '\n[doctor] des checks ont échoué. Corrige-les avant de reprendre le dev (souvent : `pnpm setup` puis `pnpm dev`).';
+    : '\n[doctor] des checks ont échoué. Corrige-les avant de reprendre le dev (souvent : `pnpm run setup` puis `pnpm dev`).';
   console.error(hint);
 }
 process.exit(summary.exitCode);
