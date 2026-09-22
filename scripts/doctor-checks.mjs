@@ -144,7 +144,7 @@ export function countJournalEntries(path = new URL('../apps/server/drizzle/meta/
 
 function psqlScalar(ctx, sql) {
   // -tA : tuple-only, unaligned -> sortie = la valeur brute
-  const r = ctx.exec('docker', ['exec', 'tomai-postgres-dev', 'psql', '-U', 'tomai_dev', '-d', 'tomai_dev', '-tA', '-c', sql]);
+  const r = ctx.exec('docker', ['exec', ctx.config.pgContainer, 'psql', '-U', 'tomai_dev', '-d', 'tomai_dev', '-tA', '-c', sql]);
   if (!r.ok) throw new Error(`psql a échoué: ${r.stderr || sql}`);
   return r.stdout.trim();
 }

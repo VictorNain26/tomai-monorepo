@@ -118,6 +118,19 @@ test('check migrations: PASS si vector présent et migrations à jour', async ()
   await byName(checks, 'migrations').run();
 });
 
+test('check migrations: psql vise le conteneur PG_CONTAINER configuré', async () => {
+  const containers = [];
+  const exec = (cmd, args) => {
+    if (args[0] === 'exec') containers.push(args[1]);
+    const sql = args.join(' ');
+    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };
+    return { ok: true, stdout: '5' };
+  };
+  const ctx = { ...ctxWith({ exec }), config: { ...CFG, pgContainer: 'pg-custom' }, journalEntries: 5 };
+  await byName(buildChecks(ctx, { full: true }), 'migrations').run();
+  assert.deepEqual([...new Set(containers)], ['pg-custom']);
+});
+
 // ─── Strict mode ─────────────────────────────────────────────────────────────
 
 test('runChecks strict: un SKIP devient un FAIL (exitCode 1)', async () => {
