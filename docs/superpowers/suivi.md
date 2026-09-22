@@ -25,8 +25,8 @@ explicitement (`.claude/rules/plans-and-agents.md`).
 - **E1** : `capturedResult.totalUsage` déprécié dans `chat-message.routes.ts` (même
   sémantique que `usage`) et appel de la méthode instance dépréciée
   `capturedResult.toUIMessageStream(...)` (ai@7 : « Use the standalone
-  `toUIMessageStream` helper from 'ai' with `result.stream` ») : tâche E1.10. Voxtral
-  TTS/STT par `fetch` maison alors que `@mistralai/mistralai` expose
+  `toUIMessageStream` helper from 'ai' with `result.stream` ») : PR E1 (tâche E1.10,
+  ajoutée au plan par la PR E1). Voxtral TTS/STT par `fetch` maison alors que `@mistralai/mistralai` expose
   `audioSpeechComplete`/`audioVoices` : tâches E1.2 et E1.3.
 - **E2** (liste détaillée en tête de la section E2 du plan) : champs morts
   `IAppUser.parentId` (`packages/api/src/types.ts`) et `ElysiaAuthenticatedUser.parentId`
@@ -47,12 +47,7 @@ explicitement (`.claude/rules/plans-and-agents.md`).
   web.
 - **Lot 3 — TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues
   avec `fr_marie_neutral` (seuls presets fr/en/gb existent ; es/de sans voix) ;
-  `/api/tts/voices` annonce encore ces langues. Les échantillons de
-  `apps/server/samples/voxtral/` (voix par niveau) n'ont aucun consommateur : clonage à
-  faire ou échantillons à supprimer.
-- **Lot 3 — typographie** : `@repo/tokens` et `.claude/rules/design-system.md` disent
-  Poppins, Nunito Sans et JetBrains Mono ; la landing charge Inter et Plus Jakarta Sans.
-  Laquelle fait foi reste à trancher par l'utilisateur.
+  `/api/tts/voices` annonce encore ces langues.
 - **Résolu** : override `'nanoid@5'` et son commentaire, retirés en B (aucun `nanoid` dans
   `pnpm-workspace.yaml`) ; recommandations `ruff`/`python` de `.vscode/extensions.json`,
   retirées par la PR docs `docs/fix-doc-drift` ; deux copies de `@ai-sdk/provider` : le
