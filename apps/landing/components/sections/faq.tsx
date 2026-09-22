@@ -12,7 +12,7 @@ export function FAQ() {
 
   return (
     <section id="faq" className="scroll-mt-20 bg-secondary py-24 lg:py-32">
-      <div className="container px-4 mx-auto">
+      <div className="container">
         <SectionHeader
           eyebrow="Questions"
           title="Ce que les parents nous demandent"
@@ -30,7 +30,7 @@ export function FAQ() {
                 aria-expanded={openIndex === index}
                 aria-controls={`faq-answer-${index}`}
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full flex items-center justify-between p-6 text-left min-h-11"
+                className="w-full flex items-center justify-between p-6 text-left min-h-11 focus-visible:ring-inset"
               >
                 <div className="flex items-center gap-4">
                   {faq.icon && (

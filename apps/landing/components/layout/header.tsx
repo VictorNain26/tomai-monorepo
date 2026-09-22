@@ -26,7 +26,7 @@ export function Header() {
         scrolled ? "border-border bg-background/90 backdrop-blur-md" : "border-transparent bg-background/70 backdrop-blur",
       )}
     >
-      <nav className="container relative flex h-16 items-center justify-between px-4">
+      <nav className="container relative flex h-16 items-center justify-between">
         {/* Logo */}
         <div className="flex items-center z-20">
           <Logo />
@@ -44,7 +44,6 @@ export function Header() {
           </Button>
         </div>
 
-        {/* Mobile Menu Button (no theme toggle) */}
         <div className="flex items-center gap-2 md:hidden z-20">
           <Button
             variant="ghost"
@@ -64,12 +63,13 @@ export function Header() {
 
       {/* Mobile Menu */}
       <div
+        inert={!mobileMenuOpen}
         className={cn(
           "md:hidden overflow-hidden transition-all duration-base ease-in-out border-t border-border/50",
           mobileMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0 border-t-0"
         )}
       >
-        <div className="container px-4 py-4 space-y-4 bg-background">
+        <div className="container py-4 space-y-4 bg-background">
           <NavLinks
             orientation="vertical"
             onLinkClick={() => setMobileMenuOpen(false)}

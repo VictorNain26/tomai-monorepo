@@ -18,7 +18,7 @@ const SHAPES = {
   circle: {
     viewBox: "0 0 200 80",
     d: "M100 4 C 170 2, 198 30, 190 50 C 180 76, 40 80, 12 56 C -6 36, 30 6, 110 8",
-    position: "-inset-x-3 -inset-y-2",
+    position: "-inset-x-3 -inset-y-2 w-[calc(100%+1.5rem)] h-[calc(100%+1rem)]",
   },
 } as const;
 
