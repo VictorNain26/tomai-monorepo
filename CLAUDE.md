@@ -6,6 +6,9 @@ Stack, structure et démarrage : `README.md` — pas de duplication ici.
 **Travaux en cours : `docs/superpowers/suivi.md`** — avancement, bloquants, prochaine
 action. Le lire avant de reprendre, le mettre à jour dans la PR qui fait avancer.
 
+Lors d'une compaction, préserver : PR en cours, branche, chemin du registre SDD
+(`.superpowers/sdd/<plan>/progress.md`), dernière tâche terminée, décisions ouvertes.
+
 ## Commandes
 
 ```bash
