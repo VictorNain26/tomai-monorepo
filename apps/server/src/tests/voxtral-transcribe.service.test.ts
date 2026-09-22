@@ -108,6 +108,21 @@ describe('VoxtralTranscribeService', () => {
       expect(body.get('model')).toBe('voxtral-mini-2602');
     });
 
+    it('preserves the real audio mimeType in the multipart file part', async () => {
+      fetchSpy = mockFetchSuccess('test');
+      const service = getVoxtralTranscribeService();
+
+      await service.transcribe(makeAudioBuffer(), 'audio/webm');
+
+      const [request] = fetchSpy.mock.calls[0] as [Request];
+      // Bun's Request#formData() doesn't reconstruct the per-part Content-Type
+      // (the Blob it returns always has type ""), so this reads the raw
+      // multipart body instead of relying on it.
+      const raw = await request.text();
+      const fileSection = raw.slice(raw.indexOf('name="file"'));
+      expect(fileSection).toContain('Content-Type: audio/webm');
+    });
+
     it('defaults to language=fr', async () => {
       fetchSpy = mockFetchSuccess('test');
       const service = getVoxtralTranscribeService();

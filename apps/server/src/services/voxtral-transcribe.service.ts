@@ -48,7 +48,11 @@ class VoxtralTranscribeService {
     try {
       const response = await getMistralSdk().audio.transcriptions.complete({
         model: STT_MODEL,
-        file: { fileName: 'audio', content: new Blob([audioBuffer], { type: mimeType }) },
+        // A plain { fileName, content } object isn't blob-like to the SDK: it falls back
+        // to `getContentTypeFromFileName('audio')` (no extension -> null -> octet-stream),
+        // dropping the real mimeType. A File is blob-like, so the SDK forwards it as-is
+        // (esm/funcs/audioTranscriptionsComplete.js:33-48, esm/types/blobs.js isBlobLike).
+        file: new File([audioBuffer], 'audio', { type: mimeType }),
         language,
       });
 
