@@ -69,10 +69,10 @@ services:
       start_period: 60s
 
   # ===========================================
-  # PostgreSQL 16 + pgvector
+  # PostgreSQL 18 + pgvector
   # ===========================================
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:0.8.6-pg18
     container_name: tomai-postgres-dev
     ports:
       - "5432:5432"
@@ -83,7 +83,7 @@ services:
       # Performance tuning for dev
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
+      - postgres_dev_data:/var/lib/postgresql
     networks:
       - tomai-dev
     restart: unless-stopped
@@ -106,7 +106,7 @@ services:
 
   # Drizzle Studio - Database UI (port 4983)
   drizzle-studio:
-    image: oven/bun:1.3-alpine
+    image: oven/bun:1.4-alpine
     container_name: tomai-drizzle-studio
     working_dir: /app
     ports:
@@ -146,7 +146,7 @@ services:
 # ===========================================
 volumes:
   postgres_dev_data:
-    name: tomai_postgres_dev_data
+    name: tomai_postgres18_dev_data
 
 # ===========================================
 # Réseau isolé development

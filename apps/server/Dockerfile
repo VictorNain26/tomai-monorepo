@@ -1,12 +1,12 @@
 # ============================================================
 # TomAI Backend - Dockerfile (2026)
 # Multi-stage: Development + Production + Koyeb
-# Runtime: Bun 1.3 | Package Manager: pnpm 12
+# Runtime: Bun 1.4 | Package Manager: pnpm 12
 # Security: non-root, SHA-pinned base, healthchecks
 # ============================================================
 
 # Stage 1: BASE
-FROM oven/bun:1.3-slim AS base
+FROM oven/bun:1.4-slim AS base
 
 WORKDIR /app
 
@@ -143,4 +143,4 @@ CMD ["bun", "--smol", "dist/index.js"]
 LABEL org.opencontainers.image.title="TomAI Backend" \
       org.opencontainers.image.description="Bun + Elysia.js backend" \
       org.opencontainers.image.source="https://github.com/VictorNain26/tomai-monorepo" \
-      org.opencontainers.image.base.name="oven/bun:1.3-slim"
+      org.opencontainers.image.base.name="oven/bun:1.4-slim"
