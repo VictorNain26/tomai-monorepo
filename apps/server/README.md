@@ -8,10 +8,8 @@ Backend Bun + Elysia.js pour la plateforme de tutorat IA francaise.
 # 1. Copier les variables d'environnement
 cp .env.example .env
 
-# 2. Configurer les cles requises dans .env
-# - BETTER_AUTH_SECRET (generer: openssl rand -base64 32)
-# - GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
-# - MISTRAL_API_KEY
+# 2. Remplir BETTER_AUTH_SECRET (openssl rand -base64 32) ; `pnpm run setup`
+#    a la racine fait 1 et 2, plus postgres et les migrations
 
 # 3. Demarrer depuis la racine du monorepo (PostgreSQL Docker + backend :3000 sur l'host)
 pnpm dev
@@ -79,23 +77,10 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 
 ## Environment Variables
 
-### Required
-
-| Variable | Description |
-|----------|-------------|
-| `BETTER_AUTH_SECRET` | Secret JWT (min 32 chars) |
-| `BETTER_AUTH_URL` | URL backend (http://localhost:3000) |
-| `GOOGLE_CLIENT_ID` | OAuth Google |
-| `GOOGLE_CLIENT_SECRET` | OAuth Google |
-| `MISTRAL_API_KEY` | API Mistral (chat, embeddings, vision, OCR, STT, TTS) |
-
-### Optional
-
-| Variable | Description |
-|----------|-------------|
-| `SCALEWAY_ACCESS_KEY` / `SCALEWAY_SECRET_KEY` | Scaleway Object Storage |
-| `SCALEWAY_BUCKET` / `SCALEWAY_REGION` | Bucket et region (fr-par) |
-| `PRONOTE_ENCRYPTION_KEY` | AES-256-GCM pour tokens Pronote |
+Requises pour booter : `DATABASE_URL` et `BETTER_AUTH_SECRET` (en production, aussi
+`BETTER_AUTH_URL` et `PRONOTE_ENCRYPTION_KEY`). Toutes les autres sont optionnelles : la feature concernée échoue à l'usage
+tant que sa variable manque (Google OAuth, Mistral, Scaleway, Pronote). Liste complète,
+défauts et contraintes : `src/config/env.ts` ; gabarit commenté : `.env.example`.
 
 ### Dev seed (`pnpm seed`)
 
@@ -120,7 +105,7 @@ src/
 │   ├── connection.ts           # Pool PostgreSQL
 │   ├── migrate.ts              # Runtime migrator
 │   └── repositories/           # Data access layer
-├── lib/                        # Auth, encryption, plan cache, observability
+├── lib/                        # Auth, encryption, observability
 ├── middleware/                  # Auth, rate-limit, memory monitor
 ├── routes/                     # API endpoints
 │   ├── chat-message.routes.ts  # SSE streaming

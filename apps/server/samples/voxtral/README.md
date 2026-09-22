@@ -1,6 +1,6 @@
 # Samples voix Voxtral TTS
 
-3 échantillons audio FR (~5s chacun) utilisés une seule fois pour créer les voix cloneées Voxtral via `scripts/voxtral-create-voices.ts`.
+3 échantillons audio FR (~5 s chacun) gardés pour cloner une voix Voxtral par niveau scolaire. Rien ne les utilise aujourd'hui : `src/services/voxtral-tts.service.ts` lit tout avec la voix preset `fr_marie_neutral`, et aucun script de création de voix n'existe dans le dépôt. Le clonage par niveau est rattaché au lot 3 (TTS, voir `docs/superpowers/suivi.md`).
 
 ## Fichiers
 
@@ -17,25 +17,10 @@ Ces samples sont des **voix synthétiques** générées par [Piper TTS](https://
 
 **Pourquoi des voix synthétiques** : pas de problème de consentement (pas de personne réelle), libres pour usage commercial, qualité homogène entre les 3 voix.
 
-## ⚠️ Statut « pour l'instant »
+## Statut « pour l'instant »
 
 Ces voix sont un *placeholder* le temps de valider la stack TTS. Pour la production réelle :
 - Enregistrer 3 voix de comédien voice-over sous contrat (~150-300€/voix sur Voxa, Bodalgo, BackStage), ou
 - Faire valider les voix Piper actuelles par le product owner (qualité, ton, branding Tom).
 
 Ne pas committer de samples grattés sur YouTube/podcasts : violation droit à l'image vocale + RGPD (la voix est une donnée biométrique).
-
-## Workflow d'usage
-
-```bash
-# Une seule fois, lors du setup d'un environnement
-cd apps/server
-bun run scripts/voxtral-create-voices.ts \
-  --primaire ./samples/voxtral/primaire.mp3 \
-  --college  ./samples/voxtral/college.mp3 \
-  --lycee    ./samples/voxtral/lycee.mp3
-
-# → Imprime les voice_id à coller dans VOXTRAL_VOICE_PRIMAIRE / COLLEGE / LYCEE
-```
-
-Les `voice_id` retournés sont stables : on les renseigne dans les secrets Koyeb une fois pour toutes, puis le service `voxtral-tts.service.ts` les sélectionne automatiquement selon le `schoolLevel` à chaque synthèse.
