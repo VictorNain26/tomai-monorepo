@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runChecks, loadConfig, buildChecks } from './doctor-checks.mjs';
 
-const CFG = { serverUrl: 'http://s:3000' };
+const CFG = { serverUrl: 'http://s:3000', mistralServerUrl: 'https://api.eu.mistral.ai', mistralModel: 'mistral-small-2603' };
 
 function ctxWith({ exec, fetchFn }) {
   return { config: CFG, exec: exec ?? (() => ({ ok: true, stdout: '' })), fetchFn: fetchFn ?? (async () => ({ ok: true, status: 200, json: async () => ({}) })) };
@@ -49,6 +49,12 @@ test('runChecks: un SKIP est visible et ne compte pas comme FAIL', async () => {
 test('loadConfig: défauts localhost quand rien fourni', () => {
   const cfg = loadConfig({ processEnv: {}, readEnvFile: () => ({}) });
   assert.equal(cfg.serverUrl, 'http://localhost:3000');
+});
+
+test('loadConfig: Mistral en UE sur Small 4 par défaut', () => {
+  const cfg = loadConfig({ processEnv: {}, readEnvFile: () => ({}) });
+  assert.equal(cfg.mistralServerUrl, 'https://api.eu.mistral.ai');
+  assert.equal(cfg.mistralModel, 'mistral-small-2603');
 });
 
 test('loadConfig: .env server prioritaire sur défaut, processEnv prioritaire sur .env', () => {
@@ -163,16 +169,20 @@ test('check mistral chat réel: FAIL si HTTP non-ok (clé invalide)', async () =
 });
 
 test('check mistral chat réel: PASS si la complétion renvoie des choices', async () => {
+  let sentUrl = null;
   let sentBody = null;
   const ctx = {
     config: { ...CFG, mistralKey: 'sk-xxx' },
     exec: () => ({}),
     fetchFn: async (url, opts) => {
+      sentUrl = url;
       sentBody = opts?.body ? JSON.parse(opts.body) : null;
       return { ok: true, json: async () => ({ choices: [{ message: { content: 'pong' } }] }) };
     },
   };
   const checks = buildChecks(ctx, { full: true, e2e: true });
-  await byName(checks, 'mistral').run(); // ne lève pas
-  assert.equal(sentBody?.model, 'ministral-3b-latest', 'doit envoyer le modèle pinné ministral-3b-latest');
+  await byName(checks, 'mistral').run();
+  assert.equal(sentUrl, 'https://api.eu.mistral.ai/v1/chat/completions');
+  assert.equal(sentBody?.model, 'mistral-small-2603');
+  assert.equal(sentBody?.reasoning_effort, 'none');
 });

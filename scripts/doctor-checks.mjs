@@ -54,6 +54,8 @@ export function loadConfig({
     pgContainer:     env('PG_CONTAINER')        ?? 'tomai-postgres-dev',
     composeFile:     join(rootDir, 'docker-compose.yml'),
     mistralKey:      env('MISTRAL_API_KEY'),
+    mistralServerUrl: env('MISTRAL_SERVER_URL') ?? 'https://api.eu.mistral.ai',
+    mistralModel:     env('MISTRAL_MODEL')      ?? 'mistral-small-2603',
   };
 }
 
@@ -159,24 +161,25 @@ function checkMigrations(ctx) {
 
 // ─── Mistral chat check (e2e only) ───────────────────────────────────────────
 
-// Preuve réelle du chemin LLM : un chat completion 1 token sur le modèle le
-// moins cher. Coût par run ≈ négligeable ; échoue sur clé invalide, quota
-// épuisé ou panne API — ce qu'une simple présence de clé ne prouve pas.
+// Preuve réelle du chemin LLM : un chat completion 1 token sur le modèle et
+// l'endpoint du serveur. Échoue sur clé invalide, quota épuisé, modèle absent
+// de l'endpoint ou panne API — ce qu'une simple présence de clé ne prouve pas.
 function checkMistralReal(ctx) {
-  return { name: 'mistral chat réel (ministral-3b, 1 token)', run: async () => {
+  return { name: `mistral chat réel (${ctx.config.mistralModel}, ${ctx.config.mistralServerUrl}, 1 token)`, run: async () => {
     if (!ctx.config.mistralKey) {
       throw new Error('MISTRAL_API_KEY absente — définis-la dans apps/server/.env ou ton shell');
     }
-    const res = await ctx.fetchFn('https://api.mistral.ai/v1/chat/completions', {
+    const res = await ctx.fetchFn(`${ctx.config.mistralServerUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${ctx.config.mistralKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'ministral-3b-latest',
+        model: ctx.config.mistralModel,
         messages: [{ role: 'user', content: 'ping' }],
         max_tokens: 1,
+        reasoning_effort: 'none',
       }),
     });
-    if (!res.ok) throw new Error(`mistral chat -> HTTP ${res.status} (clé invalide, quota ou panne API)`);
+    if (!res.ok) throw new Error(`mistral chat -> HTTP ${res.status} (clé invalide, quota, modèle absent de l'endpoint ou panne API)`);
     const body = await res.json();
     const message = body?.choices?.[0]?.message;
     if (typeof message?.content !== 'string') throw new Error('mistral chat: réponse sans message.content (shape inattendue)');
