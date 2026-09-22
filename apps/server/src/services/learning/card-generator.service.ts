@@ -41,7 +41,7 @@ import { logger } from '../../lib/observability.js';
 import type { CardGenerationParams, ParsedCard } from './types.js';
 
 // Prompt cache sur l'instruction de base + adaptations cycle/sujet.
-const CARD_GENERATOR_PROMPT_VERSION = '2026-05-18';
+const CARD_GENERATOR_PROMPT_VERSION = '2026-09-22';
 const CARD_GENERATOR_CACHE_KEY = `card-generator-${CARD_GENERATOR_PROMPT_VERSION}`;
 
 // ============================================================================
@@ -62,10 +62,6 @@ interface CardGenerationError {
   /** Debug info - ONLY logged server-side, NEVER sent to client */
   _debug?: { actualError: string };
 }
-
-// CARD_GENERATOR_PROMPT_VERSION : déjà défini en haut du fichier comme const
-// pour le prompt cache key. Conservé en export pour compat.
-;
 
 // ============================================================================
 // PROMPT BUILDER
@@ -107,10 +103,7 @@ ${getTemplatesForTypes(recommendedTypes)}`);
     parts.push(KATEX_INSTRUCTIONS);
   }
 
-  // 7. Instructions finales de génération
-  // Créer une liste explicite avec guillemets pour éviter toute ambiguïté
-  const quotedTypes = recommendedTypes.map(t => `"${t}"`).join(' | ');
-
+  // 6. Instructions finales de génération
   parts.push(`## GÉNÉRATION
 **Matière**: ${subject}
 **Niveau**: ${level}
@@ -118,31 +111,7 @@ ${getTemplatesForTypes(recommendedTypes)}`);
 
 Génère exactement ${cardCount} cartes.
 
-**FORMAT JSON OBLIGATOIRE** - Chaque carte DOIT avoir cette structure exacte:
-\`\`\`json
-[
-  {
-    "cardType": "vrai_faux",
-    "content": { "statement": "...", "isTrue": true, "explanation": "..." }
-  },
-  {
-    "cardType": "qcm",
-    "content": { "question": "...", "options": [...], "correctIndex": 0, "explanation": "..." }
-  }
-]
-\`\`\`
-
-**ATTENTION CRITIQUE - cardType**:
-Le champ "cardType" DOIT être EXACTEMENT une de ces valeurs (snake_case, en minuscules):
-${quotedTypes}
-
-⚠️ N'utilise JAMAIS:
-- camelCase (vraiFaux, fillBlank) → INCORRECT
-- kebab-case (vrai-faux, fill-blank) → INCORRECT
-- Anglais (true_false, mcq) → INCORRECT
-- Autres variantes → INCORRECT
-
-Règles: cardType en snake_case EXACT, correctIndex=0-based, isTrue=boolean (pas string).`);
+Règles: correctIndex=0-based, isTrue=boolean (pas string).`);
 
   return parts.join('\n\n');
 }
