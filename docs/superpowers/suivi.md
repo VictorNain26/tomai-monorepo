@@ -12,12 +12,28 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 - **Dernière mise à jour :** 2026-09-22
 - **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** continuer la PR A (branche `chore/remove-mobile-app`) à la
-  première tâche sans ligne `complete` dans son registre SDD
-  `.superpowers/sdd/2026-09-22-lot-0-a-suppression-mobile/progress.md` (git-ignoré, local).
-  Exécution : skill `superpowers:subagent-driven-development` sur
-  `plans/2026-09-22-lot-0-a-suppression-mobile.md` ; briefs et règles déjà extraits dans ce
-  dossier.
+- **Prochaine action :** faire relire et merger la PR A (merge commit), puis démarrer la PR B
+  (branche `build/upgrade-all-deps`, plan `plans/2026-09-22-lot-0-b-dependances.md`, tâches
+  B.2 → B.9) avec le skill `superpowers:subagent-driven-development`.
+
+## Reporté depuis la PR A
+
+Constats hors périmètre de A, à traiter dans la PR indiquée :
+
+- **PR D** : textes de la landing qui annoncent une app iOS/Android et un paiement App Store /
+  Google Play (`cgu/page.tsx`, `confidentialite/page.tsx`, `faq-data.ts`, `features.tsx`,
+  `pricing.tsx`). Routes `PUT|GET|DELETE /api/pronote/credentials` décrites « device-first »
+  et commentaires du même âge (`pronote.schema.ts:18`, `pronote-sync.service.ts:5`) ; `GET`
+  renvoie les identifiants déchiffrés au client. `tool-executor.test.ts` et
+  `chat-tools.test.ts` échouent quand on les lance ensemble (pollution du registre de modules
+  Bun, déjà présente sur `main`).
+- **PR B** : l'override `'nanoid@5'` résout `nanoid@6` et son commentaire est faux ;
+  `.vscode/extensions.json` recommande encore `ruff`/`python`. La copie en `ArrayBuffer` de
+  `encryption.ts:51-53,72-73` est à revérifier.
+- **Lot 3** : colonnes RevenueCat de `family_billing`, enum `billing_status` et commentaires
+  de `billing.schema.ts` (dont `:179`) ; `app-guide-data.ts` à réécrire avec la navigation
+  web. Le code de `BillingService` et `plan-cache` se retrouve avec
+  `git log --diff-filter=D -- apps/server/src/services/billing/`.
 
 ## Bloquants
 
@@ -31,7 +47,7 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 |---|---|---|---|---|
 | Docs : specs, roadmap, plan du lot 0, ce suivi | — | `docs/rewrite-specs-and-plans` | mergée | #306 |
 | B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | mergée | #307 |
-| A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | en cours : A.1-A.7 faites et relues | — |
+| A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | terminée, PR à ouvrir | — |
 | B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | à faire | — |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | à faire | — |
 | D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | à faire | — |
@@ -84,3 +100,5 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   migration `0027`, appliquée en local uniquement) faite et relue, commit `8b91890`.
 - **2026-09-22** — PR A : A.7 (doc et configuration Claude sans le mobile) faite et relue,
   commit `745e216`. Historique réécrit avec accord : les deux commits de A.6 fusionnés.
+- **2026-09-22** — PR A : A.8 (validation de fin de PR : 13 commandes à exit 0, aucun reste
+  injustifié) faite ; relecture finale de toute la branche sans finding bloquant.
