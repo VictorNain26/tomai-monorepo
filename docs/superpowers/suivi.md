@@ -12,10 +12,10 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 - **Dernière mise à jour :** 2026-09-22
 - **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** merger la PR B (build/upgrade-all-deps) une fois la CI verte, en
-  vérifiant dans le log que `pnpm/action-setup` installe bien pnpm 12.5.1 ; puis démarrer la
-  PR C (`plans/2026-09-22-lot-0-c-mistral-small-4.md`, branche `feat/mistral-small-4`) avec
-  le skill `superpowers:subagent-driven-development`.
+- **Prochaine action :** démarrer la PR C (`plans/2026-09-22-lot-0-c-mistral-small-4.md`,
+  branche `feat/mistral-small-4`) avec le skill `superpowers:subagent-driven-development`.
+  Deux étapes manuelles de C.1 attendent l'utilisateur : sonde curl de l'endpoint UE et
+  demande de Zero Data Retention.
 
 ## Reporté depuis les PR A et B
 
@@ -35,11 +35,19 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
   `scripts/setup.mjs` : le parcours du nouveau dev est cassé (`README.md:10`,
   `.claude/skills/dev-bootstrap/SKILL.md`, `scripts/dev.mjs:26`, `scripts/doctor*.mjs`,
   `.claude/hooks/block-destructive-db.sh:52`) ; remplacer par `pnpm run setup`.
+- **PR D (depuis la PR B)** : le workflow Renovate reste vert quand le token est refusé
+  (401 `bad-credentials` → `"result": "external-host-error"`, exit 0, constaté le 2026-09-22
+  sur le run 35727149916). Un token expiré passerait inaperçu : faire échouer le job sur ce
+  résultat (option à vérifier dans la doc Renovate avant d'écrire la config).
 - **PR E (depuis la PR B)** : champs morts `IAppUser.parentId` (`packages/api/src/types.ts:23`)
   et `ElysiaAuthenticatedUser.parentId` (`apps/server/src/types/index.ts:17`), exemple périmé
   `pool-limiter.ts:57` ; `react@19.2.3` et un second `next` résolus comme peers optionnels de
   better-auth côté serveur (`pnpm dedupe` à tenter) ; indice knip sur `ignoreBinaries` de
   `apps/server/knip.json`.
+- **Plafonds de version à lever à la main** (Renovate ne les proposera pas) : TypeScript
+  `<6.1.0` tant que `typescript-eslint` exige `typescript <6.1.0` (TS 7 sans API JS avant
+  la 7.1, issue typescript-eslint #10940) ; `@types/node` `<25.0.0` tant que le runtime est
+  Node 24 (Vercel ne propose que 24.x, 22.x, 20.x ; Node 26 LTS le 2026-10-28).
 - **Lot 3** : colonnes RevenueCat de `family_billing`, enum `billing_status` et commentaires
   de `billing.schema.ts` (dont `:179`) ; `app-guide-data.ts` à réécrire avec la navigation
   web. Le code de `BillingService` et `plan-cache` se retrouve avec
@@ -58,7 +66,7 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 | Docs : specs, roadmap, plan du lot 0, ce suivi | — | `docs/rewrite-specs-and-plans` | mergée | #306 |
 | B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | mergée | #307 |
 | A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | mergée | #308 |
-| B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | ouverte | #309 |
+| B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | mergée | #309 |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | à faire | — |
 | D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | à faire | — |
 | E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | à faire | — |
@@ -72,8 +80,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 |---|---|---|
 | Retirer `Expo deps check` et `Mobile bundle` des required checks de « Protect main » | #306, puis A | fait |
 | Confirmer qu'aucune donnée de `device_push_tokens` / `webhook_events` n'est à garder | A.6 | fait (DROP local autorisé) |
-| Confirmer la suppression de l'ancien volume Docker Postgres 16 local | B.6 | à faire |
-| Créer le secret `RENOVATE_TOKEN`, retirer l'app Mend du dépôt, vérifier la cause côté Mend | B.8 | à faire |
+| Confirmer la suppression de l'ancien volume Docker Postgres 16 local | B.6 | fait (volume supprimé) |
+| Créer le secret `RENOVATE_TOKEN`, retirer l'app Mend du dépôt, vérifier la cause côté Mend | B.8 | fait (app désinstallée, run manuel `done`, Dependency Dashboard #310) |
 | Mettre à jour les plugins Claude Code | B.9 | à faire |
 | Sonde curl de l'endpoint UE avec la clé Mistral | C.1 | à faire |
 | Demander le Zero Data Retention au support Mistral | C.1 | à faire |
@@ -123,3 +131,6 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 - **2026-09-22** — PR B : B.8 (Renovate auto-hébergé) faite et relue ; relecture finale
   sans finding bloquant ; validation de fin de PR verte (`outdated` : seuls TypeScript 7 et
   `@types/node` 26, écarts voulus).
+- **2026-09-22** — PR B mergée (#309, merge commit). Ancien volume Postgres 16 supprimé,
+  app Renovate hébergée désinstallée, secret `RENOVATE_TOKEN` créé : le run manuel de
+  Renovate termine `done` et ouvre le Dependency Dashboard (#310).
