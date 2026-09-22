@@ -12,8 +12,8 @@
 import './_helpers/mistral-env';
 import { describe, it, expect, afterEach } from 'bun:test';
 import { z } from 'zod';
-import { tool, type ToolSet } from 'ai';
-import { MockLanguageModelV4, simulateReadableStream } from 'ai/test';
+import { tool, type ToolSet, simulateReadableStream } from 'ai';
+import { MockLanguageModelV4 } from 'ai/test';
 import { streamChat, type ChatStreamParams } from '../services/chat/ai-chat.service.js';
 
 const baseParams: Omit<ChatStreamParams, 'model' | 'tools'> = {
