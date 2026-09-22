@@ -1,4 +1,5 @@
 import { describe, it, expect, afterAll } from 'bun:test';
+import { trace } from '@opentelemetry/api';
 
 const received: { path: string; authorization: string | null }[] = [];
 const collector = Bun.serve({
@@ -32,7 +33,11 @@ describe('otel', () => {
     expect(process.listenerCount('SIGINT')).toBe(int);
   });
 
-  it('exposes an awaitable shutdown', async () => {
-    expect(shutdownOtel()).resolves.toBeUndefined();
+  it('sends OTEL_EXPORTER_OTLP_HEADERS intact: URL-decoded, "=" padding kept', async () => {
+    trace.getTracer('otel-test').startSpan('probe').end();
+    await shutdownOtel();
+
+    const traceRequest = received.find((r) => r.path === '/api/public/otel/v1/traces');
+    expect(traceRequest?.authorization).toBe('Basic cGs6c2s=');
   });
 });
