@@ -15,9 +15,10 @@ Lors d'une compaction, préserver : PR en cours, branche, chemin du registre SDD
 pnpm install                      # Node 24+, pnpm 12+
 pnpm dev                          # infra Docker + server:3000 + landing:3001
 pnpm dev:down                     # arrêt de l'infra
-pnpm typecheck && pnpm lint       # validation, obligatoire avant commit
-pnpm test                         # tous les tests du workspace
-pnpm doctor                       # diagnostic de la stack
+pnpm typecheck && pnpm lint       # obligatoire avant tout commit
+pnpm test                         # tests serveur, aussi obligatoires si le serveur change
+pnpm test:scripts                 # tests de scripts/ et des hooks Claude
+pnpm run doctor                   # diagnostic de la stack
 pnpm doctor:e2e                   # diagnostic strict : un SKIP = échec
 pnpm seed                         # comptes parent + élève, dev uniquement
 ```
@@ -82,4 +83,5 @@ connaître évite de croire couvert ce qui ne l'est pas :
   `*.p8`, `*.p12`, `*.pem` — sont bloqués par des règles distinctes.
 - **lefthook** : lint + typecheck en pre-commit, tests + build en pre-push.
 
-Ne jamais contourner un hook qui échoue (`--no-verify` est deny-listé) : traiter la cause.
+Ne jamais contourner un hook qui échoue (`--no-verify` est deny-listé dans les settings
+utilisateur, pas dans ceux du dépôt) : traiter la cause.
