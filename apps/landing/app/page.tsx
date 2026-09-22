@@ -1,6 +1,7 @@
 import { Hero } from "@/components/sections/hero";
 import { Problem } from "@/components/sections/problem";
-import { Features } from "@/components/sections/features";
+import { Parents } from "@/components/sections/parents";
+import { Trust } from "@/components/sections/trust";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { InputModes } from "@/components/sections/input-modes";
 import { Pricing } from "@/components/sections/pricing";
@@ -29,7 +30,8 @@ export default function HomePage() {
       <Problem />
       <HowItWorks />
       <InputModes />
-      <Features />
+      <Parents />
+      <Trust />
       <Pricing />
       <FAQ />
       <CTA />
