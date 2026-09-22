@@ -2,7 +2,6 @@
  * @repo/api - Eden Treaty Client (type-safe e2e)
  *
  * Type-safe API client using Eden Treaty + Elysia route inference.
- * Compatible Web (Vite) et Mobile (React Native/Expo).
  */
 
 import { treaty } from '@elysiajs/eden';
@@ -21,39 +20,6 @@ export interface ApiError extends Error {
 
 /** Callback appelé sur erreur 401 (session invalide) */
 export type UnauthorizedHandler = () => void;
-
-// ============================================================================
-// CONFIGURATION UPLOAD
-// ============================================================================
-
-export const UPLOAD_CONFIG = {
-  maxSize: 10 * 1024 * 1024, // 10MB (aligned with backend)
-  allowedTypes: [
-    // Images
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/heic',
-    'image/heif',
-    // Audio
-    'audio/wav',
-    'audio/x-wav',
-    'audio/mpeg',
-    'audio/mp3',
-    'audio/mp4',
-    'audio/aac',
-    'audio/ogg',
-    'audio/webm',
-    'audio/flac',
-    'audio/aiff',
-    'audio/x-aiff',
-    // Documents
-    'application/pdf',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/msword',
-    'text/plain',
-  ],
-} as const;
 
 // ============================================================================
 // UNAUTHORIZED HANDLER
@@ -92,16 +58,8 @@ export function getTreaty(): TreatyClient {
 
   treatyClient = treaty<App>(config.baseUrl, {
     fetch: {
-      credentials: typeof config.cookieProvider === 'function' ? 'omit' : 'include',
+      credentials: 'include',
       mode: 'cors',
-    },
-    headers: () => {
-      const headers: Record<string, string> = {};
-      if (config.cookieProvider) {
-        const cookie = config.cookieProvider();
-        if (cookie) headers['Cookie'] = cookie;
-      }
-      return headers;
     },
     onResponse: (response) => {
       if (response.status === 401 && unauthorizedHandler) {

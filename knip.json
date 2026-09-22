@@ -33,11 +33,6 @@
         "src/**/*.ts"
       ]
     },
-    "packages/tokens": {
-      "project": [
-        "src/**/*.ts"
-      ]
-    },
     "packages/ui": {
       "project": [
         "src/**/*.{ts,tsx}"
