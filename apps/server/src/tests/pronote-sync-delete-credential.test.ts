@@ -153,12 +153,16 @@ mock.module('../db/schema', () => ({
 
 // Import real route AFTER all mocks are registered
 const { pronoteSyncRoutes } = await import('../routes/pronote-sync.routes');
+const { errorHandlerMiddleware } = await import('../middleware/error-handler.middleware');
 
 // ============================================
 // Test app
 // ============================================
 
-const app = new Elysia().use(pronoteSyncRoutes);
+// app.ts always composes errorHandlerMiddleware ahead of the routes; without
+// it here, Elysia's own default validation response (422) would leak through
+// instead of the production 400 envelope.
+const app = new Elysia().use(errorHandlerMiddleware).use(pronoteSyncRoutes);
 
 // ============================================
 // Helpers
@@ -270,16 +274,14 @@ describe('DELETE /api/pronote/credentials/:id', () => {
   // Non-UUID id → 400 before the service is called
   // ------------------------------------
 
-  it('non-UUID credential id → validation error before the service is called', async () => {
+  it('non-UUID credential id → 400', async () => {
     currentUser = { id: PARENT_USER_ID };
 
     const res = await app.handle(del('/api/pronote/credentials/not-a-uuid'));
 
-    // This test builds an isolated Elysia app around pronoteSyncRoutes only,
-    // without app.ts's global error handler that normalizes VALIDATION to
-    // 400 (see api-endpoints.test.ts for that path) — Elysia's own default
-    // validation response is 422.
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('VALIDATION_ERROR');
     expect(mockDeleteCredentialById).not.toHaveBeenCalled();
   });
 });
