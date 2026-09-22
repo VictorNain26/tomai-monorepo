@@ -31,7 +31,7 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 |---|---|---|---|---|
 | Docs : specs, roadmap, plan du lot 0, ce suivi | — | `docs/rewrite-specs-and-plans` | mergée | #306 |
 | B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | mergée | #307 |
-| A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | en cours : A.1 faite et relue | — |
+| A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | en cours : A.1-A.2 faites et relues | — |
 | B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | à faire | — |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | à faire | — |
 | D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | à faire | — |
@@ -72,3 +72,5 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   refusé à l'agent par le classifieur de permissions : étape laissée à l'utilisateur.
 - **2026-09-22** — Ruleset corrigé, #306 et #307 mergées. PR A démarrée : A.1 (suppression
   de `apps/mobile`) faite et relue, commit `41d00f3`.
+- **2026-09-22** — PR A : A.2 (webhook RevenueCat et billing serveur retirés) faite et
+  relue, commit `3d3175a`.
