@@ -139,7 +139,7 @@ export default function RootLayout({
         <MotionProvider>
           <div className="relative flex min-h-screen flex-col">
             <div aria-hidden="true" className="bg-notebook pointer-events-none fixed inset-0 -z-50" />
-            <div aria-hidden="true" className="pointer-events-none fixed inset-y-0 left-4 -z-40 hidden w-px bg-annotation/40 md:block" />
+            <div aria-hidden="true" className="pointer-events-none fixed inset-y-0 left-6 -z-40 hidden w-0.5 bg-annotation/70 md:block lg:left-10" />
             <Header />
             <main id="main-content" className="flex-1">
               {children}
