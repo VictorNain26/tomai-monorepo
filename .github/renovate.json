@@ -90,7 +90,7 @@
     { "description": "Elysia + plugins.", "matchPackageNames": ["elysia", "@elysiajs/**"], "groupName": "elysia" },
     { "description": "ESLint toolchain.", "matchPackageNames": ["@typescript-eslint/**", "typescript-eslint", "eslint", "@eslint/**"], "groupName": "eslint" },
     { "description": "OpenTelemetry packages move in lockstep.", "matchPackageNames": ["@opentelemetry/**"], "groupName": "opentelemetry" },
-    { "description": "Vercel AI SDK core and providers share provider-utils.", "matchPackageNames": ["ai", "@ai-sdk/**"], "groupName": "ai-sdk", "labels": ["dependencies", "ai-stack"] },
+    { "description": "Vercel AI SDK core, providers and @ai-sdk/otel in one branch: they share provider-utils, and @ai-sdk/otel depends on the exact `ai` version, so bumping one alone installs a second copy of `ai`.", "matchPackageNames": ["ai", "@ai-sdk/**"], "groupName": "ai-sdk", "labels": ["dependencies", "ai-stack"] },
     { "description": "Mistral SDK is critical (EU sovereignty): isolated and reviewed.", "matchPackageNames": ["@mistralai/mistralai"], "groupName": "mistral", "labels": ["dependencies", "ai-stack"], "reviewers": ["VictorNain26"] },
     { "description": "Radix UI primitives.", "matchPackageNames": ["@radix-ui/**"], "groupName": "radix-ui" },
     { "description": "Tailwind toolchain.", "matchPackageNames": ["tailwindcss", "tailwind-merge", "@tailwindcss/**"], "groupName": "tailwind" },

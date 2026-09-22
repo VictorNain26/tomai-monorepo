@@ -5,61 +5,30 @@
  * Utilisé par la mémoire épisodique (recherche vectorielle pgvector).
  */
 
-import { Mistral } from '@mistralai/mistralai';
 import { logger } from '../lib/observability.js';
-import { withTimeout } from '../lib/retry.js';
+import { getMistralSdk } from '../lib/ai/mistral-sdk.js';
 import { env } from '../config/env.js';
 
 // Configuration
-const MISTRAL_API_KEY = env.MISTRAL_API_KEY ?? '';
 const EMBEDDING_MODEL = env.MISTRAL_EMBED_MODEL;
 const EMBEDDING_DIM = 1024;
-const MISTRAL_TIMEOUT_MS = 30_000;
 
 // =============================================================================
 // Service
 // =============================================================================
 
 class MistralEmbeddingsService {
-  private client: Mistral | null = null;
-
-  /**
-   * Initialise le client Mistral (lazy)
-   */
-  private getClient(): Mistral {
-    if (!this.client) {
-      if (!MISTRAL_API_KEY) {
-        throw new Error('MISTRAL_API_KEY is required');
-      }
-
-      this.client = new Mistral({ apiKey: MISTRAL_API_KEY, serverURL: env.MISTRAL_SERVER_URL });
-
-      logger.info('Mistral client initialized', {
-        operation: 'mistral:init',
-        model: EMBEDDING_MODEL,
-        dimensions: EMBEDDING_DIM,
-      });
-    }
-
-    return this.client;
-  }
-
   /**
    * Génère un embedding pour une query
    * Le vecteur est normalisé pour cosine similarity
    */
   async embed(text: string): Promise<number[]> {
-    const client = this.getClient();
     const startTime = Date.now();
 
-    const response = await withTimeout(
-      client.embeddings.create({
-        model: EMBEDDING_MODEL,
-        inputs: [text],
-      }),
-      MISTRAL_TIMEOUT_MS,
-      'mistral:embed',
-    );
+    const response = await getMistralSdk().embeddings.create({
+      model: EMBEDDING_MODEL,
+      inputs: [text],
+    });
 
     const embedding = response.data[0]?.embedding;
     if (!embedding) {
@@ -89,17 +58,12 @@ class MistralEmbeddingsService {
       return [await this.embed(firstText)];
     }
 
-    const client = this.getClient();
     const startTime = Date.now();
 
-    const response = await withTimeout(
-      client.embeddings.create({
-        model: EMBEDDING_MODEL,
-        inputs: texts,
-      }),
-      MISTRAL_TIMEOUT_MS,
-      'mistral:embed-batch',
-    );
+    const response = await getMistralSdk().embeddings.create({
+      model: EMBEDDING_MODEL,
+      inputs: texts,
+    });
 
     const embeddings = response.data.map((item) => {
       if (!item.embedding) {

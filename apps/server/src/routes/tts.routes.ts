@@ -57,7 +57,6 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           userId: user.id,
           textLength: text.length,
           durationMs: Date.now() - startTime,
-          audioDurationMs: result.durationMs,
           severity: 'low' as const
         });
 
@@ -65,8 +64,7 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           success: true,
           audio: {
             data: result.audioData,
-            mimeType: result.mimeType,
-            durationMs: result.durationMs
+            mimeType: result.mimeType
           },
           meta: {
             textLength: text.length,

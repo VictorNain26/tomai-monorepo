@@ -57,6 +57,7 @@ class AutoTitleService {
         .replace('{assistantPreview}', assistantPreview);
 
       const raw = await generateText({
+        functionId: 'auto-title',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
         maxTokens: 64,

@@ -280,6 +280,7 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
     temperature: env.MISTRAL_TEMPERATURE,
     maxOutputTokens: env.MISTRAL_MAX_TOKENS,
+    maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
     providerOptions: {
       mistral: {
         parallelToolCalls: false,
@@ -287,10 +288,7 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
         promptCacheKey: params.sessionId,
       } satisfies MistralLanguageModelChatOptions,
     },
-    telemetry: {
-      isEnabled: true,
-      functionId: 'chat-stream',
-    },
+    telemetry: { functionId: 'chat-stream', recordInputs: false, recordOutputs: false },
     abortSignal: AbortSignal.timeout(env.CHAT_STREAM_TIMEOUT_MS),
   });
 }

@@ -907,6 +907,41 @@ describe('Mistral strict json_schema accepts our schemas', () => {
   (`grep -n "otel\|retry" src/integration-tests/api-endpoints.test.ts`). Si un mock de
   module supprimé y figure, le retirer.
 
+### Tâche E1.10 — usages dépréciés de l'AI SDK dans la route de chat
+
+**Files:** Modify `src/routes/chat-message.routes.ts:13,165,169`,
+`src/tests/chat-stream-route.test.ts`, `src/tests/ai-chat-service.test.ts`.
+
+Origine : `docs/superpowers/suivi.md`, section « Reporté ». Deux usages dépréciés
+dans ai 7.0.107 (`ai/dist/index.d.ts`, `StreamTextResult`) :
+
+- `totalUsage` : « @deprecated Use `usage` instead » (`:2743-2751`). Dans
+  `dist/index.js`, `get usage()` renvoie `this.totalUsage` : même valeur, la somme
+  des étapes.
+- la méthode d'instance `toUIMessageStream()` : « Use the standalone
+  `toUIMessageStream` helper from 'ai' with `result.stream` » (`:2852-2862`).
+  L'helper est déclaré en `:6184-6188`. La méthode d'instance ne fait que lui passer
+  `stream: this.stream`, `tools: this.tools` et les options de l'appelant. La route
+  passe donc le même `tools` qu'à `streamText`. Elle garde `sendReasoning: false`,
+  car l'helper vaut `true` par défaut : le raisonnement ne part jamais vers le
+  client (règle de la PR C).
+
+Comportement attendu : rien ne change pour le client (mêmes parts du UI message
+stream, aucun chunk de raisonnement), et le même usage est enregistré pour le quota
+et `cost_tracking`.
+
+- [ ] Réécrire le faux `streamChat` de `chat-stream-route.test.ts` : un vrai
+  `streamText` sur `MockLanguageModelV4`, une étape d'appel d'outil puis une étape
+  raisonnement + texte. Deux tests : le corps SSE ne contient aucune part
+  `reasoning`, et l'usage passé à `finishTurn` est égal à `result.usage`, sommé sur
+  les deux étapes. Vérifier qu'ils échouent avec `sendReasoning: true` ou avec
+  l'usage de la dernière étape seule.
+- [ ] Route : `writer.merge(toUIMessageStream({ stream: capturedResult.stream, tools, sendReasoning: false }))`
+  et `await capturedResult.usage`. Le test de service passe aussi à l'helper autonome.
+- [ ] `cd apps/server && bun run typecheck && bun run lint && bun run test && bun run test:integration`,
+  codes de sortie lus.
+- [ ] Commit : `refactor(chat): replace deprecated AI SDK stream and usage APIs`, suivi de la ligne Co-Authored-By.
+
 ---
 
 ## PR E2 — supprimer le code mort de l'infra serveur et remplacer l'outillage maison

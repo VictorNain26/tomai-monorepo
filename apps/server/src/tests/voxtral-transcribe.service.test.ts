@@ -18,6 +18,7 @@ mock.module('../config/env', () => ({
     MISTRAL_API_KEY: 'test-mistral-key',
     MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
     MISTRAL_STT_MODEL: 'voxtral-mini-2602',
+    MISTRAL_TIMEOUT: 50,
   },
 }));
 
@@ -39,9 +40,9 @@ function makeAudioBuffer(size = 8): ArrayBuffer {
 
 function mockFetchSuccess(text: string, model = 'voxtral-mini-2602') {
   return spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-    new Response(JSON.stringify({ text, model }), {
+    new Response(JSON.stringify({ model, text, language: null, usage: {} }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'content-type': 'application/json' },
     }),
   );
 }
@@ -82,8 +83,8 @@ describe('VoxtralTranscribeService', () => {
       await service.transcribe(makeAudioBuffer(), 'audio/webm');
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
-      const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe('https://api.eu.mistral.ai/v1/audio/transcriptions');
+      const [request] = fetchSpy.mock.calls[0] as [Request];
+      expect(request.url).toBe('https://api.eu.mistral.ai/v1/audio/transcriptions');
     });
 
     it('sends Authorization Bearer header', async () => {
@@ -92,10 +93,8 @@ describe('VoxtralTranscribeService', () => {
 
       await service.transcribe(makeAudioBuffer(), 'audio/webm');
 
-      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-      expect((init.headers as Record<string, string>)['Authorization']).toBe(
-        'Bearer test-mistral-key',
-      );
+      const [request] = fetchSpy.mock.calls[0] as [Request];
+      expect(request.headers.get('authorization')).toBe('Bearer test-mistral-key');
     });
 
     it('includes model=voxtral-mini-2602 in formData', async () => {
@@ -104,9 +103,24 @@ describe('VoxtralTranscribeService', () => {
 
       await service.transcribe(makeAudioBuffer(), 'audio/mp4');
 
-      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-      const body = init.body as FormData;
+      const [request] = fetchSpy.mock.calls[0] as [Request];
+      const body = await request.formData();
       expect(body.get('model')).toBe('voxtral-mini-2602');
+    });
+
+    it('preserves the real audio mimeType in the multipart file part', async () => {
+      fetchSpy = mockFetchSuccess('test');
+      const service = getVoxtralTranscribeService();
+
+      await service.transcribe(makeAudioBuffer(), 'audio/webm');
+
+      const [request] = fetchSpy.mock.calls[0] as [Request];
+      // Bun's Request#formData() doesn't reconstruct the per-part Content-Type
+      // (the Blob it returns always has type ""), so this reads the raw
+      // multipart body instead of relying on it.
+      const raw = await request.text();
+      const fileSection = raw.slice(raw.indexOf('name="file"'));
+      expect(fileSection).toContain('Content-Type: audio/webm');
     });
 
     it('defaults to language=fr', async () => {
@@ -115,8 +129,8 @@ describe('VoxtralTranscribeService', () => {
 
       await service.transcribe(makeAudioBuffer(), 'audio/mp4');
 
-      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-      const body = init.body as FormData;
+      const [request] = fetchSpy.mock.calls[0] as [Request];
+      const body = await request.formData();
       expect(body.get('language')).toBe('fr');
     });
 
@@ -126,8 +140,8 @@ describe('VoxtralTranscribeService', () => {
 
       await service.transcribe(makeAudioBuffer(), 'audio/mp4', { language: 'en' });
 
-      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-      const body = init.body as FormData;
+      const [request] = fetchSpy.mock.calls[0] as [Request];
+      const body = await request.formData();
       expect(body.get('language')).toBe('en');
     });
 
@@ -192,6 +206,21 @@ describe('VoxtralTranscribeService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Network failure');
+    });
+
+    it('aborts a hanging transcription request', async () => {
+      let captured: AbortSignal | undefined;
+      fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {
+        captured = input.signal;
+        return new Promise((_, reject) =>
+          input.signal.addEventListener('abort', () => reject(input.signal.reason)),
+        );
+      }) as unknown as typeof fetch);
+
+      const result = await getVoxtralTranscribeService().transcribe(makeAudioBuffer(), 'audio/webm');
+
+      expect(result.success).toBe(false);
+      expect(captured?.aborted).toBe(true);
     });
   });
 });

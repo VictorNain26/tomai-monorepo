@@ -7,6 +7,7 @@ mock.module('../config/env', () => ({
     MISTRAL_API_KEY: 'test-mistral-key',
     MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
     MISTRAL_TTS_MODEL: 'voxtral-mini-tts-2603',
+    MISTRAL_TIMEOUT: 50,
   },
 }));
 
@@ -20,28 +21,95 @@ describe('VoxtralTTSService', () => {
   });
 
   it('synthesises with the dated model on the configured endpoint', async () => {
-    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ audio_data: 'AAAA' }), { headers: { 'content-type': 'application/json' } }),
-    );
+    let request: Request | undefined;
+    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation((async (input: Request) => {
+      request = input;
+      return new Response(JSON.stringify({ audio_data: 'AAAA' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch);
 
     const result = await getVoxtralTTSService().synthesize('Bonjour');
 
     expect(result.success).toBe(true);
-    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://api.eu.mistral.ai/v1/audio/speech');
-    expect((JSON.parse(init.body as string) as { model: string }).model).toBe('voxtral-mini-tts-2603');
+    expect(request?.url).toBe('https://api.eu.mistral.ai/v1/audio/speech');
+    const body = (await request?.json()) as { model: string };
+    expect(body.model).toBe('voxtral-mini-tts-2603');
+  });
+
+  it('sends the chosen voice as voice_id and returns the base64 audio', async () => {
+    let body: Record<string, unknown> = {};
+    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation((async (input: Request) => {
+      body = (await input.json()) as Record<string, unknown>;
+      return new Response(JSON.stringify({ audio_data: 'QUJD' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch);
+
+    const result = await getVoxtralTTSService().synthesize('Bonjour', { voiceId: 'fr_marie_neutral' });
+
+    expect(body['voice_id']).toBe('fr_marie_neutral');
+    expect(body['voice']).toBeUndefined();
+    expect(result).toEqual({ success: true, audioData: 'QUJD', mimeType: 'audio/mpeg' });
   });
 
   it('uses the default voice fr_marie_neutral and sends no language field', async () => {
-    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ audio_data: 'AAAA' }), { headers: { 'content-type': 'application/json' } }),
-    );
+    let body: Record<string, unknown> = {};
+    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation((async (input: Request) => {
+      body = (await input.json()) as Record<string, unknown>;
+      return new Response(JSON.stringify({ audio_data: 'AAAA' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch);
 
     await getVoxtralTTSService().synthesize('Bonjour');
 
-    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    const body = JSON.parse(init.body as string) as Record<string, unknown>;
-    expect(body['voice']).toBe('fr_marie_neutral');
+    expect(body['voice_id']).toBe('fr_marie_neutral');
     expect('language' in body).toBe(false);
+  });
+
+  it('returns a failure on a non-2xx response', async () => {
+    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: 'invalid voice' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const result = await getVoxtralTTSService().synthesize('Bonjour');
+
+    expect(result.success).toBe(false);
+    expect(result.audioData).toBeUndefined();
+  });
+
+  it('returns a generic error without the upstream response body', async () => {
+    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: 'upstream-detail: voice fr_x unknown for org 42' }), {
+        status: 422,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const result = await getVoxtralTTSService().synthesize('Bonjour');
+
+    expect(result.error).toBe('Mistral TTS API error: 422');
+  });
+
+  it('aborts a hanging synthesis request', async () => {
+    let captured: AbortSignal | undefined;
+    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {
+      captured = input.signal;
+      return new Promise((_, reject) =>
+        input.signal.addEventListener('abort', () => reject(input.signal.reason)),
+      );
+    }) as unknown as typeof fetch);
+
+    const result = await getVoxtralTTSService().synthesize('Bonjour');
+
+    expect(result.success).toBe(false);
+    expect(captured?.aborted).toBe(true);
   });
 });
