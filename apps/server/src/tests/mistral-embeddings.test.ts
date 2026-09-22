@@ -25,8 +25,9 @@ describe('mistralEmbeddingsService timeout', () => {
       });
     }) as unknown as typeof fetch);
 
-    // eslint-disable-next-line @typescript-eslint/await-thenable -- bun:test .rejects.toThrow() is not typed as Promise but is awaitable
-    await expect(mistralEmbeddingsService.embed('bonjour')).rejects.toThrow();
+    const rejection = await mistralEmbeddingsService.embed('bonjour').catch((error: unknown) => error);
+
+    expect(rejection).toBeInstanceOf(Error);
     expect(captured?.aborted).toBe(true);
   });
 });
