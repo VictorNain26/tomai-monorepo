@@ -133,5 +133,12 @@ describe('Better Auth Configuration', () => {
     it('does not mount the Expo authorization proxy', () => {
       expect(apiMethods).not.toContain('expoAuthorizationProxy');
     });
+
+    it('does not mount the MCP plugin', () => {
+      // mcp() registered `getMcpSession` on better-auth 1.6 (`dist/plugins/mcp/index.mjs`,
+      // endpoint id "mcp"). Dropped in 1.7 (moved to @better-auth/mcp, needs jwt()
+      // + an OAuth provider this app doesn't have) — this guards the removal.
+      expect(apiMethods).not.toContain('getMcpSession');
+    });
   });
 });

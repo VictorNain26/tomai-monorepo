@@ -7,7 +7,7 @@ import {
   Plug,
   RefreshCcw,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { SectionHeader } from "../atoms/section-header";
 
 const FEATURES = [

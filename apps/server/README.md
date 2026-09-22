@@ -32,12 +32,12 @@ Documentation interactive auto-generee disponible en dev :
 
 | Composant | Technologie |
 |-----------|-------------|
-| Runtime | Bun 1.3 |
+| Runtime | Bun 1.4 |
 | Framework | Elysia.js 1.4 |
-| Database | PostgreSQL 16 + pgvector |
+| Database | PostgreSQL 18 + pgvector |
 | ORM | Drizzle ORM 0.45 |
 | Cache | MemoryCacheService (LRU in-memory avec TTL) |
-| Auth | Better Auth 1.6 + Google OAuth |
+| Auth | Better Auth 1.7 + Google OAuth |
 | AI Chat | Mistral (`mistral-medium-latest`, streaming + tools) |
 | Embeddings | `mistral-embed` 1024D (mémoire épisodique, pgvector) |
 | Stockage | Scaleway Object Storage (S3, RGPD France) |
@@ -73,7 +73,7 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 | Service | Port | Description |
 |---------|------|-------------|
 | backend | 3000 | API Elysia.js conteneurisee (profile: backend) |
-| postgres | 5432 | PostgreSQL 16 + pgvector |
+| postgres | 5432 | PostgreSQL 18 + pgvector |
 | drizzle-studio | 4983 | UI Database (profile: tools) |
 | adminer | 8080 | Client SQL (profile: tools) |
 

@@ -5,7 +5,6 @@
     ":semanticCommits",
     ":semanticCommitTypeAll(deps)",
     ":dependencyDashboard",
-    ":maintainLockFilesMonthly",
     "group:monorepos",
     "group:recommended",
     "helpers:pinGitHubActionDigests"
@@ -26,7 +25,6 @@
     "**/coverage/**",
     "**/.turbo/**"
   ],
-  "ignoreDeps": [],
   "major": {
     "dependencyDashboardApproval": true,
     "automerge": false,
@@ -35,18 +33,6 @@
     "prBodyNotes": [
       ":warning: **Major upgrade — human review required.** Renovate has linked release notes and migration guides above when available. Verify breaking changes locally before merging."
     ]
-  },
-  "minor": {
-    "automerge": true,
-    "automergeType": "pr",
-    "automergeStrategy": "merge-commit",
-    "minimumReleaseAge": "3 days"
-  },
-  "patch": {
-    "automerge": true,
-    "automergeType": "pr",
-    "automergeStrategy": "merge-commit",
-    "minimumReleaseAge": "3 days"
   },
   "lockFileMaintenance": {
     "enabled": true,
@@ -74,7 +60,7 @@
       "enabled": false
     },
     {
-      "description": "Auto-merge minor + patch once CI is green. 3-day minimumReleaseAge gives the community time to flag a freshly-published bug or supply-chain compromise (cf. node-ipc, polyfill.io incidents) before we automerge.",
+      "description": "Auto-merge minor + patch once CI is green, after a 3-day release age (supply-chain buffer).",
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true,
       "automergeType": "pr",
@@ -87,78 +73,31 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "dependencyDashboardApproval": true,
-      "addLabels": ["major"],
-      "prBodyColumns": ["Package", "Type", "Update", "Change", "Pending", "References"]
+      "addLabels": ["major"]
     },
     {
-      "description": "Group AWS SDK v3 packages together (one bump cycle covers all).",
-      "matchPackageNames": ["@aws-sdk/**"],
-      "groupName": "aws-sdk"
+      "description": "TypeScript 7 is blocked: typescript-eslint peer is typescript <6.1.0 until TS 7 ships an API. https://github.com/typescript-eslint/typescript-eslint/issues/10940",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<6.1.0"
     },
     {
-      "description": "Group Better Auth packages.",
-      "matchPackageNames": ["better-auth", "@better-auth/**"],
-      "groupName": "better-auth"
+      "description": "@types/node follows the Node runtime (.nvmrc, engines, Vercel). Raise together with the runtime.",
+      "matchPackageNames": ["@types/node"],
+      "allowedVersions": "<25.0.0"
     },
-    {
-      "description": "Group Drizzle ORM toolchain.",
-      "matchPackageNames": ["drizzle-orm", "drizzle-kit"],
-      "groupName": "drizzle"
-    },
-    {
-      "description": "Group Elysia + plugins.",
-      "matchPackageNames": ["elysia", "@elysiajs/**"],
-      "groupName": "elysia"
-    },
-    {
-      "description": "Group TypeScript-ESLint toolchain.",
-      "matchPackageNames": ["@typescript-eslint/**", "eslint", "@eslint/**"],
-      "groupName": "eslint"
-    },
-    {
-      "description": "Group Radix UI primitives (landing).",
-      "matchPackageNames": ["@radix-ui/**"],
-      "groupName": "radix-ui"
-    },
-    {
-      "description": "Group Tailwind toolchain.",
-      "matchPackageNames": ["tailwindcss", "tailwind-merge", "@tailwindcss/**"],
-      "groupName": "tailwind"
-    },
-    {
-      "description": "Group all DefinitelyTyped @types/* packages — devDeps only, low risk.",
-      "matchPackageNames": ["@types/**"],
-      "matchDepTypes": ["devDependencies"],
-      "groupName": "types",
-      "automerge": true,
-      "automergeType": "pr",
-      "automergeStrategy": "merge-commit"
-    },
-    {
-      "description": "Mistral SDK is critical (souverainete EU). Isolate so bumps stay reviewable.",
-      "matchPackageNames": ["@mistralai/mistralai"],
-      "groupName": "mistral",
-      "commitMessageTopic": "Mistral SDK",
-      "labels": ["dependencies", "ai-stack"],
-      "reviewers": ["VictorNain26"]
-    },
-    {
-      "description": "GitHub Actions: pin to digest, group together.",
-      "matchManagers": ["github-actions"],
-      "groupName": "github-actions",
-      "pinDigests": true,
-      "commitMessagePrefix": "chore(ci)"
-    },
-    {
-      "description": "Docker base images for the server.",
-      "matchManagers": ["dockerfile", "docker-compose"],
-      "groupName": "docker",
-      "commitMessagePrefix": "chore(docker)"
-    },
-    {
-      "description": "Pin React + React DOM together (catalog-managed).",
-      "matchPackageNames": ["react", "react-dom"],
-      "groupName": "react"
-    }
+    { "description": "AWS SDK v3 in one bump.", "matchPackageNames": ["@aws-sdk/**"], "groupName": "aws-sdk" },
+    { "description": "Better Auth packages together.", "matchPackageNames": ["better-auth", "@better-auth/**"], "groupName": "better-auth" },
+    { "description": "Drizzle ORM toolchain.", "matchPackageNames": ["drizzle-orm", "drizzle-kit"], "groupName": "drizzle" },
+    { "description": "Elysia + plugins.", "matchPackageNames": ["elysia", "@elysiajs/**"], "groupName": "elysia" },
+    { "description": "ESLint toolchain.", "matchPackageNames": ["@typescript-eslint/**", "typescript-eslint", "eslint", "@eslint/**"], "groupName": "eslint" },
+    { "description": "OpenTelemetry packages move in lockstep.", "matchPackageNames": ["@opentelemetry/**"], "groupName": "opentelemetry" },
+    { "description": "Vercel AI SDK core and providers share provider-utils.", "matchPackageNames": ["ai", "@ai-sdk/**"], "groupName": "ai-sdk", "labels": ["dependencies", "ai-stack"] },
+    { "description": "Mistral SDK is critical (EU sovereignty): isolated and reviewed.", "matchPackageNames": ["@mistralai/mistralai"], "groupName": "mistral", "labels": ["dependencies", "ai-stack"], "reviewers": ["VictorNain26"] },
+    { "description": "Radix UI primitives.", "matchPackageNames": ["@radix-ui/**"], "groupName": "radix-ui" },
+    { "description": "Tailwind toolchain.", "matchPackageNames": ["tailwindcss", "tailwind-merge", "@tailwindcss/**"], "groupName": "tailwind" },
+    { "description": "React runtime and types together.", "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"], "groupName": "react" },
+    { "description": "Sentry SDKs together.", "matchPackageNames": ["@sentry/**"], "groupName": "sentry" },
+    { "description": "GitHub Actions: pinned to digest, grouped.", "matchManagers": ["github-actions"], "groupName": "github-actions", "pinDigests": true, "commitMessagePrefix": "chore(ci)" },
+    { "description": "Docker images (server base, Postgres, tools).", "matchManagers": ["dockerfile", "docker-compose"], "groupName": "docker", "commitMessagePrefix": "chore(docker)" }
   ]
 }

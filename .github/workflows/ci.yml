@@ -83,7 +83,7 @@ jobs:
     # in CI instead of skipping on an unreachable DB. Deterministic + isolated.
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: pgvector/pgvector:0.8.6-pg18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

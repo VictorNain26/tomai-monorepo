@@ -50,7 +50,7 @@ bun run db:studio   # Interface visuelle
 ## Concurrence au deploy (advisory lock)
 
 Plusieurs instances Koyeb peuvent booter en parallèle et chacune lance
-`docker-entrypoint.sh` → `bun dist/migrate.js`. **`drizzle-orm` 0.45.2 ne pose
+`docker-entrypoint.sh` → `bun dist/migrate.js`. **`drizzle-orm` 0.45.3 ne pose
 aucun verrou de session** dans son migrateur `postgres-js` — vérifié dans le
 code installé : `node_modules/drizzle-orm/pg-core/dialect.js`, méthode
 `async migrate(migrations, session, config)` lit `lastDbMigration` puis

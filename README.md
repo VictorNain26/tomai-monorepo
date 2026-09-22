@@ -6,7 +6,7 @@ et intégration Pronote. Pré-lancement : aucun utilisateur en production.
 ## Démarrage
 
 ```bash
-pnpm install                 # Node 22+, pnpm 11+
+pnpm install                 # Node 24+, pnpm 12+
 pnpm setup                   # .env, BETTER_AUTH_SECRET, postgres, migrations Drizzle
 pnpm dev                     # infra Docker + server :3000 + landing :3001
 ```
@@ -36,9 +36,9 @@ packages/
 
 | Couche | Technologies |
 |--------|-------------|
-| Backend | Bun 1.3, Elysia 1.4, PostgreSQL 16 + pgvector, Drizzle ORM 0.45 |
-| Landing | Next.js 16, TailwindCSS 4, Framer Motion, `@repo/ui` (shadcn) |
-| Auth | Better Auth 1.6 + Google OAuth, comptes élèves par username |
+| Backend | Bun 1.4, Elysia 1.4, PostgreSQL 18 + pgvector, Drizzle ORM 0.45 |
+| Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
+| Auth | Better Auth 1.7 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |
 | IA | Mistral — chat, vision Pixtral, OCR, TTS et STT Voxtral. Stack 100 % EU |
 | Vie scolaire | Pronote via `pawnote`, **serveur uniquement** (lib GPL, tokens rotatifs) |

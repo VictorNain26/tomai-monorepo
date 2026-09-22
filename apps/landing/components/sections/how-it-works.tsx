@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageSquare, Lightbulb, GraduationCap, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Button } from "@repo/ui";
 import { SectionHeader } from "../atoms/section-header";
 

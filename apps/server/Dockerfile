@@ -1,25 +1,25 @@
 # ============================================================
 # TomAI Backend - Dockerfile (2026)
 # Multi-stage: Development + Production + Koyeb
-# Runtime: Bun 1.3 | Package Manager: pnpm
+# Runtime: Bun 1.4 | Package Manager: pnpm 12
 # Security: non-root, SHA-pinned base, healthchecks
 # ============================================================
 
 # Stage 1: BASE
-FROM oven/bun:1.3-slim AS base
+FROM oven/bun:1.4-slim AS base
 
 WORKDIR /app
 
-# Node.js 24 LTS (for pnpm) + system deps
-# SYNC: pnpm version must match packageManager in root package.json (pnpm@11.2.2)
+# Node.js 24 LTS (lifecycle scripts of allowBuilds packages) + pnpm + system deps
+# SYNC: pnpm version must match packageManager in root package.json (pnpm@12.5.1)
+# pnpm 12 is installed through npm: https://pnpm.io/installation (npm route needs Node >= 22.13)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
     && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
-    && corepack enable \
-    && corepack prepare pnpm@11.2.2 --activate \
+    && npm install -g pnpm@12.5.1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -143,4 +143,4 @@ CMD ["bun", "--smol", "dist/index.js"]
 LABEL org.opencontainers.image.title="TomAI Backend" \
       org.opencontainers.image.description="Bun + Elysia.js backend" \
       org.opencontainers.image.source="https://github.com/VictorNain26/tomai-monorepo" \
-      org.opencontainers.image.base.name="oven/bun:1.3-slim"
+      org.opencontainers.image.base.name="oven/bun:1.4-slim"

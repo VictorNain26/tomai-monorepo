@@ -3,7 +3,7 @@ packages:
   - packages/*
 
 # Supply-chain protection: chaque package qui veut exécuter un build script
-# doit être listé explicitement (pnpm 11 strictDepBuilds=true par défaut).
+# doit être listé explicitement (strictDepBuilds=true par défaut depuis pnpm 11+).
 # Tous les packages ici sont des libs officielles/matures qu'on trust pour
 # installer leurs binaires natifs.
 allowBuilds:
@@ -14,81 +14,27 @@ allowBuilds:
   sharp: true
 
 catalog:
-  '@radix-ui/react-slot': ^1.2.4
-  '@types/react': ~19.2.10
-  '@types/react-dom': ~19.2.3
+  '@radix-ui/react-slot': ^1.3.3
+  '@types/react': ~19.3.0
+  '@types/react-dom': ~19.3.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
-  eslint: ^10.4.1
-  lucide-react: ^1.17.0
-  react: 19.2.3
-  react-dom: 19.2.3
-  tailwind-merge: ^3.6.0
-  tailwindcss: ^4.3.0
+  eslint: ^10.11.0
+  lucide-react: ^1.47.0
+  react: ^19.3.0
+  react-dom: ^19.3.0
+  tailwind-merge: ^3.7.0
+  tailwindcss: ^4.3.3
   typescript: 6.0.3
 
 # Supply-chain protection: bloque l'install de packages publiés depuis <24h
-# (défaut pnpm 11).
+# (défaut depuis pnpm 11+).
 minimumReleaseAge: 1440
 
-# Migré depuis package.json#pnpm.overrides — pnpm 11 ne lit plus le champ "pnpm"
-# du package.json. Toutes les overrides doivent vivre ici.
+# Migré depuis package.json#pnpm.overrides — depuis pnpm 11+, ce champ "pnpm"
+# du package.json n'est plus lu. Toutes les overrides doivent vivre ici.
 overrides:
-  # kysely 0.29 moved DEFAULT_MIGRATION_TABLE/_LOCK_TABLE to the `kysely/migration`
-  # entry; better-auth's bundled kysely-adapter still imports them from the root,
-  # breaking the bun server build. Known upstream bug, still open:
-  # https://github.com/better-auth/better-auth/issues/9610
-  # Pin to the latest 0.28.x (last line that re-exports them from root) and drop
-  # this override once better-auth ships the fix.
-  kysely: 0.28.17
-  esbuild: '>=0.25.0'
-  fast-xml-parser: '>=5.3.8'
-  rollup: '>=4.59.0'
-  'eslint>minimatch': '>=3.1.4'
-  'eslint-plugin-react>minimatch': '>=3.1.4'
-  'glob>minimatch': '>=10.2.3'
-  '@typescript-eslint/typescript-estree>minimatch': '>=9.0.7'
-  'eslint>ajv': '>=6.14.0 <7.0.0'
-  file-type: '>=21.3.1'
-  underscore: '>=1.13.8'
-  # CVE fixes for transitive deps (GitHub Dependabot alerts). Drop once parents bump.
-  postcss: '>=8.5.18'
-  brace-expansion: '>=5.0.9'
-  # `pnpm audit --prod --audit-level high` fixes (2026-07-06 review). Patch/minor
-  # bumps of transitive deps via override; drop once the parent packages bump.
-  # @grpc/grpc-js <1.14.4: malformed request/compressed message can crash the
-  # process (via @opentelemetry/sdk-node's otlp-grpc exporters).
-  '@grpc/grpc-js': '1.14.4'
-  # protobufjs <=7.6.0: DoS via unbounded Any expansion during JSON conversion
-  # (via @grpc/grpc-js>@grpc/proto-loader). Pinned exact (not >=) — protobufjs
-  # 8.x is a major bump @grpc/proto-loader doesn't support yet.
-  protobufjs: '7.6.1'
-  # `pnpm audit --prod --audit-level high` fixes (2026-08-24). Advisories
-  # published after the 2026-07-17 green run; all transitive. Scoped by version
-  # range where a package resolves to several majors and only one is affected
-  # (syntax: https://pnpm.io/settings/dependency-resolution#overrides).
-  # nanoid <3.3.18: predictable IDs from a biased random pool. Only the 3.x
-  # copy is affected; the workspace also resolves 5.1.11, which must not be
-  # dragged back two majors.
-  'nanoid@3': '3.3.18'
-  # nanoid >=4.0.0 <5.1.16: non-secure generators loop forever on a negative
-  # size. Hits the 5.x copy (via @elysiajs/swagger), so both lines need a floor.
-  'nanoid@5': '>=5.1.16'
-  # sharp <0.35.0: out-of-bounds read in the bundled libvips.
-  # Floor raised to 0.35.4 for GHSA-rgj7-g3m4-5g8c (<0.35.4), via next.
-  sharp: '>=0.35.4'
-  # fast-uri >=3.0.0 <3.1.5: ReDoS in the URI parser (via @sentry/nextjs>ajv).
-  fast-uri: '>=3.1.5'
-  # @opentelemetry/propagator-jaeger <2.9.0: unbounded baggage parsing.
-  '@opentelemetry/propagator-jaeger': '>=2.9.0'
-  # `pnpm audit --prod --audit-level high` fixes (2026-09-16). All transitive.
-  # @xmldom/xmldom 0.8.x <0.8.15: XML injection / parser advisories
-  # (GHSA-w2rr-34g9-rvrj, GHSA-4w3w-2rp5-g8jm, GHSA-c7q8-3ch8-vqpv,
-  # GHSA-27p8-2357-5qqv, GHSA-8344-3jmq-59r6, GHSA-x4fp-j954-r2f4,
-  # GHSA-965w-775f-mr7g, GHSA-93r5-fhx6-vmg9, GHSA-6mj3-qw4j-hgrw,
-  # GHSA-g53g-w8rj-fmg7, GHSA-3px3-54cx-rmw9, GHSA-vr34-hp96-76pp), via
-  # mammoth (DOCX extraction, server).
-  '@xmldom/xmldom@0.8': '0.8.15'
-  # browserslist <=4.28.6: GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g (via
-  # @babel/helper-compilation-targets under @sentry/nextjs).
-  browserslist: '^4.28.7'
+  # GHSA-67mh-4wv8-2f99 (esbuild <0.25.0, dev-server request forwarding), via
+  # drizzle-kit>@esbuild-kit/esm-loader>@esbuild-kit/core-utils. Dev-only.
+  # Drop once drizzle-kit stops depending on @esbuild-kit.
+  '@esbuild-kit/core-utils>esbuild': '>=0.25.0'
