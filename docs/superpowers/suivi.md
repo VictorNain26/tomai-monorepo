@@ -12,10 +12,9 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 - **Dernière mise à jour :** 2026-09-22
 - **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** démarrer la PR C (`plans/2026-09-22-lot-0-c-mistral-small-4.md`,
-  branche `feat/mistral-small-4`) avec le skill `superpowers:subagent-driven-development`.
-  Deux étapes manuelles de C.1 attendent l'utilisateur : sonde curl de l'endpoint UE et
-  demande de Zero Data Retention.
+- **Prochaine action :** PR C (`plans/2026-09-22-lot-0-c-mistral-small-4.md`, branche
+  `feat/mistral-small-4`) implémentée, en revue ; merger PR C puis démarrer la PR D
+  (`plans/2026-09-22-lot-0-d-bugs.md`).
 
 ## Reporté depuis les PR A et B
 
@@ -61,12 +60,24 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
   de `billing.schema.ts` (dont `:179`) ; `app-guide-data.ts` à réécrire avec la navigation
   web. Le code de `BillingService` et `plan-cache` se retrouve avec
   `git log --diff-filter=D -- apps/server/src/services/billing/`.
+- **PR E** : deux copies de `@ai-sdk/provider` (4.0.17 et 4.0.2, erreurs IDE seulement,
+  `tsc` vert) à dédupliquer ; `capturedResult.totalUsage` déprécié dans
+  `chat-message.routes.ts` (même sémantique que `usage`) ; Voxtral TTS/STT via fetch maison
+  alors que `@mistralai/mistralai` 2.7.0 expose `audioSpeechComplete`/`audioVoices`.
+- **Lot 3 — TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues
+  avec `fr_marie_neutral` (seuls presets fr/en/gb existent ; es/de sans voix) ;
+  `/api/tts/voices` annonce encore ces langues.
+- **Lot 2** : le quota compte `totalTokens` (tokens cachés et de raisonnement inclus) ;
+  observation, antérieure à C.
+- **Surveillance** : `pronote.test.ts` live échoue en `PageUnavailableError` sur le compte
+  Pronote de test (antérieur à C).
 
 ## Bloquants
 
 | Bloquant | Effet | Qui | Comment lever |
 |---|---|---|---|
 | ~~`Expo deps check` échoue sur `main`~~ : Expo a publié des patchs SDK 56 (`expo ~56.0.22`, `expo-router ~56.2.21`…) | Required check rouge : aucune PR ne peut merger | Utilisateur | Levé le 2026-09-22 : les deux checks mobiles ne sont plus requis |
+| ZDR (Zero Data Retention) non demandé | Mistral peut conserver textes et audio d'élèves selon sa rétention par défaut ; bloque tout utilisateur réel, pas le merge (app pas en prod) | Utilisateur | Demande au support Mistral puis vérification Admin › API › Privacy |
 
 ## Lot 0 — PR
 
@@ -76,7 +87,7 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 | B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | mergée | #307 |
 | A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | mergée | #308 |
 | B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | mergée | #309 |
-| C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | à faire | — |
+| C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | en revue | — |
 | D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | à faire | — |
 | E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | à faire | — |
 | E2 — Infra serveur et outillage | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-infra` | à faire | — |
@@ -92,7 +103,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Confirmer la suppression de l'ancien volume Docker Postgres 16 local | B.6 | fait (volume supprimé) |
 | Créer le secret `RENOVATE_TOKEN`, retirer l'app Mend du dépôt, vérifier la cause côté Mend | B.8 | fait (app désinstallée, run manuel `done`, Dependency Dashboard #310) |
 | Mettre à jour les plugins Claude Code | B.9 | à faire |
-| Sonde curl de l'endpoint UE avec la clé Mistral | C.1 | à faire |
+| Sonde curl de l'endpoint UE avec la clé Mistral | C.1 | fait (2026-09-22, lancée par l'agent avec accord, après activation de Pay-As-You-Go : Small 4 et Medium sont à 0 requête/min sur le plan gratuit ; plafond de dépenses supplémentaires 10 €/mois ; entraînement sur les appels API désactivé) |
 | Demander le Zero Data Retention au support Mistral | C.1 | à faire |
 | Suite live et deux tours de chat réels | C.9 | à faire |
 | Vérifier les secrets `TURBO_TOKEN` / `TURBO_TEAM` | E2 | à faire |
@@ -143,3 +154,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 - **2026-09-22** — PR B mergée (#309, merge commit). Ancien volume Postgres 16 supprimé,
   app Renovate hébergée désinstallée, secret `RENOVATE_TOKEN` créé : le run manuel de
   Renovate termine `done` et ouvre le Dependency Dashboard (#310).
+- **2026-09-22** — PR C (bascule Mistral Small 4) implémentée : Small 4 daté partout
+  (`mistral-small-2603`), endpoint UE (`api.eu.mistral.ai`, +10 % de coût), clé de cache par
+  session, raisonnement gardé côté serveur (jamais forwardé au client), deux bugs TTS
+  corrigés, `pnpm doctor` étendu au modèle et à l'endpoint Mistral, suite live 6/6. En revue.
