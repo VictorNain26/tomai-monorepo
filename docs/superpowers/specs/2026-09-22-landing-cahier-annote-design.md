@@ -24,7 +24,9 @@ marge ; l'annotation au stylo est le motif visuel de toute la charte. Tendances
 | Nom | **TomIA, provisoire** : wordmark = texte en fonte titre, nom dans une seule constante ; la décision « Nom de l'app » de la cible reste ouverte |
 | Contenu | Réécrit ; ne promet que ce que les specs V1 prévoient |
 | Périmètre annoncé | **Collège, 6e → 3e** (`2026-09-22-agent-ia.md`, périmètre V1) |
-| Stack | Inchangée : Next.js, Tailwind v4, shadcn via `@repo/ui`, `motion`, `next-themes` |
+| Stack | Next.js, Tailwind v4, shadcn via `@repo/ui`, `motion` ; `next-themes` retiré |
+| Thème | **Clair uniquement**, pour tout le produit : pas de mode sombre (décision du 2026-09-22) |
+| Couleurs | **Les quatre couleurs du stylo Bic** sur papier : noir = texte, bleu = action, rouge = annotation du prof, vert = validé (décision du 2026-09-22, remplace le terracotta) |
 | Intégration serveur | Inchangée : Server Action `joinWaitlist` → `POST /api/waitlist`, seul point de contact |
 
 ## Tokens `@repo/tokens`
@@ -34,28 +36,38 @@ paire texte/fond ci-dessous est ≥ 4,5:1.
 
 ### Couleurs
 
-| Token | Light | Dark | Rôle | Contraste |
-|---|---|---|---|---|
-| `background` | `#FAF7F0` | `#12162B` | fond papier / encre | — |
-| `foreground` | `#1C2340` | `#F3EEE3` | texte | 14,4 / 15,4 |
-| `card`, `popover` | `#FFFDF8` | `#1A1F38` | surfaces | fg 15,2 / 14,0 |
-| `primary` | `#B0421A` | `#F08A5D` | « stylo du prof » : CTA, liens, annotations | sur bg 5,4 / 7,2 ; sur secondary 4,8 / 5,8 |
-| `primary-foreground` | `#FFFFFF` | `#12162B` | texte sur primary | 5,8 / 7,2 |
-| `secondary`, `muted`, `accent` | `#F0EADD` | `#232846` | blocs, badges | fg 12,8 / 12,4 |
-| `*-foreground` associés | `#1C2340` | `#F3EEE3` | | |
-| `muted-foreground` | `#5B6178` | `#A3A9BF` | texte secondaire | 5,7 / 7,6 |
-| `success` | `#3F6B4E` | `#8CC09C` | sauge : confiance, validé | fg blanc 6,1 / fg encre 8,6 |
-| `destructive` | `#B42318` | `#F2876F` | erreur | fg blanc 6,6 / fg encre 7,2 |
-| `warning` | `#E0A43A` | `#F2C063` | avertissement | fg encre 7,0 / 10,6 |
-| `info` | `#2B5C8A` | `#7FB2E0` | information | fg blanc 7,0 / fg encre 8,0 |
-| `violet` | `#6D3FC0` | `#A98BEA` | registre élève (lot 3) | fg blanc 6,7 / fg encre 6,4 |
-| `highlight` (nouveau) | `#F9E08B` | `#5C4A12` | surligneur sous le texte | fg 11,8 / 7,4 |
-| `border`, `input` | `#E7E0D2` | `#2A3050` | traits | — |
-| `ring` | = `primary` | = `primary` | focus | — |
-| `overlay` | `#000000` | `#000000` | inchangé | — |
+Le code de l'école : l'élève écrit en bleu, le prof corrige en rouge, le vert valide,
+le noir porte le texte. Papier, sable et surligneur jaune complètent.
 
-En dark, les `*-foreground` des couleurs de statut passent à l'encre `#12162B`
-(ratios ci-dessus) ; en light, blanc sauf `warning` (encre).
+| Token | Valeur | Rôle | Contraste |
+|---|---|---|---|
+| `background` | `#FAF7F0` | papier | — |
+| `foreground` et `*-foreground` des surfaces | `#1D1D22` | noir Bic : texte | 15,7 sur papier |
+| `card`, `popover` | `#FFFDF8` | surfaces | fg 16,5 |
+| `secondary`, `muted`, `accent` | `#F0EADD` | sable : blocs, badges | fg 14,0 |
+| `muted-foreground` | `#5C5C66` | texte secondaire | 6,2 sur papier, 5,5 sur sable |
+| `primary`, `ring` | `#1F3F9E` | bleu Bic : boutons, liens, focus | 8,7 sur papier, 7,7 sur sable |
+| `primary-foreground` | `#FFFFFF` | texte sur bleu | 9,3 |
+| `annotation` (nouveau) | `#C0282D` | rouge Bic : traits, mot corrigé, notes en marge, surtitres, marge du cahier | 5,5 sur papier, 4,9 sur sable |
+| `success` | `#1B7337` | vert Bic : validé, confiance | 5,5 sur papier, blanc dessus 5,9 |
+| `destructive` | `#B42318` | erreur | blanc dessus 6,6 |
+| `warning` | `#E0A43A` | avertissement | noir dessus 7,0 |
+| `info` | `#2B5C8A` | information | blanc dessus 7,0 |
+| `violet` | `#6D3FC0` | registre élève (lot 3) | blanc dessus 6,7 |
+| `highlight` | `#F9E08B` | surligneur sous le texte | noir dessus 12,8 |
+| `border`, `input` | `#E7E0D2` | traits | — |
+| `overlay` | `#000000` | inchangé | — |
+
+`annotation` est distinct de `destructive` : même famille rouge, usages différents
+(correction pédagogique contre message d'erreur), qui doivent pouvoir évoluer séparément.
+
+Sur le bloc CTA noir, le texte papier à 80 % d'opacité tient 10,4:1 ; le bouton y passe
+en papier, un bouton bleu sur noir ne ressortant qu'à 1,8:1 (sous le 3:1 exigé pour un
+contrôle, WCAG 1.4.11).
+
+Pas de mode sombre : `theme-dark.css` disparaît de `@repo/tokens`, avec la bascule et
+`next-themes` dans la landing. Un futur mode sombre repartira de cette palette ; la
+version sombre calculée pour le terracotta reste dans l'historique git.
 
 ### Typographie
 
@@ -84,15 +96,16 @@ landing.
   directement. `MotionConfig reducedMotion="user"` ne coupe que les transformations
   et le layout ([doc motion](https://motion.dev/docs/react-accessibility)) ; les
   tracés (`pathLength`) testent donc `useReducedMotion` eux-mêmes.
-- Grille de cahier : utilitaire `bg-notebook` local à `apps/landing/app/globals.css`,
-  couleur dérivée de `foreground` par `color-mix` (le `--grid-color` et son override
-  dark disparaissent).
+- Feuille à carreaux : utilitaire `bg-notebook` local à `apps/landing/app/globals.css`,
+  carreaux bleu pâle dérivés de `primary` par `color-mix` ; marge rouge verticale
+  (`annotation` à 40 %) fixe à gauche à partir de `md` (masquée sur mobile, où la
+  gouttière ne fait que 16 px).
 
 ## Page d'accueil
 
-Une idée par section. Les annotations terracotta font le fil d'une section à l'autre.
+Une idée par section. Les annotations au stylo rouge font le fil d'une section à l'autre.
 
-1. **Hero** — Titre Fraunces : « Il ne donne pas la réponse. Il aide à la
+1. **Hero** — plein écran (hauteur visible moins le header), contenu centré. Titre Fraunces : « Il ne donne pas la réponse. Il aide à la
    ~~trouver~~ *comprendre*. », le mot barré puis corrigé au stylo. Démo de
    conversation animée (l'élève demande la réponse d'un exercice, Tom répond par une
    question ; annotation en marge « méthode socratique »). Formulaire liste
@@ -160,7 +173,7 @@ branche). `docs/superpowers/suivi.md` gagne une ligne « hors lot 0 » dans chaq
 
 | PR | Contenu |
 |---|---|
-| **L1 — Charte** | `packages/tokens/theme.css` et `theme-dark.css` ; fontes dans `app/layout.tsx` ; `globals.css` ; variant pilule de `Button` ; règle `design-system.md` et `apps/landing/CLAUDE.md` (typo, contraintes reformulées) ; suppression des `.woff` Geist |
+| **L1 — Charte** | `packages/tokens/theme.css` (`theme-dark.css` supprimé) ; fontes dans `app/layout.tsx` ; `globals.css` ; variant pilule de `Button` ; règle `design-system.md` et `apps/landing/CLAUDE.md` (typo, contraintes reformulées) ; suppression des `.woff` Geist |
 | **L2 — Landing** | sections, primitives d'annotation, démo du hero, suppressions, metadata et OG image, pages secondaires |
 
 L1 se relit seule parce qu'elle change `@repo/tokens`, partagé.

@@ -1638,3 +1638,163 @@ Run: typecheck, lint, build (codes lus). Puis `pnpm --filter landing start` en a
 - [ ] **Step 3: `suivi.md`** : L1 `mergée` avec son lien, L2 `ouverte`, entrée au journal ; noter en « Reporté » : icônes PNG (`apple-icon.png`, `icon-192.png`, `icon-512.png`, `favicon.ico`, `icon.svg`, `public/logo.svg`) encore dans l'ancien bleu, à régénérer avec le futur logo (chantier branding) ; classes `prose` des pages légales sans effet (`@tailwindcss/typography` non installé). Commit `docs: track the landing redesign PR`.
 - [ ] **Step 4: Push et PR** : `git -C $W push -u origin feat/landing-cahier-annote-pages` ; `gh pr create --base main --title "feat(landing): Cahier annoté redesign"` avec captures (clair, sombre, mobile, OG), sortie des validations, `Generated with Claude Code`. Reporter le lien dans `suivi.md`.
 - [ ] **Step 5: Revue** : `/code-review` puis les quatre exigences du `CLAUDE.md` racine (contrat Eden non touché, imports `@repo/*`, taille de fichier, tests : seul `@repo/tokens` en porte). Preview Vercel vérifiée ; merge commit après accord de l'utilisateur.
+
+---
+
+# Avenant — palette « stylo Bic quatre couleurs » (2026-09-22)
+
+Décision utilisateur après les tâches 1-12 : la palette reprend les quatre couleurs du
+stylo Bic. Noir = texte ; bleu = action (boutons, liens, focus) ; rouge = annotation
+(le stylo du prof : traits, mot corrigé, notes en marge, surtitres) ; vert = validé /
+confiance. Papier, sable et surligneur jaune inchangés. Le terracotta disparaît. Valeurs
+et contrastes : spec, section « Couleurs ».
+
+Décision utilisateur suivante : **plus de mode sombre**, pour tout le produit. `theme-dark.css`
+disparaît de `@repo/tokens` (Task 14) ; la bascule, le provider et `next-themes` disparaissent
+de la landing (Task 15, fichiers déjà modifiés par L2, ce qui évite les conflits de rebase).
+
+### Task 14: Palette Bic dans `@repo/tokens` (branche L1)
+
+**Files:**
+- Modify: `packages/tokens/contrast.test.mjs` (tableau `PAIRS`)
+- Modify: `packages/tokens/theme.css`, `packages/tokens/package.json` (export)
+- Delete: `packages/tokens/theme-dark.css`
+- Modify: `apps/landing/app/globals.css:3,6` (import dark et variante `dark`)
+- Modify: `.claude/rules/design-system.md:16`
+
+**Interfaces:**
+- Produces: token `--color-annotation` (utilitaires `text-annotation`, `border-annotation`) ; nouvelles valeurs des tokens existants.
+
+- [ ] **Step 1: Ajouter les paires d'annotation au test** — à la fin de `PAIRS` :
+
+```js
+  ["annotation", "background"],
+  ["annotation", "card"],
+  ["annotation", "secondary"],
+```
+
+Dans le même fichier, la palette ne vient plus que de `theme.css`. Remplacer :
+
+```js
+const light = colors(read("./theme.css"));
+const dark = { ...light, ...colors(read("./theme-dark.css")) };
+```
+
+par :
+
+```js
+const palette = colors(read("./theme.css"));
+```
+
+et la boucle finale par :
+
+```js
+for (const [fg, bg] of PAIRS) {
+  test(`${fg} on ${bg} meets WCAG AA (4.5:1)`, () => {
+    assert.ok(palette[fg], `missing --color-${fg}`);
+    assert.ok(palette[bg], `missing --color-${bg}`);
+    const ratio = contrast(palette[fg], palette[bg]);
+    assert.ok(ratio >= 4.5, `${palette[fg]} on ${palette[bg]} = ${ratio.toFixed(2)}`);
+  });
+}
+```
+
+- [ ] **Step 2: Lancer le test, il doit échouer** : `pnpm --dir $W --filter @repo/tokens test > /tmp/tok.log 2>&1; echo "exit=$?"` → `exit=1`, `missing --color-annotation`.
+
+- [ ] **Step 3: Nouvelles valeurs `theme.css`** — dans le bloc `@theme`, remplacer le commentaire de couleurs par `/* Couleurs sémantiques (light) — « Cahier annoté » : papier, stylo Bic quatre couleurs */` et fixer :
+
+| Token | Valeur |
+|---|---|
+| `--color-background` | `#FAF7F0` |
+| `--color-foreground`, `--color-secondary-foreground`, `--color-accent-foreground`, `--color-card-foreground`, `--color-popover-foreground`, `--color-warning-foreground` | `#1D1D22` |
+| `--color-primary`, `--color-ring` | `#1F3F9E` |
+| `--color-primary-foreground` | `#FFFFFF` |
+| `--color-secondary`, `--color-muted`, `--color-accent` | `#F0EADD` |
+| `--color-muted-foreground` | `#5C5C66` |
+| `--color-card`, `--color-popover` | `#FFFDF8` |
+| `--color-destructive` / `-foreground` | `#B42318` / `#FFFFFF` |
+| `--color-success` / `-foreground` | `#1B7337` / `#FFFFFF` |
+| `--color-warning` | `#E0A43A` |
+| `--color-info` / `-foreground` | `#2B5C8A` / `#FFFFFF` |
+| `--color-highlight` | `#F9E08B` |
+| `--color-annotation` (nouveau, après `highlight`) | `#C0282D` |
+| `--color-border`, `--color-input` | `#E7E0D2` |
+| `--color-violet` / `-foreground` | `#6D3FC0` / `#FFFFFF` |
+| `--color-overlay` | `#000000` |
+
+- [ ] **Step 4: Supprimer le mode sombre des tokens**
+  - `git -C $W rm packages/tokens/theme-dark.css` ; dans `packages/tokens/package.json`, retirer la ligne d'export `"./theme-dark.css": "./theme-dark.css"` (et la virgule qui la précède).
+  - `theme.css` : retirer la ligne de commentaire ` * Dark mode : theme-dark.css (classe .dark).`
+  - `apps/landing/app/globals.css` : retirer `@import "@repo/tokens/theme-dark.css";` et `@custom-variant dark (&:where(.dark, .dark *));`.
+  - `.claude/rules/design-system.md:15-16` : `Nouveau token = ajout dans` / `` `theme.css` (et `theme-dark.css` s'il change en dark).`` devient `` Nouveau token = ajout dans `theme.css` (thème clair seul, pas de mode sombre). ``
+
+- [ ] **Step 5: Test vert** : même commande → `exit=0`, `# pass 26`, `# fail 0`. Puis `pnpm --dir $W --filter @repo/ui typecheck` et `pnpm --dir $W --filter landing build` → 0 (le bouton de thème de L1 bascule encore une classe `.dark` désormais sans effet : retiré en Task 15).
+- [ ] **Step 6: Commit** : fichiers un par un (dont `git rm`) ; `feat(tokens): Bic four-color palette, light theme only`.
+
+### Task 15: Rouge d'annotation et bouton inversé (branche L2, rebasée sur L1)
+
+**Files:**
+- Modify: `apps/landing/components/annotations/scribble.tsx:49`, `components/annotations/margin-note.tsx:5`, `components/atoms/section-header.tsx:14`, `components/atoms/logo.tsx:16`, `components/sections/hero.tsx:32`, `components/sections/how-it-works.tsx:43,45`, `components/sections/pricing.tsx:52`
+- Modify: `apps/landing/components/molecules/waitlist-form.tsx` (bouton en variante inversée)
+- Modify: `apps/landing/app/opengraph-image.tsx` (constantes)
+- Modify: `apps/landing/app/globals.css` (couleur des carreaux), `apps/landing/app/layout.tsx` (marge rouge)
+- Modify: `apps/landing/components/sections/hero.tsx:17-18` (plein écran)
+- Modify: `apps/landing/components/layout/header.tsx` (bouton de thème), `apps/landing/app/layout.tsx` (provider), `apps/landing/package.json` + `pnpm-lock.yaml` (`next-themes`), `apps/landing/app/{cgu,confidentialite,mentions-legales}/page.tsx` (`dark:prose-invert`)
+- Delete: `apps/landing/components/theme-provider.tsx`
+
+**Interfaces:**
+- Consumes: `text-annotation`, `border-annotation` (Task 14).
+
+- [ ] **Step 1: Passer les annotations au rouge** — à chaque ligne listée, remplacer `text-primary` par `text-annotation` ; dans `how-it-works.tsx:43`, `border-primary` par `border-annotation` (la marge rouge du cahier). Tout autre `primary` (liens, icônes, bordure de la carte « Complet », bulles de Tom, survols) reste bleu.
+- [ ] **Step 2: Bouton sur le bloc encre** — dans `waitlist-form.tsx`, le `Button` reçoit en variante inversée un fond papier (un bouton bleu sur noir ne ressort qu'à 1,8:1, sous le 3:1 exigé pour un contrôle) :
+
+```tsx
+        <Button
+          type="submit"
+          size="lg"
+          disabled={isPending}
+          aria-busy={isPending}
+          className={cn("group", tone === "inverted" && "bg-background text-foreground hover:bg-background/90")}
+        >
+```
+
+- [ ] **Step 3: OG image** — dans `app/opengraph-image.tsx`, remplacer les constantes par :
+
+```tsx
+// ImageResponse ne lit pas les variables CSS : copie de packages/tokens/theme.css.
+const PAPER = "#FAF7F0";
+const INK = "#1D1D22";
+const RED = "#C0282D";
+```
+
+et chaque `TERRACOTTA` par `RED`.
+
+- [ ] **Step 4: Feuille à carreaux avec marge**
+  - `globals.css`, utilitaire `bg-notebook` : dans les deux `repeating-linear-gradient`, remplacer `color-mix(in srgb, var(--color-foreground) 6%, transparent)` par `color-mix(in srgb, var(--color-primary) 12%, transparent)` (carreaux bleu pâle, comme un cahier).
+  - `layout.tsx` : juste après le `div` `bg-notebook`, ajouter la marge (masquée sous `md`, la gouttière mobile ne fait que 16 px) :
+
+```tsx
+              <div aria-hidden="true" className="pointer-events-none fixed inset-y-0 left-4 -z-40 hidden w-px bg-annotation/40 md:block" />
+```
+
+- [ ] **Step 5: Hero plein écran** — dans `hero.tsx`, la section devient :
+
+```tsx
+    <section className="flex min-h-[calc(100svh-4rem)] items-center py-16 lg:py-24">
+      <div className="container grid w-full items-center gap-16 lg:grid-cols-2">
+```
+
+`4rem` est la hauteur du header (`h-16`) ; `svh` évite le saut de la barre d'adresse mobile. Sur mobile le contenu empilé dépasse l'écran : `min-h` n'est qu'un plancher.
+
+- [ ] **Step 6: Retirer le mode sombre de la landing**
+  - `header.tsx` : supprimer l'import `useTheme`, les états `theme`/`mounted`, `toggleTheme`, le `useEffect` qui ne sert qu'à `mounted` (garder l'écoute du scroll), les imports `Sun`/`Moon`, et le bloc `{mounted && (<Button … aria-label="Changer de thème">…)}`.
+  - `layout.tsx` : retirer l'import et l'enveloppe `<ThemeProvider …>` (garder `<MotionProvider>` et son contenu) ; retirer `suppressHydrationWarning` de `<html>` (il n'existait que pour `next-themes`).
+  - `git -C $W rm apps/landing/components/theme-provider.tsx`.
+  - `pnpm --dir $W --filter landing remove next-themes` (met à jour `package.json` et `pnpm-lock.yaml`).
+  - Pages légales : retirer `dark:prose-invert` de la classe `prose`.
+  - Vérifier : `grep -rnE "dark:|next-themes|useTheme|ThemeProvider" $W/apps/landing --include=*.tsx --include=*.ts --include=*.css --include=*.json` (hors `node_modules`, `.next`) → aucune ligne.
+
+- [ ] **Step 7: Valider** : `grep -rn "TERRACOTTA\|terracotta" $W/apps/landing --include=*.tsx` → exit 1 ; landing typecheck, lint, build → 0.
+- [ ] **Step 8: Commit** : fichiers un par un (dont `git rm`) ; `feat(landing): Bic colors, notebook margin, full-screen hero, light only`.
+
+Après la Task 15 : la passe de vérification (Task 13) est rejouée sur la nouvelle palette.
