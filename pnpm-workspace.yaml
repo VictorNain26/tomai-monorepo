@@ -33,3 +33,8 @@ minimumReleaseAge: 1440
 
 # Migré depuis package.json#pnpm.overrides — pnpm 11 ne lit plus le champ "pnpm"
 # du package.json. Toutes les overrides doivent vivre ici.
+overrides:
+  # GHSA-67mh-4wv8-2f99 (esbuild <0.25.0, dev-server request forwarding), via
+  # drizzle-kit>@esbuild-kit/esm-loader>@esbuild-kit/core-utils. Dev-only.
+  # Drop once drizzle-kit stops depending on @esbuild-kit.
+  '@esbuild-kit/core-utils>esbuild': '>=0.25.0'
