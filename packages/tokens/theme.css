@@ -30,20 +30,20 @@
   --text-2xs: 0.625rem;
   --text-2xs--line-height: 0.875rem;
 
-  /* Couleurs sémantiques (light) — « Cahier annoté » : papier, stylo Bic quatre couleurs */
-  --color-background: #FAF7F0;
+  /* Couleurs sémantiques (light) — « Copie corrigée » : papier blanc, réglure bleue, stylo Bic quatre couleurs */
+  --color-background: #FCFCFA;
   --color-foreground: #1D1D22;
   --color-primary: #1F3F9E;
   --color-primary-foreground: #FFFFFF;
-  --color-secondary: #F0EADD;
+  --color-secondary: #F3F5FB;
   --color-secondary-foreground: #1D1D22;
-  --color-muted: #F0EADD;
+  --color-muted: #F3F5FB;
   --color-muted-foreground: #5C5C66;
-  --color-accent: #F0EADD;
+  --color-accent: #F3F5FB;
   --color-accent-foreground: #1D1D22;
-  --color-card: #FFFDF8;
+  --color-card: #FFFFFF;
   --color-card-foreground: #1D1D22;
-  --color-popover: #FFFDF8;
+  --color-popover: #FFFFFF;
   --color-popover-foreground: #1D1D22;
   --color-destructive: #B42318;
   --color-destructive-foreground: #FFFFFF;
@@ -54,9 +54,11 @@
   --color-info: #2B5C8A;
   --color-info-foreground: #FFFFFF;
   --color-highlight: #F9E08B;
+  --color-note: #FFF3B0;
+  --color-note-foreground: #1D1D22;
   --color-annotation: #C0282D;
-  --color-border: #E7E0D2;
-  --color-input: #E7E0D2;
+  --color-border: #D9DFF0;
+  --color-input: #7F8BB8;
   --color-ring: #1F3F9E;
   --color-violet: #6D3FC0;
   --color-violet-foreground: #FFFFFF;
