@@ -64,7 +64,7 @@
     "@sentry/elysia": "10.75.0",
     "@sinclair/typebox": "^0.34.52",
     "ai": "^7.0.107",
-    "better-auth": "^1.6.23",
+    "better-auth": "^1.7.5",
     "drizzle-orm": "^0.45.3",
     "elysia": "^1.4.30",
     "mammoth": "^1.12.3",

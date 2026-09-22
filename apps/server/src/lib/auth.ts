@@ -3,13 +3,12 @@
  * Configuration propre et flexible basée sur la configuration centralisée
  *
  * Plugins:
- * - openAPI: API documentation
- * - mcp: Model Context Protocol
+ * - openAPI: API documentation (development only)
  * - username: Autonomous child login
  */
 
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
-import { openAPI, mcp, username } from "better-auth/plugins";
+import { openAPI, username } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../db/connection";
 import { user, session, account, verification } from "../db/schema";
@@ -172,10 +171,6 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
-      parentId: {
-        type: "string",
-        required: false,
-      },
       isActive: {
         type: "boolean",
         defaultValue: true,
@@ -184,13 +179,11 @@ export const auth = betterAuth({
   },
 
   plugins: [
-    // openAPI + mcp only in development (expose internal auth structure in prod = security risk).
-    // Typed as BetterAuthPlugin[] so these dev-only plugins don't leak their
+    // openAPI only in development: it exposes the internal auth structure.
+    // Typed as BetterAuthPlugin[] so this dev-only plugin doesn't leak its
     // (un-nameable) option types into `typeof auth` — which would break the
-    // declaration emit of the public App type. They add no client-consumed routes.
-    ...(isDevelopment()
-      ? ([openAPI(), mcp({ loginPage: "/sign-in" })] as BetterAuthPlugin[])
-      : []),
+    // declaration emit of the public App type.
+    ...(isDevelopment() ? ([openAPI()] as BetterAuthPlugin[]) : []),
     username(), // Autonomous child login: POST /api/auth/sign-in/username
   ],
 });
