@@ -65,7 +65,7 @@ const mockLimitSelect = mock((): Promise<Row[]> => {
 
 const mockOrderBySelect = mock(() => ({ limit: mockLimitSelect }));
 
-// Dual-purpose: supports `.orderBy().limit()` (getCredentials) and direct await (getCredentialById)
+// Supports both .orderBy() chains and direct await (getCredentialById).
 const mockWhereSelect = mock((): Promise<Row[]> & { orderBy: typeof mockOrderBySelect } => {
   const result: Row[] = mockSetResult ? [mockSetResult] : [];
   const promise = Promise.resolve(result) as Promise<Row[]> & { orderBy: typeof mockOrderBySelect };

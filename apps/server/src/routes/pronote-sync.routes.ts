@@ -1,13 +1,8 @@
 /**
- * Pronote Credential Sync Routes
+ * Pronote credential management routes (server-only Pronote, QR onboarding).
  *
- * Device-first architecture: mobile stores/retrieves encrypted credentials
- * for multi-device sync. Any authenticated user (parent or student) can
- * manage their own Pronote credentials.
- *
- * PUT    /api/pronote/credentials — Upsert credentials
- * GET    /api/pronote/credentials — Fetch decrypted credentials
- * DELETE /api/pronote/credentials — Delete credentials
+ * GET    /api/pronote/credentials/list — Credential summaries of the authenticated user
+ * DELETE /api/pronote/credentials/:id  — Remove one establishment's credential (children kept)
  */
 
 import { Elysia, t } from 'elysia';
@@ -41,78 +36,6 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
           _error: error instanceof Error ? error.message : String(error),
           severity: 'high' as const,
         });
-        return status(500, { success: false, error: 'Erreur interne' });
-      }
-    })
-
-    // PUT /api/pronote/credentials — Upsert
-    .put('/credentials', async ({ body, user, status }) => {
-      try {
-        const result = await pronoteSyncService.upsertCredentials(
-          user.id,
-          body
-        );
-
-        if (!result.success) {
-          return status(400, { success: false, error: result.error });
-        }
-
-        return { success: true };
-      } catch (error) {
-        logger.error('Pronote credentials upsert failed', {
-          operation: 'pronote-sync:route:upsert:error',
-          userId: user.id,
-          _error: error instanceof Error ? error.message : String(error),
-          severity: 'high' as const,
-        });
-
-        return status(500, { success: false, error: 'Erreur interne' });
-      }
-    }, {
-      body: t.Object({
-        token: t.String({ minLength: 1 }),
-        metadata: t.String({ minLength: 2 }),
-        tokenExpiresAt: t.String({ minLength: 1 }),
-      }),
-    })
-
-    // GET /api/pronote/credentials — Fetch
-    .get('/credentials', async ({ user, status }) => {
-      try {
-        const credentials = await pronoteSyncService.getCredentials(
-          user.id
-        );
-
-        if (!credentials) {
-          return status(404, { success: false, error: 'No Pronote credentials found' });
-        }
-
-        return { success: true, data: credentials };
-      } catch (error) {
-        logger.error('Pronote credentials fetch failed', {
-          operation: 'pronote-sync:route:get:error',
-          userId: user.id,
-          _error: error instanceof Error ? error.message : String(error),
-          severity: 'high' as const,
-        });
-
-        return status(500, { success: false, error: 'Erreur interne' });
-      }
-    })
-
-    // DELETE /api/pronote/credentials — Delete
-    .delete('/credentials', async ({ user, status }) => {
-      try {
-        await pronoteSyncService.deleteCredentials(user.id);
-        return { success: true };
-      } catch (error) {
-        logger.error('Pronote credentials delete failed', {
-          operation: 'pronote-sync:route:delete:error',
-          userId: user.id,
-          _error: error instanceof Error ? error.message : String(error),
-          severity: 'high' as const,
-        });
-
         return status(500, { success: false, error: 'Erreur interne' });
       }
     })

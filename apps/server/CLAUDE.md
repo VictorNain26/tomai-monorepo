@@ -35,7 +35,7 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 - Sur un clone neuf, `@repo/api/src/client.ts` est rouge dans l'IDE tant que le
   `.d.ts` n'existe pas. `pnpm turbo typecheck` le régénère.
 - Émettre le `.d.ts` exige un contrat public **nommable** : tout type qui fuit
-  dans `App` doit être exporté (cf. `CredentialOutput`) ou neutralisé.
+  dans `App` doit être exporté (cf. `PronoteCredentialSummary`) ou neutralisé.
 
 ## Patterns
 

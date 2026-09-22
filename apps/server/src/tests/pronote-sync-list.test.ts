@@ -67,8 +67,6 @@ mock.module('../services/pronote-sync.service', () => ({
     get listCredentialSummaries() { return mockListCredentialSummaries; },
     // stubs for other route handlers
     upsertCredentials: mock(async () => ({ success: true })),
-    getCredentials: mock(async () => null),
-    deleteCredentials: mock(async () => true),
     deleteCredentialById: mock(async () => true),
   },
 }));
@@ -297,5 +295,30 @@ describe('GET /api/pronote/credentials/list', () => {
     expect(res.status).toBe(200);
     const body = await res.json() as { success: boolean; data: CredSummary[] };
     expect(body.data).toEqual([]);
+  });
+});
+
+describe('device-first credential routes (removed)', () => {
+  beforeEach(() => {
+    currentUser = { id: USER_A, role: 'parent' };
+  });
+
+  it('GET /api/pronote/credentials → 404', async () => {
+    const res = await app.handle(get('/api/pronote/credentials'));
+    expect(res.status).toBe(404);
+  });
+
+  it('PUT /api/pronote/credentials → 404', async () => {
+    const res = await app.handle(new Request('http://localhost/api/pronote/credentials', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: 't', metadata: '{}', tokenExpiresAt: '2027-01-01T00:00:00Z' }),
+    }));
+    expect(res.status).toBe(404);
+  });
+
+  it('DELETE /api/pronote/credentials → 404', async () => {
+    const res = await app.handle(new Request('http://localhost/api/pronote/credentials', { method: 'DELETE' }));
+    expect(res.status).toBe(404);
   });
 });

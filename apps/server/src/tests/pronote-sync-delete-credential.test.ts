@@ -85,8 +85,6 @@ mock.module('../services/pronote-sync.service', () => ({
     // stubs for other route handlers
     listCredentialSummaries: mock(async () => []),
     upsertCredentials: mock(async () => ({ success: true })),
-    getCredentials: mock(async () => null),
-    deleteCredentials: mock(async () => true),
   },
 }));
 
