@@ -1,3 +1,6 @@
+import { tz } from '@date-fns/tz';
+import { addDays, differenceInMinutes, isBefore, setHours, startOfDay, startOfWeek } from 'date-fns';
+
 // =============================================
 // CONFIGURATION QUOTAS
 // =============================================
@@ -97,85 +100,32 @@ export interface DeckUsageResult {
 // HELPER FUNCTIONS
 // =============================================
 
-function getParisHour(): number {
-  const parisFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Paris',
-    hour: '2-digit',
-    hour12: false,
-  });
-  return parseInt(parisFormatter.format(new Date()));
-}
-
 export function isWindowExpired(windowStartAt: Date, windowHours: number): boolean {
   const windowAgeMs = Date.now() - windowStartAt.getTime();
   const windowDurationMs = windowHours * 60 * 60 * 1000;
   return windowAgeMs >= windowDurationMs;
 }
 
+const inParis = tz('Europe/Paris');
+
+function lastDailyReset(now: Date): Date {
+  const todayReset = setHours(startOfDay(now, { in: inParis }), RESET_HOUR_PARIS, { in: inParis });
+  return isBefore(now, todayReset) ? addDays(todayReset, -1, { in: inParis }) : todayReset;
+}
+
 export function needsDailyReset(lastResetAt: Date): boolean {
-  const now = new Date();
-  const parisHour = getParisHour();
-
-  // Derive the current Paris-UTC offset dynamically so the reset boundary is
-  // correct across DST transitions (CET = UTC+1 in winter, CEST = UTC+2 in
-  // summer). Using a fixed offset silently drifts the reset by 1h for ~7 months
-  // of the year.
-  const nowUtcHour = now.getUTCHours();
-  const parisOffsetHours = ((parisHour - nowUtcHour) + 24) % 24;
-  const utcResetHour = ((RESET_HOUR_PARIS - parisOffsetHours) + 24) % 24;
-
-  const todayReset = new Date(now);
-  todayReset.setUTCHours(utcResetHour, 0, 0, 0);
-
-  // If the computed boundary is still in the future, walk back one calendar
-  // day to land on the most recent reset that has actually occurred. Comparing
-  // todayReset to `now` is robust to the case where Paris has crossed midnight
-  // but UTC hasn't (parisHour < 10 was over-rewinding by one full day there).
-  if (todayReset > now) {
-    todayReset.setUTCDate(todayReset.getUTCDate() - 1);
-  }
-
-  return lastResetAt < todayReset;
+  return isBefore(lastResetAt, lastDailyReset(new Date()));
 }
 
 export function getDailyResetTime(): string {
-  const parisHour = getParisHour();
-
-  let hoursRemaining: number;
-  if (parisHour >= RESET_HOUR_PARIS) {
-    hoursRemaining = 24 - parisHour + RESET_HOUR_PARIS;
-  } else {
-    hoursRemaining = RESET_HOUR_PARIS - parisHour;
-  }
-
-  if (hoursRemaining < 1) {
-    const minutes = Math.round(hoursRemaining * 60);
-    return `${minutes}min`;
-  }
-  return `${Math.round(hoursRemaining)}h`;
+  const now = new Date();
+  const nextReset = addDays(lastDailyReset(now), 1, { in: inParis });
+  const minutes = differenceInMinutes(nextReset, now, { roundingMethod: 'ceil' });
+  return minutes < 60 ? `${minutes}min` : `${Math.round(minutes / 60)}h`;
 }
 
 export function needsWeeklyReset(lastWeeklyResetAt: Date): boolean {
-  const now = new Date();
-  const parisFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Paris',
-    weekday: 'short',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-
-  const nowParts = parisFormatter.formatToParts(now);
-  const dayOfWeek = nowParts.find(p => p.type === 'weekday')?.value;
-
-  const daysSinceMonday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(dayOfWeek ?? 'Mon');
-  const adjustedDays = daysSinceMonday === 0 ? 6 : daysSinceMonday - 1;
-
-  const thisMonday = new Date(now);
-  thisMonday.setDate(thisMonday.getDate() - adjustedDays);
-  thisMonday.setUTCHours(0, 0, 0, 0);
-
-  return lastWeeklyResetAt < thisMonday;
+  return isBefore(lastWeeklyResetAt, startOfWeek(new Date(), { in: inParis, weekStartsOn: 1 }));
 }
 
 export function needsMonthlyReset(lastMonthlyResetAt: Date): boolean {

@@ -267,7 +267,10 @@ export async function getUsageStats(userId: string): Promise<UsageStats> {
     dailyLimit: quota.dailyLimit,
     dailyUsagePercent: quota.dailyUsagePercent,
     dailyResetsIn: quota.dailyResetsIn,
-    weeklyTokensUsed: subscription?.tokensUsedThisWeek ?? 0,
+    weeklyTokensUsed:
+      subscription && !needsWeeklyReset(subscription.lastWeeklyResetAt)
+        ? subscription.tokensUsedThisWeek
+        : 0,
     totalTokensUsed: subscription?.totalTokensUsed ?? 0,
     totalMessagesCount: subscription?.totalMessagesCount ?? 0,
     plan: quota.plan,

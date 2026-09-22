@@ -10,7 +10,7 @@
  * is exercised through incrementTokenUsage below.
  */
 
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, mock, setSystemTime } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
 // ============================================
@@ -225,6 +225,17 @@ describe('Token Quota Service', () => {
       const stats = await tokenQuotaService.getUsageStats('user-new');
       expect(stats.weeklyTokensUsed).toBe(0);
       expect(stats.totalTokensUsed).toBe(0);
+    });
+
+    it('reports zero weekly usage once the Paris week has rolled over', async () => {
+      setSystemTime(new Date('2026-09-21T10:00:00Z'));
+      dbSelectResult = [makeDbSubscription({
+        tokensUsedThisWeek: 9000,
+        lastWeeklyResetAt: new Date('2026-09-14T08:00:00Z'),
+      })];
+      const stats = await tokenQuotaService.getUsageStats('user-001');
+      setSystemTime();
+      expect(stats.weeklyTokensUsed).toBe(0);
     });
   });
 
