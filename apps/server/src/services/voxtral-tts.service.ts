@@ -1,22 +1,22 @@
 /**
  * Voxtral TTS Service — Mistral text-to-speech souveraine EU.
  *
- * Appelle directement POST {MISTRAL_SERVER_URL}/v1/audio/speech en fetch brut :
- * `@mistralai/mistralai` 2.7.0 expose désormais `audioSpeechComplete`, migration
- * suivie en PR E, pas faite ici.
+ * Appelle POST {MISTRAL_SERVER_URL}/v1/audio/speech via le SDK
+ * @mistralai/mistralai (`audio.speech.complete`), avec le client partagé
+ * `getMistralSdk()` — aucune clé ni URL de base à gérer ici.
  *
  * @see https://docs.mistral.ai/capabilities/audio/text_to_speech
  */
 
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
+import { getMistralSdk } from '../lib/ai/mistral-sdk.js';
 import type { EducationLevelType } from '../types/education.types.js';
 
 interface VoxtralTTSResult {
   success: boolean;
   audioData?: string;
   mimeType?: string;
-  durationMs?: number;
   error?: string;
 }
 
@@ -40,22 +40,10 @@ const FORMAT_TO_MIME: Record<NonNullable<VoxtralTTSOptions['outputFormat']>, str
   opus: 'audio/opus',
 };
 
-// MP3 128 kbps ≈ 16 KB/s — sert à estimer la durée sans décoder l'audio.
-const MP3_BYTES_PER_SECOND = 16_000;
 const MAX_INPUT_CHARS = 5_000;
 
 class VoxtralTTSService {
-  private readonly apiKey: string;
-  private readonly model: string;
-  private readonly baseUrl = `${env.MISTRAL_SERVER_URL}/v1`;
-
-  constructor() {
-    if (!env.MISTRAL_API_KEY) {
-      throw new Error('MISTRAL_API_KEY is required for Voxtral TTS');
-    }
-    this.apiKey = env.MISTRAL_API_KEY;
-    this.model = env.MISTRAL_TTS_MODEL;
-  }
+  private readonly model = env.MISTRAL_TTS_MODEL;
 
   async synthesize(text: string, options: VoxtralTTSOptions = {}): Promise<VoxtralTTSResult> {
     const startTime = Date.now();
@@ -79,43 +67,20 @@ class VoxtralTTSService {
     });
 
     try {
-      const response = await fetch(`${this.baseUrl}/audio/speech`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.model,
-          input: text,
-          voice,
-          response_format: outputFormat,
-        }),
+      const response = await getMistralSdk().audio.speech.complete({
+        model: this.model,
+        input: text,
+        voiceId: voice,
+        responseFormat: outputFormat,
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error('Voxtral TTS request failed', {
-          operation: 'voxtral:tts',
-          _error: `${response.status} — ${errorText.slice(0, 500)}`,
-          severity: 'high' as const,
-        });
-        return { success: false, error: `Mistral TTS API error: ${response.status}` };
-      }
-
-      const audioData = await this.readAudio(response);
-      const audioBytes = Buffer.from(audioData, 'base64').byteLength;
-      const estimatedDurationMs = Math.round((audioBytes / MP3_BYTES_PER_SECOND) * 1000);
 
       logger.info('Voxtral TTS synthesis completed', {
         operation: 'voxtral:tts:complete',
         textLength: text.length,
-        audioBytes,
-        estimatedDurationMs,
         durationMs: Date.now() - startTime,
       });
 
-      return { success: true, audioData, mimeType, durationMs: estimatedDurationMs };
+      return { success: true, audioData: response.audioData, mimeType };
     } catch (error) {
       logger.error('Voxtral TTS synthesis error', {
         operation: 'voxtral:tts',
@@ -128,24 +93,6 @@ class VoxtralTTSService {
         error: error instanceof Error ? error.message : 'Unknown Voxtral TTS error',
       };
     }
-  }
-
-  /**
-   * L'API peut renvoyer soit l'audio binaire brut (audio/*), soit un JSON
-   * {audio_data: "<base64>"} selon la version. On gère les deux pour rester
-   * robuste face à un changement de schéma documenté.
-   */
-  private async readAudio(response: Response): Promise<string> {
-    const contentType = response.headers.get('content-type') ?? '';
-    if (contentType.includes('application/json')) {
-      const payload = (await response.json()) as { audio_data?: string };
-      if (!payload.audio_data) {
-        throw new Error('Mistral TTS JSON response missing audio_data');
-      }
-      return payload.audio_data;
-    }
-    const buffer = await response.arrayBuffer();
-    return Buffer.from(buffer).toString('base64');
   }
 }
 
