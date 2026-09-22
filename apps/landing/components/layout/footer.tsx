@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, ShieldCheck, Server, Lock, Smartphone } from "lucide-react";
+import { MapPin, ShieldCheck, Server, Lock, Globe } from "lucide-react";
 import { Logo } from "../atoms/logo";
 
 export function Footer() {
@@ -30,10 +30,10 @@ export function Footer() {
               </div>
             </div>
 
-            {/* Mobile availability */}
+            {/* Web availability */}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Smartphone className="h-4 w-4 text-primary" />
-              <span>Disponible sur iOS et Android</span>
+              <Globe className="h-4 w-4 text-primary" />
+              <span>Dans le navigateur, sur ordinateur, tablette ou téléphone</span>
             </div>
           </div>
 

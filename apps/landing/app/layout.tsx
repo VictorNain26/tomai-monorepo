@@ -95,12 +95,6 @@ const jsonLd = [
         priceCurrency: "EUR",
         name: "Gratuit",
       },
-      {
-        "@type": "Offer",
-        price: "15",
-        priceCurrency: "EUR",
-        name: "Complet",
-      },
     ],
   },
   {

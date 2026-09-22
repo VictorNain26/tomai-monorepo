@@ -1,4 +1,4 @@
-import { BrainCircuit, BarChart3, BookOpen, ShieldCheck, CreditCard, GraduationCap, MessageSquareX, Smartphone } from "lucide-react";
+import { BrainCircuit, BarChart3, BookOpen, ShieldCheck, CreditCard, GraduationCap, MessageSquareX, Globe } from "lucide-react";
 
 export const FAQS = [
   {
@@ -33,12 +33,12 @@ export const FAQS = [
   },
   {
     question: "Puis-je annuler à tout moment ?",
-    answer: "Oui, l'abonnement est sans engagement. L'abonnement se souscrit dans l'application via l'App Store ou Google Play, et s'annule à tout moment depuis les réglages d'abonnement de votre store, sans justification. L'offre gratuite, avec un volume d'échanges limité chaque jour, reste accessible sans limite de durée.",
+    answer: "Oui, l'offre gratuite, avec un volume d'échanges limité chaque jour, reste accessible sans limite de durée. L'abonnement payant ouvrira après le lancement ; il sera sans engagement et ses modalités de souscription et de résiliation seront publiées à son ouverture.",
     icon: CreditCard,
   },
   {
     question: "Sur quels appareils TomIA est-il disponible ?",
-    answer: "TomIA est disponible en application mobile sur iOS et Android. Votre enfant peut travailler depuis son smartphone ou sa tablette, à la maison ou en déplacement.",
-    icon: Smartphone,
+    answer: "TomIA est un service web : il s'utilise dans le navigateur, sur ordinateur, tablette ou téléphone, sans rien installer.",
+    icon: Globe,
   },
 ];

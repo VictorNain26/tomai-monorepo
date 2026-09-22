@@ -5,7 +5,7 @@ export default function ConfidentialitePage() {
   return (
     <PageLayout
       title="Politique de Confidentialité"
-      description="Dernière mise à jour : 16 septembre 2026"
+      description="Dernière mise à jour : 22 septembre 2026"
     >
       <div className="relative mt-12">
         <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-blue-600/20 rounded-[2.5rem] blur-xl opacity-50" />
@@ -43,9 +43,9 @@ export default function ConfidentialitePage() {
               sessions de travail conservés 90 jours, et la progression de révision.</p>
             <p><strong>Connexion Pronote (optionnelle) :</strong> si vous l&apos;activez, les
               identifiants de connexion sont stockés chiffrés (AES-256-GCM). Les devoirs, notes
-              et emplois du temps restent sur l&apos;appareil de votre enfant : ils ne sont
-              jamais stockés sur nos serveurs, et ne sont transmis à l&apos;IA que le temps de
-              préparer une réponse.</p>
+              et emplois du temps sont lus à la demande depuis Pronote par nos serveurs : ils ne
+              sont jamais enregistrés en base de données, et ne sont transmis à l&apos;IA que le
+              temps de préparer une réponse.</p>
             <p><strong>Données techniques :</strong> adresse IP et type de navigateur lors des
               connexions (sécurité du compte), données d&apos;abonnement.</p>
             <p><strong>Site vitrine :</strong> votre adresse e-mail si vous vous inscrivez à la
@@ -101,17 +101,14 @@ export default function ConfidentialitePage() {
                 serveur applicatif et de la base de données.</li>
               <li><strong>Vercel</strong> (États-Unis) — hébergement du site vitrine et de
                 l&apos;application web.</li>
-              <li><strong>RevenueCat</strong> (États-Unis) — gestion des abonnements : ne
-                reçoit que des identifiants techniques pseudonymisés, jamais de nom ni
-                d&apos;adresse e-mail.</li>
               <li><strong>Google</strong> — uniquement si vous choisissez la connexion Google.</li>
             </ul>
 
             <h3>6. Transferts hors de l&apos;Union européenne</h3>
             <p>
               L&apos;essentiel de vos données est traité en France et dans l&apos;Union
-              européenne. Les transferts vers les prestataires établis aux États-Unis (Vercel,
-              RevenueCat) sont encadrés par le cadre de protection des données UE–États-Unis
+              européenne. Les transferts vers le prestataire établi aux États-Unis (Vercel) sont
+              encadrés par le cadre de protection des données UE–États-Unis
               (Data Privacy Framework) ou, à défaut, par les clauses contractuelles types de la
               Commission européenne. Une copie de ces garanties peut être obtenue en écrivant à{" "}
               <a href="mailto:contact@tomai.fr">contact@tomai.fr</a>.
@@ -155,9 +152,7 @@ export default function ConfidentialitePage() {
             <p>
               Les échanges sont chiffrés (TLS). Les identifiants Pronote sont chiffrés en
               AES-256-GCM avec une dérivation de clé PBKDF2 à 600 000 itérations et un sel
-              aléatoire par enregistrement. Le cache de l&apos;application mobile est chiffré
-              (ChaCha20-Poly1305) avec une clé conservée dans le stockage sécurisé du système
-              (trousseau iOS / Keystore Android). Les cookies de session sont protégés (httpOnly, secure) et
+              aléatoire par enregistrement. Les cookies de session sont protégés (httpOnly, secure) et
               l&apos;accès aux données d&apos;un enfant est strictement réservé à son parent.
             </p>
 

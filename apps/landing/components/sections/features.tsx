@@ -74,7 +74,7 @@ export function Features() {
       <div className="container px-4 mx-auto">
         <SectionHeader
           title="Tout ce qu'il faut pour réussir"
-          description="Une application mobile complète conçue pour l'autonomie et la réussite scolaire de votre enfant."
+          description="Un service web complet conçu pour l'autonomie et la réussite scolaire de votre enfant."
         />
 
         <motion.div

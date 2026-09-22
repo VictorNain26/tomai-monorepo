@@ -5,7 +5,7 @@ export default function CguPage() {
   return (
     <PageLayout
       title="Conditions Générales d'Utilisation"
-      description="Dernière mise à jour : 11 juin 2026"
+      description="Dernière mise à jour : 22 septembre 2026"
     >
       <div className="relative mt-12">
         <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-blue-600/20 rounded-[2.5rem] blur-xl opacity-50" />
@@ -13,12 +13,12 @@ export default function CguPage() {
           <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
             <h3>1. Objet</h3>
             <p>
-              Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services de l&apos;application mobile TomIA, ci-après nommée « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.
+              Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services du service web TomIA, accessible sur tomia.fr, ci-après nommé « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.
             </p>
 
             <h3>2. Accès au service</h3>
             <p>
-              Le Service est accessible via l&apos;application mobile TomIA, disponible sur iOS et Android. L&apos;Utilisateur doit disposer d&apos;un appareil mobile compatible et d&apos;un accès à internet. Tous les coûts afférents à l&apos;accès au Service, que ce soient les frais matériels ou d&apos;accès à internet, sont exclusivement à la charge de l&apos;utilisateur. Il est seul responsable du bon fonctionnement de son appareil mobile ainsi que de son accès à internet.
+              Le Service est accessible depuis un navigateur web récent, sur ordinateur, tablette ou téléphone. L&apos;Utilisateur doit disposer d&apos;un accès à internet. Tous les coûts afférents à l&apos;accès au Service, que ce soient les frais matériels ou d&apos;accès à internet, sont exclusivement à la charge de l&apos;utilisateur. Il est seul responsable du bon fonctionnement de son équipement ainsi que de son accès à internet.
             </p>
             <p>
               La création d&apos;un compte parent est réservée aux personnes majeures. Les
@@ -69,9 +69,7 @@ export default function CguPage() {
               enfants associés) s&apos;effectue sur demande à{" "}
               <a href="mailto:contact@tomai.fr">contact@tomai.fr</a>. Les données sont alors
               effacées dans les conditions prévues par la{" "}
-              <Link href="/confidentialite">politique de confidentialité</Link>. La résiliation
-              d&apos;un abonnement en cours s&apos;effectue selon les conditions de la
-              plateforme de téléchargement (App Store ou Google Play).
+              <Link href="/confidentialite">politique de confidentialité</Link>. Les modalités de souscription et de résiliation de l&apos;abonnement payant seront précisées dans les présentes conditions avant son ouverture.
             </p>
 
             <h3>7. Responsabilité</h3>
