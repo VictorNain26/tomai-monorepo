@@ -3,6 +3,9 @@
 Assistant scolaire socratique pour élèves français, avec supervision parentale.
 Stack, structure et démarrage : `README.md` — pas de duplication ici.
 
+**Travaux en cours : `docs/superpowers/suivi.md`** — avancement, bloquants, prochaine
+action. Le lire avant de reprendre, le mettre à jour dans la PR qui fait avancer.
+
 ## Commandes
 
 ```bash
