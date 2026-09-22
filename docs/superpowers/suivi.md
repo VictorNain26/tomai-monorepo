@@ -59,11 +59,15 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 - **Lot 3** : colonnes RevenueCat de `family_billing`, enum `billing_status` et commentaires
   de `billing.schema.ts` (dont `:179`) ; `app-guide-data.ts` à réécrire avec la navigation
   web. Le code de `BillingService` et `plan-cache` se retrouve avec
-  `git log --diff-filter=D -- apps/server/src/services/billing/`.
+  `git log --diff-filter=D -- apps/server/src/services/billing/`. Le coût est stocké en
+  centimes entiers : un tour (~0,05 centime) s'arrondit à 0 ; à revoir avec la facturation
+  web.
 - **PR E** : deux copies de `@ai-sdk/provider` (4.0.17 et 4.0.2, erreurs IDE seulement,
   `tsc` vert) à dédupliquer ; `capturedResult.totalUsage` déprécié dans
-  `chat-message.routes.ts` (même sémantique que `usage`) ; Voxtral TTS/STT via fetch maison
-  alors que `@mistralai/mistralai` 2.7.0 expose `audioSpeechComplete`/`audioVoices`.
+  `chat-message.routes.ts` (même sémantique que `usage`), même fichier appelle la méthode
+  instance dépréciée `capturedResult.toUIMessageStream(...)` (ai@7 : « Use the standalone
+  `toUIMessageStream` helper from 'ai' with `result.stream` ») ; Voxtral TTS/STT via fetch
+  maison alors que `@mistralai/mistralai` 2.7.0 expose `audioSpeechComplete`/`audioVoices`.
 - **Lot 3 — TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues
   avec `fr_marie_neutral` (seuls presets fr/en/gb existent ; es/de sans voix) ;
   `/api/tts/voices` annonce encore ces langues.
@@ -105,7 +109,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Mettre à jour les plugins Claude Code | B.9 | à faire |
 | Sonde curl de l'endpoint UE avec la clé Mistral | C.1 | fait (2026-09-22, lancée par l'agent avec accord, après activation de Pay-As-You-Go : Small 4 et Medium sont à 0 requête/min sur le plan gratuit ; plafond de dépenses supplémentaires 10 €/mois ; entraînement sur les appels API désactivé) |
 | Demander le Zero Data Retention au support Mistral | C.1 | à faire |
-| Suite live et deux tours de chat réels | C.9 | à faire |
+| Suite live et deux tours de chat réels | C.9 | fait (2026-09-22, lancé par l'agent : `test:live` Mistral 6/6, `pnpm doctor:e2e` exit 0, deux tours seedés sans aucun chunk de raisonnement côté client, `cost_tracking` en `mistral-small-2603`, majoration 1.1, 3136 tokens cachés au 2e tour) |
 | Vérifier les secrets `TURBO_TOKEN` / `TURBO_TEAM` | E2 | à faire |
 
 ## Lots suivants
