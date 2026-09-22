@@ -46,13 +46,13 @@ packages/
 | Stockage | Scaleway S3 (fr-par), uploads par URL présignée |
 | Observabilité | Sentry initialisé sur server et landing. La région dépend du DSN, absent du dépôt. Pas d'analytics installée |
 | Monorepo | Turborepo, pnpm workspaces |
-| Déploiement | Cibles : Vercel (landing), Koyeb (server). Aucune config d'infra n'est versionnée ici, et rien n'est déployé aujourd'hui |
+| Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, rien de déployé ; hébergeur tranché au lot 3 |
 
 ## Commandes
 
 ```bash
 pnpm typecheck && pnpm lint   # validation, obligatoire avant commit
-pnpm test                     # server (Bun)
+pnpm test                     # tests server (Bun) ; scripts et hooks : pnpm test:scripts
 pnpm build                    # build production
 pnpm seed                     # comptes parent + élève, dev uniquement
 pnpm db:generate              # migrations Drizzle, pour la prod
