@@ -961,10 +961,11 @@ describe('Mistral strict json_schema accepts our schemas', () => {
 >   `pnpm dedupe` (`react@19.2.3` et un second `next` tirés par better-auth côté
 >   serveur) ; `ignoreBinaries` et entrées `scripts/**` de l'espace `apps/server` du
 >   `knip.json` racine, plus le montage `./apps/server/scripts` de
->   `docker-compose.yml` (dossier supprimé) ; commentaire de l'override `nanoid` à
->   vérifier (l'override n'existe plus) ; commentaires « mobile project » de
+>   `docker-compose.yml` (dossier supprimé) ; commentaires « mobile project » de
 >   `src/lib/encryption.ts` et utilité de la copie `toArrayBuffer` (le plan le classe
->   plus bas en « Gardés, non touchés ») ; `TRUSTED_ORIGINS` inutilisée.
+>   plus bas en « Gardés, non touchés ») ; `TRUSTED_ORIGINS` inutilisée ;
+>   `pnpm test:scripts` absent de la CI. L'override `nanoid` cité par le suivi a
+>   disparu en B : rien à faire.
 
 **Branche :** `refactor/replace-custom-infra`
 
