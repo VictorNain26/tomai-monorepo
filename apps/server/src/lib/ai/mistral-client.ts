@@ -5,7 +5,7 @@
  * module keeps the two remaining non-chat-stream shapes:
  *
  * - `generateText` — completion non-streaming simple (vision, analyse doc, résumé, titre…)
- * - `generateStructured` — sortie structurée Zod en JSON Schema strict (intent classifier, cartes, épisodes…)
+ * - `generateStructured` — sortie structurée Zod en JSON Schema, strict par défaut (intent classifier, épisodes…) ; les cartes passent `strict: false`
  *
  * Both go through `mistralProvider` (`lib/ai/provider.ts`, EU endpoint).
  * Every call runs with `reasoningEffort: 'none'`: reasoning is reserved to the
@@ -131,9 +131,10 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
 }
 
 /**
- * Génération structurée validée par un schéma Zod (`json_schema` strict natif
- * Mistral). Une sortie hors schéma est relancée une seule fois avec l'erreur de
- * validation ; l'usage renvoyé cumule les deux appels.
+ * Génération structurée validée par un schéma Zod (`json_schema` natif Mistral,
+ * strict par défaut ; `strict: false` pour les cartes). Une sortie hors schéma
+ * est relancée une seule fois avec l'erreur de validation ; l'usage renvoyé
+ * cumule les deux appels.
  */
 export async function generateStructured<T>(opts: GenerateStructuredOptions<T>): Promise<StructuredResult<T>> {
   if (!env.MISTRAL_API_KEY) throw new Error('Mistral non configuré');

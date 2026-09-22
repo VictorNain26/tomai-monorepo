@@ -8,7 +8,7 @@ import { HAS_MISTRAL } from './_creds';
 // Mesuré ici : oneOf, champs optionnels et nullable passent ; `format: uri` et
 // `propertyNames` (z.record) sont rejetés en 400/3051, d'où les cartes en non-strict.
 
-describe('Mistral strict json_schema accepts our schemas (real API)', () => {
+describe('Mistral structured outputs accept our schemas, strict except cards (real API)', () => {
   it('MISTRAL_API_KEY is configured (fail-closed, no silent skip)', () => {
     expect(HAS_MISTRAL).toBe(true);
   });
