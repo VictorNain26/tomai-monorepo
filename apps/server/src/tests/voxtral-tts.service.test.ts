@@ -7,7 +7,7 @@ mock.module('../config/env', () => ({
     MISTRAL_API_KEY: 'test-mistral-key',
     MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
     MISTRAL_TTS_MODEL: 'voxtral-mini-tts-2603',
-    MISTRAL_TIMEOUT: 5000,
+    MISTRAL_TIMEOUT: 50,
   },
 }));
 
@@ -69,5 +69,34 @@ describe('VoxtralTTSService', () => {
 
     expect(body['voice_id']).toBe('fr_marie_neutral');
     expect('language' in body).toBe(false);
+  });
+
+  it('returns a failure on a non-2xx response', async () => {
+    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: 'invalid voice' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const result = await getVoxtralTTSService().synthesize('Bonjour');
+
+    expect(result.success).toBe(false);
+    expect(result.audioData).toBeUndefined();
+  });
+
+  it('aborts a hanging synthesis request', async () => {
+    let captured: AbortSignal | undefined;
+    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {
+      captured = input.signal;
+      return new Promise((_, reject) =>
+        input.signal.addEventListener('abort', () => reject(input.signal.reason)),
+      );
+    }) as unknown as typeof fetch);
+
+    const result = await getVoxtralTTSService().synthesize('Bonjour');
+
+    expect(result.success).toBe(false);
+    expect(captured?.aborted).toBe(true);
   });
 });
