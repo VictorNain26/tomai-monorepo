@@ -144,7 +144,7 @@ export function countJournalEntries(path = new URL('../apps/server/drizzle/meta/
 
 function psqlScalar(ctx, sql) {
   // -tA : tuple-only, unaligned -> sortie = la valeur brute
-  const r = ctx.exec('docker', ['exec', 'tomai-postgres-dev', 'psql', '-U', 'tomai_dev', '-d', 'tomai_dev', '-tA', '-c', sql]);
+  const r = ctx.exec('docker', ['exec', ctx.config.pgContainer, 'psql', '-U', 'tomai_dev', '-d', 'tomai_dev', '-tA', '-c', sql]);
   if (!r.ok) throw new Error(`psql a échoué: ${r.stderr || sql}`);
   return r.stdout.trim();
 }
@@ -152,10 +152,10 @@ function psqlScalar(ctx, sql) {
 function checkMigrations(ctx) {
   return { name: 'postgres: extension vector + migrations Drizzle à jour', run: async () => {
     const hasVector = psqlScalar(ctx, "SELECT count(*) FROM pg_extension WHERE extname='vector';");
-    if (hasVector === '0') throw new Error("extension 'vector' absente — lance 'pnpm setup'");
+    if (hasVector === '0') throw new Error("extension 'vector' absente — lance 'pnpm run setup'");
     const applied = Number(psqlScalar(ctx, 'SELECT count(*) FROM drizzle.__drizzle_migrations;'));
     const expected = ctx.journalEntries ?? countJournalEntries();
-    if (applied < expected) throw new Error(`migrations en retard: ${applied}/${expected} appliquées — lance 'pnpm setup' (ou 'bun run db:migrate' dans apps/server)`);
+    if (applied < expected) throw new Error(`migrations en retard: ${applied}/${expected} appliquées — lance 'pnpm run setup' (ou 'bun run db:migrate' dans apps/server)`);
   }};
 }
 

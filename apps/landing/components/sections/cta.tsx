@@ -14,7 +14,7 @@ export function CTA() {
           </h2>
 
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            L&apos;application arrive bientôt sur iOS et Android. Inscrivez-vous pour être notifié du lancement.
+            TomIA arrive bientôt en version web. Inscrivez-vous pour être notifié du lancement.
           </p>
 
           <div className="flex flex-col items-center gap-6">

@@ -9,15 +9,8 @@ const nextConfig = {
   compress: true,
   transpilePackages: ['@repo/ui'],
 
-  // Images configuration
   images: {
     formats: ['image/avif', 'image/webp'],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
   },
 
   // Performance optimizations

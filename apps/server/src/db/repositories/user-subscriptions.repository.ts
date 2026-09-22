@@ -141,24 +141,6 @@ class UserSubscriptionsRepository {
 
     return updated;
   }
-
-  /**
-   * Cron sweep: zero daily counters for users whose lastResetAt is older than
-   * 20 hours. Returns the number of rows reset.
-   */
-  async resetExpiredDaily(): Promise<number> {
-    const result = await db
-      .update(userSubscriptions)
-      .set({
-        tokensUsedToday: 0,
-        decksGeneratedToday: 0,
-        lastResetAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(sql`${userSubscriptions.lastResetAt} < NOW() - INTERVAL '20 hours'`);
-
-    return (result as unknown as { rowCount?: number }).rowCount ?? 0;
-  }
 }
 
 export const userSubscriptionsRepository = new UserSubscriptionsRepository();

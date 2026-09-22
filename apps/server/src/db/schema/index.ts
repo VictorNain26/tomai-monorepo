@@ -29,7 +29,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
   // Learning Tools (Flashcards, QCM, Vrai/Faux)
   learningDecks: many(learningDecks),
 
-  // Pronote Integration (device-first, server = credential sync only)
+  // Pronote Integration (server-side provider, QR onboarding)
   pronoteCredentials: one(pronoteCredentials, {
     fields: [user.id],
     references: [pronoteCredentials.userId],

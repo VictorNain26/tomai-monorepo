@@ -50,16 +50,16 @@ let _mockUser: MockUser | null = null;
 mock.module('../middleware/auth.middleware', () => ({
   requireAuth: async () => {
     if (!_mockUser) {
-      return { success: false as const, _error: 'Unauthorized', status: 401 as const, shouldClearCookies: false };
+      return { success: false as const, _error: 'Unauthorized', status: 401 as const };
     }
     return { success: true as const, user: _mockUser, session: { id: 'test-session' } };
   },
   requireParentRole: async () => {
     if (!_mockUser) {
-      return { success: false as const, _error: 'Unauthorized', status: 401 as const, shouldClearCookies: false };
+      return { success: false as const, _error: 'Unauthorized', status: 401 as const };
     }
     if (_mockUser.role !== 'parent') {
-      return { success: false as const, _error: 'Parent role required', status: 403 as const, shouldClearCookies: false };
+      return { success: false as const, _error: 'Parent role required', status: 403 as const };
     }
     return { success: true as const, user: _mockUser, session: { id: 'test-session' } };
   },

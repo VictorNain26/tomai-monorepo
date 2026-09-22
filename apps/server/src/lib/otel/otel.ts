@@ -5,8 +5,8 @@
  * available the first time a service file is evaluated.
  *
  * Configuration via env (no code-side config knob):
- *   OTEL_EXPORTER_OTLP_ENDPOINT   — OTLP HTTP endpoint (default: console only)
- *   OTEL_EXPORTER_OTLP_HEADERS    — comma-separated `key=value` headers
+ *   OTEL_EXPORTER_OTLP_ENDPOINT   — OTLP HTTP base URL, read by the exporter itself (+ /v1/traces)
+ *   OTEL_EXPORTER_OTLP_HEADERS    — W3C baggage-style `key=value` pairs, URL-encoded, read by the exporter
  *   OTEL_SERVICE_NAME             — defaults to "tomai-server"
  *   OTEL_DEPLOYMENT_ENVIRONMENT   — propagated to resource (dev/staging/prod)
  *   OTEL_DISABLED                 — set to "1" to skip init (tests / CI)
@@ -34,33 +34,15 @@ import {
 let sdk: NodeSDK | null = null;
 let started = false;
 
-function buildHeaders(raw: string | undefined): Record<string, string> | undefined {
-  if (!raw) return undefined;
-  const headers: Record<string, string> = {};
-  for (const pair of raw.split(',')) {
-    const [k, v] = pair.split('=');
-    if (k && v) headers[k.trim()] = v.trim();
-  }
-  return Object.keys(headers).length ? headers : undefined;
-}
-
 function buildProcessors(): SpanProcessor[] {
   const processors: SpanProcessor[] = [];
   // Pre-boot context: env singleton not yet initialized. Reads Bun.env directly.
   const endpoint = process.env['OTEL_EXPORTER_OTLP_ENDPOINT'];
-  const headers = buildHeaders(process.env['OTEL_EXPORTER_OTLP_HEADERS']);
 
   if (endpoint) {
     // Production / staging — push to OTLP HTTP endpoint (Langfuse self-hosted,
     // Tempo, Honeycomb, Grafana Cloud, etc.).
-    processors.push(
-      new BatchSpanProcessor(
-        new OTLPTraceExporter({
-          url: `${endpoint.replace(/\/$/, '')}/v1/traces`,
-          headers,
-        }),
-      ),
-    );
+    processors.push(new BatchSpanProcessor(new OTLPTraceExporter()));
   }
 
   // Always emit to console in dev so we get traces without infra setup. The
@@ -101,17 +83,9 @@ export function setupOtel(): void {
 
   sdk.start();
   started = true;
+}
 
-  // Flush traces on shutdown so the OTLP exporter actually sends the last
-  // batch. SIGTERM is what Koyeb / Docker send before killing the container.
-  const shutdown = async () => {
-    try {
-      await sdk?.shutdown();
-    } catch {
-      // best-effort; nothing to do if shutdown fails on already-dead process
-    }
-  };
-  process.on('SIGTERM', () => void shutdown());
-  process.on('SIGINT', () => void shutdown());
+export async function shutdownOtel(): Promise<void> {
+  await sdk?.shutdown();
 }
 

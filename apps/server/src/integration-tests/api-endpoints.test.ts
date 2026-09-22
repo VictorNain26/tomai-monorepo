@@ -8,6 +8,8 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { Elysia } from 'elysia';
 import { createMockLogger } from '../tests/_helpers/mock-logger';
 
+const SESSION_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
+
 // ============================================
 // MOCKS
 // ============================================
@@ -96,7 +98,7 @@ mock.module('../middleware/rate-limit.middleware', () => ({
   RateLimitPresets: { api: {} },
 }));
 mock.module('../services/token-quota.service', () => ({
-  tokenQuotaService: { resetAllDailyTokens: mock(async () => ({ resetCount: 0 })) },
+  tokenQuotaService: {},
 }));
 
 // Retention purge — its real module pulls the Drizzle schemas, whose
@@ -114,8 +116,7 @@ mock.module('../middleware/auth.middleware', () => ({
       return {
         success: false as const,
         _error: 'Unauthorized',
-        status: 401,
-        shouldClearCookies: false
+        status: 401
       };
     }
     return {
@@ -129,16 +130,14 @@ mock.module('../middleware/auth.middleware', () => ({
       return {
         success: false as const,
         _error: 'Unauthorized',
-        status: 401,
-        shouldClearCookies: false
+        status: 401
       };
     }
     if (authUser.role !== 'parent') {
       return {
         success: false as const,
         _error: 'Parent role required',
-        status: 403,
-        shouldClearCookies: false
+        status: 403
       };
     }
     return {
@@ -342,13 +341,13 @@ describe('API Endpoints', () => {
 
   describe('GET /api/chat/session/:id/history', () => {
     it('should return 401 without authentication', async () => {
-      const res = await app.handle(new Request('http://localhost/api/chat/session/s1/history'));
+      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
       expect(res.status).toBe(401);
     });
 
     it('should return messages when authenticated and session is owned', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
-      const res = await app.handle(new Request('http://localhost/api/chat/session/s1/history'));
+      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
@@ -359,22 +358,30 @@ describe('API Endpoints', () => {
     it('should return 403 when session belongs to another user (IDOR regression)', async () => {
       authUser = { id: 'user-002', firstName: 'Alice', role: 'student' };
       // chatService.getSession mock returns session owned by 'user-001'
-      const res = await app.handle(new Request('http://localhost/api/chat/session/s1/history'));
+      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
       expect(res.status).toBe(403);
       const data = await res.json();
       expect(data.error).toBe('Session not found or access denied');
+    });
+
+    it('should reject a non-UUID id with 400 before any service call', async () => {
+      authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
+      const res = await app.handle(new Request('http://localhost/api/chat/session/not-a-uuid/history'));
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error.code).toBe('VALIDATION_ERROR');
     });
   });
 
   describe('DELETE /api/chat/session/:id', () => {
     it('should return 401 without authentication', async () => {
-      const res = await app.handle(new Request('http://localhost/api/chat/session/s1', { method: 'DELETE' }));
+      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}`, { method: 'DELETE' }));
       expect(res.status).toBe(401);
     });
 
     it('should delete session when authenticated', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
-      const res = await app.handle(new Request('http://localhost/api/chat/session/s1', { method: 'DELETE' }));
+      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}`, { method: 'DELETE' }));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
@@ -384,13 +391,26 @@ describe('API Endpoints', () => {
   describe('POST /api/chat/session/:id/reset', () => {
     it('should reset session when authenticated', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
-      const res = await app.handle(new Request('http://localhost/api/chat/session/s1/reset', {
+      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}/reset`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
       }));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
       expect(data.sessionId).toBe('session-new');
+    });
+  });
+
+  describe('Malformed JSON body', () => {
+    it('answers 400 with the error envelope', async () => {
+      const res = await app.handle(new Request(
+        'http://localhost/api/chat/session/0199a3c4-7b1e-7d2a-9f00-123456789abc/files',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{bad' },
+      ));
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error.code).toBe('VALIDATION_ERROR');
+      expect(data.requestId).toBeTruthy();
     });
   });
 

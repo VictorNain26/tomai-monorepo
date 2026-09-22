@@ -11,7 +11,7 @@
  * that ordering under ESM hoisting.
  */
 
-import { setupOtel } from './lib/otel/otel.js';
+import { setupOtel, shutdownOtel } from './lib/otel/otel.js';
 setupOtel();
 
 import { setupSentry, Sentry } from './lib/sentry.js';
@@ -20,6 +20,10 @@ setupSentry();
 const { app, initializeServices } = await import('./app');
 const { logger } = await import('./lib/observability.js');
 const { env } = await import('./config/env.js');
+const { closeConnection } = await import('./db/connection.js');
+const { memoryMonitor } = await import('./middleware/memory-monitor.middleware.js');
+const { stopBackgroundJobs } = await import('./services/server-lifecycle.js');
+const { createGracefulShutdown } = await import('./lib/graceful-shutdown.js');
 
 const PORT = env.PORT;
 
@@ -52,58 +56,20 @@ async function startServer() {
 }
 
 // Gestion gracieuse de l'arrêt
-async function gracefulShutdown(signal: string) {
-  logger.info(`${signal} received - shutting down gracefully`, {
-    operation: 'server:shutdown',
-    signal
-  });
+const shutdown = createGracefulShutdown(
+  [
+    { name: 'app.stop', run: () => app.stop() },
+    { name: 'stopBackgroundJobs', run: stopBackgroundJobs },
+    { name: 'stopMonitoring', run: () => memoryMonitor.stopMonitoring() },
+    { name: 'otel.shutdown', run: shutdownOtel },
+    { name: 'sentry.close', run: () => Sentry.close(2000) },
+    { name: 'db.close', run: closeConnection },
+  ],
+  (code) => process.exit(code),
+);
 
-  try {
-    const { closeConnection } = await import('./db/connection.js');
-    const { memoryMonitor } = await import('./middleware/memory-monitor.middleware.js');
-    const { stopBackgroundJobs } = await import('./services/server-lifecycle.js');
-
-    // Each stop call is isolated so a throwing user-supplied fn cannot skip the DB drain.
-    for (const step of [
-      { name: 'stopBackgroundJobs', run: stopBackgroundJobs },
-      { name: 'stopMonitoring', run: () => memoryMonitor.stopMonitoring() },
-    ]) {
-      try {
-        step.run();
-      } catch (err) {
-        logger.error(`Shutdown step failed: ${step.name}`, {
-          operation: 'server:shutdown',
-          _error: err instanceof Error ? err.message : String(err),
-          severity: 'high' as const,
-        });
-      }
-    }
-    await closeConnection();
-
-    if (global.gc) {
-      global.gc();
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    logger.info('Shutdown completed', {
-      operation: 'server:shutdown',
-      status: 'success'
-    });
-  } catch (error) {
-    logger.error('Error during shutdown', {
-      operation: 'server:shutdown',
-      _error: error instanceof Error ? error.message : String(error),
-      severity: 'high' as const
-    });
-  }
-
-  process.exit(0);
-}
-
-// Gestionnaires de signaux
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+process.on('SIGINT', () => void shutdown('SIGINT'));
 
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception', {

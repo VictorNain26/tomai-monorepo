@@ -7,7 +7,7 @@ et intégration Pronote. Pré-lancement : aucun utilisateur en production.
 
 ```bash
 pnpm install                 # Node 24+, pnpm 12+
-pnpm setup                   # .env, BETTER_AUTH_SECRET, postgres, migrations Drizzle
+pnpm run setup               # .env, BETTER_AUTH_SECRET, postgres, migrations Drizzle
 pnpm dev                     # infra Docker + server :3000 + landing :3001
 ```
 

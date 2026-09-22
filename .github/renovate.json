@@ -45,7 +45,6 @@
   },
   "vulnerabilityAlerts": {
     "enabled": true,
-    "schedule": ["at any time"],
     "labels": ["dependencies", "security"],
     "prCreation": "immediate",
     "automerge": false,

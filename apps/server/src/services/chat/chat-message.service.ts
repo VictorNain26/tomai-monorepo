@@ -1,23 +1,12 @@
 import { studySessionsRepository, messagesRepository } from '../../db/repositories';
 import type { Message as DbMessage, AIModel } from '../../db/schema';
-import { safeUUID } from '../../utils/uuid';
 import { logger } from '../../lib/observability';
 import type { MessageDetails } from './chat-types';
 
 export class ChatMessageService {
   async getSessionHistory(sessionId: string, options?: { limit?: number; afterMessageId?: string }): Promise<DbMessage[]> {
     try {
-      const validSessionId = safeUUID(sessionId);
-      if (!validSessionId) {
-        logger.warn('Invalid session UUID for history request', {
-          operation: 'history:validation:uuid',
-          sessionId,
-          severity: 'low' as const
-        });
-        return [];
-      }
-
-      let sessionMessages = await messagesRepository.findBySessionId(validSessionId);
+      let sessionMessages = await messagesRepository.findBySessionId(sessionId);
 
       if (options?.afterMessageId) {
         const cutoffIndex = sessionMessages.findIndex(m => m.id === options.afterMessageId);
@@ -44,7 +33,7 @@ export class ChatMessageService {
           messagesWithFiles: messagesWithFiles.length,
           recentMessages: recentMessages.length,
           finalCount: sortedMessages.length,
-          sessionId: validSessionId
+          sessionId
         });
 
         return sortedMessages;
@@ -98,32 +87,20 @@ export class ChatMessageService {
     options: { verifySessionExists?: boolean } = {}
   ): Promise<{ messageId: string; realSessionId: string }> {
     try {
-      const validSessionId = safeUUID(sessionId);
-
-      if (!validSessionId) {
-        logger.error('Invalid session ID', {
-          _error: 'Invalid session ID provided',
-          operation: 'saveMessage',
-          originalSessionId: sessionId,
-          severity: 'high' as const
-        });
-        throw new Error('Invalid session ID provided');
-      }
-
       // Session verification is optional: orchestration layer already resolves + owner-checks
       // the session right before calling saveMessage, so re-selecting here is wasted I/O.
       // Callers without prior verification should pass { verifySessionExists: true }.
       const shouldVerify = options.verifySessionExists ?? true;
       if (shouldVerify) {
-        const session = await studySessionsRepository.findById(validSessionId);
+        const session = await studySessionsRepository.findById(sessionId);
         if (!session) {
           logger.error('Session not found', {
-            _error: `Session ${validSessionId} not found`,
+            _error: `Session ${sessionId} not found`,
             operation: 'saveMessage',
-            sessionId: validSessionId,
+            sessionId,
             severity: 'high' as const
           });
-          throw new Error(`Session ${validSessionId} not found. Create session explicitly first.`);
+          throw new Error(`Session ${sessionId} not found. Create session explicitly first.`);
         }
       }
 
@@ -139,7 +116,7 @@ export class ChatMessageService {
       }
 
       const message = await messagesRepository.create({
-        sessionId: validSessionId,
+        sessionId,
         role,
         content,
         frustrationLevel: metadata.frustrationLevel ?? null,
@@ -152,7 +129,7 @@ export class ChatMessageService {
         createdAt: new Date()
       });
 
-      return { messageId: message.id, realSessionId: validSessionId };
+      return { messageId: message.id, realSessionId: sessionId };
     } catch (_error) {
       logger.error('Error saving message', { operation: 'chat:message:save', _error: _error instanceof Error ? _error.message : String(_error), sessionId, role, severity: 'high' as const });
       throw new Error('Failed to save message', { cause: _error });
@@ -161,17 +138,7 @@ export class ChatMessageService {
 
   async getMessageById(messageId: string, userId: string): Promise<MessageDetails | null> {
     try {
-      const validMessageId = safeUUID(messageId);
-      if (!validMessageId) {
-        logger.warn('Invalid message UUID provided', {
-          operation: 'message:validation:uuid',
-          messageId,
-          severity: 'low' as const
-        });
-        return null;
-      }
-
-      const message = await messagesRepository.findById(validMessageId);
+      const message = await messagesRepository.findById(messageId);
       if (!message) {
         return null;
       }
@@ -180,7 +147,7 @@ export class ChatMessageService {
       if (!session || session.userId !== userId) {
         logger.warn('Unauthorized access attempt to message', {
           operation: 'message:access:unauthorized',
-          messageId: validMessageId,
+          messageId,
           userId,
           severity: 'medium' as const
         });

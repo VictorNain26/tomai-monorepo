@@ -104,6 +104,7 @@ test('check migrations: FAIL si migrations en retard', async () => {
   const ctx = { ...ctxWith({ exec }), journalEntries: 5 };                      // 5 attendues
   const checks = buildChecks(ctx, { full: true });
   await assert.rejects(byName(checks, 'migrations').run(), /migration/i);
+  await assert.rejects(byName(checks, 'migrations').run(), /pnpm run setup/, "le message doit pointer vers le script `setup` du package.json, pas la commande intégrée pnpm");
 });
 
 test('check migrations: PASS si vector présent et migrations à jour', async () => {
@@ -116,6 +117,19 @@ test('check migrations: PASS si vector présent et migrations à jour', async ()
   const ctx = { ...ctxWith({ exec }), journalEntries: 5 };
   const checks = buildChecks(ctx, { full: true });
   await byName(checks, 'migrations').run();
+});
+
+test('check migrations: psql vise le conteneur PG_CONTAINER configuré', async () => {
+  const containers = [];
+  const exec = (cmd, args) => {
+    if (args[0] === 'exec') containers.push(args[1]);
+    const sql = args.join(' ');
+    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };
+    return { ok: true, stdout: '5' };
+  };
+  const ctx = { ...ctxWith({ exec }), config: { ...CFG, pgContainer: 'pg-custom' }, journalEntries: 5 };
+  await byName(buildChecks(ctx, { full: true }), 'migrations').run();
+  assert.deepEqual([...new Set(containers)], ['pg-custom']);
 });
 
 // ─── Strict mode ─────────────────────────────────────────────────────────────

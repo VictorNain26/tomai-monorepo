@@ -49,7 +49,7 @@ has() { printf '%s' "$command" | grep -qE -- "$1"; }
 # requêtes d'un `psql -c "SELECT 1; DROP DATABASE x"`, qui doit rester bloqué.
 if printf '%s' "$command" | grep -qiE '(^|[;&|][[:space:]]*)([[:alnum:]_]+=[^[:space:]]*[[:space:]]+)*(sudo[[:space:]]+)?dropdb\b' ||
    printf '%s' "$command" | grep -qiE '\b(psql|pg_dump|mysql|drizzle-kit|db:)[^&|]*\bdrop[[:space:]]+(database|schema)\b'; then
-  deny "Suppression de base ou de schéma refusée. Pour repartir d'une base locale propre : docker compose down -v puis pnpm setup."
+  deny "Suppression de base ou de schéma refusée. Pour repartir d'une base locale propre : docker compose down -v puis pnpm run setup."
 fi
 
 # `push` de drizzle-kit, sous ses deux formes d'appel réelles dans ce dépôt :

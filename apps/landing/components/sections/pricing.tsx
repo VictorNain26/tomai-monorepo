@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ShieldCheck, ArrowRight } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@repo/ui";
 import { SectionHeader } from "../atoms/section-header";
 
@@ -24,8 +24,8 @@ export function Pricing() {
     <section id="pricing" className="py-24 lg:py-32">
       <div className="container px-4 mx-auto">
         <SectionHeader
-          title="Un prix simple, sans surprise"
-          description="Commencez gratuitement, puis passez au plan Complet quand votre enfant en a besoin."
+          title="Deux formules, sans surprise"
+          description="Commencez gratuitement. Le plan Complet ouvrira après le lancement, son tarif sera annoncé aux inscrits de la liste d'attente."
         />
 
         {/* Two Cards Side by Side */}
@@ -71,17 +71,7 @@ export function Pricing() {
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-2">Complet</h3>
 
-              {/* Price comparison */}
-              <p className="text-sm text-muted-foreground mb-1">
-                <span className="line-through">35€/h cours particulier</span>
-              </p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-4xl font-bold text-foreground">15€</p>
-                <span className="text-muted-foreground">/mois</span>
-              </div>
-              <p className="text-sm text-primary font-medium mt-1">
-                Moins de 0,50€ par jour
-              </p>
+              <p className="text-lg font-semibold text-foreground">Tarif annoncé au lancement</p>
             </div>
 
             <ul className="space-y-4 mb-8">
@@ -99,17 +89,11 @@ export function Pricing() {
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </a>
             </Button>
-
-            {/* Guarantee badge */}
-            <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
-              <ShieldCheck className="h-4 w-4 text-success" />
-              <span>Paiement et résiliation via l&apos;App Store ou Google Play</span>
-            </div>
           </div>
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
-          Sans carte bancaire • Sans engagement
+          L&apos;offre gratuite ne demande aucune carte bancaire.
         </p>
       </div>
     </section>

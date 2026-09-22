@@ -1,9 +1,11 @@
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
 import { chatSessionService } from '../../services/chat/chat-session.service';
 import { chatMessageService } from '../../services/chat/chat-message.service';
 import { AppError } from '../../lib/errors';
 import { logger } from '../../lib/observability';
+
+const idParams = t.Object({ id: t.String({ format: 'uuid' }) });
 
 export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
   .use(authMacro)
@@ -119,7 +121,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       });
       throw new AppError('INTERNAL_ERROR', 'Session reset failed');
     }
-  })
+  }, { params: idParams })
 
   .delete('/chat/session/:id', async ({ params, user }) => {
     try {
@@ -134,7 +136,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       });
       throw new AppError('INTERNAL_ERROR', 'Session deletion failed');
     }
-  })
+  }, { params: idParams })
 
   .get('/chat/session/:id/history', async ({ params, user, status }) => {
     try {
@@ -170,7 +172,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       });
       return status(500, { error: 'Session history retrieval failed' });
     }
-  })
+  }, { params: idParams })
 
   .get('/chat/message/:id', async ({ params, user }) => {
     try {
@@ -200,4 +202,4 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       });
       throw new AppError('INTERNAL_ERROR', 'Message retrieval failed');
     }
-  });
+  }, { params: idParams });

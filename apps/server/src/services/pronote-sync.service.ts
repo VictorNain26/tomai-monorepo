@@ -2,9 +2,8 @@
  * Pronote Credential Sync Service
  *
  * Stores and retrieves AES-256-GCM encrypted Pronote credentials.
- * Two consumers: mobile (device-first, decrypts for direct pawnote calls) and
- * the server-side provider (PawnoteServerAdapter, decrypts in-memory for
- * parent/web reads via pronote-data.service).
+ * Single consumer: the server-side provider (PawnoteServerAdapter), which
+ * decrypts in-memory for parent/web reads via pronote-data.service.
  */
 
 import { eq, asc, count } from 'drizzle-orm';
@@ -50,8 +49,7 @@ interface UpsertInput {
   establishmentName?: string | null;
 }
 
-/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
-export interface CredentialOutput {
+interface CredentialOutput {
   token: string;
   metadata: string;
   tokenExpiresAt: string;
@@ -131,41 +129,6 @@ class PronoteSyncService {
     });
 
     return { success: true, credentialId };
-  }
-
-  /**
-   * Get decrypted Pronote credentials for a user — oldest credential by createdAt.
-   * Deterministic even when multiple credentials exist (e.g. multi-token/multi-establishment).
-   * For multi-token reads (parent, several establishments), callers should use
-   * getCredentialById once the credential list endpoint is added (Plan B2).
-   */
-  async getCredentials(userId: string): Promise<CredentialOutput | null> {
-    const rows = await db
-      .select()
-      .from(pronoteCredentials)
-      .where(eq(pronoteCredentials.userId, userId))
-      .orderBy(asc(pronoteCredentials.createdAt))
-      .limit(1);
-
-    if (rows.length === 0) {
-      return null;
-    }
-
-    const row = rows[0]!;
-
-    const token = await decrypt(row.encryptedToken);
-    const metadata = await decrypt(row.encryptedMetadata);
-
-    logger.info('Pronote credentials retrieved', {
-      operation: 'pronote-sync:get',
-      userId,
-    });
-
-    return {
-      token,
-      metadata,
-      tokenExpiresAt: row.tokenExpiresAt.toISOString(),
-    };
   }
 
   /**
@@ -285,23 +248,6 @@ class PronoteSyncService {
       operation: 'pronote-sync:delete-by-id',
       userId,
       credentialId,
-    });
-
-    return true;
-  }
-
-  /**
-   * Delete Pronote credentials for a user.
-   * Returns true regardless of whether credentials existed.
-   */
-  async deleteCredentials(userId: string): Promise<boolean> {
-    await db
-      .delete(pronoteCredentials)
-      .where(eq(pronoteCredentials.userId, userId));
-
-    logger.info('Pronote credentials deleted', {
-      operation: 'pronote-sync:delete',
-      userId,
     });
 
     return true;

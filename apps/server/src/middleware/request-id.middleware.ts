@@ -7,11 +7,13 @@
 
 import { Elysia } from 'elysia';
 
+export const REQUEST_ID_HEADER = 'x-request-id';
+
+// onRequest, not derive: parse errors are raised before derive runs and must still carry the id.
 export const requestIdMiddleware = new Elysia({ name: 'request-id' })
-  .derive(() => {
-    const requestId = `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-    return { requestId };
+  .onRequest(({ set }) => {
+    set.headers[REQUEST_ID_HEADER] = crypto.randomUUID();
   })
-  .onAfterHandle(({ requestId, set }) => {
-    set.headers['x-request-id'] = requestId;
-  });
+  .derive({ as: 'global' }, ({ set }) => ({
+    requestId: String(set.headers[REQUEST_ID_HEADER]),
+  }));

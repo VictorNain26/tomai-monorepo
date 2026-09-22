@@ -1,6 +1,6 @@
 /**
- * Vérifie que server-lifecycle expose un arrêt des intervals (scheduler de
- * rétention + cron de reset tokens) appelable au shutdown.
+ * Vérifie que server-lifecycle expose un arrêt du scheduler de rétention
+ * appelable au shutdown.
  */
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
@@ -22,24 +22,13 @@ mock.module('../lib/encryption', () => ({ validateEncryptionSetup: mock(() => Pr
 mock.module('../middleware/memory-monitor.middleware', () => ({
   memoryMonitor: { startMonitoring: mock(() => {}), stopMonitoring: mock(() => {}) },
 }));
-mock.module('../services/token-quota.service', () => ({
-  tokenQuotaService: { resetAllDailyTokens: mock(() => Promise.resolve({ resetCount: 0 })) },
-}));
-
-const { startTokenResetCron, initializeServices, stopBackgroundJobs } = await import(
-  '../services/server-lifecycle'
-);
+const { initializeServices, stopBackgroundJobs } = await import('../services/server-lifecycle');
 
 beforeEach(() => {
   stopRetention.mockClear();
 });
 
 describe('server-lifecycle background jobs', () => {
-  it('stopBackgroundJobs clears the token reset cron without throwing', () => {
-    startTokenResetCron();
-    expect(() => stopBackgroundJobs()).not.toThrow();
-  });
-
   it('stopBackgroundJobs calls the retention stop-fn exactly once', async () => {
     // initializeServices is the only path that sets the module-level stopRetentionPurge
     // variable (via startRetentionPurgeScheduler). Without calling it, stopBackgroundJobs

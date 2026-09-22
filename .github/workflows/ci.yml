@@ -66,8 +66,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check results
+        env:
+          RESULT: ${{ needs.validate-tasks.result }}
         run: |
-          if [ "${{ needs.validate-tasks.result }}" = "failure" ]; then
+          if [ "$RESULT" != "success" ]; then
+            echo "validate-tasks finished with result: $RESULT"
             exit 1
           fi
 

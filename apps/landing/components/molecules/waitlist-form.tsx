@@ -55,7 +55,7 @@ export function WaitlistForm({
         setStatus("success");
       } else {
         setStatus("error");
-        setErrorMsg(result.error ?? "Une erreur est survenue");
+        setErrorMsg(result.error);
       }
     });
   }

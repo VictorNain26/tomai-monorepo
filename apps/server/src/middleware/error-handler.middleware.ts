@@ -8,10 +8,12 @@
 import { Elysia } from 'elysia';
 import { AppError, toErrorResponse } from '../lib/errors.js';
 import { logger } from '../lib/observability.js';
+import { REQUEST_ID_HEADER } from './request-id.middleware.js';
 
 export const errorHandlerMiddleware = new Elysia({ name: 'error-handler' })
-  .onError(({ error, set, request, store }) => {
-    const requestId = (store as { requestId?: string }).requestId;
+  .onError({ as: 'global' }, ({ error, set, request }) => {
+    const header = set.headers[REQUEST_ID_HEADER];
+    const requestId = header === undefined ? undefined : String(header);
     const url = new URL(request.url).pathname;
 
     if (error instanceof AppError) {

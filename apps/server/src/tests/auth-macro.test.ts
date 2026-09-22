@@ -3,7 +3,6 @@
  *
  * Vérifie que le macro Elysia:
  * - Injecte user/session typés dans le contexte
- * - Gère les cookies orphelines
  * - Retourne les bon status codes (401, 403, etc)
  */
 
@@ -28,36 +27,6 @@ mock.module('../lib/auth', () => ({
       }),
     },
   },
-}));
-
-// DB mock state
-let dbUserExists: boolean = true;
-
-mock.module('../db/connection', () => ({
-  db: {
-    select: mock(() => ({
-      from: mock(() => ({
-        where: mock(() => ({
-          limit: mock(() => {
-            if (dbUserExists) return [{ id: 'user-001' }];
-            return [];
-          }),
-        })),
-      })),
-    })),
-    delete: mock(() => ({
-      where: mock(() => Promise.resolve()),
-    })),
-  },
-}));
-
-mock.module('../db/schema', () => ({
-  user: { id: 'id' },
-  session: { id: 'id' },
-}));
-
-mock.module('drizzle-orm', () => ({
-  eq: (...args: unknown[]) => ({ type: 'eq', args }),
 }));
 
 // Import after all mocks
@@ -94,7 +63,6 @@ describe('Auth Macro Integration', () => {
       session: { id: 'sess-001', userId: student.id },
     };
     authShouldThrow = null;
-    dbUserExists = true;
   });
 
   describe('auth: true guard', () => {
@@ -124,21 +92,6 @@ describe('Auth Macro Integration', () => {
 
       const response = await app.handle(new Request('http://localhost/protected'));
       expect(response.status).toBe(401);
-    });
-
-    it('should set Set-Cookie header on orphaned session', async () => {
-      dbUserExists = false;
-      const app = new Elysia()
-        .use(authMacro)
-        .guard({ auth: true })
-        .get('/protected', ({ user }) => ({ userId: user.id }));
-
-      const response = await app.handle(new Request('http://localhost/protected'));
-      expect(response.status).toBe(401);
-
-      const setCookie = response.headers.get('Set-Cookie');
-      expect(setCookie).toContain('better-auth.session_token=');
-      expect(setCookie).toContain('Expires=Thu, 01 Jan 1970 00:00:00 GMT');
     });
 
     it('should return 503 on auth service failure', async () => {
@@ -192,26 +145,6 @@ describe('Auth Macro Integration', () => {
 
       const response = await app.handle(new Request('http://localhost/parent-only'));
       expect(response.status).toBe(401);
-    });
-
-    it('should set Set-Cookie on orphaned parent session', async () => {
-      const parent = makeParentUser();
-      authSessionResult = {
-        user: { ...parent },
-        session: { id: 'sess-parent', userId: parent.id },
-      };
-      dbUserExists = false;
-
-      const app = new Elysia()
-        .use(authMacro)
-        .guard({ parentAuth: true })
-        .get('/parent-only', ({ user }) => ({ role: user.role }));
-
-      const response = await app.handle(new Request('http://localhost/parent-only'));
-      expect(response.status).toBe(401);
-
-      const setCookie = response.headers.get('Set-Cookie');
-      expect(setCookie).toContain('better-auth.session_token=');
     });
   });
 

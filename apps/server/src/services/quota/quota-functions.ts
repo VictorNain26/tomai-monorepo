@@ -267,7 +267,10 @@ export async function getUsageStats(userId: string): Promise<UsageStats> {
     dailyLimit: quota.dailyLimit,
     dailyUsagePercent: quota.dailyUsagePercent,
     dailyResetsIn: quota.dailyResetsIn,
-    weeklyTokensUsed: subscription?.tokensUsedThisWeek ?? 0,
+    weeklyTokensUsed:
+      subscription && !needsWeeklyReset(subscription.lastWeeklyResetAt)
+        ? subscription.tokensUsedThisWeek
+        : 0,
     totalTokensUsed: subscription?.totalTokensUsed ?? 0,
     totalMessagesCount: subscription?.totalMessagesCount ?? 0,
     plan: quota.plan,
@@ -279,6 +282,4 @@ export function getHoursUntilReset(): string {
 }
 
 // Deck quota functions are now in ./quota-deck.ts
-// Scheduled reset sweep is now in ./quota-reset.ts
 export { checkDeckQuota, incrementDeckUsage } from './quota-deck.js';
-export { resetAllDailyTokens } from './quota-reset.js';

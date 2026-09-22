@@ -85,8 +85,6 @@ mock.module('../services/pronote-sync.service', () => ({
     // stubs for other route handlers
     listCredentialSummaries: mock(async () => []),
     upsertCredentials: mock(async () => ({ success: true })),
-    getCredentials: mock(async () => null),
-    deleteCredentials: mock(async () => true),
   },
 }));
 
@@ -153,12 +151,16 @@ mock.module('../db/schema', () => ({
 
 // Import real route AFTER all mocks are registered
 const { pronoteSyncRoutes } = await import('../routes/pronote-sync.routes');
+const { errorHandlerMiddleware } = await import('../middleware/error-handler.middleware');
 
 // ============================================
 // Test app
 // ============================================
 
-const app = new Elysia().use(pronoteSyncRoutes);
+// app.ts always composes errorHandlerMiddleware ahead of the routes; without
+// it here, Elysia's own default validation response (422) would leak through
+// instead of the production 400 envelope.
+const app = new Elysia().use(errorHandlerMiddleware).use(pronoteSyncRoutes);
 
 // ============================================
 // Helpers
@@ -166,7 +168,8 @@ const app = new Elysia().use(pronoteSyncRoutes);
 
 const PARENT_USER_ID = 'parent-user-001';
 const OTHER_USER_ID = 'other-user-002';
-const CRED_ID = 'cred-abc-123';
+const CRED_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
+const UNKNOWN_CRED_ID = '0199a3c4-7b1e-7d2a-9f00-123456789fff';
 
 function del(path: string) {
   return new Request(`http://localhost${path}`, { method: 'DELETE' });
@@ -257,11 +260,26 @@ describe('DELETE /api/pronote/credentials/:id', () => {
     currentUser = { id: PARENT_USER_ID };
     mockDeleteCredentialById = mock(async (): Promise<boolean> => false);
 
-    const res = await app.handle(del('/api/pronote/credentials/unknown-id-999'));
+    const res = await app.handle(del(`/api/pronote/credentials/${UNKNOWN_CRED_ID}`));
 
     expect(res.status).toBe(404);
     const body = await res.json() as { error: string; code: string };
     expect(body.error).toBeDefined();
     expect(body.code).toBe('pronote_credential_not_found');
+  });
+
+  // ------------------------------------
+  // Non-UUID id → 400 before the service is called
+  // ------------------------------------
+
+  it('non-UUID credential id → 400', async () => {
+    currentUser = { id: PARENT_USER_ID };
+
+    const res = await app.handle(del('/api/pronote/credentials/not-a-uuid'));
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(mockDeleteCredentialById).not.toHaveBeenCalled();
   });
 });

@@ -14,10 +14,9 @@ import { user } from './auth.schema';
 /**
  * Pronote credentials sync table
  *
- * Stores encrypted token + metadata for two consumers:
- * - Mobile (device-first): decrypts and uses the token directly for student auth
- * - Server-side provider (PawnoteServerAdapter): decrypts the token in-memory
- *   to call Pronote server-side for parent/web reads (loginToken flow)
+ * Stores encrypted token + metadata for the single consumer: the server-side
+ * provider (PawnoteServerAdapter), which decrypts the token in-memory to call
+ * Pronote server-side for parent/web reads (loginToken flow, QR onboarding).
  *
  * Security:
  * - Token encrypted AES-256-GCM before storage
