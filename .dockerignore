@@ -20,9 +20,6 @@
 **/coverage/
 **/*.tsbuildinfo
 
-# Mobile
-**/.expo/
-
 # Env & secrets (jamais envoyés au daemon)
 **/.env
 **/.env.*

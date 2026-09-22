@@ -1,3 +1,0 @@
-# Transitive deps resolved differently by pnpm on EAS vs local
-**/node_modules/ansi-styles/**
-**/node_modules/chalk/**

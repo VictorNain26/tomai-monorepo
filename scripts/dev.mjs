@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Orchestration dev : infra Docker (détaché) -> attente des services critiques
-// healthy -> apps host (Turbo, mobile exclu). Le backend tourne sur l'host (turbo),
+// healthy -> apps host (Turbo). Le backend tourne sur l'host (turbo),
 // pas en conteneur : pas de clash :3000.
 import { spawnSync, spawn } from "node:child_process";
 import { loadConfig, defaultExec, buildChecks, runChecks } from "./doctor-checks.mjs";
@@ -28,7 +28,7 @@ if (infra.exitCode !== 0) {
 }
 
 console.log("[dev] lancement des apps (server, landing)…");
-const turbo = spawn("pnpm", ["exec", "turbo", "run", "dev", "--filter=!tom-mobile"], {
+const turbo = spawn("pnpm", ["exec", "turbo", "run", "dev"], {
   stdio: "inherit",
 });
 turbo.on("exit", (code) => process.exit(code ?? 0));

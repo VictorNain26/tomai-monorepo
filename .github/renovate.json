@@ -22,7 +22,6 @@
     "**/node_modules/**",
     "**/dist/**",
     "**/.next/**",
-    "**/.expo/**",
     "**/build/**",
     "**/coverage/**",
     "**/.turbo/**"
@@ -92,41 +91,9 @@
       "prBodyColumns": ["Package", "Type", "Update", "Change", "Pending", "References"]
     },
     {
-      "description": "Group all Expo packages together.",
-      "matchPackageNames": ["expo", "expo-**", "@expo/**", "babel-preset-expo", "jest-expo"],
-      "groupName": "expo",
-      "commitMessageTopic": "Expo packages"
-    },
-    {
-      "description": "Group React Navigation packages together.",
-      "matchPackageNames": ["@react-navigation/**"],
-      "groupName": "react-navigation"
-    },
-    {
-      "description": "Group React Native core + community shims together.",
-      "matchPackageNames": [
-        "react-native",
-        "react-native-**",
-        "@react-native-async-storage/**",
-        "@react-native-community/**",
-        "@react-native-google-signin/**"
-      ],
-      "groupName": "react-native"
-    },
-    {
-      "description": "Group RN Reusables primitives.",
-      "matchPackageNames": ["@rn-primitives/**"],
-      "groupName": "rn-primitives"
-    },
-    {
       "description": "Group AWS SDK v3 packages together (one bump cycle covers all).",
       "matchPackageNames": ["@aws-sdk/**"],
       "groupName": "aws-sdk"
-    },
-    {
-      "description": "Group TanStack Query packages.",
-      "matchPackageNames": ["@tanstack/**"],
-      "groupName": "tanstack"
     },
     {
       "description": "Group Better Auth packages.",
@@ -176,13 +143,6 @@
       "reviewers": ["VictorNain26"]
     },
     {
-      "description": "RevenueCat SDK touches billing — never auto-merge majors and tag billing label.",
-      "matchPackageNames": ["react-native-purchases", "@revenuecat/**"],
-      "groupName": "revenuecat",
-      "labels": ["dependencies", "billing"],
-      "reviewers": ["VictorNain26"]
-    },
-    {
       "description": "GitHub Actions: pin to digest, group together.",
       "matchManagers": ["github-actions"],
       "groupName": "github-actions",
@@ -196,8 +156,8 @@
       "commitMessagePrefix": "chore(docker)"
     },
     {
-      "description": "Pin React + React DOM + react-test-renderer together (catalog-managed). react-test-renderer must always match react exactly — @testing-library/react-native asserts equality at test setup.",
-      "matchPackageNames": ["react", "react-dom", "react-test-renderer"],
+      "description": "Pin React + React DOM together (catalog-managed).",
+      "matchPackageNames": ["react", "react-dom"],
       "groupName": "react"
     }
   ]
