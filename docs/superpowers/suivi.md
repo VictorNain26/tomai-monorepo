@@ -12,8 +12,8 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 - **Dernière mise à jour :** 2026-09-22
 - **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** lever les bloquants ci-dessous, merger #306, puis ouvrir la PR
-  B.1 (GitHub Actions hors Node 20).
+- **Prochaine action :** lever le bloquant ci-dessous (utilisateur), puis merger #306 et
+  #307 une fois leur CI verte, puis démarrer la PR A.
 
 ## Bloquants
 
@@ -26,7 +26,7 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 | PR | Plan | Branche | Statut | Lien |
 |---|---|---|---|---|
 | Docs : specs, roadmap, plan du lot 0, ce suivi | — | `docs/rewrite-specs-and-plans` | ouverte, bloquée par le required check Expo | #306 |
-| B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | à faire | — |
+| B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | ouverte, actionlint vert, CI en attente du bloquant Expo | #307 |
 | A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | à faire | — |
 | B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | à faire | — |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | à faire | — |
@@ -64,3 +64,5 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   2026-09-04 supprimés. Décisions : Small 4 pour chat et vision, `apps/mobile` supprimé,
   échelle d'indices graduée, parent = résumé + alertes, V1 collège seul, toutes les
   dépendances à jour (TypeScript 7 bloqué par `typescript-eslint`).
+- **2026-09-22** — Suivi créé. PR B.1 ouverte (#307). Retrait des required checks mobile
+  refusé à l'agent par le classifieur de permissions : étape laissée à l'utilisateur.
