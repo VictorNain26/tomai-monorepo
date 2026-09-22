@@ -50,7 +50,7 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 | Docs : specs, roadmap, plan du lot 0, ce suivi | — | `docs/rewrite-specs-and-plans` | mergée | #306 |
 | B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | mergée | #307 |
 | A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | mergée | #308 |
-| B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | en cours : B.2-B.4 faites et relues | — |
+| B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | en cours : B.2-B.7 faites et relues | — |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | à faire | — |
 | D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | à faire | — |
 | E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | à faire | — |
@@ -108,3 +108,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 - **2026-09-22** — PR B : B.2 (pnpm 12.5.1, plancher Node 24, outillage), B.3 (dépendances
   serveur, contrat Eden identique) et B.4 (better-auth 1.7, plugin MCP retiré, champ mort
   `user.parentId` retiré de la config auth) faites et relues.
+- **2026-09-22** — PR B : B.5 (Motion 13, React 19.3, landing vérifiée dans le navigateur),
+  B.6 (Postgres 18 + pgvector 0.8.6, Bun 1.4 ; volume local neuf
+  `tomai_postgres18_dev_data`) et B.7 (overrides obsolètes retirés, seul reste un plancher
+  esbuild ciblé sur drizzle-kit) faites et relues.
