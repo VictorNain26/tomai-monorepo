@@ -97,7 +97,6 @@ class SummarizationService {
   /**
    * Vérifie si un résumé est nécessaire et le génère si oui.
    * Appelé en fire-and-forget après chaque réponse assistant.
-   * Retry automatique (max 2 tentatives) en cas d'échec.
    * Ne throw jamais — tout est catché et loggé.
    */
   async summarizeIfNeeded(sessionId: string): Promise<void> {
@@ -129,12 +128,7 @@ class SummarizationService {
 
       const messagesText = messagesToSummarize.map(m => `[${m.role}]: ${m.content}`).join('\n\n');
 
-      // Retry logic: max 2 attempts with 2s backoff
-      const summary = await this.generateSummaryWithRetry(
-        messagesText,
-        session.conversationSummary,
-        sessionId,
-      );
+      const summary = await this.generateSummary(messagesText, session.conversationSummary);
 
       if (!summary) return;
 
@@ -153,45 +147,13 @@ class SummarizationService {
         operation: 'summarization:complete',
       });
     } catch (err) {
-      logger.error('Summarization failed after all retries', {
+      logger.error('Summarization failed', {
         _error: err instanceof Error ? err.message : String(err),
         sessionId,
         operation: 'summarization:error',
         severity: 'medium' as const,
       });
     }
-  }
-
-  /**
-   * Génère un résumé avec retry automatique.
-   * Max 2 tentatives, backoff 2s entre chaque.
-   */
-  private async generateSummaryWithRetry(
-    messagesText: string,
-    previousSummary: string | null | undefined,
-    sessionId: string,
-  ): Promise<string | null> {
-    const MAX_RETRIES = 2;
-    const RETRY_DELAY_MS = 2000;
-
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        return await this.generateSummary(messagesText, previousSummary);
-      } catch (err) {
-        logger.warn(`Summarization attempt ${attempt}/${MAX_RETRIES} failed`, {
-          _error: err instanceof Error ? err.message : String(err),
-          sessionId,
-          attempt,
-          operation: 'summarization:retry',
-        });
-
-        if (attempt < MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-        }
-      }
-    }
-
-    return null;
   }
 
   /**

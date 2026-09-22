@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { APICallError } from 'ai';
 import { createMockLogger } from './_helpers/mock-logger';
 import { makeStudySession, makeMessage } from './_helpers/fixtures';
 
@@ -68,12 +69,17 @@ mock.module('../db/repositories/messages.repository', () => ({
 
 // Mistral client mock — service migré vers lib/ai/mistral-client.
 // generateText retourne directement le contenu string.
-let mistralResponse = 'Mocked summary text';
+let mistralResponse: string | Error = 'Mocked summary text';
+let generateTextCalls = 0;
 
 // Mock complet du wrapper Mistral pour isolation Bun (autres tests peuvent
 // partager le même module-mock cache).
 mock.module('../lib/ai/mistral-client', () => ({
-  generateText: mock(async () => mistralResponse),
+  generateText: mock(async () => {
+    generateTextCalls += 1;
+    if (mistralResponse instanceof Error) throw mistralResponse;
+    return mistralResponse;
+  }),
   generateStructured: mock(async () => ({})),
 }));
 
@@ -109,6 +115,7 @@ beforeEach(() => {
   sessionUpdateCalled = false;
   sessionUpdateArgs = {};
   mistralResponse = 'Mocked summary text';
+  generateTextCalls = 0;
 });
 
 describe('Summarization Service', () => {
@@ -174,6 +181,23 @@ describe('Summarization Service', () => {
       // Should not throw — null response means no summary generated
       await summarizationService.summarizeIfNeeded('session-001');
       // No summary stored when Gemini returns null
+      expect(sessionUpdateCalled).toBe(false);
+    });
+
+    it('does not retry a non-retryable 400 on top of the SDK', async () => {
+      mistralResponse = new APICallError({
+        message: 'Bad Request',
+        url: 'https://api.eu.mistral.ai/v1/chat/completions',
+        requestBodyValues: {},
+        statusCode: 400,
+        isRetryable: false,
+      });
+      sessionResult = makeStudySession({ conversationSummary: null, summaryUpToMessageId: null });
+      messagesResult = makeMessages(25);
+
+      await summarizationService.summarizeIfNeeded('session-001');
+
+      expect(generateTextCalls).toBe(1);
       expect(sessionUpdateCalled).toBe(false);
     });
 
