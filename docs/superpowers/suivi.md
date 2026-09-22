@@ -10,11 +10,12 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-09-22
+- **Dernière mise à jour :** 2026-09-23
 - **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** démarrer la PR E1 (`plans/2026-09-22-lot-0-e-code-reinvente.md`,
-  branche `refactor/replace-custom-ai-calls`) avec le skill
-  `superpowers:subagent-driven-development`.
+- **Prochaine action :** réécrire la section E2 de
+  `plans/2026-09-22-lot-0-e-code-reinvente.md` contre `main` (elle est marquée « à
+  réécrire au démarrage »), puis l'exécuter sur `refactor/replace-custom-infra` avec le
+  skill `superpowers:subagent-driven-development`.
 
 ## Reporté
 
@@ -22,12 +23,6 @@ Constats hors périmètre de la PR qui les a trouvés. Chacun nomme la PR ou le 
 traite ; quand le plan de cette PR s'écrit, le point y devient une tâche ou est renvoyé
 explicitement (`.claude/rules/plans-and-agents.md`).
 
-- **E1** : `capturedResult.totalUsage` déprécié dans `chat-message.routes.ts` (même
-  sémantique que `usage`) et appel de la méthode instance dépréciée
-  `capturedResult.toUIMessageStream(...)` (ai@7 : « Use the standalone
-  `toUIMessageStream` helper from 'ai' with `result.stream` ») : PR E1 (tâche E1.10,
-  ajoutée au plan par la PR E1). Voxtral TTS/STT par `fetch` maison alors que `@mistralai/mistralai` expose
-  `audioSpeechComplete`/`audioVoices` : tâches E1.2 et E1.3.
 - **E2** (liste détaillée en tête de la section E2 du plan) : champs morts
   `IAppUser.parentId` (`packages/api/src/types.ts`) et `ElysiaAuthenticatedUser.parentId`
   (`apps/server/src/types/index.ts`) ; exemple périmé de `pool-limiter.ts` (supprimé par
@@ -36,9 +31,19 @@ explicitement (`.claude/rules/plans-and-agents.md`).
   l'espace `apps/server` du `knip.json` racine, montage `./apps/server/scripts` de
   `docker-compose.yml` (dossier supprimé) ; commentaires « mobile project » de
   `apps/server/src/lib/encryption.ts` et utilité de sa copie `toArrayBuffer` ;
-  `TRUSTED_ORIGINS` lue par aucun fichier de `src/` ; `pnpm test:scripts` absent de la CI.
+  `TRUSTED_ORIGINS` lue par aucun fichier de `src/` ; `pnpm test:scripts` absent de la CI ;
+  `eslint-disable` antérieurs dans `apps/server/src` (surtout `await-thenable` et
+  `no-explicit-any` des tests Pronote, plus les repositories learning, `parent.service.ts`,
+  `education-levels.ts`, `seed-dev.ts`), à remplacer par une forme de code qui ne déclenche
+  pas la règle (`.catch((e: unknown) => e)` + `toBeInstanceOf`, comme en E1).
 - **Lot 2** : le quota compte `totalTokens` (tokens cachés et de raisonnement inclus) ;
-  observation, antérieure à C.
+  observation, antérieure à C. Les cartes tournent en `json_schema` non strict
+  (`strict: false`) parce que le mode strict de Mistral refuse `format: uri` (`.url()`) et
+  `propertyNames` (`z.record`) de `cards-domain.schema.ts` (400, code 3051) : revoir ce
+  schéma avec le domaine des cartes pour repasser en strict ; la tâche E1.6 prévoyait de
+  modifier ce fichier, écarté en E1 (le schéma relève du domaine). En cas d'erreur, le span
+  OpenTelemetry d'un appel IA porte le message d'erreur Mistral (le corps de la réponse) :
+  vérifier qu'il ne contient pas de contenu d'élève avant de brancher un vrai exporteur.
 - **Lot 3** : colonnes RevenueCat de `family_billing`, enum `billing_status` et
   commentaires de `billing.schema.ts` (dont `:179`) ; `app-guide-data.ts` à réécrire avec
   la navigation web. Le code de `BillingService` et `plan-cache` se retrouve avec
@@ -89,7 +94,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | mergée | #309 |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | mergée | #313 |
 | D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | mergée | #315 |
-| E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | à faire | — |
+| E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | mergée | #318 |
 | E2 — Infra serveur et outillage | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-infra` | à faire | — |
 
 Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
@@ -195,3 +200,14 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   point reporté a désormais une PR ou un lot propriétaire ; règle
   `.claude/rules/plans-and-agents.md` ajoutée (plan écrit au démarrage de sa PR, pas de
   numéros de ligne, un fait à un seul endroit).
+- **2026-09-23** — PR docs mergée (#317). PR E1 (appels IA sur l'AI SDK et le SDK Mistral)
+  mergée (#318, merge commit) : embeddings, STT et TTS par `@mistralai/mistralai` (TTS
+  envoie enfin `voice_id`, STT garde le vrai type MIME et est borné par `MISTRAL_TIMEOUT`) ;
+  sorties structurées par `generateText` + `Output.object` et Zod, `json_schema` strict par
+  défaut (cartes en non strict, voir Reporté lot 2), un seul retry sur échec de schéma sous
+  un timeout commun ; `lib/retry.ts`, `document-parsers.ts` et `otel/spans.ts` supprimés ;
+  traces par `@ai-sdk/otel` sans entrées ni sorties enregistrées ; route de chat sans API
+  dépréciées (tâche E1.10) ; `streamChat` réessaie `MISTRAL_RETRY_ATTEMPTS` fois ; le client
+  TTS ne reçoit plus le corps d'erreur Mistral. Relecture finale : 7 findings corrigés
+  avant merge. Validation : typecheck, lint, test (840), knip, test:integration à exit 0,
+  test live des sorties structurées 3/3.
