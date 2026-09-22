@@ -1,97 +1,108 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, Info, Loader2, ArrowRight } from "lucide-react";
-import { Button, cn } from "@repo/ui";
+import { ArrowRight, CheckCircle2, Info, Loader2 } from "lucide-react";
+import { Button, Input, cn } from "@repo/ui";
 import { joinWaitlist } from "@/lib/actions/waitlist";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface WaitlistFormProps {
   source: string;
   className?: string;
   buttonText?: string;
+  tone?: "default" | "inverted";
 }
 
 export function WaitlistForm({
   source,
   className,
   buttonText = "Rejoindre la liste d'attente",
+  tone = "default",
 }: WaitlistFormProps) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "already" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [isPending, startTransition] = useTransition();
+  const inputId = `waitlist-email-${source}`;
+  const errorId = `waitlist-error-${source}`;
 
-  if (status === "success") {
+  if (status === "success" || status === "already") {
+    const Icon = status === "success" ? CheckCircle2 : Info;
     return (
-      <div
-        role="status"
-        aria-live="polite"
-        className={cn("flex items-center gap-2 text-success font-medium", className)}
-      >
-        <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-        <span>Vous serez notifié du lancement !</span>
+      <div role="status" aria-live="polite" className={cn("flex items-center gap-2 font-medium", className)}>
+        <Icon className="size-5 shrink-0 text-success" aria-hidden="true" />
+        <span>
+          {status === "success"
+            ? "C'est noté, vous serez prévenu du lancement."
+            : "Cet email est déjà inscrit, vous serez prévenu du lancement."}
+        </span>
       </div>
     );
   }
 
-  if (status === "already") {
-    return (
-      <div className={cn("flex items-center gap-2 text-primary font-medium", className)}>
-        <Info className="h-5 w-5" />
-        <span>Cet email est déjà dans la liste d&apos;attente, vous serez notifié !</span>
-      </div>
-    );
+  function showError(message: string) {
+    setStatus("error");
+    setErrorMsg(message);
+  }
+
+  function handleBlur() {
+    if (email && !EMAIL_REGEX.test(email)) showError("Adresse email invalide");
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setStatus("idle");
     setErrorMsg("");
-
     startTransition(async () => {
       const result = await joinWaitlist(email, source);
-      if (result.success && result.alreadyExists) {
-        setStatus("already");
-      } else if (result.success) {
-        setStatus("success");
-      } else {
-        setStatus("error");
-        setErrorMsg(result.error);
-      }
+      if (!result.success) showError(result.error);
+      else setStatus(result.alreadyExists ? "already" : "success");
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className={cn("flex flex-col gap-2", className)}>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <label htmlFor="waitlist-email" className="sr-only">
+    <form onSubmit={handleSubmit} noValidate className={cn("flex flex-col gap-2", className)}>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <label htmlFor={inputId} className="sr-only">
           Adresse e-mail
         </label>
-        <input
-          id="waitlist-email"
+        <Input
+          id={inputId}
           type="email"
           required
-          placeholder="votre@email.com"
+          autoComplete="email"
+          placeholder="votre@email.fr"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          aria-describedby={status === "error" ? "waitlist-error" : undefined}
-          className="h-12 flex-1 rounded-xl border border-border bg-background px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (status === "error") setStatus("idle");
+          }}
+          onBlur={handleBlur}
+          variant={status === "error" ? "error" : "default"}
+          aria-invalid={status === "error"}
+          aria-describedby={status === "error" ? errorId : undefined}
+          className={cn(
+            "h-12 flex-1 rounded-full px-5 text-base",
+            tone === "inverted" && "border-background/30 bg-background text-foreground",
+          )}
         />
         <Button type="submit" size="lg" disabled={isPending} aria-busy={isPending} className="group">
           {isPending ? (
             <>
-              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-              <span className="sr-only">Chargement…</span>
+              <Loader2 className="animate-spin" aria-hidden="true" />
+              <span className="sr-only">Envoi en cours</span>
             </>
           ) : (
             <>
               {buttonText}
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+              <ArrowRight className="transition-transform duration-base group-hover:translate-x-1" aria-hidden="true" />
             </>
           )}
         </Button>
       </div>
       {status === "error" && (
-        <p id="waitlist-error" role="alert" className="text-sm text-destructive">
+        <p id={errorId} role="alert" className={cn("text-sm", tone === "inverted" ? "text-background" : "text-destructive")}>
           {errorMsg}
         </p>
       )}
