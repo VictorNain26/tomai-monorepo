@@ -3,7 +3,6 @@
  *
  * Vérifie que la configuration auth expose les bonnes capacités :
  * - Google OAuth (social provider)
- * - Expo plugin (mobile deep links)
  * - Username plugin (autonomous child login)
  * - Account linking (email/password + Google sur même email)
  *
@@ -50,7 +49,6 @@ mock.module('../config/env', () => ({
   isDevelopment: () => true,
   isInDocker: () => false,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
-  getTrustedOrigins: () => ['http://localhost:3000', 'http://localhost:3001', 'tomia://', 'exp://'],
   getCorsOrigins: () => ['http://localhost:3000', 'http://localhost:3001'],
 }));
 
@@ -123,6 +121,17 @@ describe('Better Auth Configuration', () => {
     it('should expose a request handler for mounting on Elysia', () => {
       expect(auth.handler).toBeDefined();
       expect(typeof auth.handler).toBe('function');
+    });
+  });
+
+  describe('Web-only client surface', () => {
+    it('trusts only the HTTP CORS origins', () => {
+      const options = auth.options as { trustedOrigins: string[] };
+      expect(options.trustedOrigins).toEqual(['http://localhost:3000', 'http://localhost:3001']);
+    });
+
+    it('does not mount the Expo authorization proxy', () => {
+      expect(apiMethods).not.toContain('expoAuthorizationProxy');
     });
   });
 });

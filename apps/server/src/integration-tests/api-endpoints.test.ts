@@ -67,7 +67,6 @@ mock.module('../config/env', () => ({
   isInDocker: () => false,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
   getCorsOrigins: () => ['http://localhost:3001'],
-  getTrustedOrigins: () => ['http://localhost:3001', 'tomia://'],
 }));
 
 // Cache service
@@ -235,7 +234,6 @@ mock.module('../routes/pronote-connect.routes', () => ({ pronoteConnectRoutes: n
 // The mock must spread all real sub-modules so that other integration tests
 // sharing this Bun process (single module registry) can still import named
 // exports such as `pronoteCredentials`, `user`, `parentChild`, etc.
-// Only `devicePushTokens` is replaced with a stub — everything else is real.
 import * as authSchema from '../db/schema/auth.schema';
 import * as learningSchema from '../db/schema/learning.schema';
 import * as pronoteSchema from '../db/schema/pronote.schema';
@@ -251,8 +249,6 @@ mock.module('../db/schema', () => ({
   ...filesSchema,
   ...learningToolsSchema,
   ...notificationsSchema,
-  // Override only the table used by the push-token route tested here
-  devicePushTokens: { token: 'token', userId: 'userId' },
 }));
 mock.module('../db/repositories/index', () => ({
   filesRepository: { findByUserId: mock(async () => []), findById: mock(async () => null) },

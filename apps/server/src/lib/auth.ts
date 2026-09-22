@@ -3,7 +3,6 @@
  * Configuration propre et flexible basée sur la configuration centralisée
  *
  * Plugins:
- * - expo: Mobile app support (deep links, secure storage)
  * - openAPI: API documentation
  * - mcp: Model Context Protocol
  * - username: Autonomous child login
@@ -11,11 +10,10 @@
 
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
 import { openAPI, mcp, username } from "better-auth/plugins";
-import { expo } from "@better-auth/expo";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../db/connection";
 import { user, session, account, verification } from "../db/schema";
-import { env, isProduction, isDevelopment, getTrustedOrigins } from "../config/env";
+import { env, isProduction, isDevelopment, getCorsOrigins } from "../config/env";
 import { logger } from "./observability";
 
 // Validation des services requis pour l'authentification
@@ -30,7 +28,7 @@ if (isProduction() && !env.FRONTEND_URL) {
   throw new Error('FRONTEND_URL is required for production authentication');
 }
 
-const trustedOrigins = getTrustedOrigins();
+const trustedOrigins = getCorsOrigins();
 
 /**
  * Détermine le domaine cookie pour les sous-domaines
@@ -193,7 +191,6 @@ export const auth = betterAuth({
     ...(isDevelopment()
       ? ([openAPI(), mcp({ loginPage: "/sign-in" })] as BetterAuthPlugin[])
       : []),
-    expo(),     // Mobile app support (deep links, secure storage)
     username(), // Autonomous child login: POST /api/auth/sign-in/username
   ],
 });

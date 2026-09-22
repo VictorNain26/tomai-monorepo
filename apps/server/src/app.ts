@@ -62,7 +62,7 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
       'X-Start-Time',
       'Content-Type',
       // Set-Cookie intentionally NOT exposed: JavaScript must not be able to read
-      // session cookies cross-origin (mobile uses authClient.getCookie from SecureStore).
+      // session cookies cross-origin.
     ],
     maxAge: 86400 // 24h pour les preflight requests (optimisation)
   }))

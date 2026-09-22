@@ -171,7 +171,6 @@ export function getDatabaseUrl(): string {
  * - Includes BETTER_AUTH_URL + FRONTEND_URL (if set)
  * - Adds CORS_ORIGINS comma-separated list
  * - Dev: adds localhost:3000/3001
- * Single source of truth for HTTP origins — no mobile schemes here
  */
 export function getCorsOrigins(): string[] {
   const origins = new Set<string>();
@@ -196,27 +195,6 @@ export function getCorsOrigins(): string[] {
   if (isDevelopment()) {
     origins.add('http://localhost:3000'); // server
     origins.add('http://localhost:3001'); // landing
-  }
-
-  return Array.from(origins);
-}
-
-/**
- * Build trusted origins for Better Auth
- * Composes CORS origins + adds mobile deep link schemes (tomia://, exp:// in dev)
- */
-export function getTrustedOrigins(): string[] {
-  const origins = new Set<string>();
-
-  // Start with HTTP origins from getCorsOrigins()
-  getCorsOrigins().forEach(o => origins.add(o));
-
-  // Add tomia:// (mobile deep link, always present)
-  origins.add('tomia://');
-
-  // Add exp:// only in development (Expo dev client)
-  if (isDevelopment()) {
-    origins.add('exp://');
   }
 
   return Array.from(origins);
