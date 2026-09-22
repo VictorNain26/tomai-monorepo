@@ -25,7 +25,6 @@ mock.module('../lib/observability', () => ({ logger: mockLogger }));
 // decisions (booleans) to that snapshot — exactly what the real atomic UPDATE
 // does, minus the SQL.
 let dbSelectResult: Record<string, unknown>[] = [];
-let dbUpdateResult = { rowCount: 1 };
 let dbInsertShouldThrow = false;
 
 function currentRow(): Record<string, unknown> {
@@ -78,7 +77,6 @@ mock.module('../db/repositories/user-subscriptions.repository', () => ({
     }),
     applyTokenIncrement: mockApplyTokenIncrement,
     applyDeckIncrement: mockApplyDeckIncrement,
-    resetExpiredDaily: mock(() => Promise.resolve(dbUpdateResult.rowCount)),
   },
 }));
 
@@ -105,7 +103,6 @@ function makeDbSubscription(overrides?: Record<string, unknown>) {
 
 beforeEach(() => {
   dbSelectResult = [];
-  dbUpdateResult = { rowCount: 1 };
   dbInsertShouldThrow = false;
   mockApplyTokenIncrement.mockClear();
   mockApplyDeckIncrement.mockClear();
@@ -256,20 +253,6 @@ describe('Token Quota Service', () => {
       dbInsertShouldThrow = true;
       const result = await tokenQuotaService.incrementDeckUsage('user-err');
       expect(result.success).toBe(false);
-    });
-  });
-
-  describe('resetAllDailyTokens', () => {
-    it('should batch update and return affected count', async () => {
-      dbUpdateResult = { rowCount: 42 };
-      const result = await tokenQuotaService.resetAllDailyTokens();
-      expect(result.resetCount).toBe(42);
-    });
-
-    it('should return 0 when no rows affected', async () => {
-      dbUpdateResult = { rowCount: 0 };
-      const result = await tokenQuotaService.resetAllDailyTokens();
-      expect(result.resetCount).toBe(0);
     });
   });
 

@@ -279,6 +279,4 @@ export function getHoursUntilReset(): string {
 }
 
 // Deck quota functions are now in ./quota-deck.ts
-// Scheduled reset sweep is now in ./quota-reset.ts
 export { checkDeckQuota, incrementDeckUsage } from './quota-deck.js';
-export { resetAllDailyTokens } from './quota-reset.js';

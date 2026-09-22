@@ -96,7 +96,7 @@ mock.module('../middleware/rate-limit.middleware', () => ({
   RateLimitPresets: { api: {} },
 }));
 mock.module('../services/token-quota.service', () => ({
-  tokenQuotaService: { resetAllDailyTokens: mock(async () => ({ resetCount: 0 })) },
+  tokenQuotaService: {},
 }));
 
 // Retention purge — its real module pulls the Drizzle schemas, whose
