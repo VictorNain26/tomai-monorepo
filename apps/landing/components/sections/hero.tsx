@@ -17,8 +17,8 @@ export function Hero() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="py-16 lg:py-24">
-      <div className="container grid items-center gap-16 lg:grid-cols-2">
+    <section className="flex min-h-[calc(100svh-4rem)] items-center py-16 lg:py-24">
+      <div className="container grid w-full items-center gap-16 lg:grid-cols-2">
         <div>
           <h1 className="text-5xl font-semibold leading-tight text-balance text-foreground sm:text-6xl xl:text-7xl">
             Il ne donne pas la réponse. Il aide à la{" "}
@@ -29,7 +29,7 @@ export function Hero() {
               initial={reduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: REVEAL_SECONDS, delay: 0.3 + DRAW_SECONDS }}
-              className="text-primary"
+              className="text-annotation"
             >
               comprendre
             </motion.em>

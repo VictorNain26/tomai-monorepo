@@ -40,9 +40,9 @@ export function HowItWorks() {
         <SectionHeader eyebrow="La méthode" title="Comment Tom guide votre enfant" />
         <ol className="mx-auto grid max-w-5xl gap-12 md:grid-cols-3">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="border-l-2 border-primary pl-6">
+            <li key={step.title} className="border-l-2 border-annotation pl-6">
               <FadeIn delay={index * 0.15}>
-                <Scribble kind="circle" className="mb-4 px-2 font-heading text-3xl text-primary" delay={0.2 + index * 0.15}>
+                <Scribble kind="circle" className="mb-4 px-2 font-heading text-3xl text-annotation" delay={0.2 + index * 0.15}>
                   {index + 1}
                 </Scribble>
                 <h3 className="mb-3 text-2xl font-semibold text-foreground">{step.title}</h3>

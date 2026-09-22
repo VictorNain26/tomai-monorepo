@@ -8,7 +8,7 @@ export default function CguPage() {
       description="Dernière mise à jour : 22 septembre 2026"
     >
       <div className="rounded-2xl border border-border bg-card p-8 md:p-12">
-        <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+        <div className="prose prose-slate max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
           <h3>1. Objet</h3>
           <p>
             Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services du service web TomIA, accessible sur tomia.fr, ci-après nommé « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.

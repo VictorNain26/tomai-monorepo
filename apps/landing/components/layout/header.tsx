@@ -1,31 +1,23 @@
 "use client";
 
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button, cn } from "@repo/ui";
 import { useState, useEffect, useCallback } from "react";
-import { useTheme } from "next-themes";
 import { Logo } from "../atoms/logo";
 import { NavLinks } from "../molecules/nav-links";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 10);
   }, []);
 
   useEffect(() => {
-    queueMicrotask(() => setMounted(true));
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   return (
     <header
@@ -45,22 +37,8 @@ export function Header() {
           <NavLinks />
         </div>
 
-        {/* Desktop CTA & Theme Toggle */}
+        {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3 z-20">
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              aria-label="Changer de thème"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
-          )}
           <Button size="sm" asChild>
             <a href="#waitlist">Rejoindre la liste d&apos;attente</a>
           </Button>

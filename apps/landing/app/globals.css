@@ -4,8 +4,8 @@
 
 @utility bg-notebook {
   background-image:
-    repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-foreground) 6%, transparent) 0 1px, transparent 1px calc(var(--spacing) * 8)),
-    repeating-linear-gradient(0deg, color-mix(in srgb, var(--color-foreground) 6%, transparent) 0 1px, transparent 1px calc(var(--spacing) * 8));
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 12%, transparent) 0 1px, transparent 1px calc(var(--spacing) * 8)),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--color-primary) 12%, transparent) 0 1px, transparent 1px calc(var(--spacing) * 8));
   mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 30%, transparent 100%);
 }
 

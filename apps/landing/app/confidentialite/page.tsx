@@ -8,7 +8,7 @@ export default function ConfidentialitePage() {
       description="Dernière mise à jour : 22 septembre 2026"
     >
       <div className="rounded-2xl border border-border bg-card p-8 md:p-12">
-        <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+        <div className="prose prose-slate max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
           <p>
             <strong>En bref :</strong> TomIA aide votre enfant à apprendre. Pour cela, nous
             traitons les données strictement nécessaires au tutorat, en France et en Europe

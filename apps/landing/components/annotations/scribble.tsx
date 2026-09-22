@@ -46,7 +46,7 @@ export function Scribble({
         viewBox={shape.viewBox}
         preserveAspectRatio="none"
         fill="none"
-        className={cn("pointer-events-none absolute overflow-visible text-primary", shape.position)}
+        className={cn("pointer-events-none absolute overflow-visible text-annotation", shape.position)}
       >
         <motion.path
           d={shape.d}

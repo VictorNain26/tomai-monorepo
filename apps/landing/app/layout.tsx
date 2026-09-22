@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Figtree, Fraunces } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { MobileCTABar } from "@/components/molecules/mobile-cta-bar";
@@ -125,7 +124,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning className={`${fraunces.variable} ${figtree.variable}`}>
+    <html lang="fr" className={`${fraunces.variable} ${figtree.variable}`}>
       <body>
         {jsonLd.map((schema, i) => (
           <script
@@ -137,19 +136,18 @@ export default function RootLayout({
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-full">
           Aller au contenu principal
         </a>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <MotionProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <div aria-hidden="true" className="bg-notebook pointer-events-none fixed inset-0 -z-50" />
-              <Header />
-              <main id="main-content" className="flex-1">
-                {children}
-              </main>
-              <Footer />
-              <MobileCTABar />
-            </div>
-          </MotionProvider>
-        </ThemeProvider>
+        <MotionProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <div aria-hidden="true" className="bg-notebook pointer-events-none fixed inset-0 -z-50" />
+            <div aria-hidden="true" className="pointer-events-none fixed inset-y-0 left-4 -z-40 hidden w-px bg-annotation/40 md:block" />
+            <Header />
+            <main id="main-content" className="flex-1">
+              {children}
+            </main>
+            <Footer />
+            <MobileCTABar />
+          </div>
+        </MotionProvider>
       </body>
     </html>
   );

@@ -87,7 +87,13 @@ export function WaitlistForm({
             tone === "inverted" && "border-background/30 bg-background text-foreground",
           )}
         />
-        <Button type="submit" size="lg" disabled={isPending} aria-busy={isPending} className="group">
+        <Button
+          type="submit"
+          size="lg"
+          disabled={isPending}
+          aria-busy={isPending}
+          className={cn("group", tone === "inverted" && "bg-background text-foreground hover:bg-background/90")}
+        >
           {isPending ? (
             <>
               <Loader2 className="animate-spin" aria-hidden="true" />

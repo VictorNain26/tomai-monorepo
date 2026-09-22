@@ -13,7 +13,7 @@ export function Logo({ className }: { className?: string }) {
       )}
     >
       {BRAND_NAME}
-      <span className="text-primary">.</span>
+      <span className="text-annotation">.</span>
     </Link>
   );
 }

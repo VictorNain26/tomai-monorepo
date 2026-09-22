@@ -49,7 +49,7 @@ export function Pricing() {
                 plan.featured ? "border-2 border-primary" : "border-border",
               )}
             >
-              <p className="font-heading text-lg italic text-primary">{plan.tagline}</p>
+              <p className="font-heading text-lg italic text-annotation">{plan.tagline}</p>
               <h3 className="mt-2 text-3xl font-semibold text-foreground">{plan.name}</h3>
               <p className="mt-2 text-lg font-semibold text-foreground">{plan.price}</p>
               <ul className="my-8 flex-1 space-y-3">

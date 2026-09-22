@@ -9,8 +9,8 @@ export const contentType = "image/png";
 
 // ImageResponse ne lit pas les variables CSS : copie de packages/tokens/theme.css.
 const PAPER = "#FAF7F0";
-const INK = "#1C2340";
-const TERRACOTTA = "#B0421A";
+const INK = "#1D1D22";
+const RED = "#C0282D";
 
 const fraunces = await readFile(join(process.cwd(), "assets/fraunces-latin-600-normal.woff"));
 
@@ -32,15 +32,15 @@ export default function Image() {
       >
         <div style={{ display: "flex", fontSize: 44 }}>
           {BRAND_NAME}
-          <span style={{ color: TERRACOTTA }}>.</span>
+          <span style={{ color: RED }}>.</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", fontSize: 76, lineHeight: 1.1 }}>
           <span>Il ne donne pas la réponse.</span>
           <span style={{ display: "flex" }}>
-            Il aide à la&nbsp;<span style={{ color: TERRACOTTA }}>comprendre.</span>
+            Il aide à la&nbsp;<span style={{ color: RED }}>comprendre.</span>
           </span>
         </div>
-        <div style={{ display: "flex", fontSize: 30, color: TERRACOTTA }}>Collège, de la 6e à la 3e</div>
+        <div style={{ display: "flex", fontSize: 30, color: RED }}>Collège, de la 6e à la 3e</div>
       </div>
     ),
     { ...size, fonts: [{ name: "Fraunces", data: fraunces, style: "normal", weight: 600 }] },
