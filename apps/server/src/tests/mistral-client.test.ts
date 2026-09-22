@@ -111,6 +111,16 @@ describe('generateStructured', () => {
     expect(wire['name']).toBe('intent');
   });
 
+  it('turns strict json_schema off when asked', async () => {
+    const capture: { body?: Record<string, unknown> } = {};
+    mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
+
+    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', strict: false });
+
+    const responseFormat = capture.body?.['response_format'] as Record<string, unknown>;
+    expect((responseFormat['json_schema'] as Record<string, unknown>)['strict']).toBe(false);
+  });
+
   it('retries once with the validation error, then succeeds', async () => {
     const bodies: Array<Record<string, unknown>> = [];
     const replies = [JSON.stringify({ intent: 'nope' }), JSON.stringify({ intent: 'chit-chat' })];

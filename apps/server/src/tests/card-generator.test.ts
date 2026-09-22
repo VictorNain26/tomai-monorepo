@@ -29,7 +29,7 @@ describe('generateCards', () => {
   });
 
   it('leaves the output format to the schema instead of asking for a bare JSON array', async () => {
-    let body: { messages: unknown; response_format: { json_schema: { name: string } } } | undefined;
+    let body: { messages: unknown; response_format: { json_schema: { name: string; strict?: boolean } } } | undefined;
     globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
       body = JSON.parse(init?.body as string) as typeof body;
       const cards = { cards: [{ cardType: 'flashcard', content: { front: 'a² + b² ?', back: 'c²' } }] };
@@ -41,6 +41,7 @@ describe('generateCards', () => {
     await generateCards(params);
 
     expect(body?.response_format.json_schema.name).toBe('card_generation');
+    expect(body?.response_format.json_schema.strict).toBe(false);
     expect(JSON.stringify(body?.messages)).not.toContain('```json');
   });
 

@@ -144,6 +144,8 @@ export async function generateCards(
       maxTokens: 4096,
       schema: CardGenerationSchema,
       schemaName: 'card_generation',
+      // Mistral strict mode rejects `format: uri` (.url()) and `propertyNames` (z.record) with 400/3051.
+      strict: false,
       promptCacheKey: CARD_GENERATOR_CACHE_KEY,
     });
     const cards = object.cards as ParsedCard[];

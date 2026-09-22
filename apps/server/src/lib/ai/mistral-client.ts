@@ -60,6 +60,7 @@ interface GenerateTextOptions {
 interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   schema: z.ZodType<T>;
   schemaName: string;
+  strict?: boolean;
 }
 
 export interface StructuredUsage {
@@ -157,7 +158,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       providerOptions: {
         mistral: {
           safePrompt: true,
-          strictJsonSchema: true,
+          strictJsonSchema: opts.strict ?? true,
           reasoningEffort: 'none',
           promptCacheKey: opts.promptCacheKey,
         } satisfies MistralLanguageModelChatOptions,
