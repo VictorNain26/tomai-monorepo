@@ -1,7 +1,7 @@
 /**
  * Service de Transcription Audio - TomAI
  *
- * STT via Voxtral (voxtral-mini-latest) — stack 100 % Mistral souveraine.
+ * STT via Voxtral (voxtral-mini-2602) — stack 100 % Mistral souveraine.
  * Voxtral ne fournit pas de timecodes par mot ni de score de confiance ;
  * l'analyse de prononciation sera portée par un modèle phonétique dédié.
  */

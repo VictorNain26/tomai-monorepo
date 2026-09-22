@@ -2,7 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import { generateText } from '../lib/ai/mistral-client';
 import { HAS_MISTRAL } from './_creds';
 
-// Live contre l'API Mistral (api.mistral.ai). LOCAL-ONLY (`bun run test:live`),
+// Live contre l'endpoint UE Mistral (api.eu.mistral.ai). LOCAL-ONLY (`bun run test:live`),
 // hors CI : pas de conso d'API payante ni de dépendance externe sur les PRs.
 // Valide l'entrypoint de prod non-streaming (`generateText`) ; le streaming
 // chat vit désormais dans `ai-chat.service.ts` (`streamText`, Task 4).

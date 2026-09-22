@@ -1,10 +1,9 @@
 /**
  * Voxtral TTS Service — Mistral text-to-speech souveraine EU.
  *
- * Appelle directement POST {MISTRAL_SERVER_URL}/v1/audio/speech car le SDK
- * `@mistralai/mistralai` 2.2.1 expose seulement la transcription (audio→texte),
- * pas la synthèse (texte→audio). Confirmé par inspection v2.2.1 en mai 2026 :
- * funcs/audioTranscriptions{Complete,Stream} existent, aucun équivalent speech.
+ * Appelle directement POST {MISTRAL_SERVER_URL}/v1/audio/speech en fetch brut :
+ * `@mistralai/mistralai` 2.7.0 expose désormais `audioSpeechComplete`, migration
+ * suivie en PR E, pas faite ici.
  *
  * @see https://docs.mistral.ai/capabilities/audio/text_to_speech
  */
@@ -27,11 +26,10 @@ interface VoxtralTTSOptions {
   outputFormat?: 'mp3' | 'wav' | 'pcm' | 'flac' | 'opus';
 }
 
-// Mistral expose 30 preset voices accessibles sans création préalable (GET
-// /v1/audio/voices). fr_marie_neutral est la seule voix française neutre —
-// casual_male, utilisée avant, n'existe pas (404 "Voice 'casual_male' not
-// found", observé sur l'API live le 2026-09-22). Voice cloning + mapping par
-// niveau scolaire viendront dans une itération suivante.
+// fr_marie_neutral est la voix française neutre parmi les 30 presets exposés
+// sans création préalable (GET /v1/audio/voices) ; l'API rejette `language`,
+// c'est la voix qui porte la langue. Voice cloning + mapping par niveau
+// scolaire viendront dans une itération suivante.
 const DEFAULT_VOICE = 'fr_marie_neutral';
 
 const FORMAT_TO_MIME: Record<NonNullable<VoxtralTTSOptions['outputFormat']>, string> = {

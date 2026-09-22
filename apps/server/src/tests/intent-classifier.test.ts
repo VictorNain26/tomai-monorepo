@@ -2,7 +2,7 @@
  * Tests unitaires - Intent Classifier Service
  * Mock: Mistral client (lib/ai/mistral-client) + logger + app config
  *
- * Service migré Phase 2B vers `ministral-8b-latest` via
+ * Service migré Phase 2B vers `mistral-small-2603` via
  * `generateStructured` du wrapper Mistral. JSON Schema strict garantit la
  * forme retournée — le test mocke directement la valeur parsée (pas du
  * string JSON brut).
@@ -21,7 +21,7 @@ mock.module('../lib/observability', () => ({ logger: mockLogger }));
 mock.module('../config/env', () => ({
   env: {
     MISTRAL_API_KEY: 'test-key',
-    MISTRAL_MODEL: 'mistral-medium-latest',
+    MISTRAL_MODEL: 'mistral-small-2603',
     MISTRAL_TEMPERATURE: 0.7,
     MISTRAL_MAX_TOKENS: 16384,
     MISTRAL_TIMEOUT: 60000,
