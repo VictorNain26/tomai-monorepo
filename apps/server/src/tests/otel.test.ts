@@ -39,7 +39,8 @@ describe('otel', () => {
     expect(process.listenerCount('SIGINT')).toBe(int);
   });
 
-  it('traces AI SDK calls once set up, without the student message', async () => {
+  it('exports AI SDK spans without the student message, with OTEL_EXPORTER_OTLP_HEADERS intact', async () => {
+    setupOtel();
     const model = new MockLanguageModelV4({
       doStream: async () => ({
         stream: simulateReadableStream({
@@ -72,13 +73,10 @@ describe('otel', () => {
     }).text;
     await shutdownOtel();
 
-    const exported = received.filter((r) => r.path === '/api/public/otel/v1/traces').map((r) => r.body).join('');
+    const traceRequests = received.filter((r) => r.path === '/api/public/otel/v1/traces');
+    const exported = traceRequests.map((r) => r.body).join('');
     expect(exported).toContain('gen_ai.operation.name');
     expect(exported).not.toContain('Léa Martin');
-  });
-
-  it('sends OTEL_EXPORTER_OTLP_HEADERS intact: URL-decoded, "=" padding kept', async () => {
-    const traceRequest = received.find((r) => r.path === '/api/public/otel/v1/traces');
-    expect(traceRequest?.authorization).toBe('Basic cGs6c2s=');
+    expect(traceRequests[0]?.authorization).toBe('Basic cGs6c2s=');
   });
 });
