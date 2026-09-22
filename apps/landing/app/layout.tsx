@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   applicationName: BRAND_NAME,
   category: "education",
   keywords: [
-    "TomIA", "tutorat", "éducation", "IA",
+    BRAND_NAME, "tutorat", "éducation", "IA",
     "aide aux devoirs", "aide devoirs IA",
     "soutien scolaire", "soutien scolaire IA",
     "tuteur IA français", "méthode socratique IA",
