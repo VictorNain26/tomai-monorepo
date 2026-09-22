@@ -7,8 +7,8 @@ export default function CguPage() {
       title="Conditions Générales d'Utilisation"
       description="Dernière mise à jour : 22 septembre 2026"
     >
-      <div className="rounded-2xl border border-border bg-card p-8 md:p-12">
-        <div className="prose prose-slate max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+      <div className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-border md:p-12">
+        <div className="legal-copy">
           <h3>1. Objet</h3>
           <p>
             Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services du service web TomIA, accessible sur tomia.fr, ci-après nommé « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.
@@ -65,7 +65,7 @@ export default function CguPage() {
             Le parent peut supprimer le compte d&apos;un enfant à tout moment depuis son
             espace dans l&apos;application. La suppression du compte parent (et des comptes
             enfants associés) s&apos;effectue sur demande à{" "}
-            <a href="mailto:contact@tomai.fr">contact@tomai.fr</a>. Les données sont alors
+            <a href="mailto:contact@tomia.fr">contact@tomia.fr</a>. Les données sont alors
             effacées dans les conditions prévues par la{" "}
             <Link href="/confidentialite">politique de confidentialité</Link>. Les modalités de souscription et de résiliation de l&apos;abonnement payant seront précisées dans les présentes conditions avant son ouverture.
           </p>

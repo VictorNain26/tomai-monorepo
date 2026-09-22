@@ -3,8 +3,8 @@ import { PageLayout } from "@/components/layout/page-layout";
 export default function MentionsLegalesPage() {
   return (
     <PageLayout title="Mentions Légales">
-      <div className="rounded-2xl border border-border bg-card p-8 md:p-12">
-        <div className="prose prose-slate max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+      <div className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-border md:p-12">
+        <div className="legal-copy">
           <h3>Éditeur du site</h3>
           <p>
             Le site tomia.fr est édité par Victor Lenain, micro-entrepreneur.

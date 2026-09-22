@@ -7,8 +7,8 @@ export default function ConfidentialitePage() {
       title="Politique de Confidentialité"
       description="Dernière mise à jour : 22 septembre 2026"
     >
-      <div className="rounded-2xl border border-border bg-card p-8 md:p-12">
-        <div className="prose prose-slate max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+      <div className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-border md:p-12">
+        <div className="legal-copy">
           <p>
             <strong>En bref :</strong> TomIA aide votre enfant à apprendre. Pour cela, nous
             traitons les données strictement nécessaires au tutorat, en France et en Europe
@@ -23,7 +23,7 @@ export default function ConfidentialitePage() {
             de l&apos;application TomIA (voir les{" "}
             <Link href="/mentions-legales">mentions légales</Link>). Pour toute question relative à
             vos données personnelles ou pour exercer vos droits :{" "}
-            <a href="mailto:contact@tomai.fr">contact@tomai.fr</a>.
+            <a href="mailto:contact@tomia.fr">contact@tomia.fr</a>.
           </p>
 
           <h3>2. Quelles données collectons-nous ?</h3>
@@ -109,7 +109,7 @@ export default function ConfidentialitePage() {
             encadrés par le cadre de protection des données UE–États-Unis
             (Data Privacy Framework) ou, à défaut, par les clauses contractuelles types de la
             Commission européenne. Une copie de ces garanties peut être obtenue en écrivant à{" "}
-            <a href="mailto:contact@tomai.fr">contact@tomai.fr</a>.
+            <a href="mailto:contact@tomia.fr">contact@tomia.fr</a>.
           </p>
 
           <h3>7. Combien de temps conservons-nous vos données ?</h3>
@@ -138,7 +138,7 @@ export default function ConfidentialitePage() {
             l&apos;intermédiaire de ses parents.
           </p>
           <p>
-            Pour les exercer : <a href="mailto:contact@tomai.fr">contact@tomai.fr</a> (réponse
+            Pour les exercer : <a href="mailto:contact@tomia.fr">contact@tomia.fr</a> (réponse
             sous un mois ; une vérification d&apos;identité pourra être demandée). Les comptes
             enfants peuvent être supprimés directement depuis l&apos;espace parent de
             l&apos;application ; la suppression du compte parent s&apos;effectue sur demande à
