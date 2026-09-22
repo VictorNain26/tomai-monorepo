@@ -28,15 +28,15 @@
     "postinstall": "lefthook install || true"
   },
   "devDependencies": {
-    "@evilmartians/lefthook": "^2.1.9",
-    "knip": "6.24.0",
-    "prettier": "^3.8.3",
-    "turbo": "^2.9.16",
+    "@evilmartians/lefthook": "^2.1.14",
+    "knip": "6.37.0",
+    "prettier": "^3.9.8",
+    "turbo": "^2.11.2",
     "typescript": "6.0.3"
   },
   "engines": {
-    "node": ">=22",
-    "pnpm": ">=11"
+    "node": ">=24",
+    "pnpm": ">=12"
   },
-  "packageManager": "pnpm@11.2.2"
+  "packageManager": "pnpm@12.5.1"
 }

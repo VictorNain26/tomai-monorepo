@@ -12,7 +12,7 @@ Lors d'une compaction, préserver : PR en cours, branche, chemin du registre SDD
 ## Commandes
 
 ```bash
-pnpm install                      # Node 22+, pnpm 11+
+pnpm install                      # Node 24+, pnpm 12+
 pnpm dev                          # infra Docker + server:3000 + landing:3001
 pnpm dev:down                     # arrêt de l'infra
 pnpm typecheck && pnpm lint       # validation, obligatoire avant commit
