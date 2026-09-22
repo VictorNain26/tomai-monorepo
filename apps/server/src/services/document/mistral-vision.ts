@@ -51,7 +51,7 @@ export async function extractImageWithMistralVision(
         model: VISION_MODEL,
         maxTokens: VISION_MAX_TOKENS,
         temperature: VISION_TEMPERATURE,
-        serverAddress: 'api.mistral.ai',
+        serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
       },
       async () => {
         return await generateText({

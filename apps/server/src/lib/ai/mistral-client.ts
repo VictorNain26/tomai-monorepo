@@ -7,12 +7,13 @@
  * - `generateText` — completion non-streaming simple (vision, analyse doc, résumé, titre…)
  * - `generateStructured` — completion JSON Schema strict (intent classifier, cartes, épisodes…)
  *
- * Both go through `mistralProvider` (`lib/ai/provider.ts`), which injects
- * `prompt_cache_key` on the wire request — the AI SDK's `MistralProvider`
- * has no first-class option for it (confirmed against `@ai-sdk/mistral` 4.0.5).
+ * Both go through `mistralProvider` (`lib/ai/provider.ts`, EU endpoint).
+ * Every call runs with `reasoningEffort: 'none'`: reasoning is reserved to the
+ * chat turn (`ai-chat.service.ts`).
  */
 
 import { generateText as aiGenerateText, generateObject as aiGenerateObject, jsonSchema, type ModelMessage, type TextPart, type FilePart, type JSONSchema7 } from 'ai';
+import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { mistralProvider } from './provider.js';
 import { env } from '../../config/env.js';
 import { withGenAiSpan } from '../otel/index.js';
@@ -20,9 +21,9 @@ import { withGenAiSpan } from '../otel/index.js';
 // ── Types domain ────────────────────────────────────────────────────────────
 
 /**
- * Multimodal content parts (vision). Mistral models with vision (medium 3.5 /
- * pixtral fusion) accept `image_url` parts inline alongside text. The `url`
- * shape supports both `data:` URIs and absolute https URLs.
+ * Multimodal content parts (vision). Mistral Small 4 accepts `image_url` parts
+ * inline alongside text. The `url` shape supports both `data:` URIs and
+ * absolute https URLs.
  */
 export type MistralContentPart =
   | { type: 'text'; text: string }
@@ -117,18 +118,24 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
       model,
       maxTokens,
       temperature,
-      serverAddress: 'api.mistral.ai',
+      serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
     },
     async (recordResponse) => {
       const result = await aiGenerateText({
-        model: mistralProvider(opts.promptCacheKey)(model),
+        model: mistralProvider()(model),
         messages: toModelMessages(opts.messages),
         allowSystemInMessages: true,
         temperature,
         maxOutputTokens: maxTokens,
         maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
         abortSignal: AbortSignal.timeout(timeoutMs),
-        providerOptions: { mistral: { safePrompt: true } },
+        providerOptions: {
+          mistral: {
+            safePrompt: true,
+            reasoningEffort: 'none',
+            promptCacheKey: opts.promptCacheKey,
+          } satisfies MistralLanguageModelChatOptions,
+        },
       });
       recordResponse({
         id: result.response.id,
@@ -164,11 +171,11 @@ export async function generateStructured<T = unknown>(
       model,
       maxTokens,
       temperature,
-      serverAddress: 'api.mistral.ai',
+      serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
     },
     async (recordResponse) => {
       const result = await aiGenerateObject({
-        model: mistralProvider(opts.promptCacheKey)(model),
+        model: mistralProvider()(model),
         messages: toModelMessages(opts.messages),
         allowSystemInMessages: true,
         schema: jsonSchema<T>(schema),
@@ -177,7 +184,14 @@ export async function generateStructured<T = unknown>(
         maxOutputTokens: maxTokens,
         maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
         abortSignal: AbortSignal.timeout(timeoutMs),
-        providerOptions: { mistral: { safePrompt: true, strictJsonSchema: true } },
+        providerOptions: {
+          mistral: {
+            safePrompt: true,
+            strictJsonSchema: true,
+            reasoningEffort: 'none',
+            promptCacheKey: opts.promptCacheKey,
+          } satisfies MistralLanguageModelChatOptions,
+        },
       });
       recordResponse({
         id: result.response.id,

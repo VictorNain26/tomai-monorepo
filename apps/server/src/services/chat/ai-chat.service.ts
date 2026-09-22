@@ -5,13 +5,6 @@
  * results back, loop) via `streamText`'s built-in tool loop. This service is
  * intentionally thin: assembling the prompt and configuring the call is all
  * it does — no parsing, no manual iteration.
- *
- * Prompt cache
- *   One `prompt_cache_key` shared by every student so the stable
- *   system-prompt prefix gets Mistral's 90 % cached-tokens discount. Bump
- *   `PROMPT_CACHE_VERSION` whenever the system prompt's structure changes
- *   (not its content) — the cache is keyed on a stable prefix, so an
- *   unbumped version after a structural change serves stale-shaped context.
  */
 
 import {
@@ -41,9 +34,6 @@ import { env } from '../../config/env.js';
 import type { MistralMessage, MistralContentPart } from '../../lib/ai/mistral-client.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from './file-context-types.js';
-
-/** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_CACHE_VERSION = '2026-06-14-voicefmt';
 
 export interface AttachedFile {
   /** Inline base64 payload for multimodal user messages (Mistral vision). */
@@ -262,8 +252,7 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
     intent: params.classifiedIntent?.intent,
   });
 
-  const cacheKey = `chat-${PROMPT_CACHE_VERSION}`;
-  const model = params.model ?? mistralProvider(cacheKey)(env.MISTRAL_MODEL);
+  const model = params.model ?? mistralProvider()(env.MISTRAL_MODEL);
 
   return streamText({
     model,
