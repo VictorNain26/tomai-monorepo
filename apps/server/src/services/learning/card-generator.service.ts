@@ -6,7 +6,7 @@
  * Architecture Evidence-Based:
  * - Schema simplifié (cardType enum + content object) → lisible et stable
  * - Prompt détaillé guide la structure de chaque type
- * - Validation Zod stricte après parsing (discriminatedUnion)
+ * - Sortie structurée validée par le schéma Zod (discriminatedUnion sur cardType)
  *
  * ## Fondements Scientifiques
  *
@@ -24,8 +24,9 @@
  * @see prompts/pedagogy.ts pour documentation détaillée des sources
  */
 
+import { NoObjectGeneratedError } from 'ai';
 import { generateStructured } from '../../lib/ai/mistral-client.js';
-import { CardGenerationOutputSchema } from '../../lib/ai/schemas/index.js';
+import { CardGenerationSchema } from '../../lib/ai/schemas/index.js';
 import {
   getSubjectInstructions,
   getRecommendedCardTypes,
@@ -37,7 +38,6 @@ import {
   KATEX_INSTRUCTIONS
 } from './prompts/index.js';
 import { logger } from '../../lib/observability.js';
-import { withRetry } from '../../lib/retry.js';
 import type { CardGenerationParams, ParsedCard } from './types.js';
 
 // Prompt cache sur l'instruction de base + adaptations cycle/sujet.
@@ -66,58 +66,6 @@ interface CardGenerationError {
 // CARD_GENERATOR_PROMPT_VERSION : déjà défini en haut du fichier comme const
 // pour le prompt cache key. Conservé en export pour compat.
 ;
-
-// ============================================================================
-// JSON SCHEMA SIMPLIFIÉ
-// ============================================================================
-
-/**
- * Schema minimal — Architecture Evidence-Based
- *
- * Le schema garde délibérément `content` non typé (object libre) pour deux
- * raisons : (1) 15 cardTypes × leurs champs imbriqués formeraient un schema
- * verbeux ; (2) Mistral génère mieux quand le prompt guide la structure plutôt
- * qu'un schema exhaustif. La validation de forme métier est déléguée à Zod
- * (discriminatedUnion sur cardType) après parsing.
- *
- * Architecture:
- * - Phase 1: Schema simple (cardType enum + content object non typé)
- * - Phase 2: Validation Zod stricte après parsing (discriminatedUnion)
- */
-// JSON Schema Mistral pour génération cartes — wrappé dans response_format.
-const cardGenerationSchema = {
-  name: 'card_generation',
-  strict: false, // content reste libre car typé par cardType (validation Zod après)
-  schema: {
-    type: 'object',
-    properties: {
-      cards: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            cardType: {
-              type: 'string',
-              enum: [
-                'concept', 'flashcard', 'qcm', 'vrai_faux',
-                'matching', 'fill_blank', 'word_order',
-                'calculation', 'timeline', 'matching_era', 'cause_effect',
-                'classification', 'process_order', 'grammar_transform', 'reformulation',
-              ],
-              description: 'Type de carte (snake_case obligatoire)',
-            },
-            content: {
-              type: 'object',
-              description: 'Contenu de la carte selon le type (voir prompt pour structure)',
-            },
-          },
-          required: ['cardType', 'content'],
-        },
-      },
-    },
-    required: ['cards'],
-  },
-} as const;
 
 // ============================================================================
 // PROMPT BUILDER
@@ -220,63 +168,16 @@ export async function generateCards(
 
     const prompt = buildPrompt(params);
 
-    // JSON Schema strict natif Mistral. Zod valide ensuite la forme métier
-    // (discriminatedUnion sur cardType).
-    // Prompt cache sur le préfixe pédagogique stable (templates + matière).
-    const wrapped = await withRetry(
-      async () => {
-        const parsed = await generateStructured<{ cards: unknown[] }>({
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7,
-          maxTokens: 4096,
-          schema: cardGenerationSchema,
-          promptCacheKey: CARD_GENERATOR_CACHE_KEY,
-        });
-        // Le SDK Mistral ne nous donne pas les tokens usage en JSON Schema
-        // mode via notre POST direct. Approximation : taille content sortie.
-        return { parsed, tokensUsed: JSON.stringify(parsed).length / 4 };
-      },
-      {
-        operationName: 'card-generation',
-        maxAttempts: 3,
-        initialDelayMs: 1000,
-        nonRetryableErrors: ['INVALID_'],
-      },
-    );
-
-    // generateStructured retourne déjà l'objet parsé via JSON Schema strict
-    // Mistral — pas de JSON.parse manuel ni de try/catch parse error nécessaire.
-    // L'objet a la forme { cards: [...] } — on extrait l'array pour la validation Zod suivante.
-    const parsedJson: unknown = wrapped.parsed.cards;
-    const tokensUsed = wrapped.tokensUsed;
-
-    // Best Practice 2025: Validation Zod comme défense en profondeur
-    // responseJsonSchema garantit la structure, Zod valide les invariants métier
-    const validation = CardGenerationOutputSchema.safeParse(parsedJson);
-
-    if (!validation.success) {
-      const errors = validation.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`);
-
-      // Log première carte pour diagnostic
-      const firstCard = Array.isArray(parsedJson) ? parsedJson[0] : null;
-
-      logger.error('Card validation failed', {
-        operation: 'learning:generate:validation_error',
-        topic: params.topic,
-        firstCard: firstCard ? JSON.stringify(firstCard) : 'N/A',
-        durationMs: Date.now() - startTime,
-        _error: errors.join('; '),
-        severity: 'high' as const
-      });
-
-      return {
-        success: false,
-        error: `Cartes invalides: ${errors[0]}`,
-        code: 'INVALID_OUTPUT'
-      };
-    }
-
-    const cards = validation.data as ParsedCard[];
+    const { object, usage } = await generateStructured({
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      maxTokens: 4096,
+      schema: CardGenerationSchema,
+      schemaName: 'card_generation',
+      promptCacheKey: CARD_GENERATOR_CACHE_KEY,
+    });
+    const cards = object.cards as ParsedCard[];
+    const tokensUsed = usage.inputTokens + usage.outputTokens;
     const durationMs = Date.now() - startTime;
 
     logger.info('Card generation completed', {
@@ -298,6 +199,17 @@ export async function generateCards(
     };
 
   } catch (error) {
+    if (NoObjectGeneratedError.isInstance(error)) {
+      logger.error('Card validation failed', {
+        operation: 'learning:generate:validation_error',
+        topic: params.topic,
+        durationMs: Date.now() - startTime,
+        _error: error.message,
+        severity: 'high' as const
+      });
+      return { success: false, error: 'Cartes invalides', code: 'INVALID_OUTPUT' };
+    }
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
 

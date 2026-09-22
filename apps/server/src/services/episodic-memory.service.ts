@@ -22,6 +22,7 @@
  * — but the critical log makes the operational problem visible.
  */
 
+import { z } from 'zod';
 import { generateStructured } from '../lib/ai/mistral-client.js';
 import { studySessionsRepository } from '../db/repositories/study-sessions.repository.js';
 import { messagesRepository } from '../db/repositories/messages.repository.js';
@@ -36,11 +37,11 @@ const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-05-18';
 // Prompt cache stable — bump version pour invalider
 const EPISODIC_CACHE_KEY = `episodic-extract-${EPISODIC_EXTRACTION_PROMPT_VERSION}`;
 
-interface ExtractedEpisode {
-  summary: string;
-  conceptsCovered: string[];
-  outcome: 'completed' | 'abandoned' | 'succeeded';
-}
+const EpisodeSchema = z.object({
+  summary: z.string().min(1),
+  conceptsCovered: z.array(z.string().min(1)).max(6),
+  outcome: z.enum(['completed', 'abandoned', 'succeeded']),
+});
 
 const EPISODE_TTL_DAYS = 90;
 
@@ -59,27 +60,6 @@ ${messagesText}
 
 Réponds UNIQUEMENT en JSON strict.`;
 }
-
-const EXTRACTION_SCHEMA = {
-  name: 'episode_extraction',
-  strict: true,
-  schema: {
-    type: 'object',
-    properties: {
-      summary: { type: 'string' },
-      conceptsCovered: {
-        type: 'array',
-        items: { type: 'string' },
-      },
-      outcome: {
-        type: 'string',
-        enum: ['completed', 'abandoned', 'succeeded'],
-      },
-    },
-    required: ['summary', 'conceptsCovered', 'outcome'],
-    additionalProperties: false,
-  },
-} as const;
 
 class EpisodicMemoryService {
   /**
@@ -116,10 +96,7 @@ class EpisodicMemoryService {
         .join('\n\n')
         .slice(0, 20_000);
 
-      // Extraction structurée FR.
-      // JSON Schema strict garantit la forme. Prompt cache sur le prompt
-      // d'extraction (templaté, subject seul varie via interpolation).
-      const parsed = await generateStructured<ExtractedEpisode>({
+      const { object: parsed } = await generateStructured({
         model: env.MISTRAL_MODEL,
         messages: [
           {
@@ -129,14 +106,11 @@ class EpisodicMemoryService {
         ],
         temperature: 0.2,
         maxTokens: 1200,
-        schema: EXTRACTION_SCHEMA,
+        schema: EpisodeSchema,
+        schemaName: 'episode_extraction',
         promptCacheKey: EPISODIC_CACHE_KEY,
         timeoutMs: 30_000,
       });
-
-      if (!parsed.summary || !Array.isArray(parsed.conceptsCovered)) {
-        throw new Error('Malformed extraction JSON');
-      }
 
       const embedding = await mistralEmbeddingsService.embed(parsed.summary);
 

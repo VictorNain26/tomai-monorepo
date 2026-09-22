@@ -16,6 +16,7 @@
  * returned object and the log line is monitored.
  */
 
+import { z } from 'zod';
 import { generateStructured } from '../../lib/ai/mistral-client.js';
 import { logger } from '../../lib/observability.js';
 import type { EducationLevelType } from '../../types/index.js';
@@ -40,38 +41,20 @@ export interface ClassifiedIntent {
   error?: string;
 }
 
-const ALLOWED_INTENTS: StudentIntent[] = [
+const ALLOWED_INTENTS = [
   'solve-this-for-me',
   'check-my-answer',
   'explain-concept',
   'clarify-question',
   'chit-chat',
   'unknown',
-];
+] as const satisfies readonly StudentIntent[];
 
-const RESPONSE_SCHEMA = {
-  name: 'intent_classification',
-  strict: true,
-  schema: {
-    type: 'object',
-    properties: {
-      intent: {
-        type: 'string',
-        enum: ALLOWED_INTENTS,
-      },
-      confidence: {
-        type: 'string',
-        enum: ['low', 'medium', 'high'],
-      },
-      subject: {
-        type: 'string',
-        enum: STUDENT_SUBJECTS,
-      },
-    },
-    required: ['intent', 'confidence', 'subject'],
-    additionalProperties: false,
-  },
-} as const;
+const IntentSchema = z.object({
+  intent: z.enum(ALLOWED_INTENTS),
+  confidence: z.enum(['low', 'medium', 'high']),
+  subject: z.enum(STUDENT_SUBJECTS),
+});
 
 // Cache stable pour prompt cache Mistral (-90 % sur cached tokens).
 // À bumper si le prompt change pour forcer un nouveau cache.
@@ -113,24 +96,16 @@ class IntentClassifierService {
 
     const startTime = Date.now();
     try {
-      const parsed = await generateStructured<{ intent?: string; confidence?: string; subject?: string }>({
+      const { object } = await generateStructured({
         messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
         temperature: 0,
         maxTokens: 96,
-        schema: RESPONSE_SCHEMA,
+        schema: IntentSchema,
+        schemaName: 'intent_classification',
         promptCacheKey: INTENT_CACHE_KEY,
         timeoutMs: 8_000,
       });
-
-      const intent = ALLOWED_INTENTS.includes(parsed.intent as StudentIntent)
-        ? (parsed.intent as StudentIntent)
-        : 'unknown';
-      const confidence = parsed.confidence === 'high' || parsed.confidence === 'medium' || parsed.confidence === 'low'
-        ? parsed.confidence
-        : 'low';
-      const subject = (STUDENT_SUBJECTS as readonly string[]).includes(parsed.subject ?? '')
-        ? (parsed.subject as StudentSubject)
-        : 'general';
+      const { intent, confidence, subject } = object;
 
       logger.debug('Intent classified', {
         operation: 'intent-classifier:classified',

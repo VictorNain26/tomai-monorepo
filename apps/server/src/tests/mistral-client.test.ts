@@ -1,5 +1,7 @@
 import './_helpers/mistral-env';
 import { describe, it, expect, afterEach } from 'bun:test';
+import { NoObjectGeneratedError } from 'ai';
+import { z } from 'zod';
 import { generateText, generateStructured, type MistralMessage } from '../lib/ai/mistral-client';
 
 const originalFetch = globalThis.fetch;
@@ -92,44 +94,62 @@ describe('generateText', () => {
 });
 
 describe('generateStructured', () => {
-  const SCHEMA = {
-    name: 'test_schema',
-    strict: true,
-    schema: {
-      type: 'object',
-      properties: { intent: { type: 'string' } },
-      required: ['intent'],
-      additionalProperties: false,
-    },
-  };
+  const schema = z.object({ intent: z.enum(['explain-concept', 'chit-chat']) });
 
-  it('returns the parsed object matching the schema', async () => {
+  it('returns the validated object and the real usage', async () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
 
-    const result = await generateStructured<{ intent: string }>({
-      messages: [{ role: 'user', content: 'classe ce message' }],
-      schema: SCHEMA,
-    });
+    const result = await generateStructured({ messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
 
-    expect(result).toEqual({ intent: 'explain-concept' });
+    expect(result).toEqual({ object: { intent: 'explain-concept' }, usage: { inputTokens: 10, outputTokens: 5 } });
+    const responseFormat = capture.body?.['response_format'] as Record<string, unknown>;
+    expect(responseFormat['type']).toBe('json_schema');
+    const wire = responseFormat['json_schema'] as Record<string, unknown>;
+    expect(wire['strict']).toBe(true);
+    expect(wire['name']).toBe('intent');
   });
 
-  it('sends response_format json_schema strict on the wire body', async () => {
+  it('retries once with the validation error, then succeeds', async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    const replies = [JSON.stringify({ intent: 'nope' }), JSON.stringify({ intent: 'chit-chat' })];
+    globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+      bodies.push(JSON.parse(init?.body as string) as Record<string, unknown>);
+      return new Response(JSON.stringify(chatCompletion(replies[bodies.length - 1] ?? '')), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const result = await generateStructured({ messages: [{ role: 'user', content: 'salut' }], schema, schemaName: 'intent' });
+
+    expect(result.object).toEqual({ intent: 'chit-chat' });
+    expect(result.usage).toEqual({ inputTokens: 20, outputTokens: 10 });
+    const retryMessages = bodies[1]?.['messages'] as Array<{ role: string; content: unknown }>;
+    expect(JSON.stringify(retryMessages.at(-1)?.content)).toContain('schéma');
+  });
+
+  it('does not retry twice', async () => {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return new Response(JSON.stringify(chatCompletion(JSON.stringify({ intent: 'nope' }))), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const rejection = await generateStructured({ messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent' })
+      .catch((error: unknown) => error);
+
+    expect(NoObjectGeneratedError.isInstance(rejection)).toBe(true);
+    expect(calls).toBe(2);
+  });
+
+  it('sends prompt_cache_key on the wire body', async () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
 
-    await generateStructured<{ intent: string }>({
-      messages: [{ role: 'user', content: 'classe' }],
-      schema: SCHEMA,
-      promptCacheKey: 'intent-v1',
-    });
+    await generateStructured({ messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', promptCacheKey: 'intent-v1' });
 
-    const responseFormat = capture.body?.['response_format'] as Record<string, unknown>;
-    expect(responseFormat?.['type']).toBe('json_schema');
-    const jsonSchemaWire = responseFormat?.['json_schema'] as Record<string, unknown>;
-    expect(jsonSchemaWire?.['strict']).toBe(true);
-    expect(jsonSchemaWire?.['name']).toBe('test_schema');
     expect(capture.body?.['prompt_cache_key']).toBe('intent-v1');
   });
 
@@ -137,7 +157,7 @@ describe('generateStructured', () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
 
-    await generateStructured<{ intent: string }>({ messages: [{ role: 'user', content: 'classe' }], schema: SCHEMA });
+    await generateStructured({ messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
 
     expect(capture.body?.['reasoning_effort']).toBe('none');
   });
