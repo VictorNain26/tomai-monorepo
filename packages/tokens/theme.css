@@ -2,7 +2,6 @@
  * Consommé en CSS par les apps Tailwind v4 via :
  *   @import "@repo/tokens/theme.css";
  * Importer APRÈS l'import de Tailwind de l'app.
- * Dark mode : theme-dark.css (classe .dark).
  * Contrastes AA vérifiés par contrast.test.mjs. */
 
 /* inline : les variables next/font sont posées sur <html> par l'app ; sans
@@ -31,33 +30,34 @@
   --text-2xs: 0.625rem;
   --text-2xs--line-height: 0.875rem;
 
-  /* Couleurs sémantiques (light) — « Cahier annoté » : papier, encre, stylo terracotta */
+  /* Couleurs sémantiques (light) — « Cahier annoté » : papier, stylo Bic quatre couleurs */
   --color-background: #FAF7F0;
-  --color-foreground: #1C2340;
-  --color-primary: #B0421A;
+  --color-foreground: #1D1D22;
+  --color-primary: #1F3F9E;
   --color-primary-foreground: #FFFFFF;
   --color-secondary: #F0EADD;
-  --color-secondary-foreground: #1C2340;
+  --color-secondary-foreground: #1D1D22;
   --color-muted: #F0EADD;
-  --color-muted-foreground: #5B6178;
+  --color-muted-foreground: #5C5C66;
   --color-accent: #F0EADD;
-  --color-accent-foreground: #1C2340;
+  --color-accent-foreground: #1D1D22;
   --color-card: #FFFDF8;
-  --color-card-foreground: #1C2340;
+  --color-card-foreground: #1D1D22;
   --color-popover: #FFFDF8;
-  --color-popover-foreground: #1C2340;
+  --color-popover-foreground: #1D1D22;
   --color-destructive: #B42318;
   --color-destructive-foreground: #FFFFFF;
-  --color-success: #3F6B4E;
+  --color-success: #1B7337;
   --color-success-foreground: #FFFFFF;
   --color-warning: #E0A43A;
-  --color-warning-foreground: #1C2340;
+  --color-warning-foreground: #1D1D22;
   --color-info: #2B5C8A;
   --color-info-foreground: #FFFFFF;
   --color-highlight: #F9E08B;
+  --color-annotation: #C0282D;
   --color-border: #E7E0D2;
   --color-input: #E7E0D2;
-  --color-ring: #B0421A;
+  --color-ring: #1F3F9E;
   --color-violet: #6D3FC0;
   --color-violet-foreground: #FFFFFF;
   --color-overlay: #000000;

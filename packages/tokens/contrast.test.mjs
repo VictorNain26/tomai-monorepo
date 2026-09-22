@@ -8,8 +8,7 @@ const colors = (css) =>
     [...css.matchAll(/--color-([a-z-]+):\s*(#[0-9A-Fa-f]{6})/g)].map(([, name, hex]) => [name, hex]),
   );
 
-const light = colors(read("./theme.css"));
-const dark = { ...light, ...colors(read("./theme-dark.css")) };
+const palette = colors(read("./theme.css"));
 
 function luminance(hex) {
   const channel = (i) => {
@@ -48,15 +47,16 @@ const PAIRS = [
   ["success", "background"],
   ["destructive", "background"],
   ["info", "background"],
+  ["annotation", "background"],
+  ["annotation", "card"],
+  ["annotation", "secondary"],
 ];
 
-for (const [theme, palette] of [["light", light], ["dark", dark]]) {
-  for (const [fg, bg] of PAIRS) {
-    test(`${theme}: ${fg} on ${bg} meets WCAG AA (4.5:1)`, () => {
-      assert.ok(palette[fg], `missing --color-${fg}`);
-      assert.ok(palette[bg], `missing --color-${bg}`);
-      const ratio = contrast(palette[fg], palette[bg]);
-      assert.ok(ratio >= 4.5, `${palette[fg]} on ${palette[bg]} = ${ratio.toFixed(2)}`);
-    });
-  }
+for (const [fg, bg] of PAIRS) {
+  test(`${fg} on ${bg} meets WCAG AA (4.5:1)`, () => {
+    assert.ok(palette[fg], `missing --color-${fg}`);
+    assert.ok(palette[bg], `missing --color-${bg}`);
+    const ratio = contrast(palette[fg], palette[bg]);
+    assert.ok(ratio >= 4.5, `${palette[fg]} on ${palette[bg]} = ${ratio.toFixed(2)}`);
+  });
 }

@@ -6,7 +6,6 @@
     "test": "node --test"
   },
   "exports": {
-    "./theme.css": "./theme.css",
-    "./theme-dark.css": "./theme-dark.css"
+    "./theme.css": "./theme.css"
   }
 }

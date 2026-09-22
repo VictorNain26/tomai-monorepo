@@ -1,9 +1,6 @@
 @import "tailwindcss";
 @import "@repo/tokens/theme.css";
-@import "@repo/tokens/theme-dark.css";
 @source "../../../packages/ui/src";
-
-@custom-variant dark (&:where(.dark, .dark *));
 
 @utility bg-notebook {
   background-image:
