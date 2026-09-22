@@ -12,9 +12,8 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 - **Dernière mise à jour :** 2026-09-22
 - **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** PR C (`plans/2026-09-22-lot-0-c-mistral-small-4.md`, branche
-  `feat/mistral-small-4`) implémentée, en revue ; merger PR C puis démarrer la PR D
-  (`plans/2026-09-22-lot-0-d-bugs.md`).
+- **Prochaine action :** démarrer la PR D (`plans/2026-09-22-lot-0-d-bugs.md`, branche
+  `fix/server-and-tooling-bugs`) avec le skill `superpowers:subagent-driven-development`.
 
 ## Reporté depuis les PR A et B
 
@@ -91,7 +90,7 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 | B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | mergée | #307 |
 | A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | mergée | #308 |
 | B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | mergée | #309 |
-| C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | en revue | #313 |
+| C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | mergée | #313 |
 | D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | à faire | — |
 | E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | à faire | — |
 | E2 — Infra serveur et outillage | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-infra` | à faire | — |
@@ -161,4 +160,6 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 - **2026-09-22** — PR C (bascule Mistral Small 4) implémentée : Small 4 daté partout
   (`mistral-small-2603`), endpoint UE (`api.eu.mistral.ai`, +10 % de coût), clé de cache par
   session, raisonnement gardé côté serveur (jamais forwardé au client), deux bugs TTS
-  corrigés, `pnpm doctor` étendu au modèle et à l'endpoint Mistral, suite live 6/6. En revue.
+  corrigés, `pnpm doctor` étendu au modèle et à l'endpoint Mistral, suite live 6/6.
+- **2026-09-22** — PR C mergée (#313, merge commit). Reste la demande de Zero Data Retention
+  (bloquant avant tout utilisateur réel).
