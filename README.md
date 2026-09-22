@@ -37,7 +37,7 @@ packages/
 | Couche | Technologies |
 |--------|-------------|
 | Backend | Bun 1.3, Elysia 1.4, PostgreSQL 16 + pgvector, Drizzle ORM 0.45 |
-| Landing | Next.js 16, TailwindCSS 4, Framer Motion, `@repo/ui` (shadcn) |
+| Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
 | Auth | Better Auth 1.6 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |
 | IA | Mistral — chat, vision Pixtral, OCR, TTS et STT Voxtral. Stack 100 % EU |
