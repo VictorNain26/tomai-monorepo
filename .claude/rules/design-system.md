@@ -22,4 +22,7 @@ Ce qui s'applique à chaque PR touchant de l'UI.
   reduced-motion respecté.
 - **Registres** : landing/parent = sobre ; élève = vivant (violet,
   micro-motion) sans infantiliser.
-- **Typo** : Poppins titres, Nunito Sans corps, JetBrains Mono code.
+- **Typo** : Fraunces titres, Figtree corps, JetBrains Mono code.
+- **Exceptions au « tokens uniquement »** : les valeurs que `motion` anime
+  lui-même dans `style`, et les images `next/og` (`ImageResponse` ne lit que
+  `style`, sans variables CSS). Rien d'autre.

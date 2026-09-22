@@ -20,14 +20,14 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground active:scale-[0.98]",
         link: "text-primary underline-offset-4 hover:underline",
         premium:
-          "bg-gradient-to-r from-primary to-violet text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] border border-white/10",
+          "bg-gradient-to-r from-primary to-violet text-primary-foreground shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] border border-white/10",
       },
       size: {
-        default: "h-10 px-5 py-2 text-sm rounded-lg",
-        sm: "h-9 px-4 text-sm rounded-lg",
-        lg: "h-12 px-8 text-base rounded-xl [&_svg]:size-5",
-        xl: "h-14 px-10 text-lg rounded-xl [&_svg]:size-6",
-        icon: "h-10 w-10 rounded-lg",
+        default: "h-11 px-6 text-sm rounded-full",
+        sm: "h-11 px-4 text-sm rounded-full",
+        lg: "h-12 px-8 text-base rounded-full [&_svg]:size-5",
+        xl: "h-14 px-10 text-lg rounded-full [&_svg]:size-6",
+        icon: "size-11 rounded-full",
       },
     },
     defaultVariants: {
