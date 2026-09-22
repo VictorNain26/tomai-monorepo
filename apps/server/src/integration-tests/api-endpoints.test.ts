@@ -116,8 +116,7 @@ mock.module('../middleware/auth.middleware', () => ({
       return {
         success: false as const,
         _error: 'Unauthorized',
-        status: 401,
-        shouldClearCookies: false
+        status: 401
       };
     }
     return {
@@ -131,16 +130,14 @@ mock.module('../middleware/auth.middleware', () => ({
       return {
         success: false as const,
         _error: 'Unauthorized',
-        status: 401,
-        shouldClearCookies: false
+        status: 401
       };
     }
     if (authUser.role !== 'parent') {
       return {
         success: false as const,
         _error: 'Parent role required',
-        status: 403,
-        shouldClearCookies: false
+        status: 403
       };
     }
     return {
