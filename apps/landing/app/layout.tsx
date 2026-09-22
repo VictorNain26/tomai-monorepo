@@ -4,8 +4,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { BackgroundPattern } from "@/components/atoms/background-pattern";
 import { MobileCTABar } from "@/components/molecules/mobile-cta-bar";
+import { MotionProvider } from "@/components/motion-provider";
+import { BRAND_NAME } from "@/lib/brand";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -20,13 +21,17 @@ const figtree = Figtree({
   variable: "--font-figtree",
 });
 
+const TITLE = `${BRAND_NAME} - Le tuteur qui ne donne pas la réponse`;
+const DESCRIPTION =
+  "Assistant scolaire pour collégiens, de la 6e à la 3e. Tom guide votre enfant par des questions, à la manière d'un bon professeur, et vous tient informé sans lire ses conversations.";
+
 export const metadata: Metadata = {
   title: {
-    default: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
-    template: "%s | TomIA",
+    default: TITLE,
+    template: `%s | ${BRAND_NAME}`,
   },
-  description: "TomIA est un assistant IA pour les collégiens, de la 6e à la 3e. Il guide votre enfant avec la méthode socratique, sans donner les réponses, avec des explications adaptées à sa classe.",
-  applicationName: "TomIA",
+  description: DESCRIPTION,
+  applicationName: BRAND_NAME,
   category: "education",
   keywords: [
     "TomIA", "tutorat", "éducation", "IA",
@@ -35,9 +40,10 @@ export const metadata: Metadata = {
     "tuteur IA français", "méthode socratique IA",
     "collège", "6e", "5e", "4e", "3e",
     "application éducative", "app scolaire",
+    "IA européenne", "Mistral",
   ],
-  authors: [{ name: "TomIA" }],
-  creator: "TomIA",
+  authors: [{ name: BRAND_NAME }],
+  creator: BRAND_NAME,
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -49,15 +55,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    title: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
-    description: "Assistant IA pour collégiens, de la 6e à la 3e. Méthode socratique, explications adaptées au niveau, sans donner les réponses.",
-    siteName: "TomIA",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    title: TITLE,
+    description: DESCRIPTION,
+    siteName: BRAND_NAME,
   },
   twitter: {
     card: "summary_large_image",
-    title: "TomIA - L'IA qui aide votre enfant à comprendre ses leçons",
-    description: "Assistant IA pour collégiens, de la 6e à la 3e. Méthode socratique, explications adaptées au niveau, sans donner les réponses.",
+    title: TITLE,
+    description: DESCRIPTION,
   },
   metadataBase: new URL("https://tomia.fr"),
   alternates: {
@@ -84,11 +89,11 @@ const jsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "TomIA",
+    name: BRAND_NAME,
     applicationCategory: "EducationApplication",
     operatingSystem: "Web",
     inLanguage: "fr",
-    description: "Assistant IA de tutorat pour collégiens, de la 6e à la 3e. Méthode socratique, explications adaptées au niveau.",
+    description: DESCRIPTION,
     offers: [
       {
         "@type": "Offer",
@@ -101,7 +106,7 @@ const jsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "TomIA",
+    name: BRAND_NAME,
     url: "https://tomia.fr",
     logo: "https://tomia.fr/logo.svg",
   },
@@ -109,7 +114,7 @@ const jsonLd = [
     "@context": "https://schema.org",
     "@type": "WebSite",
     url: "https://tomia.fr",
-    name: "TomIA",
+    name: BRAND_NAME,
     inLanguage: "fr",
   },
 ];
@@ -129,24 +134,21 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
           />
         ))}
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-full">
           Aller au contenu principal
         </a>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <div className="flex min-h-screen flex-col relative">
-            <BackgroundPattern />
-            <Header />
-            <main id="main-content" className="flex-1">
-              {children}
-            </main>
-            <Footer />
-            <MobileCTABar />
-          </div>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <MotionProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <div aria-hidden="true" className="bg-notebook pointer-events-none fixed inset-0 -z-50" />
+              <Header />
+              <main id="main-content" className="flex-1">
+                {children}
+              </main>
+              <Footer />
+              <MobileCTABar />
+            </div>
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>

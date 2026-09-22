@@ -30,10 +30,8 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b transition-all duration-200",
-        scrolled
-          ? "bg-background/95 backdrop-blur-md border-border/60 shadow-sm"
-          : "bg-background/95 backdrop-blur border-border/40"
+        "sticky top-0 z-50 w-full border-b transition-colors duration-base",
+        scrolled ? "border-border bg-background/90 backdrop-blur-md" : "border-transparent bg-background/70 backdrop-blur",
       )}
     >
       <nav className="container relative flex h-16 items-center justify-between px-4">
@@ -54,7 +52,6 @@ export function Header() {
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="rounded-full"
               aria-label="Changer de thème"
             >
               {theme === "dark" ? (
@@ -74,7 +71,6 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
             aria-expanded={mobileMenuOpen}
@@ -91,7 +87,7 @@ export function Header() {
       {/* Mobile Menu */}
       <div
         className={cn(
-          "md:hidden overflow-hidden transition-all duration-200 ease-in-out border-t border-border/50",
+          "md:hidden overflow-hidden transition-all duration-base ease-in-out border-t border-border/50",
           mobileMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0 border-t-0"
         )}
       >
