@@ -16,10 +16,13 @@ We will acknowledge within 48 hours and provide a fix timeline within 7 days.
 
 ## Security Measures
 
-- Dependencies monitored by Dependabot (auto-merge patch/minor)
-- Secret scanning via Gitleaks on every push/PR
-- Dependency review on PRs (blocks high-severity vulnerabilities)
+- Dependency updates opened by Renovate (`.github/renovate.json`: minor/patch auto-merged
+  once CI is green after a 3-day release age, majors reviewed by a human); Dependabot
+  only raises vulnerability alerts
+- Secret scanning (Gitleaks), SAST (Semgrep) and `pnpm audit` (prod, high+) on every
+  push/PR to `main` (`.github/workflows/security.yml`)
 - SHA-pinned GitHub Actions (supply chain protection)
 - Non-root Docker containers (user `tomai`, UID 1001)
 - AES-256-GCM encryption for Pronote credentials (PBKDF2 600K iterations)
-- Security headers on landing page (X-Frame-Options, CSP, etc.)
+- Security headers on the landing page (`apps/landing/vercel.json`: nosniff,
+  X-Frame-Options, Referrer-Policy, Permissions-Policy) and the server; no CSP yet (lot 3)

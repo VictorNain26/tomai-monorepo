@@ -946,6 +946,62 @@ et `cost_tracking`.
 
 ## PR E2 — supprimer le code mort de l'infra serveur et remplacer l'outillage maison
 
+> **À réécrire au démarrage d'E2.**
+>
+> Le plan ci-dessous a été écrit avant le merge des PR C et D et a dérivé (audit du
+> 2026-09-22 sur `main` @ 17e8326). Il se réécrit contre `main` à jour avant la
+> première tâche (`.claude/rules/plans-and-agents.md`). Écarts vérifiés :
+>
+> - **Déjà faites** : E2.5 (`apps/server/scripts/` supprimé en `ed4c2be`, PR A) et E2.12
+>   (`.npmrc` supprimé en `0bb738e`). La liste « Fichiers » les supprime encore.
+> - **Cassées** :
+>   - E2.6 — depuis D, `onError({ as: 'global' })` de
+>     `src/middleware/error-handler.middleware.ts` répond **400**
+>     `{ error: { code: 'VALIDATION_ERROR', message }, requestId }` sur `VALIDATION` et
+>     `PARSE` : la note de contrat « 422 d'Elysia » est fausse. Le mock de
+>     `rate-limit-ordering.test.ts` vise `../middleware/auth.middleware`, pas
+>     `../lib/auth-macro`. `validation.ts` exporte 11 schémas et 2 fonctions. Numéros de
+>     ligne de `parent.routes.ts` décalés.
+>   - E2.7 — les lignes 91-94 de `env.ts` sont désormais les modèles Mistral. Viser les
+>     noms : bloc `Rate limiting` (`RATE_LIMIT_*`), `DEBUG`, `POSTHOG_API_KEY`. Ajouter
+>     `TRUSTED_ORIGINS`, lue par aucun fichier de `src/` (seul un mock de
+>     `auth-config.test.ts` la cite).
+> - **Dérives** :
+>   - En-tête de la PR E : versions installées aujourd'hui `ai` 7.0.107,
+>     `@ai-sdk/mistral` ^4.0.48, `@mistralai/mistralai` ^2.7.0, `better-auth` 1.7.5 ;
+>     relire les `.d.ts` (dont les interfaces `rateLimit` de better-auth, citées pour
+>     1.6.23 en E2.8).
+>   - E2.1 — le motif du codemod compte 117 sites dans 49 fichiers ; `LOG_LEVEL` est à
+>     `env.ts:117` ; `document-extraction.service.ts` n'a pas de log d'`Error` brut
+>     (le site cité est un champ `error?: string` de résultat).
+>   - E2.3 — `index.ts` a été réécrit par D : l'arrêt passe par
+>     `createGracefulShutdown` à six étapes ; retirer **seulement** l'étape
+>     `stopMonitoring` et l'import dynamique du moniteur.
+>   - E2.8 — `skipPaths` a déjà disparu du middleware : ne pas le réintroduire dans le
+>     code cible. Numéros de ligne de `app.ts`, `pronote-sync.routes.ts`,
+>     `chat-message.routes.ts`, `lib/auth.ts` et `rate-limit.middleware.ts` décalés.
+>   - E2.10 — lignes de `ci.yml` et de `doctor-checks.mjs`/`.test.mjs` décalées ; le
+>     message du doctor cite déjà `pnpm run setup`. Le test à faire échouer d'abord reste
+>     valable.
+>   - E2.11 — le dépôt exige Node ≥ 24 (`package.json` `engines`).
+>   - E2.2, E2.15 — mocks d'`api-endpoints.test.ts` décalés de deux lignes.
+> - **Docs que E2 rend fausses**, à mettre à jour dans la même PR :
+>   `apps/server/README.md` (cache `MemoryCacheService`, « memory monitor » dans
+>   `middleware/`), `apps/server/CLAUDE.md` (exception Zod de `src/schemas/`), et
+>   `.claude/skills/dev-bootstrap/SKILL.md` (`CREATE EXTENSION` à la main avant
+>   `db:migrate`).
+> - **Points reportés à absorber** (`docs/superpowers/suivi.md`) : champs morts
+>   `IAppUser.parentId` (`packages/api/src/types.ts`) et
+>   `ElysiaAuthenticatedUser.parentId` (`apps/server/src/types/index.ts`) ;
+>   `pnpm dedupe` (`react@19.2.3` et un second `next` tirés par better-auth côté
+>   serveur) ; `ignoreBinaries` et entrées `scripts/**` de l'espace `apps/server` du
+>   `knip.json` racine, plus le montage `./apps/server/scripts` de
+>   `docker-compose.yml` (dossier supprimé) ; commentaires « mobile project » de
+>   `src/lib/encryption.ts` et utilité de la copie `toArrayBuffer` (le plan le classe
+>   plus bas en « Gardés, non touchés ») ; `TRUSTED_ORIGINS` inutilisée ;
+>   `pnpm test:scripts` absent de la CI. L'override `nanoid` cité par le suivi a
+>   disparu en B : rien à faire.
+
 **Branche :** `refactor/replace-custom-infra`
 
 **Objectif :** supprimer les modules sans effet réel et remplacer logger, rate limit,
@@ -1610,7 +1666,7 @@ Constats vérifiés :
 - `apps/server/src/db/migrate.ts:70` crée l'extension, sous verrou consultatif,
   avant les migrations. `setup.mjs:46-47` et `ci.yml:118` la recréent juste avant
   d'appeler ce même migrateur. `doctor-checks.mjs:152-153` ne la crée pas : il vérifie
-  sa présence, mais son message renvoie à `pnpm setup`, alors que le bon remède est
+  sa présence, mais son message renvoie à `pnpm run setup`, alors que le bon remède est
   le migrateur.
 - `ci.yml:117` boucle sur `pg_isready` sans timeout. Or le service déclare
   `--health-cmd pg_isready` (`:94-97`), et le runner n'exécute les étapes qu'une
@@ -1622,7 +1678,7 @@ Constats vérifiés :
   se fait sur le log d'un run (étape ci-dessous).
 
 - [ ] Dans `doctor-checks.test.mjs:88`, remplacer `/vector/i` par `/db:migrate/`.
-  `pnpm test:scripts` : **FAIL** (le message actuel cite `pnpm setup`).
+  `pnpm test:scripts` : **FAIL** (le message actuel cite `pnpm run setup`).
 - [ ] `doctor-checks.mjs:153` :
   `throw new Error("extension 'vector' absente — lance 'bun run db:migrate' dans apps/server (le migrateur la crée)");`.
 - [ ] `setup.mjs` : supprimer les lignes 46-47 (`docker exec … CREATE EXTENSION …`) et
@@ -1630,7 +1686,7 @@ Constats vérifiés :
 - [ ] `ci.yml` : l'étape « Prepare integration DB » se réduit à
   `cd apps/server && bun run db:migrate`, renommée `Prepare integration DB (migrations)`.
 - [ ] `pnpm test:scripts` : exit 0. Sur une base neuve :
-  `docker compose down -v && pnpm setup`, puis
+  `docker compose down -v && pnpm run setup`, puis
   `docker exec tomai-postgres-dev psql -U tomai_dev -d tomai_dev -tAc "SELECT count(*) FROM pg_extension WHERE extname='vector'"`
   doit afficher `1`.
 - [ ] Après le push, dans le log du job d'intégration, l'étape « Initialize containers »
@@ -1687,7 +1743,7 @@ export function parseEnvFile(path) {
 }
 ```
 
-- [ ] `pnpm test:scripts && pnpm doctor` : exit 0 (le second avec l'infra démarrée).
+- [ ] `pnpm test:scripts && pnpm run doctor` : exit 0 (le second avec l'infra démarrée).
 - [ ] Commit, un `git add` par fichier ; `refactor(ci): parse .env with node:util parseEnv in doctor`,
   suivi de la ligne Co-Authored-By.
 
