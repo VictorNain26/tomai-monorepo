@@ -88,17 +88,8 @@ mock.module('../config/app-guide/index', () => ({
   }),
 }));
 
-// Import after all mocks. chat-tools.test.ts's mock.module('../services/chat/tool-executor', ...)
-// registers in the process-wide module registry (bun-types test.d.ts:
-// `module(id, factory): ... If the module is already loaded, exports are
-// overwritten`) before this file ever loads the real module — there is no
-// "previous value" to restore, so `mock.restore()` cannot undo it. The
-// `?fresh` suffix makes this a distinct specifier from the one the other
-// file mocked, bypassing the registry entry to load the real module. It is
-// a runtime-built string, not a literal, so TypeScript treats `import()`
-// as returning `any` instead of resolving it as a module path.
-const toolExecutorPath = '../services/chat/tool-executor' + '?fresh';
-const { executeTool } = (await import(toolExecutorPath)) as typeof import('../services/chat/tool-executor');
+// Import after all mocks
+const { executeTool } = await import('../services/chat/tool-executor');
 
 const baseContext = {
   userId: 'user-001',
