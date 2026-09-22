@@ -8,8 +8,9 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-function mockFetchJson(capture: { body?: Record<string, unknown> }, responseBody: unknown) {
-  globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+function mockFetchJson(capture: { url?: string; body?: Record<string, unknown> }, responseBody: unknown) {
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    capture.url = String(url);
     capture.body = init?.body ? (JSON.parse(init.body as string) as Record<string, unknown>) : undefined;
     return new Response(JSON.stringify(responseBody), {
       status: 200,
@@ -23,7 +24,7 @@ function chatCompletion(content: string) {
     id: 'cmpl-1',
     object: 'chat.completion',
     created: 0,
-    model: 'mistral-medium-latest',
+    model: 'mistral-small-2603',
     choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' }],
     usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
   };
@@ -77,6 +78,17 @@ describe('generateText', () => {
     expect(userContent.some((part) => part['type'] === 'text')).toBe(true);
     expect(userContent.some((part) => part['type'] === 'image_url')).toBe(true);
   });
+
+  it('calls the dated model on the EU endpoint with reasoning off', async () => {
+    const capture: { url?: string; body?: Record<string, unknown> } = {};
+    mockFetchJson(capture, chatCompletion('ok'));
+
+    await generateText({ messages: [{ role: 'user', content: 'Salut' }] });
+
+    expect(capture.url).toBe('https://api.eu.mistral.ai/v1/chat/completions');
+    expect(capture.body?.['model']).toBe('mistral-small-2603');
+    expect(capture.body?.['reasoning_effort']).toBe('none');
+  });
 });
 
 describe('generateStructured', () => {
@@ -119,5 +131,14 @@ describe('generateStructured', () => {
     expect(jsonSchemaWire?.['strict']).toBe(true);
     expect(jsonSchemaWire?.['name']).toBe('test_schema');
     expect(capture.body?.['prompt_cache_key']).toBe('intent-v1');
+  });
+
+  it('keeps reasoning off for structured outputs', async () => {
+    const capture: { body?: Record<string, unknown> } = {};
+    mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
+
+    await generateStructured<{ intent: string }>({ messages: [{ role: 'user', content: 'classe' }], schema: SCHEMA });
+
+    expect(capture.body?.['reasoning_effort']).toBe('none');
   });
 });

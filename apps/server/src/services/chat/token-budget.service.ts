@@ -11,7 +11,7 @@
 
 /**
  * Budget total cible envoyé à Mistral (input tokens).
- * Mistral mistral-medium-latest has 128k context window. We conservatively
+ * Mistral Small 4 has a 256k context window. We conservatively
  * target 30k tokens of input to leave room for cached prompt sections
  * (9k system prompt + tools) and output tokens (16k). Recalibrated for
  * Mistral from legacy values (formerly 25k for a 32k window).

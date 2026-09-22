@@ -81,7 +81,7 @@ mock.module('../lib/ai/mistral-client', () => ({
 mock.module('../config/env', () => ({
   env: {
     MISTRAL_API_KEY: 'test-key',
-    MISTRAL_MODEL: 'mistral-small-latest',
+    MISTRAL_MODEL: 'mistral-small-2603',
     MISTRAL_TEMPERATURE: 0.7,
     MISTRAL_MAX_TOKENS: 16384,
     MISTRAL_TIMEOUT: 60000,

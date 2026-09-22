@@ -59,6 +59,7 @@ mock.module('../config/env', () => ({
   env: {
     NODE_ENV: 'test',
     MISTRAL_API_KEY: 'test-key',
+    MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
     BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
     BETTER_AUTH_URL: 'http://localhost:3000',
   },

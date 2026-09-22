@@ -2,7 +2,7 @@
  * Mistral Vision OCR for images.
  *
  * Triggered by document-extraction.service when image MIME type is detected.
- * Uses mistral-medium-latest (multimodal Pixtral fusion) to extract text
+ * Uses the multimodal chat model (Mistral Small 4) to extract text
  * content and describe structural elements.
  */
 
@@ -51,7 +51,7 @@ export async function extractImageWithMistralVision(
         model: VISION_MODEL,
         maxTokens: VISION_MAX_TOKENS,
         temperature: VISION_TEMPERATURE,
-        serverAddress: 'api.mistral.ai',
+        serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
       },
       async () => {
         return await generateText({

@@ -7,11 +7,9 @@
  * it does — no parsing, no manual iteration.
  *
  * Prompt cache
- *   One `prompt_cache_key` shared by every student so the stable
- *   system-prompt prefix gets Mistral's 90 % cached-tokens discount. Bump
- *   `PROMPT_CACHE_VERSION` whenever the system prompt's structure changes
- *   (not its content) — the cache is keyed on a stable prefix, so an
- *   unbumped version after a structural change serves stale-shaped context.
+ *   `promptCacheKey` = the chat session id, as Mistral recommends for
+ *   multi-turn conversations: each turn resends the same prefix (system
+ *   prompt + history), so turn N+1 reads turn N's prefix from cache.
  */
 
 import {
@@ -24,7 +22,9 @@ import {
   type FilePart,
 } from 'ai';
 import { mistralProvider } from '../../lib/ai/provider.js';
+import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { routeReasoningEffort } from '../../lib/ai/mistral-reasoning.js';
+import { logger } from '../../lib/observability.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory } from '../../utils/conversation/index.js';
@@ -43,7 +43,7 @@ import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from './file-context-types.js';
 
 /** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_CACHE_VERSION = '2026-06-14-voicefmt';
+const PROMPT_VERSION = '2026-06-14-voicefmt';
 
 export interface AttachedFile {
   /** Inline base64 payload for multimodal user messages (Mistral vision). */
@@ -262,8 +262,15 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
     intent: params.classifiedIntent?.intent,
   });
 
-  const cacheKey = `chat-${PROMPT_CACHE_VERSION}`;
-  const model = params.model ?? mistralProvider(cacheKey)(env.MISTRAL_MODEL);
+  const model = params.model ?? mistralProvider()(env.MISTRAL_MODEL);
+
+  logger.info('Chat stream started', {
+    operation: 'chat-stream:start',
+    sessionId: params.sessionId,
+    model: env.MISTRAL_MODEL,
+    promptVersion: PROMPT_VERSION,
+    reasoningEffort,
+  });
 
   return streamText({
     model,
@@ -277,7 +284,8 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
       mistral: {
         parallelToolCalls: false,
         reasoningEffort,
-      },
+        promptCacheKey: params.sessionId,
+      } satisfies MistralLanguageModelChatOptions,
     },
     telemetry: {
       isEnabled: true,

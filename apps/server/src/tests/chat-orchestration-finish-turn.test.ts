@@ -121,7 +121,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       userId: 'user-001',
       userContent: 'Bonjour',
       responseMessage: emptyResponse,
-      model: 'mistral-medium-latest',
+      model: 'mistral-small-2603',
       usage: undefined,
       startTime: Date.now(),
       attachedFileInfo: null,
@@ -146,7 +146,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       userId: 'user-001',
       userContent: 'Bonjour',
       responseMessage: filledResponse,
-      model: 'mistral-medium-latest',
+      model: 'mistral-small-2603',
       usage: {
         inputTokens: 10,
         outputTokens: 5,

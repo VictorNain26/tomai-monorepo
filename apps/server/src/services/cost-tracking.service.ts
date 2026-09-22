@@ -7,10 +7,10 @@
  * cost in cents from model pricing and inserts a row after each assistant
  * response.
  *
- * Pricing is expressed in USD per million tokens, as published by each
- * provider. We convert to cents at insert time using a fixed USD/EUR rate
- * (configurable via env). Cached tokens (from prompt_tokens_details.cached_tokens
- * in the Mistral SSE response) are billed at 10% of the standard input rate.
+ * Pricing is expressed in USD per million tokens, as published by Mistral,
+ * keyed by dated model id (no aliases: an alias can silently change price).
+ * Cached tokens are billed at 10 % of the input rate; the EU regional endpoint
+ * adds 10 % to everything (docs.mistral.ai/inference/regional-inference).
  *
  * Unknown models: we insert a row with cost_cents=0 and a
  * billingMetadata.unknownModel flag rather than silently dropping the call.
@@ -35,37 +35,17 @@ interface CostRecordInput {
   cachedTokens?: number;
 }
 
-/**
- * Published Mistral pricing in USD per million tokens (input / output),
- * as published at mistral.ai/pricing (juin 2026). Keys are prefixes:
- * normalizeModelId matches via startsWith, so "mistral-medium" covers
- * "mistral-medium-latest", "mistral-medium-2508", etc. Longer prefixes
- * (ministral-3b, ministral-8b) must come before shorter ones to avoid
- * shadowing.
- */
 const MODEL_PRICING_USD_PER_MILLION: Record<string, { input: number; output: number }> = {
-  'magistral-medium':  { input: 2.00,  output: 5.00  },
-  'magistral-small':   { input: 0.50,  output: 1.50  },
-  'ministral-3b':      { input: 0.10,  output: 0.10  },
-  'ministral-8b':      { input: 0.15,  output: 0.15  },
-  'mistral-medium':    { input: 1.50,  output: 7.50  },
-  'mistral-small':     { input: 0.15,  output: 0.60  }, // Small 4 (mistral.ai/pricing 2026)
-  'mistral-large':     { input: 0.50,  output: 1.50  },
+  'mistral-small-2603': { input: 0.15, output: 0.60 },
 };
 
 const CACHE_DISCOUNT = 0.10;
+const EU_REGIONAL_UPCHARGE = 1.1;
 
 const USD_TO_EUR = env.USD_TO_EUR_RATE;
 
-/** Normalize provider-suffixed model IDs down to the pricing key. */
-function normalizeModelId(aiModel: string): string {
-  // Normalize provider-suffixed model IDs to their pricing prefix
-  // (e.g. "mistral-medium-latest" → "mistral-medium").
-  const lower = aiModel.toLowerCase();
-  for (const key of Object.keys(MODEL_PRICING_USD_PER_MILLION)) {
-    if (lower.startsWith(key)) return key;
-  }
-  return lower;
+export function regionalUpcharge(serverUrl: string): number {
+  return new URL(serverUrl).host === 'api.eu.mistral.ai' ? EU_REGIONAL_UPCHARGE : 1;
 }
 
 export function computeCostCents(
@@ -73,9 +53,9 @@ export function computeCostCents(
   tokensInput: number,
   tokensOutput: number,
   cachedTokens: number,
+  upcharge: number,
 ): { costCents: number; unknownModel: boolean } {
-  const key = normalizeModelId(aiModel);
-  const pricing = MODEL_PRICING_USD_PER_MILLION[key];
+  const pricing = MODEL_PRICING_USD_PER_MILLION[aiModel];
   if (!pricing) {
     return { costCents: 0, unknownModel: true };
   }
@@ -86,18 +66,20 @@ export function computeCostCents(
     (uncachedInput / 1_000_000) * pricing.input +
     (cached / 1_000_000) * pricing.input * CACHE_DISCOUNT;
   const outputUsd = (tokensOutput / 1_000_000) * pricing.output;
-  const totalEur = (inputUsd + outputUsd) * USD_TO_EUR;
+  const totalEur = (inputUsd + outputUsd) * upcharge * USD_TO_EUR;
 
   return { costCents: Math.round(totalEur * 100), unknownModel: false };
 }
 
 class CostTrackingService {
   async record(input: CostRecordInput): Promise<void> {
+    const upcharge = regionalUpcharge(env.MISTRAL_SERVER_URL);
     const { costCents, unknownModel } = computeCostCents(
       input.aiModel,
       input.tokensInput,
       input.tokensOutput,
       input.cachedTokens ?? 0,
+      upcharge,
     );
 
     if (unknownModel) {
@@ -122,6 +104,7 @@ class CostTrackingService {
           cachedTokens: input.cachedTokens ?? 0,
           unknownModel,
           usdToEur: USD_TO_EUR,
+          regionalUpcharge: upcharge,
         },
       });
     } catch (err) {

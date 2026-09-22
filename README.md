@@ -40,7 +40,7 @@ packages/
 | Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
 | Auth | Better Auth 1.7 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |
-| IA | Mistral — chat, vision Pixtral, OCR, TTS et STT Voxtral. Stack 100 % EU |
+| IA | Mistral Small 4 — chat, vision multimodale, OCR, TTS et STT Voxtral. Stack 100 % EU |
 | Vie scolaire | Pronote via `pawnote`, **serveur uniquement** (lib GPL, tokens rotatifs) |
 | Paiements | Aucun branché. Paiement web prévu au lot 3 |
 | Stockage | Scaleway S3 (fr-par), uploads par URL présignée |

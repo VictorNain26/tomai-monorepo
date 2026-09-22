@@ -29,6 +29,25 @@ const inDocker = isRunningInDocker();
  * - Optional configs: defaults provided
  * - Database: smart Docker/localhost detection
  */
+const pinnedModelId = z.string().refine((id) => !id.endsWith('-latest'), {
+  error: 'alias -latest interdit : épingler un ID daté (https://docs.mistral.ai/inference/model-lifecycle)',
+});
+
+// MISTRAL_SERVER_URL doit être une origine nue : un chemin (ex. .../v1)
+// produirait /v1/v1/... une fois concaténé au chemin d'API. En prod, seul
+// l'endpoint UE est autorisé (aucune donnée élève hors UE).
+const mistralServerUrl = z
+  .url()
+  .refine((value) => new URL(value).pathname === '/', {
+    error: 'MISTRAL_SERVER_URL doit être une origine nue, sans chemin (ex. https://api.eu.mistral.ai)',
+  })
+  .refine((value) => !value.endsWith('/'), {
+    error: 'MISTRAL_SERVER_URL ne doit pas se terminer par un slash',
+  })
+  .refine((value) => !isProd || new URL(value).host === 'api.eu.mistral.ai', {
+    error: 'MISTRAL_SERVER_URL doit être api.eu.mistral.ai en production (aucune donnée élève hors UE)',
+  });
+
 const EnvSchema = z.object({
   // Application
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -65,17 +84,14 @@ const EnvSchema = z.object({
   SCALEWAY_BUCKET: z.string().optional(),
   SCALEWAY_REGION: z.string().default('fr-par'),
 
-  // AI — Mistral (100% sovereign EU stack)
-  // Source unique des modèles. Aliases `-latest` : garantis stables par Mistral
-  // (jamais retirés, contrairement aux IDs datés) ; version réelle en commentaire.
+  // AI — Mistral. Endpoint UE : inférence garantie en Europe, +10 %
+  // (https://docs.mistral.ai/inference/regional-inference).
   MISTRAL_API_KEY: z.string().optional(),
-  MISTRAL_MODEL: z.string().default('mistral-medium-latest'), // Medium 3.5 — chat, extraction épisodes, vision, analyse doc
-  MISTRAL_MODEL_CLASSIFY: z.string().default('ministral-8b-latest'), // Ministral 3 8B — classification d'intention
-  MISTRAL_MODEL_TITLE: z.string().default('ministral-3b-latest'), // Ministral 3 3B — titres auto, health-check
-  MISTRAL_MODEL_LIGHT: z.string().default('mistral-small-latest'), // Small 4 — résumés, génération de cartes
-  MISTRAL_EMBED_MODEL: z.string().default('mistral-embed'), // embeddings 1024D — mémoire épisodique
-  MISTRAL_STT_MODEL: z.string().default('voxtral-mini-latest'), // Voxtral — transcription (STT)
-  MISTRAL_TTS_MODEL: z.string().default('voxtral-tts-latest'), // Voxtral — synthèse vocale (TTS)
+  MISTRAL_SERVER_URL: mistralServerUrl.default('https://api.eu.mistral.ai'),
+  MISTRAL_MODEL: pinnedModelId.default('mistral-small-2603'),
+  MISTRAL_EMBED_MODEL: pinnedModelId.default('mistral-embed-2312'),
+  MISTRAL_STT_MODEL: pinnedModelId.default('voxtral-mini-2602'),
+  MISTRAL_TTS_MODEL: pinnedModelId.default('voxtral-mini-tts-2603'),
   MISTRAL_MAX_TOKENS: z.coerce.number().int().default(16384),
   MISTRAL_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
   MISTRAL_TIMEOUT: z.coerce.number().int().default(60000),
