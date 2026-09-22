@@ -10,7 +10,7 @@ import { HAS_MISTRAL } from './_creds';
 // Live contre l'endpoint UE de Mistral. LOCAL-ONLY (`bun run test:live`), fail-closed.
 
 const RED_PNG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAJ0lEQVR42u3NsQkAAAjAsP7/tF7hIASyp6lTCQQCgUAgEAgEgi/BAjLD/C5w/SM9AAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAS0lEQVR42u3PQQkAAAgAsetfWiP4FgYrsKZeS0BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEDgsqnc8OJg6Ln3AAAAAElFTkSuQmCC';
 
 const mathTurn = {
   userId: 'live-user',
@@ -30,10 +30,10 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     const sessionId = randomUUID();
     const first = streamChat({ ...mathTurn, sessionId, content: 'Résous 2x + 3 = 11.', conversationHistory: [] });
     const firstText = await first.text;
-    const firstUsage = await first.totalUsage;
+    const firstUsage = await first.usage;
 
     expect(firstText.length).toBeGreaterThan(0);
-    expect(((await first.reasoningText) ?? '').length).toBeGreaterThan(0);
+    expect(((await first.finalStep).reasoningText ?? '').length).toBeGreaterThan(0);
     expect(firstUsage.inputTokens ?? 0).toBeGreaterThan(0);
     expect(firstUsage.outputTokens ?? 0).toBeGreaterThan(0);
 
@@ -49,14 +49,14 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     });
     await second.text;
 
-    expect((await second.totalUsage).inputTokenDetails.cacheReadTokens ?? 0).toBeGreaterThan(0);
+    expect((await second.usage).inputTokenDetails.cacheReadTokens ?? 0).toBeGreaterThan(0);
   }, 180_000);
 
   it("emits no reasoning when the route says 'none'", async () => {
     const turn = streamChat({ ...mathTurn, subject: 'francais', sessionId: randomUUID(), content: 'Donne un synonyme de rapide.', conversationHistory: [] });
     await turn.text;
 
-    expect((await turn.reasoningText) ?? '').toBe('');
+    expect((await turn.finalStep).reasoningText ?? '').toBe('');
   }, 60_000);
 
   it('reads an image (Small 4 is multimodal)', async () => {

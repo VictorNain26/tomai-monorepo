@@ -179,7 +179,7 @@ describe('streamChat — Mistral wire request', () => {
   it('surfaces cached prompt tokens from the streamed usage', async () => {
     mockMistralStream({});
 
-    const usage = await streamChat({ ...baseParams, tools: noopTools }).totalUsage;
+    const usage = await streamChat({ ...baseParams, tools: noopTools }).usage;
 
     expect(usage.inputTokens).toBe(200);
     expect(usage.inputTokenDetails.cacheReadTokens).toBe(128);
