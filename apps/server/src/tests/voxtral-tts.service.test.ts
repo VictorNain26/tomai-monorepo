@@ -85,6 +85,19 @@ describe('VoxtralTTSService', () => {
     expect(result.audioData).toBeUndefined();
   });
 
+  it('returns a generic error without the upstream response body', async () => {
+    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: 'upstream-detail: voice fr_x unknown for org 42' }), {
+        status: 422,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const result = await getVoxtralTTSService().synthesize('Bonjour');
+
+    expect(result.error).toBe('Mistral TTS API error: 422');
+  });
+
   it('aborts a hanging synthesis request', async () => {
     let captured: AbortSignal | undefined;
     fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {

@@ -11,6 +11,7 @@
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
 import { getMistralSdk } from '../lib/ai/mistral-sdk.js';
+import { MistralError } from '@mistralai/mistralai/models/errors';
 import type { EducationLevelType } from '../types/education.types.js';
 
 interface VoxtralTTSResult {
@@ -88,6 +89,9 @@ class VoxtralTTSService {
         durationMs: Date.now() - startTime,
         severity: 'high' as const,
       });
+      if (error instanceof MistralError) {
+        return { success: false, error: `Mistral TTS API error: ${error.statusCode}` };
+      }
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown Voxtral TTS error',
