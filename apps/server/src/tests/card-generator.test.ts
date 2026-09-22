@@ -56,5 +56,20 @@ describe('generateCards', () => {
 
     expect(isGenerationError(result)).toBe(true);
     expect(calls).toBe(1);
-  }, 15_000);
+  });
+
+  it('returns INVALID_OUTPUT after the schema retry also fails', async () => {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return new Response(JSON.stringify(completion(JSON.stringify({ cards: 'not-an-array' }))), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const result = await generateCards(params);
+
+    expect(isGenerationError(result) && result.code).toBe('INVALID_OUTPUT');
+    expect(calls).toBe(2);
+  });
 });
