@@ -39,6 +39,15 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
   (401 `bad-credentials` → `"result": "external-host-error"`, exit 0, constaté le 2026-09-22
   sur le run 35727149916). Un token expiré passerait inaperçu : faire échouer le job sur ce
   résultat (option à vérifier dans la doc Renovate avant d'écrire la config).
+- **PR D (depuis la PR B)** : `vulnerabilityAlerts.schedule` de `.github/renovate.json` est
+  sans effet (Renovate ignore toujours `schedule` pour les correctifs de sécurité, doc
+  `configuration-options` § `vulnerabilityAlerts`) : le retirer.
+- **Surveillance** : le graphe de dépendances GitHub liste encore `apps/curriculum/uv.lock` et
+  `apps/ai-service/uv.lock` (supprimés en `8f5011f`, 0 dépendance) et y rattachait de nouvelles
+  alertes (#317 créée le 2026-09-19). Les 70 alertes ont été classées `inaccurate` le
+  2026-09-22. Si une alerte réapparaît sur ces chemins, ouvrir un ticket au support GitHub.
+  Dependabot ne sert qu'à détecter (alertes + graphe, source de `vulnerabilityAlerts`) ; ses
+  PR de version et de sécurité restent désactivées, Renovate ouvre toutes les PR.
 - **PR E (depuis la PR B)** : champs morts `IAppUser.parentId` (`packages/api/src/types.ts:23`)
   et `ElysiaAuthenticatedUser.parentId` (`apps/server/src/types/index.ts:17`), exemple périmé
   `pool-limiter.ts:57` ; `react@19.2.3` et un second `next` résolus comme peers optionnels de
