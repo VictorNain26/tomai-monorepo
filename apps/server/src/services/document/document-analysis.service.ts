@@ -9,7 +9,7 @@
  * Cache key = système + version pour amortir le préfixe pédagogique stable.
  */
 
-import { generateText, type MistralMessage } from '../../lib/ai/mistral-client.js';
+import { generateStructured, type MistralMessage } from '../../lib/ai/mistral-client.js';
 import { logger } from '../../lib/observability.js';
 import { env } from '../../config/env.js';
 import { documentExtractionService } from './document-extraction.service.js';
@@ -20,15 +20,12 @@ import {
   buildImagePrompt as buildDocImagePrompt,
   DOCUMENT_PROMPT_VERSION,
 } from './document-prompts.js';
-import type {
-  DocumentAnalysisResult,
-  DocumentAnalysisOptions,
-} from './document-types.js';
 import {
-  parseAnalysisResponse,
-  parseImageAnalysisResponse,
-  createErrorResult,
-} from './document-parsers.js';
+  DocumentAnalysisSchema,
+  ImageAnalysisSchema,
+  type DocumentAnalysisResult,
+  type DocumentAnalysisOptions,
+} from './document-types.js';
 
 // Re-export types for backward compatibility
 export type {
@@ -42,6 +39,34 @@ const ANALYSIS_MODEL = env.MISTRAL_MODEL;
 const ANALYSIS_TEMPERATURE = 0.2;
 const ANALYSIS_MAX_TOKENS = 2048;
 const ANALYSIS_TIMEOUT_MS = 45_000;
+
+function createErrorResult(
+  startTime: number,
+  extractionTimeMs: number,
+  errorMessage: string
+): DocumentAnalysisResult {
+  return {
+    success: false,
+    extraction: {
+      text: '',
+      method: 'none',
+      wordCount: 0
+    },
+    classification: {
+      documentType: 'non-educatif',
+      subject: 'inconnu',
+      confidence: 'low',
+      description: 'Erreur'
+    },
+    analysis: '',
+    metrics: {
+      totalTimeMs: Date.now() - startTime,
+      extractionTimeMs,
+      analysisTimeMs: 0
+    },
+    error: errorMessage
+  };
+}
 
 class DocumentAnalysisService {
   async analyzeDocument(
@@ -89,7 +114,7 @@ class DocumentAnalysisService {
       });
 
       const analysisStart = Date.now();
-      const { classification, analysis } = await this.analyzeText(
+      const { classification, analysis, tokensUsed } = await this.analyzeText(
         extraction.text,
         schoolLevel,
         userQuestion,
@@ -117,7 +142,7 @@ class DocumentAnalysisService {
           description: `Document ${classification.documentType} en ${classification.subject}`,
         },
         analysis,
-        metrics: { totalTimeMs, extractionTimeMs, analysisTimeMs, tokensUsed: 0 },
+        metrics: { totalTimeMs, extractionTimeMs, analysisTimeMs, tokensUsed },
       };
     } catch (error) {
       logger.error('Document analysis failed', {
@@ -154,7 +179,7 @@ class DocumentAnalysisService {
 
     try {
       const analysisStart = Date.now();
-      const { classification, analysis, extractedText } = await this.analyzeImageWithVision(
+      const { classification, analysis, extractedText, tokensUsed } = await this.analyzeImageWithVision(
         base64Data,
         mimeType,
         schoolLevel,
@@ -184,7 +209,7 @@ class DocumentAnalysisService {
           description: `Image ${classification.documentType} en ${classification.subject}`,
         },
         analysis,
-        metrics: { totalTimeMs, extractionTimeMs: 0, analysisTimeMs, tokensUsed: 0 },
+        metrics: { totalTimeMs, extractionTimeMs: 0, analysisTimeMs, tokensUsed },
       };
     } catch (error) {
       logger.error('Image analysis failed', {
@@ -220,16 +245,18 @@ class DocumentAnalysisService {
       { role: 'user', content: userPrompt },
     ];
 
-    const responseText = await generateText({
+    const { object, usage } = await generateStructured({
       model: ANALYSIS_MODEL,
       messages,
       temperature: ANALYSIS_TEMPERATURE,
       maxTokens: ANALYSIS_MAX_TOKENS,
+      schema: DocumentAnalysisSchema,
+      schemaName: 'document_analysis',
       promptCacheKey: `document-analysis-text-${DOCUMENT_PROMPT_VERSION}-${schoolLevel}`,
       timeoutMs: ANALYSIS_TIMEOUT_MS,
     });
 
-    return parseAnalysisResponse(responseText);
+    return { ...object, tokensUsed: usage.inputTokens + usage.outputTokens };
   }
 
   private async analyzeImageWithVision(
@@ -253,16 +280,18 @@ class DocumentAnalysisService {
       },
     ];
 
-    const responseText = await generateText({
+    const { object, usage } = await generateStructured({
       model: ANALYSIS_MODEL,
       messages,
       temperature: ANALYSIS_TEMPERATURE,
       maxTokens: ANALYSIS_MAX_TOKENS,
+      schema: ImageAnalysisSchema,
+      schemaName: 'image_analysis',
       promptCacheKey: `document-analysis-image-${DOCUMENT_PROMPT_VERSION}-${schoolLevel}`,
       timeoutMs: ANALYSIS_TIMEOUT_MS,
     });
 
-    return parseImageAnalysisResponse(responseText);
+    return { ...object, tokensUsed: usage.inputTokens + usage.outputTokens };
   }
 }
 

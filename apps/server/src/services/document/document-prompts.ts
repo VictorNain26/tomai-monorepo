@@ -1,6 +1,6 @@
 import type { EducationLevelType } from '../../types/education.types.js';
 
-export const DOCUMENT_PROMPT_VERSION = '2026-04-21';
+export const DOCUMENT_PROMPT_VERSION = '2026-09-22';
 
 const LEVEL_NAMES: Record<EducationLevelType, string> = {
   cp: 'CP', ce1: 'CE1', ce2: 'CE2', cm1: 'CM1', cm2: 'CM2',
@@ -15,21 +15,6 @@ export function buildSystemPrompt(
   const levelText = LEVEL_NAMES[schoolLevel] ?? schoolLevel;
 
   let prompt = `Tu es Tom, tuteur pédagogique expert pour élèves français de ${levelText}.
-
-## FORMAT DE RÉPONSE OBLIGATOIRE
-Tu DOIS répondre UNIQUEMENT avec un JSON valide au format suivant:
-\`\`\`json
-{
-  "classification": {
-    "documentType": "exercice|cours|devoir|correction|document|non-educatif",
-    "subject": "mathematiques|francais|anglais|espagnol|allemand|histoire|geographie|emc|svt|physique-chimie|technologie|inconnu",
-    "confidence": "high|medium|low",
-    "detectedLevel": "niveau détecté ou null"
-  },
-  "extractedText": "texte complet extrait (pour images uniquement)",
-  "analysis": "ton analyse pédagogique complète ici"
-}
-\`\`\`
 
 ## RÈGLES PÉDAGOGIQUES
 - Utilise l'enseignement EXPLICITE pour les définitions
@@ -55,7 +40,7 @@ export function buildUserPrompt(
   schoolLevel: EducationLevelType,
   userQuestion?: string
 ): string {
-  let prompt = `Analyse ce document et réponds au format JSON demandé.
+  let prompt = `Analyse ce document.
 
 ## DOCUMENT
 """
@@ -75,7 +60,7 @@ export function buildImagePrompt(
   schoolLevel: EducationLevelType,
   userQuestion?: string
 ): string {
-  let prompt = `Analyse cette image et réponds au format JSON demandé.
+  let prompt = `Analyse cette image.
 
 TÂCHE:
 1. Extrais TOUT le texte visible (OCR)
