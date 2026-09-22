@@ -38,7 +38,7 @@ packages/
 |--------|-------------|
 | Backend | Bun 1.4, Elysia 1.4, PostgreSQL 18 + pgvector, Drizzle ORM 0.45 |
 | Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
-| Auth | Better Auth 1.6 + Google OAuth, comptes élèves par username |
+| Auth | Better Auth 1.7 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |
 | IA | Mistral — chat, vision Pixtral, OCR, TTS et STT Voxtral. Stack 100 % EU |
 | Vie scolaire | Pronote via `pawnote`, **serveur uniquement** (lib GPL, tokens rotatifs) |

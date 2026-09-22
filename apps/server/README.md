@@ -37,7 +37,7 @@ Documentation interactive auto-generee disponible en dev :
 | Database | PostgreSQL 18 + pgvector |
 | ORM | Drizzle ORM 0.45 |
 | Cache | MemoryCacheService (LRU in-memory avec TTL) |
-| Auth | Better Auth 1.6 + Google OAuth |
+| Auth | Better Auth 1.7 + Google OAuth |
 | AI Chat | Mistral (`mistral-medium-latest`, streaming + tools) |
 | Embeddings | `mistral-embed` 1024D (mémoire épisodique, pgvector) |
 | Stockage | Scaleway Object Storage (S3, RGPD France) |

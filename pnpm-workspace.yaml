@@ -3,7 +3,7 @@ packages:
   - packages/*
 
 # Supply-chain protection: chaque package qui veut exécuter un build script
-# doit être listé explicitement (pnpm 11 strictDepBuilds=true par défaut).
+# doit être listé explicitement (strictDepBuilds=true par défaut depuis pnpm 11+).
 # Tous les packages ici sont des libs officielles/matures qu'on trust pour
 # installer leurs binaires natifs.
 allowBuilds:
@@ -28,11 +28,11 @@ catalog:
   typescript: 6.0.3
 
 # Supply-chain protection: bloque l'install de packages publiés depuis <24h
-# (défaut pnpm 11).
+# (défaut depuis pnpm 11+).
 minimumReleaseAge: 1440
 
-# Migré depuis package.json#pnpm.overrides — pnpm 11 ne lit plus le champ "pnpm"
-# du package.json. Toutes les overrides doivent vivre ici.
+# Migré depuis package.json#pnpm.overrides — depuis pnpm 11+, ce champ "pnpm"
+# du package.json n'est plus lu. Toutes les overrides doivent vivre ici.
 overrides:
   # GHSA-67mh-4wv8-2f99 (esbuild <0.25.0, dev-server request forwarding), via
   # drizzle-kit>@esbuild-kit/esm-loader>@esbuild-kit/core-utils. Dev-only.
