@@ -2,6 +2,21 @@
 @import "@repo/tokens/theme.css";
 @source "../../../packages/ui/src";
 
+@theme {
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.5rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 2rem;
+  --text-xl--line-height: 2rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.5rem;
+  --text-4xl--line-height: 3rem;
+  --text-5xl--line-height: 3.5rem;
+  --text-6xl--line-height: 4rem;
+  --text-7xl--line-height: 5rem;
+  --text-8xl--line-height: 6rem;
+}
+
 /* Seyès : carreau 32 px, interlignes 8 px. Les verticales sont peintes par ::before
  * car les % de background-position ne se rapportent pas à la largeur de la boîte ;
  * `left` en % se rapporte à la largeur de la section, barre de défilement exclue. */
@@ -79,8 +94,22 @@
     @apply border-border;
   }
 
+  /* (ascent − |descent|) / unitsPerEm, @capsizecss/metrics 4.3.0 :
+   * Figtree 950/250/1000, Fraunces 1956/510/2000. */
   body {
+    --ink-ad: 0.7;
     @apply bg-background font-sans text-foreground antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    --ink-ad: 0.723;
+  }
+
+  /* Décale chaque bloc pour que la ligne de base tombe sur le bas de sa ligne,
+   * donc sur une ligne de la réglure quand le bloc démarre sur une ligne. */
+  p, h1, h2, h3, h4, h5, h6, dt, dd, blockquote {
+    position: relative;
+    top: calc(0.5lh - var(--ink-ad) * 0.5em);
   }
 
   h1, h2, h3, h4, h5, h6 {

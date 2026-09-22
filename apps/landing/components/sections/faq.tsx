@@ -22,7 +22,7 @@ export function FAQ() {
           {FAQS.map((faq, index) => (
             <div
               key={index}
-              className="bg-card border border-border rounded-2xl overflow-hidden transition-colors duration-base hover:border-primary"
+              className="bg-card rounded-2xl overflow-hidden shadow-sm ring-1 ring-border transition-shadow duration-base hover:ring-primary"
             >
               <button
                 type="button"
@@ -58,7 +58,7 @@ export function FAQ() {
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.25 }}
                   >
-                    <div className="px-6 pb-6 pl-[3.25rem] sm:pl-20 text-muted-foreground leading-relaxed">
+                    <div className="px-6 pb-6 pl-[3.25rem] sm:pl-20 text-muted-foreground">
                       {faq.answer}
                     </div>
                   </motion.div>

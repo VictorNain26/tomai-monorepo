@@ -45,8 +45,8 @@ export function HowItWorks() {
                 <Scribble kind="circle" className="mb-4 px-2 font-heading text-3xl text-annotation" delay={0.2 + index * 0.15}>
                   {index + 1}
                 </Scribble>
-                <h3 className="mb-3 text-2xl font-semibold text-foreground">{step.title}</h3>
-                <p className="leading-relaxed text-muted-foreground">{step.body}</p>
+                <h3 className="mb-4 text-2xl font-semibold text-foreground">{step.title}</h3>
+                <p className="text-muted-foreground">{step.body}</p>
               </FadeIn>
             </li>
           ))}
