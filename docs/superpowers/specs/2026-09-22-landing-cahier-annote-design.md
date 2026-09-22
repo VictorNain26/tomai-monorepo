@@ -39,8 +39,8 @@ paire texte/fond ci-dessous est ≥ 4,5:1.
 | `background` | `#FAF7F0` | `#12162B` | fond papier / encre | — |
 | `foreground` | `#1C2340` | `#F3EEE3` | texte | 14,4 / 15,4 |
 | `card`, `popover` | `#FFFDF8` | `#1A1F38` | surfaces | fg 15,2 / 14,0 |
-| `primary` | `#B7461C` | `#F08A5D` | « stylo du prof » : CTA, liens, annotations | sur bg 5,0 / 7,2 |
-| `primary-foreground` | `#FFFFFF` | `#12162B` | texte sur primary | 5,4 / 7,2 |
+| `primary` | `#B0421A` | `#F08A5D` | « stylo du prof » : CTA, liens, annotations | sur bg 5,4 / 7,2 ; sur secondary 4,8 / 5,8 |
+| `primary-foreground` | `#FFFFFF` | `#12162B` | texte sur primary | 5,8 / 7,2 |
 | `secondary`, `muted`, `accent` | `#F0EADD` | `#232846` | blocs, badges | fg 12,8 / 12,4 |
 | `*-foreground` associés | `#1C2340` | `#F3EEE3` | | |
 | `muted-foreground` | `#5B6178` | `#A3A9BF` | texte secondaire | 5,7 / 7,6 |
@@ -76,12 +76,17 @@ landing.
 - `--radius` : 0,75 → 1 rem, échelle `--radius-*` décalée d'autant. Boutons en
   pilule (`rounded-full`) via un changement du variant par défaut de `Button` dans
   `@repo/ui`.
-- Durées `fast` / `base` / `slow` / `pulse` inchangées. Nouveau `--duration-draw`
-  (800 ms) pour les traits SVG qui se dessinent.
+- Durées `fast` / `base` / `slow` / `pulse` inchangées. Pas de token pour le tracé
+  des annotations : `motion` prend ses durées en secondes dans le JS et ne lit pas
+  une variable CSS, un token serait une valeur morte. La durée vit dans une
+  constante unique de la landing (`lib/motion.ts`).
 - Tout mouvement est coupé sous `prefers-reduced-motion` : état final affiché
-  directement.
-- `--grid-color` (grille de cahier) reste local à `apps/landing/app/globals.css`,
-  recoloré en bleu encre très pâle.
+  directement. `MotionConfig reducedMotion="user"` ne coupe que les transformations
+  et le layout ([doc motion](https://motion.dev/docs/react-accessibility)) ; les
+  tracés (`pathLength`) testent donc `useReducedMotion` eux-mêmes.
+- Grille de cahier : utilitaire `bg-notebook` local à `apps/landing/app/globals.css`,
+  couleur dérivée de `foreground` par `color-mix` (le `--grid-color` et son override
+  dark disparaissent).
 
 ## Page d'accueil
 
