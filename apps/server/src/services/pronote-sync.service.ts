@@ -2,9 +2,8 @@
  * Pronote Credential Sync Service
  *
  * Stores and retrieves AES-256-GCM encrypted Pronote credentials.
- * Two consumers: mobile (device-first, decrypts for direct pawnote calls) and
- * the server-side provider (PawnoteServerAdapter, decrypts in-memory for
- * parent/web reads via pronote-data.service).
+ * Single consumer: the server-side provider (PawnoteServerAdapter), which
+ * decrypts in-memory for parent/web reads via pronote-data.service.
  */
 
 import { eq, asc, count } from 'drizzle-orm';
