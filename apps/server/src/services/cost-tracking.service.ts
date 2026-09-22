@@ -45,7 +45,7 @@ const EU_REGIONAL_UPCHARGE = 1.1;
 const USD_TO_EUR = env.USD_TO_EUR_RATE;
 
 export function regionalUpcharge(serverUrl: string): number {
-  return new URL(serverUrl).host === 'api.mistral.ai' ? 1 : EU_REGIONAL_UPCHARGE;
+  return new URL(serverUrl).host === 'api.eu.mistral.ai' ? EU_REGIONAL_UPCHARGE : 1;
 }
 
 export function computeCostCents(

@@ -33,6 +33,21 @@ const pinnedModelId = z.string().refine((id) => !id.endsWith('-latest'), {
   error: 'alias -latest interdit : épingler un ID daté (https://docs.mistral.ai/inference/model-lifecycle)',
 });
 
+// MISTRAL_SERVER_URL doit être une origine nue : un chemin (ex. .../v1)
+// produirait /v1/v1/... une fois concaténé au chemin d'API. En prod, seul
+// l'endpoint UE est autorisé (aucune donnée élève hors UE).
+const mistralServerUrl = z
+  .url()
+  .refine((value) => new URL(value).pathname === '/', {
+    error: 'MISTRAL_SERVER_URL doit être une origine nue, sans chemin (ex. https://api.eu.mistral.ai)',
+  })
+  .refine((value) => !value.endsWith('/'), {
+    error: 'MISTRAL_SERVER_URL ne doit pas se terminer par un slash',
+  })
+  .refine((value) => !isProd || new URL(value).host === 'api.eu.mistral.ai', {
+    error: 'MISTRAL_SERVER_URL doit être api.eu.mistral.ai en production (aucune donnée élève hors UE)',
+  });
+
 const EnvSchema = z.object({
   // Application
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -72,7 +87,7 @@ const EnvSchema = z.object({
   // AI — Mistral. Endpoint UE : inférence garantie en Europe, +10 %
   // (https://docs.mistral.ai/inference/regional-inference).
   MISTRAL_API_KEY: z.string().optional(),
-  MISTRAL_SERVER_URL: z.url().default('https://api.eu.mistral.ai'),
+  MISTRAL_SERVER_URL: mistralServerUrl.default('https://api.eu.mistral.ai'),
   MISTRAL_MODEL: pinnedModelId.default('mistral-small-2603'),
   MISTRAL_EMBED_MODEL: pinnedModelId.default('mistral-embed-2312'),
   MISTRAL_STT_MODEL: pinnedModelId.default('voxtral-mini-2602'),

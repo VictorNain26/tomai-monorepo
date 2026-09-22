@@ -38,4 +38,37 @@ describe('env — Mistral model ids', () => {
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr.toString()).toContain('MISTRAL_SERVER_URL');
   });
+
+  it('refuses a server URL with a path', () => {
+    const result = bootEnv({ MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai/v1' });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain('MISTRAL_SERVER_URL');
+  });
+
+  it('refuses a server URL with a trailing slash', () => {
+    const result = bootEnv({ MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai/' });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain('MISTRAL_SERVER_URL');
+  });
+
+  it('refuses a non-EU server URL in production', () => {
+    const result = bootEnv({
+      NODE_ENV: 'production',
+      MISTRAL_SERVER_URL: 'https://api.mistral.ai',
+      PRONOTE_ENCRYPTION_KEY: 'x'.repeat(32),
+      BETTER_AUTH_URL: 'https://tomia.fr',
+    });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain('MISTRAL_SERVER_URL');
+  });
+
+  it('accepts the EU server URL in production', () => {
+    const result = bootEnv({
+      NODE_ENV: 'production',
+      MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
+      PRONOTE_ENCRYPTION_KEY: 'x'.repeat(32),
+      BETTER_AUTH_URL: 'https://tomia.fr',
+    });
+    expect(result.exitCode).toBe(0);
+  });
 });

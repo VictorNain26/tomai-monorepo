@@ -45,4 +45,8 @@ describe('regionalUpcharge', () => {
   it("vaut 1 sur l'endpoint global", () => {
     expect(regionalUpcharge('https://api.mistral.ai')).toBe(1);
   });
+
+  it('vaut 1 sur un hôte inconnu (dev local), jamais la majoration UE par défaut', () => {
+    expect(regionalUpcharge('http://localhost:1234')).toBe(1);
+  });
 });
