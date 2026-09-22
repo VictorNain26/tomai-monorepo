@@ -84,12 +84,9 @@ export const auth = betterAuth({
   // Origins de confiance pour les callbacks OAuth
   trustedOrigins,
 
-  // Configuration des sessions
+  // No cookieCache: a cached session outlives a deleted or banned account for its whole maxAge.
   session: {
-    cookieCache: {
-      enabled: true,
-      maxAge: env.SESSION_MAX_AGE,
-    },
+    expiresIn: env.SESSION_MAX_AGE,
     updateAge: env.SESSION_UPDATE_AGE,
   },
 

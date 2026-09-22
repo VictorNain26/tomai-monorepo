@@ -1,6 +1,6 @@
 /**
  * Tests unitaires - Auth Middleware (middleware/auth.middleware.ts)
- * Mock: Better Auth + DB + logger
+ * Mock: Better Auth + logger
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
@@ -29,40 +29,6 @@ mock.module('../lib/auth', () => ({
   },
 }));
 
-// DB mock state
-let dbUserExists: boolean = true;
-let dbDeleteShouldThrow: Error | null = null;
-
-mock.module('../db/connection', () => ({
-  db: {
-    select: mock(() => ({
-      from: mock(() => ({
-        where: mock(() => ({
-          limit: mock(() => {
-            if (dbUserExists) return [{ id: 'user-001' }];
-            return [];
-          }),
-        })),
-      })),
-    })),
-    delete: mock(() => ({
-      where: mock(() => {
-        if (dbDeleteShouldThrow) throw dbDeleteShouldThrow;
-        return Promise.resolve();
-      }),
-    })),
-  },
-}));
-
-mock.module('../db/schema', () => ({
-  user: { id: 'id' },
-  session: { id: 'id' },
-}));
-
-mock.module('drizzle-orm', () => ({
-  eq: (...args: unknown[]) => ({ type: 'eq', args }),
-}));
-
 // Import after mocks
 const {
   requireAuth,
@@ -76,8 +42,6 @@ beforeEach(() => {
     session: { id: 'sess-001', userId: student.id },
   };
   authShouldThrow = null;
-  dbUserExists = true;
-  dbDeleteShouldThrow = null;
 });
 
 describe('Auth Middleware', () => {
@@ -97,30 +61,6 @@ describe('Auth Middleware', () => {
       if (!result.success) {
         expect(result.status).toBe(401);
         expect(result._error).toBe('Unauthorized');
-        expect(result.shouldClearCookies).toBe(false);
-      }
-    });
-
-    it('should detect orphaned session (user deleted) and set shouldClearCookies', async () => {
-      dbUserExists = false;
-      const result = await requireAuth(new Headers());
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.status).toBe(401);
-        expect(result.shouldClearCookies).toBe(true);
-        expect(mockLogger.warn).toHaveBeenCalled();
-      }
-    });
-
-    it('should handle cleanup failure silently on orphaned session', async () => {
-      dbUserExists = false;
-      dbDeleteShouldThrow = new Error('DB unavailable');
-      const result = await requireAuth(new Headers());
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.shouldClearCookies).toBe(true);
-        // Should log error but not throw
-        expect(mockLogger.error).toHaveBeenCalled();
       }
     });
 
@@ -131,8 +71,14 @@ describe('Auth Middleware', () => {
       if (!result.success) {
         expect(result.status).toBe(503);
         expect(result._error).toBe('Authentication service error');
-        expect(result.shouldClearCookies).toBe(false);
       }
+    });
+
+    it('asks better-auth for the session with the request headers only', async () => {
+      const headers = new Headers({ cookie: 'better-auth.session_token=abc' });
+      await requireAuth(headers);
+      const { auth } = await import('../lib/auth');
+      expect(auth.api.getSession).toHaveBeenCalledWith({ headers });
     });
   });
 
