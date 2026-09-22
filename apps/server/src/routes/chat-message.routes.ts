@@ -12,6 +12,7 @@
 import { Elysia, t } from 'elysia';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { authMacro } from '../lib/auth-macro.js';
+import { requestIdMiddleware } from '../middleware/request-id.middleware.js';
 import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 import { chatOrchestrationService, ChatOrchestrationError } from '../services/chat/chat-orchestration.service.js';
 import { streamChat } from '../services/chat/ai-chat.service.js';
@@ -34,13 +35,13 @@ function sanitizePrompt(text: string): string {
 }
 
 export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
+  .use(requestIdMiddleware)
   .use(authMacro)
   // Rate-limit AFTER the auth guard so `resolve` has injected `user` — the `ai`
   // preset keys by user id, which is undefined if this runs before the guard.
   .guard({ auth: true })
   .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.ai))
-  .post('/stream', async ({ body, user, set, store }) => {
-    const requestId = (store as { requestId?: string }).requestId;
+  .post('/stream', async ({ body, user, set, requestId }) => {
     const { message, sessionId, subject, schoolLevel, firstName, fileId, fileIds: fileIdsBody, inputMode, pronoteContext } = body;
 
     const fileIds = fileIdsBody ?? (fileId ? [fileId] : []);
