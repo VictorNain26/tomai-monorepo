@@ -184,7 +184,7 @@ describe('Summarization Service', () => {
       expect(sessionUpdateCalled).toBe(false);
     });
 
-    it('does not retry a non-retryable 400 on top of the SDK', async () => {
+    it('calls generateText once on a non-retryable 400 (no retry loop over the SDK)', async () => {
       mistralResponse = new APICallError({
         message: 'Bad Request',
         url: 'https://api.eu.mistral.ai/v1/chat/completions',
