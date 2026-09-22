@@ -3,6 +3,12 @@ import { authMacro } from '../../lib/auth-macro.js';
 import { chatSessionService } from '../../services/chat/chat-session.service';
 import { logger } from '../../lib/observability';
 
+const sessionParams = t.Object({ id: t.String({ format: 'uuid' }) });
+const sessionFileParams = t.Object({
+  id: t.String({ format: 'uuid' }),
+  fileId: t.String({ format: 'uuid' }),
+});
+
 export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
   .use(authMacro)
 
@@ -70,7 +76,7 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
       });
       return status(500, { error: 'Failed to list session files' });
     }
-  })
+  }, { params: sessionParams })
 
   .post('/chat/session/:id/files', async ({ params, body, user, status }) => {
     try {
@@ -105,8 +111,9 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
       return status(500, { error: 'Failed to attach file' });
     }
   }, {
+    params: sessionParams,
     body: t.Object({
-      fileId: t.String({ minLength: 1, maxLength: 100 }),
+      fileId: t.String({ format: 'uuid' }),
     }),
   })
 
@@ -130,4 +137,4 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
       });
       return status(500, { error: 'Failed to detach file' });
     }
-  });
+  }, { params: sessionFileParams });

@@ -105,7 +105,7 @@ mock.module('../db/repositories', () => ({
 mock.module('../db/connection', () => ({
   db: {
     delete: mock(() => ({
-      where: mock(async () => ({ rowCount: 1 })),
+      where: mock(async () => ({ count: 1 })),
     })),
   },
 }));
@@ -127,15 +127,6 @@ mock.module('../services/storage/scaleway-storage.service', () => ({
 mock.module('../services/episodic-memory.service', () => ({
   episodicMemoryService: {
     extractAndStore: mock(async () => {}),
-  },
-}));
-
-// safeUUID: pass through valid UUIDs, return null for invalid
-mock.module('../utils/uuid', () => ({
-  safeUUID: (value: string | null | undefined) => {
-    if (!value) return null;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(value) ? value : null;
   },
 }));
 
@@ -234,9 +225,11 @@ describe('ChatSessionService', () => {
       expect(result?.subject).toBe('mathematiques');
     });
 
-    it('should return null for invalid UUID', async () => {
-      const result = await sessionService.getSession('not-a-uuid');
-      expect(result).toBeNull();
+    it('should look up a UUIDv7 session id', async () => {
+      const UUID_V7 = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
+      findByIdResult = makeStudySession({ id: UUID_V7, userId: 'user-001' });
+      const result = await sessionService.getSession(UUID_V7);
+      expect(result?.id).toBe(UUID_V7);
     });
 
     it('should return null when session not found', async () => {
@@ -321,10 +314,6 @@ describe('ChatSessionService', () => {
 
       await sessionService.deleteSession(VALID_UUID, 'user-001');
       expect(deleteByIdCalled).toBe(true);
-    });
-
-    it('should throw for invalid UUID', async () => {
-      expect(await rejection(sessionService.deleteSession('bad-id'))).toBeInstanceOf(Error);
     });
 
     it('should throw when session belongs to different user', async () => {

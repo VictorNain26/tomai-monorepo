@@ -10,7 +10,6 @@ import { eq } from 'drizzle-orm';
 import { studySessionsRepository, messagesRepository, filesRepository } from '../../db/repositories';
 import { db } from '../../db/connection';
 import { messages } from '../../db/schema';
-import { safeUUID } from '../../utils/uuid';
 import { logger } from '../../lib/observability';
 import { deleteFile as deleteScalewayFile } from '../storage/scaleway-storage.service.js';
 
@@ -20,19 +19,14 @@ import { deleteFile as deleteScalewayFile } from '../storage/scaleway-storage.se
  */
 export async function deleteSessionCascade(sessionId: string, userId?: string): Promise<void> {
   try {
-    const validSessionId = safeUUID(sessionId);
-    if (!validSessionId) {
-      throw new Error(`Invalid session UUID: "${sessionId}"`);
-    }
-
     if (userId) {
-      const session = await studySessionsRepository.findById(validSessionId);
+      const session = await studySessionsRepository.findById(sessionId);
       if (!session || session.userId !== userId) {
         throw new Error('Session not found or access denied');
       }
     }
 
-    const sessionMessages = await messagesRepository.findBySessionId(validSessionId);
+    const sessionMessages = await messagesRepository.findBySessionId(sessionId);
 
     const fileIds: string[] = [];
     for (const msg of sessionMessages) {
@@ -45,7 +39,7 @@ export async function deleteSessionCascade(sessionId: string, userId?: string): 
     if (fileIds.length > 0) {
       logger.info('Deleting files associated with session', {
         operation: 'chat:session:delete:files',
-        sessionId: validSessionId,
+        sessionId,
         fileCount: fileIds.length,
       });
 
@@ -58,12 +52,12 @@ export async function deleteSessionCascade(sessionId: string, userId?: string): 
       }
     }
 
-    await db.delete(messages).where(eq(messages.sessionId, validSessionId));
-    await studySessionsRepository.deleteById(validSessionId);
+    await db.delete(messages).where(eq(messages.sessionId, sessionId));
+    await studySessionsRepository.deleteById(sessionId);
 
     logger.info('Session deleted successfully', {
       operation: 'chat:session:delete',
-      sessionId: validSessionId,
+      sessionId,
       filesDeleted: fileIds.length,
     });
   } catch (_error) {

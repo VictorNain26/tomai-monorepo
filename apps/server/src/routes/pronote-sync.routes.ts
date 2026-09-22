@@ -140,6 +140,6 @@ export const pronoteSyncRoutes = new Elysia({ name: 'pronote-sync-routes' })
         return status(500, { success: false, error: 'Erreur interne' });
       }
     }, {
-      params: t.Object({ id: t.String() }),
+      params: t.Object({ id: t.String({ format: 'uuid' }) }),
     })
   );

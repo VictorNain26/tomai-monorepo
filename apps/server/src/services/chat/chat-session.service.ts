@@ -1,6 +1,5 @@
 import { usersRepository, studySessionsRepository, type CreateStudySessionInput } from '../../db/repositories';
 import type { SchoolLevel } from '../../db/schema';
-import { safeUUID } from '../../utils/uuid';
 import { logger } from '../../lib/observability';
 import { deleteSessionCascade } from './session-cleanup';
 import { episodicMemoryService } from '../episodic-memory.service.js';
@@ -91,12 +90,7 @@ export class ChatSessionService {
     uploadedAt: string;
   }): Promise<void> {
     try {
-      const validSessionId = safeUUID(sessionId);
-      if (!validSessionId) {
-        throw new Error(`Invalid session UUID: "${sessionId}"`);
-      }
-
-      const currentSession = await studySessionsRepository.findById(validSessionId);
+      const currentSession = await studySessionsRepository.findById(sessionId);
       if (!currentSession) {
         throw new Error(`Session not found: ${sessionId}`);
       }
@@ -117,12 +111,12 @@ export class ChatSessionService {
         analyzedAt: new Date().toISOString()
       });
 
-      await studySessionsRepository.update(validSessionId, {
+      await studySessionsRepository.update(sessionId, {
         sessionMetadata: currentMetadata
       });
 
       logger.info('Session updated with file analysis', {
-        sessionId: validSessionId,
+        sessionId,
         fileName: fileData.fileName,
         operation: 'updateSessionWithFiles'
       });
@@ -146,12 +140,7 @@ export class ChatSessionService {
     analyzedAt: string;
   }>> {
     try {
-      const validSessionId = safeUUID(sessionId);
-      if (!validSessionId) {
-        return [];
-      }
-
-      const session = await studySessionsRepository.findById(validSessionId);
+      const session = await studySessionsRepository.findById(sessionId);
       if (!session?.sessionMetadata) {
         return [];
       }
@@ -171,17 +160,7 @@ export class ChatSessionService {
 
   async getSession(sessionId: string): Promise<SessionDetails | null> {
     try {
-      const validSessionId = safeUUID(sessionId);
-      if (!validSessionId) {
-        logger.warn('Invalid session UUID provided', {
-          operation: 'session:validation:uuid',
-          sessionId,
-          severity: 'low' as const
-        });
-        return null;
-      }
-
-      const session = await studySessionsRepository.findById(validSessionId);
+      const session = await studySessionsRepository.findById(sessionId);
       if (!session) {
         return null;
       }
@@ -219,10 +198,7 @@ export class ChatSessionService {
     subject: string | null;
   } | null> {
     try {
-      const validSessionId = safeUUID(sessionId);
-      if (!validSessionId) return null;
-
-      const session = await studySessionsRepository.findById(validSessionId);
+      const session = await studySessionsRepository.findById(sessionId);
       if (!session) return null;
 
       return {
@@ -303,17 +279,12 @@ export class ChatSessionService {
 
   async resetSession(sessionId: string, userId: string): Promise<string> {
     try {
-      const validSessionId = safeUUID(sessionId);
-      if (!validSessionId) {
-        throw new Error(`Invalid session UUID: "${sessionId}"`);
-      }
-
-      const session = await studySessionsRepository.findById(validSessionId);
+      const session = await studySessionsRepository.findById(sessionId);
       if (!session || session.userId !== userId) {
         throw new Error('Session not found or access denied');
       }
 
-      await studySessionsRepository.update(validSessionId, {
+      await studySessionsRepository.update(sessionId, {
         status: 'completed',
         endedAt: new Date(),
       });
@@ -323,11 +294,11 @@ export class ChatSessionService {
       // is a meaningful pedagogical boundary worth persisting into long-term
       // memory. GDPR note: deletion cascade removes the episode alongside
       // the parent session (see session_episodes.session_id_fkey).
-      episodicMemoryService.extractAndStore(validSessionId, userId).catch(err => {
+      episodicMemoryService.extractAndStore(sessionId, userId).catch(err => {
         logger.warn('Episodic extraction (reset) failed in background', {
           operation: 'chat:session:reset:episodic-bg',
           _error: err instanceof Error ? err.message : String(err),
-          sessionId: validSessionId,
+          sessionId,
         });
       });
 
@@ -335,7 +306,7 @@ export class ChatSessionService {
 
       logger.info('Session reset: archived old, created new', {
         operation: 'chat:session:reset',
-        oldSessionId: validSessionId,
+        oldSessionId: sessionId,
         newSessionId,
         subject: session.subject,
       });

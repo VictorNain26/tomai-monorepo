@@ -166,7 +166,8 @@ const app = new Elysia().use(pronoteSyncRoutes);
 
 const PARENT_USER_ID = 'parent-user-001';
 const OTHER_USER_ID = 'other-user-002';
-const CRED_ID = 'cred-abc-123';
+const CRED_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
+const UNKNOWN_CRED_ID = '0199a3c4-7b1e-7d2a-9f00-123456789fff';
 
 function del(path: string) {
   return new Request(`http://localhost${path}`, { method: 'DELETE' });
@@ -257,11 +258,28 @@ describe('DELETE /api/pronote/credentials/:id', () => {
     currentUser = { id: PARENT_USER_ID };
     mockDeleteCredentialById = mock(async (): Promise<boolean> => false);
 
-    const res = await app.handle(del('/api/pronote/credentials/unknown-id-999'));
+    const res = await app.handle(del(`/api/pronote/credentials/${UNKNOWN_CRED_ID}`));
 
     expect(res.status).toBe(404);
     const body = await res.json() as { error: string; code: string };
     expect(body.error).toBeDefined();
     expect(body.code).toBe('pronote_credential_not_found');
+  });
+
+  // ------------------------------------
+  // Non-UUID id → 400 before the service is called
+  // ------------------------------------
+
+  it('non-UUID credential id → validation error before the service is called', async () => {
+    currentUser = { id: PARENT_USER_ID };
+
+    const res = await app.handle(del('/api/pronote/credentials/not-a-uuid'));
+
+    // This test builds an isolated Elysia app around pronoteSyncRoutes only,
+    // without app.ts's global error handler that normalizes VALIDATION to
+    // 400 (see api-endpoints.test.ts for that path) — Elysia's own default
+    // validation response is 422.
+    expect(res.status).toBe(422);
+    expect(mockDeleteCredentialById).not.toHaveBeenCalled();
   });
 });
