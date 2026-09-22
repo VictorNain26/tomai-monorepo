@@ -240,7 +240,6 @@ import * as pronoteSchema from '../db/schema/pronote.schema';
 import * as billingSchema from '../db/schema/billing.schema';
 import * as filesSchema from '../db/schema/files.schema';
 import * as learningToolsSchema from '../db/schema/learning-tools.schema';
-import * as notificationsSchema from '../db/schema/notifications.schema';
 mock.module('../db/schema', () => ({
   ...authSchema,
   ...learningSchema,
@@ -248,7 +247,6 @@ mock.module('../db/schema', () => ({
   ...billingSchema,
   ...filesSchema,
   ...learningToolsSchema,
-  ...notificationsSchema,
 }));
 mock.module('../db/repositories/index', () => ({
   filesRepository: { findByUserId: mock(async () => []), findById: mock(async () => null) },

@@ -175,27 +175,6 @@ export const familyBilling = pgTable('family_billing', {
 }));
 
 /**
- * Table webhook_events - Stocke les événements RevenueCat traités pour idempotence
- * TTL géré par cleanup job (événements > 7 jours supprimés).
- *
- * Historiquement la colonne `source` gérait aussi Stripe ; elle est conservée
- * pour permettre l'ajout futur d'autres providers et parce que la colonne
- * existe déjà en prod — la narrowing applicative se fait via `WebhookSource`.
- */
-export const webhookEvents = pgTable('webhook_events', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  eventId: varchar('event_id', { length: 255 }).notNull().unique(), // ID RevenueCat
-  source: varchar('source', { length: 50 }).notNull(), // 'revenuecat'
-  eventType: varchar('event_type', { length: 100 }).notNull(), // Type d'événement
-  processedAt: timestamp('processed_at', { withTimezone: true }).notNull().defaultNow(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(), // Pour cleanup
-}, (table) => ({
-  eventIdIdx: index('idx_webhook_events_event_id').on(table.eventId),
-  sourceIdx: index('idx_webhook_events_source').on(table.source),
-  expiresAtIdx: index('idx_webhook_events_expires_at').on(table.expiresAt),
-}));
-
-/**
  * Table waitlist_entries - Collecte d'emails pour la liste d'attente
  * Utilisée par la landing page avant le lancement de l'app mobile
  */
@@ -257,11 +236,6 @@ export type UserSubscriptionWithRelations = UserSubscription & {
 export type FamilyBillingWithRelations = FamilyBilling & {
   parent?: typeof user.$inferSelect;
 };
-
-// Webhook Events Types (idempotence sans Redis)
-export type WebhookEvent = typeof webhookEvents.$inferSelect;
-export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
-export type WebhookSource = 'revenuecat';
 
 // Waitlist Types
 export type WaitlistEntry = typeof waitlistEntries.$inferSelect;
