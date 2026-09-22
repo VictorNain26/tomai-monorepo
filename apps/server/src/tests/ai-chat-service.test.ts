@@ -9,7 +9,8 @@
  * execution — a trivial fake tool stands in for `buildChatTools`'s output.
  */
 
-import { describe, it, expect } from 'bun:test';
+import './_helpers/mistral-env';
+import { describe, it, expect, afterEach } from 'bun:test';
 import { z } from 'zod';
 import { tool, type ToolSet } from 'ai';
 import { MockLanguageModelV4, simulateReadableStream } from 'ai/test';
@@ -122,5 +123,65 @@ describe('streamChat', () => {
     }
 
     expect(received).toEqual(['Bonjour ', 'le monde']);
+  });
+});
+
+describe('streamChat — Mistral wire request', () => {
+  const originalFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  function mockMistralStream(capture: { url?: string; body?: Record<string, unknown> }) {
+    const chunk = (delta: Record<string, unknown>, extra: Record<string, unknown> = {}) =>
+      `data: ${JSON.stringify({ id: 'c1', object: 'chat.completion.chunk', created: 0, model: 'mistral-small-2603', choices: [{ index: 0, delta, finish_reason: extra['finish_reason'] ?? null }], ...extra })}\n\n`;
+    const sse =
+      chunk({ role: 'assistant', content: 'ok' }) +
+      chunk({ content: '' }, {
+        finish_reason: 'stop',
+        usage: { prompt_tokens: 200, completion_tokens: 1, total_tokens: 201, prompt_tokens_details: { cached_tokens: 128 } },
+      }) +
+      'data: [DONE]\n\n';
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      capture.url = String(url);
+      capture.body = JSON.parse(init?.body as string) as Record<string, unknown>;
+      return new Response(sse, { headers: { 'content-type': 'text/event-stream' } });
+    }) as unknown as typeof fetch;
+  }
+
+  it('sends the dated model, the session cache key and high reasoning on a STEM solve turn', async () => {
+    const capture: { url?: string; body?: Record<string, unknown> } = {};
+    mockMistralStream(capture);
+
+    const result = streamChat({
+      ...baseParams,
+      subject: 'mathematiques',
+      classifiedIntent: { intent: 'solve-this-for-me', confidence: 'high' },
+      tools: noopTools,
+    });
+    await result.text;
+
+    expect(capture.url).toBe('https://api.eu.mistral.ai/v1/chat/completions');
+    expect(capture.body?.['model']).toBe('mistral-small-2603');
+    expect(capture.body?.['prompt_cache_key']).toBe('session-001');
+    expect(capture.body?.['reasoning_effort']).toBe('high');
+  });
+
+  it("sends reasoning_effort 'none' outside the STEM hard-intent route", async () => {
+    const capture: { url?: string; body?: Record<string, unknown> } = {};
+    mockMistralStream(capture);
+
+    await streamChat({ ...baseParams, subject: 'francais', tools: noopTools }).text;
+
+    expect(capture.body?.['reasoning_effort']).toBe('none');
+  });
+
+  it('surfaces cached prompt tokens from the streamed usage', async () => {
+    mockMistralStream({});
+
+    const usage = await streamChat({ ...baseParams, tools: noopTools }).totalUsage;
+
+    expect(usage.inputTokens).toBe(200);
+    expect(usage.inputTokenDetails.cacheReadTokens).toBe(128);
   });
 });

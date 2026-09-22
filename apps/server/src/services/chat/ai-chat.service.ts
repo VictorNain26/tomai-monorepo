@@ -5,6 +5,11 @@
  * results back, loop) via `streamText`'s built-in tool loop. This service is
  * intentionally thin: assembling the prompt and configuring the call is all
  * it does — no parsing, no manual iteration.
+ *
+ * Prompt cache
+ *   `promptCacheKey` = the chat session id, as Mistral recommends for
+ *   multi-turn conversations: each turn resends the same prefix (system
+ *   prompt + history), so turn N+1 reads turn N's prefix from cache.
  */
 
 import {
@@ -17,7 +22,9 @@ import {
   type FilePart,
 } from 'ai';
 import { mistralProvider } from '../../lib/ai/provider.js';
+import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { routeReasoningEffort } from '../../lib/ai/mistral-reasoning.js';
+import { logger } from '../../lib/observability.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory } from '../../utils/conversation/index.js';
@@ -34,6 +41,9 @@ import { env } from '../../config/env.js';
 import type { MistralMessage, MistralContentPart } from '../../lib/ai/mistral-client.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from './file-context-types.js';
+
+/** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
+const PROMPT_VERSION = '2026-06-14-voicefmt';
 
 export interface AttachedFile {
   /** Inline base64 payload for multimodal user messages (Mistral vision). */
@@ -254,6 +264,14 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
 
   const model = params.model ?? mistralProvider()(env.MISTRAL_MODEL);
 
+  logger.info('Chat stream started', {
+    operation: 'chat-stream:start',
+    sessionId: params.sessionId,
+    model: env.MISTRAL_MODEL,
+    promptVersion: PROMPT_VERSION,
+    reasoningEffort,
+  });
+
   return streamText({
     model,
     system,
@@ -266,7 +284,8 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
       mistral: {
         parallelToolCalls: false,
         reasoningEffort,
-      },
+        promptCacheKey: params.sessionId,
+      } satisfies MistralLanguageModelChatOptions,
     },
     telemetry: {
       isEnabled: true,

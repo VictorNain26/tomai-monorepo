@@ -20,7 +20,7 @@ const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
 mock.module('../config/env', () => ({
-  env: { MISTRAL_MODEL: 'mistral-medium-latest' },
+  env: { MISTRAL_MODEL: 'mistral-small-2603' },
 }));
 
 // authMacro — inject a mutable user into every guarded request
@@ -99,20 +99,24 @@ mock.module('../services/chat/chat-tools', () => ({
 
 // ai-chat.service — controls what the "model" produces on the wire
 type FakeStreamChatResult = {
-  toUIMessageStream: () => ReadableStream<unknown>;
+  toUIMessageStream: (options?: { sendReasoning?: boolean }) => ReadableStream<unknown>;
   totalUsage: Promise<{ inputTokens: number; outputTokens: number; totalTokens: number; inputTokenDetails: { cacheReadTokens: number } }>;
 };
 
+let lastUIStreamOptions: { sendReasoning?: boolean } | undefined;
+
 let streamChatImpl: (params: unknown) => FakeStreamChatResult = () => ({
-  toUIMessageStream: () =>
-    new ReadableStream({
+  toUIMessageStream: (options) => {
+    lastUIStreamOptions = options;
+    return new ReadableStream({
       start(controller) {
         controller.enqueue({ type: 'text-start', id: 't1' });
         controller.enqueue({ type: 'text-delta', id: 't1', delta: 'Bonjour' });
         controller.enqueue({ type: 'text-end', id: 't1' });
         controller.close();
       },
-    }),
+    });
+  },
   totalUsage: Promise.resolve({
     inputTokens: 10,
     outputTokens: 5,
@@ -148,6 +152,7 @@ function makeRequest(body?: unknown) {
 
 describe('POST /api/chat/stream', () => {
   beforeEach(() => {
+    lastUIStreamOptions = undefined;
     currentUser = null;
     quotaAllowed = true;
     checkQuota.mockClear();
@@ -155,15 +160,17 @@ describe('POST /api/chat/stream', () => {
     persistUserTurn.mockClear();
     finishTurn.mockClear();
     streamChatImpl = () => ({
-      toUIMessageStream: () =>
-        new ReadableStream({
+      toUIMessageStream: (options) => {
+        lastUIStreamOptions = options;
+        return new ReadableStream({
           start(controller) {
             controller.enqueue({ type: 'text-start', id: 't1' });
             controller.enqueue({ type: 'text-delta', id: 't1', delta: 'Bonjour' });
             controller.enqueue({ type: 'text-end', id: 't1' });
             controller.close();
           },
-        }),
+        });
+      },
       totalUsage: Promise.resolve({
         inputTokens: 10,
         outputTokens: 5,
@@ -231,5 +238,13 @@ describe('POST /api/chat/stream', () => {
       expect(res.status).toBe(200);
       await res.text();
     }
+  });
+
+  it('never forwards the model reasoning to the client', async () => {
+    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'troisieme', firstName: 'Léo' };
+    const res = await app.handle(makeRequest());
+    await res.text();
+
+    expect(lastUIStreamOptions).toEqual({ sendReasoning: false });
   });
 });

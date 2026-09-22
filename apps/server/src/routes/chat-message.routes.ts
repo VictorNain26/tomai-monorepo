@@ -161,7 +161,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           tools,
         });
 
-        writer.merge(capturedResult.toUIMessageStream());
+        writer.merge(capturedResult.toUIMessageStream({ sendReasoning: false }));
       },
       onFinish: async ({ responseMessage }) => {
         try {
