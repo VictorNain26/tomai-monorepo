@@ -19,10 +19,8 @@ export async function purgeExpiredData(): Promise<{
     .delete(studentSubjectProfiles)
     .where(lt(studentSubjectProfiles.ttlUntil, now));
 
-  const episodesDeleted =
-    (episodesResult as unknown as { rowCount?: number })?.rowCount ?? 0;
-  const profilesDeleted =
-    (profilesResult as unknown as { rowCount?: number })?.rowCount ?? 0;
+  const episodesDeleted = episodesResult.count;
+  const profilesDeleted = profilesResult.count;
 
   logger.info('Retention purge completed', {
     operation: 'retention-purge:run',
