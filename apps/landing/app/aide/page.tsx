@@ -12,8 +12,7 @@ export default function AidePage() {
       maxWidth="5xl"
     >
       <div className="max-w-3xl mx-auto mb-24 text-center">
-        <div className="group relative overflow-hidden rounded-3xl bg-card border border-border/50 p-8 md:p-12 transition-all hover:shadow-2xl hover:border-primary/50">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="group rounded-2xl border border-border bg-card p-8 md:p-12 transition-colors duration-base hover:border-primary">
           <div className="relative z-10">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
               <MessageCircle className="h-8 w-8 text-primary" />
@@ -22,15 +21,14 @@ export default function AidePage() {
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
               Notre équipe de support est disponible pour vous accompagner dans votre utilisation de Tom.
             </p>
-            <Link href="/contact">
-              <Button size="lg">Contacter le support</Button>
-            </Link>
+            <Button size="lg" asChild>
+              <Link href="/contact">Contacter le support</Link>
+            </Button>
           </div>
         </div>
       </div>
 
       <div className="relative">
-        <div className="absolute inset-0 -z-10 bg-secondary/30 rounded-[3rem] blur-3xl"></div>
         <FAQ />
       </div>
     </PageLayout>
