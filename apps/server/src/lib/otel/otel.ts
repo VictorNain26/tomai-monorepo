@@ -101,17 +101,9 @@ export function setupOtel(): void {
 
   sdk.start();
   started = true;
+}
 
-  // Flush traces on shutdown so the OTLP exporter actually sends the last
-  // batch. SIGTERM is what Koyeb / Docker send before killing the container.
-  const shutdown = async () => {
-    try {
-      await sdk?.shutdown();
-    } catch {
-      // best-effort; nothing to do if shutdown fails on already-dead process
-    }
-  };
-  process.on('SIGTERM', () => void shutdown());
-  process.on('SIGINT', () => void shutdown());
+export async function shutdownOtel(): Promise<void> {
+  await sdk?.shutdown();
 }
 
