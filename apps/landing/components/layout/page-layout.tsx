@@ -10,8 +10,8 @@ interface PageLayoutProps {
 
 export function PageLayout({ title, description, maxWidth = "4xl", children }: PageLayoutProps) {
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] py-12 md:py-24 px-4 overflow-hidden">
-      <FadeIn className={`container mx-auto ${maxWidth === "5xl" ? "max-w-5xl" : "max-w-4xl"}`}>
+    <div className="bg-seyes min-h-[calc(100vh-4rem)] py-12 md:py-24">
+      <FadeIn className={`container ${maxWidth === "5xl" ? "max-w-5xl" : "max-w-4xl"}`}>
         <SectionHeader title={title} description={description} align="center" />
         {children}
       </FadeIn>

@@ -17,7 +17,7 @@ export function Hero() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="flex min-h-[calc(100svh-4rem)] items-center py-16 lg:py-24">
+    <section className="bg-seyes flex min-h-[calc(100svh-4rem)] items-center py-16 lg:py-24">
       <div className="container grid w-full items-center gap-16 lg:grid-cols-2">
         <div>
           <h1 className="text-5xl font-semibold leading-tight text-balance text-foreground sm:text-6xl xl:text-7xl">

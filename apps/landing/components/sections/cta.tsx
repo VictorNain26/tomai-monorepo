@@ -2,7 +2,7 @@ import { WaitlistForm } from "../molecules/waitlist-form";
 
 export function CTA() {
   return (
-    <section id="waitlist" className="scroll-mt-20 py-24">
+    <section id="waitlist" className="bg-seyes scroll-mt-20 py-24">
       <div className="container">
         <div className="mx-auto max-w-4xl rounded-2xl bg-foreground px-6 py-14 text-center text-background sm:px-16">
           <h2 className="text-4xl font-semibold text-balance sm:text-5xl">Soyez prévenu du lancement</h2>

@@ -2,15 +2,72 @@
 @import "@repo/tokens/theme.css";
 @source "../../../packages/ui/src";
 
-@utility bg-notebook {
+/* Seyès : carreau 32 px, interlignes 8 px. Les verticales sont peintes par ::before
+ * car les % de background-position ne se rapportent pas à la largeur de la boîte ;
+ * `left` en % se rapporte à la largeur de la section, barre de défilement exclue. */
+@utility bg-seyes {
+  --cell: 2rem;
+  --rule: 0.5rem;
+  --sheet-x: max(0px, calc((100% - 78rem) / 2));
+  --margin-index: 1;
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background-color: var(--color-background);
   background-image:
-    repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 12%, transparent) 0 1px, transparent 1px calc(var(--spacing) * 8)),
-    repeating-linear-gradient(0deg, color-mix(in srgb, var(--color-primary) 12%, transparent) 0 1px, transparent 1px calc(var(--spacing) * 8));
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 30%, transparent 100%);
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 10%, transparent) 1px, transparent 1px);
+  background-size: 100% var(--cell), 100% var(--rule);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: calc(var(--sheet-x) - 40 * var(--cell));
+    right: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: linear-gradient(to right, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px);
+    background-size: var(--cell) 100%;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: calc(var(--sheet-x) + var(--margin-index) * var(--cell));
+    width: 2px;
+    z-index: -1;
+    pointer-events: none;
+    background-color: var(--color-annotation);
+  }
+
+  @media (width >= 48rem) {
+    --margin-index: 2;
+  }
+
+  @media (width >= 64rem) {
+    --margin-index: 3;
+  }
 }
 
+/* 78rem = 39 carreaux : centré, son bord gauche tombe sur une verticale.
+ * Padding gauche = marge + ½ carreau (mobile), + 1 carreau (md, lg). */
 @utility container {
-  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-12 lg:px-16;
+  margin-inline: auto;
+  width: 100%;
+  max-width: 78rem;
+  padding-left: 3rem;
+  padding-right: 1rem;
+
+  @media (width >= 48rem) {
+    padding-left: 6rem;
+    padding-right: 4rem;
+  }
+
+  @media (width >= 64rem) {
+    padding-left: 8rem;
+  }
 }
 
 ::selection {

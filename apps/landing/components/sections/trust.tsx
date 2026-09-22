@@ -11,7 +11,7 @@ const COMMITMENTS = [
 
 export function Trust() {
   return (
-    <section className="py-24 lg:py-32">
+    <section className="bg-seyes py-24 lg:py-32">
       <FadeIn className="container grid max-w-5xl gap-10 md:grid-cols-[1fr_2fr] md:items-start">
         <MarginNote className="text-2xl md:mt-2">Ce qu&apos;on s&apos;engage à faire, et à ne pas faire.</MarginNote>
         <div>

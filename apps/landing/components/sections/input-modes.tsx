@@ -9,7 +9,7 @@ const MODES = [
 
 export function InputModes() {
   return (
-    <section className="pb-24 lg:pb-32">
+    <section className="bg-seyes pb-24 lg:pb-32">
       <FadeIn className="container max-w-5xl">
         <div className="grid gap-8 rounded-2xl border border-border bg-card p-8 sm:grid-cols-3 sm:p-10">
           {MODES.map(({ icon: Icon, title, body }) => (
