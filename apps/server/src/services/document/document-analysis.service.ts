@@ -246,6 +246,7 @@ class DocumentAnalysisService {
     ];
 
     const { object, usage } = await generateStructured({
+      functionId: 'document-analysis',
       model: ANALYSIS_MODEL,
       messages,
       temperature: ANALYSIS_TEMPERATURE,
@@ -281,6 +282,7 @@ class DocumentAnalysisService {
     ];
 
     const { object, usage } = await generateStructured({
+      functionId: 'image-analysis',
       model: ANALYSIS_MODEL,
       messages,
       temperature: ANALYSIS_TEMPERATURE,

@@ -41,7 +41,7 @@ describe('generateText', () => {
       { role: 'system', content: 'Tu es un tuteur.' },
       { role: 'user', content: 'Salut' },
     ];
-    const text = await generateText({ messages, maxTokens: 128, temperature: 0.3 });
+    const text = await generateText({ functionId: 'test', messages, maxTokens: 128, temperature: 0.3 });
 
     expect(text).toBe('Bonjour !');
   });
@@ -51,6 +51,7 @@ describe('generateText', () => {
     mockFetchJson(capture, chatCompletion('ok'));
 
     await generateText({
+      functionId: 'test',
       messages: [{ role: 'user', content: 'Salut' }],
       maxTokens: 256,
       promptCacheKey: 'test-cache-v1',
@@ -73,7 +74,7 @@ describe('generateText', () => {
         ],
       },
     ];
-    await generateText({ messages });
+    await generateText({ functionId: 'test', messages });
 
     const sentMessages = capture.body?.['messages'] as Array<{ content: unknown }>;
     const userContent = sentMessages[0]?.content as Array<Record<string, unknown>>;
@@ -85,7 +86,7 @@ describe('generateText', () => {
     const capture: { url?: string; body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion('ok'));
 
-    await generateText({ messages: [{ role: 'user', content: 'Salut' }] });
+    await generateText({ functionId: 'test', messages: [{ role: 'user', content: 'Salut' }] });
 
     expect(capture.url).toBe('https://api.eu.mistral.ai/v1/chat/completions');
     expect(capture.body?.['model']).toBe('mistral-small-2603');
@@ -100,7 +101,7 @@ describe('generateStructured', () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
 
-    const result = await generateStructured({ messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
+    const result = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
 
     expect(result).toEqual({ object: { intent: 'explain-concept' }, usage: { inputTokens: 10, outputTokens: 5 } });
     const responseFormat = capture.body?.['response_format'] as Record<string, unknown>;
@@ -120,7 +121,7 @@ describe('generateStructured', () => {
       });
     }) as unknown as typeof fetch;
 
-    const result = await generateStructured({ messages: [{ role: 'user', content: 'salut' }], schema, schemaName: 'intent' });
+    const result = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'salut' }], schema, schemaName: 'intent' });
 
     expect(result.object).toEqual({ intent: 'chit-chat' });
     expect(result.usage).toEqual({ inputTokens: 20, outputTokens: 10 });
@@ -137,7 +138,7 @@ describe('generateStructured', () => {
       });
     }) as unknown as typeof fetch;
 
-    const rejection = await generateStructured({ messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent' })
+    const rejection = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent' })
       .catch((error: unknown) => error);
 
     expect(NoObjectGeneratedError.isInstance(rejection)).toBe(true);
@@ -161,7 +162,7 @@ describe('generateStructured', () => {
       });
     }) as unknown as typeof fetch;
 
-    const rejection = await generateStructured({ messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent', timeoutMs: 250 })
+    const rejection = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent', timeoutMs: 250 })
       .catch((error: unknown) => error);
 
     expect(calls).toBe(2);
@@ -173,7 +174,7 @@ describe('generateStructured', () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
 
-    await generateStructured({ messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', promptCacheKey: 'intent-v1' });
+    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', promptCacheKey: 'intent-v1' });
 
     expect(capture.body?.['prompt_cache_key']).toBe('intent-v1');
   });
@@ -182,7 +183,7 @@ describe('generateStructured', () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
 
-    await generateStructured({ messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
+    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
 
     expect(capture.body?.['reasoning_effort']).toBe('none');
   });

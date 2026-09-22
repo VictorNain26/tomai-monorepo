@@ -97,6 +97,7 @@ class IntentClassifierService {
     const startTime = Date.now();
     try {
       const { object } = await generateStructured({
+        functionId: 'intent-classifier',
         messages: [{ role: 'user', content: buildPrompt(trimmed, schoolLevel) }],
         temperature: 0,
         maxTokens: 96,

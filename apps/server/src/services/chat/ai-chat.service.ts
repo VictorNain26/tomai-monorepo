@@ -287,10 +287,7 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
         promptCacheKey: params.sessionId,
       } satisfies MistralLanguageModelChatOptions,
     },
-    telemetry: {
-      isEnabled: true,
-      functionId: 'chat-stream',
-    },
+    telemetry: { functionId: 'chat-stream', recordInputs: false, recordOutputs: false },
     abortSignal: AbortSignal.timeout(env.CHAT_STREAM_TIMEOUT_MS),
   });
 }

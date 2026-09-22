@@ -17,7 +17,6 @@ import type { z } from 'zod';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { mistralProvider } from './provider.js';
 import { env } from '../../config/env.js';
-import { withGenAiSpan } from '../otel/index.js';
 
 // ── Types domain ────────────────────────────────────────────────────────────
 
@@ -44,6 +43,7 @@ export type MistralMessage =
 
 interface GenerateTextOptions {
   messages: MistralMessage[];
+  functionId: string;
   model?: string;
   temperature?: number;
   maxTokens?: number;
@@ -109,42 +109,24 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
   const maxTokens = opts.maxTokens ?? env.MISTRAL_MAX_TOKENS;
   const timeoutMs = opts.timeoutMs ?? env.MISTRAL_TIMEOUT;
 
-  return withGenAiSpan(
-    {
-      operation: 'chat',
-      provider: 'mistral_ai',
-      model,
-      maxTokens,
-      temperature,
-      serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
+  const result = await aiGenerateText({
+    model: mistralProvider()(model),
+    messages: toModelMessages(opts.messages),
+    allowSystemInMessages: true,
+    temperature,
+    maxOutputTokens: maxTokens,
+    maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
+    abortSignal: AbortSignal.timeout(timeoutMs),
+    telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
+    providerOptions: {
+      mistral: {
+        safePrompt: true,
+        reasoningEffort: 'none',
+        promptCacheKey: opts.promptCacheKey,
+      } satisfies MistralLanguageModelChatOptions,
     },
-    async (recordResponse) => {
-      const result = await aiGenerateText({
-        model: mistralProvider()(model),
-        messages: toModelMessages(opts.messages),
-        allowSystemInMessages: true,
-        temperature,
-        maxOutputTokens: maxTokens,
-        maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
-        abortSignal: AbortSignal.timeout(timeoutMs),
-        providerOptions: {
-          mistral: {
-            safePrompt: true,
-            reasoningEffort: 'none',
-            promptCacheKey: opts.promptCacheKey,
-          } satisfies MistralLanguageModelChatOptions,
-        },
-      });
-      recordResponse({
-        id: result.response.id,
-        model: result.response.modelId,
-        finishReasons: [result.finishReason],
-        inputTokens: result.usage.inputTokens,
-        outputTokens: result.usage.outputTokens,
-      });
-      return result.text;
-    },
-  );
+  });
+  return result.text;
 }
 
 /**
@@ -160,65 +142,47 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
   const maxTokens = opts.maxTokens ?? env.MISTRAL_MAX_TOKENS;
   const timeoutMs = opts.timeoutMs ?? env.MISTRAL_TIMEOUT;
 
-  return withGenAiSpan(
-    {
-      operation: 'chat',
-      provider: 'mistral_ai',
-      model,
-      maxTokens,
+  const abortSignal = AbortSignal.timeout(timeoutMs);
+  const call = async (messages: ModelMessage[]) => {
+    const result = await aiGenerateText({
+      model: mistralProvider()(model),
+      messages,
+      allowSystemInMessages: true,
+      output: Output.object({ schema: opts.schema, name: opts.schemaName }),
       temperature,
-      serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
-    },
-    async (recordResponse) => {
-      const abortSignal = AbortSignal.timeout(timeoutMs);
-      const call = async (messages: ModelMessage[]) => {
-        const result = await aiGenerateText({
-          model: mistralProvider()(model),
-          messages,
-          allowSystemInMessages: true,
-          output: Output.object({ schema: opts.schema, name: opts.schemaName }),
-          temperature,
-          maxOutputTokens: maxTokens,
-          maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
-          abortSignal,
-          providerOptions: {
-            mistral: {
-              safePrompt: true,
-              strictJsonSchema: true,
-              reasoningEffort: 'none',
-              promptCacheKey: opts.promptCacheKey,
-            } satisfies MistralLanguageModelChatOptions,
-          },
-        });
-        recordResponse({
-          id: result.response.id,
-          model: result.response.modelId,
-          finishReasons: [result.finishReason],
-          inputTokens: result.usage.inputTokens,
-          outputTokens: result.usage.outputTokens,
-        });
-        return { object: result.output, usage: toUsage(result.usage) };
-      };
+      maxOutputTokens: maxTokens,
+      maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
+      abortSignal,
+      telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
+      providerOptions: {
+        mistral: {
+          safePrompt: true,
+          strictJsonSchema: true,
+          reasoningEffort: 'none',
+          promptCacheKey: opts.promptCacheKey,
+        } satisfies MistralLanguageModelChatOptions,
+      },
+    });
+    return { object: result.output, usage: toUsage(result.usage) };
+  };
 
-      const messages = toModelMessages(opts.messages);
-      try {
-        return await call(messages);
-      } catch (error) {
-        if (!NoObjectGeneratedError.isInstance(error) || !TypeValidationError.isInstance(error.cause)) throw error;
-        const retry = await call([
-          ...messages,
-          { role: 'assistant', content: error.text ?? '' },
-          { role: 'user', content: `Ta réponse ne respecte pas le schéma attendu : ${error.cause.message}. Renvoie un JSON corrigé.` },
-        ]);
-        const first = toUsage(error.usage);
-        return {
-          object: retry.object,
-          usage: {
-            inputTokens: first.inputTokens + retry.usage.inputTokens,
-            outputTokens: first.outputTokens + retry.usage.outputTokens,
-          },
-        };
-      }
-    },
-  );
+  const messages = toModelMessages(opts.messages);
+  try {
+    return await call(messages);
+  } catch (error) {
+    if (!NoObjectGeneratedError.isInstance(error) || !TypeValidationError.isInstance(error.cause)) throw error;
+    const retry = await call([
+      ...messages,
+      { role: 'assistant', content: error.text ?? '' },
+      { role: 'user', content: `Ta réponse ne respecte pas le schéma attendu : ${error.cause.message}. Renvoie un JSON corrigé.` },
+    ]);
+    const first = toUsage(error.usage);
+    return {
+      object: retry.object,
+      usage: {
+        inputTokens: first.inputTokens + retry.usage.inputTokens,
+        outputTokens: first.outputTokens + retry.usage.outputTokens,
+      },
+    };
+  }
 }

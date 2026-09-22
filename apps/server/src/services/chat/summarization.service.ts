@@ -173,6 +173,7 @@ class SummarizationService {
       : `## CONVERSATION\n${messagesText}`;
 
     const text = await generateText({
+      functionId: 'summarization',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },

@@ -138,6 +138,7 @@ export async function generateCards(
     const prompt = buildPrompt(params);
 
     const { object, usage } = await generateStructured({
+      functionId: 'card-generation',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       maxTokens: 4096,

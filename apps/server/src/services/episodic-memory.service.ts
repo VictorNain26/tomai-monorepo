@@ -97,6 +97,7 @@ class EpisodicMemoryService {
         .slice(0, 20_000);
 
       const { object: parsed } = await generateStructured({
+        functionId: 'episodic-extraction',
         model: env.MISTRAL_MODEL,
         messages: [
           {

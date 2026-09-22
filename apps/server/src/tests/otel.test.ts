@@ -1,11 +1,16 @@
 import { describe, it, expect, afterAll } from 'bun:test';
-import { trace } from '@opentelemetry/api';
+import { simulateReadableStream } from 'ai';
+import { MockLanguageModelV4 } from 'ai/test';
 
-const received: { path: string; authorization: string | null }[] = [];
+const received: { path: string; authorization: string | null; body: string }[] = [];
 const collector = Bun.serve({
   port: 0,
-  fetch(req) {
-    received.push({ path: new URL(req.url).pathname, authorization: req.headers.get('authorization') });
+  async fetch(req) {
+    received.push({
+      path: new URL(req.url).pathname,
+      authorization: req.headers.get('authorization'),
+      body: new TextDecoder().decode(await req.arrayBuffer()),
+    });
     return new Response('{}', { headers: { 'content-type': 'application/json' } });
   },
 });
@@ -17,6 +22,7 @@ process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] = `http://localhost:${collector.port}
 process.env['OTEL_EXPORTER_OTLP_HEADERS'] = 'Authorization=Basic%20cGs6c2s=';
 
 const { setupOtel, shutdownOtel } = await import('../lib/otel/otel');
+const { streamChat } = await import('../services/chat/ai-chat.service');
 
 afterAll(() => {
   void collector.stop(true);
@@ -33,10 +39,45 @@ describe('otel', () => {
     expect(process.listenerCount('SIGINT')).toBe(int);
   });
 
-  it('sends OTEL_EXPORTER_OTLP_HEADERS intact: URL-decoded, "=" padding kept', async () => {
-    trace.getTracer('otel-test').startSpan('probe').end();
+  it('traces AI SDK calls once set up, without the student message', async () => {
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunkDelayInMs: 0,
+          initialDelayInMs: 0,
+          chunks: [
+            { type: 'stream-start', warnings: [] },
+            {
+              type: 'finish',
+              usage: {
+                inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined },
+                outputTokens: { total: 1, text: 1, reasoning: undefined },
+              },
+              finishReason: { unified: 'stop', raw: undefined },
+            },
+          ],
+        }),
+      }),
+    });
+
+    await streamChat({
+      userId: 'u',
+      sessionId: 's',
+      content: 'je suis Léa Martin',
+      schoolLevel: 'troisieme',
+      userRole: 'student',
+      conversationHistory: [],
+      tools: {},
+      model,
+    }).text;
     await shutdownOtel();
 
+    const exported = received.filter((r) => r.path === '/api/public/otel/v1/traces').map((r) => r.body).join('');
+    expect(exported).toContain('gen_ai.operation.name');
+    expect(exported).not.toContain('Léa Martin');
+  });
+
+  it('sends OTEL_EXPORTER_OTLP_HEADERS intact: URL-decoded, "=" padding kept', async () => {
     const traceRequest = received.find((r) => r.path === '/api/public/otel/v1/traces');
     expect(traceRequest?.authorization).toBe('Basic cGs6c2s=');
   });
