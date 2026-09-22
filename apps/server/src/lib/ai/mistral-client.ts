@@ -63,7 +63,7 @@ interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   strict?: boolean;
 }
 
-export interface StructuredUsage {
+interface StructuredUsage {
   inputTokens: number;
   outputTokens: number;
 }
