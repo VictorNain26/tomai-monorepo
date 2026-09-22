@@ -1,34 +1,15 @@
-"use client";
-
-import { BookOpen } from "lucide-react";
 import { WaitlistForm } from "../molecules/waitlist-form";
 
 export function CTA() {
   return (
-    <section id="waitlist" className="py-24">
-      <div className="container px-4 mx-auto">
-        <div className="max-w-3xl mx-auto text-center rounded-3xl bg-gradient-to-br from-primary/10 via-violet/10 to-transparent p-12 sm:p-16">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-4">
-            Soyez parmi les{" "}
-            <span className="bg-gradient-to-r from-primary to-violet bg-clip-text text-transparent">premiers à l&apos;essayer</span>
-          </h2>
-
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            TomIA arrive bientôt en version web. Inscrivez-vous pour être notifié du lancement.
+    <section id="waitlist" className="scroll-mt-20 py-24">
+      <div className="container">
+        <div className="mx-auto max-w-4xl rounded-2xl bg-foreground px-6 py-14 text-center text-background sm:px-16">
+          <h2 className="text-4xl font-semibold text-balance sm:text-5xl">Soyez prévenu du lancement</h2>
+          <p className="mx-auto mt-4 max-w-xl text-lg opacity-80">
+            Tom arrive bientôt, dans le navigateur. Laissez votre email pour être prévenu de l&apos;ouverture.
           </p>
-
-          <div className="flex flex-col items-center gap-6">
-            <WaitlistForm
-              source="cta-bottom"
-              buttonText="Rejoindre la liste d'attente"
-              className="max-w-lg w-full"
-            />
-
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <BookOpen className="h-4 w-4 text-primary" />
-              <span>Collège, de la 6e à la 3e, 10 matières</span>
-            </div>
-          </div>
+          <WaitlistForm source="cta-bottom" tone="inverted" className="mx-auto mt-8 max-w-lg" />
         </div>
       </div>
     </section>

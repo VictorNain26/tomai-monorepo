@@ -11,18 +11,18 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-24 bg-secondary/50">
+    <section id="faq" className="scroll-mt-20 bg-secondary py-24 lg:py-32">
       <div className="container px-4 mx-auto">
         <SectionHeader
-          title="Questions fréquentes"
-          description="Tout ce que les parents veulent savoir avant de commencer."
+          eyebrow="Questions"
+          title="Ce que les parents nous demandent"
         />
 
         <div className="space-y-4 max-w-3xl mx-auto">
           {FAQS.map((faq, index) => (
             <div
               key={index}
-              className="bg-card border border-border rounded-2xl overflow-hidden transition-all duration-200 hover:border-primary/50"
+              className="bg-card border border-border rounded-2xl overflow-hidden transition-colors duration-base hover:border-primary"
             >
               <button
                 type="button"
@@ -30,7 +30,7 @@ export function FAQ() {
                 aria-expanded={openIndex === index}
                 aria-controls={`faq-answer-${index}`}
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full flex items-center justify-between p-6 text-left"
+                className="w-full flex items-center justify-between p-6 text-left min-h-11"
               >
                 <div className="flex items-center gap-4">
                   {faq.icon && (
@@ -43,7 +43,7 @@ export function FAQ() {
                   </span>
                 </div>
                 <ChevronDown
-                  className={`h-5 w-5 text-muted-foreground transition-transform duration-200 shrink-0 ml-2 ${openIndex === index ? "rotate-180" : ""}`}
+                  className={`h-5 w-5 text-muted-foreground transition-transform duration-base shrink-0 ml-2 ${openIndex === index ? "rotate-180" : ""}`}
                 />
               </button>
 
@@ -56,7 +56,7 @@ export function FAQ() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.25 }}
                   >
                     <div className="px-6 pb-6 pl-[3.25rem] sm:pl-20 text-muted-foreground leading-relaxed">
                       {faq.answer}

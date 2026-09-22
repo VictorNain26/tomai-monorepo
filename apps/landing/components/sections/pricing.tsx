@@ -1,100 +1,75 @@
-"use client";
-
-import { Check, ArrowRight } from "lucide-react";
-import { Button } from "@repo/ui";
+import { ArrowRight, Check } from "lucide-react";
+import { Button, cn } from "@repo/ui";
 import { SectionHeader } from "../atoms/section-header";
 
-const FREE_FEATURES = [
-  "Collège, de la 6e à la 3e",
-  "10 matières",
-  "Volume d'échanges limité chaque jour",
-  "Aide aux devoirs, méthode socratique",
-  "Connexion Pronote",
-  "Espace parent",
-];
-
-const PREMIUM_FEATURES = [
-  "Tout le plan Gratuit",
-  "5 fois plus d'échanges par jour",
-  "Fiches de révision + répétition espacée",
+const PLANS = [
+  {
+    name: "Gratuit",
+    price: "0 €",
+    tagline: "Pour découvrir",
+    cta: "Rejoindre la liste d'attente",
+    featured: false,
+    features: [
+      "Collège, de la 6e à la 3e",
+      "Aide aux devoirs par questions",
+      "Un volume d'échanges limité chaque jour",
+      "Connexion Pronote",
+      "Espace parent",
+    ],
+  },
+  {
+    name: "Complet",
+    price: "Tarif annoncé au lancement",
+    tagline: "Pour aller au bout",
+    cta: "Être prévenu du lancement",
+    featured: true,
+    features: [
+      "Tout le plan Gratuit",
+      "Cinq fois plus d'échanges par jour",
+      "Fiches de révision et répétition espacée",
+    ],
+  },
 ];
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-24 lg:py-32">
-      <div className="container px-4 mx-auto">
+    <section id="pricing" className="scroll-mt-20 py-24 lg:py-32">
+      <div className="container">
         <SectionHeader
+          eyebrow="Tarifs"
           title="Deux formules, sans surprise"
-          description="Commencez gratuitement. Le plan Complet ouvrira après le lancement, son tarif sera annoncé aux inscrits de la liste d'attente."
+          description="L'offre gratuite reste gratuite. Le tarif du plan Complet sera annoncé en premier aux inscrits de la liste d'attente."
         />
-
-        {/* Two Cards Side by Side */}
-        <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
-          {/* Free Card */}
-          <div className="bg-card rounded-2xl p-8 border-2 border-border shadow-md hover:shadow-lg transition-shadow">
-            <div className="mb-6">
-              <div className="inline-block px-3 py-1 bg-secondary rounded-full text-sm font-medium text-foreground mb-4">
-                Pour découvrir
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">Gratuit</h3>
-              <p className="text-3xl font-bold text-foreground">0€</p>
+        <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
+          {PLANS.map((plan) => (
+            <div
+              key={plan.name}
+              className={cn(
+                "flex flex-col rounded-2xl border bg-card p-8",
+                plan.featured ? "border-2 border-primary" : "border-border",
+              )}
+            >
+              <p className="font-heading text-lg italic text-primary">{plan.tagline}</p>
+              <h3 className="mt-2 text-3xl font-semibold text-foreground">{plan.name}</h3>
+              <p className="mt-2 text-lg font-semibold text-foreground">{plan.price}</p>
+              <ul className="my-8 flex-1 space-y-3">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-foreground">
+                    <Check className="mt-0.5 size-5 shrink-0 text-success" aria-hidden="true" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Button variant={plan.featured ? "default" : "outline"} className="group w-full" asChild>
+                <a href="#waitlist">
+                  {plan.cta}
+                  <ArrowRight className="transition-transform duration-base group-hover:translate-x-1" aria-hidden="true" />
+                </a>
+              </Button>
             </div>
-
-            <ul className="space-y-4 mb-8">
-              {FREE_FEATURES.map((feature, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <Check className="h-5 w-5 shrink-0 text-success mt-0.5" />
-                  <span className="text-foreground">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <Button variant="outline" className="w-full group" asChild>
-              <a href="#waitlist">
-                Rejoindre la liste d&apos;attente
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </a>
-            </Button>
-          </div>
-
-          {/* Premium Card */}
-          <div className="bg-card rounded-2xl p-8 border-2 border-primary shadow-lg hover:shadow-xl transition-shadow relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-primary text-primary-foreground text-xs font-semibold px-4 py-1 rounded-full">
-                Recommandé
-              </span>
-            </div>
-
-            <div className="mb-6">
-              <div className="inline-block px-3 py-1 bg-primary/10 rounded-full text-sm font-medium text-primary mb-4">
-                Accès complet
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">Complet</h3>
-
-              <p className="text-lg font-semibold text-foreground">Tarif annoncé au lancement</p>
-            </div>
-
-            <ul className="space-y-4 mb-8">
-              {PREMIUM_FEATURES.map((feature, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <Check className="h-5 w-5 shrink-0 text-success mt-0.5" />
-                  <span className="text-foreground font-medium">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <Button className="w-full group" asChild>
-              <a href="#waitlist">
-                Être notifié du lancement
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </a>
-            </Button>
-          </div>
+          ))}
         </div>
-
-        <p className="text-center text-sm text-muted-foreground mt-8">
-          L&apos;offre gratuite ne demande aucune carte bancaire.
-        </p>
+        <p className="mt-8 text-center text-sm text-muted-foreground">Aucune carte bancaire pour l&apos;offre gratuite.</p>
       </div>
     </section>
   );
