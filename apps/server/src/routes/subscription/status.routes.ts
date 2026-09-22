@@ -1,7 +1,7 @@
 /**
  * Status Routes
  *
- * GET /api/subscriptions/status - Get subscription status (DB-driven, RevenueCat as source of truth)
+ * GET /api/subscriptions/status - Get subscription status (DB-driven)
  * GET /api/subscriptions/usage  - Get token usage
  *
  * Security: All routes require authentication and verify caller identity (IDOR protection)

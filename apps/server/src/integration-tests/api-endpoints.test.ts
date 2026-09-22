@@ -230,7 +230,6 @@ mock.module('../routes/waitlist.routes', () => ({ waitlistRoutes: new Elysia() }
 mock.module('../routes/pronote-sync.routes', () => ({ pronoteSyncRoutes: new Elysia() }));
 mock.module('../routes/pronote-data.routes', () => ({ pronoteDataRoutes: new Elysia() }));
 mock.module('../routes/pronote-connect.routes', () => ({ pronoteConnectRoutes: new Elysia() }));
-mock.module('../routes/revenuecat-webhook.routes', () => ({ revenuecatWebhookRoutes: new Elysia() }));
 
 // DB schema + repositories (dynamic imports in apiRoutes)
 // The mock must spread all real sub-modules so that other integration tests

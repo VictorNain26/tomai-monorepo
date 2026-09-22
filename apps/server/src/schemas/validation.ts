@@ -139,51 +139,6 @@ export const updateChildSchema = z.object({
 );
 
 // ============================================
-// SCHÉMAS WEBHOOK REVENUECAT
-// ============================================
-
-// Source unique de facturation : un payload malformé ou forgé ne doit jamais
-// atteindre la logique de billing. Validation de forme au périmètre (l'auth
-// timing-safe protège déjà l'accès ; ceci protège l'intégrité des données).
-const revenueCatEventTypeSchema = z.enum([
-  'TEST', 'INITIAL_PURCHASE', 'RENEWAL', 'CANCELLATION', 'UNCANCELLATION',
-  'NON_RENEWING_PURCHASE', 'SUBSCRIPTION_PAUSED', 'EXPIRATION', 'BILLING_ISSUE',
-  'PRODUCT_CHANGE', 'TRANSFER', 'SUBSCRIPTION_EXTENDED', 'TEMPORARY_ENTITLEMENT_GRANT',
-]);
-
-const revenueCatSubscriberAttributeSchema = z.object({
-  value: z.string(),
-  updated_at_ms: z.number(),
-});
-
-export const revenueCatWebhookSchema = z.object({
-  api_version: z.string(),
-  event: z.object({
-    type: revenueCatEventTypeSchema,
-    id: z.string().min(1),
-    app_id: z.string(),
-    app_user_id: z.string().min(1),
-    original_app_user_id: z.string(),
-    aliases: z.array(z.string()),
-    product_id: z.string(),
-    entitlement_ids: z.array(z.string()),
-    event_timestamp_ms: z.number(),
-    purchased_at_ms: z.number().optional(),
-    expiration_at_ms: z.number().optional(),
-    store: z.string(),
-    environment: z.enum(['SANDBOX', 'PRODUCTION']),
-    price: z.number().optional(),
-    currency: z.string().optional(),
-    period_type: z.string().optional(),
-    cancel_reason: z.string().optional(),
-    expiration_reason: z.string().optional(),
-    new_product_id: z.string().optional(),
-    subscriber_attributes: z.record(z.string(), revenueCatSubscriberAttributeSchema).optional(),
-  }),
-});
-
-
-// ============================================
 // UTILITAIRES VALIDATION
 // ============================================
 

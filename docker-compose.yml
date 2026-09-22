@@ -39,7 +39,7 @@ services:
       # Container-network override (diffère de apps/server/.env en host)
       - BETTER_AUTH_URL=http://localhost:3000
       # Les secrets (BETTER_AUTH_SECRET, GOOGLE_*, MISTRAL_API_KEY,
-      # PRONOTE_ENCRYPTION_KEY, REVENUECAT_WEBHOOK_AUTH) viennent d'env_file :
+      # PRONOTE_ENCRYPTION_KEY) viennent d'env_file :
       # les lister en ${VAR} ici les écraserait (environment > env_file).
     env_file:
       - apps/server/.env

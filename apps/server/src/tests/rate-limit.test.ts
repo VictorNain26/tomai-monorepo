@@ -190,30 +190,3 @@ describe('RateLimitPresets — per-user keying', () => {
     expect(RateLimitPresets.ai.keyGenerator?.(authedCtx('user-7'))).toBe('ai:user:user-7');
   });
 });
-
-describe('createRateLimitMiddleware — skipPaths (webhook exemption)', () => {
-  function mkCtx(path: string, ip: string): Context {
-    return {
-      request: {
-        headers: new Map<string, string>([['x-forwarded-for', ip]]),
-        url: `http://localhost${path}`,
-      },
-      set: { headers: {}, status: 200 },
-    } as unknown as Context;
-  }
-
-  it('never rate-limits an exempted path prefix, even past the limit', () => {
-    const mw = createRateLimitMiddleware({ maxRequests: 1, windowSeconds: 60, skipPaths: ['/webhooks/'] });
-    // RevenueCat events arrive in bursts from a shared IP pool — must never 429.
-    expect(mw(mkCtx('/webhooks/revenuecat', '5.5.5.5'))).toBeUndefined();
-    expect(mw(mkCtx('/webhooks/revenuecat', '5.5.5.5'))).toBeUndefined();
-    expect(mw(mkCtx('/webhooks/revenuecat', '5.5.5.5'))).toBeUndefined();
-  });
-
-  it('still rate-limits non-exempted paths', () => {
-    const mw = createRateLimitMiddleware({ maxRequests: 1, windowSeconds: 60, skipPaths: ['/webhooks/'] });
-    expect(mw(mkCtx('/api/something', '6.6.6.6'))).toBeUndefined();
-    const blocked = mw(mkCtx('/api/something', '6.6.6.6'));
-    expect((blocked as unknown as { error?: string })?.error).toBe('Too Many Requests');
-  });
-});

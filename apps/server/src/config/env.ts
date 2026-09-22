@@ -55,9 +55,6 @@ const EnvSchema = z.object({
   // Pronote encryption (required in production if Pronote is enabled)
   PRONOTE_ENCRYPTION_KEY: z.string().min(32, 'PRONOTE_ENCRYPTION_KEY must be at least 32 characters').optional(),
 
-  // RevenueCat webhooks (required in production)
-  REVENUECAT_WEBHOOK_AUTH: z.string().min(32, 'REVENUECAT_WEBHOOK_AUTH must be at least 32 characters').optional(),
-
   // Session configuration
   SESSION_MAX_AGE: z.coerce.number().int().default(604800), // 7 days in seconds
   SESSION_UPDATE_AGE: z.coerce.number().int().default(86400), // 1 day in seconds
@@ -128,10 +125,6 @@ function parseEnv(): EnvType {
   // Validate production-specific requirements
   if (isProd) {
     const prodChecks: string[] = [];
-
-    if (!result.data.REVENUECAT_WEBHOOK_AUTH) {
-      prodChecks.push('REVENUECAT_WEBHOOK_AUTH is required (production)');
-    }
 
     if (!result.data.PRONOTE_ENCRYPTION_KEY) {
       prodChecks.push('PRONOTE_ENCRYPTION_KEY is required (production)');
