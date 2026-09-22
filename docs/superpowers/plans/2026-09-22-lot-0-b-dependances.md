@@ -896,7 +896,7 @@ Les plugins vivent dans `~/.claude/plugins`, hors dépôt. Aucun fichier du dép
 
 Commandes documentées ([Discover plugins, « Manage marketplaces » et « Configure auto-updates »](https://code.claude.com/docs/en/discover-plugins), [Plugins reference, `claude plugin update` et `claude plugin marketplace update`](https://code.claude.com/docs/en/plugins-reference)) :
 
-- [x] Dans un terminal (hors session Claude Code) :
+- [ ] Dans un terminal (hors session Claude Code) :
   ```bash
   claude plugin marketplace update
   claude plugin update superpowers@claude-plugins-official
@@ -918,8 +918,8 @@ Commandes documentées ([Discover plugins, « Manage marketplaces » et « Confi
   claude plugin update cloudflare@cloudflare
   ```
   (Liste tirée de `~/.claude/plugins/installed_plugins.json` le 2026-09-22.) Dans une session ouverte, lancer ensuite `/reload-plugins`.
-- [x] Optionnel : `claude plugin uninstall expo@claude-plugins-official`. Le plugin Expo ne sert plus une fois `apps/mobile` supprimé. Ses skills alourdissent le contexte à chaque session, et il continuera d'apparaître sous « Not used recently » dans `/plugin`.
-- [x] Auto-update : `claude-plugins-official` a l'auto-update activé par défaut. Les marketplaces tierces (`cloudflare`, `knowledge-work-plugins`) ne l'ont pas. Pour l'activer : `/plugin` → Marketplaces → choisir la marketplace → **Enable auto-update**.
+- [ ] Optionnel : `claude plugin uninstall expo@claude-plugins-official`. Le plugin Expo ne sert plus une fois `apps/mobile` supprimé. Ses skills alourdissent le contexte à chaque session, et il continuera d'apparaître sous « Not used recently » dans `/plugin`.
+- [ ] Auto-update : `claude-plugins-official` a l'auto-update activé par défaut. Les marketplaces tierces (`cloudflare`, `knowledge-work-plugins`) ne l'ont pas. Pour l'activer : `/plugin` → Marketplaces → choisir la marketplace → **Enable auto-update**.
 
 ---
 
