@@ -1,7 +1,7 @@
 /**
  * Voxtral STT Service — Mistral speech-to-text souveraine EU.
  *
- * Appelle directement POST https://api.mistral.ai/v1/audio/transcriptions via
+ * Appelle directement POST {MISTRAL_SERVER_URL}/v1/audio/transcriptions via
  * multipart/form-data, avec la clé MISTRAL_API_KEY — aucune clé tierce.
  *
  * Réponse Mistral : { model: string, text: string }. Voxtral ne détecte pas la
@@ -13,7 +13,7 @@
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
 
-const STT_ENDPOINT = 'https://api.mistral.ai/v1/audio/transcriptions';
+const STT_ENDPOINT = `${env.MISTRAL_SERVER_URL}/v1/audio/transcriptions`;
 const STT_MODEL = env.MISTRAL_STT_MODEL;
 
 /** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */

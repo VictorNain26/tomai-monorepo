@@ -14,7 +14,11 @@ const mockLogger = createMockLogger();
 mock.module('../lib/observability', () => ({ logger: mockLogger }));
 
 mock.module('../config/env', () => ({
-  env: { MISTRAL_API_KEY: 'test-mistral-key', MISTRAL_STT_MODEL: 'voxtral-mini-latest' },
+  env: {
+    MISTRAL_API_KEY: 'test-mistral-key',
+    MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
+    MISTRAL_STT_MODEL: 'voxtral-mini-2602',
+  },
 }));
 
 // ============================================
@@ -33,7 +37,7 @@ function makeAudioBuffer(size = 8): ArrayBuffer {
   return new Uint8Array(size).fill(1).buffer;
 }
 
-function mockFetchSuccess(text: string, model = 'voxtral-mini-latest') {
+function mockFetchSuccess(text: string, model = 'voxtral-mini-2602') {
   return spyOn(globalThis, 'fetch').mockResolvedValueOnce(
     new Response(JSON.stringify({ text, model }), {
       status: 200,
@@ -79,7 +83,7 @@ describe('VoxtralTranscribeService', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe('https://api.mistral.ai/v1/audio/transcriptions');
+      expect(url).toBe('https://api.eu.mistral.ai/v1/audio/transcriptions');
     });
 
     it('sends Authorization Bearer header', async () => {
@@ -94,7 +98,7 @@ describe('VoxtralTranscribeService', () => {
       );
     });
 
-    it('includes model=voxtral-mini-latest in formData', async () => {
+    it('includes model=voxtral-mini-2602 in formData', async () => {
       fetchSpy = mockFetchSuccess('test');
       const service = getVoxtralTranscribeService();
 
@@ -102,7 +106,7 @@ describe('VoxtralTranscribeService', () => {
 
       const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
       const body = init.body as FormData;
-      expect(body.get('model')).toBe('voxtral-mini-latest');
+      expect(body.get('model')).toBe('voxtral-mini-2602');
     });
 
     it('defaults to language=fr', async () => {

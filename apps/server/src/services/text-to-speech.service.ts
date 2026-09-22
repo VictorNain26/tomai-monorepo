@@ -47,7 +47,6 @@ class TextToSpeechService {
     try {
       const normalizedText = normalizeForSpeech(text);
       const result = await getVoxtralTTSService().synthesize(normalizedText, {
-        language: options.language,
         schoolLevel: options.schoolLevel,
       });
 

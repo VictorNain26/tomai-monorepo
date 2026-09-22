@@ -1,7 +1,7 @@
 /**
  * Voxtral TTS Service — Mistral text-to-speech souveraine EU.
  *
- * Appelle directement POST https://api.mistral.ai/v1/audio/speech car le SDK
+ * Appelle directement POST {MISTRAL_SERVER_URL}/v1/audio/speech car le SDK
  * `@mistralai/mistralai` 2.2.1 expose seulement la transcription (audio→texte),
  * pas la synthèse (texte→audio). Confirmé par inspection v2.2.1 en mai 2026 :
  * funcs/audioTranscriptions{Complete,Stream} existent, aucun équivalent speech.
@@ -23,23 +23,16 @@ interface VoxtralTTSResult {
 
 interface VoxtralTTSOptions {
   voiceId?: string;
-  language?: 'fr' | 'en' | 'es' | 'de';
   schoolLevel?: EducationLevelType;
   outputFormat?: 'mp3' | 'wav' | 'pcm' | 'flac' | 'opus';
 }
 
-// Mistral expose ~20 preset voices accessibles sans création préalable.
-// Pour le MVP on utilise une voix neutre par défaut. Voice cloning + mapping
-// par niveau scolaire viendront dans une itération suivante (POST /v1/audio/voices
-// + samples 3s par profil).
-const DEFAULT_VOICE = 'casual_male';
-
-const LANGUAGE_MAP: Record<NonNullable<VoxtralTTSOptions['language']>, string> = {
-  fr: 'French',
-  en: 'English',
-  es: 'Spanish',
-  de: 'German',
-};
+// Mistral expose 30 preset voices accessibles sans création préalable (GET
+// /v1/audio/voices). fr_marie_neutral est la seule voix française neutre —
+// casual_male, utilisée avant, n'existe pas (404 "Voice 'casual_male' not
+// found", observé sur l'API live le 2026-09-22). Voice cloning + mapping par
+// niveau scolaire viendront dans une itération suivante.
+const DEFAULT_VOICE = 'fr_marie_neutral';
 
 const FORMAT_TO_MIME: Record<NonNullable<VoxtralTTSOptions['outputFormat']>, string> = {
   mp3: 'audio/mpeg',
@@ -56,7 +49,7 @@ const MAX_INPUT_CHARS = 5_000;
 class VoxtralTTSService {
   private readonly apiKey: string;
   private readonly model: string;
-  private readonly baseUrl = 'https://api.mistral.ai/v1';
+  private readonly baseUrl = `${env.MISTRAL_SERVER_URL}/v1`;
 
   constructor() {
     if (!env.MISTRAL_API_KEY) {
@@ -77,7 +70,6 @@ class VoxtralTTSService {
     }
 
     const voice = options.voiceId ?? DEFAULT_VOICE;
-    const language = LANGUAGE_MAP[options.language ?? 'fr'];
     const outputFormat = options.outputFormat ?? 'mp3';
     const mimeType = FORMAT_TO_MIME[outputFormat];
 
@@ -85,7 +77,6 @@ class VoxtralTTSService {
       operation: 'voxtral:tts:start',
       textLength: text.length,
       voice,
-      language,
       model: this.model,
     });
 
@@ -100,7 +91,6 @@ class VoxtralTTSService {
           model: this.model,
           input: text,
           voice,
-          language,
           response_format: outputFormat,
         }),
       });

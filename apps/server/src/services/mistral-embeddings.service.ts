@@ -32,7 +32,7 @@ class MistralEmbeddingsService {
         throw new Error('MISTRAL_API_KEY is required');
       }
 
-      this.client = new Mistral({ apiKey: MISTRAL_API_KEY });
+      this.client = new Mistral({ apiKey: MISTRAL_API_KEY, serverURL: env.MISTRAL_SERVER_URL });
 
       logger.info('Mistral client initialized', {
         operation: 'mistral:init',
