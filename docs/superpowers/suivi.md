@@ -74,7 +74,7 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 | A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | mergée | #308 |
 | B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | mergée | #309 |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | mergée | #313 |
-| D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | en revue | #315 |
+| D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | mergée | #315 |
 | E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | à faire | — |
 | E2 — Infra serveur et outillage | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-infra` | à faire | — |
 
@@ -169,3 +169,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   cohérence) ; `apps/landing/lib/actions/waitlist.ts` porte désormais une vraie logique de
   branchement mais la landing n'a pas de lanceur de tests
   (`.claude/rules/testing-and-commits.md` : « Pas de tests ») — choix délibéré à revisiter.
+- **2026-09-22** — PR D mergée (#315, merge commit `7f083ff`). Preview Vercel vérifiée dans le
+  navigateur (la preview est derrière le SSO Vercel, donc pas de `curl` anonyme possible) :
+  `X-XSS-Protection` absent, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` et
+  `Permissions-Policy` toujours servis ; `/_next/image` sur une URL externe répond 400 et le
+  logo SVG s'affiche toujours (servi sans passer par l'optimiseur).
