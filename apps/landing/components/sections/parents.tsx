@@ -12,7 +12,7 @@ const POINTS = [
 
 export function Parents() {
   return (
-    <section id="parents" className="scroll-mt-20 bg-secondary py-24 lg:py-32">
+    <section id="parents" className="scroll-mt-20 py-24 lg:py-32">
       <div className="container">
         <SectionHeader
           eyebrow="Pour les parents"
@@ -25,10 +25,10 @@ export function Parents() {
         <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2">
           {POINTS.map(({ icon: Icon, title, body }, index) => (
             <FadeIn key={title} delay={index * 0.1}>
-              <div className="flex h-full gap-4 rounded-2xl border border-border bg-card p-6">
-                <Icon className="mt-1 size-6 shrink-0 text-primary" aria-hidden="true" />
+              <div className="flex h-full gap-4 rounded-2xl bg-card shadow-sm ring-1 ring-border p-6">
+                <Icon className="mt-2 size-6 shrink-0 text-primary" aria-hidden="true" />
                 <div>
-                  <h3 className="mb-1 text-xl font-semibold text-foreground">{title}</h3>
+                  <h3 className="mb-2 text-xl font-semibold text-foreground">{title}</h3>
                   <p className="text-muted-foreground">{body}</p>
                 </div>
               </div>

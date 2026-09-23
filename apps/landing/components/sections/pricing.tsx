@@ -40,27 +40,32 @@ export function Pricing() {
           title="Deux formules, sans surprise"
           description="L'offre gratuite reste gratuite. Le tarif du plan Complet sera annoncé en premier aux inscrits de la liste d'attente."
         />
-        <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
+        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
           {PLANS.map((plan) => (
             <div
               key={plan.name}
               className={cn(
-                "flex flex-col rounded-2xl border bg-card p-8",
-                plan.featured ? "border-2 border-primary" : "border-border",
+                "flex flex-col rounded-2xl bg-card p-8 shadow-sm",
+                plan.featured ? "ring-2 ring-primary" : "ring-1 ring-border",
               )}
             >
               <p className="font-heading text-lg italic text-annotation">{plan.tagline}</p>
               <h3 className="mt-2 text-3xl font-semibold text-foreground">{plan.name}</h3>
               <p className="mt-2 text-lg font-semibold text-foreground">{plan.price}</p>
-              <ul className="my-8 flex-1 space-y-3">
+              <ul className="my-8 flex-1 space-y-4">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-foreground">
-                    <Check className="mt-0.5 size-5 shrink-0 text-success" aria-hidden="true" />
+                  <li key={feature} className="flex items-start gap-4 text-foreground">
+                    <Check className="size-5 shrink-0 text-success" aria-hidden="true" />
                     {feature}
                   </li>
                 ))}
               </ul>
-              <Button variant={plan.featured ? "default" : "outline"} className="group w-full" asChild>
+              <Button
+                variant={plan.featured ? "default" : "outline"}
+                size="lg"
+                className="group h-auto min-h-12 w-full whitespace-normal px-6 py-2 text-center"
+                asChild
+              >
                 <a href="#waitlist">
                   {plan.cta}
                   <ArrowRight className="transition-transform duration-base group-hover:translate-x-1" aria-hidden="true" />

@@ -7,13 +7,21 @@ Le workflow TDD (Red-Green-Refactor) est géré par **superpowers:test-driven-de
 | App | Runner | Commande |
 |-----|--------|----------|
 | Server | Bun test runner | `cd apps/server && bun run test` |
-| Landing | — | Pas de tests (site statique) |
+| Landing | Playwright | `pnpm --filter landing test:grid` |
+
+Le test de grille de la landing est local uniquement : ni en CI, ni dans la validation avant commit.
+Prérequis unique : `pnpm --filter landing exec playwright install chromium`. Il construit le
+site, le sert sur le port 3011 et couvre la feuille Seyès (réglure, bande de tête, marge), les
+bornes (rien ne déborde de la feuille), les fiches (tout texte des pages secondaires y vit),
+le rendu sans JavaScript et sous mouvement réduit (chaque bloc révélé finit visible et en
+place).
 
 ## Localisation des tests
 
 | App | Pattern | Exemple |
 |-----|---------|---------|
 | Server | `src/tests/<service>.test.ts` | `src/tests/encryption.test.ts` |
+| Landing | `apps/landing/tests/<name>.spec.ts` | `tests/grid.spec.ts` |
 
 ## Validation obligatoire avant commit
 

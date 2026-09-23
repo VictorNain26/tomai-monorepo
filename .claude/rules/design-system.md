@@ -17,6 +17,8 @@ Ce qui s'applique à chaque PR touchant de l'UI.
 - **États complets** sur tout interactif : disabled, loading, hover, active,
   focus visible, error. Pas de happy-path only.
 - **A11y AA** : cibles ≥ 44 px, labels (`aria-*` / `<label>`), contraste 4.5:1.
+- **Papier** : fond `background` blanc, objets posés en `card` ou `note` (post-it) ;
+  pas de bande de fond pleine largeur. Jamais `annotation` sur `highlight` (4,48:1).
 - **Patterns UX** : skeletons (pas de spinner pleine page), empty state avec
   action, validation formulaire au blur, toast = info / dialog = irréversible,
   reduced-motion respecté.

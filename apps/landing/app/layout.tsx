@@ -126,6 +126,10 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${fraunces.variable} ${figtree.variable}`}>
       <body>
+        <noscript>
+          {/* data-reveal must mark only elements whose hidden state is Motion's entry state */}
+          <style>{"[data-reveal]{opacity:1!important;transform:none!important}path[data-reveal]{stroke-dasharray:none!important}"}</style>
+        </noscript>
         {jsonLd.map((schema, i) => (
           <script
             key={i}
@@ -138,8 +142,6 @@ export default function RootLayout({
         </a>
         <MotionProvider>
           <div className="relative flex min-h-screen flex-col">
-            <div aria-hidden="true" className="bg-notebook pointer-events-none fixed inset-0 -z-50" />
-            <div aria-hidden="true" className="pointer-events-none fixed inset-y-0 left-6 -z-40 hidden w-0.5 bg-annotation/70 md:block lg:left-10" />
             <Header />
             <main id="main-content" className="flex-1">
               {children}

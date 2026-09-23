@@ -17,16 +17,17 @@ export function ChatDemo({ className }: { className?: string }) {
 
   return (
     <figure aria-label="Exemple de conversation entre un élève et Tom" className={cn("relative", className)}>
-      <ol className="space-y-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <ol className="space-y-4 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border">
         {MESSAGES.map((message, index) => (
           <motion.li
+            data-reveal=""
             key={index}
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: REVEAL_SECONDS, delay: 0.4 + index * 0.6 }}
             className={cn(
-              "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
+              "max-w-[85%] rounded-2xl px-4 py-2 text-sm",
               message.from === "student"
                 ? "ml-auto bg-secondary text-secondary-foreground"
                 : "bg-primary text-primary-foreground",
@@ -37,7 +38,7 @@ export function ChatDemo({ className }: { className?: string }) {
           </motion.li>
         ))}
       </ol>
-      <MarginNote className="mt-4 text-right lg:absolute lg:-right-6 lg:top-24 lg:mt-0 lg:w-36 lg:translate-x-full lg:text-left">
+      <MarginNote className="mt-4 text-right">
         Une question plutôt qu&apos;une réponse : la méthode socratique.
       </MarginNote>
     </figure>

@@ -8,7 +8,7 @@ export function Logo({ className }: { className?: string }) {
       href="/"
       aria-label={`${BRAND_NAME} - Accueil`}
       className={cn(
-        "font-heading text-2xl font-semibold tracking-tight text-foreground transition-opacity duration-base hover:opacity-80",
+        "inline-flex min-h-11 items-center font-heading text-2xl font-semibold tracking-tight text-foreground transition-opacity duration-base hover:opacity-80",
         className,
       )}
     >

@@ -3,9 +3,9 @@ import { Scribble } from "../annotations/scribble";
 
 export function Problem() {
   return (
-    <section className="border-y border-border bg-secondary py-20">
+    <section className="py-20">
       <FadeIn className="container max-w-4xl text-center">
-        <p className="font-heading text-3xl font-medium leading-snug text-balance text-foreground sm:text-4xl">
+        <p className="font-heading text-3xl font-medium text-balance text-foreground sm:text-4xl">
           Copier une réponse prend dix secondes.{" "}
           <Scribble kind="underline">L&apos;oublier aussi.</Scribble>
         </p>

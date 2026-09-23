@@ -17,7 +17,7 @@ export function MobileCTABar() {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-40 md:hidden bg-background/95 backdrop-blur-md border-t border-border p-3 transition-transform duration-300 ${
+      className={`fixed bottom-0 left-0 right-0 z-40 md:hidden bg-background/95 backdrop-blur-md border-t border-border p-4 transition-transform duration-300 ${
         visible ? "translate-y-0" : "translate-y-full"
       }`}
     >

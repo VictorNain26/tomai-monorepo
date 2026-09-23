@@ -8,6 +8,7 @@ import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { FAQS } from "@/components/sections/faq-data";
 import { CTA } from "@/components/sections/cta";
+import { NotebookSheet } from "@/components/notebook/notebook-sheet";
 
 const faqJsonLd = {
   "@context": "https://schema.org",
@@ -26,15 +27,17 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <Hero />
-      <Problem />
-      <HowItWorks />
-      <InputModes />
-      <Parents />
-      <Trust />
-      <Pricing />
-      <FAQ />
-      <CTA />
+      <NotebookSheet band>
+        <Hero />
+        <Problem />
+        <HowItWorks />
+        <InputModes />
+        <Parents />
+        <Trust />
+        <Pricing />
+        <FAQ />
+        <CTA />
+      </NotebookSheet>
     </>
   );
 }
