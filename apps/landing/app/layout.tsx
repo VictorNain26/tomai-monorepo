@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Figtree, Fraunces } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/layout/header";
@@ -7,16 +7,17 @@ import { Footer } from "@/components/layout/footer";
 import { BackgroundPattern } from "@/components/atoms/background-pattern";
 import { MobileCTABar } from "@/components/molecules/mobile-cta-bar";
 
-const inter = Inter({
+const fraunces = Fraunces({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  axes: ["SOFT", "opsz"],
+  variable: "--font-fraunces",
 });
 
-const jakarta = Plus_Jakarta_Sans({
+const figtree = Figtree({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-jakarta",
+  variable: "--font-figtree",
 });
 
 export const metadata: Metadata = {
@@ -119,8 +120,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jakarta.variable}`}>
+    <html lang="fr" suppressHydrationWarning className={`${fraunces.variable} ${figtree.variable}`}>
+      <body>
         {jsonLd.map((schema, i) => (
           <script
             key={i}

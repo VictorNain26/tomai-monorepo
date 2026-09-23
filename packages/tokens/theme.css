@@ -2,21 +2,25 @@
  * Consommé en CSS par les apps Tailwind v4 via :
  *   @import "@repo/tokens/theme.css";
  * Importer APRÈS l'import de Tailwind de l'app.
- * Dark mode : theme-dark.css (classe .dark). */
-@theme {
-  /* Fontes */
-  --font-sans: 'NunitoSans';
-  --font-heading: 'Poppins';
-  --font-mono: 'JetBrainsMono';
+ * Contrastes AA vérifiés par contrast.test.mjs. */
 
+/* inline : les variables next/font sont posées sur <html> par l'app ; sans
+ * inline, la fonte se résoudrait là où le token est défini. */
+@theme inline {
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+@theme {
   /* Rayons */
-  --radius: 0.75rem;
-  --radius-2xl: 16px;
-  --radius-xl: 14px;
-  --radius-lg: 12px;
-  --radius-md: 10px;
-  --radius-sm: 8px;
-  --radius-xs: 6px;
+  --radius: 1rem;
+  --radius-2xl: 20px;
+  --radius-xl: 18px;
+  --radius-lg: 16px;
+  --radius-md: 14px;
+  --radius-sm: 12px;
+  --radius-xs: 10px;
 
   /* Espacements additionnels */
   --spacing-18: 4.5rem;
@@ -26,33 +30,35 @@
   --text-2xs: 0.625rem;
   --text-2xs--line-height: 0.875rem;
 
-  /* Couleurs sémantiques (light) — base froide, shadcn-aligned */
-  --color-background: #FFFFFF;
-  --color-foreground: #0F172A;
-  --color-primary: #2563EB;
+  /* Couleurs sémantiques (light) — « Cahier annoté » : papier, stylo Bic quatre couleurs */
+  --color-background: #FAF7F0;
+  --color-foreground: #1D1D22;
+  --color-primary: #1F3F9E;
   --color-primary-foreground: #FFFFFF;
-  --color-secondary: #F1F5F9;
-  --color-secondary-foreground: #0F172A;
-  --color-muted: #F1F5F9;
-  --color-muted-foreground: #64748B;
-  --color-accent: #F1F5F9;
-  --color-accent-foreground: #0F172A;
-  --color-card: #FFFFFF;
-  --color-card-foreground: #0F172A;
-  --color-popover: #FFFFFF;
-  --color-popover-foreground: #0F172A;
-  --color-destructive: #DC2626;
+  --color-secondary: #F0EADD;
+  --color-secondary-foreground: #1D1D22;
+  --color-muted: #F0EADD;
+  --color-muted-foreground: #5C5C66;
+  --color-accent: #F0EADD;
+  --color-accent-foreground: #1D1D22;
+  --color-card: #FFFDF8;
+  --color-card-foreground: #1D1D22;
+  --color-popover: #FFFDF8;
+  --color-popover-foreground: #1D1D22;
+  --color-destructive: #B42318;
   --color-destructive-foreground: #FFFFFF;
-  --color-success: #059669;
+  --color-success: #1B7337;
   --color-success-foreground: #FFFFFF;
-  --color-warning: #D97706;
-  --color-warning-foreground: #FFFFFF;
-  --color-info: #0EA5E9;
+  --color-warning: #E0A43A;
+  --color-warning-foreground: #1D1D22;
+  --color-info: #2B5C8A;
   --color-info-foreground: #FFFFFF;
-  --color-border: #E2E8F0;
-  --color-input: #E2E8F0;
-  --color-ring: #2563EB;
-  --color-violet: #7C3AED;
+  --color-highlight: #F9E08B;
+  --color-annotation: #C0282D;
+  --color-border: #E7E0D2;
+  --color-input: #E7E0D2;
+  --color-ring: #1F3F9E;
+  --color-violet: #6D3FC0;
   --color-violet-foreground: #FFFFFF;
   --color-overlay: #000000;
 

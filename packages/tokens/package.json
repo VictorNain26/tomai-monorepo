@@ -2,8 +2,10 @@
   "name": "@repo/tokens",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "test": "node --test"
+  },
   "exports": {
-    "./theme.css": "./theme.css",
-    "./theme-dark.css": "./theme-dark.css"
+    "./theme.css": "./theme.css"
   }
 }
