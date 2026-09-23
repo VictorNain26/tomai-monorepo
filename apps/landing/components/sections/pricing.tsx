@@ -63,7 +63,7 @@ export function Pricing() {
               <Button
                 variant={plan.featured ? "default" : "outline"}
                 size="lg"
-                className="group h-auto min-h-12 w-full whitespace-normal px-6 text-center"
+                className="group h-auto min-h-12 w-full whitespace-normal px-6 py-2 text-center"
                 asChild
               >
                 <a href="#waitlist">

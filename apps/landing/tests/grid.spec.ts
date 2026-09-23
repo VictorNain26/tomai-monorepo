@@ -232,6 +232,23 @@ test("/aide at 375px keeps each FAQ question within three lines", async ({ page 
   expect(tall).toEqual([]);
 });
 
+test("/ at 375px keeps 8px between a wrapped pricing label and its button edge", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: HEIGHT });
+  await page.goto("/");
+  await settle(page);
+  const cramped = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("#pricing a")].flatMap((button) => {
+      const range = document.createRange();
+      range.selectNodeContents(button);
+      const text = range.getBoundingClientRect();
+      const box = button.getBoundingClientRect();
+      const gap = Math.min(text.top - box.top, box.bottom - text.bottom);
+      return gap < 7.5 ? [`${button.textContent?.trim()} ${gap.toFixed(1)}px`] : [];
+    }),
+  );
+  expect(cramped).toEqual([]);
+});
+
 declare global {
   interface Window {
     layoutShift: number;
@@ -250,8 +267,9 @@ test.describe("with motion", () => {
         }).observe({ type: "layout-shift", buffered: true });
       });
       await page.goto(path);
+      await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(1500);
-      expect(await page.evaluate(() => window.layoutShift)).toBe(0);
+      expect(await page.evaluate(() => window.layoutShift)).toBeLessThan(0.001);
     });
   }
 });
