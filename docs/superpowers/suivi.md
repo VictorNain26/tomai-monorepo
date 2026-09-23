@@ -80,6 +80,12 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 
 Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 
+## Hors lot 0
+
+| PR | Plan | Branche | Statut | Lien |
+|---|---|---|---|---|
+| Landing « La copie corrigée », PR 1 — fondations | `plans/2026-09-23-landing-copie-corrigee-pr1-fondations.md` | `feat/landing-copie-corrigee` | ouverte | — |
+
 ## Étapes manuelles (utilisateur)
 
 | Étape | Pour | Statut |
@@ -174,3 +180,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   `X-XSS-Protection` absent, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` et
   `Permissions-Policy` toujours servis ; `/_next/image` sur une URL externe répond 400 et le
   logo SVG s'affiche toujours (servi sans passer par l'optimiseur).
+- **2026-09-23** — Landing, PR 1 « La copie corrigée » (fondations) : feuille Seyès peinte
+  par section avec marge rouge sur une verticale, papier blanc, rythme de ligne de base sur
+  la réglure, footer en quatrième de couverture bleue, contact `contact@tomia.fr`. Test de
+  grille Playwright (`pnpm --filter landing test:grid`, 6 pages × 5 largeurs + zoom 20 px) :
+  local uniquement, son branchement en CI fera l'objet d'une PR séparée.
