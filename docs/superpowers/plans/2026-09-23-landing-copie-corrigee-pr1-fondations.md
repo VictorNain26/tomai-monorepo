@@ -2,612 +2,560 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Poser la feuille Seyès sous tout le texte de la landing : fonds blancs, réglure et marge peintes par section et calées sur le conteneur, ligne de base de chaque bloc de texte sur une ligne, pages légales et footer au format de la nouvelle DA, contact et promesses honnêtes.
+**Goal:** Une feuille Seyès peinte une fois par page (bande de tête sans horizontales, marge sans verticales), le texte composé des pages secondaires posé sur des fiches collées, et les deux défauts restants de la première vague (débordement des tarifs, conteneur imbriqué de `/aide`).
 
-**Architecture:** Les couleurs changent dans `@repo/tokens` (testées par `contrast.test.mjs`). Toute la géométrie vit dans `apps/landing/app/globals.css` : un utilitaire `bg-seyes` que chaque section porte, un `container` aligné sur la grille, des hauteurs de ligne multiples de 8 et une règle de base qui décale chaque bloc de texte pour que sa ligne de base tombe sur une ligne (unité `lh`). Aucune nouvelle dépendance ; aucune animation nouvelle.
+**Architecture:** Un composant serveur `NotebookSheet` porte trois calques décoratifs (horizontales, verticales, marge) dessinés par des utilitaires de `globals.css`. Un composant client `Fiche` (Motion `whileInView`) porte le texte composé. Le rythme de ligne de base par `lh` et la réglure par section sont retirés. Le test Playwright `test:grid` est réécrit autour de la feuille.
 
-**Tech Stack:** Tailwind v4.3 (`@theme`, `@utility`, `@layer base`), Next.js 16.3 App Router, `node:test`.
+**Tech Stack:** Next.js 16.3 App Router, Tailwind v4.3 (`@utility`), Motion 13.4 (`motion/react`), Playwright 1.63.
 
-**Spec:** `docs/superpowers/specs/2026-09-23-landing-copie-corrigee-design.md` (§1 Fondations, §4 « Contact et aide », §5-7).
+**Spec:** `docs/superpowers/specs/2026-09-23-landing-copie-corrigee-design.md` (§1 Fondations, §5 Contraintes, §7 Tests).
+
+## Point de départ
+
+Plan réécrit le 2026-09-23 après la révision de la spec (commit `4e84b94`) ; il remplace
+la version exécutée jusqu'à `5bd89c6`. Registre SDD :
+`.superpowers/sdd/2026-09-23-landing-copie-corrigee-pr1-fondations/progress.md`. Déjà sur la
+branche et conservé :
+
+- `f227e6b` tokens (`background`, `card`, `note`, `input`) ;
+- `a8d3d94` pages légales mises en forme, contact `contact@tomia.fr`, promesses V1 ;
+- `7246d21`, `89ed4dc` boutons 48 px ; `760c0e4` + `5bd89c6` Playwright et sa règle.
+
+Remplacé par ce plan : `bg-seyes` par section (`041f884`), rythme `lh` (`e901312`), findings
+3, 4, 6, 7 de la revue finale (ligne de base du texte composé). Restent valides et traités
+ici : finding 1 (tarifs, Task 2), finding 2 (`/aide`, Task 2), demi-pixel de calage
+(Task 1), `reuseExistingServer` (Task 1), prérequis `playwright install` (Task 5). Les
+points 5, 8 et 10 de la revue deviennent sans objet (plus de réglure par section, footer
+refait en PR 2) ; le 9 (note de marge de la démo) est neutralisé en Task 2, la démo part en
+PR 3. Hors de cette PR : en-tête et couvertures (PR 2), écriture et Caveat (PR 3), sections
+(PR 4).
 
 ## Global Constraints
 
 - Worktree `W=/home/ordiv/projets/tomai-monorepo/.claude/worktrees/landing-cahier-annote`, branche `feat/landing-copie-corrigee`. Git uniquement via `git -C $W …`.
 - Stager fichier par fichier (jamais `git add .` / `-A`), jamais `--no-verify`, jamais `--amend`.
-- Commits `<type>(<scope>): <description>` en anglais, suivis d'une ligne vide puis `Co-Authored-By: Claude <noreply@anthropic.com>`.
-- Tokens uniquement dans les composants : aucune couleur littérale hors `packages/tokens/theme.css` et `app/opengraph-image.tsx`.
+- Commits `<type>(<scope>): <description>` en anglais, puis une ligne vide, puis `Co-Authored-By: Claude <noreply@anthropic.com>` et `Claude-Session: https://claude.ai/code/session_01Qg7JXj2n5rfm4fz7f8EKRt`.
+- Tokens uniquement : aucune couleur littérale hors `packages/tokens/theme.css` et `app/opengraph-image.tsx`.
 - Thème clair seul ; site statique ; la landing n'appelle le serveur que par `joinWaitlist`.
 - Cibles interactives ≥ 44 px ; contraste texte ≥ 4.5:1, contrôles ≥ 3:1.
-- Tout espacement vertical (`m*`, `p*`, `space-y-*`, `gap-*` en colonne) est un multiple de 8 px : `-2`, `-4`, `-6`, `-8`, `-10`, `-12`, `-16`, `-20`, `-24`, `-32`. Jamais `-1`, `-3`, `-5`, `-0.5`, `-1.5`.
-- Aucune bordure horizontale (`border`, `border-y`, `border-t`, `border-b`) sur un bloc du flux : `ring-*` ou `shadow-*` à la place (1 px décalerait les lignes). `border-l-*` reste permis.
-- Aucun utilitaire `leading-*` dans la landing.
-- Fichiers < 400 lignes. Pas de commentaire sauf WHY non évident.
-- Validation avant chaque commit : `pnpm --dir $W --filter landing typecheck`, `lint`, `build` (et `--filter @repo/tokens test` en Task 1), chacune redirigée vers un log, code de sortie lu (`cmd > /tmp/x.log 2>&1; echo "exit=$?"`), jamais pipée dans `tail`.
+- Aucun moteur d'animation maison : Motion, CSS et SVG natifs. Aucune dépendance runtime nouvelle.
+- Pas de style inline ; pas d'`eslint-disable`. Fichiers < 400 lignes. Pas de commentaire sauf WHY non évident.
+- Validation avant chaque commit, chacune redirigée vers un log et code de sortie lu (`cmd > $LOG 2>&1; echo "exit=$?"`), jamais pipée dans `tail` : `pnpm --dir $W --filter landing typecheck`, `lint`, `build`, `test:grid`.
 - `next dev` / `next build` peut ajouter un bloc « nextjs-agent-rules » à `apps/landing/CLAUDE.md` : `git -C $W restore apps/landing/CLAUDE.md`, jamais commité.
+- Arrêter un serveur par son PID ou son port exact, jamais `pkill -f next-server`.
 - Ne jamais lire de fichier `.env`.
 
 ## Review Focus
 
-1. **Largeur 1248-1263 px avec barre de défilement** : la section est plus étroite que le viewport ; la marge doit rester sur une verticale et le contenu à droite d'elle (le calage lit la largeur de la section, pas le viewport). Testé en Task 5 (iframe 1260).
-2. **Titre sur plusieurs lignes à 375 px** : chaque ligne a sa ligne de base sur une ligne de la réglure (hauteur de ligne multiple de 8). Testé en Task 5 (iframe 375, `h1` du hero).
-3. **Police pas encore chargée** : les métriques du fallback diffèrent ; la mesure n'a de sens qu'après `document.fonts.ready`. Le script de Task 5 l'attend.
-4. **Animations d'entrée en cours** (`FadeIn` translate en y) : une mesure prise pendant l'animation est fausse. Le script de Task 5 tourne après stabilisation et sous `prefers-reduced-motion`.
-5. **Zoom navigateur 125 %** : cellules et hauteurs de ligne sont en `rem`, elles changent d'échelle ensemble ; la marge reste sur une verticale. Testé en Task 5 (zoom via `document.documentElement.style.fontSize` à 20px dans l'iframe).
+1. **Largeur impaire au-delà de 80rem (1441 px)** : `margin-inline: auto` donnerait un bord de feuille à x,5 px et des verticales floues ; le bord doit être entier. Testé en Task 1 (largeur 1441).
+2. **Mobile 375 px** : la marge passe à 56 px, le contenu reste à droite d'elle et rien ne déborde (bouton des tarifs). Testé en Tasks 1 et 2.
+3. **JavaScript désactivé** : Motion rend l'état `initial` (opacité 0) en ligne ; sans JS, fiches et `FadeIn` resteraient invisibles. Testé en Task 3.
+4. **Mouvement réduit** : `MotionConfig reducedMotion="user"` coupe les transformations et garde le fondu ; toute fiche doit finir opaque et à sa place. Testé en Task 3.
+5. **Texte composé sur la réglure d'une page secondaire** : tout texte de `/aide`, `/faq`, `/contact` et des pages légales vit sur une fiche. Testé en Task 4.
 
 ---
 
-### Task 1: Papier blanc et nouveaux fonds dans `@repo/tokens`
+### Task 1: Feuille unique par page
 
 **Files:**
-- Modify: `packages/tokens/contrast.test.mjs`
-- Modify: `packages/tokens/theme.css`
-- Modify: `.claude/rules/design-system.md`
+- Create: `apps/landing/components/notebook/notebook-sheet.tsx`
+- Create (réécriture complète) : `apps/landing/tests/grid.spec.ts`
+- Modify: `apps/landing/app/globals.css`
+- Modify: `apps/landing/app/page.tsx`, `apps/landing/components/layout/page-layout.tsx`, `apps/landing/app/faq/page.tsx`
+- Modify: les neuf racines de section qui portent `bg-seyes` (`hero`, `problem`, `how-it-works`, `input-modes`, `parents`, `trust`, `pricing`, `faq`, `cta` sous `components/sections/`)
+- Modify: `apps/landing/playwright.config.ts`
 
 **Interfaces:**
-- Produces: tokens `--color-note`, `--color-note-foreground` (utilitaires `bg-note`, `text-note-foreground`) ; nouvelles valeurs `background`, `card`, `popover`, `secondary`, `muted`, `accent`, `border`, `input`.
+- Produces: `NotebookSheet({ band?: boolean; className?: string; children: React.ReactNode })`, racine `[data-sheet]` (plus `[data-band]` si `band`), calques enfants directs `[data-sheet-rules]`, `[data-sheet-verticals]`, `[data-sheet-margin]`. Variables CSS globales `--cell`, `--rule`, `--band`, `--margin-x`. Utilitaire `container` recalé sur `--margin-x`. Dans `grid.spec.ts` : `SECONDARY`, `PAGES`, `WIDTHS`, `HEIGHT`, `settle(page)`.
 
-- [ ] **Step 1: Écrire les tests qui échouent** — dans `packages/tokens/contrast.test.mjs`, ajouter à la fin du tableau `PAIRS` :
+- [ ] **Step 1: Écrire le test qui échoue** — remplacer tout `apps/landing/tests/grid.spec.ts` par :
 
-```js
-  ["note-foreground", "note"],
-  ["foreground", "note"],
-  ["primary", "note"],
-  ["annotation", "note"],
-```
+```ts
+import { expect, test, type Page } from "@playwright/test";
 
-puis, après la boucle existante, un second jeu au seuil des contrôles :
+const SECONDARY = ["/aide", "/faq", "/contact", "/cgu", "/confidentialite", "/mentions-legales"];
+const PAGES = ["/", ...SECONDARY];
+const WIDTHS = [375, 768, 1024, 1441];
+const HEIGHT = 861;
 
-```js
-const CONTROL_PAIRS = [
-  ["input", "background"],
-  ["input", "card"],
-];
+interface Geometry {
+  marginX: number;
+  band: number;
+}
 
-for (const [fg, bg] of CONTROL_PAIRS) {
-  test(`${fg} on ${bg} meets WCAG 1.4.11 (3:1)`, () => {
-    assert.ok(palette[fg], `missing --color-${fg}`);
-    assert.ok(palette[bg], `missing --color-${bg}`);
-    const ratio = contrast(palette[fg], palette[bg]);
-    assert.ok(ratio >= 3, `${palette[fg]} on ${palette[bg]} = ${ratio.toFixed(2)}`);
+function geometryFor(width: number): Geometry {
+  return width >= 768 ? { marginX: 96, band: 96 } : { marginX: 56, band: 64 };
+}
+
+async function settle(page: Page) {
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(async () => {
+    const step = window.innerHeight / 2;
+    for (let y = 0; y < document.documentElement.scrollHeight; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+    window.scrollTo(0, 0);
   });
+}
+
+function inspectSheets(page: Page, geometry: Geometry) {
+  return page.evaluate(({ marginX, band }) => {
+    const near = (a: number, b: number) => Math.abs(a - b) <= 0.5;
+    const problems: string[] = [];
+    const sheets = [...document.querySelectorAll<HTMLElement>("[data-sheet]")];
+    const nested = document.querySelectorAll("[data-sheet] [data-sheet]").length;
+
+    for (const sheet of sheets) {
+      const box = sheet.getBoundingClientRect();
+      const layer = (name: string) => sheet.querySelector<HTMLElement>(`:scope > [data-sheet-${name}]`)?.getBoundingClientRect();
+      const rules = layer("rules");
+      const verticals = layer("verticals");
+      const margin = layer("margin");
+      if (!rules || !verticals || !margin) {
+        problems.push("sheet without its three layers");
+        continue;
+      }
+      if (Math.abs(box.left - Math.round(box.left)) > 0.01) problems.push(`sheet left not whole: ${box.left}`);
+      if (!near(margin.left - box.left, marginX)) problems.push(`margin at ${margin.left - box.left}, expected ${marginX}`);
+      if (!near(verticals.left, margin.left)) problems.push(`verticals start at ${verticals.left}, margin at ${margin.left}`);
+      const rulesTop = sheet.hasAttribute("data-band") ? band : 0;
+      if (!near(rules.top - box.top, rulesTop)) problems.push(`rules start at ${rules.top - box.top}, expected ${rulesTop}`);
+
+      for (const el of sheet.querySelectorAll<HTMLElement>("p, h1, h2, h3, li, a, button, input")) {
+        if (el.closest('[aria-hidden="true"]') || el.getClientRects().length === 0) continue;
+        const left = el.getBoundingClientRect().left;
+        if (left < margin.right - 0.5) problems.push(`<${el.tagName.toLowerCase()}> over the margin at ${left.toFixed(1)}`);
+      }
+    }
+    return { sheets: sheets.length, nested, problems };
+  }, geometry);
+}
+
+for (const path of PAGES) {
+  for (const width of WIDTHS) {
+    test(`${path} at ${width}px is drawn on one Seyès sheet`, async ({ page }) => {
+      await page.setViewportSize({ width, height: HEIGHT });
+      await page.goto(path);
+      await settle(page);
+      const { sheets, nested, problems } = await inspectSheets(page, geometryFor(width));
+      expect(sheets, "no sheet on the page").toBeGreaterThan(0);
+      expect(nested, "a sheet inside a sheet").toBe(0);
+      expect(problems, problems.join("\n")).toEqual([]);
+    });
+  }
 }
 ```
 
-- [ ] **Step 2: Vérifier l'échec** : `pnpm --dir $W --filter @repo/tokens test > /tmp/tok.log 2>&1; echo "exit=$?"` → `exit=1` ; le log contient `missing --color-note` et `input on background` sous 3:1 (`#E7E0D2`).
+- [ ] **Step 2: Lancer le test, vérifier qu'il échoue**
 
-- [ ] **Step 3: Nouvelles valeurs dans `packages/tokens/theme.css`** — remplacer le commentaire de couleurs par `/* Couleurs sémantiques (light) — « Copie corrigée » : papier blanc, réglure bleue, stylo Bic quatre couleurs */` et fixer exactement :
+Run: `pnpm --dir $W --filter landing test:grid > $LOG 2>&1; echo "exit=$?"`
+Expected: exit ≠ 0, chaque test en échec sur « no sheet on the page ».
 
-```css
-  --color-background: #FCFCFA;
-  --color-secondary: #F3F5FB;
-  --color-muted: #F3F5FB;
-  --color-accent: #F3F5FB;
-  --color-card: #FFFFFF;
-  --color-popover: #FFFFFF;
-  --color-border: #D9DFF0;
-  --color-input: #7F8BB8;
+- [ ] **Step 3: Créer `NotebookSheet`** — `apps/landing/components/notebook/notebook-sheet.tsx` :
+
+```tsx
+import { cn } from "@repo/ui";
+
+interface NotebookSheetProps {
+  band?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}
+
+export function NotebookSheet({ band = false, className, children }: NotebookSheetProps) {
+  return (
+    <div data-sheet="" data-band={band ? "" : undefined} className={cn("sheet", className)}>
+      <div aria-hidden="true" data-sheet-rules="" className={cn("sheet-rules", band && "top-(--band)")} />
+      <div aria-hidden="true" data-sheet-verticals="" className="sheet-verticals" />
+      <div aria-hidden="true" data-sheet-margin="" className="sheet-margin" />
+      {children}
+    </div>
+  );
+}
 ```
 
-et ajouter, juste après `--color-highlight` :
+Le nom évite le `Sheet` de shadcn que la PR 2 utilisera pour le menu mobile.
+
+- [ ] **Step 4: Réécrire la géométrie dans `apps/landing/app/globals.css`**
+
+Retirer : le bloc `@theme` des hauteurs de ligne, `@utility bg-seyes`, la règle `top: calc(0.5lh − …)` de `@layer base` et de `legal-copy li`, les variables `--ink-ad` et leurs commentaires Capsize. Ajouter, sous les `@import` :
 
 ```css
-  --color-note: #FFF3B0;
-  --color-note-foreground: #1D1D22;
-```
-
-Toutes les autres lignes de couleur restent inchangées.
-
-- [ ] **Step 4: Vérifier le succès** : même commande → `exit=0`, `# pass 32`, `# fail 0` (26 existants + 4 paires + 2 contrôles).
-
-- [ ] **Step 5: Règle design-system** — dans `.claude/rules/design-system.md`, sous la puce « A11y AA », ajouter :
-
-```markdown
-- **Papier** : fond `background` blanc, objets posés en `card` ou `note` (post-it) ;
-  pas de bande de fond pleine largeur. Jamais `annotation` sur `highlight` (4,48:1).
-```
-
-- [ ] **Step 6: Valider** : `pnpm --dir $W --filter @repo/ui typecheck` → 0 ; `pnpm --dir $W --filter landing build` → 0.
-
-- [ ] **Step 7: Commit** : `git -C $W add packages/tokens/contrast.test.mjs`, puis `packages/tokens/theme.css`, puis `.claude/rules/design-system.md` ; message `feat(tokens): white paper, note and control-contrast tokens`.
-
----
-
-### Task 2: Feuille Seyès et marge peintes par section
-
-**Files:**
-- Modify: `apps/landing/app/globals.css` (remplacer `@utility bg-notebook` et `@utility container`)
-- Modify: `apps/landing/app/layout.tsx:141-142` (supprimer les deux calques `fixed`)
-- Modify: `apps/landing/components/layout/page-layout.tsx:13-14`
-- Modify: `apps/landing/components/sections/{hero,problem,how-it-works,input-modes,parents,trust,pricing,faq,cta}.tsx` (racine `<section>`)
-
-**Interfaces:**
-- Consumes: `--color-primary`, `--color-annotation`, `--color-background` (Task 1).
-- Produces: utilitaire `bg-seyes` (section = une feuille : réglure, verticales calées, marge) ; utilitaire `container` aligné sur la grille. Les PR suivantes posent chaque bloc sur ces deux utilitaires.
-
-- [ ] **Step 1: Remplacer les utilitaires** — dans `globals.css`, supprimer le bloc `@utility bg-notebook { … }` et le bloc `@utility container { … }`, et mettre à la place :
-
-```css
-/* Seyès : carreau 32 px, interlignes 8 px. Les verticales sont peintes par ::before
- * car les % de background-position ne se rapportent pas à la largeur de la boîte ;
- * `left` en % se rapporte à la largeur de la section, barre de défilement exclue. */
-@utility bg-seyes {
+:root {
   --cell: 2rem;
   --rule: 0.5rem;
-  --sheet-x: max(0px, calc((100% - 78rem) / 2));
-  --margin-index: 1;
+  --band: 4rem;
+  --margin-x: 3.5rem;
+}
+
+@media (width >= 48rem) {
+  :root {
+    --band: 6rem;
+    --margin-x: 6rem;
+  }
+}
+
+/* Bord gauche entier : `auto` donnerait x,5 px et des verticales floues sur une largeur impaire. */
+@utility sheet {
   position: relative;
   isolation: isolate;
-  overflow-x: clip;
+  display: flow-root;
+  max-width: 80rem;
+  margin-inline: auto;
   background-color: var(--color-background);
+  box-shadow: 0 0 0 1px var(--color-border);
+
+  @supports (margin-left: round(down, 1px, 1px)) {
+    margin-left: max(0px, round(down, (100% - 80rem) / 2, 1px));
+  }
+}
+
+@utility sheet-rules {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image:
     linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px),
     linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 10%, transparent) 1px, transparent 1px);
   background-size: 100% var(--cell), 100% var(--rule);
+}
 
+@utility sheet-verticals {
+  position: absolute;
+  inset-block: 0;
+  left: var(--margin-x);
+  right: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(to right, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px);
+  background-size: var(--cell) 100%;
+}
+
+@utility sheet-margin {
+  position: absolute;
+  inset-block: 0;
+  left: var(--margin-x);
+  width: 2px;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--color-annotation);
+}
+```
+
+Remplacer le corps de `@utility container` par : `margin-inline: auto; width: 100%; max-width: 80rem; padding-left: calc(var(--margin-x) + 1rem); padding-right: 1rem;` et, à partir de `48rem`, `padding-left: calc(var(--margin-x) + var(--cell)); padding-right: 4rem;`. Dans `@layer base`, `body` passe de `bg-background` à `bg-secondary` (bureau autour du cahier, spec §1).
+
+`round()` : Baseline newly available depuis 2024-05-17 (Chrome 125, Firefox 118, Safari 17.2 — https://web-platform-dx.github.io/web-features-explorer/features/round-mod-rem/) ; `@supports` garde `auto` ailleurs. À citer dans le corps du commit.
+
+- [ ] **Step 5: Poser une feuille par page**
+
+- Retirer `bg-seyes` des neuf racines de section (garder leurs autres classes).
+- `app/page.tsx` : envelopper toutes les sections dans un seul `<NotebookSheet band>`.
+- `components/layout/page-layout.tsx` : la `div` `bg-seyes` devient `<NotebookSheet band className="min-h-[calc(100svh-4rem)] py-12 md:py-24">` autour du `FadeIn` existant.
+- `app/faq/page.tsx` : envelopper `<FAQ />` dans `<NotebookSheet band>` (la page passe sur `PageLayout` en Task 4).
+
+- [ ] **Step 6: Toujours tester un build neuf** — dans `apps/landing/playwright.config.ts`, `reuseExistingServer: false` : un serveur resté sur :3011 servirait un ancien build (https://playwright.dev/docs/test-webserver).
+
+- [ ] **Step 7: Lancer le test, vérifier qu'il passe**
+
+Run: `pnpm --dir $W --filter landing test:grid > $LOG 2>&1; echo "exit=$?"`
+Expected: exit=0, 28 tests passés (7 pages × 4 largeurs).
+
+- [ ] **Step 8: Valider et commiter** — typecheck, lint, build (codes de sortie lus), `git -C $W restore apps/landing/CLAUDE.md` si besoin, puis :
+
+```bash
+git -C $W add apps/landing/components/notebook/notebook-sheet.tsx apps/landing/tests/grid.spec.ts apps/landing/app/globals.css apps/landing/app/page.tsx apps/landing/components/layout/page-layout.tsx apps/landing/app/faq/page.tsx apps/landing/playwright.config.ts apps/landing/components/sections/hero.tsx apps/landing/components/sections/problem.tsx apps/landing/components/sections/how-it-works.tsx apps/landing/components/sections/input-modes.tsx apps/landing/components/sections/parents.tsx apps/landing/components/sections/trust.tsx apps/landing/components/sections/pricing.tsx apps/landing/components/sections/faq.tsx apps/landing/components/sections/cta.tsx
+git -C $W commit -m "feat(landing): one Seyès sheet per page with a header band and a plain margin"
+```
+
+---
+
+### Task 2: Rien ne déborde de la feuille, `/aide` sans conteneur imbriqué
+
+**Files:**
+- Create: `apps/landing/components/sections/faq-list.tsx`
+- Modify: `apps/landing/components/sections/faq.tsx`, `apps/landing/app/aide/page.tsx`
+- Modify: `apps/landing/components/sections/pricing.tsx`, `apps/landing/components/sections/chat-demo.tsx`
+- Test: `apps/landing/tests/grid.spec.ts`
+
+**Interfaces:**
+- Consumes: `NotebookSheet`, `[data-sheet]`, `PAGES`, `WIDTHS`, `HEIGHT`, `settle` (Task 1).
+- Produces: `FaqList()` — la liste des questions (état ouvert/fermé inclus), sans section, sans `container`, sans en-tête.
+
+- [ ] **Step 1: Écrire les tests qui échouent** — dans `grid.spec.ts`, ajouter à la fin :
+
+```ts
+function inspectBounds(page: Page) {
+  return page.evaluate(() => {
+    const problems: string[] = [];
+    if (document.documentElement.scrollWidth > window.innerWidth) {
+      problems.push(`page scrolls sideways: ${document.documentElement.scrollWidth} > ${window.innerWidth}`);
+    }
+    if (document.querySelectorAll(".container .container").length > 0) problems.push("a container inside a container");
+    for (const sheet of document.querySelectorAll<HTMLElement>("[data-sheet]")) {
+      const box = sheet.getBoundingClientRect();
+      for (const el of sheet.querySelectorAll<HTMLElement>("*")) {
+        if (el.closest('[aria-hidden="true"]') || el.getClientRects().length === 0) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.left < box.left - 0.5 || rect.right > box.right + 0.5) {
+          problems.push(`<${el.tagName.toLowerCase()} class="${el.className}"> spans ${rect.left.toFixed(1)}–${rect.right.toFixed(1)}, sheet ${box.left}–${box.right}`);
+        }
+      }
+    }
+    return problems;
+  });
+}
+
+for (const path of PAGES) {
+  for (const width of WIDTHS) {
+    test(`${path} at ${width}px stays inside its sheet`, async ({ page }) => {
+      await page.setViewportSize({ width, height: HEIGHT });
+      await page.goto(path);
+      await settle(page);
+      const problems = await inspectBounds(page);
+      expect(problems, problems.join("\n")).toEqual([]);
+    });
+  }
+}
+```
+
+- [ ] **Step 2: Lancer, vérifier l'échec** — `test:grid` : exit ≠ 0. Échecs attendus : `/` à 375 et 768 (bouton des tarifs, `size="lg"` = `px-8 whitespace-nowrap`) ; `/` à 1024 et plus si la note de marge de la démo sort à droite (`lg:translate-x-full`) ; `/aide` à toutes les largeurs (« a container inside a container »). Noter tout autre échec et sa cause dans le rapport.
+
+- [ ] **Step 3: Extraire `FaqList`** — `faq-list.tsx` (`"use client"`) reçoit tel quel le bloc `div.space-y-4` de `faq.tsx` (liste, `useState` d'ouverture, `AnimatePresence`). `FAQ` garde sa section, son `container`, son `SectionHeader`, rend `<FaqList />` puis la ligne « Vous avez une autre question ? » ; il n'a plus besoin de `"use client"`. `app/aide/page.tsx` rend `<FaqList />` à la place de `<FAQ />` : un seul conteneur, celui de `PageLayout`.
+
+- [ ] **Step 4: Tarifs** — dans `pricing.tsx`, la grille devient `grid-cols-1 md:grid-cols-2` (pistes `minmax(0, 1fr)` qui ne grandissent plus sur le contenu) ; le bouton garde `size="lg"` (48 px) et reçoit `h-auto min-h-12 whitespace-normal px-6 text-center`, pour que le libellé passe à la ligne au lieu de pousser la carte.
+
+- [ ] **Step 5: Démo** — dans `chat-demo.tsx`, la `MarginNote` perd ses classes `lg:absolute lg:-right-6 lg:mt-0 lg:translate-y-24 lg:w-36 lg:translate-x-full lg:text-left` et reste dans le flux sous la démo (la démo est supprimée en PR 3).
+
+- [ ] **Step 6: Relancer** — `test:grid` : exit=0, 56 tests passés.
+
+- [ ] **Step 7: Valider et commiter** — typecheck, lint, build, puis un commit par cause :
+
+```bash
+git -C $W add apps/landing/components/sections/pricing.tsx apps/landing/components/sections/chat-demo.tsx apps/landing/tests/grid.spec.ts
+git -C $W commit -m "fix(landing): pricing cards and the demo note stay inside the sheet"
+git -C $W add apps/landing/components/sections/faq-list.tsx apps/landing/components/sections/faq.tsx apps/landing/app/aide/page.tsx
+git -C $W commit -m "fix(landing): render the help page FAQ inside its own container"
+```
+
+---
+
+### Task 3: Fiche collée, visible sans JS et sous mouvement réduit
+
+**Files:**
+- Create: `apps/landing/components/notebook/fiche.tsx`
+- Modify: `apps/landing/components/atoms/fade-in.tsx`
+- Modify: `apps/landing/app/layout.tsx`
+- Modify: `apps/landing/app/globals.css`
+- Test: `apps/landing/tests/grid.spec.ts`
+
+**Interfaces:**
+- Consumes: `settle` (Task 1).
+- Produces: `Fiche({ tilt?: "none" | "left" | "right"; variant?: "paper" | "note"; delay?: number; className?: string; children: React.ReactNode })`, racine `[data-fiche][data-reveal]`. Attribut `data-reveal` sur tout bloc que Motion masque avant son entrée (`Fiche`, `FadeIn`). Utilitaire `fiche-tape`.
+
+- [ ] **Step 1: Écrire les tests qui échouent** — dans `grid.spec.ts`, ajouter :
+
+```ts
+function hiddenReveals(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("[data-reveal]")]
+      .filter((el) => getComputedStyle(el).opacity !== "1" || getComputedStyle(el).transform !== "none")
+      .map((el) => el.textContent?.trim().slice(0, 40) ?? ""),
+  );
+}
+
+test.describe("without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  for (const path of ["/", "/cgu"]) {
+    test(`${path} shows every revealed block`, async ({ page }) => {
+      await page.goto(path);
+      expect(await page.locator("[data-reveal]").count()).toBeGreaterThan(0);
+      expect(await hiddenReveals(page)).toEqual([]);
+    });
+  }
+});
+
+for (const path of ["/", "/cgu"]) {
+  test(`${path} ends every reveal opaque and in place under reduced motion`, async ({ page }) => {
+    await page.goto(path);
+    await settle(page);
+    await expect.poll(() => hiddenReveals(page)).toEqual([]);
+  });
+}
+```
+
+`javaScriptEnabled` et `reducedMotion` sont des `TestOptions` de Playwright 1.63 (`playwright/types/test.d.ts` ; https://playwright.dev/docs/api/class-testoptions) ; la config impose déjà `reducedMotion: "reduce"`.
+
+- [ ] **Step 2: Lancer, vérifier l'échec** — `test:grid` : les deux tests « without JavaScript » échouent (`[data-reveal]` absent) ; noter le résultat des tests « reduced motion ».
+
+- [ ] **Step 3: Créer `Fiche`** — `apps/landing/components/notebook/fiche.tsx` :
+
+```tsx
+"use client";
+
+import { motion, type Variants } from "motion/react";
+import { cn } from "@repo/ui";
+
+const TILTS = {
+  none: "",
+  left: "-rotate-[0.6deg]",
+  right: "rotate-[0.8deg]",
+} as const;
+
+const PASTE: Variants = {
+  hidden: { opacity: 0, y: -12, rotate: -2.5, scale: 1.03 },
+  shown: { opacity: 1, y: 0, rotate: 0, scale: 1 },
+};
+
+interface FicheProps {
+  tilt?: keyof typeof TILTS;
+  variant?: "paper" | "note";
+  delay?: number;
+  className?: string;
+  children: React.ReactNode;
+}
+
+export function Fiche({ tilt = "left", variant = "paper", delay = 0, className, children }: FicheProps) {
+  return (
+    <motion.div
+      data-fiche=""
+      data-reveal=""
+      variants={PASTE}
+      initial="hidden"
+      whileInView="shown"
+      viewport={{ once: true, margin: "0px 0px -10% 0px" }}
+      transition={{ duration: 0.65, delay, ease: [0.2, 0.8, 0.2, 1] }}
+      className={cn(
+        "relative p-6 shadow-md md:p-8",
+        variant === "paper" ? "fiche-tape bg-card text-card-foreground" : "bg-note text-note-foreground",
+        TILTS[tilt],
+        className,
+      )}
+    >
+      {children}
+    </motion.div>
+  );
+}
+```
+
+La rotation de repos passe par la propriété CSS `rotate` (Tailwind 4.3 compile `-rotate-[0.6deg]` en `rotate: calc(0.6deg * -1)`), celle de l'entrée par le `transform` de Motion : les deux se composent.
+
+- [ ] **Step 4: Ruban adhésif et état final sans JS** — dans `globals.css` :
+
+```css
+@utility fiche-tape {
   &::before {
     content: "";
     position: absolute;
-    inset-block: 0;
-    left: calc(var(--sheet-x) - 40 * var(--cell));
-    right: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: linear-gradient(to right, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px);
-    background-size: var(--cell) 100%;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset-block: 0;
-    left: calc(var(--sheet-x) + var(--margin-index) * var(--cell));
-    width: 2px;
-    z-index: -1;
-    pointer-events: none;
-    background-color: var(--color-annotation);
-  }
-
-  @media (width >= 48rem) {
-    --margin-index: 2;
-  }
-
-  @media (width >= 64rem) {
-    --margin-index: 3;
-  }
-}
-
-/* 78rem = 39 carreaux : centré, son bord gauche tombe sur une verticale.
- * Padding gauche = marge + ½ carreau (mobile), + 1 carreau (md, lg). */
-@utility container {
-  margin-inline: auto;
-  width: 100%;
-  max-width: 78rem;
-  padding-left: 3rem;
-  padding-right: 1rem;
-
-  @media (width >= 48rem) {
-    padding-left: 6rem;
-    padding-right: 4rem;
-  }
-
-  @media (width >= 64rem) {
-    padding-left: 8rem;
+    top: -0.75rem;
+    left: -1rem;
+    width: 5rem;
+    height: 1.5rem;
+    rotate: -30deg;
+    background-color: color-mix(in srgb, var(--color-note) 55%, transparent);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--color-foreground) 12%, transparent);
   }
 }
 ```
 
-Source nesting dans `@utility` : https://tailwindcss.com/docs/adding-custom-styles#adding-custom-utilities (exemple `&::-webkit-scrollbar`). Après build, vérifier dans `apps/landing/.next/static/chunks/*.css` que `.bg-seyes::before`, `.bg-seyes::after` et les deux `@media` de `--margin-index` sont émis ; sinon, sortir les pseudo-éléments en `@layer components { .bg-seyes::before { … } }` et le signaler dans le rapport.
-
-- [ ] **Step 2: Supprimer les calques fixes** — dans `app/layout.tsx`, supprimer les lignes :
+Dans `app/layout.tsx`, en tête de `<body>` :
 
 ```tsx
-            <div aria-hidden="true" className="bg-notebook pointer-events-none fixed inset-0 -z-50" />
-            <div aria-hidden="true" className="pointer-events-none fixed inset-y-0 left-6 -z-40 hidden w-0.5 bg-annotation/70 md:block lg:left-10" />
+<noscript>
+  <style>{"[data-reveal]{opacity:1!important;transform:none!important}"}</style>
+</noscript>
 ```
 
-- [ ] **Step 3: Chaque section devient une feuille** — remplacer la `className` de la racine `<section>` :
+Vérifier sur le HTML du build que la règle est émise : `curl -s localhost:3011/cgu | grep -c 'data-reveal\]{opacity'` doit valoir 1. Sinon, passer par `dangerouslySetInnerHTML={{ __html: "<style>…</style>" }}` sur le `<noscript>`, comme le JSON-LD voisin, et le dire dans le rapport.
 
-| Fichier | Avant | Après |
-|---|---|---|
-| `sections/hero.tsx:20` | `flex min-h-[calc(100svh-4rem)] items-center py-16 lg:py-24` | `bg-seyes flex min-h-[calc(100svh-4rem)] items-center py-16 lg:py-24` |
-| `sections/problem.tsx:6` | `border-y border-border bg-secondary py-20` | `bg-seyes py-20` |
-| `sections/how-it-works.tsx:38` | `scroll-mt-20 py-24 lg:py-32` | `bg-seyes scroll-mt-20 py-24 lg:py-32` |
-| `sections/input-modes.tsx:12` | `pb-24 lg:pb-32` | `bg-seyes pb-24 lg:pb-32` |
-| `sections/parents.tsx:15` | `scroll-mt-20 bg-secondary py-24 lg:py-32` | `bg-seyes scroll-mt-20 py-24 lg:py-32` |
-| `sections/trust.tsx:14` | `py-24 lg:py-32` | `bg-seyes py-24 lg:py-32` |
-| `sections/pricing.tsx:36` | `scroll-mt-20 py-24 lg:py-32` | `bg-seyes scroll-mt-20 py-24 lg:py-32` |
-| `sections/faq.tsx:14` | `scroll-mt-20 bg-secondary py-24 lg:py-32` | `bg-seyes scroll-mt-20 py-24 lg:py-32` |
-| `sections/cta.tsx:5` | `scroll-mt-20 py-24` | `bg-seyes scroll-mt-20 py-24` |
+- [ ] **Step 5: `FadeIn`** — ajouter `data-reveal=""` à son `motion.div`.
 
-- [ ] **Step 4: Pages secondaires** — dans `components/layout/page-layout.tsx` :
+- [ ] **Step 6: Relancer** — `test:grid` : exit=0, 60 tests passés. Si un test « reduced motion » échoue sur un `transform` identité écrit autrement que `none` (`matrix(1, 0, 0, 1, 0, 0)`), accepter aussi cette valeur dans `hiddenReveals` et le justifier dans le rapport.
 
-```tsx
-    <div className="bg-seyes min-h-[calc(100vh-4rem)] py-12 md:py-24">
-      <FadeIn className={`container ${maxWidth === "5xl" ? "max-w-5xl" : "max-w-4xl"}`}>
+- [ ] **Step 7: Valider et commiter**
+
+```bash
+git -C $W add apps/landing/components/notebook/fiche.tsx apps/landing/components/atoms/fade-in.tsx apps/landing/app/layout.tsx apps/landing/app/globals.css apps/landing/tests/grid.spec.ts
+git -C $W commit -m "feat(landing): pasted card component, visible without JavaScript"
 ```
-
-(`px-4` et `overflow-hidden` retirés : `bg-seyes` clippe déjà en x, et le `px-4` écrasait le padding aligné.)
-
-- [ ] **Step 5: Vérifier qu'aucun reste n'existe** : `grep -rnE "bg-notebook|bg-secondary py|border-y" $W/apps/landing/app $W/apps/landing/components` → aucune ligne (exit 1).
-
-- [ ] **Step 6: Preuve de rendu** : `pnpm --dir $W --filter landing build` → 0 ; `grep -o "bg-seyes" $W/apps/landing/.next/server/app/index.html | wc -l` → 9 ; et la présence de `.bg-seyes:after` (ou `::after`) dans le CSS compilé.
-
-- [ ] **Step 7: Commit** : typecheck + lint + build à 0, fichiers un par un ; `feat(landing): Seyès sheet and margin painted per section`.
 
 ---
 
-### Task 3: Rythme vertical — hauteurs de ligne, ligne de base, espacements, cartes
+### Task 4: Texte composé des pages secondaires sur des fiches
 
 **Files:**
-- Modify: `apps/landing/app/globals.css` (`@theme` des hauteurs de ligne, règle de ligne de base)
-- Modify: `apps/landing/components/sections/{hero,problem,how-it-works,input-modes,parents,pricing,faq}.tsx`, `components/atoms/section-header.tsx`, `components/molecules/mobile-cta-bar.tsx`
+- Modify: `apps/landing/components/layout/page-layout.tsx`
+- Modify: `apps/landing/app/aide/page.tsx`, `apps/landing/app/contact/page.tsx`, `apps/landing/app/faq/page.tsx`, `apps/landing/app/cgu/page.tsx`, `apps/landing/app/confidentialite/page.tsx`, `apps/landing/app/mentions-legales/page.tsx`
+- Test: `apps/landing/tests/grid.spec.ts`
 
 **Interfaces:**
-- Consumes: `bg-seyes`, `container` (Task 2).
-- Produces: variable héritée `--ink-ad` ; tout `p`, `h1`-`h6`, `dt`, `dd`, `blockquote` est décalé pour poser sa ligne de base sur le bas de sa ligne. Les PR suivantes n'ajoutent pas de `leading-*` et utilisent des espacements pairs.
+- Consumes: `NotebookSheet` (Task 1), `FaqList` (Task 2), `Fiche` (Task 3), `SECONDARY`, `settle` (Task 1).
 
-- [ ] **Step 1: Hauteurs de ligne multiples de 8** — dans `globals.css`, après les `@import` :
+- [ ] **Step 1: Écrire le test qui échoue** — dans `grid.spec.ts`, ajouter :
 
-```css
-@theme {
-  --text-xs--line-height: 1rem;
-  --text-sm--line-height: 1.5rem;
-  --text-base--line-height: 1.5rem;
-  --text-lg--line-height: 2rem;
-  --text-xl--line-height: 2rem;
-  --text-2xl--line-height: 2rem;
-  --text-3xl--line-height: 2.5rem;
-  --text-4xl--line-height: 3rem;
-  --text-5xl--line-height: 3.5rem;
-  --text-6xl--line-height: 4rem;
-  --text-7xl--line-height: 5rem;
-  --text-8xl--line-height: 6rem;
+```ts
+function textOffCards(page: Page) {
+  return page.evaluate(() => {
+    const loose: string[] = [];
+    const walker = document.createTreeWalker(document.querySelector("main") ?? document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent?.trim();
+      const parent = node.parentElement;
+      if (!text || !parent || parent.closest('[aria-hidden="true"], script, style, noscript')) continue;
+      if (parent.getClientRects().length === 0) continue;
+      if (!parent.closest("[data-fiche]")) loose.push(text.slice(0, 40));
+    }
+    return loose;
+  });
+}
+
+for (const path of SECONDARY) {
+  test(`${path} keeps its typed text on cards`, async ({ page }) => {
+    await page.goto(path);
+    await settle(page);
+    expect(await textOffCards(page)).toEqual([]);
+  });
 }
 ```
 
-Source : https://tailwindcss.com/docs/font-size#customizing-your-theme (`--text-*--line-height`).
+- [ ] **Step 2: Lancer, vérifier l'échec** — les six tests échouent (titres de `SectionHeader` et textes posés sur la feuille).
 
-- [ ] **Step 2: Ligne de base sur la ligne** — dans le `@layer base` existant de `globals.css`, remplacer `body { @apply bg-background font-sans text-foreground antialiased; }` par :
+- [ ] **Step 3: `PageLayout`** — dans la feuille de Task 1, le `FadeIn` contient une seule `<Fiche tilt="none">` qui porte le `SectionHeader` (`align="left"`, `className="mb-8"`) puis `children`. Les pages ne posent plus leur propre carte.
 
-```css
-  /* (ascent − |descent|) / unitsPerEm, @capsizecss/metrics 4.3.0 :
-   * Figtree 950/250/1000, Fraunces 1956/510/2000. */
-  body {
-    --ink-ad: 0.7;
-    @apply bg-background font-sans text-foreground antialiased;
-  }
+- [ ] **Step 4: Pages**
+  - Pages légales et contact : retirer la `div` carte (`rounded-2xl bg-card … ring-1 ring-border`) autour du contenu ; garder `legal-copy` et le contenu tels quels.
+  - `/aide` : le bloc « Une question ? » perd sa carte ; `<FaqList />` le suit, avec `mt-12`, dans la même fiche.
+  - `/faq` : `PageLayout` (`title="Questions fréquentes"`, `description` reprise de la métadonnée de la page) avec `<FaqList />` puis la ligne « Vous avez une autre question ? Contactez-nous » ; la `NotebookSheet` posée en Task 1 disparaît au profit de celle de `PageLayout`.
 
-  h1, h2, h3, h4, h5, h6, .font-heading {
-    --ink-ad: 0.723;
-  }
+- [ ] **Step 5: Relancer** — `test:grid` : exit=0, 66 tests passés.
 
-  /* Décale chaque bloc pour que la ligne de base tombe sur le bas de sa ligne,
-   * donc sur une ligne de la réglure quand le bloc démarre sur une ligne. */
-  p, h1, h2, h3, h4, h5, h6, dt, dd, blockquote {
-    position: relative;
-    top: calc(0.5lh - var(--ink-ad) * 0.5em);
-  }
+- [ ] **Step 6: Valider et commiter**
+
+```bash
+git -C $W add apps/landing/components/layout/page-layout.tsx apps/landing/app/aide/page.tsx apps/landing/app/contact/page.tsx apps/landing/app/faq/page.tsx apps/landing/app/cgu/page.tsx apps/landing/app/confidentialite/page.tsx apps/landing/app/mentions-legales/page.tsx apps/landing/tests/grid.spec.ts
+git -C $W commit -m "feat(landing): secondary pages set their text on pasted cards"
 ```
-
-Garder le bloc `h1, h2, … { @apply font-heading tracking-tight; }` existant. Source `lh` : https://developer.mozilla.org/en-US/docs/Web/CSS/length#lh ; support : https://web-platform-dx.github.io/web-features-explorer/features/lh/ (Chrome 109, Firefox 120, Safari 16.4).
-
-- [ ] **Step 3: Retirer les `leading-*`** — supprimer la classe (et elle seule) à ces emplacements :
-
-| Fichier:ligne | Classe retirée |
-|---|---|
-| `components/layout/footer.tsx:14` | `leading-relaxed` (fichier réécrit en Task 4 : sauter si déjà fait) |
-| `components/sections/faq.tsx:61` | `leading-relaxed` |
-| `components/sections/hero.tsx:23` | `leading-tight` |
-| `components/sections/hero.tsx:39` | `leading-relaxed` |
-| `components/sections/problem.tsx:8` | `leading-snug` |
-| `components/sections/how-it-works.tsx:49` | `leading-relaxed` |
-| `app/contact/page.tsx:36` | `leading-relaxed` (bloc supprimé en Task 4 : sauter) |
-
-`components/sections/chat-demo.tsx` n'est pas touché : il disparaît en PR 4.
-
-- [ ] **Step 4: Espacements pairs** :
-
-| Fichier | Avant | Après |
-|---|---|---|
-| `components/atoms/section-header.tsx` | `mb-3` | `mb-4` |
-| `components/sections/how-it-works.tsx` | `mb-3` | `mb-4` |
-| `components/sections/pricing.tsx` | `space-y-3` | `space-y-4` |
-| `components/sections/pricing.tsx` | `mt-0.5` | *(retiré)* |
-| `components/sections/pricing.tsx` | `gap-3` | `gap-4` |
-| `components/sections/parents.tsx` | `mt-1` | `mt-2` |
-| `components/sections/parents.tsx` | `mb-1` | `mb-2` |
-| `components/sections/input-modes.tsx` | `mt-1` | `mt-2` |
-| `components/molecules/mobile-cta-bar.tsx` | `p-3` | `p-4` |
-
-| `components/sections/hero.tsx:20` | `items-center` | `items-start` (un centrage vertical place le texte à une hauteur arbitraire ; la section garde sa hauteur plein écran) |
-| `components/sections/hero.tsx:21` | `items-center` (grille du conteneur) | `items-start` |
-
-Tout bouton posé dans le flux du texte (pas dans une rangée avec d'autres éléments plus hauts) prend `size="lg"` (48 px) : une hauteur de 44 px décalerait tout ce qui suit.
-
-Puis : `grep -rnoE "\b(m[tby]?|p[tby]?|space-y|gap-y)-(1|3|5|7|9|11|0\.5|1\.5|2\.5|3\.5)\b" $W/apps/landing/app $W/apps/landing/components --include=*.tsx | grep -v chat-demo` → seules restent les occurrences de `footer.tsx`, `contact/page.tsx` et `aide/page.tsx` (réécrits en Task 4) ; `gap-*` sur une rangée horizontale (`flex` sans `flex-col`) est permis.
-
-- [ ] **Step 5: Cartes en `ring`** :
-
-| Fichier:ligne | Avant | Après |
-|---|---|---|
-| `sections/input-modes.tsx:14` | `rounded-2xl border border-border bg-card` | `rounded-2xl bg-card shadow-sm ring-1 ring-border` |
-| `sections/faq.tsx:25` | `bg-card border border-border rounded-2xl overflow-hidden transition-colors duration-base hover:border-primary` | `bg-card rounded-2xl overflow-hidden shadow-sm ring-1 ring-border transition-shadow duration-base hover:ring-primary` |
-| `sections/parents.tsx:28` | `rounded-2xl border border-border bg-card` | `rounded-2xl bg-card shadow-sm ring-1 ring-border` |
-| `sections/pricing.tsx:48` | `rounded-2xl border bg-card p-8` | `rounded-2xl bg-card p-8 shadow-sm` |
-| `sections/pricing.tsx:49` | `plan.featured ? "border-2 border-primary" : "border-border"` | `plan.featured ? "ring-2 ring-primary" : "ring-1 ring-border"` |
-
-- [ ] **Step 6: Contrôle** : `grep -rnE "\bborder(-[xytb])?\b [^\"]*border-border|border-2|leading-" $W/apps/landing/components --include=*.tsx | grep -v chat-demo | grep -v "layout/header\|layout/footer"` → aucune ligne. (Header : PR 2 ; footer : Task 4.)
-
-- [ ] **Step 7: Commit** : typecheck + lint + build à 0, fichiers un par un ; `feat(landing): baseline rhythm on the Seyès rules`.
 
 ---
 
-### Task 4: Footer en 4e de couverture, pages légales, contact et aide honnêtes
+### Task 5: Règles, suivi et passe visuelle
 
 **Files:**
-- Modify: `apps/landing/app/globals.css` (utilitaire `legal-copy`)
-- Modify: `apps/landing/components/layout/footer.tsx` (réécriture)
-- Modify: `apps/landing/app/{cgu,confidentialite,mentions-legales}/page.tsx`
-- Modify: `apps/landing/app/contact/page.tsx`, `apps/landing/app/aide/page.tsx`
-
-**Interfaces:**
-- Consumes: `bg-seyes`, `container`, `--ink-ad` (Tasks 2-3) ; `BRAND_NAME` (`@/lib/brand`).
-- Produces: utilitaire `legal-copy`.
-
-- [ ] **Step 1: Utilitaire `legal-copy`** — dans `globals.css`, après `@utility container` :
-
-```css
-@utility legal-copy {
-  color: var(--color-muted-foreground);
-
-  & h3 {
-    margin-top: 2rem;
-    margin-bottom: 0.5rem;
-    font-size: var(--text-xl);
-    line-height: 2rem;
-    font-weight: 600;
-    color: var(--color-foreground);
-  }
-
-  & h3:first-child {
-    margin-top: 0;
-  }
-
-  & p,
-  & ul {
-    margin-bottom: 1rem;
-  }
-
-  & ul {
-    list-style: disc;
-    padding-left: 1.5rem;
-  }
-
-  & li {
-    position: relative;
-    top: calc(0.5lh - var(--ink-ad) * 0.5em);
-    margin-bottom: 0.5rem;
-  }
-
-  & a {
-    color: var(--color-primary);
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
-
-  & strong {
-    font-weight: 600;
-    color: var(--color-foreground);
-  }
-}
-```
-
-Avant d'écrire : `grep -nE "<li>\s*<p|<h2|<h4|<table" $W/apps/landing/app/{cgu,confidentialite,mentions-legales}/page.tsx` ; si un `li` contient un `p` (double décalage) ou si un autre niveau de titre existe, l'ajouter au style et le signaler.
-
-- [ ] **Step 2: Pages légales** — dans chacun des trois fichiers, remplacer :
-
-```tsx
-      <div className="rounded-2xl border border-border bg-card p-8 md:p-12">
-        <div className="prose prose-slate max-w-none prose-headings:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
-```
-
-(la seconde ligne peut différer légèrement selon le fichier : remplacer la `className` entière de ce `div` interne) par :
-
-```tsx
-      <div className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-border md:p-12">
-        <div className="legal-copy">
-```
-
-Puis remplacer chaque `contact@tomai.fr` par `contact@tomia.fr` (`cgu`, `confidentialite`) : `grep -rn "tomai\.fr" $W/apps/landing` → aucune ligne à la fin de la tâche.
-
-- [ ] **Step 3: Footer** — remplacer tout `components/layout/footer.tsx` par :
-
-```tsx
-import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
-
-const LINK_GROUPS = [
-  {
-    title: "Produit",
-    links: [
-      { href: "/#how-it-works", label: "Comment ça marche" },
-      { href: "/#parents", label: "Parents" },
-      { href: "/#pricing", label: "Tarifs" },
-    ],
-  },
-  {
-    title: "Aide",
-    links: [
-      { href: "/aide", label: "Centre d'aide" },
-      { href: "/contact", label: "Contact" },
-    ],
-  },
-  {
-    title: "Légal",
-    links: [
-      { href: "/confidentialite", label: "Confidentialité" },
-      { href: "/cgu", label: "CGU" },
-      { href: "/mentions-legales", label: "Mentions légales" },
-    ],
-  },
-] as const;
-
-export function Footer() {
-  return (
-    <footer className="bg-primary text-primary-foreground">
-      <div className="container py-16 md:py-20">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
-          <div className="space-y-4">
-            <p className="font-heading text-2xl font-semibold">{BRAND_NAME}</p>
-            <p className="max-w-xs text-sm text-primary-foreground/80">
-              L&apos;assistant qui aide les collégiens à comprendre leurs leçons, sans faire leurs exercices à leur place.
-            </p>
-            <ul className="space-y-2 text-sm text-primary-foreground/80">
-              <li>Hébergé dans l&apos;Union européenne</li>
-              <li>Sans publicité</li>
-              <li>Dans le navigateur, sur ordinateur, tablette ou téléphone</li>
-            </ul>
-          </div>
-
-          {LINK_GROUPS.map((group) => (
-            <nav key={group.title} aria-label={group.title}>
-              <p className="mb-4 text-sm font-semibold">{group.title}</p>
-              <ul className="space-y-2 text-sm">
-                {group.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="inline-flex min-h-11 items-center text-primary-foreground/80 underline-offset-4 transition-colors duration-base hover:text-primary-foreground hover:underline"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
-        </div>
-
-        <p className="mt-12 text-sm text-primary-foreground/80">
-          © {new Date().getFullYear()} {BRAND_NAME}. Tous droits réservés.
-        </p>
-      </div>
-    </footer>
-  );
-}
-```
-
-Vérifier au calcul que `primary-foreground` à 80 % sur `primary` dépasse 4.5:1 (mélange ≈ `#D2D9EC` sur `#1F3F9E`) et reporter le ratio dans le rapport ; s'il est sous 4.5, passer à `/90`. Le focus des liens sur fond bleu : l'anneau `ring-ring` (bleu) est invisible sur `primary` ; ajouter à la `className` du `Link` : `focus-visible:ring-primary-foreground focus-visible:ring-offset-primary`.
-
-- [ ] **Step 4: Contact** — remplacer tout `app/contact/page.tsx` par :
-
-```tsx
-import { PageLayout } from "@/components/layout/page-layout";
-import { Button } from "@repo/ui";
-
-const CONTACT_EMAIL = "contact@tomia.fr";
-
-export default function ContactPage() {
-  return (
-    <PageLayout title="Contactez-nous" description="Une question, une suggestion ? Écrivez-nous.">
-      <div className="mx-auto mt-12 max-w-xl rounded-2xl bg-card p-8 text-center shadow-sm ring-1 ring-border">
-        <h3 className="mb-4 text-2xl font-semibold">Par email</h3>
-        <p className="mb-8 text-muted-foreground">Nous lisons chaque message.</p>
-        <Button asChild size="lg">
-          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-        </Button>
-      </div>
-    </PageLayout>
-  );
-}
-```
-
-- [ ] **Step 5: Aide** — dans `app/aide/page.tsx` : supprimer l'import `MessageCircle` ; remplacer le bloc carte (du `div` `group rounded-2xl …` jusqu'à sa fermeture) par :
-
-```tsx
-        <div className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-border md:p-12">
-          <h3 className="mb-4 text-2xl font-semibold">Une question sur {BRAND_NAME} ?</h3>
-          <p className="mx-auto mb-8 max-w-md text-muted-foreground">
-            Écrivez-nous : nous lisons chaque message.
-          </p>
-          <Button size="lg" asChild>
-            <Link href="/contact">Nous écrire</Link>
-          </Button>
-        </div>
-```
-
-avec `import { BRAND_NAME } from "@/lib/brand";`, et remplacer `description="Trouvez les réponses à vos questions et apprenez à utiliser Tom."` par `description={`Les réponses aux questions fréquentes sur ${BRAND_NAME}.`}`. Le wrapper `max-w-3xl mx-auto mb-24 text-center` reste.
-
-- [ ] **Step 6: Contrôle** : `grep -rnE "tomai\.fr|24 ?h|équipe( de)? support|Notre équipe" $W/apps/landing/app $W/apps/landing/components` → aucune ligne ; `grep -rn "lucide-react" $W/apps/landing/components/layout/footer.tsx $W/apps/landing/app/aide/page.tsx $W/apps/landing/app/contact/page.tsx` → aucune ligne.
-
-- [ ] **Step 7: Commit** : typecheck + lint + build à 0, fichiers un par un ; `feat(landing): notebook back cover, legal typography, honest contact`.
-
----
-
-### Task 5: Script de contrôle de la grille et passe de vérification
-
-**Files:**
-- Create: `apps/landing/scripts/check-grid.js`
+- Modify: `.claude/rules/testing-and-commits.md`
 - Modify: `docs/superpowers/suivi.md`
+- Modify: toute mention vivante de `bg-seyes`, du rythme `lh` ou de Capsize, hors specs et plans datés (repérage : `grep -rln "bg-seyes\|ink-ad\|capsize" $W/.claude $W/apps/landing --include=*.md`)
 
-**Interfaces:**
-- Consumes: `bg-seyes`, `container`, règle de ligne de base (Tasks 2-4).
-- Produces: `check-grid.js`, réutilisé par les PR 2 à 5 (chaque passe visuelle l'exécute).
+- [ ] **Step 1: Règle de test** — dans `.claude/rules/testing-and-commits.md`, ligne Landing : prérequis unique `pnpm --filter landing exec playwright install chromium`, et ce que couvre `test:grid` (feuille, bornes, fiches, sans JS, mouvement réduit).
 
-- [ ] **Step 1: Écrire le script** — `apps/landing/scripts/check-grid.js` :
+- [ ] **Step 2: Suivi** — dans `docs/superpowers/suivi.md`, section « Hors lot 0 » : la ligne PR 1 décrit la feuille unique et les fiches ; ajouter trois lignes « à faire » — PR 2 Couvertures, PR 3 Écriture, PR 4 Sections — plan « à écrire au démarrage ». Au journal, compléter l'entrée 2026-09-23 : pivot « fiches collées », couvertures, spec révisée (`4e84b94`), commits remplacés (`041f884`, `e901312`).
 
-```js
-// Contrôle de la réglure, à exécuter dans la page (console ou javascript_tool) après
-// chargement des polices et fin des animations. Retourne { checked, problems }.
-async function checkGrid({ rule = 8, cell = 32, sheet = 1248, tolerance = 1 } = {}) {
-  await document.fonts.ready;
-  const problems = [];
-  let checked = 0;
-  const offGrid = (value, step) => {
-    const r = ((value % step) + step) % step;
-    return Math.min(r, step - r) > tolerance;
-  };
-  const baselineOf = (el) => {
-    const probe = document.createElement("span");
-    probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
-    el.prepend(probe);
-    const y = probe.getBoundingClientRect().top;
-    probe.remove();
-    return y;
-  };
-  for (const section of document.querySelectorAll(".bg-seyes")) {
-    const box = section.getBoundingClientRect();
-    const sheetX = Math.max(0, (section.clientWidth - sheet) / 2);
-    const marginLeft = parseFloat(getComputedStyle(section, "::after").left);
-    if (offGrid(marginLeft - sheetX, cell)) {
-      problems.push({ kind: "margin", section: section.id || section.className, marginLeft, sheetX });
-    }
-    for (const el of section.querySelectorAll("p, h1, h2, h3, h4, h5, h6, dt, dd, blockquote, .legal-copy li")) {
-      if (!el.textContent.trim() || el.getClientRects().length === 0) continue;
-      if (el.closest("[aria-hidden='true']")) continue;
-      checked += 1;
-      const y = baselineOf(el) - box.top;
-      if (offGrid(y, rule)) {
-        problems.push({ kind: "baseline", text: el.textContent.trim().slice(0, 40), y: Math.round(y * 10) / 10 });
-      }
-      if (el.getBoundingClientRect().left < box.left + marginLeft + 2) {
-        problems.push({ kind: "over-margin", text: el.textContent.trim().slice(0, 40) });
-      }
-    }
-  }
-  return { checked, problems };
-}
+- [ ] **Step 3: Passe visuelle** — build puis `next start --port 3011` ; captures Playwright de `/`, `/aide`, `/cgu` à 375, 768 et 1440, sous mouvement réduit et normal ; chemins dans le rapport. Arrêter le serveur par son PID.
+
+- [ ] **Step 4: Valider et commiter** — typecheck, lint, build, `test:grid` (codes de sortie lus), puis :
+
+```bash
+git -C $W add .claude/rules/testing-and-commits.md docs/superpowers/suivi.md
+git -C $W commit -m "docs: record the one-sheet foundations and the notebook PR sequence"
 ```
-
-Le `style.cssText` est dans un outil de contrôle, pas dans l'application : l'exception « pas de style inline » ne s'applique qu'au code livré (`app/`, `components/`).
-
-- [ ] **Step 2: Passe de vérification** (agent de vérification avec les outils Chrome, `pnpm --dir $W --filter landing dev` sur :3001) :
-  1. Injecter `check-grid.js` et l'exécuter sur `/`, `/aide`, `/contact`, `/cgu`, `/confidentialite`, `/mentions-legales` à 1440 px (onglet), puis dans des iframes same-origin de largeur 375, 768, 1024, 1260 (`iframe.contentWindow.eval(source)` puis `await iframe.contentWindow.checkGrid()`), sous émulation `prefers-reduced-motion: reduce` si disponible, sinon après 3 s de stabilisation. Attendu : `problems` vide partout, `checked` > 0.
-  2. Zoom : dans l'iframe 1024, `document.documentElement.style.fontSize = "20px"` puis `checkGrid({ rule: 10, cell: 40, sheet: 1560 })` → marge sur une verticale (`kind: "margin"` absent).
-  3. Captures : hero, Problème, Parents, FAQ, footer, une page légale, à 1440 et 375 ; la marge rouge traverse chaque section, le fond est blanc, aucune bande.
-  4. Clavier : focus visible sur les liens du footer bleu.
-  5. Tout `problems` non vide est corrigé (espacement impair restant, bordure, hauteur non multiple de 8), avec un commit `fix(landing): …` par cause, puis la passe est rejouée.
-
-- [ ] **Step 3: `suivi.md`** — dans `docs/superpowers/suivi.md`, section « Hors lot 0 », ajouter une ligne pour `feat/landing-copie-corrigee` (PR 1 fondations, état « ouverte » au push) et une entrée de journal datée du jour : feuille Seyès, papier blanc, rythme de ligne de base, footer couverture, contact `contact@tomia.fr`.
-
-- [ ] **Step 4: Commit** : `git -C $W add apps/landing/scripts/check-grid.js`, puis `docs/superpowers/suivi.md` ; message `test(landing): grid and baseline checker, track the foundations PR`.

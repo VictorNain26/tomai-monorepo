@@ -55,11 +55,11 @@ Livrés (commit `f227e6b`) : `background` `#FCFCFA`, `card` `#FFFFFF`, `note` `#
 `input` `#7F8BB8` (3,25:1, WCAG 1.4.11), ratios prouvés par
 `packages/tokens/contrast.test.mjs`. Le bureau autour du cahier utilise `secondary`.
 
-### Feuille (`apps/landing/app/globals.css`, `components/notebook/sheet.tsx`)
+### Feuille (`apps/landing/app/globals.css`, `components/notebook/notebook-sheet.tsx`)
 
 - `--cell: 2rem`, `--rule: 0.5rem`, `--band: 6rem` (4rem en mobile), `--margin-x: 6rem`
   (3.5rem en mobile).
-- Une feuille = un composant `Sheet` (fond `background`, `display: flow-root`) portant
+- Une feuille = un composant `NotebookSheet` (le `Sheet` de shadcn sert au menu mobile ; fond `background`, `display: flow-root`) portant
   trois calques décoratifs `aria-hidden` :
   - horizontales : fortes tous les `--cell`, fines tous les `--rule`, sur toute la largeur,
     à partir de `--band` pour la première et la dernière feuille ;
@@ -188,7 +188,7 @@ pas de dépendance runtime nouvelle.
 
 Quatre PR courtes, empilées sur `feat/landing-cahier-annote-pages` :
 
-1. Fondations : `Sheet` une fois par page, `Fiche`, retrait du rythme `lh` et de la
+1. Fondations : `NotebookSheet` une fois par page, `Fiche`, retrait du rythme `lh` et de la
    réglure par section, débordement des tarifs, feuille imbriquée de `/aide`.
 2. Couvertures : ouverture, fermeture, en-tête collant.
 3. Écriture : Caveat, `Hand`, date en marge, première page et exercice.
