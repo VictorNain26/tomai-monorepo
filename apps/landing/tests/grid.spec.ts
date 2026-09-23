@@ -133,6 +133,38 @@ test.describe("without JavaScript", () => {
   });
 });
 
+test("/cgu at 1441px keeps legal lines within 85 characters", async ({ page }) => {
+  await page.setViewportSize({ width: 1441, height: HEIGHT });
+  await page.goto("/cgu");
+  await settle(page);
+  const longest = await page.evaluate(() => {
+    let max = 0;
+    const range = document.createRange();
+    for (const p of document.querySelectorAll(".legal-copy p")) {
+      const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+      let top: number | null = null;
+      let count = 0;
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        for (let i = 0; i < (node.textContent ?? "").length; i++) {
+          range.setStart(node, i);
+          range.setEnd(node, i + 1);
+          const rect = range.getClientRects()[0];
+          if (!rect || rect.width === 0) continue;
+          if (top !== null && Math.abs(rect.top - top) > 4) {
+            max = Math.max(max, count);
+            count = 0;
+          }
+          top = rect.top;
+          count++;
+        }
+      }
+      max = Math.max(max, count);
+    }
+    return max;
+  });
+  expect(longest).toBeLessThanOrEqual(85);
+});
+
 test("/aide at 375px keeps each FAQ question within three lines", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: HEIGHT });
   await page.goto("/aide");

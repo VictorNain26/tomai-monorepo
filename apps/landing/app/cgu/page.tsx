@@ -6,6 +6,7 @@ export default function CguPage() {
     <PageLayout
       title="Conditions Générales d'Utilisation"
       description="Dernière mise à jour : 22 septembre 2026"
+      maxWidth="3xl"
     >
       <div className="legal-copy">
         <h3>1. Objet</h3>

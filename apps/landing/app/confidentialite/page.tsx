@@ -6,6 +6,7 @@ export default function ConfidentialitePage() {
     <PageLayout
       title="Politique de Confidentialité"
       description="Dernière mise à jour : 22 septembre 2026"
+      maxWidth="3xl"
     >
       <div className="legal-copy">
         <p>

@@ -2,7 +2,7 @@ import { PageLayout } from "@/components/layout/page-layout";
 
 export default function MentionsLegalesPage() {
   return (
-    <PageLayout title="Mentions Légales">
+    <PageLayout title="Mentions Légales" maxWidth="3xl">
       <div className="legal-copy">
         <h3>Éditeur du site</h3>
         <p>
