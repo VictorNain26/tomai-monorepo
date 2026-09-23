@@ -40,9 +40,9 @@ le schéma en local.
 
 ## `.env` minimal qui suffit à booter
 
-Auth et DB sont les seules variables requises ; tout le reste est incrémental —
-les features AI et billing échouent à l'usage tant que leur variable manque,
-mais le serveur démarre.
+Auth et DB sont les seules variables requises (`apps/server/src/config/env.ts`) ;
+tout le reste est incrémental — une feature (IA, stockage, Google OAuth) échoue à
+l'usage tant que sa variable manque, mais le serveur démarre.
 
 ```
 NODE_ENV=development
@@ -53,7 +53,8 @@ DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
 DATABASE_URL_EXTERNAL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
 ```
 
-Un `/health` en `degraded` sans `MISTRAL_API_KEY` est **normal** en local.
+Sans `MISTRAL_API_KEY`, `/health` reste `healthy` (il ne sonde que la base) ;
+c'est `/health/ai` qui répond 503.
 
 ## Ce que `pnpm dev` attend réellement
 
@@ -68,7 +69,7 @@ L'image backend iso-prod reste disponible en opt-in via
 ## Diagnostic
 
 ```bash
-pnpm doctor        # PASS/FAIL/SKIP par dépendance
+pnpm run doctor    # PASS/FAIL/SKIP par dépendance
 pnpm doctor:e2e    # strict : un SKIP compte comme un échec
 ```
 

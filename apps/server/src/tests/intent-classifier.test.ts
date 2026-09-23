@@ -2,10 +2,8 @@
  * Tests unitaires - Intent Classifier Service
  * Mock: Mistral client (lib/ai/mistral-client) + logger + app config
  *
- * Service migré Phase 2B vers `mistral-small-2603` via
- * `generateStructured` du wrapper Mistral. JSON Schema strict garantit la
- * forme retournée — le test mocke directement la valeur parsée (pas du
- * string JSON brut).
+ * Le mock de `generateStructured` valide la réponse avec le schéma Zod passé
+ * par le service, comme le vrai client : une valeur hors schéma rejette.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
@@ -30,20 +28,19 @@ mock.module('../config/env', () => ({
   },
 }));
 
-// Mistral client mock — generateStructured retourne directement l'objet parsé
-// (JSON Schema strict garantit la forme côté Mistral).
-let mockStructuredResponse: { intent?: string; confidence?: string } | Error = {
+let mockStructuredResponse: { intent?: string; confidence?: string; subject?: string } | Error = {
   intent: 'explain-concept',
   confidence: 'high',
+  subject: 'mathematiques',
 };
 
 // Mock COMPLET du wrapper Mistral (toutes les exports) pour ne pas casser
 // d'autres tests qui partagent le même module-mock cache Bun et importeraient
 // `generateText`.
 mock.module('../lib/ai/mistral-client', () => ({
-  generateStructured: mock(async () => {
+  generateStructured: mock(async (opts: { schema: { parse: (value: unknown) => unknown } }) => {
     if (mockStructuredResponse instanceof Error) throw mockStructuredResponse;
-    return mockStructuredResponse;
+    return { object: opts.schema.parse(mockStructuredResponse), usage: { inputTokens: 0, outputTokens: 0 } };
   }),
   generateText: mock(async () => 'not-used-here'),
 }));
@@ -52,7 +49,7 @@ mock.module('../lib/ai/mistral-client', () => ({
 const { intentClassifierService } = await import('../services/chat/intent-classifier.service');
 
 beforeEach(() => {
-  mockStructuredResponse = { intent: 'explain-concept', confidence: 'high' };
+  mockStructuredResponse = { intent: 'explain-concept', confidence: 'high', subject: 'mathematiques' };
 });
 
 describe('Intent Classifier Service', () => {
@@ -89,7 +86,7 @@ describe('Intent Classifier Service', () => {
 
     it('should not short-circuit a 20-char greeting', async () => {
       // Longer messages go through Mistral even if they start with a greeting word.
-      mockStructuredResponse = { intent: 'explain-concept', confidence: 'medium' };
+      mockStructuredResponse = { intent: 'explain-concept', confidence: 'medium', subject: 'mathematiques' };
       const result = await intentClassifierService.classify('Bonjour, je bloque sur fractions', 'sixieme');
       expect(result.intent).toBe('explain-concept');
       expect(result.confidence).toBe('medium');
@@ -98,7 +95,7 @@ describe('Intent Classifier Service', () => {
 
   describe('classify() — Mistral path', () => {
     it('should parse a valid Mistral structured response', async () => {
-      mockStructuredResponse = { intent: 'solve-this-for-me', confidence: 'high' };
+      mockStructuredResponse = { intent: 'solve-this-for-me', confidence: 'high', subject: 'mathematiques' };
       const result = await intentClassifierService.classify(
         'Donne-moi la réponse à 3/4 + 2/5 stp',
         'cinquieme',
@@ -107,22 +104,26 @@ describe('Intent Classifier Service', () => {
       expect(result.confidence).toBe('high');
     });
 
-    it('should fall back to unknown on invalid intent value', async () => {
-      mockStructuredResponse = { intent: 'not-a-real-intent', confidence: 'high' };
+    it('should reject an invalid intent value and return the error fallback', async () => {
+      mockStructuredResponse = { intent: 'not-a-real-intent', confidence: 'high', subject: 'mathematiques' };
       const result = await intentClassifierService.classify(
         "Explique-moi le théorème de Pythagore",
         'quatrieme',
       );
       expect(result.intent).toBe('unknown');
+      expect(result.confidence).toBe('low');
+      expect(result.error).toBeDefined();
     });
 
-    it('should fall back to low confidence on invalid confidence value', async () => {
-      mockStructuredResponse = { intent: 'explain-concept', confidence: 'bogus' };
+    it('should reject an invalid confidence value and return the error fallback', async () => {
+      mockStructuredResponse = { intent: 'explain-concept', confidence: 'bogus', subject: 'mathematiques' };
       const result = await intentClassifierService.classify(
         "Explique-moi le théorème de Pythagore",
         'quatrieme',
       );
+      expect(result.intent).toBe('unknown');
       expect(result.confidence).toBe('low');
+      expect(result.error).toBeDefined();
     });
 
     it('should return unknown + error on Mistral throw', async () => {
@@ -135,10 +136,6 @@ describe('Intent Classifier Service', () => {
       expect(result.confidence).toBe('low');
       expect(result.error).toBe('mistral unavailable');
     });
-
-    // Note: avec JSON Schema strict côté Mistral, le payload malformé n'arrive
-    // pas au client — l'API rejette en amont. Le cas "intent inconnu" est
-    // couvert par le test "fall back to unknown on invalid intent value".
   });
 
   describe('buildReinforcement()', () => {

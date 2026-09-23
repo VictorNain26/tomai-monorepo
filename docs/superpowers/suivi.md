@@ -10,53 +10,72 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-09-22
+- **Dernière mise à jour :** 2026-09-23
 - **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** démarrer la PR E1 (`plans/2026-09-22-lot-0-e-code-reinvente.md`,
-  branche `refactor/replace-custom-ai-calls`) avec le skill
-  `superpowers:subagent-driven-development`.
+- **Prochaine action :** réécrire la section E2 de
+  `plans/2026-09-22-lot-0-e-code-reinvente.md` contre `main` (elle est marquée « à
+  réécrire au démarrage »), puis l'exécuter sur `refactor/replace-custom-infra` avec le
+  skill `superpowers:subagent-driven-development`.
 
-## Reporté depuis les PR A et B
+## Reporté
 
-Constats hors périmètre de A, à traiter dans la PR indiquée :
+Constats hors périmètre de la PR qui les a trouvés. Chacun nomme la PR ou le lot qui le
+traite ; quand le plan de cette PR s'écrit, le point y devient une tâche ou est renvoyé
+explicitement (`.claude/rules/plans-and-agents.md`).
 
-- **PR B** : l'override `'nanoid@5'` résout `nanoid@6` et son commentaire est faux ;
-  `.vscode/extensions.json` recommande encore `ruff`/`python`. La copie en `ArrayBuffer` de
-  `encryption.ts:51-53,72-73` est à revérifier.
-- **Surveillance** : le graphe de dépendances GitHub liste encore `apps/curriculum/uv.lock` et
-  `apps/ai-service/uv.lock` (supprimés en `8f5011f`, 0 dépendance) et y rattachait de nouvelles
-  alertes (#317 créée le 2026-09-19). Les 70 alertes ont été classées `inaccurate` le
-  2026-09-22. Si une alerte réapparaît sur ces chemins, ouvrir un ticket au support GitHub.
-  Dependabot ne sert qu'à détecter (alertes + graphe, source de `vulnerabilityAlerts`) ; ses
-  PR de version et de sécurité restent désactivées, Renovate ouvre toutes les PR.
-- **PR E (depuis la PR B)** : champs morts `IAppUser.parentId` (`packages/api/src/types.ts:23`)
-  et `ElysiaAuthenticatedUser.parentId` (`apps/server/src/types/index.ts:17`), exemple périmé
-  `pool-limiter.ts:57` ; `react@19.2.3` et un second `next` résolus comme peers optionnels de
-  better-auth côté serveur (`pnpm dedupe` à tenter) ; indice knip sur `ignoreBinaries` de
-  `apps/server/knip.json`.
-- **Plafonds de version à lever à la main** (Renovate ne les proposera pas) : TypeScript
-  `<6.1.0` tant que `typescript-eslint` exige `typescript <6.1.0` (TS 7 sans API JS avant
-  la 7.1, issue typescript-eslint #10940) ; `@types/node` `<25.0.0` tant que le runtime est
-  Node 24 (Vercel ne propose que 24.x, 22.x, 20.x ; Node 26 LTS le 2026-10-28).
-- **Lot 3** : colonnes RevenueCat de `family_billing`, enum `billing_status` et commentaires
-  de `billing.schema.ts` (dont `:179`) ; `app-guide-data.ts` à réécrire avec la navigation
-  web. Le code de `BillingService` et `plan-cache` se retrouve avec
+- **E2** (liste détaillée en tête de la section E2 du plan) : champs morts
+  `IAppUser.parentId` (`packages/api/src/types.ts`) et `ElysiaAuthenticatedUser.parentId`
+  (`apps/server/src/types/index.ts`) ; exemple périmé de `pool-limiter.ts` (supprimé par
+  E2.4) ; `react@19.2.3` et un second `next` résolus comme peers optionnels de better-auth
+  côté serveur (`pnpm dedupe` à tenter) ; `ignoreBinaries` et entrées `scripts/**` de
+  l'espace `apps/server` du `knip.json` racine, montage `./apps/server/scripts` de
+  `docker-compose.yml` (dossier supprimé) ; commentaires « mobile project » de
+  `apps/server/src/lib/encryption.ts` et utilité de sa copie `toArrayBuffer` ;
+  `TRUSTED_ORIGINS` lue par aucun fichier de `src/` ; `pnpm test:scripts` absent de la CI ;
+  `eslint-disable` antérieurs dans `apps/server/src` (surtout `await-thenable` et
+  `no-explicit-any` des tests Pronote, plus les repositories learning, `parent.service.ts`,
+  `education-levels.ts`, `seed-dev.ts`), à remplacer par une forme de code qui ne déclenche
+  pas la règle (`.catch((e: unknown) => e)` + `toBeInstanceOf`, comme en E1).
+- **Lot 2** : le quota compte `totalTokens` (tokens cachés et de raisonnement inclus) ;
+  observation, antérieure à C. Les cartes tournent en `json_schema` non strict
+  (`strict: false`) parce que le mode strict de Mistral refuse `format: uri` (`.url()`) et
+  `propertyNames` (`z.record`) de `cards-domain.schema.ts` (400, code 3051) : revoir ce
+  schéma avec le domaine des cartes pour repasser en strict ; la tâche E1.6 prévoyait de
+  modifier ce fichier, écarté en E1 (le schéma relève du domaine). En cas d'erreur, le span
+  OpenTelemetry d'un appel IA porte le message d'erreur Mistral (le corps de la réponse) :
+  vérifier qu'il ne contient pas de contenu d'élève avant de brancher un vrai exporteur.
+- **Lot 3** : colonnes RevenueCat de `family_billing`, enum `billing_status` et
+  commentaires de `billing.schema.ts` (dont `:179`) ; `app-guide-data.ts` à réécrire avec
+  la navigation web. Le code de `BillingService` et `plan-cache` se retrouve avec
   `git log --diff-filter=D -- apps/server/src/services/billing/`. Le coût est stocké en
   centimes entiers : un tour (~0,05 centime) s'arrondit à 0 ; à revoir avec la facturation
   web.
-- **PR E** : deux copies de `@ai-sdk/provider` (4.0.17 et 4.0.2, erreurs IDE seulement,
-  `tsc` vert) à dédupliquer ; `capturedResult.totalUsage` déprécié dans
-  `chat-message.routes.ts` (même sémantique que `usage`), même fichier appelle la méthode
-  instance dépréciée `capturedResult.toUIMessageStream(...)` (ai@7 : « Use the standalone
-  `toUIMessageStream` helper from 'ai' with `result.stream` ») ; Voxtral TTS/STT via fetch
-  maison alors que `@mistralai/mistralai` 2.7.0 expose `audioSpeechComplete`/`audioVoices`.
 - **Lot 3 — TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues
   avec `fr_marie_neutral` (seuls presets fr/en/gb existent ; es/de sans voix) ;
   `/api/tts/voices` annonce encore ces langues.
-- **Lot 2** : le quota compte `totalTokens` (tokens cachés et de raisonnement inclus) ;
-  observation, antérieure à C.
-- **Surveillance** : `pronote.test.ts` live échoue en `PageUnavailableError` sur le compte
-  Pronote de test (antérieur à C).
+- **Résolu** : override `'nanoid@5'` et son commentaire, retirés en B (aucun `nanoid` dans
+  `pnpm-workspace.yaml`) ; recommandations `ruff`/`python` de `.vscode/extensions.json`,
+  retirées par la PR docs `docs/fix-doc-drift` ; deux copies de `@ai-sdk/provider` : le
+  lockfile ne résout plus que la 4.0.17 ; un dossier 4.0.2 resté dans un ancien
+  `node_modules` est orphelin.
+
+## Surveillance
+
+Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas :
+
+- Le graphe de dépendances GitHub liste encore `apps/curriculum/uv.lock` et
+  `apps/ai-service/uv.lock` (supprimés en `8f5011f`, 0 dépendance) et y rattachait de
+  nouvelles alertes (#317 créée le 2026-09-19). Les 70 alertes ont été classées
+  `inaccurate` le 2026-09-22. Si une alerte réapparaît sur ces chemins, ouvrir un ticket
+  au support GitHub. Dependabot ne sert qu'à détecter (alertes + graphe, source de
+  `vulnerabilityAlerts`) ; ses PR de version et de sécurité restent désactivées, Renovate
+  ouvre toutes les PR.
+- Plafonds de version à lever à la main (Renovate ne les proposera pas) : TypeScript
+  `<6.1.0` tant que `typescript-eslint` exige `typescript <6.1.0` (TS 7 sans API JS avant
+  la 7.1, issue typescript-eslint #10940) ; `@types/node` `<25.0.0` tant que le runtime est
+  Node 24 (Vercel ne propose que 24.x, 22.x, 20.x ; Node 26 LTS le 2026-10-28).
+- `pronote.test.ts` live échoue en `PageUnavailableError` sur le compte Pronote de test
+  (antérieur à C).
 
 ## Bloquants
 
@@ -75,7 +94,7 @@ Constats hors périmètre de A, à traiter dans la PR indiquée :
 | B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | mergée | #309 |
 | C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | mergée | #313 |
 | D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | mergée | #315 |
-| E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | à faire | — |
+| E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | mergée | #318 |
 | E2 — Infra serveur et outillage | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-infra` | à faire | — |
 
 Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
@@ -183,6 +202,24 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   `X-XSS-Protection` absent, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` et
   `Permissions-Policy` toujours servis ; `/_next/image` sur une URL externe répond 400 et le
   logo SVG s'affiche toujours (servi sans passer par l'optimiseur).
+- **2026-09-22** — PR docs `docs/fix-doc-drift` : doc réalignée sur le code après l'audit
+  de cohérence (`/health` sans `degraded`, variables requises pointées sur `env.ts`,
+  déploiement réel, endpoint Mistral en origine nue, ZDR non demandé, landing, sécurité) ;
+  section E2 du plan marquée « à réécrire au démarrage » avec les écarts vérifiés ; chaque
+  point reporté a désormais une PR ou un lot propriétaire ; règle
+  `.claude/rules/plans-and-agents.md` ajoutée (plan écrit au démarrage de sa PR, pas de
+  numéros de ligne, un fait à un seul endroit).
+- **2026-09-23** — PR docs mergée (#317). PR E1 (appels IA sur l'AI SDK et le SDK Mistral)
+  mergée (#318, merge commit) : embeddings, STT et TTS par `@mistralai/mistralai` (TTS
+  envoie enfin `voice_id`, STT garde le vrai type MIME et est borné par `MISTRAL_TIMEOUT`) ;
+  sorties structurées par `generateText` + `Output.object` et Zod, `json_schema` strict par
+  défaut (cartes en non strict, voir Reporté lot 2), un seul retry sur échec de schéma sous
+  un timeout commun ; `lib/retry.ts`, `document-parsers.ts` et `otel/spans.ts` supprimés ;
+  traces par `@ai-sdk/otel` sans entrées ni sorties enregistrées ; route de chat sans API
+  dépréciées (tâche E1.10) ; `streamChat` réessaie `MISTRAL_RETRY_ATTEMPTS` fois ; le client
+  TTS ne reçoit plus le corps d'erreur Mistral. Relecture finale : 7 findings corrigés
+  avant merge. Validation : typecheck, lint, test (840), knip, test:integration à exit 0,
+  test live des sorties structurées 3/3.
 - **2026-09-23** — Landing, PR 1 « La copie corrigée » (fondations) : feuille Seyès peinte
   par section avec marge rouge sur une verticale, papier blanc, rythme de ligne de base sur
   la réglure, footer en quatrième de couverture bleue, contact `contact@tomia.fr`. Test de
@@ -192,5 +229,5 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   par section, texte composé sur des fiches collées au lieu du rythme de ligne de base
   (`lh` + Capsize), couvertures de cahier en ouverture et en fermeture (PR 2), écriture
   manuscrite (PR 3), sections restylées (PR 4). Commits remplacés : `041f884` (feuille par
-  section) et `e901312` (rythme de ligne de base). Le test de grille compte 75 cas (feuille,
+  section) et `e901312` (rythme de ligne de base). Le test de grille compte 76 cas (feuille,
   bornes, fiches, sans JavaScript, mouvement réduit).

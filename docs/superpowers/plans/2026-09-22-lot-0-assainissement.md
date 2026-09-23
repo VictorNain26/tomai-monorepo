@@ -7,7 +7,9 @@ dépendances à jour, Mistral Small 4 réellement configuré, bugs corrigés ave
 code d'infrastructure maison remplacé par des bibliothèques maintenues.
 
 **Architecture :** six PR courtes et séquentielles, chacune mergée en merge commit avant
-d'ouvrir la suivante. Chaque PR a son propre plan, ci-dessous. Chaque tâche se relit seule.
+d'ouvrir la suivante. Ce document ne porte que l'objectif, l'ordre et les contraintes
+globales ; le plan de chaque PR s'écrit, ou se réécrit, à son démarrage contre `main` à
+jour (`.claude/rules/plans-and-agents.md`). Chaque tâche se relit seule.
 
 **Tech Stack :** Bun + Elysia, Drizzle/Postgres, AI SDK 7 + `@ai-sdk/mistral`, Next.js
 (landing), pnpm + Turborepo, GitHub Actions.
@@ -85,4 +87,3 @@ Elles demandent un accès humain et ne peuvent pas être faites par un agent :
   SSE) : lot 3.
 - Stockage partagé du rate limit si plusieurs instances : lot 3.
 - `safePrompt`, rejeu du raisonnement, modération : lot 2.
-- `pnpm test:scripts` absent de la CI : PR séparée.

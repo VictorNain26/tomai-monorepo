@@ -10,7 +10,7 @@
  */
 
 import { Elysia, t } from 'elysia';
-import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
+import { createUIMessageStream, createUIMessageStreamResponse, toUIMessageStream } from 'ai';
 import { authMacro } from '../lib/auth-macro.js';
 import { requestIdMiddleware } from '../middleware/request-id.middleware.js';
 import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
@@ -162,11 +162,11 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           tools,
         });
 
-        writer.merge(capturedResult.toUIMessageStream({ sendReasoning: false }));
+        writer.merge(toUIMessageStream({ stream: capturedResult.stream, tools, sendReasoning: false }));
       },
       onFinish: async ({ responseMessage }) => {
         try {
-          const usage = capturedResult ? await capturedResult.totalUsage : undefined;
+          const usage = capturedResult ? await capturedResult.usage : undefined;
           await chatOrchestrationService.finishTurn({
             sessionId: turnCtx.sessionId,
             userId: user.id,

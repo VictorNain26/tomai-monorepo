@@ -8,7 +8,6 @@
 
 import { generateText, type MistralMessage } from '../../lib/ai/mistral-client.js';
 import { logger } from '../../lib/observability.js';
-import { withGenAiSpan } from '../../lib/otel/index.js';
 import type { ExtractionResult } from './document-extraction.service.js';
 import { env } from '../../config/env.js';
 
@@ -44,25 +43,14 @@ export async function extractImageWithMistralVision(
       },
     ];
 
-    const extractedText = await withGenAiSpan(
-      {
-        operation: 'text_completion',
-        provider: 'mistral_ai',
-        model: VISION_MODEL,
-        maxTokens: VISION_MAX_TOKENS,
-        temperature: VISION_TEMPERATURE,
-        serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
-      },
-      async () => {
-        return await generateText({
-          model: VISION_MODEL,
-          messages,
-          temperature: VISION_TEMPERATURE,
-          maxTokens: VISION_MAX_TOKENS,
-          timeoutMs: VISION_TIMEOUT_MS,
-        });
-      },
-    );
+    const extractedText = await generateText({
+      functionId: 'vision-ocr',
+      model: VISION_MODEL,
+      messages,
+      temperature: VISION_TEMPERATURE,
+      maxTokens: VISION_MAX_TOKENS,
+      timeoutMs: VISION_TIMEOUT_MS,
+    });
 
     const trimmedText = extractedText.trim();
     const wordCount = countWords(trimmedText);

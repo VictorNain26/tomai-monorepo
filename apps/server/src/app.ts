@@ -153,6 +153,7 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
     try {
       const { generateText } = await import('./lib/ai/mistral-client.js');
       const response = await generateText({
+        functionId: 'health-check',
         messages: [{ role: 'user', content: 'Réponds uniquement "OK" sans rien ajouter.' }],
         maxTokens: 10,
         temperature: 0,
