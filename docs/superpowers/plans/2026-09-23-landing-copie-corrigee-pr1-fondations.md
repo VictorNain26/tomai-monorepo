@@ -522,7 +522,7 @@ for (const path of SECONDARY) {
 
 - [ ] **Step 2: Lancer, vérifier l'échec** — les six tests échouent (titres de `SectionHeader` et textes posés sur la feuille).
 
-- [ ] **Step 3: `PageLayout`** — dans la feuille de Task 1, le `FadeIn` contient une seule `<Fiche tilt="none">` qui porte le `SectionHeader` (`align="left"`, `className="mb-8"`) puis `children`. Les pages ne posent plus leur propre carte.
+- [ ] **Step 3: `PageLayout`** — dans la feuille de Task 1, le `FadeIn` est remplacé par une `div` `container` (même largeur max) qui contient une seule `<Fiche tilt="none">` : `SectionHeader` (`align="left"`, `className="mb-8"`) puis `children`. La fiche porte déjà son entrée ; garder `FadeIn` empilerait deux animations sur le même contenu. Les pages ne posent plus leur propre carte.
 
 - [ ] **Step 4: Pages**
   - Pages légales et contact : retirer la `div` carte (`rounded-2xl bg-card … ring-1 ring-border`) autour du contenu ; garder `legal-copy` et le contenu tels quels.
@@ -551,7 +551,13 @@ git -C $W commit -m "feat(landing): secondary pages set their text on pasted car
 
 - [ ] **Step 2: Suivi** — dans `docs/superpowers/suivi.md`, section « Hors lot 0 » : la ligne PR 1 décrit la feuille unique et les fiches ; ajouter trois lignes « à faire » — PR 2 Couvertures, PR 3 Écriture, PR 4 Sections — plan « à écrire au démarrage ». Au journal, compléter l'entrée 2026-09-23 : pivot « fiches collées », couvertures, spec révisée (`4e84b94`), commits remplacés (`041f884`, `e901312`).
 
-- [ ] **Step 3: Passe visuelle** — build puis `next start --port 3011` ; captures Playwright de `/`, `/aide`, `/cgu` à 375, 768 et 1440, sous mouvement réduit et normal ; chemins dans le rapport. Arrêter le serveur par son PID.
+- [ ] **Step 3: Passe visuelle et UX** — build puis `next start --port 3011` ; captures Playwright de `/`, `/aide`, `/cgu` à 375, 768 et 1440, sous mouvement réduit et normal ; chemins dans le rapport. Contrôler et rapporter, avec la mesure :
+  - largeur utile du texte à 375 px (≥ 280 px) et longueur de ligne des pages légales à 1440 px (≤ ~85 caractères, sinon `max-w-prose` sur `legal-copy`) ;
+  - contenu au-dessus de la ligne de flottaison lisible en moins de 0,7 s après le chargement (une seule animation par bloc, aucune attente de défilement) ;
+  - aucun saut de mise en page à l'apparition des fiches (`y` et `scale` passent par `transform`) ;
+  - ruban adhésif qui ne recouvre aucun texte ; cibles ≥ 44 px ; focus visible au clavier sur les liens et boutons des fiches ;
+  - lignes de la réglure discrètes sous le texte des fiches (aucune ne transparaît).
+  Tout défaut se corrige dans cette tâche, commit `fix(landing): …` séparé. Arrêter le serveur par son PID.
 
 - [ ] **Step 4: Valider et commiter** — typecheck, lint, build, `test:grid` (codes de sortie lus), puis :
 
