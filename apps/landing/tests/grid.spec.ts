@@ -133,3 +133,26 @@ for (const path of ["/", "/cgu"]) {
     await expect.poll(() => hiddenReveals(page)).toEqual([]);
   });
 }
+
+function textOffCards(page: Page) {
+  return page.evaluate(() => {
+    const loose: string[] = [];
+    const walker = document.createTreeWalker(document.querySelector("main") ?? document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent?.trim();
+      const parent = node.parentElement;
+      if (!text || !parent || parent.closest('[aria-hidden="true"], script, style, noscript')) continue;
+      if (parent.getClientRects().length === 0) continue;
+      if (!parent.closest("[data-fiche]")) loose.push(text.slice(0, 40));
+    }
+    return loose;
+  });
+}
+
+for (const path of SECONDARY) {
+  test(`${path} keeps its typed text on cards`, async ({ page }) => {
+    await page.goto(path);
+    await settle(page);
+    expect(await textOffCards(page)).toEqual([]);
+  });
+}

@@ -11,19 +11,19 @@ export default function AidePage() {
       description={`Les réponses aux questions fréquentes sur ${BRAND_NAME}.`}
       maxWidth="5xl"
     >
-      <div className="max-w-3xl mx-auto mb-24 text-center">
-        <div className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-border md:p-12">
-          <h3 className="mb-4 text-2xl font-semibold">Une question sur {BRAND_NAME} ?</h3>
-          <p className="mx-auto mb-8 max-w-md text-muted-foreground">
-            Écrivez-nous : nous lisons chaque message.
-          </p>
-          <Button size="lg" asChild>
-            <Link href="/contact">Nous écrire</Link>
-          </Button>
-        </div>
+      <div className="max-w-3xl mx-auto text-center">
+        <h3 className="mb-4 text-2xl font-semibold">Une question sur {BRAND_NAME} ?</h3>
+        <p className="mx-auto mb-8 max-w-md text-muted-foreground">
+          Écrivez-nous : nous lisons chaque message.
+        </p>
+        <Button size="lg" asChild>
+          <Link href="/contact">Nous écrire</Link>
+        </Button>
       </div>
 
-      <FaqList />
+      <div className="mt-12">
+        <FaqList />
+      </div>
     </PageLayout>
   );
 }

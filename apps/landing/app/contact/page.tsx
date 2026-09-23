@@ -6,7 +6,7 @@ const CONTACT_EMAIL = "contact@tomia.fr";
 export default function ContactPage() {
   return (
     <PageLayout title="Contactez-nous" description="Une question, une suggestion ? Écrivez-nous.">
-      <div className="mx-auto mt-12 max-w-xl rounded-2xl bg-card p-8 text-center shadow-sm ring-1 ring-border">
+      <div className="mx-auto mt-12 max-w-xl text-center">
         <h3 className="mb-4 text-2xl font-semibold">Par email</h3>
         <p className="mb-8 text-muted-foreground">Nous lisons chaque message.</p>
         <Button asChild size="lg">
