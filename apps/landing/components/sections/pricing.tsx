@@ -60,7 +60,7 @@ export function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Button variant={plan.featured ? "default" : "outline"} className="group w-full" asChild>
+              <Button variant={plan.featured ? "default" : "outline"} size="lg" className="group w-full" asChild>
                 <a href="#waitlist">
                   {plan.cta}
                   <ArrowRight className="transition-transform duration-base group-hover:translate-x-1" aria-hidden="true" />
