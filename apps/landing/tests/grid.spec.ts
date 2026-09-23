@@ -133,6 +133,18 @@ test.describe("without JavaScript", () => {
   });
 });
 
+test("/aide at 375px keeps each FAQ question within three lines", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: HEIGHT });
+  await page.goto("/aide");
+  await settle(page);
+  const tall = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("[id^=faq-question-] span")]
+      .map((span) => ({ text: span.textContent ?? "", lines: Math.round(span.offsetHeight / parseFloat(getComputedStyle(span).lineHeight)) }))
+      .filter(({ lines }) => lines > 3),
+  );
+  expect(tall).toEqual([]);
+});
+
 declare global {
   interface Window {
     layoutShift: number;

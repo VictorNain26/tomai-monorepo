@@ -21,12 +21,12 @@ export function FaqList() {
             aria-expanded={openIndex === index}
             aria-controls={`faq-answer-${index}`}
             onClick={() => setOpenIndex(openIndex === index ? null : index)}
-            className="w-full flex items-center justify-between p-6 text-left min-h-11 focus-visible:ring-inset"
+            className="w-full flex items-center justify-between p-4 text-left min-h-11 focus-visible:ring-inset sm:p-6"
           >
             <div className="flex items-center gap-4">
               {faq.icon && (
-                <div className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full shrink-0 ${openIndex === index ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'} transition-colors`}>
-                  <faq.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <div className={`hidden size-10 items-center justify-center rounded-full shrink-0 ${openIndex === index ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'} transition-colors sm:flex`}>
+                  <faq.icon className="size-5" />
                 </div>
               )}
               <span className="font-semibold text-base sm:text-lg text-foreground">
@@ -49,7 +49,7 @@ export function FaqList() {
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.25 }}
               >
-                <div className="px-6 pb-6 pl-[3.25rem] sm:pl-20 text-muted-foreground">
+                <div className="px-4 pb-4 text-muted-foreground sm:px-6 sm:pb-6 sm:pl-20">
                   {faq.answer}
                 </div>
               </motion.div>

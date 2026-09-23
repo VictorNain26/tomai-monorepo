@@ -33,7 +33,7 @@ export function Fiche({ tilt = "left", variant = "paper", delay = 0, className, 
       viewport={{ once: true, margin: "0px 0px -10% 0px" }}
       transition={{ duration: 0.65, delay, ease: [0.2, 0.8, 0.2, 1] }}
       className={cn(
-        "relative p-6 shadow-md md:p-8",
+        "relative p-4 shadow-md sm:p-6 md:p-8",
         variant === "paper" ? "fiche-tape bg-card text-card-foreground" : "bg-note text-note-foreground",
         TILTS[tilt],
         className,
