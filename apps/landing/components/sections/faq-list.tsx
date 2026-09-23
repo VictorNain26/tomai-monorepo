@@ -38,7 +38,7 @@ export function FaqList() {
             />
           </button>
 
-          <AnimatePresence>
+          <AnimatePresence initial={false}>
             {openIndex === index && (
               <motion.div
                 id={`faq-answer-${index}`}

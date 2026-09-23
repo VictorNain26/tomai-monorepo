@@ -124,6 +124,37 @@ test.describe("without JavaScript", () => {
       expect(await hiddenReveals(page)).toEqual([]);
     });
   }
+
+  test("/aide shows the FAQ answer that starts open", async ({ page }) => {
+    await page.goto("/aide");
+    const answer = page.locator("#faq-answer-0");
+    await expect(answer).toBeVisible();
+    expect((await answer.boundingBox())?.height).toBeGreaterThan(24);
+  });
+});
+
+declare global {
+  interface Window {
+    layoutShift: number;
+  }
+}
+
+test.describe("with motion", () => {
+  test.use({ reducedMotion: "no-preference" });
+
+  for (const path of ["/aide", "/cgu"]) {
+    test(`${path} loads without a layout shift`, async ({ page }) => {
+      await page.addInitScript(() => {
+        window.layoutShift = 0;
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) window.layoutShift += (entry as PerformanceEntry & { value: number }).value;
+        }).observe({ type: "layout-shift", buffered: true });
+      });
+      await page.goto(path);
+      await page.waitForTimeout(1500);
+      expect(await page.evaluate(() => window.layoutShift)).toBe(0);
+    });
+  }
 });
 
 for (const path of ["/", "/cgu"]) {
