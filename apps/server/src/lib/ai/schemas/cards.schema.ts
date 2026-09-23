@@ -101,8 +101,10 @@ const ParsedCardSchema = z.discriminatedUnion('cardType', [
   z.object({ cardType: z.literal('reformulation'), content: ReformulationContentSchema })
 ]);
 
-export const CardGenerationOutputSchema = z.array(ParsedCardSchema)
+const CardGenerationOutputSchema = z.array(ParsedCardSchema)
   .min(1)
   .describe('Tableau de cartes générées');
+
+export const CardGenerationSchema = z.object({ cards: CardGenerationOutputSchema });
 
 

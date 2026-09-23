@@ -5,7 +5,7 @@
  *
  * Usage:
  * ```typescript
- * import { CardGenerationOutputSchema, ParsedCardSchema } from '@/lib/ai/schemas';
+ * import { CardGenerationSchema } from '@/lib/ai/schemas';
  * ```
  */
 
@@ -28,7 +28,7 @@ export {
   // Combined Schemas
   
   
-  CardGenerationOutputSchema,
+  CardGenerationSchema,
   // Types
   
   

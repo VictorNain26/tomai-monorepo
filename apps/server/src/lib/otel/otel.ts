@@ -11,12 +11,14 @@
  *   OTEL_DEPLOYMENT_ENVIRONMENT   — propagated to resource (dev/staging/prod)
  *   OTEL_DISABLED                 — set to "1" to skip init (tests / CI)
  *
- * GenAI conventions are still in Development (SemConv 1.41). We import the
- * incubating attribute keys explicitly in `spans.ts` to keep the typed
- * surface stable as the spec moves.
+ * AI SDK calls are traced by `@ai-sdk/otel` (GenAI SemConv spans), registered
+ * here once the tracer provider is up. Prompts and completions are never
+ * recorded: every call site sets `recordInputs: false, recordOutputs: false`.
  */
 
 import { NodeSDK } from '@opentelemetry/sdk-node';
+import { registerTelemetry } from 'ai';
+import { OpenTelemetry } from '@ai-sdk/otel';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import {
   BatchSpanProcessor,
@@ -82,6 +84,7 @@ export function setupOtel(): void {
   });
 
   sdk.start();
+  registerTelemetry(new OpenTelemetry());
   started = true;
 }
 

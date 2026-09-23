@@ -42,18 +42,20 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 - **JAMAIS de logique métier dans un route handler** → déléguer au service.
 - **JAMAIS d'accès DB depuis une route** → passer par le repository.
 - **Validation HTTP en TypeBox** (`t`, natif Elysia) sur chaque route : c'est elle
-  qui alimente les types Eden. Zod (`src/schemas/`) est réservé aux payloads
-  non-route — webhooks, validations externes complexes.
+  qui alimente les types Eden. Zod sert hors route : variables d'environnement,
+  sorties structurées de l'IA, arguments des outils du chat. Seule exception
+  restante, la double validation Zod de `parent.routes.ts` (`src/schemas/`),
+  retirée en PR E2.
 - **Auth** : macro `authMacro` + `.guard({ auth: true })`, qui injecte
   `{ user, session }` typés. Jamais de vérification manuelle.
 - **Transactions** : `db.transaction(...)` dès qu'une opération touche plusieurs
   tables.
 - **Uploads** : URL présignée, le client écrit dans S3 sans passer par le backend.
-- **Feature flags** via `app.config.ts` pour les déploiements progressifs.
 
 ## Sécurité
 
-- **Fail-fast au boot** si une variable de prod manque (`environment.config.ts`).
+- **Fail-fast au boot** : `src/config/env.ts` valide l'environnement au chargement
+  et refuse de démarrer sur une variable requise absente ou invalide.
 - **Pronote** : lib GPL `pawnote` et tokens **serveur uniquement**, jamais côté
   client. Credentials chiffrés AES-256-GCM, PBKDF2 600K itérations, **salt
   aléatoire de 16 octets par enregistrement** préfixé au ciphertext.
@@ -74,7 +76,5 @@ Runner Bun, tests dans `src/tests/<service>.test.ts`. Couverture attendue sur ce
 qui casse silencieusement : quotas, round-trip de chiffrement, transactions
 multi-tables.
 
-Piège connu : `src/integration-tests/api-endpoints.test.ts` mocke `drizzle-orm`
-partiellement. Tout nouveau module tiré par la chaîne `app.ts` /
-`server-lifecycle.ts` qui importe les schémas Drizzle doit y être mocké — le
-modèle est le mock de `retention-purge.service`.
+Piège du mock partiel de `drizzle-orm` dans `api-endpoints.test.ts` :
+`.claude/rules/testing-and-commits.md`.

@@ -16,7 +16,6 @@ interface TTSResult {
   success: boolean;
   audioData?: string;
   mimeType?: string;
-  durationMs?: number;
   _error?: string;
 }
 
@@ -65,7 +64,6 @@ class TextToSpeechService {
         success: true,
         audioData: result.audioData,
         mimeType: result.mimeType ?? 'audio/mpeg',
-        durationMs: result.durationMs,
       };
     } catch (error) {
       logger.error('TTS synthesis error', {

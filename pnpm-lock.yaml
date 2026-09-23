@@ -287,6 +287,9 @@ importers:
       '@ai-sdk/mistral':
         specifier: ^4.0.48
         version: 4.0.48(zod@4.6.5)
+      '@ai-sdk/otel':
+        specifier: 1.0.107
+        version: 1.0.107(zod@4.6.5)
       '@aws-sdk/client-s3':
         specifier: ^3.1136.0
         version: 3.1136.0
@@ -516,6 +519,10 @@ packages:
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/otel@1.0.107':
+    resolution: {integrity: sha512-hL16fbCnotmeyszS4y+TVYVBiL3thy0h7shOgPpGJG4pui5Hbse7Ud0E5tcnX3fI89Li/WHVtSYdDhg6eUAaQg==}
+    engines: {node: '>=22'}
 
   '@ai-sdk/provider-utils@5.0.45':
     resolution: {integrity: sha512-gLuaCups8OCIRz3eO6WWz5op7VLYNNtFzyH0sWUr0FE9v7cTxR0qxDpQdrKnGcql+9WWttobjnZsJVsuEbsPQQ==}
@@ -5030,6 +5037,14 @@ snapshots:
       '@ai-sdk/provider': 4.0.17
       '@ai-sdk/provider-utils': 5.0.45(zod@4.6.5)
       zod: 4.6.5
+
+  '@ai-sdk/otel@1.0.107(zod@4.6.5)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.17
+      '@opentelemetry/api': 1.9.1
+      ai: 7.0.107(zod@4.6.5)
+    transitivePeerDependencies:
+      - zod
 
   '@ai-sdk/provider-utils@5.0.45(zod@4.6.5)':
     dependencies:

@@ -15,6 +15,7 @@ describe('Chat (Mistral) live (real API)', () => {
 
   it('generateText returns a coherent completion', async () => {
     const out = await generateText({
+      functionId: 'live-chat',
       messages: [
         {
           role: 'user',

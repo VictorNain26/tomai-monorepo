@@ -28,9 +28,9 @@ let mockStructuredResponse: { intent?: string; confidence?: string; subject?: st
 };
 
 mock.module('../lib/ai/mistral-client', () => ({
-  generateStructured: mock(async () => {
+  generateStructured: mock(async (opts: { schema: { parse: (value: unknown) => unknown } }) => {
     if (mockStructuredResponse instanceof Error) throw mockStructuredResponse;
-    return mockStructuredResponse;
+    return { object: opts.schema.parse(mockStructuredResponse), usage: { inputTokens: 0, outputTokens: 0 } };
   }),
   generateText: mock(async () => 'not-used-here'),
 }));
@@ -75,12 +75,13 @@ describe('IntentClassifier subject propagation', () => {
     expect(result.confidence).toBe('high');
   });
 
-  it('falls back to general when subject is invalid', async () => {
+  it('rejects an invalid subject and returns the error fallback', async () => {
     mockStructuredResponse = { intent: 'explain-concept', confidence: 'medium', subject: 'physique-chimie' };
     const result = await intentClassifierService.classify("C'est quoi l'énergie ?", 'seconde');
 
     expect(result.subject).toBe('general');
-    expect(result.intent).toBe('explain-concept');
+    expect(result.intent).toBe('unknown');
+    expect(result.error).toBeDefined();
   });
 
   it('returns subject:general on short-circuit (empty message)', async () => {
