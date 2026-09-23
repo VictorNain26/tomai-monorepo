@@ -1,42 +1,32 @@
 "use client";
 
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button, cn } from "@repo/ui";
 import { useState, useEffect, useCallback } from "react";
-import { useTheme } from "next-themes";
 import { Logo } from "../atoms/logo";
 import { NavLinks } from "../molecules/nav-links";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 10);
   }, []);
 
   useEffect(() => {
-    queueMicrotask(() => setMounted(true));
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
-
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b transition-all duration-200",
-        scrolled
-          ? "bg-background/95 backdrop-blur-md border-border/60 shadow-sm"
-          : "bg-background/95 backdrop-blur border-border/40"
+        "sticky top-0 z-50 w-full border-b transition-colors duration-base",
+        scrolled ? "border-border bg-background/90 backdrop-blur-md" : "border-transparent bg-background/70 backdrop-blur",
       )}
     >
-      <nav className="container relative flex h-16 items-center justify-between px-4">
+      <nav className="container relative flex h-16 items-center justify-between">
         {/* Logo */}
         <div className="flex items-center z-20">
           <Logo />
@@ -47,34 +37,17 @@ export function Header() {
           <NavLinks />
         </div>
 
-        {/* Desktop CTA & Theme Toggle */}
+        {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3 z-20">
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-full"
-              aria-label="Changer de thème"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
-          )}
           <Button size="sm" asChild>
             <a href="#waitlist">Rejoindre la liste d&apos;attente</a>
           </Button>
         </div>
 
-        {/* Mobile Menu Button (no theme toggle) */}
         <div className="flex items-center gap-2 md:hidden z-20">
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
             aria-expanded={mobileMenuOpen}
@@ -90,12 +63,13 @@ export function Header() {
 
       {/* Mobile Menu */}
       <div
+        inert={!mobileMenuOpen}
         className={cn(
-          "md:hidden overflow-hidden transition-all duration-200 ease-in-out border-t border-border/50",
+          "md:hidden overflow-hidden transition-all duration-base ease-in-out border-t border-border/50",
           mobileMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0 border-t-0"
         )}
       >
-        <div className="container px-4 py-4 space-y-4 bg-background">
+        <div className="container py-4 space-y-4 bg-background">
           <NavLinks
             orientation="vertical"
             onLinkClick={() => setMobileMenuOpen(false)}

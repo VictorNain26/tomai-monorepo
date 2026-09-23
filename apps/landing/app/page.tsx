@@ -1,12 +1,14 @@
 import { Hero } from "@/components/sections/hero";
-import { Stats } from "@/components/sections/stats";
-import { ProblemSolution } from "@/components/sections/problem-solution";
-import { Features } from "@/components/sections/features";
+import { Problem } from "@/components/sections/problem";
+import { Parents } from "@/components/sections/parents";
+import { Trust } from "@/components/sections/trust";
 import { HowItWorks } from "@/components/sections/how-it-works";
+import { InputModes } from "@/components/sections/input-modes";
 import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { FAQS } from "@/components/sections/faq-data";
 import { CTA } from "@/components/sections/cta";
+import { NotebookSheet } from "@/components/notebook/notebook-sheet";
 
 const faqJsonLd = {
   "@context": "https://schema.org",
@@ -25,14 +27,17 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <Hero />
-      <Stats />
-      <ProblemSolution />
-      <HowItWorks />
-      <Features />
-      <Pricing />
-      <FAQ />
-      <CTA />
+      <NotebookSheet band>
+        <Hero />
+        <Problem />
+        <HowItWorks />
+        <InputModes />
+        <Parents />
+        <Trust />
+        <Pricing />
+        <FAQ />
+        <CTA />
+      </NotebookSheet>
     </>
   );
 }

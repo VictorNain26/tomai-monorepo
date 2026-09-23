@@ -1,26 +1,19 @@
 import Link from "next/link";
-import Image from "next/image";
 import { cn } from "@repo/ui";
+import { BRAND_NAME } from "@/lib/brand";
 
-interface LogoProps {
-  className?: string;
-}
-
-export function Logo({ className }: LogoProps) {
+export function Logo({ className }: { className?: string }) {
   return (
     <Link
       href="/"
-      className={cn("flex items-center gap-2 hover:opacity-90 transition-opacity", className)}
-      aria-label="TomIA - Accueil"
+      aria-label={`${BRAND_NAME} - Accueil`}
+      className={cn(
+        "inline-flex min-h-11 items-center font-heading text-2xl font-semibold tracking-tight text-foreground transition-opacity duration-base hover:opacity-80",
+        className,
+      )}
     >
-      <Image
-        src="/logo.svg"
-        alt="TomIA"
-        width={120}
-        height={48}
-        className="h-8 w-auto"
-        priority
-      />
+      {BRAND_NAME}
+      <span className="text-annotation">.</span>
     </Link>
   );
 }

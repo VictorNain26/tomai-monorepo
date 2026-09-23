@@ -1,32 +1,19 @@
 import { cn } from "@repo/ui";
 
 interface SectionHeaderProps {
-  title: string;
+  eyebrow?: string;
+  title: React.ReactNode;
   description?: string;
-  className?: string;
   align?: "center" | "left";
+  className?: string;
 }
 
-export function SectionHeader({
-  title,
-  description,
-  className,
-  align = "center"
-}: SectionHeaderProps) {
+export function SectionHeader({ eyebrow, title, description, align = "center", className }: SectionHeaderProps) {
   return (
-    <div className={cn(
-      "max-w-3xl mb-16",
-      align === "center" ? "mx-auto text-center" : "text-left",
-      className
-    )}>
-      <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
-        {title}
-      </h2>
-      {description && (
-        <p className="text-lg text-muted-foreground">
-          {description}
-        </p>
-      )}
+    <div className={cn("mb-16 max-w-3xl", align === "center" ? "mx-auto text-center" : "text-left", className)}>
+      {eyebrow && <p className="mb-4 font-heading text-lg italic text-annotation">{eyebrow}</p>}
+      <h2 className="text-4xl font-semibold text-balance text-foreground sm:text-5xl">{title}</h2>
+      {description && <p className="mt-4 text-lg text-muted-foreground">{description}</p>}
     </div>
   );
 }

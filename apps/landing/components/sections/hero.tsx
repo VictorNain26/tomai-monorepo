@@ -1,49 +1,60 @@
 "use client";
 
-import { GraduationCap, ShieldCheck } from "lucide-react";
-import { RotatingText } from "../atoms/rotating-text";
+import { motion, useReducedMotion } from "motion/react";
+import { GraduationCap, Landmark, ShieldCheck } from "lucide-react";
+import { DRAW_SECONDS, REVEAL_SECONDS } from "@/lib/motion";
+import { Scribble } from "../annotations/scribble";
 import { WaitlistForm } from "../molecules/waitlist-form";
+import { ChatDemo } from "./chat-demo";
+
+const SIGNALS = [
+  { icon: GraduationCap, label: "Collège, de la 6e à la 3e" },
+  { icon: Landmark, label: "Hébergé dans l'Union européenne" },
+  { icon: ShieldCheck, label: "Gratuit pour commencer" },
+];
 
 export function Hero() {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <section className="min-h-[calc(100vh-4rem)] flex items-center py-16 lg:py-24">
-      <div className="container flex flex-col items-center text-center">
-        {/* Credibility badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
-          <GraduationCap className="h-4 w-4" />
-          <span>Collège, de la 6e à la 3e, 10 matières</span>
+    <section className="flex min-h-[calc(100svh-4rem)] items-start py-16 lg:py-24">
+      <div className="container grid w-full grid-cols-1 items-start gap-16 lg:grid-cols-2">
+        <div>
+          <h1 className="text-4xl font-semibold text-balance text-foreground sm:text-6xl xl:text-7xl">
+            Il ne donne pas la réponse. Il aide à la{" "}
+            <Scribble kind="strike" delay={0.3}>
+              <span aria-hidden="true" className="text-muted-foreground">trouver</span>
+            </Scribble>{" "}
+            <motion.em
+              data-reveal=""
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: REVEAL_SECONDS, delay: 0.3 + DRAW_SECONDS }}
+              className="text-annotation"
+            >
+              comprendre
+            </motion.em>
+            .
+          </h1>
+
+          <p className="mt-6 max-w-xl text-lg text-muted-foreground md:text-xl">
+            Tom accompagne votre enfant dans ses devoirs comme un bon professeur : par des questions,
+            à son niveau, jusqu&apos;à ce qu&apos;il trouve seul.
+          </p>
+
+          <WaitlistForm source="hero" className="mt-10 max-w-lg" />
+
+          <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            {SIGNALS.map(({ icon: Icon, label }) => (
+              <li key={label} className="flex items-center gap-2">
+                <Icon className="size-4 text-success" aria-hidden="true" />
+                {label}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-foreground leading-[1.15] mb-6 max-w-4xl [text-wrap:balance]">
-          L&apos;IA qui aide à
-          <br />
-          <RotatingText
-            words={["comprendre", "réfléchir", "progresser", "réussir"]}
-          />
-          ,
-          <br />
-          pas à copier
-        </h1>
-
-        <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mb-10">
-          TomIA pose les bonnes questions pour que votre enfant trouve les
-          réponses par lui-même.
-        </p>
-
-        <WaitlistForm source="hero" className="max-w-lg w-full" />
-
-        {/* Trust signals */}
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-5 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-success" />
-            <span>RGPD</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span>🇪🇺</span>
-            <span>Hébergé en Europe</span>
-          </div>
-          <span>Gratuit pour commencer</span>
-        </div>
+        <ChatDemo className="mx-auto w-full max-w-md lg:mr-24" />
       </div>
     </section>
   );

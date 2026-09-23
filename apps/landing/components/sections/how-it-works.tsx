@@ -1,90 +1,56 @@
-"use client";
-
-import { MessageSquare, Lightbulb, GraduationCap, ArrowRight } from "lucide-react";
-import { motion } from "motion/react";
-import { Button } from "@repo/ui";
+import { FadeIn } from "../atoms/fade-in";
+import { Scribble } from "../annotations/scribble";
+import { Highlight } from "../annotations/highlight";
 import { SectionHeader } from "../atoms/section-header";
 
 const STEPS = [
   {
-    number: "01",
-    title: "Posez votre question",
-    description: "Maths, Français, Histoire... Votre enfant pose sa question à TomIA comme à un professeur.",
-    icon: MessageSquare,
-    color: "text-info",
-    bg: "bg-info/10",
+    title: "Il questionne",
+    body: (
+      <>
+        Face à un exercice, Tom ne donne pas la solution. Il pose <Highlight>la question qui débloque</Highlight>, puis
+        la suivante, et ne donne un indice plus précis que si votre enfant bloque vraiment.
+      </>
+    ),
   },
   {
-    number: "02",
-    title: "TomIA guide la réflexion",
-    description: "TomIA pose des questions simples pour aider votre enfant à avancer, sans jamais donner la réponse.",
-    icon: Lightbulb,
-    color: "text-warning",
-    bg: "bg-warning/10",
+    title: "Il s'adapte",
+    body: (
+      <>
+        Vocabulaire, longueur des explications, notations : tout suit <Highlight>la classe de votre enfant</Highlight>,
+        de la 6e à la 3e, et la matière travaillée.
+      </>
+    ),
   },
   {
-    number: "03",
-    title: "La notion est comprise",
-    description: "L'élève trouve la solution par lui-même. Il gagne en confiance et retient mieux la leçon.",
-    icon: GraduationCap,
-    color: "text-success",
-    bg: "bg-success/10",
+    title: "Il fait réviser",
+    body: (
+      <>
+        Ce qui a été compris devient des fiches, revues au bon moment grâce à <Highlight>la répétition espacée</Highlight>,
+        pour que ça tienne jusqu&apos;au contrôle.
+      </>
+    ),
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 lg:py-32 overflow-hidden">
-      <div className="container px-4 mx-auto">
-        <SectionHeader
-          title="Comment ça marche ?"
-          description="Une méthode simple et efficace pour redonner confiance à votre enfant."
-        />
-
-        <div className="relative grid md:grid-cols-3 gap-12">
-          {/* Animated Connecting Line (Desktop) */}
-          <motion.div
-            className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-info/30 via-warning/30 to-success/30 origin-left"
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          />
-
+    <section id="how-it-works" className="scroll-mt-20 py-24 lg:py-32">
+      <div className="container">
+        <SectionHeader eyebrow="La méthode" title="Comment Tom guide votre enfant" />
+        <ol className="mx-auto grid max-w-5xl gap-12 md:grid-cols-3">
           {STEPS.map((step, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ delay: index * 0.2, duration: 0.5 }}
-              className="relative flex flex-col items-center text-center"
-            >
-              <div className={`relative flex items-center justify-center w-24 h-24 rounded-3xl ${step.bg} ${step.color} mb-8 z-10 transition-transform hover:scale-110 duration-300`}>
-                <step.icon className="h-10 w-10" />
-                <span className="absolute -top-2 -right-2 flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                  {step.number}
-                </span>
-              </div>
-
-              <h3 className="text-xl font-bold text-foreground mb-4">
-                {step.title}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {step.description}
-              </p>
-            </motion.div>
+            <li key={step.title} className="border-l-2 border-annotation pl-6">
+              <FadeIn delay={index * 0.15}>
+                <Scribble kind="circle" className="mb-4 px-2 font-heading text-3xl text-annotation" delay={0.2 + index * 0.15}>
+                  {index + 1}
+                </Scribble>
+                <h3 className="mb-4 text-2xl font-semibold text-foreground">{step.title}</h3>
+                <p className="text-muted-foreground">{step.body}</p>
+              </FadeIn>
+            </li>
           ))}
-        </div>
-
-        <div className="flex justify-center mt-16">
-          <Button size="lg" variant="outline" className="group" asChild>
-            <a href="#waitlist">
-              Être notifié du lancement
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </a>
-          </Button>
-        </div>
+        </ol>
       </div>
     </section>
   );

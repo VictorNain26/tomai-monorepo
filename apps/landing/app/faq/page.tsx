@@ -1,14 +1,30 @@
 import type { Metadata } from "next";
-import { FAQ } from "@/components/sections/faq";
+import Link from "next/link";
+import { PageLayout } from "@/components/layout/page-layout";
+import { FaqList } from "@/components/sections/faq-list";
+import { BRAND_NAME } from "@/lib/brand";
+
+const DESCRIPTION = `Retrouvez les réponses aux questions les plus fréquentes sur ${BRAND_NAME} : méthode socratique, niveaux et matières, suivi parental, tarifs et compatibilité Pronote.`;
 
 export const metadata: Metadata = {
   title: "Questions fréquentes",
-  description: "Retrouvez les réponses aux questions les plus fréquentes sur TomIA : méthode socratique, niveaux et matières, suivi parental, tarifs et compatibilité Pronote.",
+  description: DESCRIPTION,
   alternates: {
     canonical: "/faq",
   },
 };
 
 export default function FAQPage() {
-  return <FAQ />;
+  return (
+    <PageLayout title="Questions fréquentes" description={DESCRIPTION}>
+      <FaqList />
+
+      <p className="mt-8 text-center text-sm text-muted-foreground">
+        Vous avez une autre question ?{" "}
+        <Link href="/contact" className="font-medium text-primary hover:underline">
+          Contactez-nous
+        </Link>
+      </p>
+    </PageLayout>
+  );
 }

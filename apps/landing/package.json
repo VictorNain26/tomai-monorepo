@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "validate": "bun run typecheck && bun run lint",
     "validate:ci": "bun run typecheck && bun run lint:ci",
+    "test:grid": "playwright test",
     "clean": "rm -rf .next"
   },
   "dependencies": {
@@ -22,12 +23,12 @@
     "lucide-react": "catalog:",
     "motion": "^13.4.0",
     "next": "~16.3.5",
-    "next-themes": "^0.4.6",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@repo/eslint-config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.13.6",

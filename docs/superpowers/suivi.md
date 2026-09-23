@@ -99,6 +99,15 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
 Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 
+## Hors lot 0
+
+| PR | Plan | Branche | Statut | Lien |
+|---|---|---|---|---|
+| Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | `plans/2026-09-23-landing-copie-corrigee-pr1-fondations.md` | `feat/landing-copie-corrigee` | ouverte, empilée sur #319 puis #320 | #321 |
+| Landing, PR 2 — Couvertures (ouverture, fermeture, bande de tête collante) ; reporté de PR 1 : garder `overflow-x: clip` (jamais `hidden`) sur la feuille pour la scène collante ; découper `tests/grid.spec.ts` (feuille et bornes, révélations et sans JS, cibles et lignes) avant d'y ajouter les couvertures | à écrire au démarrage | — | à faire | — |
+| Landing, PR 3 — Écriture (Caveat en SVG, barré et souligné tracés) ; reporté de PR 1 : le pli de l'accueil doit se lire en moins de 0,7 s — aujourd'hui « comprendre », écrit après le barré de « trouver », apparaît à 1,1 s et les bulles de la démo arrivent en cascade (0,4 + 0,6 s par bulle) ; étendre la surcharge `noscript` de `[data-reveal]` à `clip-path` pour `Hand` | à écrire au démarrage | — | à faire | — |
+| Landing, PR 4 — Sections (première page, exercice en fiche, sections restylées) ; reporté de PR 1 : fiche légale centrée à 1440 px, loin de la marge ; texte des fiches à 255 px de large à 375 px ; aucun `<h1>` sur les pages secondaires (`SectionHeader` rend toujours un `<h2>`) ; vérifier que chaque petite fiche atteint le seuil `-10%` de `whileInView` | à écrire au démarrage | — | à faire | — |
+
 ## Étapes manuelles (utilisateur)
 
 | Étape | Pour | Statut |
@@ -211,3 +220,14 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   TTS ne reçoit plus le corps d'erreur Mistral. Relecture finale : 7 findings corrigés
   avant merge. Validation : typecheck, lint, test (840), knip, test:integration à exit 0,
   test live des sorties structurées 3/3.
+- **2026-09-23** — Landing, PR 1 « La copie corrigée » (fondations) : feuille Seyès peinte
+  par section avec marge rouge sur une verticale, papier blanc, rythme de ligne de base sur
+  la réglure, footer en quatrième de couverture bleue, contact `contact@tomia.fr`. Test de
+  grille Playwright (`pnpm --filter landing test:grid`, 6 pages × 5 largeurs + zoom 20 px) :
+  local uniquement, son branchement en CI fera l'objet d'une PR séparée.
+  Pivot le même jour, spec révisée (`4e84b94`) : une seule feuille par page au lieu d'une
+  par section, texte composé sur des fiches collées au lieu du rythme de ligne de base
+  (`lh` + Capsize), couvertures de cahier en ouverture et en fermeture (PR 2), écriture
+  manuscrite (PR 3), sections restylées (PR 4). Commits remplacés : `041f884` (feuille par
+  section) et `e901312` (rythme de ligne de base). Le test de grille compte 76 cas (feuille,
+  bornes, fiches, sans JavaScript, mouvement réduit).

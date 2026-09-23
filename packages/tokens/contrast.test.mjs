@@ -50,6 +50,10 @@ const PAIRS = [
   ["annotation", "background"],
   ["annotation", "card"],
   ["annotation", "secondary"],
+  ["note-foreground", "note"],
+  ["foreground", "note"],
+  ["primary", "note"],
+  ["annotation", "note"],
 ];
 
 for (const [fg, bg] of PAIRS) {
@@ -58,5 +62,19 @@ for (const [fg, bg] of PAIRS) {
     assert.ok(palette[bg], `missing --color-${bg}`);
     const ratio = contrast(palette[fg], palette[bg]);
     assert.ok(ratio >= 4.5, `${palette[fg]} on ${palette[bg]} = ${ratio.toFixed(2)}`);
+  });
+}
+
+const CONTROL_PAIRS = [
+  ["input", "background"],
+  ["input", "card"],
+];
+
+for (const [fg, bg] of CONTROL_PAIRS) {
+  test(`${fg} on ${bg} meets WCAG 1.4.11 (3:1)`, () => {
+    assert.ok(palette[fg], `missing --color-${fg}`);
+    assert.ok(palette[bg], `missing --color-${bg}`);
+    const ratio = contrast(palette[fg], palette[bg]);
+    assert.ok(ratio >= 3, `${palette[fg]} on ${palette[bg]} = ${ratio.toFixed(2)}`);
   });
 }
