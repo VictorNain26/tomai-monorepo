@@ -26,6 +26,7 @@ export function Hero() {
               <span aria-hidden="true" className="text-muted-foreground">trouver</span>
             </Scribble>{" "}
             <motion.em
+              data-reveal=""
               initial={reduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: REVEAL_SECONDS, delay: 0.3 + DRAW_SECONDS }}

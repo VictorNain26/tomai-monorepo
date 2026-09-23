@@ -20,6 +20,7 @@ export function ChatDemo({ className }: { className?: string }) {
       <ol className="space-y-4 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border">
         {MESSAGES.map((message, index) => (
           <motion.li
+            data-reveal=""
             key={index}
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}

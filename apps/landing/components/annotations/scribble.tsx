@@ -49,6 +49,7 @@ export function Scribble({
         className={cn("pointer-events-none absolute overflow-visible text-annotation", shape.position)}
       >
         <motion.path
+          data-reveal=""
           d={shape.d}
           stroke="currentColor"
           strokeWidth={3}

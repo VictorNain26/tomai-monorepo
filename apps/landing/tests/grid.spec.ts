@@ -139,6 +139,28 @@ test.describe("without JavaScript", () => {
     });
   }
 
+  test("/ shows every word and every stroke", async ({ page }) => {
+    await page.goto("/");
+    const hidden = await page.evaluate(() => {
+      const found: string[] = [];
+      const walker = document.createTreeWalker(document.querySelector("main") ?? document.body, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const text = node.textContent?.trim();
+        for (let el = node.parentElement; text && el; el = el.parentElement) {
+          if (getComputedStyle(el).opacity === "0") {
+            found.push(text.slice(0, 40));
+            break;
+          }
+        }
+      }
+      for (const path of document.querySelectorAll("main svg path")) {
+        if (getComputedStyle(path).strokeDasharray !== "none") found.push(`undrawn path ${path.getAttribute("d")}`);
+      }
+      return found;
+    });
+    expect(hidden).toEqual([]);
+  });
+
   test("/aide shows the FAQ answer that starts open", async ({ page }) => {
     await page.goto("/aide");
     const answer = page.locator("#faq-answer-0");
