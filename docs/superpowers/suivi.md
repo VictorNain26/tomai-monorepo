@@ -84,10 +84,10 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 
 | PR | Plan | Branche | Statut | Lien |
 |---|---|---|---|---|
-| Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`) | `plans/2026-09-23-landing-copie-corrigee-pr1-fondations.md` | `feat/landing-copie-corrigee` | en cours | — |
+| Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | `plans/2026-09-23-landing-copie-corrigee-pr1-fondations.md` | `feat/landing-copie-corrigee` | en cours | — |
 | Landing, PR 2 — Couvertures (ouverture, fermeture, bande de tête collante) | à écrire au démarrage | — | à faire | — |
-| Landing, PR 3 — Écriture (Caveat en SVG, barré et souligné tracés) | à écrire au démarrage | — | à faire | — |
-| Landing, PR 4 — Sections (première page, exercice en fiche, sections restylées) | à écrire au démarrage | — | à faire | — |
+| Landing, PR 3 — Écriture (Caveat en SVG, barré et souligné tracés) ; reporté de PR 1 : le pli de l'accueil doit se lire en moins de 0,7 s — aujourd'hui le mot souligné du hero apparaît à 1,1 s et les bulles de la démo en cascade (0,4 + 0,6 s par bulle) | à écrire au démarrage | — | à faire | — |
+| Landing, PR 4 — Sections (première page, exercice en fiche, sections restylées) ; reporté de PR 1 : fiche légale centrée à 1440 px, loin de la marge ; texte des fiches à 255 px de large à 375 px | à écrire au démarrage | — | à faire | — |
 
 ## Étapes manuelles (utilisateur)
 
@@ -192,5 +192,5 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   par section, texte composé sur des fiches collées au lieu du rythme de ligne de base
   (`lh` + Capsize), couvertures de cahier en ouverture et en fermeture (PR 2), écriture
   manuscrite (PR 3), sections restylées (PR 4). Commits remplacés : `041f884` (feuille par
-  section) et `e901312` (rythme de ligne de base). Le test de grille compte 74 cas (feuille,
+  section) et `e901312` (rythme de ligne de base). Le test de grille compte 75 cas (feuille,
   bornes, fiches, sans JavaScript, mouvement réduit).
