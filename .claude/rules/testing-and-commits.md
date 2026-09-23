@@ -7,13 +7,16 @@ Le workflow TDD (Red-Green-Refactor) est géré par **superpowers:test-driven-de
 | App | Runner | Commande |
 |-----|--------|----------|
 | Server | Bun test runner | `cd apps/server && bun run test` |
-| Landing | — | Pas de tests (site statique) |
+| Landing | Playwright | `pnpm --filter landing test:grid` |
+
+Le test de grille de la landing est local uniquement : ni en CI, ni dans la validation avant commit.
 
 ## Localisation des tests
 
 | App | Pattern | Exemple |
 |-----|---------|---------|
 | Server | `src/tests/<service>.test.ts` | `src/tests/encryption.test.ts` |
+| Landing | `apps/landing/tests/<name>.spec.ts` | `tests/grid.spec.ts` |
 
 ## Validation obligatoire avant commit
 
