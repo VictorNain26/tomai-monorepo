@@ -23,6 +23,7 @@
   display: flow-root;
   max-width: 80rem;
   margin-inline: auto;
+  overflow-x: clip;
   background-color: var(--color-background);
   box-shadow: 0 0 0 1px var(--color-border);
 

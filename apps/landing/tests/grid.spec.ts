@@ -272,6 +272,36 @@ test.describe("with motion", () => {
       expect(await page.evaluate(() => window.layoutShift)).toBeLessThan(0.001);
     });
   }
+
+  test("/confidentialite at 375px settles its pasted fiche from the top edge without scrolling the page sideways", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: HEIGHT });
+    await page.goto("/confidentialite");
+
+    const samples: number[] = [];
+    const overflows: number[] = [];
+    const deadline = Date.now() + 300;
+    while (Date.now() < deadline) {
+      const sample = await page.evaluate(() => {
+        const heading = document.querySelector("main h2");
+        const rect = heading?.getBoundingClientRect();
+        return {
+          left: rect ? rect.left : null,
+          scrollWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+        };
+      });
+      if (sample.left !== null) samples.push(sample.left);
+      overflows.push(sample.scrollWidth - sample.innerWidth);
+    }
+
+    await page.waitForTimeout(900);
+    const settled = await page.evaluate(() => document.querySelector("main h2")?.getBoundingClientRect().left ?? null);
+
+    expect(settled, "heading not found").not.toBeNull();
+    const worstDelta = samples.length > 0 ? Math.max(...samples.map((left) => Math.abs(left - (settled as number)))) : 0;
+    expect(worstDelta, `samples: ${samples.join(", ")}, settled: ${settled}`).toBeLessThanOrEqual(16);
+    expect(Math.max(...overflows), `overflow samples: ${overflows.join(", ")}`).toBeLessThanOrEqual(0);
+  });
 });
 
 for (const path of ["/", "/cgu"]) {
