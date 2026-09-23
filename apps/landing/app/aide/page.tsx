@@ -1,5 +1,5 @@
 import { PageLayout } from "@/components/layout/page-layout";
-import { FAQ } from "@/components/sections/faq";
+import { FaqList } from "@/components/sections/faq-list";
 import { Button } from "@repo/ui";
 import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
@@ -23,9 +23,7 @@ export default function AidePage() {
         </div>
       </div>
 
-      <div className="relative">
-        <FAQ />
-      </div>
+      <FaqList />
     </PageLayout>
   );
 }
