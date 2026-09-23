@@ -9,15 +9,20 @@ export type SubjectType =
   | 'histoire' | 'geographie' | 'emc' | 'svt' | 'physique-chimie'
   | 'technologie' | 'inconnu';
 
-export const ClassificationSchema = z.object({
+const ClassificationSchema = z.object({
   documentType: z.enum(['exercice', 'cours', 'devoir', 'correction', 'document', 'non-educatif']),
-  subject: z.enum([
-    'mathematiques', 'francais', 'anglais', 'espagnol', 'allemand',
-    'histoire', 'geographie', 'emc', 'svt', 'physique-chimie',
-    'technologie', 'inconnu'
-  ]),
+  subject: z.enum(['mathematiques', 'francais', 'anglais', 'espagnol', 'allemand', 'histoire', 'geographie', 'emc', 'svt', 'physique-chimie', 'technologie', 'inconnu']),
   confidence: z.enum(['high', 'medium', 'low']),
-  detectedLevel: z.string().optional()
+  detectedLevel: z.string().nullable().describe('Niveau scolaire détecté, ou null'),
+});
+
+export const DocumentAnalysisSchema = z.object({
+  classification: ClassificationSchema,
+  analysis: z.string().min(1).describe('Analyse pédagogique complète'),
+});
+
+export const ImageAnalysisSchema = DocumentAnalysisSchema.extend({
+  extractedText: z.string().describe("Tout le texte visible dans l'image (OCR)"),
 });
 
 export interface DocumentAnalysisResult {

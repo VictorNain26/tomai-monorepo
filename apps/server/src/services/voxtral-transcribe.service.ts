@@ -1,10 +1,11 @@
 /**
  * Voxtral STT Service — Mistral speech-to-text souveraine EU.
  *
- * Appelle directement POST {MISTRAL_SERVER_URL}/v1/audio/transcriptions via
- * multipart/form-data, avec la clé MISTRAL_API_KEY — aucune clé tierce.
+ * Appelle POST {MISTRAL_SERVER_URL}/v1/audio/transcriptions via le SDK
+ * @mistralai/mistralai (multipart/form-data géré par le SDK), avec la clé
+ * MISTRAL_API_KEY portée par le client partagé — aucune clé tierce.
  *
- * Réponse Mistral : { model: string, text: string }. Voxtral ne détecte pas la
+ * Réponse Mistral : { model, text, language, usage }. Voxtral ne détecte pas la
  * langue : detectedLanguage renvoie la langue forcée à la transcription.
  *
  * @see https://docs.mistral.ai/capabilities/audio/
@@ -12,8 +13,8 @@
 
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
+import { getMistralSdk } from '../lib/ai/mistral-sdk.js';
 
-const STT_ENDPOINT = `${env.MISTRAL_SERVER_URL}/v1/audio/transcriptions`;
 const STT_MODEL = env.MISTRAL_STT_MODEL;
 
 /** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
@@ -36,15 +37,6 @@ export interface VoxtralTranscribeOptions {
 }
 
 class VoxtralTranscribeService {
-  private readonly apiKey: string;
-
-  constructor() {
-    if (!env.MISTRAL_API_KEY) {
-      throw new Error('MISTRAL_API_KEY is required for Voxtral STT');
-    }
-    this.apiKey = env.MISTRAL_API_KEY;
-  }
-
   async transcribe(
     audioBuffer: ArrayBuffer,
     mimeType: string,
@@ -53,36 +45,18 @@ class VoxtralTranscribeService {
     const startTime = Date.now();
     const language = options.language ?? 'fr';
 
-    const formData = new FormData();
-    formData.append('file', new Blob([audioBuffer], { type: mimeType }), 'audio');
-    formData.append('model', STT_MODEL);
-    formData.append('language', language);
-
     try {
-      const response = await fetch(STT_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: formData,
+      const response = await getMistralSdk().audio.transcriptions.complete({
+        model: STT_MODEL,
+        // A plain { fileName, content } object isn't blob-like to the SDK: it falls back
+        // to `getContentTypeFromFileName('audio')` (no extension -> null -> octet-stream),
+        // dropping the real mimeType. A File is blob-like, so the SDK forwards it as-is
+        // (esm/funcs/audioTranscriptionsComplete.js:33-48, esm/types/blobs.js isBlobLike).
+        file: new File([audioBuffer], 'audio', { type: mimeType }),
+        language,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error('Voxtral STT request failed', {
-          operation: 'voxtral:stt',
-          _error: `${response.status} — ${errorText.slice(0, 500)}`,
-          severity: 'high' as const,
-        });
-        return {
-          success: false,
-          error: `Mistral STT API error: ${response.status}`,
-        };
-      }
-
-      const payload = (await response.json()) as { text: string; model?: string };
-
-      if (!payload.text) {
+      if (!response.text) {
         logger.error('Voxtral STT returned empty text', {
           operation: 'voxtral:stt',
           _error: 'empty transcription',
@@ -94,13 +68,13 @@ class VoxtralTranscribeService {
       logger.info('Voxtral STT transcription completed', {
         operation: 'voxtral:stt',
         language,
-        model: payload.model ?? STT_MODEL,
+        model: response.model,
         durationMs: Date.now() - startTime,
       });
 
       return {
         success: true,
-        transcription: payload.text,
+        transcription: response.text,
         detectedLanguage: language,
       };
     } catch (error) {

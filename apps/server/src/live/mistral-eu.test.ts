@@ -61,6 +61,7 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
 
   it('reads an image (Small 4 is multimodal)', async () => {
     const out = await generateText({
+      functionId: 'live-mistral-eu',
       messages: [{ role: 'user', content: [
         { type: 'text', text: 'De quelle couleur est cette image ? Réponds en un seul mot.' },
         { type: 'image_url', imageUrl: RED_PNG },

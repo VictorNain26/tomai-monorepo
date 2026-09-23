@@ -12,9 +12,10 @@
 import './_helpers/mistral-env';
 import { describe, it, expect, afterEach } from 'bun:test';
 import { z } from 'zod';
-import { tool, type ToolSet, simulateReadableStream } from 'ai';
+import { APICallError, tool, type ToolSet, simulateReadableStream, toUIMessageStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { streamChat, type ChatStreamParams } from '../services/chat/ai-chat.service.js';
+import { env } from '../config/env.js';
 
 const baseParams: Omit<ChatStreamParams, 'model' | 'tools'> = {
   userId: 'user-001',
@@ -125,7 +126,7 @@ describe('streamChat', () => {
     expect(received).toEqual(['Bonjour ', 'le monde']);
   });
 
-  it('never forwards reasoning chunks through toUIMessageStream({ sendReasoning: false }) — a real serialized stream, not just the option value', async () => {
+  it('never forwards reasoning chunks through toUIMessageStream with sendReasoning: false — a real serialized stream, not just the option value', async () => {
     const model = new MockLanguageModelV4({
       doStream: async () => ({
         stream: simulateReadableStream({
@@ -147,12 +148,30 @@ describe('streamChat', () => {
 
     const result = streamChat({ ...baseParams, tools: noopTools, model });
     const chunks: Array<{ type: string }> = [];
-    for await (const chunk of result.toUIMessageStream({ sendReasoning: false })) {
-      chunks.push(chunk as { type: string });
+    for await (const chunk of toUIMessageStream({ stream: result.stream, tools: noopTools, sendReasoning: false })) {
+      chunks.push(chunk);
     }
 
     expect(chunks.some((c) => c.type.startsWith('reasoning'))).toBe(false);
     expect(chunks.some((c) => c.type === 'text-delta')).toBe(true);
+  });
+
+  it('retries a retryable provider error MISTRAL_RETRY_ATTEMPTS times, like the other Mistral calls', async () => {
+    const configured = env.MISTRAL_RETRY_ATTEMPTS;
+    (env as Record<string, unknown>)['MISTRAL_RETRY_ATTEMPTS'] = 0;
+    try {
+      const model = new MockLanguageModelV4({
+        doStream: async () => {
+          throw new APICallError({ message: 'overloaded', url: 'https://api.eu.mistral.ai', requestBodyValues: {}, statusCode: 503, isRetryable: true });
+        },
+      });
+
+      await Promise.resolve(streamChat({ ...baseParams, tools: noopTools, model }).text).catch(() => undefined);
+
+      expect(model.doStreamCalls).toHaveLength(1);
+    } finally {
+      (env as Record<string, unknown>)['MISTRAL_RETRY_ATTEMPTS'] = configured;
+    }
   });
 });
 

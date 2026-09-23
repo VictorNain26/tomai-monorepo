@@ -4,12 +4,15 @@
  * Covers the guards that stay plain JSON before the UI Message Stream
  * starts (auth, quota, concurrency) and the post-stream contract:
  * `content-type`/`x-vercel-ai-ui-message-stream` headers, `onFinish`
- * persistence (user + assistant messages), and concurrency release even
- * when the stream throws.
+ * persistence (user + assistant messages), concurrency release even when
+ * the stream throws, no reasoning on the wire, and the usage recorded.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { Elysia } from 'elysia';
+import { z } from 'zod';
+import { isStepCount, simulateReadableStream, streamText, tool, type ToolSet } from 'ai';
+import { MockLanguageModelV4 } from 'ai/test';
 import { createMockLogger } from './_helpers/mock-logger';
 
 // ============================================
@@ -92,38 +95,79 @@ mock.module('../services/chat/chat-orchestration.service', () => ({
   ChatOrchestrationError,
 }));
 
-// chat-tools — irrelevant to the route contract, stubbed
+const chatTools: ToolSet = {
+  noop_tool: tool({
+    description: 'Test-only no-op tool',
+    inputSchema: z.object({}),
+    execute: async () => 'ok',
+  }),
+};
 mock.module('../services/chat/chat-tools', () => ({
-  buildChatTools: mock(() => ({})),
+  buildChatTools: mock(() => chatTools),
 }));
 
-// ai-chat.service — controls what the "model" produces on the wire
-type FakeStreamChatResult = {
-  toUIMessageStream: (options?: { sendReasoning?: boolean }) => ReadableStream<unknown>;
-  totalUsage: Promise<{ inputTokens: number; outputTokens: number; totalTokens: number; inputTokenDetails: { cacheReadTokens: number } }>;
-};
+// ai-chat.service — a real streamText over a mock model: step 1 calls a
+// tool, step 2 reasons then answers, so usage spans two steps.
+function stepUsage(input: number, cacheRead: number, output: number) {
+  return {
+    inputTokens: { total: input, noCache: input - cacheRead, cacheRead, cacheWrite: undefined },
+    outputTokens: { total: output, text: output, reasoning: undefined },
+  };
+}
 
-let lastUIStreamOptions: { sendReasoning?: boolean } | undefined;
+function mockChatModel(): MockLanguageModelV4 {
+  let callIndex = 0;
+  return new MockLanguageModelV4({
+    doStream: async () => {
+      callIndex += 1;
+      if (callIndex === 1) {
+        return {
+          stream: simulateReadableStream({
+            chunkDelayInMs: 0,
+            initialDelayInMs: 0,
+            chunks: [
+              { type: 'stream-start', warnings: [] },
+              { type: 'tool-call', toolCallId: 'call-1', toolName: 'noop_tool', input: '{}' },
+              { type: 'finish', usage: stepUsage(100, 64, 3), finishReason: { unified: 'tool-calls', raw: undefined } },
+            ],
+          }),
+        };
+      }
+      return {
+        stream: simulateReadableStream({
+          chunkDelayInMs: 0,
+          initialDelayInMs: 0,
+          chunks: [
+            { type: 'stream-start', warnings: [] },
+            { type: 'reasoning-start', id: 'r1' },
+            { type: 'reasoning-delta', id: 'r1', delta: 'secret chain of thought' },
+            { type: 'reasoning-end', id: 'r1' },
+            { type: 'text-start', id: 't1' },
+            { type: 'text-delta', id: 't1', delta: 'Bonjour' },
+            { type: 'text-end', id: 't1' },
+            { type: 'finish', usage: stepUsage(120, 100, 4), finishReason: { unified: 'stop', raw: undefined } },
+          ],
+        }),
+      };
+    },
+  });
+}
 
-let streamChatImpl: (params: unknown) => FakeStreamChatResult = () => ({
-  toUIMessageStream: (options) => {
-    lastUIStreamOptions = options;
-    return new ReadableStream({
-      start(controller) {
-        controller.enqueue({ type: 'text-start', id: 't1' });
-        controller.enqueue({ type: 'text-delta', id: 't1', delta: 'Bonjour' });
-        controller.enqueue({ type: 'text-end', id: 't1' });
-        controller.close();
-      },
-    });
-  },
-  totalUsage: Promise.resolve({
-    inputTokens: 10,
-    outputTokens: 5,
-    totalTokens: 15,
-    inputTokenDetails: { cacheReadTokens: 0 },
-  }),
-});
+type StreamChatResult = ReturnType<typeof streamText>;
+
+let lastStreamChatResult: StreamChatResult | undefined;
+
+function realStreamChat(params: unknown): StreamChatResult {
+  lastStreamChatResult = streamText({
+    model: mockChatModel(),
+    prompt: 'Bonjour Tom',
+    tools: (params as { tools: ToolSet }).tools,
+    stopWhen: isStepCount(5),
+  });
+  return lastStreamChatResult;
+}
+
+let streamChatImpl: (params: unknown) => StreamChatResult = realStreamChat;
 
 mock.module('../services/chat/ai-chat.service', () => ({
   streamChat: (params: unknown) => streamChatImpl(params),
@@ -152,32 +196,14 @@ function makeRequest(body?: unknown) {
 
 describe('POST /api/chat/stream', () => {
   beforeEach(() => {
-    lastUIStreamOptions = undefined;
     currentUser = null;
     quotaAllowed = true;
     checkQuota.mockClear();
     prepareTurn.mockClear();
     persistUserTurn.mockClear();
     finishTurn.mockClear();
-    streamChatImpl = () => ({
-      toUIMessageStream: (options) => {
-        lastUIStreamOptions = options;
-        return new ReadableStream({
-          start(controller) {
-            controller.enqueue({ type: 'text-start', id: 't1' });
-            controller.enqueue({ type: 'text-delta', id: 't1', delta: 'Bonjour' });
-            controller.enqueue({ type: 'text-end', id: 't1' });
-            controller.close();
-          },
-        });
-      },
-      totalUsage: Promise.resolve({
-        inputTokens: 10,
-        outputTokens: 5,
-        totalTokens: 15,
-        inputTokenDetails: { cacheReadTokens: 0 },
-      }),
-    });
+    lastStreamChatResult = undefined;
+    streamChatImpl = realStreamChat;
   });
 
   it('returns 401 when unauthenticated', async () => {
@@ -243,8 +269,26 @@ describe('POST /api/chat/stream', () => {
   it('never forwards the model reasoning to the client', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'troisieme', firstName: 'Léo' };
     const res = await app.handle(makeRequest());
+    const body = await res.text();
+
+    expect(body).toContain('"type":"text-delta"');
+    expect(body).toContain('Bonjour');
+    expect(body).not.toContain('"type":"reasoning');
+    expect(body).not.toContain('secret chain of thought');
+  });
+
+  it('records the model usage summed over every step', async () => {
+    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'troisieme', firstName: 'Léo' };
+    const res = await app.handle(makeRequest());
     await res.text();
 
-    expect(lastUIStreamOptions).toEqual({ sendReasoning: false });
+    const finishArgs = finishTurn.mock.calls[0]?.[0] as { usage: unknown };
+    expect(finishArgs.usage).toEqual(await lastStreamChatResult?.usage);
+    expect(finishArgs.usage).toMatchObject({
+      inputTokens: 220,
+      outputTokens: 7,
+      totalTokens: 227,
+      inputTokenDetails: { cacheReadTokens: 164 },
+    });
   });
 });

@@ -5,18 +5,18 @@
  * module keeps the two remaining non-chat-stream shapes:
  *
  * - `generateText` — completion non-streaming simple (vision, analyse doc, résumé, titre…)
- * - `generateStructured` — completion JSON Schema strict (intent classifier, cartes, épisodes…)
+ * - `generateStructured` — sortie structurée Zod en JSON Schema, strict par défaut (intent classifier, épisodes…) ; les cartes passent `strict: false`
  *
  * Both go through `mistralProvider` (`lib/ai/provider.ts`, EU endpoint).
  * Every call runs with `reasoningEffort: 'none'`: reasoning is reserved to the
  * chat turn (`ai-chat.service.ts`).
  */
 
-import { generateText as aiGenerateText, generateObject as aiGenerateObject, jsonSchema, type ModelMessage, type TextPart, type FilePart, type JSONSchema7 } from 'ai';
+import { generateText as aiGenerateText, Output, NoObjectGeneratedError, TypeValidationError, type LanguageModelUsage, type ModelMessage, type TextPart, type FilePart } from 'ai';
+import type { z } from 'zod';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { mistralProvider } from './provider.js';
 import { env } from '../../config/env.js';
-import { withGenAiSpan } from '../otel/index.js';
 
 // ── Types domain ────────────────────────────────────────────────────────────
 
@@ -43,6 +43,7 @@ export type MistralMessage =
 
 interface GenerateTextOptions {
   messages: MistralMessage[];
+  functionId: string;
   model?: string;
   temperature?: number;
   maxTokens?: number;
@@ -57,10 +58,19 @@ interface GenerateTextOptions {
 }
 
 interface GenerateStructuredOptions<T> extends GenerateTextOptions {
-  /** JSON Schema wrapper — `{ name, strict, schema }`, forme Mistral `response_format.json_schema`. */
-  schema: Record<string, unknown>;
-  /** Pour le typing fort côté caller — sera retourné directement (déjà objet, plus de JSON.parse). */
-  expectedType?: () => T;
+  schema: z.ZodType<T>;
+  schemaName: string;
+  strict?: boolean;
+}
+
+interface StructuredUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface StructuredResult<T> {
+  object: T;
+  usage: StructuredUsage;
 }
 
 // ── Helpers internes ────────────────────────────────────────────────────────
@@ -83,19 +93,8 @@ function toModelMessages(messages: MistralMessage[]): ModelMessage[] {
   });
 }
 
-/**
- * Pulls the raw JSON Schema (`.schema`) and name out of the Mistral
- * `response_format.json_schema` wrapper callers already build (unchanged in
- * this task — see `episodic-memory.service.ts` / `intent-classifier.service.ts`
- * / `card-generator.service.ts` for the wrapper shape).
- */
-function extractJsonSchema(wrapper: Record<string, unknown>): { name?: string; schema: JSONSchema7 } {
-  const schema = wrapper['schema'];
-  if (!schema || typeof schema !== 'object') {
-    throw new Error('generateStructured: schema.schema (JSON Schema) manquant');
-  }
-  const name = wrapper['name'];
-  return { name: typeof name === 'string' ? name : undefined, schema: schema as JSONSchema7 };
+function toUsage(usage: LanguageModelUsage | undefined): StructuredUsage {
+  return { inputTokens: usage?.inputTokens ?? 0, outputTokens: usage?.outputTokens ?? 0 };
 }
 
 // ── API publique ────────────────────────────────────────────────────────────
@@ -111,96 +110,81 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
   const maxTokens = opts.maxTokens ?? env.MISTRAL_MAX_TOKENS;
   const timeoutMs = opts.timeoutMs ?? env.MISTRAL_TIMEOUT;
 
-  return withGenAiSpan(
-    {
-      operation: 'chat',
-      provider: 'mistral_ai',
-      model,
-      maxTokens,
-      temperature,
-      serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
+  const result = await aiGenerateText({
+    model: mistralProvider()(model),
+    messages: toModelMessages(opts.messages),
+    allowSystemInMessages: true,
+    temperature,
+    maxOutputTokens: maxTokens,
+    maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
+    abortSignal: AbortSignal.timeout(timeoutMs),
+    telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
+    providerOptions: {
+      mistral: {
+        safePrompt: true,
+        reasoningEffort: 'none',
+        promptCacheKey: opts.promptCacheKey,
+      } satisfies MistralLanguageModelChatOptions,
     },
-    async (recordResponse) => {
-      const result = await aiGenerateText({
-        model: mistralProvider()(model),
-        messages: toModelMessages(opts.messages),
-        allowSystemInMessages: true,
-        temperature,
-        maxOutputTokens: maxTokens,
-        maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
-        abortSignal: AbortSignal.timeout(timeoutMs),
-        providerOptions: {
-          mistral: {
-            safePrompt: true,
-            reasoningEffort: 'none',
-            promptCacheKey: opts.promptCacheKey,
-          } satisfies MistralLanguageModelChatOptions,
-        },
-      });
-      recordResponse({
-        id: result.response.id,
-        model: result.response.modelId,
-        finishReasons: [result.finishReason],
-        inputTokens: result.usage.inputTokens,
-        outputTokens: result.usage.outputTokens,
-      });
-      return result.text;
-    },
-  );
+  });
+  return result.text;
 }
 
 /**
- * Génération structurée JSON Schema. Garantit que la sortie respecte le schéma
- * (mode `json_schema` strict natif Mistral, via `generateObject`).
+ * Génération structurée validée par un schéma Zod (`json_schema` natif Mistral,
+ * strict par défaut ; `strict: false` pour les cartes). Une sortie hors schéma
+ * est relancée une seule fois avec l'erreur de validation ; l'usage renvoyé
+ * cumule les deux appels.
  */
-export async function generateStructured<T = unknown>(
-  opts: GenerateStructuredOptions<T>,
-): Promise<T> {
+export async function generateStructured<T>(opts: GenerateStructuredOptions<T>): Promise<StructuredResult<T>> {
   if (!env.MISTRAL_API_KEY) throw new Error('Mistral non configuré');
 
   const model = opts.model ?? env.MISTRAL_MODEL;
   const temperature = opts.temperature ?? env.MISTRAL_TEMPERATURE;
   const maxTokens = opts.maxTokens ?? env.MISTRAL_MAX_TOKENS;
   const timeoutMs = opts.timeoutMs ?? env.MISTRAL_TIMEOUT;
-  const { name, schema } = extractJsonSchema(opts.schema);
 
-  return withGenAiSpan(
-    {
-      operation: 'chat',
-      provider: 'mistral_ai',
-      model,
-      maxTokens,
+  const abortSignal = AbortSignal.timeout(timeoutMs);
+  const call = async (messages: ModelMessage[]) => {
+    const result = await aiGenerateText({
+      model: mistralProvider()(model),
+      messages,
+      allowSystemInMessages: true,
+      output: Output.object({ schema: opts.schema, name: opts.schemaName }),
       temperature,
-      serverAddress: new URL(env.MISTRAL_SERVER_URL).host,
-    },
-    async (recordResponse) => {
-      const result = await aiGenerateObject({
-        model: mistralProvider()(model),
-        messages: toModelMessages(opts.messages),
-        allowSystemInMessages: true,
-        schema: jsonSchema<T>(schema),
-        schemaName: name,
-        temperature,
-        maxOutputTokens: maxTokens,
-        maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
-        abortSignal: AbortSignal.timeout(timeoutMs),
-        providerOptions: {
-          mistral: {
-            safePrompt: true,
-            strictJsonSchema: true,
-            reasoningEffort: 'none',
-            promptCacheKey: opts.promptCacheKey,
-          } satisfies MistralLanguageModelChatOptions,
-        },
-      });
-      recordResponse({
-        id: result.response.id,
-        model: result.response.modelId,
-        finishReasons: [result.finishReason],
-        inputTokens: result.usage.inputTokens,
-        outputTokens: result.usage.outputTokens,
-      });
-      return result.object;
-    },
-  );
+      maxOutputTokens: maxTokens,
+      maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
+      abortSignal,
+      telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
+      providerOptions: {
+        mistral: {
+          safePrompt: true,
+          strictJsonSchema: opts.strict ?? true,
+          reasoningEffort: 'none',
+          promptCacheKey: opts.promptCacheKey,
+        } satisfies MistralLanguageModelChatOptions,
+      },
+    });
+    return { object: result.output, usage: toUsage(result.usage) };
+  };
+
+  const messages = toModelMessages(opts.messages);
+  try {
+    return await call(messages);
+  } catch (error) {
+    if (!NoObjectGeneratedError.isInstance(error) || !TypeValidationError.isInstance(error.cause)) throw error;
+    const retry = await call([
+      ...messages,
+      { role: 'assistant', content: error.text ?? '' },
+      { role: 'user', content: `Ta réponse ne respecte pas le schéma attendu : ${error.cause.message}. Renvoie un JSON corrigé.` },
+    ]);
+    const first = toUsage(error.usage);
+    return {
+      object: retry.object,
+      usage: {
+        inputTokens: first.inputTokens + retry.usage.inputTokens,
+        outputTokens: first.outputTokens + retry.usage.outputTokens,
+      },
+    };
+  }
 }

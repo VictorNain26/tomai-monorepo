@@ -24,10 +24,10 @@ cd apps/server && bun run dev &   # host, :3000 — NOT the `backend` compose pr
 curl -sS http://localhost:3000/health | python3 -m json.tool
 ```
 
-Assert the top-level `status` field is `"healthy"` (or `"degraded"` only if
-you can explain which optional dependency is intentionally unconfigured —
-e.g. `MISTRAL_API_KEY` absent in a minimal local `.env`). `"unhealthy"` is a
-failure, full stop.
+Assert the top-level `status` field is `"healthy"`; `"unhealthy"` (HTTP 503)
+is a failure, full stop. `/health` only probes the database: it proves nothing
+about Mistral. For an AI change, also hit `/health/ai` (503 when
+`MISTRAL_API_KEY` is absent or the call fails).
 
 Then run the strict end-to-end doctor from the repo root — it fails loud
 (no SKIP silently accepted) on every real dependency:
