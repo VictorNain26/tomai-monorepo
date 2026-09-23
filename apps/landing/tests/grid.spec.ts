@@ -179,6 +179,25 @@ test("/cgu at 1441px keeps legal lines within 85 characters", async ({ page }) =
   expect(longest).toBeLessThanOrEqual(85);
 });
 
+for (const width of [375, 1024]) {
+  test(`header and page controls at ${width}px are at least 44px targets`, async ({ page }) => {
+    await page.setViewportSize({ width, height: HEIGHT });
+    for (const path of ["/", "/aide"]) {
+      await page.goto(path);
+      await settle(page);
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>("header a, header button, main a, main button, main input")]
+          .filter((el) => el.getClientRects().length > 0 && !el.closest(".sr-only"))
+          .filter((el) => !(el.tagName === "A" && getComputedStyle(el).display === "inline"))
+          .map((el) => ({ text: (el.textContent || el.getAttribute("aria-label") || "").trim().slice(0, 30), box: el.getBoundingClientRect() }))
+          .filter(({ box }) => box.width < 44 || box.height < 44)
+          .map(({ text, box }) => `${text} ${Math.round(box.width)}×${Math.round(box.height)}`),
+      );
+      expect(small, path).toEqual([]);
+    }
+  });
+}
+
 test("/aide at 375px keeps each FAQ question within three lines", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: HEIGHT });
   await page.goto("/aide");
