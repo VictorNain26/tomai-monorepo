@@ -33,7 +33,7 @@ const PLANS = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="bg-seyes scroll-mt-20 py-24 lg:py-32">
+    <section id="pricing" className="scroll-mt-20 py-24 lg:py-32">
       <div className="container">
         <SectionHeader
           eyebrow="Tarifs"

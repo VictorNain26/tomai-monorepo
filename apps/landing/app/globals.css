@@ -2,86 +2,77 @@
 @import "@repo/tokens/theme.css";
 @source "../../../packages/ui/src";
 
-@theme {
-  --text-xs--line-height: 1rem;
-  --text-sm--line-height: 1.5rem;
-  --text-base--line-height: 1.5rem;
-  --text-lg--line-height: 2rem;
-  --text-xl--line-height: 2rem;
-  --text-2xl--line-height: 2rem;
-  --text-3xl--line-height: 2.5rem;
-  --text-4xl--line-height: 3rem;
-  --text-5xl--line-height: 3.5rem;
-  --text-6xl--line-height: 4rem;
-  --text-7xl--line-height: 5rem;
-  --text-8xl--line-height: 6rem;
-}
-
-/* Seyès : carreau 32 px, interlignes 8 px. Les verticales sont peintes par ::before
- * car les % de background-position ne se rapportent pas à la largeur de la boîte ;
- * `left` en % se rapporte à la largeur de la section, barre de défilement exclue. */
-@utility bg-seyes {
+:root {
   --cell: 2rem;
   --rule: 0.5rem;
-  --sheet-x: max(0px, calc((100% - 78rem) / 2));
-  --margin-index: 1;
+  --band: 4rem;
+  --margin-x: 3.5rem;
+}
+
+@media (width >= 48rem) {
+  :root {
+    --band: 6rem;
+    --margin-x: 6rem;
+  }
+}
+
+/* Bord gauche entier : `auto` donnerait x,5 px et des verticales floues sur une largeur impaire. */
+@utility sheet {
   position: relative;
   isolation: isolate;
-  overflow-x: clip;
+  display: flow-root;
+  max-width: 80rem;
+  margin-inline: auto;
   background-color: var(--color-background);
+  box-shadow: 0 0 0 1px var(--color-border);
+
+  @supports (margin-left: round(down, 1px, 1px)) {
+    margin-left: max(0px, round(down, (100% - 80rem) / 2, 1px));
+  }
+}
+
+@utility sheet-rules {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image:
     linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px),
     linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 10%, transparent) 1px, transparent 1px);
   background-size: 100% var(--cell), 100% var(--rule);
-
-  &::before {
-    content: "";
-    position: absolute;
-    inset-block: 0;
-    left: calc(var(--sheet-x) - 40 * var(--cell));
-    right: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: linear-gradient(to right, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px);
-    background-size: var(--cell) 100%;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset-block: 0;
-    left: calc(var(--sheet-x) + var(--margin-index) * var(--cell));
-    width: 2px;
-    z-index: -1;
-    pointer-events: none;
-    background-color: var(--color-annotation);
-  }
-
-  @media (width >= 48rem) {
-    --margin-index: 2;
-  }
-
-  @media (width >= 64rem) {
-    --margin-index: 3;
-  }
 }
 
-/* 78rem = 39 carreaux : centré, son bord gauche tombe sur une verticale.
- * Padding gauche = marge + ½ carreau (mobile), + 1 carreau (md, lg). */
+@utility sheet-verticals {
+  position: absolute;
+  inset-block: 0;
+  left: var(--margin-x);
+  right: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(to right, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px);
+  background-size: var(--cell) 100%;
+}
+
+@utility sheet-margin {
+  position: absolute;
+  inset-block: 0;
+  left: var(--margin-x);
+  width: 2px;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--color-annotation);
+}
+
 @utility container {
   margin-inline: auto;
   width: 100%;
-  max-width: 78rem;
-  padding-left: 3rem;
+  max-width: 80rem;
+  padding-left: calc(var(--margin-x) + 1rem);
   padding-right: 1rem;
 
   @media (width >= 48rem) {
-    padding-left: 6rem;
+    padding-left: calc(var(--margin-x) + var(--cell));
     padding-right: 4rem;
-  }
-
-  @media (width >= 64rem) {
-    padding-left: 8rem;
   }
 }
 
@@ -112,8 +103,6 @@
   }
 
   & li {
-    position: relative;
-    top: calc(0.5lh - var(--ink-ad) * 0.5em);
     margin-bottom: 0.5rem;
   }
 
@@ -138,22 +127,8 @@
     @apply border-border;
   }
 
-  /* (ascent − |descent|) / unitsPerEm, @capsizecss/metrics 4.3.0 :
-   * Figtree 950/250/1000, Fraunces 1956/510/2000. */
   body {
-    --ink-ad: 0.7;
-    @apply bg-background font-sans text-foreground antialiased;
-  }
-
-  h1, h2, h3, h4, h5, h6, .font-heading {
-    --ink-ad: 0.723;
-  }
-
-  /* Décale chaque bloc pour que la ligne de base tombe sur le bas de sa ligne,
-   * donc sur une ligne de la réglure quand le bloc démarre sur une ligne. */
-  p, h1, h2, h3, h4, h5, h6, dt, dd, blockquote {
-    position: relative;
-    top: calc(0.5lh - var(--ink-ad) * 0.5em);
+    @apply bg-secondary font-sans text-foreground antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {

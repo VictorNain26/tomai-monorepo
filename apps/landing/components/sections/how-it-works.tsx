@@ -35,7 +35,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="bg-seyes scroll-mt-20 py-24 lg:py-32">
+    <section id="how-it-works" className="scroll-mt-20 py-24 lg:py-32">
       <div className="container">
         <SectionHeader eyebrow="La méthode" title="Comment Tom guide votre enfant" />
         <ol className="mx-auto grid max-w-5xl gap-12 md:grid-cols-3">

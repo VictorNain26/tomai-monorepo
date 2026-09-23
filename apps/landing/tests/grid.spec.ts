@@ -1,70 +1,17 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const PAGES = ["/", "/aide", "/contact", "/cgu", "/confidentialite", "/mentions-legales"];
-const WIDTHS = [375, 768, 1024, 1260, 1440];
-const HEIGHT = 900;
+const SECONDARY = ["/aide", "/faq", "/contact", "/cgu", "/confidentialite", "/mentions-legales"];
+const PAGES = ["/", ...SECONDARY];
+const WIDTHS = [375, 768, 1024, 1441];
+const HEIGHT = 861;
 
-interface Grid {
-  rule: number;
-  cell: number;
-  sheet: number;
+interface Geometry {
+  marginX: number;
+  band: number;
 }
 
-interface Measure {
-  checked: number;
-  problems: string[];
-}
-
-const DEFAULT_GRID: Grid = { rule: 8, cell: 32, sheet: 1248 };
-
-function measure(page: Page, grid: Grid): Promise<Measure> {
-  return page.evaluate(({ rule, cell, sheet }) => {
-    const TEXT = "p, h1, h2, h3, h4, h5, h6, dt, dd, blockquote, .legal-copy li";
-    const offGrid = (value: number, step: number) => {
-      const rest = ((value % step) + step) % step;
-      return Math.min(rest, step - rest) > 1;
-    };
-    const problems: string[] = [];
-    let checked = 0;
-
-    for (const section of document.querySelectorAll<HTMLElement>(".bg-seyes")) {
-      const box = section.getBoundingClientRect();
-      const sheetX = Math.max(0, (section.clientWidth - sheet) / 2);
-      const marginLeft = parseFloat(getComputedStyle(section, "::after").left);
-      if (offGrid(marginLeft - sheetX, cell)) {
-        problems.push(`margin off vertical: left=${marginLeft} sheetX=${sheetX} width=${section.clientWidth}`);
-      }
-
-      for (const el of section.querySelectorAll<HTMLElement>(TEXT)) {
-        const text = el.textContent?.trim() ?? "";
-        if (!text || el.closest('[aria-hidden="true"]') || el.getClientRects().length === 0) continue;
-        checked++;
-
-        // A margin note is tilted on purpose: measure the line box it is laid out on, before the tilt.
-        // The reduced-motion rule turns any style change into a 0.01ms transition: disable it to read the result now.
-        const tilt = el.style.rotate;
-        el.style.transition = "none";
-        el.style.rotate = "none";
-        const probe = document.createElement("span");
-        probe.style.cssText = "display:inline-block;width:0;height:0";
-        el.prepend(probe);
-        const baseline = probe.getBoundingClientRect().top - box.top;
-        probe.remove();
-        el.style.rotate = tilt;
-        el.style.transition = "";
-
-        const excerpt = text.slice(0, 40);
-        if (offGrid(baseline, rule)) {
-          problems.push(`baseline off rule: <${el.tagName.toLowerCase()}> "${excerpt}" y=${baseline.toFixed(2)}`);
-        }
-        const left = el.getBoundingClientRect().left;
-        if (left < box.left + marginLeft + 2) {
-          problems.push(`text over margin: <${el.tagName.toLowerCase()}> "${excerpt}" left=${left.toFixed(2)}`);
-        }
-      }
-    }
-    return { checked, problems };
-  }, grid);
+function geometryFor(width: number): Geometry {
+  return width >= 768 ? { marginX: 96, band: 96 } : { marginX: 56, band: 64 };
 }
 
 async function settle(page: Page) {
@@ -73,40 +20,55 @@ async function settle(page: Page) {
     const step = window.innerHeight / 2;
     for (let y = 0; y < document.documentElement.scrollHeight; y += step) {
       window.scrollTo(0, y);
-      for (let frame = 0; frame < 2; frame++) {
-        await new Promise((resolve) => requestAnimationFrame(resolve));
-      }
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     }
     window.scrollTo(0, 0);
   });
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll<HTMLElement>("[style*=transform]")].every((el) => el.style.transform === "none"),
-  );
 }
 
-async function expectOnGrid(page: Page, grid: Grid) {
-  const { checked, problems } = await measure(page, grid);
-  expect(checked, "no text element measured").toBeGreaterThan(0);
-  expect(problems, problems.join("\n")).toEqual([]);
+function inspectSheets(page: Page, geometry: Geometry) {
+  return page.evaluate(({ marginX, band }) => {
+    const near = (a: number, b: number) => Math.abs(a - b) <= 0.5;
+    const problems: string[] = [];
+    const sheets = [...document.querySelectorAll<HTMLElement>("[data-sheet]")];
+    const nested = document.querySelectorAll("[data-sheet] [data-sheet]").length;
+
+    for (const sheet of sheets) {
+      const box = sheet.getBoundingClientRect();
+      const layer = (name: string) => sheet.querySelector<HTMLElement>(`:scope > [data-sheet-${name}]`)?.getBoundingClientRect();
+      const rules = layer("rules");
+      const verticals = layer("verticals");
+      const margin = layer("margin");
+      if (!rules || !verticals || !margin) {
+        problems.push("sheet without its three layers");
+        continue;
+      }
+      if (Math.abs(box.left - Math.round(box.left)) > 0.01) problems.push(`sheet left not whole: ${box.left}`);
+      if (!near(margin.left - box.left, marginX)) problems.push(`margin at ${margin.left - box.left}, expected ${marginX}`);
+      if (!near(verticals.left, margin.left)) problems.push(`verticals start at ${verticals.left}, margin at ${margin.left}`);
+      const rulesTop = sheet.hasAttribute("data-band") ? band : 0;
+      if (!near(rules.top - box.top, rulesTop)) problems.push(`rules start at ${rules.top - box.top}, expected ${rulesTop}`);
+
+      for (const el of sheet.querySelectorAll<HTMLElement>("p, h1, h2, h3, li, a, button, input")) {
+        if (el.closest('[aria-hidden="true"]') || el.getClientRects().length === 0) continue;
+        const left = el.getBoundingClientRect().left;
+        if (left < margin.right - 0.5) problems.push(`<${el.tagName.toLowerCase()}> over the margin at ${left.toFixed(1)}`);
+      }
+    }
+    return { sheets: sheets.length, nested, problems };
+  }, geometry);
 }
 
 for (const path of PAGES) {
   for (const width of WIDTHS) {
-    test(`${path} at ${width}px sits on the Seyès grid`, async ({ page }) => {
+    test(`${path} at ${width}px is drawn on one Seyès sheet`, async ({ page }) => {
       await page.setViewportSize({ width, height: HEIGHT });
       await page.goto(path);
       await settle(page);
-      await expectOnGrid(page, DEFAULT_GRID);
+      const { sheets, nested, problems } = await inspectSheets(page, geometryFor(width));
+      expect(sheets, "no sheet on the page").toBeGreaterThan(0);
+      expect(nested, "a sheet inside a sheet").toBe(0);
+      expect(problems, problems.join("\n")).toEqual([]);
     });
   }
-
-  test(`${path} at 1024px with a 20px root font sits on the scaled grid`, async ({ page }) => {
-    await page.setViewportSize({ width: 1024, height: HEIGHT });
-    await page.goto(path);
-    await page.evaluate(() => {
-      document.documentElement.style.fontSize = "20px";
-    });
-    await settle(page);
-    await expectOnGrid(page, { rule: 10, cell: 40, sheet: 1560 });
-  });
 }

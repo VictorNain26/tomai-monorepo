@@ -11,7 +11,7 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="bg-seyes scroll-mt-20 py-24 lg:py-32">
+    <section id="faq" className="scroll-mt-20 py-24 lg:py-32">
       <div className="container">
         <SectionHeader
           eyebrow="Questions"

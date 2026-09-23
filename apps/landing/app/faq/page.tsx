@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FAQ } from "@/components/sections/faq";
+import { NotebookSheet } from "@/components/notebook/notebook-sheet";
 
 export const metadata: Metadata = {
   title: "Questions fréquentes",
@@ -10,5 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default function FAQPage() {
-  return <FAQ />;
+  return (
+    <NotebookSheet band>
+      <FAQ />
+    </NotebookSheet>
+  );
 }
