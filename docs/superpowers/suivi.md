@@ -84,7 +84,10 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 
 | PR | Plan | Branche | Statut | Lien |
 |---|---|---|---|---|
-| Landing « La copie corrigée », PR 1 — fondations | `plans/2026-09-23-landing-copie-corrigee-pr1-fondations.md` | `feat/landing-copie-corrigee` | ouverte | — |
+| Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`) | `plans/2026-09-23-landing-copie-corrigee-pr1-fondations.md` | `feat/landing-copie-corrigee` | en cours | — |
+| Landing, PR 2 — Couvertures (ouverture, fermeture, bande de tête collante) | à écrire au démarrage | — | à faire | — |
+| Landing, PR 3 — Écriture (Caveat en SVG, barré et souligné tracés) | à écrire au démarrage | — | à faire | — |
+| Landing, PR 4 — Sections (première page, exercice en fiche, sections restylées) | à écrire au démarrage | — | à faire | — |
 
 ## Étapes manuelles (utilisateur)
 
@@ -185,3 +188,9 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   la réglure, footer en quatrième de couverture bleue, contact `contact@tomia.fr`. Test de
   grille Playwright (`pnpm --filter landing test:grid`, 6 pages × 5 largeurs + zoom 20 px) :
   local uniquement, son branchement en CI fera l'objet d'une PR séparée.
+  Pivot le même jour, spec révisée (`4e84b94`) : une seule feuille par page au lieu d'une
+  par section, texte composé sur des fiches collées au lieu du rythme de ligne de base
+  (`lh` + Capsize), couvertures de cahier en ouverture et en fermeture (PR 2), écriture
+  manuscrite (PR 3), sections restylées (PR 4). Commits remplacés : `041f884` (feuille par
+  section) et `e901312` (rythme de ligne de base). Le test de grille compte 74 cas (feuille,
+  bornes, fiches, sans JavaScript, mouvement réduit).
