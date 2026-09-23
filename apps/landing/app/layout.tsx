@@ -126,6 +126,9 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${fraunces.variable} ${figtree.variable}`}>
       <body>
+        <noscript>
+          <style>{"[data-reveal]{opacity:1!important;transform:none!important}"}</style>
+        </noscript>
         {jsonLd.map((schema, i) => (
           <script
             key={i}

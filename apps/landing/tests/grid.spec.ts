@@ -105,3 +105,31 @@ for (const path of PAGES) {
     });
   }
 }
+
+function hiddenReveals(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("[data-reveal]")]
+      .filter((el) => getComputedStyle(el).opacity !== "1" || getComputedStyle(el).transform !== "none")
+      .map((el) => el.textContent?.trim().slice(0, 40) ?? ""),
+  );
+}
+
+test.describe("without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  for (const path of ["/", "/cgu"]) {
+    test(`${path} shows every revealed block`, async ({ page }) => {
+      await page.goto(path);
+      expect(await page.locator("[data-reveal]").count()).toBeGreaterThan(0);
+      expect(await hiddenReveals(page)).toEqual([]);
+    });
+  }
+});
+
+for (const path of ["/", "/cgu"]) {
+  test(`${path} ends every reveal opaque and in place under reduced motion`, async ({ page }) => {
+    await page.goto(path);
+    await settle(page);
+    await expect.poll(() => hiddenReveals(page)).toEqual([]);
+  });
+}
