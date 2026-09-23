@@ -11,9 +11,9 @@ export default function AidePage() {
       description={`Les réponses aux questions fréquentes sur ${BRAND_NAME}.`}
       maxWidth="5xl"
     >
-      <div className="max-w-3xl mx-auto text-center">
+      <div className="max-w-3xl">
         <h3 className="mb-4 text-2xl font-semibold">Une question sur {BRAND_NAME} ?</h3>
-        <p className="mx-auto mb-8 max-w-md text-muted-foreground">
+        <p className="mb-8 max-w-md text-muted-foreground">
           Écrivez-nous : nous lisons chaque message.
         </p>
         <Button size="lg" asChild>

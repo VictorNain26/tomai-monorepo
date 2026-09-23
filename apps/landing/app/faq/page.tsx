@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
 import { FaqList } from "@/components/sections/faq-list";
+import { BRAND_NAME } from "@/lib/brand";
 
-const DESCRIPTION =
-  "Retrouvez les réponses aux questions les plus fréquentes sur TomIA : méthode socratique, niveaux et matières, suivi parental, tarifs et compatibilité Pronote.";
+const DESCRIPTION = `Retrouvez les réponses aux questions les plus fréquentes sur ${BRAND_NAME} : méthode socratique, niveaux et matières, suivi parental, tarifs et compatibilité Pronote.`;
 
 export const metadata: Metadata = {
   title: "Questions fréquentes",

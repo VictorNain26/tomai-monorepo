@@ -268,7 +268,15 @@ test.describe("with motion", () => {
       });
       await page.goto(path);
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(1500);
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            [...document.querySelectorAll<HTMLElement>("[data-reveal]")].every(
+              (el) => getComputedStyle(el).opacity === "1" && getComputedStyle(el).transform === "none",
+            ),
+          ),
+        )
+        .toBe(true);
       expect(await page.evaluate(() => window.layoutShift)).toBeLessThan(0.001);
     });
   }
