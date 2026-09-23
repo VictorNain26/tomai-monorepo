@@ -18,9 +18,9 @@ export function Hero() {
 
   return (
     <section className="flex min-h-[calc(100svh-4rem)] items-start py-16 lg:py-24">
-      <div className="container grid w-full items-start gap-16 lg:grid-cols-2">
+      <div className="container grid w-full grid-cols-1 items-start gap-16 lg:grid-cols-2">
         <div>
-          <h1 className="text-5xl font-semibold text-balance text-foreground sm:text-6xl xl:text-7xl">
+          <h1 className="text-4xl font-semibold text-balance text-foreground sm:text-6xl xl:text-7xl">
             Il ne donne pas la réponse. Il aide à la{" "}
             <Scribble kind="strike" delay={0.3}>
               <span aria-hidden="true" className="text-muted-foreground">trouver</span>

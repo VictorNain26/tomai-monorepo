@@ -90,6 +90,20 @@ function inspectBounds(page: Page) {
         }
       }
     }
+    for (const container of document.querySelectorAll<HTMLElement>("[data-sheet] .container")) {
+      const box = container.getBoundingClientRect();
+      const style = getComputedStyle(container);
+      const left = box.left + parseFloat(style.paddingLeft);
+      const right = box.right - parseFloat(style.paddingRight);
+      for (const el of container.querySelectorAll<HTMLElement>("*")) {
+        if (el.closest('[aria-hidden="true"], .sr-only') || el.getClientRects().length === 0) continue;
+        const rect = el.getBoundingClientRect();
+        // 2 px of slack: a rotated margin note grows its box by a pixel or two.
+        if (rect.left < left - 2 || rect.right > right + 2) {
+          problems.push(`<${el.tagName.toLowerCase()} class="${el.className}"> spans ${rect.left.toFixed(1)}–${rect.right.toFixed(1)}, container text ${left}–${right}`);
+        }
+      }
+    }
     return problems;
   });
 }
