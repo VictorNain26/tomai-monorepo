@@ -49,7 +49,7 @@ function inspectSheets(page: Page, geometry: Geometry) {
       const rulesTop = sheet.hasAttribute("data-band") ? band : 0;
       if (!near(rules.top - box.top, rulesTop)) problems.push(`rules start at ${rules.top - box.top}, expected ${rulesTop}`);
 
-      for (const el of sheet.querySelectorAll<HTMLElement>("p, h1, h2, h3, li, a, button, input")) {
+      for (const el of sheet.querySelectorAll<HTMLElement>("p, h1, h2, h3, h4, li, a, button, input, dt, dd, label, blockquote")) {
         if (el.closest('[aria-hidden="true"]') || el.getClientRects().length === 0) continue;
         const left = el.getBoundingClientRect().left;
         if (left < margin.right - 0.5) problems.push(`<${el.tagName.toLowerCase()}> over the margin at ${left.toFixed(1)}`);
@@ -66,8 +66,41 @@ for (const path of PAGES) {
       await page.goto(path);
       await settle(page);
       const { sheets, nested, problems } = await inspectSheets(page, geometryFor(width));
-      expect(sheets, "no sheet on the page").toBeGreaterThan(0);
+      expect(sheets, "not exactly one sheet on the page").toBe(1);
       expect(nested, "a sheet inside a sheet").toBe(0);
+      expect(problems, problems.join("\n")).toEqual([]);
+    });
+  }
+}
+
+function inspectBounds(page: Page) {
+  return page.evaluate(() => {
+    const problems: string[] = [];
+    if (document.documentElement.scrollWidth > window.innerWidth) {
+      problems.push(`page scrolls sideways: ${document.documentElement.scrollWidth} > ${window.innerWidth}`);
+    }
+    if (document.querySelectorAll(".container .container").length > 0) problems.push("a container inside a container");
+    for (const sheet of document.querySelectorAll<HTMLElement>("[data-sheet]")) {
+      const box = sheet.getBoundingClientRect();
+      for (const el of sheet.querySelectorAll<HTMLElement>("*")) {
+        if (el.closest('[aria-hidden="true"]') || el.getClientRects().length === 0) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.left < box.left - 0.5 || rect.right > box.right + 0.5) {
+          problems.push(`<${el.tagName.toLowerCase()} class="${el.className}"> spans ${rect.left.toFixed(1)}–${rect.right.toFixed(1)}, sheet ${box.left}–${box.right}`);
+        }
+      }
+    }
+    return problems;
+  });
+}
+
+for (const path of PAGES) {
+  for (const width of WIDTHS) {
+    test(`${path} at ${width}px stays inside its sheet`, async ({ page }) => {
+      await page.setViewportSize({ width, height: HEIGHT });
+      await page.goto(path);
+      await settle(page);
+      const problems = await inspectBounds(page);
       expect(problems, problems.join("\n")).toEqual([]);
     });
   }

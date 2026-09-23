@@ -40,7 +40,7 @@ export function Pricing() {
           title="Deux formules, sans surprise"
           description="L'offre gratuite reste gratuite. Le tarif du plan Complet sera annoncé en premier aux inscrits de la liste d'attente."
         />
-        <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
+        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
           {PLANS.map((plan) => (
             <div
               key={plan.name}
@@ -60,7 +60,12 @@ export function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Button variant={plan.featured ? "default" : "outline"} size="lg" className="group w-full" asChild>
+              <Button
+                variant={plan.featured ? "default" : "outline"}
+                size="lg"
+                className="group h-auto min-h-12 w-full whitespace-normal px-6 text-center"
+                asChild
+              >
                 <a href="#waitlist">
                   {plan.cta}
                   <ArrowRight className="transition-transform duration-base group-hover:translate-x-1" aria-hidden="true" />

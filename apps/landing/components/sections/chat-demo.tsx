@@ -37,7 +37,7 @@ export function ChatDemo({ className }: { className?: string }) {
           </motion.li>
         ))}
       </ol>
-      <MarginNote className="mt-4 text-right lg:absolute lg:-right-6 lg:mt-0 lg:translate-y-24 lg:w-36 lg:translate-x-full lg:text-left">
+      <MarginNote className="mt-4 text-right">
         Une question plutôt qu&apos;une réponse : la méthode socratique.
       </MarginNote>
     </figure>
