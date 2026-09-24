@@ -1,9 +1,8 @@
 # Identité Kompri
 
 Date : 2026-09-24. Remplace, pour tout ce qui touche à l'identité, les directions
-`2026-09-22-landing-cahier-annote-design.md` et `2026-09-23-landing-copie-corrigee-design.md`
-(cahier Seyès littéral). La refonte de la landing fera l'objet de sa propre spec, écrite sur
-cette base.
+« cahier annoté » et « copie corrigée » (cahier Seyès littéral). La refonte de la landing
+fera l'objet de sa propre spec, écrite sur cette base.
 
 ## Intention
 
@@ -35,6 +34,11 @@ fixes ne peuvent pas rester alignées sur une réglure qui défile).
 | Abandonné | Réglure Seyès, marge rouge, couvertures animées, navigation dans la marge |
 
 ## 1. Nom : Kompri
+
+Le nom est rouvert depuis le 2026-09-24 : Kompri reste un candidat, pas une décision. Le
+site et la mascotte gardent leurs valeurs actuelles (« TomIA », « Tom ») jusqu'à ce que
+Victor tranche. La palette, les typographies et les signes d'école ci-dessous restent
+décidés.
 
 « Compris ! » : le moment où ça fait tilt, et la question du prof, « C'est compris ? ». C'est
 la promesse du produit : l'enfant ne recopie pas, il comprend. L'orthographe en K suit la
@@ -82,10 +86,8 @@ Chaque couleur a un rôle unique :
 
 Les autres tokens de `packages/tokens/theme.css` restent tels quels. Écart avec `main` : trois
 valeurs changent, `background` (`#FCFCFA` → `#FAF7F0`), `secondary`/`muted`/`accent`
-(`#F3F5FB` → `#F0EADD`) et `card`/`popover` (`#FFFFFF` → `#FFFDF8`). La table de la spec
-du 2026-09-22 donne déjà les contrastes de ces couleurs sur papier `#FAF7F0` et sable
-`#F0EADD` (tous ≥ 4,5:1 pour le texte) ; la PR qui change les tokens les prouve par
-`packages/tokens/contrast.test.mjs`.
+(`#F3F5FB` → `#F0EADD`) et `card`/`popover` (`#FFFFFF` → `#FFFDF8`) ;
+`packages/tokens/contrast.test.mjs` les vérifie.
 
 Un brun loutre s'ajoute pour l'illustration seule. Il ne devient pas un token d'interface.
 

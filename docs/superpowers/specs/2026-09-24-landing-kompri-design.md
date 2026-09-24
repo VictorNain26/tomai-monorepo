@@ -2,8 +2,8 @@
 
 Date : 2026-09-24. Applique `2026-09-24-identite-kompri-design.md` (nom, couleurs,
 typographies, signes d'école, Tom, logotype) à la landing. Maquette validée : écran
-`direction-retenue` du brainstorming du même jour (nav, hero, trois étapes). Remplace
-`2026-09-22-landing-cahier-annote-design.md` et `2026-09-23-landing-copie-corrigee-design.md`.
+`direction-retenue` du brainstorming du même jour (nav, hero, trois étapes). Remplace les
+directions « cahier annoté » et « copie corrigée ».
 
 ## Intention
 
@@ -40,8 +40,8 @@ Critères de réussite :
 | Pages secondaires | Colonne de lecture sur le papier, titre en `<h1>` ; plus de feuille ni de fiche |
 | Menu mobile | `Sheet` de `@repo/ui`, repris de la branche `feat/landing-couvertures` |
 | Formulaire | Non contrôlé, repris de la même branche : la saisie faite avant l'hydratation est gardée |
-| Nom | Kompri partout, domaine et adresse de contact compris, une fois `kompri.fr` réservé |
-| Logo | Logotype Kompri (identité § 6) ; favicon provisoire « K » blanc sur `primary` |
+| Nom | Provisoire : constantes de `apps/landing/lib/brand.ts` (`TomIA`, mascotte `Tom`) jusqu'à la décision de Victor |
+| Logo | Provisoire, comme le nom ; pas de logotype tant que le nom n'est pas tranché |
 
 ## 1. Fondations
 
@@ -113,23 +113,24 @@ Confiance, Tarifs, FAQ, appel final. Les textes restent ceux de `main`, sauf ci-
 livraison du SVG, le composant l'affiche avec un `alt` qui décrit la pose, et rien d'autre ne
 change. Les autres poses arriveront avec l'app, qui en aura l'usage.
 
+Le disque et sa place dans la mise en page sont provisoires eux aussi : Victor n'a pas encore
+arrêté la mascotte ni où elle se place dans le hero.
+
 ## 5. Nom et logo
 
-- `lib/brand.ts` : `BRAND_NAME = "Kompri"`. Les mentions écrites en dur (`cgu`,
-  `confidentialite`, `public/manifest.webmanifest`) passent par la constante ou sont
-  réécrites. Le sujet des phrases reste le produit (« Kompri ») et Tom reste le tuteur
-  (« Tom vous aide… »).
-- Domaine : `metadataBase`, `sitemap.ts`, `robots.ts`, mentions légales et `CONTACT_EMAIL`
-  passent à `kompri.fr` et `contact@kompri.fr`. Préalable : domaine réservé et relié à
-  Vercel, boîte de contact créée (actions de Victor).
-- Logotype : « Kompri » en Nunito 800, converti en tracés par fontTools, en trois fichiers
-  SVG sous `apps/landing/public/brand/` (couleur sur papier, blanc sur bleu, logotype seul).
-  L'en-tête affiche le logotype en texte Nunito, qui rend à l'identique sans requête de plus.
-- Icônes : `app/icon.svg` devient un « K » Nunito 800 blanc sur carré arrondi `primary` ;
-  `apple-icon.png`, `icon-192.png`, `icon-512.png` et `favicon.ico` en sont générés ;
-  `theme_color` du manifeste passe à `#1F3F9E`. La tête de Tom les remplace plus tard.
-- Image Open Graph (`app/opengraph-image.tsx`) : Nunito 800 lue depuis `assets/` à la place
-  de Fraunces, couleurs de l'identité.
+Le nom du site et celui de la mascotte restent provisoires, derrière les constantes de
+`apps/landing/lib/brand.ts` (valeur actuelle : « TomIA », mascotte « Tom »), jusqu'à la
+décision de Victor. Le sujet se scinde en deux PR (§ 7) :
+
+- **Indépendant du nom, PR 3a** : chaque « TomIA » écrit en dur (`cgu`, `confidentialite`,
+  `public/manifest.webmanifest`) et le nom de la mascotte passent par la constante ; image
+  Open Graph (`app/opengraph-image.tsx`) en Nunito à la place de Fraunces.
+- **Dépend du nom, PR 3b** : domaine (`metadataBase`, `sitemap.ts`, `robots.ts`, mentions
+  légales, `CONTACT_EMAIL`), logotype (converti en tracés par fontTools, trois fichiers SVG
+  sous `apps/landing/public/brand/`), icônes (`app/icon.svg`, `apple-icon.png`,
+  `icon-192.png`, `icon-512.png`, `favicon.ico`, `theme_color` du manifeste). Préalable :
+  nom tranché, domaine réservé et relié à Vercel, boîte de contact créée (actions de
+  Victor).
 
 ## 6. Contraintes
 
@@ -140,7 +141,7 @@ primitives interactives via `@repo/ui`, cibles de 44 px, contraste AA, fichiers 
 
 ## 7. Livraison
 
-Trois PR courtes, sur `main`, dans cet ordre :
+Quatre PR courtes, sur `main`, dans cet ordre :
 
 1. **Fondations et pages** : tokens, polices, retrait de la feuille, en-tête, pied de page,
    pages secondaires en `<h1>`, 404, formulaire non contrôlé, nouvelle suite de tests. Au
@@ -148,8 +149,9 @@ Trois PR courtes, sur `main`, dans cet ordre :
    ci-dessus sont reprises.
 2. **Première page** : hero, étapes, `TomIllustration`, `HandNote`, `Scribble` réduit au
    cercle, suppression de `chat-demo.tsx`, sections restylées.
-3. **Kompri** : nom, domaine, adresse de contact, logotype, icônes, image Open Graph. Ne
-   démarre qu'une fois `kompri.fr` réservé et relié.
+3a. **Constantes de marque** (§ 5) : ne dépend pas du nom choisi, démarrable dès maintenant.
+3b. **Nom définitif** (§ 5) : domaine, adresse de contact, logotype, icônes. Démarre une
+    fois le nom tranché par Victor.
 
 Entre les PR 1 et 2, la première page de `main` est dans un état intermédiaire (nouvelles
 couleurs, anciens textes) : les deux PR se suivent sans pause. Chaque PR : typecheck, lint,
@@ -167,7 +169,7 @@ au clavier ; captures dans la PR. Les specs et plans des directions « cahier an
   finit opaque et en place ; aucun décalage de mise en page au chargement ; lignes légales
   de 85 caractères au plus ; questions de FAQ sur trois lignes au plus à 375 px ; écart du
   libellé de tarif. S'ajoutent : un seul `<h1>` par page ; saisie de l'e-mail avant
-  l'hydratation conservée (repris de `feat/landing-couvertures`) ; en PR 3, aucune
+  l'hydratation conservée (repris de `feat/landing-couvertures`) ; en PR 3b, aucune
   occurrence de « TomIA » dans le HTML rendu.
 - `.claude/rules/testing-and-commits.md` et `apps/landing/CLAUDE.md` décrivent la nouvelle
   suite et le nouveau nom.

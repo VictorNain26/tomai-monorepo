@@ -17,14 +17,14 @@ Ce qui s'applique à chaque PR touchant de l'UI.
 - **États complets** sur tout interactif : disabled, loading, hover, active,
   focus visible, error. Pas de happy-path only.
 - **A11y AA** : cibles ≥ 44 px, labels (`aria-*` / `<label>`), contraste 4.5:1.
-- **Papier** : fond `background` blanc, objets posés en `card` ou `note` (post-it) ;
-  pas de bande de fond pleine largeur. Jamais `annotation` sur `highlight` (4,48:1).
+- **Papier** : fond `background` crème, objets posés en `card` ; pas de bande de
+  fond pleine largeur. Jamais `annotation` sur `highlight` (4,48:1).
 - **Patterns UX** : skeletons (pas de spinner pleine page), empty state avec
   action, validation formulaire au blur, toast = info / dialog = irréversible,
   reduced-motion respecté.
-- **Registres** : landing/parent = sobre ; élève = vivant (violet,
-  micro-motion) sans infantiliser.
-- **Typo** : Fraunces titres, Figtree corps, JetBrains Mono code.
+- **Registres** : landing/parent = sobre ; élève = vivant (micro-motion) sans
+  infantiliser.
+- **Typo** : Nunito titres et corps, Caveat notes manuscrites.
 - **Exceptions au « tokens uniquement »** : les valeurs que `motion` anime
   lui-même dans `style`, et les images `next/og` (`ImageResponse` ne lit que
   `style`, sans variables CSS). Rien d'autre.

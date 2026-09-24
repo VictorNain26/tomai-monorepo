@@ -103,10 +103,10 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 
 | PR | Plan | Branche | Statut | Lien |
 |---|---|---|---|---|
-| Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | `plans/2026-09-23-landing-copie-corrigee-pr1-fondations.md` | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
+| Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | — | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
 | Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
 | Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | ouverte | #323 |
-| Landing, refonte sur l'identité Kompri (remplace les PR 3 et 4 « cahier » : tokens, polices, renommage TomIA → Kompri, retrait de la feuille Seyès, intégration de Tom) ; reporté de PR 1 : aucun `<h1>` sur les pages secondaires (`SectionHeader` rend toujours un `<h2>`) | spec `specs/2026-09-24-landing-kompri-design.md` (trois PR : fondations et pages, première page, nom Kompri ; Tom en emplacement réservé) ; plan à écrire au démarrage de chaque PR | `docs/landing-kompri` | spec en revue | — |
+| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) ; reporté de PR 1 : aucun `<h1>` sur les pages secondaires (`SectionHeader` rend toujours un `<h2>`) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif) | `feat/landing-kompri-fondations` | PR 1 en cours | — |
 
 ## Étapes manuelles (utilisateur)
 
@@ -122,7 +122,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Suite live et deux tours de chat réels | C.9 | fait (2026-09-22, lancé par l'agent : `test:live` Mistral 6/6, `pnpm doctor:e2e` exit 0, deux tours seedés sans aucun chunk de raisonnement côté client, `cost_tracking` en `mistral-small-2603`, majoration 1.1, 3136 tokens cachés au 2e tour) |
 | Vérifier les secrets `TURBO_TOKEN` / `TURBO_TEAM` | E2 | à faire |
 | Recherche INPI « Kompri » (classes 9, 41, 42) | Identité Kompri | fait (2026-09-24, par l'agent sur data.inpi.fr : aucune marque en conflit en France, détail dans la spec) |
-| Déposer la marque « Kompri » (classes 9, 41, 42) et réserver `kompri.fr`, `kompri.app`, `kompri.ai` | Identité Kompri | à faire |
+| Déposer la marque et réserver les domaines candidats | Identité Kompri | en attente : nom rouvert le 2026-09-24, bloqué jusqu'à la décision de Victor |
 | Générer Tom (six images) sur Recraft, un mois d'offre Basic (12 $ HT), avec les prompts de la spec ; retoucher les zones ratées par inpainting ; exporter en SVG | Refonte landing | à faire |
 
 ## Lots suivants
@@ -243,3 +243,11 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 - **2026-09-24** — Recherche INPI « Kompri » : aucune marque en conflit en France. Spec de la
   refonte de la landing (`specs/2026-09-24-landing-kompri-design.md`) : trois PR, Tom en
   emplacement réservé en attendant les images.
+- **2026-09-24** — Landing, PR 1 (fondations, branche `feat/landing-kompri-fondations`) :
+  tokens crème et Nunito, en-tête avec menu mobile en `Sheet`, footer clair, page 404 ;
+  nettoyage de fin de PR (composants `@repo/ui` et token `violet` inutilisés retirés,
+  documents des directions « cahier annoté » et « copie corrigée » supprimés). Le nom est
+  rouvert le même jour : Kompri redevient un candidat, pas une décision ; le site et la
+  mascotte restent sur leurs valeurs provisoires (« TomIA », « Tom ») derrière
+  `apps/landing/lib/brand.ts` jusqu'au choix de Victor — palette, polices et signes d'école
+  restent décidés.
