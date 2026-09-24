@@ -75,9 +75,10 @@ Chaque couleur a un rôle unique :
 
 Les autres tokens de `packages/tokens/theme.css` restent tels quels. Écart avec `main` : trois
 valeurs changent, `background` (`#FCFCFA` → `#FAF7F0`), `secondary`/`muted`/`accent`
-(`#F3F5FB` → `#F0EADD`) et `card`/`popover` (`#FFFFFF` → `#FFFDF8`). La table de la spec du 2026-09-22 donne déjà les contrastes de ces
-couleurs sur papier `#FAF7F0` et sable `#F0EADD` (tous ≥ 4,5:1 pour le texte) ; la PR qui
-change les tokens les prouve par `packages/tokens/contrast.test.mjs`.
+(`#F3F5FB` → `#F0EADD`) et `card`/`popover` (`#FFFFFF` → `#FFFDF8`). La table de la spec
+du 2026-09-22 donne déjà les contrastes de ces couleurs sur papier `#FAF7F0` et sable
+`#F0EADD` (tous ≥ 4,5:1 pour le texte) ; la PR qui change les tokens les prouve par
+`packages/tokens/contrast.test.mjs`.
 
 Un brun loutre s'ajoute pour l'illustration seule. Il ne devient pas un token d'interface.
 
@@ -85,8 +86,8 @@ Un brun loutre s'ajoute pour l'illustration seule. Il ne devient pas un token d'
 
 - **Nunito** pour les titres et le texte courant, en remplacement de Fraunces et Figtree.
   Sans empattements, aux terminaisons arrondies : c'est ce qui porte le côté doux et
-  familial. Police variable (axe `wght`), licence OFL (`google/fonts`, `ofl/nunito/METADATA.pb`) ;
-  chargée par `next/font/google` comme les polices actuelles.
+  familial. Police variable (axe `wght`), licence OFL (`google/fonts`,
+  `ofl/nunito/METADATA.pb`) ; chargée par `next/font/google` comme les polices actuelles.
 - **Caveat** (OFL, `wght` 400 à 700) pour les seules notes manuscrites, en rouge.
 
 Titres en graisse 800, texte courant en 400, libellés et boutons en 700.
@@ -144,7 +145,40 @@ en référence visuelle pour les suivantes.
 3. Critère d'acceptation : les six images montrent visiblement le même personnage
    (proportions, couleurs, pull, stylo) ; sinon on reprend l'étape 1 avec une description
    plus précise.
-4. Export SVG ; les fichiers rejoignent le dépôt avec la refonte de la landing.
+4. Export SVG des six images retenues.
+5. **Finition par un illustrateur** freelance (brief ci-dessous) : l'IA fournit le
+   personnage, l'illustrateur corrige ses défauts habituels (mains, petites incohérences,
+   tracés sales) et harmonise le jeu. Les fichiers livrés rejoignent le dépôt avec la
+   refonte de la landing.
+
+Pourquoi pas un dessin maison : aucun outil de génération d'image n'est disponible côté
+agent, et un personnage dessiné en SVG à la main, forme par forme, serait amateur — c'est le
+code inventé que le projet refuse.
+
+### Brief de l'illustrateur
+
+- **Reçoit** : les six images Recraft retenues, cette section 5 (description, style,
+  palette) et la palette du § 2.
+- **Livre** : six SVG propres — tracés vectoriels uniquement (aucune image matricielle
+  intégrée), calques nommés et groupés, couleurs limitées à la palette, mêmes proportions
+  et mêmes détails (pull, stylo) d'une pose à l'autre ; la tête seule reste lisible en
+  32 px ; plus les fichiers sources.
+- **Cède** ses droits patrimoniaux sur les six images et leurs dérivés : le contrat
+  mentionne distinctement chaque droit cédé (reproduction, représentation, adaptation) et
+  délimite l'étendue, la destination, le lieu et la durée, comme l'exige l'article L131-3
+  du Code de la propriété intellectuelle
+  (`https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006278958`). Destination :
+  tous supports de la marque Kompri (site, app, réseaux, impression), monde, durée légale
+  des droits.
+
+## 6. Logo
+
+Logotype « Kompri » en Nunito graisse 800, en `primary`, précédé de la tête de Tom. Le
+logotype seul sert là où la tête serait trop petite. Pas de dessin de lettres sur mesure :
+le texte est converti en tracés SVG par un outil existant (fontTools ou opentype.js), pour
+ne pas dépendre de la police chargée, avec un réglage de l'approche des lettres. Variantes :
+couleur sur papier, blanc sur bleu, logotype seul. La tête de Tom s'y ajoute une fois la
+mascotte livrée.
 
 Prompt de base (en anglais, langue de travail des générateurs) :
 
@@ -162,15 +196,11 @@ chin, looking up, thinking* ; *pointing to the side with one finger, eyebrows ra
 a hint* ; *both arms raised, celebrating, big smile* ; *leaning forward, listening
 attentively* ; *head only, front view, smiling, centered, for an app icon*.
 
-## 6. Logo
-
-Logotype « Kompri » en Nunito graisse 800, en `primary`, précédé de la tête de Tom. Le
-logotype seul sert là où la tête serait trop petite. Pas de dessin de lettres sur mesure.
-
 ## 7. Suite
 
 Découpage, dans l'ordre :
-1. **Cette spec**, puis la génération de Tom par Victor.
+1. **Cette spec**, puis Tom : génération par Victor, finition par un illustrateur ; le
+   logotype en parallèle.
 2. **Refonte de la landing** sur cette identité : spec et plan propres, écrits contre `main`
    à jour. Elle change les tokens (§ 2), les polices (§ 3), renomme TomIA en Kompri, retire
    la feuille Seyès déjà livrée dans `main` et intègre Tom.
