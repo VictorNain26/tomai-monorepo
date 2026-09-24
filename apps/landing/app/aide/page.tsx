@@ -12,7 +12,7 @@ export default function AidePage() {
       maxWidth="5xl"
     >
       <div className="max-w-3xl">
-        <h2 className="mb-4 text-2xl font-semibold">Une question sur {BRAND_NAME} ?</h2>
+        <h2 className="mb-4 text-2xl">Une question sur {BRAND_NAME} ?</h2>
         <p className="mb-8 max-w-md text-muted-foreground">
           Écrivez-nous : nous lisons chaque message.
         </p>

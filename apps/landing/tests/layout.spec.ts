@@ -96,7 +96,7 @@ for (const width of [375, 1024]) {
       await page.goto(path);
       await settle(page);
       const small = await page.evaluate(() =>
-        [...document.querySelectorAll<HTMLElement>("header a, header button, main a, main button, main input")]
+        [...document.querySelectorAll<HTMLElement>("header a, header button, main a, main button, main input, footer a")]
           .filter((el) => el.getClientRects().length > 0 && !el.closest(".sr-only"))
           .filter((el) => !(el.tagName === "A" && getComputedStyle(el).display === "inline"))
           .map((el) => ({ text: (el.textContent || el.getAttribute("aria-label") || "").trim().slice(0, 30), box: el.getBoundingClientRect() }))

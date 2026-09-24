@@ -30,7 +30,7 @@ export function NavLinks({
           href={link.href}
           className={cn(
             "min-h-11 items-center text-sm font-bold text-foreground hover:text-primary transition-colors duration-base",
-            orientation === "vertical" ? "flex" : "inline-flex min-w-11 justify-center px-2"
+            orientation === "vertical" ? "flex" : "inline-flex px-2"
           )}
           onClick={onLinkClick}
         >

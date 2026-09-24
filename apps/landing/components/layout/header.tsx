@@ -26,7 +26,7 @@ export function Header() {
         scrolled ? "border-border bg-background/90 backdrop-blur-md" : "border-transparent bg-background/70 backdrop-blur",
       )}
     >
-      <nav className="container relative flex h-16 items-center justify-between">
+      <nav aria-label="Principale" className="container relative flex h-16 items-center justify-between">
         <div className="flex items-center z-20">
           <Logo />
         </div>
