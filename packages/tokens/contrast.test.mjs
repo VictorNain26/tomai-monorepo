@@ -45,6 +45,7 @@ const PAIRS = [
   ["info-foreground", "info"],
   ["violet-foreground", "violet"],
   ["success", "background"],
+  ["success", "card"],
   ["destructive", "background"],
   ["info", "background"],
   ["annotation", "background"],

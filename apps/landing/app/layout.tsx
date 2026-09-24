@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Figtree, Fraunces } from "next/font/google";
+import { Caveat, Nunito } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -7,17 +7,16 @@ import { MobileCTABar } from "@/components/molecules/mobile-cta-bar";
 import { MotionProvider } from "@/components/motion-provider";
 import { BRAND_NAME } from "@/lib/brand";
 
-const fraunces = Fraunces({
+const nunito = Nunito({
   subsets: ["latin"],
   display: "swap",
-  axes: ["SOFT", "opsz"],
-  variable: "--font-fraunces",
+  variable: "--font-nunito",
 });
 
-const figtree = Figtree({
+const caveat = Caveat({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-figtree",
+  variable: "--font-caveat",
 });
 
 const TITLE = `${BRAND_NAME} - Le tuteur qui ne donne pas la réponse`;
@@ -124,7 +123,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${fraunces.variable} ${figtree.variable}`}>
+    <html lang="fr" className={`${nunito.variable} ${caveat.variable}`}>
       <body>
         <noscript>
           {/* data-reveal must mark only elements whose hidden state is Motion's entry state */}
