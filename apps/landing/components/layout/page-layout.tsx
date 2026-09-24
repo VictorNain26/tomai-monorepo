@@ -4,7 +4,6 @@ import { cn } from "@repo/ui";
 const MAX_WIDTHS = {
   "3xl": "max-w-3xl",
   "4xl": "max-w-4xl",
-  "5xl": "max-w-5xl",
 } as const;
 
 interface PageLayoutProps {
