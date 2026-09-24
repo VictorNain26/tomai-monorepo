@@ -6,7 +6,7 @@ declare global {
   }
 }
 
-export const SECONDARY = ["/aide", "/faq", "/contact", "/cgu", "/confidentialite", "/mentions-legales"];
+const SECONDARY = ["/aide", "/faq", "/contact", "/cgu", "/confidentialite", "/mentions-legales"];
 export const PAGES = ["/", ...SECONDARY];
 export const WIDTHS = [375, 768, 1024, 1441];
 export const HEIGHT = 861;
