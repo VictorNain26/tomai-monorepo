@@ -79,3 +79,5 @@ export { Badge, badgeVariants } from "./components/badge";
 export type { BadgeProps } from "./components/badge";
 
 export { Avatar, AvatarImage, AvatarFallback } from "./components/avatar";
+
+export { Sheet, SheetTrigger, SheetContent, SheetTitle } from "./components/sheet";
