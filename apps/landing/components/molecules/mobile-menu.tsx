@@ -16,7 +16,7 @@ export function MobileMenu({ className }: { className?: string }) {
           <Menu className="size-5" aria-hidden="true" />
         </Button>
       </SheetTrigger>
-      <SheetContent aria-describedby={undefined} className="p-6 pt-16">
+      <SheetContent className="p-6 pt-16">
         <SheetTitle className="sr-only">Menu</SheetTitle>
         <nav aria-label="Principale" className="flex flex-col gap-4">
           <NavLinks orientation="vertical" onLinkClick={() => setOpen(false)} />

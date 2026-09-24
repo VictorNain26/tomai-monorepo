@@ -43,7 +43,6 @@ const PAIRS = [
   ["destructive-foreground", "destructive"],
   ["warning-foreground", "warning"],
   ["info-foreground", "info"],
-  ["violet-foreground", "violet"],
   ["success", "background"],
   ["success", "card"],
   ["destructive", "background"],
