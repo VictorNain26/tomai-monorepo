@@ -46,10 +46,17 @@ Vérifications du 2026-09-24 :
   `kompri.ai` (RDAP Identity Digital) ; `kompri.com` est pris ;
 - aucune entreprise « Kompri » au registre (API Recherche d'entreprises,
   `https://recherche-entreprises.api.gouv.fr/search?q=kompri`) ;
-- aucune app ni marque de ce nom trouvée par recherche web.
+- aucune app ni marque de ce nom trouvée par recherche web ;
+- base marques de l'INPI (`https://data.inpi.fr`, recherche « kompri », 3 résultats ;
+  « kompris », aucun) : aucune marque ne couvre la France dans les classes 9, 41 ou 42.
+  « Kes Tapa Kompr! » (FR 5060957) est en classe 25, vêtements. « KOMPRI » (UE 018402188)
+  est en classes 6 et 19, métal et bâtiment. « My Kompri » (WO 1814718) a une classe 41
+  limitée à la formation médicale en lymphologie, et ne désigne que l'Autriche et la
+  Suisse.
 
-Restent à faire par Victor, avant toute publication du nom : la recherche d'antériorité à
-l'INPI (`https://data.inpi.fr`, classes 9, 41 et 42) et la réservation des trois domaines.
+Restent à faire par Victor, avant toute publication du nom : le dépôt de la marque (classes
+9, 41 et 42) et la réservation des trois domaines. Une recherche de similarité
+professionnelle, que l'INPI conseille, n'est pas couverte par la recherche ci-dessus.
 
 Pistes écartées : Brouillon, Trousse, Jugeote, Ciboulot (« pas assez subtil ni tech ») ;
 Maïeo (tréma illisible) et Mayeo (conservé comme repli) ; Heuri (agence homonyme) ; CQFD
@@ -156,7 +163,9 @@ en référence visuelle pour les suivantes.
 
 Budget : pas d'illustrateur. Recraft accorde la propriété et l'usage commercial des images
 générées pendant l'abonnement (`https://www.recraft.ai/pricing`) : un seul mois d'offre
-payante suffit, à condition de générer et d'exporter tout le jeu pendant ce mois.
+payante suffit, à condition de générer et d'exporter tout le jeu pendant ce mois. L'offre
+Basic (12 $ HT par mois sans engagement, 1 000 crédits) inclut déjà ces droits, les
+palettes personnalisées et les outils de retouche.
 
 Pourquoi pas un dessin maison : aucun outil de génération d'image n'est disponible côté
 agent, et un personnage dessiné en SVG à la main, forme par forme, serait amateur — c'est le
