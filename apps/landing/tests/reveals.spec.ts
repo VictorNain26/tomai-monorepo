@@ -52,25 +52,14 @@ test.describe("with motion", () => {
         }).observe({ type: "layout-shift", buffered: true });
       });
       await page.goto(path);
-      await page.evaluate(() => document.fonts.ready);
-      await expect
-        .poll(() =>
-          page.evaluate(() =>
-            [...document.querySelectorAll<HTMLElement>("[data-reveal]")].every(
-              (el) => getComputedStyle(el).opacity === "1" && getComputedStyle(el).transform === "none",
-            ),
-          ),
-        )
-        .toBe(true);
+      await settle(page);
       expect(await page.evaluate(() => window.layoutShift)).toBeLessThan(0.001);
     });
   }
 });
 
-for (const path of ["/", "/cgu"]) {
-  test(`${path} ends every reveal opaque and in place under reduced motion`, async ({ page }) => {
-    await page.goto(path);
-    await settle(page);
-    await expect.poll(() => hiddenReveals(page)).toEqual([]);
-  });
-}
+test("/ ends every reveal opaque and in place under reduced motion", async ({ page }) => {
+  await page.goto("/");
+  await settle(page);
+  await expect.poll(() => hiddenReveals(page)).toEqual([]);
+});

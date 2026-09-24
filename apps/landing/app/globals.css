@@ -2,11 +2,6 @@
 @import "@repo/tokens/theme.css";
 @source "../../../packages/ui/src";
 
-@theme {
-  /* 65ch (Tailwind default) keeps legal-copy lines past 85 characters at wide viewports. */
-  --max-width-prose: 56ch;
-}
-
 @utility container {
   margin-inline: auto;
   width: 100%;
@@ -23,7 +18,7 @@
 }
 
 @utility legal-copy {
-  @apply max-w-prose;
+  @apply max-w-xl;
   color: var(--color-muted-foreground);
 
   & h2 {
