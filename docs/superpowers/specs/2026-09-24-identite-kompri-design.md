@@ -145,31 +145,22 @@ en référence visuelle pour les suivantes.
 3. Critère d'acceptation : les six images montrent visiblement le même personnage
    (proportions, couleurs, pull, stylo) ; sinon on reprend l'étape 1 avec une description
    plus précise.
-4. Export SVG des six images retenues.
-5. **Finition par un illustrateur** freelance (brief ci-dessous) : l'IA fournit le
-   personnage, l'illustrateur corrige ses défauts habituels (mains, petites incohérences,
-   tracés sales) et harmonise le jeu. Les fichiers livrés rejoignent le dépôt avec la
-   refonte de la landing.
+4. Retouche dans Recraft même : une main ou un détail raté se corrige en régénérant la
+   zone seule (inpainting, proposé par Recraft : `https://www.recraft.ai/pricing`) plutôt
+   que toute l'image. Une image qui garde des mains déformées est refusée.
+5. Export SVG des six images retenues.
+6. **Finition technique, par l'agent**, avec des outils existants et sans redessiner :
+   optimisation par SVGO, couleurs ramenées aux valeurs exactes de la palette, suppression
+   des tracés parasites, contrôle du rendu en 32 px par capture Playwright. Les fichiers
+   rejoignent le dépôt avec la refonte de la landing.
+
+Budget : pas d'illustrateur. Recraft accorde la propriété et l'usage commercial des images
+générées pendant l'abonnement (`https://www.recraft.ai/pricing`) : un seul mois d'offre
+payante suffit, à condition de générer et d'exporter tout le jeu pendant ce mois.
 
 Pourquoi pas un dessin maison : aucun outil de génération d'image n'est disponible côté
 agent, et un personnage dessiné en SVG à la main, forme par forme, serait amateur — c'est le
 code inventé que le projet refuse.
-
-### Brief de l'illustrateur
-
-- **Reçoit** : les six images Recraft retenues, cette section 5 (description, style,
-  palette) et la palette du § 2.
-- **Livre** : six SVG propres — tracés vectoriels uniquement (aucune image matricielle
-  intégrée), calques nommés et groupés, couleurs limitées à la palette, mêmes proportions
-  et mêmes détails (pull, stylo) d'une pose à l'autre ; la tête seule reste lisible en
-  32 px ; plus les fichiers sources.
-- **Cède** ses droits patrimoniaux sur les six images et leurs dérivés : le contrat
-  mentionne distinctement chaque droit cédé (reproduction, représentation, adaptation) et
-  délimite l'étendue, la destination, le lieu et la durée, comme l'exige l'article L131-3
-  du Code de la propriété intellectuelle
-  (`https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006278958`). Destination :
-  tous supports de la marque Kompri (site, app, réseaux, impression), monde, durée légale
-  des droits.
 
 ## 6. Logo
 
@@ -183,7 +174,7 @@ mascotte livrée.
 Prompt de base (en anglais, langue de travail des générateurs) :
 
 > Friendly anthropomorphic otter character named Tom, a warm and patient tutor. Standing
-> upright on two legs, expressive human-like hands, soft brown fur with a cream muzzle and
+> upright on two legs, simple rounded hands with four fingers, soft brown fur with a cream muzzle and
 > belly, small round ears, gentle eyes with expressive eyebrows. Wears a cozy ink-blue
 > knitted sweater with a four-colour ballpoint pen clipped in the chest pocket. Flat vector
 > illustration, rounded geometric shapes, no outlines, flat shading, limited palette: brown,
@@ -199,8 +190,8 @@ attentively* ; *head only, front view, smiling, centered, for an app icon*.
 ## 7. Suite
 
 Découpage, dans l'ordre :
-1. **Cette spec**, puis Tom : génération par Victor, finition par un illustrateur ; le
-   logotype en parallèle.
+1. **Cette spec**, puis Tom : génération et retouche par Victor sur Recraft, finition
+   technique par l'agent ; le logotype en parallèle.
 2. **Refonte de la landing** sur cette identité : spec et plan propres, écrits contre `main`
    à jour. Elle change les tokens (§ 2), les polices (§ 3), renomme TomIA en Kompri, retire
    la feuille Seyès déjà livrée dans `main` et intègre Tom.

@@ -122,7 +122,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Suite live et deux tours de chat réels | C.9 | fait (2026-09-22, lancé par l'agent : `test:live` Mistral 6/6, `pnpm doctor:e2e` exit 0, deux tours seedés sans aucun chunk de raisonnement côté client, `cost_tracking` en `mistral-small-2603`, majoration 1.1, 3136 tokens cachés au 2e tour) |
 | Vérifier les secrets `TURBO_TOKEN` / `TURBO_TEAM` | E2 | à faire |
 | Recherche d'antériorité INPI « Kompri » (classes 9, 41, 42) et réservation de `kompri.fr`, `kompri.app`, `kompri.ai` | Identité Kompri | à faire |
-| Générer Tom (six images) sur Recraft en offre payante avec les prompts de la spec, puis confier la finition à un illustrateur (brief et cession de droits dans la spec) | Refonte landing | à faire |
+| Générer Tom (six images) sur Recraft, un mois d'offre payante, avec les prompts de la spec ; retoucher les zones ratées par inpainting ; exporter en SVG | Refonte landing | à faire |
 
 ## Lots suivants
 
