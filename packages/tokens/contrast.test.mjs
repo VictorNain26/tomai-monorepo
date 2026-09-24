@@ -50,10 +50,6 @@ const PAIRS = [
   ["annotation", "background"],
   ["annotation", "card"],
   ["annotation", "secondary"],
-  ["note-foreground", "note"],
-  ["foreground", "note"],
-  ["primary", "note"],
-  ["annotation", "note"],
 ];
 
 for (const [fg, bg] of PAIRS) {

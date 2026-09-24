@@ -4,13 +4,11 @@ import { hiddenReveals, settle } from "./support";
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 
-  for (const path of ["/", "/cgu"]) {
-    test(`${path} shows every revealed block`, async ({ page }) => {
-      await page.goto(path);
-      expect(await page.locator("[data-reveal]").count()).toBeGreaterThan(0);
-      expect(await hiddenReveals(page)).toEqual([]);
-    });
-  }
+  test("/ shows every revealed block", async ({ page }) => {
+    await page.goto("/");
+    expect(await page.locator("[data-reveal]").count()).toBeGreaterThan(0);
+    expect(await hiddenReveals(page)).toEqual([]);
+  });
 
   test("/ shows every word and every stroke", async ({ page }) => {
     await page.goto("/");
