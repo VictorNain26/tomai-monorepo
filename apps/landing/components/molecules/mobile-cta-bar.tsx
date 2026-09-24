@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@repo/ui";
 
 export function MobileCTABar() {
@@ -22,9 +23,7 @@ export function MobileCTABar() {
       }`}
     >
       <Button className="w-full" size="lg" asChild>
-        <a href="#waitlist">
-          Rejoindre la liste d&apos;attente
-        </a>
+        <Link href="/#waitlist">S&apos;inscrire</Link>
       </Button>
     </div>
   );
