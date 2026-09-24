@@ -105,7 +105,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 |---|---|---|---|---|
 | Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | `plans/2026-09-23-landing-copie-corrigee-pr1-fondations.md` | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
 | Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
-| Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | ouverte | — |
+| Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | ouverte | #323 |
 | Landing, refonte sur l'identité Kompri (remplace les PR 3 et 4 « cahier » : tokens, polices, renommage TomIA → Kompri, retrait de la feuille Seyès, intégration de Tom) ; reporté de PR 1 : aucun `<h1>` sur les pages secondaires (`SectionHeader` rend toujours un `<h2>`) | spec et plan à écrire au démarrage, après la génération de Tom | — | à faire | — |
 
 ## Étapes manuelles (utilisateur)
