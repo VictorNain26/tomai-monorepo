@@ -10,7 +10,7 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-09-23
+- **Dernière mise à jour :** 2026-09-24
 - **Lot en cours :** 0 — Assainissement
 - **Prochaine action :** réécrire la section E2 de
   `plans/2026-09-22-lot-0-e-code-reinvente.md` contre `main` (elle est marquée « à
@@ -104,9 +104,9 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | PR | Plan | Branche | Statut | Lien |
 |---|---|---|---|---|
 | Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | `plans/2026-09-23-landing-copie-corrigee-pr1-fondations.md` | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
-| Landing, PR 2 — Couvertures (ouverture, fermeture, bande de tête collante) ; reporté de PR 1 : garder `overflow-x: clip` (jamais `hidden`) sur la feuille pour la scène collante ; découper `tests/grid.spec.ts` (feuille et bornes, révélations et sans JS, cibles et lignes) avant d'y ajouter les couvertures | à écrire au démarrage | — | à faire | — |
-| Landing, PR 3 — Écriture (Caveat en SVG, barré et souligné tracés) ; reporté de PR 1 : le pli de l'accueil doit se lire en moins de 0,7 s — aujourd'hui « comprendre », écrit après le barré de « trouver », apparaît à 1,1 s et les bulles de la démo arrivent en cascade (0,4 + 0,6 s par bulle) ; étendre la surcharge `noscript` de `[data-reveal]` à `clip-path` pour `Hand` | à écrire au démarrage | — | à faire | — |
-| Landing, PR 4 — Sections (première page, exercice en fiche, sections restylées) ; reporté de PR 1 : fiche légale centrée à 1440 px, loin de la marge ; texte des fiches à 255 px de large à 375 px ; aucun `<h1>` sur les pages secondaires (`SectionHeader` rend toujours un `<h2>`) ; vérifier que chaque petite fiche atteint le seuil `-10%` de `whileInView` | à écrire au démarrage | — | à faire | — |
+| Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
+| Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | ouverte | #323 |
+| Landing, refonte sur l'identité Kompri (remplace les PR 3 et 4 « cahier » : tokens, polices, renommage TomIA → Kompri, retrait de la feuille Seyès, intégration de Tom) ; reporté de PR 1 : aucun `<h1>` sur les pages secondaires (`SectionHeader` rend toujours un `<h2>`) | spec et plan à écrire au démarrage, après la génération de Tom | — | à faire | — |
 
 ## Étapes manuelles (utilisateur)
 
@@ -121,6 +121,9 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Demander le Zero Data Retention au support Mistral | C.1 | à faire |
 | Suite live et deux tours de chat réels | C.9 | fait (2026-09-22, lancé par l'agent : `test:live` Mistral 6/6, `pnpm doctor:e2e` exit 0, deux tours seedés sans aucun chunk de raisonnement côté client, `cost_tracking` en `mistral-small-2603`, majoration 1.1, 3136 tokens cachés au 2e tour) |
 | Vérifier les secrets `TURBO_TOKEN` / `TURBO_TEAM` | E2 | à faire |
+| Recherche INPI « Kompri » (classes 9, 41, 42) | Identité Kompri | fait (2026-09-24, par l'agent sur data.inpi.fr : aucune marque en conflit en France, détail dans la spec) |
+| Déposer la marque « Kompri » (classes 9, 41, 42) et réserver `kompri.fr`, `kompri.app`, `kompri.ai` | Identité Kompri | à faire |
+| Générer Tom (six images) sur Recraft, un mois d'offre Basic (12 $ HT), avec les prompts de la spec ; retoucher les zones ratées par inpainting ; exporter en SVG | Refonte landing | à faire |
 
 ## Lots suivants
 
@@ -231,3 +234,9 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   manuscrite (PR 3), sections restylées (PR 4). Commits remplacés : `041f884` (feuille par
   section) et `e901312` (rythme de ligne de base). Le test de grille compte 76 cas (feuille,
   bornes, fiches, sans JavaScript, mouvement réduit).
+- **2026-09-24** — Landing : la direction « cahier » (couvertures, navigation dans la marge)
+  est abandonnée après la PR 2 — elle visait l'élève plutôt que le parent, faisait « devoirs »,
+  et des notes de marge fixes ne tiennent pas l'alignement sur une réglure qui défile. Nouvelle
+  identité (`specs/2026-09-24-identite-kompri-design.md`) : produit **Kompri**, Tom en loutre
+  anthropomorphe, stylo quatre couleurs sur papier crème, Nunito. La refonte de la landing
+  remplace les PR 3 et 4.
