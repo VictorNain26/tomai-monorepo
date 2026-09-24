@@ -23,22 +23,20 @@ fixes ne peuvent pas rester alignées sur une réglure qui défile).
 
 | Sujet | Décision |
 |---|---|
-| Nom du produit | **Kompri** (« Compris ! ») |
+| Nom du produit | Provisoire (candidat : Kompri), voir `2026-09-24-landing-kompri-design.md` § 5 |
 | Personnage | **Tom**, une loutre anthropomorphe, est le tuteur IA ; il n'est pas le nom du produit |
 | Ton | Chaleureux et humain ; la page vouvoie les parents, Tom tutoie l'élève |
 | Couleurs | Stylo Bic quatre couleurs, sur papier crème |
 | Typographies | Nunito pour tout le texte ; Caveat pour les seules notes manuscrites |
 | Signes d'école | Surligneur, numéros entourés, une note manuscrite ; rien d'autre |
 | Illustration | Aplats vectoriels arrondis, sans contour |
-| Logo | Logotype « Kompri » en Nunito, avec la tête de Tom |
+| Logo | Logotype du nom retenu |
 | Abandonné | Réglure Seyès, marge rouge, couvertures animées, navigation dans la marge |
 
-## 1. Nom : Kompri
+## 1. Nom (candidat : Kompri)
 
-Le nom est rouvert depuis le 2026-09-24 : Kompri reste un candidat, pas une décision. Le
-site et la mascotte gardent leurs valeurs actuelles (« TomIA », « Tom ») jusqu'à ce que
-Victor tranche. La palette, les typographies et les signes d'école ci-dessous restent
-décidés.
+Le nom est rouvert depuis le 2026-09-24 ; état et valeurs provisoires : voir
+`2026-09-24-landing-kompri-design.md` § 5.
 
 « Compris ! » : le moment où ça fait tilt, et la question du prof, « C'est compris ? ». C'est
 la promesse du produit : l'enfant ne recopie pas, il comprend. L'orthographe en K suit la
@@ -65,9 +63,6 @@ professionnelle, que l'INPI conseille, n'est pas couverte par la recherche ci-de
 Pistes écartées : Brouillon, Trousse, Jugeote, Ciboulot (« pas assez subtil ni tech ») ;
 Maïeo (tréma illisible) et Mayeo (conservé comme repli) ; Heuri (agence homonyme) ; CQFD
 (450 entreprises homonymes).
-
-Le code et la landing parlent encore de « TomIA » : le renommage se fait dans la refonte de
-la landing, adresse de contact comprise, une fois le domaine réservé.
 
 ## 2. Couleurs : le stylo quatre couleurs
 
@@ -175,7 +170,7 @@ code inventé que le projet refuse.
 
 ## 6. Logo
 
-Logotype « Kompri » en Nunito graisse 800, en `primary`, précédé de la tête de Tom. Le
+Logotype du nom retenu en Nunito graisse 800, en `primary`, précédé de la tête de Tom. Le
 logotype seul sert là où la tête serait trop petite. Pas de dessin de lettres sur mesure :
 le texte est converti en tracés SVG par un outil existant (fontTools ou opentype.js), pour
 ne pas dépendre de la police chargée, avec un réglage de l'approche des lettres. Variantes :
@@ -204,8 +199,8 @@ Découpage, dans l'ordre :
 1. **Cette spec**, puis Tom : génération et retouche par Victor sur Recraft, finition
    technique par l'agent ; le logotype en parallèle.
 2. **Refonte de la landing** sur cette identité : spec et plan propres, écrits contre `main`
-   à jour. Elle change les tokens (§ 2), les polices (§ 3), renomme TomIA en Kompri, retire
-   la feuille Seyès déjà livrée dans `main` et intègre Tom.
+   à jour. Elle change les tokens (§ 2), les polices (§ 3), retire la feuille Seyès déjà
+   livrée dans `main`, intègre Tom, et fait le renommage à sa PR 3b de la spec landing.
 3. **L'app**, plus tard, reprend les mêmes tokens.
 
 La PR 2 de la landing (branche `feat/landing-couvertures`, couvertures et navigation dans la

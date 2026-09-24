@@ -24,7 +24,7 @@ Ce qui s'applique à chaque PR touchant de l'UI.
   reduced-motion respecté.
 - **Registres** : landing/parent = sobre ; élève = vivant (micro-motion) sans
   infantiliser.
-- **Typo** : Nunito titres et corps, Caveat notes manuscrites.
+- **Typo** : Nunito titres et corps, Caveat notes manuscrites, JetBrains Mono code.
 - **Exceptions au « tokens uniquement »** : les valeurs que `motion` anime
   lui-même dans `style`, et les images `next/og` (`ImageResponse` ne lit que
   `style`, sans variables CSS). Rien d'autre.

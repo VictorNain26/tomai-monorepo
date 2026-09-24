@@ -53,6 +53,9 @@ explicitement (`.claude/rules/plans-and-agents.md`).
 - **Lot 3 — TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues
   avec `fr_marie_neutral` (seuls presets fr/en/gb existent ; es/de sans voix) ;
   `/api/tts/voices` annonce encore ces langues.
+- **PR 3a** (spec `specs/2026-09-24-landing-kompri-design.md` § 5) : les pages secondaires,
+  hors `/faq`, n'ont pas de `metadata` propre et héritent du titre de l'accueil et de
+  `canonical: "/"`.
 - **Résolu** : override `'nanoid@5'` et son commentaire, retirés en B (aucun `nanoid` dans
   `pnpm-workspace.yaml`) ; recommandations `ruff`/`python` de `.vscode/extensions.json`,
   retirées par la PR docs `docs/fix-doc-drift` ; deux copies de `@ai-sdk/provider` : le
@@ -105,8 +108,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 |---|---|---|---|---|
 | Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | — | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
 | Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
-| Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | ouverte | #323 |
-| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) ; reporté de PR 1 : aucun `<h1>` sur les pages secondaires (`SectionHeader` rend toujours un `<h2>`) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif) | `feat/landing-kompri-fondations` | PR 1 en cours | — |
+| Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | mergée | #323 |
+| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif) | `feat/landing-kompri-fondations` | PR 1 en cours | — |
 
 ## Étapes manuelles (utilisateur)
 
@@ -246,8 +249,5 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 - **2026-09-24** — Landing, PR 1 (fondations, branche `feat/landing-kompri-fondations`) :
   tokens crème et Nunito, en-tête avec menu mobile en `Sheet`, footer clair, page 404 ;
   nettoyage de fin de PR (composants `@repo/ui` et token `violet` inutilisés retirés,
-  documents des directions « cahier annoté » et « copie corrigée » supprimés). Le nom est
-  rouvert le même jour : Kompri redevient un candidat, pas une décision ; le site et la
-  mascotte restent sur leurs valeurs provisoires (« TomIA », « Tom ») derrière
-  `apps/landing/lib/brand.ts` jusqu'au choix de Victor — palette, polices et signes d'école
-  restent décidés.
+  documents des directions « cahier annoté » et « copie corrigée » supprimés). Nom du site
+  et de la mascotte rouverts le 2026-09-24 (spec landing § 5).
