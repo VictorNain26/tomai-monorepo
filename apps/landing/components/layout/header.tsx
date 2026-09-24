@@ -1,13 +1,13 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
 import { Button, cn } from "@repo/ui";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Logo } from "../atoms/logo";
 import { NavLinks } from "../molecules/nav-links";
+import { MobileMenu } from "../molecules/mobile-menu";
 
 export function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   const handleScroll = useCallback(() => {
@@ -27,60 +27,24 @@ export function Header() {
       )}
     >
       <nav className="container relative flex h-16 items-center justify-between">
-        {/* Logo */}
         <div className="flex items-center z-20">
           <Logo />
         </div>
 
-        {/* Desktop Navigation - Centered */}
         <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <NavLinks />
         </div>
 
-        {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3 z-20">
           <Button size="sm" asChild>
-            <a href="#waitlist">Rejoindre la liste d&apos;attente</a>
+            <Link href="/#waitlist">S&apos;inscrire</Link>
           </Button>
         </div>
 
         <div className="flex items-center gap-2 md:hidden z-20">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </Button>
+          <MobileMenu />
         </div>
       </nav>
-
-      {/* Mobile Menu */}
-      <div
-        inert={!mobileMenuOpen}
-        className={cn(
-          "md:hidden overflow-hidden transition-all duration-base ease-in-out border-t border-border/50",
-          mobileMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0 border-t-0"
-        )}
-      >
-        <div className="container py-4 space-y-4 bg-background">
-          <NavLinks
-            orientation="vertical"
-            onLinkClick={() => setMobileMenuOpen(false)}
-          />
-          <div className="pt-2">
-            <Button className="w-full" asChild>
-              <a href="#waitlist">Rejoindre la liste d&apos;attente</a>
-            </Button>
-          </div>
-        </div>
-      </div>
     </header>
   );
 }
