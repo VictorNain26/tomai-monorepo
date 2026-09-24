@@ -9,16 +9,14 @@ const SheetTrigger = SheetPrimitive.Trigger;
 function SheetContent({
   className,
   children,
-  side = "right",
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Content> & { side?: "right" | "left" }) {
+}: React.ComponentProps<typeof SheetPrimitive.Content>) {
   return (
     <SheetPrimitive.Portal>
       <SheetPrimitive.Overlay className="fixed inset-0 z-50 bg-overlay/80" />
       <SheetPrimitive.Content
         className={cn(
-          "fixed inset-y-0 z-50 flex h-full w-3/4 flex-col gap-4 bg-background shadow-lg sm:max-w-sm",
-          side === "right" ? "right-0 border-l" : "left-0 border-r",
+          "fixed inset-y-0 right-0 z-50 flex h-full w-3/4 flex-col gap-4 border-l bg-background shadow-lg sm:max-w-sm",
           className,
         )}
         {...props}

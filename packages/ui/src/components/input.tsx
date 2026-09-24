@@ -9,7 +9,6 @@ const inputVariants = cva(
       variant: {
         default: "border-input focus-visible:ring-ring",
         error: "border-destructive focus-visible:ring-destructive",
-        success: "border-success focus-visible:ring-success",
       },
     },
     defaultVariants: {
