@@ -17,7 +17,7 @@ export default function ConfidentialitePage() {
           sur simple demande.
         </p>
 
-        <h3>1. Qui est responsable de vos données ?</h3>
+        <h2>1. Qui est responsable de vos données ?</h2>
         <p>
           Le responsable du traitement est Victor Lenain, entrepreneur individuel, éditeur
           de l&apos;application TomIA (voir les{" "}
@@ -26,7 +26,7 @@ export default function ConfidentialitePage() {
           <a href="mailto:contact@tomia.fr">contact@tomia.fr</a>.
         </p>
 
-        <h3>2. Quelles données collectons-nous ?</h3>
+        <h2>2. Quelles données collectons-nous ?</h2>
         <p><strong>Compte parent :</strong> nom, prénom, adresse e-mail et mot de passe
           (stocké sous forme hachée). Si vous choisissez la connexion Google : prénom, nom
           et adresse e-mail transmis par Google.</p>
@@ -49,7 +49,7 @@ export default function ConfidentialitePage() {
         <p><strong>Site vitrine :</strong> votre adresse e-mail si vous vous inscrivez à la
           liste d&apos;attente ou nous contactez.</p>
 
-        <h3>3. Pourquoi, et sur quelle base légale ?</h3>
+        <h2>3. Pourquoi, et sur quelle base légale ?</h2>
         <ul>
           <li><strong>Fournir le service de tutorat</strong> (compte, conversations,
             révisions) — exécution du contrat.</li>
@@ -67,7 +67,7 @@ export default function ConfidentialitePage() {
           <li><strong>Liste d&apos;attente et contact</strong> — consentement.</li>
         </ul>
 
-        <h3>4. Le profil d&apos;apprentissage, expliqué simplement</h3>
+        <h2>4. Le profil d&apos;apprentissage, expliqué simplement</h2>
         <p>
           Pour adapter ses explications, TomIA note au fil des conversations ce que
           l&apos;élève maîtrise et ce qui lui pose des difficultés (par exemple « à
@@ -83,7 +83,7 @@ export default function ConfidentialitePage() {
           voit ces notes, et tu peux demander à les effacer, toi-même ou avec tes parents.
         </p>
 
-        <h3>5. Qui accède à vos données ?</h3>
+        <h2>5. Qui accède à vos données ?</h2>
         <p>
           Vos données ne sont jamais vendues ni louées, et nous ne diffusons aucune
           publicité. Elles sont traitées par les prestataires suivants, chacun limité à sa
@@ -102,7 +102,7 @@ export default function ConfidentialitePage() {
           <li><strong>Google</strong> — uniquement si vous choisissez la connexion Google.</li>
         </ul>
 
-        <h3>6. Transferts hors de l&apos;Union européenne</h3>
+        <h2>6. Transferts hors de l&apos;Union européenne</h2>
         <p>
           L&apos;essentiel de vos données est traité en France et dans l&apos;Union
           européenne. Les transferts vers le prestataire établi aux États-Unis (Vercel) sont
@@ -112,7 +112,7 @@ export default function ConfidentialitePage() {
           <a href="mailto:contact@tomia.fr">contact@tomia.fr</a>.
         </p>
 
-        <h3>7. Combien de temps conservons-nous vos données ?</h3>
+        <h2>7. Combien de temps conservons-nous vos données ?</h2>
         <ul>
           <li><strong>Compte et contenus d&apos;apprentissage</strong> (messages, fichiers,
             profil, cartes de révision) : pendant l&apos;utilisation du service, puis
@@ -128,7 +128,7 @@ export default function ConfidentialitePage() {
           <li><strong>Données de facturation</strong> : 10 ans (obligation comptable).</li>
         </ul>
 
-        <h3>8. Vos droits</h3>
+        <h2>8. Vos droits</h2>
         <p>
           Conformément au RGPD et à la loi Informatique et Libertés, vous disposez des
           droits d&apos;accès, de rectification, d&apos;effacement, de limitation,
@@ -146,7 +146,7 @@ export default function ConfidentialitePage() {
           (<a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">cnil.fr</a>).
         </p>
 
-        <h3>9. Sécurité</h3>
+        <h2>9. Sécurité</h2>
         <p>
           Les échanges sont chiffrés (TLS). Les identifiants Pronote sont chiffrés en
           AES-256-GCM avec une dérivation de clé PBKDF2 à 600 000 itérations et un sel
@@ -154,7 +154,7 @@ export default function ConfidentialitePage() {
           l&apos;accès aux données d&apos;un enfant est strictement réservé à son parent.
         </p>
 
-        <h3>10. Protection des mineurs</h3>
+        <h2>10. Protection des mineurs</h2>
         <p>
           TomIA est conçu pour des élèves mineurs, sous le contrôle de leurs parents : le
           compte enfant est créé par le parent, et pour les enfants de moins de 15 ans le
@@ -166,7 +166,7 @@ export default function ConfidentialitePage() {
           mineurs.
         </p>
 
-        <h3>11. Évolution de cette politique</h3>
+        <h2>11. Évolution de cette politique</h2>
         <p>
           En cas de modification substantielle de cette politique, vous serez informé par
           e-mail ou via l&apos;application avant son entrée en vigueur. La date de dernière

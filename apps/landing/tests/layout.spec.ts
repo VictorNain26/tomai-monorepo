@@ -1,6 +1,25 @@
 import { expect, test, type Page } from "@playwright/test";
 import { HEIGHT, PAGES, settle, WIDTHS } from "./support";
 
+function headingLevels(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll("main h1, main h2, main h3, main h4")]
+      .filter((el) => el.getClientRects().length > 0)
+      .map((el) => Number(el.tagName.slice(1))),
+  );
+}
+
+for (const path of PAGES) {
+  test(`${path} has one h1 and never skips a heading level`, async ({ page }) => {
+    await page.goto(path);
+    const levels = await headingLevels(page);
+    expect(levels.filter((level) => level === 1), "h1 count").toHaveLength(1);
+    expect(levels[0], "first heading").toBe(1);
+    const skips = levels.flatMap((level, i) => (i > 0 && level > levels[i - 1] + 1 ? [`h${levels[i - 1]} → h${level}`] : []));
+    expect(skips).toEqual([]);
+  });
+}
+
 function inspectBounds(page: Page) {
   return page.evaluate(() => {
     const problems: string[] = [];
