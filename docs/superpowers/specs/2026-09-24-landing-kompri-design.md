@@ -98,7 +98,7 @@ Confiance, Tarifs, FAQ, appel final. Les textes restent ceux de `main`, sauf ci-
      à la 3e ; jamais la réponse de son exercice.
   3. « Il trouve seul » — et ce qu'il a compris revient en révision au bon moment, jusqu'au
      contrôle.
-  Numéros cerclés de rouge, le troisième de vert (`Scribble kind="circle"`, tracé par
+  Numéros cerclés de rouge, le troisième de vert (`Scribble`, tracé par
   Motion). Aucun surlignage dans le corps des étapes.
 - **Parents** : « sans lire par-dessus son épaule » passe du souligné au surligné.
 - **Confiance** : la note « Ce qu'on s'engage à faire, et à ne pas faire. » devient une
@@ -110,11 +110,12 @@ Confiance, Tarifs, FAQ, appel final. Les textes restent ceux de `main`, sauf ci-
 `components/atoms/tom-illustration.tsx` expose `TomIllustration({ className })`, la pose
 « bonjour » du hero, seule utilisée par la landing. En attendant l'image, il rend un disque
 `secondary` décoratif (`aria-hidden`), dans une boîte carrée de la taille finale. À la
-livraison du SVG, le composant l'affiche avec un `alt` qui décrit la pose, et rien d'autre ne
-change. Les autres poses arriveront avec l'app, qui en aura l'usage.
+livraison de l'image (PNG transparent, stade cycle 4), le composant l'affiche avec un `alt`
+qui décrit la pose, et rien d'autre ne change. Les autres poses arriveront avec l'app, qui en
+aura l'usage.
 
-Le disque et sa place dans la mise en page sont provisoires eux aussi : Victor n'a pas encore
-arrêté la mascotte ni où elle se place dans le hero.
+Le disque et sa place dans le hero restent provisoires ; la mascotte, elle, est décidée
+(identité § 5).
 
 ## 5. Nom et logo
 
@@ -176,5 +177,6 @@ au clavier ; captures dans la PR. Les specs et plans des directions « cahier an
 
 ## Hors périmètre
 
-Les images de Tom (génération par Victor, finition dans une PR à part), l'app, les View
-Transitions entre pages, le délai d'expiration du `fetch` de `joinWaitlist`.
+Les images de Tom (modélisation et animation dans Blender par une équipe d'agents,
+intégration dans une PR à part), l'app, les View Transitions entre pages, le délai
+d'expiration du `fetch` de `joinWaitlist`.

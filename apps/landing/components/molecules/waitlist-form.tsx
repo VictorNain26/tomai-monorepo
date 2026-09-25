@@ -29,7 +29,7 @@ export function WaitlistForm({
   if (status === "success" || status === "already") {
     const Icon = status === "success" ? CheckCircle2 : Info;
     return (
-      <div role="status" aria-live="polite" className={cn("flex items-center gap-2 font-medium", className)}>
+      <div role="status" aria-live="polite" className={cn("flex items-center gap-2 font-bold", className)}>
         <Icon className="size-5 shrink-0 text-success" aria-hidden="true" />
         <span>
           {status === "success"

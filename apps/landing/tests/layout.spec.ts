@@ -120,6 +120,18 @@ test("/aide at 375px keeps each FAQ question within three lines", async ({ page 
   expect(tall).toEqual([]);
 });
 
+for (const path of ["/", "/faq"]) {
+  test(`${path} underlines every inline link in body text`, async ({ page }) => {
+    await page.goto(path);
+    const notUnderlined = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>("main p a")]
+        .filter((el) => !getComputedStyle(el).textDecorationLine.includes("underline"))
+        .map((el) => el.textContent?.trim() ?? ""),
+    );
+    expect(notUnderlined).toEqual([]);
+  });
+}
+
 test("/ at 375px keeps 8px between a wrapped pricing label and its button edge", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: HEIGHT });
   await page.goto("/");
