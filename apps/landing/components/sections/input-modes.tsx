@@ -16,7 +16,7 @@ export function InputModes() {
             <div key={title} className="flex gap-4">
               <Icon className="mt-2 size-6 shrink-0 text-primary" aria-hidden="true" />
               <p className="text-muted-foreground">
-                <span className="block font-heading text-xl font-semibold text-foreground">{title}</span>
+                <span className="block font-heading text-xl font-bold text-foreground">{title}</span>
                 {body}
               </p>
             </div>

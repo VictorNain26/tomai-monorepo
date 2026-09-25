@@ -46,7 +46,7 @@ export function Footer() {
 
           {LINK_GROUPS.map((group) => (
             <nav key={group.title} aria-label={group.title}>
-              <p className="mb-4 text-sm font-semibold text-muted-foreground">{group.title}</p>
+              <p className="mb-4 text-sm font-bold text-muted-foreground">{group.title}</p>
               <ul className="space-y-2 text-sm">
                 {group.links.map((link) => (
                   <li key={link.href}>

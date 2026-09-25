@@ -28,7 +28,7 @@ export function Parents() {
               <div className="flex h-full gap-4 rounded-2xl bg-card shadow-sm ring-1 ring-border p-6">
                 <Icon className="mt-2 size-6 shrink-0 text-primary" aria-hidden="true" />
                 <div>
-                  <h3 className="mb-2 text-xl font-semibold text-foreground">{title}</h3>
+                  <h3 className="mb-2 text-xl text-foreground">{title}</h3>
                   <p className="text-muted-foreground">{body}</p>
                 </div>
               </div>

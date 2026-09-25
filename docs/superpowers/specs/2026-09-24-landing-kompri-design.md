@@ -177,5 +177,6 @@ au clavier ; captures dans la PR. Les specs et plans des directions « cahier an
 
 ## Hors périmètre
 
-Les images de Tom (modélisation par Victor dans Blender, intégration dans une PR à part),
-l'app, les View Transitions entre pages, le délai d'expiration du `fetch` de `joinWaitlist`.
+Les images de Tom (modélisation et animation dans Blender par une équipe d'agents,
+intégration dans une PR à part), l'app, les View Transitions entre pages, le délai
+d'expiration du `fetch` de `joinWaitlist`.

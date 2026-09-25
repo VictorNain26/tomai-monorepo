@@ -29,7 +29,7 @@ export function FaqList() {
                   <faq.icon className="size-5" />
                 </div>
               )}
-              <span className="font-semibold text-base sm:text-lg text-foreground">
+              <span className="font-bold text-base sm:text-lg text-foreground">
                 {faq.question}
               </span>
             </div>

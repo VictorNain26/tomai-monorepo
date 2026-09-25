@@ -49,9 +49,9 @@ export function Pricing() {
                 plan.featured ? "ring-2 ring-primary" : "ring-1 ring-border",
               )}
             >
-              <p className="font-heading text-lg italic text-annotation">{plan.tagline}</p>
-              <h3 className="mt-2 text-3xl font-semibold text-foreground">{plan.name}</h3>
-              <p className="mt-2 text-lg font-semibold text-foreground">{plan.price}</p>
+              <p className="text-sm font-bold text-muted-foreground">{plan.tagline}</p>
+              <h3 className="mt-2 text-3xl text-foreground">{plan.name}</h3>
+              <p className="mt-2 text-lg font-bold text-foreground">{plan.price}</p>
               <ul className="my-8 flex-1 space-y-4">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-4 text-foreground">

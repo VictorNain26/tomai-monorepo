@@ -29,7 +29,7 @@ fixes ne peuvent pas rester alignées sur une réglure qui défile).
 | Couleurs | Stylo Bic quatre couleurs, sur papier crème |
 | Typographies | Nunito pour tout le texte ; Caveat pour les seules notes manuscrites |
 | Signes d'école | Surligneur, numéros entourés, une note manuscrite ; rien d'autre |
-| Illustration | Rendu 3D toon fait par Victor dans Blender : aplats de 2 à 3 tons, contour à l'encre, fond transparent |
+| Illustration | Rendu 3D toon fait dans Blender par une équipe d'agents, validé par Victor : aplats de 2 à 3 tons, contour à l'encre, fond transparent |
 | Logo | Logotype du nom retenu |
 | Abandonné | Réglure Seyès, marge rouge, couvertures animées, navigation dans la marge |
 
@@ -137,9 +137,11 @@ déforment mains et visages) ; le hibou (mascotte de Duolingo) ; le chat (Tom et
   4. **bravo** — il fête la réussite, les bras en l'air ;
   5. **écoute** — penché en avant, attentif ;
   6. **tête seule**, de face, pour l'icône d'app, le favicon et le logo.
-- **Production** : Victor modèle le personnage ; l'agent peut piloter Blender par le serveur
-  MCP officiel de Blender Lab (matériaux, contour, éclairage, rendus en série), et vérifie le
-  rendu en 32 px par capture Playwright.
+- **Production** : une équipe d'agents pilote Blender par le serveur MCP officiel de Blender
+  Lab — direction artistique (bible du personnage et planche de turnaround), modélisation,
+  rig et animation pré-rendue, avec un critique visuel indépendant à chaque étape (matériaux,
+  contour, éclairage, rendus en série, vérification du rendu en 32 px par capture
+  Playwright). Victor valide chaque étape.
 - Sources, citées dans le texte :
   `https://docs.blender.org/manual/en/latest/render/shader_nodes/color/shader_to_rgb.html`,
   `https://docs.blender.org/manual/en/latest/grease_pencil/modifiers/generate/line_art.html`,
@@ -158,8 +160,8 @@ mascotte livrée.
 ## 7. Suite
 
 Découpage, dans l'ordre :
-1. **Cette spec**, puis Tom : modélisation et rendu par Victor dans Blender, finition
-   technique par l'agent ; le logotype en parallèle.
+1. **Cette spec**, puis Tom : modélisation et rendu dans Blender par une équipe d'agents,
+   validés par Victor à chaque étape ; le logotype en parallèle.
 2. **Refonte de la landing** sur cette identité : spec et plan propres, écrits contre `main`
    à jour. Elle change les tokens (§ 2), les polices (§ 3), retire la feuille Seyès déjà
    livrée dans `main`, intègre Tom, et fait le renommage à sa PR 3b de la spec landing.

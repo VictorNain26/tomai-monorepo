@@ -10,7 +10,7 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-09-24
+- **Dernière mise à jour :** 2026-09-25
 - **Lot en cours :** 0 — Assainissement
 - **Prochaine action :** réécrire la section E2 de
   `plans/2026-09-22-lot-0-e-code-reinvente.md` contre `main` (elle est marquée « à
@@ -109,7 +109,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | — | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
 | Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
 | Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | mergée | #323 |
-| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif) | `feat/landing-kompri-fondations` | PR 1 en cours | — |
+| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif), plan `plans/2026-09-25-landing-kompri-pr2-accueil.md` | `feat/landing-kompri-accueil` | PR 1 mergée (#325), PR 2 en cours | #325 |
 
 ## Étapes manuelles (utilisateur)
 
@@ -126,7 +126,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Vérifier les secrets `TURBO_TOKEN` / `TURBO_TEAM` | E2 | à faire |
 | Recherche INPI « Kompri » (classes 9, 41, 42) | Identité Kompri | fait (2026-09-24, par l'agent sur data.inpi.fr : aucune marque en conflit en France, détail dans la spec) |
 | Déposer la marque et réserver les domaines candidats | Identité Kompri | en attente : nom rouvert le 2026-09-24, bloqué jusqu'à la décision de Victor |
-| Générer Tom (six images) sur Recraft, un mois d'offre Basic (12 $ HT), avec les prompts de la spec ; retoucher les zones ratées par inpainting ; exporter en SVG | Refonte landing | à faire |
+| Valider la bible et la planche de référence de Tom, puis le modèle 3D | Refonte landing | en cours |
 
 ## Lots suivants
 
@@ -251,3 +251,15 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   nettoyage de fin de PR (composants `@repo/ui` et token `violet` inutilisés retirés,
   documents des directions « cahier annoté » et « copie corrigée » supprimés). Nom du site
   et de la mascotte rouverts le 2026-09-24 (spec landing § 5).
+- **2026-09-25** — PR 1 mergée (#325, merge commit). Landing, PR 2 « Accueil » démarrée sur
+  la branche `feat/landing-kompri-accueil` (plan `plans/2026-09-25-landing-kompri-pr2-accueil.md`) :
+  tâches 1 à 5 faites — refonte du hero autour de l'emplacement réservé de Tom, `Highlight`
+  en `<mark>`, `HandNote`, `Scribble` réduit aux cercles, les trois étapes en pastilles
+  numérotées, titres ramenés en graisse 800 (la base de `globals.css` suffit), accroche de
+  formule sortie du rouge italique (réservé aux notes de Tom) vers `text-sm font-bold
+  text-muted-foreground`. Décision : la production de Tom change de mains — Victor ne
+  modélise plus lui-même ; une équipe d'agents pilote Blender par le serveur MCP officiel de
+  Blender Lab (direction artistique et planche de référence, modélisation, rig et animation
+  pré-rendue, un critique visuel indépendant à chaque étape), Victor valide chaque étape ;
+  toujours aucune 3D temps réel sur le site (spec d'identité § 5). Specs `2026-09-24-identite-
+  kompri-design.md` et `2026-09-24-landing-kompri-design.md` mises à jour en conséquence.
