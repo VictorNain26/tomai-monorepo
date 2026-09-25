@@ -13,7 +13,8 @@ La suite e2e de la landing est locale uniquement : ni en CI, ni dans la validati
 Prérequis unique : `pnpm --filter landing exec playwright install chromium`. Elle construit le
 site, le sert sur le port 3011 et couvre la mise en page (aucun défilement horizontal, cibles
 de 44 px, lignes légales), le rendu sans JavaScript et sous mouvement réduit, le formulaire et
-le menu mobile.
+le menu mobile, ainsi que trois garde-fous propres à la page d'accueil : la place réservée à
+Tom, les signes d'école (un surlignage par titre, une note par section), la graisse des titres.
 
 ## Localisation des tests
 

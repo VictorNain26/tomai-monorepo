@@ -24,7 +24,7 @@ fixes ne peuvent pas rester alignées sur une réglure qui défile).
 | Sujet | Décision |
 |---|---|
 | Nom du produit | Provisoire (candidat : Kompri), voir `2026-09-24-landing-kompri-design.md` § 5 |
-| Personnage | **Tom**, une loutre anthropomorphe, est le tuteur IA ; il n'est pas le nom du produit ; qui grandit avec l'élève (§ 5) |
+| Personnage | **Tom**, une loutre anthropomorphe, est le tuteur IA ; il n'est pas le nom du produit ; il grandit avec l'élève (§ 5) |
 | Ton | Chaleureux et humain ; la page vouvoie les parents, Tom tutoie l'élève |
 | Couleurs | Stylo Bic quatre couleurs, sur papier crème |
 | Typographies | Nunito pour tout le texte ; Caveat pour les seules notes manuscrites |
@@ -106,8 +106,8 @@ Ils sont rares, sinon ils redeviennent un décor :
 - **note manuscrite** : au plus une par section, en Caveat rouge, légèrement inclinée, à la
   voix de Tom (« c'est toi qui l'écris ! »).
 
-Les traits (cercles, soulignés) sont des chemins SVG simples ; leur éventuelle animation
-passe par Motion, déjà en dépendance.
+Les cercles sont des chemins SVG simples ; leur éventuelle animation passe par Motion, déjà
+en dépendance.
 
 ## 5. Tom
 
@@ -141,7 +141,8 @@ déforment mains et visages) ; le hibou (mascotte de Duolingo) ; le chat (Tom et
   Lab — direction artistique (bible du personnage et planche de turnaround), modélisation,
   rig et animation pré-rendue, avec un critique visuel indépendant à chaque étape (matériaux,
   contour, éclairage, rendus en série, vérification du rendu en 32 px par capture
-  Playwright). Victor valide chaque étape.
+  Playwright). Victor valide chaque étape. Rendus pré-calculés en PNG, aucune 3D temps réel
+  sur le site.
 - Sources, citées dans le texte :
   `https://docs.blender.org/manual/en/latest/render/shader_nodes/color/shader_to_rgb.html`,
   `https://docs.blender.org/manual/en/latest/grease_pencil/modifiers/generate/line_art.html`,

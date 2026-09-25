@@ -254,8 +254,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 - **2026-09-25** — PR 1 mergée (#325, merge commit). Landing, PR 2 « Accueil » démarrée sur
   la branche `feat/landing-kompri-accueil` (plan `plans/2026-09-25-landing-kompri-pr2-accueil.md`) :
   tâches 1 à 5 faites — refonte du hero autour de l'emplacement réservé de Tom, `Highlight`
-  en `<mark>`, `HandNote`, `Scribble` réduit aux cercles, les trois étapes en pastilles
-  numérotées, titres ramenés en graisse 800 (la base de `globals.css` suffit), accroche de
+  en `<mark>`, `HandNote`, `Scribble` réduit aux cercles, les trois étapes en cartes aux
+  numéros entourés, titres ramenés en graisse 800 (la base de `globals.css` suffit), accroche de
   formule sortie du rouge italique (réservé aux notes de Tom) vers `text-sm font-bold
   text-muted-foreground`. Décision : la production de Tom change de mains — Victor ne
   modélise plus lui-même ; une équipe d'agents pilote Blender par le serveur MCP officiel de
