@@ -1,19 +1,20 @@
+import { cn } from "@repo/ui";
 import { FadeIn } from "../atoms/fade-in";
 import { Scribble } from "../annotations/scribble";
 import { SectionHeader } from "../atoms/section-header";
 
 const STEPS = [
   {
-    title: "Il questionne",
-    body: "Face à un exercice, Tom ne donne pas la solution. Il pose la question qui débloque, puis la suivante, et ne donne un indice plus précis que si votre enfant bloque vraiment.",
+    title: "Il pose sa question",
+    body: "Une photo de l'exercice ou quelques mots, dans n'importe quelle matière.",
   },
   {
-    title: "Il s'adapte",
-    body: "Vocabulaire, longueur des explications, notations : tout suit la classe de votre enfant, de la 6e à la 3e, et la matière travaillée.",
+    title: "Tom le guide",
+    body: "Une question, puis un indice, puis un autre, à son niveau de la 6e à la 3e ; jamais la réponse de son exercice.",
   },
   {
-    title: "Il fait réviser",
-    body: "Ce qui a été compris devient des fiches, revues au bon moment grâce à la répétition espacée, pour que ça tienne jusqu'au contrôle.",
+    title: "Il trouve seul",
+    body: "Et ce qu'il a compris revient en révision au bon moment, jusqu'au contrôle.",
   },
 ];
 
@@ -24,12 +25,18 @@ export function HowItWorks() {
         <SectionHeader eyebrow="La méthode" title="Comment Tom guide votre enfant" />
         <ol className="mx-auto grid max-w-5xl gap-12 md:grid-cols-3">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="border-l-2 border-annotation pl-6">
+            <li key={step.title} className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-border">
               <FadeIn delay={index * 0.15}>
-                <Scribble className="mb-4 px-2 font-heading text-3xl text-annotation" delay={0.2 + index * 0.15}>
+                <Scribble
+                  className={cn(
+                    "mb-4 px-2 font-heading text-3xl",
+                    index === 2 ? "text-success" : "text-annotation",
+                  )}
+                  delay={0.2 + index * 0.15}
+                >
                   {index + 1}
                 </Scribble>
-                <h3 className="mb-4 text-2xl font-semibold text-foreground">{step.title}</h3>
+                <h3 className="mb-4 text-2xl text-foreground">{step.title}</h3>
                 <p className="text-muted-foreground">{step.body}</p>
               </FadeIn>
             </li>
