@@ -35,8 +35,9 @@ function inspectBounds(page: Page) {
       for (const el of container.querySelectorAll<HTMLElement>("*")) {
         if (el.closest('[aria-hidden="true"], .sr-only') || el.getClientRects().length === 0) continue;
         const rect = el.getBoundingClientRect();
-        // 2 px of slack: a rotated margin note grows its box by a pixel or two.
-        if (rect.left < left - 2 || rect.right > right + 2) {
+        // 4 px of slack: a rotated hand note grows its box by a pixel or two, and a highlight
+        // that wraps onto a new line (box-decoration-clone) pads that line's fragment up to px-1.
+        if (rect.left < left - 4 || rect.right > right + 4) {
           problems.push(`<${el.tagName.toLowerCase()} class="${el.className}"> spans ${rect.left.toFixed(1)}–${rect.right.toFixed(1)}, container text ${left}–${right}`);
         }
       }

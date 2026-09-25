@@ -1,7 +1,7 @@
 import { BellRing, CalendarDays, EyeOff, LineChart } from "lucide-react";
 import { FadeIn } from "../atoms/fade-in";
 import { SectionHeader } from "../atoms/section-header";
-import { Scribble } from "../annotations/scribble";
+import { Highlight } from "../annotations/highlight";
 
 const POINTS = [
   { icon: LineChart, title: "Un résumé", body: "Matières travaillées, temps passé, notions qui résistent." },
@@ -18,7 +18,7 @@ export function Parents() {
           eyebrow="Pour les parents"
           title={
             <>
-              Vous savez où il en est, <Scribble kind="underline">sans lire par-dessus son épaule</Scribble>
+              Vous savez où il en est, <Highlight>sans lire par-dessus son épaule</Highlight>
             </>
           }
         />
