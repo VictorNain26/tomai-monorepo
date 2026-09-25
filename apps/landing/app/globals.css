@@ -2,108 +2,34 @@
 @import "@repo/tokens/theme.css";
 @source "../../../packages/ui/src";
 
-:root {
-  --cell: 2rem;
-  --rule: 0.5rem;
-  --band: 4rem;
-  --margin-x: 3.5rem;
-}
-
-@media (width >= 48rem) {
-  :root {
-    --band: 6rem;
-    --margin-x: 6rem;
-  }
-}
-
-/* Bord gauche entier : `auto` donnerait x,5 px et des verticales floues sur une largeur impaire. */
-@utility sheet {
-  position: relative;
-  isolation: isolate;
-  display: flow-root;
-  max-width: 80rem;
-  margin-inline: auto;
-  overflow-x: clip;
-  background-color: var(--color-background);
-  box-shadow: 0 0 0 1px var(--color-border);
-
-  @supports (margin-left: round(down, 1px, 1px)) {
-    margin-left: max(0px, round(down, (100% - 80rem) / 2, 1px));
-  }
-}
-
-@utility sheet-rules {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 10%, transparent) 1px, transparent 1px);
-  background-size: 100% var(--cell), 100% var(--rule);
-}
-
-@utility sheet-verticals {
-  position: absolute;
-  inset-block: 0;
-  left: var(--margin-x);
-  right: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: linear-gradient(to right, color-mix(in srgb, var(--color-primary) 25%, transparent) 1px, transparent 1px);
-  background-size: var(--cell) 100%;
-}
-
-@utility sheet-margin {
-  position: absolute;
-  inset-block: 0;
-  left: var(--margin-x);
-  width: 2px;
-  z-index: -1;
-  pointer-events: none;
-  background-color: var(--color-annotation);
-}
-
 @utility container {
   margin-inline: auto;
   width: 100%;
   max-width: 80rem;
-  padding-left: calc(var(--margin-x) + 1rem);
-  padding-right: 1rem;
+  padding-inline: 1rem;
 
   @media (width >= 48rem) {
-    padding-left: calc(var(--margin-x) + var(--cell));
-    padding-right: 4rem;
+    padding-inline: 2rem;
   }
-}
 
-@utility fiche-tape {
-  &::before {
-    content: "";
-    position: absolute;
-    top: -0.75rem;
-    left: -1rem;
-    width: 5rem;
-    height: 1.5rem;
-    rotate: -30deg;
-    background-color: color-mix(in srgb, var(--color-note) 55%, transparent);
-    box-shadow: 0 1px 2px color-mix(in srgb, var(--color-foreground) 12%, transparent);
+  @media (width >= 64rem) {
+    padding-inline: 3rem;
   }
 }
 
 @utility legal-copy {
+  @apply max-w-lg;
   color: var(--color-muted-foreground);
 
-  & h3 {
+  & h2 {
     margin-top: 2rem;
     margin-bottom: 0.5rem;
     font-size: var(--text-xl);
     line-height: 2rem;
-    font-weight: 600;
     color: var(--color-foreground);
   }
 
-  & h3:first-child {
+  & h2:first-child {
     margin-top: 0;
   }
 
@@ -143,11 +69,11 @@
   }
 
   body {
-    @apply bg-secondary font-sans text-foreground antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading tracking-tight;
+    @apply font-heading font-extrabold tracking-tight;
   }
 
   html {

@@ -11,7 +11,6 @@ const LINKS = [
   { href: "/#how-it-works", label: "Comment ça marche" },
   { href: "/#parents", label: "Parents" },
   { href: "/#pricing", label: "Tarifs" },
-  { href: "/#faq", label: "FAQ" },
 ];
 
 export function NavLinks({
@@ -30,7 +29,7 @@ export function NavLinks({
           key={link.href}
           href={link.href}
           className={cn(
-            "min-h-11 items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-base",
+            "min-h-11 items-center text-sm font-bold text-foreground hover:text-primary transition-colors duration-base",
             orientation === "vertical" ? "flex" : "inline-flex px-2"
           )}
           onClick={onLinkClick}

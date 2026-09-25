@@ -9,17 +9,15 @@ export default function AidePage() {
     <PageLayout
       title="Centre d'aide"
       description={`Les réponses aux questions fréquentes sur ${BRAND_NAME}.`}
-      maxWidth="5xl"
+      maxWidth="3xl"
     >
-      <div className="max-w-3xl">
-        <h3 className="mb-4 text-2xl font-semibold">Une question sur {BRAND_NAME} ?</h3>
-        <p className="mb-8 max-w-md text-muted-foreground">
-          Écrivez-nous : nous lisons chaque message.
-        </p>
-        <Button size="lg" asChild>
-          <Link href="/contact">Nous écrire</Link>
-        </Button>
-      </div>
+      <h2 className="mb-4 text-2xl">Une question sur {BRAND_NAME} ?</h2>
+      <p className="mb-8 max-w-md text-muted-foreground">
+        Écrivez-nous : nous lisons chaque message.
+      </p>
+      <Button size="lg" asChild>
+        <Link href="/contact">Nous écrire</Link>
+      </Button>
 
       <div className="mt-12">
         <FaqList />

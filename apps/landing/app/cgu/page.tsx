@@ -9,12 +9,12 @@ export default function CguPage() {
       maxWidth="3xl"
     >
       <div className="legal-copy">
-        <h3>1. Objet</h3>
+        <h2>1. Objet</h2>
         <p>
           Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services du service web TomIA, accessible sur tomia.fr, ci-après nommé « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.
         </p>
 
-        <h3>2. Accès au service</h3>
+        <h2>2. Accès au service</h2>
         <p>
           Le Service est accessible depuis un navigateur web récent, sur ordinateur, tablette ou téléphone. L&apos;Utilisateur doit disposer d&apos;un accès à internet. Tous les coûts afférents à l&apos;accès au Service, que ce soient les frais matériels ou d&apos;accès à internet, sont exclusivement à la charge de l&apos;utilisateur. Il est seul responsable du bon fonctionnement de son équipement ainsi que de son accès à internet.
         </p>
@@ -24,7 +24,7 @@ export default function CguPage() {
           titulaire de l&apos;autorité parentale) depuis son propre compte.
         </p>
 
-        <h3>3. Comptes enfants et autorité parentale</h3>
+        <h2>3. Comptes enfants et autorité parentale</h2>
         <p>
           En créant un compte pour un enfant, le parent déclare être titulaire de
           l&apos;autorité parentale sur cet enfant et accepte les présentes CGU en son nom
@@ -44,12 +44,12 @@ export default function CguPage() {
           sont partagées avec personne d&apos;autre.
         </p>
 
-        <h3>4. Propriété intellectuelle</h3>
+        <h2>4. Propriété intellectuelle</h2>
         <p>
           L&apos;application TomIA, ainsi que les textes, graphiques, images, sons et vidéos la composant, sont la propriété de l&apos;éditeur ou de ses partenaires. Toute représentation et/ou reproduction et/ou exploitation partielle ou totale des contenus et services proposés par l&apos;application TomIA, par quelque procédé que ce soit, sans l&apos;autorisation préalable et par écrit de TomIA est strictement interdite et serait susceptible de constituer une contrefaçon au sens des articles L 335-2 et suivants du Code de la propriété intellectuelle.
         </p>
 
-        <h3>5. Données personnelles</h3>
+        <h2>5. Données personnelles</h2>
         <p>
           Le traitement des données personnelles des parents et des enfants (données
           collectées, finalités, bases légales, durées de conservation, prestataires,
@@ -60,7 +60,7 @@ export default function CguPage() {
           n&apos;est diffusée.
         </p>
 
-        <h3>6. Résiliation et suppression de compte</h3>
+        <h2>6. Résiliation et suppression de compte</h2>
         <p>
           Le parent peut supprimer le compte d&apos;un enfant à tout moment depuis son
           espace dans l&apos;application. La suppression du compte parent (et des comptes
@@ -70,12 +70,12 @@ export default function CguPage() {
           <Link href="/confidentialite">politique de confidentialité</Link>. Les modalités de souscription et de résiliation de l&apos;abonnement payant seront précisées dans les présentes conditions avant son ouverture.
         </p>
 
-        <h3>7. Responsabilité</h3>
+        <h2>7. Responsabilité</h2>
         <p>
           TomIA est un outil d&apos;aide aux devoirs utilisant l&apos;intelligence artificielle. Ses réponses, générées par un modèle d&apos;intelligence artificielle et adaptées au niveau scolaire déclaré, ne sauraient se substituer à l&apos;enseignement scolaire. TomIA s&apos;efforce de fournir des informations fiables mais ne garantit pas l&apos;exactitude, la complétude et l&apos;actualité de toutes les informations diffusées.
         </p>
 
-        <h3>8. Droit applicable</h3>
+        <h2>8. Droit applicable</h2>
         <p>
           Les présentes CGU sont soumises au droit français. En cas de litige et à défaut
           de résolution amiable, les tribunaux français seront seuls compétents,

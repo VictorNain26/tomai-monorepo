@@ -43,17 +43,13 @@ const PAIRS = [
   ["destructive-foreground", "destructive"],
   ["warning-foreground", "warning"],
   ["info-foreground", "info"],
-  ["violet-foreground", "violet"],
   ["success", "background"],
+  ["success", "card"],
   ["destructive", "background"],
   ["info", "background"],
   ["annotation", "background"],
   ["annotation", "card"],
   ["annotation", "secondary"],
-  ["note-foreground", "note"],
-  ["foreground", "note"],
-  ["primary", "note"],
-  ["annotation", "note"],
 ];
 
 for (const [fg, bg] of PAIRS) {

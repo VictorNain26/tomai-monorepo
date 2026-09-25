@@ -20,7 +20,6 @@ export function WaitlistForm({
   buttonText = "Rejoindre la liste d'attente",
   tone = "default",
 }: WaitlistFormProps) {
-  const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "already" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -46,16 +45,18 @@ export function WaitlistForm({
     setErrorMsg(message);
   }
 
-  function handleBlur() {
+  function handleBlur(e: React.FocusEvent<HTMLInputElement>) {
+    const email = e.currentTarget.value;
     if (email && !EMAIL_REGEX.test(email)) showError("Adresse email invalide");
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("idle");
     setErrorMsg("");
+    const email = new FormData(e.currentTarget).get("email");
     startTransition(async () => {
-      const result = await joinWaitlist(email, source);
+      const result = await joinWaitlist(typeof email === "string" ? email : "", source);
       if (!result.success) showError(result.error);
       else setStatus(result.alreadyExists ? "already" : "success");
     });
@@ -67,15 +68,15 @@ export function WaitlistForm({
         <label htmlFor={inputId} className="sr-only">
           Adresse e-mail
         </label>
+        {/* Uncontrolled: a controlled value would overwrite what the visitor typed before hydration. */}
         <Input
           id={inputId}
+          name="email"
           type="email"
           required
           autoComplete="email"
           placeholder="votre@email.fr"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
+          onChange={() => {
             if (status === "error") setStatus("idle");
           }}
           onBlur={handleBlur}

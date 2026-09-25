@@ -9,7 +9,6 @@ const inputVariants = cva(
       variant: {
         default: "border-input focus-visible:ring-ring",
         error: "border-destructive focus-visible:ring-destructive",
-        success: "border-success focus-visible:ring-success",
       },
     },
     defaultVariants: {
@@ -18,7 +17,7 @@ const inputVariants = cva(
   }
 );
 
-export type InputProps = React.ComponentProps<"input"> & VariantProps<typeof inputVariants>;
+type InputProps = React.ComponentProps<"input"> & VariantProps<typeof inputVariants>;
 
 function Input({ className, variant, type, ...props }: InputProps) {
   return (
