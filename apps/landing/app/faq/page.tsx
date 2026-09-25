@@ -21,7 +21,7 @@ export default function FAQPage() {
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
         Vous avez une autre question ?{" "}
-        <Link href="/contact" className="text-primary hover:underline">
+        <Link href="/contact" className="text-primary underline underline-offset-4">
           Contactez-nous
         </Link>
       </p>
