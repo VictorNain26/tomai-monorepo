@@ -43,7 +43,7 @@ test.describe("without JavaScript", () => {
 test.describe("with motion", () => {
   test.use({ reducedMotion: "no-preference" });
 
-  for (const path of ["/aide", "/cgu"]) {
+  for (const path of ["/", "/aide", "/cgu"]) {
     test(`${path} loads without a layout shift`, async ({ page }) => {
       await page.addInitScript(() => {
         window.layoutShift = 0;
