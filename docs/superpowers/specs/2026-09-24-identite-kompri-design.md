@@ -24,12 +24,12 @@ fixes ne peuvent pas rester alignées sur une réglure qui défile).
 | Sujet | Décision |
 |---|---|
 | Nom du produit | Provisoire (candidat : Kompri), voir `2026-09-24-landing-kompri-design.md` § 5 |
-| Personnage | **Tom**, une loutre anthropomorphe, est le tuteur IA ; il n'est pas le nom du produit |
+| Personnage | **Tom**, une loutre anthropomorphe, est le tuteur IA ; il n'est pas le nom du produit ; qui grandit avec l'élève (§ 5) |
 | Ton | Chaleureux et humain ; la page vouvoie les parents, Tom tutoie l'élève |
 | Couleurs | Stylo Bic quatre couleurs, sur papier crème |
 | Typographies | Nunito pour tout le texte ; Caveat pour les seules notes manuscrites |
 | Signes d'école | Surligneur, numéros entourés, une note manuscrite ; rien d'autre |
-| Illustration | Aplats vectoriels arrondis, sans contour |
+| Illustration | Rendu 3D toon fait par Victor dans Blender : aplats de 2 à 3 tons, contour à l'encre, fond transparent |
 | Logo | Logotype du nom retenu |
 | Abandonné | Réglure Seyès, marge rouge, couvertures animées, navigation dans la marge |
 
@@ -119,54 +119,32 @@ pour ouvrir ce qu'elle trouve : elle trouve la solution elle-même, comme l'él�
 Écartés : un hybride mi-humain mi-loutre (vallée de l'étrange, et zone où les générateurs
 déforment mains et visages) ; le hibou (mascotte de Duolingo) ; le chat (Tom et Jerry).
 
-### Style
-
-Aplats vectoriels arrondis, sans contour, formes simples, ombres en aplats d'un ton plus
-sombre. Palette : brun loutre, crème du ventre et du museau, plus deux couleurs du stylo au
-plus (le bleu du pull, le rouge du stylo). Lisible en 32 px (favicon) comme en 400 px (hero).
-
-### Jeu de départ
-
-Cinq poses et une tête :
-1. **bonjour** — il salue d'une main, sourire ;
-2. **réfléchit** — la main sous le menton, regard en l'air ;
-3. **indice** — il montre du doigt, sourcils levés ;
-4. **bravo** — il fête la réussite, les bras en l'air ;
-5. **écoute** — penché en avant, attentif ;
-6. **tête seule**, de face, pour l'icône d'app, le favicon et le logo.
-
-### Production
-
-Victor génère, avec **Recraft sur une offre payante** : les images y appartiennent à
-l'utilisateur et l'usage commercial est permis, ce qui n'est pas le cas de l'offre gratuite
-(`https://www.recraft.ai/terms`). Méthode recommandée par Recraft pour garder un personnage
-cohérent (`https://www.recraft.ai/docs/best-practices/character-consistency`) : description
-détaillée des traits, même style appliqué à toutes les images, et image déjà validée posée
-en référence visuelle pour les suivantes.
-
-1. Générer la pose 1 avec le prompt de base ; itérer jusqu'à un Tom qui convient.
-2. Poser cette image en référence et appliquer le même style pour les poses 2 à 6.
-3. Critère d'acceptation : les six images montrent visiblement le même personnage
-   (proportions, couleurs, pull, stylo) ; sinon on reprend l'étape 1 avec une description
-   plus précise.
-4. Retouche dans Recraft même : une main ou un détail raté se corrige en régénérant la
-   zone seule (inpainting, proposé par Recraft : `https://www.recraft.ai/pricing`) plutôt
-   que toute l'image. Une image qui garde des mains déformées est refusée.
-5. Export SVG des six images retenues.
-6. **Finition technique, par l'agent**, avec des outils existants et sans redessiner :
-   optimisation par SVGO, couleurs ramenées aux valeurs exactes de la palette, suppression
-   des tracés parasites, contrôle du rendu en 32 px par capture Playwright. Les fichiers
-   rejoignent le dépôt avec la refonte de la landing.
-
-Budget : pas d'illustrateur. Recraft accorde la propriété et l'usage commercial des images
-générées pendant l'abonnement (`https://www.recraft.ai/pricing`) : un seul mois d'offre
-payante suffit, à condition de générer et d'exporter tout le jeu pendant ce mois. L'offre
-Basic (12 $ HT par mois sans engagement, 1 000 crédits) inclut déjà ces droits, les
-palettes personnalisées et les outils de retouche.
-
-Pourquoi pas un dessin maison : aucun outil de génération d'image n'est disponible côté
-agent, et un personnage dessiné en SVG à la main, forme par forme, serait amateur — c'est le
-code inventé que le projet refuse.
+- **Il grandit avec l'élève** : trois stades calqués sur les cycles officiels : 6e (cycle 3,
+  proportions rondes, grosse tête), 5e à 3e (cycle 4, silhouette plus fine, attitude
+  assurée), lycée (proportions d'adolescent, dessin plus sobre). Un seul modèle, une seule
+  armature, les stades sont des variantes de proportions (*shape keys*). La V1 couvre le
+  collège : le stade lycée n'apparaît nulle part tant que le lycée n'est pas proposé.
+- **Style** : rendu toon dans Blender (EEVEE). Ombrage en 2 à 3 aplats par couleur (nœud
+  *Shader to RGB* suivi d'une *Color Ramp*), contour par le modificateur *Line Art* en
+  `foreground` `#1D1D22`, sans flou ni textures réalistes. Palette : brun loutre, crème du
+  ventre et du museau, bleu `#1F3F9E` du pull, rouge `#C0282D` du stylo. Fond transparent
+  (option *Transparent* du panneau Film d'EEVEE), export PNG.
+- **Jeu de départ** : les cinq poses et la tête gardent leur liste actuelle ; la landing
+  n'utilise que « bonjour » au stade cycle 4, produit en premier.
+  1. **bonjour** — il salue d'une main, sourire ;
+  2. **réfléchit** — la main sous le menton, regard en l'air ;
+  3. **indice** — il montre du doigt, sourcils levés ;
+  4. **bravo** — il fête la réussite, les bras en l'air ;
+  5. **écoute** — penché en avant, attentif ;
+  6. **tête seule**, de face, pour l'icône d'app, le favicon et le logo.
+- **Production** : Victor modèle le personnage ; l'agent peut piloter Blender par le serveur
+  MCP officiel de Blender Lab (matériaux, contour, éclairage, rendus en série), et vérifie le
+  rendu en 32 px par capture Playwright.
+- Sources, citées dans le texte :
+  `https://docs.blender.org/manual/en/latest/render/shader_nodes/color/shader_to_rgb.html`,
+  `https://docs.blender.org/manual/en/latest/grease_pencil/modifiers/generate/line_art.html`,
+  `https://docs.blender.org/manual/en/latest/render/eevee/render_settings/film.html`,
+  `https://www.blender.org/lab/mcp-server/`.
 
 ## 6. Logo
 
@@ -177,26 +155,10 @@ ne pas dépendre de la police chargée, avec un réglage de l'approche des lettr
 couleur sur papier, blanc sur bleu, logotype seul. La tête de Tom s'y ajoute une fois la
 mascotte livrée.
 
-Prompt de base (en anglais, langue de travail des générateurs) :
-
-> Friendly anthropomorphic otter character named Tom, a warm and patient tutor. Standing
-> upright on two legs, simple rounded hands with four fingers, soft brown fur with a cream muzzle and
-> belly, small round ears, gentle eyes with expressive eyebrows. Wears a cozy ink-blue
-> knitted sweater with a four-colour ballpoint pen clipped in the chest pocket. Flat vector
-> illustration, rounded geometric shapes, no outlines, flat shading, limited palette: brown,
-> cream, ink blue #1F3F9E, touch of red #C0282D. Plain off-white background. Full body.
-> Pose: waving hello with one hand, warm smile.
-
-Poses suivantes, avec la pose 1 en référence : remplacer la dernière phrase par
-« Same character, consistent face and proportions. Pose: » suivi de la pose — *hand under
-chin, looking up, thinking* ; *pointing to the side with one finger, eyebrows raised, giving
-a hint* ; *both arms raised, celebrating, big smile* ; *leaning forward, listening
-attentively* ; *head only, front view, smiling, centered, for an app icon*.
-
 ## 7. Suite
 
 Découpage, dans l'ordre :
-1. **Cette spec**, puis Tom : génération et retouche par Victor sur Recraft, finition
+1. **Cette spec**, puis Tom : modélisation et rendu par Victor dans Blender, finition
    technique par l'agent ; le logotype en parallèle.
 2. **Refonte de la landing** sur cette identité : spec et plan propres, écrits contre `main`
    à jour. Elle change les tokens (§ 2), les polices (§ 3), retire la feuille Seyès déjà
@@ -212,6 +174,7 @@ contrôlé (saisie préservée à l'hydratation) et ses tests.
 
 - un parent qui voit la page reconnaît en quelques secondes le produit, Tom et la promesse ;
 - les quatre couleurs du stylo gardent chacune un seul rôle, partout ;
-- les six images de Tom montrent le même personnage ;
+- les images d'un même stade montrent le même personnage, et les trois stades le même Tom à
+  trois âges ;
 - Tom reste lisible en 32 px ;
 - aucune police, couleur ou illustration hors de cette spec sans la modifier d'abord.
