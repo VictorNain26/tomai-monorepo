@@ -14,8 +14,7 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 - **Lot en cours :** 0 — Assainissement
 - **Prochaine action :** réécrire la section E2 de
   `plans/2026-09-22-lot-0-e-code-reinvente.md` contre `main` (elle est marquée « à
-  réécrire au démarrage »), puis l'exécuter sur `refactor/replace-custom-infra` avec le
-  skill `superpowers:subagent-driven-development`.
+  réécrire au démarrage »), puis l'exécuter sur `refactor/replace-custom-infra`.
 
 ## Reporté
 

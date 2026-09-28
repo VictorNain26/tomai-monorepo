@@ -1,7 +1,5 @@
 # Lot 0, PR E — Remplacer le code qui réinvente une bibliothèque (E1, E2)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Index du lot, contraintes globales, ordre des PR et étapes manuelles :** `docs/superpowers/plans/2026-09-22-lot-0-assainissement.md` — à lire avant ce plan.
 
 **Specs :** `docs/superpowers/specs/2026-09-22-cible-v1.md`, `docs/superpowers/specs/2026-09-22-agent-ia.md`.
