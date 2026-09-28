@@ -8,20 +8,13 @@ paths:
 
 # Design system — règles d'application
 
-Ce qui s'applique à chaque PR touchant de l'UI.
-
 - **Tokens uniquement** : aucune couleur, durée, rayon ou taille littérale
   dans composants et écrans — classes utilitaires issues de `@repo/tokens`
   (`bg-primary`, `duration-base`, `rounded-lg`…). Nouveau token = ajout dans
-  `theme.css` (thème clair seul, pas de mode sombre).
-- **États complets** sur tout interactif : disabled, loading, hover, active,
-  focus visible, error. Pas de happy-path only.
-- **A11y AA** : cibles ≥ 44 px, labels (`aria-*` / `<label>`), contraste 4.5:1.
+  `theme.css`.
+- **Thème clair seul** : pas de mode sombre ni de bascule de thème.
 - **Papier** : fond `background` crème, objets posés en `card` ; pas de bande de
   fond pleine largeur. Jamais `annotation` sur `highlight` (4,48:1).
-- **Patterns UX** : skeletons (pas de spinner pleine page), empty state avec
-  action, validation formulaire au blur, toast = info / dialog = irréversible,
-  reduced-motion respecté.
 - **Registres** : landing/parent = sobre ; élève = vivant (micro-motion) sans
   infantiliser.
 - **Typo** : Nunito titres et corps, Caveat notes manuscrites, JetBrains Mono code.
