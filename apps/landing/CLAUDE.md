@@ -19,8 +19,5 @@ pnpm build
 - **Primitives interactives via `@repo/ui`** (bouton, champ, dialog, menu) : c'est
   là que vit leur accessibilité. Sections, annotations et démo sont des composants
   de composition, libres.
-- **Tokens uniquement** : Tailwind et `@repo/tokens`, aucune valeur de style écrite
-  à la main. Exceptions : valeurs animées par `motion`, et `app/opengraph-image.tsx`
-  (`ImageResponse` ne lit que `style`).
 - Déploiement Vercel automatique au push. **Jamais `pnpm install --force`** dans
   `vercel.json` : ça masque les conflits de résolution au lieu de les régler.

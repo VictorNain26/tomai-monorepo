@@ -39,8 +39,8 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 
 ## Patterns
 
-- **JAMAIS de logique métier dans un route handler** → déléguer au service.
-- **JAMAIS d'accès DB depuis une route** → passer par le repository.
+- **Pas de logique métier dans un route handler** → déléguer au service.
+- **Pas d'accès DB depuis une route** → passer par le repository.
 - **Validation HTTP en TypeBox** (`t`, natif Elysia) sur chaque route : c'est elle
   qui alimente les types Eden. Zod sert hors route : variables d'environnement,
   sorties structurées de l'IA, arguments des outils du chat. Seule exception
