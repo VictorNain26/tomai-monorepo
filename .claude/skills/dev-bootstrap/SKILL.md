@@ -79,7 +79,3 @@ pnpm doctor:e2e    # strict : un SKIP compte comme un échec
 docker compose down -v   # détruit les volumes, donc les données locales
 pnpm run setup
 ```
-
-Depuis Postgres 18 (lot 0), le volume s'appelle `tomai_postgres18_dev_data`. Un
-ancien volume `tomai_postgres_dev_data` (PG16) est illisible par PG18 : le
-supprimer avec `docker volume rm tomai_postgres_dev_data`, puis `pnpm run setup`.

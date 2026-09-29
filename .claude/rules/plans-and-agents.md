@@ -7,9 +7,8 @@ paths:
 # Plans et agents — conventions
 
 - Un plan de PR s'écrit, ou se réécrit, au démarrage de la PR, contre `main` à jour. L'index
-  du lot ne porte que l'objectif, l'ordre des PR et les contraintes globales. Raison : les
-  plans du lot 0, écrits d'avance, ont dérivé à chaque PR mergée (10 écarts sur E1, deux
-  tâches E2 cassées).
+  du lot ne porte que l'objectif, l'ordre des PR et les contraintes globales. Raison : un
+  plan écrit d'avance dérive à chaque PR mergée entre-temps.
 - Désigner le code par chemin et symbole, jamais par numéro de ligne. Le code complet ne
   s'écrit que pour les fichiers et tests nouveaux ; la modification d'un fichier existant
   se décrit par comportement attendu, interface et test.
