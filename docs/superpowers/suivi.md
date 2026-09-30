@@ -104,8 +104,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 |---|---|---|---|---|
 | Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | — | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
 | Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
-| Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | mergée | #323 |
-| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif), plan `plans/2026-09-25-landing-kompri-pr2-accueil.md` | `feat/landing-kompri-accueil`, `feat/landing-brand-constants` | PR 1 et PR 2 mergées ; PR 3a en cours | #325, #326 |
+| Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis ; révisée en charte landing + app le 2026-09-30 (`docs/charte-graphique`) | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | mergée | #323 |
+| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif), plan `plans/2026-09-25-landing-kompri-pr2-accueil.md` | `feat/landing-kompri-accueil`, `feat/landing-brand-constants` | PR 1, 2 et 3a mergées ; PR 3b attend le nom | #325, #326, #331 |
 | Landing : Tom dans le hero (PNG, puis salut et respiration en vidéo HEVC/WebM avec alpha) | spec `specs/2026-09-24-landing-kompri-design.md` § 4 | `feat/landing-tom` | mergée | #329 |
 
 ## Étapes manuelles (utilisateur)
@@ -277,6 +277,16 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   Nunito avec Tom ; tête de Tom rendue de face dans `tom-mascotte`, devenue logo de l'en-tête,
   favicon et icônes d'app (déplacées de la PR 3b à la 3a à la demande de Victor) ;
   `theme_color` passé du violet de l'ancienne identité au papier.
+- **2026-09-30** — PR 3a mergée (#331). Charte graphique révisée pour couvrir l'app (branche
+  `docs/charte-graphique`, spec d'identité réécrite en place) : un seul Tom (cycle 4) en V1,
+  quatre poses liées aux états de l'app (bonjour, réfléchit, encourage, bravo à produire),
+  le rouge de Tom n'est jamais une faute, registres parent/élève, états des écrans, échelle
+  typographique. Tokens : `border` et `input` passent des bleus gris de l'ancienne identité
+  au sable, `info` et `--font-mono` retirés (inutilisés), primitive `Input` en pilule de
+  44 px ; rayons, espacements et `text-2xs` inutilisés retirés. Mergée (#332). Design System
+  « Charte TomIA » publié depuis les tokens et la charte :
+  https://claude.ai/artifact/WMHt6nPV7SEthVj3R6sEF5 (vue du code, à republier quand les
+  tokens changent).
 - **2026-09-30** — Revue de la landing avec Victor : l'atout est l'IA, Tom est un plus. Spec
   landing révisée en place (branche `docs/landing-demonstration`) et plan
   `plans/2026-09-30-landing-demonstration.md` : PR 4 retrait de la liste d'attente (son

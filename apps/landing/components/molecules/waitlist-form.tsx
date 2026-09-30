@@ -84,7 +84,7 @@ export function WaitlistForm({
           aria-invalid={status === "error"}
           aria-describedby={status === "error" ? errorId : undefined}
           className={cn(
-            "h-12 rounded-full px-5 text-base sm:flex-1",
+            "h-12 px-5 text-base sm:flex-1",
             tone === "inverted" && "border-background/30 bg-background text-foreground",
           )}
         />
