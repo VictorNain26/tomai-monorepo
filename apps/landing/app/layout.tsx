@@ -3,7 +3,6 @@ import { Caveat, Nunito } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { MobileCTABar } from "@/components/molecules/mobile-cta-bar";
 import { MotionProvider } from "@/components/motion-provider";
 import { BRAND_NAME } from "@/lib/brand";
 
@@ -138,7 +137,6 @@ export default function RootLayout({
               {children}
             </main>
             <Footer />
-            <MobileCTABar />
           </div>
         </MotionProvider>
       </body>

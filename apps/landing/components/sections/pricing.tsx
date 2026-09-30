@@ -1,5 +1,5 @@
-import { ArrowRight, Check } from "lucide-react";
-import { Button, cn } from "@repo/ui";
+import { Check } from "lucide-react";
+import { cn } from "@repo/ui";
 import { SectionHeader } from "../atoms/section-header";
 
 const PLANS = [
@@ -7,7 +7,6 @@ const PLANS = [
     name: "Gratuit",
     price: "0 €",
     tagline: "Pour découvrir",
-    cta: "Rejoindre la liste d'attente",
     featured: false,
     features: [
       "Collège, de la 6e à la 3e",
@@ -21,7 +20,6 @@ const PLANS = [
     name: "Complet",
     price: "Tarif annoncé au lancement",
     tagline: "Pour aller au bout",
-    cta: "Être prévenu du lancement",
     featured: true,
     features: [
       "Tout le plan Gratuit",
@@ -38,7 +36,7 @@ export function Pricing() {
         <SectionHeader
           eyebrow="Tarifs"
           title="Deux formules, sans surprise"
-          description="L'offre gratuite reste gratuite. Le tarif du plan Complet sera annoncé en premier aux inscrits de la liste d'attente."
+          description="L'offre gratuite reste gratuite. Le tarif du plan Complet sera annoncé à l'ouverture."
         />
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
           {PLANS.map((plan) => (
@@ -52,7 +50,7 @@ export function Pricing() {
               <p className="text-sm font-bold text-muted-foreground">{plan.tagline}</p>
               <h3 className="mt-2 text-3xl text-foreground">{plan.name}</h3>
               <p className="mt-2 text-lg font-bold text-foreground">{plan.price}</p>
-              <ul className="my-8 flex-1 space-y-4">
+              <ul className="mt-8 space-y-4">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-4 text-foreground">
                     <Check className="size-5 shrink-0 text-success" aria-hidden="true" />
@@ -60,17 +58,6 @@ export function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Button
-                variant={plan.featured ? "default" : "outline"}
-                size="lg"
-                className="group h-auto min-h-12 w-full whitespace-normal px-6 py-2 text-center"
-                asChild
-              >
-                <a href="#waitlist">
-                  {plan.cta}
-                  <ArrowRight className="transition-transform duration-base group-hover:translate-x-1" aria-hidden="true" />
-                </a>
-              </Button>
             </div>
           ))}
         </div>

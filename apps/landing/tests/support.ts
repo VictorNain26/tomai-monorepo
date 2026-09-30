@@ -1,4 +1,4 @@
-import type { Page, Route } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 declare global {
   interface Window {
@@ -36,15 +36,4 @@ export function hiddenReveals(page: Page) {
       .filter((el) => getComputedStyle(el).opacity !== "1" || getComputedStyle(el).transform !== "none")
       .map((el) => el.textContent?.trim().slice(0, 40) ?? ""),
   );
-}
-
-export async function holdScripts(page: Page) {
-  const held: Route[] = [];
-  await page.route("**/_next/static/chunks/*.js", (route) => {
-    held.push(route);
-  });
-  return async () => {
-    await Promise.all(held.map((route) => route.continue()));
-    await page.unroute("**/_next/static/chunks/*.js");
-  };
 }

@@ -2,7 +2,6 @@ import { GraduationCap, Landmark, ShieldCheck } from "lucide-react";
 import { TomIllustration } from "../atoms/tom-illustration";
 import { Highlight } from "../annotations/highlight";
 import { HandNote } from "../annotations/hand-note";
-import { WaitlistForm } from "../molecules/waitlist-form";
 
 const SIGNALS = [
   { icon: Landmark, label: "Hébergé dans l'Union européenne" },
@@ -30,9 +29,7 @@ export function Hero() {
 
           <HandNote className="mt-4">c&apos;est toi qui l&apos;écris !</HandNote>
 
-          <WaitlistForm source="hero" className="mt-10 max-w-lg" />
-
-          <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
             {SIGNALS.map(({ icon: Icon, label }) => (
               <li key={label} className="flex items-center gap-2">
                 <Icon className="size-4 text-success" aria-hidden="true" />

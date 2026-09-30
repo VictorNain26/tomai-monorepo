@@ -52,6 +52,10 @@ explicitement (`.claude/rules/plans-and-agents.md`).
 - **Lot 3 — TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues
   avec `fr_marie_neutral` (seuls presets fr/en/gb existent ; es/de sans voix) ;
   `/api/tts/voices` annonce encore ces langues.
+- **Lot 3 — liste d'attente** : route serveur `/api/waitlist`, table `waitlist_entries` et
+  leurs tests, orphelins depuis la PR 4 de la landing ; à supprimer avec la migration du
+  lot 3, qui ajoute « Commencer gratuitement ». Variable `NEXT_PUBLIC_SERVER_URL` à retirer
+  du projet Vercel `tomai-landing` (action de Victor).
 - **Résolu** : override `'nanoid@5'` et son commentaire, retirés en B (aucun `nanoid` dans
   `pnpm-workspace.yaml`) ; recommandations `ruff`/`python` de `.vscode/extensions.json`,
   retirées par la PR docs `docs/fix-doc-drift` ; deux copies de `@ai-sdk/provider` : le
@@ -125,6 +129,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Déposer la marque et réserver les domaines candidats | Identité Kompri | en attente : nom rouvert le 2026-09-24, bloqué jusqu'à la décision de Victor |
 | Valider la bible et la planche de référence de Tom, puis le modèle 3D | Refonte landing | fait (2026-09-30, livrables dans `tom-mascotte/renders/final/`) |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing : Tom | à faire (reporté par Victor le 2026-09-30) |
+| Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Landing PR 4 | à faire après le merge |
 
 ## Lots suivants
 
@@ -293,3 +298,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   formulaire échoue en production, `api.tomia.fr` répond 404), PR 5 hero avec un échange
   d'exemple qui déroule l'échelle d'indices, PR 6 sections. « Commencer gratuitement »
   arrive avec l'app (lot 3) ; d'ici là, la page n'a pas de bouton.
+- **2026-09-30** — #333 mergée (spec et plan). Landing PR 4 (`feat/landing-drop-waitlist`) :
+  liste d'attente retirée (formulaire, Server Action, `lib/urls.ts`, barre d'action mobile,
+  section d'appel final, boutons « S'inscrire », `zod`), confidentialité mise à jour ; la
+  landing n'appelle plus le serveur. Next monté en 16.3.7 et `@grpc/grpc-js` en 1.14.5 à part
+  (#334, GHSA-vcvr-r3jv-pc5j et GHSA-m9gg-hp2v-232j).

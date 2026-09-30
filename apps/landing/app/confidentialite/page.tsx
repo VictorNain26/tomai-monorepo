@@ -17,7 +17,7 @@ export default function ConfidentialitePage() {
   return (
     <PageLayout
       title="Politique de Confidentialité"
-      description="Dernière mise à jour : 22 septembre 2026"
+      description="Dernière mise à jour : 30 septembre 2026"
       maxWidth="3xl"
     >
       <div className="legal-copy">
@@ -58,8 +58,7 @@ export default function ConfidentialitePage() {
           temps de préparer une réponse.</p>
         <p><strong>Données techniques :</strong> adresse IP et type de navigateur lors des
           connexions (sécurité du compte), données d&apos;abonnement.</p>
-        <p><strong>Site vitrine :</strong> votre adresse e-mail si vous vous inscrivez à la
-          liste d&apos;attente ou nous contactez.</p>
+        <p><strong>Site vitrine :</strong> votre adresse e-mail si vous nous contactez.</p>
 
         <h2>3. Pourquoi, et sur quelle base légale ?</h2>
         <ul>
@@ -76,7 +75,7 @@ export default function ConfidentialitePage() {
             obligation légale (conservation comptable).</li>
           <li><strong>Sécurité du service</strong> (journaux de connexion, limitation de
             débit) — intérêt légitime.</li>
-          <li><strong>Liste d&apos;attente et contact</strong> — consentement.</li>
+          <li><strong>Contact</strong> — consentement.</li>
         </ul>
 
         <h2>4. Le profil d&apos;apprentissage, expliqué simplement</h2>
