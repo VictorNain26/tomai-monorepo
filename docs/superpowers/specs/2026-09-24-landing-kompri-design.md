@@ -32,7 +32,7 @@ Critères de réussite :
 | Fond, cartes | Tokens de l'identité § 2 ; cartes `card` à coins doux et ombre légère, comme la maquette |
 | Polices | Nunito (texte et titres) et Caveat (notes), par `next/font/google` ; Figtree et Fraunces retirées |
 | Hero | Badge « Collège, de la 6e à la 3e », titre de la maquette, note manuscrite, formulaire, Tom à droite |
-| Tom | Composant `TomIllustration` ; en attendant les images, un disque `secondary` décoratif de même taille |
+| Tom | Composant `TomIllustration` : PNG transparent, puis salut et respiration en vidéo |
 | Étapes | « Comment ça marche » en trois étapes numérotées cerclées, la troisième en vert |
 | Traits | `Scribble` ne garde que le cercle ; soulignés et barré deviennent surlignage ou disparaissent |
 | Note manuscrite | `MarginNote` devient `HandNote` : Caveat, `annotation`, légère inclinaison |
@@ -88,7 +88,7 @@ Confiance, Tarifs, FAQ, appel final. Les textes restent ceux de `main`, sauf ci-
   donne pas la réponse. Il aide votre enfant à la trouver. », « la trouver » surligné ;
   paragraphe d'accroche actuel ; note manuscrite « c'est toi qui l'écris ! » ; formulaire
   d'inscription ; les deux autres signaux actuels (hébergement UE, gratuit pour commencer)
-  sous le formulaire. `TomIllustration` (pose « bonjour ») à droite, dessous en mobile.
+  sous le formulaire. `TomIllustration` (salut, puis respiration) à droite, dessous en mobile.
   « Tom ne donne pas la réponse » reste exact au sens de `2026-09-22-agent-ia.md` § 4.
 - **Problème** : « L'oublier aussi. » passe du souligné au surligné.
 - **Comment ça marche** (`how-it-works.tsx`) : trois étapes de la maquette, en cartes.
@@ -107,15 +107,22 @@ Confiance, Tarifs, FAQ, appel final. Les textes restent ceux de `main`, sauf ci-
 
 ## 4. Tom
 
-`components/atoms/tom-illustration.tsx` expose `TomIllustration({ className })`, la pose
-« bonjour » du hero, seule utilisée par la landing. En attendant l'image, il rend un disque
-`secondary` décoratif (`aria-hidden`), dans une boîte carrée de la taille finale. À la
-livraison de l'image (PNG transparent, stade cycle 4), le composant l'affiche avec un `alt`
-qui décrit la pose, et rien d'autre ne change. Les autres poses arriveront avec l'app, qui en
-aura l'usage.
+`components/atoms/tom-illustration.tsx` expose `TomIllustration({ className })`, seul Tom
+de la landing, dans une boîte carrée de 384 px au plus. Rendus Blender du dépôt
+`tom-mascotte` :
 
-Le disque et sa place dans le hero restent provisoires ; la mascotte, elle, est décidée
-(identité § 5).
+- `assets/tom.png`, PNG transparent 768 px, première image des animations, servi par
+  `next/image` et préchargé : Tom sans JavaScript, sous `prefers-reduced-motion` et pendant
+  le chargement ;
+- puis le salut, joué une fois, enchaîné sur la respiration en boucle (`public/tom/`).
+  Chaque vidéo a deux sources : HEVC avec alpha (`.mov`) en premier pour Safari, qui ignore
+  l'alpha du VP9, puis WebM VP9 avec alpha
+  ([Jake Archibald](https://jakearchibald.com/2024/video-with-transparency/)). L'HEVC sort
+  d'`avconvert` sur un runner macOS (workflow `hevc-alpha.yml` de `tom-mascotte`), avec la
+  transparence vérifiée dans Safari 26.6.1.
+
+Le conteneur porte le nom accessible ; image et vidéos sont décoratives. Les autres poses
+arriveront avec l'app, qui en aura l'usage.
 
 ## 5. Nom et logo
 
@@ -177,6 +184,6 @@ au clavier ; captures dans la PR. Les specs et plans des directions « cahier an
 
 ## Hors périmètre
 
-Les images de Tom (modélisation et animation dans Blender par une équipe d'agents,
-intégration dans une PR à part), l'app, les View Transitions entre pages, le délai
+La production de Tom (modélisation et animation dans Blender par une équipe d'agents),
+l'app, les View Transitions entre pages, le délai
 d'expiration du `fetch` de `joinWaitlist`.
