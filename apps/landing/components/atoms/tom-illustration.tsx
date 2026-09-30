@@ -25,8 +25,9 @@ export function TomIllustration({ className }: { className?: string }) {
   const [clip, setClip] = useState<Clip>("still");
 
   useEffect(() => {
-    // Autoplay can be refused (iOS Low Power Mode): Tom then stays still.
-    if (reducedMotion === false) salut.current?.play().catch(() => undefined);
+    // Hidden on small screens, Tom must not download his clips; autoplay can also be refused
+    // (iOS Low Power Mode): either way he stays still.
+    if (reducedMotion === false && salut.current?.checkVisibility()) salut.current.play().catch(() => undefined);
   }, [reducedMotion]);
 
   return (
@@ -36,7 +37,7 @@ export function TomIllustration({ className }: { className?: string }) {
       data-testid="tom"
       className={cn("relative aspect-square w-full max-w-sm", className)}
     >
-      <Image src={tom} alt="" sizes="384px" preload className={cn("size-full", clip !== "still" && "invisible")} />
+      <Image src={tom} alt="" sizes="176px" className={cn("size-full", clip !== "still" && "invisible")} />
       <video
         ref={salut}
         aria-hidden="true"

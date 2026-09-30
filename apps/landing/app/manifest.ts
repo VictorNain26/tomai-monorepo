@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: BRAND_NAME,
     short_name: BRAND_NAME,
-    description: "Le tuteur qui ne donne pas la réponse, pour les collégiens de la 6e à la 3e.",
+    description: "L'IA qui aide les collégiens à comprendre leurs devoirs, de la 6e à la 3e.",
     start_url: "/",
     display: "standalone",
     background_color: PAPER,
