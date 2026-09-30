@@ -12,7 +12,7 @@ const POINTS = [
 
 export function Parents() {
   return (
-    <section id="parents" className="scroll-mt-20 py-24 lg:py-32">
+    <section id="parents" className="scroll-mt-20 py-16 lg:py-24">
       <div className="container">
         <SectionHeader
           eyebrow="Pour les parents"
