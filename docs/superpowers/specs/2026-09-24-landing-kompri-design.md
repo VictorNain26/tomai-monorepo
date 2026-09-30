@@ -32,7 +32,7 @@ Critères de réussite :
 | Fond, cartes | Tokens de l'identité § 2 ; cartes `card` à coins doux et ombre légère, comme la maquette |
 | Polices | Nunito (texte et titres) et Caveat (notes), par `next/font/google` ; Figtree et Fraunces retirées |
 | Hero | Badge « Collège, de la 6e à la 3e », titre de la maquette, note manuscrite, formulaire, Tom à droite |
-| Tom | Composant `TomIllustration` ; en attendant les images, un disque `secondary` décoratif de même taille |
+| Tom | Composant `TomIllustration` : la pose « bonjour » en PNG transparent |
 | Étapes | « Comment ça marche » en trois étapes numérotées cerclées, la troisième en vert |
 | Traits | `Scribble` ne garde que le cercle ; soulignés et barré deviennent surlignage ou disparaissent |
 | Note manuscrite | `MarginNote` devient `HandNote` : Caveat, `annotation`, légère inclinaison |
@@ -108,14 +108,12 @@ Confiance, Tarifs, FAQ, appel final. Les textes restent ceux de `main`, sauf ci-
 ## 4. Tom
 
 `components/atoms/tom-illustration.tsx` expose `TomIllustration({ className })`, la pose
-« bonjour » du hero, seule utilisée par la landing. En attendant l'image, il rend un disque
-`secondary` décoratif (`aria-hidden`), dans une boîte carrée de la taille finale. À la
-livraison de l'image (PNG transparent, stade cycle 4), le composant l'affiche avec un `alt`
-qui décrit la pose, et rien d'autre ne change. Les autres poses arriveront avec l'app, qui en
-aura l'usage.
-
-Le disque et sa place dans le hero restent provisoires ; la mascotte, elle, est décidée
-(identité § 5).
+« bonjour » du hero, seule utilisée par la landing : le PNG transparent 768 px
+`assets/tom-bonjour.png`, rendu dans Blender (dépôt `tom-mascotte`), servi par `next/image`
+dans une boîte carrée de 384 px au plus, préchargé et avec un `alt` qui décrit la pose. Les
+autres poses arriveront avec l'app, qui en aura l'usage. L'animation (salut puis
+respiration) dépend d'un encodage HEVC avec alpha lisible par Safari, qui ignore l'alpha du
+WebM ; elle fera l'objet d'une PR à part si cet encodage est prouvé.
 
 ## 5. Nom et logo
 
@@ -177,6 +175,6 @@ au clavier ; captures dans la PR. Les specs et plans des directions « cahier an
 
 ## Hors périmètre
 
-Les images de Tom (modélisation et animation dans Blender par une équipe d'agents,
-intégration dans une PR à part), l'app, les View Transitions entre pages, le délai
+La production de Tom (modélisation et animation dans Blender par une équipe d'agents),
+l'app, les View Transitions entre pages, le délai
 d'expiration du `fetch` de `joinWaitlist`.

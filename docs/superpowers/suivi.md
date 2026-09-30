@@ -10,7 +10,7 @@ Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-09-25
+- **Dernière mise à jour :** 2026-09-30
 - **Lot en cours :** 0 — Assainissement
 - **Prochaine action :** réécrire la section E2 de
   `plans/2026-09-22-lot-0-e-code-reinvente.md` contre `main` (elle est marquée « à
@@ -108,7 +108,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | — | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
 | Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
 | Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | mergée | #323 |
-| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif), plan `plans/2026-09-25-landing-kompri-pr2-accueil.md` | `feat/landing-kompri-accueil` | PR 1 mergée (#325), PR 2 en cours | #325 |
+| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif), plan `plans/2026-09-25-landing-kompri-pr2-accueil.md` | `feat/landing-kompri-accueil` | PR 1 et PR 2 mergées ; PR 3a à faire | #325, #326 |
+| Landing : Tom dans le hero (pose « bonjour » en PNG ; l'animation attend la preuve d'un HEVC avec alpha lisible par Safari) | spec `specs/2026-09-24-landing-kompri-design.md` § 4 | `feat/landing-tom` | en cours | — |
 
 ## Étapes manuelles (utilisateur)
 
@@ -125,7 +126,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Vérifier les secrets `TURBO_TOKEN` / `TURBO_TEAM` | E2 | à faire |
 | Recherche INPI « Kompri » (classes 9, 41, 42) | Identité Kompri | fait (2026-09-24, par l'agent sur data.inpi.fr : aucune marque en conflit en France, détail dans la spec) |
 | Déposer la marque et réserver les domaines candidats | Identité Kompri | en attente : nom rouvert le 2026-09-24, bloqué jusqu'à la décision de Victor |
-| Valider la bible et la planche de référence de Tom, puis le modèle 3D | Refonte landing | en cours |
+| Valider la bible et la planche de référence de Tom, puis le modèle 3D | Refonte landing | fait (2026-09-30, livrables dans `tom-mascotte/renders/final/`) |
+| Vérifier Tom dans le hero sur un iPhone (aperçu Vercel de `feat/landing-tom`) | Landing : Tom | à faire |
 
 ## Lots suivants
 
@@ -262,3 +264,10 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   pré-rendue, un critique visuel indépendant à chaque étape), Victor valide chaque étape ;
   toujours aucune 3D temps réel sur le site (spec d'identité § 5). Specs `2026-09-24-identite-
   kompri-design.md` et `2026-09-24-landing-kompri-design.md` mises à jour en conséquence.
+- **2026-09-30** — Tom 3D livré (dépôt `tom-mascotte`, Git LFS, `tom.blend` source de vérité).
+  Branche `feat/landing-tom` : `TomIllustration` affiche la pose « bonjour » en PNG par
+  `next/image` (AVIF de 12 Ko servi, préchargé). L'animation n'est pas intégrée : Safari 27
+  ignore toujours l'alpha du WebM (notes de version du 14 septembre 2026), et l'HEVC avec
+  alpha ne s'encode de façon prouvée qu'avec l'encodeur d'Apple ; un essai sur un runner macOS
+  de GitHub Actions est en cours dans `tom-mascotte`. Pas de 3D temps réel : l'export glTF ne
+  garde ni l'ombrage toon ni le contour Line Art.
