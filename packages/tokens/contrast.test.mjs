@@ -42,11 +42,9 @@ const PAIRS = [
   ["success-foreground", "success"],
   ["destructive-foreground", "destructive"],
   ["warning-foreground", "warning"],
-  ["info-foreground", "info"],
   ["success", "background"],
   ["success", "card"],
   ["destructive", "background"],
-  ["info", "background"],
   ["annotation", "background"],
   ["annotation", "card"],
   ["annotation", "secondary"],
@@ -64,6 +62,7 @@ for (const [fg, bg] of PAIRS) {
 const CONTROL_PAIRS = [
   ["input", "background"],
   ["input", "card"],
+  ["input", "secondary"],
 ];
 
 for (const [fg, bg] of CONTROL_PAIRS) {

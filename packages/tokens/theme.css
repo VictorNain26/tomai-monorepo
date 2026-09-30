@@ -10,7 +10,6 @@
   --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
   --font-hand: var(--font-caveat), cursive;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 @theme {
@@ -52,12 +51,10 @@
   --color-success-foreground: #FFFFFF;
   --color-warning: #E0A43A;
   --color-warning-foreground: #1D1D22;
-  --color-info: #2B5C8A;
-  --color-info-foreground: #FFFFFF;
   --color-highlight: #F9E08B;
   --color-annotation: #C0282D;
-  --color-border: #D9DFF0;
-  --color-input: #7F8BB8;
+  --color-border: #E3DACB;
+  --color-input: #8A7F6C;
   --color-ring: #1F3F9E;
   --color-overlay: #000000;
 
