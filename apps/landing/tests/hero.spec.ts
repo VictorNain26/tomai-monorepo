@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { HEIGHT, settle } from "./support";
 
-test("the hero keeps a square place for Tom beside the text on desktop", async ({ page }) => {
+test("the hero shows Tom beside the text on desktop", async ({ page }) => {
   await page.setViewportSize({ width: 1441, height: HEIGHT });
   await page.goto("/");
   await settle(page);
@@ -13,9 +13,11 @@ test("the hero keeps a square place for Tom beside the text on desktop", async (
   expect(Math.abs(tom.width - tom.height)).toBeLessThanOrEqual(1);
   expect(tom.width).toBeGreaterThanOrEqual(240);
   expect(tom.x).toBeGreaterThanOrEqual(title.x + title.width);
+  const image = page.getByRole("img", { name: /^Tom/ });
+  await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 });
 
-test("the hero puts Tom's place under the sign-up form on mobile", async ({ page }) => {
+test("the hero puts Tom under the sign-up form on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: HEIGHT });
   await page.goto("/");
   await settle(page);
