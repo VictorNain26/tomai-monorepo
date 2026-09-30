@@ -17,7 +17,8 @@ paths:
   fond pleine largeur. Jamais `annotation` sur `highlight` (4,48:1).
 - **Registres** : landing/parent = sobre ; élève = vivant (micro-motion) sans
   infantiliser.
-- **Typo** : Nunito titres et corps, Caveat notes manuscrites, JetBrains Mono code.
+- **Typo** : Nunito titres et corps, Caveat notes manuscrites ; pas de police à chasse
+  fixe en V1.
 - **Exceptions au « tokens uniquement »** : les valeurs que `motion` anime
   lui-même dans `style`, et les images `next/og` (`ImageResponse` ne lit que
   `style`, sans variables CSS). Rien d'autre.
