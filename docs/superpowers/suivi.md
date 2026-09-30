@@ -303,3 +303,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   section d'appel final, boutons « S'inscrire », `zod`), confidentialité mise à jour ; la
   landing n'appelle plus le serveur. Next monté en 16.3.7 et `@grpc/grpc-js` en 1.14.5 à part
   (#334, GHSA-vcvr-r3jv-pc5j et GHSA-m9gg-hp2v-232j).
+- **2026-09-30** — #335 mergée (liste d'attente retirée). Landing PR 5
+  (`feat/landing-demo-exchange`) : hero « Il trouve la réponse. Et il la comprend. », accroche
+  qui nomme l'IA, échange d'exemple (`demo-exchange.tsx`, équation de 4e, échelle d'indices),
+  Tom plus petit à côté en bureau et absent en mobile (ses vidéos ne s'y téléchargent pas) ;
+  titre du site, image Open Graph et manifeste ne promettent plus « ne donne pas la réponse ».

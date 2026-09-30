@@ -18,7 +18,7 @@ const caveat = Caveat({
   variable: "--font-caveat",
 });
 
-const TITLE = `${BRAND_NAME} - Le tuteur qui ne donne pas la réponse`;
+const TITLE = `${BRAND_NAME} - L'IA qui aide votre enfant à comprendre ses devoirs`;
 const DESCRIPTION =
   "Assistant scolaire pour collégiens, de la 6e à la 3e. Tom guide votre enfant par des questions, à la manière d'un bon professeur, et vous tient informé sans lire ses conversations.";
 

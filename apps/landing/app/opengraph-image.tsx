@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { BRAND_NAME } from "@/lib/brand";
 
-export const alt = `${BRAND_NAME} - Le tuteur qui ne donne pas la réponse`;
+export const alt = `${BRAND_NAME} - L'IA qui aide votre enfant à comprendre ses devoirs`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -35,9 +35,9 @@ export default function Image() {
         <div style={{ display: "flex", flexDirection: "column", width: 640 }}>
           <div style={{ display: "flex", fontSize: 44, color: PRIMARY }}>{BRAND_NAME}</div>
           <div style={{ display: "flex", flexWrap: "wrap", marginTop: 40, fontSize: 64, lineHeight: 1.1 }}>
-            Tom ne donne pas la réponse. Il aide votre enfant à&nbsp;
+            Il trouve la réponse. Et&nbsp;
             <span style={{ backgroundImage: `linear-gradient(to top, ${HIGHLIGHT} 50%, transparent 50%)` }}>
-              la trouver
+              il la comprend
             </span>
             .
           </div>
