@@ -31,7 +31,7 @@ const LINK_GROUPS = [
 export function Footer() {
   return (
     <footer className="bg-secondary text-secondary-foreground">
-      <div className="container pt-16 pb-28 md:py-20">
+      <div className="container py-16 md:py-20">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           <div className="space-y-4">
             <Logo />

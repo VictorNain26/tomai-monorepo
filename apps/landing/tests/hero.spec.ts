@@ -17,17 +17,17 @@ test("the hero shows Tom beside the text on desktop", async ({ page }) => {
   await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 });
 
-test("the hero puts Tom under the sign-up form on mobile", async ({ page }) => {
+test("the hero puts Tom under the text on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: HEIGHT });
   await page.goto("/");
   await settle(page);
   const tom = await page.getByTestId("tom").boundingBox();
-  const form = await page.locator("section").first().locator("form").boundingBox();
+  const signals = await page.locator("section").first().locator("ul").first().boundingBox();
   expect(tom).not.toBeNull();
-  expect(form).not.toBeNull();
-  if (!tom || !form) return;
+  expect(signals).not.toBeNull();
+  if (!tom || !signals) return;
   expect(Math.abs(tom.width - tom.height)).toBeLessThanOrEqual(1);
-  expect(tom.y).toBeGreaterThanOrEqual(form.y + form.height);
+  expect(tom.y).toBeGreaterThanOrEqual(signals.y + signals.height);
 });
 
 test.describe("with motion allowed", () => {

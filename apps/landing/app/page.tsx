@@ -7,7 +7,6 @@ import { InputModes } from "@/components/sections/input-modes";
 import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { FAQS } from "@/components/sections/faq-data";
-import { CTA } from "@/components/sections/cta";
 
 const faqJsonLd = {
   "@context": "https://schema.org",
@@ -34,7 +33,6 @@ export default function HomePage() {
       <Trust />
       <Pricing />
       <FAQ />
-      <CTA />
     </>
   );
 }

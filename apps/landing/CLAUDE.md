@@ -12,10 +12,10 @@ pnpm build
 
 ## Contraintes
 
-- **Frontière stricte** : la landing ne consomme **jamais** Eden Treaty ni l'auth.
-  Son unique point d'intégration serveur est la Server Action `joinWaitlist` →
-  `POST /api/waitlist`. Toute fonctionnalité « produit » qui la tenterait
-  appartient au client applicatif — c'est ce qui l'empêche de dériver en second produit.
+- **Frontière stricte** : la landing n'appelle **jamais** le serveur, ni Eden Treaty ni
+  l'auth. Son seul lien vers le produit sera le bouton « Commencer gratuitement », ajouté à
+  l'ouverture de l'app (lot 3). Toute fonctionnalité « produit » appartient au client
+  applicatif — c'est ce qui l'empêche de dériver en second produit.
 - **Primitives interactives via `@repo/ui`** (bouton, champ, dialog, menu) : c'est
   là que vit leur accessibilité. Sections, annotations et démo sont des composants
   de composition, libres.

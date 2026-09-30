@@ -22,7 +22,7 @@ test("the desktop header shows its links and hides the menu button", async ({ pa
   await page.setViewportSize({ width: 1024, height: HEIGHT });
   await page.goto("/");
   const header = page.getByRole("banner");
-  for (const name of ["Comment ça marche", "Parents", "Tarifs", "S'inscrire"]) {
+  for (const name of ["Comment ça marche", "Parents", "Tarifs"]) {
     await expect(header.getByRole("link", { name })).toBeVisible();
   }
   await expect(header.getByRole("button", { name: "Ouvrir le menu" })).toBeHidden();
