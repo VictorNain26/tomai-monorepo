@@ -31,7 +31,7 @@ const PLANS = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="scroll-mt-20 py-24 lg:py-32">
+    <section id="pricing" className="scroll-mt-20 py-16 lg:py-24">
       <div className="container">
         <SectionHeader
           eyebrow="Tarifs"
@@ -48,7 +48,7 @@ export function Pricing() {
               )}
             >
               <p className="text-sm font-bold text-muted-foreground">{plan.tagline}</p>
-              <h3 className="mt-2 text-3xl text-foreground">{plan.name}</h3>
+              <h3 className="mt-2 text-xl text-foreground">{plan.name}</h3>
               <p className="mt-2 text-lg font-bold text-foreground">{plan.price}</p>
               <ul className="mt-8 space-y-4">
                 {plan.features.map((feature) => (

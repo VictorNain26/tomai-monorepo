@@ -3,7 +3,6 @@ import { Problem } from "@/components/sections/problem";
 import { Parents } from "@/components/sections/parents";
 import { Trust } from "@/components/sections/trust";
 import { HowItWorks } from "@/components/sections/how-it-works";
-import { InputModes } from "@/components/sections/input-modes";
 import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { FAQS } from "@/components/sections/faq-data";
@@ -28,7 +27,6 @@ export default function HomePage() {
       <Hero />
       <Problem />
       <HowItWorks />
-      <InputModes />
       <Parents />
       <Trust />
       <Pricing />

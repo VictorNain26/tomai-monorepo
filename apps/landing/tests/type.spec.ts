@@ -12,3 +12,14 @@ for (const path of PAGES) {
     expect(light).toEqual([]);
   });
 }
+
+test("/ gives every section title one size and every card title text-xl", async ({ page }) => {
+  await page.setViewportSize({ width: 1441, height: 900 });
+  await page.goto("/");
+  const sizes = await page.evaluate(() => ({
+    h2: [...new Set([...document.querySelectorAll("main h2")].map((el) => getComputedStyle(el).fontSize))],
+    h3: [...new Set([...document.querySelectorAll("main h3")].map((el) => getComputedStyle(el).fontSize))],
+  }));
+  expect(sizes.h2).toHaveLength(1);
+  expect(sizes.h3).toEqual(["20px"]);
+});
