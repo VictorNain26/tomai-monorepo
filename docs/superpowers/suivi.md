@@ -308,3 +308,8 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   qui nomme l'IA, échange d'exemple (`demo-exchange.tsx`, équation de 4e, échelle d'indices),
   Tom plus petit à côté en bureau et absent en mobile (ses vidéos ne s'y téléchargent pas) ;
   titre du site, image Open Graph et manifeste ne promettent plus « ne donne pas la réponse ».
+- **2026-09-30** — #336 mergée (hero et échange d'exemple). Landing PR 6
+  (`feat/landing-sections`) : « Comment ça marche » décrit l'échelle d'indices, les modes de
+  saisie entrent dans l'étape 1 (`input-modes.tsx` supprimé) ; un seul espacement de section
+  (`py-16 lg:py-24`), une seule taille de `h2`, titres de carte en `text-xl` (testé) ; la
+  charte prend la taille de `h2` du code (`text-4xl` → `sm:text-5xl`).

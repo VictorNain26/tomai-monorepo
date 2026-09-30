@@ -86,7 +86,7 @@ Règles :
 | Rôle | Landing | App |
 |---|---|---|
 | Titre de page (`h1`) | `text-4xl` → `xl:text-7xl` (hero) | `text-2xl` → `md:text-3xl` |
-| Titre de section (`h2`) | `text-3xl` → `md:text-5xl` | `text-xl` |
+| Titre de section (`h2`) | `text-4xl` → `sm:text-5xl` | `text-xl` |
 | Titre de carte (`h3`) | `text-xl` | `text-lg` |
 | Texte courant | `text-lg` → `md:text-xl` (accroche), `text-base` | `text-base`, messages du chat compris |
 | Libellés, métadonnées | `text-sm` | `text-sm` |
