@@ -109,7 +109,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
 | Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | mergée | #323 |
 | Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif), plan `plans/2026-09-25-landing-kompri-pr2-accueil.md` | `feat/landing-kompri-accueil` | PR 1 et PR 2 mergées ; PR 3a à faire | #325, #326 |
-| Landing : Tom dans le hero (PNG, puis salut et respiration en vidéo HEVC/WebM avec alpha) | spec `specs/2026-09-24-landing-kompri-design.md` § 4 | `feat/landing-tom` | en cours | — |
+| Landing : Tom dans le hero (PNG, puis salut et respiration en vidéo HEVC/WebM avec alpha) | spec `specs/2026-09-24-landing-kompri-design.md` § 4 | `feat/landing-tom` | mergée | #329 |
 
 ## Étapes manuelles (utilisateur)
 
