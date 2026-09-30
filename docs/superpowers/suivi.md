@@ -52,9 +52,6 @@ explicitement (`.claude/rules/plans-and-agents.md`).
 - **Lot 3 — TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues
   avec `fr_marie_neutral` (seuls presets fr/en/gb existent ; es/de sans voix) ;
   `/api/tts/voices` annonce encore ces langues.
-- **PR 3a** (spec `specs/2026-09-24-landing-kompri-design.md` § 5) : les pages secondaires,
-  hors `/faq`, n'ont pas de `metadata` propre et héritent du titre de l'accueil et de
-  `canonical: "/"`.
 - **Résolu** : override `'nanoid@5'` et son commentaire, retirés en B (aucun `nanoid` dans
   `pnpm-workspace.yaml`) ; recommandations `ruff`/`python` de `.vscode/extensions.json`,
   retirées par la PR docs `docs/fix-doc-drift` ; deux copies de `@ai-sdk/provider` : le
@@ -108,7 +105,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | — | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
 | Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
 | Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | mergée | #323 |
-| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif), plan `plans/2026-09-25-landing-kompri-pr2-accueil.md` | `feat/landing-kompri-accueil` | PR 1 et PR 2 mergées ; PR 3a à faire | #325, #326 |
+| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif), plan `plans/2026-09-25-landing-kompri-pr2-accueil.md` | `feat/landing-kompri-accueil`, `feat/landing-brand-constants` | PR 1 et PR 2 mergées ; PR 3a en cours | #325, #326 |
 | Landing : Tom dans le hero (PNG, puis salut et respiration en vidéo HEVC/WebM avec alpha) | spec `specs/2026-09-24-landing-kompri-design.md` § 4 | `feat/landing-tom` | mergée | #329 |
 
 ## Étapes manuelles (utilisateur)
@@ -127,7 +124,7 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
 | Recherche INPI « Kompri » (classes 9, 41, 42) | Identité Kompri | fait (2026-09-24, par l'agent sur data.inpi.fr : aucune marque en conflit en France, détail dans la spec) |
 | Déposer la marque et réserver les domaines candidats | Identité Kompri | en attente : nom rouvert le 2026-09-24, bloqué jusqu'à la décision de Victor |
 | Valider la bible et la planche de référence de Tom, puis le modèle 3D | Refonte landing | fait (2026-09-30, livrables dans `tom-mascotte/renders/final/`) |
-| Vérifier Tom dans le hero sur un iPhone (aperçu Vercel de `feat/landing-tom`) | Landing : Tom | à faire |
+| Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing : Tom | à faire (reporté par Victor le 2026-09-30) |
 
 ## Lots suivants
 
@@ -274,3 +271,9 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   l'ombrage toon ni le contour Line Art. Script `typecheck` de la landing passé à `next
   typegen && tsc --noEmit` : la CI vérifiait sans `next-env.d.ts`. Avis `brace-expansion`
   (high) corrigé à part (#330).
+- **2026-09-30** — PR 3a (`feat/landing-brand-constants`) : `metadata` propres aux pages
+  secondaires ; `BRAND_NAME` dans les pages légales et le manifeste (`app/manifest.ts`) ; le
+  nom de la mascotte reste en toutes lettres (accords dans les phrases) ; image Open Graph en
+  Nunito avec Tom ; tête de Tom rendue de face dans `tom-mascotte`, devenue logo de l'en-tête,
+  favicon et icônes d'app (déplacées de la PR 3b à la 3a à la demande de Victor) ;
+  `theme_color` passé du violet de l'ancienne identité au papier.

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
+import { Logo } from "../atoms/logo";
 
 const LINK_GROUPS = [
   {
@@ -33,7 +34,7 @@ export function Footer() {
       <div className="container pt-16 pb-28 md:py-20">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           <div className="space-y-4">
-            <p className="font-heading text-2xl font-extrabold text-primary">{BRAND_NAME}</p>
+            <Logo />
             <p className="max-w-xs text-sm text-muted-foreground">
               L&apos;assistant qui aide les collégiens à comprendre leurs leçons, sans faire leurs exercices à leur place.
             </p>

@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import { PageLayout } from "@/components/layout/page-layout";
+import { BRAND_NAME } from "@/lib/brand";
+
+const DESCRIPTION = `Mentions légales de ${BRAND_NAME} : éditeur du site, hébergement et propriété intellectuelle.`;
+
+export const metadata: Metadata = {
+  title: "Mentions Légales",
+  description: DESCRIPTION,
+  alternates: {
+    canonical: "/mentions-legales",
+  },
+};
 
 export default function MentionsLegalesPage() {
   return (

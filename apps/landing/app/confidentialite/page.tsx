@@ -1,5 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
+import { BRAND_NAME } from "@/lib/brand";
+
+const DESCRIPTION = `Comment ${BRAND_NAME} protège les données de votre enfant : données collectées, bases légales, hébergement dans l'Union européenne, durées de conservation et vos droits.`;
+
+export const metadata: Metadata = {
+  title: "Politique de Confidentialité",
+  description: DESCRIPTION,
+  alternates: {
+    canonical: "/confidentialite",
+  },
+};
 
 export default function ConfidentialitePage() {
   return (
@@ -10,7 +22,7 @@ export default function ConfidentialitePage() {
     >
       <div className="legal-copy">
         <p>
-          <strong>En bref :</strong> TomIA aide votre enfant à apprendre. Pour cela, nous
+          <strong>En bref :</strong> {BRAND_NAME} aide votre enfant à apprendre. Pour cela, nous
           traitons les données strictement nécessaires au tutorat, en France et en Europe
           autant que possible. Nous ne vendons jamais vos données, nous ne diffusons aucune
           publicité, et vous gardez le contrôle : consultation, correction et suppression
@@ -20,7 +32,7 @@ export default function ConfidentialitePage() {
         <h2>1. Qui est responsable de vos données ?</h2>
         <p>
           Le responsable du traitement est Victor Lenain, entrepreneur individuel, éditeur
-          de l&apos;application TomIA (voir les{" "}
+          de l&apos;application {BRAND_NAME} (voir les{" "}
           <Link href="/mentions-legales">mentions légales</Link>). Pour toute question relative à
           vos données personnelles ou pour exercer vos droits :{" "}
           <a href="mailto:contact@tomia.fr">contact@tomia.fr</a>.
@@ -69,7 +81,7 @@ export default function ConfidentialitePage() {
 
         <h2>4. Le profil d&apos;apprentissage, expliqué simplement</h2>
         <p>
-          Pour adapter ses explications, TomIA note au fil des conversations ce que
+          Pour adapter ses explications, {BRAND_NAME} note au fil des conversations ce que
           l&apos;élève maîtrise et ce qui lui pose des difficultés (par exemple « à
           l&apos;aise en géométrie, fractions à consolider »). Ce profil sert uniquement à
           ajuster le tutorat. Il n&apos;est jamais utilisé à des fins publicitaires, jamais
@@ -156,7 +168,7 @@ export default function ConfidentialitePage() {
 
         <h2>10. Protection des mineurs</h2>
         <p>
-          TomIA est conçu pour des élèves mineurs, sous le contrôle de leurs parents : le
+          {BRAND_NAME} est conçu pour des élèves mineurs, sous le contrôle de leurs parents : le
           compte enfant est créé par le parent, et pour les enfants de moins de 15 ans le
           traitement repose sur le consentement conjoint du parent et de l&apos;enfant
           (article 45 de la loi Informatique et Libertés). Aucune publicité n&apos;est

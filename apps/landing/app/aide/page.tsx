@@ -1,14 +1,25 @@
+import type { Metadata } from "next";
 import { PageLayout } from "@/components/layout/page-layout";
 import { FaqList } from "@/components/sections/faq-list";
 import { Button } from "@repo/ui";
 import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
 
+const DESCRIPTION = `Les réponses aux questions fréquentes sur ${BRAND_NAME}.`;
+
+export const metadata: Metadata = {
+  title: "Centre d'aide",
+  description: DESCRIPTION,
+  alternates: {
+    canonical: "/aide",
+  },
+};
+
 export default function AidePage() {
   return (
     <PageLayout
       title="Centre d'aide"
-      description={`Les réponses aux questions fréquentes sur ${BRAND_NAME}.`}
+      description={DESCRIPTION}
       maxWidth="3xl"
     >
       <h2 className="mb-4 text-2xl">Une question sur {BRAND_NAME} ?</h2>

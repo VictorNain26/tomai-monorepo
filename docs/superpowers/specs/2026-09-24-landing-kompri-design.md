@@ -131,14 +131,18 @@ Le nom du site et celui de la mascotte restent provisoires, derrière les consta
 décision de Victor. Le sujet se scinde en deux PR (§ 7) :
 
 - **Indépendant du nom, PR 3a** : chaque « TomIA » écrit en dur (`cgu`, `confidentialite`,
-  `public/manifest.webmanifest`) et le nom de la mascotte passent par la constante ; image
-  Open Graph (`app/opengraph-image.tsx`) en Nunito à la place de Fraunces.
+  manifeste) passe par `BRAND_NAME` ; le manifeste devient `app/manifest.ts` pour la lire.
+  Le nom de la mascotte reste écrit en toutes lettres : il est pris dans des phrases dont
+  l'accord dépend du nom, et le changer se fera par une recherche. Chaque page secondaire a
+  ses `metadata` (titre, description, `canonical`). Image Open Graph en Nunito, avec Tom et
+  le titre du hero. La tête de Tom, rendue de face dans Blender (`tom-mascotte`,
+  `renders/final/icone/`), devient la marque : devant le nom dans l'en-tête, et dans
+  l'onglet et les icônes d'app (`app/favicon.ico`, `app/icon.png`, `app/apple-icon.png`,
+  `public/icon-192.png`, `public/icon-512.png`) ; `theme_color` passe au papier.
 - **Dépend du nom, PR 3b** : domaine (`metadataBase`, `sitemap.ts`, `robots.ts`, mentions
-  légales, `CONTACT_EMAIL`), logotype (converti en tracés par fontTools, trois fichiers SVG
-  sous `apps/landing/public/brand/`), icônes (`app/icon.svg`, `apple-icon.png`,
-  `icon-192.png`, `icon-512.png`, `favicon.ico`, `theme_color` du manifeste). Préalable :
-  nom tranché, domaine réservé et relié à Vercel, boîte de contact créée (actions de
-  Victor).
+  légales, `CONTACT_EMAIL`, URL du JSON-LD), logotype (converti en tracés par fontTools,
+  trois fichiers SVG sous `apps/landing/public/brand/`). Préalable : nom tranché, domaine
+  réservé et relié à Vercel, boîte de contact créée (actions de Victor).
 
 ## 6. Contraintes
 
@@ -158,7 +162,7 @@ Quatre PR courtes, sur `main`, dans cet ordre :
 2. **Première page** : hero, étapes, `TomIllustration`, `HandNote`, `Scribble` réduit au
    cercle, suppression de `chat-demo.tsx`, sections restylées.
 3a. **Constantes de marque** (§ 5) : ne dépend pas du nom choisi, démarrable dès maintenant.
-3b. **Nom définitif** (§ 5) : domaine, adresse de contact, logotype, icônes. Démarre une
+3b. **Nom définitif** (§ 5) : domaine, adresse de contact, logotype. Démarre une
     fois le nom tranché par Victor.
 
 Entre les PR 1 et 2, la première page de `main` est dans un état intermédiaire (nouvelles
