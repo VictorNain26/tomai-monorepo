@@ -10,9 +10,12 @@ export const contentType = "image/png";
 // ImageResponse ne lit pas les variables CSS : copie de packages/tokens/theme.css.
 const PAPER = "#FAF7F0";
 const INK = "#1D1D22";
-const RED = "#C0282D";
+const PRIMARY = "#1F3F9E";
+const HIGHLIGHT = "#F9E08B";
+const MUTED = "#5C5C66";
 
-const fraunces = await readFile(join(process.cwd(), "assets/fraunces-latin-600-normal.woff"));
+const nunito = await readFile(join(process.cwd(), "assets/nunito-latin-800-normal.ttf"));
+const tom = `data:image/png;base64,${await readFile(join(process.cwd(), "assets/tom.png"), "base64")}`;
 
 export default function Image() {
   return new ImageResponse(
@@ -22,27 +25,27 @@ export default function Image() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: 80,
+          alignItems: "center",
+          paddingLeft: 80,
           background: PAPER,
           color: INK,
-          fontFamily: "Fraunces",
+          fontFamily: "Nunito",
         }}
       >
-        <div style={{ display: "flex", fontSize: 44 }}>
-          {BRAND_NAME}
-          <span style={{ color: RED }}>.</span>
+        <div style={{ display: "flex", flexDirection: "column", width: 640 }}>
+          <div style={{ display: "flex", fontSize: 44, color: PRIMARY }}>{BRAND_NAME}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", marginTop: 40, fontSize: 64, lineHeight: 1.1 }}>
+            Tom ne donne pas la réponse. Il aide votre enfant à&nbsp;
+            <span style={{ backgroundImage: `linear-gradient(to top, ${HIGHLIGHT} 50%, transparent 50%)` }}>
+              la trouver
+            </span>
+            .
+          </div>
+          <div style={{ display: "flex", marginTop: 40, fontSize: 30, color: MUTED }}>Collège, de la 6e à la 3e</div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", fontSize: 76, lineHeight: 1.1 }}>
-          <span>Il ne donne pas la réponse.</span>
-          <span style={{ display: "flex" }}>
-            Il aide à la&nbsp;<span style={{ color: RED }}>comprendre.</span>
-          </span>
-        </div>
-        <div style={{ display: "flex", fontSize: 30, color: RED }}>Collège, de la 6e à la 3e</div>
+        <img src={tom} width={560} height={560} alt="" />
       </div>
     ),
-    { ...size, fonts: [{ name: "Fraunces", data: fraunces, style: "normal", weight: 600 }] },
+    { ...size, fonts: [{ name: "Nunito", data: nunito, style: "normal", weight: 800 }] },
   );
 }
