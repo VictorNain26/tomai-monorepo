@@ -176,8 +176,9 @@ arrive ; jamais un écran figé.
 **Composants.** Primitives dans `@repo/ui` (base shadcn, où vit leur accessibilité),
 ajoutées quand un lot en a l'usage et pas avant. Existants : `Button`, `Input`, `Sheet`.
 
-**Formes et mouvement.** Rayons : `rounded-full` pour les boutons, les champs d'une ligne
-et les badges ; `rounded-2xl` pour les cartes et les zones de saisie de plusieurs lignes. Durées : `duration-fast`
+**Formes et mouvement.** Deux rayons seulement : `rounded-full` (utilitaire Tailwind) pour
+les boutons, les champs d'une ligne et les badges ; `rounded-2xl` (token `--radius-2xl`,
+20 px) pour les cartes et les zones de saisie de plusieurs lignes. Durées : `duration-fast`
 (retour d'un appui), `duration-base` (transitions), `duration-slow` (entrées d'écran).
 Toute animation décorative s'arrête sous `prefers-reduced-motion`.
 
