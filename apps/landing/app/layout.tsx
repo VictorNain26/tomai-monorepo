@@ -42,14 +42,6 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: BRAND_NAME }],
   creator: BRAND_NAME,
-  icons: {
-    icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "32x32" },
-    ],
-    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
-  },
-  manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     locale: "fr_FR",
@@ -106,7 +98,7 @@ const jsonLd = [
     "@type": "Organization",
     name: BRAND_NAME,
     url: "https://tomia.fr",
-    logo: "https://tomia.fr/logo.svg",
+    logo: "https://tomia.fr/icon-512.png",
   },
   {
     "@context": "https://schema.org",
