@@ -13,22 +13,9 @@
 }
 
 @theme {
-  /* Rayons */
-  --radius: 1rem;
+  /* Rayon des cartes ; boutons, champs et badges prennent rounded-full
+   * (utilitaire Tailwind). */
   --radius-2xl: 20px;
-  --radius-xl: 18px;
-  --radius-lg: 16px;
-  --radius-md: 14px;
-  --radius-sm: 12px;
-  --radius-xs: 10px;
-
-  /* Espacements additionnels */
-  --spacing-18: 4.5rem;
-  --spacing-22: 5.5rem;
-
-  /* Tailles de texte */
-  --text-2xs: 0.625rem;
-  --text-2xs--line-height: 0.875rem;
 
   /* Couleurs sémantiques (light) — stylo Bic quatre couleurs sur papier crème */
   --color-background: #FAF7F0;
