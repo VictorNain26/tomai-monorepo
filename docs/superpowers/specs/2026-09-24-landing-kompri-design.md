@@ -1,193 +1,144 @@
-# Landing Kompri — refonte sur la nouvelle identité
+# Landing — refonte sur l'identité
 
-Date : 2026-09-24. Applique `2026-09-24-identite-kompri-design.md` (nom, couleurs,
-typographies, signes d'école, Tom, logotype) à la landing. Maquette validée : écran
-`direction-retenue` du brainstorming du même jour (nav, hero, trois étapes). Remplace les
-directions « cahier annoté » et « copie corrigée ».
+Date : 2026-09-24, révisée le 2026-09-30. Applique la charte
+(`2026-09-24-identite-kompri-design.md`) à la landing, en ligne sur `www.tomia.fr`.
 
 ## Intention
 
-Un parent arrive, lit en dix secondes que Tom aide son enfant à trouver la réponse au lieu
-de la donner, et repart avec une impression chaleureuse et humaine. La page est une page de
-marque ordinaire, sur papier crème : l'école ne vient que par trois signes rares (surligneur,
-numéros entourés, une note manuscrite). Plus de feuille Seyès, de marge, de fiches collées
-ni de couvertures.
+Un parent arrive et voit, en quelques secondes, **ce que fait l'IA** : elle fait trouver son
+enfant au lieu de lui donner la solution. L'atout du produit est cette méthode ; Tom en est
+le visage, **un plus, pas l'argument de vente**. La page le montre par un échange d'exemple
+plutôt qu'elle ne l'affirme, et décrit l'échelle d'indices de l'agent
+(`2026-09-22-agent-ia.md` § 4) sans promettre « jamais la réponse » : Tom ne donne jamais
+la réponse de l'exercice de l'élève, mais peut dérouler un exemple analogue.
 
 Critères de réussite :
-- aucun reste du cahier dans le code : ni `NotebookSheet`, ni `Fiche`, ni utilitaires
-  `sheet-*`, ni variables `--cell`, `--band`, `--margin-x` ;
-- signes d'école dans les bornes de l'identité (§ 4) : un surlignage au plus par titre, une
-  note manuscrite au plus par section ;
-- une seule balise `<h1>` par page, pages secondaires comprises ;
+- au-dessus de la ligne de flottaison, en bureau comme en mobile : le bénéfice et la
+  démonstration ;
+- aucune formule qui dépasse ce que fait l'agent V1 ;
+- signes d'école dans les bornes de la charte (§ 4) ; une seule balise `<h1>` par page ;
 - état final complet sans JavaScript et sous `prefers-reduced-motion` ;
-- la place de Tom est prête : quand les images arrivent, un seul composant change et la
-  mise en page ne bouge pas ;
-- aucune dépendance runtime nouvelle ; aucun composant d'animation maison au-delà de ceux
-  qui existent.
+- aucun bouton sans destination.
 
 ## Décisions
 
 | Sujet | Décision |
 |---|---|
-| Fond, cartes | Tokens de l'identité § 2 ; cartes `card` à coins doux et ombre légère, comme la maquette |
-| Polices | Nunito (texte et titres) et Caveat (notes), par `next/font/google` ; Figtree et Fraunces retirées |
-| Hero | Badge « Collège, de la 6e à la 3e », titre de la maquette, note manuscrite, formulaire, Tom à droite |
-| Tom | Composant `TomIllustration` : PNG transparent, puis salut et respiration en vidéo |
-| Étapes | « Comment ça marche » en trois étapes numérotées cerclées, la troisième en vert |
-| Traits | `Scribble` ne garde que le cercle ; soulignés et barré deviennent surlignage ou disparaissent |
-| Note manuscrite | `MarginNote` devient `HandNote` : Caveat, `annotation`, légère inclinaison |
-| Démo en bulles | `chat-demo.tsx` supprimé |
-| Pages secondaires | Colonne de lecture sur le papier, titre en `<h1>` ; plus de feuille ni de fiche |
-| Menu mobile | `Sheet` de `@repo/ui`, repris de la branche `feat/landing-couvertures` |
-| Formulaire | Non contrôlé, repris de la même branche : la saisie faite avant l'hydratation est gardée |
-| Nom | Provisoire : constantes de `apps/landing/lib/brand.ts` (`TomIA`, mascotte `Tom`) jusqu'à la décision de Victor |
-| Logo | Provisoire, comme le nom ; pas de logotype tant que le nom n'est pas tranché |
+| Hero | Titre du bénéfice, accroche qui nomme l'IA et le collège, échange d'exemple ; Tom animé à côté en bureau |
+| Échange d'exemple | Composant de la landing, statique, au style du chat de l'app (charte § 7), marqué « Exemple » |
+| Tom | Présent par sa tête dans l'échange ; en entier (salut, respiration) seulement dans le hero en bureau |
+| Liste d'attente | **Retirée** : son formulaire échoue en production (`api.tomia.fr` répond 404) et Victor lance la page avec l'app |
+| Appel à l'action | Un seul, « Commencer gratuitement », vers l'inscription de l'app ; ajouté par la PR qui ouvre l'app (lot 3), pas avant |
+| Comment ça marche | Trois étapes qui décrivent l'échelle d'indices ; les modes de saisie (photo, voix, clavier) entrent dans l'étape 1 |
+| Appel final | Retiré avec la liste d'attente ; revient en lot 3 avec le bouton, sur une carte `card`, pas sur un bloc noir |
+| Fond, cartes, polices, signes d'école | Charte § 2 à § 4 (livrés en PR 1 et 2) |
+| Nom, marque, métadonnées | `BRAND_NAME`, tête de Tom en logo et en icônes, `metadata` par page (livrés en PR 3a) |
 
-## 1. Fondations
+## 1. Première page
 
-**Tokens** (`packages/tokens/theme.css`) : les trois changements de l'identité § 2
-(`background`, `secondary`/`muted`/`accent`, `card`/`popover`) ; `--font-sans` et
-`--font-heading` pointent tous deux vers Nunito, et `--font-hand` est ajouté pour Caveat.
-`packages/tokens/contrast.test.mjs` couvre les nouvelles paires de fond. Le commentaire
-« Copie corrigée » du fichier est mis à jour.
+Ordre : Hero, Problème, Comment ça marche, Parents, Confiance, Tarifs, FAQ.
 
-**Polices** (`apps/landing/app/layout.tsx`) : Nunito (axe `wght`) et Caveat (graisse 600)
-remplacent Figtree et Fraunces. Titres en 800, texte en 400, libellés et boutons en 700.
+**Hero.**
+- Badge « Collège, de la 6e à la 3e ».
+- Titre : « Il trouve la réponse. Et il la comprend. », « il la comprend » surligné.
+- Accroche : « Une IA qui accompagne votre enfant dans ses devoirs comme un bon professeur :
+  une question, puis un indice, à son niveau, jusqu'à ce qu'il trouve seul. »
+- Les deux signaux actuels (hébergement UE, gratuit pour commencer).
+- À droite en bureau, dessous en mobile : l'échange d'exemple. En bureau (`lg` et plus), Tom
+  entier (`TomIllustration`, plus petit qu'aujourd'hui) se tient à côté de la carte ; en
+  mobile, seule sa tête reste, dans les messages.
+- La note manuscrite « c'est toi qui l'écris ! » quitte le hero : elle devient la note de
+  Tom à la fin de l'échange.
 
-**Feuille retirée** : `components/notebook/` (`NotebookSheet`, `Fiche`), les utilitaires
-`sheet`, `sheet-rules`, `sheet-verticals`, `sheet-margin`, `fiche-tape` et les variables
-`--cell`, `--rule`, `--band`, `--margin-x` de `app/globals.css`. L'utilitaire `container`
-reprend des marges latérales fixes : 16 px en mobile, plus larges ensuite. Les
-utilitaires `legal-copy`, la sélection en `highlight` et le focus visible restent.
+**Échange d'exemple** (`components/sections/demo-exchange.tsx`). Une carte `card` titrée
+« Exemple de séance », qui déroule l'échelle d'indices sur un exercice de 4e :
+1. l'élève : « 3x + 5 = 20. J'ai trouvé x = 20/3, mais c'est faux. » ;
+2. Tom repère l'erreur : « Tu as divisé 20 par 3 directement. Qu'est-ce qui accompagne
+   encore le 3x, à gauche du signe égal ? » ;
+3. l'élève : « Le + 5 ? » ;
+4. Tom, indice : « Oui. Que fais-tu de ce 5, des deux côtés, pour garder 3x seul ? » ;
+5. l'élève : « J'enlève 5 : 3x = 15, donc x = 5. » ;
+6. Tom : « Vérifie : combien font 3 × 5 + 5 ? » ;
+7. l'élève : « 20. C'est bon ! » ;
+8. note manuscrite de Tom : « c'est toi qui l'as trouvé ! ».
 
-**Mouvement** : `FadeIn` reste le seul révélateur de section. Ses durées et celles de
-`Scribble` passent par les constantes de `lib/motion.ts`, au lieu de valeurs écrites en dur.
+Messages de Tom sur `card` avec sa tête (avatar `tom-tete.png`), ceux de l'élève sur
+`primary`, à droite. Formules en texte, `x` en italique : pas de KaTeX pour un exemple
+statique. Les messages entrent l'un après l'autre à l'entrée dans la vue (Motion, déjà en
+dépendance), et sont tous visibles sans JavaScript et sous mouvement réduit.
+
+**Comment ça marche** (`how-it-works.tsx`), trois cartes aux numéros entourés :
+1. « Il pose sa question » — une photo de l'exercice, sa voix ou le clavier, dans n'importe
+   quelle matière (remplace la section `input-modes.tsx`, supprimée) ;
+2. « Tom cherche où ça coince » — puis une question, un indice, une étape, à son niveau ;
+   jamais la réponse de son exercice ;
+3. « Il trouve seul » — et ce qu'il a compris revient en révision au bon moment.
+
+**Autres sections.** Problème, Parents, Confiance, Tarifs et FAQ gardent leur texte. Leurs
+titres de carte passent à `text-xl` (charte § 3) ; les vides entre titre et cartes de
+Problème et Parents se resserrent. Tarifs : plus de bouton jusqu'au lot 3.
 
 ## 2. Structure commune
 
-- **En-tête** (`components/layout/header.tsx`) : logotype à gauche ; liens « Comment ça
-  marche », « Parents », « Tarifs » ; bouton « S'inscrire » vers `#waitlist`. En mobile, le
-  menu s'ouvre dans le `Sheet` de `@repo/ui` (composant et `mobile-menu.tsx` repris de
-  `feat/landing-couvertures`, avec leur `<nav>` étiquetée). Fond `background` translucide
-  au défilement, comme aujourd'hui.
-- **Pied de page** (`components/layout/footer.tsx`) : inchangé dans son contenu, sur fond
-  `secondary`.
-- **Pages secondaires** (`aide`, `faq`, `contact`, `cgu`, `confidentialite`,
-  `mentions-legales`) : `PageLayout` rend une colonne de lecture sur le papier, avec le titre
-  en `<h1>` (`SectionHeader` reçoit le niveau de titre en paramètre). Ferme le point reporté
-  de la PR 1 du 2026-09-23.
-- **Page 404** (`app/not-found.tsx`) : reprise de `feat/landing-couvertures` (repère
-  `<main>`, pied de page, titre de document).
+En-tête, menu mobile et barre d'action mobile perdent « S'inscrire » : le bouton revient en
+lot 3 sous le libellé unique. Pied de page inchangé. La politique de confidentialité retire
+la liste d'attente des données et des bases légales.
 
-## 3. Première page
+## 3. Tom
 
-Ordre des sections inchangé : Hero, Problème, Comment ça marche, Modes de saisie, Parents,
-Confiance, Tarifs, FAQ, appel final. Les textes restent ceux de `main`, sauf ci-dessous.
+`components/atoms/tom-illustration.tsx` : `assets/tom.png` (première image des
+animations, `next/image`, préchargé), puis le salut enchaîné sur la respiration en boucle
+(`public/tom/`), deux sources par vidéo, HEVC avec alpha (`.mov`) d'abord pour Safari, puis
+WebM VP9 ([Jake Archibald](https://jakearchibald.com/2024/video-with-transparency/)). Le
+conteneur porte le nom accessible. Dans le hero révisé, il n'est plus préchargé : l'échange
+devient le contenu principal.
 
-- **Hero** : badge « Collège, de la 6e à la 3e » (`success` sur `card`) ; titre « Tom ne
-  donne pas la réponse. Il aide votre enfant à la trouver. », « la trouver » surligné ;
-  paragraphe d'accroche actuel ; note manuscrite « c'est toi qui l'écris ! » ; formulaire
-  d'inscription ; les deux autres signaux actuels (hébergement UE, gratuit pour commencer)
-  sous le formulaire. `TomIllustration` (salut, puis respiration) à droite, dessous en mobile.
-  « Tom ne donne pas la réponse » reste exact au sens de `2026-09-22-agent-ia.md` § 4.
-- **Problème** : « L'oublier aussi. » passe du souligné au surligné.
-- **Comment ça marche** (`how-it-works.tsx`) : trois étapes de la maquette, en cartes.
-  1. « Il pose sa question » — une photo de l'exercice ou quelques mots, dans n'importe
-     quelle matière.
-  2. « Tom le guide » — une question, puis un indice, puis un autre, à son niveau de la 6e
-     à la 3e ; jamais la réponse de son exercice.
-  3. « Il trouve seul » — et ce qu'il a compris revient en révision au bon moment, jusqu'au
-     contrôle.
-  Numéros cerclés de rouge, le troisième de vert (`Scribble`, tracé par
-  Motion). Aucun surlignage dans le corps des étapes.
-- **Parents** : « sans lire par-dessus son épaule » passe du souligné au surligné.
-- **Confiance** : la note « Ce qu'on s'engage à faire, et à ne pas faire. » devient une
-  `HandNote` ; « ne sont pas un produit » reste surligné.
-- Les autres sections gardent leur contenu et prennent les cartes de la maquette.
+## 4. Nom et logo
 
-## 4. Tom
+Livré en PR 3a : `BRAND_NAME` partout où le nom s'affiche, `metadata` par page, image Open
+Graph en Nunito, tête de Tom en logo, favicon et icônes. Reste la **PR 3b**, qui dépend du
+nom : domaine (`metadataBase`, `sitemap.ts`, `robots.ts`, mentions légales,
+`CONTACT_EMAIL`, JSON-LD) et logotype en tracés SVG (fontTools). Préalable : nom tranché,
+domaine réservé et relié à Vercel, boîte de contact créée (actions de Victor).
 
-`components/atoms/tom-illustration.tsx` expose `TomIllustration({ className })`, seul Tom
-de la landing, dans une boîte carrée de 384 px au plus. Rendus Blender du dépôt
-`tom-mascotte` :
+## 5. Contraintes
 
-- `assets/tom.png`, PNG transparent 768 px, première image des animations, servi par
-  `next/image` et préchargé : Tom sans JavaScript, sous `prefers-reduced-motion` et pendant
-  le chargement ;
-- puis le salut, joué une fois, enchaîné sur la respiration en boucle (`public/tom/`).
-  Chaque vidéo a deux sources : HEVC avec alpha (`.mov`) en premier pour Safari, qui ignore
-  l'alpha du VP9, puis WebM VP9 avec alpha
-  ([Jake Archibald](https://jakearchibald.com/2024/video-with-transparency/)). L'HEVC sort
-  d'`avconvert` sur un runner macOS (workflow `hevc-alpha.yml` de `tom-mascotte`), avec la
-  transparence vérifiée dans Safari 26.6.1.
+Tokens uniquement (hors valeurs animées par Motion et image Open Graph), thème clair, site
+statique, primitives interactives via `@repo/ui`, cibles de 44 px, contraste AA, fichiers de
+moins de 400 lignes, aucune promesse au-delà de la V1. **Frontière** : sans liste d'attente,
+la landing n'appelle plus le serveur ; en lot 3, son seul lien vers le produit est le bouton
+« Commencer gratuitement ».
 
-Le conteneur porte le nom accessible ; image et vidéos sont décoratives. Les autres poses
-arriveront avec l'app, qui en aura l'usage.
+## 6. Livraison
 
-## 5. Nom et logo
+Livrées : PR 1 (fondations et pages, #325), PR 2 (première page, #326), Tom animé (#329),
+PR 3a (constantes de marque, #331). Suivent, courtes, sur `main`, dans cet ordre (plan
+`plans/2026-09-30-landing-demonstration.md`) :
 
-Le nom du site et celui de la mascotte restent provisoires, derrière les constantes de
-`apps/landing/lib/brand.ts` (valeur actuelle : « TomIA », mascotte « Tom »), jusqu'à la
-décision de Victor. Le sujet se scinde en deux PR (§ 7) :
+4. **Retrait de la liste d'attente** : formulaire, Server Action, tests, ancres, boutons
+   « S'inscrire », section d'appel final, confidentialité.
+5. **Hero et échange d'exemple** : titre, accroche, `demo-exchange.tsx`, Tom plus petit à côté.
+6. **Sections** : Comment ça marche en échelle d'indices, `input-modes.tsx` supprimé,
+   titres de carte, vides resserrés.
 
-- **Indépendant du nom, PR 3a** : chaque « TomIA » écrit en dur (`cgu`, `confidentialite`,
-  manifeste) passe par `BRAND_NAME` ; le manifeste devient `app/manifest.ts` pour la lire.
-  Le nom de la mascotte reste écrit en toutes lettres : il est pris dans des phrases dont
-  l'accord dépend du nom, et le changer se fera par une recherche. Chaque page secondaire a
-  ses `metadata` (titre, description, `canonical`). Image Open Graph en Nunito, avec Tom et
-  le titre du hero. La tête de Tom, rendue de face dans Blender (`tom-mascotte`,
-  `renders/final/icone/`), devient la marque : devant le nom dans l'en-tête, et dans
-  l'onglet et les icônes d'app (`app/favicon.ico`, `app/icon.png`, `app/apple-icon.png`,
-  `public/icon-192.png`, `public/icon-512.png`) ; `theme_color` passe au papier.
-- **Dépend du nom, PR 3b** : domaine (`metadataBase`, `sitemap.ts`, `robots.ts`, mentions
-  légales, `CONTACT_EMAIL`, URL du JSON-LD), logotype (converti en tracés par fontTools,
-  trois fichiers SVG sous `apps/landing/public/brand/`). Préalable : nom tranché, domaine
-  réservé et relié à Vercel, boîte de contact créée (actions de Victor).
+Puis **lot 3** : « Commencer gratuitement » partout (en-tête, menu, barre mobile, hero,
+tarifs, appel final sur `card`), vers l'inscription de l'app. **3b** dès que le nom est
+tranché.
 
-## 6. Contraintes
+Chaque PR : typecheck, lint, build, tests ; passe visuelle à 375, 768 et 1440 px, avec
+mouvement réduit et au clavier ; captures dans la PR.
 
-Inchangées : tokens uniquement (hors valeurs animées par Motion et image Open Graph),
-thème clair, site statique, frontière landing (seule intégration serveur : `joinWaitlist`),
-primitives interactives via `@repo/ui`, cibles de 44 px, contraste AA, fichiers de moins de
-400 lignes, aucune promesse au-delà de la V1.
+## 7. Tests
 
-## 7. Livraison
-
-Quatre PR courtes, sur `main`, dans cet ordre :
-
-1. **Fondations et pages** : tokens, polices, retrait de la feuille, en-tête, pied de page,
-   pages secondaires en `<h1>`, 404, formulaire non contrôlé, nouvelle suite de tests. Au
-   démarrage, fermeture de la PR `feat/landing-couvertures` (avec accord), dont les pièces
-   ci-dessus sont reprises.
-2. **Première page** : hero, étapes, `TomIllustration`, `HandNote`, `Scribble` réduit au
-   cercle, suppression de `chat-demo.tsx`, sections restylées.
-3a. **Constantes de marque** (§ 5) : ne dépend pas du nom choisi, démarrable dès maintenant.
-3b. **Nom définitif** (§ 5) : domaine, adresse de contact, logotype. Démarre une
-    fois le nom tranché par Victor.
-
-Entre les PR 1 et 2, la première page de `main` est dans un état intermédiaire (nouvelles
-couleurs, anciens textes) : les deux PR se suivent sans pause. Chaque PR : typecheck, lint,
-build, tests ; passe visuelle dans Chrome à 375, 768 et 1440 px, avec mouvement réduit et
-au clavier ; captures dans la PR. Les specs et plans des directions « cahier annoté » et
-« copie corrigée » sont supprimés dans la PR 1.
-
-## 8. Tests
-
-- `@repo/tokens` : paires de contraste sur les nouveaux fonds.
-- Suite Playwright locale : `tests/grid.spec.ts` et le script `test:grid` sont remplacés par
-  `tests/*.spec.ts` et un script `test:e2e`, sur les mêmes pages et largeurs (375, 768,
-  1024, 1441). Restent : aucun défilement horizontal ; cibles de 44 px ; sans JavaScript,
-  chaque bloc révélé visible et chaque trait tracé ; sous mouvement réduit, chaque révélation
-  finit opaque et en place ; aucun décalage de mise en page au chargement ; lignes légales
-  de 85 caractères au plus ; questions de FAQ sur trois lignes au plus à 375 px ; écart du
-  libellé de tarif. S'ajoutent : un seul `<h1>` par page ; saisie de l'e-mail avant
-  l'hydratation conservée (repris de `feat/landing-couvertures`) ; en PR 3b, aucune
-  occurrence de « TomIA » dans le HTML rendu.
-- `.claude/rules/testing-and-commits.md` et `apps/landing/CLAUDE.md` décrivent la nouvelle
-  suite et le nouveau nom.
+Suite Playwright (`pnpm --filter landing test:e2e`) : aucun défilement horizontal ; cibles
+de 44 px ; sans JavaScript, chaque bloc révélé visible ; sous mouvement réduit, chaque
+révélation finit opaque et en place ; aucun décalage de mise en page au chargement ; un seul
+`<h1>` par page ; lignes légales de 85 caractères au plus ; questions de FAQ sur trois
+lignes au plus à 375 px. S'ajoutent : l'échange d'exemple entièrement visible sans
+JavaScript et sous mouvement réduit, et qui commence dans le premier écran à 1440 px ; aucun lien
+vers `#waitlist`. En PR 3b : aucune occurrence de « TomIA » dans le HTML rendu.
 
 ## Hors périmètre
 
-La production de Tom (modélisation et animation dans Blender par une équipe d'agents),
-l'app, les View Transitions entre pages, le délai
-d'expiration du `fetch` de `joinWaitlist`.
+La production de Tom (dépôt `tom-mascotte`), l'app, la suppression côté serveur de la route
+`/api/waitlist` et de sa table (lot 3), les View Transitions entre pages.

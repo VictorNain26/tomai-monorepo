@@ -288,9 +288,18 @@ Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
   le rouge de Tom n'est jamais une faute, registres parent/élève, états des écrans, échelle
   typographique. Tokens : `border` et `input` passent des bleus gris de l'ancienne identité
   au sable, `info` et `--font-mono` retirés (inutilisés), primitive `Input` en pilule de
-  44 px. Suite : Design System publié depuis les tokens, puis spec de la landing revue
-  contre la charte et maquettes des écrans de l'app.
-- **2026-09-30** — Landing PR 4 (`feat/landing-drop-waitlist`) : liste d'attente retirée
-  (formulaire, Server Action, `lib/urls.ts`, barre d'action mobile, section d'appel final,
-  boutons « S'inscrire », `zod`), confidentialité mise à jour ; la landing n'appelle plus le
-  serveur. Next monté en 16.3.7 à part (#334, GHSA-vcvr-r3jv-pc5j, `next/og`).
+  44 px ; rayons, espacements et `text-2xs` inutilisés retirés. Mergée (#332). Design System
+  « Charte TomIA » publié depuis les tokens et la charte :
+  https://claude.ai/artifact/WMHt6nPV7SEthVj3R6sEF5 (vue du code, à republier quand les
+  tokens changent).
+- **2026-09-30** — Revue de la landing avec Victor : l'atout est l'IA, Tom est un plus. Spec
+  landing révisée en place (branche `docs/landing-demonstration`) et plan
+  `plans/2026-09-30-landing-demonstration.md` : PR 4 retrait de la liste d'attente (son
+  formulaire échoue en production, `api.tomia.fr` répond 404), PR 5 hero avec un échange
+  d'exemple qui déroule l'échelle d'indices, PR 6 sections. « Commencer gratuitement »
+  arrive avec l'app (lot 3) ; d'ici là, la page n'a pas de bouton.
+- **2026-09-30** — #333 mergée (spec et plan). Landing PR 4 (`feat/landing-drop-waitlist`) :
+  liste d'attente retirée (formulaire, Server Action, `lib/urls.ts`, barre d'action mobile,
+  section d'appel final, boutons « S'inscrire », `zod`), confidentialité mise à jour ; la
+  landing n'appelle plus le serveur. Next monté en 16.3.7 et `@grpc/grpc-js` en 1.14.5 à part
+  (#334, GHSA-vcvr-r3jv-pc5j et GHSA-m9gg-hp2v-232j).
