@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { HEIGHT, settle } from "./support";
+import { HEIGHT, settle, waitForHydration } from "./support";
 
 test("the hero shows Tom beside the text on desktop", async ({ page }) => {
   await page.setViewportSize({ width: 1441, height: HEIGHT });
@@ -13,7 +13,7 @@ test("the hero shows Tom beside the text on desktop", async ({ page }) => {
   expect(Math.abs(tom.width - tom.height)).toBeLessThanOrEqual(1);
   expect(tom.width).toBeGreaterThanOrEqual(240);
   expect(tom.x).toBeGreaterThanOrEqual(title.x + title.width);
-  const image = page.getByRole("img", { name: /^Tom/ });
+  const image = page.getByTestId("tom").locator("img");
   await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 });
 
@@ -28,4 +28,30 @@ test("the hero puts Tom under the sign-up form on mobile", async ({ page }) => {
   if (!tom || !form) return;
   expect(Math.abs(tom.width - tom.height)).toBeLessThanOrEqual(1);
   expect(tom.y).toBeGreaterThanOrEqual(form.y + form.height);
+});
+
+test.describe("with motion allowed", () => {
+  test.use({ reducedMotion: "no-preference" });
+
+  test("Tom waves, then breathes in a loop in place of his picture", async ({ page }) => {
+    await page.goto("/");
+    const tom = page.getByTestId("tom");
+    const breathing = tom.locator("video[loop]");
+    await expect(breathing).toBeVisible({ timeout: 10_000 });
+    await expect.poll(() => breathing.evaluate((video: HTMLVideoElement) => !video.paused)).toBe(true);
+    await expect(tom.locator("img")).toBeHidden();
+    await expect(tom.locator("video:not([loop])")).toBeHidden();
+  });
+});
+
+test("Tom stays still under reduced motion", async ({ page }) => {
+  await page.goto("/");
+  await waitForHydration(page);
+  const tom = page.getByTestId("tom");
+  await expect(tom.locator("img")).toBeVisible();
+  await expect(tom.locator("video")).toHaveCount(2);
+  for (const video of await tom.locator("video").all()) {
+    await expect(video).toBeHidden();
+    expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
+  }
 });
