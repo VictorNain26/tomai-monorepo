@@ -17,11 +17,11 @@ bloquant levé).
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
   - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349),
-    module `documents` (#350) ;
-    restent, dans l'ordre, `learning`, `tutor`, `auth` et `family`, `billing`
+    module `documents` (#350), module `learning` (#351) ;
+    restent, dans l'ordre, `tutor`, `auth` et `family`, `billing`
     (rangement cible : `architecture.md`, « Monolithe modulaire ») ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** refonte du module `learning`, sur une branche courte dont le plan
+- **Prochaine action :** refonte du module `tutor`, sur une branche courte dont le plan
   s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
@@ -83,8 +83,10 @@ contraire.
 - **TTS** : une seule voix, française (`fr_marie_*`) ; `/api/tts` n'accepte et n'annonce
   plus que `fr` (#349). Décider s'il faut d'autres voix pour les cours de langue.
 - **Cartes** en `json_schema` non strict : le mode strict de Mistral refuse `format: uri`
-  (`.url()`) et `propertyNames` (`z.record`) de `lib/ai/schemas/cards-domain.schema.ts` (400, code 3051).
-  Revoir ce schéma pour repasser en strict.
+  (`.url()`) et `propertyNames` (`z.record`) de `modules/learning/cards-domain.schema.ts` (400, code 3051).
+  Revoir ce schéma pour repasser en strict, et unifier au passage les trois définitions des
+  types de cartes (enum `card_type`, `modules/learning/card-generation.types.ts`, schémas Zod
+  de `cards.schema.ts`).
 - **Quota** : `needsMonthlyReset` (`services/quota/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
   jour et de la semaine passent par date-fns. Une seule méthode.
 - `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
@@ -208,4 +210,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Refonte du serveur commencée : socle sous `src/platform/` (#348), module `voice` (#349),
   module `documents`, premier module qui porte ses tables ; une suppression de fichier
   garde la ligne quand le stockage échoue, au lieu de laisser un objet d'élève orphelin
-  (#350).
+  (#350). Module `learning` ; le tuteur lit les signaux de révision par le service du
+  module au lieu d'interroger ses tables (#351).

@@ -7,14 +7,14 @@
  */
 
 import { asc, eq, and, sql } from 'drizzle-orm';
-import { db } from '../connection';
+import { db } from '../../db/connection.js';
 import {
   learningCards,
   learningDecks,
   type LearningCard,
   type NewLearningCard,
   type FSRSData,
-} from '../schema';
+} from './decks.schema.js';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -113,15 +113,6 @@ class LearningCardsRepository {
     return deleted ?? null;
   }
 
-  /**
-   * Delete every card attached to a deck. Normally not needed because the
-   * FK cascade handles this when the deck itself is deleted, but exposed for
-   * "empty the deck without deleting it" flows (card-generate retries, etc.).
-   */
-  async deleteByDeckId(deckId: string, executor: DbOrTx = db): Promise<void> {
-    await executor.delete(learningCards).where(eq(learningCards.deckId, deckId));
-  }
-
   async resetFsrsDataByDeckId(deckId: string, emptyFsrsData: FSRSData): Promise<void> {
     await db
       .update(learningCards)
@@ -158,6 +149,23 @@ class LearningCardsRepository {
       );
 
     return result?.count ?? 0;
+  }
+
+  async listWeakSubjects(userId: string, limit: number): Promise<{ subject: string; totalLapses: number }[]> {
+    return db
+      .select({
+        subject: learningDecks.subject,
+        totalLapses: sql<number>`sum((${learningCards.fsrsData}->>'lapses')::int)::int`,
+      })
+      .from(learningCards)
+      .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
+      .where(and(
+        eq(learningDecks.userId, userId),
+        sql`(${learningCards.fsrsData}->>'lapses')::int > 0`
+      ))
+      .groupBy(learningDecks.subject)
+      .orderBy(sql`sum((${learningCards.fsrsData}->>'lapses')::int) desc`)
+      .limit(limit);
   }
 }
 

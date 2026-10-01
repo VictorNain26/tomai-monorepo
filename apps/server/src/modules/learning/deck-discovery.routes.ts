@@ -4,7 +4,7 @@ import { educationLevelSchema } from '../../lib/education-levels.js';
 import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { logger } from '../../platform/observability/logger';
 import { educationService } from '../../services/education.service';
-import { subjectLabels } from './helpers';
+import { subjectLabels } from './routes.helpers.js';
 import type { EducationLevelType } from '../../types/index';
 
 const subjectsQuery = z.object({ niveau: educationLevelSchema.optional() });

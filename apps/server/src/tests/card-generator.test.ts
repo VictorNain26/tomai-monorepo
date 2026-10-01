@@ -1,6 +1,6 @@
 import './_helpers/mistral-env';
 import { describe, it, expect, afterEach } from 'bun:test';
-import { generateCards, isGenerationError } from '../services/learning/card-generator.service';
+import { generateCards, isGenerationError } from '../modules/learning/card-generator.service';
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });

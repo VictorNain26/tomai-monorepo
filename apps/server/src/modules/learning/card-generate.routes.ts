@@ -3,13 +3,13 @@ import { z } from 'zod';
 import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { logger } from '../../platform/observability/logger';
 import { checkQuota, checkDeckQuota, incrementDeckUsage } from '../../services/token-quota.service';
-import { getLevelConfig } from '../../config/learning-config.js';
+import { getLevelConfig } from './learning-config.js';
 import {
   generateCards,
   isGenerationError,
-} from '../../services/learning/index';
-import { learningService } from '../../services/learning/learning.service';
-import { getUserLevel } from './helpers';
+} from './card-generator.service.js';
+import { learningService } from './learning.service.js';
+import { getUserLevel } from './routes.helpers.js';
 
 
 const generateBody = z.object({

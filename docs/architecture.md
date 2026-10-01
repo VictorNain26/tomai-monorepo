@@ -35,8 +35,8 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 |---|---|---|
 | `auth` | Comptes parent (email, Google) et élève (username) ; le moteur de session (better-auth, gardes) est dans `platform/` | `routes/api/parent.routes.ts` (création d'enfant), `db/repositories/users.repository.ts` |
 | `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations | `services/parent/`, `parent.service.ts`, `routes/api/parent.routes.ts` |
-| `tutor` | Agent IA : session de chat, outils, mémoire, résumé, garde-fous | `services/chat/`, `lib/ai/` (routage du raisonnement, schémas de cartes), `episodic-memory.service.ts`, `cognitive-profile.service.ts` |
-| `learning` | Decks, cartes, révisions FSRS | `services/learning/`, `fsrs.service.ts`, `routes/learning/` |
+| `tutor` | Agent IA : session de chat, outils, mémoire, résumé, garde-fous | `services/chat/`, `lib/ai/` (routage du raisonnement), `episodic-memory.service.ts`, `cognitive-profile.service.ts` et sa table (`db/schema/cognitive-profile.schema.ts`) |
+| `learning` | Decks, cartes, révisions FSRS, génération de cartes | `modules/learning/` |
 | `documents` | Upload, classeur de séance, extraction, analyse, stockage S3, fichiers prêts pour un tour de chat | `modules/documents/` |
 | `billing` | Formules Gratuit et Complet, quotas, abonnement web | `services/quota/`, `subscription.service.ts`, `token-quota.service.ts` |
 | `voice` | Transcription et synthèse vocale (Voxtral) | `modules/voice/` |

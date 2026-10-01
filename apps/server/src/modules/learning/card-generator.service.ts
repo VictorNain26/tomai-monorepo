@@ -26,7 +26,7 @@
 
 import { NoObjectGeneratedError } from 'ai';
 import { generateStructured } from '../../platform/ai/mistral-client.js';
-import { CardGenerationSchema } from '../../lib/ai/schemas/index.js';
+import { CardGenerationSchema } from './cards.schema.js';
 import {
   getSubjectInstructions,
   getRecommendedCardTypes,
@@ -38,7 +38,7 @@ import {
   KATEX_INSTRUCTIONS
 } from './prompts/index.js';
 import { logger } from '../../platform/observability/logger.js';
-import type { CardGenerationParams, ParsedCard } from './types.js';
+import type { CardGenerationParams, ParsedCard } from './card-generation.types.js';
 
 // Prompt cache sur l'instruction de base + adaptations cycle/sujet.
 const CARD_GENERATOR_PROMPT_VERSION = '2026-09-22';

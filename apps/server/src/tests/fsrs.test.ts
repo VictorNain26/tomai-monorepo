@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - FSRS Service (services/fsrs.service.ts)
+ * Tests unitaires - FSRS Service (modules/learning/fsrs.service.ts)
  * Tests: initializeCardFsrsData (pure), previewScheduling (pure),
  * reviewCard (DB mock), getDueCards priority (DB mock), getDeckStats (DB mock)
  */
@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import { State, Rating } from 'ts-fsrs';
-import type { FSRSData } from '../db/schema.js';
+import type { FSRSData } from '../modules/learning/decks.schema.js';
 
 // ============================================
 // MOCKS
@@ -55,7 +55,7 @@ mock.module('../db/connection', () => ({
   },
 }));
 
-mock.module('../db/schema', () => ({
+mock.module('../modules/learning/decks.schema', () => ({
   learningCards: {
     id: 'id',
     deckId: 'deckId',
@@ -81,7 +81,7 @@ mock.module('drizzle-orm', () => ({
 }));
 
 // Import after mocks — NOT mocking ts-fsrs or learning-config (real logic)
-const { fsrsService } = await import('../services/fsrs.service');
+const { fsrsService } = await import('../modules/learning/fsrs.service');
 
 // Helper: create a card DB row with FSRS data
 function makeCardRow(

@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { educationLevelSchema } from '../../lib/education-levels.js';
 import { logger } from '../../platform/observability/logger';
-import { learningService } from '../../services/learning/learning.service';
-import { handleDeckDomainError, idParam } from './helpers';
+import { learningService } from './learning.service.js';
+import { handleDeckDomainError, idParam } from './routes.helpers.js';
 
 
 const createDeckBody = z.object({

@@ -1,5 +1,5 @@
 /**
- * Unit tests — LearningService (src/services/learning/learning.service.ts)
+ * Unit tests — LearningService (src/modules/learning/learning.service.ts)
  *
  * Strategy:
  *  - Mock the repository modules so we verify delegation + ownership logic
@@ -38,7 +38,7 @@ const mockDeckListByUser = mock(async () => [] as unknown[]);
 const mockDeckUpdateById = mock(async () => ({ id: 'deck-1', title: 'updated' } as unknown));
 const mockDeckDeleteById = mock(async () => {});
 
-mock.module('../db/repositories/learning-decks.repository', () => ({
+mock.module('../modules/learning/learning-decks.repository', () => ({
   learningDecksRepository: {
     insert: mockDeckInsert,
     findById: mockDeckFindById,
@@ -57,7 +57,7 @@ const mockCardDeleteById = mock(async (): Promise<unknown> => null);
 const mockCardCountByDeckId = mock(async (): Promise<number> => 0);
 const mockCardCountDueByUser = mock(async (): Promise<number> => 0);
 
-mock.module('../db/repositories/learning-cards.repository', () => ({
+mock.module('../modules/learning/learning-cards.repository', () => ({
   learningCardsRepository: {
     insertMany: mockCardInsertMany,
     listByDeck: mockCardListByDeck,
@@ -89,7 +89,7 @@ const mockFsrsPreviewScheduling = mock(() => ({
   4: { due: new Date(), interval: 7 },
 }));
 
-mock.module('../services/fsrs.service', () => ({
+mock.module('../modules/learning/fsrs.service', () => ({
   fsrsService: {
     initializeCardFsrsData: mockFsrsInit,
     reviewCard: mockFsrsReviewCard,
@@ -98,9 +98,9 @@ mock.module('../services/fsrs.service', () => ({
   Rating: { Again: 1, Hard: 2, Good: 3, Easy: 4 },
 }));
 
-const { learningService } = await import('../services/learning/learning.service');
+const { learningService } = await import('../modules/learning/learning.service');
 const { DeckNotFoundError, DeckOwnershipError, CardNotFoundError, CardValidationError } =
-  await import('../services/learning/learning-errors');
+  await import('../modules/learning/learning-errors');
 
 beforeEach(() => {
   transactionFailed = false;

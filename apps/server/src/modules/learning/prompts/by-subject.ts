@@ -7,7 +7,7 @@
  * - L'IA choisit les types les plus adaptés au contenu
  */
 
-import type { SubjectCategory, CardType, EducationCycle } from '../types.js';
+import type { SubjectCategory, CardType, EducationCycle } from '../card-generation.types.js';
 import type { EducationLevelType } from '../../../types/index.js';
 
 // ============================================================================

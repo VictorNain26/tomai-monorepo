@@ -6,11 +6,9 @@
  * permettre à l'agent de décider du retry. Jamais de throw.
  */
 
-import { generateCards, type CardGenerationResult } from '../learning/card-generator.service.js';
-import { learningService } from '../learning/learning.service.js';
+import { generateCards, learningService, getLevelConfig, type CardGenerationResult } from '../../modules/learning/index.js';
 import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { makeToolError, type ToolResult } from './tool-errors.js';
-import { getLevelConfig } from '../../config/learning-config.js';
 import { getAppHelpContent } from '../../config/app-guide/index.js';
 import { logger } from '../../platform/observability/logger.js';
 import type { EducationLevelType } from '../../types/index.js';

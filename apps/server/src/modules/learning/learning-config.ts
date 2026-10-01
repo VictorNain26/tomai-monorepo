@@ -9,7 +9,7 @@
  * @see docs/AUDIT_LEARNING_FLASHCARDS.md
  */
 
-import type { EducationLevelType } from '../types/index.js';
+import type { EducationLevelType } from '../../types/index.js';
 
 /**
  * Configuration d'apprentissage par niveau scolaire

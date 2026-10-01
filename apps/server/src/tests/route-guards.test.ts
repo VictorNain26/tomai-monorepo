@@ -27,20 +27,20 @@ mock.module('../services/token-quota.service', () => ({
   checkDeckQuota: async () => ({ allowed: true }),
   incrementDeckUsage: async () => ({}),
 }));
-mock.module('../services/learning/index', () => ({ generateCards: async () => ({ cards: [] }), isGenerationError: () => false }));
-mock.module('../services/learning/learning.service', () => ({
+mock.module('../modules/learning/card-generator.service', () => ({ generateCards: async () => ({ cards: [] }), isGenerationError: () => false }));
+mock.module('../modules/learning/learning.service', () => ({
   learningService: {},
   DeckNotFoundError: class extends Error {},
   DeckOwnershipError: class extends Error {},
   CardNotFoundError: class extends Error {},
   CardValidationError: class extends Error {},
 }));
-mock.module('../services/fsrs.service', () => ({ fsrsService: {}, Rating: {} }));
+mock.module('../modules/learning/fsrs.service', () => ({ fsrsService: {}, Rating: {} }));
 mock.module('../modules/documents/storage', () => ({}));
 mock.module('../modules/voice/index', () => ({ audioTranscriptionService: {} }));
 mock.module('../modules/documents/files.repository', () => ({ filesRepository: {} }));
 
-const { learningRoutes } = await import('../routes/learning/index');
+const { learningRoutes } = await import('../modules/learning/learning.routes');
 const { uploadRoutes } = await import('../modules/documents/upload.routes');
 const { handleError } = await import('../platform/http/error-handler');
 

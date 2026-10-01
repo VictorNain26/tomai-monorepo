@@ -38,33 +38,18 @@ mock.module('../services/cognitive-profile.service', () => ({
   },
 }));
 
-// Card generator (unused by the profile path but imported at module load)
-mock.module('../services/learning/card-generator.service', () => ({
+// Learning module (unused by the profile path but imported at module load)
+mock.module('../modules/learning/index', () => ({
   generateCards: mock(async () => ({ cards: [], count: 0 })),
-}));
-
-// Learning service (unused here)
-mock.module('../services/learning/learning.service', () => ({
   learningService: {
     createDeckWithCards: mock(async () => ({ deck: { id: 'd', title: 't' }, cards: [] })),
   },
-}));
-
-// FSRS (unused here)
-mock.module('../services/fsrs.service', () => ({
-  fsrsService: { initializeCardFsrsData: mock(() => ({})) },
+  getLevelConfig: mock(() => ({ cardsPerSession: 10 })),
 }));
 
 // DB (unused on this path)
 mock.module('../db/connection', () => ({
   db: { transaction: mock(async (fn: (tx: unknown) => Promise<unknown>) => fn({})) },
-}));
-
-mock.module('../db/schema', () => ({ learningDecks: {}, learningCards: {} }));
-
-// Config mocks
-mock.module('../config/learning-config', () => ({
-  getLevelConfig: mock(() => ({ cardsPerSession: 10 })),
 }));
 
 mock.module('../config/app-guide/index', () => ({
