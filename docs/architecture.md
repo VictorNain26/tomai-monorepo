@@ -33,9 +33,9 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 
 | Module | Responsabilité | Code actuel |
 |---|---|---|
-| `auth` | Comptes parent (email, Google) et élève (username) ; le moteur de session (better-auth, gardes) est dans `platform/` | `routes/api/parent.routes.ts` (création d'enfant), `db/repositories/users.repository.ts` |
-| `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations | `services/parent/`, `parent.service.ts`, `progress.service.ts`, `routes/api/parent.routes.ts`, `db/schema/progress.schema.ts` |
-| `tutor` | Agent IA : session de chat, classeur de séance, outils, mémoire, profils, résumé, garde-fous, purge RGPD de ses tables | `modules/tutor/` |
+| `auth` | Comptes parent (email, Google) et élève (username), création d'un compte élève, mot de passe ; le moteur de session (better-auth, gardes) est dans `platform/` et lit les tables par `db/schema` | `modules/auth/` |
+| `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations | `modules/family/` ; `db/schema/progress.schema.ts` et `db/repositories/progress.repository.ts` en attente du lot 3 |
+| `tutor` | Agent IA : session de chat, classeur de séance, outils, mémoire, profils, résumé, garde-fous, statistiques d'étude, purge RGPD de ses tables | `modules/tutor/` |
 | `learning` | Decks, cartes, révisions FSRS, génération de cartes | `modules/learning/` |
 | `documents` | Upload, liste des fichiers, extraction, analyse, stockage S3, fichiers prêts pour un tour de chat | `modules/documents/` |
 | `billing` | Formules Gratuit et Complet, quotas, abonnement web | `services/quota/`, `subscription.service.ts`, `token-quota.service.ts`, `cost-tracking.service.ts`, `db/schema/cost-tracking.schema.ts` |
