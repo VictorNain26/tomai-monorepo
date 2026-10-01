@@ -16,7 +16,7 @@
     "build:server": "turbo run build --filter=tomai-server",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "validate": "pnpm run typecheck && pnpm run lint",
+    "validate": "bun run typecheck && bun run lint",
     "test": "turbo run test",
     "test:server": "turbo run test --filter=tomai-server",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
@@ -24,7 +24,7 @@
     "db:generate": "turbo run db:generate --filter=tomai-server",
     "db:push": "turbo run db:push --filter=tomai-server",
     "db:studio": "turbo run db:studio --filter=tomai-server",
-    "seed": "pnpm --filter tomai-server seed",
+    "seed": "bun run --filter tomai-server seed",
     "postinstall": "lefthook install || true"
   },
   "devDependencies": {
@@ -36,7 +36,21 @@
   },
   "engines": {
     "node": ">=24",
-    "pnpm": ">=12"
+    "bun": ">=1.4.2"
   },
-  "packageManager": "pnpm@12.5.1"
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "trustedDependencies": [
+    "@evilmartians/lefthook",
+    "@sentry/cli",
+    "esbuild",
+    "protobufjs",
+    "sharp"
+  ],
+  "overrides": {
+    "@esbuild-kit/core-utils>esbuild": ">=0.25.0"
+  }
 }
