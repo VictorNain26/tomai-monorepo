@@ -12,11 +12,13 @@ bloquant levé).
 ## Où on en est
 
 - **Dernière mise à jour :** 2026-10-01.
-- **Lot en cours :** 0 — Assainissement, dernière ligne droite. Restent deux PR, dont le
-  plan s'écrit au démarrage, contre `main` à jour :
+- **Lot en cours :** 0 — Assainissement, dernière ligne droite. Restent trois PR, dans
+  cet ordre (`plans/2026-10-01-roadmap.md`, « Découpage en PR »), dont le plan s'écrit au
+  démarrage, contre `main` à jour :
   - **nettoyage de la vision** : Pronote et la liste d'attente retirés du code (détail dans
     « Reporté ») ;
-  - **E2 — infra serveur et outillage** (détail dans « Reporté »).
+  - **E2 — infra serveur et outillage** (détail dans « Reporté ») ;
+  - **lint strict** : plus aucun `eslint-disable` (détail dans « Reporté »).
 - **Prochaine action :** le nettoyage de la vision, avant E2. Il supprime des fichiers
   qu'E2 modifierait sinon : limiteurs de débit de Pronote et de la liste d'attente, import
   d'enfants par Pronote dans `ParentService.createChild`, `lib/encryption.ts`, tests
@@ -124,8 +126,8 @@ Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
   partent avec Pronote), à remplacer par une forme de code qui ne déclenche pas la règle.
   Le plan d'E2 de la branche locale les renvoie à une PR « E3 — lint strict » (config
   partagée `strictTypeChecked` et `stylisticTypeChecked`, `noInlineConfig`,
-  `reportUnusedDisableDirectives: 'error'`, `only-warn` retiré) que la roadmap ne liste
-  pas : à trancher au démarrage d'E2.
+  `reportUnusedDisableDirectives: 'error'`, `only-warn` retiré) : c'est la quatrième PR
+  du lot 0 dans la roadmap.
 
 ### Lot 1 — harnais d'évaluation
 
