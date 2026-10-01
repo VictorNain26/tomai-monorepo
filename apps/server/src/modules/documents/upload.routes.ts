@@ -289,10 +289,12 @@ export const uploadRoutes = new Hono<AppEnv>()
         return c.json({ success: false, error: 'Access denied' }, 403);
       }
 
-      // Delete from Scaleway
-      await storage.deleteFile(fileRecord.storageKey);
+      // The row is the only reference to the object: keep it until the object is
+      // gone, so a failed S3 delete can be retried instead of orphaning it.
+      if (!(await storage.deleteFile(fileRecord.storageKey))) {
+        return c.json({ success: false, error: 'Failed to delete file' }, 500);
+      }
 
-      // Delete from DB
       await filesRepository.hardDelete(fileId);
 
       logger.info('File deleted', {

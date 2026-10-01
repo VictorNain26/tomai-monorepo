@@ -45,9 +45,17 @@ export async function deleteSessionCascade(sessionId: string, userId?: string): 
 
       for (const fileId of fileIds) {
         const file = await filesRepository.findById(fileId);
-        if (file) {
-          await deleteScalewayFile(file.storageKey);
+        if (!file) continue;
+        // A failed S3 delete keeps the row: it still lists the file in the
+        // student's classeur and lets the account purge reach the object.
+        if (await deleteScalewayFile(file.storageKey)) {
           await filesRepository.hardDelete(fileId);
+        } else {
+          logger.warn('File kept after a failed storage delete', {
+            operation: 'chat:session:delete:files',
+            sessionId,
+            fileId,
+          });
         }
       }
     }
