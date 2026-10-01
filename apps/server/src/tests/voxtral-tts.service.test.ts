@@ -11,7 +11,7 @@ mock.module('../platform/config/env', () => ({
   },
 }));
 
-const { getVoxtralTTSService } = await import('../services/voxtral-tts.service');
+const { getVoxtralTTSService } = await import('../modules/voice/voxtral-tts.service');
 
 describe('VoxtralTTSService', () => {
   let fetchSpy: ReturnType<typeof spyOn> | undefined;

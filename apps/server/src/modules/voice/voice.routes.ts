@@ -10,10 +10,10 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { requireUser, validate, type AppEnv } from '../platform/http/context.js';
-import { textToSpeechService, type TTSOptions } from '../services/text-to-speech.service.js';
-import { logger } from '../platform/observability/logger.js';
-import type { EducationLevelType } from '../types/education.types.js';
+import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
+import { textToSpeechService, type TTSOptions } from './text-to-speech.service.js';
+import { logger } from '../../platform/observability/logger.js';
+import { educationLevelSchema } from '../../lib/education-levels.js';
 
 // ============================================
 // Routes
@@ -21,12 +21,13 @@ import type { EducationLevelType } from '../types/education.types.js';
 
 const synthesizeBody = z.object({
   text: z.string().min(1).max(5000),
-  language: z.enum(['fr', 'en', 'es', 'de']).optional(),
-  schoolLevel: z.string().min(2).max(20).optional(),
+  // Only the French voice exists (fr_marie_*): no other language is accepted or advertised.
+  language: z.literal('fr').optional(),
+  schoolLevel: educationLevelSchema.optional(),
 });
 
 // Mounted under /api/tts by app.ts.
-export const ttsRoutes = new Hono<AppEnv>()
+export const voiceRoutes = new Hono<AppEnv>()
 
     // POST /api/tts/synthesize - Synthétiser texte en audio
     .post('/synthesize', requireUser, validate('json', synthesizeBody), async (c) => {
@@ -40,7 +41,7 @@ export const ttsRoutes = new Hono<AppEnv>()
         // Options TTS (voix auto-sélectionnée par niveau scolaire)
         const ttsOptions: TTSOptions = {
           language,
-          schoolLevel: schoolLevel as EducationLevelType | undefined,
+          schoolLevel,
         };
 
         const result = await textToSpeechService.synthesize(text, ttsOptions);
@@ -104,7 +105,7 @@ export const ttsRoutes = new Hono<AppEnv>()
         provider: 'voxtral',
         autoSelect: false,
         voices: [],
-        languages: ['fr', 'en', 'es', 'de'],
+        languages: ['fr'],
         limits: {
           maxTextLength: 5000,
         },

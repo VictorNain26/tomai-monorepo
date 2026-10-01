@@ -16,11 +16,11 @@ bloquant levé).
   remplacer par Bun tout ce qu'il remplace proprement et une refonte complète du serveur.
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
-  - **refonte du serveur** : le socle est rangé sous `src/platform/` (#348) ; restent les
-    modules, dans l'ordre `voice`, `documents`, `learning`, `tutor`, `auth` et `family`,
-    `billing` (rangement cible : `architecture.md`, « Monolithe modulaire ») ;
+  - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349) ;
+    restent, dans l'ordre, `documents`, `learning`, `tutor`, `auth` et `family`, `billing`
+    (rangement cible : `architecture.md`, « Monolithe modulaire ») ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** refonte du module `voice`, sur une branche courte dont le plan
+- **Prochaine action :** refonte du module `documents`, sur une branche courte dont le plan
   s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
@@ -63,7 +63,7 @@ contraire.
   relue par un humain, injectée par notion à chaque tour. En 2026-2027 coexistent les
   programmes de 2025 (6e), de 2026 (5e, français et mathématiques) et de 2020 (4e, 3e).
 - **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
-  - la synthèse vocale (`/api/tts`, `routes/tts.routes.ts`) n'a aucun quota, seulement le
+  - la synthèse vocale (`/api/tts`, `modules/voice/voice.routes.ts`) n'a aucun quota, seulement le
     rate limit global : c'est le seul poste non borné ;
   - l'outil `generate_flashcards` du chat (`services/chat/chat-tools.ts`) n'a ni contrôle
     de plan ni quota de cartes, alors que la route `/api/learning/generate` réserve les
@@ -79,14 +79,14 @@ contraire.
     TTS n'écrivent rien dans `cost_tracking` : seul le tour de chat y est tracé ;
   - `cost_tracking.cost_cents` est un entier : un tour (environ 0,05 centime) s'arrondit
     à 0.
-- **TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues avec
-  `fr_marie_neutral` ; `/api/tts/voices` annonce `es` et `de`, qui n'ont pas de voix.
+- **TTS** : une seule voix, française (`fr_marie_*`) ; `/api/tts` n'accepte et n'annonce
+  plus que `fr` (#349). Décider s'il faut d'autres voix pour les cours de langue.
 - **Cartes** en `json_schema` non strict : le mode strict de Mistral refuse `format: uri`
   (`.url()`) et `propertyNames` (`z.record`) de `lib/ai/schemas/cards-domain.schema.ts` (400, code 3051).
   Revoir ce schéma pour repasser en strict.
 - **Quota** : `needsMonthlyReset` (`services/quota/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
   jour et de la semaine passent par date-fns. Une seule méthode.
-- `lib/text/speech-normalize.ts` à réévaluer avec la lecture vocale.
+- `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
 
 ### Lot 3 — client web
 
@@ -204,4 +204,4 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   il émet `mobile-web-app-capable` au lieu de `apple-mobile-web-app-capable`.
   Logger sur pino (même API, `LOG_LEVEL` appliqué, erreurs loggées avec leur stack sous
   `err`) (#347).
-  Refonte du serveur commencée : socle sous `src/platform/` (#348).
+  Refonte du serveur commencée : socle sous `src/platform/` (#348), module `voice` (#349).

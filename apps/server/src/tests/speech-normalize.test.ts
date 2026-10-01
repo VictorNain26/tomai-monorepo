@@ -1,11 +1,11 @@
 /**
- * Tests unitaires — normalizeForSpeech (lib/text/speech-normalize.ts)
+ * Tests unitaires — normalizeForSpeech (modules/voice/speech-normalize.ts)
  * Valide la suppression du markdown et la conversion KaTeX en texte parlé.
  * Invariant fort : aucun `$` ni `\` résiduel après normalisation.
  */
 
 import { describe, it, expect } from 'bun:test';
-import { normalizeForSpeech } from '../lib/text/speech-normalize.js';
+import { normalizeForSpeech } from '../modules/voice/speech-normalize.js';
 
 describe('normalizeForSpeech — markdown', () => {
   it('supprime le gras avec **', () => {

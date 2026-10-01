@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { streamChat } from '../services/chat/ai-chat.service';
 import { generateText } from '../platform/ai/mistral-client';
 import { mistralEmbeddingsService } from '../services/mistral-embeddings.service';
-import { getVoxtralTTSService } from '../services/voxtral-tts.service';
-import { getVoxtralTranscribeService } from '../services/voxtral-transcribe.service';
+import { getVoxtralTTSService } from '../modules/voice/voxtral-tts.service';
+import { getVoxtralTranscribeService } from '../modules/voice/voxtral-transcribe.service';
 import { HAS_MISTRAL } from './_creds';
 
 // Live contre l'endpoint UE de Mistral. LOCAL-ONLY (`bun run test:live`), fail-closed.

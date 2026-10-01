@@ -194,7 +194,7 @@ mock.module('../routes/file-upload.routes', () => ({ fileUploadRoutes: new Hono(
 mock.module('../routes/subscription/index', () => ({
   statusRoutes: new Hono(),
 }));
-mock.module('../routes/tts.routes', () => ({ ttsRoutes: new Hono() }));
+mock.module('../modules/voice/index', () => ({ voiceRoutes: new Hono() }));
 mock.module('../routes/learning/index', () => ({
   learningRoutes: new Hono(),
 }));

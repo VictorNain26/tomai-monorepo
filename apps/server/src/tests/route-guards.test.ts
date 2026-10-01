@@ -37,7 +37,7 @@ mock.module('../services/learning/learning.service', () => ({
 }));
 mock.module('../services/fsrs.service', () => ({ fsrsService: {}, Rating: {} }));
 mock.module('../services/storage/scaleway-storage.service', () => ({ scalewayStorageService: {} }));
-mock.module('../services/audio-transcription.service', () => ({ audioTranscriptionService: {} }));
+mock.module('../modules/voice/index', () => ({ audioTranscriptionService: {} }));
 mock.module('../db/repositories/index', () => ({ filesRepository: {} }));
 
 const { learningRoutes } = await import('../routes/learning/index');

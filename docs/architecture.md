@@ -39,7 +39,7 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 | `learning` | Decks, cartes, révisions FSRS | `services/learning/`, `fsrs.service.ts`, `routes/learning/` |
 | `documents` | Upload, extraction, analyse, stockage S3 | `services/document/`, `services/storage/`, `routes/file-upload.routes.ts` |
 | `billing` | Formules Gratuit et Complet, quotas, abonnement web | `services/quota/`, `subscription.service.ts`, `token-quota.service.ts` |
-| `voice` | Transcription et synthèse vocale (Voxtral) | `voxtral-*.service.ts`, `audio-transcription.service.ts`, `text-to-speech.service.ts` |
+| `voice` | Transcription et synthèse vocale (Voxtral) | `modules/voice/` |
 | `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `platform/` (config, migrateur, auth, http, observabilité, IA, cycle de vie), `retention-purge.service.ts` |
 
 Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par module, lot 0) :

@@ -27,7 +27,7 @@ mock.module('../platform/config/env', () => ({
 // ============================================
 
 const { getVoxtralTranscribeService, isVoxtralTranscribeConfigured } = await import(
-  '../services/voxtral-transcribe.service'
+  '../modules/voice/voxtral-transcribe.service'
 );
 
 // ============================================
