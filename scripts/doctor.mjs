@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // bun run doctor — preuve end-to-end de l'environnement de dev. Exit 0 si tout PASS, 1 sinon.
 // bun run doctor:e2e (--e2e) — mode strict : SKIP = FAIL, ajoute le check MISTRAL_API_KEY.
 import { loadConfig, defaultExec, buildChecks, runChecks } from './doctor-checks.mjs';

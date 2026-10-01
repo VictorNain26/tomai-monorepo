@@ -1,7 +1,7 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Bootstrap one-time idempotent du dev local :
-// .env depuis .env.example, génération du secret, postgres + extension vector +
-// migrations. Relançable sans effet de bord.
+// .env depuis .env.example, génération du secret, postgres + migrations (le
+// migrateur crée l'extension vector). Relançable sans effet de bord.
 import { spawnSync } from "node:child_process";
 import { existsSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
@@ -40,11 +40,9 @@ if (existsSync(serverEnvPath)) {
   }
 }
 
-// 3. Postgres up + extension vector + migrations
+// 3. Postgres up + migrations (apps/server/src/db/migrate.ts crée l'extension vector)
 console.log("[setup] postgres…");
 run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "60", "postgres"]);
-run("docker", ["exec", "tomai-postgres-dev", "psql", "-U", "tomai_dev", "-d", "tomai_dev",
-  "-c", "CREATE EXTENSION IF NOT EXISTS vector;"]);
 console.log("[setup] migrations Drizzle…");
 run("bun", ["run", "db:migrate"], { cwd: "apps/server" });
 

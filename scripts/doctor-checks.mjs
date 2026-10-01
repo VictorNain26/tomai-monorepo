@@ -5,6 +5,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { parseEnv } from 'node:util';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
@@ -14,21 +15,10 @@ export const SKIP = Symbol.for('doctor.skip');
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-/** Parse minimal d'un fichier .env (KEY=VALUE, ignore # et lignes vides). */
+/** Lit un fichier .env avec le parseur de la plateforme (commentaires en fin de ligne compris) ; absent = {}. */
 function parseEnvFile(path) {
   try {
-    const content = readFileSync(path, 'utf8');
-    const out = {};
-    for (const line of content.split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const idx = trimmed.indexOf('=');
-      if (idx < 0) continue;
-      const key = trimmed.slice(0, idx).trim();
-      const val = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
-      out[key] = val;
-    }
-    return out;
+    return parseEnv(readFileSync(path, 'utf8'));
   } catch {
     return {};
   }
@@ -152,7 +142,7 @@ function psqlScalar(ctx, sql) {
 function checkMigrations(ctx) {
   return { name: 'postgres: extension vector + migrations Drizzle à jour', run: async () => {
     const hasVector = psqlScalar(ctx, "SELECT count(*) FROM pg_extension WHERE extname='vector';");
-    if (hasVector === '0') throw new Error("extension 'vector' absente — lance 'bun run setup'");
+    if (hasVector === '0') throw new Error("extension 'vector' absente — lance 'bun run db:migrate' dans apps/server (le migrateur la crée)");
     const applied = Number(psqlScalar(ctx, 'SELECT count(*) FROM drizzle.__drizzle_migrations;'));
     const expected = ctx.journalEntries ?? countJournalEntries();
     if (applied < expected) throw new Error(`migrations en retard: ${applied}/${expected} appliquées — lance 'bun run setup' (ou 'bun run db:migrate' dans apps/server)`);
