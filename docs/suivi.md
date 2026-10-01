@@ -196,6 +196,11 @@ Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
 - Tests e2e de la landing qui gardent l'identité rejetée (`signs.spec.ts`, graisse des
   titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`) : à revoir avec la nouvelle
   identité.
+- `Scribble` (`apps/landing/components/annotations/scribble.tsx`) provoque une erreur
+  d'hydratation sous mouvement réduit (`initial` différent entre serveur et client).
+  Correctif technique permis pendant le gel ; disparaît de toute façon avec l'identité du
+  lot 4.
+- Mentions légales : « micro-entrepreneur » à confirmer par Victor.
 
 ## Surveillance
 
