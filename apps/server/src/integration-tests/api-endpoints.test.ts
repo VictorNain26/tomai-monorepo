@@ -225,7 +225,6 @@ mock.module('../routes/tts.routes', () => ({ ttsRoutes: new Elysia() }));
 mock.module('../routes/learning/index', () => ({
   learningRoutes: new Elysia(),
 }));
-mock.module('../routes/waitlist.routes', () => ({ waitlistRoutes: new Elysia() }));
 mock.module('../routes/pronote-sync.routes', () => ({ pronoteSyncRoutes: new Elysia() }));
 mock.module('../routes/pronote-data.routes', () => ({ pronoteDataRoutes: new Elysia() }));
 mock.module('../routes/pronote-connect.routes', () => ({ pronoteConnectRoutes: new Elysia() }));
