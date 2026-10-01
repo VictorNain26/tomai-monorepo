@@ -17,13 +17,17 @@ export default function CguPage() {
   return (
     <PageLayout
       title="Conditions Générales d'Utilisation"
-      description="Dernière mise à jour : 22 septembre 2026"
+      description="Dernière mise à jour : 1er octobre 2026"
       maxWidth="3xl"
     >
       <div className="legal-copy">
         <h2>1. Objet</h2>
         <p>
           Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services du service web {BRAND_NAME}, accessible sur tomia.fr, ci-après nommé « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.
+        </p>
+        <p>
+          Le Service est en préparation et n&apos;est pas encore ouvert&nbsp;: les présentes
+          conditions s&apos;appliqueront à son ouverture.
         </p>
 
         <h2>2. Accès au service</h2>
@@ -52,8 +56,8 @@ export default function CguPage() {
         <p>
           <strong>Pour toi, élève :</strong> ton compte a été créé par tes parents pour
           t&apos;aider à apprendre. Utilise Tom pour comprendre tes leçons, pas pour copier
-          des réponses. Tes parents peuvent voir ta progression, et tes conversations ne
-          sont partagées avec personne d&apos;autre.
+          des réponses. Tes parents verront un résumé de ton travail, pas tes
+          conversations&nbsp;: elles ne seront partagées avec personne.
         </p>
 
         <h2>4. Propriété intellectuelle</h2>

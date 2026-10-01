@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: BRAND_NAME,
     short_name: BRAND_NAME,
-    description: "L'IA qui aide les collégiens à comprendre leurs devoirs, de la 6e à la 3e.",
+    description: "Une aide aux devoirs pour les collégiens, de la 6e à la 3e, en préparation.",
     start_url: "/",
     display: "standalone",
     background_color: PAPER,

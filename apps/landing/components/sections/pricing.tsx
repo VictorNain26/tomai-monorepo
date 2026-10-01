@@ -12,7 +12,6 @@ const PLANS = [
       "Collège, de la 6e à la 3e",
       "Aide aux devoirs par questions",
       "Un volume d'échanges limité chaque jour",
-      "Connexion Pronote",
       "Espace parent",
     ],
   },
@@ -23,7 +22,7 @@ const PLANS = [
     featured: true,
     features: [
       "Tout le plan Gratuit",
-      "Cinq fois plus d'échanges par jour",
+      "Plus d'échanges par jour",
       "Fiches de révision et répétition espacée",
     ],
   },
@@ -36,7 +35,7 @@ export function Pricing() {
         <SectionHeader
           eyebrow="Tarifs"
           title="Deux formules, sans surprise"
-          description="L'offre gratuite reste gratuite. Le tarif du plan Complet sera annoncé à l'ouverture."
+          description="L'offre gratuite restera gratuite. Le tarif du plan Complet sera annoncé à l'ouverture."
         />
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
           {PLANS.map((plan) => (

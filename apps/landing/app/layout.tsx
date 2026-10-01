@@ -18,9 +18,9 @@ const caveat = Caveat({
   variable: "--font-caveat",
 });
 
-const TITLE = `${BRAND_NAME} - L'IA qui aide votre enfant à comprendre ses devoirs`;
+const TITLE = `${BRAND_NAME} – Une aide aux devoirs pour le collège, en préparation`;
 const DESCRIPTION =
-  "Assistant scolaire pour collégiens, de la 6e à la 3e. Tom guide votre enfant par des questions, à la manière d'un bon professeur, et vous tient informé sans lire ses conversations.";
+  "Aide aux devoirs en préparation pour les collégiens, de la 6e à la 3e : Tom est conçu pour guider votre enfant par des questions, sans faire l'exercice à sa place.";
 
 export const metadata: Metadata = {
   title: {
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     BRAND_NAME, "tutorat", "éducation", "IA",
     "aide aux devoirs", "aide devoirs IA",
     "soutien scolaire", "soutien scolaire IA",
-    "tuteur IA français", "méthode socratique IA",
+    "tuteur IA français",
     "collège", "6e", "5e", "4e", "3e",
     "application éducative", "app scolaire",
     "IA européenne", "Mistral",
@@ -75,23 +75,6 @@ export const metadata: Metadata = {
 };
 
 const jsonLd = [
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: BRAND_NAME,
-    applicationCategory: "EducationApplication",
-    operatingSystem: "Web",
-    inLanguage: "fr",
-    description: DESCRIPTION,
-    offers: [
-      {
-        "@type": "Offer",
-        price: "0",
-        priceCurrency: "EUR",
-        name: "Gratuit",
-      },
-    ],
-  },
   {
     "@context": "https://schema.org",
     "@type": "Organization",
