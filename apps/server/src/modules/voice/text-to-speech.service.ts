@@ -20,7 +20,7 @@ interface TTSResult {
 }
 
 export interface TTSOptions {
-  language?: 'fr' | 'en' | 'es' | 'de';
+  language?: 'fr';
   schoolLevel?: EducationLevelType;
 }
 

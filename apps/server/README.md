@@ -88,29 +88,23 @@ Les variables ci-dessous peuplent la DB avec des comptes de test locaux (`bun ru
 
 ```
 src/
-├── index.ts                    # Point d'entree, graceful shutdown
+├── index.ts                    # Point d'entree, jobs de fond, graceful shutdown
 ├── app.ts                      # App Hono : middlewares, routes, AppType
+├── platform/                   # Socle sans regle metier
+│   ├── config/                 # env.ts (variables validees au boot)
+│   ├── db/                     # Migrateur runtime
+│   ├── auth/                   # better-auth, lecture de session
+│   ├── http/                   # Contexte Hono, gardes, validation, erreurs, rate limit
+│   ├── observability/          # Logger pino, OpenTelemetry, Sentry
+│   ├── ai/                     # Client Mistral
+│   └── lifecycle/              # Verification au demarrage, arret
+├── modules/                    # Un dossier par module (docs/architecture.md)
+│   └── voice/                  # TTS et transcription Voxtral
+├── db/                         # Client Drizzle, schema, repositories (composition)
 ├── config/                     # Configuration IA, education, prompts
-├── db/
-│   ├── schema.ts               # Source of truth (Drizzle)
-│   ├── connection.ts           # Pool PostgreSQL
-│   ├── migrate.ts              # Runtime migrator
-│   └── repositories/           # Data access layer
-├── lib/                        # Auth, observability
-├── middleware/                  # Auth, rate-limit, erreurs
-├── routes/                     # API endpoints
-│   ├── chat-message.routes.ts  # SSE streaming
-│   ├── file-upload.routes.ts   # Upload Scaleway
-│   ├── tts.routes.ts           # Text-to-Speech
-│   ├── learning/               # Decks, cartes, FSRS
-│   └── subscription/           # Status lecture seule (DB)
-├── services/                   # Business logic
-│   ├── chat/                   # Mistral streaming, summarization, tools
-│   ├── storage/                # Scaleway S3
-│   ├── quota/                  # Quotas tokens IA
-│   ├── voxtral-*.service.ts    # STT / TTS Mistral
-│   └── fsrs.service.ts         # Spaced repetition
-└── types/                      # Types TypeScript
+├── routes/                     # Routes pas encore rangees dans un module
+├── services/                   # Services pas encore ranges dans un module
+└── types/                      # Types TypeScript partages
 ```
 
 ## Docker Build (Production)

@@ -63,7 +63,7 @@ contraire.
   relue par un humain, injectée par notion à chaque tour. En 2026-2027 coexistent les
   programmes de 2025 (6e), de 2026 (5e, français et mathématiques) et de 2020 (4e, 3e).
 - **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
-  - la synthèse vocale (`/api/tts`, `routes/tts.routes.ts`) n'a aucun quota, seulement le
+  - la synthèse vocale (`/api/tts`, `modules/voice/voice.routes.ts`) n'a aucun quota, seulement le
     rate limit global : c'est le seul poste non borné ;
   - l'outil `generate_flashcards` du chat (`services/chat/chat-tools.ts`) n'a ni contrôle
     de plan ni quota de cartes, alors que la route `/api/learning/generate` réserve les
@@ -79,14 +79,14 @@ contraire.
     TTS n'écrivent rien dans `cost_tracking` : seul le tour de chat y est tracé ;
   - `cost_tracking.cost_cents` est un entier : un tour (environ 0,05 centime) s'arrondit
     à 0.
-- **TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues avec
-  `fr_marie_neutral` ; `/api/tts/voices` annonce `es` et `de`, qui n'ont pas de voix.
+- **TTS** : une seule voix, française (`fr_marie_*`) ; `/api/tts` n'accepte et n'annonce
+  plus que `fr` (#349). Décider s'il faut d'autres voix pour les cours de langue.
 - **Cartes** en `json_schema` non strict : le mode strict de Mistral refuse `format: uri`
   (`.url()`) et `propertyNames` (`z.record`) de `lib/ai/schemas/cards-domain.schema.ts` (400, code 3051).
   Revoir ce schéma pour repasser en strict.
 - **Quota** : `needsMonthlyReset` (`services/quota/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
   jour et de la semaine passent par date-fns. Une seule méthode.
-- `lib/text/speech-normalize.ts` à réévaluer avec la lecture vocale.
+- `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
 
 ### Lot 3 — client web
 

@@ -1,5 +1,5 @@
 /**
- * Tests unitaires — normalizeForSpeech (lib/text/speech-normalize.ts)
+ * Tests unitaires — normalizeForSpeech (modules/voice/speech-normalize.ts)
  * Valide la suppression du markdown et la conversion KaTeX en texte parlé.
  * Invariant fort : aucun `$` ni `\` résiduel après normalisation.
  */
