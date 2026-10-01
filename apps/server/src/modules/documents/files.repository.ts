@@ -4,8 +4,8 @@
  */
 
 import { eq, and, sql, desc, inArray } from 'drizzle-orm';
-import { db } from '../connection.js';
-import { files, type FileStatus } from '../schema.js';
+import { db } from '../../db/connection.js';
+import { files, type FileStatus } from './files.schema.js';
 
 // Types inférés du schéma
 export type File = typeof files.$inferSelect;
@@ -53,19 +53,6 @@ class FilesRepository {
   }
 
   /**
-   * Trouver un fichier par storageKey
-   */
-  async findByStorageKey(storageKey: string): Promise<File | undefined> {
-    const [file] = await db
-      .select()
-      .from(files)
-      .where(eq(files.storageKey, storageKey))
-      .limit(1);
-
-    return file;
-  }
-
-  /**
    * Lister les fichiers d'un utilisateur
    */
   async findByUserId(userId: string, limit = 50): Promise<File[]> {
@@ -106,13 +93,6 @@ class FilesRepository {
       .returning();
 
     return updatedFile;
-  }
-
-  /**
-   * Marquer un fichier comme supprimé (soft delete)
-   */
-  async softDelete(id: string): Promise<File | undefined> {
-    return await this.updateStatus(id, 'deleted');
   }
 
   /**

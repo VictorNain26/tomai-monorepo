@@ -91,6 +91,10 @@ mock.module('../db/repositories', () => ({
     })),
     findById: mock(async () => findMessageByIdResult),
   },
+}));
+
+mock.module('../modules/documents/index', () => ({
+  deleteFile: mock(async () => {}),
   filesRepository: {
     findById: mock(async (id: string) => {
       if (filesDeletedIds.includes(id)) return null;
@@ -116,10 +120,6 @@ mock.module('../db/schema', () => ({
 
 mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
-}));
-
-mock.module('../services/storage/scaleway-storage.service', () => ({
-  deleteFile: mock(async () => {}),
 }));
 
 // The real service pulls schema symbols this file's partial `../db/schema`

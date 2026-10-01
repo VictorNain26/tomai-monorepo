@@ -16,10 +16,10 @@
 
 import { chatSessionService } from './chat-session.service.js';
 import { chatMessageService } from './chat-message.service.js';
-import { sessionFilesRepository, studySessionsRepository } from '../../db/repositories/index.js';
+import { studySessionsRepository } from '../../db/repositories/index.js';
 import { resolveEffectiveSubject, shouldPersistDetectedSubject } from './subject-resolution.js';
 import { STUDENT_SUBJECTS } from '../../config/prompts/adaptation/subjects.js';
-import { fileContextService } from './file-context.service.js';
+import { fileContextService, sessionFilesRepository, type AttachedFileInfo, type AttachedFileForPrompt } from '../../modules/documents/index.js';
 import { getLearningContext } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
@@ -34,7 +34,6 @@ import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js'
 import type { LanguageModelUsage } from 'ai';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFile } from './ai-chat.service.js';
-import type { AttachedFileInfo, AttachedFileForPrompt } from './file-context-types.js';
 
 const MAX_ENRICHED_CONTENT_CHARS = 50_000;
 

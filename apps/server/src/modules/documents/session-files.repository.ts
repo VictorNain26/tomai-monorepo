@@ -4,8 +4,8 @@
  */
 
 import { eq, and, count } from 'drizzle-orm';
-import { db } from '../connection.js';
-import { sessionFiles, files } from '../schema.js';
+import { db } from '../../db/connection.js';
+import { sessionFiles, files } from './files.schema.js';
 
 class SessionFilesRepository {
   /**
@@ -88,24 +88,6 @@ class SessionFilesRepository {
       );
 
     return rows;
-  }
-
-  /**
-   * Vérifier si un fichier est attaché à une session
-   */
-  async isAttached(sessionId: string, fileId: string): Promise<boolean> {
-    const rows = await db
-      .select({ id: sessionFiles.id })
-      .from(sessionFiles)
-      .where(
-        and(
-          eq(sessionFiles.sessionId, sessionId),
-          eq(sessionFiles.fileId, fileId)
-        )
-      )
-      .limit(1);
-
-    return rows.length > 0;
   }
 
   /**

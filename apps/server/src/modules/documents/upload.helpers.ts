@@ -1,5 +1,5 @@
-import type { User } from '../types/auth.types.js';
-import type { EducationLevelType } from '../types/education.types.js';
+import type { User } from '../../types/auth.types.js';
+import type { EducationLevelType } from '../../types/education.types.js';
 
 // ============================================================================
 // Configuration

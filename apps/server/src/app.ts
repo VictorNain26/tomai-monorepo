@@ -14,7 +14,7 @@ import { sentryMiddleware } from './platform/observability/sentry.js';
 
 import { apiRoutes } from './routes/api/index.js';
 import { chatMessageRoutes } from './routes/chat-message.routes.js';
-import { fileUploadRoutes } from './routes/file-upload.routes.js';
+import { uploadRoutes, sessionFilesRoutes } from './modules/documents/index.js';
 import { statusRoutes } from './routes/subscription/index.js';
 import { voiceRoutes } from './modules/voice/index.js';
 import { learningRoutes } from './routes/learning/index.js';
@@ -151,7 +151,8 @@ const app = base
 
   .route('/', apiRoutes)
   .route('/api/chat', chatMessageRoutes)
-  .route('/api/upload', fileUploadRoutes)
+  .route('/api/upload', uploadRoutes)
+  .route('/api', sessionFilesRoutes)
   .route('/api/subscriptions', statusRoutes)
   .route('/api/tts', voiceRoutes)
   .route('/api/learning', learningRoutes)

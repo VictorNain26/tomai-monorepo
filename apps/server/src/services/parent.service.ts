@@ -3,10 +3,10 @@
  * Implementation split into parent/parent-dashboard.service.ts and parent/parent-types.ts
  */
 
-import { usersRepository, filesRepository } from '../db/repositories';
+import { usersRepository } from '../db/repositories';
+import { filesRepository, deleteFiles } from '../modules/documents/index.js';
 import { parentChildRepository } from '../db/repositories/parent-child.repository';
 import { logger } from '../platform/observability/logger';
-import { deleteFiles } from './storage/scaleway-storage.service';
 import { auth } from '../platform/auth/auth';
 import { hashPassword } from 'better-auth/crypto';
 import { db } from '../db/connection';

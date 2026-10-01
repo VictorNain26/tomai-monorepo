@@ -2,7 +2,7 @@ import { relations } from 'drizzle-orm';
 import { user, session, account, parentChild } from './auth.schema';
 import { studySessions, messages, costTracking, progress } from './learning.schema';
 import { learningDecks, studentCognitiveProfiles } from './learning-tools.schema';
-import { files, sessionFiles } from './files.schema';
+import { files, sessionFiles } from '../../modules/documents/files.schema';
 
 // =============================================
 // CROSS-DOMAIN RELATIONS
@@ -64,5 +64,5 @@ export type UserWithRelations = User & {
 export * from './auth.schema';
 export * from './learning.schema';
 export * from './billing.schema';
-export * from './files.schema';
+export * from '../../modules/documents/files.schema';
 export * from './learning-tools.schema';

@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Files Repository (db/repositories/files.repository.ts)
+ * Tests unitaires - Files Repository (modules/documents/files.repository.ts)
  * Mock: db.update to capture the SQL fragment passed to .set().
  *
  * Le but est de vérifier que mergeEducationalContext() émet un MERGE JSONB
@@ -50,19 +50,15 @@ const makeCol = (name: string) => ({
   toString: () => name,
 });
 
-mock.module('../db/schema', () => ({
+mock.module('../modules/documents/files.schema', () => ({
   files: {
     id: makeCol('id'),
     educationalContext: makeCol('educational_context'),
   },
-  // Also expose these so other tests running in the same Bun process after
-  // this one don't break when they import schema (mock.module cache is global).
-  learningDecks: {},
-  learningCards: {},
 }));
 
 // Import after mocks
-const { filesRepository } = await import('../db/repositories/files.repository');
+const { filesRepository } = await import('../modules/documents/files.repository');
 
 /**
  * Serialize a drizzle SQL template object into a single string for assertion.
