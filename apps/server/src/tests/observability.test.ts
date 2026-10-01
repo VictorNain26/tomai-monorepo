@@ -35,6 +35,21 @@ describe('logger', () => {
     expect(err.stack).toContain('kaput');
   });
 
+  it('never logs other properties of an Error, such as an AI SDK request body', () => {
+    const [line] = logLines(`
+      const cause = Object.assign(new Error('upstream'), { code: 'ECONNRESET' });
+      const e = Object.assign(new Error('call failed', { cause }), {
+        statusCode: 503,
+        requestBodyValues: { messages: [{ role: 'user', content: 'secret pupil text' }] },
+      });
+      logger.error('ai', { err: e, severity: 'high' });
+    `);
+    const err = line?.['err'] as Record<string, unknown>;
+    expect(JSON.stringify(line)).not.toContain('secret pupil text');
+    expect(err).toMatchObject({ type: 'Error', message: 'call failed', statusCode: 503 });
+    expect(err['cause']).toMatchObject({ message: 'upstream', code: 'ECONNRESET' });
+  });
+
   it('does not throw on a BigInt or a circular reference', () => {
     const lines = logLines(
       `const a = {}; a.self = a; logger.info('big', { n: 10n }); logger.info('circular', { a });`,

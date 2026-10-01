@@ -91,7 +91,7 @@ export const fsrsExtraRoutes = new Hono<AuthEnv>()
         operation: 'learning:reset:error',
         userId: user.id,
         deckId,
-        err: errorMessage,
+        err: error,
         severity: 'medium' as const,
       });
       return c.json({ error: 'Échec de la réinitialisation' }, 500);

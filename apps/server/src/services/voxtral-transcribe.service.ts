@@ -59,7 +59,7 @@ class VoxtralTranscribeService {
       if (!response.text) {
         logger.error('Voxtral STT returned empty text', {
           operation: 'voxtral:stt',
-          err: 'empty transcription',
+          reason: 'empty transcription',
           severity: 'high' as const,
         });
         return { success: false, error: 'Voxtral STT returned empty transcription' };

@@ -132,7 +132,7 @@ const app = base
       logger.error('AI health check failed', {
         operation: 'health:ai:failed',
         model,
-        err: errorMessage,
+        err: error,
         errorType,
         latencyMs,
         severity: 'high' as const,

@@ -34,7 +34,7 @@ class FileContextService {
     } catch (error) {
       logger.warn('Failed to retrieve file metadata', {
         fileId,
-        error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'retrieve-file-metadata'
       });
       return null;
@@ -154,7 +154,7 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       const fileContent = await scalewayStorageService.getFileContent(file.storageKey);
       if (!fileContent) {
         logger.error('Failed to retrieve file from storage', {
-          err: 'Storage returned null',
+          reason: 'Storage returned null',
           fileId,
           storageKey: file.storageKey,
           operation: 'analyze-file',

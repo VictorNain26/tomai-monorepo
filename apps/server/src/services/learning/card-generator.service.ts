@@ -131,7 +131,7 @@ export async function generateCards(
       operation: 'learning:generate:start',
       topic: params.topic,
       subject: params.subject,
-      level: params.level,
+      schoolLevel: params.level,
       requestedCards: params.cardCount
     });
 
@@ -156,7 +156,7 @@ export async function generateCards(
       operation: 'learning:generate:complete',
       topic: params.topic,
       subject: params.subject,
-      level: params.level,
+      schoolLevel: params.level,
       cardsGenerated: cards.length,
       requestedCards: params.cardCount,
       tokensUsed,
@@ -183,7 +183,6 @@ export async function generateCards(
     }
 
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
 
     // Detect specific error types for better diagnostics
     const isRateLimit = errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit');
@@ -200,11 +199,10 @@ export async function generateCards(
       operation: 'learning:generate:error',
       topic: params.topic,
       subject: params.subject,
-      level: params.level,
+      schoolLevel: params.level,
       cardCount: params.cardCount,
       durationMs: Date.now() - startTime,
-      err: errorMessage,
-      stack: errorStack,
+      err: error,
       errorType: isRateLimit ? 'rate_limit' : isApiKey ? 'api_key' : isModelNotFound ? 'model_not_found' : isQuota ? 'quota' : isUnavailable ? 'unavailable' : 'unknown',
       severity: 'high' as const
     });

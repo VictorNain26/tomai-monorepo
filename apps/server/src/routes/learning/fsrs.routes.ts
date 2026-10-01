@@ -173,7 +173,7 @@ export const fsrsRoutes = new Hono<AuthEnv>()
           operation: 'learning:due:error',
           userId: user.id,
           deckId,
-          err: errorMessage,
+          err: error,
           severity: 'medium' as const,
         });
         return c.json({ error: 'Échec de la récupération des cartes' }, 500);
@@ -215,7 +215,7 @@ export const fsrsRoutes = new Hono<AuthEnv>()
         operation: 'learning:stats:error',
         userId: user.id,
         deckId,
-        err: errorMessage,
+        err: error,
         severity: 'medium' as const,
       });
       return c.json({ error: 'Échec de la récupération des statistiques' }, 500);

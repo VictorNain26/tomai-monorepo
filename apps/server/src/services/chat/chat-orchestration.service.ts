@@ -216,7 +216,7 @@ class ChatOrchestrationService {
       subject: effectiveSubject,
       detectedSubject,
       sessionId,
-      level: request.schoolLevel,
+      schoolLevel: request.schoolLevel,
       filesCount: request.fileIds.length,
       multimodalFilesCount: multimodalFiles.length,
       intent: classifiedIntent.intent,

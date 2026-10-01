@@ -121,7 +121,7 @@ class IntentClassifierService {
       const errorMessage = err instanceof Error ? err.message : String(err);
       logger.error('Intent classifier failed', {
         operation: 'intent-classifier:error',
-        err: errorMessage,
+        err: err,
         durationMs: Date.now() - startTime,
         severity: 'high' as const,
       });

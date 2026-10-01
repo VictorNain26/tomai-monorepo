@@ -228,7 +228,7 @@ export class ParentService {
 
       const checkUser = await usersRepository.findById(childId);
       if (checkUser) {
-        logger.error('CRITICAL: Child still exists after deletion', { operation: 'parent:child:delete:verify', err: 'Child persists after delete query', childId, parentId, severity: 'critical' as const });
+        logger.error('CRITICAL: Child still exists after deletion', { operation: 'parent:child:delete:verify', reason: 'Child persists after delete query', childId, parentId, severity: 'critical' as const });
         throw new Error('Deletion failed: User still exists in database');
       }
 
@@ -241,7 +241,7 @@ export class ParentService {
       if (filesFailedKeys.length > 0) {
         logger.error('S3 purge failed for some child files', {
           operation: 'parent:delete-child-s3-purge',
-          err: 'deleteFiles reported failures (S3 errors already logged by storage service)',
+          reason: 'deleteFiles reported failures (S3 errors already logged by storage service)',
           failedCount: filesFailedKeys.length,
           childId,
           severity: 'high' as const,

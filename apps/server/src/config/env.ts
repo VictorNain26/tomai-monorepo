@@ -7,6 +7,7 @@
  */
 
 import { z } from 'zod';
+import { LOG_LEVELS } from '../lib/log-levels.js';
 import { existsSync } from 'node:fs';
 import { resolveDatabaseUrl } from './database-url.js';
 
@@ -105,7 +106,7 @@ const EnvSchema = z.object({
 
   // Observability
   GIT_COMMIT_SHA: z.string().default('unknown'),
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
 
   // Logging/Monitoring (optional)

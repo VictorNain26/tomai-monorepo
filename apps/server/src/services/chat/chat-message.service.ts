@@ -95,7 +95,7 @@ export class ChatMessageService {
         const session = await studySessionsRepository.findById(sessionId);
         if (!session) {
           logger.error('Session not found', {
-            err: `Session ${sessionId} not found`,
+            reason: `Session ${sessionId} not found`,
             operation: 'saveMessage',
             sessionId,
             severity: 'high' as const

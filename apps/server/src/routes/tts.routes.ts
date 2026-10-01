@@ -49,7 +49,7 @@ export const ttsRoutes = new Hono<AppEnv>()
           logger.error('TTS synthesis failed', {
             operation: 'tts:route:synthesize',
             userId: user.id,
-            err: result._error ?? 'Unknown TTS error',
+            reason: result._error ?? 'Unknown TTS error',
             severity: 'medium' as const
           });
 

@@ -67,7 +67,7 @@ export async function prepareMultimodalFiles(fileIds: string[]): Promise<Multimo
     } catch (error) {
       logger.warn('Failed to prepare multimodal file', {
         fileId,
-        error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'prepare-multimodal',
       });
     }
@@ -110,7 +110,7 @@ export async function updateFileAnalysis(
     });
   } catch (error) {
     logger.warn('Failed to update file analysis in DB', {
-      error: error instanceof Error ? error.message : String(error),
+      err: error,
       fileId,
       operation: 'update-file-analysis',
     });
