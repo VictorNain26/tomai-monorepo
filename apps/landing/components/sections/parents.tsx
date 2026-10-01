@@ -5,7 +5,7 @@ import { Highlight } from "../annotations/highlight";
 
 const POINTS = [
   { icon: LineChart, title: "Un résumé", body: "Matières travaillées, temps passé, notions qui résistent." },
-  { icon: BellRing, title: "Des alertes", body: "Quand une difficulté revient, vous êtes prévenu." },
+  { icon: BellRing, title: "Une alerte", body: "Si votre enfant confie qu'il va mal, vous êtes prévenu." },
   { icon: CalendarDays, title: "Pronote", body: "Devoirs, notes et emploi du temps : Tom part de ce qui est vraiment à faire." },
   { icon: EyeOff, title: "Pas les conversations", body: "Votre enfant garde un espace à lui. Vous suivez ses progrès, pas ses messages." },
 ];
