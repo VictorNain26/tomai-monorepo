@@ -26,8 +26,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
   TURBO_SCM_BASE: origin/main
 
 jobs:
@@ -114,11 +112,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
-      - name: Prepare integration DB (pgvector extension + migrations)
-        run: |
-          until pg_isready -h localhost -U postgres; do echo "waiting for postgres..."; sleep 1; done
-          PGPASSWORD=postgres psql -h localhost -U postgres -d test -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          cd apps/server && bun run db:migrate
+      - name: Script tests
+        run: bun run test:scripts
+      # The runner starts steps once the postgres service is healthy, and the
+      # migrator creates the vector extension under its advisory lock.
+      - name: Prepare integration DB (migrations)
+        run: cd apps/server && bun run db:migrate
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}

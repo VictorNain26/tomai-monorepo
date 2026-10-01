@@ -45,7 +45,6 @@ services:
       # Hot-reload: mount sources (contexte = racine du monorepo)
       - ./apps/server/src:/app/apps/server/src:ro
       - ./apps/server/drizzle:/app/apps/server/drizzle:ro
-      - ./apps/server/scripts:/app/apps/server/scripts:ro
       - ./apps/server/tsconfig.json:/app/apps/server/tsconfig.json:ro
       - ./apps/server/drizzle.config.ts:/app/apps/server/drizzle.config.ts:ro
     depends_on:
