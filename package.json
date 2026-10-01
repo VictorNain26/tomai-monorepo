@@ -51,6 +51,8 @@
     "sharp"
   ],
   "overrides": {
-    "@esbuild-kit/core-utils>esbuild": ">=0.25.0"
+    "@esbuild-kit/core-utils": {
+      "esbuild": ">=0.25.0"
+    }
   }
 }
