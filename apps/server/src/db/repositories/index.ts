@@ -1,4 +1,3 @@
-export { usersRepository } from './users.repository';
 export { progressRepository } from './progress.repository';
 
 // Export database connection and schema for advanced queries

@@ -1,11 +1,8 @@
 /**
  * Cost Tracking Service — persist per-call AI spend.
  *
- * The `cost_tracking` table has existed for a while (see
- * progress.service.getCostTracking) but was never populated by the chat
- * pipeline, leaving dashboards empty. This service computes a per-message
- * cost in cents from model pricing and inserts a row after each assistant
- * response.
+ * Computes a per-message cost in cents from model pricing and inserts a
+ * `cost_tracking` row after each assistant response.
  *
  * Pricing is expressed in USD per million tokens, as published by Mistral,
  * keyed by dated model id (no aliases: an alias can silently change price).

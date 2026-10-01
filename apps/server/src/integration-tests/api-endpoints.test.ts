@@ -173,18 +173,10 @@ mock.module('../modules/tutor/chat-message.service', () => ({
   },
 }));
 
-mock.module('../services/parent.service', () => ({
+mock.module('../modules/family/parent.service', () => ({
   parentService: {
     getParentChildren: mock(async () => []),
     getParentDashboardMetrics: mock(async () => []),
-  },
-}));
-
-mock.module('../services/progress.service', () => ({
-  progressService: {
-    getStudentStats: mock(async () => ({
-      totalSessions: 5, totalStudyTime: 120, conceptsLearned: 10, averageFrustration: 1.5,
-    })),
   },
 }));
 
@@ -208,7 +200,8 @@ mock.module('../modules/learning/index', () => ({
 // The mock must spread all real sub-modules so that other integration tests
 // sharing this Bun process (single module registry) can still import named
 // exports such as `user`, `parentChild`, etc.
-import * as authSchema from '../db/schema/auth.schema';
+import * as authSchema from '../modules/auth/auth.schema';
+import * as familySchema from '../modules/family/family.schema';
 import * as sessionSchema from '../modules/tutor/session.schema';
 import * as progressSchema from '../db/schema/progress.schema';
 import * as costTrackingSchema from '../db/schema/cost-tracking.schema';
@@ -218,6 +211,7 @@ import * as decksSchema from '../modules/learning/decks.schema';
 import * as cognitiveProfileSchema from '../modules/tutor/cognitive-profile.schema';
 mock.module('../db/schema', () => ({
   ...authSchema,
+  ...familySchema,
   ...sessionSchema,
   ...progressSchema,
   ...costTrackingSchema,

@@ -10,9 +10,9 @@
 import { Hono } from 'hono';
 import { requireParent, requireUser, type AppEnv } from '../../platform/http/context.js';
 import { subscriptionService } from '../../services/subscription.service.js';
-import { usersRepository } from '../../db/repositories/users.repository.js';
+import { usersRepository } from '../../modules/auth/index.js';
 import { verifyParentIdMatch } from './helpers.js';
-import { parentChildRepository } from '../../db/repositories/parent-child.repository.js';
+import { parentChildRepository } from '../../modules/family/index.js';
 
 // Mounted under /api/subscriptions by app.ts.
 export const statusRoutes = new Hono<AppEnv>()

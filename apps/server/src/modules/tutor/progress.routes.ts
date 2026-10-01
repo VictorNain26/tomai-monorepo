@@ -1,14 +1,18 @@
 import { Hono } from 'hono';
 import { requireUser, type AppEnv } from '../../platform/http/context.js';
-import { progressService } from '../../services/progress.service';
+import { progressRepository } from '../../db/repositories';
+import { getStudyStats } from './study-stats.js';
 import { logger } from '../../platform/observability/logger';
 
-export const progressApiRoutes = new Hono<AppEnv>()
+export const progressRoutes = new Hono<AppEnv>()
 
   .get('/progress/dashboard', requireUser, async (c) => {
     const user = c.var.user;
     try {
-      const stats = await progressService.getStudentStats(user.id);
+      const [sessionStats, progressSummary] = await Promise.all([
+        getStudyStats(user.id),
+        progressRepository.getProgressSummary(user.id),
+      ]);
       return c.json({
         success: true,
         student: {
@@ -17,10 +21,10 @@ export const progressApiRoutes = new Hono<AppEnv>()
           level: user.schoolLevel
         },
         stats: {
-          totalSessions: stats.totalSessions,
-          totalStudyTime: stats.totalStudyTime,
-          conceptsLearned: stats.conceptsLearned,
-          averageFrustration: stats.averageFrustration
+          totalSessions: sessionStats.totalSessions,
+          totalStudyTime: sessionStats.totalMinutes,
+          conceptsLearned: progressSummary.totalConcepts,
+          averageFrustration: sessionStats.averageFrustration
         }
       });
     } catch (_error) {

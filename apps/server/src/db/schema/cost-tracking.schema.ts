@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import { user } from './auth.schema';
+import { user } from '../../modules/auth/auth.schema';
 import { studySessions } from '../../modules/tutor/session.schema';
 
 /**

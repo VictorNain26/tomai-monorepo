@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import { user, schoolLevelEnum } from '../../db/schema/auth.schema';
+import { user, schoolLevelEnum } from '../auth/auth.schema';
 
 // =============================================
 // ENUMS

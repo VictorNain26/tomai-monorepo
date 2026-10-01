@@ -37,8 +37,9 @@ if (!dbReachable) {
 // ============================================================
 
 let auth: Awaited<typeof import('../platform/auth/auth')>['auth'];
-let parentService: InstanceType<typeof import('../services/parent.service')['ParentService']>;
+let parentService: InstanceType<typeof import('../modules/family/parent.service')['ParentService']>;
 let createdParentId: string;
+let createdChildId: string;
 let childUsername: string;
 const childPassword = 'child-password-123!';
 
@@ -48,7 +49,7 @@ beforeAll(async () => {
   const authMod = await import('../platform/auth/auth');
   auth = authMod.auth;
 
-  const { ParentService } = await import('../services/parent.service');
+  const { ParentService } = await import('../modules/family/parent.service');
   parentService = new ParentService();
 
   // Create a parent account to own the child
@@ -64,7 +65,7 @@ beforeAll(async () => {
 
   // Create the child via parentService (mirrors production flow)
   childUsername = `kid_${suffix}`;
-  await parentService.createChild(createdParentId, {
+  const child = await parentService.createChild(createdParentId, {
     firstName: 'Test',
     lastName: 'Child',
     username: childUsername,
@@ -72,17 +73,16 @@ beforeAll(async () => {
     schoolLevel: 'sixieme',
     dateOfBirth: '2014-03-01',
   });
+  createdChildId = child.id;
 });
 
 afterAll(async () => {
   if (!dbReachable) return;
-  // Best-effort cleanup — cascade delete handles child via parent_child FK
-  if (createdParentId) {
-    const { db } = await import('../db/connection');
-    const { user } = await import('../db/schema');
-    const { eq } = await import('drizzle-orm');
-    await db.delete(user).where(eq(user.id, createdParentId)).catch(() => null);
-  }
+  // Best-effort cleanup. Deleting the parent cascades only to the parent_child link, not to the child account.
+  const { db } = await import('../db/connection');
+  const { user } = await import('../db/schema');
+  const { inArray } = await import('drizzle-orm');
+  await db.delete(user).where(inArray(user.id, [createdParentId, createdChildId].filter(Boolean))).catch(() => null);
 });
 
 // ============================================================
@@ -120,5 +120,18 @@ describe.skipIf(!dbReachable)('username plugin — autonomous child login', () =
       threw = true;
     }
     expect(threw).toBe(true);
+  });
+
+  it('signs in with the new password once setPassword replaced it', async () => {
+    const { setPassword } = await import('../modules/auth/index');
+    const newPassword = 'new-child-password-789!';
+
+    await setPassword(createdChildId, newPassword);
+
+    const signedIn = await auth.api.signInUsername({ body: { username: childUsername, password: newPassword } });
+    expect(signedIn?.user?.username).toBe(childUsername);
+    const oldPassword = await auth.api.signInUsername({ body: { username: childUsername, password: childPassword } })
+      .then(() => undefined, (error: unknown) => error);
+    expect(oldPassword).toBeInstanceOf(Error);
   });
 });

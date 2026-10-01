@@ -17,11 +17,11 @@ bloquant levé).
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
   - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349),
-    module `documents` (#350), module `learning` (#351), module `tutor` (#352) ;
-    restent, dans l'ordre, `auth` et `family`, `billing`
+    module `documents` (#350), module `learning` (#351), module `tutor` (#352),
+    modules `auth` et `family` (#353) ; reste `billing`
     (rangement cible : `architecture.md`, « Monolithe modulaire ») ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** refonte des modules `auth` et `family`, sur une branche courte dont le plan
+- **Prochaine action :** refonte du module `billing`, sur une branche courte dont le plan
   s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
@@ -37,19 +37,13 @@ contraire.
 ### Lot 0 — lint strict
 
 - `eslint-disable` antérieurs dans `apps/server/src` (repositories learning,
-  `parent.service.ts`, `education-levels.ts`, `seed-dev.ts`,
+  `education-levels.ts`, `seed-dev.ts`,
   `modules/tutor/chat-message.routes.ts` (`no-control-regex` dans `sanitizePrompt`)), à remplacer
   par une forme de code qui ne déclenche pas la règle.
   Configuration visée (relevée dans l'ancien plan d'E2) : config
   partagée `strictTypeChecked` et `stylisticTypeChecked`, `noInlineConfig`,
   `reportUnusedDisableDirectives: 'error'`, `only-warn` retiré) : c'est la quatrième PR
   du lot 0 dans la roadmap.
-
-### Lot 0 — modules `auth` et `family`
-
-- `services/progress.service.ts` et `services/parent/parent-dashboard.service.ts` interrogent
-  directement `study_sessions` et `messages`, tables du tuteur : les faire passer par
-  `modules/tutor/index.ts` (#352).
 
 ### Lot 1 — harnais d'évaluation
 
@@ -109,11 +103,10 @@ contraire.
   (`platform/http/error-handler.ts`) renvoie toujours le même message générique,
   sans dire quel champ est faux. Les formulaires d'enfant en auront besoin : exposer les
   champs en erreur dans l'enveloppe, pour toutes les routes.
-- **Tableau de bord parent** : `ParentDashboardService.getSessionMessages`
-  (`services/parent/parent-dashboard.service.ts`), relayée par
-  `ParentService.getSessionMessages`, renvoie le texte complet des messages d'une séance de
-  l'enfant. Aucune route ne l'expose sur `main` depuis la suppression du mobile, mais le
-  service existe : à supprimer, le parent ne voit que le résumé et l'alerte de détresse.
+- **Tableaux de bord** : aucun code n'écrit la table `progress`, donc `conceptsLearned` de
+  `/api/progress/dashboard` vaut toujours 0 ; l'alimenter ou supprimer table, dépôt et champ
+  avec le tableau de bord du client web. La table `parent_restore_token` (bascule rapide du
+  mobile) n'est plus lue ni écrite : la supprimer par migration (#353).
 - **Facturation** : colonnes `revenuecat_customer_id` et `revenuecat_subscription_id` de
   `family_billing`, enum `billing_status` et commentaires RevenueCat de
   `db/schema/billing.schema.ts`, restes du mobile, refaits avec le paiement web.
@@ -219,4 +212,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   (#350). Module `learning` ; le tuteur lit les signaux de révision par le service du
   module au lieu d'interroger ses tables (#351). Module `tutor` : le classeur de séance
   passe de `documents` au tuteur, la purge RGPD quitte `platform`, et le contrôle de
-  migrations de la CI couvre enfin les schémas des modules (#352).
+  migrations de la CI couvre enfin les schémas des modules (#352). Modules `auth` et
+  `family` : les comptes élèves passent par `auth`, le tableau de bord parent lit les
+  statistiques du tuteur, et le code qui exposait au parent le texte des séances est
+  supprimé avec le reste du code mort (#353).

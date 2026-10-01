@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, timestamp, jsonb, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import { user } from '../../db/schema/auth.schema';
+import { user } from '../auth/auth.schema';
 
 /**
  * Table student_cognitive_profiles - Profil cognitif persistant

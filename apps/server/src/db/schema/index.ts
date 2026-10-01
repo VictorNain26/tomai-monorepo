@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
-import { user, session, account, parentChild } from './auth.schema';
+import { user, session, account } from '../../modules/auth/auth.schema';
+import { parentChild } from '../../modules/family/family.schema';
 import { studySessions, messages } from '../../modules/tutor/session.schema';
 import { progress } from './progress.schema';
 import { costTracking } from './cost-tracking.schema';
@@ -51,7 +52,7 @@ export const studySessionsRelations = relations(studySessions, ({ one, many }) =
 // =============================================
 // CROSS-DOMAIN TYPES
 // =============================================
-import type { User, Session, Account } from './auth.schema';
+import type { User, Session, Account } from '../../modules/auth/auth.schema';
 import type { StudySession } from '../../modules/tutor/session.schema';
 import type { Progress } from './progress.schema';
 
@@ -65,7 +66,8 @@ export type UserWithRelations = User & {
 // =============================================
 // RE-EXPORTS
 // =============================================
-export * from './auth.schema';
+export * from '../../modules/auth/auth.schema';
+export * from '../../modules/family/family.schema';
 export * from '../../modules/tutor/session.schema';
 export * from './progress.schema';
 export * from './cost-tracking.schema';
