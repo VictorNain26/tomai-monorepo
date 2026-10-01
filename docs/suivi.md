@@ -16,13 +16,14 @@ bloquant levé).
   remplacer par Bun tout ce qu'il remplace proprement et une refonte complète du serveur.
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
-  - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349) ;
-    restent, dans l'ordre, `documents`, `learning`, `tutor`, `auth` et `family`, `billing`
+  - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349),
+    module `documents` (`refactor/server-documents`) ;
+    restent, dans l'ordre, `learning`, `tutor`, `auth` et `family`, `billing`
     (rangement cible : `architecture.md`, « Monolithe modulaire ») ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** refonte du module `documents`, sur une branche courte dont le plan
+- **Prochaine action :** refonte du module `learning`, sur une branche courte dont le plan
   s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** `refactor/server-documents` (module `documents`).
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -110,6 +111,11 @@ contraire.
   `db/schema/billing.schema.ts`, restes du mobile, refaits avec le paiement web.
 - `config/app-guide/app-guide-data.ts` (outil `get_app_help`) décrit l'application mobile
   et l'abonnement : à réécrire avec la navigation web.
+- **Suppression de fichier** : `DELETE /api/upload/file/:fileId`
+  (`modules/documents/upload.routes.ts`) et `deleteSession` (`services/chat/session-cleanup.ts`)
+  effacent la ligne `files` même quand la suppression S3 échoue (`deleteFile` rend `false`
+  sans lever) : l'objet de l'élève reste en stockage et plus rien ne le référence. Garder
+  la ligne et répondre en erreur, avec test.
 - **Hébergement** : délai de grâce SIGTERM au moins égal à un tour de chat (`app.stop()`
   attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
   `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
@@ -204,4 +210,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   il émet `mobile-web-app-capable` au lieu de `apple-mobile-web-app-capable`.
   Logger sur pino (même API, `LOG_LEVEL` appliqué, erreurs loggées avec leur stack sous
   `err`) (#347).
-  Refonte du serveur commencée : socle sous `src/platform/` (#348), module `voice` (#349).
+  Refonte du serveur commencée : socle sous `src/platform/` (#348), module `voice` (#349),
+  module `documents`, premier module qui porte ses tables (`refactor/server-documents`).
