@@ -1,7 +1,8 @@
 # Tom Monorepo
 
-Assistant scolaire IA socratique pour élèves français, avec supervision parentale
-et intégration Pronote. Pré-lancement : aucun utilisateur en production.
+Tuteur IA pour les devoirs des collégiens (6e à 3e) : il aide l'élève à trouver sans
+faire l'exercice à sa place, et le parent reçoit un résumé de la semaine, jamais les
+conversations. Pré-lancement : aucun utilisateur en production.
 
 ## Démarrage
 
@@ -11,11 +12,11 @@ pnpm run setup               # .env, BETTER_AUTH_SECRET, postgres, migrations Dr
 pnpm dev                     # infra Docker + server :3000 + landing :3001
 ```
 
-Arrêt de l'infra : `pnpm dev:down`. Documentation d'API en dev :
+Arrêt de l'infra : `pnpm dev:down`. Documentation d'API en dev :
 http://localhost:3000/swagger
 
 `pnpm dev` démarre l'infra puis **attend que postgres soit `healthy`** avant de
-lancer les apps ; si l'infra est incomplète, rien ne démarre. `pnpm run doctor` donne
+lancer les apps ; si l'infra est incomplète, rien ne démarre. `pnpm run doctor` donne
 le détail, `pnpm doctor:e2e` la version stricte où un `SKIP` compte comme un échec.
 
 ## Structure
@@ -40,13 +41,12 @@ packages/
 | Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
 | Auth | Better Auth 1.7 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |
-| IA | Mistral Small 4 — chat, vision multimodale, OCR, TTS et STT Voxtral. Stack 100 % EU |
-| Vie scolaire | Pronote via `pawnote`, **serveur uniquement** (lib GPL, tokens rotatifs) |
+| IA | Mistral Small 4 — chat, vision multimodale, OCR, TTS et STT Voxtral. Stack 100 % EU |
 | Paiements | Aucun branché. Paiement web prévu au lot 3 |
 | Stockage | Scaleway S3 (fr-par), uploads par URL présignée |
 | Observabilité | Sentry initialisé sur server et landing. La région dépend du DSN, absent du dépôt. Pas d'analytics installée |
 | Monorepo | Turborepo, pnpm workspaces |
-| Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, rien de déployé ; hébergeur tranché au lot 3 |
+| Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, rien de déployé ; hébergeur tranché au lot 3 |
 
 ## Commandes
 
@@ -61,13 +61,22 @@ pnpm db:push                  # sync direct du schéma, dev local uniquement
 
 ## Git
 
-`main` est la seule branche permanente : jamais de push direct, toujours une PR,
+`main` est la seule branche permanente : jamais de push direct, toujours une PR,
 et merge commit — jamais de squash.
 
 ## Documentation
 
-`README.md` (ici) décrit la stack et le démarrage ; `CLAUDE.md` porte les
+`README.md` (ici) décrit la stack et le démarrage ; `CLAUDE.md` porte les
 instructions destinées aux agents.
 
-Chaque app a sa propre doc : [server](./apps/server/CLAUDE.md) ·
+Produit et avancement, dans `docs/` :
+[vision produit](./docs/vision.md) (pour qui,
+promesse, prix, périmètre) · [roadmap](./docs/roadmap.md) ·
+[suivi](./docs/suivi.md) (où on en est) · specs techniques
+[cible V1](./docs/architecture.md) et
+[agent IA](./docs/agent.md).
+
+Pronote est hors V1 : son code, encore présent côté serveur, est retiré au lot 0.
+
+Chaque app a sa propre doc : [server](./apps/server/CLAUDE.md) ·
 [landing](./apps/landing/CLAUDE.md)
