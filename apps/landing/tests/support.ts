@@ -34,6 +34,6 @@ export function hiddenReveals(page: Page) {
   return page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("[data-reveal]")]
       .filter((el) => getComputedStyle(el).opacity !== "1" || getComputedStyle(el).transform !== "none")
-      .map((el) => el.textContent?.trim().slice(0, 40) ?? ""),
+      .map((el) => el.textContent.trim().slice(0, 40)),
   );
 }

@@ -20,15 +20,13 @@ export function FaqList() {
             id={`faq-question-${index}`}
             aria-expanded={openIndex === index}
             aria-controls={`faq-answer-${index}`}
-            onClick={() => setOpenIndex(openIndex === index ? null : index)}
+            onClick={() => { setOpenIndex(openIndex === index ? null : index); }}
             className="w-full flex items-center justify-between p-4 text-left min-h-11 focus-visible:ring-inset sm:p-6"
           >
             <div className="flex items-center gap-4">
-              {faq.icon && (
-                <div className={`hidden size-10 items-center justify-center rounded-full shrink-0 ${openIndex === index ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'} transition-colors sm:flex`}>
-                  <faq.icon className="size-5" />
-                </div>
-              )}
+              <div className={`hidden size-10 items-center justify-center rounded-full shrink-0 ${openIndex === index ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'} transition-colors sm:flex`}>
+                <faq.icon className="size-5" />
+              </div>
               <span className="font-bold text-base sm:text-lg text-foreground">
                 {faq.question}
               </span>
