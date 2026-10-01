@@ -51,7 +51,10 @@ Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par modu
   (vérification au démarrage).
 - `apps/server/src/db/` : point de composition des données — le client Drizzle et le
   schéma qui réunit les tables de tous les modules (les requêtes relationnelles de Drizzle
-  en ont besoin). `index.ts`, de même, démarre et arrête les jobs des modules.
+  en ont besoin). Seule exception à la règle de l'index : ce schéma importe directement le
+  fichier `*.schema.ts` de chaque module, car passer par `index.ts` chargerait routes et
+  clients externes dans `drizzle-kit`. `src/index.ts`, de même, démarre et arrête les jobs des
+  modules.
 - `apps/server/src/modules/<module>/` : routes Hono du module (montées par `app.ts` sur
   son préfixe), services, dépôts, tables Drizzle et schémas Zod, avec un `index.ts` pour
   ce que les autres modules ont le droit d'appeler.

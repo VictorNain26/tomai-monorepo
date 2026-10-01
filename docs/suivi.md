@@ -111,11 +111,6 @@ contraire.
   `db/schema/billing.schema.ts`, restes du mobile, refaits avec le paiement web.
 - `config/app-guide/app-guide-data.ts` (outil `get_app_help`) décrit l'application mobile
   et l'abonnement : à réécrire avec la navigation web.
-- **Suppression de fichier** : `DELETE /api/upload/file/:fileId`
-  (`modules/documents/upload.routes.ts`) et `deleteSession` (`services/chat/session-cleanup.ts`)
-  effacent la ligne `files` même quand la suppression S3 échoue (`deleteFile` rend `false`
-  sans lever) : l'objet de l'élève reste en stockage et plus rien ne le référence. Garder
-  la ligne et répondre en erreur, avec test.
 - **Hébergement** : délai de grâce SIGTERM au moins égal à un tour de chat (`app.stop()`
   attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
   `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
@@ -211,4 +206,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Logger sur pino (même API, `LOG_LEVEL` appliqué, erreurs loggées avec leur stack sous
   `err`) (#347).
   Refonte du serveur commencée : socle sous `src/platform/` (#348), module `voice` (#349),
-  module `documents`, premier module qui porte ses tables (`refactor/server-documents`).
+  module `documents`, premier module qui porte ses tables ; une suppression de fichier
+  garde la ligne quand le stockage échoue, au lieu de laisser un objet d'élève orphelin
+  (`refactor/server-documents`).
