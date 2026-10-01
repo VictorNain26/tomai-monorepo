@@ -6,7 +6,7 @@
 import { eq, desc, count, sql } from 'drizzle-orm';
 import { getTableColumns } from 'drizzle-orm';
 import { db } from '../../db/connection';
-import { studySessions, messages, type StudySession } from '../../db/schema';
+import { studySessions, messages, type StudySession } from './session.schema.js';
 
 /**
  * Input type pour création session

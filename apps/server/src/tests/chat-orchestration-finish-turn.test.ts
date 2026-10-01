@@ -1,5 +1,5 @@
 /**
- * Tests — ChatOrchestrationService.finishTurn (services/chat/chat-orchestration.service.ts)
+ * Tests — ChatOrchestrationService.finishTurn (modules/tutor/chat-orchestration.service.ts)
  *
  * Mirrors the legacy SSE pipeline's `postProcess`, which only ever ran on a
  * `done` chunk (never on a stream that errored before producing content):

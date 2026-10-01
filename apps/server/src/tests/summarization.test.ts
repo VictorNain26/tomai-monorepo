@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Summarization Service (services/chat/summarization.service.ts)
+ * Tests unitaires - Summarization Service (modules/tutor/summarization.service.ts)
  * Mock: DB repos + Gemini + logger
  */
 

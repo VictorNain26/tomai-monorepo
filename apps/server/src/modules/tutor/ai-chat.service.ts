@@ -41,7 +41,7 @@ import type { MistralMessage, MistralContentPart } from '../../platform/ai/mistr
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
-/** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
+/** Bump whenever content under modules/tutor/prompts/** or shared/pedagogy/** changes. */
 const PROMPT_VERSION = '2026-10-01';
 
 export interface AttachedFile {

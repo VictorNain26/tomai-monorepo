@@ -122,7 +122,7 @@ mock.module('../db/connection', () => ({
   },
 }));
 
-mock.module('../db/schema', () => ({
+mock.module('../modules/tutor/session.schema', () => ({
   messages: { sessionId: 'sessionId' },
 }));
 

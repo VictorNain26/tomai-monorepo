@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '../../db/connection';
-import { studentSubjectProfiles, type StudentSubjectProfile } from '../../db/schema';
+import { studentSubjectProfiles, type StudentSubjectProfile } from './session.schema.js';
 
 const MAX_CONCEPTS = 100;
 const MAX_DIFFICULTIES = 50;

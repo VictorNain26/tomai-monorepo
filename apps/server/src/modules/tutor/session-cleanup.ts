@@ -11,7 +11,7 @@ import { studySessionsRepository } from './study-sessions.repository.js';
 import { messagesRepository } from './messages.repository.js';
 import { filesRepository, deleteFile as deleteScalewayFile } from '../documents/index.js';
 import { db } from '../../db/connection';
-import { messages } from '../../db/schema';
+import { messages } from './session.schema.js';
 import { logger } from '../../platform/observability/logger';
 
 /**

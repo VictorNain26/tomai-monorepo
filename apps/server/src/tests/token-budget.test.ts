@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Token Budget Service (services/chat/token-budget.service.ts)
+ * Tests unitaires - Token Budget Service (modules/tutor/token-budget.service.ts)
  * 0 mocks — fonctions pures
  */
 

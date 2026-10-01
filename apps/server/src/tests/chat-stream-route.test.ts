@@ -1,5 +1,5 @@
 /**
- * Tests — Chat stream route (routes/chat-message.routes.ts)
+ * Tests — Chat stream route (modules/tutor/chat-message.routes.ts)
  *
  * Covers the guards that stay plain JSON before the UI Message Stream
  * starts (auth, quota, concurrency) and the post-stream contract:

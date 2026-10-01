@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { db } from '../../db/connection';
-import { sessionEpisodes, type NewSessionEpisode } from '../../db/schema';
+import { sessionEpisodes, type NewSessionEpisode } from './session.schema.js';
 
 type EpisodeRow = {
   sessionId: string;

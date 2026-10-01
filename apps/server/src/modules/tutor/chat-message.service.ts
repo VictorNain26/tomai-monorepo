@@ -1,6 +1,7 @@
 import { studySessionsRepository } from './study-sessions.repository.js';
 import { messagesRepository } from './messages.repository.js';
-import type { Message as DbMessage, AIModel } from '../../db/schema';
+import type { AIModel } from '../../db/schema';
+import type { Message as DbMessage } from './session.schema.js';
 import { logger } from '../../platform/observability/logger';
 import type { MessageDetails } from './chat-types';
 

@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Chat Tools (services/chat/chat-tools.ts)
+ * Tests unitaires - Chat Tools (modules/tutor/chat-tools.ts)
  *
  * Verifies the AI SDK `tool()` wrapping: the 4 tool keys, the JSON Schema the
  * model receives for each input, and that generate_flashcards calls

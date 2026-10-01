@@ -11,7 +11,7 @@ import {
   studentCognitiveProfiles,
   type StudentCognitiveProfile,
   type CognitiveObservation,
-} from '../../db/schema.js';
+} from './cognitive-profile.schema.js';
 import { eq } from 'drizzle-orm';
 import { logger } from '../../platform/observability/logger.js';
 

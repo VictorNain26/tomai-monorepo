@@ -1,5 +1,5 @@
 /**
- * Tests unitaires — AiChatService (services/chat/ai-chat.service.ts)
+ * Tests unitaires — AiChatService (modules/tutor/ai-chat.service.ts)
  *
  * Verifies the streamText wiring against a `MockLanguageModelV4` (the
  * interface version @ai-sdk/mistral@4.0.48 implements — confirmed in

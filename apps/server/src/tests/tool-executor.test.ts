@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Tool Executor (services/chat/tool-executor.ts)
+ * Tests unitaires - Tool Executor (modules/tutor/tool-executor.ts)
  * Mock: learning, DB, logger
  *
  * Note: mock.module paths resolve from the test file location (src/tests/)
@@ -15,7 +15,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-// Cognitive profile — src/services/cognitive-profile.service.ts
+// Cognitive profile — src/modules/tutor/cognitive-profile.service.ts
 let profileResult: Record<string, unknown> | null = {
   strengths: ['calcul'],
   weaknesses: ['fractions'],

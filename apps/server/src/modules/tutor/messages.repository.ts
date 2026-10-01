@@ -1,6 +1,6 @@
 import { eq, asc, count } from 'drizzle-orm';
 import { db } from '../../db/connection';
-import { messages, type Message, type NewMessage } from '../../db/schema';
+import { messages, type Message, type NewMessage } from './session.schema.js';
 
 class MessagesRepository {
   async create(messageData: NewMessage): Promise<Message> {

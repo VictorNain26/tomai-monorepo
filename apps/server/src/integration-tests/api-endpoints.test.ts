@@ -209,14 +209,18 @@ mock.module('../modules/learning/index', () => ({
 // sharing this Bun process (single module registry) can still import named
 // exports such as `user`, `parentChild`, etc.
 import * as authSchema from '../db/schema/auth.schema';
-import * as learningSchema from '../modules/tutor/session.schema';
+import * as sessionSchema from '../modules/tutor/session.schema';
+import * as progressSchema from '../db/schema/progress.schema';
+import * as costTrackingSchema from '../db/schema/cost-tracking.schema';
 import * as billingSchema from '../db/schema/billing.schema';
 import * as filesSchema from '../modules/documents/files.schema';
 import * as decksSchema from '../modules/learning/decks.schema';
 import * as cognitiveProfileSchema from '../modules/tutor/cognitive-profile.schema';
 mock.module('../db/schema', () => ({
   ...authSchema,
-  ...learningSchema,
+  ...sessionSchema,
+  ...progressSchema,
+  ...costTrackingSchema,
   ...billingSchema,
   ...filesSchema,
   ...decksSchema,
