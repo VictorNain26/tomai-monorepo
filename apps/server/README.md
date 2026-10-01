@@ -1,6 +1,7 @@
 # TomAI Server
 
-Backend Bun + Elysia.js pour la plateforme de tutorat IA francaise.
+Backend Bun + Elysia.js du tuteur IA pour collégiens (produit :
+`docs/superpowers/specs/2026-10-01-vision-produit.md`).
 
 ## Quick Start
 
@@ -20,7 +21,7 @@ curl http://localhost:3000/health
 
 ## API Documentation
 
-Documentation interactive auto-generee disponible en dev :
+Documentation interactive auto-generee disponible en dev :
 
 **http://localhost:3000/swagger**
 
@@ -42,7 +43,6 @@ Documentation interactive auto-generee disponible en dev :
 | STT | Voxtral (`voxtral-mini-2602`) |
 | TTS | Voxtral (`voxtral-mini-tts-2603`) |
 | Paiements | Aucun branché (paiement web au lot 3) |
-| Pronote | Pawnote 1.6 + AES-256-GCM |
 
 ## Commands
 
@@ -77,14 +77,15 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 
 ## Environment Variables
 
-Requises pour booter : `DATABASE_URL` et `BETTER_AUTH_SECRET` (en production, aussi
-`BETTER_AUTH_URL` et `PRONOTE_ENCRYPTION_KEY`). Toutes les autres sont optionnelles : la feature concernée échoue à l'usage
-tant que sa variable manque (Google OAuth, Mistral, Scaleway, Pronote). Liste complète,
-défauts et contraintes : `src/config/env.ts` ; gabarit commenté : `.env.example`.
+Requises pour booter : `DATABASE_URL` et `BETTER_AUTH_SECRET` (en production, aussi
+`BETTER_AUTH_URL`, et `PRONOTE_ENCRYPTION_KEY` tant que le code Pronote, hors V1, n'est pas
+retiré au lot 0). Toutes les autres sont optionnelles : la feature concernée échoue à l'usage
+tant que sa variable manque (Google OAuth, Mistral, Scaleway). Liste complète,
+défauts et contraintes : `src/config/env.ts` ; gabarit commenté : `.env.example`.
 
 ### Dev seed (`pnpm seed`)
 
-Les variables ci-dessous peuplent la DB avec des comptes de test locaux (`pnpm seed`) et sont **refusées en production**. Présentes par défaut dans `.env.example` :
+Les variables ci-dessous peuplent la DB avec des comptes de test locaux (`pnpm seed`) et sont **refusées en production**. Présentes par défaut dans `.env.example` :
 
 | Variable | Valeur (défaut) | Usage |
 |----------|-----------------|-------|
@@ -110,14 +111,14 @@ src/
 ├── routes/                     # API endpoints
 │   ├── chat-message.routes.ts  # SSE streaming
 │   ├── file-upload.routes.ts   # Upload Scaleway
-│   ├── pronote-*.routes.ts     # Integration Pronote (connexion, donnees, sync)
+│   ├── pronote-*.routes.ts     # Pronote, hors V1, retire au lot 0
 │   ├── tts.routes.ts           # Text-to-Speech
 │   ├── learning/               # Decks, cartes, FSRS
 │   └── subscription/           # Status lecture seule (DB)
 ├── services/                   # Business logic
 │   ├── chat/                   # Mistral streaming, summarization, tools
 │   ├── storage/                # Scaleway S3
-│   ├── pronote/                # Pawnote adapter, connexion, donnees
+│   ├── pronote/                # Pronote, hors V1, retire au lot 0
 │   ├── quota/                  # Quotas tokens IA
 │   ├── voxtral-*.service.ts    # STT / TTS Mistral
 │   └── fsrs.service.ts         # Spaced repetition
@@ -126,7 +127,7 @@ src/
 
 ## Docker Build (Production)
 
-Multi-stage : base (Bun + Node + pnpm) → deps → build (typecheck + lint + bundle) → production.
+Multi-stage : base (Bun + Node + pnpm) → deps → build (typecheck + lint + bundle) → production.
 
 ```bash
 # Entrypoint : migrations auto avant demarrage

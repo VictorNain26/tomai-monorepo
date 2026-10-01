@@ -8,17 +8,24 @@ paths:
 
 # Design system — règles d'application
 
-- **Tokens uniquement** : aucune couleur, durée, rayon ou taille littérale
+L'identité visuelle actuelle (palette, polices, signes d'école de la landing) est rejetée :
+elle se refait au lot 4 (`docs/superpowers/plans/2026-10-01-roadmap.md`). D'ici là, aucune
+nouvelle direction visuelle ; le client web du lot 3 se construit sur les tokens actuels, que
+le lot 4 remplacera sans toucher aux composants. Les règles ci-dessous sont techniques et
+survivent au changement d'identité.
+
+- **Tokens uniquement** : aucune couleur, durée, rayon ou taille littérale
   dans composants et écrans — classes utilitaires issues de `@repo/tokens`
   (`bg-primary`, `duration-base`, `rounded-lg`…). Nouveau token = ajout dans
   `theme.css`.
-- **Thème clair seul** : pas de mode sombre ni de bascule de thème.
-- **Papier** : fond `background` crème, objets posés en `card` ; pas de bande de
-  fond pleine largeur. Jamais `annotation` sur `highlight` (4,48:1).
-- **Registres** : landing/parent = sobre ; élève = vivant (micro-motion) sans
-  infantiliser.
-- **Typo** : Nunito titres et corps, Caveat notes manuscrites ; pas de police à chasse
-  fixe en V1.
-- **Exceptions au « tokens uniquement »** : les valeurs que `motion` anime
+- **Exceptions au « tokens uniquement »** : les valeurs que `motion` anime
   lui-même dans `style`, et les images `next/og` (`ImageResponse` ne lit que
   `style`, sans variables CSS). Rien d'autre.
+- **Primitives interactives via `@repo/ui`** (bouton, champ, dialog, menu) : leur
+  accessibilité y vit, on ne la refait pas dans une app.
+- **Accessibilité** : contraste WCAG AA, 4,5:1 pour le texte courant
+  ([WCAG 2.2, 1.4.3](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html)),
+  vérifié sur chaque paire de tokens qu'on associe ; cibles tactiles d'au moins 44 px ;
+  aucun défilement horizontal à largeur de téléphone ; mouvement réduit respecté ; contenu
+  lisible sans JavaScript sur la landing. La suite e2e de la landing garde tout sauf le
+  contraste (`.claude/rules/testing-and-commits.md`).
