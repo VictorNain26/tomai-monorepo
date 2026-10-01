@@ -25,10 +25,9 @@ import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { intentClassifierService, type ClassifiedIntent } from './intent-classifier.service.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
-import { costTrackingService } from '../../services/cost-tracking.service.js';
+import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
 import { episodicMemoryService } from './episodic-memory.service.js';
 import { subjectProfileService } from './subject-profile.service.js';
-import { tokenQuotaService } from '../../services/token-quota.service.js';
 import { logger } from '../../platform/observability/logger.js';
 import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js';
 import type { LanguageModelUsage } from 'ai';
@@ -306,7 +305,7 @@ class ChatOrchestrationService {
     }, { verifySessionExists: false });
 
     if (tokensUsed > 0) {
-      await tokenQuotaService.incrementTokenUsage(userId, tokensUsed);
+      await incrementTokenUsage(userId, tokensUsed);
 
       await costTrackingService.record({
         userId,

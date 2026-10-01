@@ -46,7 +46,7 @@ mock.module('../platform/http/rate-limit', () => ({
   RateLimitPresets: { ai: {} },
 }));
 
-// tokenQuotaService — mutable quota outcome
+// checkQuota — mutable quota outcome
 let quotaAllowed = true;
 const checkQuota = mock(async (_userId: string) => ({
   allowed: quotaAllowed,
@@ -56,9 +56,7 @@ const checkQuota = mock(async (_userId: string) => ({
   windowRefreshIn: 3600,
   plan: 'free',
 }));
-mock.module('../services/token-quota.service', () => ({
-  tokenQuotaService: { checkQuota },
-}));
+mock.module('../modules/billing/index', () => ({ checkQuota }));
 
 // chat-orchestration.service — the "business logic" seam
 class ChatOrchestrationError extends Error {

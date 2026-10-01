@@ -1,7 +1,7 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import { user } from '../../modules/auth/auth.schema';
-import { studySessions } from '../../modules/tutor/session.schema';
+import { user } from '../auth/auth.schema';
+import { studySessions } from '../tutor/session.schema';
 
 /**
  * Table cost_tracking - Suivi des coûts AI

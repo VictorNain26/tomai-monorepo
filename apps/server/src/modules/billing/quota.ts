@@ -1,4 +1,4 @@
-import { userSubscriptionsRepository } from '../../db/repositories/user-subscriptions.repository.js';
+import { userSubscriptionsRepository } from './user-subscriptions.repository.js';
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
 import {
@@ -277,9 +277,3 @@ export async function getUsageStats(userId: string): Promise<UsageStats> {
   };
 }
 
-export function getHoursUntilReset(): string {
-  return getDailyResetTime();
-}
-
-// Deck quota functions are now in ./quota-deck.ts
-export { checkDeckQuota, incrementDeckUsage } from './quota-deck.js';

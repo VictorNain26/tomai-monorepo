@@ -77,10 +77,6 @@ mock.module('../platform/http/rate-limit', () => ({
   createRateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
   RateLimitPresets: { api: {} },
 }));
-mock.module('../services/token-quota.service', () => ({
-  tokenQuotaService: {},
-}));
-
 // Retention purge — its real module pulls the Drizzle schemas, whose
 // `relations` import the partial drizzle-orm mock above doesn't provide.
 mock.module('../modules/tutor/retention-purge.service', () => ({
@@ -184,9 +180,7 @@ mock.module('../modules/family/parent.service', () => ({
 mock.module('../modules/tutor/chat-message.routes', () => ({ chatMessageRoutes: new Hono() }));
 mock.module('../modules/documents/upload.routes', () => ({ uploadRoutes: new Hono() }));
 mock.module('../modules/documents/file-context.service', () => ({ fileContextService: {} }));
-mock.module('../routes/subscription/index', () => ({
-  statusRoutes: new Hono(),
-}));
+mock.module('../modules/family/subscription.routes', () => ({ subscriptionRoutes: new Hono() }));
 mock.module('../modules/voice/index', () => ({ voiceRoutes: new Hono() }));
 mock.module('../modules/learning/index', () => ({
   learningRoutes: new Hono(),
@@ -204,8 +198,8 @@ import * as authSchema from '../modules/auth/auth.schema';
 import * as familySchema from '../modules/family/family.schema';
 import * as sessionSchema from '../modules/tutor/session.schema';
 import * as progressSchema from '../db/schema/progress.schema';
-import * as costTrackingSchema from '../db/schema/cost-tracking.schema';
-import * as billingSchema from '../db/schema/billing.schema';
+import * as costTrackingSchema from '../modules/billing/cost-tracking.schema';
+import * as billingSchema from '../modules/billing/billing.schema';
 import * as filesSchema from '../modules/documents/files.schema';
 import * as decksSchema from '../modules/learning/decks.schema';
 import * as cognitiveProfileSchema from '../modules/tutor/cognitive-profile.schema';

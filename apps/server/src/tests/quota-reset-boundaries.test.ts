@@ -3,7 +3,7 @@ import {
   getDailyResetTime,
   needsDailyReset,
   needsWeeklyReset,
-} from '../services/quota/quota-config';
+} from '../modules/billing/quota-config';
 
 const at = (iso: string) => setSystemTime(new Date(iso));
 

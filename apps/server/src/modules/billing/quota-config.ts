@@ -20,7 +20,7 @@ export const QUOTA_CONFIG = {
   },
 } as const;
 
-export const SOFT_LIMITS = {
+const SOFT_LIMITS = {
   NORMAL: 0.70,
   WARNING: 0.85,
   THROTTLE: 0.95,

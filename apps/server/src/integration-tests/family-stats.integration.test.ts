@@ -29,7 +29,7 @@ describe.skipIf(!dbReachable)('family children and study stats from postgres', (
   it('lists active children, and inactive ones on request', async () => {
     const { db } = await import('../db/connection');
     const { user, parentChild } = await import('../db/schema');
-    const { listChildren } = await import('../modules/family/index');
+    const { listChildren } = await import('../modules/family/children');
 
     await db.insert(user).values(ids.map((id) => ({ id, email: `${id}@internal.tomai` })));
     await db.update(user).set({ isActive: false }).where(eq(user.id, inactiveId));

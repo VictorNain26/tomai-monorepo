@@ -1,5 +1,5 @@
 /**
- * Status Routes
+ * Subscription Routes
  *
  * GET /api/subscriptions/status - Get subscription status (DB-driven)
  * GET /api/subscriptions/usage  - Get token usage
@@ -9,13 +9,12 @@
 
 import { Hono } from 'hono';
 import { requireParent, requireUser, type AppEnv } from '../../platform/http/context.js';
-import { subscriptionService } from '../../services/subscription.service.js';
-import { usersRepository } from '../../modules/auth/index.js';
-import { verifyParentIdMatch } from './helpers.js';
-import { parentChildRepository } from '../../modules/family/index.js';
+import { subscriptionService } from './subscription.service.js';
+import { getUsageStats } from '../billing/index.js';
+import { parentChildRepository } from './parent-child.repository.js';
 
 // Mounted under /api/subscriptions by app.ts.
-export const statusRoutes = new Hono<AppEnv>()
+export const subscriptionRoutes = new Hono<AppEnv>()
 
   .get('/status', requireParent, async (c) => {
     const authenticatedUser = c.var.user;
@@ -25,9 +24,8 @@ export const statusRoutes = new Hono<AppEnv>()
       return c.json({ error: 'parentId query parameter required' }, 400);
     }
 
-    const { valid, error: idorError } = verifyParentIdMatch(authenticatedUser.id, parentId);
-    if (!valid) {
-      return c.json({ error: idorError }, 403);
+    if (parentId !== authenticatedUser.id) {
+      return c.json({ error: 'Access denied: You can only manage your own subscription' }, 403);
     }
 
     return c.json(await subscriptionService.getFamilyStatus(parentId));
@@ -41,16 +39,12 @@ export const statusRoutes = new Hono<AppEnv>()
       return c.json({ error: 'userId query parameter required' }, 400);
     }
 
-    const userRecord = await usersRepository.findById(userId);
-
-    if (!userRecord) {
-      return c.json({ error: 'User not found' }, 404);
-    }
-
+    // Access is checked before any lookup: an unknown id answers 403 like a
+    // forbidden one, so the route does not reveal which accounts exist.
     const isSelfAccess = authenticatedUser.id === userId;
     const isParentAccessingChild =
       authenticatedUser.role === 'parent' &&
-      (await parentChildRepository.isLinked(authenticatedUser.id, userRecord.id));
+      (await parentChildRepository.isLinked(authenticatedUser.id, userId));
 
     if (!isSelfAccess && !isParentAccessingChild) {
       return c.json({
@@ -58,8 +52,7 @@ export const statusRoutes = new Hono<AppEnv>()
       }, 403);
     }
 
-    const { tokenQuotaService } = await import('../../services/token-quota.service.js');
-    const usage = await tokenQuotaService.getUsageStats(userId);
+    const usage = await getUsageStats(userId);
 
     return c.json({
       userId,
@@ -95,7 +88,6 @@ export const statusRoutes = new Hono<AppEnv>()
         tokensRemaining: usage.dailyTokensRemaining,
         dailyLimit: usage.dailyLimit,
         usagePercentage: usage.dailyUsagePercent,
-        lastResetAt: new Date().toISOString(),
         resetsIn: usage.dailyResetsIn,
       },
     });
