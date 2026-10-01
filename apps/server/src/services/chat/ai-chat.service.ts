@@ -39,7 +39,7 @@ import { calculateBudget, truncateToTokenBudget } from './token-budget.service.j
 import { env } from '../../platform/config/env.js';
 import type { MistralMessage, MistralContentPart } from '../../platform/ai/mistral-client.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { AttachedFileForPrompt } from './file-context-types.js';
+import type { AttachedFileForPrompt } from '../../modules/documents/index.js';
 
 /** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
 const PROMPT_VERSION = '2026-10-01';

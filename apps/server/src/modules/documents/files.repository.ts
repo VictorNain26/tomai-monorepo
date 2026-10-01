@@ -4,8 +4,8 @@
  */
 
 import { eq, and, sql, desc, inArray } from 'drizzle-orm';
-import { db } from '../connection.js';
-import { files, type FileStatus } from '../schema.js';
+import { db } from '../../db/connection.js';
+import { files, type FileStatus } from './files.schema.js';
 
 // Types inférés du schéma
 export type File = typeof files.$inferSelect;
@@ -53,19 +53,6 @@ class FilesRepository {
   }
 
   /**
-   * Trouver un fichier par storageKey
-   */
-  async findByStorageKey(storageKey: string): Promise<File | undefined> {
-    const [file] = await db
-      .select()
-      .from(files)
-      .where(eq(files.storageKey, storageKey))
-      .limit(1);
-
-    return file;
-  }
-
-  /**
    * Lister les fichiers d'un utilisateur
    */
   async findByUserId(userId: string, limit = 50): Promise<File[]> {
@@ -109,13 +96,6 @@ class FilesRepository {
   }
 
   /**
-   * Marquer un fichier comme supprimé (soft delete)
-   */
-  async softDelete(id: string): Promise<File | undefined> {
-    return await this.updateStatus(id, 'deleted');
-  }
-
-  /**
    * Supprimer un fichier (hard delete)
    */
   async hardDelete(id: string): Promise<boolean> {
@@ -153,15 +133,19 @@ class FilesRepository {
    * Merge arbitrary keys into the JSONB educationalContext column (SQL-level merge
    * to avoid read-modify-write races). Used to persist STT transcription, OCR
    * extraction snippets, and document analysis caches on the file record.
+   * Returns false when no row matched (file deleted meanwhile).
    */
-  async mergeEducationalContext(id: string, patch: Record<string, unknown>): Promise<void> {
-    await db
+  async mergeEducationalContext(id: string, patch: Record<string, unknown>): Promise<boolean> {
+    const updated = await db
       .update(files)
       .set({
         educationalContext: sql`COALESCE(${files.educationalContext}, '{}'::jsonb) || ${JSON.stringify(patch)}::jsonb`,
         updatedAt: sql`NOW()`,
       })
-      .where(eq(files.id, id));
+      .where(eq(files.id, id))
+      .returning({ id: files.id });
+
+    return updated.length > 0;
   }
 }
 

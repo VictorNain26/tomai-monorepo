@@ -27,13 +27,6 @@ import {
   type DocumentAnalysisOptions,
 } from './document-types.js';
 
-// Re-export types for backward compatibility
-export type {
-  
-  
-  DocumentAnalysisResult,
-  
-} from './document-types.js';
 
 const ANALYSIS_MODEL = env.MISTRAL_MODEL;
 const ANALYSIS_TEMPERATURE = 0.2;

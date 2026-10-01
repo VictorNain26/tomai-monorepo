@@ -1,10 +1,7 @@
-import { eq, sql } from 'drizzle-orm';
-import { db } from '../../db/connection.js';
-import { files } from '../../db/schema.js';
-import { filesRepository } from '../../db/repositories/index.js';
-import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
+import { filesRepository } from './files.repository.js';
+import * as storage from './storage.js';
 import { logger } from '../../platform/observability/logger.js';
-import type { DocumentAnalysisResult } from '../document/index.js';
+import type { DocumentAnalysisResult } from './document-types.js';
 import type { MultimodalFile } from './file-context-types.js';
 
 /**
@@ -27,18 +24,18 @@ export async function prepareMultimodalFiles(fileIds: string[]): Promise<Multimo
     return [];
   }
 
+  const records = await filesRepository.findByIds(fileIds);
   const result: MultimodalFile[] = [];
 
   for (const fileId of fileIds) {
+    const file = records.find((f) => f.id === fileId);
+    if (!file) continue;
     try {
-      const file = await filesRepository.findById(fileId);
-      if (!file) continue;
-
       const isImage = file.mimeType.startsWith('image/');
       const contentType: 'image' | 'document' = isImage ? 'image' : 'document';
 
       if (isImage) {
-        const content = await scalewayStorageService.getFileContent(file.storageKey);
+        const content = await storage.getFileContent(file.storageKey);
         if (!content) continue;
         result.push({
           fileName: file.fileName,
@@ -81,27 +78,15 @@ export async function updateFileAnalysis(
   result: DocumentAnalysisResult,
 ): Promise<void> {
   try {
-    const file = await filesRepository.findById(fileId);
-    if (!file) return;
-
-    const existingContext = (file.educationalContext ?? {}) as Record<string, unknown>;
-    const updatedContext = {
-      ...existingContext,
+    const saved = await filesRepository.mergeEducationalContext(fileId, {
       analysisContext: result.analysis,
       extractedText: result.extraction.text,
       documentType: result.classification.documentType,
       subject: result.classification.subject,
       classification: result.classification,
       metrics: result.metrics,
-    };
-
-    await db
-      .update(files)
-      .set({
-        educationalContext: sql`${JSON.stringify(updatedContext)}::jsonb`,
-        updatedAt: new Date(),
-      })
-      .where(eq(files.id, fileId));
+    });
+    if (!saved) return;
 
     logger.info('File analysis saved to DB', {
       fileId,

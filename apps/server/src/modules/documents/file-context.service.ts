@@ -1,46 +1,14 @@
-import { filesRepository, sessionFilesRepository } from '../../db/repositories/index.js';
-import type { File as FileRecord } from '../../db/repositories/files.repository.js';
-import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
-import { documentAnalysisService, type DocumentAnalysisResult } from '../document/index.js';
+import { filesRepository, type File as FileRecord } from './files.repository.js';
+import { sessionFilesRepository } from './session-files.repository.js';
+import * as storage from './storage.js';
+import { documentAnalysisService } from './document-analysis.service.js';
+import type { DocumentAnalysisResult } from './document-types.js';
 import { logger } from '../../platform/observability/logger.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileInfo, AttachedFileForPrompt, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
 import { prepareMultimodalFiles, updateFileAnalysis } from './file-multimodal.service.js';
 
-;
-
 class FileContextService {
-  /**
-   * Récupère les métadonnées d'un fichier depuis PostgreSQL.
-   *
-   * Pas de cache LLM externe : Mistral n'a pas d'équivalent à une Files API,
-   * donc les payloads multimodaux sont (re)construits à chaque tour à partir
-   * du contenu Scaleway. Voir prepareMultimodalFiles.
-   */
-  async retrieveFileMetadata(fileId: string): Promise<AttachedFileInfo | null> {
-    try {
-      const file = await filesRepository.findById(fileId);
-      if (!file) {
-        logger.warn('File not found in DB', { fileId, operation: 'retrieve-file-metadata' });
-        return null;
-      }
-
-      return {
-        fileName: file.fileName,
-        fileId: file.id,
-        mimeType: file.mimeType,
-        fileSizeBytes: file.sizeBytes
-      };
-    } catch (error) {
-      logger.warn('Failed to retrieve file metadata', {
-        fileId,
-        err: error,
-        operation: 'retrieve-file-metadata'
-      });
-      return null;
-    }
-  }
-
   /**
    * Récupère le contexte de tous les fichiers attachés à une session
    * Lit depuis la table session_files (classeur) au lieu de scanner l'historique
@@ -151,7 +119,7 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       });
 
       // Récupérer le contenu depuis Scaleway
-      const fileContent = await scalewayStorageService.getFileContent(file.storageKey);
+      const fileContent = await storage.getFileContent(file.storageKey);
       if (!fileContent) {
         logger.error('Failed to retrieve file from storage', {
           reason: 'Storage returned null',
@@ -224,7 +192,6 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
     const { fileIds, content, schoolLevel, userId, sessionId } = params;
 
     // Batch-fetch all attached files once (1 SELECT) in parallel with session context.
-    // Previous implementation did N SELECTs in retrieveFileMetadata + N more in analyzeFileWithCache.
     const [fileRecords, sessionFiles] = await Promise.all([
       filesRepository.findByIds(fileIds),
       this.getSessionFilesForPrompt(sessionId)

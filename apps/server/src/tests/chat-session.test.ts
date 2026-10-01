@@ -47,6 +47,7 @@ interface MessageData {
   aiModel: string | null;
   tokensUsed: number | null;
   createdAt: Date;
+  attachedFile?: { fileId?: string };
 }
 
 // ============================================
@@ -68,6 +69,7 @@ let deleteByIdCalled = false;
 let findMessageByIdResult: MessageData | null = null;
 let findUserByIdResult: UserData | null = null;
 let filesDeletedIds: string[] = [];
+let storageDeleteSucceeds = true;
 
 mock.module('../db/repositories', () => ({
   usersRepository: {
@@ -91,6 +93,10 @@ mock.module('../db/repositories', () => ({
     })),
     findById: mock(async () => findMessageByIdResult),
   },
+}));
+
+mock.module('../modules/documents/index', () => ({
+  deleteFile: mock(async () => storageDeleteSucceeds),
   filesRepository: {
     findById: mock(async (id: string) => {
       if (filesDeletedIds.includes(id)) return null;
@@ -116,10 +122,6 @@ mock.module('../db/schema', () => ({
 
 mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
-}));
-
-mock.module('../services/storage/scaleway-storage.service', () => ({
-  deleteFile: mock(async () => {}),
 }));
 
 // The real service pulls schema symbols this file's partial `../db/schema`
@@ -158,6 +160,7 @@ beforeEach(() => {
   findMessageByIdResult = null;
   findUserByIdResult = null;
   filesDeletedIds = [];
+  storageDeleteSucceeds = true;
 });
 
 // ============================================
@@ -308,6 +311,24 @@ describe('ChatSessionService', () => {
   });
 
   describe('deleteSession', () => {
+    it('deletes the files attached to its messages, object then row', async () => {
+      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'user-001' });
+      findBySessionIdResult = [{ ...makeMessage({ id: 'msg-1', sessionId: VALID_UUID }), attachedFile: { fileId: 'file-1' } }];
+
+      await sessionService.deleteSession(VALID_UUID, 'user-001');
+      expect(filesDeletedIds).toEqual(['file-1']);
+    });
+
+    it('keeps a file row when its storage delete fails, so the object is never orphaned', async () => {
+      findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'user-001' });
+      findBySessionIdResult = [{ ...makeMessage({ id: 'msg-1', sessionId: VALID_UUID }), attachedFile: { fileId: 'file-1' } }];
+      storageDeleteSucceeds = false;
+
+      await sessionService.deleteSession(VALID_UUID, 'user-001');
+      expect(filesDeletedIds).toEqual([]);
+      expect(deleteByIdCalled).toBe(true);
+    });
+
     it('should delete session and its messages', async () => {
       findByIdResult = makeStudySession({ id: VALID_UUID, userId: 'user-001' });
       findBySessionIdResult = [];

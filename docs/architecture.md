@@ -37,7 +37,7 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 | `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations | `services/parent/`, `parent.service.ts`, `routes/api/parent.routes.ts` |
 | `tutor` | Agent IA : session de chat, outils, mémoire, résumé, garde-fous | `services/chat/`, `lib/ai/` (routage du raisonnement, schémas de cartes), `episodic-memory.service.ts`, `cognitive-profile.service.ts` |
 | `learning` | Decks, cartes, révisions FSRS | `services/learning/`, `fsrs.service.ts`, `routes/learning/` |
-| `documents` | Upload, extraction, analyse, stockage S3 | `services/document/`, `services/storage/`, `routes/file-upload.routes.ts` |
+| `documents` | Upload, classeur de séance, extraction, analyse, stockage S3, fichiers prêts pour un tour de chat | `modules/documents/` |
 | `billing` | Formules Gratuit et Complet, quotas, abonnement web | `services/quota/`, `subscription.service.ts`, `token-quota.service.ts` |
 | `voice` | Transcription et synthèse vocale (Voxtral) | `modules/voice/` |
 | `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `platform/` (config, migrateur, auth, http, observabilité, IA, cycle de vie), `retention-purge.service.ts` |
@@ -51,7 +51,10 @@ Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par modu
   (vérification au démarrage).
 - `apps/server/src/db/` : point de composition des données — le client Drizzle et le
   schéma qui réunit les tables de tous les modules (les requêtes relationnelles de Drizzle
-  en ont besoin). `index.ts`, de même, démarre et arrête les jobs des modules.
+  en ont besoin). Seule exception à la règle de l'index : ce schéma importe directement le
+  fichier `*.schema.ts` de chaque module, car passer par `index.ts` chargerait routes et
+  clients externes dans `drizzle-kit`. `src/index.ts`, de même, démarre et arrête les jobs des
+  modules.
 - `apps/server/src/modules/<module>/` : routes Hono du module (montées par `app.ts` sur
   son préfixe), services, dépôts, tables Drizzle et schémas Zod, avec un `index.ts` pour
   ce que les autres modules ont le droit d'appeler.

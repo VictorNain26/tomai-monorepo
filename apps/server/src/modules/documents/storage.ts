@@ -129,7 +129,7 @@ function getS3Client(): S3Client {
  *
  * @see https://github.com/aws/aws-sdk-js-v3/blob/main/packages/s3-request-presigner/README.md
  */
-async function generatePresignedUploadUrl(params: {
+export async function generatePresignedUploadUrl(params: {
   userId: string;
   fileName: string;
   mimeType: string;
@@ -197,7 +197,7 @@ async function generatePresignedUploadUrl(params: {
 /**
  * Génère une URL présignée pour téléchargement
  */
-async function generatePresignedDownloadUrl(
+export async function generatePresignedDownloadUrl(
   storageKey: string
 ): Promise<PresignedDownloadResult> {
   const client = getS3Client();
@@ -228,7 +228,7 @@ async function generatePresignedDownloadUrl(
 /**
  * Vérifie qu'un fichier existe et récupère ses métadonnées
  */
-async function getFileInfo(storageKey: string): Promise<StoredFileInfo | null> {
+export async function getFileInfo(storageKey: string): Promise<StoredFileInfo | null> {
   const client = getS3Client();
 
   try {
@@ -341,7 +341,7 @@ export async function deleteFiles(
 /**
  * Récupère le contenu d'un fichier (pour injection multimodale)
  */
-async function getFileContent(storageKey: string): Promise<{
+export async function getFileContent(storageKey: string): Promise<{
   content: Buffer;
   contentType: string;
 } | null> {
@@ -384,66 +384,10 @@ async function getFileContent(storageKey: string): Promise<{
 /**
  * Vérifie si le service Scaleway est correctement configuré
  */
-function isConfigured(): boolean {
+export function isConfigured(): boolean {
   return !!(
     env.SCALEWAY_ACCESS_KEY &&
     env.SCALEWAY_SECRET_KEY &&
     env.SCALEWAY_BUCKET
   );
 }
-
-/**
- * Health check du service
- */
-async function healthCheck(): Promise<{
-  status: 'healthy' | 'unhealthy' | 'not_configured';
-  message: string;
-}> {
-  if (!isConfigured()) {
-    return {
-      status: 'not_configured',
-      message: 'Scaleway credentials not configured',
-    };
-  }
-
-  try {
-    const client = getS3Client();
-
-    // Tester avec une requête HEAD sur le bucket
-    const command = new HeadObjectCommand({
-      Bucket: env.SCALEWAY_BUCKET,
-      Key: '.health-check', // Fichier qui n'existe probablement pas
-    });
-
-    try {
-      await client.send(command);
-    } catch (error) {
-      // NotFound est OK, ça veut dire que le bucket est accessible
-      if ((error as { name?: string }).name !== 'NotFound') {
-        throw error;
-      }
-    }
-
-    return {
-      status: 'healthy',
-      message: `Connected to Scaleway ${SCALEWAY_CONFIG.region}`,
-    };
-  } catch (error) {
-    return {
-      status: 'unhealthy',
-      message: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-// Export du service
-export const scalewayStorageService = {
-  generatePresignedUploadUrl,
-  generatePresignedDownloadUrl,
-  getFileInfo,
-  deleteFile,
-  deleteFiles,
-  getFileContent,
-  isConfigured,
-  healthCheck,
-};

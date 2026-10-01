@@ -190,7 +190,8 @@ mock.module('../services/progress.service', () => ({
 
 // Mock non-essential route modules as empty Hono apps
 mock.module('../routes/chat-message.routes', () => ({ chatMessageRoutes: new Hono() }));
-mock.module('../routes/file-upload.routes', () => ({ fileUploadRoutes: new Hono() }));
+mock.module('../modules/documents/upload.routes', () => ({ uploadRoutes: new Hono() }));
+mock.module('../modules/documents/file-context.service', () => ({ fileContextService: {} }));
 mock.module('../routes/subscription/index', () => ({
   statusRoutes: new Hono(),
 }));
@@ -199,14 +200,14 @@ mock.module('../routes/learning/index', () => ({
   learningRoutes: new Hono(),
 }));
 
-// DB schema + repositories (dynamic imports in apiRoutes)
+// DB schema + repositories
 // The mock must spread all real sub-modules so that other integration tests
 // sharing this Bun process (single module registry) can still import named
 // exports such as `user`, `parentChild`, etc.
 import * as authSchema from '../db/schema/auth.schema';
 import * as learningSchema from '../db/schema/learning.schema';
 import * as billingSchema from '../db/schema/billing.schema';
-import * as filesSchema from '../db/schema/files.schema';
+import * as filesSchema from '../modules/documents/files.schema';
 import * as learningToolsSchema from '../db/schema/learning-tools.schema';
 mock.module('../db/schema', () => ({
   ...authSchema,
@@ -215,8 +216,10 @@ mock.module('../db/schema', () => ({
   ...filesSchema,
   ...learningToolsSchema,
 }));
-mock.module('../db/repositories/index', () => ({
+mock.module('../modules/documents/files.repository', () => ({
   filesRepository: { findByUserId: mock(async () => []), findById: mock(async () => null) },
+}));
+mock.module('../modules/documents/session-files.repository', () => ({
   sessionFilesRepository: {
     findBySession: mock(async () => []), countBySession: mock(async () => 0),
     attach: mock(async () => {}), detach: mock(async () => {}),

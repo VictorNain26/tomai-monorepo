@@ -50,11 +50,12 @@ const mockListByUserId = mock(async () => listByUserIdResult);
 let deleteFilesResult: { deleted: number; failed: string[] } = { deleted: 0, failed: [] };
 const mockDeleteFiles = mock(async () => deleteFilesResult);
 
-mock.module('../services/storage/scaleway-storage.service', () => ({
-  deleteFiles: mockDeleteFiles,
-}));
-
 const mockDeleteById = mock(async () => deleteResult);
+
+mock.module('../modules/documents/index', () => ({
+  deleteFiles: mockDeleteFiles,
+  filesRepository: { listByUserId: mockListByUserId },
+}));
 
 mock.module('../db/repositories', () => ({
   usersRepository: {
@@ -63,9 +64,6 @@ mock.module('../db/repositories', () => ({
     update: mock(async () => updateResult),
     deleteById: mockDeleteById,
     findById: mock(async () => findByIdResult),
-  },
-  filesRepository: {
-    listByUserId: mockListByUserId,
   },
   studySessionsRepository: {
     getSessionStats: mock(async () => ({

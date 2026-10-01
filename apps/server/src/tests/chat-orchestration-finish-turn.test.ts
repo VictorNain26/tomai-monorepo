@@ -41,11 +41,11 @@ mock.module('../services/chat/chat-message.service', () => ({
 }));
 
 mock.module('../db/repositories/index', () => ({
-  sessionFilesRepository: { attach: mock(async () => {}) },
   studySessionsRepository: { updateSubject: mock(async () => {}) },
 }));
 
-mock.module('../services/chat/file-context.service', () => ({
+mock.module('../modules/documents/index', () => ({
+  sessionFilesRepository: { attach: mock(async () => {}) },
   fileContextService: {
     prepareFileContext: mock(async () => ({ attachedFileInfos: [], attachedFiles: [] })),
     prepareMultimodalFiles: mock(async () => []),

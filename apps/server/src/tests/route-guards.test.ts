@@ -36,17 +36,17 @@ mock.module('../services/learning/learning.service', () => ({
   CardValidationError: class extends Error {},
 }));
 mock.module('../services/fsrs.service', () => ({ fsrsService: {}, Rating: {} }));
-mock.module('../services/storage/scaleway-storage.service', () => ({ scalewayStorageService: {} }));
+mock.module('../modules/documents/storage', () => ({}));
 mock.module('../modules/voice/index', () => ({ audioTranscriptionService: {} }));
-mock.module('../db/repositories/index', () => ({ filesRepository: {} }));
+mock.module('../modules/documents/files.repository', () => ({ filesRepository: {} }));
 
 const { learningRoutes } = await import('../routes/learning/index');
-const { fileUploadRoutes } = await import('../routes/file-upload.routes');
+const { uploadRoutes } = await import('../modules/documents/upload.routes');
 const { handleError } = await import('../platform/http/error-handler');
 
 const app = new Hono<AppEnv>()
   .route('/api/learning', learningRoutes)
-  .route('/api/upload', fileUploadRoutes)
+  .route('/api/upload', uploadRoutes)
   .onError(handleError);
 
 describe('module-level auth guards', () => {

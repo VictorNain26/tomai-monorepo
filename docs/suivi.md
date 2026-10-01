@@ -16,11 +16,12 @@ bloquant levé).
   remplacer par Bun tout ce qu'il remplace proprement et une refonte complète du serveur.
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
-  - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349) ;
-    restent, dans l'ordre, `documents`, `learning`, `tutor`, `auth` et `family`, `billing`
+  - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349),
+    module `documents` (#350) ;
+    restent, dans l'ordre, `learning`, `tutor`, `auth` et `family`, `billing`
     (rangement cible : `architecture.md`, « Monolithe modulaire ») ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** refonte du module `documents`, sur une branche courte dont le plan
+- **Prochaine action :** refonte du module `learning`, sur une branche courte dont le plan
   s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
@@ -204,4 +205,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   il émet `mobile-web-app-capable` au lieu de `apple-mobile-web-app-capable`.
   Logger sur pino (même API, `LOG_LEVEL` appliqué, erreurs loggées avec leur stack sous
   `err`) (#347).
-  Refonte du serveur commencée : socle sous `src/platform/` (#348), module `voice` (#349).
+  Refonte du serveur commencée : socle sous `src/platform/` (#348), module `voice` (#349),
+  module `documents`, premier module qui porte ses tables ; une suppression de fichier
+  garde la ligne quand le stockage échoue, au lieu de laisser un objet d'élève orphelin
+  (#350).

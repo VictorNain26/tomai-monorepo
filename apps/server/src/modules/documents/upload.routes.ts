@@ -1,18 +1,18 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { requireUser, validate, type AppEnv } from '../platform/http/context.js';
-import { logger } from '../platform/observability/logger.js';
-import { scalewayStorageService } from '../services/storage/scaleway-storage.service.js';
-import { audioTranscriptionService } from '../modules/voice/index.js';
-import { filesRepository } from '../db/repositories/index.js';
-import { env } from '../platform/config/env.js';
-import type { EducationLevelType } from '../types/education.types.js';
+import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
+import { logger } from '../../platform/observability/logger.js';
+import * as storage from './storage.js';
+import { audioTranscriptionService } from '../voice/index.js';
+import { filesRepository } from './files.repository.js';
+import { env } from '../../platform/config/env.js';
+import type { EducationLevelType } from '../../types/education.types.js';
 import {
   MAX_FILE_SIZE,
   detectFileType,
   sanitizeFileName,
   buildEducationalContext,
-} from './file-upload.helpers.js';
+} from './upload.helpers.js';
 
 const presignBody = z.object({
   fileName: z.string().min(1).max(255),
@@ -24,7 +24,7 @@ const presignBody = z.object({
 const fileParams = z.object({ fileId: z.uuid() });
 
 // Mounted under /api/upload by app.ts; every route needs a signed-in user.
-export const fileUploadRoutes = new Hono<AppEnv>()
+export const uploadRoutes = new Hono<AppEnv>()
   .use(requireUser)
 
   /**
@@ -32,7 +32,7 @@ export const fileUploadRoutes = new Hono<AppEnv>()
    * Requires authentication to prevent unauthorized storage service discovery
    */
   .get('/status', (c) => {
-    const configured = scalewayStorageService.isConfigured();
+    const configured = storage.isConfigured();
     return c.json({
       configured,
       provider: 'scaleway',
@@ -66,13 +66,13 @@ export const fileUploadRoutes = new Hono<AppEnv>()
       }
 
       // Check Scaleway is configured
-      if (!scalewayStorageService.isConfigured()) {
+      if (!storage.isConfigured()) {
         return c.json({ success: false, error: 'Storage service not configured' }, 503);
       }
 
       // Generate presigned URL
       const sanitizedName = sanitizeFileName(fileName);
-      const presignedResult = await scalewayStorageService.generatePresignedUploadUrl({
+      const presignedResult = await storage.generatePresignedUploadUrl({
         userId: user.id,
         fileName: sanitizedName,
         mimeType,
@@ -149,7 +149,7 @@ export const fileUploadRoutes = new Hono<AppEnv>()
       }
 
       // Verify file exists in Scaleway
-      const fileInfo = await scalewayStorageService.getFileInfo(fileRecord.storageKey);
+      const fileInfo = await storage.getFileInfo(fileRecord.storageKey);
       if (!fileInfo) {
         return c.json({ success: false, error: 'File not found in storage' }, 400);
       }
@@ -176,7 +176,7 @@ export const fileUploadRoutes = new Hono<AppEnv>()
       // time — no separate upload step, no external file cache.
       if (fileType === 'audio') {
         try {
-          const fileContent = await scalewayStorageService.getFileContent(fileRecord.storageKey);
+          const fileContent = await storage.getFileContent(fileRecord.storageKey);
           if (fileContent) {
             const transcriptionResult = await audioTranscriptionService.transcribeAudio(
               fileContent.content.buffer as ArrayBuffer,
@@ -248,7 +248,7 @@ export const fileUploadRoutes = new Hono<AppEnv>()
         return c.json({ success: false, error: 'Access denied' }, 403);
       }
 
-      const downloadResult = await scalewayStorageService.generatePresignedDownloadUrl(
+      const downloadResult = await storage.generatePresignedDownloadUrl(
         fileRecord.storageKey
       );
 
@@ -289,10 +289,12 @@ export const fileUploadRoutes = new Hono<AppEnv>()
         return c.json({ success: false, error: 'Access denied' }, 403);
       }
 
-      // Delete from Scaleway
-      await scalewayStorageService.deleteFile(fileRecord.storageKey);
+      // The row is the only reference to the object: keep it until the object is
+      // gone, so a failed S3 delete can be retried instead of orphaning it.
+      if (!(await storage.deleteFile(fileRecord.storageKey))) {
+        return c.json({ success: false, error: 'Failed to delete file' }, 500);
+      }
 
-      // Delete from DB
       await filesRepository.hardDelete(fileId);
 
       logger.info('File deleted', {

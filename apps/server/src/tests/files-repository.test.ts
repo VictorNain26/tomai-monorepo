@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Files Repository (db/repositories/files.repository.ts)
+ * Tests unitaires - Files Repository (modules/documents/files.repository.ts)
  * Mock: db.update to capture the SQL fragment passed to .set().
  *
  * Le but est de vérifier que mergeEducationalContext() émet un MERGE JSONB
@@ -18,10 +18,11 @@ import { sql } from 'drizzle-orm';
 let capturedSetArg: Record<string, unknown> | null = null;
 let capturedWhereArgs: unknown[] = [];
 let updateCalledWith: unknown = null;
+let returnedRows: { id: string }[] = [{ id: 'file-1' }];
 
 const mockWhere = mock((arg: unknown) => {
   capturedWhereArgs.push(arg);
-  return Promise.resolve([]);
+  return { returning: () => Promise.resolve(returnedRows) };
 });
 
 const mockSet = mock((arg: Record<string, unknown>) => {
@@ -50,19 +51,15 @@ const makeCol = (name: string) => ({
   toString: () => name,
 });
 
-mock.module('../db/schema', () => ({
+mock.module('../modules/documents/files.schema', () => ({
   files: {
     id: makeCol('id'),
     educationalContext: makeCol('educational_context'),
   },
-  // Also expose these so other tests running in the same Bun process after
-  // this one don't break when they import schema (mock.module cache is global).
-  learningDecks: {},
-  learningCards: {},
 }));
 
 // Import after mocks
-const { filesRepository } = await import('../db/repositories/files.repository');
+const { filesRepository } = await import('../modules/documents/files.repository');
 
 /**
  * Serialize a drizzle SQL template object into a single string for assertion.
@@ -87,6 +84,7 @@ beforeEach(() => {
   capturedSetArg = null;
   capturedWhereArgs = [];
   updateCalledWith = null;
+  returnedRows = [{ id: 'file-1' }];
   mockUpdate.mockClear();
   mockSet.mockClear();
   mockWhere.mockClear();
@@ -151,10 +149,17 @@ describe('FilesRepository.mergeEducationalContext', () => {
   it('should resolve without error on empty patch', async () => {
     expect(
       filesRepository.mergeEducationalContext('file-1', {}),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(true);
     const setArg = capturedSetArg as Record<string, unknown>;
     const rendered = serializeSql(setArg.educationalContext);
     expect(rendered).toContain('{}');
+  });
+
+  it('reports whether a row was updated', async () => {
+    expect(await filesRepository.mergeEducationalContext('file-1', { key: 'v' })).toBe(true);
+
+    returnedRows = [];
+    expect(await filesRepository.mergeEducationalContext('gone', { key: 'v' })).toBe(false);
   });
 
   it('should NOT serialize the column name as a bare string (i.e. not a plain overwrite)', async () => {

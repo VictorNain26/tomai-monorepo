@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import { generateStructured } from '../platform/ai/mistral-client';
 import { CardGenerationSchema } from '../lib/ai/schemas';
-import { DocumentAnalysisSchema } from '../services/document/document-types';
+import { DocumentAnalysisSchema } from '../modules/documents/document-types';
 import { HAS_MISTRAL } from './_creds';
 
 // La doc Mistral ne liste pas les mots-clés JSON Schema acceptés en mode strict.

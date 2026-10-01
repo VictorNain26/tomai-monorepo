@@ -1,20 +1,25 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
-import { chatSessionService } from '../../services/chat/chat-session.service';
+import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { logger } from '../../platform/observability/logger';
+import { filesRepository } from './files.repository.js';
+import { sessionFilesRepository } from './session-files.repository.js';
 
 const sessionParams = z.object({ id: z.uuid() });
 const sessionFileParams = z.object({ id: z.uuid(), fileId: z.uuid() });
 const attachBody = z.object({ fileId: z.uuid() });
 
-export const sessionFilesApiRoutes = new Hono<AppEnv>()
+async function ownsSession(sessionId: string, userId: string): Promise<boolean> {
+  const session = await studySessionsRepository.findById(sessionId);
+  return session?.userId === userId;
+}
+
+export const sessionFilesRoutes = new Hono<AppEnv>()
 
   .get('/files', requireUser, async (c) => {
     const user = c.var.user;
     try {
-      const { filesRepository } = await import('../../db/repositories/index');
-
       const userFiles = await filesRepository.findByUserId(user.id);
       return c.json({
         success: true,
@@ -49,12 +54,10 @@ export const sessionFilesApiRoutes = new Hono<AppEnv>()
     const user = c.var.user;
     const params = c.req.valid('param');
     try {
-      const session = await chatSessionService.getSessionForUser(params.id, user.id);
-      if (!session) {
+      if (!(await ownsSession(params.id, user.id))) {
         return c.json({ error: 'Session not found or access denied' }, 403);
       }
 
-      const { sessionFilesRepository } = await import('../../db/repositories/index');
       const attachedFiles = await sessionFilesRepository.findBySession(params.id);
 
       return c.json({
@@ -84,12 +87,10 @@ export const sessionFilesApiRoutes = new Hono<AppEnv>()
     try {
       const { fileId } = c.req.valid('json');
 
-      const session = await chatSessionService.getSessionForUser(params.id, user.id);
-      if (!session) {
+      if (!(await ownsSession(params.id, user.id))) {
         return c.json({ error: 'Session not found or access denied' }, 403);
       }
 
-      const { filesRepository, sessionFilesRepository } = await import('../../db/repositories/index');
       const file = await filesRepository.findById(fileId);
       if (!file || file.userId !== user.id) {
         return c.json({ error: 'File not found or access denied' }, 403);
@@ -118,12 +119,10 @@ export const sessionFilesApiRoutes = new Hono<AppEnv>()
     const user = c.var.user;
     const params = c.req.valid('param');
     try {
-      const session = await chatSessionService.getSessionForUser(params.id, user.id);
-      if (!session) {
+      if (!(await ownsSession(params.id, user.id))) {
         return c.json({ error: 'Session not found or access denied' }, 403);
       }
 
-      const { sessionFilesRepository } = await import('../../db/repositories/index');
       await sessionFilesRepository.detach(params.id, params.fileId);
 
       return c.json({ success: true });

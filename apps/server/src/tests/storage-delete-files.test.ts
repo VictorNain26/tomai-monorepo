@@ -49,7 +49,7 @@ mock.module('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: mock(() => Promise.resolve('https://signed')),
 }));
 
-const { deleteFiles } = await import('../services/storage/scaleway-storage.service');
+const { deleteFiles } = await import('../modules/documents/storage');
 
 beforeEach(() => {
   sentInputs.length = 0;

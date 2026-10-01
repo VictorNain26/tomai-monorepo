@@ -5,7 +5,6 @@ import { chatSessionApiRoutes } from './chat-session.routes';
 import { parentApiRoutes } from './parent.routes';
 import { educationApiRoutes } from './education.routes';
 import { progressApiRoutes } from './progress.routes';
-import { sessionFilesApiRoutes } from './session-files.routes';
 import { studentApiRoutes } from './student.routes';
 
 // Each route carries its own auth guard: a `use()` here would apply to every
@@ -15,7 +14,6 @@ const api = new Hono<AppEnv>()
   .route('/', parentApiRoutes)
   .route('/', educationApiRoutes)
   .route('/', progressApiRoutes)
-  .route('/', sessionFilesApiRoutes)
   .route('/', studentApiRoutes);
 
 // Mounted at root (not under /api): GET /health is the single canonical

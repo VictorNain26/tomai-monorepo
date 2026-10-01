@@ -11,13 +11,13 @@ interface ExtractionResult {
 const extracted: ExtractionResult = { success: true, text: 'Exercice 1 : calculer 3 + 4.', metadata: { wordCount: 5, extractionMethod: 'pdf' } };
 let extraction: ExtractionResult = extracted;
 
-mock.module('../services/document/document-extraction.service', () => ({
+mock.module('../modules/documents/document-extraction.service', () => ({
   documentExtractionService: {
     extractText: async () => extraction,
   },
 }));
 
-const { documentAnalysisService } = await import('../services/document/document-analysis.service');
+const { documentAnalysisService } = await import('../modules/documents/document-analysis.service');
 const originalFetch = globalThis.fetch;
 beforeEach(() => { extraction = extracted; });
 afterEach(() => { globalThis.fetch = originalFetch; });
