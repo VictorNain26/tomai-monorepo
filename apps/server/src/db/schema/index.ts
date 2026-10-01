@@ -1,7 +1,8 @@
 import { relations } from 'drizzle-orm';
 import { user, session, account, parentChild } from './auth.schema';
 import { studySessions, messages, costTracking, progress } from './learning.schema';
-import { learningDecks, studentCognitiveProfiles } from './learning-tools.schema';
+import { learningDecks } from '../../modules/learning/decks.schema';
+import { studentCognitiveProfiles } from './cognitive-profile.schema';
 import { files, sessionFiles } from '../../modules/documents/files.schema';
 
 // =============================================
@@ -65,4 +66,5 @@ export * from './auth.schema';
 export * from './learning.schema';
 export * from './billing.schema';
 export * from '../../modules/documents/files.schema';
-export * from './learning-tools.schema';
+export * from '../../modules/learning/decks.schema';
+export * from './cognitive-profile.schema';

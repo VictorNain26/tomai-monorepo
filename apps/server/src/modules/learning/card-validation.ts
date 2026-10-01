@@ -6,7 +6,7 @@
  * enforces the same invariants without duplicating the rules.
  */
 
-import type { CardType } from '../../db/schema.js';
+import type { CardType } from './decks.schema.js';
 
 /**
  * Validate a card's content against the invariants of its type.

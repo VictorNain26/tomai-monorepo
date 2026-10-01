@@ -10,7 +10,7 @@
  * - ? = champ optionnel
  */
 
-import type { CardType } from '../types.js';
+import type { CardType } from '../card-generation.types.js';
 
 // ============================================================================
 // TEMPLATES PAR TYPE DE CARTE

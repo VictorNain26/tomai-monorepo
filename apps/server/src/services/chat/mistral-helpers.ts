@@ -11,12 +11,10 @@
  * - MAX_TOOL_ITERATIONS  : same agentic loop bound (5 iterations).
  * - wrapUserMessage      : prompt-injection defence (delimiter wrap), still
  *                          necessary regardless of provider.
- * - getLearningContext   : reads FSRS due-cards + weak subjects from pg.
+ * - getLearningContext   : turns the learning module's review signals into prompt text.
  */
 
-import { sql, eq, and } from 'drizzle-orm';
-import { db } from '../../db/connection.js';
-import { learningCards, learningDecks } from '../../db/schema.js';
+import { getReviewSignals } from '../../modules/learning/index.js';
 import { logger } from '../../platform/observability/logger.js';
 
 export const MAX_TOOL_ITERATIONS = 5;
@@ -94,31 +92,7 @@ export function wrapAttachedFiles(
 
 export async function getLearningContext(userId: string): Promise<string | null> {
   try {
-    const dueResult = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(learningCards)
-      .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
-      .where(and(
-        eq(learningDecks.userId, userId),
-        sql`(${learningCards.fsrsData}->>'due')::timestamptz <= now()`
-      ));
-
-    const dueCount = dueResult[0]?.count ?? 0;
-
-    const weakSubjects = await db
-      .select({
-        subject: learningDecks.subject,
-        totalLapses: sql<number>`sum((${learningCards.fsrsData}->>'lapses')::int)::int`,
-      })
-      .from(learningCards)
-      .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
-      .where(and(
-        eq(learningDecks.userId, userId),
-        sql`(${learningCards.fsrsData}->>'lapses')::int > 0`
-      ))
-      .groupBy(learningDecks.subject)
-      .orderBy(sql`sum((${learningCards.fsrsData}->>'lapses')::int) desc`)
-      .limit(3);
+    const { dueCount, weakSubjects } = await getReviewSignals(userId);
 
     if (dueCount === 0 && weakSubjects.length === 0) return null;
 

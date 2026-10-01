@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { generateStructured } from '../platform/ai/mistral-client';
-import { CardGenerationSchema } from '../lib/ai/schemas';
+import { CardGenerationSchema } from '../modules/learning/cards.schema';
 import { DocumentAnalysisSchema } from '../modules/documents/document-types';
 import { HAS_MISTRAL } from './_creds';
 

@@ -6,12 +6,12 @@
  */
 
 import { and, desc, eq } from 'drizzle-orm';
-import { db } from '../connection';
+import { db } from '../../db/connection.js';
 import {
   learningDecks,
   type LearningDeck,
   type NewLearningDeck,
-} from '../schema';
+} from './decks.schema.js';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 
 /**

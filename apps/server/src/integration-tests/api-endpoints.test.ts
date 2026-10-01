@@ -196,8 +196,12 @@ mock.module('../routes/subscription/index', () => ({
   statusRoutes: new Hono(),
 }));
 mock.module('../modules/voice/index', () => ({ voiceRoutes: new Hono() }));
-mock.module('../routes/learning/index', () => ({
+mock.module('../modules/learning/index', () => ({
   learningRoutes: new Hono(),
+  learningService: {},
+  generateCards: async () => ({ cards: [] }),
+  getLevelConfig: () => ({}),
+  getReviewSignals: async () => ({ dueCount: 0, weakSubjects: [] }),
 }));
 
 // DB schema + repositories
@@ -208,13 +212,15 @@ import * as authSchema from '../db/schema/auth.schema';
 import * as learningSchema from '../db/schema/learning.schema';
 import * as billingSchema from '../db/schema/billing.schema';
 import * as filesSchema from '../modules/documents/files.schema';
-import * as learningToolsSchema from '../db/schema/learning-tools.schema';
+import * as decksSchema from '../modules/learning/decks.schema';
+import * as cognitiveProfileSchema from '../db/schema/cognitive-profile.schema';
 mock.module('../db/schema', () => ({
   ...authSchema,
   ...learningSchema,
   ...billingSchema,
   ...filesSchema,
-  ...learningToolsSchema,
+  ...decksSchema,
+  ...cognitiveProfileSchema,
 }));
 mock.module('../modules/documents/files.repository', () => ({
   filesRepository: { findByUserId: mock(async () => []), findById: mock(async () => null) },

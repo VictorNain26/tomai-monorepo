@@ -40,15 +40,13 @@ let cardGenResult: Record<string, unknown> = {
 };
 
 let cardGenThrows = false;
-mock.module('../services/learning/card-generator.service', () => ({
-  generateCards: mock(async () => {
-    if (cardGenThrows) throw new Error('mistral unreachable');
-    return cardGenResult;
-  }),
-}));
+const generateCards = mock(async () => {
+  if (cardGenThrows) throw new Error('mistral unreachable');
+  return cardGenResult;
+});
 
-// FSRS — src/services/fsrs.service.ts
-mock.module('../services/fsrs.service', () => ({
+// FSRS — src/modules/learning/fsrs.service.ts
+mock.module('../modules/learning/fsrs.service', () => ({
   fsrsService: {
     initializeCardFsrsData: mock(() => ({ difficulty: 0.3, stability: 0 })),
   },
@@ -71,13 +69,16 @@ mock.module('../db/connection', () => ({
   },
 }));
 
-mock.module('../db/schema', () => ({
+mock.module('../modules/learning/decks.schema', () => ({
   learningDecks: {},
   learningCards: {},
 }));
 
-// Config mocks — src/config/
-mock.module('../config/learning-config', () => ({
+// The deck is created by the real learningService; generation and level config are stubbed.
+const { learningService } = await import('../modules/learning/learning.service');
+mock.module('../modules/learning/index', () => ({
+  generateCards,
+  learningService,
   getLevelConfig: mock(() => ({ cardsPerSession: 10 })),
 }));
 

@@ -6,8 +6,8 @@ import {
   learningService,
   CardNotFoundError,
   CardValidationError,
-} from '../../services/learning/learning.service';
-import { handleDeckDomainError, idParam } from './helpers';
+} from './learning.service.js';
+import { handleDeckDomainError, idParam } from './routes.helpers.js';
 
 
 const cardType = z.enum(['flashcard', 'qcm', 'vrai_faux']);

@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import { user, schoolLevelEnum } from './auth.schema';
+import { user, schoolLevelEnum } from '../../db/schema/auth.schema';
 
 // =============================================
 // ENUMS
@@ -104,38 +104,6 @@ export const learningCards = pgTable('learning_cards', {
   cardTypeIdx: index('idx_learning_cards_type').on(table.cardType),
 }));
 
-/**
- * Table student_cognitive_profiles - Profil cognitif persistant
- *
- * Mis à jour par l'agent IA au fil des conversations.
- * Utilisé pour personnaliser les réponses pédagogiques.
- */
-export const studentCognitiveProfiles = pgTable('student_cognitive_profiles', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: varchar('user_id', { length: 255 }).notNull().unique(),
-
-  // Profil cognitif (mis à jour par l'agent)
-  strengths: jsonb('strengths').default(sql`'[]'::jsonb`),
-  weaknesses: jsonb('weaknesses').default(sql`'[]'::jsonb`),
-  preferredStyle: varchar('preferred_style', { length: 50 }),
-
-  // Historique des observations (append-only, max 50 entries)
-  observations: jsonb('observations').default(sql`'[]'::jsonb`),
-
-  // Timestamps
-  lastUpdatedByAgent: timestamp('last_updated_by_agent', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
-    columns: [table.userId],
-    foreignColumns: [user.id],
-    name: 'student_cognitive_profiles_user_id_fkey'
-  }).onDelete('cascade'),
-
-  userIdIdx: index('idx_student_cognitive_profiles_user_id').on(table.userId),
-}));
-
 // =============================================
 // RELATIONS
 // =============================================
@@ -152,13 +120,6 @@ export const learningCardsRelations = relations(learningCards, ({ one }) => ({
   deck: one(learningDecks, {
     fields: [learningCards.deckId],
     references: [learningDecks.id]
-  }),
-}));
-
-export const studentCognitiveProfilesRelations = relations(studentCognitiveProfiles, ({ one }) => ({
-  user: one(user, {
-    fields: [studentCognitiveProfiles.userId],
-    references: [user.id]
   }),
 }));
 
@@ -213,14 +174,4 @@ export interface FSRSData {
   lapses?: number;
   state?: number; // 0=new, 1=learning, 2=review, 3=relearning
   lastReview?: string; // ISO date
-}
-
-// Cognitive Profile Types
-export type StudentCognitiveProfile = typeof studentCognitiveProfiles.$inferSelect;
-export type NewStudentCognitiveProfile = typeof studentCognitiveProfiles.$inferInsert;
-
-export interface CognitiveObservation {
-  date: string;
-  observation: string;
-  subject?: string;
 }

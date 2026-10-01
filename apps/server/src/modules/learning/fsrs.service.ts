@@ -8,12 +8,12 @@ import {
   type FSRSParameters,
   type Grade,
 } from 'ts-fsrs';
-import { learningCardsRepository } from '../db/repositories/learning-cards.repository.js';
-import { learningDecksRepository } from '../db/repositories/learning-decks.repository.js';
-import type { FSRSData } from '../db/schema.js';
-import { getLevelConfig } from '../config/learning-config.js';
-import type { EducationLevelType } from '../types/index.js';
-import { logger } from '../platform/observability/logger.js';
+import { learningCardsRepository } from './learning-cards.repository.js';
+import { learningDecksRepository } from './learning-decks.repository.js';
+import type { FSRSData } from './decks.schema.js';
+import { getLevelConfig } from './learning-config.js';
+import type { EducationLevelType } from '../../types/index.js';
+import { logger } from '../../platform/observability/logger.js';
 
 import type { ReviewResult, CardForReview, DeckReviewStats, GetDueCardsOptions } from './fsrs-types.js';
 
@@ -285,17 +285,6 @@ class FSRSService {
         interval: recordLog[Rating.Easy].card.scheduled_days,
       },
     } as Record<Grade, { due: Date; interval: number }>;
-  }
-
-  async resetCard(cardId: string): Promise<void> {
-    const emptyFsrsData = this.initializeCardFsrsData();
-
-    await learningCardsRepository.updateById(cardId, { fsrsData: emptyFsrsData });
-
-    logger.info('Card FSRS data reset', {
-      cardId,
-      operation: 'fsrs-reset',
-    });
   }
 
   async resetDeck(deckId: string, userId: string): Promise<number> {

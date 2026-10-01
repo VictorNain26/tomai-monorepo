@@ -17,7 +17,7 @@ import { chatMessageRoutes } from './routes/chat-message.routes.js';
 import { uploadRoutes, sessionFilesRoutes } from './modules/documents/index.js';
 import { statusRoutes } from './routes/subscription/index.js';
 import { voiceRoutes } from './modules/voice/index.js';
-import { learningRoutes } from './routes/learning/index.js';
+import { learningRoutes } from './modules/learning/index.js';
 
 import { logger } from './platform/observability/logger.js';
 import { handleError, handleNotFound } from './platform/http/error-handler.js';

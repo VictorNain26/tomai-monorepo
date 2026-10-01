@@ -10,7 +10,7 @@ import type { EducationLevelType } from '../../types/index';
 import {
   DeckNotFoundError,
   DeckOwnershipError,
-} from '../../services/learning/learning.service';
+} from './learning.service.js';
 
 /** `:id` of a deck or card: a UUID, so a malformed id is a 400, not a Postgres 500. */
 export const idParam = z.object({ id: z.uuid() });

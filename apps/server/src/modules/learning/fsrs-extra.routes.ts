@@ -7,10 +7,10 @@
 import { Hono } from 'hono';
 import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { logger } from '../../platform/observability/logger';
-import { learningService, CardNotFoundError } from '../../services/learning/learning.service';
-import { fsrsService } from '../../services/fsrs.service';
-import { getLevelConfig } from '../../config/learning-config';
-import { getUserLevel, idParam } from './helpers';
+import { learningService, CardNotFoundError } from './learning.service.js';
+import { fsrsService } from './fsrs.service.js';
+import { getLevelConfig } from './learning-config.js';
+import { getUserLevel, idParam } from './routes.helpers.js';
 
 export const fsrsExtraRoutes = new Hono<AuthEnv>()
 

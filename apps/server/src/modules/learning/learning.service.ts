@@ -16,8 +16,8 @@ import { db } from '../../db/connection.js';
 import {
   learningDecksRepository,
   type ListDecksOptions,
-} from '../../db/repositories/learning-decks.repository.js';
-import { learningCardsRepository } from '../../db/repositories/learning-cards.repository.js';
+} from './learning-decks.repository.js';
+import { learningCardsRepository } from './learning-cards.repository.js';
 import type {
   LearningDeck,
   NewLearningDeck,
@@ -25,10 +25,10 @@ import type {
   CardType,
   NewLearningCard,
   FSRSData,
-} from '../../db/schema.js';
+} from './decks.schema.js';
 import { logger } from '../../platform/observability/logger.js';
-import { fsrsService, Rating } from '../fsrs.service.js';
-import type { ReviewResult } from '../fsrs-types.js';
+import { fsrsService, Rating } from './fsrs.service.js';
+import type { ReviewResult } from './fsrs-types.js';
 import type { EducationLevelType } from '../../types/index.js';
 import {
   DeckNotFoundError,
