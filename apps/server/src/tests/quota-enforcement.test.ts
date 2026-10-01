@@ -30,7 +30,7 @@ mock.module('../platform/config/env', () => ({
 let dbSelectResult: Record<string, unknown>[] = [];
 let dbShouldThrow: Error | null = null;
 
-mock.module('../db/repositories/user-subscriptions.repository', () => ({
+mock.module('../modules/billing/user-subscriptions.repository', () => ({
   userSubscriptionsRepository: {
     findByUserId: mock(() =>
       dbShouldThrow ? Promise.reject(dbShouldThrow) : Promise.resolve(dbSelectResult[0]),
@@ -42,8 +42,8 @@ mock.module('../db/repositories/user-subscriptions.repository', () => ({
 }));
 
 // Import after env + mocks so env picks up the flag value.
-const { checkQuota } = await import('../services/quota/quota-functions');
-const { checkDeckQuota } = await import('../services/quota/quota-deck');
+const { checkQuota } = await import('../modules/billing/quota');
+const { checkDeckQuota } = await import('../modules/billing/quota-deck');
 
 beforeEach(() => {
   dbSelectResult = [];

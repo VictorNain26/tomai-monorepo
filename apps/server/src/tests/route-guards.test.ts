@@ -22,7 +22,7 @@ mock.module('../platform/config/env', () => ({
 }));
 mock.module('../db/connection', () => ({ db: {} }));
 mock.module('../services/education.service', () => ({ educationService: {} }));
-mock.module('../services/token-quota.service', () => ({
+mock.module('../modules/billing/index', () => ({
   checkQuota: async () => ({ plan: 'premium' }),
   checkDeckQuota: async () => ({ allowed: true }),
   incrementDeckUsage: async () => ({}),

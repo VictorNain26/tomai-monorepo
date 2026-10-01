@@ -1,5 +1,5 @@
 /**
- * Status Routes
+ * Subscription Routes
  *
  * GET /api/subscriptions/status - Get subscription status (DB-driven)
  * GET /api/subscriptions/usage  - Get token usage
@@ -9,13 +9,27 @@
 
 import { Hono } from 'hono';
 import { requireParent, requireUser, type AppEnv } from '../../platform/http/context.js';
-import { subscriptionService } from '../../services/subscription.service.js';
-import { usersRepository } from '../../modules/auth/index.js';
-import { verifyParentIdMatch } from './helpers.js';
-import { parentChildRepository } from '../../modules/family/index.js';
+import { subscriptionService } from './subscription.service.js';
+import { usersRepository } from '../auth/index.js';
+import { getUsageStats } from '../billing/index.js';
+import { parentChildRepository } from './parent-child.repository.js';
+
+// Prevents IDOR: a parent only reads their own subscription.
+function verifyParentIdMatch(
+  authenticatedUserId: string,
+  requestedParentId: string
+): { valid: boolean; error?: string } {
+  if (authenticatedUserId !== requestedParentId) {
+    return {
+      valid: false,
+      error: 'Access denied: You can only manage your own subscription'
+    };
+  }
+  return { valid: true };
+}
 
 // Mounted under /api/subscriptions by app.ts.
-export const statusRoutes = new Hono<AppEnv>()
+export const subscriptionRoutes = new Hono<AppEnv>()
 
   .get('/status', requireParent, async (c) => {
     const authenticatedUser = c.var.user;
@@ -58,8 +72,7 @@ export const statusRoutes = new Hono<AppEnv>()
       }, 403);
     }
 
-    const { tokenQuotaService } = await import('../../services/token-quota.service.js');
-    const usage = await tokenQuotaService.getUsageStats(userId);
+    const usage = await getUsageStats(userId);
 
     return c.json({
       userId,

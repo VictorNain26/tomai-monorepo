@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, timestamp, boolean, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import { user } from '../../modules/auth/auth.schema';
+import { user } from '../auth/auth.schema';
 
 // =============================================
 // ENUMS

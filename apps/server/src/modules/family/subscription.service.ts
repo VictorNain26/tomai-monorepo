@@ -1,5 +1,5 @@
-import { listChildren } from '../modules/family/index.js';
-import { subscriptionRepository } from '../db/repositories/subscription.repository.js';
+import { subscriptionRepository } from '../billing/index.js';
+import { listChildren } from './children.js';
 
 type ChildWithStatus = {
   id: string;

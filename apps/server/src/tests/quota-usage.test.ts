@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Token Quota Service (services/token-quota.service.ts)
+ * Tests unitaires - Quota de tokens et de fiches (modules/billing/quota.ts, quota-deck.ts)
  * REWRITE — behavioral tests for helpers via incrementTokenUsage
  * Mock: DB + logger
  *
@@ -66,7 +66,7 @@ const mockApplyDeckIncrement = mock(
   },
 );
 
-mock.module('../db/repositories/user-subscriptions.repository', () => ({
+mock.module('../modules/billing/user-subscriptions.repository', () => ({
   userSubscriptionsRepository: {
     findByUserId: mock(() => Promise.resolve(dbSelectResult[0])),
     findByUserIdWithPlanName: mock(() => Promise.resolve(dbSelectResult[0])),
@@ -81,7 +81,8 @@ mock.module('../db/repositories/user-subscriptions.repository', () => ({
 }));
 
 // Import after mocks
-const { tokenQuotaService } = await import('../services/token-quota.service');
+const { incrementTokenUsage, getUsageStats, getHoursUntilReset } = await import('../modules/billing/quota');
+const { incrementDeckUsage } = await import('../modules/billing/quota-deck');
 
 // Helper to create a subscription DB row for incrementTokenUsage
 function makeDbSubscription(overrides?: Record<string, unknown>) {
@@ -116,7 +117,7 @@ describe('Token Quota Service', () => {
         windowTokensUsed: 1000,
         tokensUsedToday: 2000,
       })];
-      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      const result = await incrementTokenUsage('user-001', 500);
       expect(result.success).toBe(true);
       expect(result.newWindowTokensUsed).toBe(1500); // 1000 + 500
       expect(result.newDailyTokensUsed).toBe(2500); // 2000 + 500
@@ -133,7 +134,7 @@ describe('Token Quota Service', () => {
         lastResetAt: yesterdayMorning,
         tokensUsedToday: 10000,
       })];
-      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      const result = await incrementTokenUsage('user-001', 500);
       expect(result.success).toBe(true);
       expect(result.newWindowTokensUsed).toBe(500);
       expect(result.newDailyTokensUsed).toBe(500);
@@ -146,7 +147,7 @@ describe('Token Quota Service', () => {
         windowTokensUsed: 4000, // Should be reset to 0 before adding
         tokensUsedToday: 2000,
       })];
-      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      const result = await incrementTokenUsage('user-001', 500);
       expect(result.success).toBe(true);
       // Window was reset → only the new 500 tokens
       expect(result.newWindowTokensUsed).toBe(500);
@@ -158,7 +159,7 @@ describe('Token Quota Service', () => {
         windowStartAt: fourHours59Min,
         windowTokensUsed: 3000,
       })];
-      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      const result = await incrementTokenUsage('user-001', 500);
       expect(result.success).toBe(true);
       expect(result.newWindowTokensUsed).toBe(3500); // 3000 + 500, not reset
     });
@@ -169,7 +170,7 @@ describe('Token Quota Service', () => {
         windowTokensUsed: 4800,
         tokensUsedToday: 0,
       })];
-      const result = await tokenQuotaService.incrementTokenUsage('user-001', 200);
+      const result = await incrementTokenUsage('user-001', 200);
       expect(result.success).toBe(true);
       expect(result.newWindowTokensUsed).toBe(5000);
       // 5000/5000 = 100% → blocked
@@ -181,7 +182,7 @@ describe('Token Quota Service', () => {
         windowTokensUsed: 0,
         tokensUsedToday: 0,
       })];
-      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      const result = await incrementTokenUsage('user-001', 500);
       expect(result.success).toBe(true);
       // 500/5000 = 10% → normal
       expect(result.mode).toBe('normal');
@@ -193,7 +194,7 @@ describe('Token Quota Service', () => {
         windowTokensUsed: 3750,
         tokensUsedToday: 0,
       })];
-      const result = await tokenQuotaService.incrementTokenUsage('user-001', 500);
+      const result = await incrementTokenUsage('user-001', 500);
       expect(result.success).toBe(true);
       // 4250/5000 = 85% → exactly at WARNING threshold
       expect(result.mode).toBe('warning');
@@ -205,7 +206,7 @@ describe('Token Quota Service', () => {
         windowTokensUsed: 4500,
         tokensUsedToday: 0,
       })];
-      const result = await tokenQuotaService.incrementTokenUsage('user-001', 250);
+      const result = await incrementTokenUsage('user-001', 250);
       expect(result.success).toBe(true);
       // 4750/5000 = 95% → throttle
       expect(result.mode).toBe('throttle');
@@ -214,7 +215,7 @@ describe('Token Quota Service', () => {
     it('should return success=false on DB error', async () => {
       dbSelectResult = [];
       dbInsertShouldThrow = true;
-      const result = await tokenQuotaService.incrementTokenUsage('user-err', 100);
+      const result = await incrementTokenUsage('user-err', 100);
       expect(result.success).toBe(false);
     });
   });
@@ -222,7 +223,7 @@ describe('Token Quota Service', () => {
   describe('getUsageStats', () => {
     it('should handle missing subscription gracefully', async () => {
       dbSelectResult = [];
-      const stats = await tokenQuotaService.getUsageStats('user-new');
+      const stats = await getUsageStats('user-new');
       expect(stats.weeklyTokensUsed).toBe(0);
       expect(stats.totalTokensUsed).toBe(0);
     });
@@ -233,7 +234,7 @@ describe('Token Quota Service', () => {
         tokensUsedThisWeek: 9000,
         lastWeeklyResetAt: new Date('2026-09-14T08:00:00Z'),
       })];
-      const stats = await tokenQuotaService.getUsageStats('user-001');
+      const stats = await getUsageStats('user-001');
       setSystemTime();
       expect(stats.weeklyTokensUsed).toBe(0);
     });
@@ -250,7 +251,7 @@ describe('Token Quota Service', () => {
         lastResetAt: new Date(),
         lastMonthlyResetAt: new Date(),
       }];
-      const result = await tokenQuotaService.incrementDeckUsage('user-001');
+      const result = await incrementDeckUsage('user-001');
       expect(result.success).toBe(true);
       expect(result.newDecksGeneratedToday).toBe(2);
       expect(result.newDecksGeneratedThisMonth).toBe(11);
@@ -262,14 +263,14 @@ describe('Token Quota Service', () => {
     it('should return success=false on error', async () => {
       dbSelectResult = [];
       dbInsertShouldThrow = true;
-      const result = await tokenQuotaService.incrementDeckUsage('user-err');
+      const result = await incrementDeckUsage('user-err');
       expect(result.success).toBe(false);
     });
   });
 
   describe('getHoursUntilReset', () => {
     it('should return a non-empty time string (Xh or Xmin)', () => {
-      const result = tokenQuotaService.getHoursUntilReset();
+      const result = getHoursUntilReset();
       expect(typeof result).toBe('string');
       expect(result).toMatch(/^\d+[hm]/); // matches "5h", "30min", etc.
     });

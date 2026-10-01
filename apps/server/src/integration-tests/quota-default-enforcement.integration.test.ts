@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'bun:test';
 import { sql } from 'drizzle-orm';
-import { checkQuota, checkDeckQuota } from '../services/quota/quota-functions.js';
-import { QUOTA_CONFIG } from '../services/quota/quota-config.js';
+import { checkQuota } from '../modules/billing/quota.js';
+import { checkDeckQuota } from '../modules/billing/quota-deck.js';
+import { QUOTA_CONFIG } from '../modules/billing/quota-config.js';
 
 /**
  * Integration test — quota enforcement is ON by default

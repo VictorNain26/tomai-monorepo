@@ -1,12 +1,12 @@
 import { eq, sql } from 'drizzle-orm';
-import { db } from '../connection';
+import { db } from '../../db/connection';
 import {
   userSubscriptions,
   subscriptionPlans,
   type UserSubscription,
   type NewUserSubscription,
   type SubscriptionPlan,
-} from '../schema';
+} from '../../db/schema';
 
 type SubscriptionWithPlanName = UserSubscription & { planName: string };
 

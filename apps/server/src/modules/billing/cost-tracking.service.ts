@@ -14,10 +14,10 @@
  * Monitoring can alert on these.
  */
 
-import { db } from '../db/connection.js';
-import { costTracking } from '../db/schema.js';
-import { logger } from '../platform/observability/logger.js';
-import { env } from '../platform/config/env.js';
+import { db } from '../../db/connection.js';
+import { costTracking } from '../../db/schema.js';
+import { logger } from '../../platform/observability/logger.js';
+import { env } from '../../platform/config/env.js';
 
 type AiOperation = 'chat' | 'summarization' | 'auto-title' | 'card-generation' | 'intent-classify' | 'document-analysis';
 

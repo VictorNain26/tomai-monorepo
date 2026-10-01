@@ -18,7 +18,7 @@ import { chatOrchestrationService, ChatOrchestrationError } from './chat-orchest
 import { streamChat } from './ai-chat.service.js';
 import { buildChatTools } from './chat-tools.js';
 import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js';
-import { tokenQuotaService } from '../../services/token-quota.service.js';
+import { checkQuota } from '../billing/index.js';
 import { AppError, toErrorResponse } from '../../platform/http/errors.js';
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
@@ -64,7 +64,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     const safeContent = sanitizePrompt(extractTextFromParts((message as { parts?: unknown } | null)?.parts));
 
     // 1. Quota check
-    const quotaCheck = await tokenQuotaService.checkQuota(user.id);
+    const quotaCheck = await checkQuota(user.id);
     if (!quotaCheck.allowed) {
       return c.json({
         error: {

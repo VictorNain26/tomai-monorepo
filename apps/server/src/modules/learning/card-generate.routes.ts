@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { logger } from '../../platform/observability/logger';
-import { checkQuota, checkDeckQuota, incrementDeckUsage } from '../../services/token-quota.service';
+import { checkQuota, checkDeckQuota, incrementDeckUsage } from '../billing/index.js';
 import { getLevelConfig } from './learning-config.js';
 import {
   generateCards,

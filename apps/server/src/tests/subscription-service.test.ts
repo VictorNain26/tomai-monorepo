@@ -4,15 +4,15 @@ const listChildren = mock(async (_parentId: string, _options?: { includeInactive
   { id: 'c1', name: 'Léa Martin', username: 'lea' },
   { id: 'c2', name: 'Tom Martin', username: 'tom' },
 ]);
-mock.module('../modules/family/index', () => ({ listChildren }));
-mock.module('../db/repositories/subscription.repository', () => ({
+mock.module('../modules/family/children', () => ({ listChildren }));
+mock.module('../modules/billing/index', () => ({
   subscriptionRepository: {
     findFamilyBilling: mock(async () => undefined),
     findChildSubscriptions: mock(async () => [{ userId: 'c2', planName: 'premium', status: 'active' }]),
   },
 }));
 
-const { subscriptionService } = await import('../services/subscription.service');
+const { subscriptionService } = await import('../modules/family/subscription.service');
 
 describe('subscriptionService.getFamilyStatus', () => {
   it('lists every child, deactivated ones included, with their plan', async () => {

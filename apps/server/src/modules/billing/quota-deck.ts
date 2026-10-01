@@ -4,7 +4,7 @@
  * Extracted from quota-functions.ts to keep each file under the 400-line limit.
  */
 
-import { userSubscriptionsRepository } from '../../db/repositories/user-subscriptions.repository.js';
+import { userSubscriptionsRepository } from './user-subscriptions.repository.js';
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
 import {
@@ -14,7 +14,7 @@ import {
   type DeckQuotaResult,
   type DeckUsageResult,
 } from './quota-config.js';
-import { ensureUserSubscription } from './quota-functions.js';
+import { ensureUserSubscription } from './quota.js';
 
 export async function checkDeckQuota(userId: string): Promise<DeckQuotaResult> {
   // Feature flag: unlimited access when enforcement is off. Counters still

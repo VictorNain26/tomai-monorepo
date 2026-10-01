@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { computeCostCents, regionalUpcharge } from '../services/cost-tracking.service.js';
+import { computeCostCents, regionalUpcharge } from '../modules/billing/cost-tracking.service.js';
 
 // USD_TO_EUR par défaut = 0.92.
 describe('computeCostCents', () => {

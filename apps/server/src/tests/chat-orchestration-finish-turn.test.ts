@@ -80,8 +80,10 @@ mock.module('../modules/tutor/cognitive-profile.service', () => ({
 }));
 
 const record = mock(async () => {});
-mock.module('../services/cost-tracking.service', () => ({
+const incrementTokenUsage = mock(async () => {});
+mock.module('../modules/billing/index', () => ({
   costTrackingService: { record },
+  incrementTokenUsage,
 }));
 
 mock.module('../modules/tutor/episodic-memory.service', () => ({
@@ -93,11 +95,6 @@ mock.module('../modules/tutor/episodic-memory.service', () => ({
 
 mock.module('../modules/tutor/subject-profile.service', () => ({
   subjectProfileService: { formatSubjectMemoryForPrompt: mock(async () => null) },
-}));
-
-const incrementTokenUsage = mock(async () => {});
-mock.module('../services/token-quota.service', () => ({
-  tokenQuotaService: { incrementTokenUsage },
 }));
 
 // Import the real module under test AFTER all mocks are registered.
