@@ -3,7 +3,7 @@ import {
   stripPromptTags,
   wrapUserMessage,
   wrapAttachedFiles,
-} from '../services/chat/mistral-helpers.js';
+} from '../modules/tutor/mistral-helpers.js';
 
 describe('stripPromptTags', () => {
   it('retire les fences de contenu non-maîtrisé', () => {

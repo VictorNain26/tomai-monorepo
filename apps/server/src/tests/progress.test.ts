@@ -20,12 +20,15 @@ let sessionStatsData = { totalSessions: 0, totalMinutes: 0, averageFrustration: 
 let progressSummaryData = { totalConcepts: 0, subjectProgress: [] };
 
 mock.module('../db/repositories', () => ({
+  progressRepository: {
+    getProgressSummary: mock(async () => progressSummaryData),
+  },
+}));
+
+mock.module('../modules/tutor/index', () => ({
   studySessionsRepository: {
     getSessionStats: mock(async () => sessionStatsData),
     findByUserIdWithStats: mock(async () => sessionsData),
-  },
-  progressRepository: {
-    getProgressSummary: mock(async () => progressSummaryData),
   },
 }));
 

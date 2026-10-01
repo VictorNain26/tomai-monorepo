@@ -33,7 +33,7 @@ mock.module('../modules/documents/files.repository', () => ({
 mock.module('../modules/documents/session-files.repository', () => ({
   sessionFilesRepository: { attach, countBySession: mock(async () => 0) },
 }));
-mock.module('../db/repositories/study-sessions.repository', () => ({
+mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: { findById: mock(async (id: string) => ({ id, userId: sessionOwner })) },
 }));
 
@@ -43,7 +43,7 @@ mock.module('../modules/documents/storage', () => ({
 }));
 
 const { uploadRoutes } = await import('../modules/documents/upload.routes');
-const { sessionFilesRoutes } = await import('../modules/documents/session-files.routes');
+const { sessionFilesRoutes } = await import('../modules/tutor/session-files.routes');
 const { handleError } = await import('../platform/http/error-handler');
 
 const app = new Hono<AppEnv>()

@@ -83,7 +83,7 @@ mock.module('../services/token-quota.service', () => ({
 
 // Retention purge — its real module pulls the Drizzle schemas, whose
 // `relations` import the partial drizzle-orm mock above doesn't provide.
-mock.module('../services/retention-purge.service', () => ({
+mock.module('../modules/tutor/retention-purge.service', () => ({
   purgeExpiredData: mock(async () => ({ episodesDeleted: 0, profilesDeleted: 0 })),
   startRetentionPurgeScheduler: () => () => {},
 }));
@@ -129,7 +129,7 @@ mock.module('../platform/auth/session', () => ({
 }));
 
 // Services used by apiRoutes
-mock.module('../services/chat/chat-session.service', () => ({
+mock.module('../modules/tutor/chat-session.service', () => ({
   chatSessionService: {
     getOrCreateActiveSession: mock(async () => 'session-001'),
     deleteSession: mock(async () => {}),
@@ -164,7 +164,7 @@ mock.module('../services/chat/chat-session.service', () => ({
   },
 }));
 
-mock.module('../services/chat/chat-message.service', () => ({
+mock.module('../modules/tutor/chat-message.service', () => ({
   chatMessageService: {
     getSessionHistory: mock(async () => [
       { id: 'msg-1', role: 'user', content: 'Hello', createdAt: new Date(), aiModel: null, attachedFile: null },
@@ -189,7 +189,7 @@ mock.module('../services/progress.service', () => ({
 }));
 
 // Mock non-essential route modules as empty Hono apps
-mock.module('../routes/chat-message.routes', () => ({ chatMessageRoutes: new Hono() }));
+mock.module('../modules/tutor/chat-message.routes', () => ({ chatMessageRoutes: new Hono() }));
 mock.module('../modules/documents/upload.routes', () => ({ uploadRoutes: new Hono() }));
 mock.module('../modules/documents/file-context.service', () => ({ fileContextService: {} }));
 mock.module('../routes/subscription/index', () => ({
@@ -209,11 +209,11 @@ mock.module('../modules/learning/index', () => ({
 // sharing this Bun process (single module registry) can still import named
 // exports such as `user`, `parentChild`, etc.
 import * as authSchema from '../db/schema/auth.schema';
-import * as learningSchema from '../db/schema/learning.schema';
+import * as learningSchema from '../modules/tutor/session.schema';
 import * as billingSchema from '../db/schema/billing.schema';
 import * as filesSchema from '../modules/documents/files.schema';
 import * as decksSchema from '../modules/learning/decks.schema';
-import * as cognitiveProfileSchema from '../db/schema/cognitive-profile.schema';
+import * as cognitiveProfileSchema from '../modules/tutor/cognitive-profile.schema';
 mock.module('../db/schema', () => ({
   ...authSchema,
   ...learningSchema,

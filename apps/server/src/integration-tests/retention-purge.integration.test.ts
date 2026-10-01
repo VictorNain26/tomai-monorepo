@@ -25,7 +25,7 @@ describe.skipIf(!dbReachable)('purgeExpiredData — counts from a real postgres-
   it('reports the expired subject profiles it deleted', async () => {
     const { db } = await import('../db/connection');
     const { user, studentSubjectProfiles } = await import('../db/schema');
-    const { purgeExpiredData } = await import('../services/retention-purge.service');
+    const { purgeExpiredData } = await import('../modules/tutor/retention-purge.service');
 
     await db.insert(user).values({ id: userId, email: `${userId}@internal.tomai` });
     await db.insert(studentSubjectProfiles).values({

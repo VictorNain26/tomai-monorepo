@@ -24,7 +24,7 @@ let profileResult: Record<string, unknown> | null = {
   lastUpdatedByAgent: new Date('2025-06-15'),
 };
 
-mock.module('../services/cognitive-profile.service', () => ({
+mock.module('../modules/tutor/cognitive-profile.service', () => ({
   cognitiveProfileService: {
     getProfile: mock(async () => profileResult),
   },
@@ -82,7 +82,7 @@ mock.module('../modules/learning/index', () => ({
   getLevelConfig: mock(() => ({ cardsPerSession: 10 })),
 }));
 
-mock.module('../config/app-guide/index', () => ({
+mock.module('../modules/tutor/app-guide/index', () => ({
   getAppHelpContent: mock((topic: string) => {
     if (topic === 'overview') return 'Guide overview content';
     return null;
@@ -90,7 +90,7 @@ mock.module('../config/app-guide/index', () => ({
 }));
 
 // Import after all mocks
-const { executeTool } = await import('../services/chat/tool-executor');
+const { executeTool } = await import('../modules/tutor/tool-executor');
 
 const baseContext = {
   userId: 'user-001',

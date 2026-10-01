@@ -72,7 +72,7 @@ mock.module('drizzle-orm', () => ({
 }));
 
 // Import after mocks
-const { cognitiveProfileService } = await import('../services/cognitive-profile.service');
+const { cognitiveProfileService } = await import('../modules/tutor/cognitive-profile.service');
 
 beforeEach(() => {
   queryFindFirstResult = undefined;

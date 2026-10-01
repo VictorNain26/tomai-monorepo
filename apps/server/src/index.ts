@@ -20,7 +20,7 @@ const { app, initializeServices } = await import('./app');
 const { logger } = await import('./platform/observability/logger.js');
 const { env } = await import('./platform/config/env.js');
 const { closeConnection } = await import('./db/connection.js');
-const { startRetentionPurgeScheduler } = await import('./services/retention-purge.service.js');
+const { startRetentionPurgeScheduler } = await import('./modules/tutor/index.js');
 const { createGracefulShutdown } = await import('./platform/lifecycle/graceful-shutdown.js');
 
 const PORT = env.PORT;

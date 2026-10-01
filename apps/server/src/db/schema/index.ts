@@ -1,8 +1,10 @@
 import { relations } from 'drizzle-orm';
 import { user, session, account, parentChild } from './auth.schema';
-import { studySessions, messages, costTracking, progress } from './learning.schema';
+import { studySessions, messages } from '../../modules/tutor/session.schema';
+import { progress } from './progress.schema';
+import { costTracking } from './cost-tracking.schema';
 import { learningDecks } from '../../modules/learning/decks.schema';
-import { studentCognitiveProfiles } from './cognitive-profile.schema';
+import { studentCognitiveProfiles } from '../../modules/tutor/cognitive-profile.schema';
 import { files, sessionFiles } from '../../modules/documents/files.schema';
 
 // =============================================
@@ -50,7 +52,8 @@ export const studySessionsRelations = relations(studySessions, ({ one, many }) =
 // CROSS-DOMAIN TYPES
 // =============================================
 import type { User, Session, Account } from './auth.schema';
-import type { StudySession, Progress } from './learning.schema';
+import type { StudySession } from '../../modules/tutor/session.schema';
+import type { Progress } from './progress.schema';
 
 export type UserWithRelations = User & {
   sessions?: Session[];
@@ -63,8 +66,10 @@ export type UserWithRelations = User & {
 // RE-EXPORTS
 // =============================================
 export * from './auth.schema';
-export * from './learning.schema';
+export * from '../../modules/tutor/session.schema';
+export * from './progress.schema';
+export * from './cost-tracking.schema';
 export * from './billing.schema';
 export * from '../../modules/documents/files.schema';
 export * from '../../modules/learning/decks.schema';
-export * from './cognitive-profile.schema';
+export * from '../../modules/tutor/cognitive-profile.schema';

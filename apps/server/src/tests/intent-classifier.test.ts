@@ -46,7 +46,7 @@ mock.module('../platform/ai/mistral-client', () => ({
 }));
 
 // Import after mocks
-const { intentClassifierService } = await import('../services/chat/intent-classifier.service');
+const { intentClassifierService } = await import('../modules/tutor/intent-classifier.service');
 
 beforeEach(() => {
   mockStructuredResponse = { intent: 'explain-concept', confidence: 'high', subject: 'mathematiques' };

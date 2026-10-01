@@ -6,7 +6,7 @@ import { MockLanguageModelV4 } from 'ai/test';
 import { OpenTelemetry } from '@ai-sdk/otel';
 import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor, type ReadableSpan } from '@opentelemetry/sdk-trace-base';
 import { generateText, generateStructured } from '../platform/ai/mistral-client';
-import { streamChat } from '../services/chat/ai-chat.service';
+import { streamChat } from '../modules/tutor/ai-chat.service';
 
 const exporter = new InMemorySpanExporter();
 const provider = new BasicTracerProvider({ spanProcessors: [new SimpleSpanProcessor(exporter)] });

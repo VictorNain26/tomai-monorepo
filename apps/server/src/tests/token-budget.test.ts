@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { estimateTokens, truncateToTokenBudget, calculateBudget } from '../services/chat/token-budget.service';
+import { estimateTokens, truncateToTokenBudget, calculateBudget } from '../modules/tutor/token-budget.service';
 
 describe('Token Budget Service', () => {
   describe('estimateTokens', () => {

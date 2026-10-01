@@ -10,7 +10,7 @@
 
 import { describe, it, expect, mock } from 'bun:test';
 import { asSchema, type ToolSet } from 'ai';
-import type { TomMetadata } from '../services/chat/chat-ui-message';
+import type { TomMetadata } from '../modules/tutor/chat-ui-message';
 
 // ============================================
 // MOCKS — tool-executor.ts is the single delegation point
@@ -19,13 +19,13 @@ import type { TomMetadata } from '../services/chat/chat-ui-message';
 let executeToolResult: unknown = { ok: true };
 const executeToolMock = mock(async () => executeToolResult);
 
-mock.module('../services/chat/tool-executor', () => ({
+mock.module('../modules/tutor/tool-executor', () => ({
   executeTool: executeToolMock,
   isDeckCreatedResult: (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'deck_created',
 }));
 
-const { buildChatTools, SUBJECT_SLUGS } = await import('../services/chat/chat-tools');
+const { buildChatTools, SUBJECT_SLUGS } = await import('../modules/tutor/chat-tools');
 
 const baseContext = {
   userId: 'user-001',

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { resolveEffectiveSubject, shouldPersistDetectedSubject } from '../services/chat/subject-resolution.js';
+import { resolveEffectiveSubject, shouldPersistDetectedSubject } from '../modules/tutor/subject-resolution.js';
 
 describe('resolveEffectiveSubject', () => {
   it('prefers a confident detected subject', () => {

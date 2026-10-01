@@ -31,7 +31,7 @@ let existingProfile: Profile | null = null;
 const updateProfileSpy = mock(async () => undefined);
 const getProfileSpy = mock(async () => existingProfile);
 
-mock.module('../services/cognitive-profile.service', () => ({
+mock.module('../modules/tutor/cognitive-profile.service', () => ({
   cognitiveProfileService: {
     getProfile: getProfileSpy,
     updateProfile: updateProfileSpy,
@@ -52,12 +52,12 @@ mock.module('../db/connection', () => ({
   db: { transaction: mock(async (fn: (tx: unknown) => Promise<unknown>) => fn({})) },
 }));
 
-mock.module('../config/app-guide/index', () => ({
+mock.module('../modules/tutor/app-guide/index', () => ({
   getAppHelpContent: mock(() => null),
 }));
 
 // Import after mocks
-const { executeTool, isDeckCreatedResult } = await import('../services/chat/tool-executor');
+const { executeTool, isDeckCreatedResult } = await import('../modules/tutor/tool-executor');
 
 const baseContext = {
   userId: 'user-001',

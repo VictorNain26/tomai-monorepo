@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
-import { routeReasoningEffort } from '../lib/ai/mistral-reasoning.js';
-import { STUDENT_SUBJECTS } from '../config/prompts/adaptation/subjects.js';
+import { routeReasoningEffort } from '../modules/tutor/mistral-reasoning.js';
+import { STUDENT_SUBJECTS } from '../modules/tutor/prompts/adaptation/subjects.js';
 
 describe('routeReasoningEffort', () => {
   it('boosts the subject families the intent classifier emits for STEM', () => {

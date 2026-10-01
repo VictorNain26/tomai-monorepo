@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { wrapStudentContext } from '../services/chat/mistral-helpers';
+import { wrapStudentContext } from '../modules/tutor/mistral-helpers';
 
 describe('wrapStudentContext', () => {
   it('returns null when both inputs are absent', () => {

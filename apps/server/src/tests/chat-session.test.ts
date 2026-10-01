@@ -75,6 +75,20 @@ mock.module('../db/repositories', () => ({
   usersRepository: {
     findById: mock(async () => findUserByIdResult),
   },
+}));
+
+mock.module('../modules/tutor/messages.repository', () => ({
+  messagesRepository: {
+    findBySessionId: mock(async () => findBySessionIdResult),
+    create: mock(async (input: Record<string, unknown>) => ({
+      id: createMessageResult.id,
+      ...input,
+    })),
+    findById: mock(async () => findMessageByIdResult),
+  },
+}));
+
+mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: {
     findActiveByUser: mock(async () => findActiveByUserResult),
     findById: mock(async () => findByIdResult),
@@ -84,14 +98,6 @@ mock.module('../db/repositories', () => ({
     deleteById: mock(async () => {
       deleteByIdCalled = true;
     }),
-  },
-  messagesRepository: {
-    findBySessionId: mock(async () => findBySessionIdResult),
-    create: mock(async (input: Record<string, unknown>) => ({
-      id: createMessageResult.id,
-      ...input,
-    })),
-    findById: mock(async () => findMessageByIdResult),
   },
 }));
 
@@ -126,15 +132,15 @@ mock.module('drizzle-orm', () => ({
 
 // The real service pulls schema symbols this file's partial `../db/schema`
 // mock does not provide.
-mock.module('../services/episodic-memory.service', () => ({
+mock.module('../modules/tutor/episodic-memory.service', () => ({
   episodicMemoryService: {
     extractAndStore: mock(async () => {}),
   },
 }));
 
 // Import after mocks
-const { ChatSessionService } = await import('../services/chat/chat-session.service');
-const { ChatMessageService } = await import('../services/chat/chat-message.service');
+const { ChatSessionService } = await import('../modules/tutor/chat-session.service');
+const { ChatMessageService } = await import('../modules/tutor/chat-message.service');
 
 function rejection(promise: Promise<unknown>): Promise<unknown> {
   return promise.then(() => undefined, (error: unknown) => error);
@@ -186,7 +192,7 @@ describe('ChatSessionService', () => {
       findActiveByUserResult = null;
       createSessionResult = { id: VALID_UUID };
       // Simulate error by making findActiveByUser throw
-      const { studySessionsRepository } = await import('../db/repositories');
+      const { studySessionsRepository } = await import('../modules/tutor/study-sessions.repository');
       (studySessionsRepository.findActiveByUser as ReturnType<typeof mock>).mockImplementationOnce(
         () => Promise.reject(new Error('DB connection lost'))
       );

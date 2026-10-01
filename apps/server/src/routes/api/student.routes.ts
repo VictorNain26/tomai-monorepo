@@ -1,10 +1,9 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
-import { subjectProfileService } from '../../services/chat/subject-profile.service.js';
+import { subjectProfileService, STUDENT_SUBJECTS } from '../../modules/tutor/index.js';
 import { AppError } from '../../platform/http/errors.js';
 import { logger } from '../../platform/observability/logger.js';
-import { STUDENT_SUBJECTS } from '../../config/prompts/adaptation/subjects.js';
 
 const editMemoryBody = z.object({
   subject: z.enum(STUDENT_SUBJECTS),

@@ -65,6 +65,16 @@ mock.module('../db/repositories', () => ({
     deleteById: mockDeleteById,
     findById: mock(async () => findByIdResult),
   },
+  progressRepository: {
+    getProgressSummary: mock(async () => ({
+      subjectProgress: [
+        { subject: 'maths', conceptCount: 5, averageMastery: 0.7, totalPracticeTime: 120 },
+      ],
+    })),
+  },
+}));
+
+mock.module('../modules/tutor/index', () => ({
   studySessionsRepository: {
     getSessionStats: mock(async () => ({
       totalSessions: 10,
@@ -84,13 +94,6 @@ mock.module('../db/repositories', () => ({
     findBySessionId: mock(async () => [
       { id: 'msg-1', role: 'user', content: 'Hello', frustrationLevel: null, createdAt: new Date(), aiModel: null, tokensUsed: null },
     ]),
-  },
-  progressRepository: {
-    getProgressSummary: mock(async () => ({
-      subjectProgress: [
-        { subject: 'maths', conceptCount: 5, averageMastery: 0.7, totalPracticeTime: 120 },
-      ],
-    })),
   },
 }));
 

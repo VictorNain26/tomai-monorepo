@@ -37,13 +37,13 @@ const mockDb = {
 };
 
 mock.module('../db/connection', () => ({ db: mockDb }));
-mock.module('../db/schema/learning.schema', () => ({
+mock.module('../modules/tutor/session.schema', () => ({
   sessionEpisodes: { ttlUntil: 'ttl_until' },
   studentSubjectProfiles: { ttlUntil: 'ttl_until' },
 }));
 // Import after mocks
 const { purgeExpiredData, startRetentionPurgeScheduler } = await import(
-  '../services/retention-purge.service'
+  '../modules/tutor/retention-purge.service'
 );
 
 beforeEach(() => {

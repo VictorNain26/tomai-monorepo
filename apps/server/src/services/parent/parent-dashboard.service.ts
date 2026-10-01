@@ -1,5 +1,6 @@
 import { sql, eq, desc } from 'drizzle-orm';
-import { studySessionsRepository, messagesRepository, progressRepository } from '../../db/repositories';
+import { progressRepository } from '../../db/repositories';
+import { studySessionsRepository, messagesRepository } from '../../modules/tutor/index.js';
 import { db } from '../../db/connection';
 import { studySessions } from '../../db/schema';
 import { logger } from '../../platform/observability/logger';
