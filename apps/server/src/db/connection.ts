@@ -113,22 +113,6 @@ export const db = new Proxy({} as PostgresJsDatabase<typeof schema>, {
 // UTILITIES
 // ============================================================================
 
-let poolWarnings = 0;
-
-/**
- * Log pool warning
- * Called when pool utilization > 80%
- */
-export function logPoolWarning(context: string): void {
-  poolWarnings++;
-  logger.warn('PostgreSQL pool high utilization', {
-    operation: 'db:pool:warning',
-    context,
-    warnings: poolWarnings,
-    severity: 'medium' as const
-  });
-}
-
 /**
  * Graceful shutdown
  */
