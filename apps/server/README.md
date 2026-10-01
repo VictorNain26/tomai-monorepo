@@ -35,7 +35,6 @@ Documentation interactive auto-générée disponible en dev :
 | Framework | Elysia.js 1.4 |
 | Database | PostgreSQL 18 + pgvector |
 | ORM | Drizzle ORM 0.45 |
-| Cache | MemoryCacheService (LRU in-memory avec TTL) |
 | Auth | Better Auth 1.7 + Google OAuth |
 | AI Chat | Mistral Small 4 (`mistral-small-2603`, streaming + tools + vision), endpoint UE |
 | Embeddings | `mistral-embed-2312` 1024D (mémoire épisodique, pgvector) |
@@ -106,7 +105,7 @@ src/
 │   ├── migrate.ts              # Runtime migrator
 │   └── repositories/           # Data access layer
 ├── lib/                        # Auth, observability
-├── middleware/                  # Auth, rate-limit, memory monitor
+├── middleware/                  # Auth, rate-limit, erreurs
 ├── routes/                     # API endpoints
 │   ├── chat-message.routes.ts  # SSE streaming
 │   ├── file-upload.routes.ts   # Upload Scaleway
