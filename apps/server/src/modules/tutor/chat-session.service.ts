@@ -1,4 +1,4 @@
-import { usersRepository } from '../../db/repositories';
+import { usersRepository } from '../auth/index.js';
 import { studySessionsRepository, type CreateStudySessionInput } from './study-sessions.repository.js';
 import type { SchoolLevel } from '../../db/schema';
 import { logger } from '../../platform/observability/logger';

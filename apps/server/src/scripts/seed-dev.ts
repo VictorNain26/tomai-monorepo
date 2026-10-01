@@ -11,8 +11,8 @@ import { isProduction } from '../platform/config/env';
 import { auth } from '../platform/auth/auth';
 import { db } from '../db/connection';
 import { learningDecks } from '../db/schema';
-import { usersRepository } from '../db/repositories';
-import { parentChildRepository } from '../db/repositories/parent-child.repository';
+import { usersRepository } from '../modules/auth/index.js';
+import { parentChildRepository } from '../modules/family/index.js';
 import type { SchoolLevel } from '../db/schema.js';
 
 const SEED = {

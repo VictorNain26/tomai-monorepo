@@ -1,4 +1,4 @@
-import { usersRepository } from '../db/repositories/users.repository.js';
+import { listChildren } from '../modules/family/index.js';
 import { subscriptionRepository } from '../db/repositories/subscription.repository.js';
 
 type ChildWithStatus = {
@@ -27,7 +27,7 @@ class SubscriptionService {
   async getFamilyStatus(parentId: string): Promise<FamilyStatusResult> {
     const [billing, children] = await Promise.all([
       subscriptionRepository.findFamilyBilling(parentId),
-      usersRepository.findAllChildrenByParentId(parentId),
+      listChildren(parentId, { includeInactive: true }),
     ]);
 
     const childIds = children.map((c) => c.id);

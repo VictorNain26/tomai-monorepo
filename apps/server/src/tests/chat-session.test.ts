@@ -71,7 +71,7 @@ let findUserByIdResult: UserData | null = null;
 let filesDeletedIds: string[] = [];
 let storageDeleteSucceeds = true;
 
-mock.module('../db/repositories', () => ({
+mock.module('../modules/auth/index', () => ({
   usersRepository: {
     findById: mock(async () => findUserByIdResult),
   },

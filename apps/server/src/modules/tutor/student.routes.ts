@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
-import { subjectProfileService, STUDENT_SUBJECTS } from '../../modules/tutor/index.js';
+import { subjectProfileService } from './subject-profile.service.js';
+import { STUDENT_SUBJECTS } from './prompts/adaptation/subjects.js';
 import { AppError } from '../../platform/http/errors.js';
 import { logger } from '../../platform/observability/logger.js';
 
@@ -11,7 +12,7 @@ const editMemoryBody = z.object({
   difficulties: z.array(z.string().max(120)).max(50).optional(),
 });
 
-export const studentApiRoutes = new Hono<AppEnv>()
+export const studentRoutes = new Hono<AppEnv>()
 
   .get('/student/memory', requireUser, async (c) => {
     const user = c.var.user;

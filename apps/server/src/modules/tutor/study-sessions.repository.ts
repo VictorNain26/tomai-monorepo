@@ -195,6 +195,8 @@ class StudySessionsRepository {
     totalMinutes: number;
     averageFrustration: number;
     subjectBreakdown: Record<string, number>;
+    lastSessionDate: Date | null;
+    studyDays: number;
   }> {
     // Aggregated in SQL: single scan of study_sessions filtered by userId.
     // Previous implementation loaded up to 1000 full rows to compute sums/averages in JS.
@@ -203,6 +205,8 @@ class StudySessionsRepository {
         totalSessions: sql<number>`COUNT(*)::int`,
         totalMinutes: sql<number>`COALESCE(SUM(${studySessions.durationMinutes}), 0)::int`,
         averageFrustration: sql<number>`COALESCE(AVG(${studySessions.frustrationAvg}), 0)::float`,
+        lastSessionDate: sql<Date | null>`MAX(${studySessions.startedAt})`.mapWith(studySessions.startedAt),
+        studyDays: sql<number>`COUNT(DISTINCT DATE(${studySessions.startedAt}))::int`,
       })
       .from(studySessions)
       .where(eq(studySessions.userId, userId));
@@ -226,6 +230,8 @@ class StudySessionsRepository {
       totalMinutes: aggregate?.totalMinutes ?? 0,
       averageFrustration: Math.round((aggregate?.averageFrustration ?? 0) * 10) / 10,
       subjectBreakdown,
+      lastSessionDate: aggregate?.lastSessionDate ?? null,
+      studyDays: aggregate?.studyDays ?? 0,
     };
   }
 

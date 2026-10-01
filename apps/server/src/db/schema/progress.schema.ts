@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, timestamp, integer, decimal, jsonb, index, foreignKey, unique } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import { user } from './auth.schema';
+import { user } from '../../modules/auth/auth.schema';
 
 /**
  * Table progress - Progression pédagogique

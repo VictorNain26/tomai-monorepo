@@ -1,97 +1,14 @@
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { db } from '../connection';
-import { progress, type Progress, type NewProgress } from '../schema';
+import { progress, type Progress } from '../schema';
 
 class ProgressRepository {
-  async create(progressData: NewProgress): Promise<Progress> {
-    const [progressRecord] = await db
-      .insert(progress)
-      .values(progressData)
-      .returning();
-
-    if (!progressRecord) {
-      throw new Error('Failed to create progress record');
-    }
-
-    return progressRecord;
-  }
-
   async findByUserId(userId: string): Promise<Progress[]> {
     return await db
       .select()
       .from(progress)
       .where(eq(progress.userId, userId))
       .orderBy(desc(progress.updatedAt));
-  }
-
-  async findByUserIdAndSubject(userId: string, subject: string): Promise<Progress[]> {
-    return await db
-      .select()
-      .from(progress)
-      .where(
-        and(
-          eq(progress.userId, userId),
-          eq(progress.subject, subject)
-        )
-      )
-      .orderBy(desc(progress.updatedAt));
-  }
-
-  async findByUserSubjectConcept(userId: string, subject: string, concept: string): Promise<Progress | undefined> {
-    const [progressRecord] = await db
-      .select()
-      .from(progress)
-      .where(
-        and(
-          eq(progress.userId, userId),
-          eq(progress.subject, subject),
-          eq(progress.concept, concept)
-        )
-      )
-      .limit(1);
-
-    return progressRecord;
-  }
-
-  async upsertProgress(
-    userId: string,
-    subject: string,
-    concept: string,
-    masteryLevel: number,
-    practiceTimeMinutes?: number,
-    successRate?: number
-  ): Promise<Progress> {
-    const deltaMinutes = practiceTimeMinutes ?? 0;
-    const successRateStr = successRate?.toString();
-
-    const [row] = await db
-      .insert(progress)
-      .values({
-        userId,
-        subject,
-        concept,
-        masteryLevel,
-        totalPracticeTime: deltaMinutes,
-        successRate: successRateStr ?? '0',
-      })
-      .onConflictDoUpdate({
-        target: [progress.userId, progress.subject, progress.concept],
-        set: {
-          masteryLevel,
-          totalPracticeTime: sql`COALESCE(${progress.totalPracticeTime}, 0) + ${deltaMinutes}`,
-          successRate: successRateStr
-            ? sql`${successRateStr}`
-            : sql`${progress.successRate}`,
-          lastPracticed: sql`NOW()`,
-          updatedAt: sql`NOW()`,
-        },
-      })
-      .returning();
-
-    if (!row) {
-      throw new Error('Failed to upsert progress record');
-    }
-    return row;
   }
 
   async getProgressSummary(userId: string): Promise<{
@@ -135,15 +52,6 @@ class ProgressRepository {
       averageMastery: Math.round(averageMastery * 10) / 10,
       subjectProgress,
     };
-  }
-
-  async deleteById(id: string): Promise<boolean> {
-    const result = await db
-      .delete(progress)
-      .where(eq(progress.id, id))
-      .returning();
-
-    return result.length > 0;
   }
 }
 

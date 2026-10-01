@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { createChildSchema, updateChildSchema } from '../schemas/validation';
+import { createChildSchema, updateChildSchema } from '../modules/family/parent.validation';
 
 const validChild = {
   firstName: 'Lucas',

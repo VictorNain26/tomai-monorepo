@@ -1,30 +1,18 @@
-/**
- * Parent Service - Re-export facade for backward compatibility
- * Implementation split into parent/parent-dashboard.service.ts and parent/parent-types.ts
- */
-
-import { usersRepository } from '../db/repositories';
-import { filesRepository, deleteFiles } from '../modules/documents/index.js';
-import { parentChildRepository } from '../db/repositories/parent-child.repository';
-import { logger } from '../platform/observability/logger';
-import { auth } from '../platform/auth/auth';
-import { hashPassword } from 'better-auth/crypto';
-import { db } from '../db/connection';
-import { account } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
-import type { SchoolLevel } from '../db/schema.js';
-import { ParentDashboardService } from './parent/parent-dashboard.service';
-import type { ChildInfo, ParentDashboardMetrics, StudentProgress, SessionSummary, SessionMessage } from './parent/parent-types';
-
-// Re-export types
-;
+import { usersRepository, createStudentAccount, setPassword } from '../auth/index.js';
+import { filesRepository, deleteFiles } from '../documents/index.js';
+import { parentChildRepository } from './parent-child.repository.js';
+import { listChildren } from './children.js';
+import { logger } from '../../platform/observability/logger';
+import type { SchoolLevel } from '../../db/schema.js';
+import { ParentDashboardService } from './parent-dashboard.service';
+import type { ChildInfo, ParentDashboardMetrics } from './parent-types';
 
 export class ParentService {
   private readonly dashboard = new ParentDashboardService();
 
   async getParentChildren(parentId: string): Promise<ChildInfo[]> {
     try {
-      const children = await usersRepository.findChildrenByParentId(parentId);
+      const children = await listChildren(parentId);
       logger.debug('Retrieved children from database', {
         parentId,
         childrenCount: children.length,
@@ -65,32 +53,6 @@ export class ParentService {
     return this.dashboard.getParentDashboardMetrics(parentId, (id) => this.getParentChildren(id));
   }
 
-  async getParentStudentProgress(parentId: string, studentId?: string, cachedChildren?: ChildInfo[]): Promise<StudentProgress[]> {
-    return this.dashboard.getParentStudentProgress(parentId, (id) => this.getParentChildren(id), studentId, cachedChildren);
-  }
-
-  async getStudentSessions(parentId: string, studentId: string): Promise<SessionSummary[]> {
-    return this.dashboard.getStudentSessions(parentId, studentId, (id) => this.getParentChildren(id));
-  }
-
-  async getSessionMessages(parentId: string, sessionId: string): Promise<SessionMessage[]> {
-    return this.dashboard.getSessionMessages(parentId, sessionId, (id) => this.getParentChildren(id));
-  }
-
-  async getParentStatistics(parentId: string): Promise<{
-    totalChildren: number;
-    totalStudyTime: number;
-    totalSessions: number;
-    avgFrustration: number;
-    activeStudents: number;
-  }> {
-    return this.dashboard.getParentStatistics(
-      parentId,
-      (id) => this.getParentChildren(id),
-      (id) => this.getParentDashboardMetrics(id)
-    );
-  }
-
   async createChild(parentId: string, childData: {
     firstName: string;
     lastName: string;
@@ -104,37 +66,20 @@ export class ParentService {
       throw new Error('Ce nom d\'utilisateur existe déjà');
     }
 
-    // The username plugin augments signUpEmail at runtime but TS overloads
-    // don't reflect it yet — cast only the `username` addition; the other
-    // fields remain fully typed so typos in email/password/name are still caught.
-    const typedBody = {
-      email: `child_${Date.now()}_${Math.random().toString(36).substring(7)}@internal.tomai`,
-      password: childData.password,
-      name: `${childData.firstName} ${childData.lastName}`.trim(),
-    };
-    const result = await auth.api.signUpEmail({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      body: { ...typedBody, username: childData.username } as typeof typedBody & Record<string, any>,
+    const childId = await createStudentAccount({
+      ...childData,
+      schoolLevel: childData.schoolLevel as SchoolLevel,
     });
 
     try {
-      await usersRepository.update(result.user.id, {
-        firstName: childData.firstName,
-        lastName: childData.lastName,
-        username: childData.username,
-        displayUsername: childData.username,
-        role: 'student',
-        schoolLevel: childData.schoolLevel as SchoolLevel,
-        dateOfBirth: childData.dateOfBirth,
-      });
-      await parentChildRepository.link(parentId, result.user.id);
+      await parentChildRepository.link(parentId, childId);
     } catch (err) {
-      await usersRepository.deleteById(result.user.id);
+      await usersRepository.deleteById(childId);
       throw err;
     }
 
     return {
-      id: result.user.id,
+      id: childId,
       firstName: childData.firstName,
       lastName: childData.lastName,
       username: childData.username,
@@ -177,12 +122,8 @@ export class ParentService {
       if (updateData.dateOfBirth !== undefined) updateObject.dateOfBirth = updateData.dateOfBirth;
       if (updateData.schoolLevel !== undefined) updateObject.schoolLevel = updateData.schoolLevel as SchoolLevel;
 
-      // Update password: hash via Better Auth's own hasher, then write to credential account
       if (updateData.password) {
-        const hashedPassword = await hashPassword(updateData.password);
-        await db.update(account)
-          .set({ password: hashedPassword })
-          .where(and(eq(account.userId, childId), eq(account.providerId, 'credential')));
+        await setPassword(childId, updateData.password);
       }
 
       const updatedChild = await usersRepository.update(childId, updateObject);
@@ -257,21 +198,6 @@ export class ParentService {
     } catch (_error) {
       logger.error('Error deleting child', { operation: 'parent:child:delete', err: _error, parentId, childId, severity: 'high' as const });
       throw new Error('Failed to delete child', { cause: _error });
-    }
-  }
-
-  async isParentOf(parentId: string, studentId: string): Promise<boolean> {
-    try {
-      return await parentChildRepository.isLinked(parentId, studentId);
-    } catch (error) {
-      logger.error('Error verifying parent-child relationship', {
-        operation: 'parent:isParentOf:error',
-        parentId,
-        studentId,
-        err: error,
-        severity: 'medium' as const,
-      });
-      return false;
     }
   }
 }

@@ -93,7 +93,7 @@ const mockDb = {
 mock.module('../db/connection', () => ({ db: mockDb }));
 
 // Import after mocks
-const { parentChildRepository } = await import('../db/repositories/parent-child.repository');
+const { parentChildRepository } = await import('../modules/family/parent-child.repository');
 
 // ============================================
 // Helper : configure le filtre pour le prochain select
@@ -149,11 +149,6 @@ describe('ParentChildRepository', () => {
 
   // ---- unlink ----
 
-  it('unlink appelle delete', async () => {
-    await parentChildRepository.unlink('p1', 'c1');
-    expect(mockDelete).toHaveBeenCalledTimes(1);
-  });
-
   // ---- getChildIds ----
 
   it('getChildIds retourne les childUserId pour un parent', async () => {
@@ -167,16 +162,6 @@ describe('ParentChildRepository', () => {
   });
 
   // ---- getParentIds ----
-
-  it('getParentIds retourne les parentUserId pour un enfant', async () => {
-    rows.push({ id: '1', parentUserId: 'p1', childUserId: 'c1' });
-    rows.push({ id: '2', parentUserId: 'p2', childUserId: 'c1' });
-    setupFilter('childUserId', 'c1');
-    const result = await parentChildRepository.getParentIds('c1');
-    expect(Array.isArray(result)).toBe(true);
-    expect(result).toContain('p1');
-    expect(result).toContain('p2');
-  });
 
   // ---- isLinked ----
 

@@ -16,13 +16,13 @@ const createChild = mock((_parentId: string, data: Record<string, unknown>) =>
 const updateChild = mock((_parentId: string, childId: string, data: Record<string, unknown>) =>
   Promise.resolve({ id: childId, ...data }),
 );
-mock.module('../services/parent.service', () => ({ parentService: { createChild, updateChild } }));
+mock.module('../modules/family/parent.service', () => ({ parentService: { createChild, updateChild } }));
 
 const { Hono } = await import('hono');
 const { handleError } = await import('../platform/http/error-handler');
-const { parentApiRoutes } = await import('../routes/api/parent.routes');
+const { parentRoutes } = await import('../modules/family/parent.routes');
 
-const app = new Hono<AppEnv>().route('/', parentApiRoutes).onError(handleError);
+const app = new Hono<AppEnv>().route('/', parentRoutes).onError(handleError);
 
 const validChild = {
   firstName: 'Lucas',

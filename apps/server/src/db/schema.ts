@@ -6,7 +6,8 @@
 // schema/index.ts → a domain schema file). Re-exporting each subpath directly
 // here sidesteps that quirk while keeping a single import entry point for
 // consumers.
-export * from './schema/auth.schema';
+export * from '../modules/auth/auth.schema';
+export * from '../modules/family/family.schema';
 export * from '../modules/tutor/session.schema';
 export * from './schema/progress.schema';
 export * from './schema/cost-tracking.schema';

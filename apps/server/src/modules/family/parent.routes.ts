@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { requireParent, validate, type AppEnv } from '../../platform/http/context.js';
-import { createChildSchema, updateChildSchema } from '../../schemas/validation';
-import { parentService } from '../../services/parent.service';
+import { createChildSchema, updateChildSchema } from './parent.validation';
+import { parentService } from './parent.service';
 import { logger } from '../../platform/observability/logger';
 
 const childParams = z.object({ id: z.string().min(1) });
 
-export const parentApiRoutes = new Hono<AppEnv>()
+export const parentRoutes = new Hono<AppEnv>()
 
   .get('/parent/dashboard', requireParent, async (c) => {
     const user = c.var.user;
