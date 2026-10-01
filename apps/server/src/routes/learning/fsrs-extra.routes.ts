@@ -4,19 +4,19 @@
  * Preview scheduling, deck reset, and learning config.
  */
 
-import { Elysia } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import type { AuthEnv } from '../../lib/http.js';
 import { logger } from '../../lib/observability';
 import { learningService, CardNotFoundError } from '../../services/learning/learning.service';
 import { fsrsService } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';
 import { getUserLevel } from './helpers';
 
-export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
-  .use(authMacro)
-  .guard({ auth: true })
+export const fsrsExtraRoutes = new Hono<AuthEnv>()
 
-  .get('/cards/:id/preview', async ({ params, user, status }) => {
+  .get('/cards/:id/preview', async (c) => {
+    const user = c.var.user;
+    const params = c.req.param();
     const { id: cardId } = params;
     const level = getUserLevel(user.id, user.schoolLevel);
 
@@ -36,7 +36,7 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
         };
       };
 
-      return {
+      return c.json({
         cardId,
         scheduling: {
           again: formatPreview(1),
@@ -44,10 +44,10 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
           good: formatPreview(3),
           easy: formatPreview(4),
         },
-      };
+      });
     } catch (error) {
       if (error instanceof CardNotFoundError) {
-        return status(404, { error: 'Carte non trouvée' });
+        return c.json({ error: 'Carte non trouvée' }, 404);
       }
       logger.error('Failed to preview scheduling', {
         operation: 'learning:preview:error',
@@ -56,11 +56,13 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'low' as const,
       });
-      return status(500, { error: 'Échec de la prévisualisation' });
+      return c.json({ error: 'Échec de la prévisualisation' }, 500);
     }
   })
 
-  .post('/decks/:id/reset', async ({ params, user, status }) => {
+  .post('/decks/:id/reset', async (c) => {
+    const user = c.var.user;
+    const params = c.req.param();
     const { id: deckId } = params;
 
     try {
@@ -73,16 +75,16 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
         cardsReset,
       });
 
-      return {
+      return c.json({
         success: true,
         cardsReset,
         message: `${cardsReset} carte${cardsReset > 1 ? 's' : ''} remise${cardsReset > 1 ? 's' : ''} à zéro`,
-      };
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       if (errorMessage.includes('not found') || errorMessage.includes('access denied')) {
-        return status(404, { error: 'Deck non trouvé' });
+        return c.json({ error: 'Deck non trouvé' }, 404);
       }
 
       logger.error('Failed to reset deck', {
@@ -92,15 +94,16 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
         _error: errorMessage,
         severity: 'medium' as const,
       });
-      return status(500, { error: 'Échec de la réinitialisation' });
+      return c.json({ error: 'Échec de la réinitialisation' }, 500);
     }
   })
 
-  .get('/config', async ({ user }) => {
+  .get('/config', async (c) => {
+    const user = c.var.user;
     const level = getUserLevel(user.id, user.schoolLevel);
     const config = getLevelConfig(level);
 
-    return {
+    return c.json({
       level,
       config: {
         cardsPerSession: config.cardsPerSession,
@@ -113,5 +116,5 @@ export const fsrsExtraRoutes = new Elysia({ prefix: '/api/learning' })
         encourageBreaks: config.cycle === 'cycle2',
         maxNewCardsPerSession: Math.ceil(config.cardsPerSession * 0.3),
       },
-    };
+    });
   });

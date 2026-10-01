@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // DOM for fetch/Request/Response types used by the Eden client. No bun-types:
+    // DOM for fetch/Request/Response types used by the typed client. No bun-types:
     // the `App` type comes from the server's *built* declarations
     // (tomai-server/app -> dist/types/app.d.ts), which carry no Bun globals.
     "lib": ["ES2022", "DOM"]

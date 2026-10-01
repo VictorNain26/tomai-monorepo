@@ -1,35 +1,24 @@
-import { Elysia, t } from 'elysia';
-import type { Static } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { requireUser, validate, type AppEnv } from '../../lib/http.js';
 import { subjectProfileService } from '../../services/chat/subject-profile.service.js';
 import { AppError } from '../../lib/errors.js';
 import { logger } from '../../lib/observability.js';
-import type { StudentSubject } from '../../config/prompts/adaptation/subjects.js';
+import { STUDENT_SUBJECTS } from '../../config/prompts/adaptation/subjects.js';
 
-const subjectUnion = t.Union([
-  t.Literal('mathematiques'),
-  t.Literal('francais'),
-  t.Literal('langues'),
-  t.Literal('sciences'),
-  t.Literal('histoire-geo'),
-  t.Literal('general'),
-]);
+const editMemoryBody = z.object({
+  subject: z.enum(STUDENT_SUBJECTS),
+  masteryNotes: z.string().max(500).nullable().optional(),
+  difficulties: z.array(z.string().max(120)).max(50).optional(),
+});
 
-// Garde-fou : l'union de route doit couvrir exactement l'enum matière.
-type _SubjectUnionMatchesEnum = Static<typeof subjectUnion> extends StudentSubject
-  ? StudentSubject extends Static<typeof subjectUnion> ? true : never
-  : never;
-/** @public — compile-time-only assertion; exported so it can't be tree-shaken/reported as an unused local. */
-export const _subjectUnionCheck: _SubjectUnionMatchesEnum = true;
+export const studentApiRoutes = new Hono<AppEnv>()
 
-export const studentApiRoutes = new Elysia({ name: 'api-student' })
-  .use(authMacro)
-  .guard({ auth: true })
-
-  .get('/student/memory', async ({ user }) => {
+  .get('/student/memory', requireUser, async (c) => {
+    const user = c.var.user;
     try {
       const memory = await subjectProfileService.getMemory(user.id);
-      return { success: true, memory };
+      return c.json({ success: true, memory });
     } catch (_error) {
       logger.error('Student memory retrieval failed', {
         operation: 'api:student:memory:get',
@@ -41,17 +30,18 @@ export const studentApiRoutes = new Elysia({ name: 'api-student' })
     }
   })
 
-  .patch('/student/memory', async ({ user, body, set }) => {
+  .patch('/student/memory', requireUser, validate('json', editMemoryBody), async (c) => {
+    const user = c.var.user;
+    const body = c.req.valid('json');
     try {
       const profile = await subjectProfileService.editMemory(user.id, body.subject, {
         masteryNotes: body.masteryNotes,
         difficulties: body.difficulties,
       });
       if (!profile) {
-        set.status = 404;
-        return { success: false as const, error: 'Profil introuvable pour cette matière' };
+        return c.json({ success: false as const, error: 'Profil introuvable pour cette matière' }, 404);
       }
-      return { success: true as const, profile };
+      return c.json({ success: true as const, profile });
     } catch (_error) {
       logger.error('Student memory edit failed', {
         operation: 'api:student:memory:patch',
@@ -61,10 +51,4 @@ export const studentApiRoutes = new Elysia({ name: 'api-student' })
       });
       throw new AppError('INTERNAL_ERROR', 'Memory edit failed');
     }
-  }, {
-    body: t.Object({
-      subject: subjectUnion,
-      masteryNotes: t.Optional(t.Nullable(t.String({ maxLength: 500 }))),
-      difficulties: t.Optional(t.Array(t.String({ maxLength: 120 }), { maxItems: 50 })),
-    }),
   });

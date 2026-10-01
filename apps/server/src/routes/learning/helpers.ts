@@ -22,7 +22,7 @@ import {
  *
  * Returns `{ status, body }` when the error was handled, or `null` when the
  * error was not a known deck domain error (caller must rethrow / fall through).
- * The caller is responsible for calling `return status(domain.status, domain.body)`.
+ * The caller is responsible for calling `return c.json(domain.body, domain.status)`.
  */
 export function handleDeckDomainError(
   err: unknown,

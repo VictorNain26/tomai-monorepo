@@ -2,7 +2,7 @@
  * Types d'authentification - Aliases pour compatibilité
  */
 
-import type { ElysiaAuthenticatedUser } from './index.js';
+import type { AuthenticatedUser } from './index.js';
 
 // Alias pour compatibilité avec les imports existants
-export type User = ElysiaAuthenticatedUser;
+export type User = AuthenticatedUser;

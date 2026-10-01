@@ -1,41 +1,41 @@
-import { Elysia, t } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { requireUser, validate, type AppEnv } from '../../lib/http.js';
 import { chatSessionService } from '../../services/chat/chat-session.service';
 import { chatMessageService } from '../../services/chat/chat-message.service';
 import { AppError } from '../../lib/errors';
 import { logger } from '../../lib/observability';
 
-const idParams = t.Object({ id: t.String({ format: 'uuid' }) });
+const idParams = z.object({ id: z.uuid() });
 
-export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
-  .use(authMacro)
-  .guard({ auth: true })
+export const chatSessionApiRoutes = new Hono<AppEnv>()
 
   /**
    * GET /chat/conversations - List all conversations for the user
    * Ordered by most recent activity. Supports pagination.
    */
-  .get('/chat/conversations', async ({ user, query }) => {
+  .get('/chat/conversations', requireUser, async (c) => {
+    const user = c.var.user;
     try {
-      const limit = Math.min(Number(query?.limit) || 20, 50);
-      const offset = Math.max(Number(query?.offset) || 0, 0);
+      const limit = Math.min(Number(c.req.query('limit')) || 20, 50);
+      const offset = Math.max(Number(c.req.query('offset')) || 0, 0);
 
       const conversations = await chatSessionService.listConversations(user.id, { limit, offset });
 
-      return {
+      return c.json({
         success: true,
-        conversations: conversations.map(c => ({
-          id: c.id,
-          title: c.title,
-          subject: c.subject,
-          status: c.status,
-          messageCount: c.messageCount,
-          lastMessagePreview: c.lastMessagePreview,
-          lastMessageRole: c.lastMessageRole,
-          lastActivityAt: c.lastActivityAt.toISOString(),
-          startedAt: c.startedAt.toISOString(),
+        conversations: conversations.map(conv => ({
+          id: conv.id,
+          title: conv.title,
+          subject: conv.subject,
+          status: conv.status,
+          messageCount: conv.messageCount,
+          lastMessagePreview: conv.lastMessagePreview,
+          lastMessageRole: conv.lastMessageRole,
+          lastActivityAt: conv.lastActivityAt.toISOString(),
+          startedAt: conv.startedAt.toISOString(),
         })),
-      };
+      });
     } catch (_error) {
       logger.error('Conversations list failed', {
         operation: 'api:chat:conversations:list',
@@ -47,12 +47,13 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
-  .get('/chat/sessions/latest', async ({ user }) => {
+  .get('/chat/sessions/latest', requireUser, async (c) => {
+    const user = c.var.user;
     try {
       const sessions = await chatSessionService.getUserSessions(user.id, 1);
       const latestSession = sessions[0] ?? null;
 
-      return {
+      return c.json({
         success: true,
         session: latestSession ? {
           id: latestSession.id,
@@ -61,7 +62,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
           endedAt: latestSession.endedAt?.toISOString() ?? null,
           messagesCount: latestSession.messagesCount
         } : null
-      };
+      });
     } catch (_error) {
       logger.error('Latest session retrieval failed', {
         operation: 'api:chat:sessions:latest',
@@ -73,10 +74,11 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
-  .post('/chat/session', async ({ user }) => {
+  .post('/chat/session', requireUser, async (c) => {
+    const user = c.var.user;
     try {
       const sessionId = await chatSessionService.getOrCreateActiveSession(user.id);
-      return { success: true, sessionId };
+      return c.json({ success: true, sessionId });
     } catch (_error) {
       logger.error('Session retrieval failed', {
         operation: 'api:chat:session:getOrCreate',
@@ -92,10 +94,11 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
    * POST /chat/session/new - Always create a new conversation
    * Used by the FAB button on conversations list.
    */
-  .post('/chat/session/new', async ({ user }) => {
+  .post('/chat/session/new', requireUser, async (c) => {
+    const user = c.var.user;
     try {
       const sessionId = await chatSessionService.createSession(user.id, 'général');
-      return { success: true, sessionId };
+      return c.json({ success: true, sessionId });
     } catch (_error) {
       logger.error('Session creation failed', {
         operation: 'api:chat:session:new',
@@ -107,10 +110,12 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
     }
   })
 
-  .post('/chat/session/:id/reset', async ({ params, user }) => {
+  .post('/chat/session/:id/reset', requireUser, validate('param', idParams), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     try {
       const newSessionId = await chatSessionService.resetSession(params.id, user.id);
-      return { success: true, sessionId: newSessionId };
+      return c.json({ success: true, sessionId: newSessionId });
     } catch (_error) {
       logger.error('Session reset failed', {
         operation: 'api:chat:session:reset',
@@ -121,12 +126,14 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       });
       throw new AppError('INTERNAL_ERROR', 'Session reset failed');
     }
-  }, { params: idParams })
+  })
 
-  .delete('/chat/session/:id', async ({ params, user }) => {
+  .delete('/chat/session/:id', requireUser, validate('param', idParams), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     try {
       await chatSessionService.deleteSession(params.id, user.id);
-      return { success: true, message: 'Session deleted successfully' };
+      return c.json({ success: true, message: 'Session deleted successfully' });
     } catch (_error) {
       logger.error('Session deletion failed', {
         operation: 'api:chat:session:delete',
@@ -136,13 +143,15 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       });
       throw new AppError('INTERNAL_ERROR', 'Session deletion failed');
     }
-  }, { params: idParams })
+  })
 
-  .get('/chat/session/:id/history', async ({ params, user, status }) => {
+  .get('/chat/session/:id/history', requireUser, validate('param', idParams), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     try {
       const session = await chatSessionService.getSessionForUser(params.id, user.id);
       if (!session) {
-        return status(403, { error: 'Session not found or access denied' });
+        return c.json({ error: 'Session not found or access denied' }, 403);
       }
 
       const messages = await chatMessageService.getSessionHistory(params.id);
@@ -151,7 +160,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       const lastMessage = messages[messages.length - 1];
       const hasOrphanMessage = lastMessage?.role === 'user';
 
-      return {
+      return c.json({
         success: true,
         hasOrphanMessage,
         messages: messages.map(m => ({
@@ -162,7 +171,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
           aiModel: m.aiModel ?? null,
           attachedFile: m.attachedFile ?? null
         }))
-      };
+      });
     } catch (_error) {
       logger.error('Session history retrieval failed', {
         operation: 'api:chat:session:history',
@@ -170,11 +179,13 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { error: 'Session history retrieval failed' });
+      return c.json({ error: 'Session history retrieval failed' }, 500);
     }
-  }, { params: idParams })
+  })
 
-  .get('/chat/message/:id', async ({ params, user }) => {
+  .get('/chat/message/:id', requireUser, validate('param', idParams), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     try {
       const message = await chatMessageService.getMessageById(params.id, user.id);
 
@@ -182,7 +193,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
         throw new AppError('SESSION_NOT_FOUND', 'Message not found');
       }
 
-      return {
+      return c.json({
         success: true,
         id: message.id,
         role: message.role,
@@ -191,7 +202,7 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
         sessionId: message.sessionId,
         aiModel: message.aiModel ?? null,
         attachedFile: message.attachedFile ?? null
-      };
+      });
     } catch (_error) {
       if (_error instanceof AppError) throw _error;
       logger.error('Message retrieval failed', {
@@ -202,4 +213,4 @@ export const chatSessionApiRoutes = new Elysia({ name: 'api-chat-session' })
       });
       throw new AppError('INTERNAL_ERROR', 'Message retrieval failed');
     }
-  }, { params: idParams });
+  });

@@ -116,7 +116,7 @@ describe('Better Auth Configuration', () => {
   });
 
   describe('Auth handler', () => {
-    it('should expose a request handler for mounting on Elysia', () => {
+    it('should expose a request handler for mounting on Hono', () => {
       expect(auth.handler).toBeDefined();
       expect(typeof auth.handler).toBe('function');
     });

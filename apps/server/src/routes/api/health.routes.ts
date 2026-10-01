@@ -1,11 +1,12 @@
-import { Elysia } from 'elysia';
+import { Hono } from 'hono';
 import { db } from '../../db/connection';
 import { sql } from 'drizzle-orm';
 import { env } from '../../config/env';
+import type { AppEnv } from '../../lib/http.js';
 
-export const apiHealthRoutes = new Elysia({ name: 'api-health-check' })
+export const apiHealthRoutes = new Hono<AppEnv>()
 
-  .get('/health', async ({ status }) => {
+  .get('/health', async (c) => {
     const checks: Record<string, { status: string; latency?: number; error?: string }> = {};
     let overallStatus: 'healthy' | 'unhealthy' = 'healthy';
 
@@ -34,5 +35,5 @@ export const apiHealthRoutes = new Elysia({ name: 'api-health-check' })
       checks,
     };
 
-    return overallStatus === 'unhealthy' ? status(503, body) : body;
+    return c.json(body, overallStatus === 'unhealthy' ? 503 : 200);
   });

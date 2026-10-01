@@ -1,4 +1,5 @@
-import { Elysia } from 'elysia';
+import { Hono } from 'hono';
+import type { AppEnv } from '../../lib/http.js';
 import { apiHealthRoutes } from './health.routes';
 import { chatSessionApiRoutes } from './chat-session.routes';
 import { parentApiRoutes } from './parent.routes';
@@ -7,17 +8,18 @@ import { progressApiRoutes } from './progress.routes';
 import { sessionFilesApiRoutes } from './session-files.routes';
 import { studentApiRoutes } from './student.routes';
 
-export const apiRoutes = new Elysia({ name: 'api-routes' })
+// Each route carries its own auth guard: a `use()` here would apply to every
+// /api/* route, public ones included.
+const api = new Hono<AppEnv>()
+  .route('/', chatSessionApiRoutes)
+  .route('/', parentApiRoutes)
+  .route('/', educationApiRoutes)
+  .route('/', progressApiRoutes)
+  .route('/', sessionFilesApiRoutes)
+  .route('/', studentApiRoutes);
 
-  // Mounted at root (not under /api): GET /health is the single canonical
-  // health endpoint, polled by the Dockerfile HEALTHCHECK.
-  .use(apiHealthRoutes)
-
-  .group('/api', (app) => app
-    .use(chatSessionApiRoutes)
-    .use(parentApiRoutes)
-    .use(educationApiRoutes)
-    .use(progressApiRoutes)
-    .use(sessionFilesApiRoutes)
-    .use(studentApiRoutes)
-  );
+// Mounted at root (not under /api): GET /health is the single canonical
+// health endpoint, polled by the Dockerfile HEALTHCHECK.
+export const apiRoutes = new Hono<AppEnv>()
+  .route('/', apiHealthRoutes)
+  .route('/api', api);

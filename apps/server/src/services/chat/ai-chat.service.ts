@@ -61,7 +61,7 @@ interface ClassifiedIntent {
   error?: string;
 }
 
-/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
+/** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface StreamGenerationParams {
   userId: string;
   content: string;

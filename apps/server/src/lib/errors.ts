@@ -8,6 +8,8 @@
  * - Correlation with request context
  */
 
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
+
 type ErrorCode =
   // Auth (401, 403)
   | 'UNAUTHORIZED'
@@ -29,10 +31,11 @@ type ErrorCode =
   | 'AI_UNAVAILABLE'
   | 'AI_CONFIGURATION'
   | 'EXTERNAL_SERVICE_ERROR'
+  | 'SERVICE_UNAVAILABLE'
   // Server (500)
   | 'INTERNAL_ERROR';
 
-const STATUS_MAP: Record<ErrorCode, number> = {
+const STATUS_MAP: Record<ErrorCode, ContentfulStatusCode> = {
   UNAUTHORIZED: 401,
   SESSION_EXPIRED: 401,
   FORBIDDEN: 403,
@@ -48,6 +51,7 @@ const STATUS_MAP: Record<ErrorCode, number> = {
   AI_UNAVAILABLE: 503,
   AI_CONFIGURATION: 503,
   EXTERNAL_SERVICE_ERROR: 502,
+  SERVICE_UNAVAILABLE: 503,
   INTERNAL_ERROR: 500,
 };
 
@@ -67,12 +71,13 @@ const USER_MESSAGES: Record<ErrorCode, string> = {
   AI_UNAVAILABLE: 'Le service IA est temporairement indisponible. Réessaie.',
   AI_CONFIGURATION: 'Erreur de configuration du service IA. Contacte le support.',
   EXTERNAL_SERVICE_ERROR: 'Un service externe ne répond pas. Réessaie.',
+  SERVICE_UNAVAILABLE: 'Le service est temporairement indisponible. Réessaie.',
   INTERNAL_ERROR: 'Erreur interne. Réessaie ou contacte le support.',
 };
 
 export class AppError extends Error {
   public readonly code: ErrorCode;
-  public readonly statusCode: number;
+  public readonly statusCode: ContentfulStatusCode;
   public readonly userMessage: string;
 
   constructor(code: ErrorCode, internalMessage?: string) {

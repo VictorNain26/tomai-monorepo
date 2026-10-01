@@ -1,18 +1,17 @@
 /**
- * TomAI Server - Architecture propre et modulaire
- * Backend Elysia.js avec Better Auth et AI Orchestration
+ * TomAI Server — Hono on Bun, Better Auth, AI orchestration.
  */
 
-import { Elysia } from 'elysia';
-import { cors } from '@elysiajs/cors';
-import { swagger } from '@elysiajs/swagger';
-import { withElysia } from '@sentry/elysia';
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { requestId } from 'hono/request-id';
+import { secureHeaders } from 'hono/secure-headers';
 
-// Auth et configuration
 import { auth } from './lib/auth.js';
 import { env, isDevelopment, getCorsOrigins } from './config/env.js';
+import type { AppEnv } from './lib/http.js';
+import { sentryMiddleware } from './lib/sentry.js';
 
-// Routes modulaires
 import { apiRoutes } from './routes/api/index.js';
 import { chatMessageRoutes } from './routes/chat-message.routes.js';
 import { fileUploadRoutes } from './routes/file-upload.routes.js';
@@ -20,130 +19,69 @@ import { statusRoutes } from './routes/subscription/index.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { learningRoutes } from './routes/learning/index.js';
 
-// Middleware
 import { logger } from './lib/observability.js';
-import { requestIdMiddleware } from './middleware/request-id.middleware.js';
-import { errorHandlerMiddleware } from './middleware/error-handler.middleware.js';
+import { handleError, handleNotFound } from './middleware/error-handler.middleware.js';
 import { createRateLimitMiddleware, RateLimitPresets } from './middleware/rate-limit.middleware.js';
 
 const isDev = isDevelopment();
 
-// Application Elysia avec architecture modulaire
-// Sentry.withElysia wraps first — a no-op when Sentry.init() never ran
-// (no SENTRY_DSN) since @sentry/core spans/captureException are no-ops
-// without a client. https://github.com/getsentry/sentry-javascript/tree/master/packages/elysia
-const app = withElysia(new Elysia({ name: 'tomai-server' }))
+const base = new Hono<AppEnv>();
+// No-op unless SENTRY_DSN is set; must wrap the app before any route.
+base.use(sentryMiddleware(base));
 
-  // Request ID + Global Error Handler (avant tout le reste)
-  .use(requestIdMiddleware)
-  .use(errorHandlerMiddleware)
+const app = base
+  .use(requestId())
 
-  // CORS Configuration DÉFINITIVE - Cross-Origin pour frontend/backend séparés
   .use(cors({
-    // PRODUCTION: www.tomia.fr + koyeb.app domains autorisés
     origin: getCorsOrigins(),
-    // CRITICAL: credentials=true pour cookies SameSite=none cross-origin
+    // credentials=true pour les cookies de session cross-origin
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type', 
-      'Authorization', 
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowHeaders: [
+      'Content-Type',
+      'Authorization',
       'Cookie', // REQUIRED pour Better Auth sessions
       'Cache-Control',
       'Accept',
       'X-Requested-With'
     ],
-    exposeHeaders: [
-      'X-Response-Time',
-      'X-Start-Time',
-      'Content-Type',
-      // Set-Cookie intentionally NOT exposed: JavaScript must not be able to read
-      // session cookies cross-origin.
-    ],
-    maxAge: 86400 // 24h pour les preflight requests (optimisation)
+    // Set-Cookie intentionally NOT exposed: JavaScript must not be able to read
+    // session cookies cross-origin.
+    exposeHeaders: ['X-Response-Time', 'X-Start-Time', 'Content-Type'],
+    maxAge: 86400,
   }))
 
-  // Security headers — applied BEFORE the handler so SSE/streaming endpoints
-  // include them in the initial response flush (onAfterHandle runs after the
-  // response has already started for async generators).
-  // HSTS is gated on production so local http://localhost dev keeps working.
-  .onBeforeHandle(({ set }) => {
-    set.headers['X-Content-Type-Options'] = 'nosniff';
-    set.headers['X-Frame-Options'] = 'DENY';
-    set.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin';
-    set.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()';
-    if (!isDev) {
-      set.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
-    }
-  })
+  // HSTS only in production so local http://localhost keeps working.
+  .use(secureHeaders({
+    xFrameOptions: 'DENY',
+    referrerPolicy: 'strict-origin-when-cross-origin',
+    permissionsPolicy: { geolocation: [], microphone: [], camera: [] },
+    strictTransportSecurity: isDev ? false : 'max-age=31536000; includeSubDomains',
+  }))
 
-  // Swagger pour développement uniquement
-  .use(isDev ? swagger({
-    documentation: {
-      info: {
-        title: 'TomAI API - Architecture Clean',
-        version: '1.0.0',
-        description: 'API TomAI avec chatbot simple et efficace'
-      }
-    }
-  }) : new Elysia())
+  .use(createRateLimitMiddleware(RateLimitPresets.api))
 
-  // Rate Limiting Global - Protection DDoS et brute-force
-  .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.api))
+  .on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 
-  // Better Auth integration - Mount at root, Better Auth handles /api/auth basePath
-  // IMPORTANT: .mount() at root lets Better Auth manage all /api/auth/* routes
-  .mount(auth.handler)
+  .get('/', (c) => c.json({ name: 'TomAI API', status: 'operational' }))
 
-  // Routes principales - Minimal info en production (sécurité)
-  .get('/', () => {
-    // En développement: afficher les détails pour debug
-    if (isDev) {
-      return {
-        message: 'TomAI Server - Development Mode',
-        version: '2.1.0',
-        status: 'operational',
-        environment: 'development',
-        endpoints: {
-          chatMessage: '/api/chat/message',
-          chatStream: '/api/chat/stream',
-          chatHistory: '/api/chat/session/:id/history',
-          tts: '/api/tts/synthesize',
-          health: '/health',
-          api: '/api',
-          auth: '/api/auth',
-          subscriptions: '/api/subscriptions',
-          swagger: '/swagger'
-        }
-      };
-    }
-
-    // En production: informations minimales
-    return {
-      name: 'TomAI API',
-      status: 'operational'
-    };
-  })
-
-  // GET /health is mounted below via apiRoutes (routes/api/health.routes.ts) —
-  // it is the single canonical health endpoint (Dockerfile HEALTHCHECK target),
-  // with real dependency checks (database, cache).
+  // GET /health is mounted via apiRoutes (routes/api/health.routes.ts) — the
+  // single canonical health endpoint (Dockerfile HEALTHCHECK target).
 
   // Diagnostic AI endpoint - probes the actual Mistral API with a tiny call.
   // Separated from /health so the main health response stays cheap and
   // immune to upstream rate-limit blips.
-  .get('/health/ai', async ({ set }) => {
+  .get('/health/ai', async (c) => {
     const startTime = Date.now();
     const model = env.MISTRAL_MODEL;
 
     if (!env.MISTRAL_API_KEY) {
-      set.status = 503;
-      return {
+      return c.json({
         status: 'unhealthy',
         error: 'MISTRAL_API_KEY not configured',
         model,
         timestamp: new Date().toISOString(),
-      };
+      }, 503);
     }
 
     try {
@@ -165,12 +103,12 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
         responsePreview: response.substring(0, 20),
       });
 
-      return {
+      return c.json({
         status: 'healthy',
         model,
         latencyMs,
         timestamp: new Date().toISOString(),
-      };
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const latencyMs = Date.now() - startTime;
@@ -191,35 +129,33 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
         severity: 'high' as const,
       });
 
-      set.status = 503;
-      return {
+      return c.json({
         status: 'unhealthy',
         model,
         error: errorMessage,
         errorType,
         latencyMs,
         timestamp: new Date().toISOString(),
-      };
+      }, 503);
     }
   })
 
-  // Routes modulaires
-  .use(apiRoutes)
-  .use(chatMessageRoutes)   // Messages chat HTTP simple
-  .use(fileUploadRoutes)  // Upload: Scaleway + PostgreSQL (RGPD France)
-  .use(statusRoutes)        // Subscription status + token usage (DB-driven)
-  .use(ttsRoutes)           // Text-to-Speech (Voxtral TTS — voxtral-tts-26.03)
-  .use(learningRoutes)      // Outils de révision - decks, cards, discovery, AI generation, FSRS
+  .route('/', apiRoutes)
+  .route('/api/chat', chatMessageRoutes)
+  .route('/api/upload', fileUploadRoutes)
+  .route('/api/subscriptions', statusRoutes)
+  .route('/api/tts', ttsRoutes)
+  .route('/api/learning', learningRoutes)
 
+  .onError(handleError)
+  .notFound(handleNotFound);
 
-// Export pour utilisation dans index.ts
 export { app };
 
-// Eden Treaty type export - Type-safety end-to-end frontend/backend
-export type App = typeof app;
+// Typed client contract (hono/client `hc<AppType>`), consumed by @repo/api.
+export type AppType = typeof app;
 
 // UI message wire types for chat clients (AI SDK UIMessage) - type-only
 export type { TomChatMessage, TomDataParts, DeckCreatedData } from './services/chat/chat-ui-message.js';
 
-// Re-export initializeServices from server-lifecycle
 export { initializeServices } from './services/server-lifecycle.js';

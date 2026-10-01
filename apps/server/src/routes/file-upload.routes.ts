@@ -1,5 +1,6 @@
-import { Elysia, t } from 'elysia';
-import { authMacro } from '../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { requireUser, validate, type AppEnv } from '../lib/http.js';
 import { logger } from '../lib/observability.js';
 import { scalewayStorageService } from '../services/storage/scaleway-storage.service.js';
 import { audioTranscriptionService } from '../services/audio-transcription.service.js';
@@ -13,30 +14,39 @@ import {
   buildEducationalContext,
 } from './file-upload.helpers.js';
 
-;
+const presignBody = z.object({
+  fileName: z.string().min(1).max(255),
+  mimeType: z.string().min(1).max(100),
+  sizeBytes: z.number().min(1).max(MAX_FILE_SIZE),
+  context: z.string().max(500).optional(),
+});
 
-export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
-  .use(authMacro)
-  .guard({ auth: true })
+const fileParams = z.object({ fileId: z.uuid() });
+
+// Mounted under /api/upload by app.ts; every route needs a signed-in user.
+export const fileUploadRoutes = new Hono<AppEnv>()
+  .use(requireUser)
 
   /**
    * GET /api/upload/status - Vérifier si le service est configuré
    * Requires authentication to prevent unauthorized storage service discovery
    */
-  .get('/status', () => {
+  .get('/status', (c) => {
     const configured = scalewayStorageService.isConfigured();
-    return {
+    return c.json({
       configured,
       provider: 'scaleway',
       region: env.SCALEWAY_REGION ?? 'fr-par',
       maxFileSize: MAX_FILE_SIZE,
-    };
+    });
   })
 
   /**
    * POST /api/upload/presign - Générer URL présignée pour upload direct
    */
-  .post('/presign', async ({ body, user, status }) => {
+  .post('/presign', validate('json', presignBody), async (c) => {
+    const user = c.var.user;
+    const body = c.req.valid('json');
     try {
       // Auth with strict DB validation (prevents orphan session reuse)
       const { fileName, mimeType, sizeBytes, context } = body;
@@ -44,20 +54,20 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
       // Validate file type
       const fileType = detectFileType(mimeType);
       if (fileType === 'unknown') {
-        return status(400, { success: false, error: 'Unsupported file type' });
+        return c.json({ success: false, error: 'Unsupported file type' }, 400);
       }
 
       // Validate size
       if (sizeBytes > MAX_FILE_SIZE) {
-        return status(400, {
+        return c.json({
           success: false,
           error: `File too large. Maximum: ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
-        });
+        }, 400);
       }
 
       // Check Scaleway is configured
       if (!scalewayStorageService.isConfigured()) {
-        return status(503, { success: false, error: 'Storage service not configured' });
+        return c.json({ success: false, error: 'Storage service not configured' }, 503);
       }
 
       // Generate presigned URL
@@ -97,13 +107,13 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         storageKey: presignedResult.storageKey,
       });
 
-      return {
+      return c.json({
         success: true,
         fileId: fileRecord.id,
         uploadUrl: presignedResult.uploadUrl,
         storageKey: presignedResult.storageKey,
         expiresAt: presignedResult.expiresAt.toISOString(),
-      };
+      });
 
     } catch (error) {
       logger.error('Presign URL generation failed', {
@@ -111,15 +121,8 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         operation: 'file:presign',
         severity: 'high' as const,
       });
-      return status(500, { success: false, error: 'Failed to generate upload URL' });
+      return c.json({ success: false, error: 'Failed to generate upload URL' }, 500);
     }
-  }, {
-    body: t.Object({
-      fileName: t.String({ minLength: 1, maxLength: 255 }),
-      mimeType: t.String({ minLength: 1, maxLength: 100 }),
-      sizeBytes: t.Number({ minimum: 1, maximum: MAX_FILE_SIZE }),
-      context: t.Optional(t.String({ maxLength: 500 })),
-    }),
   })
 
   /**
@@ -128,25 +131,27 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
    * Frontend appelle cet endpoint APRÈS avoir uploadé vers Scaleway
    * Backend vérifie le fichier et enregistre les métadonnées en base
    */
-  .post('/confirm/:fileId', async ({ params: { fileId }, user, status }) => {
+  .post('/confirm/:fileId', validate('param', fileParams), async (c) => {
+    const user = c.var.user;
+    const { fileId } = c.req.valid('param');
     try {
       // Auth with strict DB validation (prevents orphan session reuse)
 
       // Get file record
       const fileRecord = await filesRepository.findById(fileId);
       if (!fileRecord) {
-        return status(404, { success: false, error: 'File not found' });
+        return c.json({ success: false, error: 'File not found' }, 404);
       }
 
       // Verify ownership
       if (fileRecord.userId !== user.id) {
-        return status(403, { success: false, error: 'Access denied' });
+        return c.json({ success: false, error: 'Access denied' }, 403);
       }
 
       // Verify file exists in Scaleway
       const fileInfo = await scalewayStorageService.getFileInfo(fileRecord.storageKey);
       if (!fileInfo) {
-        return status(400, { success: false, error: 'File not found in storage' });
+        return c.json({ success: false, error: 'File not found in storage' }, 400);
       }
 
       // Update status to uploaded
@@ -209,11 +214,11 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         hasTranscription: !!transcription,
       });
 
-      return {
+      return c.json({
         success: true,
         fileId,
         transcription,
-      };
+      });
 
     } catch (error) {
       logger.error('Upload confirmation failed', {
@@ -222,41 +227,39 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         fileId,
         severity: 'high' as const,
       });
-      return status(500, { success: false, error: 'Failed to confirm upload' });
+      return c.json({ success: false, error: 'Failed to confirm upload' }, 500);
     }
-  }, {
-    params: t.Object({
-      fileId: t.String({ format: 'uuid' }),
-    }),
   })
 
   /**
    * GET /api/upload/file/:fileId - Obtenir URL de téléchargement
    */
-  .get('/file/:fileId', async ({ params: { fileId }, user, status }) => {
+  .get('/file/:fileId', validate('param', fileParams), async (c) => {
+    const user = c.var.user;
+    const { fileId } = c.req.valid('param');
     try {
       const fileRecord = await filesRepository.findById(fileId);
 
       if (!fileRecord) {
-        return status(404, { success: false, error: 'File not found' });
+        return c.json({ success: false, error: 'File not found' }, 404);
       }
 
       if (fileRecord.userId !== user.id) {
-        return status(403, { success: false, error: 'Access denied' });
+        return c.json({ success: false, error: 'Access denied' }, 403);
       }
 
       const downloadResult = await scalewayStorageService.generatePresignedDownloadUrl(
         fileRecord.storageKey
       );
 
-      return {
+      return c.json({
         success: true,
         downloadUrl: downloadResult.downloadUrl,
         expiresAt: downloadResult.expiresAt.toISOString(),
         fileName: fileRecord.fileName,
         mimeType: fileRecord.mimeType,
         sizeBytes: fileRecord.sizeBytes,
-      };
+      });
 
     } catch (error) {
       logger.error('Download URL generation failed', {
@@ -265,27 +268,25 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         fileId,
         severity: 'medium' as const,
       });
-      return status(500, { success: false, error: 'Failed to generate download URL' });
+      return c.json({ success: false, error: 'Failed to generate download URL' }, 500);
     }
-  }, {
-    params: t.Object({
-      fileId: t.String({ format: 'uuid' }),
-    }),
   })
 
   /**
    * DELETE /api/upload/file/:fileId - Supprimer un fichier
    */
-  .delete('/file/:fileId', async ({ params: { fileId }, user, status }) => {
+  .delete('/file/:fileId', validate('param', fileParams), async (c) => {
+    const user = c.var.user;
+    const { fileId } = c.req.valid('param');
     try {
       const fileRecord = await filesRepository.findById(fileId);
 
       if (!fileRecord) {
-        return status(404, { success: false, error: 'File not found' });
+        return c.json({ success: false, error: 'File not found' }, 404);
       }
 
       if (fileRecord.userId !== user.id) {
-        return status(403, { success: false, error: 'Access denied' });
+        return c.json({ success: false, error: 'Access denied' }, 403);
       }
 
       // Delete from Scaleway
@@ -301,7 +302,7 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         storageKey: fileRecord.storageKey,
       });
 
-      return { success: true, fileId };
+      return c.json({ success: true, fileId });
 
     } catch (error) {
       logger.error('File deletion failed', {
@@ -310,10 +311,6 @@ export const fileUploadRoutes = new Elysia({ prefix: '/api/upload' })
         fileId,
         severity: 'medium' as const,
       });
-      return status(500, { success: false, error: 'Failed to delete file' });
+      return c.json({ success: false, error: 'Failed to delete file' }, 500);
     }
-  }, {
-    params: t.Object({
-      fileId: t.String({ format: 'uuid' }),
-    }),
   });

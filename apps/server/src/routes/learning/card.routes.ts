@@ -1,5 +1,6 @@
-import { Elysia, t } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { validate, type AuthEnv } from '../../lib/http.js';
 import { logger } from '../../lib/observability';
 import {
   learningService,
@@ -8,13 +9,32 @@ import {
 } from '../../services/learning/learning.service';
 import { handleDeckDomainError } from './helpers';
 
-export const cardRoutes = new Elysia({ prefix: '/api/learning' })
-  .use(authMacro)
-  .guard({ auth: true })
+
+const cardType = z.enum(['flashcard', 'qcm', 'vrai_faux']);
+
+const addCardsBody = z.object({
+  cards: z.array(z.object({
+    cardType,
+    content: z.record(z.string(), z.unknown()),
+    position: z.number().optional(),
+  })).min(1),
+});
+
+const updateCardBody = z.object({
+  cardType: cardType.optional(),
+  content: z.record(z.string(), z.unknown()).optional(),
+  position: z.number().optional(),
+});
+
+export const cardRoutes = new Hono<AuthEnv>()
 
   .post(
     '/decks/:id/cards',
-    async ({ params, body, user, status }) => {
+    validate('json', addCardsBody),
+    async (c) => {
+      const user = c.var.user;
+      const params = c.req.param();
+      const body = c.req.valid('json');
       const { id: deckId } = params;
       const { cards } = body;
 
@@ -32,54 +52,42 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
           userId: user.id, deckId, cardsAdded: insertedCards.length,
         });
 
-        return { cards: insertedCards, count: insertedCards.length };
+        return c.json({ cards: insertedCards, count: insertedCards.length });
       } catch (error) {
         if (error instanceof CardValidationError) {
-          return status(400, { error: error.message });
+          return c.json({ error: error.message }, 400);
         }
         const domain = handleDeckDomainError(error);
-        if (domain) return status(domain.status, domain.body);
+        if (domain) return c.json(domain.body, domain.status);
         logger.error('Failed to add cards', {
           operation: 'learning:cards:add',
           userId: user.id, deckId,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        return status(500, { error: 'Failed to add cards' });
+        return c.json({ error: 'Failed to add cards' }, 500);
       }
     },
-    {
-      body: t.Object({
-        cards: t.Array(
-          t.Object({
-            cardType: t.Union([
-              t.Literal('flashcard'),
-              t.Literal('qcm'),
-              t.Literal('vrai_faux'),
-            ]),
-            content: t.Record(t.String(), t.Unknown()),
-            position: t.Optional(t.Number()),
-          }),
-          { minItems: 1 }
-        ),
-      }),
-    }
   )
 
   .patch(
     '/cards/:id',
-    async ({ params, body, user, status }) => {
+    validate('json', updateCardBody),
+    async (c) => {
+      const user = c.var.user;
+      const params = c.req.param();
+      const body = c.req.valid('json');
       const { id: cardId } = params;
 
       try {
         const updatedCard = await learningService.updateCardOrThrow(user.id, cardId, body);
-        return { card: updatedCard };
+        return c.json({ card: updatedCard });
       } catch (error) {
         if (error instanceof CardValidationError) {
-          return status(400, { error: error.message });
+          return c.json({ error: error.message }, 400);
         }
         if (error instanceof CardNotFoundError) {
-          return status(404, { error: 'Card not found' });
+          return c.json({ error: 'Card not found' }, 404);
         }
         logger.error('Failed to update card', {
           operation: 'learning:cards:update',
@@ -87,31 +95,22 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        return status(500, { error: 'Failed to update card' });
+        return c.json({ error: 'Failed to update card' }, 500);
       }
     },
-    {
-      body: t.Object({
-        cardType: t.Optional(t.Union([
-          t.Literal('flashcard'),
-          t.Literal('qcm'),
-          t.Literal('vrai_faux'),
-        ])),
-        content: t.Optional(t.Record(t.String(), t.Unknown())),
-        position: t.Optional(t.Number()),
-      }),
-    }
   )
 
-  .delete('/cards/:id', async ({ params, user, status }) => {
+  .delete('/cards/:id', async (c) => {
+    const user = c.var.user;
+    const params = c.req.param();
     const { id: cardId } = params;
 
     try {
       await learningService.deleteCardOrThrow(user.id, cardId);
-      return { success: true };
+      return c.json({ success: true });
     } catch (error) {
       if (error instanceof CardNotFoundError) {
-        return status(404, { error: 'Card not found' });
+        return c.json({ error: 'Card not found' }, 404);
       }
       logger.error('Failed to delete card', {
         operation: 'learning:cards:delete',
@@ -119,6 +118,6 @@ export const cardRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      return status(500, { error: 'Failed to delete card' });
+      return c.json({ error: 'Failed to delete card' }, 500);
     }
   });

@@ -1,14 +1,12 @@
 /**
  * Learning Routes - Module Entry Point
  *
- * All learning route groups share the `/api/learning` prefix and are mounted as
- * SIBLINGS here. They must never be nested via `.use()` inside one another:
- * nesting two same-prefix Elysia instances stacks the prefix and yields
- * `/api/learning/api/learning/...` (404 on the real paths). Guarded by
- * src/tests/learning-routes-mount.test.ts.
+ * Every learning route requires a signed-in user: the guard is applied once
+ * here, and app.ts mounts this module under /api/learning only.
  */
 
-import { Elysia } from 'elysia';
+import { Hono } from 'hono';
+import { requireUser, type AppEnv } from '../../lib/http.js';
 import { deckRoutes } from './deck.routes';
 import { deckDiscoveryRoutes } from './deck-discovery.routes';
 import { cardRoutes } from './card.routes';
@@ -16,13 +14,11 @@ import { cardGenerateRoutes } from './card-generate.routes';
 import { fsrsRoutes } from './fsrs.routes';
 import { fsrsExtraRoutes } from './fsrs-extra.routes';
 
-export const learningRoutes = new Elysia({ name: 'learning-routes' })
-  .use(deckRoutes)
-  .use(deckDiscoveryRoutes)
-  .use(cardRoutes)
-  .use(cardGenerateRoutes)
-  .use(fsrsRoutes)
-  .use(fsrsExtraRoutes);
-
-// Re-export helpers for potential use elsewhere
-;
+export const learningRoutes = new Hono<AppEnv>()
+  .use(requireUser)
+  .route('/', deckRoutes)
+  .route('/', deckDiscoveryRoutes)
+  .route('/', cardRoutes)
+  .route('/', cardGenerateRoutes)
+  .route('/', fsrsRoutes)
+  .route('/', fsrsExtraRoutes);

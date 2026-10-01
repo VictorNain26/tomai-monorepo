@@ -8,8 +8,9 @@
  * - Accessibilité pour les élèves dyslexiques
  */
 
-import { Elysia, t } from 'elysia';
-import { authMacro } from '../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { requireUser, validate, type AppEnv } from '../lib/http.js';
 import { textToSpeechService, type TTSOptions } from '../services/text-to-speech.service.js';
 import { logger } from '../lib/observability.js';
 import type { EducationLevelType } from '../types/education.types.js';
@@ -18,13 +19,19 @@ import type { EducationLevelType } from '../types/education.types.js';
 // Routes
 // ============================================
 
-export const ttsRoutes = new Elysia({ name: 'tts-routes' })
-  .use(authMacro)
-  .guard({ auth: true })
-  .group('/api/tts', (app) => app
+const synthesizeBody = z.object({
+  text: z.string().min(1).max(5000),
+  language: z.enum(['fr', 'en', 'es', 'de']).optional(),
+  schoolLevel: z.string().min(2).max(20).optional(),
+});
+
+// Mounted under /api/tts by app.ts.
+export const ttsRoutes = new Hono<AppEnv>()
 
     // POST /api/tts/synthesize - Synthétiser texte en audio
-    .post('/synthesize', async ({ body, user, status }) => {
+    .post('/synthesize', requireUser, validate('json', synthesizeBody), async (c) => {
+      const user = c.var.user;
+      const body = c.req.valid('json');
       const startTime = Date.now();
 
       try {
@@ -46,10 +53,10 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
             severity: 'medium' as const
           });
 
-          return status(500, {
+          return c.json({
             success: false,
             error: result._error ?? 'Échec de la synthèse vocale',
-          });
+          }, 500);
         }
 
         logger.info('TTS synthesis completed', {
@@ -60,7 +67,7 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           severity: 'low' as const
         });
 
-        return {
+        return c.json({
           success: true,
           audio: {
             data: result.audioData,
@@ -70,7 +77,7 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
             textLength: text.length,
             processingMs: Date.now() - startTime
           }
-        };
+        });
 
       } catch (error) {
         logger.error('TTS route error', {
@@ -80,27 +87,19 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
           severity: 'high' as const
         });
 
-        return status(500, {
+        return c.json({
           success: false,
           error: 'Erreur interne lors de la synthèse vocale',
-        });
+        }, 500);
       }
-    }, {
-      body: t.Object({
-        text: t.String({ minLength: 1, maxLength: 5000 }),
-        language: t.Optional(t.Union([
-          t.Literal('fr'), t.Literal('en'), t.Literal('es'), t.Literal('de'),
-        ])),
-        schoolLevel: t.Optional(t.String({ minLength: 2, maxLength: 20 })),
-      }),
     })
 
     // GET /api/tts/voices - Métadonnées Voxtral (MVP : voix par défaut unique)
-    .get('/voices', async () => {
+    .get('/voices', requireUser, (c) => {
       // MVP : voix par défaut Voxtral. Voice cloning + mapping par niveau
       // scolaire viendront dans une itération suivante (POST /v1/audio/voices
       // côté Mistral, samples 3s par profil).
-      return {
+      return c.json({
         success: true,
         provider: 'voxtral',
         autoSelect: false,
@@ -109,6 +108,5 @@ export const ttsRoutes = new Elysia({ name: 'tts-routes' })
         limits: {
           maxTextLength: 5000,
         },
-      };
-    })
-  );
+      });
+    });

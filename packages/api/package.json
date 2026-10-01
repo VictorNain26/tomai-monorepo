@@ -26,11 +26,11 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@elysiajs/eden": "^1.4.9"
-  },
   "devDependencies": {
     "tomai-server": "workspace:*",
     "typescript": "catalog:"
+  },
+  "dependencies": {
+    "hono": "^4.13.12"
   }
 }

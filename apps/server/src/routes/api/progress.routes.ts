@@ -1,16 +1,15 @@
-import { Elysia } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { requireUser, type AppEnv } from '../../lib/http.js';
 import { progressService } from '../../services/progress.service';
 import { logger } from '../../lib/observability';
 
-export const progressApiRoutes = new Elysia({ name: 'api-progress' })
-  .use(authMacro)
+export const progressApiRoutes = new Hono<AppEnv>()
 
-  .guard({ auth: true })
-  .get('/progress/dashboard', async ({ user, status }) => {
+  .get('/progress/dashboard', requireUser, async (c) => {
+    const user = c.var.user;
     try {
       const stats = await progressService.getStudentStats(user.id);
-      return {
+      return c.json({
         success: true,
         student: {
           id: user.id,
@@ -23,7 +22,7 @@ export const progressApiRoutes = new Elysia({ name: 'api-progress' })
           conceptsLearned: stats.conceptsLearned,
           averageFrustration: stats.averageFrustration
         }
-      };
+      });
     } catch (_error) {
       logger.error('Progress dashboard retrieval failed', {
         operation: 'api:progress:dashboard',
@@ -31,6 +30,6 @@ export const progressApiRoutes = new Elysia({ name: 'api-progress' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { error: 'Progress retrieval failed' });
+      return c.json({ error: 'Progress retrieval failed' }, 500);
     }
   });

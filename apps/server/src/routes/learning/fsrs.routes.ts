@@ -6,8 +6,9 @@
  * Preview, reset, and config endpoints are in fsrs-extra.routes.ts.
  */
 
-import { Elysia, t } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { validate, type AuthEnv } from '../../lib/http.js';
 import { logger } from '../../lib/observability';
 import { learningService, CardNotFoundError } from '../../services/learning/learning.service';
 import { fsrsService } from '../../services/fsrs.service';
@@ -15,18 +16,28 @@ import type { Rating } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';
 import { getUserLevel } from './helpers';
 
-export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
-  .use(authMacro)
-  .guard({ auth: true })
+
+const reviewBody = z.object({
+  cardId: z.uuid(),
+  rating: z.number().min(1).max(4),
+});
+
+const dueQuery = z.object({
+  limit: z.string().optional(),
+  includeNew: z.string().optional(),
+});
+
+export const fsrsRoutes = new Hono<AuthEnv>()
 
   /**
    * Get total due cards count for the authenticated user
    * GET /api/learning/due-summary
    */
-  .get('/due-summary', async ({ user, status }) => {
+  .get('/due-summary', async (c) => {
+    const user = c.var.user;
     try {
       const totalDue = await learningService.getDueSummaryForUser(user.id);
-      return { success: true, totalDue };
+      return c.json({ success: true, totalDue });
     } catch (error) {
       logger.error('Failed to fetch due summary', {
         operation: 'learning:due-summary:error',
@@ -34,7 +45,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      return status(500, { error: 'Failed to fetch due summary' });
+      return c.json({ error: 'Failed to fetch due summary' }, 500);
     }
   })
 
@@ -50,7 +61,10 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    */
   .post(
     '/review',
-    async ({ body, user, status }) => {
+    validate('json', reviewBody),
+    async (c) => {
+      const user = c.var.user;
+      const body = c.req.valid('json');
       const { cardId, rating } = body;
       const level = getUserLevel(user.id, user.schoolLevel);
 
@@ -66,7 +80,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
           nextDue: result.nextDue.toISOString(),
         });
 
-        return {
+        return c.json({
           success: true,
           result: {
             cardId: result.cardId,
@@ -79,10 +93,10 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
             reps: result.reps,
             lapses: result.lapses,
           },
-        };
+        });
       } catch (error) {
         if (error instanceof CardNotFoundError) {
-          return status(404, { error: 'Carte non trouvée' });
+          return c.json({ error: 'Carte non trouvée' }, 404);
         }
         logger.error('Failed to review card', {
           operation: 'learning:review:error',
@@ -91,15 +105,9 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        return status(500, { error: 'Échec de l\'enregistrement de la révision' });
+        return c.json({ error: 'Échec de l\'enregistrement de la révision' }, 500);
       }
     },
-    {
-      body: t.Object({
-        cardId: t.String({ format: 'uuid' }),
-        rating: t.Number({ minimum: 1, maximum: 4 }),
-      }),
-    }
   )
 
   /**
@@ -114,7 +122,11 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    */
   .get(
     '/decks/:id/due',
-    async ({ params, query, user, status }) => {
+    validate('query', dueQuery),
+    async (c) => {
+      const user = c.var.user;
+      const params = c.req.param();
+      const query = c.req.valid('query');
       const { id: deckId } = params;
       const level = getUserLevel(user.id, user.schoolLevel);
 
@@ -131,7 +143,7 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
           includeNew,
         });
 
-        return {
+        return c.json({
           cards: dueCards.map((card) => ({
             id: card.id,
             deckId: card.deckId,
@@ -142,18 +154,18 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
             // Don't return fsrsData to frontend (invisible to student)
           })),
           count: dueCards.length,
-          overdueCount: dueCards.filter((c) => c.overdue).length,
+          overdueCount: dueCards.filter((card) => card.overdue).length,
           sessionConfig: {
             recommendedCards: config.cardsPerSession,
             sessionMinutes: config.sessionMinutes,
             level,
           },
-        };
+        });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         if (errorMessage.includes('not found') || errorMessage.includes('access denied')) {
-          return status(404, { error: 'Deck non trouvé' });
+          return c.json({ error: 'Deck non trouvé' }, 404);
         }
 
         logger.error('Failed to get due cards', {
@@ -163,15 +175,9 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
           _error: errorMessage,
           severity: 'medium' as const,
         });
-        return status(500, { error: 'Échec de la récupération des cartes' });
+        return c.json({ error: 'Échec de la récupération des cartes' }, 500);
       }
     },
-    {
-      query: t.Object({
-        limit: t.Optional(t.String()),
-        includeNew: t.Optional(t.String()),
-      }),
-    }
   )
 
   /**
@@ -182,24 +188,26 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
    * - Debugging / support
    * - Parent dashboard (future)
    */
-  .get('/decks/:id/stats', async ({ params, user, status }) => {
+  .get('/decks/:id/stats', async (c) => {
+    const user = c.var.user;
+    const params = c.req.param();
     const { id: deckId } = params;
 
     try {
       const stats = await fsrsService.getDeckStats(deckId, user.id);
 
-      return {
+      return c.json({
         stats: {
           ...stats,
           averageDifficulty: Math.round(stats.averageDifficulty * 100) / 100,
           averageStability: Math.round(stats.averageStability * 100) / 100,
         },
-      };
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       if (errorMessage.includes('not found') || errorMessage.includes('access denied')) {
-        return status(404, { error: 'Deck non trouvé' });
+        return c.json({ error: 'Deck non trouvé' }, 404);
       }
 
       logger.error('Failed to get deck stats', {
@@ -209,6 +217,6 @@ export const fsrsRoutes = new Elysia({ prefix: '/api/learning' })
         _error: errorMessage,
         severity: 'medium' as const,
       });
-      return status(500, { error: 'Échec de la récupération des statistiques' });
+      return c.json({ error: 'Échec de la récupération des statistiques' }, 500);
     }
   });

@@ -1,18 +1,18 @@
 /**
  * @repo/api - Platform-agnostic API package
  *
- * Eden Treaty client typed from the server's `App`, shared by the clients.
+ * Typed client (hono/client) built from the server's `AppType`, shared by the clients.
  *
  * @example
  * // Initialize at app startup
- * import { initializeApi, getTreaty, unwrap } from '@repo/api';
+ * import { initializeApi, getClient, unwrap } from '@repo/api';
  *
  * initializeApi({
  *   baseUrl: 'https://api.tomia.fr',
  * });
  *
  * // Type-safe API calls
- * const data = unwrap(await getTreaty().api.parent.dashboard.get());
+ * const data = await unwrap(await getClient().api.parent.dashboard.$get());
  */
 
 // Configuration
@@ -24,16 +24,16 @@ export {
   type ApiConfig,
 } from './config';
 
-// Eden Treaty Client
+// Typed client
 export {
-  getTreaty,
+  getClient,
   unwrap,
-  resetTreatyClient,
+  resetClient,
   setUnauthorizedHandler,
+  type ApiClient,
+  type SuccessData,
   type ApiError,
   type UnauthorizedHandler,
-  type TreatyClient,
-  type ResponseData,
 } from './client';
 
 // Shared Types (platform-agnostic)

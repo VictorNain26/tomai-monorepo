@@ -1,6 +1,6 @@
 /**
  * Schémas de validation Zod - TomAI
- * Corps des routes parent, branchés en Standard Schema (`body:` d'Elysia)
+ * Corps des routes enfant, validés par `validate('json', ...)` (lib/http.ts)
  */
 
 import { z } from 'zod';

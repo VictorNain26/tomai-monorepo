@@ -1,16 +1,15 @@
 /**
- * @repo/api - Eden Treaty Client (type-safe e2e)
+ * @repo/api - typed client (hono/client) for the TomAI server.
  *
- * Type-safe API client using Eden Treaty + Elysia route inference.
+ * The `AppType` comes from the server's *built* declarations
+ * (`tomai-server/app` -> dist/types/app.d.ts), so clients get the real route
+ * types without type-checking the Bun-flavoured server source.
  */
 
-import { treaty } from '@elysiajs/eden';
-import type { App } from 'tomai-server/app';
+import { hc, type ClientResponse } from 'hono/client';
+import type { ClientErrorStatusCode, ServerErrorStatusCode } from 'hono/utils/http-status';
+import type { AppType } from 'tomai-server/app';
 import { getApiConfig } from './config';
-
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface ApiError extends Error {
   status: number;
@@ -21,67 +20,42 @@ export interface ApiError extends Error {
 /** Callback appelé sur erreur 401 (session invalide) */
 export type UnauthorizedHandler = () => void;
 
-// ============================================================================
-// UNAUTHORIZED HANDLER
-// ============================================================================
-
 let unauthorizedHandler: UnauthorizedHandler | null = null;
 
 export function setUnauthorizedHandler(handler: UnauthorizedHandler): void {
   unauthorizedHandler = handler;
 }
 
-// ============================================================================
-// EDEN TREATY CLIENT (type-safe e2e)
-// ============================================================================
-
-export type TreatyClient = ReturnType<typeof treaty<App>>;
-
-let treatyClient: TreatyClient | null = null;
-
-/**
- * Get the Eden Treaty client with full end-to-end type-safety from the server
- * routes. Lazily initialized on first call (requires initializeApi() first).
- *
- * The `App` type comes from the server's *built* declarations
- * (`tomai-server/app` -> dist/types/app.d.ts), so clients get the real route
- * types without type-checking the Bun-flavoured server source. Response bodies
- * (and their types) are derived from this contract — never hand-maintained.
- *
- * @example
- * const decks = unwrap(await getTreaty().api.learning.decks.get()); // typed
- */
-export function getTreaty(): TreatyClient {
-  if (treatyClient) return treatyClient;
-
-  const config = getApiConfig();
-
-  treatyClient = treaty<App>(config.baseUrl, {
-    fetch: {
-      credentials: 'include',
-      mode: 'cors',
-    },
-    onResponse: (response) => {
-      if (response.status === 401 && unauthorizedHandler) {
-        unauthorizedHandler();
-      }
+function createClient(baseUrl: string) {
+  return hc<AppType>(baseUrl, {
+    init: { credentials: 'include', mode: 'cors' },
+    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+      const response = await fetch(input, init);
+      if (response.status === 401) unauthorizedHandler?.();
+      return response;
     },
   });
-
-  return treatyClient;
 }
+
+export type ApiClient = ReturnType<typeof createClient>;
+
+let client: ApiClient | null = null;
 
 /**
- * Reset the treaty client (useful after re-initialization).
- * @internal
+ * Typed client, lazily created on first call (requires initializeApi() first).
+ *
+ * @example
+ * const decks = await unwrap(await getClient().api.learning.decks.$get());
  */
-export function resetTreatyClient(): void {
-  treatyClient = null;
+export function getClient(): ApiClient {
+  client ??= createClient(getApiConfig().baseUrl);
+  return client;
 }
 
-// ============================================================================
-// UNWRAP HELPER
-// ============================================================================
+/** @internal */
+export function resetClient(): void {
+  client = null;
+}
 
 function buildApiError(status: number, errorValue: unknown): ApiError {
   let message = `HTTP ${status}`;
@@ -117,38 +91,20 @@ function buildApiError(status: number, errorValue: unknown): ApiError {
   return err;
 }
 
-/**
- * Eden Treaty's discriminated success/failure response, as consumed by `unwrap`.
- * Mirrors `@elysiajs/eden`'s `Treaty.TreatyResponse` (the extra `response` /
- * `status` / `headers` fields are structurally compatible and ignored here).
- */
-type TreatyResult<T> =
-  | { data: T; error: null }
-  | { data: null; error: { status: unknown; value: unknown } };
+/** Body types of the non-error responses in a typed client response union. */
+export type SuccessData<R> =
+  R extends ClientResponse<infer T, infer S>
+    ? S extends ClientErrorStatusCode | ServerErrorStatusCode ? never : T
+    : never;
 
 /**
- * Unwrap an Eden Treaty response: return `data` on success, throw a typed
- * {@link ApiError} on failure. The success type `T` is inferred from the call,
- * so callers never cast:
- *
- * @example
- * const decks = unwrap(await getTreaty().api.learning.decks.get()); // typed
+ * Return the parsed body on success, throw a typed {@link ApiError} otherwise.
+ * The success type is inferred from the call, so callers never cast.
  */
-export function unwrap<T>(response: TreatyResult<T>): T {
-  if (response.error) {
-    const status = typeof response.error.status === 'number' ? response.error.status : 0;
-    throw buildApiError(status, response.error.value);
+export async function unwrap<R extends ClientResponse<unknown>>(response: R): Promise<SuccessData<R>> {
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    throw buildApiError(response.status, body);
   }
-  return response.data;
+  return response.json() as Promise<SuccessData<R>>;
 }
-
-/**
- * The success `data` type of an Eden Treaty endpoint method, for deriving
- * client types from the server contract instead of hand-maintaining them.
- *
- * @example
- * type LearningApi = ReturnType<typeof getTreaty>['api']['learning'];
- * export type LearningDeck = ResponseData<LearningApi['decks']['get']>['decks'][number];
- */
-export type ResponseData<Fn extends (...args: never[]) => Promise<{ data: unknown }>> =
-  NonNullable<Awaited<ReturnType<Fn>>['data']>;

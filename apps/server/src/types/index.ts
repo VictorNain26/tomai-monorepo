@@ -3,8 +3,8 @@ import type { userRoleEnum, SchoolLevel } from '../db/schema';
 // Type pour le rôle utilisateur
 type UserRole = typeof userRoleEnum.enumValues[number];
 
-// Elysia Context User interface pour l'authentification
-export interface ElysiaAuthenticatedUser {
+// Utilisateur authentifié injecté par requireUser / requireParent
+export interface AuthenticatedUser {
   id: string;
   username?: string | null;
   email?: string | null;

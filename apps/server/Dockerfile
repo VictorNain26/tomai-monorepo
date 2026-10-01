@@ -141,6 +141,6 @@ CMD ["bun", "--smol", "dist/index.js"]
 
 # OCI Metadata
 LABEL org.opencontainers.image.title="TomAI Backend" \
-      org.opencontainers.image.description="Bun + Elysia.js backend" \
+      org.opencontainers.image.description="Bun + Hono backend" \
       org.opencontainers.image.source="https://github.com/VictorNain26/tomai-monorepo" \
       org.opencontainers.image.base.name="oven/bun:1.4-slim"
