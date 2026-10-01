@@ -33,7 +33,7 @@ fixée d'avance.
 5. Outillage Bun, en deux PR : `build/bun-package-manager` (#344, `bun install` à la place
    de pnpm, CI, Docker, Vercel) et `build/bun-scripts` (#346, scripts et tests de scripts
    sous Bun, liste « outillage » soldée). Mergées.
-6. Logger : pino et codemod du motif `_error` (liste « Lot 0 — logger »).
+6. `refactor/server-logger` (#347) : pino et codemod du motif `_error`. Mergée.
 7. Refonte du serveur, une PR par module de `architecture.md` (`auth` et parent, `chat`,
    `learning`, `documents`, `billing`, `voice`, `platform`) : un dossier par module, un
    routeur Hono par ressource, services et dépôts revus, fichiers sous 400 lignes.

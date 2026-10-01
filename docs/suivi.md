@@ -16,11 +16,10 @@ bloquant levé).
   remplacer par Bun tout ce qu'il remplace proprement et une refonte complète du serveur.
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
-  - **logger** (détail dans « Reporté ») ;
   - **refonte du serveur**, une PR par module ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** logger, sur une branche courte dont le plan s'écrit
-  d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
+- **Prochaine action :** refonte du serveur, premier module, sur une branche courte dont le
+  plan s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -31,15 +30,6 @@ Constats hors du périmètre de la PR qui les a trouvés. Chacun nomme son lot�
 plan de la PR s'écrit, le point y devient une tâche ou est explicitement renvoyé
 (`.claude/rules/plans-and-agents.md`). Chemins relatifs à `apps/server/src/` sauf mention
 contraire.
-
-### Lot 0 — logger
-
-- **Logger** : `lib/observability.ts` sérialise par `JSON.stringify` (une `Error` devient
-  `{}`, un BigInt ou une référence circulaire fait lever l'appel de log) et ignore
-  `LOG_LEVEL`, validée par `config/env.ts` mais lue nulle part. À remplacer par pino, même
-  signature d'appel, puis codemod du motif
-  `_error: x instanceof Error ? x.message : String(x)` (123 sites dans 52 fichiers le
-  2026-10-01), qui perd la stack.
 
 ### Lot 0 — lint strict
 
@@ -210,3 +200,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Scripts et tests de scripts sous Bun, attentes et `CREATE EXTENSION` en double retirés,
   CI allégée, liste « outillage » soldée (#346). `appleWebApp` de la landing abandonné :
   il émet `mobile-web-app-capable` au lieu de `apple-mobile-web-app-capable`.
+  Logger sur pino (même API, `LOG_LEVEL` appliqué, erreurs loggées avec leur stack sous
+  `err`) (#347).
