@@ -5,18 +5,18 @@
  */
 
 import { Hono } from 'hono';
-import type { AuthEnv } from '../../lib/http.js';
+import { validate, type AuthEnv } from '../../lib/http.js';
 import { logger } from '../../lib/observability';
 import { learningService, CardNotFoundError } from '../../services/learning/learning.service';
 import { fsrsService } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';
-import { getUserLevel } from './helpers';
+import { getUserLevel, idParam } from './helpers';
 
 export const fsrsExtraRoutes = new Hono<AuthEnv>()
 
-  .get('/cards/:id/preview', async (c) => {
+  .get('/cards/:id/preview', validate('param', idParam), async (c) => {
     const user = c.var.user;
-    const params = c.req.param();
+    const params = c.req.valid('param');
     const { id: cardId } = params;
     const level = getUserLevel(user.id, user.schoolLevel);
 
@@ -60,9 +60,9 @@ export const fsrsExtraRoutes = new Hono<AuthEnv>()
     }
   })
 
-  .post('/decks/:id/reset', async (c) => {
+  .post('/decks/:id/reset', validate('param', idParam), async (c) => {
     const user = c.var.user;
-    const params = c.req.param();
+    const params = c.req.valid('param');
     const { id: deckId } = params;
 
     try {

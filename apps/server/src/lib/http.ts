@@ -40,8 +40,17 @@ export const requireParent = createMiddleware<AuthEnv>(async (c, next) => {
   await next();
 });
 
-/** zValidator that routes failures through the global VALIDATION_ERROR envelope. */
+const JSON_CONTENT_TYPE = /^application\/([a-z-.]+\+)?json\b/i;
+
+/**
+ * zValidator that routes failures through the global VALIDATION_ERROR envelope.
+ * Hono validates `{}` when a json body arrives without a JSON Content-Type, so
+ * that case is rejected here.
+ */
 export const validate = <T extends ZodType, Target extends keyof ValidationTargets>(target: Target, schema: T) =>
-  zValidator(target, schema, (result) => {
+  zValidator(target, schema, (result, c) => {
+    if (target === 'json' && !JSON_CONTENT_TYPE.test(c.req.header('content-type') ?? '')) {
+      throw new AppError('VALIDATION_ERROR', 'Expected an application/json body');
+    }
     if (!result.success) throw new AppError('VALIDATION_ERROR', result.error.message);
   });

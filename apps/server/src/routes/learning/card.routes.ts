@@ -7,7 +7,7 @@ import {
   CardNotFoundError,
   CardValidationError,
 } from '../../services/learning/learning.service';
-import { handleDeckDomainError } from './helpers';
+import { handleDeckDomainError, idParam } from './helpers';
 
 
 const cardType = z.enum(['flashcard', 'qcm', 'vrai_faux']);
@@ -30,10 +30,11 @@ export const cardRoutes = new Hono<AuthEnv>()
 
   .post(
     '/decks/:id/cards',
+    validate('param', idParam),
     validate('json', addCardsBody),
     async (c) => {
       const user = c.var.user;
-      const params = c.req.param();
+      const params = c.req.valid('param');
       const body = c.req.valid('json');
       const { id: deckId } = params;
       const { cards } = body;
@@ -72,10 +73,11 @@ export const cardRoutes = new Hono<AuthEnv>()
 
   .patch(
     '/cards/:id',
+    validate('param', idParam),
     validate('json', updateCardBody),
     async (c) => {
       const user = c.var.user;
-      const params = c.req.param();
+      const params = c.req.valid('param');
       const body = c.req.valid('json');
       const { id: cardId } = params;
 
@@ -100,9 +102,9 @@ export const cardRoutes = new Hono<AuthEnv>()
     },
   )
 
-  .delete('/cards/:id', async (c) => {
+  .delete('/cards/:id', validate('param', idParam), async (c) => {
     const user = c.var.user;
-    const params = c.req.param();
+    const params = c.req.valid('param');
     const { id: cardId } = params;
 
     try {

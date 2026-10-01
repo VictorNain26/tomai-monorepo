@@ -12,6 +12,7 @@
 import * as Sentry from '@sentry/hono/bun';
 import type { ErrorEvent } from '@sentry/hono/bun';
 import type { Env, Hono, MiddlewareHandler } from 'hono';
+import { AppError } from './errors.js';
 
 /**
  * `sendDefaultPii: false` only strips the IP on spans — request headers
@@ -41,6 +42,8 @@ export function sentryMiddleware<E extends Env>(app: Hono<E>): MiddlewareHandler
     release: process.env['GIT_COMMIT_SHA'] ?? 'unknown',
     tracesSampleRate: 0.1,
     beforeSend: scrubRequestData,
+    // The default filter reads `error.status`; AppError carries `statusCode`.
+    shouldHandleError: (error) => !(error instanceof AppError) || error.statusCode >= 500,
   });
 }
 

@@ -4,6 +4,7 @@
  */
 
 import type { Context, Env, MiddlewareHandler } from 'hono';
+import { getConnInfo } from 'hono/bun';
 import type { AuthEnv } from '../lib/http.js';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import { logger } from '../lib/observability';
@@ -31,8 +32,13 @@ const DEFAULT_CONFIG: RateLimitConfig<Env> = {
  * est l'entrée RIGHTMOST de X-Forwarded-For (ajoutée par le proxy).
  * Les entrées leftmost sont contrôlables par le client → non fiables en prod.
  *
- * Développement: L'IP vient directement de la connexion (aucun proxy).
+ * Développement: L'IP vient directement de la connexion (aucun proxy). Sans
+ * serveur Bun derrière le contexte (tests via app.request), il n'y en a pas.
  */
+function connectionAddress(context: Context): string | undefined {
+  return context.env ? getConnInfo(context).remote.address : undefined;
+}
+
 export function defaultKeyGenerator(context: Context): string {
   const forwardedFor = context.req.header('x-forwarded-for');
   const realIp = context.req.header('x-real-ip');
@@ -43,7 +49,7 @@ export function defaultKeyGenerator(context: Context): string {
       // (added by Koyeb proxy), not the leftmost (client-controllable)
       forwardedFor.split(',').map((p) => p.trim()).at(-1) ?? 'unknown'
     : // Development or fallback: use cloudflare > x-real-ip > direct connection
-      cfConnectingIp ?? realIp ?? 'unknown';
+      cfConnectingIp ?? realIp ?? connectionAddress(context) ?? 'unknown';
 
   return `ip:${ip}`;
 }

@@ -4,7 +4,7 @@ import { validate, type AuthEnv } from '../../lib/http.js';
 import { educationLevelSchema } from '../../lib/education-levels.js';
 import { logger } from '../../lib/observability';
 import { learningService } from '../../services/learning/learning.service';
-import { handleDeckDomainError } from './helpers';
+import { handleDeckDomainError, idParam } from './helpers';
 
 
 const createDeckBody = z.object({
@@ -74,9 +74,9 @@ export const deckRoutes = new Hono<AuthEnv>()
     },
   )
 
-  .get('/decks/:id', async (c) => {
+  .get('/decks/:id', validate('param', idParam), async (c) => {
     const user = c.var.user;
-    const params = c.req.param();
+    const params = c.req.valid('param');
     const { id: deckId } = params;
 
     try {
@@ -96,10 +96,11 @@ export const deckRoutes = new Hono<AuthEnv>()
 
   .patch(
     '/decks/:id',
+    validate('param', idParam),
     validate('json', updateDeckBody),
     async (c) => {
       const user = c.var.user;
-      const params = c.req.param();
+      const params = c.req.valid('param');
       const body = c.req.valid('json');
       const { id: deckId } = params;
 
@@ -120,9 +121,9 @@ export const deckRoutes = new Hono<AuthEnv>()
     },
   )
 
-  .delete('/decks/:id', async (c) => {
+  .delete('/decks/:id', validate('param', idParam), async (c) => {
     const user = c.var.user;
-    const params = c.req.param();
+    const params = c.req.valid('param');
     const { id: deckId } = params;
 
     try {

@@ -36,7 +36,7 @@ function sanitizePrompt(text: string): string {
 
 const streamBody = z.object({
   // Last UIMessage sent by the client (AI SDK UI Message format); the server rebuilds full history from DB.
-  message: z.unknown(),
+  message: z.looseObject({}),
   sessionId: z.uuid().optional(),
   // Optional for multi-subject chat
   subject: z.string().min(2).max(50).optional(),

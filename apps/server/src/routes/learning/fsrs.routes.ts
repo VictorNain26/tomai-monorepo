@@ -14,7 +14,7 @@ import { learningService, CardNotFoundError } from '../../services/learning/lear
 import { fsrsService } from '../../services/fsrs.service';
 import type { Rating } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';
-import { getUserLevel } from './helpers';
+import { getUserLevel, idParam } from './helpers';
 
 
 const reviewBody = z.object({
@@ -122,10 +122,11 @@ export const fsrsRoutes = new Hono<AuthEnv>()
    */
   .get(
     '/decks/:id/due',
+    validate('param', idParam),
     validate('query', dueQuery),
     async (c) => {
       const user = c.var.user;
-      const params = c.req.param();
+      const params = c.req.valid('param');
       const query = c.req.valid('query');
       const { id: deckId } = params;
       const level = getUserLevel(user.id, user.schoolLevel);
@@ -188,9 +189,9 @@ export const fsrsRoutes = new Hono<AuthEnv>()
    * - Debugging / support
    * - Parent dashboard (future)
    */
-  .get('/decks/:id/stats', async (c) => {
+  .get('/decks/:id/stats', validate('param', idParam), async (c) => {
     const user = c.var.user;
-    const params = c.req.param();
+    const params = c.req.valid('param');
     const { id: deckId } = params;
 
     try {

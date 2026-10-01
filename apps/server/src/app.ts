@@ -30,7 +30,12 @@ const base = new Hono<AppEnv>();
 base.use(sentryMiddleware(base));
 
 const app = base
-  .use(requestId())
+  // Always generated here: an incoming X-Request-Id would let a client forge log correlation.
+  .use(requestId({ headerName: '' }))
+  .use(async (c, next) => {
+    c.header('X-Request-Id', c.var.requestId);
+    await next();
+  })
 
   .use(cors({
     origin: getCorsOrigins(),
@@ -47,12 +52,16 @@ const app = base
     ],
     // Set-Cookie intentionally NOT exposed: JavaScript must not be able to read
     // session cookies cross-origin.
-    exposeHeaders: ['X-Response-Time', 'X-Start-Time', 'Content-Type'],
+    exposeHeaders: ['X-Request-Id', 'Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
     maxAge: 86400,
   }))
 
-  // HSTS only in production so local http://localhost keeps working.
+  // HSTS only in production so local http://localhost keeps working. CORP and
+  // COOP stay off: the web client runs on another origin and the OAuth flow
+  // may rely on window.opener.
   .use(secureHeaders({
+    crossOriginResourcePolicy: false,
+    crossOriginOpenerPolicy: false,
     xFrameOptions: 'DENY',
     referrerPolicy: 'strict-origin-when-cross-origin',
     permissionsPolicy: { geolocation: [], microphone: [], camera: [] },

@@ -14,7 +14,11 @@ const { validate } = await import('../lib/http');
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 const app = new Hono<AppEnv>()
-  .use(requestId())
+  .use(requestId({ headerName: '' }))
+  .use(async (c, next) => {
+    c.header('X-Request-Id', c.var.requestId);
+    await next();
+  })
   .get('/app-error', () => {
     throw new AppError('SESSION_NOT_FOUND');
   })
@@ -58,6 +62,18 @@ describe('request id + global error envelope', () => {
     });
     expect(res.status).toBe(400);
     expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(body.requestId).toMatch(UUID_V4);
+  });
+
+  it('rejects a json body sent without a JSON Content-Type instead of validating {}', async () => {
+    const { res, body } = await call('/json', { method: 'POST', body: '{"a":1}' });
+    expect(res.status).toBe(400);
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('ignores a client-supplied X-Request-Id', async () => {
+    const res = await app.request('/ok', { headers: { 'X-Request-Id': 'forged-id' } });
+    const body = (await res.json()) as { requestId: string };
     expect(body.requestId).toMatch(UUID_V4);
   });
 
