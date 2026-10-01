@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
 import { BRAND_NAME } from "@/lib/brand";
 
-const DESCRIPTION = `Comment ${BRAND_NAME} protège les données de votre enfant : données collectées, bases légales, hébergement dans l'Union européenne, durées de conservation et vos droits.`;
+const DESCRIPTION = `Comment ${BRAND_NAME} protégera les données de votre enfant\u00a0: données collectées, bases légales, prestataires, durées de conservation et vos droits.`;
 
 export const metadata: Metadata = {
   title: "Politique de Confidentialité",
@@ -17,14 +17,19 @@ export default function ConfidentialitePage() {
   return (
     <PageLayout
       title="Politique de Confidentialité"
-      description="Dernière mise à jour : 30 septembre 2026"
+      description="Dernière mise à jour : 1er octobre 2026"
       maxWidth="3xl"
     >
       <div className="legal-copy">
         <p>
-          <strong>En bref :</strong> {BRAND_NAME} aide votre enfant à apprendre. Pour cela, nous
-          traitons les données strictement nécessaires au tutorat, en France et en Europe
-          autant que possible. Nous ne vendons jamais vos données, nous ne diffusons aucune
+          <strong>Service en préparation&nbsp;:</strong> cette politique décrit le service tel
+          qu&apos;il fonctionnera à son ouverture. L&apos;application n&apos;est pas encore
+          ouverte&nbsp;: aujourd&apos;hui, aucune donnée d&apos;élève n&apos;est collectée.
+        </p>
+        <p>
+          <strong>En bref :</strong> {BRAND_NAME} est conçu pour aider votre enfant à
+          apprendre. Pour cela, nous traitons les données strictement nécessaires au
+          tutorat, en France et en Europe autant que possible. Nous ne vendons jamais vos données, nous ne diffusons aucune
           publicité, et vous gardez le contrôle : consultation, correction et suppression
           sur simple demande.
         </p>
@@ -99,17 +104,16 @@ export default function ConfidentialitePage() {
             (transcription) le temps de générer la réponse.</li>
           <li><strong>Scaleway</strong> (France, données stockées à Paris) — stockage des
             photos, documents et messages vocaux.</li>
-          <li><strong>Koyeb</strong> (Union européenne — Francfort) — hébergement du
-            serveur applicatif et de la base de données.</li>
-          <li><strong>Vercel</strong> (États-Unis) — hébergement du site vitrine et de
-            l&apos;application web.</li>
+          <li><strong>Vercel</strong> (États-Unis) — hébergement du site vitrine.</li>
           <li><strong>Google</strong> — uniquement si vous choisissez la connexion Google.</li>
         </ul>
 
         <h2>6. Transferts hors de l&apos;Union européenne</h2>
         <p>
-          L&apos;essentiel de vos données est traité en France et dans l&apos;Union
-          européenne. Les transferts vers le prestataire établi aux États-Unis (Vercel) sont
+          Mistral AI et Scaleway traitent vos données dans l&apos;Union européenne.
+          L&apos;hébergeur du serveur applicatif et de la base de données n&apos;est pas
+          encore choisi&nbsp;: il sera nommé ici avant l&apos;ouverture. Les transferts vers
+          le prestataire établi aux États-Unis (Vercel) sont
           encadrés par le cadre de protection des données UE–États-Unis
           (Data Privacy Framework) ou, à défaut, par les clauses contractuelles types de la
           Commission européenne. Une copie de ces garanties peut être obtenue en écrivant à{" "}
