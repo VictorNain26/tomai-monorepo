@@ -56,7 +56,7 @@ beforeEach(() => {
 
 describe('Rate Limit Middleware', () => {
   describe('X-Forwarded-For Header - Anti-spoofing (C3a)', () => {
-    it('should use RIGHTMOST IP in X-Forwarded-For when in production (trusted proxy)', () => {
+    it('should use RIGHTMOST IP in X-Forwarded-For when in production (trusted proxy)', async () => {
       // Simulates: client forges leftmost IP → proxy adds rightmost IP
       // Client sends: X-Forwarded-For: 1.2.3.4, 9.9.9.9
       // (1.2.3.4 is forged by client, 9.9.9.9 is added by Koyeb proxy — the real client)
@@ -79,21 +79,21 @@ describe('Rate Limit Middleware', () => {
       const context1 = createMockContext({
         'x-forwarded-for': '1.2.3.4, 9.9.9.9',
       }) as Context;
-      const result1 = middleware(context1);
+      const result1 = await middleware(context1);
       expect(result1).toBeUndefined();
 
       // Second request: different forged leftmost IP, same rightmost 9.9.9.9
       const context2 = createMockContext({
         'x-forwarded-for': '3.3.3.3, 9.9.9.9',
       }) as Context;
-      const result2 = middleware(context2);
+      const result2 = await middleware(context2);
       expect(result2).toBeUndefined();
 
       // Third request: different rightmost IP (8.8.8.8)
       const context3 = createMockContext({
         'x-forwarded-for': '1.2.3.4, 8.8.8.8',
       }) as Context;
-      const result3 = middleware(context3);
+      const result3 = await middleware(context3);
       expect(result3).toBeUndefined();
 
       // Verify that only 2 distinct keys were created (9.9.9.9 and 8.8.8.8)
@@ -107,7 +107,7 @@ describe('Rate Limit Middleware', () => {
       expect(extractedKeys.has('ip:development')).toBe(false);
     });
 
-    it('should NOT use X-Forwarded-For in development (direct connection)', () => {
+    it('should NOT use X-Forwarded-For in development (direct connection)', async () => {
       mockIsProduction = false;
       mockIsDevelopment = true;
 
@@ -130,7 +130,7 @@ describe('Rate Limit Middleware', () => {
         'cf-connecting-ip': '7.7.7.7',
       }) as Context;
 
-      const result = middleware(context);
+      const result = await middleware(context);
       expect(result).toBeUndefined();
       // In dev mode, when no X-Forwarded-For is present and cfConnectingIp is 7.7.7.7,
       // the key should use cfConnectingIp
@@ -138,7 +138,7 @@ describe('Rate Limit Middleware', () => {
       expect(extractedKeys.has('ip:9.9.9.9')).toBe(false);
     });
 
-    it('should fail-closed on middleware error (return 503)', () => {
+    it('should fail-closed on middleware error (return 503)', async () => {
       mockIsProduction = true;
 
       // Create middleware with an invalid keyGenerator to trigger an error
@@ -154,10 +154,46 @@ describe('Rate Limit Middleware', () => {
         'x-forwarded-for': '9.9.9.9',
       }) as Context;
 
-      const result = middleware(context);
+      const result = await middleware(context);
       expect(result).not.toBeUndefined();
       expect((result as unknown as { error: string })?.error).toBe('Service Unavailable');
       expect(context.set.status).toBe(503);
+    });
+  });
+
+  describe('Quota', () => {
+    const fixedKey = () => 'ip:1.1.1.1';
+
+    it('lets requests through under the limit and reports the remaining quota', async () => {
+      const middleware = createRateLimitMiddleware({ maxRequests: 2, windowSeconds: 60, keyGenerator: fixedKey });
+      const context = createMockContext({}) as Context;
+
+      expect(await middleware(context)).toBeUndefined();
+      expect((context.set.headers as Record<string, string>)['X-RateLimit-Limit']).toBe('2');
+      expect((context.set.headers as Record<string, string>)['X-RateLimit-Remaining']).toBe('1');
+    });
+
+    it('answers 429 with Retry-After once the limit is spent', async () => {
+      const middleware = createRateLimitMiddleware({ maxRequests: 1, windowSeconds: 60, keyGenerator: fixedKey });
+      await middleware(createMockContext({}) as Context);
+
+      const context = createMockContext({}) as Context;
+      const result = (await middleware(context)) as { error: string; retryAfter: number };
+
+      expect(context.set.status).toBe(429);
+      expect(result.error).toBe('Too Many Requests');
+      expect(result.retryAfter).toBeGreaterThan(0);
+      expect((context.set.headers as Record<string, string>)['Retry-After']).toBe(String(result.retryAfter));
+    });
+
+    it('keeps one counter per limiter for the same key', async () => {
+      const strict = createRateLimitMiddleware({ maxRequests: 1, windowSeconds: 60, keyGenerator: fixedKey });
+      const loose = createRateLimitMiddleware({ maxRequests: 5, windowSeconds: 60, keyGenerator: fixedKey });
+
+      for (let i = 0; i < 3; i++) {
+        expect(await loose(createMockContext({}) as Context)).toBeUndefined();
+      }
+      expect(await strict(createMockContext({}) as Context)).toBeUndefined();
     });
   });
 });

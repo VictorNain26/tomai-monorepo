@@ -72,6 +72,7 @@
     "elysia": "^1.4.30",
     "mammoth": "^1.12.3",
     "postgres": "^3.4.9",
+    "rate-limiter-flexible": "^11.2.1",
     "ts-fsrs": "^5.4.2",
     "unpdf": "^1.8.1",
     "zod": "^4.6.5"

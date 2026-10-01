@@ -353,6 +353,9 @@ importers:
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
+      rate-limiter-flexible:
+        specifier: ^11.2.1
+        version: 11.2.1
       ts-fsrs:
         specifier: ^5.4.2
         version: 5.4.2
@@ -4261,6 +4264,9 @@ packages:
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
+
+  rate-limiter-flexible@11.2.1:
+    resolution: {integrity: sha512-JAaz01HZ893zAw+Hx5MdM1z3lLAkyVvNpqR+GNp0k3kjuQB8gY91fXhf5C0osWs+A7iKgFv585qzwmjS3aBHlA==}
 
   react-dom@19.2.3:
     resolution: {integrity: sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==}
@@ -8502,6 +8508,8 @@ snapshots:
       hookified: 2.2.0
 
   queue-microtask@1.2.3: {}
+
+  rate-limiter-flexible@11.2.1: {}
 
   react-dom@19.2.3(react@19.2.3):
     dependencies:

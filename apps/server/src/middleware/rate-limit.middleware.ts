@@ -1,16 +1,16 @@
 /**
- * Rate Limiting Middleware - Production-Ready
- * Protection DDoS et brute-force avec in-memory backend
+ * Rate Limiting Middleware
+ * Un compteur en mémoire par limiteur (rate-limiter-flexible), mono-instance.
  */
 
 import type { Context } from 'elysia';
+import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import { logger } from '../lib/observability';
 import { isProduction, isDevelopment } from '../config/env';
 
 interface RateLimitConfig {
   maxRequests: number;
   windowSeconds: number;
-  skipSuccessfulRequests?: boolean;
   keyGenerator?: (context: Context) => string;
 }
 
@@ -21,7 +21,6 @@ interface RateLimitConfig {
 const DEFAULT_CONFIG: RateLimitConfig = {
   maxRequests: isProduction() ? 100 : 500, // 100 req/min prod, 500 dev
   windowSeconds: 60, // 1 minute
-  skipSuccessfulRequests: false,
 };
 
 /**
@@ -49,114 +48,29 @@ export function defaultKeyGenerator(context: Context): string {
 }
 
 /**
- * In-memory rate limit store (mono-instance)
- */
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-// Cleanup expired entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, record] of rateLimitStore.entries()) {
-    if (record.resetTime <= now) {
-      rateLimitStore.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
-
-/**
- * Check rate limit (in-memory)
- */
-function checkRateLimit(
-  identifier: string,
-  maxRequests: number,
-  windowSeconds: number
-): { allowed: boolean; remaining: number; resetTime: number } {
-  const now = Date.now();
-  const key = `ratelimit:${identifier}`;
-  const record = rateLimitStore.get(key);
-
-  // No record or expired
-  if (!record || record.resetTime <= now) {
-    const resetTime = now + windowSeconds * 1000;
-    rateLimitStore.set(key, { count: 1, resetTime });
-    return { allowed: true, remaining: maxRequests - 1, resetTime };
-  }
-
-  // Increment
-  record.count++;
-  const allowed = record.count <= maxRequests;
-  const remaining = Math.max(0, maxRequests - record.count);
-
-  return { allowed, remaining, resetTime: record.resetTime };
-}
-
-/**
  * Middleware factory pour rate limiting
  */
 export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {}) {
-  const finalConfig: RateLimitConfig = {
-    ...DEFAULT_CONFIG,
-    ...config,
-    keyGenerator: config.keyGenerator ?? defaultKeyGenerator,
-  };
+  const maxRequests = config.maxRequests ?? DEFAULT_CONFIG.maxRequests;
+  const windowSeconds = config.windowSeconds ?? DEFAULT_CONFIG.windowSeconds;
+  const keyGenerator = config.keyGenerator ?? defaultKeyGenerator;
+  const limiter = new RateLimiterMemory({ points: maxRequests, duration: windowSeconds });
 
-  return function rateLimitMiddleware(context: Context) {
+  return async function rateLimitMiddleware(context: Context) {
+    let identifier: string;
+    let allowed: boolean;
+    let result: RateLimiterRes;
+
     try {
-      // Générer clé unique pour cet identifiant
-      const identifier = finalConfig.keyGenerator!(context);
-
-      // Vérifier rate limit (in-memory, synchrone)
-      const { allowed, remaining, resetTime } = checkRateLimit(
-        identifier,
-        finalConfig.maxRequests,
-        finalConfig.windowSeconds
-      );
-
-      // Ajouter headers rate limit (standard HTTP)
-      const headers: Record<string, string> = {
-        ...(context.set.headers as Record<string, string>),
-        'X-RateLimit-Limit': finalConfig.maxRequests.toString(),
-        'X-RateLimit-Remaining': remaining.toString(),
-        'X-RateLimit-Reset': Math.ceil(resetTime / 1000).toString(),
-      };
-
-      (context.set.headers as Record<string, string>) = headers;
-
-      // Si limite dépassée, bloquer la requête
-      if (!allowed) {
-        const retryAfterSeconds = Math.ceil((resetTime - Date.now()) / 1000);
-
-        logger.warn('Rate limit exceeded', {
-          operation: 'rate-limit:exceeded',
-          identifier,
-          metadata: {
-            maxRequests: finalConfig.maxRequests,
-            windowSeconds: finalConfig.windowSeconds,
-            path: new URL(context.request.url).pathname,
-          },
-        });
-
-        context.set.status = 429;
-        (context.set.headers as Record<string, string>)['Retry-After'] = retryAfterSeconds.toString();
-        return {
-          error: 'Too Many Requests',
-          message: `Rate limit exceeded. Maximum ${finalConfig.maxRequests} requests per ${finalConfig.windowSeconds} seconds.`,
-          retryAfter: retryAfterSeconds,
-        };
-      }
-
-      // Logger les requêtes en développement
-      if (isDevelopment() && remaining < 10) {
-        logger.debug('Rate limit check', {
-          operation: 'rate-limit:check',
-          identifier,
-          remaining,
-          metadata: { maxRequests: finalConfig.maxRequests },
-        });
-      }
-
-      return;
-
+      identifier = keyGenerator(context);
+      ({ allowed, result } = await limiter.consume(identifier).then(
+        (res) => ({ allowed: true, result: res }),
+        (rejection: unknown) => {
+          // consume() rejects with a RateLimiterRes when the quota is spent, with an Error otherwise
+          if (rejection instanceof RateLimiterRes) return { allowed: false, result: rejection };
+          throw rejection;
+        },
+      ));
     } catch (error) {
       // Fail-closed: On error, block the request (security > availability)
       logger.error('Rate limit middleware error', {
@@ -171,6 +85,46 @@ export function createRateLimitMiddleware(config: Partial<RateLimitConfig> = {})
         message: 'Rate limit check failed. Please try again later.',
       };
     }
+
+    const resetTime = Date.now() + result.msBeforeNext;
+    Object.assign(context.set.headers, {
+      'X-RateLimit-Limit': maxRequests.toString(),
+      'X-RateLimit-Remaining': result.remainingPoints.toString(),
+      'X-RateLimit-Reset': Math.ceil(resetTime / 1000).toString(),
+    });
+
+    if (!allowed) {
+      const retryAfterSeconds = Math.ceil(result.msBeforeNext / 1000);
+
+      logger.warn('Rate limit exceeded', {
+        operation: 'rate-limit:exceeded',
+        identifier,
+        metadata: {
+          maxRequests,
+          windowSeconds,
+          path: new URL(context.request.url).pathname,
+        },
+      });
+
+      context.set.status = 429;
+      context.set.headers['Retry-After'] = retryAfterSeconds.toString();
+      return {
+        error: 'Too Many Requests',
+        message: `Rate limit exceeded. Maximum ${maxRequests} requests per ${windowSeconds} seconds.`,
+        retryAfter: retryAfterSeconds,
+      };
+    }
+
+    if (isDevelopment() && result.remainingPoints < 10) {
+      logger.debug('Rate limit check', {
+        operation: 'rate-limit:check',
+        identifier,
+        remaining: result.remainingPoints,
+        metadata: { maxRequests },
+      });
+    }
+
+    return;
   };
 }
 
@@ -184,18 +138,6 @@ export const RateLimitPresets = {
     windowSeconds: 60,
   },
 
-  // Auth endpoints (plus strict pour éviter brute-force)
-  auth: {
-    maxRequests: isProduction() ? 10 : 50,
-    windowSeconds: 60,
-    keyGenerator: (context: Context) => {
-      // Type assertion pour body qui contient potentiellement email
-      const body = context.body as { email?: string } | undefined;
-      const email = body?.email;
-      return email ? `auth:email:${email}` : defaultKeyGenerator(context);
-    },
-  },
-
   // Chat/AI endpoints (modéré car coûteux)
   ai: {
     maxRequests: isProduction() ? 30 : 100,
@@ -206,17 +148,5 @@ export const RateLimitPresets = {
       const userId = ctx.user?.id;
       return userId ? `ai:user:${userId}` : defaultKeyGenerator(context);
     },
-  },
-
-  // File upload (très strict)
-  upload: {
-    maxRequests: isProduction() ? 5 : 20,
-    windowSeconds: 60,
-  },
-
-  // Public endpoints (plus permissif)
-  public: {
-    maxRequests: isProduction() ? 200 : 1000,
-    windowSeconds: 60,
   },
 } as const;
