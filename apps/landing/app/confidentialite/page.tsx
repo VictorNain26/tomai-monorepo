@@ -51,11 +51,6 @@ export default function ConfidentialitePage() {
         <p><strong>Personnalisation pédagogique :</strong> un profil d&apos;apprentissage
           (points forts, difficultés, style d&apos;apprentissage préféré), des résumés de
           sessions de travail conservés 90 jours, et la progression de révision.</p>
-        <p><strong>Connexion Pronote (optionnelle) :</strong> si vous l&apos;activez, les
-          identifiants de connexion sont stockés chiffrés (AES-256-GCM). Les devoirs, notes
-          et emplois du temps sont lus à la demande depuis Pronote par nos serveurs : ils ne
-          sont jamais enregistrés en base de données, et ne sont transmis à l&apos;IA que le
-          temps de préparer une réponse.</p>
         <p><strong>Données techniques :</strong> adresse IP et type de navigateur lors des
           connexions (sécurité du compte), données d&apos;abonnement.</p>
         <p><strong>Site vitrine :</strong> votre adresse e-mail si vous nous contactez.</p>
@@ -69,8 +64,6 @@ export default function ConfidentialitePage() {
           <li><strong>Créer et gérer le compte d&apos;un enfant</strong> — consentement du
             titulaire de l&apos;autorité parentale et, conjointement, de l&apos;enfant
             (article 45 de la loi Informatique et Libertés pour les moins de 15 ans).</li>
-          <li><strong>Connexion Pronote</strong> — consentement, activable et désactivable
-            à tout moment.</li>
           <li><strong>Facturation et abonnement</strong> — exécution du contrat et
             obligation légale (conservation comptable).</li>
           <li><strong>Sécurité du service</strong> (journaux de connexion, limitation de
@@ -134,8 +127,6 @@ export default function ConfidentialitePage() {
             90 jours.</li>
           <li><strong>Sessions de connexion</strong> : 7 jours.</li>
           <li><strong>Journaux techniques et de sécurité</strong> : 12 mois.</li>
-          <li><strong>Identifiants Pronote chiffrés</strong> : jusqu&apos;à la déconnexion
-            de Pronote ou la suppression du compte.</li>
           <li><strong>Données de facturation</strong> : 10 ans (obligation comptable).</li>
         </ul>
 
@@ -159,9 +150,7 @@ export default function ConfidentialitePage() {
 
         <h2>9. Sécurité</h2>
         <p>
-          Les échanges sont chiffrés (TLS). Les identifiants Pronote sont chiffrés en
-          AES-256-GCM avec une dérivation de clé PBKDF2 à 600 000 itérations et un sel
-          aléatoire par enregistrement. Les cookies de session sont protégés (httpOnly, secure) et
+          Les échanges sont chiffrés (TLS). Les cookies de session sont protégés (httpOnly, secure) et
           l&apos;accès aux données d&apos;un enfant est strictement réservé à son parent.
         </p>
 

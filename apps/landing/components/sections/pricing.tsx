@@ -12,7 +12,6 @@ const PLANS = [
       "Collège, de la 6e à la 3e",
       "Aide aux devoirs par questions",
       "Un volume d'échanges limité chaque jour",
-      "Connexion Pronote",
       "Espace parent",
     ],
   },

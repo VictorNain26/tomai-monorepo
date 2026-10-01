@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, BrainCircuit, Cpu, CreditCard, GraduationCap, Globe, MessageSquareX, ShieldCheck } from "lucide-react";
+import { BarChart3, BookOpen, BrainCircuit, Cpu, CreditCard, Globe, MessageSquareX, ShieldCheck } from "lucide-react";
 
 export const FAQS = [
   {
@@ -8,18 +8,13 @@ export const FAQS = [
   },
   {
     question: "Quelle différence avec ChatGPT ou une appli qui résout les exercices ?",
-    answer: "Une appli qui résout sur photo rend la solution, et une IA généraliste peut la donner dès qu'on la lui demande. Tom n'a qu'une façon de faire : il fait réfléchir. Il s'adresse aux seuls collégiens, se connecte à Pronote et vous tient informé.",
+    answer: "Une appli qui résout sur photo rend la solution, et une IA généraliste peut la donner dès qu'on la lui demande. Tom n'a qu'une façon de faire : il fait réfléchir. Il s'adresse aux seuls collégiens et vous tient informé.",
     icon: MessageSquareX,
   },
   {
     question: "Tom s'adapte-t-il au niveau de mon enfant ?",
     answer: "Oui. Tom s'adresse aux collégiens, de la 6e à la 3e. Il adapte son vocabulaire, la longueur de ses explications et les notations à la classe de votre enfant et à la matière travaillée.",
     icon: BookOpen,
-  },
-  {
-    question: "Est-ce compatible avec Pronote ?",
-    answer: "Oui. Une fois Pronote connecté, Tom voit les devoirs, les dernières notes et l'emploi du temps : l'accompagnement part de ce que votre enfant a réellement à faire.",
-    icon: GraduationCap,
   },
   {
     question: "Comment suivre les progrès de mon enfant ?",
