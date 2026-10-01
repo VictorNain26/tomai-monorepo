@@ -1,7 +1,4 @@
-import js from "@eslint/js";
 import { fixupPluginRules } from "@eslint/compat";
-import eslintConfigPrettier from "eslint-config-prettier";
-import tseslint from "typescript-eslint";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginReact from "eslint-plugin-react";
 import globals from "globals";
@@ -17,9 +14,6 @@ const fixedReactHooks = fixupPluginRules(pluginReactHooks);
  * @type {import("eslint").Linter.Config[]} */
 export const config = [
   ...baseConfig,
-  js.configs.recommended,
-  eslintConfigPrettier,
-  ...tseslint.configs.recommended,
   {
     plugins: { react: fixedReact },
     rules: pluginReact.configs.flat.recommended.rules,

@@ -11,7 +11,18 @@
   ],
   "globalPassThroughEnv": [
     "GITHUB_ACTIONS",
-    "VERCEL"
+    "VERCEL",
+    "OTEL_EXPORTER_OTLP_ENDPOINT",
+    "OTEL_DISABLED",
+    "OTEL_SERVICE_NAME",
+    "OTEL_DEPLOYMENT_ENVIRONMENT",
+    "APP_VERSION",
+    "SENTRY_DSN",
+    "GIT_COMMIT_SHA",
+    "SEED_PARENT_EMAIL",
+    "SEED_PARENT_PASSWORD",
+    "SEED_CHILD_USERNAME",
+    "SEED_CHILD_PASSWORD"
   ],
   "tasks": {
     "build": {
