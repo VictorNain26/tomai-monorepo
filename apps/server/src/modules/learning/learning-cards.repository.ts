@@ -151,21 +151,8 @@ class LearningCardsRepository {
     return result?.count ?? 0;
   }
 
-  /** Due cards and the three subjects with the most lapses, for the tutor's prompt. */
-  async getReviewSignals(userId: string): Promise<{
-    dueCount: number;
-    weakSubjects: { subject: string; totalLapses: number }[];
-  }> {
-    const [due] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(learningCards)
-      .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
-      .where(and(
-        eq(learningDecks.userId, userId),
-        sql`(${learningCards.fsrsData}->>'due')::timestamptz <= now()`
-      ));
-
-    const weakSubjects = await db
+  async listWeakSubjects(userId: string, limit: number): Promise<{ subject: string; totalLapses: number }[]> {
+    return db
       .select({
         subject: learningDecks.subject,
         totalLapses: sql<number>`sum((${learningCards.fsrsData}->>'lapses')::int)::int`,
@@ -178,9 +165,7 @@ class LearningCardsRepository {
       ))
       .groupBy(learningDecks.subject)
       .orderBy(sql`sum((${learningCards.fsrsData}->>'lapses')::int) desc`)
-      .limit(3);
-
-    return { dueCount: due?.count ?? 0, weakSubjects };
+      .limit(limit);
   }
 }
 

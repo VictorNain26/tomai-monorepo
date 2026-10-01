@@ -6,10 +6,6 @@
  *  - Orchestrate multi-table writes atomically via `db.transaction(...)`
  *  - Delegate every SQL call to the repository layer (no `db.insert/update/
  *    delete/select` in this file, except the transaction envelope itself)
- *
- * Consolidates the deck+cards creation transaction previously duplicated in
- * `card-generate.routes.ts` (transactional) and `chat/tool-executor.ts`
- * (non-transactional — the subtle bug this extraction fixes).
  */
 
 import { db } from '../../db/connection.js';
@@ -314,6 +310,14 @@ class LearningService {
    */
   async getDueSummaryForUser(userId: string): Promise<number> {
     return learningCardsRepository.countDueByUser(userId);
+  }
+
+  async getReviewSignals(userId: string) {
+    const [dueCount, weakSubjects] = await Promise.all([
+      learningCardsRepository.countDueByUser(userId),
+      learningCardsRepository.listWeakSubjects(userId, 3),
+    ]);
+    return { dueCount, weakSubjects };
   }
 
   /**

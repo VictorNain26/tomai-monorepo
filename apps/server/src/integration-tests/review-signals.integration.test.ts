@@ -13,49 +13,73 @@ async function checkDbReachable(): Promise<boolean> {
 
 const dbReachable = await checkDbReachable();
 
-describe.skipIf(!dbReachable)('getReviewSignals — due cards and weak subjects from postgres', () => {
-  const studentId = `review_${Date.now()}`;
-  const otherId = `review_other_${Date.now()}`;
+describe.skipIf(!dbReachable)('learningService.getReviewSignals — due cards and weak subjects from postgres', () => {
+  const stamp = Date.now();
+  const studentId = `review_${stamp}`;
+  const otherId = `review_other_${stamp}`;
+  const emptyId = `review_empty_${stamp}`;
+  const noLapseId = `review_nolapse_${stamp}`;
+  const past = new Date(stamp - 86_400_000).toISOString();
+  const future = new Date(stamp + 86_400_000).toISOString();
+  const content = { front: 'q', back: 'r' };
 
   afterAll(async () => {
     const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
-    await db.delete(user).where(inArray(user.id, [studentId, otherId])).catch(() => null);
+    await db.delete(user).where(inArray(user.id, [studentId, otherId, emptyId, noLapseId])).catch(() => null);
   });
 
-  it("counts the student's due cards and ranks subjects by lapses", async () => {
+  async function seed() {
     const { db } = await import('../db/connection');
     const { user, learningDecks, learningCards } = await import('../db/schema');
-    const { getReviewSignals } = await import('../modules/learning/index');
 
-    const past = new Date(Date.now() - 86_400_000).toISOString();
-    const future = new Date(Date.now() + 86_400_000).toISOString();
-    const content = { front: 'q', back: 'r' };
-
-    await db.insert(user).values([
-      { id: studentId, email: `${studentId}@internal.tomai` },
-      { id: otherId, email: `${otherId}@internal.tomai` },
-    ]);
-    const [maths, francais, otherDeck] = await db.insert(learningDecks).values([
-      { userId: studentId, title: 'Fractions', subject: 'mathematiques', source: 'prompt' },
-      { userId: studentId, title: 'Accords', subject: 'francais', source: 'prompt' },
-      { userId: otherId, title: 'Fractions', subject: 'mathematiques', source: 'prompt' },
-    ]).returning({ id: learningDecks.id });
-    if (!maths || !francais || !otherDeck) throw new Error('decks not inserted');
+    await db.insert(user).values([studentId, otherId, emptyId, noLapseId].map((id) => ({ id, email: `${id}@internal.tomai` })));
+    const decks = await db.insert(learningDecks).values(
+      [
+        [studentId, 'francais'],
+        [studentId, 'mathematiques'],
+        [studentId, 'histoire'],
+        [studentId, 'svt'],
+        [otherId, 'mathematiques'],
+        [noLapseId, 'anglais'],
+      ].map(([userId, subject]) => ({ userId: userId as string, subject: subject as string, title: 'Deck', source: 'prompt' as const })),
+    ).returning({ id: learningDecks.id });
+    const [francais, maths, histoire, svt, otherDeck, anglais] = decks.map((d) => d.id) as [string, string, string, string, string, string];
 
     await db.insert(learningCards).values([
-      { deckId: maths.id, cardType: 'flashcard', content, fsrsData: { due: past, lapses: 2 } },
-      { deckId: maths.id, cardType: 'flashcard', content, fsrsData: { due: future, lapses: 0 } },
-      { deckId: francais.id, cardType: 'flashcard', content, fsrsData: { due: future, lapses: 5 } },
-      { deckId: otherDeck.id, cardType: 'flashcard', content, fsrsData: { due: past, lapses: 9 } },
+      { deckId: francais, cardType: 'flashcard', content, fsrsData: { due: future, lapses: 5 } },
+      { deckId: maths, cardType: 'flashcard', content, fsrsData: { due: past, lapses: 2 } },
+      { deckId: maths, cardType: 'flashcard', content, fsrsData: { due: future, lapses: 1 } },
+      { deckId: histoire, cardType: 'flashcard', content, fsrsData: { due: future, lapses: 2 } },
+      { deckId: svt, cardType: 'flashcard', content, fsrsData: { due: future, lapses: 1 } },
+      { deckId: otherDeck, cardType: 'flashcard', content, fsrsData: { due: past, lapses: 9 } },
+      { deckId: anglais, cardType: 'flashcard', content, fsrsData: { due: past, lapses: 0 } },
     ]);
+  }
 
-    expect(await getReviewSignals(studentId)).toEqual({
+  it("counts only the student's due cards and keeps the three subjects with the most lapses", async () => {
+    await seed();
+    const { learningService } = await import('../modules/learning/index');
+
+    expect(await learningService.getReviewSignals(studentId)).toEqual({
       dueCount: 1,
       weakSubjects: [
         { subject: 'francais', totalLapses: 5 },
-        { subject: 'mathematiques', totalLapses: 2 },
+        { subject: 'mathematiques', totalLapses: 3 },
+        { subject: 'histoire', totalLapses: 2 },
       ],
     });
+  });
+
+  it('leaves out a subject without lapses', async () => {
+    const { learningService } = await import('../modules/learning/index');
+
+    expect(await learningService.getReviewSignals(noLapseId)).toEqual({ dueCount: 1, weakSubjects: [] });
+  });
+
+  it('returns nothing for a student without cards', async () => {
+    const { learningService } = await import('../modules/learning/index');
+
+    expect(await learningService.getReviewSignals(emptyId)).toEqual({ dueCount: 0, weakSubjects: [] });
   });
 });

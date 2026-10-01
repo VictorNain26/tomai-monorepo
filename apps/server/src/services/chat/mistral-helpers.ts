@@ -14,7 +14,7 @@
  * - getLearningContext   : turns the learning module's review signals into prompt text.
  */
 
-import { getReviewSignals } from '../../modules/learning/index.js';
+import { learningService } from '../../modules/learning/index.js';
 import { logger } from '../../platform/observability/logger.js';
 
 export const MAX_TOOL_ITERATIONS = 5;
@@ -92,7 +92,7 @@ export function wrapAttachedFiles(
 
 export async function getLearningContext(userId: string): Promise<string | null> {
   try {
-    const { dueCount, weakSubjects } = await getReviewSignals(userId);
+    const { dueCount, weakSubjects } = await learningService.getReviewSignals(userId);
 
     if (dueCount === 0 && weakSubjects.length === 0) return null;
 

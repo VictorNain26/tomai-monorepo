@@ -1,11 +1,16 @@
 import { describe, it, expect, mock } from 'bun:test';
+import type { learningService } from '../modules/learning/learning.service';
 
-let signals: { dueCount: number; weakSubjects: { subject: string; totalLapses: number }[] } = { dueCount: 0, weakSubjects: [] };
+type ReviewSignals = Awaited<ReturnType<typeof learningService.getReviewSignals>>;
+
+let signals: ReviewSignals = { dueCount: 0, weakSubjects: [] };
 let failing = false;
 mock.module('../modules/learning/index', () => ({
-  getReviewSignals: async () => {
-    if (failing) throw new Error('db down');
-    return signals;
+  learningService: {
+    getReviewSignals: async (): Promise<ReviewSignals> => {
+      if (failing) throw new Error('db down');
+      return signals;
+    },
   },
 }));
 

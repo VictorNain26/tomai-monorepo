@@ -30,7 +30,7 @@ mock.module('../services/cognitive-profile.service', () => ({
   },
 }));
 
-// Card generator — src/services/learning/card-generator.service.ts
+// Card generator stub, injected through the modules/learning/index mock below
 let cardGenResult: Record<string, unknown> = {
   cards: [
     { cardType: 'front_back', content: { front: 'Q1', back: 'A1' } },
