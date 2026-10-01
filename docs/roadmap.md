@@ -25,9 +25,8 @@ fixée d'avance.
 
 **Lot 0**
 1. `fix/landing-honest-claims` (#338) : textes de la landing en ligne. Mergée.
-2. Nettoyage de la vision : retrait de Pronote et de la liste d'attente (code, schéma et
-   migration, dépendances, variables, tests, contexte de l'agent). Avant E2, parce qu'il
-   supprime des fichiers qu'E2 toucherait.
+2. `chore/remove-pronote-waitlist` (#341) : Pronote et la liste d'attente retirés du code
+   (schéma et migration, dépendances, variables, tests, contexte de l'agent). Mergée.
 3. E2 — infra serveur et outillage : la liste « Lot 0 — E2 » de `suivi.md`.
 4. Lint strict : chaque `eslint-disable` remplacé par une forme de code qui ne déclenche
    pas la règle, puis `noInlineConfig`.
