@@ -358,7 +358,7 @@ Sont listées ici les affirmations fausses, invérifiables ou prématurées. Cer
 - [P1] `docs/superpowers/specs/2026-09-22-cible-v1.md`
 - [P2] `docs/superpowers/specs/2026-09-22-agent-ia.md`
 - [P3] `docs/superpowers/suivi.md` (bloquants, journal C.9) ; table `cost_tracking` de la base locale (2 lignes du 2026-09-22)
-- [P4] `apps/server/src/services/quota/quota-config.ts` ; `docs/superpowers/specs/2026-09-24-landing-kompri-design.md` (Tarifs)
+- [P4] `apps/server/src/services/quota/quota-config.ts` ; spec landing du 2026-09-24, supprimée depuis (Tarifs)
 - [P5] `apps/server/src/services/quota/quota-functions.ts` (`checkQuotaReal`) ; `services/chat/chat-orchestration.service.ts:298`
 - [P6] `apps/landing/components/sections/faq-data.ts`, `hero.tsx`, `trust.tsx`
 
