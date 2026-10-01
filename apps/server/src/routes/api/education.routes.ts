@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import type { AppEnv } from '../../lib/http.js';
-import { logger } from '../../lib/observability';
+import type { AppEnv } from '../../platform/http/context.js';
+import { logger } from '../../platform/observability/logger';
 import { educationService } from '../../services/education.service';
 
 export const educationApiRoutes = new Hono<AppEnv>()

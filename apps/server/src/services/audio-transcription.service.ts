@@ -6,7 +6,7 @@
  * l'analyse de prononciation sera portée par un modèle phonétique dédié.
  */
 
-import { logger } from '../lib/observability.js';
+import { logger } from '../platform/observability/logger.js';
 import type { EducationLevelType } from '../types/education.types.js';
 import {
   getVoxtralTranscribeService,

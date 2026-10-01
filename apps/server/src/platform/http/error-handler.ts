@@ -5,9 +5,9 @@
 
 import type { ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { AppError, toErrorResponse } from '../lib/errors.js';
-import { logger } from '../lib/observability.js';
-import type { AppEnv } from '../lib/http.js';
+import { AppError, toErrorResponse } from './errors.js';
+import { logger } from '../observability/logger.js';
+import type { AppEnv } from './context.js';
 
 export const handleError: ErrorHandler<AppEnv> = (error, c) => {
   const requestId = c.get('requestId');

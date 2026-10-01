@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import { requireUser, type AppEnv } from '../../lib/http.js';
+import { requireUser, type AppEnv } from '../../platform/http/context.js';
 import { progressService } from '../../services/progress.service';
-import { logger } from '../../lib/observability';
+import { logger } from '../../platform/observability/logger';
 
 export const progressApiRoutes = new Hono<AppEnv>()
 

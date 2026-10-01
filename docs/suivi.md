@@ -95,7 +95,7 @@ contraire.
   tableau enseignant, notes transmises) sans réévaluer le classement « haut risque »
   (annexe III, point 3, applicable le 2 décembre 2027).
 - **Erreurs de validation** : le 400 `VALIDATION_ERROR` du gestionnaire global
-  (`middleware/error-handler.middleware.ts`) renvoie toujours le même message générique,
+  (`platform/http/error-handler.ts`) renvoie toujours le même message générique,
   sans dire quel champ est faux. Les formulaires d'enfant en auront besoin : exposer les
   champs en erreur dans l'enveloppe, pour toutes les routes.
 - **Tableau de bord parent** : `ParentDashboardService.getSessionMessages`

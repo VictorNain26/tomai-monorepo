@@ -11,17 +11,17 @@
  * that ordering under ESM hoisting.
  */
 
-import { setupOtel, shutdownOtel } from './lib/otel/otel.js';
+import { setupOtel, shutdownOtel } from './platform/observability/otel.js';
 setupOtel();
 
-import { Sentry } from './lib/sentry.js';
+import { Sentry } from './platform/observability/sentry.js';
 
 const { app, initializeServices } = await import('./app');
-const { logger } = await import('./lib/observability.js');
-const { env } = await import('./config/env.js');
-const { closeConnection } = await import('./db/connection.js');
-const { stopBackgroundJobs } = await import('./services/server-lifecycle.js');
-const { createGracefulShutdown } = await import('./lib/graceful-shutdown.js');
+const { logger } = await import('./platform/observability/logger.js');
+const { env } = await import('./platform/config/env.js');
+const { closeConnection } = await import('./platform/db/connection.js');
+const { stopBackgroundJobs } = await import('./platform/lifecycle/server-lifecycle.js');
+const { createGracefulShutdown } = await import('./platform/lifecycle/graceful-shutdown.js');
 
 const PORT = env.PORT;
 let server: ReturnType<typeof Bun.serve> | undefined;

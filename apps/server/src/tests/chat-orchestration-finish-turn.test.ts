@@ -17,7 +17,7 @@ import type { ClassifiedIntent } from '../services/chat/intent-classifier.servic
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 mock.module('../services/chat/chat-session.service', () => ({
   chatSessionService: {

@@ -25,7 +25,7 @@
  */
 
 import { NoObjectGeneratedError } from 'ai';
-import { generateStructured } from '../../lib/ai/mistral-client.js';
+import { generateStructured } from '../../platform/ai/mistral-client.js';
 import { CardGenerationSchema } from '../../lib/ai/schemas/index.js';
 import {
   getSubjectInstructions,
@@ -37,7 +37,7 @@ import {
   getTemplatesForTypes,
   KATEX_INSTRUCTIONS
 } from './prompts/index.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 import type { CardGenerationParams, ParsedCard } from './types.js';
 
 // Prompt cache sur l'instruction de base + adaptations cycle/sujet.

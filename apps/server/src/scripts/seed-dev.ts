@@ -7,9 +7,9 @@
  */
 
 import { eq } from 'drizzle-orm';
-import { isProduction } from '../config/env';
+import { isProduction } from '../platform/config/env';
 import { auth } from '../lib/auth';
-import { db } from '../db/connection';
+import { db } from '../platform/db/connection';
 import { learningDecks } from '../db/schema/learning-tools.schema';
 import { usersRepository } from '../db/repositories';
 import { parentChildRepository } from '../db/repositories/parent-child.repository';

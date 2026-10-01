@@ -13,7 +13,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { isStepCount, simulateReadableStream, streamText, tool, type ToolSet } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
-import type { AppEnv } from '../lib/http';
+import type { AppEnv } from '../platform/http/context';
 import { createMockLogger } from './_helpers/mock-logger';
 
 // ============================================
@@ -21,9 +21,9 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: { MISTRAL_MODEL: 'mistral-small-2603' },
 }));
 
@@ -41,7 +41,7 @@ mock.module('../middleware/auth.middleware', () => ({
 }));
 
 // Rate-limit — pass-through in tests
-mock.module('../middleware/rate-limit.middleware', () => ({
+mock.module('../platform/http/rate-limit', () => ({
   createRateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
   RateLimitPresets: { ai: {} },
 }));
@@ -170,7 +170,7 @@ mock.module('../services/chat/ai-chat.service', () => ({
 
 // Import real route AFTER all mocks are registered
 const { chatMessageRoutes } = await import('../routes/chat-message.routes');
-const { handleError } = await import('../middleware/error-handler.middleware');
+const { handleError } = await import('../platform/http/error-handler');
 
 // ============================================
 // Test app

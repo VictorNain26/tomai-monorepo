@@ -10,12 +10,12 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Force the feature flag ON for this suite. Bun captures Bun.env at boot,
 // so setting process.env at test time doesn't propagate — mock the module
 // that reads it instead.
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: {
     QUOTA_ENFORCEMENT_ENABLED: true,
     NODE_ENV: 'test',

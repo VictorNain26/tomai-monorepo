@@ -8,7 +8,7 @@
  */
 
 import { Hono } from 'hono';
-import { requireParent, requireUser, type AppEnv } from '../../lib/http.js';
+import { requireParent, requireUser, type AppEnv } from '../../platform/http/context.js';
 import { subscriptionService } from '../../services/subscription.service.js';
 import { usersRepository } from '../../db/repositories/users.repository.js';
 import { verifyParentIdMatch } from './helpers.js';

@@ -54,7 +54,7 @@ interface MessageData {
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Repository mock state
 let findActiveByUserResult: StudySessionData | null = null;
@@ -102,7 +102,7 @@ mock.module('../db/repositories', () => ({
   },
 }));
 
-mock.module('../db/connection', () => ({
+mock.module('../platform/db/connection', () => ({
   db: {
     delete: mock(() => ({
       where: mock(async () => ({ count: 1 })),

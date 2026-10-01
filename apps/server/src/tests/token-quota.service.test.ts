@@ -18,7 +18,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Repository mock state. `dbSelectResult[0]` is the snapshot the service reads
 // before deciding resets; the increment mocks apply the service's reset

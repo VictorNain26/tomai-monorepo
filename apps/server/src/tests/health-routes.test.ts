@@ -13,7 +13,7 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 const mockEnv: Record<string, unknown> = {
   APP_VERSION: 'test',
@@ -22,7 +22,7 @@ const mockEnv: Record<string, unknown> = {
   GIT_COMMIT_SHA: 'abc1234',
 };
 
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: mockEnv,
   isDevelopment: () => false,
   isProduction: () => false,
@@ -30,7 +30,7 @@ mock.module('../config/env', () => ({
 
 const dbExecute = mock(() => Promise.resolve([{ '?column?': 1 }]));
 
-mock.module('../db/connection', () => ({ db: { execute: dbExecute } }));
+mock.module('../platform/db/connection', () => ({ db: { execute: dbExecute } }));
 mock.module('drizzle-orm', () => ({
   sql: (strings: TemplateStringsArray) => strings,
 }));

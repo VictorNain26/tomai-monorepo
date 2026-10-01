@@ -21,10 +21,10 @@ import {
   type TextPart,
   type FilePart,
 } from 'ai';
-import { mistralProvider } from '../../lib/ai/provider.js';
+import { mistralProvider } from '../../platform/ai/provider.js';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
-import { routeReasoningEffort } from '../../lib/ai/mistral-reasoning.js';
-import { logger } from '../../lib/observability.js';
+import { routeReasoningEffort } from '../../platform/ai/mistral-reasoning.js';
+import { logger } from '../../platform/observability/logger.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory } from '../../utils/conversation/index.js';
@@ -36,8 +36,8 @@ import {
   MAX_TOOL_ITERATIONS,
 } from './mistral-helpers.js';
 import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
-import { env } from '../../config/env.js';
-import type { MistralMessage, MistralContentPart } from '../../lib/ai/mistral-client.js';
+import { env } from '../../platform/config/env.js';
+import type { MistralMessage, MistralContentPart } from '../../platform/ai/mistral-client.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from './file-context-types.js';
 

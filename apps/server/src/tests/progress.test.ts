@@ -12,7 +12,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Repository mock state
 let sessionsData: Array<Record<string, unknown>> = [];
@@ -33,7 +33,7 @@ mock.module('../db/repositories', () => ({
 let dbSelectResults: unknown[][] = [];
 let dbSelectIdx = 0;
 
-mock.module('../db/connection', () => ({
+mock.module('../platform/db/connection', () => ({
   db: {
     selectDistinct: mock(() => ({
       from: mock(() => ({

@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { APICallError, tool, type ToolSet, simulateReadableStream, toUIMessageStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { streamChat, type ChatStreamParams } from '../services/chat/ai-chat.service.js';
-import { env } from '../config/env.js';
+import { env } from '../platform/config/env.js';
 
 const baseParams: Omit<ChatStreamParams, 'model' | 'tools'> = {
   userId: 'user-001',

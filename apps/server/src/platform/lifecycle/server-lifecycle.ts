@@ -1,8 +1,8 @@
 import { env } from '../config/env.js';
-import { logger } from '../lib/observability.js';
+import { logger } from '../observability/logger.js';
 import { db } from '../db/connection.js';
 import { sql } from 'drizzle-orm';
-import { startRetentionPurgeScheduler } from './retention-purge.service.js';
+import { startRetentionPurgeScheduler } from '../../services/retention-purge.service.js';
 
 let stopRetentionPurge: (() => void) | null = null;
 

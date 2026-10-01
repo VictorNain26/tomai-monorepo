@@ -16,7 +16,7 @@ import { generateText as aiGenerateText, Output, NoObjectGeneratedError, TypeVal
 import type { z } from 'zod';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { mistralProvider } from './provider.js';
-import { env } from '../../config/env.js';
+import { env } from '../config/env.js';
 
 // ── Types domain ────────────────────────────────────────────────────────────
 

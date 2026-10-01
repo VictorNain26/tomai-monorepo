@@ -7,20 +7,20 @@
 import { describe, it, expect, mock } from 'bun:test';
 import { Hono } from 'hono';
 import { createMockLogger } from './_helpers/mock-logger';
-import type { AppEnv } from '../lib/http';
+import type { AppEnv } from '../platform/http/context';
 
-mock.module('../lib/observability', () => ({ logger: createMockLogger() }));
+mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 mock.module('../middleware/auth.middleware', () => {
   const unauthorized = () => Promise.resolve({ success: false as const, _error: 'Unauthorized', status: 401 as const });
   return { requireAuth: unauthorized, requireParentRole: unauthorized };
 });
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: {},
   isProduction: () => false,
   isDevelopment: () => true,
   getCorsOrigins: () => [],
 }));
-mock.module('../db/connection', () => ({ db: {} }));
+mock.module('../platform/db/connection', () => ({ db: {} }));
 mock.module('../services/education.service', () => ({ educationService: {} }));
 mock.module('../services/token-quota.service', () => ({
   checkQuota: async () => ({ plan: 'premium' }),
@@ -42,7 +42,7 @@ mock.module('../db/repositories/index', () => ({ filesRepository: {} }));
 
 const { learningRoutes } = await import('../routes/learning/index');
 const { fileUploadRoutes } = await import('../routes/file-upload.routes');
-const { handleError } = await import('../middleware/error-handler.middleware');
+const { handleError } = await import('../platform/http/error-handler');
 
 const app = new Hono<AppEnv>()
   .route('/api/learning', learningRoutes)

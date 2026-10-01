@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach, mock, spyOn } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
-mock.module('../lib/observability', () => ({ logger: createMockLogger() }));
-mock.module('../config/env', () => ({
+mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
+mock.module('../platform/config/env', () => ({
   env: {
     MISTRAL_API_KEY: 'test-mistral-key',
     MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',

@@ -1,6 +1,6 @@
 import { studySessionsRepository, messagesRepository } from '../../db/repositories';
 import type { Message as DbMessage, AIModel } from '../../db/schema';
-import { logger } from '../../lib/observability';
+import { logger } from '../../platform/observability/logger';
 import type { MessageDetails } from './chat-types';
 
 export class ChatMessageService {

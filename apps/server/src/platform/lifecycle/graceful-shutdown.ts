@@ -1,4 +1,4 @@
-import { logger } from './observability.js';
+import { logger } from '../observability/logger.js';
 
 export interface ShutdownStep {
   name: string;

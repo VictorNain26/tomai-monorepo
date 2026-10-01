@@ -18,9 +18,9 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: {
     BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
     BETTER_AUTH_URL: 'http://localhost:3000',
@@ -50,7 +50,7 @@ mock.module('../config/env', () => ({
   getCorsOrigins: () => ['http://localhost:3000', 'http://localhost:3001'],
 }));
 
-mock.module('../db/connection', () => ({
+mock.module('../platform/db/connection', () => ({
   db: {},
 }));
 

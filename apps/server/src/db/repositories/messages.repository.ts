@@ -1,5 +1,5 @@
 import { eq, asc, count } from 'drizzle-orm';
-import { db } from '../connection';
+import { db } from '../../platform/db/connection';
 import { messages, type Message, type NewMessage } from '../schema';
 
 class MessagesRepository {

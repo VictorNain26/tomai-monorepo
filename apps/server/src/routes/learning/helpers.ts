@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod';
-import { logger } from '../../lib/observability';
+import { logger } from '../../platform/observability/logger';
 import type { EducationLevelType } from '../../types/index';
 import {
   DeckNotFoundError,

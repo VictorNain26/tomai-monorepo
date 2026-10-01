@@ -4,7 +4,7 @@
  */
 
 import { eq, and, count } from 'drizzle-orm';
-import { db } from '../connection.js';
+import { db } from '../../platform/db/connection.js';
 import { sessionFiles, files } from '../schema.js';
 
 class SessionFilesRepository {

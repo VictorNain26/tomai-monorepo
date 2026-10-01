@@ -46,9 +46,9 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 - **Routes** : handler écrit juste après le chemin, routes chaînées pour que le
   client typé les infère, pas de contrôleur
   ([best practices Hono](https://hono.dev/docs/guides/best-practices)).
-- **Validation HTTP** : Zod partout, via `validate(target, schema)` (`lib/http.ts`),
+- **Validation HTTP** : Zod partout, via `validate(target, schema)` (`platform/http/context.ts`),
   qui envoie l'échec dans l'enveloppe `VALIDATION_ERROR`.
-- **Auth** : `requireUser` ou `requireParent` (`lib/http.ts`) posés sur la route, qui
+- **Auth** : `requireUser` ou `requireParent` (`platform/http/context.ts`) posés sur la route, qui
   remplissent `c.var.user` et `c.var.session`. Jamais de `use()` d'auth dans un
   sous-routeur monté sur un préfixe partagé : il s'appliquerait à tout ce préfixe.
 - **Transactions** : `db.transaction(...)` dès qu'une opération touche plusieurs
@@ -57,7 +57,7 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 
 ## Sécurité
 
-- **Fail-fast au boot** : `src/config/env.ts` valide l'environnement au chargement
+- **Fail-fast au boot** : `src/platform/config/env.ts` valide l'environnement au chargement
   et refuse de démarrer sur une variable requise absente ou invalide.
 - **CORS** : whitelist en prod, `credentials: true`. **Headers** : HSTS,
   `X-Frame-Options: DENY`, nosniff, Permissions-Policy restrictive.

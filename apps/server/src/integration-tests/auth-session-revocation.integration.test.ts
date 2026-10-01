@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 
 async function checkDbReachable(): Promise<boolean> {
   try {
-    const { db } = await import('../db/connection');
+    const { db } = await import('../platform/db/connection');
     await db.execute(sql`SELECT 1`);
     return true;
   } catch {
@@ -27,7 +27,7 @@ describe.skipIf(!dbReachable)('requireAuth — a deleted account loses access im
   });
 
   afterAll(async () => {
-    const { db } = await import('../db/connection');
+    const { db } = await import('../platform/db/connection');
     const { user } = await import('../db/schema');
     await db.delete(user).where(eq(user.email, email)).catch(() => null);
   });
@@ -39,7 +39,7 @@ describe.skipIf(!dbReachable)('requireAuth — a deleted account loses access im
   });
 
   it('rejects the same cookies once the user row is deleted', async () => {
-    const { db } = await import('../db/connection');
+    const { db } = await import('../platform/db/connection');
     const { user } = await import('../db/schema');
     const { requireAuth } = await import('../middleware/auth.middleware');
     await db.delete(user).where(eq(user.email, email));

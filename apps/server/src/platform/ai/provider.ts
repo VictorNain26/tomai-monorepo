@@ -1,5 +1,5 @@
 import { createMistral, type MistralProvider } from '@ai-sdk/mistral';
-import { env } from '../../config/env.js';
+import { env } from '../config/env.js';
 
 type FetchLike = (url: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 

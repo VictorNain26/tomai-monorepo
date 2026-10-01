@@ -8,9 +8,9 @@ import { requestId } from 'hono/request-id';
 import { secureHeaders } from 'hono/secure-headers';
 
 import { auth } from './lib/auth.js';
-import { env, isDevelopment, getCorsOrigins } from './config/env.js';
-import type { AppEnv } from './lib/http.js';
-import { sentryMiddleware } from './lib/sentry.js';
+import { env, isDevelopment, getCorsOrigins } from './platform/config/env.js';
+import type { AppEnv } from './platform/http/context.js';
+import { sentryMiddleware } from './platform/observability/sentry.js';
 
 import { apiRoutes } from './routes/api/index.js';
 import { chatMessageRoutes } from './routes/chat-message.routes.js';
@@ -19,9 +19,9 @@ import { statusRoutes } from './routes/subscription/index.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { learningRoutes } from './routes/learning/index.js';
 
-import { logger } from './lib/observability.js';
-import { handleError, handleNotFound } from './middleware/error-handler.middleware.js';
-import { createRateLimitMiddleware, RateLimitPresets } from './middleware/rate-limit.middleware.js';
+import { logger } from './platform/observability/logger.js';
+import { handleError, handleNotFound } from './platform/http/error-handler.js';
+import { createRateLimitMiddleware, RateLimitPresets } from './platform/http/rate-limit.js';
 
 const isDev = isDevelopment();
 
@@ -94,7 +94,7 @@ const app = base
     }
 
     try {
-      const { generateText } = await import('./lib/ai/mistral-client.js');
+      const { generateText } = await import('./platform/ai/mistral-client.js');
       const response = await generateText({
         functionId: 'health-check',
         messages: [{ role: 'user', content: 'Réponds uniquement "OK" sans rien ajouter.' }],
@@ -167,4 +167,4 @@ export type AppType = typeof app;
 // UI message wire types for chat clients (AI SDK UIMessage) - type-only
 export type { TomChatMessage, TomDataParts, DeckCreatedData } from './services/chat/chat-ui-message.js';
 
-export { initializeServices } from './services/server-lifecycle.js';
+export { initializeServices } from './platform/lifecycle/server-lifecycle.js';

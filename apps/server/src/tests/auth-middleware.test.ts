@@ -12,7 +12,7 @@ import { makeUser, makeParentUser } from './_helpers/fixtures';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Auth mock state
 let authSessionResult: { user: Record<string, unknown>; session: Record<string, unknown> } | null = null;

@@ -71,7 +71,7 @@ docker compose --profile tools up -d    # Adminer (8080) + Drizzle Studio (4983)
 Requises pour booter : `DATABASE_URL` et `BETTER_AUTH_SECRET` (en production, aussi
 `BETTER_AUTH_URL`). Toutes les autres sont optionnelles : la feature concernée échoue à l'usage
 tant que sa variable manque (Google OAuth, Mistral, Scaleway). Liste complète,
-défauts et contraintes : `src/config/env.ts` ; gabarit commenté : `.env.example`.
+défauts et contraintes : `src/platform/config/env.ts` ; gabarit commenté : `.env.example`.
 
 ### Dev seed (`bun run seed`)
 

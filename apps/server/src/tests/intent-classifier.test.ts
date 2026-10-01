@@ -14,9 +14,9 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: {
     MISTRAL_API_KEY: 'test-key',
     MISTRAL_MODEL: 'mistral-small-2603',
@@ -37,7 +37,7 @@ let mockStructuredResponse: { intent?: string; confidence?: string; subject?: st
 // Mock COMPLET du wrapper Mistral (toutes les exports) pour ne pas casser
 // d'autres tests qui partagent le même module-mock cache Bun et importeraient
 // `generateText`.
-mock.module('../lib/ai/mistral-client', () => ({
+mock.module('../platform/ai/mistral-client', () => ({
   generateStructured: mock(async (opts: { schema: { parse: (value: unknown) => unknown } }) => {
     if (mockStructuredResponse instanceof Error) throw mockStructuredResponse;
     return { object: opts.schema.parse(mockStructuredResponse), usage: { inputTokens: 0, outputTokens: 0 } };

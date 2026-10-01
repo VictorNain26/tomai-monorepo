@@ -7,7 +7,7 @@ import postgres from 'postgres';
 // DB reachability guard — mirrors seed-dev.integration.test.ts
 async function checkDbReachable(): Promise<boolean> {
   try {
-    const { db } = await import('../db/connection');
+    const { db } = await import('../platform/db/connection');
     await db.execute(sql`SELECT 1`);
     return true;
   } catch {
@@ -62,7 +62,7 @@ describe.skipIf(!dbReachable)('runMigrations — concurrent boot exclusivity', (
     Bun.env['DATABASE_URL_EXTERNAL'] = testUrl.toString();
 
     try {
-      const { runMigrations } = await import('../db/migrate');
+      const { runMigrations } = await import('../platform/db/migrate');
       await Promise.all([runMigrations(), runMigrations()]);
     } finally {
       if (previousUrl === undefined) {

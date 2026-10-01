@@ -5,11 +5,11 @@
 
 import { usersRepository, filesRepository } from '../db/repositories';
 import { parentChildRepository } from '../db/repositories/parent-child.repository';
-import { logger } from '../lib/observability';
+import { logger } from '../platform/observability/logger';
 import { deleteFiles } from './storage/scaleway-storage.service';
 import { auth } from '../lib/auth';
 import { hashPassword } from 'better-auth/crypto';
-import { db } from '../db/connection';
+import { db } from '../platform/db/connection';
 import { account } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { SchoolLevel } from '../db/schema.js';

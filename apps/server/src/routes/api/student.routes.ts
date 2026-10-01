@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { requireUser, validate, type AppEnv } from '../../lib/http.js';
+import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
 import { subjectProfileService } from '../../services/chat/subject-profile.service.js';
-import { AppError } from '../../lib/errors.js';
-import { logger } from '../../lib/observability.js';
+import { AppError } from '../../platform/http/errors.js';
+import { logger } from '../../platform/observability/logger.js';
 import { STUDENT_SUBJECTS } from '../../config/prompts/adaptation/subjects.js';
 
 const editMemoryBody = z.object({

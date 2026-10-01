@@ -12,7 +12,7 @@
 import * as Sentry from '@sentry/hono/bun';
 import type { ErrorEvent } from '@sentry/hono/bun';
 import type { Env, Hono, MiddlewareHandler } from 'hono';
-import { AppError } from './errors.js';
+import { AppError } from '../http/errors.js';
 
 /**
  * `sendDefaultPii: false` only strips the IP on spans — request headers

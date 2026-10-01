@@ -12,16 +12,16 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { createUIMessageStream, createUIMessageStreamResponse, toUIMessageStream } from 'ai';
-import { requireUser, validate, type AppEnv } from '../lib/http.js';
-import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
+import { requireUser, validate, type AppEnv } from '../platform/http/context.js';
+import { createRateLimitMiddleware, RateLimitPresets } from '../platform/http/rate-limit.js';
 import { chatOrchestrationService, ChatOrchestrationError } from '../services/chat/chat-orchestration.service.js';
 import { streamChat } from '../services/chat/ai-chat.service.js';
 import { buildChatTools } from '../services/chat/chat-tools.js';
 import { extractTextFromParts, type TomChatMessage } from '../services/chat/chat-ui-message.js';
 import { tokenQuotaService } from '../services/token-quota.service.js';
-import { AppError, toErrorResponse } from '../lib/errors.js';
-import { logger } from '../lib/observability.js';
-import { env } from '../config/env.js';
+import { AppError, toErrorResponse } from '../platform/http/errors.js';
+import { logger } from '../platform/observability/logger.js';
+import { env } from '../platform/config/env.js';
 import { educationLevelSchema, isEducationLevel } from '../lib/education-levels.js';
 
 // Track active UI message streams per user

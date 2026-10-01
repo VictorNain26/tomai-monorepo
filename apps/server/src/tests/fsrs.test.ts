@@ -14,7 +14,7 @@ import type { FSRSData } from '../db/schema.js';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // DB mock — queue-based for sequential selects
 let selectQueue: unknown[][] = [];
@@ -34,7 +34,7 @@ const mockUpdateWhere = mock(() => {
 const mockUpdateSet = mock(() => ({ where: mockUpdateWhere }));
 const mockDbUpdate = mock(() => ({ set: mockUpdateSet }));
 
-mock.module('../db/connection', () => ({
+mock.module('../platform/db/connection', () => ({
   db: {
     select: mock(() => ({
       from: mock(() => ({

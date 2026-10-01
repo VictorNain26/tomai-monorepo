@@ -10,7 +10,7 @@ exact = false
 
 [test]
 # Configuration tests
-preload = ["./src/config/env.ts"]
+preload = ["./src/platform/config/env.ts"]
 coverage = true
 timeout = 30000  # 30 secondes timeout
 

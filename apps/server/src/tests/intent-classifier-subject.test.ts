@@ -13,11 +13,11 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 // MOCKS — paths relative to src/tests/
 // ============================================
 
-mock.module('../lib/observability', () => ({
+mock.module('../platform/observability/logger', () => ({
   logger: { debug: () => {}, error: () => {}, info: () => {}, warn: () => {} },
 }));
 
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: { MISTRAL_MODEL: 'mistral-small-2603' },
 }));
 
@@ -27,7 +27,7 @@ let mockStructuredResponse: { intent?: string; confidence?: string; subject?: st
   subject: 'mathematiques',
 };
 
-mock.module('../lib/ai/mistral-client', () => ({
+mock.module('../platform/ai/mistral-client', () => ({
   generateStructured: mock(async (opts: { schema: { parse: (value: unknown) => unknown } }) => {
     if (mockStructuredResponse instanceof Error) throw mockStructuredResponse;
     return { object: opts.schema.parse(mockStructuredResponse), usage: { inputTokens: 0, outputTokens: 0 } };

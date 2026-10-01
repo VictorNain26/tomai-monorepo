@@ -12,7 +12,7 @@
  * (non-transactional — the subtle bug this extraction fixes).
  */
 
-import { db } from '../../db/connection.js';
+import { db } from '../../platform/db/connection.js';
 import {
   learningDecksRepository,
   type ListDecksOptions,
@@ -26,7 +26,7 @@ import type {
   NewLearningCard,
   FSRSData,
 } from '../../db/schema.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 import { fsrsService, Rating } from '../fsrs.service.js';
 import type { ReviewResult } from '../fsrs-types.js';
 import type { EducationLevelType } from '../../types/index.js';

@@ -11,9 +11,9 @@
  * @see https://docs.mistral.ai/capabilities/audio/
  */
 
-import { logger } from '../lib/observability.js';
-import { env } from '../config/env.js';
-import { getMistralSdk } from '../lib/ai/mistral-sdk.js';
+import { logger } from '../platform/observability/logger.js';
+import { env } from '../platform/config/env.js';
+import { getMistralSdk } from '../platform/ai/mistral-sdk.js';
 
 const STT_MODEL = env.MISTRAL_STT_MODEL;
 

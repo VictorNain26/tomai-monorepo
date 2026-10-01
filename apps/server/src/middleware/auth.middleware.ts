@@ -1,5 +1,5 @@
 import { auth } from '../lib/auth';
-import { logger } from '../lib/observability';
+import { logger } from '../platform/observability/logger';
 import type { AuthenticatedUser } from '../types/index.js';
 
 export const requireAuth = async (headers: Headers): Promise<

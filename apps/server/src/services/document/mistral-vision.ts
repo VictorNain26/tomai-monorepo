@@ -6,10 +6,10 @@
  * content and describe structural elements.
  */
 
-import { generateText, type MistralMessage } from '../../lib/ai/mistral-client.js';
-import { logger } from '../../lib/observability.js';
+import { generateText, type MistralMessage } from '../../platform/ai/mistral-client.js';
+import { logger } from '../../platform/observability/logger.js';
 import type { ExtractionResult } from './document-extraction.service.js';
-import { env } from '../../config/env.js';
+import { env } from '../../platform/config/env.js';
 
 const VISION_MODEL = env.MISTRAL_MODEL;
 const VISION_TEMPERATURE = 0.1;

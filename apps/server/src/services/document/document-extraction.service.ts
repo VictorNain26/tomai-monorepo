@@ -14,7 +14,7 @@
 
 import { extractText, getDocumentProxy } from 'unpdf';
 import mammoth from 'mammoth';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 import { extractImageWithMistralVision } from './mistral-vision.js';
 
 export interface ExtractionResult {

@@ -18,7 +18,7 @@ import { sql } from 'drizzle-orm';
 
 async function checkDbReachable(): Promise<boolean> {
   try {
-    const { db } = await import('../db/connection');
+    const { db } = await import('../platform/db/connection');
     await db.execute(sql`select 1`);
     return true;
   } catch {
@@ -78,7 +78,7 @@ afterAll(async () => {
   if (!dbReachable) return;
   // Best-effort cleanup — cascade delete handles child via parent_child FK
   if (createdParentId) {
-    const { db } = await import('../db/connection');
+    const { db } = await import('../platform/db/connection');
     const { user } = await import('../db/schema');
     const { eq } = await import('drizzle-orm');
     await db.delete(user).where(eq(user.id, createdParentId)).catch(() => null);

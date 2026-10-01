@@ -1,6 +1,6 @@
 import { usersRepository, studySessionsRepository, type CreateStudySessionInput } from '../../db/repositories';
 import type { SchoolLevel } from '../../db/schema';
-import { logger } from '../../lib/observability';
+import { logger } from '../../platform/observability/logger';
 import { deleteSessionCascade } from './session-cleanup';
 import { episodicMemoryService } from '../episodic-memory.service.js';
 import type { SessionDetails, UserSession, ConversationListItem } from './chat-types';

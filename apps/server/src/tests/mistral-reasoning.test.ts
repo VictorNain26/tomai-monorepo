@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { routeReasoningEffort } from '../lib/ai/mistral-reasoning.js';
+import { routeReasoningEffort } from '../platform/ai/mistral-reasoning.js';
 import { STUDENT_SUBJECTS } from '../config/prompts/adaptation/subjects.js';
 
 describe('routeReasoningEffort', () => {

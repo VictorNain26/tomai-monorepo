@@ -15,9 +15,9 @@
  */
 
 import { sql, eq, and } from 'drizzle-orm';
-import { db } from '../../db/connection.js';
+import { db } from '../../platform/db/connection.js';
 import { learningCards, learningDecks } from '../../db/schema.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 
 export const MAX_TOOL_ITERATIONS = 5;
 

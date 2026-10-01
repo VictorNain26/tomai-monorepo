@@ -10,10 +10,10 @@
  * Prompt cache actif (system prompt stable invariant inter-sessions).
  */
 
-import { generateText } from '../../lib/ai/mistral-client.js';
+import { generateText } from '../../platform/ai/mistral-client.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
 import { messagesRepository } from '../../db/repositories/messages.repository.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS

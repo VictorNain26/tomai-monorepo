@@ -15,11 +15,11 @@ const SESSION_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // DB mock — mutable for health check tests
 let dbHealthy = true;
-mock.module('../db/connection', () => ({
+mock.module('../platform/db/connection', () => ({
   db: {
     execute: mock(async () => {
       if (!dbHealthy) throw new Error('Connection refused');
@@ -57,7 +57,7 @@ mock.module('../lib/auth', () => ({
   },
 }));
 
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: {
     NODE_ENV: 'test',
     MISTRAL_API_KEY: 'test-key',
@@ -73,7 +73,7 @@ mock.module('../config/env', () => ({
 }));
 
 // Infrastructure mocks
-mock.module('../middleware/rate-limit.middleware', () => ({
+mock.module('../platform/http/rate-limit', () => ({
   createRateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
   RateLimitPresets: { api: {} },
 }));
@@ -224,7 +224,7 @@ mock.module('../db/repositories/index', () => ({
 }));
 
 // Mistral client mock for /health/ai (dynamic import in app.ts)
-mock.module('../lib/ai/mistral-client', () => ({
+mock.module('../platform/ai/mistral-client', () => ({
   generateText: mock(async () => 'OK'),
 }));
 

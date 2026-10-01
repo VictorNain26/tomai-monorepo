@@ -7,7 +7,7 @@
  */
 
 import { asc, eq, and, sql } from 'drizzle-orm';
-import { db } from '../connection';
+import { db } from '../../platform/db/connection';
 import {
   learningCards,
   learningDecks,

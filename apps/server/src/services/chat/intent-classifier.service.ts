@@ -17,8 +17,8 @@
  */
 
 import { z } from 'zod';
-import { generateStructured } from '../../lib/ai/mistral-client.js';
-import { logger } from '../../lib/observability.js';
+import { generateStructured } from '../../platform/ai/mistral-client.js';
+import { logger } from '../../platform/observability/logger.js';
 import type { EducationLevelType } from '../../types/index.js';
 import { STUDENT_SUBJECTS, type StudentSubject } from '../../config/prompts/adaptation/subjects.js';
 

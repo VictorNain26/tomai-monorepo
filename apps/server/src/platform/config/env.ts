@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { LOG_LEVELS } from '../lib/log-levels.js';
+import { LOG_LEVELS } from '../observability/log-levels.js';
 import { existsSync } from 'node:fs';
 import { resolveDatabaseUrl } from './database-url.js';
 

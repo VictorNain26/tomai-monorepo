@@ -33,14 +33,14 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 
 | Module | Responsabilité | Code actuel |
 |---|---|---|
-| `auth` | Comptes parent (email, Google) et élève (username), sessions | `lib/auth.ts`, `lib/http.ts` |
+| `auth` | Comptes parent (email, Google) et élève (username), sessions | `lib/auth.ts`, `platform/http/context.ts` |
 | `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations | `services/parent/`, `parent.service.ts`, `routes/api/parent.routes.ts` |
 | `tutor` | Agent IA : session de chat, outils, mémoire, résumé, garde-fous | `services/chat/`, `lib/ai/`, `episodic-memory.service.ts`, `cognitive-profile.service.ts` |
 | `learning` | Decks, cartes, révisions FSRS | `services/learning/`, `fsrs.service.ts`, `routes/learning/` |
 | `documents` | Upload, extraction, analyse, stockage S3 | `services/document/`, `services/storage/`, `routes/file-upload.routes.ts` |
 | `billing` | Formules Gratuit et Complet, quotas, abonnement web | `services/quota/`, `subscription.service.ts`, `token-quota.service.ts` |
 | `voice` | Transcription et synthèse vocale (Voxtral) | `voxtral-*.service.ts`, `audio-transcription.service.ts`, `text-to-speech.service.ts` |
-| `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `config/`, `db/`, `lib/otel/`, `lib/errors.ts`, `retention-purge.service.ts` |
+| `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `platform/` (config, db, http, observabilité, IA, cycle de vie), `retention-purge.service.ts` |
 
 Le découpage physique en modules se fait au fil des lots, sur le code qu'on
 touche, pas en un big-bang.

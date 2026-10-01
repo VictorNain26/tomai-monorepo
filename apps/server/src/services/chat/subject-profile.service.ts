@@ -1,6 +1,6 @@
 import { studentSubjectProfileRepository } from '../../db/repositories/student-subject-profile.repository.js';
 import { STUDENT_SUBJECTS } from '../../config/prompts/adaptation/subjects.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 
 const SUBJECT_PROFILE_TTL_DAYS = 180;
 const PROMPT_CONCEPTS = 12;

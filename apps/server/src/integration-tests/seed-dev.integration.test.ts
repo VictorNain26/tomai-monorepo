@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm';
 // DB reachability guard — mirrors username-login.integration.test.ts
 async function checkDbReachable(): Promise<boolean> {
   try {
-    const { db } = await import('../db/connection');
+    const { db } = await import('../platform/db/connection');
     await db.execute(sql`SELECT 1`);
     return true;
   } catch {
@@ -24,7 +24,7 @@ describe.skipIf(!dbReachable)('seedDev — deterministic, login-proven accounts'
 
   afterAll(async () => {
     // Cleanup: delete the parent, cascade removes the child.
-    const { db } = await import('../db/connection');
+    const { db } = await import('../platform/db/connection');
     const { user } = await import('../db/schema');
     const { eq } = await import('drizzle-orm');
     await db.delete(user).where(eq(user.email, 'dev.parent@tomai.local')).catch(() => null);
@@ -46,7 +46,7 @@ describe.skipIf(!dbReachable)('seedDev — deterministic, login-proven accounts'
     });
     expect(childLogin?.user?.username).toBe('dev.eleve');
 
-    const { db } = await import('../db/connection');
+    const { db } = await import('../platform/db/connection');
     const schema = await import('../db/schema');
     const { eq } = await import('drizzle-orm');
     const childDecks = await db

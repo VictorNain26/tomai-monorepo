@@ -7,9 +7,9 @@
  * Prompt cache actif pour le préfixe d'instruction stable.
  */
 
-import { generateText } from '../../lib/ai/mistral-client.js';
+import { generateText } from '../../platform/ai/mistral-client.js';
 import { studySessionsRepository } from '../../db/repositories/study-sessions.repository.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 
 const AUTO_TITLE_PROMPT_VERSION = '2026-05-18';
 

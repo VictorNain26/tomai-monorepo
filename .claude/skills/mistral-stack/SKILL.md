@@ -12,8 +12,8 @@ variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/agent.md` §
 
 | Rôle | Modèle | Réglage |
 |---|---|---|
-| Chat élève, texte et image | `mistral-small-2603` (Small 4) | `reasoningEffort` routé par `lib/ai/mistral-reasoning.ts`, `promptCacheKey` = ID de session |
-| Vision, analyse de document, résumés, cartes, titres, classification d'intention | `mistral-small-2603` | `reasoningEffort: 'none'` (imposé par `lib/ai/mistral-client.ts`) |
+| Chat élève, texte et image | `mistral-small-2603` (Small 4) | `reasoningEffort` routé par `platform/ai/mistral-reasoning.ts`, `promptCacheKey` = ID de session |
+| Vision, analyse de document, résumés, cartes, titres, classification d'intention | `mistral-small-2603` | `reasoningEffort: 'none'` (imposé par `platform/ai/mistral-client.ts`) |
 | Embeddings mémoire épisodique | `MISTRAL_EMBED_MODEL` (1024D) | — |
 | STT / TTS | `voxtral-mini-2602` / `voxtral-mini-tts-2603` | Timeout explicite, voix preset `fr_marie_neutral` (champ `language` refusé par l'API) |
 
@@ -26,7 +26,7 @@ modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
 
 ## Appeler l'API
 
-- Non-streaming : `generateText` / `generateStructured` de `src/lib/ai/mistral-client.ts`,
+- Non-streaming : `generateText` / `generateStructured` de `src/platform/ai/mistral-client.ts`,
   jamais le SDK directement depuis un service.
 - Chat : `streamChat` (`src/services/chat/ai-chat.service.ts`, `streamText`), exposé par
   `/api/chat/stream`. Le raisonnement reste côté serveur (`sendReasoning: false`).

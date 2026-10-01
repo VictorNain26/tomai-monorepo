@@ -1,5 +1,5 @@
 import { Mistral } from '@mistralai/mistralai';
-import { env } from '../../config/env.js';
+import { env } from '../config/env.js';
 
 let client: Mistral | null = null;
 

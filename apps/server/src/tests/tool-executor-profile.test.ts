@@ -15,7 +15,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Cognitive profile — this is what we actually care about.
 interface Profile {
@@ -56,7 +56,7 @@ mock.module('../services/fsrs.service', () => ({
 }));
 
 // DB (unused on this path)
-mock.module('../db/connection', () => ({
+mock.module('../platform/db/connection', () => ({
   db: { transaction: mock(async (fn: (tx: unknown) => Promise<unknown>) => fn({})) },
 }));
 

@@ -28,7 +28,7 @@ interface CognitiveProfileData {
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // DB mock state
 let queryFindFirstResult: CognitiveProfileData | undefined = undefined;
@@ -36,7 +36,7 @@ let dbUpdateCalled = false;
 let dbInsertCalled = false;
 let dbShouldThrow = false;
 
-mock.module('../db/connection', () => ({
+mock.module('../platform/db/connection', () => ({
   db: {
     query: {
       studentCognitiveProfiles: {

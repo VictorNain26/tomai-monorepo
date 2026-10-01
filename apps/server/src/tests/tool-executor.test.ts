@@ -13,7 +13,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Cognitive profile — src/services/cognitive-profile.service.ts
 let profileResult: Record<string, unknown> | null = {
@@ -61,7 +61,7 @@ const mockTxInsert = mock(() => ({
   })),
 }));
 
-mock.module('../db/connection', () => ({
+mock.module('../platform/db/connection', () => ({
   db: {
     transaction: mock(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
       return fn({

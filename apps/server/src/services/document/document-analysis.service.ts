@@ -9,9 +9,9 @@
  * Cache key = système + version pour amortir le préfixe pédagogique stable.
  */
 
-import { generateStructured, type MistralMessage } from '../../lib/ai/mistral-client.js';
-import { logger } from '../../lib/observability.js';
-import { env } from '../../config/env.js';
+import { generateStructured, type MistralMessage } from '../../platform/ai/mistral-client.js';
+import { logger } from '../../platform/observability/logger.js';
+import { env } from '../../platform/config/env.js';
 import { documentExtractionService } from './document-extraction.service.js';
 import type { EducationLevelType } from '../../types/education.types.js';
 import {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { scrubRequestData } from '../lib/sentry';
+import { scrubRequestData } from '../platform/observability/sentry';
 
 import type { ErrorEvent } from '@sentry/hono/bun';
 

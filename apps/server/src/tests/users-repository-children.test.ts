@@ -28,7 +28,7 @@ const mockDb = {
   select: mock(() => ({ from: mockFrom })),
 };
 
-mock.module('../db/connection', () => ({ db: mockDb }));
+mock.module('../platform/db/connection', () => ({ db: mockDb }));
 
 // Import after mocks
 const usersRepository = await import('../db/repositories/users.repository');

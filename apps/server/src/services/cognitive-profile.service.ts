@@ -6,14 +6,14 @@
  * et utilisé pour personnaliser les réponses pédagogiques.
  */
 
-import { db } from '../db/connection.js';
+import { db } from '../platform/db/connection.js';
 import {
   studentCognitiveProfiles,
   type StudentCognitiveProfile,
   type CognitiveObservation,
 } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { logger } from '../lib/observability.js';
+import { logger } from '../platform/observability/logger.js';
 
 const MAX_OBSERVATIONS = 50;
 

@@ -1,7 +1,7 @@
 import { lt } from 'drizzle-orm';
-import { db } from '../db/connection.js';
+import { db } from '../platform/db/connection.js';
 import { sessionEpisodes, studentSubjectProfiles } from '../db/schema/learning.schema.js';
-import { logger } from '../lib/observability.js';
+import { logger } from '../platform/observability/logger.js';
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 

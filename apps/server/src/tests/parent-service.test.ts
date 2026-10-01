@@ -31,7 +31,7 @@ interface UserData {
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Users repository mock
 let childrenResult: UserData[] = [];
@@ -108,7 +108,7 @@ mock.module('../lib/auth', () => ({
 }));
 
 // DB mock for pool limiter and direct queries
-mock.module('../db/connection', () => ({
+mock.module('../platform/db/connection', () => ({
   db: {
     selectDistinct: mock(() => ({
       from: mock(() => ({

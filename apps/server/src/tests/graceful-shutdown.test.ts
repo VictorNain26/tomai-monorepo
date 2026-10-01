@@ -1,9 +1,9 @@
 import { describe, it, expect, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
-mock.module('../lib/observability', () => ({ logger: createMockLogger() }));
+mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 
-const { createGracefulShutdown } = await import('../lib/graceful-shutdown');
+const { createGracefulShutdown } = await import('../platform/lifecycle/graceful-shutdown');
 
 describe('createGracefulShutdown', () => {
   it('awaits each step in order, then exits 0', async () => {

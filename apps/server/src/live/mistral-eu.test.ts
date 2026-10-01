@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import { randomUUID } from 'node:crypto';
 import { streamChat } from '../services/chat/ai-chat.service';
-import { generateText } from '../lib/ai/mistral-client';
+import { generateText } from '../platform/ai/mistral-client';
 import { mistralEmbeddingsService } from '../services/mistral-embeddings.service';
 import { getVoxtralTTSService } from '../services/voxtral-tts.service';
 import { getVoxtralTranscribeService } from '../services/voxtral-transcribe.service';

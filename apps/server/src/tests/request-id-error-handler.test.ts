@@ -3,13 +3,13 @@ import { Hono } from 'hono';
 import { requestId } from 'hono/request-id';
 import { z } from 'zod';
 import { createMockLogger } from './_helpers/mock-logger';
-import type { AppEnv } from '../lib/http';
+import type { AppEnv } from '../platform/http/context';
 
-mock.module('../lib/observability', () => ({ logger: createMockLogger() }));
+mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 
-const { handleError, handleNotFound } = await import('../middleware/error-handler.middleware');
-const { AppError } = await import('../lib/errors');
-const { validate } = await import('../lib/http');
+const { handleError, handleNotFound } = await import('../platform/http/error-handler');
+const { AppError } = await import('../platform/http/errors');
+const { validate } = await import('../platform/http/context');
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 

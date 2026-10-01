@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { generateStructured } from '../lib/ai/mistral-client';
+import { generateStructured } from '../platform/ai/mistral-client';
 import { CardGenerationSchema } from '../lib/ai/schemas';
 import { DocumentAnalysisSchema } from '../services/document/document-types';
 import { HAS_MISTRAL } from './_creds';

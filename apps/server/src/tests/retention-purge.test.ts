@@ -12,7 +12,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 mock.module('drizzle-orm', () => ({
   lt: (...args: unknown[]) => ({ type: 'lt', args }),
@@ -36,7 +36,7 @@ const mockDb = {
   }),
 };
 
-mock.module('../db/connection', () => ({ db: mockDb }));
+mock.module('../platform/db/connection', () => ({ db: mockDb }));
 mock.module('../db/schema/learning.schema', () => ({
   sessionEpisodes: { ttlUntil: 'ttl_until' },
   studentSubjectProfiles: { ttlUntil: 'ttl_until' },

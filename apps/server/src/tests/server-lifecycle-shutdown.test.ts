@@ -6,19 +6,19 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 const stopRetention = mock(() => {});
 mock.module('../services/retention-purge.service', () => ({
   startRetentionPurgeScheduler: mock(() => stopRetention),
 }));
 
-mock.module('../config/env', () => ({ env: { NODE_ENV: 'test' } }));
-mock.module('../db/connection', () => ({
+mock.module('../platform/config/env', () => ({ env: { NODE_ENV: 'test' } }));
+mock.module('../platform/db/connection', () => ({
   db: { execute: mock(() => Promise.resolve([{ count: 0 }])) },
 }));
 mock.module('drizzle-orm', () => ({ sql: (s: unknown) => s }));
-const { initializeServices, stopBackgroundJobs } = await import('../services/server-lifecycle');
+const { initializeServices, stopBackgroundJobs } = await import('../platform/lifecycle/server-lifecycle');
 
 beforeEach(() => {
   stopRetention.mockClear();
