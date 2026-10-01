@@ -277,7 +277,3 @@ export async function getUsageStats(userId: string): Promise<UsageStats> {
   };
 }
 
-export function getHoursUntilReset(): string {
-  return getDailyResetTime();
-}
-

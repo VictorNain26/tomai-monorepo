@@ -1,7 +1,5 @@
 /**
  * Deck quota functions (flashcard generation limits)
- *
- * Extracted from quota-functions.ts to keep each file under the 400-line limit.
  */
 
 import { userSubscriptionsRepository } from './user-subscriptions.repository.js';

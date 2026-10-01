@@ -81,7 +81,7 @@ mock.module('../modules/billing/user-subscriptions.repository', () => ({
 }));
 
 // Import after mocks
-const { incrementTokenUsage, getUsageStats, getHoursUntilReset } = await import('../modules/billing/quota');
+const { incrementTokenUsage, getUsageStats } = await import('../modules/billing/quota');
 const { incrementDeckUsage } = await import('../modules/billing/quota-deck');
 
 // Helper to create a subscription DB row for incrementTokenUsage
@@ -109,7 +109,7 @@ beforeEach(() => {
   mockApplyDeckIncrement.mockClear();
 });
 
-describe('Token Quota Service', () => {
+describe('Token and deck quotas', () => {
   describe('incrementTokenUsage — behavioral window/reset tests', () => {
     it('should increment counters when window is fresh (not expired)', async () => {
       dbSelectResult = [makeDbSubscription({
@@ -265,14 +265,6 @@ describe('Token Quota Service', () => {
       dbInsertShouldThrow = true;
       const result = await incrementDeckUsage('user-err');
       expect(result.success).toBe(false);
-    });
-  });
-
-  describe('getHoursUntilReset', () => {
-    it('should return a non-empty time string (Xh or Xmin)', () => {
-      const result = getHoursUntilReset();
-      expect(typeof result).toBe('string');
-      expect(result).toMatch(/^\d+[hm]/); // matches "5h", "30min", etc.
     });
   });
 });

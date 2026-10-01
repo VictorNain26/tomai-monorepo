@@ -180,15 +180,7 @@ mock.module('../modules/family/parent.service', () => ({
 mock.module('../modules/tutor/chat-message.routes', () => ({ chatMessageRoutes: new Hono() }));
 mock.module('../modules/documents/upload.routes', () => ({ uploadRoutes: new Hono() }));
 mock.module('../modules/documents/file-context.service', () => ({ fileContextService: {} }));
-mock.module('../modules/billing/index', () => ({
-  subscriptionRepository: {},
-  checkQuota: async () => ({ allowed: true }),
-  incrementTokenUsage: async () => ({}),
-  getUsageStats: async () => ({}),
-  checkDeckQuota: async () => ({ allowed: true }),
-  incrementDeckUsage: async () => ({}),
-  costTrackingService: { record: async () => {} },
-}));
+mock.module('../modules/family/subscription.routes', () => ({ subscriptionRoutes: new Hono() }));
 mock.module('../modules/voice/index', () => ({ voiceRoutes: new Hono() }));
 mock.module('../modules/learning/index', () => ({
   learningRoutes: new Hono(),
