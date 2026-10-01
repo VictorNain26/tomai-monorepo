@@ -13,10 +13,10 @@ paths:
 | App | Runner | Commande | Emplacement |
 |-----|--------|----------|-------------|
 | Server | Bun | `cd apps/server && bun run test` | `src/tests/<service>.test.ts` |
-| Landing | Playwright | `pnpm --filter landing test:e2e` | `apps/landing/tests/<name>.spec.ts` |
+| Landing | Playwright | `bun run --filter landing test:e2e` | `apps/landing/tests/<name>.spec.ts` |
 
 La suite e2e de la landing est locale uniquement : ni en CI, ni dans la validation avant commit.
-Prérequis unique : `pnpm --filter landing exec playwright install chromium`. Elle construit le
+Prérequis unique : `cd apps/landing && bunx playwright install chromium`. Elle construit le
 site, le sert sur le port 3011 et couvre la mise en page (hiérarchie des titres, aucun
 défilement horizontal, cibles de 44 px, lignes légales, liens soulignés), le rendu sans
 JavaScript et sous mouvement réduit, l'absence de formulaire et de liste d'attente, le menu

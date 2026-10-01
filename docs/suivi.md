@@ -16,11 +16,12 @@ bloquant levé).
   remplacer par Bun tout ce qu'il remplace proprement et une refonte complète du serveur.
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
-  - **outillage Bun** (détail dans « Reporté », « Lot 0 — outillage ») ;
+  - **outillage Bun, scripts** : `bun install` a remplacé pnpm (#344) ; restent les scripts
+    sous Bun et la liste « Lot 0 — outillage » ;
   - **logger** (détail dans « Reporté ») ;
   - **refonte du serveur**, une PR par module ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** outillage Bun, sur une branche courte dont le plan s'écrit
+- **Prochaine action :** scripts sous Bun, sur une branche courte dont le plan s'écrit
   d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
@@ -44,11 +45,9 @@ contraire.
 
 ### Lot 0 — outillage
 
-Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23, à reprendre dans la PR
-« outillage Bun » : pnpm cède la place à `bun install` (catalogs, `minimumReleaseAge` et
-`trustedDependencies` dans `bunfig.toml` et `package.json`, documentés pour Bun 1.4.2),
-les scripts `scripts/*.mjs` et `node --test` passent sous Bun, la CI sur `setup-bun` et
-`bun audit`. Vercel (landing), Renovate, lefthook, Turbo et le Dockerfile suivent.
+`bun install` a remplacé pnpm (#344). Reste, pour la PR « scripts sous Bun » : passer
+`scripts/*.mjs` et `node --test` sous Bun, et les constats ci-dessous, vérifiés sur `main`
+le 2026-09-22 et le 2026-09-23.
 
 - **Déclarations mortes** : `ignoreBinaries` et entrées `scripts/**` de l'espace
   `apps/server` du `knip.json` racine ; montage `./apps/server/scripts` du service
@@ -56,17 +55,18 @@ les scripts `scripts/*.mjs` et `node --test` passent sous Bun, la CI sur `setup-
 - **Scripts** (racine) : `scripts/dev.mjs` enchaîne trois attentes, une seule suffit
   (`docker compose up --wait`) ; `CREATE EXTENSION vector` est refait par `scripts/setup.mjs`
   et par `ci.yml` alors que `apps/server/src/db/migrate.ts` la crée sous verrou, et le check
-  d'extension de `scripts/doctor-checks.mjs` renvoie à `pnpm run setup` au lieu du
+  d'extension de `scripts/doctor-checks.mjs` renvoie à `bun run setup` au lieu du
   migrateur ; `parseEnvFile` du doctor garde le commentaire en ligne dans la valeur,
   `util.parseEnv` de Node le remplace.
 - **CI** : boucle `pg_isready` redondante (le runner attend déjà le service `healthy`) ;
-  `pnpm test:scripts` ne tourne nulle part ; `TURBO_TOKEN` et `TURBO_TEAM` absents des
+  `bun run test:scripts` ne tourne nulle part ; `TURBO_TOKEN` et `TURBO_TEAM` absents des
   secrets et « Remote caching disabled » dans les logs (vérifié le 2026-09-23) : retirer ces
   variables de `ci.yml` et garder la seule couche `actions/cache`.
 - **Landing** : option typée `appleWebApp` de la Metadata API à la place du bloc `other` de
   `apps/landing/app/layout.tsx` (changement technique, compatible avec le gel).
-- **Lockfile** : `pnpm dedupe --check` échoue ; `react@19.2.3` et un second `next` restent
-  résolus sous le serveur comme pairs optionnels de better-auth.
+- **Lockfile** : `react@19.2.3` et un second `next` étaient résolus sous le serveur comme
+  pairs optionnels de better-auth (constat pnpm du 2026-09-23) ; à revérifier dans
+  `bun.lock`.
 - **Doc que cette PR rend fausse**, à corriger dans la même PR :
   `.claude/skills/dev-bootstrap/SKILL.md` (`CREATE EXTENSION` à la main avant
   `db:migrate`).
@@ -179,6 +179,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   `<6.1.0` tant que `typescript-eslint` exige `typescript <6.1.0` ; `@types/node` `<25.0.0`
   tant que le runtime est Node 24 (Vercel ne propose que 24.x, 22.x et 20.x ; Node 26 LTS le
   2026-10-28).
+- **Catalogs Bun** : retirés à la bascule (#344) parce que Renovate ne les met pas à jour.
+  Les remettre quand renovatebot/renovate#42909 est fusionnée.
 - **Bun.SQL** à la place de postgres.js : écarté le 2026-10-01. 34 bugs Postgres ouverts
   dans oven-sh/bun, dont des corruptions silencieuses (`text[]` stocké en JSON, `uuid[]`
   non parsé, entiers au-delà de 2^51 envoyés en flottant), et dans le driver `bun-sql` de
@@ -202,6 +204,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
 | Étape | Pour | Statut |
 |---|---|---|
+| Après le merge de #344 : `rm -rf node_modules && bun install` à la racine du clone local (les `node_modules` actuels viennent de pnpm) | Outillage | à faire |
 | Mener 8 à 10 entretiens de parents, dont des familles modestes (guide dans `etudes/2026-10-01/parents.md`) | Questions ouvertes de la vision, lot 4 | à faire |
 | Demander le Zero Data Retention au support Mistral, puis vérifier Admin › API › Privacy | Porte avant ouverture | à faire |
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
@@ -232,3 +235,4 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   limit sur rate-limiter-flexible (#342).
   Serveur passé d'Elysia à Hono, sur Bun, après comparaison chiffrée ; Python écarté pour
   le serveur (#343).
+  `bun install` remplace pnpm, lockfile migré à versions identiques (#344).

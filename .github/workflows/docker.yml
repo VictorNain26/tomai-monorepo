@@ -9,8 +9,8 @@ on:
     branches: [main]
     paths:
       - 'apps/server/**'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
+      - 'bun.lock'
+      - 'bunfig.toml'
       - 'package.json'
       - 'tsconfig.base.json'
       - '.github/workflows/docker.yml'
@@ -18,8 +18,8 @@ on:
     branches: [main]
     paths:
       - 'apps/server/**'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
+      - 'bun.lock'
+      - 'bunfig.toml'
       - 'package.json'
       - 'tsconfig.base.json'
       - '.github/workflows/docker.yml'

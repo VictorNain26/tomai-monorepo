@@ -7,16 +7,16 @@ conversations. Pré-lancement : aucun utilisateur en production.
 ## Démarrage
 
 ```bash
-pnpm install                 # Node 24+, pnpm 12+
-pnpm run setup               # .env, BETTER_AUTH_SECRET, postgres, migrations Drizzle
-pnpm dev                     # infra Docker + server :3000 + landing :3001
+bun install    # Bun 1.4.2+ ; Node 24+ pour la landing
+bun run setup  # .env, BETTER_AUTH_SECRET, postgres, migrations Drizzle
+bun run dev    # infra Docker + server :3000 + landing :3001
 ```
 
-Arrêt de l'infra : `pnpm dev:down`.
+Arrêt de l'infra : `bun run dev:down`.
 
-`pnpm dev` démarre l'infra puis **attend que postgres soit `healthy`** avant de
-lancer les apps ; si l'infra est incomplète, rien ne démarre. `pnpm run doctor` donne
-le détail, `pnpm doctor:e2e` la version stricte où un `SKIP` compte comme un échec.
+`bun run dev` démarre l'infra puis **attend que postgres soit `healthy`** avant de
+lancer les apps ; si l'infra est incomplète, rien ne démarre. `bun run doctor` donne
+le détail, `bun run doctor:e2e` la version stricte où un `SKIP` compte comme un échec.
 
 ## Structure
 
@@ -44,18 +44,18 @@ packages/
 | Paiements | Aucun branché. Paiement web prévu au lot 3 |
 | Stockage | Scaleway S3 (fr-par), uploads par URL présignée |
 | Observabilité | Sentry initialisé sur server et landing. La région dépend du DSN, absent du dépôt. Pas d'analytics installée |
-| Monorepo | Turborepo, pnpm workspaces |
+| Monorepo | Turborepo, workspaces Bun |
 | Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, rien de déployé ; hébergeur tranché au lot 3 |
 
 ## Commandes
 
 ```bash
-pnpm typecheck && pnpm lint   # validation, obligatoire avant commit
-pnpm test                     # tests server (Bun) ; scripts et hooks : pnpm test:scripts
-pnpm build                    # build production
-pnpm seed                     # comptes parent + élève, dev uniquement
-pnpm db:generate              # migrations Drizzle, pour la prod
-pnpm db:push                  # sync direct du schéma, dev local uniquement
+bun run typecheck && bun run lint  # validation, obligatoire avant commit
+bun run test                       # tests server (Bun) ; scripts et hooks : bun run test:scripts
+bun run build                      # build production
+bun run seed                       # comptes parent + élève, dev uniquement
+bun run db:generate                # migrations Drizzle, pour la prod
+bun run db:push                    # sync direct du schéma, dev local uniquement
 ```
 
 ## Git
