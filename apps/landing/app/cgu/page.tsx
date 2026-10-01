@@ -1,17 +1,33 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageLayout } from "@/components/layout/page-layout";
+import { BRAND_NAME } from "@/lib/brand";
+
+const DESCRIPTION = `Conditions d'utilisation de ${BRAND_NAME} : accès au service, comptes enfants et autorité parentale, données personnelles, résiliation et responsabilité.`;
+
+export const metadata: Metadata = {
+  title: "Conditions Générales d'Utilisation",
+  description: DESCRIPTION,
+  alternates: {
+    canonical: "/cgu",
+  },
+};
 
 export default function CguPage() {
   return (
     <PageLayout
       title="Conditions Générales d'Utilisation"
-      description="Dernière mise à jour : 22 septembre 2026"
+      description="Dernière mise à jour : 1er octobre 2026"
       maxWidth="3xl"
     >
       <div className="legal-copy">
         <h2>1. Objet</h2>
         <p>
-          Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services du service web TomIA, accessible sur tomia.fr, ci-après nommé « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.
+          Les présentes Conditions Générales d&apos;Utilisation ont pour objet de définir les modalités de mise à disposition des services du service web {BRAND_NAME}, accessible sur tomia.fr, ci-après nommé « le Service » et les conditions d&apos;utilisation du Service par l&apos;Utilisateur.
+        </p>
+        <p>
+          Le Service est en préparation et n&apos;est pas encore ouvert&nbsp;: les présentes
+          conditions s&apos;appliqueront à son ouverture.
         </p>
 
         <h2>2. Accès au service</h2>
@@ -40,13 +56,13 @@ export default function CguPage() {
         <p>
           <strong>Pour toi, élève :</strong> ton compte a été créé par tes parents pour
           t&apos;aider à apprendre. Utilise Tom pour comprendre tes leçons, pas pour copier
-          des réponses. Tes parents peuvent voir ta progression, et tes conversations ne
-          sont partagées avec personne d&apos;autre.
+          des réponses. Tes parents verront un résumé de ton travail, pas tes
+          conversations&nbsp;: elles ne seront partagées avec personne.
         </p>
 
         <h2>4. Propriété intellectuelle</h2>
         <p>
-          L&apos;application TomIA, ainsi que les textes, graphiques, images, sons et vidéos la composant, sont la propriété de l&apos;éditeur ou de ses partenaires. Toute représentation et/ou reproduction et/ou exploitation partielle ou totale des contenus et services proposés par l&apos;application TomIA, par quelque procédé que ce soit, sans l&apos;autorisation préalable et par écrit de TomIA est strictement interdite et serait susceptible de constituer une contrefaçon au sens des articles L 335-2 et suivants du Code de la propriété intellectuelle.
+          L&apos;application {BRAND_NAME}, ainsi que les textes, graphiques, images, sons et vidéos la composant, sont la propriété de l&apos;éditeur ou de ses partenaires. Toute représentation et/ou reproduction et/ou exploitation partielle ou totale des contenus et services proposés par l&apos;application {BRAND_NAME}, par quelque procédé que ce soit, sans l&apos;autorisation préalable et par écrit de {BRAND_NAME} est strictement interdite et serait susceptible de constituer une contrefaçon au sens des articles L 335-2 et suivants du Code de la propriété intellectuelle.
         </p>
 
         <h2>5. Données personnelles</h2>
@@ -72,7 +88,7 @@ export default function CguPage() {
 
         <h2>7. Responsabilité</h2>
         <p>
-          TomIA est un outil d&apos;aide aux devoirs utilisant l&apos;intelligence artificielle. Ses réponses, générées par un modèle d&apos;intelligence artificielle et adaptées au niveau scolaire déclaré, ne sauraient se substituer à l&apos;enseignement scolaire. TomIA s&apos;efforce de fournir des informations fiables mais ne garantit pas l&apos;exactitude, la complétude et l&apos;actualité de toutes les informations diffusées.
+          {BRAND_NAME} est un outil d&apos;aide aux devoirs utilisant l&apos;intelligence artificielle. Ses réponses, générées par un modèle d&apos;intelligence artificielle et adaptées au niveau scolaire déclaré, ne sauraient se substituer à l&apos;enseignement scolaire. {BRAND_NAME} s&apos;efforce de fournir des informations fiables mais ne garantit pas l&apos;exactitude, la complétude et l&apos;actualité de toutes les informations diffusées.
         </p>
 
         <h2>8. Droit applicable</h2>

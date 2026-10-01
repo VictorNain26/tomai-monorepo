@@ -3,15 +3,14 @@ import { HandNote } from "../annotations/hand-note";
 import { Highlight } from "../annotations/highlight";
 
 const COMMITMENTS = [
-  "Données hébergées dans l'Union européenne, traitées selon le RGPD.",
-  "Une IA européenne : les modèles de Mistral AI, appelés depuis l'Europe.",
+  "Une IA européenne : les modèles de Mistral AI, appelés sur leur infrastructure européenne.",
   "Aucune publicité, aucune revente de données.",
   "Consultation, correction et suppression des données sur simple demande.",
 ];
 
 export function Trust() {
   return (
-    <section className="py-24 lg:py-32">
+    <section className="py-16 lg:py-24">
       <FadeIn className="container grid max-w-5xl gap-10 md:grid-cols-[1fr_2fr] md:items-start">
         <HandNote className="md:mt-2">Ce qu&apos;on s&apos;engage à faire, et à ne pas faire.</HandNote>
         <div>

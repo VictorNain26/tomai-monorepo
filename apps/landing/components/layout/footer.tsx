@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
+import { Logo } from "../atoms/logo";
 
 const LINK_GROUPS = [
   {
@@ -30,17 +31,18 @@ const LINK_GROUPS = [
 export function Footer() {
   return (
     <footer className="bg-secondary text-secondary-foreground">
-      <div className="container pt-16 pb-28 md:py-20">
+      <div className="container py-16 md:py-20">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           <div className="space-y-4">
-            <p className="font-heading text-2xl font-extrabold text-primary">{BRAND_NAME}</p>
+            <Logo />
             <p className="max-w-xs text-sm text-muted-foreground">
-              L&apos;assistant qui aide les collégiens à comprendre leurs leçons, sans faire leurs exercices à leur place.
+              En préparation&nbsp;: une aide aux devoirs pour que, le soir, ce ne soit plus au parent
+              d&apos;expliquer, ni à l&apos;IA de faire l&apos;exercice.
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Hébergé dans l&apos;Union européenne</li>
+              <li>Modèles de Mistral AI, appelés en Europe</li>
               <li>Sans publicité</li>
-              <li>Dans le navigateur, sur ordinateur, tablette ou téléphone</li>
+              <li>Un service web, pensé d&apos;abord pour le téléphone</li>
             </ul>
           </div>
 

@@ -3,9 +3,9 @@ import { Highlight } from "../annotations/highlight";
 
 export function Problem() {
   return (
-    <section className="py-20">
+    <section className="py-16 lg:py-24">
       <FadeIn className="container max-w-4xl text-center">
-        <h2 className="font-heading text-3xl text-balance text-foreground sm:text-4xl">
+        <h2 className="text-4xl text-balance text-foreground sm:text-5xl">
           Copier une réponse prend dix secondes. <Highlight>L&apos;oublier aussi.</Highlight>
         </h2>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">

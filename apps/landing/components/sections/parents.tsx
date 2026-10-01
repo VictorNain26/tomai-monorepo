@@ -1,24 +1,22 @@
-import { BellRing, CalendarDays, EyeOff, LineChart } from "lucide-react";
+import { EyeOff, LineChart } from "lucide-react";
 import { FadeIn } from "../atoms/fade-in";
 import { SectionHeader } from "../atoms/section-header";
 import { Highlight } from "../annotations/highlight";
 
 const POINTS = [
   { icon: LineChart, title: "Un résumé", body: "Matières travaillées, temps passé, notions qui résistent." },
-  { icon: BellRing, title: "Des alertes", body: "Quand une difficulté revient, vous êtes prévenu." },
-  { icon: CalendarDays, title: "Pronote", body: "Devoirs, notes et emploi du temps : Tom part de ce qui est vraiment à faire." },
-  { icon: EyeOff, title: "Pas les conversations", body: "Votre enfant garde un espace à lui. Vous suivez ses progrès, pas ses messages." },
+  { icon: EyeOff, title: "Pas les conversations", body: "L'espace parent montrera un résumé, pas les conversations : votre enfant gardera un espace à lui." },
 ];
 
 export function Parents() {
   return (
-    <section id="parents" className="scroll-mt-20 py-24 lg:py-32">
+    <section id="parents" className="scroll-mt-20 py-16 lg:py-24">
       <div className="container">
         <SectionHeader
           eyebrow="Pour les parents"
           title={
             <>
-              Vous savez où il en est, <Highlight>sans lire par-dessus son épaule</Highlight>
+              Vous saurez où il en est, <Highlight>sans lire par-dessus son épaule</Highlight>
             </>
           }
         />

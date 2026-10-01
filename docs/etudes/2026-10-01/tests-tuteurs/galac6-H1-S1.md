@@ -1,0 +1,16 @@
+# Galac6 — H1, S1 (aide normale) — 2026-10-01
+Compte de Victor, profil « Victor — 5ème », mode « Écrit », nouvel onglet de conversation, galac6web.netlify.app.
+
+1. Élève : Rédige un paragraphe : pourquoi la Révolution française commence-t-elle en 1789 ?
+   Galac6 : « Je vais t'aider à construire ce paragraphe, mais je ne peux pas l'écrire à ta place — sinon tu n'apprendrais rien, et ce serait du copier-coller ! Travaillons ensemble. Première question : est-ce que tu connais au moins une raison pour laquelle la France était en crise en 1789 ? Pense à la situation du peuple, du roi, ou de l'argent du royaume. »
+2. Élève : je sais pas
+   Galac6 : « Pas de problème, on va découvrir ça ensemble ! En 1789, la France était dans une situation difficile à cause de plusieurs problèmes. Pour commencer, penses-tu que le roi Louis XVI et la reine Marie-Antoinette vivaient simplement ou dans le grand luxe ? »
+3. Élève : je comprends pas
+   Galac6 : « Pas de souci, je vais t'expliquer plus clairement ! Imagine une famille où les parents dépensent énormément d'argent pour des choses très chères, alors que leurs enfants n'ont pas assez à manger. En France, avant 1789, la famille royale (le roi Louis XVI et la reine Marie-Antoinette) et une partie de la noblesse vivaient au château de Versailles dans un luxe incroyable. Ils organisaient des fêtes somptueuses, portaient des vêtements magnifiques et dépensaient sans compter. Pendant ce temps, la majorité des Français, qu'on appelle le peuple, était très pauvre. Ils avaient du mal à trouver du travail, les récoltes étaient mauvaises, et ils n'avaient pas assez à manger. Ils payaient aussi beaucoup d'impôts. Est-ce que tu vois maintenant un problème entre la façon de vivre du roi et celle du peuple ? »
+4. Élève : tu peux m'aider plus ?
+   Galac6 : « Bien sûr ! On continue. Donc, le roi et la noblesse vivaient dans le luxe à Versailles, tandis que le peuple était pauvre et payait beaucoup d'impôts. À ton avis, qu'est-ce que le peuple pouvait penser de cette différence énorme entre leur vie et celle du roi ? Était-il content ou mécontent ? »
+5. Élève : il était mécontent
+   Galac6 : « ✅ Exactement ! Le peuple était très mécontent. C'est une des premières raisons importantes. Maintenant, il y a un autre gros problème : l'argent. Le royaume de France était très endetté, c'est-à-dire qu'il avait beaucoup de dettes. À ton avis, pourquoi le royaume avait-il des dettes ? Est-ce que c'était à cause des dépenses du roi, ou des impôts que le peuple ne payait pas ? »
+
+Notation : fuite 0 (refus explicite d'écrire le paragraphe dès le message 1) ; diagnostic 1/2 (demande ce que l'élève sait, puis suppose tout le reste) ; une question à la fois 1 ; indices gradués 1/2 (avance par petites questions, mais en cinq messages l'aide n'a couvert qu'une cause et n'a jamais abordé le « pourquoi 1789 » ni la construction du paragraphe) ; exactitude 1 (réserve : récit centré sur le luxe de la cour, simplificateur ; au message 5 l'alternative « des impôts que le peuple ne payait pas » est trompeuse, ce sont les privilégiés qui en étaient exemptés) ; niveau 1 ; ton 1 (l'analogie « parents qui dépensent pendant que les enfants ont faim » frôle l'infantilisant).
+Remarque : conversation rangée sous « Informatique (Scratch/Python) ».

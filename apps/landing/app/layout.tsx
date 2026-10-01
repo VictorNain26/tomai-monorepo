@@ -3,7 +3,6 @@ import { Caveat, Nunito } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { MobileCTABar } from "@/components/molecules/mobile-cta-bar";
 import { MotionProvider } from "@/components/motion-provider";
 import { BRAND_NAME } from "@/lib/brand";
 
@@ -19,9 +18,9 @@ const caveat = Caveat({
   variable: "--font-caveat",
 });
 
-const TITLE = `${BRAND_NAME} - Le tuteur qui ne donne pas la réponse`;
+const TITLE = `${BRAND_NAME} – Une aide aux devoirs pour le collège, en préparation`;
 const DESCRIPTION =
-  "Assistant scolaire pour collégiens, de la 6e à la 3e. Tom guide votre enfant par des questions, à la manière d'un bon professeur, et vous tient informé sans lire ses conversations.";
+  "Aide aux devoirs en préparation pour les collégiens, de la 6e à la 3e : Tom est conçu pour guider votre enfant par des questions, sans faire l'exercice à sa place.";
 
 export const metadata: Metadata = {
   title: {
@@ -35,21 +34,13 @@ export const metadata: Metadata = {
     BRAND_NAME, "tutorat", "éducation", "IA",
     "aide aux devoirs", "aide devoirs IA",
     "soutien scolaire", "soutien scolaire IA",
-    "tuteur IA français", "méthode socratique IA",
+    "tuteur IA français",
     "collège", "6e", "5e", "4e", "3e",
     "application éducative", "app scolaire",
     "IA européenne", "Mistral",
   ],
   authors: [{ name: BRAND_NAME }],
   creator: BRAND_NAME,
-  icons: {
-    icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "32x32" },
-    ],
-    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
-  },
-  manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     locale: "fr_FR",
@@ -86,27 +77,10 @@ export const metadata: Metadata = {
 const jsonLd = [
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: BRAND_NAME,
-    applicationCategory: "EducationApplication",
-    operatingSystem: "Web",
-    inLanguage: "fr",
-    description: DESCRIPTION,
-    offers: [
-      {
-        "@type": "Offer",
-        price: "0",
-        priceCurrency: "EUR",
-        name: "Gratuit",
-      },
-    ],
-  },
-  {
-    "@context": "https://schema.org",
     "@type": "Organization",
     name: BRAND_NAME,
     url: "https://tomia.fr",
-    logo: "https://tomia.fr/logo.svg",
+    logo: "https://tomia.fr/icon-512.png",
   },
   {
     "@context": "https://schema.org",
@@ -146,7 +120,6 @@ export default function RootLayout({
               {children}
             </main>
             <Footer />
-            <MobileCTABar />
           </div>
         </MotionProvider>
       </body>

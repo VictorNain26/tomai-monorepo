@@ -4,7 +4,7 @@ import { FaqList } from "./faq-list";
 
 export function FAQ() {
   return (
-    <section id="faq" className="scroll-mt-20 py-24 lg:py-32">
+    <section id="faq" className="scroll-mt-20 py-16 lg:py-24">
       <div className="container">
         <SectionHeader
           eyebrow="Questions"
