@@ -10,10 +10,10 @@ de nouvelle section ni de nouvelle direction visuelle : l'identité est rejet�
 au lot 4, avec le nom du produit.
 
 ```bash
-pnpm dev          # :3001
-pnpm typecheck
-pnpm lint         # zéro warning
-pnpm build
+bun run dev   # :3001
+bun run typecheck
+bun run lint  # zéro warning
+bun run build
 ```
 
 ## Contraintes
@@ -25,7 +25,7 @@ pnpm build
 - **Primitives interactives via `@repo/ui`** (bouton, champ, dialog, menu) : c'est
   là que vit leur accessibilité. Sections, annotations et démo sont des composants
   de composition, libres.
-- Déploiement Vercel automatique au push. **Jamais `pnpm install --force`** dans
+- Déploiement Vercel automatique au push. **Jamais `bun install --force`** dans
   `vercel.json` : ça masque les conflits de résolution au lieu de les régler.
 
 <!-- BEGIN:nextjs-agent-rules -->

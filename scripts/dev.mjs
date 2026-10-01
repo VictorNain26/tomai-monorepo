@@ -23,12 +23,12 @@ console.log("[dev] vérification infra (fail-fast) avant de lancer les apps…")
 const ctx = { config: loadConfig(), exec: defaultExec, fetchFn: fetch };
 const infra = await runChecks(buildChecks(ctx, { full: false }));
 if (infra.exitCode !== 0) {
-  console.error("[dev] infra incomplète — apps non lancées. Lance `pnpm doctor` pour le détail, puis `pnpm run setup`/`docker compose up -d`.");
+  console.error("[dev] infra incomplète — apps non lancées. Lance `bun run doctor` pour le détail, puis `bun run setup`/`docker compose up -d`.");
   process.exit(1);
 }
 
 console.log("[dev] lancement des apps (server, landing)…");
-const turbo = spawn("pnpm", ["exec", "turbo", "run", "dev"], {
+const turbo = spawn("bunx", ["turbo", "run", "dev"], {
   stdio: "inherit",
 });
 turbo.on("exit", (code) => process.exit(code ?? 0));

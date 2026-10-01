@@ -10,11 +10,11 @@ coût des tokens : skill `/mistral-stack`.
 
 ```bash
 # Depuis la RACINE (le compose y vit) :
-pnpm dev                          # infra Docker + server host :3000 + landing
+bun run dev               # infra Docker + server host :3000 + landing
 # Depuis apps/server :
 bun run typecheck && bun run lint # validation
-bun run test                      # tests, runner Bun
-bun run test:integration          # obligatoire avant push, gating en CI
+bun run test              # tests, runner Bun
+bun run test:integration  # obligatoire avant push, gating en CI
 bun run build
 ```
 
@@ -35,7 +35,7 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 - Ordonnancement par turbo : `typecheck` `dependsOn ["^build:types"]`.
   `dist/types/` est gitignored, jamais commité.
 - Sur un clone neuf, `@repo/api/src/client.ts` est rouge dans l'IDE tant que le
-  `.d.ts` n'existe pas. `pnpm turbo typecheck` le régénère.
+  `.d.ts` n'existe pas. `bunx turbo typecheck` le régénère.
 - Émettre le `.d.ts` exige un contrat public **nommable** : tout type qui fuit
   dans `AppType` doit être exporté (cf. `StreamGenerationParams`) ou neutralisé.
 

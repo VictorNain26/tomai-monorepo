@@ -8,12 +8,12 @@ description: Démarrer le monorepo depuis un clone neuf, ou réparer une stack l
 ## Le chemin normal
 
 ```bash
-pnpm install
-pnpm run setup         # .env, BETTER_AUTH_SECRET, postgres, migrations
-pnpm dev
+bun install
+bun run setup         # .env, BETTER_AUTH_SECRET, postgres, migrations
+bun run dev
 ```
 
-`pnpm run setup` (`scripts/setup.mjs`) enchaîne ces étapes dans l'ordre. Le reste de
+`bun run setup` (`scripts/setup.mjs`) enchaîne ces étapes dans l'ordre. Le reste de
 cette skill sert quand il échoue, ou pour comprendre ce qu'il fait.
 
 ## Le piège : `db:migrate`, jamais `db:push`, sur une base neuve
@@ -24,7 +24,7 @@ schéma directement. Sur une base vierge, un `db:push` donne donc un schéma cor
 et un serveur qui refuse quand même de démarrer, ce qui est le symptôme le plus
 déroutant de la stack.
 
-Séquence manuelle si `pnpm run setup` a échoué en route (commandes `docker` depuis la
+Séquence manuelle si `bun run setup` a échoué en route (commandes `docker` depuis la
 racine, `bun run` depuis `apps/server`) :
 
 ```bash
@@ -56,7 +56,7 @@ DATABASE_URL_EXTERNAL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/t
 Sans `MISTRAL_API_KEY`, `/health` reste `healthy` (il ne sonde que la base) ;
 c'est `/health/ai` qui répond 503.
 
-## Ce que `pnpm dev` attend réellement
+## Ce que `bun run dev` attend réellement
 
 `scripts/dev.mjs` démarre l'infra puis attend **postgres en `healthy`** avant de
 lancer les apps. Si l'infra est incomplète, les apps ne démarrent pas du tout —
@@ -69,13 +69,13 @@ L'image backend iso-prod reste disponible en opt-in via
 ## Diagnostic
 
 ```bash
-pnpm run doctor    # PASS/FAIL/SKIP par dépendance
-pnpm doctor:e2e    # strict : un SKIP compte comme un échec
+bun run doctor    # PASS/FAIL/SKIP par dépendance
+bun run doctor:e2e    # strict : un SKIP compte comme un échec
 ```
 
 ## Repartir d'une base vraiment propre
 
 ```bash
 docker compose down -v   # détruit les volumes, donc les données locales
-pnpm run setup
+bun run setup
 ```

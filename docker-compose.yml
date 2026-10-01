@@ -3,7 +3,7 @@
 # Défaut       : postgres
 # Backend (opt-in, iso-prod) : docker compose --profile backend up -d
 # Outils       : docker compose --profile tools up -d
-# Orchestration dev : `pnpm dev` (à la racine)
+# Orchestration dev : `bun run dev` (à la racine)
 # ============================================================
 
 # Nom de projet Compose figé, indépendant du dossier : évite les conflits de
@@ -13,7 +13,7 @@ name: tomai
 services:
   # ===========================================
   # Backend TomAI — conteneurisé (OPT-IN)
-  # En dev normal le backend tourne sur l'host via `pnpm dev`.
+  # En dev normal le backend tourne sur l'host via `bun run dev`.
   # Ce service ne sert qu'à tester l'image iso-prod : --profile backend.
   # ===========================================
   backend:

@@ -14,19 +14,19 @@ terminée, décisions ouvertes.
 ## Commandes
 
 ```bash
-pnpm install                      # Node 24+, pnpm 12+
-pnpm dev                          # infra Docker + server:3000 + landing:3001
-pnpm dev:down                     # arrêt de l'infra
-pnpm typecheck && pnpm lint       # obligatoire avant tout commit
-pnpm test                         # tests serveur, aussi obligatoires si le serveur change
-pnpm test:scripts                 # tests de scripts/
-pnpm run doctor                   # diagnostic de la stack
-pnpm doctor:e2e                   # diagnostic strict : un SKIP = échec
-pnpm seed                         # comptes parent + élève, dev uniquement
+bun install                        # Bun 1.4.2+ ; Node 24+ pour la landing
+bun run dev                        # infra Docker + server:3000 + landing:3001
+bun run dev:down                   # arrêt de l'infra
+bun run typecheck && bun run lint  # obligatoire avant tout commit
+bun run test                       # tests serveur, aussi obligatoires si le serveur change
+bun run test:scripts               # tests de scripts/
+bun run doctor                     # diagnostic de la stack
+bun run doctor:e2e                 # diagnostic strict : un SKIP = échec
+bun run seed                       # comptes parent + élève, dev uniquement
 ```
 
 L'infra Docker vit à la **racine** (`docker-compose.yml`, pas dans `apps/server`).
-`pnpm dev` la démarre et attend que postgres soit `healthy` avant de lancer les
+`bun run dev` la démarre et attend que postgres soit `healthy` avant de lancer les
 apps : si l'infra est incomplète, les apps ne démarrent pas.
 
 ## Git
