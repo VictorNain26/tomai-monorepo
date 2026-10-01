@@ -81,8 +81,7 @@ jobs:
     name: Test
     needs: validate-tasks
     runs-on: ubuntu-latest
-    # Ephemeral pgvector service so DB-backed integration tests (incl. the
-    # Pronote onboarding e2e: discover -> activate -> getGrades) actually RUN
+    # Ephemeral pgvector service so DB-backed integration tests actually RUN
     # in CI instead of skipping on an unreachable DB. Deterministic + isolated.
     services:
       postgres:

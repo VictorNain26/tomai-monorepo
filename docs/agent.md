@@ -156,7 +156,7 @@ dans la cible 4-5.
 - Appels et résultats d'outils persistés dans l'historique (aujourd'hui seul le
   texte l'est, `ChatOrchestrationService.finishTurn`).
 - `generate_flashcards` réservé au Complet, comme la route de génération de cartes, et
-  compté dans son quota (§14).
+  compté dans son quota (§13).
 
 ## 7. Prompt et contexte
 
@@ -263,29 +263,7 @@ Cartographie de risque, à valider par un conseil avant l'ouverture.
   le lot 1 la fournit.
 - À ne pas citer : Wang & Fan 2025 (*HSSC*), rétracté le 2026-04-22.
 
-## 13. Retrait de Pronote (lot 0)
-
-Pronote sort de la V1 (vision, « Périmètre V1 »). L'agent ne doit rien en attendre. Ce
-qu'il en attend aujourd'hui, à retirer au lot 0 avec le reste du code Pronote (chemins
-relatifs à `apps/server/src/`) :
-
-- `pronoteContext`, champ optionnel du corps de `POST /api/chat/stream`
-  (`routes/chat-message.routes.ts`), fourni par le client et passé à `streamChat` ;
-- `PronoteContext` et `StreamGenerationParams.pronoteContext`
-  (`services/chat/ai-chat.service.ts`) ;
-- `wrapPronoteData` et la balise `pronote_data` de l'expression de `stripPromptTags`
-  (`services/chat/mistral-helpers.ts`, test `tests/prompt-security.test.ts`) ;
-- `pronoteBlock` de `ChatMessageParts`, injecté en message `user` à part par
-  `assembleChatMessages` (`services/chat/chat-message-assembler.ts`) ;
-- les mentions des données Pronote et du bloc `<pronote_data>` dans
-  `config/prompts/core/safety.ts`, qui changent le prompt système (nouvelle
-  `PROMPT_VERSION`, avant la baseline du lot 1) ;
-- le sujet `pronote` de l'outil `get_app_help` et la mention de Pronote dans sa
-  description (`services/chat/chat-tools.ts`, `services/chat/tool-executor.ts`), et ses
-  textes dans `config/app-guide/app-guide-data.ts` (test `tests/app-guide-data.test.ts`) ;
-- « recherches Pronote » dans le prompt de `services/chat/summarization.service.ts`.
-
-## 14. Quotas et coûts (lot 2)
+## 13. Quotas et coûts (lot 2)
 
 Le gratuit doit couvrir une soirée de devoirs normale, et le coût d'un élève payant rester
 sous son revenu net dans le pire cas mesuré (vision, « Offre et prix » et critères de

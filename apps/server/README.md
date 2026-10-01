@@ -78,8 +78,7 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 ## Environment Variables
 
 Requises pour booter : `DATABASE_URL` et `BETTER_AUTH_SECRET` (en production, aussi
-`BETTER_AUTH_URL`, et `PRONOTE_ENCRYPTION_KEY` tant que le code Pronote, hors V1, n'est pas
-retiré au lot 0). Toutes les autres sont optionnelles : la feature concernée échoue à l'usage
+`BETTER_AUTH_URL`). Toutes les autres sont optionnelles : la feature concernée échoue à l'usage
 tant que sa variable manque (Google OAuth, Mistral, Scaleway). Liste complète,
 défauts et contraintes : `src/config/env.ts` ; gabarit commenté : `.env.example`.
 
@@ -106,19 +105,17 @@ src/
 │   ├── connection.ts           # Pool PostgreSQL
 │   ├── migrate.ts              # Runtime migrator
 │   └── repositories/           # Data access layer
-├── lib/                        # Auth, encryption, observability
+├── lib/                        # Auth, observability
 ├── middleware/                  # Auth, rate-limit, memory monitor
 ├── routes/                     # API endpoints
 │   ├── chat-message.routes.ts  # SSE streaming
 │   ├── file-upload.routes.ts   # Upload Scaleway
-│   ├── pronote-*.routes.ts     # Pronote, hors V1, retiré au lot 0
 │   ├── tts.routes.ts           # Text-to-Speech
 │   ├── learning/               # Decks, cartes, FSRS
 │   └── subscription/           # Status lecture seule (DB)
 ├── services/                   # Business logic
 │   ├── chat/                   # Mistral streaming, summarization, tools
 │   ├── storage/                # Scaleway S3
-│   ├── pronote/                # Pronote, hors V1, retiré au lot 0
 │   ├── quota/                  # Quotas tokens IA
 │   ├── voxtral-*.service.ts    # STT / TTS Mistral
 │   └── fsrs.service.ts         # Spaced repetition

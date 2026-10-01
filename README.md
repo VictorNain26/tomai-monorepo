@@ -76,7 +76,5 @@ promesse, prix, périmètre) · [roadmap](./docs/roadmap.md) ·
 [cible V1](./docs/architecture.md) et
 [agent IA](./docs/agent.md).
 
-Pronote est hors V1 : son code, encore présent côté serveur, est retiré au lot 0.
-
 Chaque app a sa propre doc : [server](./apps/server/CLAUDE.md) ·
 [landing](./apps/landing/CLAUDE.md)

@@ -54,9 +54,8 @@ Une tâche = un commit, typecheck et lint verts à chacun (pre-commit lefthook).
 
 La liste de `agent.md` § 13 :
 
-- `routes/chat-message.routes.ts` : champ `pronoteContext` retiré du corps et de l'appel à
-  `streamChat`. Un client qui l'envoie encore reçoit un 400 (`additionalProperties` à
-  vérifier dans le schéma TypeBox ; sinon le champ est ignoré, ce qui suffit).
+- `routes/chat-message.routes.ts` : champ `pronoteContext` retiré du schéma du corps et de
+  l'appel à `streamChat`.
 - `services/chat/ai-chat.service.ts` : `PronoteContext`,
   `StreamGenerationParams.pronoteContext` et l'appel à `wrapPronoteData` retirés ;
   `PROMPT_VERSION` mise à jour.
@@ -71,8 +70,7 @@ La liste de `agent.md` § 13 :
 - `services/chat/chat-tools.ts`, `services/chat/tool-executor.ts`,
   `config/app-guide/app-guide-data.ts` : sujet `pronote` retiré de l'enum, de la
   description, du message d'erreur et des textes. `tests/app-guide-data.test.ts` : la liste
-  des sujets attendus perd `pronote`, et un cas vérifie qu'aucun texte du guide ne
-  mentionne Pronote.
+  des sujets attendus perd `pronote`.
 - `services/chat/summarization.service.ts` : « recherches Pronote » retiré du prompt,
   `SUMMARIZATION_PROMPT_VERSION` mise à jour.
 

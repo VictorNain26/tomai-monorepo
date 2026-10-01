@@ -58,9 +58,6 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 
 - **Fail-fast au boot** : `src/config/env.ts` valide l'environnement au chargement
   et refuse de démarrer sur une variable requise absente ou invalide.
-- **Pronote** : hors V1, tout son code (routes, services, `pawnote`, `lib/encryption.ts`,
-  tables) est retiré au lot 0 (`docs/suivi.md`, « Reporté ») ; n'y ajouter
-  aucune fonctionnalité d'ici là.
 - **CORS** : whitelist en prod, `credentials: true`. **Headers** : HSTS,
   `X-Frame-Options: DENY`, nosniff, Permissions-Policy restrictive.
 - **Rate limiting** : preset global `api`, preset `ai` plus strict sur le chat.
@@ -75,8 +72,7 @@ auto au déploiement.
 ## Tests
 
 Runner Bun, tests dans `src/tests/<service>.test.ts`. Couverture attendue sur ce
-qui casse silencieusement : quotas, round-trip de chiffrement, transactions
-multi-tables.
+qui casse silencieusement : quotas, transactions multi-tables.
 
 Piège du mock partiel de `drizzle-orm` dans `api-endpoints.test.ts` :
 `.claude/rules/testing-and-commits.md`.
