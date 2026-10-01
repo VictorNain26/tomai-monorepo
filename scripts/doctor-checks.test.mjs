@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runChecks, loadConfig, buildChecks } from './doctor-checks.mjs';
+import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { runChecks, loadConfig, buildChecks, parseEnvFile } from './doctor-checks.mjs';
 
 const CFG = { serverUrl: 'http://s:3000', mistralServerUrl: 'https://api.eu.mistral.ai', mistralModel: 'mistral-small-2603' };
 
@@ -104,7 +107,7 @@ test('check migrations: FAIL si migrations en retard', async () => {
   const ctx = { ...ctxWith({ exec }), journalEntries: 5 };                      // 5 attendues
   const checks = buildChecks(ctx, { full: true });
   await assert.rejects(byName(checks, 'migrations').run(), /migration/i);
-  await assert.rejects(byName(checks, 'migrations').run(), /bun run setup/, "le message doit pointer vers le script `setup` du package.json (`bun run setup`)");
+  await assert.rejects(byName(checks, 'migrations').run(), /bun run db:migrate/, "le message doit pointer vers le migrateur");
 });
 
 test('check migrations: PASS si vector présent et migrations à jour', async () => {
@@ -199,4 +202,21 @@ test('check mistral chat réel: PASS si la complétion renvoie des choices', asy
   assert.equal(sentUrl, 'https://api.eu.mistral.ai/v1/chat/completions');
   assert.equal(sentBody?.model, 'mistral-small-2603');
   assert.equal(sentBody?.reasoning_effort, 'none');
+});
+
+test('parseEnvFile: valeurs, guillemets et commentaire en fin de ligne', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'doctor-env-'));
+  const path = join(dir, '.env');
+  writeFileSync(path, 'DATABASE_URL=postgres://a@b/c # local\nQUOTED="x y"\n# commentaire\nEMPTY=\n');
+  assert.deepEqual(parseEnvFile(path), { DATABASE_URL: 'postgres://a@b/c', QUOTED: 'x y', EMPTY: '' });
+});
+
+test('parseEnvFile: fichier absent -> {}', () => {
+  assert.deepEqual(parseEnvFile(join(tmpdir(), 'doctor-env-absent', '.env')), {});
+});
+
+test('parseEnvFile: autre erreur de lecture -> remonte', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'doctor-env-'));
+  mkdirSync(join(dir, '.env'));
+  assert.throws(() => parseEnvFile(join(dir, '.env')), /EISDIR|directory/i);
 });

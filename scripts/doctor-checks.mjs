@@ -15,12 +15,13 @@ export const SKIP = Symbol.for('doctor.skip');
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-/** Lit un fichier .env avec le parseur de la plateforme (commentaires en fin de ligne compris) ; absent = {}. */
-function parseEnvFile(path) {
+/** Lit un fichier .env avec le parseur de la plateforme (commentaires en fin de ligne compris). Absent = {} ; toute autre erreur de lecture remonte. */
+export function parseEnvFile(path) {
   try {
     return parseEnv(readFileSync(path, 'utf8'));
-  } catch {
-    return {};
+  } catch (error) {
+    if (error?.code === 'ENOENT') return {};
+    throw error;
   }
 }
 
@@ -145,7 +146,7 @@ function checkMigrations(ctx) {
     if (hasVector === '0') throw new Error("extension 'vector' absente — lance 'bun run db:migrate' dans apps/server (le migrateur la crée)");
     const applied = Number(psqlScalar(ctx, 'SELECT count(*) FROM drizzle.__drizzle_migrations;'));
     const expected = ctx.journalEntries ?? countJournalEntries();
-    if (applied < expected) throw new Error(`migrations en retard: ${applied}/${expected} appliquées — lance 'bun run setup' (ou 'bun run db:migrate' dans apps/server)`);
+    if (applied < expected) throw new Error(`migrations en retard: ${applied}/${expected} appliquées — lance 'bun run db:migrate' dans apps/server`);
   }};
 }
 

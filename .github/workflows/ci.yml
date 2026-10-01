@@ -54,6 +54,17 @@ jobs:
             bunx --no-install turbo run ${{ matrix.task }} --affected
           fi
 
+  # Root scripts: no database and no install needed, bun runs their tests.
+  script-tests:
+    name: Script tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - run: bun run test:scripts
+
   # =============================================
   # Job 1b: Required status check gate
   # =============================================
@@ -112,8 +123,6 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
-      - name: Script tests
-        run: bun run test:scripts
       # The runner starts steps once the postgres service is healthy, and the
       # migrator creates the vector extension under its advisory lock.
       - name: Prepare integration DB (migrations)

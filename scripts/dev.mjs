@@ -13,8 +13,8 @@ function run(cmd, args) {
   }
 }
 
-console.log("[dev] démarrage de l'infra, attente des services healthy…");
-run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "120"]);
+console.log("[dev] démarrage de postgres, attente healthy…");
+run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "120", "postgres"]);
 
 console.log("[dev] vérification infra (fail-fast) avant de lancer les apps…");
 const ctx = { config: loadConfig(), exec: defaultExec, fetchFn: fetch };
