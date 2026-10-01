@@ -84,7 +84,7 @@ export function createRateLimitMiddleware<E extends Env>(
       // Fail-closed: On error, block the request (security > availability)
       logger.error('Rate limit middleware error', {
         operation: 'rate-limit:error',
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'high' as const,
       });
 

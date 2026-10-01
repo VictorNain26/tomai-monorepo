@@ -141,7 +141,7 @@ export async function getLearningContext(userId: string): Promise<string | null>
   } catch (err) {
     logger.warn('Failed to fetch learning context', {
       operation: 'chat:learning-context',
-      _error: err instanceof Error ? err.message : String(err),
+      err: err,
       userId,
     });
     return null;

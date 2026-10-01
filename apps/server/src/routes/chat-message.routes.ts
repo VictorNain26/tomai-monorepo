@@ -131,7 +131,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
         return c.json(toErrorResponse(appError, requestId), appError.statusCode);
       }
       logger.error('Chat turn setup failed', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         userId: user.id,
         requestId,
         operation: 'chat-stream:setup-error',
@@ -192,7 +192,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           });
         } catch (error) {
           logger.error('Chat turn persistence failed', {
-            _error: error instanceof Error ? error.message : String(error),
+            err: error,
             userId: user.id,
             sessionId: turnCtx.sessionId,
             requestId,
@@ -205,7 +205,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
       },
       onError: error => {
         logger.error('Unexpected streaming error', {
-          _error: error instanceof Error ? error.message : String(error),
+          err: error,
           userId: user.id,
           sessionId: turnCtx.sessionId,
           requestId,

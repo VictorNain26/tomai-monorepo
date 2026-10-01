@@ -34,7 +34,7 @@ export const deckRoutes = new Hono<AuthEnv>()
       logger.error('Failed to fetch decks', {
         operation: 'learning:decks:list',
         userId: user.id,
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'medium' as const,
       });
       return c.json({ error: 'Failed to fetch decks' }, 500);
@@ -66,7 +66,7 @@ export const deckRoutes = new Hono<AuthEnv>()
         logger.error('Failed to create deck', {
           operation: 'learning:decks:create',
           userId: user.id,
-          _error: error instanceof Error ? error.message : String(error),
+          err: error,
           severity: 'medium' as const,
         });
         return c.json({ error: 'Failed to create deck' }, 500);
@@ -87,7 +87,7 @@ export const deckRoutes = new Hono<AuthEnv>()
       logger.error('Failed to fetch deck', {
         operation: 'learning:decks:get',
         userId: user.id, deckId,
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'medium' as const,
       });
       return c.json({ error: 'Failed to fetch deck' }, 500);
@@ -113,7 +113,7 @@ export const deckRoutes = new Hono<AuthEnv>()
         logger.error('Failed to update deck', {
           operation: 'learning:decks:update',
           userId: user.id, deckId,
-          _error: error instanceof Error ? error.message : String(error),
+          err: error,
           severity: 'medium' as const,
         });
         return c.json({ error: 'Failed to update deck' }, 500);
@@ -135,7 +135,7 @@ export const deckRoutes = new Hono<AuthEnv>()
       logger.error('Failed to delete deck', {
         operation: 'learning:decks:delete',
         userId: user.id, deckId,
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'medium' as const,
       });
       return c.json({ error: 'Failed to delete deck' }, 500);

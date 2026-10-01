@@ -87,7 +87,7 @@ class DocumentExtractionService {
 
     } catch (error) {
       logger.error('Document extraction failed', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         mimeType: cleanMimeType,
         fileName,
         operation: 'document-extraction',
@@ -150,7 +150,7 @@ class DocumentExtractionService {
 
     } catch (error) {
       logger.error('PDF extraction error', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'pdf-extraction',
         severity: 'medium' as const
       });
@@ -217,7 +217,7 @@ class DocumentExtractionService {
 
     } catch (error) {
       logger.error('DOCX extraction error', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'docx-extraction',
         severity: 'medium' as const
       });

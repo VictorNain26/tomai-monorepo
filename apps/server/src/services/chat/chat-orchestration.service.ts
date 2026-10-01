@@ -178,7 +178,7 @@ class ChatOrchestrationService {
         .catch(err => logger.warn('Subject persist failed', {
           operation: 'chat-orchestration:subject-persist',
           sessionId,
-          _error: err instanceof Error ? err.message : String(err),
+          err: err,
         }));
     }
 
@@ -331,7 +331,7 @@ class ChatOrchestrationService {
 
     summarizationService.summarizeIfNeeded(sessionId).catch(err => {
       logger.error('Background summarization failed', {
-        _error: err instanceof Error ? err.message : String(err),
+        err: err,
         sessionId,
         operation: 'chat-orchestration:summarization-bg',
         severity: 'low' as const,
@@ -340,7 +340,7 @@ class ChatOrchestrationService {
 
     autoTitleService.generateTitleIfNeeded(sessionId, userContent, fullContent).catch(err => {
       logger.warn('Background auto-title failed', {
-        _error: err instanceof Error ? err.message : String(err),
+        err: err,
         sessionId,
         operation: 'chat-orchestration:auto-title-bg',
       });

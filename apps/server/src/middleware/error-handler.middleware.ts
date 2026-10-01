@@ -18,7 +18,7 @@ export const handleError: ErrorHandler<AppEnv> = (error, c) => {
       logger.error(`AppError: ${error.message}`, {
         requestId,
         operation: `error-handler:${error.code}`,
-        _error: error.message,
+        err: error,
         severity: 'high' as const,
         url,
       });
@@ -40,8 +40,7 @@ export const handleError: ErrorHandler<AppEnv> = (error, c) => {
   logger.error('Unhandled error', {
     requestId,
     operation: 'error-handler:unhandled',
-    _error: error.message,
-    stack: error.stack,
+    err: error,
     severity: 'high' as const,
     url,
   });

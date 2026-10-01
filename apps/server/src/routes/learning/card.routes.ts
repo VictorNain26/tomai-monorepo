@@ -63,7 +63,7 @@ export const cardRoutes = new Hono<AuthEnv>()
         logger.error('Failed to add cards', {
           operation: 'learning:cards:add',
           userId: user.id, deckId,
-          _error: error instanceof Error ? error.message : String(error),
+          err: error,
           severity: 'medium' as const,
         });
         return c.json({ error: 'Failed to add cards' }, 500);
@@ -94,7 +94,7 @@ export const cardRoutes = new Hono<AuthEnv>()
         logger.error('Failed to update card', {
           operation: 'learning:cards:update',
           userId: user.id, cardId,
-          _error: error instanceof Error ? error.message : String(error),
+          err: error,
           severity: 'medium' as const,
         });
         return c.json({ error: 'Failed to update card' }, 500);
@@ -117,7 +117,7 @@ export const cardRoutes = new Hono<AuthEnv>()
       logger.error('Failed to delete card', {
         operation: 'learning:cards:delete',
         userId: user.id, cardId,
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'medium' as const,
       });
       return c.json({ error: 'Failed to delete card' }, 500);

@@ -53,7 +53,7 @@ export const fsrsExtraRoutes = new Hono<AuthEnv>()
         operation: 'learning:preview:error',
         userId: user.id,
         cardId,
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'low' as const,
       });
       return c.json({ error: 'Échec de la prévisualisation' }, 500);
@@ -91,7 +91,7 @@ export const fsrsExtraRoutes = new Hono<AuthEnv>()
         operation: 'learning:reset:error',
         userId: user.id,
         deckId,
-        _error: errorMessage,
+        err: errorMessage,
         severity: 'medium' as const,
       });
       return c.json({ error: 'Échec de la réinitialisation' }, 500);

@@ -176,7 +176,7 @@ export async function generateCards(
         operation: 'learning:generate:validation_error',
         topic: params.topic,
         durationMs: Date.now() - startTime,
-        _error: error.message,
+        err: error,
         severity: 'high' as const
       });
       return { success: false, error: 'Cartes invalides', code: 'INVALID_OUTPUT' };
@@ -203,7 +203,7 @@ export async function generateCards(
       level: params.level,
       cardCount: params.cardCount,
       durationMs: Date.now() - startTime,
-      _error: errorMessage,
+      err: errorMessage,
       stack: errorStack,
       errorType: isRateLimit ? 'rate_limit' : isApiKey ? 'api_key' : isModelNotFound ? 'model_not_found' : isQuota ? 'quota' : isUnavailable ? 'unavailable' : 'unknown',
       severity: 'high' as const

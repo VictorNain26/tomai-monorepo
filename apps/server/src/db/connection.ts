@@ -137,7 +137,7 @@ export const closeConnection = async (): Promise<void> => {
   } catch (_error) {
     logger.error('Error closing database connection', {
       operation: 'db:disconnect:_error',
-      _error: _error instanceof Error ? _error : new Error(_error as string),
+      err: _error,
       severity: 'low' as const
     });
   }

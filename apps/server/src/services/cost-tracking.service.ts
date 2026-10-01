@@ -113,7 +113,7 @@ class CostTrackingService {
       logger.error('Cost tracking insert failed', {
         operation: 'cost-tracking:insert-failed',
         aiModel: input.aiModel,
-        _error: err instanceof Error ? err.message : String(err),
+        err: err,
         severity: 'high' as const,
       });
     }

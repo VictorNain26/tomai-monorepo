@@ -23,7 +23,7 @@ export function createGracefulShutdown(
       } catch (err) {
         logger.error(`Shutdown step failed: ${step.name}`, {
           operation: 'server:shutdown',
-          _error: err instanceof Error ? err.message : String(err),
+          err: err,
           severity: 'high' as const,
         });
       }

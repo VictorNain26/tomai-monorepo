@@ -31,7 +31,7 @@ export const cognitiveProfileService = {
       logger.error('Failed to get cognitive profile', {
         operation: 'cognitive-profile:get',
         userId,
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'medium' as const,
       });
       return null;
@@ -139,7 +139,7 @@ export const cognitiveProfileService = {
       logger.error('Failed to update cognitive profile', {
         operation: 'cognitive-profile:update',
         userId,
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'medium' as const,
       });
     }

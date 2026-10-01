@@ -22,7 +22,7 @@ export class ChatSessionService {
       return await this.createSession(userId, 'général');
     } catch (error) {
       logger.error('Failed to get or create active session', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         userId,
         operation: 'getOrCreateActiveSession',
         severity: 'high' as const
@@ -64,7 +64,7 @@ export class ChatSessionService {
 
       logger.error('Failed to create session', {
         operation: 'createSession',
-        _error: error,
+        err: error,
         userId,
         subject,
         topic,
@@ -122,7 +122,7 @@ export class ChatSessionService {
       });
     } catch (_error) {
       logger.error('Failed to update session with files', {
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         sessionId,
         fileName: fileData.fileName,
         operation: 'updateSessionWithFiles',
@@ -149,7 +149,7 @@ export class ChatSessionService {
       return Array.isArray(metadata.attachedFiles) ? metadata.attachedFiles : [];
     } catch (_error) {
       logger.error('Failed to get session files', {
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         sessionId,
         operation: 'getSessionFiles',
         severity: 'medium' as const
@@ -177,7 +177,7 @@ export class ChatSessionService {
         conceptsCovered: Array.isArray(session.conceptsCovered) ? session.conceptsCovered.join(', ') : session.conceptsCovered
       };
     } catch (_error) {
-      logger.error('Error getting session', { operation: 'chat:session:get', _error: _error instanceof Error ? _error.message : String(_error), sessionId, severity: 'medium' as const });
+      logger.error('Error getting session', { operation: 'chat:session:get', err: _error, sessionId, severity: 'medium' as const });
       throw new Error('Failed to get session', { cause: _error });
     }
   }
@@ -209,7 +209,7 @@ export class ChatSessionService {
     } catch (_error) {
       logger.error('Error getting session summary', {
         operation: 'chat:session:summary',
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         sessionId,
         severity: 'medium' as const
       });
@@ -236,7 +236,7 @@ export class ChatSessionService {
       return result;
 
     } catch (_error) {
-      logger.error('Error getting user sessions', { operation: 'chat:sessions:list', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
+      logger.error('Error getting user sessions', { operation: 'chat:sessions:list', err: _error, userId, severity: 'medium' as const });
       throw new Error('Failed to get user sessions', { cause: _error });
     }
   }
@@ -265,7 +265,7 @@ export class ChatSessionService {
     } catch (_error) {
       logger.error('Error listing conversations', {
         operation: 'chat:conversations:list',
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         userId,
         severity: 'medium' as const,
       });
@@ -297,7 +297,7 @@ export class ChatSessionService {
       episodicMemoryService.extractAndStore(sessionId, userId).catch(err => {
         logger.warn('Episodic extraction (reset) failed in background', {
           operation: 'chat:session:reset:episodic-bg',
-          _error: err instanceof Error ? err.message : String(err),
+          err: err,
           sessionId,
         });
       });
@@ -315,7 +315,7 @@ export class ChatSessionService {
     } catch (_error) {
       logger.error('Error resetting session', {
         operation: 'chat:session:reset',
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         sessionId,
         severity: 'medium' as const
       });
@@ -340,7 +340,7 @@ export class ChatSessionService {
         ...(user.firstName && { firstName: user.firstName })
       };
     } catch (_error) {
-      logger.error('Error getting user by ID', { operation: 'chat:user:get', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
+      logger.error('Error getting user by ID', { operation: 'chat:user:get', err: _error, userId, severity: 'medium' as const });
       throw new Error('Failed to get user', { cause: _error });
     }
   }

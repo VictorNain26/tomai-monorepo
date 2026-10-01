@@ -54,7 +54,7 @@ function getCookieDomain(): string | undefined {
       logger.warn('Failed to extract cookie domain from URL', {
         operation: 'auth:cookie_domain:invalid_url',
         url: url ?? '(empty)',
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
       });
     }
   }

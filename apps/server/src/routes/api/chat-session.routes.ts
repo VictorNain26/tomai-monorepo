@@ -40,7 +40,7 @@ export const chatSessionApiRoutes = new Hono<AppEnv>()
       logger.error('Conversations list failed', {
         operation: 'api:chat:conversations:list',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const,
       });
       throw new AppError('INTERNAL_ERROR', 'Conversations list failed');
@@ -67,7 +67,7 @@ export const chatSessionApiRoutes = new Hono<AppEnv>()
       logger.error('Latest session retrieval failed', {
         operation: 'api:chat:sessions:latest',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const,
       });
       throw new AppError('INTERNAL_ERROR', 'Latest session retrieval failed');
@@ -83,7 +83,7 @@ export const chatSessionApiRoutes = new Hono<AppEnv>()
       logger.error('Session retrieval failed', {
         operation: 'api:chat:session:getOrCreate',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const,
       });
       throw new AppError('INTERNAL_ERROR', 'Session retrieval failed');
@@ -103,7 +103,7 @@ export const chatSessionApiRoutes = new Hono<AppEnv>()
       logger.error('Session creation failed', {
         operation: 'api:chat:session:new',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const,
       });
       throw new AppError('INTERNAL_ERROR', 'Session creation failed');
@@ -121,7 +121,7 @@ export const chatSessionApiRoutes = new Hono<AppEnv>()
         operation: 'api:chat:session:reset',
         userId: user.id,
         sessionId: params.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const,
       });
       throw new AppError('INTERNAL_ERROR', 'Session reset failed');
@@ -138,7 +138,7 @@ export const chatSessionApiRoutes = new Hono<AppEnv>()
       logger.error('Session deletion failed', {
         operation: 'api:chat:session:delete',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const,
       });
       throw new AppError('INTERNAL_ERROR', 'Session deletion failed');
@@ -176,7 +176,7 @@ export const chatSessionApiRoutes = new Hono<AppEnv>()
       logger.error('Session history retrieval failed', {
         operation: 'api:chat:session:history',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const
       });
       return c.json({ error: 'Session history retrieval failed' }, 500);
@@ -208,7 +208,7 @@ export const chatSessionApiRoutes = new Hono<AppEnv>()
       logger.error('Message retrieval failed', {
         operation: 'api:chat:message',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const,
       });
       throw new AppError('INTERNAL_ERROR', 'Message retrieval failed');

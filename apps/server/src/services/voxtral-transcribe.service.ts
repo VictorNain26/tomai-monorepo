@@ -59,7 +59,7 @@ class VoxtralTranscribeService {
       if (!response.text) {
         logger.error('Voxtral STT returned empty text', {
           operation: 'voxtral:stt',
-          _error: 'empty transcription',
+          err: 'empty transcription',
           severity: 'high' as const,
         });
         return { success: false, error: 'Voxtral STT returned empty transcription' };
@@ -80,7 +80,7 @@ class VoxtralTranscribeService {
     } catch (error) {
       logger.error('Voxtral STT transcription error', {
         operation: 'voxtral:stt',
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         durationMs: Date.now() - startTime,
         severity: 'high' as const,
       });

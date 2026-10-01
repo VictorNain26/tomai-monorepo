@@ -70,7 +70,7 @@ export async function executeTool(
       operation: 'tool-executor:error',
       toolName,
       userId: context.userId,
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       durationMs: Date.now() - startTime,
       severity: 'high' as const,
     });

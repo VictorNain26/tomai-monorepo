@@ -146,7 +146,7 @@ class DocumentAnalysisService {
       };
     } catch (error) {
       logger.error('Document analysis failed', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         fileName,
         userId,
         operation: 'document-analysis-error',
@@ -213,7 +213,7 @@ class DocumentAnalysisService {
       };
     } catch (error) {
       logger.error('Image analysis failed', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         fileName,
         userId,
         operation: 'image-analysis-error',

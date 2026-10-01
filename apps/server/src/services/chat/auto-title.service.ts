@@ -91,7 +91,7 @@ class AutoTitleService {
       });
     } catch (err) {
       logger.warn('Auto-title generation failed', {
-        _error: err instanceof Error ? err.message : String(err),
+        err: err,
         sessionId,
         operation: 'auto-title:error',
       });

@@ -109,7 +109,7 @@ class ProgressService {
         monthlyActivity: monthlyActivity[0]?.count ?? 0,
       };
     } catch (_error) {
-      logger.error('Error getting student stats', { operation: 'progress:stats:get', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
+      logger.error('Error getting student stats', { operation: 'progress:stats:get', err: _error, userId, severity: 'medium' as const });
       throw new Error('Failed to get student statistics', { cause: _error });
     }
   }
@@ -131,7 +131,7 @@ class ProgressService {
         durationMinutes: session.durationMinutes ?? 0,
       }));
     } catch (_error) {
-      logger.error('Error getting user sessions', { operation: 'progress:sessions:get', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
+      logger.error('Error getting user sessions', { operation: 'progress:sessions:get', err: _error, userId, severity: 'medium' as const });
       throw new Error('Failed to get user sessions', { cause: _error });
     }
   }
@@ -165,7 +165,7 @@ class ProgressService {
         estimatedCost: (Number(row.totalCostCents) || 0) / 100 // Convertir centimes en euros
       }));
     } catch (_error) {
-      logger.error('Error getting cost tracking', { operation: 'progress:costs:daily', _error: _error instanceof Error ? _error.message : String(_error), severity: 'medium' as const });
+      logger.error('Error getting cost tracking', { operation: 'progress:costs:daily', err: _error, severity: 'medium' as const });
       throw new Error('Failed to get cost tracking', { cause: _error });
     }
   }
@@ -200,7 +200,7 @@ class ProgressService {
         totalTokens: tokenCount
       }];
     } catch (_error) {
-      logger.error('Error getting monthly costs', { operation: 'progress:costs:monthly', _error: _error instanceof Error ? _error.message : String(_error), severity: 'medium' as const });
+      logger.error('Error getting monthly costs', { operation: 'progress:costs:monthly', err: _error, severity: 'medium' as const });
       throw new Error('Failed to get monthly costs', { cause: _error });
     }
   }
@@ -262,7 +262,7 @@ class ProgressService {
         engagementLevel
       };
     } catch (_error) {
-      logger.error('Error getting student performance', { operation: 'progress:performance:get', _error: _error instanceof Error ? _error.message : String(_error), userId, severity: 'medium' as const });
+      logger.error('Error getting student performance', { operation: 'progress:performance:get', err: _error, userId, severity: 'medium' as const });
       throw new Error('Failed to get student performance', { cause: _error });
     }
   }
@@ -275,7 +275,7 @@ class ProgressService {
       const { parentService } = await import('./parent.service');
       return await parentService.isParentOf(parentId, studentId);
     } catch (_error) {
-      logger.error('Error checking student access', { operation: 'progress:access:check', _error: _error instanceof Error ? _error.message : String(_error), parentId, studentId, severity: 'medium' as const });
+      logger.error('Error checking student access', { operation: 'progress:access:check', err: _error, parentId, studentId, severity: 'medium' as const });
       return false;
     }
   }

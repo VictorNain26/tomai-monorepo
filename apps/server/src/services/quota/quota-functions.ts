@@ -151,7 +151,7 @@ async function checkQuotaReal(userId: string): Promise<QuotaCheckResult> {
   } catch (error) {
     logger.error('checkQuota failed, falling back to allowed', {
       operation: 'quota:check:error',
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       severity: 'high' as const,
       userId,
     });
@@ -234,7 +234,7 @@ export async function incrementTokenUsage(
 
   } catch (error) {
     logger.error('Error incrementing token usage', {
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       severity: 'medium' as const,
       userId,
       tokensUsed,

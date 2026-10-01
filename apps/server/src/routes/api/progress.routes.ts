@@ -27,7 +27,7 @@ export const progressApiRoutes = new Hono<AppEnv>()
       logger.error('Progress dashboard retrieval failed', {
         operation: 'api:progress:dashboard',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const
       });
       return c.json({ error: 'Progress retrieval failed' }, 500);

@@ -35,7 +35,7 @@ export function startRetentionPurgeScheduler(): () => void {
   purgeExpiredData().catch((error: unknown) => {
     logger.error('Retention purge failed (startup)', {
       operation: 'retention-purge:error',
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       severity: 'high' as const,
     });
   });
@@ -44,7 +44,7 @@ export function startRetentionPurgeScheduler(): () => void {
     purgeExpiredData().catch((error: unknown) => {
       logger.error('Retention purge failed (scheduled)', {
         operation: 'retention-purge:error',
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'high' as const,
       });
     });

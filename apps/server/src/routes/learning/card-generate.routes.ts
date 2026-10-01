@@ -97,7 +97,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
           logger.error('AI card generation failed', {
             operation: 'learning:generate:failed',
             userId: user.id,
-            _error: generationResult.error,
+            err: generationResult.error,
             _actualError: generationResult._debug?.actualError,
             code: generationResult.code,
             severity: 'medium' as const,
@@ -153,7 +153,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
           operation: 'learning:generate:error',
           userId: user.id, subject, domaine,
           topic: topic ?? null,
-          _error: error instanceof Error ? error.message : String(error),
+          err: error,
           severity: 'high' as const,
         });
         return c.json({ error: 'Échec de la génération du deck' }, 500);

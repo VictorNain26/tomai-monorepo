@@ -79,7 +79,7 @@ class FileContextService {
         .filter((ctx): ctx is NonNullable<typeof ctx> => ctx !== null);
     } catch (error) {
       logger.error('Failed to get session files context', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'get-session-files-context',
         severity: 'medium' as const
       });
@@ -154,7 +154,7 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       const fileContent = await scalewayStorageService.getFileContent(file.storageKey);
       if (!fileContent) {
         logger.error('Failed to retrieve file from storage', {
-          _error: 'Storage returned null',
+          err: 'Storage returned null',
           fileId,
           storageKey: file.storageKey,
           operation: 'analyze-file',
@@ -199,7 +199,7 @@ RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la r�
       return null;
     } catch (error) {
       logger.error('File analysis failed', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         fileId,
         operation: 'analyze-file',
         severity: 'medium' as const

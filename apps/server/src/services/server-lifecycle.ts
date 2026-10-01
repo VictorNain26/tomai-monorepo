@@ -50,7 +50,7 @@ export async function initializeServices(): Promise<void> {
   } catch (_error) {
     logger.error('FATAL: Service initialization failed', {
       operation: 'services:init:error',
-      _error: _error instanceof Error ? _error.message : String(_error),
+      err: _error,
       severity: 'critical' as const
     });
     throw _error;
