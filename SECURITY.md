@@ -23,6 +23,5 @@ We will acknowledge within 48 hours and provide a fix timeline within 7 days.
   push/PR to `main` (`.github/workflows/security.yml`)
 - SHA-pinned GitHub Actions (supply chain protection)
 - Non-root Docker containers (user `tomai`, UID 1001)
-- AES-256-GCM encryption for Pronote credentials (PBKDF2 600K iterations)
 - Security headers on the landing page (`apps/landing/vercel.json`: nosniff,
   X-Frame-Options, Referrer-Policy, Permissions-Policy) and the server; no CSP yet (lot 3)

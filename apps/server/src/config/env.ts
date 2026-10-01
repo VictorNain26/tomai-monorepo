@@ -170,7 +170,7 @@ export function getDatabaseUrl(): string {
  * Build CORS origins list (HTTP/HTTPS only)
  * - Includes BETTER_AUTH_URL + FRONTEND_URL (if set)
  * - Adds CORS_ORIGINS comma-separated list
- * - Dev: adds localhost:3000/3001
+ * - Dev: adds localhost:3000
  */
 export function getCorsOrigins(): string[] {
   const origins = new Set<string>();
@@ -194,7 +194,6 @@ export function getCorsOrigins(): string[] {
   // Dev origins (HTTP localhost)
   if (isDevelopment()) {
     origins.add('http://localhost:3000'); // server
-    origins.add('http://localhost:3001'); // landing
   }
 
   return Array.from(origins);
