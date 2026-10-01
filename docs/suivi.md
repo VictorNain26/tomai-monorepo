@@ -12,15 +12,16 @@ bloquant levé).
 ## Où on en est
 
 - **Dernière mise à jour :** 2026-10-01.
-- **Lot en cours :** 0 — Assainissement, dernière ligne droite. E2 est découpé en trois
-  PR (`roadmap.md`) ; la première, code mort, validation et rate limit, est mergée
-  (#342). Restent, dans cet ordre, chacune avec son plan écrit au démarrage contre
-  `main` à jour :
-  - **E2, logger** (détail dans « Reporté ») ;
-  - **E2, outillage** (détail dans « Reporté ») ;
-  - **lint strict** : plus aucun `eslint-disable` (détail dans « Reporté »).
-- **Prochaine action :** E2, logger, sur une branche courte dont le plan s'écrit d'abord
-  dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
+- **Lot en cours :** 0 — Assainissement, élargi le 2026-10-01 : Victor a demandé de
+  remplacer par Bun tout ce qu'il remplace proprement et une refonte complète du serveur.
+  Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
+  avec son plan écrit au démarrage contre `main` à jour :
+  - **outillage Bun** (détail dans « Reporté », « Lot 0 — outillage ») ;
+  - **logger** (détail dans « Reporté ») ;
+  - **refonte du serveur**, une PR par module ;
+  - **lint strict** (détail dans « Reporté »).
+- **Prochaine action :** outillage Bun, sur une branche courte dont le plan s'écrit
+  d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -32,7 +33,7 @@ plan de la PR s'écrit, le point y devient une tâche ou est explicitement renvo
 (`.claude/rules/plans-and-agents.md`). Chemins relatifs à `apps/server/src/` sauf mention
 contraire.
 
-### Lot 0 — E2, logger
+### Lot 0 — logger
 
 - **Logger** : `lib/observability.ts` sérialise par `JSON.stringify` (une `Error` devient
   `{}`, un BigInt ou une référence circulaire fait lever l'appel de log) et ignore
@@ -41,9 +42,13 @@ contraire.
   `_error: x instanceof Error ? x.message : String(x)` (123 sites dans 52 fichiers le
   2026-10-01), qui perd la stack.
 
-### Lot 0 — E2, outillage
+### Lot 0 — outillage
 
-Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
+Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23, à reprendre dans la PR
+« outillage Bun » : pnpm cède la place à `bun install` (catalogs, `minimumReleaseAge` et
+`trustedDependencies` dans `bunfig.toml` et `package.json`, documentés pour Bun 1.4.2),
+les scripts `scripts/*.mjs` et `node --test` passent sous Bun, la CI sur `setup-bun` et
+`bun audit`. Vercel (landing), Renovate, lefthook, Turbo et le Dockerfile suivent.
 
 - **Déclarations mortes** : `ignoreBinaries` et entrées `scripts/**` de l'espace
   `apps/server` du `knip.json` racine ; montage `./apps/server/scripts` du service
@@ -155,6 +160,15 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   `<6.1.0` tant que `typescript-eslint` exige `typescript <6.1.0` ; `@types/node` `<25.0.0`
   tant que le runtime est Node 24 (Vercel ne propose que 24.x, 22.x et 20.x ; Node 26 LTS le
   2026-10-28).
+- **Bun.SQL** à la place de postgres.js : écarté le 2026-10-01. 34 bugs Postgres ouverts
+  dans oven-sh/bun, dont des corruptions silencieuses (`text[]` stocké en JSON, `uuid[]`
+  non parsé, entiers au-delà de 2^51 envoyés en flottant), et dans le driver `bun-sql` de
+  Drizzle (JSON non sérialisé, millisecondes tronquées, fuseau horaire faux). À réévaluer
+  quand ces bugs sont fermés.
+- **S3 de Bun** à la place du SDK AWS : écarté le 2026-10-01. Le presign de Bun ne signe ni
+  `Content-Length` ni `Content-Type` en requête (`S3FilePresignOptions` : `expiresIn`,
+  `method`, `acl`, `type`), alors que l'upload direct en dépend pour borner la taille. À
+  réévaluer si Bun l'ajoute.
 - date-fns est gardé alors que Bun 1.4.2 expose `Temporal` : à réévaluer quand le typage de
   TypeScript le couvre.
 
@@ -197,3 +211,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   E2 découpé en trois PR ; la première retire le cache et le moniteur mémoire, le limiteur
   de pool, la double validation des routes enfant et les variables mortes, et passe le rate
   limit sur rate-limiter-flexible (#342).
+  Serveur passé d'Elysia à Hono, sur Bun, après comparaison chiffrée ; Python écarté pour
+  le serveur (#343).

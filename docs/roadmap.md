@@ -27,11 +27,17 @@ fixée d'avance.
 1. `fix/landing-honest-claims` (#338) : textes de la landing en ligne. Mergée.
 2. `chore/remove-pronote-waitlist` (#341) : Pronote et la liste d'attente retirés du code
    (schéma et migration, dépendances, variables, tests, contexte de l'agent). Mergée.
-3. E2 — infra serveur et outillage, en trois PR (listes « Lot 0 — E2 » de `suivi.md`) :
-   `refactor/server-cleanup` (#342, code mort, validation, rate limit), puis le logger,
-   puis l'outillage (scripts, CI, lockfile).
-4. Lint strict : chaque `eslint-disable` remplacé par une forme de code qui ne déclenche
-   pas la règle, puis `noInlineConfig`.
+3. `refactor/server-cleanup` (#342) : code mort, validation des routes enfant, rate limit.
+   Mergée.
+4. `refactor/server-hono` (#343) : Elysia remplacé par Hono, sur Bun. Mergée.
+5. Outillage Bun : `bun install` à la place de pnpm, scripts et tests de scripts sous Bun,
+   CI sur Bun ; absorbe la liste « Lot 0 — outillage » de `suivi.md`.
+6. Logger : pino et codemod du motif `_error` (liste « Lot 0 — logger »).
+7. Refonte du serveur, une PR par module de `architecture.md` (`auth` et parent, `chat`,
+   `learning`, `documents`, `billing`, `voice`, `platform`) : un dossier par module, un
+   routeur Hono par ressource, services et dépôts revus, fichiers sous 400 lignes.
+8. Lint strict : chaque `eslint-disable` remplacé par une forme de code qui ne déclenche
+   pas la règle, puis `noInlineConfig`. En dernier, sur le code refondu.
 
 **Lot 1**
 1. Jeu d'exercices et scénarios (données versionnées, réponses vérifiées).
