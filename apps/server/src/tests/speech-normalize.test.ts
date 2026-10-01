@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { normalizeForSpeech } from '../lib/text/speech-normalize.js';
+import { normalizeForSpeech } from '../modules/voice/speech-normalize.js';
 
 describe('normalizeForSpeech — markdown', () => {
   it('supprime le gras avec **', () => {

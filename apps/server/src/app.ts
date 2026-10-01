@@ -16,7 +16,7 @@ import { apiRoutes } from './routes/api/index.js';
 import { chatMessageRoutes } from './routes/chat-message.routes.js';
 import { fileUploadRoutes } from './routes/file-upload.routes.js';
 import { statusRoutes } from './routes/subscription/index.js';
-import { ttsRoutes } from './routes/tts.routes.js';
+import { voiceRoutes } from './modules/voice/index.js';
 import { learningRoutes } from './routes/learning/index.js';
 
 import { logger } from './platform/observability/logger.js';
@@ -153,7 +153,7 @@ const app = base
   .route('/api/chat', chatMessageRoutes)
   .route('/api/upload', fileUploadRoutes)
   .route('/api/subscriptions', statusRoutes)
-  .route('/api/tts', ttsRoutes)
+  .route('/api/tts', voiceRoutes)
   .route('/api/learning', learningRoutes)
 
   .onError(handleError)

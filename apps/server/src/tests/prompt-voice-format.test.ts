@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { isSpeakable } from '../lib/text/speech-normalize.js';
+import { isSpeakable } from '../modules/voice/speech-normalize.js';
 import { generateResponseFormatPolicy } from '../config/prompts/core/response-format.js';
 import { buildSystemPrompt } from '../config/prompts/system-prompt.js';
 import { stripPromptTags } from '../services/chat/mistral-helpers.js';

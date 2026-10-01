@@ -10,10 +10,10 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { requireUser, validate, type AppEnv } from '../platform/http/context.js';
-import { textToSpeechService, type TTSOptions } from '../services/text-to-speech.service.js';
-import { logger } from '../platform/observability/logger.js';
-import type { EducationLevelType } from '../types/education.types.js';
+import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
+import { textToSpeechService, type TTSOptions } from './text-to-speech.service.js';
+import { logger } from '../../platform/observability/logger.js';
+import type { EducationLevelType } from '../../types/education.types.js';
 
 // ============================================
 // Routes
@@ -26,7 +26,7 @@ const synthesizeBody = z.object({
 });
 
 // Mounted under /api/tts by app.ts.
-export const ttsRoutes = new Hono<AppEnv>()
+export const voiceRoutes = new Hono<AppEnv>()
 
     // POST /api/tts/synthesize - Synthétiser texte en audio
     .post('/synthesize', requireUser, validate('json', synthesizeBody), async (c) => {

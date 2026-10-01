@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireUser, validate, type AppEnv } from '../platform/http/context.js';
 import { logger } from '../platform/observability/logger.js';
 import { scalewayStorageService } from '../services/storage/scaleway-storage.service.js';
-import { audioTranscriptionService } from '../services/audio-transcription.service.js';
+import { audioTranscriptionService } from '../modules/voice/index.js';
 import { filesRepository } from '../db/repositories/index.js';
 import { env } from '../platform/config/env.js';
 import type { EducationLevelType } from '../types/education.types.js';
