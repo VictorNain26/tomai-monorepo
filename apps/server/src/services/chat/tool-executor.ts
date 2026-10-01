@@ -184,7 +184,7 @@ function executeGetAppHelp(
   if (!content) {
     return {
       found: false,
-      message: `Sujet "${topic}" non reconnu. Sujets disponibles : overview, navigation, chat, flashcards, pronote, files, subscription, profile.`,
+      message: `Sujet "${topic}" non reconnu. Sujets disponibles : overview, navigation, chat, flashcards, files, subscription, profile.`,
     };
   }
 

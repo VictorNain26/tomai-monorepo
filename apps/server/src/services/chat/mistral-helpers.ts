@@ -18,7 +18,6 @@ import { sql, eq, and } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { learningCards, learningDecks } from '../../db/schema.js';
 import { logger } from '../../lib/observability.js';
-import type { PronoteContext } from './ai-chat.service.js';
 
 export const MAX_TOOL_ITERATIONS = 5;
 
@@ -29,7 +28,7 @@ export const MAX_TOOL_ITERATIONS = 5;
  * text read as a system instruction.
  */
 const TEMPLATE_TAGS =
-  /<\/?(?:student_message|pronote_data|student_context|attached_file|identity|tone|transparency|pedagogy|visualization|response_format|safety|level_adaptation|subject_specifics)\b[^>]*>/gi;
+  /<\/?(?:student_message|student_context|attached_file|identity|tone|transparency|pedagogy|visualization|response_format|safety|level_adaptation|subject_specifics)\b[^>]*>/gi;
 
 /** Remove all template delimiter tags from untrusted content. */
 export function stripPromptTags(content: string): string {
@@ -43,36 +42,6 @@ export function stripPromptTags(content: string): string {
  */
 export function wrapUserMessage(content: string): string {
   return `<student_message>\n${stripPromptTags(content)}\n</student_message>`;
-}
-
-/**
- * Wrap ephemeral Pronote data (homework, grades, timetable) as a delimited
- * user-turn block. It is third-party data — a forged homework description
- * must never be read as an instruction — so it lives in a `<pronote_data>`
- * block the system prompt treats as data, NEVER inside the system prompt.
- * Returns null when there is nothing to inject.
- */
-export function wrapPronoteData(pronoteContext?: PronoteContext): string | null {
-  if (!pronoteContext) return null;
-
-  const parts: string[] = [];
-  if (pronoteContext.homework?.length) {
-    parts.push(`DEVOIRS DE LA SEMAINE:\n${JSON.stringify(pronoteContext.homework)}`);
-  }
-  if (pronoteContext.recentGrades?.length) {
-    parts.push(`DERNIERES NOTES:\n${JSON.stringify(pronoteContext.recentGrades)}`);
-  }
-  if (pronoteContext.todayTimetable?.length) {
-    parts.push(`EDT DU JOUR:\n${JSON.stringify(pronoteContext.todayTimetable)}`);
-  }
-
-  if (parts.length === 0) return null;
-
-  // pronoteContext is client-supplied; strip any literal delimiter tokens a
-  // forged value could contain so it cannot break out of the fence and have
-  // trailing text read as outside-the-block instructions.
-  const body = stripPromptTags(parts.join('\n\n'));
-  return `<pronote_data>\n${body}\n</pronote_data>`;
 }
 
 /**

@@ -6,7 +6,6 @@ export interface ChatMessageParts {
   conversationSummary?: string | null;
   historyMessages: MistralMessage[];
   studentContextBlock?: string | null;
-  pronoteBlock?: string | null;
   attachedFilesBlock?: string | null;
   intentReinforcement?: string | null;
   inputMode?: string;
@@ -15,8 +14,8 @@ export interface ChatMessageParts {
 
 /**
  * Assemble le tableau de messages envoyé à Mistral. Ordre : système (préfixe
- * caché) → résumé de conversation → fenêtre verbatim → contexte élève → pronote
- * → fichiers → consigne du tour → marqueur vocal → message courant.
+ * caché) → résumé de conversation → fenêtre verbatim → contexte élève → fichiers
+ * → consigne du tour → marqueur vocal → message courant.
  *
  * Le résumé est injecté ICI (un message role:'system' dans l'historique serait
  * filtré avant l'appel Mistral), ce qui complète le découplage fait dans
@@ -37,7 +36,6 @@ export function assembleChatMessages(parts: ChatMessageParts): MistralMessage[] 
     ...(parts.studentContextBlock
       ? [{ role: 'user' as const, content: parts.studentContextBlock }]
       : []),
-    ...(parts.pronoteBlock ? [{ role: 'user' as const, content: parts.pronoteBlock }] : []),
     ...(parts.attachedFilesBlock
       ? [{ role: 'user' as const, content: parts.attachedFilesBlock }]
       : []),
