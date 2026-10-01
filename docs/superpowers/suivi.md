@@ -1,315 +1,234 @@
 # Suivi des travaux
 
 Source de vérité de l'avancement. **À lire en premier en reprenant le travail**, et à
-mettre à jour dans la même PR que le travail qu'il décrit (PR ouverte, mergée, étape
-manuelle faite, bloquant levé).
+mettre à jour dans la PR qui le fait avancer (PR ouverte ou mergée, étape manuelle faite,
+bloquant levé).
 
-Specs : `specs/2026-09-22-cible-v1.md`, `specs/2026-09-22-agent-ia.md`.
-Roadmap : `plans/2026-09-22-roadmap.md`. Plan du lot en cours :
-`plans/2026-09-22-lot-0-assainissement.md` (index) et ses plans par PR.
+- Vision : `specs/2026-10-01-vision-produit.md` (pour qui, promesse, preuves, prix).
+- Roadmap : `plans/2026-10-01-roadmap.md`.
+- Specs techniques : `specs/2026-09-22-cible-v1.md`, `specs/2026-09-22-agent-ia.md`.
+- Études du 2026-10-01 : `etudes/`. Ce sont des instantanés datés, jamais mis à jour.
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-09-30
-- **Lot en cours :** 0 — Assainissement
-- **Prochaine action :** réécrire la section E2 de
-  `plans/2026-09-22-lot-0-e-code-reinvente.md` contre `main` (elle est marquée « à
-  réécrire au démarrage »), puis l'exécuter sur `refactor/replace-custom-infra`.
+- **Dernière mise à jour :** 2026-10-01.
+- **Lot en cours :** 0 — Assainissement, dernière ligne droite. Restent deux PR, dont le
+  plan s'écrit au démarrage, contre `main` à jour :
+  - **nettoyage de la vision** : Pronote et la liste d'attente retirés du code (détail dans
+    « Reporté ») ;
+  - **E2 — infra serveur et outillage** (détail dans « Reporté »).
+- **Prochaine action :** le nettoyage de la vision, avant E2. Il supprime des fichiers
+  qu'E2 modifierait sinon : limiteurs de débit de Pronote et de la liste d'attente, import
+  d'enfants par Pronote dans `ParentService.createChild`, `lib/encryption.ts`, tests
+  Pronote porteurs d'`eslint-disable`.
+- **PR ouvertes :**
+  - #338 (`fix/landing-honest-claims`) : correctifs d'honnêteté de la landing en ligne
+    (FAQ, comparaison à ChatGPT, alertes parent limitées à la détresse, mentions de
+    Pronote retirées). En attente du merge de Victor ; elle clôt le volet « textes de la
+    landing » du lot 0.
+  - #328 (`chore/prompt-audit`, 2026-09-29) : audit des fichiers d'instructions, touche
+    `.claude/rules/plans-and-agents.md` et `.claude/skills/dev-bootstrap/SKILL.md`. À
+    rebaser sur `main` après le merge de la refonte documentaire, ou à fermer.
+- **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté y entrent.
+  L'identité visuelle est rejetée et se refait au lot 4.
+- **Branches locales qui portent de la matière** (non poussées, sans valeur de décision) :
+  - `feat/landing-redesign` : direction visuelle explorée jusqu'au 2026-10-01, non validée.
+    Matière pour le lot 4, à reprendre ou supprimer à son démarrage.
+  - `refactor/replace-custom-infra` : plan d'E2 réécrit le 2026-09-23 contre `main` @
+    `6d4d8b6` (`plans/2026-09-23-lot-0-e2-infra.md` sur cette branche), avec pré-vol et
+    arbitrages. Matière pour le plan d'E2, à revérifier contre `main` à jour.
 
 ## Reporté
 
-Constats hors périmètre de la PR qui les a trouvés. Chacun nomme la PR ou le lot qui le
-traite ; quand le plan de cette PR s'écrit, le point y devient une tâche ou est renvoyé
-explicitement (`.claude/rules/plans-and-agents.md`).
+Constats hors du périmètre de la PR qui les a trouvés. Chacun nomme son lot ; quand le
+plan de la PR s'écrit, le point y devient une tâche ou est explicitement renvoyé
+(`.claude/rules/plans-and-agents.md`). Chemins relatifs à `apps/server/src/` sauf mention
+contraire.
 
-- **E2** (liste détaillée en tête de la section E2 du plan) : champs morts
-  `IAppUser.parentId` (`packages/api/src/types.ts`) et `ElysiaAuthenticatedUser.parentId`
-  (`apps/server/src/types/index.ts`) ; exemple périmé de `pool-limiter.ts` (supprimé par
-  E2.4) ; `react@19.2.3` et un second `next` résolus comme peers optionnels de better-auth
-  côté serveur (`pnpm dedupe` à tenter) ; `ignoreBinaries` et entrées `scripts/**` de
-  l'espace `apps/server` du `knip.json` racine, montage `./apps/server/scripts` de
-  `docker-compose.yml` (dossier supprimé) ; commentaires « mobile project » de
-  `apps/server/src/lib/encryption.ts` et utilité de sa copie `toArrayBuffer` ;
-  `TRUSTED_ORIGINS` lue par aucun fichier de `src/` ; `pnpm test:scripts` absent de la CI ;
-  `eslint-disable` antérieurs dans `apps/server/src` (surtout `await-thenable` et
-  `no-explicit-any` des tests Pronote, plus les repositories learning, `parent.service.ts`,
-  `education-levels.ts`, `seed-dev.ts`), à remplacer par une forme de code qui ne déclenche
-  pas la règle (`.catch((e: unknown) => e)` + `toBeInstanceOf`, comme en E1).
-- **Lot 2** : le quota compte `totalTokens` (tokens cachés et de raisonnement inclus) ;
-  observation, antérieure à C. Les cartes tournent en `json_schema` non strict
-  (`strict: false`) parce que le mode strict de Mistral refuse `format: uri` (`.url()`) et
-  `propertyNames` (`z.record`) de `cards-domain.schema.ts` (400, code 3051) : revoir ce
-  schéma avec le domaine des cartes pour repasser en strict ; la tâche E1.6 prévoyait de
-  modifier ce fichier, écarté en E1 (le schéma relève du domaine). En cas d'erreur, le span
-  OpenTelemetry d'un appel IA porte le message d'erreur Mistral (le corps de la réponse) :
-  vérifier qu'il ne contient pas de contenu d'élève avant de brancher un vrai exporteur.
-- **Lot 3** : colonnes RevenueCat de `family_billing`, enum `billing_status` et
-  commentaires de `billing.schema.ts` (dont `:179`) ; `app-guide-data.ts` à réécrire avec
-  la navigation web. Le code de `BillingService` et `plan-cache` se retrouve avec
-  `git log --diff-filter=D -- apps/server/src/services/billing/`. Le coût est stocké en
-  centimes entiers : un tour (~0,05 centime) s'arrondit à 0 ; à revoir avec la facturation
-  web.
-- **Lot 3 — TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues
-  avec `fr_marie_neutral` (seuls presets fr/en/gb existent ; es/de sans voix) ;
-  `/api/tts/voices` annonce encore ces langues.
-- **Lot 3 — liste d'attente** : route serveur `/api/waitlist`, table `waitlist_entries` et
-  leurs tests, orphelins depuis la PR 4 de la landing ; à supprimer avec la migration du
-  lot 3, qui ajoute « Commencer gratuitement ». Variable `NEXT_PUBLIC_SERVER_URL` à retirer
-  du projet Vercel `tomai-landing` (action de Victor).
-- **Résolu** : override `'nanoid@5'` et son commentaire, retirés en B (aucun `nanoid` dans
-  `pnpm-workspace.yaml`) ; recommandations `ruff`/`python` de `.vscode/extensions.json`,
-  retirées par la PR docs `docs/fix-doc-drift` ; deux copies de `@ai-sdk/provider` : le
-  lockfile ne résout plus que la 4.0.17 ; un dossier 4.0.2 resté dans un ancien
-  `node_modules` est orphelin.
+### Lot 0 — nettoyage de la vision
+
+- **Pronote** (hors V1, voir la vision) : tout ce que `rg -il pronote apps packages
+  scripts .github docker-compose.yml` trouve, dont `services/pronote/`,
+  `services/pronote-sync.service.ts`, les routes `routes/pronote-*.routes.ts`,
+  `lib/pronote-onboarding.ts`, `lib/pronote-url-allowlist.ts`, `db/schema/pronote.schema.ts`
+  et son repository (tables supprimées par une migration), la dépendance `pawnote`,
+  `lib/encryption.ts` (Pronote est son seul appelant) et sa validation au boot dans
+  `services/server-lifecycle.ts`, `PRONOTE_ENCRYPTION_KEY` (`config/env.ts`, requise en
+  production, et `apps/server/.env.example`), `hasPronote` et `pronoteCredentialId` de
+  `ChildInfo`, le preset `pronote` du rate limit, les tests unitaires, d'intégration et live
+  (`live/pronote.test.ts` échoue en `PageUnavailableError` sur le compte de test depuis
+  avant la PR C). Côté agent : la liste de `specs/2026-09-22-agent-ia.md`, § 13.
+- **Liste d'attente** : route `/api/waitlist` (`routes/waitlist.routes.ts`), table
+  `waitlist_entries` (`db/schema/billing.schema.ts`) avec sa migration de suppression,
+  `db/repositories/waitlist.repository.ts` et leurs tests. La landing ne l'appelle plus
+  depuis #335. Variable `NEXT_PUBLIC_SERVER_URL` à retirer du projet Vercel (étape
+  manuelle).
+
+### Lot 0 — E2, infra serveur et outillage
+
+Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
+
+- **Logger** : `lib/observability.ts` sérialise par `JSON.stringify` (une `Error` devient
+  `{}`, un BigInt ou une référence circulaire fait lever l'appel de log) et ignore
+  `LOG_LEVEL`, validée par `config/env.ts` mais lue nulle part. À remplacer par pino, même
+  signature d'appel, puis codemod du motif
+  `_error: x instanceof Error ? x.message : String(x)` (116 sites dans 49 fichiers le
+  2026-09-23), qui perd la stack.
+- **Code mort** : `services/memory-cache.service.ts` (son `healthCheck()` répond toujours
+  `healthy`, `/health` est son seul consommateur ; `setInterval` dès l'import) ;
+  `middleware/memory-monitor.middleware.ts` (ne fait que `global.gc()` et des logs, branché
+  dans `initializeServices` et dans l'étape `stopMonitoring` de `createGracefulShutdown`) ;
+  `db/pool-limiter.ts` et `p-limit` (postgres-js met déjà en file au-delà de `max` ; seul
+  consommateur `services/parent/parent-dashboard.service.ts`).
+- **Validation** : une seule validation TypeBox par route parent ; `schemas/validation.ts`
+  (double validation Zod de `routes/api/parent.routes.ts`) et son test disparaissent.
+  Depuis D, une erreur de validation répond 400
+  `{ error: { code: 'VALIDATION_ERROR', message }, requestId }`, pas 422.
+- **Variables mortes** de `config/env.ts` : `RATE_LIMIT_WINDOW_MS`,
+  `RATE_LIMIT_MAX_REQUESTS_API`, `RATE_LIMIT_MAX_REQUESTS_CHAT`, `DEBUG`, `POSTHOG_API_KEY`
+  et `TRUSTED_ORIGINS` (better-auth lit `BETTER_AUTH_TRUSTED_ORIGINS`). `LOG_LEVEL` reste.
+- **Rate limit** : `middleware/rate-limit.middleware.ts` tient une fenêtre fixe dans une
+  seule `Map` partagée par tous les limiteurs (deux limiteurs aux plafonds différents
+  incrémentent la même clé), `setInterval` à l'import, presets `auth`, `upload` et `public`
+  sans consommateur, `skipSuccessfulRequests` jamais lu. À remplacer par
+  `rate-limiter-flexible`, un compteur par limiteur. La connexion enfant `/sign-in/username`
+  est déjà couverte par la règle par défaut de better-auth sur `/sign-in` : aucune règle à
+  ajouter.
+- **Déclarations mortes** : `IAppUser.parentId` (`packages/api/src/types.ts`) et
+  `ElysiaAuthenticatedUser.parentId` (`types/index.ts`) ; `ignoreBinaries` et entrées
+  `scripts/**` de l'espace `apps/server` du `knip.json` racine ; montage
+  `./apps/server/scripts` du service `backend` de `docker-compose.yml` (dossier supprimé).
+- **Scripts** (racine) : `scripts/dev.mjs` enchaîne trois attentes, une seule suffit
+  (`docker compose up --wait`) ; `CREATE EXTENSION vector` est refait par `scripts/setup.mjs`
+  et par `ci.yml` alors que `apps/server/src/db/migrate.ts` la crée sous verrou, et le check
+  d'extension de `scripts/doctor-checks.mjs` renvoie à `pnpm run setup` au lieu du
+  migrateur ; `parseEnvFile` du doctor garde le commentaire en ligne dans la valeur,
+  `util.parseEnv` de Node le remplace.
+- **CI** : boucle `pg_isready` redondante (le runner attend déjà le service `healthy`) ;
+  `pnpm test:scripts` ne tourne nulle part ; `TURBO_TOKEN` et `TURBO_TEAM` absents des
+  secrets et « Remote caching disabled » dans les logs (vérifié le 2026-09-23) : retirer ces
+  variables de `ci.yml` et garder la seule couche `actions/cache`.
+- **Landing** : option typée `appleWebApp` de la Metadata API à la place du bloc `other` de
+  `apps/landing/app/layout.tsx` (changement technique, compatible avec le gel).
+- **Lockfile** : `pnpm dedupe --check` échoue ; `react@19.2.3` et un second `next` restent
+  résolus sous le serveur comme pairs optionnels de better-auth.
+- **Doc que E2 rend fausse**, à corriger dans la même PR : `apps/server/README.md`
+  (`MemoryCacheService`, moniteur mémoire), `apps/server/CLAUDE.md` (exception Zod de
+  `src/schemas/`), `.claude/skills/dev-bootstrap/SKILL.md` (`CREATE EXTENSION` à la main
+  avant `db:migrate`).
+
+### Lot 0 — lint strict
+
+- `eslint-disable` antérieurs dans `apps/server/src` (repositories learning,
+  `parent.service.ts`, `education-levels.ts`, `seed-dev.ts` ; ceux des tests Pronote
+  partent avec Pronote), à remplacer par une forme de code qui ne déclenche pas la règle.
+  Le plan d'E2 de la branche locale les renvoie à une PR « E3 — lint strict » (config
+  partagée `strictTypeChecked` et `stylisticTypeChecked`, `noInlineConfig`,
+  `reportUnusedDisableDirectives: 'error'`, `only-warn` retiré) que la roadmap ne liste
+  pas : à trancher au démarrage d'E2.
+
+### Lot 1 — harnais d'évaluation
+
+- En cas d'erreur, le span OpenTelemetry d'un appel IA porte le message d'erreur de
+  Mistral, c'est-à-dire le corps de sa réponse : vérifier qu'il ne contient pas de contenu
+  d'élève avant de brancher le premier exporteur (Langfuse).
+
+### Lot 2 — agent qui ne cède pas, quotas et coûts
+
+- **Défauts de coût** relevés par `etudes/2026-10-01-couts.md` sur le code du 2026-10-01 :
+  - la synthèse vocale (`/api/tts`, `routes/tts.routes.ts`) n'a aucun quota, seulement le
+    rate limit global : c'est le seul poste non borné ;
+  - l'outil `generate_flashcards` du chat (`services/chat/chat-tools.ts`) n'a ni contrôle
+    de plan ni quota de cartes, alors que la route `/api/learning/generate` réserve les
+    fiches au Complet ;
+  - le résumé de conversation se relance à chaque tour après le 10e
+    (`services/chat/summarization.service.ts` : le seuil de 10 nouveaux messages se compte
+    depuis le dernier message résumé, alors que 10 messages restent toujours hors du
+    résumé) ;
+  - le quota compte `usage.totalTokens` (`ChatOrchestrationService.finishTurn`) : les tokens
+    en cache au prix plein alors qu'ils coûtent 10 %, raisonnement compris ; le préfixe fixe
+    consomme 63 % de la fenêtre gratuite ;
+  - classifieur d'intention, titre, résumé, analyse de photo, cartes, embeddings, STT et
+    TTS n'écrivent rien dans `cost_tracking` : seul le tour de chat y est tracé ;
+  - `cost_tracking.cost_cents` est un entier : un tour (environ 0,05 centime) s'arrondit
+    à 0.
+- **TTS** : `language` de `/api/tts` accepté mais ignoré, toutes les langues lues avec
+  `fr_marie_neutral` ; `/api/tts/voices` annonce `es` et `de`, qui n'ont pas de voix.
+- **Cartes** en `json_schema` non strict : le mode strict de Mistral refuse `format: uri`
+  (`.url()`) et `propertyNames` (`z.record`) de `lib/ai/schemas/cards-domain.schema.ts` (400, code 3051).
+  Revoir ce schéma pour repasser en strict.
+- **Quota** : `needsMonthlyReset` (`services/quota/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
+  jour et de la semaine passent par date-fns. Une seule méthode.
+- `lib/text/speech-normalize.ts` à réévaluer avec la lecture vocale.
+
+### Lot 3 — client web
+
+- **Tableau de bord parent** : `ParentDashboardService.getSessionMessages`
+  (`services/parent/parent-dashboard.service.ts`), relayée par
+  `ParentService.getSessionMessages`, renvoie le texte complet des messages d'une séance de
+  l'enfant. Aucune route ne l'expose sur `main` depuis la suppression du mobile, mais le
+  service existe : à supprimer, le parent ne voit que le résumé et l'alerte de détresse.
+- **Facturation** : colonnes `revenuecat_customer_id` et `revenuecat_subscription_id` de
+  `family_billing`, enum `billing_status` et commentaires RevenueCat de
+  `db/schema/billing.schema.ts`, restes du mobile, refaits avec le paiement web.
+- `config/app-guide/app-guide-data.ts` (outil `get_app_help`) décrit l'application mobile
+  et l'abonnement : à réécrire avec la navigation web.
+- **Hébergement** : délai de grâce SIGTERM au moins égal à un tour de chat (`app.stop()`
+  attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
+  `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
+
+### Lot 4 — marque et lancement
+
+- CSP de la landing.
+- Tests e2e de la landing qui gardent l'identité rejetée (`signs.spec.ts`, graisse des
+  titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`) : à revoir avec la nouvelle
+  identité.
 
 ## Surveillance
 
-Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas :
+Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
-- Le graphe de dépendances GitHub liste encore `apps/curriculum/uv.lock` et
-  `apps/ai-service/uv.lock` (supprimés en `8f5011f`, 0 dépendance) et y rattachait de
-  nouvelles alertes (#317 créée le 2026-09-19). Les 70 alertes ont été classées
-  `inaccurate` le 2026-09-22. Si une alerte réapparaît sur ces chemins, ouvrir un ticket
-  au support GitHub. Dependabot ne sert qu'à détecter (alertes + graphe, source de
-  `vulnerabilityAlerts`) ; ses PR de version et de sécurité restent désactivées, Renovate
+- Le graphe de dépendances GitHub listait encore `apps/curriculum/uv.lock` et
+  `apps/ai-service/uv.lock` (supprimés en `8f5011f`) et y rattachait des alertes ; les 70
+  alertes ont été classées `inaccurate` le 2026-09-22. Si une alerte réapparaît sur ces
+  chemins, ouvrir un ticket au support GitHub. Dependabot ne sert qu'à détecter ; Renovate
   ouvre toutes les PR.
-- Plafonds de version à lever à la main (Renovate ne les proposera pas) : TypeScript
-  `<6.1.0` tant que `typescript-eslint` exige `typescript <6.1.0` (TS 7 sans API JS avant
-  la 7.1, issue typescript-eslint #10940) ; `@types/node` `<25.0.0` tant que le runtime est
-  Node 24 (Vercel ne propose que 24.x, 22.x, 20.x ; Node 26 LTS le 2026-10-28).
-- `pronote.test.ts` live échoue en `PageUnavailableError` sur le compte Pronote de test
-  (antérieur à C).
+- Plafonds de version à lever à la main (Renovate ne les proposera pas) : TypeScript
+  `<6.1.0` tant que `typescript-eslint` exige `typescript <6.1.0` ; `@types/node` `<25.0.0`
+  tant que le runtime est Node 24 (Vercel ne propose que 24.x, 22.x et 20.x ; Node 26 LTS le
+  2026-10-28).
+- date-fns est gardé alors que Bun 1.4.2 expose `Temporal` : à réévaluer quand le typage de
+  TypeScript le couvre.
 
 ## Bloquants
 
 | Bloquant | Effet | Qui | Comment lever |
 |---|---|---|---|
-| ~~`Expo deps check` échoue sur `main`~~ : Expo a publié des patchs SDK 56 (`expo ~56.0.22`, `expo-router ~56.2.21`…) | Required check rouge : aucune PR ne peut merger | Utilisateur | Levé le 2026-09-22 : les deux checks mobiles ne sont plus requis |
-| ZDR (Zero Data Retention) non demandé | Mistral peut conserver textes et audio d'élèves selon sa rétention par défaut ; bloque tout utilisateur réel, pas le merge (app pas en prod) | Utilisateur | Demande au support Mistral puis vérification Admin › API › Privacy |
+| Zero Data Retention non demandé | Mistral peut conserver textes et audio d'élèves selon sa rétention par défaut ; bloque tout utilisateur réel, pas le merge | Victor | Étape manuelle ci-dessous |
+| Entretiens parents non faits | Prérequis du lot 4 : prix, appareil du soir et canaux restent des hypothèses | Victor | Étape manuelle ci-dessous |
 
-## Lot 0 — PR
-
-| PR | Plan | Branche | Statut | Lien |
-|---|---|---|---|---|
-| Docs : specs, roadmap, plan du lot 0, ce suivi | — | `docs/rewrite-specs-and-plans` | mergée | #306 |
-| B.1 — GitHub Actions sur leur dernière majeure (urgent : fin de Node 20 sur les runners le 2026-09-23 d'après le plan B) | `plans/2026-09-22-lot-0-b-dependances.md`, tâche B.1 | `ci/bump-actions` | mergée | #307 |
-| A — Suppression de `apps/mobile` et du billing RevenueCat | `plans/2026-09-22-lot-0-a-suppression-mobile.md` | `chore/remove-mobile-app` | mergée | #308 |
-| B — Dépendances et outillage à jour (B.2 → B.9) | `plans/2026-09-22-lot-0-b-dependances.md` | `build/upgrade-all-deps` | mergée | #309 |
-| C — Bascule Mistral Small 4 | `plans/2026-09-22-lot-0-c-mistral-small-4.md` | `feat/mistral-small-4` | mergée | #313 |
-| D — Bugs avec tests de non-régression | `plans/2026-09-22-lot-0-d-bugs.md` | `fix/server-and-tooling-bugs` | mergée | #315 |
-| E1 — Appels IA sur l'AI SDK et le SDK Mistral | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-ai-calls` | mergée | #318 |
-| E2 — Infra serveur et outillage | `plans/2026-09-22-lot-0-e-code-reinvente.md` | `refactor/replace-custom-infra` | à faire | — |
-
-Le détail des tâches se coche dans le plan de chaque PR, sur sa branche.
-
-## Hors lot 0
-
-| PR | Plan | Branche | Statut | Lien |
-|---|---|---|---|---|
-| Landing « La copie corrigée », PR 1 — fondations : une feuille Seyès par page (bande de tête, marge sans verticales), texte composé sur des fiches collées visibles sans JavaScript (`0fd8a47`, `6a22cc8`, `2dcc595`, `e58d1d9`, `d0e6651`, passe UX `7a4bdeb`…`05fc9f9`) | — | `feat/landing-copie-corrigee` | mergée avec #319 et #320 | #321 |
-| Landing, PR 2 — Couvertures et navigation dans la marge : **abandonnée** avec la direction « cahier » (spec `specs/2026-09-24-identite-kompri-design.md`) ; branche non mergée, à fermer au démarrage de la refonte en reprenant le formulaire d'inscription non contrôlé et ses tests | `plans/2026-09-24-landing-copie-corrigee-pr2-couvertures.md` (sur sa branche) | `feat/landing-couvertures` | abandonnée | — |
-| Identité Kompri : nom, stylo quatre couleurs sur papier crème, Nunito + Caveat, Tom la loutre anthropomorphe en aplats arrondis ; révisée en charte landing + app le 2026-09-30 (`docs/charte-graphique`) | spec `specs/2026-09-24-identite-kompri-design.md` | `docs/identite-kompri` | mergée | #323 |
-| Landing, refonte sur l'identité (remplace les PR 3 et 4 « cahier » : tokens, polices, retrait de la feuille Seyès, intégration de Tom ; nom et mascotte encore provisoires) | spec `specs/2026-09-24-landing-kompri-design.md` (PR 1 fondations et pages, PR 2 première page, PR 3a constantes de marque, PR 3b nom définitif), plan `plans/2026-09-25-landing-kompri-pr2-accueil.md` | `feat/landing-kompri-accueil`, `feat/landing-brand-constants` | PR 1, 2 et 3a mergées ; PR 3b attend le nom | #325, #326, #331 |
-| Landing : Tom dans le hero (PNG, puis salut et respiration en vidéo HEVC/WebM avec alpha) | spec `specs/2026-09-24-landing-kompri-design.md` § 4 | `feat/landing-tom` | mergée | #329 |
-
-## Étapes manuelles (utilisateur)
+## Étapes manuelles (Victor)
 
 | Étape | Pour | Statut |
 |---|---|---|
-| Retirer `Expo deps check` et `Mobile bundle` des required checks de « Protect main » | #306, puis A | fait |
-| Confirmer qu'aucune donnée de `device_push_tokens` / `webhook_events` n'est à garder | A.6 | fait (DROP local autorisé) |
-| Confirmer la suppression de l'ancien volume Docker Postgres 16 local | B.6 | fait (volume supprimé) |
-| Créer le secret `RENOVATE_TOKEN`, retirer l'app Mend du dépôt, vérifier la cause côté Mend | B.8 | fait (app désinstallée, run manuel `done`, Dependency Dashboard #310) |
-| Mettre à jour les plugins Claude Code | B.9 | à faire |
-| Sonde curl de l'endpoint UE avec la clé Mistral | C.1 | fait (2026-09-22, lancée par l'agent avec accord, après activation de Pay-As-You-Go : Small 4 et Medium sont à 0 requête/min sur le plan gratuit ; plafond de dépenses supplémentaires 10 €/mois ; entraînement sur les appels API désactivé) |
-| Demander le Zero Data Retention au support Mistral | C.1 | à faire |
-| Suite live et deux tours de chat réels | C.9 | fait (2026-09-22, lancé par l'agent : `test:live` Mistral 6/6, `pnpm doctor:e2e` exit 0, deux tours seedés sans aucun chunk de raisonnement côté client, `cost_tracking` en `mistral-small-2603`, majoration 1.1, 3136 tokens cachés au 2e tour) |
-| Vérifier les secrets `TURBO_TOKEN` / `TURBO_TEAM` | E2 | à faire |
-| Recherche INPI « Kompri » (classes 9, 41, 42) | Identité Kompri | fait (2026-09-24, par l'agent sur data.inpi.fr : aucune marque en conflit en France, détail dans la spec) |
-| Déposer la marque et réserver les domaines candidats | Identité Kompri | en attente : nom rouvert le 2026-09-24, bloqué jusqu'à la décision de Victor |
-| Valider la bible et la planche de référence de Tom, puis le modèle 3D | Refonte landing | fait (2026-09-30, livrables dans `tom-mascotte/renders/final/`) |
-| Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing : Tom | à faire (reporté par Victor le 2026-09-30) |
-| Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Landing PR 4 | à faire après le merge |
+| Merger #338 | Lot 0 | à faire |
+| Mener 8 à 10 entretiens de parents, dont des familles modestes (guide dans `etudes/2026-10-01-parents.md`) | Questions ouvertes de la vision, lot 4 | à faire |
+| Demander le Zero Data Retention au support Mistral, puis vérifier Admin › API › Privacy | Porte avant ouverture | à faire |
+| Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
+| Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
+| Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
 
-## Lots suivants
+## Historique
 
-| Lot | Statut |
-|---|---|
-| 1 — Harnais d'évaluation | plan à écrire au démarrage |
-| 2 — Agent selon les guides | plan à écrire au démarrage |
-| 3 — Client web Next.js | plan à écrire au démarrage |
-
-## Journal
-
-- **2026-09-22** — Specs, roadmap et plan du lot 0 réécrits (#306), anciens documents du
-  2026-09-04 supprimés. Décisions : Small 4 pour chat et vision, `apps/mobile` supprimé,
-  échelle d'indices graduée, parent = résumé + alertes, V1 collège seul, toutes les
-  dépendances à jour (TypeScript 7 bloqué par `typescript-eslint`).
-- **2026-09-22** — Suivi créé. PR B.1 ouverte (#307). Retrait des required checks mobile
-  refusé à l'agent par le classifieur de permissions : étape laissée à l'utilisateur.
-- **2026-09-22** — Ruleset corrigé, #306 et #307 mergées. PR A démarrée : A.1 (suppression
-  de `apps/mobile`) faite et relue, commit `41d00f3`.
-- **2026-09-22** — PR A : A.2 (webhook RevenueCat et billing serveur retirés) faite et
-  relue, commit `3d3175a`.
-- **2026-09-22** — PR A : A.3 (plugin Expo de Better Auth, origines mobiles, routes de
-  jetons push retirés) faite et relue, commit `ed4c2be`.
-- **2026-09-22** — PR A : A.4 (exports réservés au mobile retirés de `@repo/api`,
-  `@repo/tokens`, `@repo/eslint-config`) faite et relue, commit `a88dfa6`.
-- **2026-09-22** — PR A : A.5 (réglages et overrides pnpm propres à Expo retirés, `.npmrc`
-  supprimé) faite et relue, commit `0bb738e`.
-- **2026-09-22** — PR A : A.6 (tables `device_push_tokens` et `webhook_events` supprimées,
-  migration `0027`, appliquée en local uniquement) faite et relue, commit `8b91890`.
-- **2026-09-22** — PR A : A.7 (doc et configuration Claude sans le mobile) faite et relue,
-  commit `745e216`. Historique réécrit avec accord : les deux commits de A.6 fusionnés.
-- **2026-09-22** — PR A : A.8 (validation de fin de PR : 13 commandes à exit 0, aucun reste
-  injustifié) faite ; relecture finale de toute la branche sans finding bloquant.
-- **2026-09-22** — PR A mergée (#308, merge commit). PR B démarrée.
-- **2026-09-22** — PR B : B.2 (pnpm 12.5.1, plancher Node 24, outillage), B.3 (dépendances
-  serveur, contrat Eden identique) et B.4 (better-auth 1.7, plugin MCP retiré, champ mort
-  `user.parentId` retiré de la config auth) faites et relues.
-- **2026-09-22** — PR B : B.5 (Motion 13, React 19.3, landing vérifiée dans le navigateur),
-  B.6 (Postgres 18 + pgvector 0.8.6, Bun 1.4 ; volume local neuf
-  `tomai_postgres18_dev_data`) et B.7 (overrides obsolètes retirés, seul reste un plancher
-  esbuild ciblé sur drizzle-kit) faites et relues.
-- **2026-09-22** — PR B : B.8 (Renovate auto-hébergé) faite et relue ; relecture finale
-  sans finding bloquant ; validation de fin de PR verte (`outdated` : seuls TypeScript 7 et
-  `@types/node` 26, écarts voulus).
-- **2026-09-22** — PR B mergée (#309, merge commit). Ancien volume Postgres 16 supprimé,
-  app Renovate hébergée désinstallée, secret `RENOVATE_TOKEN` créé : le run manuel de
-  Renovate termine `done` et ouvre le Dependency Dashboard (#310).
-- **2026-09-22** — PR C (bascule Mistral Small 4) implémentée : Small 4 daté partout
-  (`mistral-small-2603`), endpoint UE (`api.eu.mistral.ai`, +10 % de coût), clé de cache par
-  session, raisonnement gardé côté serveur (jamais forwardé au client), deux bugs TTS
-  corrigés, `pnpm doctor` étendu au modèle et à l'endpoint Mistral, suite live 6/6.
-- **2026-09-22** — PR C mergée (#313, merge commit). Reste la demande de Zero Data Retention
-  (bloquant avant tout utilisateur réel).
-- **2026-09-22** — PR D (bugs avec tests de non-régression) implémentée : 19 tâches. Par
-  thème — serveur : arrêt gracieux ordonné, id de requête et enveloppe d'erreur globale,
-  bornes de quota calculées en Europe/Paris, purge de rétention qui rapporte les vrais
-  compteurs, retrait du sweep horaire de quota, parseur JSON natif d'Elysia, retrait de la
-  vérification de session orpheline et du cache de cookie de session, configuration OTLP
-  laissée à l'exporteur, gate de validation qui échoue si la matrice échoue, `PG_CONTAINER`
-  honoré par le doctor, UUID validés à la frontière de route, routes de credentials
-  device-first supprimées ; landing : images distantes non proxyables stoppées, en-têtes de
-  sécurité et métadonnées SEO corrigés, réponse de la waitlist vérifiée en statut et en
-  corps, textes qui décrivent un service web plutôt qu'une app de store ; CI : job Renovate en
-  échec si le token est refusé, parcours nouveau dev pointé sur `pnpm run setup` ;
-  outillage : lanceur de tests maison remplacé par `bun test --isolate` partout, mocks
-  `tool-executor`/`chat-tools` isolés. Décisions à garder : date-fns conservé bien que Bun
-  1.4.2 expose désormais `Temporal` (typage TypeScript 6.0 non vérifié) — à réévaluer ;
-  `apps/server/scripts/run-tests.ts` (lanceur custom) remplacé par `bun test --isolate`
-  natif ; les erreurs de validation répondent maintenant 400 avec l'enveloppe
-  `{ error: { code, message }, requestId }` au lieu du 422 par défaut d'Elysia (changement de
-  contrat pour de futurs clients) ; le `cookieCache` de better-auth retiré, donc un compte
-  supprimé perd l'accès immédiatement ; `needsMonthlyReset` utilise toujours
-  `Intl.DateTimeFormat` alors que les bornes jour/semaine sont passées à date-fns (suivi de
-  cohérence) ; `apps/landing/lib/actions/waitlist.ts` porte désormais une vraie logique de
-  branchement mais la landing n'a pas de lanceur de tests
-  (`.claude/rules/testing-and-commits.md` : « Pas de tests ») — choix délibéré à revisiter.
-- **2026-09-22** — PR D mergée (#315, merge commit `7f083ff`). Preview Vercel vérifiée dans le
-  navigateur (la preview est derrière le SSO Vercel, donc pas de `curl` anonyme possible) :
-  `X-XSS-Protection` absent, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` et
-  `Permissions-Policy` toujours servis ; `/_next/image` sur une URL externe répond 400 et le
-  logo SVG s'affiche toujours (servi sans passer par l'optimiseur).
-- **2026-09-22** — PR docs `docs/fix-doc-drift` : doc réalignée sur le code après l'audit
-  de cohérence (`/health` sans `degraded`, variables requises pointées sur `env.ts`,
-  déploiement réel, endpoint Mistral en origine nue, ZDR non demandé, landing, sécurité) ;
-  section E2 du plan marquée « à réécrire au démarrage » avec les écarts vérifiés ; chaque
-  point reporté a désormais une PR ou un lot propriétaire ; règle
-  `.claude/rules/plans-and-agents.md` ajoutée (plan écrit au démarrage de sa PR, pas de
-  numéros de ligne, un fait à un seul endroit).
-- **2026-09-23** — PR docs mergée (#317). PR E1 (appels IA sur l'AI SDK et le SDK Mistral)
-  mergée (#318, merge commit) : embeddings, STT et TTS par `@mistralai/mistralai` (TTS
-  envoie enfin `voice_id`, STT garde le vrai type MIME et est borné par `MISTRAL_TIMEOUT`) ;
-  sorties structurées par `generateText` + `Output.object` et Zod, `json_schema` strict par
-  défaut (cartes en non strict, voir Reporté lot 2), un seul retry sur échec de schéma sous
-  un timeout commun ; `lib/retry.ts`, `document-parsers.ts` et `otel/spans.ts` supprimés ;
-  traces par `@ai-sdk/otel` sans entrées ni sorties enregistrées ; route de chat sans API
-  dépréciées (tâche E1.10) ; `streamChat` réessaie `MISTRAL_RETRY_ATTEMPTS` fois ; le client
-  TTS ne reçoit plus le corps d'erreur Mistral. Relecture finale : 7 findings corrigés
-  avant merge. Validation : typecheck, lint, test (840), knip, test:integration à exit 0,
-  test live des sorties structurées 3/3.
-- **2026-09-23** — Landing, PR 1 « La copie corrigée » (fondations) : feuille Seyès peinte
-  par section avec marge rouge sur une verticale, papier blanc, rythme de ligne de base sur
-  la réglure, footer en quatrième de couverture bleue, contact `contact@tomia.fr`. Test de
-  grille Playwright (`pnpm --filter landing test:grid`, 6 pages × 5 largeurs + zoom 20 px) :
-  local uniquement, son branchement en CI fera l'objet d'une PR séparée.
-  Pivot le même jour, spec révisée (`4e84b94`) : une seule feuille par page au lieu d'une
-  par section, texte composé sur des fiches collées au lieu du rythme de ligne de base
-  (`lh` + Capsize), couvertures de cahier en ouverture et en fermeture (PR 2), écriture
-  manuscrite (PR 3), sections restylées (PR 4). Commits remplacés : `041f884` (feuille par
-  section) et `e901312` (rythme de ligne de base). Le test de grille compte 76 cas (feuille,
-  bornes, fiches, sans JavaScript, mouvement réduit).
-- **2026-09-24** — Landing : la direction « cahier » (couvertures, navigation dans la marge)
-  est abandonnée après la PR 2 — elle visait l'élève plutôt que le parent, faisait « devoirs »,
-  et des notes de marge fixes ne tiennent pas l'alignement sur une réglure qui défile. Nouvelle
-  identité (`specs/2026-09-24-identite-kompri-design.md`) : produit **Kompri**, Tom en loutre
-  anthropomorphe, stylo quatre couleurs sur papier crème, Nunito. La refonte de la landing
-  remplace les PR 3 et 4.
-- **2026-09-24** — Recherche INPI « Kompri » : aucune marque en conflit en France. Spec de la
-  refonte de la landing (`specs/2026-09-24-landing-kompri-design.md`) : trois PR, Tom en
-  emplacement réservé en attendant les images.
-- **2026-09-24** — Landing, PR 1 (fondations, branche `feat/landing-kompri-fondations`) :
-  tokens crème et Nunito, en-tête avec menu mobile en `Sheet`, footer clair, page 404 ;
-  nettoyage de fin de PR (composants `@repo/ui` et token `violet` inutilisés retirés,
-  documents des directions « cahier annoté » et « copie corrigée » supprimés). Nom du site
-  et de la mascotte rouverts le 2026-09-24 (spec landing § 5).
-- **2026-09-25** — PR 1 mergée (#325, merge commit). Landing, PR 2 « Accueil » démarrée sur
-  la branche `feat/landing-kompri-accueil` (plan `plans/2026-09-25-landing-kompri-pr2-accueil.md`) :
-  tâches 1 à 5 faites — refonte du hero autour de l'emplacement réservé de Tom, `Highlight`
-  en `<mark>`, `HandNote`, `Scribble` réduit aux cercles, les trois étapes en cartes aux
-  numéros entourés, titres ramenés en graisse 800 (la base de `globals.css` suffit), accroche de
-  formule sortie du rouge italique (réservé aux notes de Tom) vers `text-sm font-bold
-  text-muted-foreground`. Décision : la production de Tom change de mains — Victor ne
-  modélise plus lui-même ; une équipe d'agents pilote Blender par le serveur MCP officiel de
-  Blender Lab (direction artistique et planche de référence, modélisation, rig et animation
-  pré-rendue, un critique visuel indépendant à chaque étape), Victor valide chaque étape ;
-  toujours aucune 3D temps réel sur le site (spec d'identité § 5). Specs `2026-09-24-identite-
-  kompri-design.md` et `2026-09-24-landing-kompri-design.md` mises à jour en conséquence.
-- **2026-09-30** — Tom 3D livré (dépôt `tom-mascotte`, Git LFS, `tom.blend` source de vérité).
-  Branche `feat/landing-tom` : `TomIllustration` affiche le PNG transparent (AVIF de 12 Ko
-  servi, préchargé), puis joue le salut et enchaîne la respiration en boucle ; PNG seul sous
-  mouvement réduit. Safari 27 ignore toujours l'alpha du WebM (notes de version du 14
-  septembre 2026) : il reçoit d'abord une source HEVC avec alpha, encodée par `avconvert` sur
-  un runner macOS de GitHub Actions (`tom-mascotte`, workflow `hevc-alpha.yml`, fond
-  transparent vérifié dans Safari 26.6.1). Pas de 3D temps réel : l'export glTF ne garde ni
-  l'ombrage toon ni le contour Line Art. Script `typecheck` de la landing passé à `next
-  typegen && tsc --noEmit` : la CI vérifiait sans `next-env.d.ts`. Avis `brace-expansion`
-  (high) corrigé à part (#330).
-- **2026-09-30** — PR 3a (`feat/landing-brand-constants`) : `metadata` propres aux pages
-  secondaires ; `BRAND_NAME` dans les pages légales et le manifeste (`app/manifest.ts`) ; le
-  nom de la mascotte reste en toutes lettres (accords dans les phrases) ; image Open Graph en
-  Nunito avec Tom ; tête de Tom rendue de face dans `tom-mascotte`, devenue logo de l'en-tête,
-  favicon et icônes d'app (déplacées de la PR 3b à la 3a à la demande de Victor) ;
-  `theme_color` passé du violet de l'ancienne identité au papier.
-- **2026-09-30** — PR 3a mergée (#331). Charte graphique révisée pour couvrir l'app (branche
-  `docs/charte-graphique`, spec d'identité réécrite en place) : un seul Tom (cycle 4) en V1,
-  quatre poses liées aux états de l'app (bonjour, réfléchit, encourage, bravo à produire),
-  le rouge de Tom n'est jamais une faute, registres parent/élève, états des écrans, échelle
-  typographique. Tokens : `border` et `input` passent des bleus gris de l'ancienne identité
-  au sable, `info` et `--font-mono` retirés (inutilisés), primitive `Input` en pilule de
-  44 px ; rayons, espacements et `text-2xs` inutilisés retirés. Mergée (#332). Design System
-  « Charte TomIA » publié depuis les tokens et la charte :
-  https://claude.ai/artifact/WMHt6nPV7SEthVj3R6sEF5 (vue du code, à republier quand les
-  tokens changent).
-- **2026-09-30** — Revue de la landing avec Victor : l'atout est l'IA, Tom est un plus. Spec
-  landing révisée en place (branche `docs/landing-demonstration`) et plan
-  `plans/2026-09-30-landing-demonstration.md` : PR 4 retrait de la liste d'attente (son
-  formulaire échoue en production, `api.tomia.fr` répond 404), PR 5 hero avec un échange
-  d'exemple qui déroule l'échelle d'indices, PR 6 sections. « Commencer gratuitement »
-  arrive avec l'app (lot 3) ; d'ici là, la page n'a pas de bouton.
-- **2026-09-30** — #333 mergée (spec et plan). Landing PR 4 (`feat/landing-drop-waitlist`) :
-  liste d'attente retirée (formulaire, Server Action, `lib/urls.ts`, barre d'action mobile,
-  section d'appel final, boutons « S'inscrire », `zod`), confidentialité mise à jour ; la
-  landing n'appelle plus le serveur. Next monté en 16.3.7 et `@grpc/grpc-js` en 1.14.5 à part
-  (#334, GHSA-vcvr-r3jv-pc5j et GHSA-m9gg-hp2v-232j).
-- **2026-09-30** — #335 mergée (liste d'attente retirée). Landing PR 5
-  (`feat/landing-demo-exchange`) : hero « Il trouve la réponse. Et il la comprend. », accroche
-  qui nomme l'IA, échange d'exemple (`demo-exchange.tsx`, équation de 4e, échelle d'indices),
-  Tom plus petit à côté en bureau et absent en mobile (ses vidéos ne s'y téléchargent pas) ;
-  titre du site, image Open Graph et manifeste ne promettent plus « ne donne pas la réponse ».
-- **2026-09-30** — #336 mergée (hero et échange d'exemple). Landing PR 6
-  (`feat/landing-sections`) : « Comment ça marche » décrit l'échelle d'indices, les modes de
-  saisie entrent dans l'étape 1 (`input-modes.tsx` supprimé) ; un seul espacement de section
-  (`py-16 lg:py-24`), une seule taille de `h2`, titres de carte en `text-xl` (testé) ; la
-  charte prend la taille de `h2` du code (`text-4xl` → `sm:text-5xl`).
+- **Lot 0** (2026-09-22 et 23) : specs, roadmap et plans réécrits (#306) ; GitHub Actions
+  sur leur dernière majeure (#307) ; A, `apps/mobile` et le billing RevenueCat supprimés
+  (#308) ; B, dépendances et outillage à jour, Renovate auto-hébergé (#309) ; C, Mistral
+  Small 4 sur l'endpoint UE (#313) ; D, bugs corrigés avec tests de non-régression (#315) ;
+  doc réalignée (#317) ; E1, appels IA sur l'AI SDK et le SDK Mistral (#318). Outillage
+  Claude Code en règles natives (#327).
+- **Landing** (2026-09-23 au 30) : une direction « cahier » (#319 à #321) puis une première
+  identité (#323 à #326, #329, #331, #332), toutes deux abandonnées ; liste d'attente
+  retirée (#333, #335) ; échange d'exemple et sections (#336, #337) ; correctifs de
+  dépendances (#330, #334).
+- **2026-10-01** : études, vision produit validée et nouvelle roadmap. Pronote sort de la
+  V1, l'identité visuelle est rejetée et se refait au lot 4, la landing en ligne est gelée.
