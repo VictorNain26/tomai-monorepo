@@ -4,12 +4,16 @@
  * Validation and utility functions used across learning routes.
  */
 
+import { z } from 'zod';
 import { logger } from '../../lib/observability';
 import type { EducationLevelType } from '../../types/index';
 import {
   DeckNotFoundError,
   DeckOwnershipError,
 } from '../../services/learning/learning.service';
+
+/** `:id` of a deck or card: a UUID, so a malformed id is a 400, not a Postgres 500. */
+export const idParam = z.object({ id: z.uuid() });
 
 /**
  * Map a LearningService deck domain error to a typed status response.
@@ -22,7 +26,7 @@ import {
  *
  * Returns `{ status, body }` when the error was handled, or `null` when the
  * error was not a known deck domain error (caller must rethrow / fall through).
- * The caller is responsible for calling `return status(domain.status, domain.body)`.
+ * The caller is responsible for calling `return c.json(domain.body, domain.status)`.
  */
 export function handleDeckDomainError(
   err: unknown,

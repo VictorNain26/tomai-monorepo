@@ -1,21 +1,23 @@
-import { Elysia } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { requireParent, validate, type AppEnv } from '../../lib/http.js';
 import { createChildSchema, updateChildSchema } from '../../schemas/validation';
 import { parentService } from '../../services/parent.service';
 import { logger } from '../../lib/observability';
 
-export const parentApiRoutes = new Elysia({ name: 'api-parent' })
-  .use(authMacro)
-  .guard({ parentAuth: true })
+const childParams = z.object({ id: z.string().min(1) });
 
-  .get('/parent/dashboard', async ({ user, status }) => {
+export const parentApiRoutes = new Hono<AppEnv>()
+
+  .get('/parent/dashboard', requireParent, async (c) => {
+    const user = c.var.user;
     try {
       const [children, metrics] = await Promise.all([
         parentService.getParentChildren(user.id),
         parentService.getParentDashboardMetrics(user.id)
       ]);
 
-      return {
+      return c.json({
         success: true,
         parent: {
           id: user.id,
@@ -23,7 +25,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         },
         children,
         metrics
-      };
+      });
     } catch (_error) {
       logger.error('Parent dashboard retrieval failed', {
         operation: 'api:parent:dashboard',
@@ -31,14 +33,15 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { error: 'Dashboard retrieval failed' });
+      return c.json({ error: 'Dashboard retrieval failed' }, 500);
     }
   })
 
-  .get('/parent/children', async ({ user, status }) => {
+  .get('/parent/children', requireParent, async (c) => {
+    const user = c.var.user;
     try {
       const children = await parentService.getParentChildren(user.id);
-      return children;
+      return c.json(children);
     } catch (_error) {
       logger.error('Parent children retrieval failed', {
         operation: 'api:parent:children',
@@ -46,23 +49,23 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { error: 'Children retrieval failed' });
+      return c.json({ error: 'Children retrieval failed' }, 500);
     }
   })
 
-  .post('/parent/children', async ({ body, user, status }) => {
+  .post('/parent/children', requireParent, validate('json', createChildSchema), async (c) => {
+    const user = c.var.user;
+    const body = c.req.valid('json');
     logger.info('Child creation request received', {
       operation: 'api:parent:child:request',
       userId: user.id,
-      bodyType: typeof body,
-      bodyKeys: body ? Object.keys(body as object) : [],
-      contentLength: JSON.stringify(body).length,
+      bodyKeys: Object.keys(body),
       severity: 'low' as const
     });
 
     try {
       const child = await parentService.createChild(user.id, body);
-      return { success: true, child, message: 'Child created successfully' };
+      return c.json({ success: true, child, message: 'Child created successfully' });
     } catch (_error) {
       logger.error('Child creation failed', {
         operation: 'api:parent:child:create',
@@ -70,16 +73,17 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'high' as const
       });
-      return status(400, { error: 'Creation failed', message: _error instanceof Error ? _error.message : 'Failed to create child' });
+      return c.json({ error: 'Creation failed', message: _error instanceof Error ? _error.message : 'Failed to create child' }, 400);
     }
-  }, {
-    body: createChildSchema,
   })
 
-  .patch('/parent/children/:id', async ({ params, body, user, status, request: { headers } }) => {
+  .patch('/parent/children/:id', requireParent, validate('param', childParams), validate('json', updateChildSchema), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
+    const body = c.req.valid('json');
     try {
-      const child = await parentService.updateChild(user.id, params.id, body, headers);
-      return { success: true, child };
+      const child = await parentService.updateChild(user.id, params.id, body, c.req.raw.headers);
+      return c.json({ success: true, child });
     } catch (_error) {
       logger.error('Child update failed', {
         operation: 'api:parent:child:update',
@@ -87,16 +91,16 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(400, { error: 'Update failed', message: _error instanceof Error ? _error.message : 'Failed to update child' });
+      return c.json({ error: 'Update failed', message: _error instanceof Error ? _error.message : 'Failed to update child' }, 400);
     }
-  }, {
-    body: updateChildSchema,
   })
 
-  .delete('/parent/children/:id', async ({ params, user, status }) => {
+  .delete('/parent/children/:id', requireParent, validate('param', childParams), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     try {
       await parentService.deleteChild(user.id, params.id);
-      return { success: true, message: 'Child deleted successfully' };
+      return c.json({ success: true, message: 'Child deleted successfully' });
     } catch (_error) {
       logger.error('Child deletion failed', {
         operation: 'api:parent:child:delete',
@@ -104,6 +108,6 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(400, { error: 'Deletion failed', message: _error instanceof Error ? _error.message : 'Failed to delete child' });
+      return c.json({ error: 'Deletion failed', message: _error instanceof Error ? _error.message : 'Failed to delete child' }, 400);
     }
   });

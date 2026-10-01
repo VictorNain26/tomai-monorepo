@@ -12,8 +12,7 @@ pnpm run setup               # .env, BETTER_AUTH_SECRET, postgres, migrations Dr
 pnpm dev                     # infra Docker + server :3000 + landing :3001
 ```
 
-Arrêt de l'infra : `pnpm dev:down`. Documentation d'API en dev :
-http://localhost:3000/swagger
+Arrêt de l'infra : `pnpm dev:down`.
 
 `pnpm dev` démarre l'infra puis **attend que postgres soit `healthy`** avant de
 lancer les apps ; si l'infra est incomplète, rien ne démarre. `pnpm run doctor` donne
@@ -23,11 +22,11 @@ le détail, `pnpm doctor:e2e` la version stricte où un `SKIP` compte comme un �
 
 ```
 apps/
-├── server/       # Bun + Elysia — API backend (3000)
+├── server/       # Bun + Hono — API backend (3000)
 └── landing/      # Next.js — vitrine SEO (3001)
 
 packages/
-├── api/             # Client Eden Treaty typé — le contrat serveur → clients
+├── api/             # Client typé (hono/client) — le contrat serveur → clients
 ├── ui/              # Primitives shadcn (DOM)
 ├── tokens/          # Design tokens CSS (Tailwind v4) partagés
 └── eslint-config/   # Config ESLint partagée
@@ -37,7 +36,7 @@ packages/
 
 | Couche | Technologies |
 |--------|-------------|
-| Backend | Bun 1.4, Elysia 1.4, PostgreSQL 18 + pgvector, Drizzle ORM 0.45 |
+| Backend | Bun 1.4, Hono 4, PostgreSQL 18 + pgvector, Drizzle ORM 0.45 |
 | Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
 | Auth | Better Auth 1.7 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |

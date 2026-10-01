@@ -7,44 +7,44 @@
  * Security: All routes require authentication and verify caller identity (IDOR protection)
  */
 
-import { Elysia } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { requireParent, requireUser, type AppEnv } from '../../lib/http.js';
 import { subscriptionService } from '../../services/subscription.service.js';
 import { usersRepository } from '../../db/repositories/users.repository.js';
 import { verifyParentIdMatch } from './helpers.js';
 import { parentChildRepository } from '../../db/repositories/parent-child.repository.js';
 
-export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
-  .use(authMacro)
+// Mounted under /api/subscriptions by app.ts.
+export const statusRoutes = new Hono<AppEnv>()
 
-  .guard({ parentAuth: true })
-  .get('/status', async ({ query, status, user: authenticatedUser }) => {
-    const parentId = query.parentId;
+  .get('/status', requireParent, async (c) => {
+    const authenticatedUser = c.var.user;
+    const parentId = c.req.query('parentId');
 
     if (!parentId) {
-      return status(400, { error: 'parentId query parameter required' });
+      return c.json({ error: 'parentId query parameter required' }, 400);
     }
 
     const { valid, error: idorError } = verifyParentIdMatch(authenticatedUser.id, parentId);
     if (!valid) {
-      return status(403, { error: idorError });
+      return c.json({ error: idorError }, 403);
     }
 
-    return subscriptionService.getFamilyStatus(parentId);
+    return c.json(await subscriptionService.getFamilyStatus(parentId));
   })
 
-  .guard({ auth: true })
-  .get('/usage', async ({ query, status, user: authenticatedUser }) => {
-    const userId = query.userId;
+  .get('/usage', requireUser, async (c) => {
+    const authenticatedUser = c.var.user;
+    const userId = c.req.query('userId');
 
     if (!userId) {
-      return status(400, { error: 'userId query parameter required' });
+      return c.json({ error: 'userId query parameter required' }, 400);
     }
 
     const userRecord = await usersRepository.findById(userId);
 
     if (!userRecord) {
-      return status(404, { error: 'User not found' });
+      return c.json({ error: 'User not found' }, 404);
     }
 
     const isSelfAccess = authenticatedUser.id === userId;
@@ -53,15 +53,15 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
       (await parentChildRepository.isLinked(authenticatedUser.id, userRecord.id));
 
     if (!isSelfAccess && !isParentAccessingChild) {
-      return status(403, {
+      return c.json({
         error: "Access denied: You can only view your own usage or your children's usage",
-      });
+      }, 403);
     }
 
     const { tokenQuotaService } = await import('../../services/token-quota.service.js');
     const usage = await tokenQuotaService.getUsageStats(userId);
 
-    return {
+    return c.json({
       userId,
       plan: usage.plan,
 
@@ -98,5 +98,5 @@ export const statusRoutes = new Elysia({ prefix: '/api/subscriptions' })
         lastResetAt: new Date().toISOString(),
         resetsIn: usage.dailyResetsIn,
       },
-    };
+    });
   });

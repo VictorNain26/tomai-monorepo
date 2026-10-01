@@ -10,7 +10,6 @@
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { Elysia } from 'elysia';
 import { createMockLogger } from './_helpers/mock-logger';
 
 const mockLogger = createMockLogger();
@@ -39,8 +38,7 @@ mock.module('drizzle-orm', () => ({
 const { apiHealthRoutes } = await import('../routes/api/health.routes');
 
 async function callHealth() {
-  const app = new Elysia().use(apiHealthRoutes);
-  const response = await app.handle(new Request('http://localhost/health'));
+  const response = await apiHealthRoutes.request('/health');
   const body = (await response.json()) as {
     status: string;
     commit: string;

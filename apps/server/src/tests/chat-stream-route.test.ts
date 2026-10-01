@@ -9,10 +9,11 @@
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { Elysia } from 'elysia';
+import { Hono } from 'hono';
 import { z } from 'zod';
 import { isStepCount, simulateReadableStream, streamText, tool, type ToolSet } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
+import type { AppEnv } from '../lib/http';
 import { createMockLogger } from './_helpers/mock-logger';
 
 // ============================================
@@ -26,28 +27,22 @@ mock.module('../config/env', () => ({
   env: { MISTRAL_MODEL: 'mistral-small-2603' },
 }));
 
-// authMacro — inject a mutable user into every guarded request
+// Auth — inject a mutable user into every guarded request
 let currentUser: Record<string, unknown> | null = null;
+const resolveUser = () =>
+  Promise.resolve(
+    currentUser
+      ? { success: true as const, user: currentUser, session: { id: 'sess-001' } }
+      : { success: false as const, _error: 'Unauthorized', status: 401 as const },
+  );
+mock.module('../middleware/auth.middleware', () => ({
+  requireAuth: resolveUser,
+  requireParentRole: resolveUser,
+}));
 
-interface MacroResolveContext {
-  status: (code: number) => unknown;
-}
-
-const authMacroMock = new Elysia({ name: 'auth-macro' }).macro({
-  auth: {
-    resolve(ctx: MacroResolveContext) {
-      if (!currentUser) {
-        return ctx.status(401) as never;
-      }
-      return { user: currentUser, session: { id: 'sess-001' } };
-    },
-  },
-});
-mock.module('../lib/auth-macro', () => ({ authMacro: authMacroMock }));
-
-// Rate-limit — no-op in tests
+// Rate-limit — pass-through in tests
 mock.module('../middleware/rate-limit.middleware', () => ({
-  createRateLimitMiddleware: mock(() => () => {}),
+  createRateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
   RateLimitPresets: { ai: {} },
 }));
 
@@ -175,12 +170,13 @@ mock.module('../services/chat/ai-chat.service', () => ({
 
 // Import real route AFTER all mocks are registered
 const { chatMessageRoutes } = await import('../routes/chat-message.routes');
+const { handleError } = await import('../middleware/error-handler.middleware');
 
 // ============================================
 // Test app
 // ============================================
 
-const app = new Elysia().use(chatMessageRoutes);
+const app = new Hono<AppEnv>().route('/api/chat', chatMessageRoutes).onError(handleError);
 
 function makeRequest(body?: unknown) {
   return new Request('http://localhost/api/chat/stream', {
@@ -208,14 +204,14 @@ describe('POST /api/chat/stream', () => {
 
   it('returns 401 when unauthenticated', async () => {
     currentUser = null;
-    const res = await app.handle(makeRequest());
+    const res = await app.fetch(makeRequest());
     expect(res.status).toBe(401);
   });
 
   it('returns 429 JSON when the quota is exceeded', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
     quotaAllowed = false;
-    const res = await app.handle(makeRequest());
+    const res = await app.fetch(makeRequest());
     expect(res.status).toBe(429);
     const json = (await res.json()) as { error: { code: string } };
     expect(json.error.code).toBe('QUOTA_EXCEEDED');
@@ -223,7 +219,7 @@ describe('POST /api/chat/stream', () => {
 
   it('returns a 200 UI Message Stream response with the expected headers', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
-    const res = await app.handle(makeRequest());
+    const res = await app.fetch(makeRequest());
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/event-stream');
     expect(res.headers.get('x-vercel-ai-ui-message-stream')).toBe('v1');
@@ -232,7 +228,7 @@ describe('POST /api/chat/stream', () => {
 
   it('persists the user message before streaming and the assistant message in onFinish', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
-    const res = await app.handle(makeRequest());
+    const res = await app.fetch(makeRequest());
     await res.text();
 
     expect(persistUserTurn).toHaveBeenCalledTimes(1);
@@ -260,7 +256,7 @@ describe('POST /api/chat/stream', () => {
     // consuming each stream (which drives release via onFinish/onError).
     // If the slot were never released, the 3rd request would 409.
     for (let i = 0; i < 3; i += 1) {
-      const res = await app.handle(makeRequest());
+      const res = await app.fetch(makeRequest());
       expect(res.status).toBe(200);
       await res.text();
     }
@@ -268,7 +264,7 @@ describe('POST /api/chat/stream', () => {
 
   it('never forwards the model reasoning to the client', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'troisieme', firstName: 'Léo' };
-    const res = await app.handle(makeRequest());
+    const res = await app.fetch(makeRequest());
     const body = await res.text();
 
     expect(body).toContain('"type":"text-delta"');
@@ -279,7 +275,7 @@ describe('POST /api/chat/stream', () => {
 
   it('records the model usage summed over every step', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'troisieme', firstName: 'Léo' };
-    const res = await app.handle(makeRequest());
+    const res = await app.fetch(makeRequest());
     await res.text();
 
     const finishArgs = finishTurn.mock.calls[0]?.[0] as { usage: unknown };

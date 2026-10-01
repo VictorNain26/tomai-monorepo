@@ -18,7 +18,7 @@ pnpm build
 
 ## Contraintes
 
-- **Frontière stricte** : la landing n'appelle **jamais** le serveur, ni Eden Treaty ni
+- **Frontière stricte** : la landing n'appelle **jamais** le serveur, ni le client `@repo/api` ni
   l'auth. Son seul lien vers le produit sera le bouton « Commencer gratuitement », ajouté au
   lot 4 quand l'app existe. Toute fonctionnalité « produit » appartient au client
   applicatif — c'est ce qui l'empêche de dériver en second produit.

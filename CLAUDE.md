@@ -39,7 +39,7 @@ apps : si l'infra est incomplète, les apps ne démarrent pas.
 `/code-review` (natif) couvre correction et qualité. S'y ajoutent quatre exigences
 propres au monorepo, à vérifier explicitement :
 
-- **Contrat Eden** — une modification dans `packages/api/` doit rester rétrocompatible
+- **Contrat client** — une modification dans `packages/api/` doit rester rétrocompatible
   pour les clients ; les types viennent du serveur, jamais redéfinis côté client.
 - **Frontières workspace** — imports via les packages `@repo/*`, aucune dépendance
   circulaire.

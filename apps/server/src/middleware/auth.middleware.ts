@@ -1,9 +1,9 @@
 import { auth } from '../lib/auth';
 import { logger } from '../lib/observability';
-import type { ElysiaAuthenticatedUser } from '../types/index.js';
+import type { AuthenticatedUser } from '../types/index.js';
 
 export const requireAuth = async (headers: Headers): Promise<
-  | { readonly success: true; readonly user: ElysiaAuthenticatedUser; readonly session: Record<string, unknown> }
+  | { readonly success: true; readonly user: AuthenticatedUser; readonly session: Record<string, unknown> }
   | { readonly success: false; readonly _error: string; readonly status: 401 | 503 }
 > => {
   try {
@@ -15,7 +15,7 @@ export const requireAuth = async (headers: Headers): Promise<
 
     return {
       success: true,
-      user: session.user as ElysiaAuthenticatedUser,
+      user: session.user as AuthenticatedUser,
       session: session.session,
     } as const;
   } catch (error) {
@@ -30,7 +30,7 @@ export const requireAuth = async (headers: Headers): Promise<
 };
 
 export const requireParentRole = async (headers: Headers): Promise<
-  | { readonly success: true; readonly user: ElysiaAuthenticatedUser; readonly session: Record<string, unknown> }
+  | { readonly success: true; readonly user: AuthenticatedUser; readonly session: Record<string, unknown> }
   | { readonly success: false; readonly _error: string; readonly status: 401 | 403 | 503 }
 > => {
   const authResult = await requireAuth(headers);

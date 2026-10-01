@@ -1,24 +1,22 @@
-import { Elysia, t } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { requireUser, validate, type AppEnv } from '../../lib/http.js';
 import { chatSessionService } from '../../services/chat/chat-session.service';
 import { logger } from '../../lib/observability';
 
-const sessionParams = t.Object({ id: t.String({ format: 'uuid' }) });
-const sessionFileParams = t.Object({
-  id: t.String({ format: 'uuid' }),
-  fileId: t.String({ format: 'uuid' }),
-});
+const sessionParams = z.object({ id: z.uuid() });
+const sessionFileParams = z.object({ id: z.uuid(), fileId: z.uuid() });
+const attachBody = z.object({ fileId: z.uuid() });
 
-export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
-  .use(authMacro)
+export const sessionFilesApiRoutes = new Hono<AppEnv>()
 
-  .guard({ auth: true })
-  .get('/files', async ({ user, status }) => {
+  .get('/files', requireUser, async (c) => {
+    const user = c.var.user;
     try {
       const { filesRepository } = await import('../../db/repositories/index');
 
       const userFiles = await filesRepository.findByUserId(user.id);
-      return {
+      return c.json({
         success: true,
         files: userFiles.map(f => {
           const eduCtx = f.educationalContext as {
@@ -35,7 +33,7 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
             createdAt: f.createdAt.toISOString(),
           };
         }),
-      };
+      });
     } catch (_error) {
       logger.error('Files listing failed', {
         operation: 'api:files:list',
@@ -43,21 +41,23 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { error: 'Failed to list files' });
+      return c.json({ error: 'Failed to list files' }, 500);
     }
   })
 
-  .get('/chat/session/:id/files', async ({ params, user, status }) => {
+  .get('/chat/session/:id/files', requireUser, validate('param', sessionParams), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     try {
       const session = await chatSessionService.getSessionForUser(params.id, user.id);
       if (!session) {
-        return status(403, { error: 'Session not found or access denied' });
+        return c.json({ error: 'Session not found or access denied' }, 403);
       }
 
       const { sessionFilesRepository } = await import('../../db/repositories/index');
       const attachedFiles = await sessionFilesRepository.findBySession(params.id);
 
-      return {
+      return c.json({
         success: true,
         files: attachedFiles.map(f => ({
           id: f.fileId,
@@ -66,7 +66,7 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
           sizeBytes: f.sizeBytes,
           attachedAt: f.attachedAt.toISOString(),
         })),
-      };
+      });
     } catch (_error) {
       logger.error('Session files listing failed', {
         operation: 'api:chat:session:files:list',
@@ -74,33 +74,35 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { error: 'Failed to list session files' });
+      return c.json({ error: 'Failed to list session files' }, 500);
     }
-  }, { params: sessionParams })
+  })
 
-  .post('/chat/session/:id/files', async ({ params, body, user, status }) => {
+  .post('/chat/session/:id/files', requireUser, validate('param', sessionParams), validate('json', attachBody), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     try {
-      const { fileId } = body;
+      const { fileId } = c.req.valid('json');
 
       const session = await chatSessionService.getSessionForUser(params.id, user.id);
       if (!session) {
-        return status(403, { error: 'Session not found or access denied' });
+        return c.json({ error: 'Session not found or access denied' }, 403);
       }
 
       const { filesRepository, sessionFilesRepository } = await import('../../db/repositories/index');
       const file = await filesRepository.findById(fileId);
       if (!file || file.userId !== user.id) {
-        return status(403, { error: 'File not found or access denied' });
+        return c.json({ error: 'File not found or access denied' }, 403);
       }
 
       const count = await sessionFilesRepository.countBySession(params.id);
       if (count >= 10) {
-        return status(400, { error: 'Maximum 10 fichiers par session' });
+        return c.json({ error: 'Maximum 10 fichiers par session' }, 400);
       }
 
       await sessionFilesRepository.attach(params.id, fileId);
 
-      return { success: true };
+      return c.json({ success: true });
     } catch (_error) {
       logger.error('Session file attach failed', {
         operation: 'api:chat:session:files:attach',
@@ -108,26 +110,23 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { error: 'Failed to attach file' });
+      return c.json({ error: 'Failed to attach file' }, 500);
     }
-  }, {
-    params: sessionParams,
-    body: t.Object({
-      fileId: t.String({ format: 'uuid' }),
-    }),
   })
 
-  .delete('/chat/session/:id/files/:fileId', async ({ params, user, status }) => {
+  .delete('/chat/session/:id/files/:fileId', requireUser, validate('param', sessionFileParams), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     try {
       const session = await chatSessionService.getSessionForUser(params.id, user.id);
       if (!session) {
-        return status(403, { error: 'Session not found or access denied' });
+        return c.json({ error: 'Session not found or access denied' }, 403);
       }
 
       const { sessionFilesRepository } = await import('../../db/repositories/index');
       await sessionFilesRepository.detach(params.id, params.fileId);
 
-      return { success: true };
+      return c.json({ success: true });
     } catch (_error) {
       logger.error('Session file detach failed', {
         operation: 'api:chat:session:files:detach',
@@ -135,6 +134,6 @@ export const sessionFilesApiRoutes = new Elysia({ name: 'api-session-files' })
         _error: _error instanceof Error ? _error.message : String(_error),
         severity: 'medium' as const
       });
-      return status(500, { error: 'Failed to detach file' });
+      return c.json({ error: 'Failed to detach file' }, 500);
     }
-  }, { params: sessionFileParams });
+  });

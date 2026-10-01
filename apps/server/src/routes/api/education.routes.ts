@@ -1,10 +1,11 @@
-import { Elysia } from 'elysia';
+import { Hono } from 'hono';
+import type { AppEnv } from '../../lib/http.js';
 import { logger } from '../../lib/observability';
 import { educationService } from '../../services/education.service';
 
-export const educationApiRoutes = new Elysia({ name: 'api-education' })
+export const educationApiRoutes = new Hono<AppEnv>()
 
-  .get('/education/levels', () => {
+  .get('/education/levels', (c) => {
     const levels = educationService.getAvailableLevels();
 
     logger.info('Education levels retrieved', {
@@ -14,10 +15,10 @@ export const educationApiRoutes = new Elysia({ name: 'api-education' })
       severity: 'low' as const
     });
 
-    return {
+    return c.json({
       success: true,
       levels,
       total: levels.length,
       availableCount: levels.filter(l => l.available).length
-    };
+    });
   });

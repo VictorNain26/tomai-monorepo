@@ -1,5 +1,6 @@
-import { Elysia, t } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { validate, type AuthEnv } from '../../lib/http.js';
 import { logger } from '../../lib/observability';
 import { checkQuota, checkDeckQuota, incrementDeckUsage } from '../../services/token-quota.service';
 import { getLevelConfig } from '../../config/learning-config.js';
@@ -10,12 +11,20 @@ import {
 import { learningService } from '../../services/learning/learning.service';
 import { getUserLevel } from './helpers';
 
-export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
-  .use(authMacro)
-  .guard({ auth: true })
+
+const generateBody = z.object({
+  subject: z.string().min(1).max(100),
+  domaine: z.string().min(1).max(200),
+  topic: z.string().min(1).max(500).optional(),
+});
+
+export const cardGenerateRoutes = new Hono<AuthEnv>()
   .post(
     '/generate',
-    async ({ body, user, status }) => {
+    validate('json', generateBody),
+    async (c) => {
+      const user = c.var.user;
+      const body = c.req.valid('json');
       const { subject, domaine, topic } = body;
 
       const isFullDomaineMode = !topic || topic.trim() === '';
@@ -30,11 +39,11 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           userId: user.id,
           plan: quota.plan,
         });
-        return status(403, {
+        return c.json({
           error: 'Abonnement requis',
           message: 'La génération de cartes de révision est réservée aux comptes premium. Demande à tes parents de souscrire un abonnement !',
           code: 'SUBSCRIPTION_REQUIRED',
-        });
+        }, 403);
       }
 
       const deckQuota = await checkDeckQuota(user.id);
@@ -47,7 +56,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           dailyLimit: deckQuota.dailyLimit,
           monthlyLimit: deckQuota.monthlyLimit,
         });
-        return status(429, {
+        return c.json({
           error: 'Limite atteinte',
           message: deckQuota.message,
           code: 'DECK_LIMIT_REACHED',
@@ -55,7 +64,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           decksRemainingThisMonth: deckQuota.decksRemainingThisMonth,
           dailyLimit: deckQuota.dailyLimit,
           monthlyLimit: deckQuota.monthlyLimit,
-        });
+        }, 429);
       }
 
       try {
@@ -93,7 +102,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
             code: generationResult.code,
             severity: 'medium' as const,
           });
-          return status(500, { error: generationResult.error, code: generationResult.code });
+          return c.json({ error: generationResult.error, code: generationResult.code }, 500);
         }
 
         const generatedCards = generationResult.cards;
@@ -130,7 +139,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           decksRemainingThisMonth: deckUsage.decksRemainingThisMonth,
         });
 
-        return {
+        return c.json({
           deck: newDeck,
           cards: insertedCards,
           metadata: {
@@ -138,7 +147,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
             decksRemainingToday: deckUsage.decksRemainingToday,
             decksRemainingThisMonth: deckUsage.decksRemainingThisMonth,
           },
-        };
+        });
       } catch (error) {
         logger.error('Failed to generate deck', {
           operation: 'learning:generate:error',
@@ -147,14 +156,7 @@ export const cardGenerateRoutes = new Elysia({ prefix: '/api/learning' })
           _error: error instanceof Error ? error.message : String(error),
           severity: 'high' as const,
         });
-        return status(500, { error: 'Échec de la génération du deck' });
+        return c.json({ error: 'Échec de la génération du deck' }, 500);
       }
     },
-    {
-      body: t.Object({
-        subject: t.String({ minLength: 1, maxLength: 100 }),
-        domaine: t.String({ minLength: 1, maxLength: 200 }),
-        topic: t.Optional(t.String({ minLength: 1, maxLength: 500 })),
-      }),
-    }
   );

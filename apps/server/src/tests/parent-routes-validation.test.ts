@@ -1,4 +1,5 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import type { AppEnv } from '../lib/http';
 import { createMockLogger } from './_helpers/mock-logger';
 
 mock.module('../lib/observability', () => ({ logger: createMockLogger() }));
@@ -17,11 +18,11 @@ const updateChild = mock((_parentId: string, childId: string, data: Record<strin
 );
 mock.module('../services/parent.service', () => ({ parentService: { createChild, updateChild } }));
 
-const { Elysia } = await import('elysia');
-const { errorHandlerMiddleware } = await import('../middleware/error-handler.middleware');
+const { Hono } = await import('hono');
+const { handleError } = await import('../middleware/error-handler.middleware');
 const { parentApiRoutes } = await import('../routes/api/parent.routes');
 
-const app = new Elysia().use(errorHandlerMiddleware).use(parentApiRoutes);
+const app = new Hono<AppEnv>().route('/', parentApiRoutes).onError(handleError);
 
 const validChild = {
   firstName: 'Lucas',
@@ -33,13 +34,11 @@ const validChild = {
 };
 
 function send(method: 'POST' | 'PATCH', path: string, body: unknown) {
-  return app.handle(
-    new Request(`http://localhost${path}`, {
-      method,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    }),
-  );
+  return app.request(path, {
+    method,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 describe('parent child routes validate their body once, with the Zod schemas', () => {

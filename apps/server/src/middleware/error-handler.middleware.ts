@@ -1,71 +1,57 @@
 /**
- * Global Error Handler Middleware
- *
- * Catches all unhandled errors and returns a standardized response.
- * Integrates with AppError for typed errors, falls back to 500 for unknown errors.
+ * Global error handling: every error leaves as `{ error: { code, message }, requestId }`.
+ * AppError keeps its status; anything else is logged and answered with a generic 500.
  */
 
-import { Elysia } from 'elysia';
+import type { ErrorHandler, NotFoundHandler } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { AppError, toErrorResponse } from '../lib/errors.js';
 import { logger } from '../lib/observability.js';
-import { REQUEST_ID_HEADER } from './request-id.middleware.js';
+import type { AppEnv } from '../lib/http.js';
 
-export const errorHandlerMiddleware = new Elysia({ name: 'error-handler' })
-  .onError({ as: 'global' }, ({ error, set, request }) => {
-    const header = set.headers[REQUEST_ID_HEADER];
-    const requestId = header === undefined ? undefined : String(header);
-    const url = new URL(request.url).pathname;
+export const handleError: ErrorHandler<AppEnv> = (error, c) => {
+  const requestId = c.get('requestId');
+  const url = new URL(c.req.url).pathname;
 
-    if (error instanceof AppError) {
-      set.status = error.statusCode;
-
-      // Log client errors at warn, server errors at error
-      if (error.statusCode >= 500) {
-        logger.error(`AppError: ${error.message}`, {
-          requestId,
-          operation: `error-handler:${error.code}`,
-          _error: error.message,
-          severity: 'high' as const,
-          url,
-        });
-      } else {
-        logger.warn(`AppError: ${error.code}`, {
-          requestId,
-          operation: `error-handler:${error.code}`,
-          url,
-        });
-      }
-
-      return toErrorResponse(error, requestId);
+  if (error instanceof AppError) {
+    if (error.statusCode >= 500) {
+      logger.error(`AppError: ${error.message}`, {
+        requestId,
+        operation: `error-handler:${error.code}`,
+        _error: error.message,
+        severity: 'high' as const,
+        url,
+      });
+    } else {
+      logger.warn(`AppError: ${error.code}`, {
+        requestId,
+        operation: `error-handler:${error.code}`,
+        url,
+      });
     }
+    return c.json(toErrorResponse(error, requestId), error.statusCode);
+  }
 
-    // Elysia validation errors (t.Object schema failures)
-    if (error instanceof Error && 'code' in error) {
-      const elysiaError = error as Error & { code: string; status?: number };
-      if (elysiaError.code === 'VALIDATION' || elysiaError.code === 'PARSE') {
-        set.status = 400;
-        return toErrorResponse(new AppError('VALIDATION_ERROR', error.message), requestId);
-      }
-      if (elysiaError.code === 'NOT_FOUND') {
-        set.status = 404;
-        return {
-          error: { code: 'NOT_FOUND' as const, message: 'Route introuvable.' },
-          ...(requestId && { requestId }),
-        };
-      }
-    }
+  // Malformed JSON and other request errors raised by Hono itself
+  if (error instanceof HTTPException && error.status === 400) {
+    return c.json(toErrorResponse(new AppError('VALIDATION_ERROR', error.message), requestId), 400);
+  }
 
-    // Unknown errors — always log, return generic message
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Unhandled error', {
-      requestId,
-      operation: 'error-handler:unhandled',
-      _error: errorMessage,
-      stack: error instanceof Error ? error.stack : undefined,
-      severity: 'high' as const,
-      url,
-    });
-
-    set.status = 500;
-    return toErrorResponse(new AppError('INTERNAL_ERROR'), requestId);
+  logger.error('Unhandled error', {
+    requestId,
+    operation: 'error-handler:unhandled',
+    _error: error.message,
+    stack: error.stack,
+    severity: 'high' as const,
+    url,
   });
+  return c.json(toErrorResponse(new AppError('INTERNAL_ERROR'), requestId), 500);
+};
+
+export const handleNotFound: NotFoundHandler<AppEnv> = (c) => {
+  const requestId = c.get('requestId');
+  return c.json(
+    { error: { code: 'NOT_FOUND' as const, message: 'Route introuvable.' }, ...(requestId && { requestId }) },
+    404,
+  );
+};

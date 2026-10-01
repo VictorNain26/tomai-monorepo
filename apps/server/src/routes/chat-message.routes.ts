@@ -9,10 +9,10 @@
  * stay plain JSON responses, unchanged from the legacy SSE route.
  */
 
-import { Elysia, t } from 'elysia';
+import { Hono } from 'hono';
+import { z } from 'zod';
 import { createUIMessageStream, createUIMessageStreamResponse, toUIMessageStream } from 'ai';
-import { authMacro } from '../lib/auth-macro.js';
-import { requestIdMiddleware } from '../middleware/request-id.middleware.js';
+import { requireUser, validate, type AppEnv } from '../lib/http.js';
 import { createRateLimitMiddleware, RateLimitPresets } from '../middleware/rate-limit.middleware.js';
 import { chatOrchestrationService, ChatOrchestrationError } from '../services/chat/chat-orchestration.service.js';
 import { streamChat } from '../services/chat/ai-chat.service.js';
@@ -22,7 +22,7 @@ import { tokenQuotaService } from '../services/token-quota.service.js';
 import { AppError, toErrorResponse } from '../lib/errors.js';
 import { logger } from '../lib/observability.js';
 import { env } from '../config/env.js';
-import { EDUCATION_LEVEL_UNION, isEducationLevel } from '../lib/education-levels.js';
+import { educationLevelSchema, isEducationLevel } from '../lib/education-levels.js';
 
 // Track active UI message streams per user
 const activeStreams = new Map<string, number>();
@@ -34,14 +34,30 @@ function sanitizePrompt(text: string): string {
   return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
 
-export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
-  .use(requestIdMiddleware)
-  .use(authMacro)
-  // Rate-limit AFTER the auth guard so `resolve` has injected `user` — the `ai`
-  // preset keys by user id, which is undefined if this runs before the guard.
-  .guard({ auth: true })
-  .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.ai))
-  .post('/stream', async ({ body, user, set, requestId }) => {
+const streamBody = z.object({
+  // Last UIMessage sent by the client (AI SDK UI Message format); the server rebuilds full history from DB.
+  message: z.looseObject({}),
+  sessionId: z.uuid().optional(),
+  // Optional for multi-subject chat
+  subject: z.string().min(2).max(50).optional(),
+  schoolLevel: educationLevelSchema.optional(),
+  firstName: z.string().min(1).max(50).optional(),
+  /** @deprecated use fileIds */
+  fileId: z.string().min(20).max(100).optional(),
+  fileIds: z.array(z.string().min(20).max(100)).max(5).optional(),
+  // Input channel declared by the user gesture (mic vs keyboard); never inferred by the model. Defaults to text.
+  inputMode: z.enum(['text', 'voice']).optional(),
+});
+
+const aiRateLimit = createRateLimitMiddleware(RateLimitPresets.ai);
+
+// Mounted under /api/chat by app.ts. The ai rate limit keys by user id, so it
+// runs after requireUser.
+export const chatMessageRoutes = new Hono<AppEnv>()
+  .post('/stream', requireUser, aiRateLimit, validate('json', streamBody), async (c) => {
+    const user = c.var.user;
+    const requestId = c.var.requestId;
+    const body = c.req.valid('json');
     const { message, sessionId, subject, schoolLevel, firstName, fileId, fileIds: fileIdsBody, inputMode } = body;
 
     const fileIds = fileIdsBody ?? (fileId ? [fileId] : []);
@@ -50,8 +66,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     // 1. Quota check
     const quotaCheck = await tokenQuotaService.checkQuota(user.id);
     if (!quotaCheck.allowed) {
-      set.status = 429;
-      return {
+      return c.json({
         error: {
           code: 'QUOTA_EXCEEDED' as const,
           message: quotaCheck.message ?? 'Limite atteinte. Réessaie bientôt.',
@@ -63,20 +78,18 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           plan: quotaCheck.plan,
         },
         requestId,
-      };
+      }, 429);
     }
 
     // 2. Content validation
     if (safeContent.trim().length === 0 && fileIds.length === 0) {
-      set.status = 400;
-      return toErrorResponse(new AppError('EMPTY_MESSAGE'), requestId);
+      return c.json(toErrorResponse(new AppError('EMPTY_MESSAGE'), requestId), 400);
     }
 
     // 3. Concurrent stream limit
     const currentStreams = activeStreams.get(user.id) ?? 0;
     if (currentStreams >= MAX_CONCURRENT_STREAMS) {
-      set.status = 409;
-      return toErrorResponse(new AppError('CONCURRENT_STREAM'), requestId);
+      return c.json(toErrorResponse(new AppError('CONCURRENT_STREAM'), requestId), 409);
     }
     activeStreams.set(user.id, currentStreams + 1);
 
@@ -114,8 +127,8 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       releaseStream();
       if (error instanceof ChatOrchestrationError) {
         const code = error.statusCode === 403 ? ('FORBIDDEN' as const) : ('SESSION_NOT_FOUND' as const);
-        set.status = error.statusCode;
-        return toErrorResponse(new AppError(code, error.message), requestId);
+        const appError = new AppError(code, error.message);
+        return c.json(toErrorResponse(appError, requestId), appError.statusCode);
       }
       logger.error('Chat turn setup failed', {
         _error: error instanceof Error ? error.message : String(error),
@@ -124,8 +137,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
         operation: 'chat-stream:setup-error',
         severity: 'high' as const,
       });
-      set.status = 500;
-      return toErrorResponse(new AppError('INTERNAL_ERROR'), requestId);
+      return c.json(toErrorResponse(new AppError('INTERNAL_ERROR'), requestId), 500);
     }
 
     const startTime = Date.now();
@@ -206,45 +218,4 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
     });
 
     return createUIMessageStreamResponse({ stream });
-  }, {
-    body: t.Object({
-      message: t.Unknown({
-        description: 'Last UIMessage sent by the client (AI SDK UI Message format); the server rebuilds full history from DB.',
-      }),
-      sessionId: t.Optional(t.String({
-        minLength: 36,
-        maxLength: 36,
-        pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-        description: 'Session UUID',
-      })),
-      subject: t.Optional(t.String({
-        minLength: 2,
-        maxLength: 50,
-        description: 'Educational subject (optional for multi-subject chat)',
-      })),
-      schoolLevel: t.Optional(t.Union(
-        [...EDUCATION_LEVEL_UNION.anyOf],
-        { description: 'Student school level (CP → terminale)' },
-      )),
-      firstName: t.Optional(t.String({
-        minLength: 1,
-        maxLength: 50,
-        description: 'Student first name',
-      })),
-      fileId: t.Optional(t.String({
-        minLength: 20,
-        maxLength: 100,
-        description: '[DEPRECATED] Use fileIds instead',
-      })),
-      fileIds: t.Optional(t.Array(t.String({
-        minLength: 20,
-        maxLength: 100,
-      }), {
-        maxItems: 5,
-        description: 'File IDs for multimodal messages',
-      })),
-      inputMode: t.Optional(t.Union([t.Literal('text'), t.Literal('voice')], {
-        description: 'Input channel declared by the user gesture (mic vs keyboard); never inferred by the model. Defaults to text.',
-      })),
-    }),
   });

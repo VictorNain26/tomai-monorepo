@@ -1,11 +1,11 @@
 /**
  * Tests unitaires - API Endpoints (app.ts + api.routes.ts)
  * Mock: DB, auth, services, non-essential route modules
- * Tests the real Elysia app composition via app.handle()
+ * Tests the real Hono app composition via app.request()
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { Elysia } from 'elysia';
+import { Hono } from 'hono';
 import { createMockLogger } from '../tests/_helpers/mock-logger';
 
 const SESSION_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
@@ -42,7 +42,7 @@ mock.module('drizzle-orm', () => ({
   and: (...args: unknown[]) => ({ type: 'and', args }),
 }));
 
-// Better Auth handler mount — returns 404 for non-auth paths (Elysia falls through)
+// Better Auth handler, mounted on /api/auth/* only
 mock.module('../lib/auth', () => ({
   auth: {
     handler: (req: Request) => {
@@ -74,7 +74,7 @@ mock.module('../config/env', () => ({
 
 // Infrastructure mocks
 mock.module('../middleware/rate-limit.middleware', () => ({
-  createRateLimitMiddleware: mock(() => () => {}),
+  createRateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
   RateLimitPresets: { api: {} },
 }));
 mock.module('../services/token-quota.service', () => ({
@@ -188,15 +188,15 @@ mock.module('../services/progress.service', () => ({
   },
 }));
 
-// Mock non-essential route modules as empty Elysia plugins
-mock.module('../routes/chat-message.routes', () => ({ chatMessageRoutes: new Elysia() }));
-mock.module('../routes/file-upload.routes', () => ({ fileUploadRoutes: new Elysia() }));
+// Mock non-essential route modules as empty Hono apps
+mock.module('../routes/chat-message.routes', () => ({ chatMessageRoutes: new Hono() }));
+mock.module('../routes/file-upload.routes', () => ({ fileUploadRoutes: new Hono() }));
 mock.module('../routes/subscription/index', () => ({
-  statusRoutes: new Elysia(),
+  statusRoutes: new Hono(),
 }));
-mock.module('../routes/tts.routes', () => ({ ttsRoutes: new Elysia() }));
+mock.module('../routes/tts.routes', () => ({ ttsRoutes: new Hono() }));
 mock.module('../routes/learning/index', () => ({
-  learningRoutes: new Elysia(),
+  learningRoutes: new Hono(),
 }));
 
 // DB schema + repositories (dynamic imports in apiRoutes)
@@ -243,7 +243,7 @@ beforeEach(() => {
 describe('API Endpoints', () => {
   describe('GET /', () => {
     it('should return operational status', async () => {
-      const res = await app.handle(new Request('http://localhost/'));
+      const res = await app.fetch(new Request('http://localhost/'));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.status).toBe('operational');
@@ -252,7 +252,7 @@ describe('API Endpoints', () => {
 
   describe('GET /health', () => {
     it('should return healthy when all services OK (root path — canonical, not /api/health)', async () => {
-      const res = await app.handle(new Request('http://localhost/health'));
+      const res = await app.fetch(new Request('http://localhost/health'));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.status).toBe('healthy');
@@ -262,7 +262,7 @@ describe('API Endpoints', () => {
 
     it('should return unhealthy 503 when database down', async () => {
       dbHealthy = false;
-      const res = await app.handle(new Request('http://localhost/health'));
+      const res = await app.fetch(new Request('http://localhost/health'));
       expect(res.status).toBe(503);
       const data = await res.json();
       expect(data.status).toBe('unhealthy');
@@ -270,7 +270,7 @@ describe('API Endpoints', () => {
     });
 
     it('should include version and environment info', async () => {
-      const res = await app.handle(new Request('http://localhost/health'));
+      const res = await app.fetch(new Request('http://localhost/health'));
       const data = await res.json();
       expect(data).toHaveProperty('status');
       expect(data).toHaveProperty('environment');
@@ -279,14 +279,14 @@ describe('API Endpoints', () => {
     });
 
     it('no longer exposes a duplicate /api/health (single canonical endpoint)', async () => {
-      const res = await app.handle(new Request('http://localhost/api/health'));
+      const res = await app.fetch(new Request('http://localhost/api/health'));
       expect(res.status).toBe(404);
     });
   });
 
   describe('POST /api/chat/session', () => {
     it('should return 401 without authentication', async () => {
-      const res = await app.handle(new Request('http://localhost/api/chat/session', {
+      const res = await app.fetch(new Request('http://localhost/api/chat/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       }));
@@ -295,7 +295,7 @@ describe('API Endpoints', () => {
 
     it('should create session when authenticated', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student', schoolLevel: 'troisieme' };
-      const res = await app.handle(new Request('http://localhost/api/chat/session', {
+      const res = await app.fetch(new Request('http://localhost/api/chat/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       }));
@@ -308,13 +308,13 @@ describe('API Endpoints', () => {
 
   describe('GET /api/chat/session/:id/history', () => {
     it('should return 401 without authentication', async () => {
-      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
+      const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
       expect(res.status).toBe(401);
     });
 
     it('should return messages when authenticated and session is owned', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
-      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
+      const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
@@ -325,7 +325,7 @@ describe('API Endpoints', () => {
     it('should return 403 when session belongs to another user (IDOR regression)', async () => {
       authUser = { id: 'user-002', firstName: 'Alice', role: 'student' };
       // chatService.getSession mock returns session owned by 'user-001'
-      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
+      const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
       expect(res.status).toBe(403);
       const data = await res.json();
       expect(data.error).toBe('Session not found or access denied');
@@ -333,7 +333,7 @@ describe('API Endpoints', () => {
 
     it('should reject a non-UUID id with 400 before any service call', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
-      const res = await app.handle(new Request('http://localhost/api/chat/session/not-a-uuid/history'));
+      const res = await app.fetch(new Request('http://localhost/api/chat/session/not-a-uuid/history'));
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.error.code).toBe('VALIDATION_ERROR');
@@ -342,13 +342,13 @@ describe('API Endpoints', () => {
 
   describe('DELETE /api/chat/session/:id', () => {
     it('should return 401 without authentication', async () => {
-      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}`, { method: 'DELETE' }));
+      const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}`, { method: 'DELETE' }));
       expect(res.status).toBe(401);
     });
 
     it('should delete session when authenticated', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
-      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}`, { method: 'DELETE' }));
+      const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}`, { method: 'DELETE' }));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
@@ -358,7 +358,7 @@ describe('API Endpoints', () => {
   describe('POST /api/chat/session/:id/reset', () => {
     it('should reset session when authenticated', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
-      const res = await app.handle(new Request(`http://localhost/api/chat/session/${SESSION_ID}/reset`, {
+      const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}/reset`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
       }));
       expect(res.status).toBe(200);
@@ -370,7 +370,8 @@ describe('API Endpoints', () => {
 
   describe('Malformed JSON body', () => {
     it('answers 400 with the error envelope', async () => {
-      const res = await app.handle(new Request(
+      authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
+      const res = await app.fetch(new Request(
         'http://localhost/api/chat/session/0199a3c4-7b1e-7d2a-9f00-123456789abc/files',
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{bad' },
       ));
@@ -383,7 +384,7 @@ describe('API Endpoints', () => {
 
   describe('Unknown routes', () => {
     it('should return 404 for unknown route', async () => {
-      const res = await app.handle(new Request('http://localhost/api/nonexistent'));
+      const res = await app.fetch(new Request('http://localhost/api/nonexistent'));
       expect(res.status).toBe(404);
     });
   });

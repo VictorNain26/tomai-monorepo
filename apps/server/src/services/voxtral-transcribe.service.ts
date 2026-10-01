@@ -17,7 +17,7 @@ import { getMistralSdk } from '../lib/ai/mistral-sdk.js';
 
 const STT_MODEL = env.MISTRAL_STT_MODEL;
 
-/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
+/** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface VoxtralTranscribeResult {
   success: boolean;
   transcription?: string;
@@ -26,7 +26,7 @@ export interface VoxtralTranscribeResult {
   error?: string;
 }
 
-/** @public — reachable only via Eden Treaty's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
+/** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface VoxtralTranscribeOptions {
   /**
    * Code ISO-639-1 de la langue attendue (ex. "fr").

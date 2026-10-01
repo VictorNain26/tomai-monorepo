@@ -14,8 +14,7 @@
 import { setupOtel, shutdownOtel } from './lib/otel/otel.js';
 setupOtel();
 
-import { setupSentry, Sentry } from './lib/sentry.js';
-setupSentry();
+import { Sentry } from './lib/sentry.js';
 
 const { app, initializeServices } = await import('./app');
 const { logger } = await import('./lib/observability.js');
@@ -25,16 +24,19 @@ const { stopBackgroundJobs } = await import('./services/server-lifecycle.js');
 const { createGracefulShutdown } = await import('./lib/graceful-shutdown.js');
 
 const PORT = env.PORT;
+let server: ReturnType<typeof Bun.serve> | undefined;
 
 async function startServer() {
   try {
     // Initialiser les services (DB connection, AI, etc.)
     await initializeServices();
 
-    // Démarrer le serveur
-    app.listen({
+    // idleTimeout 30 s: Bun's default (10 s) would cut a chat stream while the model thinks.
+    server = Bun.serve({
       hostname: '0.0.0.0',
-      port: PORT
+      port: PORT,
+      idleTimeout: 30,
+      fetch: app.fetch,
     });
 
     logger.info('TomAI Server ready', {
@@ -57,7 +59,8 @@ async function startServer() {
 // Gestion gracieuse de l'arrêt
 const shutdown = createGracefulShutdown(
   [
-    { name: 'app.stop', run: () => app.stop() },
+    // Lets in-flight requests, chat streams included, finish.
+    { name: 'server.stop', run: () => server?.stop() },
     { name: 'stopBackgroundJobs', run: stopBackgroundJobs },
     { name: 'otel.shutdown', run: shutdownOtel },
     { name: 'sentry.close', run: () => Sentry.close(2000) },

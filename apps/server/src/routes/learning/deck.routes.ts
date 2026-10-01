@@ -1,18 +1,35 @@
-import { Elysia, t } from 'elysia';
-import { authMacro } from '../../lib/auth-macro.js';
-import { EDUCATION_LEVEL_UNION } from '../../lib/education-levels.js';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { validate, type AuthEnv } from '../../lib/http.js';
+import { educationLevelSchema } from '../../lib/education-levels.js';
 import { logger } from '../../lib/observability';
 import { learningService } from '../../services/learning/learning.service';
-import { handleDeckDomainError } from './helpers';
+import { handleDeckDomainError, idParam } from './helpers';
 
-export const deckRoutes = new Elysia({ prefix: '/api/learning' })
-  .use(authMacro)
-  .guard({ auth: true })
 
-  .get('/decks', async ({ user, status }) => {
+const createDeckBody = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().optional(),
+  subject: z.string().min(1).max(100),
+  source: z.enum(['prompt', 'conversation', 'document', 'rag_program']),
+  sourceId: z.string().optional(),
+  sourcePrompt: z.string().optional(),
+  schoolLevel: educationLevelSchema.optional(),
+});
+
+const updateDeckBody = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().optional(),
+  subject: z.string().min(1).max(100).optional(),
+});
+
+export const deckRoutes = new Hono<AuthEnv>()
+
+  .get('/decks', async (c) => {
+    const user = c.var.user;
     try {
       const decks = await learningService.listUserDecks(user.id);
-      return { decks, count: decks.length };
+      return c.json({ decks, count: decks.length });
     } catch (error) {
       logger.error('Failed to fetch decks', {
         operation: 'learning:decks:list',
@@ -20,13 +37,16 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      return status(500, { error: 'Failed to fetch decks' });
+      return c.json({ error: 'Failed to fetch decks' }, 500);
     }
   })
 
   .post(
     '/decks',
-    async ({ body, user, status }) => {
+    validate('json', createDeckBody),
+    async (c) => {
+      const user = c.var.user;
+      const body = c.req.valid('json');
       try {
         // Empty deck creation — caller will populate cards via other endpoints.
         const { deck: newDeck } = await learningService.createDeckWithCards({
@@ -41,7 +61,7 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
           subject: body.subject, source: body.source,
         });
 
-        return { deck: newDeck };
+        return c.json({ deck: newDeck });
       } catch (error) {
         logger.error('Failed to create deck', {
           operation: 'learning:decks:create',
@@ -49,87 +69,75 @@ export const deckRoutes = new Elysia({ prefix: '/api/learning' })
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        return status(500, { error: 'Failed to create deck' });
+        return c.json({ error: 'Failed to create deck' }, 500);
       }
     },
-    {
-      body: t.Object({
-        title: t.String({ minLength: 1, maxLength: 200 }),
-        description: t.Optional(t.String()),
-        subject: t.String({ minLength: 1, maxLength: 100 }),
-        source: t.Union([
-          t.Literal('prompt'), t.Literal('conversation'),
-          t.Literal('document'), t.Literal('rag_program'),
-        ]),
-        sourceId: t.Optional(t.String()),
-        sourcePrompt: t.Optional(t.String()),
-        schoolLevel: t.Optional(EDUCATION_LEVEL_UNION),
-      }),
-    }
   )
 
-  .get('/decks/:id', async ({ params, user, status }) => {
+  .get('/decks/:id', validate('param', idParam), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     const { id: deckId } = params;
 
     try {
-      return await learningService.getDeckWithCardsOrThrow(user.id, deckId);
+      return c.json(await learningService.getDeckWithCardsOrThrow(user.id, deckId));
     } catch (error) {
       const domain = handleDeckDomainError(error);
-      if (domain) return status(domain.status, domain.body);
+      if (domain) return c.json(domain.body, domain.status);
       logger.error('Failed to fetch deck', {
         operation: 'learning:decks:get',
         userId: user.id, deckId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      return status(500, { error: 'Failed to fetch deck' });
+      return c.json({ error: 'Failed to fetch deck' }, 500);
     }
   })
 
   .patch(
     '/decks/:id',
-    async ({ params, body, user, status }) => {
+    validate('param', idParam),
+    validate('json', updateDeckBody),
+    async (c) => {
+      const user = c.var.user;
+      const params = c.req.valid('param');
+      const body = c.req.valid('json');
       const { id: deckId } = params;
 
       try {
         const updatedDeck = await learningService.updateDeckOrThrow(user.id, deckId, body);
-        return { deck: updatedDeck };
+        return c.json({ deck: updatedDeck });
       } catch (error) {
         const domain = handleDeckDomainError(error);
-        if (domain) return status(domain.status, domain.body);
+        if (domain) return c.json(domain.body, domain.status);
         logger.error('Failed to update deck', {
           operation: 'learning:decks:update',
           userId: user.id, deckId,
           _error: error instanceof Error ? error.message : String(error),
           severity: 'medium' as const,
         });
-        return status(500, { error: 'Failed to update deck' });
+        return c.json({ error: 'Failed to update deck' }, 500);
       }
     },
-    {
-      body: t.Object({
-        title: t.Optional(t.String({ minLength: 1, maxLength: 200 })),
-        description: t.Optional(t.String()),
-        subject: t.Optional(t.String({ minLength: 1, maxLength: 100 })),
-      }),
-    }
   )
 
-  .delete('/decks/:id', async ({ params, user, status }) => {
+  .delete('/decks/:id', validate('param', idParam), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
     const { id: deckId } = params;
 
     try {
       await learningService.deleteDeckOrThrow(user.id, deckId);
-      return { success: true };
+      return c.json({ success: true });
     } catch (error) {
       const domain = handleDeckDomainError(error);
-      if (domain) return status(domain.status, domain.body);
+      if (domain) return c.json(domain.body, domain.status);
       logger.error('Failed to delete deck', {
         operation: 'learning:decks:delete',
         userId: user.id, deckId,
         _error: error instanceof Error ? error.message : String(error),
         severity: 'medium' as const,
       });
-      return status(500, { error: 'Failed to delete deck' });
+      return c.json({ error: 'Failed to delete deck' }, 500);
     }
   });

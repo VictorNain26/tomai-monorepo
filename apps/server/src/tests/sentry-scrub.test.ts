@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { scrubRequestData } from '../lib/sentry';
 
-import type { ErrorEvent } from '@sentry/elysia';
+import type { ErrorEvent } from '@sentry/hono/bun';
 
 describe('scrubRequestData', () => {
   test('strips headers, cookies and query_string but keeps url/method and the rest of the event', () => {
