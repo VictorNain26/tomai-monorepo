@@ -59,7 +59,6 @@ const EnvSchema = z.object({
   BETTER_AUTH_URL: isProd ? z.url() : z.url().default('http://localhost:3000'),
   FRONTEND_URL: z.url().optional(),
   CORS_ORIGINS: z.string().optional(),
-  TRUSTED_ORIGINS: z.string().optional(),
 
   // Database (resolved via resolveDatabaseUrl() which handles Docker detection)
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
@@ -98,11 +97,6 @@ const EnvSchema = z.object({
   // the AI SDK manages the tool loop as a single continuous stream.
   CHAT_STREAM_TIMEOUT_MS: z.coerce.number().int().default(120000),
 
-  // Rate limiting
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(900000), // 15 min
-  RATE_LIMIT_MAX_REQUESTS_API: z.coerce.number().int().default(100),
-  RATE_LIMIT_MAX_REQUESTS_CHAT: z.coerce.number().int().default(10),
-
   // Currency conversion
   USD_TO_EUR_RATE: z.coerce.number().positive().default(0.92),
 
@@ -112,12 +106,10 @@ const EnvSchema = z.object({
   // Observability
   GIT_COMMIT_SHA: z.string().default('unknown'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-  DEBUG: z.string().optional(),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
 
   // Logging/Monitoring (optional)
   SENTRY_DSN: z.string().optional(),
-  POSTHOG_API_KEY: z.string().optional(),
 }); // Allow extra system variables (npm, shell, etc.)
 
 type EnvType = z.infer<typeof EnvSchema>;

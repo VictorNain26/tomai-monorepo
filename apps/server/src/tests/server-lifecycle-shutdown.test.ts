@@ -18,9 +18,6 @@ mock.module('../db/connection', () => ({
   db: { execute: mock(() => Promise.resolve([{ count: 0 }])) },
 }));
 mock.module('drizzle-orm', () => ({ sql: (s: unknown) => s }));
-mock.module('../middleware/memory-monitor.middleware', () => ({
-  memoryMonitor: { startMonitoring: mock(() => {}), stopMonitoring: mock(() => {}) },
-}));
 const { initializeServices, stopBackgroundJobs } = await import('../services/server-lifecycle');
 
 beforeEach(() => {

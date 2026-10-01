@@ -1,6 +1,5 @@
 import { env } from '../config/env.js';
 import { logger } from '../lib/observability.js';
-import { memoryMonitor } from '../middleware/memory-monitor.middleware.js';
 import { db } from '../db/connection.js';
 import { sql } from 'drizzle-orm';
 import { startRetentionPurgeScheduler } from './retention-purge.service.js';
@@ -12,11 +11,6 @@ export async function initializeServices(): Promise<void> {
     logger.info('Initializing TomAI services...', {
       operation: 'services:init',
       environment: env.NODE_ENV
-    });
-
-    logger.info('In-memory cache ready', {
-      operation: 'services:init:cache',
-      provider: 'memory-lru'
     });
 
     const dbStart = Date.now();
@@ -38,8 +32,6 @@ export async function initializeServices(): Promise<void> {
       operation: 'services:init:migrations',
       count: Number(migrations[0]?.count ?? 0)
     });
-
-    memoryMonitor.startMonitoring(30000);
 
     stopRetentionPurge = startRetentionPurgeScheduler();
 

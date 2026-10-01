@@ -31,7 +31,6 @@ mock.module('../config/env', () => ({
     SESSION_MAX_AGE: 604800,
     SESSION_UPDATE_AGE: 86400,
     CORS_ORIGINS: undefined,
-    TRUSTED_ORIGINS: undefined,
     DATABASE_URL: 'postgresql://test:test@localhost/test',
     PORT: 3000,
     APP_VERSION: '1.0.0',

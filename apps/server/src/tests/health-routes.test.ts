@@ -1,5 +1,5 @@
 /**
- * GET /health — seul endpoint canonique, check réel de la base + du cache.
+ * GET /health — seul endpoint canonique, check réel de la base.
  *
  * `apiHealthRoutes` (routes/api/health.routes.ts) est monté à la racine de
  * l'app (voir routes/api/index.ts) — c'est ce endpoint que le HEALTHCHECK du
@@ -35,9 +35,6 @@ mock.module('../db/connection', () => ({ db: { execute: dbExecute } }));
 mock.module('drizzle-orm', () => ({
   sql: (strings: TemplateStringsArray) => strings,
 }));
-mock.module('../services/memory-cache.service', () => ({
-  cacheService: { healthCheck: () => ({ status: 'healthy', client: 'memory', latency: 0 }) },
-}));
 
 const { apiHealthRoutes } = await import('../routes/api/health.routes');
 
@@ -57,14 +54,14 @@ describe('GET /health', () => {
     dbExecute.mockImplementation(() => Promise.resolve([{ '?column?': 1 }]));
   });
 
-  it('reports healthy with database and cache checks', async () => {
+  it('reports healthy with the database as its only check', async () => {
     const { response, body } = await callHealth();
 
     expect(response.status).toBe(200);
     expect(body.status).toBe('healthy');
     expect(body.checks.database.status).toBe('healthy');
     expect(typeof body.checks.database.latency).toBe('number');
-    expect(body.checks.cache.status).toBe('healthy');
+    expect(Object.keys(body.checks)).toEqual(['database']);
   });
 
   it('exposes the deployed commit sha so the smoke test can gate on it', async () => {

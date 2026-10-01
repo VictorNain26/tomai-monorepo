@@ -43,11 +43,13 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 
 - **Pas de logique métier dans un route handler** → déléguer au service.
 - **Pas d'accès DB depuis une route** → passer par le repository.
-- **Validation HTTP en TypeBox** (`t`, natif Elysia) sur chaque route : c'est elle
-  qui alimente les types Eden. Zod sert hors route : variables d'environnement,
-  sorties structurées de l'IA, arguments des outils du chat. Seule exception
-  restante, la double validation Zod de `parent.routes.ts` (`src/schemas/`),
-  retirée en PR E2.
+- **Validation HTTP** : TypeBox (`t`, natif Elysia) par défaut sur chaque route. Quand
+  la règle a besoin de transformations ou de raffinements (trim, minuscules, borne
+  d'âge), un schéma Zod sert directement de `body` : Elysia l'accepte en Standard Schema
+  et en infère aussi les types Eden (corps des routes enfant de `parent.routes.ts`,
+  `src/schemas/validation.ts`). Jamais les deux sur une même route. Zod sert aussi hors
+  route : variables d'environnement, sorties structurées de l'IA, arguments des outils
+  du chat.
 - **Auth** : macro `authMacro` + `.guard({ auth: true })`, qui injecte
   `{ user, session }` typés. Jamais de vérification manuelle.
 - **Transactions** : `db.transaction(...)` dès qu'une opération touche plusieurs

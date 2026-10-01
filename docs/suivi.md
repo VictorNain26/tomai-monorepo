@@ -12,13 +12,15 @@ bloquant levé).
 ## Où on en est
 
 - **Dernière mise à jour :** 2026-10-01.
-- **Lot en cours :** 0 — Assainissement, dernière ligne droite. Pronote et la liste
-  d'attente sont sortis du code (#341). Restent deux PR, dans cet ordre (`roadmap.md`,
-  « Découpage en PR »), dont le plan s'écrit au démarrage, contre `main` à jour :
-  - **E2 — infra serveur et outillage** (détail dans « Reporté ») ;
+- **Lot en cours :** 0 — Assainissement, dernière ligne droite. E2 est découpé en trois
+  PR (`roadmap.md`) ; la première, code mort, validation et rate limit, est mergée
+  (#342). Restent, dans cet ordre, chacune avec son plan écrit au démarrage contre
+  `main` à jour :
+  - **E2, logger** (détail dans « Reporté ») ;
+  - **E2, outillage** (détail dans « Reporté ») ;
   - **lint strict** : plus aucun `eslint-disable` (détail dans « Reporté »).
-- **Prochaine action :** E2, sur une branche courte dont le plan s'écrit d'abord dans
-  `docs/plans/` (`.claude/rules/plans-and-agents.md`).
+- **Prochaine action :** E2, logger, sur une branche courte dont le plan s'écrit d'abord
+  dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -30,40 +32,22 @@ plan de la PR s'écrit, le point y devient une tâche ou est explicitement renvo
 (`.claude/rules/plans-and-agents.md`). Chemins relatifs à `apps/server/src/` sauf mention
 contraire.
 
-### Lot 0 — E2, infra serveur et outillage
-
-Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
+### Lot 0 — E2, logger
 
 - **Logger** : `lib/observability.ts` sérialise par `JSON.stringify` (une `Error` devient
   `{}`, un BigInt ou une référence circulaire fait lever l'appel de log) et ignore
   `LOG_LEVEL`, validée par `config/env.ts` mais lue nulle part. À remplacer par pino, même
   signature d'appel, puis codemod du motif
-  `_error: x instanceof Error ? x.message : String(x)` (116 sites dans 49 fichiers le
-  2026-09-23), qui perd la stack.
-- **Code mort** : `services/memory-cache.service.ts` (son `healthCheck()` répond toujours
-  `healthy`, `/health` est son seul consommateur ; `setInterval` dès l'import) ;
-  `middleware/memory-monitor.middleware.ts` (ne fait que `global.gc()` et des logs, branché
-  dans `initializeServices` et dans l'étape `stopMonitoring` de `createGracefulShutdown`) ;
-  `db/pool-limiter.ts` et `p-limit` (postgres-js met déjà en file au-delà de `max` ; seul
-  consommateur `services/parent/parent-dashboard.service.ts`).
-- **Validation** : une seule validation TypeBox par route parent ; `schemas/validation.ts`
-  (double validation Zod de `routes/api/parent.routes.ts`) et son test disparaissent.
-  Depuis D, une erreur de validation répond 400
-  `{ error: { code: 'VALIDATION_ERROR', message }, requestId }`, pas 422.
-- **Variables mortes** de `config/env.ts` : `RATE_LIMIT_WINDOW_MS`,
-  `RATE_LIMIT_MAX_REQUESTS_API`, `RATE_LIMIT_MAX_REQUESTS_CHAT`, `DEBUG`, `POSTHOG_API_KEY`
-  et `TRUSTED_ORIGINS` (better-auth lit `BETTER_AUTH_TRUSTED_ORIGINS`). `LOG_LEVEL` reste.
-- **Rate limit** : `middleware/rate-limit.middleware.ts` tient une fenêtre fixe dans une
-  seule `Map` partagée par tous les limiteurs (deux limiteurs aux plafonds différents
-  incrémentent la même clé), `setInterval` à l'import, presets `auth`, `upload` et `public`
-  sans consommateur, `skipSuccessfulRequests` jamais lu. À remplacer par
-  `rate-limiter-flexible`, un compteur par limiteur. La connexion enfant `/sign-in/username`
-  est déjà couverte par la règle par défaut de better-auth sur `/sign-in` : aucune règle à
-  ajouter.
-- **Déclarations mortes** : `IAppUser.parentId` (`packages/api/src/types.ts`) et
-  `ElysiaAuthenticatedUser.parentId` (`types/index.ts`) ; `ignoreBinaries` et entrées
-  `scripts/**` de l'espace `apps/server` du `knip.json` racine ; montage
-  `./apps/server/scripts` du service `backend` de `docker-compose.yml` (dossier supprimé).
+  `_error: x instanceof Error ? x.message : String(x)` (123 sites dans 52 fichiers le
+  2026-10-01), qui perd la stack.
+
+### Lot 0 — E2, outillage
+
+Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
+
+- **Déclarations mortes** : `ignoreBinaries` et entrées `scripts/**` de l'espace
+  `apps/server` du `knip.json` racine ; montage `./apps/server/scripts` du service
+  `backend` de `docker-compose.yml` (dossier supprimé).
 - **Scripts** (racine) : `scripts/dev.mjs` enchaîne trois attentes, une seule suffit
   (`docker compose up --wait`) ; `CREATE EXTENSION vector` est refait par `scripts/setup.mjs`
   et par `ci.yml` alors que `apps/server/src/db/migrate.ts` la crée sous verrou, et le check
@@ -78,10 +62,9 @@ Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
   `apps/landing/app/layout.tsx` (changement technique, compatible avec le gel).
 - **Lockfile** : `pnpm dedupe --check` échoue ; `react@19.2.3` et un second `next` restent
   résolus sous le serveur comme pairs optionnels de better-auth.
-- **Doc que E2 rend fausse**, à corriger dans la même PR : `apps/server/README.md`
-  (`MemoryCacheService`, moniteur mémoire), `apps/server/CLAUDE.md` (exception Zod de
-  `src/schemas/`), `.claude/skills/dev-bootstrap/SKILL.md` (`CREATE EXTENSION` à la main
-  avant `db:migrate`).
+- **Doc que cette PR rend fausse**, à corriger dans la même PR :
+  `.claude/skills/dev-bootstrap/SKILL.md` (`CREATE EXTENSION` à la main avant
+  `db:migrate`).
 
 ### Lot 0 — lint strict
 
@@ -130,6 +113,10 @@ Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
 
 ### Lot 3 — client web
 
+- **Erreurs de validation** : le 400 `VALIDATION_ERROR` du gestionnaire global
+  (`middleware/error-handler.middleware.ts`) renvoie toujours le même message générique,
+  sans dire quel champ est faux. Les formulaires d'enfant en auront besoin : exposer les
+  champs en erreur dans l'enveloppe, pour toutes les routes.
 - **Tableau de bord parent** : `ParentDashboardService.getSessionMessages`
   (`services/parent/parent-dashboard.service.ts`), relayée par
   `ParentService.getSessionMessages`, renvoie le texte complet des messages d'une séance de
@@ -207,3 +194,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   `docs/` (#339) ; fichiers d'instructions allégés (#328).
   Étude du statut juridique (#340). Pronote, la liste d'attente et leurs tables retirés du
   code, contexte Pronote de l'agent compris (#341).
+  E2 découpé en trois PR ; la première retire le cache et le moniteur mémoire, le limiteur
+  de pool, la double validation des routes enfant et les variables mortes, et passe le rate
+  limit sur rate-limiter-flexible (#342).

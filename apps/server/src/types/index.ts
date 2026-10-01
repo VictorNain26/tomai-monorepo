@@ -14,7 +14,6 @@ export interface ElysiaAuthenticatedUser {
   lastName?: string | null;
   schoolLevel?: string | null;
   dateOfBirth?: string | null;
-  parentId?: string | null;
 }
 
 // Single source of truth: derived from the DB `school_level` enum.

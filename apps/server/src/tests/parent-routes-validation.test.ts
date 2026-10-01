@@ -1,0 +1,87 @@
+import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import { createMockLogger } from './_helpers/mock-logger';
+
+mock.module('../lib/observability', () => ({ logger: createMockLogger() }));
+
+const parentUser = { id: 'parent-1', role: 'parent' };
+mock.module('../middleware/auth.middleware', () => ({
+  requireAuth: () => Promise.resolve({ success: true, user: parentUser, session: { id: 's1' } }),
+  requireParentRole: () => Promise.resolve({ success: true, user: parentUser, session: { id: 's1' } }),
+}));
+
+const createChild = mock((_parentId: string, data: Record<string, unknown>) =>
+  Promise.resolve({ id: 'child-1', ...data }),
+);
+const updateChild = mock((_parentId: string, childId: string, data: Record<string, unknown>) =>
+  Promise.resolve({ id: childId, ...data }),
+);
+mock.module('../services/parent.service', () => ({ parentService: { createChild, updateChild } }));
+
+const { Elysia } = await import('elysia');
+const { errorHandlerMiddleware } = await import('../middleware/error-handler.middleware');
+const { parentApiRoutes } = await import('../routes/api/parent.routes');
+
+const app = new Elysia().use(errorHandlerMiddleware).use(parentApiRoutes);
+
+const validChild = {
+  firstName: 'Lucas',
+  lastName: 'Martin',
+  username: 'lucas_ce2',
+  password: 'ChildPass123',
+  schoolLevel: 'ce2',
+  dateOfBirth: '2015-03-15',
+};
+
+function send(method: 'POST' | 'PATCH', path: string, body: unknown) {
+  return app.handle(
+    new Request(`http://localhost${path}`, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+describe('parent child routes validate their body once, with the Zod schemas', () => {
+  beforeEach(() => {
+    createChild.mockClear();
+    updateChild.mockClear();
+  });
+
+  it.each([
+    ['an age out of bounds', { ...validChild, dateOfBirth: '2022-01-01' }],
+    ['a weak password', { ...validChild, password: 'weak' }],
+    ['a missing date of birth', { ...validChild, dateOfBirth: undefined }],
+  ])('POST rejects %s with VALIDATION_ERROR before the service', async (_label, body) => {
+    const res = await send('POST', '/parent/children', body);
+    expect(res.status).toBe(400);
+    const data = (await res.json()) as { error: { code: string } };
+    expect(data.error.code).toBe('VALIDATION_ERROR');
+    expect(createChild).not.toHaveBeenCalled();
+  });
+
+  it('POST hands the normalized body to the service', async () => {
+    const res = await send('POST', '/parent/children', {
+      ...validChild,
+      username: 'LUCAS_CE2',
+      firstName: 'Lucas ',
+    });
+    expect(res.status).toBe(200);
+    expect(createChild).toHaveBeenCalledTimes(1);
+    expect(createChild.mock.calls[0]?.[1]).toMatchObject({ username: 'lucas_ce2', firstName: 'Lucas' });
+  });
+
+  it('PATCH rejects an empty update with VALIDATION_ERROR before the service', async () => {
+    const res = await send('PATCH', '/parent/children/child-1', {});
+    expect(res.status).toBe(400);
+    const data = (await res.json()) as { error: { code: string } };
+    expect(data.error.code).toBe('VALIDATION_ERROR');
+    expect(updateChild).not.toHaveBeenCalled();
+  });
+
+  it('PATCH hands a valid partial update to the service', async () => {
+    const res = await send('PATCH', '/parent/children/child-1', { schoolLevel: 'cm1' });
+    expect(res.status).toBe(200);
+    expect(updateChild.mock.calls[0]?.[2]).toEqual({ schoolLevel: 'cm1' });
+  });
+});

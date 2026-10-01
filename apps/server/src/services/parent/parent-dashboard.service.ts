@@ -3,7 +3,6 @@ import { studySessionsRepository, messagesRepository, progressRepository } from 
 import { db } from '../../db/connection';
 import { studySessions } from '../../db/schema';
 import { logger } from '../../lib/observability';
-import { withPoolLimit } from '../../db/pool-limiter.js';
 import type { ChildInfo, ParentDashboardMetrics, StudentProgress, SessionSummary, SessionMessage } from './parent-types';
 
 export class ParentDashboardService {
@@ -17,38 +16,27 @@ export class ParentDashboardService {
         return [];
       }
 
-      // Parallelize across all children (previously sequential boucle for: ~N× slower).
-      // Pool limiter throttles the actual DB calls so we don't exhaust the connection pool.
       const metrics = await Promise.all(
         children.map(async (child): Promise<ParentDashboardMetrics> => {
           try {
             const [sessionStats, subjectsResult, lastSessionResult, studyDaysResult] = await Promise.all([
               studySessionsRepository.getSessionStats(child.id),
-              withPoolLimit(
-                () => db
-                  .selectDistinct({ subject: studySessions.subject })
-                  .from(studySessions)
-                  .where(eq(studySessions.userId, child.id)),
-                `subjects-${child.id}`
-              ),
-              withPoolLimit(
-                () => db
-                  .select({ startedAt: studySessions.startedAt })
-                  .from(studySessions)
-                  .where(eq(studySessions.userId, child.id))
-                  .orderBy(desc(studySessions.startedAt))
-                  .limit(1),
-                `last-session-${child.id}`
-              ),
-              withPoolLimit(
-                () => db
-                  .select({
-                    studyDays: sql<number>`COUNT(DISTINCT DATE(${studySessions.startedAt}))::int`
-                  })
-                  .from(studySessions)
-                  .where(eq(studySessions.userId, child.id)),
-                `study-days-${child.id}`
-              ),
+              db
+                .selectDistinct({ subject: studySessions.subject })
+                .from(studySessions)
+                .where(eq(studySessions.userId, child.id)),
+              db
+                .select({ startedAt: studySessions.startedAt })
+                .from(studySessions)
+                .where(eq(studySessions.userId, child.id))
+                .orderBy(desc(studySessions.startedAt))
+                .limit(1),
+              db
+                .select({
+                  studyDays: sql<number>`COUNT(DISTINCT DATE(${studySessions.startedAt}))::int`
+                })
+                .from(studySessions)
+                .where(eq(studySessions.userId, child.id)),
             ]);
 
             return {

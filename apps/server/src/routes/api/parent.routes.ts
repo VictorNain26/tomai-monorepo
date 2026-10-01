@@ -1,12 +1,6 @@
-import { Elysia, t } from 'elysia';
+import { Elysia } from 'elysia';
 import { authMacro } from '../../lib/auth-macro.js';
-import { EDUCATION_LEVEL_UNION } from '../../lib/education-levels.js';
-import {
-  validateSchema,
-  isValidationError,
-  createChildSchema,
-  updateChildSchema
-} from '../../schemas/validation';
+import { createChildSchema, updateChildSchema } from '../../schemas/validation';
 import { parentService } from '../../services/parent.service';
 import { logger } from '../../lib/observability';
 
@@ -66,24 +60,8 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       severity: 'low' as const
     });
 
-    // TypeBox provides structural gating + contract typing; Zod enforces detailed
-    // business rules (transforms, age check, regex) that TypeBox does not express.
-    const validation = validateSchema(createChildSchema, body);
-    if (isValidationError(validation)) {
-      logger.error('Child creation validation failed', {
-        _error: validation._error,
-        operation: 'api:parent:child:validation',
-        userId: user.id,
-        bodyType: typeof body,
-        bodyKeys: body ? Object.keys(body as object) : [],
-        validationDetails: validation._error,
-        severity: 'medium' as const
-      });
-      return status(400, { error: 'Validation Error', message: validation._error, details: 'Check request body format' });
-    }
-
     try {
-      const child = await parentService.createChild(user.id, validation.data);
+      const child = await parentService.createChild(user.id, body);
       return { success: true, child, message: 'Child created successfully' };
     } catch (_error) {
       logger.error('Child creation failed', {
@@ -95,26 +73,12 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       return status(400, { error: 'Creation failed', message: _error instanceof Error ? _error.message : 'Failed to create child' });
     }
   }, {
-    body: t.Object({
-      firstName: t.String(),
-      lastName: t.String(),
-      username: t.String(),
-      password: t.String(),
-      schoolLevel: EDUCATION_LEVEL_UNION,
-      dateOfBirth: t.String(),
-    }),
+    body: createChildSchema,
   })
 
   .patch('/parent/children/:id', async ({ params, body, user, status, request: { headers } }) => {
-    // TypeBox provides structural gating + contract typing; Zod enforces detailed
-    // business rules (transforms, age check, regex) that TypeBox does not express.
-    const validation = validateSchema(updateChildSchema, body);
-    if (isValidationError(validation)) {
-      return status(400, { error: 'Validation Error', message: validation._error });
-    }
-
     try {
-      const child = await parentService.updateChild(user.id, params.id, validation.data, headers);
+      const child = await parentService.updateChild(user.id, params.id, body, headers);
       return { success: true, child };
     } catch (_error) {
       logger.error('Child update failed', {
@@ -126,14 +90,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       return status(400, { error: 'Update failed', message: _error instanceof Error ? _error.message : 'Failed to update child' });
     }
   }, {
-    body: t.Object({
-      firstName: t.Optional(t.String()),
-      lastName: t.Optional(t.String()),
-      // username intentionally excluded — immutable after creation
-      password: t.Optional(t.String()),
-      schoolLevel: t.Optional(EDUCATION_LEVEL_UNION),
-      dateOfBirth: t.Optional(t.String()),
-    }),
+    body: updateChildSchema,
   })
 
   .delete('/parent/children/:id', async ({ params, user, status }) => {

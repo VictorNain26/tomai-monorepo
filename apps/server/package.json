@@ -71,8 +71,8 @@
     "drizzle-orm": "^0.45.3",
     "elysia": "^1.4.30",
     "mammoth": "^1.12.3",
-    "p-limit": "^7.3.3",
     "postgres": "^3.4.9",
+    "rate-limiter-flexible": "^11.2.1",
     "ts-fsrs": "^5.4.2",
     "unpdf": "^1.8.1",
     "zod": "^4.6.5"

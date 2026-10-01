@@ -72,22 +72,7 @@ mock.module('../config/env', () => ({
   getCorsOrigins: () => ['http://localhost:3001'],
 }));
 
-// Cache service
-mock.module('../services/memory-cache.service', () => ({
-  cacheService: {
-    healthCheck: mock(() => ({ status: 'healthy', latency: 1 })),
-    get: mock(() => null),
-    set: mock(() => true),
-    delete: mock(() => true),
-    invalidateByPattern: mock(() => 0),
-  },
-  memoryCacheService: { get: mock(() => null), set: mock(() => true) },
-}));
-
 // Infrastructure mocks
-mock.module('../middleware/memory-monitor.middleware', () => ({
-  memoryMonitor: { startMonitoring: mock(() => {}) },
-}));
 mock.module('../middleware/rate-limit.middleware', () => ({
   createRateLimitMiddleware: mock(() => () => {}),
   RateLimitPresets: { api: {} },
@@ -203,13 +188,6 @@ mock.module('../services/progress.service', () => ({
   },
 }));
 
-mock.module('../schemas/validation', () => ({
-  validateSchema: mock((_s: unknown, data: unknown) => ({ data })),
-  isValidationError: mock(() => false),
-  createChildSchema: {},
-  updateChildSchema: {},
-}));
-
 // Mock non-essential route modules as empty Elysia plugins
 mock.module('../routes/chat-message.routes', () => ({ chatMessageRoutes: new Elysia() }));
 mock.module('../routes/file-upload.routes', () => ({ fileUploadRoutes: new Elysia() }));
@@ -279,7 +257,7 @@ describe('API Endpoints', () => {
       const data = await res.json();
       expect(data.status).toBe('healthy');
       expect(data.checks.database.status).toBe('healthy');
-      expect(data.checks.cache.status).toBe('healthy');
+      expect(data.checks.cache).toBeUndefined();
     });
 
     it('should return unhealthy 503 when database down', async () => {
