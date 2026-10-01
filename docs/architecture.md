@@ -15,7 +15,7 @@ directement la cible.
 
 | Sujet | Décision | Motif |
 |---|---|---|
-| Client V1 | **Web uniquement, Next.js, pensé d'abord pour le téléphone** | Un seul client à livrer ; le collégien travaille le soir, probablement sur téléphone, à vérifier (vision, « Pour qui ») |
+| Client V1 | **Web uniquement, application monopage (orientation : Vite, React, TanStack Router), pensée d'abord pour le téléphone** | Un seul client à livrer ; le collégien travaille le soir, probablement sur téléphone, à vérifier (vision, « Pour qui ») |
 | Application native | **Hors V1** ; `apps/mobile` supprimé au lot 0 (l'historique git le garde) | Code mort à maintenir sinon |
 | Topologie | **Un dépôt, backend en monolithe modulaire** | `ai-service` et `curriculum` séparés ont pourri puis été supprimés ; un service séparé ne se justifie que par une contrainte réelle |
 | Serveur | Bun + Hono (Elysia remplacé le 2026-10-01) | Client typé de bout en bout (`hono/client`) ; adoption et maintenance bien plus larges qu'Elysia, qui reposait sur un seul mainteneur ; tourne sur Bun, Node et l'edge |
@@ -47,7 +47,7 @@ touche, pas en un big-bang.
 
 ## Client web
 
-- `apps/web` en Next.js (App Router), consommateur du client typé via `@repo/api`.
+- `apps/web` en application monopage Vite + React + TanStack Router (orientation du 2026-10-01, confirmée au démarrage du lot 3), consommateur du client typé via `@repo/api`.
 - **Pensé d'abord pour le téléphone** : chaque parcours se conçoit et se prouve à largeur
   de téléphone, le bureau s'en déduit.
 - Primitives `@repo/ui` (shadcn) et tokens `@repo/tokens`.
@@ -60,10 +60,10 @@ Elles sont tranchées au démarrage du lot qui en dépend, doc-first, pas avant�
 
 | Décision | Lot | Ce qui doit être vérifié |
 |---|---|---|
-| Next.js séparé qui appelle le serveur Hono, ou Hono monté dans une route Next | 3 | Doc Hono (adaptateur Vercel/Next.js), impact sur cookies et streaming |
+| Client web : SPA Vite + React + TanStack Router (orientation du 2026-10-01 : derrière une connexion, sans besoin de SEO ni de rendu serveur ; Vite 219 M et TanStack Router 28 M téléchargements par semaine) | 3 | Fichiers servis par Hono sur la même origine que l'API (cookies sans CORS) ou par un hébergeur statique ; intégration de `@repo/ui` et de `useChat` |
 | Hébergement web et serveur (UE) | 3 | Région UE, streaming SSE long, coût |
 | Fournisseur de paiement web | 3 | Conformité UE, abonnement familial multi-enfants, facturation sans piège réalisable telle que la vision la définit |
-| Sort de `apps/landing` : conservée ou absorbée par `apps/web` | 4 | SEO, un seul déploiement |
+| Landing : Astro à la place de Next.js (orientation du 2026-10-01 : site statique, SEO, HTML sans JavaScript par défaut, composants React en îlots) | 4 | Reprise de `@repo/ui` en îlots, hébergement, réécriture avec la nouvelle identité |
 | Nom du produit | 4 | Marques et domaines (vision, « Marque ») |
 
 ## Ordre des lots
