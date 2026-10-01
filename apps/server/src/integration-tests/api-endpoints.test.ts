@@ -85,11 +85,6 @@ mock.module('../services/memory-cache.service', () => ({
 }));
 
 // Infrastructure mocks
-mock.module('../lib/encryption', () => ({
-  validateEncryptionSetup: mock(async () => true),
-  encrypt: mock(async (v: string) => `enc:${v}`),
-  decrypt: mock(async (v: string) => v.replace(/^enc:/, '')),
-}));
 mock.module('../middleware/memory-monitor.middleware', () => ({
   memoryMonitor: { startMonitoring: mock(() => {}) },
 }));
@@ -225,25 +220,19 @@ mock.module('../routes/tts.routes', () => ({ ttsRoutes: new Elysia() }));
 mock.module('../routes/learning/index', () => ({
   learningRoutes: new Elysia(),
 }));
-mock.module('../routes/waitlist.routes', () => ({ waitlistRoutes: new Elysia() }));
-mock.module('../routes/pronote-sync.routes', () => ({ pronoteSyncRoutes: new Elysia() }));
-mock.module('../routes/pronote-data.routes', () => ({ pronoteDataRoutes: new Elysia() }));
-mock.module('../routes/pronote-connect.routes', () => ({ pronoteConnectRoutes: new Elysia() }));
 
 // DB schema + repositories (dynamic imports in apiRoutes)
 // The mock must spread all real sub-modules so that other integration tests
 // sharing this Bun process (single module registry) can still import named
-// exports such as `pronoteCredentials`, `user`, `parentChild`, etc.
+// exports such as `user`, `parentChild`, etc.
 import * as authSchema from '../db/schema/auth.schema';
 import * as learningSchema from '../db/schema/learning.schema';
-import * as pronoteSchema from '../db/schema/pronote.schema';
 import * as billingSchema from '../db/schema/billing.schema';
 import * as filesSchema from '../db/schema/files.schema';
 import * as learningToolsSchema from '../db/schema/learning-tools.schema';
 mock.module('../db/schema', () => ({
   ...authSchema,
   ...learningSchema,
-  ...pronoteSchema,
   ...billingSchema,
   ...filesSchema,
   ...learningToolsSchema,

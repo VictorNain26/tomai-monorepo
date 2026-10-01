@@ -72,9 +72,9 @@ const updateStudentProfileSchema = z.object({
 
 const getAppHelpSchema = z.object({
   topic: z
-    .enum(['overview', 'navigation', 'chat', 'flashcards', 'pronote', 'files', 'subscription', 'profile'])
+    .enum(['overview', 'navigation', 'chat', 'flashcards', 'files', 'subscription', 'profile'])
     .describe(
-      'Le sujet de la question: overview (vue générale), navigation (onglets), chat (conversation), flashcards (révision), pronote (connexion/données), files (fichiers/photos), subscription (abonnement), profile (paramètres)',
+      'Le sujet de la question: overview (vue générale), navigation (onglets), chat (conversation), flashcards (révision), files (fichiers/photos), subscription (abonnement), profile (paramètres)',
     ),
 });
 
@@ -122,7 +122,7 @@ export function buildChatTools(ctx: ChatToolContext): ToolSet {
 
     get_app_help: tool({
       description:
-        "Guide d'utilisation de l'application Tom. OBLIGATOIRE pour toute question sur l'app (navigation, fonctionnalités, Pronote, abonnement). Ne réponds JAMAIS aux questions sur l'app sans consulter cet outil.",
+        "Guide d'utilisation de l'application Tom. OBLIGATOIRE pour toute question sur l'app (navigation, fonctionnalités, abonnement). Ne réponds JAMAIS aux questions sur l'app sans consulter cet outil.",
       inputSchema: getAppHelpSchema,
       execute: async (input) => executeTool('get_app_help', input, executionContext),
     }),

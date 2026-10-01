@@ -219,20 +219,4 @@ export const RateLimitPresets = {
     maxRequests: isProduction() ? 200 : 1000,
     windowSeconds: 60,
   },
-
-  // Pronote connection - OWASP/Cloudflare best practice
-  // QR code auth = already 2FA (QR + PIN), less strict than password auth
-  // Cloudflare recommends: 10 req / 10 min for auth tier 2
-  // @see https://developers.cloudflare.com/waf/rate-limiting-rules/best-practices/
-  pronote: {
-    maxRequests: isProduction() ? 10 : 50,
-    windowSeconds: 300, // 5 minutes
-    keyGenerator: (context: Context) => {
-      // Rate limit par user authentifié (injecté par authMacro `resolve`).
-      // Requiert que ce middleware tourne APRÈS `.guard({ auth: true })`.
-      const ctx = context as Context & { user?: { id: string } };
-      const userId = ctx.user?.id;
-      return userId ? `pronote:user:${userId}` : defaultKeyGenerator(context);
-    },
-  },
 } as const;

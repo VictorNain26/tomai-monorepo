@@ -46,7 +46,7 @@ Le résumé doit être concis (max 1500 mots) et structuré en sections.
 2. **Acquis** : Ce que l'élève a compris et maîtrise
 3. **Difficultés** : Confusions, blocages, incompréhensions identifiés
 4. **Erreurs de raisonnement** : Erreurs spécifiques commises par l'élève
-5. **Outils utilisés** : Flashcards créées, recherches Pronote, programmes consultés
+5. **Outils utilisés** : Flashcards créées, programmes consultés
 6. **Méthode socratique** : Questions qui ont été efficaces vs bloquantes
 7. **Prochaine étape** : Ce qu'il faudrait aborder ensuite
 
@@ -87,7 +87,7 @@ Un résumé précédent existe déjà. Tu dois le FUSIONNER avec les nouveaux é
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════
 
-const SUMMARIZATION_PROMPT_VERSION = '2026-05-18';
+const SUMMARIZATION_PROMPT_VERSION = '2026-10-01';
 
 // Prompt cache : bumper la version pour invalider après modif prompts.
 const SUMMARIZATION_CACHE_KEY = `summarization-${SUMMARIZATION_PROMPT_VERSION}`;

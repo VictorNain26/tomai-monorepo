@@ -55,7 +55,6 @@ describe('env — Mistral model ids', () => {
     const result = bootEnv({
       NODE_ENV: 'production',
       MISTRAL_SERVER_URL: 'https://api.mistral.ai',
-      PRONOTE_ENCRYPTION_KEY: 'x'.repeat(32),
       BETTER_AUTH_URL: 'https://tomia.fr',
     });
     expect(result.exitCode).not.toBe(0);
@@ -66,7 +65,6 @@ describe('env — Mistral model ids', () => {
     const result = bootEnv({
       NODE_ENV: 'production',
       MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
-      PRONOTE_ENCRYPTION_KEY: 'x'.repeat(32),
       BETTER_AUTH_URL: 'https://tomia.fr',
     });
     expect(result.exitCode).toBe(0);

@@ -31,7 +31,6 @@ import { optimizeConversationHistory } from '../../utils/conversation/index.js';
 import { assembleChatMessages } from './chat-message-assembler.js';
 import {
   wrapUserMessage,
-  wrapPronoteData,
   wrapStudentContext,
   wrapAttachedFiles,
   MAX_TOOL_ITERATIONS,
@@ -43,19 +42,13 @@ import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from './file-context-types.js';
 
 /** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_VERSION = '2026-06-14-voicefmt';
+const PROMPT_VERSION = '2026-10-01';
 
 export interface AttachedFile {
   /** Inline base64 payload for multimodal user messages (Mistral vision). */
   base64?: string;
   mimeType: string;
   contentType: 'image' | 'document';
-}
-
-export interface PronoteContext {
-  homework?: Array<{ subject: string; description: string; dueDate: string; done: boolean }>;
-  recentGrades?: Array<{ subject: string; value: number | null; outOf: number; date: string }>;
-  todayTimetable?: Array<{ subject: string; startDate: string; endDate: string; canceled: boolean }>;
 }
 
 interface HistoricalFileRef {
@@ -80,7 +73,6 @@ export interface StreamGenerationParams {
   learningContext?: string | null;
   conversationSummary?: string | null;
   userRole: 'student' | 'parent';
-  pronoteContext?: PronoteContext;
   files?: AttachedFile[];
   /**
    * Attached-document analyses (OCR of the student's files). Injected as a
@@ -231,7 +223,6 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
   });
 
   const userContent = buildUserContent(params.content, params.files);
-  const pronoteBlock = wrapPronoteData(params.pronoteContext);
   const studentContextBlock = wrapStudentContext(params.cognitiveProfileSummary, params.learningContext);
   const attachedFilesBlock = params.attachedFiles?.length
     ? wrapAttachedFiles(params.attachedFiles)
@@ -248,7 +239,6 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
       conversationSummary: truncatedSummary,
       historyMessages,
       studentContextBlock,
-      pronoteBlock,
       attachedFilesBlock,
       intentReinforcement: params.intentReinforcement,
       inputMode: params.inputMode,

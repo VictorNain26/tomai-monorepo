@@ -8,7 +8,6 @@
 // consumers.
 export * from './schema/auth.schema';
 export * from './schema/learning.schema';
-export * from './schema/pronote.schema';
 export * from './schema/billing.schema';
 export * from './schema/files.schema';
 export * from './schema/learning-tools.schema';

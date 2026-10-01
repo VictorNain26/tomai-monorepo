@@ -34,12 +34,10 @@ services:
       - DOCKER_CONTAINER=true
       # Database (internal Docker network)
       - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
-      # CORS (landing:3001)
-      - CORS_ORIGINS=http://localhost:3001
       # Container-network override (diffère de apps/server/.env en host)
       - BETTER_AUTH_URL=http://localhost:3000
-      # Les secrets (BETTER_AUTH_SECRET, GOOGLE_*, MISTRAL_API_KEY,
-      # PRONOTE_ENCRYPTION_KEY) viennent d'env_file :
+      # Les secrets (BETTER_AUTH_SECRET, GOOGLE_*, MISTRAL_API_KEY)
+      # viennent d'env_file :
       # les lister en ${VAR} ici les écraserait (environment > env_file).
     env_file:
       - apps/server/.env

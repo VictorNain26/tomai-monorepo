@@ -19,10 +19,6 @@ import { fileUploadRoutes } from './routes/file-upload.routes.js';
 import { statusRoutes } from './routes/subscription/index.js';
 import { ttsRoutes } from './routes/tts.routes.js';
 import { learningRoutes } from './routes/learning/index.js';
-import { waitlistRoutes } from './routes/waitlist.routes.js';
-import { pronoteSyncRoutes } from './routes/pronote-sync.routes.js';
-import { pronoteDataRoutes } from './routes/pronote-data.routes.js';
-import { pronoteConnectRoutes } from './routes/pronote-connect.routes.js';
 
 // Middleware
 import { logger } from './lib/observability.js';
@@ -214,10 +210,6 @@ const app = withElysia(new Elysia({ name: 'tomai-server' }))
   .use(statusRoutes)        // Subscription status + token usage (DB-driven)
   .use(ttsRoutes)           // Text-to-Speech (Voxtral TTS — voxtral-tts-26.03)
   .use(learningRoutes)      // Outils de révision - decks, cards, discovery, AI generation, FSRS
-  .use(waitlistRoutes)      // Waitlist - Landing page email collection
-  .use(pronoteSyncRoutes)     // Pronote credential sync (server-side provider only)
-  .use(pronoteDataRoutes)    // Pronote data endpoints (grades, homework, timetable)
-  .use(pronoteConnectRoutes) // Pronote onboarding (establishment search, QR connect)
 
 
 // Export pour utilisation dans index.ts

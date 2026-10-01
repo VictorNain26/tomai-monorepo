@@ -101,11 +101,7 @@ export const parentApiRoutes = new Elysia({ name: 'api-parent' })
       username: t.String(),
       password: t.String(),
       schoolLevel: EDUCATION_LEVEL_UNION,
-      // Optional at the contract level (Pronote-imported children have no birth
-      // date); the Zod `createChildSchema` still requires + validates it for the
-      // manual create-child form. TODO(product): decide whether imported children
-      // should be exempt in Zod too, instead of failing validation.
-      dateOfBirth: t.Optional(t.String()),
+      dateOfBirth: t.String(),
     }),
   })
 

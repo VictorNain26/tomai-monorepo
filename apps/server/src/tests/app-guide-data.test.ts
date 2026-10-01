@@ -6,7 +6,6 @@ const TOPICS = [
   'navigation',
   'chat',
   'flashcards',
-  'pronote',
   'files',
   'subscription',
   'profile',

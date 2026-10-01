@@ -70,6 +70,7 @@ beforeAll(async () => {
     username: childUsername,
     password: childPassword,
     schoolLevel: 'sixieme',
+    dateOfBirth: '2014-03-01',
   });
 });
 

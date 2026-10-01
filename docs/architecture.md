@@ -42,10 +42,6 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 | `voice` | Transcription et synthèse vocale (Voxtral) | `voxtral-*.service.ts`, `audio-transcription.service.ts`, `text-to-speech.service.ts` |
 | `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `config/`, `db/`, `lib/otel/`, `lib/errors.ts`, `retention-purge.service.ts` |
 
-Ce qui disparaît au lot 0, faute de place dans la V1 : tout le code Pronote (dont le
-contexte Pronote de l'agent, `agent.md` § 13) et la route de la liste
-d'attente avec sa table. Liste détaillée : `docs/suivi.md`, « Reporté ».
-
 Le découpage physique en modules se fait au fil des lots, sur le code qu'on
 touche, pas en un big-bang.
 

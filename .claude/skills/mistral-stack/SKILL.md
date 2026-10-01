@@ -53,7 +53,7 @@ produit une ligne `unknownModel` à 0, à corriger dans la table.
 Coûts mesurés : `docs/etudes/2026-10-01/couts.md`. Aujourd'hui, seul le tour
 de chat est tracé et compté au quota, en tokens bruts : défauts listés dans
 `docs/suivi.md` (« Reporté », lot 2), cible dans
-`docs/agent.md` § 14. Tout nouvel appel IA passe par
+`docs/agent.md` § 13. Tout nouvel appel IA passe par
 `cost_tracking`.
 
 ## Sources

@@ -24,7 +24,6 @@ type ErrorCode =
   | 'CONCURRENT_STREAM'
   | 'DECK_NOT_FOUND'
   | 'FILE_NOT_FOUND'
-  | 'PRONOTE_NOT_CONNECTED'
   // AI / External (502, 503)
   | 'AI_RATE_LIMIT'
   | 'AI_UNAVAILABLE'
@@ -45,7 +44,6 @@ const STATUS_MAP: Record<ErrorCode, number> = {
   CONCURRENT_STREAM: 409,
   DECK_NOT_FOUND: 404,
   FILE_NOT_FOUND: 404,
-  PRONOTE_NOT_CONNECTED: 400,
   AI_RATE_LIMIT: 429,
   AI_UNAVAILABLE: 503,
   AI_CONFIGURATION: 503,
@@ -65,7 +63,6 @@ const USER_MESSAGES: Record<ErrorCode, string> = {
   CONCURRENT_STREAM: 'Une réponse est déjà en cours. Attends qu\'elle se termine.',
   DECK_NOT_FOUND: 'Deck introuvable.',
   FILE_NOT_FOUND: 'Fichier introuvable.',
-  PRONOTE_NOT_CONNECTED: 'Pronote n\'est pas connecté.',
   AI_RATE_LIMIT: 'Le service est temporairement surchargé. Réessaie dans quelques secondes.',
   AI_UNAVAILABLE: 'Le service IA est temporairement indisponible. Réessaie.',
   AI_CONFIGURATION: 'Erreur de configuration du service IA. Contacte le support.',

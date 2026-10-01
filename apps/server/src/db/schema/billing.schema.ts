@@ -174,19 +174,6 @@ export const familyBilling = pgTable('family_billing', {
   billingStatusIdx: index('idx_family_billing_status').on(table.billingStatus),
 }));
 
-/**
- * Table waitlist_entries - Collecte d'emails pour la liste d'attente
- * Utilisée par la landing page avant le lancement de l'app mobile
- */
-export const waitlistEntries = pgTable('waitlist_entries', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  email: varchar('email', { length: 320 }).notNull().unique(),
-  source: varchar('source', { length: 50 }), // ex: "landing-hero", "pricing-free"
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  emailIdx: index('idx_waitlist_entries_email').on(table.email),
-}));
-
 // =============================================
 // RELATIONS
 // =============================================
@@ -236,7 +223,3 @@ export type UserSubscriptionWithRelations = UserSubscription & {
 export type FamilyBillingWithRelations = FamilyBilling & {
   parent?: typeof user.$inferSelect;
 };
-
-// Waitlist Types
-export type WaitlistEntry = typeof waitlistEntries.$inferSelect;
-export type NewWaitlistEntry = typeof waitlistEntries.$inferInsert;

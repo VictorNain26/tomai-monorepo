@@ -12,20 +12,13 @@ bloquant levé).
 ## Où on en est
 
 - **Dernière mise à jour :** 2026-10-01.
-- **Lot en cours :** 0 — Assainissement, dernière ligne droite. Restent trois PR, dans
-  cet ordre (`roadmap.md`, « Découpage en PR »), dont le plan s'écrit au
-  démarrage, contre `main` à jour :
-  - **nettoyage de la vision** : Pronote et la liste d'attente retirés du code (détail dans
-    « Reporté ») ;
-  - **E2 — infra serveur et outillage** (détail dans « Reporté ») ;
-  - **lint strict** : plus aucun `eslint-disable` (détail dans « Reporté »).
-- **Prochaine action :** le nettoyage de la vision, avant E2, sur une branche
-  `chore/remove-pronote-waitlist` ; son plan s'écrit d'abord dans
-  `docs/plans/chore-remove-pronote-waitlist.md` (`.claude/rules/plans-and-agents.md`). Il
-  supprime des fichiers qu'E2 modifierait sinon : limiteurs de débit de Pronote et de la
-  liste d'attente, lecture des identifiants Pronote dans `ParentService.getParentChildren`
-  (`pronoteChildResourcesRepository`) et champs `hasPronote`/`pronoteCredentialId` de
-  `ChildInfo`, `lib/encryption.ts`, tests Pronote porteurs d'`eslint-disable`.
+- **Lot en cours :** 0 — Assainissement, dernière ligne droite. Pronote et la liste
+  d'attente sont sortis du code (#341). Restent deux PR, dans cet ordre (`roadmap.md`,
+  « Découpage en PR »), dont le plan s'écrit au démarrage, contre `main` à jour :
+  - **E2 — infra serveur et outillage** (détail dans « Reporté ») ;
+  - **lint strict** : plus aucun `eslint-disable` (détail dans « Reporté »).
+- **Prochaine action :** E2, sur une branche courte dont le plan s'écrit d'abord dans
+  `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -36,29 +29,6 @@ Constats hors du périmètre de la PR qui les a trouvés. Chacun nomme son lot�
 plan de la PR s'écrit, le point y devient une tâche ou est explicitement renvoyé
 (`.claude/rules/plans-and-agents.md`). Chemins relatifs à `apps/server/src/` sauf mention
 contraire.
-
-### Lot 0 — nettoyage de la vision
-
-- **Pronote** (hors V1, voir la vision) : tout ce que
-  `rg -il pronote apps packages scripts .github docker-compose.yml -g '!apps/server/drizzle/**'`
-  trouve (les migrations appliquées ne se modifient pas), dont `services/pronote/`,
-  `services/pronote-sync.service.ts`, les routes `routes/pronote-*.routes.ts`,
-  `lib/pronote-onboarding.ts`, `lib/pronote-url-allowlist.ts`, `db/schema/pronote.schema.ts`
-  et son repository (tables supprimées par une migration), la dépendance `pawnote`,
-  `lib/encryption.ts` (Pronote est son seul appelant) et sa validation au boot dans
-  `services/server-lifecycle.ts`, `PRONOTE_ENCRYPTION_KEY` (`config/env.ts`, requise en
-  production, et `apps/server/.env.example`), `hasPronote` et `pronoteCredentialId` de
-  `ChildInfo`, le preset `pronote` du rate limit, les tests unitaires, d'intégration et live
-  (`live/pronote.test.ts` échoue en `PageUnavailableError` sur le compte de test depuis
-  avant la PR C). Côté agent : la liste de `agent.md`, § 13.
-- **Liste d'attente** : route `/api/waitlist` (`routes/waitlist.routes.ts`), table
-  `waitlist_entries` (`db/schema/billing.schema.ts`) avec sa migration de suppression,
-  `db/repositories/waitlist.repository.ts` et leurs tests. La landing ne l'appelle plus
-  depuis #335. Variable `NEXT_PUBLIC_SERVER_URL` à retirer du projet Vercel (étape
-  manuelle).
-- **Doc que le nettoyage rend fausse**, à corriger dans la même PR : `apps/server/CLAUDE.md`
-  (tests de « round-trip de chiffrement »), `apps/server/README.md` (`lib/` décrit comme
-  « Auth, encryption », lignes Pronote de l'arborescence).
 
 ### Lot 0 — E2, infra serveur et outillage
 
@@ -117,8 +87,8 @@ Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
 
 - `eslint-disable` antérieurs dans `apps/server/src` (repositories learning,
   `parent.service.ts`, `education-levels.ts`, `seed-dev.ts`,
-  `routes/chat-message.routes.ts` (`no-control-regex` dans `sanitizePrompt`) ; ceux des tests Pronote
-  partent avec Pronote), à remplacer par une forme de code qui ne déclenche pas la règle.
+  `routes/chat-message.routes.ts` (`no-control-regex` dans `sanitizePrompt`)), à remplacer
+  par une forme de code qui ne déclenche pas la règle.
   Configuration visée (relevée dans l'ancien plan d'E2) : config
   partagée `strictTypeChecked` et `stylisticTypeChecked`, `noInlineConfig`,
   `reportUnusedDisableDirectives: 'error'`, `only-warn` retiré) : c'est la quatrième PR
@@ -235,3 +205,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   V1, l'identité visuelle est rejetée et se refait au lot 4, la landing en ligne est gelée.
   Landing présentée « en préparation », sans affirmation fausse (#338) ; doc refondue sous
   `docs/` (#339) ; fichiers d'instructions allégés (#328).
+  Étude du statut juridique (#340). Pronote, la liste d'attente et leurs tables retirés du
+  code, contexte Pronote de l'agent compris (#341).

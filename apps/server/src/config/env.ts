@@ -71,9 +71,6 @@ const EnvSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
-  // Pronote encryption (required in production if Pronote is enabled)
-  PRONOTE_ENCRYPTION_KEY: z.string().min(32, 'PRONOTE_ENCRYPTION_KEY must be at least 32 characters').optional(),
-
   // Session configuration
   SESSION_MAX_AGE: z.coerce.number().int().default(604800), // 7 days in seconds
   SESSION_UPDATE_AGE: z.coerce.number().int().default(86400), // 1 day in seconds
@@ -138,19 +135,6 @@ function parseEnv(): EnvType {
     throw new Error(`Invalid environment configuration:\n  ${errorMessages}`);
   }
 
-  // Validate production-specific requirements
-  if (isProd) {
-    const prodChecks: string[] = [];
-
-    if (!result.data.PRONOTE_ENCRYPTION_KEY) {
-      prodChecks.push('PRONOTE_ENCRYPTION_KEY is required (production)');
-    }
-
-    if (prodChecks.length > 0) {
-      throw new Error(`Production validation failed:\n  ${prodChecks.join('\n  ')}`);
-    }
-  }
-
   return result.data;
 }
 
@@ -186,7 +170,7 @@ export function getDatabaseUrl(): string {
  * Build CORS origins list (HTTP/HTTPS only)
  * - Includes BETTER_AUTH_URL + FRONTEND_URL (if set)
  * - Adds CORS_ORIGINS comma-separated list
- * - Dev: adds localhost:3000/3001
+ * - Dev: adds localhost:3000
  */
 export function getCorsOrigins(): string[] {
   const origins = new Set<string>();
@@ -210,7 +194,6 @@ export function getCorsOrigins(): string[] {
   // Dev origins (HTTP localhost)
   if (isDevelopment()) {
     origins.add('http://localhost:3000'); // server
-    origins.add('http://localhost:3001'); // landing
   }
 
   return Array.from(origins);

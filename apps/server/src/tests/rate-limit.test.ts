@@ -170,23 +170,17 @@ describe('RateLimitPresets — per-user keying', () => {
     return {
       request: {
         headers: new Map<string, string>([['x-forwarded-for', '9.9.9.9']]),
-        url: 'http://localhost/api/pronote/credentials',
+        url: 'http://localhost/api/chat/stream',
       },
       ...(userId ? { user: { id: userId } } : {}),
     } as unknown as Context;
   }
 
-  it('pronote keys by authenticated user id (not by shared IP)', () => {
-    expect(RateLimitPresets.pronote.keyGenerator?.(authedCtx('student-42'))).toBe(
-      'pronote:user:student-42'
-    );
-  });
-
-  it('pronote falls back to IP only when unauthenticated', () => {
-    expect(RateLimitPresets.pronote.keyGenerator?.(authedCtx(undefined))).toBe('ip:9.9.9.9');
-  });
-
-  it('ai keys by authenticated user id', () => {
+  it('ai keys by authenticated user id (not by shared IP)', () => {
     expect(RateLimitPresets.ai.keyGenerator?.(authedCtx('user-7'))).toBe('ai:user:user-7');
+  });
+
+  it('ai falls back to IP only when unauthenticated', () => {
+    expect(RateLimitPresets.ai.keyGenerator?.(authedCtx(undefined))).toBe('ip:9.9.9.9');
   });
 });

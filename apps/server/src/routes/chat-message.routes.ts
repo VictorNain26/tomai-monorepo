@@ -42,7 +42,7 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
   .guard({ auth: true })
   .onBeforeHandle(createRateLimitMiddleware(RateLimitPresets.ai))
   .post('/stream', async ({ body, user, set, requestId }) => {
-    const { message, sessionId, subject, schoolLevel, firstName, fileId, fileIds: fileIdsBody, inputMode, pronoteContext } = body;
+    const { message, sessionId, subject, schoolLevel, firstName, fileId, fileIds: fileIdsBody, inputMode } = body;
 
     const fileIds = fileIdsBody ?? (fileId ? [fileId] : []);
     const safeContent = sanitizePrompt(extractTextFromParts((message as { parts?: unknown } | null)?.parts));
@@ -149,7 +149,6 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
           firstName: firstName ?? user.firstName ?? undefined,
           sessionId: turnCtx.sessionId,
           userRole,
-          pronoteContext,
           conversationSummary: turnCtx.conversationSummary,
           conversationHistory: turnCtx.conversationHistory,
           cognitiveProfileSummary: turnCtx.cognitiveProfileSummary,
@@ -247,25 +246,5 @@ export const chatMessageRoutes = new Elysia({ prefix: '/api/chat' })
       inputMode: t.Optional(t.Union([t.Literal('text'), t.Literal('voice')], {
         description: 'Input channel declared by the user gesture (mic vs keyboard); never inferred by the model. Defaults to text.',
       })),
-      pronoteContext: t.Optional(t.Object({
-        homework: t.Optional(t.Array(t.Object({
-          subject: t.String(),
-          description: t.String(),
-          dueDate: t.String(),
-          done: t.Boolean(),
-        }))),
-        recentGrades: t.Optional(t.Array(t.Object({
-          subject: t.String(),
-          value: t.Union([t.Number(), t.Null()]),
-          outOf: t.Number(),
-          date: t.String(),
-        }))),
-        todayTimetable: t.Optional(t.Array(t.Object({
-          subject: t.String(),
-          startDate: t.String(),
-          endDate: t.String(),
-          canceled: t.Boolean(),
-        }))),
-      }, { description: 'Ephemeral Pronote context from device (never persisted)' })),
     }),
   });
