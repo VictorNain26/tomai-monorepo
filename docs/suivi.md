@@ -19,10 +19,13 @@ bloquant levé).
     « Reporté ») ;
   - **E2 — infra serveur et outillage** (détail dans « Reporté ») ;
   - **lint strict** : plus aucun `eslint-disable` (détail dans « Reporté »).
-- **Prochaine action :** le nettoyage de la vision, avant E2. Il supprime des fichiers
-  qu'E2 modifierait sinon : limiteurs de débit de Pronote et de la liste d'attente, import
-  d'enfants par Pronote dans `ParentService.createChild`, `lib/encryption.ts`, tests
-  Pronote porteurs d'`eslint-disable`.
+- **Prochaine action :** le nettoyage de la vision, avant E2, sur une branche
+  `chore/remove-pronote-waitlist` ; son plan s'écrit d'abord dans
+  `docs/plans/chore-remove-pronote-waitlist.md` (`.claude/rules/plans-and-agents.md`). Il
+  supprime des fichiers qu'E2 modifierait sinon : limiteurs de débit de Pronote et de la
+  liste d'attente, lecture des identifiants Pronote dans `ParentService.getParentChildren`
+  (`pronoteChildResourcesRepository`) et champs `hasPronote`/`pronoteCredentialId` de
+  `ChildInfo`, `lib/encryption.ts`, tests Pronote porteurs d'`eslint-disable`.
 - **PR ouvertes :**
   - #338 (`fix/landing-honest-claims`) : correctifs d'honnêteté de la landing en ligne
     (FAQ, comparaison à ChatGPT, alertes parent limitées à la détresse, mentions de
@@ -33,12 +36,15 @@ bloquant levé).
     rebaser sur `main` après le merge de la refonte documentaire, ou à fermer.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
-- **Branches locales qui portent de la matière** (non poussées, sans valeur de décision) :
+- **Branches qui portent de la matière** (sans valeur de décision) :
   - `feat/landing-redesign` : direction visuelle explorée jusqu'au 2026-10-01, non validée.
     Matière pour le lot 4, à reprendre ou supprimer à son démarrage.
-  - `refactor/replace-custom-infra` : plan d'E2 réécrit le 2026-09-23 contre `main` @
-    `6d4d8b6` (fichier `2026-09-23-lot-0-e2-infra.md` sur cette branche), avec pré-vol et
+  - `refactor/replace-custom-infra` (locale et sur `origin`) : plan d'E2 réécrit le
+    2026-09-23 contre `main` @ `6d4d8b6`
+    (`git show refactor/replace-custom-infra:docs/superpowers/plans/2026-09-23-lot-0-e2-infra.md`), avec pré-vol et
     arbitrages. Matière pour le plan d'E2, à revérifier contre `main` à jour.
+  - `backup/landing-redesign-before-split` (locale) : sauvegarde d'un découpage de commits de
+    `feat/landing-redesign`, au contenu identique ; à supprimer.
 
 ## Reporté
 
@@ -49,8 +55,9 @@ contraire.
 
 ### Lot 0 — nettoyage de la vision
 
-- **Pronote** (hors V1, voir la vision) : tout ce que `rg -il pronote apps packages
-  scripts .github docker-compose.yml` trouve, dont `services/pronote/`,
+- **Pronote** (hors V1, voir la vision) : tout ce que
+  `rg -il pronote apps packages scripts .github docker-compose.yml -g '!apps/server/drizzle/**'`
+  trouve (les migrations appliquées ne se modifient pas), dont `services/pronote/`,
   `services/pronote-sync.service.ts`, les routes `routes/pronote-*.routes.ts`,
   `lib/pronote-onboarding.ts`, `lib/pronote-url-allowlist.ts`, `db/schema/pronote.schema.ts`
   et son repository (tables supprimées par une migration), la dépendance `pawnote`,
@@ -65,6 +72,9 @@ contraire.
   `db/repositories/waitlist.repository.ts` et leurs tests. La landing ne l'appelle plus
   depuis #335. Variable `NEXT_PUBLIC_SERVER_URL` à retirer du projet Vercel (étape
   manuelle).
+- **Doc que le nettoyage rend fausse**, à corriger dans la même PR : `apps/server/CLAUDE.md`
+  (tests de « round-trip de chiffrement »), `apps/server/README.md` (`lib/` décrit comme
+  « Auth, encryption », lignes Pronote de l'arborescence).
 
 ### Lot 0 — E2, infra serveur et outillage
 
@@ -122,9 +132,10 @@ Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
 ### Lot 0 — lint strict
 
 - `eslint-disable` antérieurs dans `apps/server/src` (repositories learning,
-  `parent.service.ts`, `education-levels.ts`, `seed-dev.ts` ; ceux des tests Pronote
+  `parent.service.ts`, `education-levels.ts`, `seed-dev.ts`,
+  `routes/chat-message.routes.ts` (`no-control-regex` dans `sanitizePrompt`) ; ceux des tests Pronote
   partent avec Pronote), à remplacer par une forme de code qui ne déclenche pas la règle.
-  Le plan d'E2 de la branche locale les renvoie à une PR « E3 — lint strict » (config
+  Le plan d'E2 de `refactor/replace-custom-infra` les renvoie à une PR « E3 — lint strict » (config
   partagée `strictTypeChecked` et `stylisticTypeChecked`, `noInlineConfig`,
   `reportUnusedDisableDirectives: 'error'`, `only-warn` retiré) : c'est la quatrième PR
   du lot 0 dans la roadmap.

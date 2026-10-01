@@ -15,7 +15,7 @@ directement la cible.
 
 | Sujet | Décision | Motif |
 |---|---|---|
-| Client V1 | **Web uniquement, Next.js, pensé d'abord pour le téléphone** | Un seul client à livrer ; le collégien travaille le soir, souvent sur téléphone (vision, « Pour qui ») |
+| Client V1 | **Web uniquement, Next.js, pensé d'abord pour le téléphone** | Un seul client à livrer ; le collégien travaille le soir, probablement sur téléphone, à vérifier (vision, « Pour qui ») |
 | Application native | **Hors V1** ; `apps/mobile` supprimé au lot 0 (l'historique git le garde) | Code mort à maintenir sinon |
 | Topologie | **Un dépôt, backend en monolithe modulaire** | `ai-service` et `curriculum` séparés ont pourri puis été supprimés ; un service séparé ne se justifie que par une contrainte réelle |
 | Serveur | Bun + Elysia conservés | Contrat Eden Treaty typé de bout en bout vers le client |

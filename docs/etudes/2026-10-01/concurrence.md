@@ -5,6 +5,8 @@ Analyse du 2026-10-01. Toutes les pages ont été consultées ce jour-là, sauf 
 **Correctifs postérieurs (même jour), qui priment sur le texte ci-dessous :**
 - le « 95 % des parents refusent une IA qui donne les réponses » (Kantar) ne se cite pas : `marche.md` le classe comme une reformulation trompeuse (question sur le rôle principal souhaité, 5 % choisissent « donner la réponse ») ;
 - « personne ne revendique la lecture des devoirs Pronote » est faux : Otto Lycée lit les devoirs Pronote avec une IA, et Eliott est partenaire officiel de Pronote ; Dinobot s'en tient à une connexion unique (voir `pronote.md`) ;
+- « aucun produit n'a été testé » ne vaut que pour ce document : les tests du même jour sont dans `tests-tuteurs/synthese.md` ;
+- les renvois [P1] à [P3] vers `architecture.md`, `agent.md` et `suivi.md` visent leur état du 2026-10-01 avant la refonte de la doc (commit `0e249a0`, alors sous `docs/superpowers/`) ;
 - Pronote n'est plus un différenciateur de la V1 (`docs/vision.md`).
 
 **Cible.** Les parents de collégiens (6e à 3e), y compris ceux qui ne peuvent pas payer un professeur particulier.

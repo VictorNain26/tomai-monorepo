@@ -24,10 +24,14 @@ concurrent est mesurée ; ce qui n'est pas construit ne se promet pas.
 - **Y compris les familles qui ne peuvent pas payer un professeur** : un cours particulier
   coûte de 19 à 49 € de l'heure avant crédit d'impôt (`etudes/2026-10-01/marche.md`), et
   près de la moitié des parents disent y avoir renoncé pour des raisons financières
-  (`etudes/2026-10-01/parents.md`, enseignement 2). Ces familles sont plus souvent sans
+  (`etudes/2026-10-01/parents.md`, enseignement 2 ; sondage commandé par un acteur
+  intéressé, à citer comme tel). Ces familles sont plus souvent sans
   ordinateur et parlent plus souvent une autre langue à la maison (même étude,
   enseignement 5).
-- **L'élève qui l'utilise** : collégien, le soir, souvent sur téléphone.
+- **L'élève qui l'utilise** : collégien, le soir ; souvent sur téléphone, hypothèse H6 de
+  `etudes/2026-10-01/parents.md` à vérifier par les entretiens. Le téléphone d'abord se
+  défend déjà : l'ordinateur manque plus souvent dans les familles modestes (même étude,
+  enseignement 5).
 
 ## Ce qu'on promet, ce qu'on prouve
 
@@ -53,7 +57,7 @@ directe, pression), une passe par conversation (`etudes/2026-10-01/tests-tuteurs
 |---|---|---|---|
 | ChatGPT « Étudier » (gratuit) | 9 fois sur 20, dont 4 sur 5 dès la première pression | 5,7 | Meilleur diagnostic de l'erreur ; cède à « c'est à rendre demain » ; le mode se quitte |
 | Galac6 (gratuit, illimité) | 2 fois sur 20, en aide normale | 6,55 | Tient sous pression ; affiche parfois son raisonnement interne avec la solution, et des balises techniques ; modèles américains |
-| Dinobot (5 questions par jour gratuites, puis 5,99 ou 9,99 €) | 0 sur 5 (un seul test, quota) | moyenne | Tient ; répète le même indice, perd le fil ; Mistral, hébergé en France, même discours que nous, deux ans d'avance |
+| Dinobot (5 questions par jour gratuites, puis 5,99 ou 9,99 €) | 0 sur 1 conversation de pression (5 messages ; quota épuisé) | 6 sur ce seul test | Tient ; répète le même indice, perd le fil ; Mistral, hébergé en France, même discours que nous ; 170 000 à 200 000 élèves revendiqués par l'éditeur, chiffres variables selon la source |
 
 Ce que ça veut dire :
 - « L'IA qui ne donne pas la réponse » **n'est pas une place libre** : Dinobot le revendique,
@@ -75,7 +79,7 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
 
 ## Offre et prix
 
-- **Gratuit, utilisable chaque soir** : le quota se fixe en échanges réels, à partir du coût
+- **Gratuit, utilisable chaque soir** : le quota se fixe en échanges ou en coût réel, à partir du coût
   mesuré (un compte gratuit à son plafond coûte de l'ordre de 0,18 € par mois,
   `etudes/2026-10-01/couts.md`). Le quota actuel (1 à 2 échanges par soirée, parce qu'il
   compte au prix plein les tokens en cache) est un défaut, pas une offre.
@@ -95,7 +99,7 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
   - **Pronote** : l'accès actuel passe par une bibliothèque non officielle, archivée et
     cassée par la version 2026 de Pronote, en se faisant passer pour l'application
     officielle (`etudes/2026-10-01/pronote.md`). Il ne revient que par une convention avec
-    Index Éducation (démarche de Victor, qui suppose une entreprise immatriculée), sur un
+    Index Éducation (démarche de Victor), sur un
     produit qui marche déjà sans lui.
   - **Enseignants et établissements** : horizon, pas la V1 (référencement GAR, achat par
     établissement).

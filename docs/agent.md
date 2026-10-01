@@ -184,7 +184,7 @@ est rejoué tel quel, comme le demande Mistral.
 
 Toutes les sorties machine passent par `generateText` + `Output.object` avec un
 schéma Zod, `strictJsonSchema: true`, et une validation au runtime. Plus aucun
-parsing par regex (`document-parsers.ts`) ni `generateObject` (déprécié en
+parsing par regex ni `generateObject` (déprécié en
 `ai@7`). Champs nullables et valeurs `unclear` là où la source peut manquer ;
 une seule relance avec l'erreur de validation, jamais quand l'information est
 absente de la source. Le coût vient de `result.usage`, pas d'une estimation.

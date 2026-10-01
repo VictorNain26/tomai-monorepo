@@ -4,7 +4,7 @@ Vitrine marketing et SEO, statique. Next.js + Tailwind + Motion ; versions dan
 `README.md` racine.
 
 **Gelée jusqu'au lot 4** (`docs/roadmap.md`) : seuls des
-correctifs d'honnêteté y entrent, c'est-à-dire retirer ou corriger une phrase qui affirme ce
+correctifs d'honnêteté ou techniques y entrent ; un correctif d'honnêteté retire ou corrige une phrase qui affirme ce
 que le produit ne fait pas ou ce qui n'est pas prouvé (`.claude/rules/marketing.md`). Pas
 de nouvelle section ni de nouvelle direction visuelle : l'identité est rejetée et se refait
 au lot 4, avec le nom du produit.

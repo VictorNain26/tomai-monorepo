@@ -10,9 +10,9 @@ Backend Bun + Elysia.js du tuteur IA pour collégiens (produit :
 cp .env.example .env
 
 # 2. Remplir BETTER_AUTH_SECRET (openssl rand -base64 32) ; `pnpm run setup`
-#    a la racine fait 1 et 2, plus postgres et les migrations
+#    à la racine fait 1 et 2, plus postgres et les migrations
 
-# 3. Demarrer depuis la racine du monorepo (PostgreSQL Docker + backend :3000 sur l'host)
+# 3. Démarrer depuis la racine du monorepo (PostgreSQL Docker + backend :3000 sur l'host)
 pnpm dev
 
 # 4. Verifier
@@ -21,7 +21,7 @@ curl http://localhost:3000/health
 
 ## API Documentation
 
-Documentation interactive auto-generee disponible en dev :
+Documentation interactive auto-générée disponible en dev :
 
 **http://localhost:3000/swagger**
 
@@ -111,14 +111,14 @@ src/
 ├── routes/                     # API endpoints
 │   ├── chat-message.routes.ts  # SSE streaming
 │   ├── file-upload.routes.ts   # Upload Scaleway
-│   ├── pronote-*.routes.ts     # Pronote, hors V1, retire au lot 0
+│   ├── pronote-*.routes.ts     # Pronote, hors V1, retiré au lot 0
 │   ├── tts.routes.ts           # Text-to-Speech
 │   ├── learning/               # Decks, cartes, FSRS
 │   └── subscription/           # Status lecture seule (DB)
 ├── services/                   # Business logic
 │   ├── chat/                   # Mistral streaming, summarization, tools
 │   ├── storage/                # Scaleway S3
-│   ├── pronote/                # Pronote, hors V1, retire au lot 0
+│   ├── pronote/                # Pronote, hors V1, retiré au lot 0
 │   ├── quota/                  # Quotas tokens IA
 │   ├── voxtral-*.service.ts    # STT / TTS Mistral
 │   └── fsrs.service.ts         # Spaced repetition
