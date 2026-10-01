@@ -18,10 +18,11 @@ import { sql } from 'drizzle-orm';
 let capturedSetArg: Record<string, unknown> | null = null;
 let capturedWhereArgs: unknown[] = [];
 let updateCalledWith: unknown = null;
+let returnedRows: { id: string }[] = [{ id: 'file-1' }];
 
 const mockWhere = mock((arg: unknown) => {
   capturedWhereArgs.push(arg);
-  return Promise.resolve([]);
+  return { returning: () => Promise.resolve(returnedRows) };
 });
 
 const mockSet = mock((arg: Record<string, unknown>) => {
@@ -83,6 +84,7 @@ beforeEach(() => {
   capturedSetArg = null;
   capturedWhereArgs = [];
   updateCalledWith = null;
+  returnedRows = [{ id: 'file-1' }];
   mockUpdate.mockClear();
   mockSet.mockClear();
   mockWhere.mockClear();
@@ -147,10 +149,17 @@ describe('FilesRepository.mergeEducationalContext', () => {
   it('should resolve without error on empty patch', async () => {
     expect(
       filesRepository.mergeEducationalContext('file-1', {}),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(true);
     const setArg = capturedSetArg as Record<string, unknown>;
     const rendered = serializeSql(setArg.educationalContext);
     expect(rendered).toContain('{}');
+  });
+
+  it('reports whether a row was updated', async () => {
+    expect(await filesRepository.mergeEducationalContext('file-1', { key: 'v' })).toBe(true);
+
+    returnedRows = [];
+    expect(await filesRepository.mergeEducationalContext('gone', { key: 'v' })).toBe(false);
   });
 
   it('should NOT serialize the column name as a bare string (i.e. not a plain overwrite)', async () => {

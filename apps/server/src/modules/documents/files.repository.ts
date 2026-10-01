@@ -133,15 +133,19 @@ class FilesRepository {
    * Merge arbitrary keys into the JSONB educationalContext column (SQL-level merge
    * to avoid read-modify-write races). Used to persist STT transcription, OCR
    * extraction snippets, and document analysis caches on the file record.
+   * Returns false when no row matched (file deleted meanwhile).
    */
-  async mergeEducationalContext(id: string, patch: Record<string, unknown>): Promise<void> {
-    await db
+  async mergeEducationalContext(id: string, patch: Record<string, unknown>): Promise<boolean> {
+    const updated = await db
       .update(files)
       .set({
         educationalContext: sql`COALESCE(${files.educationalContext}, '{}'::jsonb) || ${JSON.stringify(patch)}::jsonb`,
         updatedAt: sql`NOW()`,
       })
-      .where(eq(files.id, id));
+      .where(eq(files.id, id))
+      .returning({ id: files.id });
+
+    return updated.length > 0;
   }
 }
 

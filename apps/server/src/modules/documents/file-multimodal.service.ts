@@ -24,13 +24,13 @@ export async function prepareMultimodalFiles(fileIds: string[]): Promise<Multimo
     return [];
   }
 
+  const records = await filesRepository.findByIds(fileIds);
   const result: MultimodalFile[] = [];
 
   for (const fileId of fileIds) {
+    const file = records.find((f) => f.id === fileId);
+    if (!file) continue;
     try {
-      const file = await filesRepository.findById(fileId);
-      if (!file) continue;
-
       const isImage = file.mimeType.startsWith('image/');
       const contentType: 'image' | 'document' = isImage ? 'image' : 'document';
 
@@ -78,7 +78,7 @@ export async function updateFileAnalysis(
   result: DocumentAnalysisResult,
 ): Promise<void> {
   try {
-    await filesRepository.mergeEducationalContext(fileId, {
+    const saved = await filesRepository.mergeEducationalContext(fileId, {
       analysisContext: result.analysis,
       extractedText: result.extraction.text,
       documentType: result.classification.documentType,
@@ -86,6 +86,7 @@ export async function updateFileAnalysis(
       classification: result.classification,
       metrics: result.metrics,
     });
+    if (!saved) return;
 
     logger.info('File analysis saved to DB', {
       fileId,
