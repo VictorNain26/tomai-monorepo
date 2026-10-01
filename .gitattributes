@@ -45,7 +45,7 @@ Dockerfile  text eol=lf
 
 # ── Lock files: LF, no auto-merge (regenerate via package manager) ──────
 package-lock.json text eol=lf
-pnpm-lock.yaml    text eol=lf
+bun.lock          text eol=lf
 yarn.lock         text eol=lf
 
 # ── Windows-only scripts: keep CRLF (cmd.exe/PowerShell parse these) ────

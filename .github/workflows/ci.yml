@@ -51,9 +51,9 @@ jobs:
       - name: Run ${{ matrix.task }}
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            pnpm turbo run ${{ matrix.task }}
+            bunx turbo run ${{ matrix.task }}
           else
-            pnpm turbo run ${{ matrix.task }} --affected
+            bunx turbo run ${{ matrix.task }} --affected
           fi
 
   # =============================================
@@ -107,9 +107,9 @@ jobs:
       - name: Run tests
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            pnpm turbo run test
+            bunx turbo run test
           else
-            pnpm turbo run test --affected
+            bunx turbo run test --affected
           fi
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
@@ -151,9 +151,9 @@ jobs:
       - name: Run build
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            pnpm turbo run build
+            bunx turbo run build
           else
-            pnpm turbo run build --affected
+            bunx turbo run build --affected
           fi
 
   # =============================================
@@ -213,14 +213,14 @@ jobs:
         with:
           turbo-cache-key: knip
       - name: Run knip
-        run: pnpm exec knip
+        run: bunx knip
 
   # =============================================
   # Job 6: Monorepo lint (sherif)
   # =============================================
   # Version-pinned per https://github.com/QuiiBz/sherif README ("Run it by
   # specifying a version instead of latest") to avoid CI drift on new releases.
-  # Reads pnpm-workspace.yaml directly, no install needed — just Node/npx.
+  # Reads the workspaces of the root package.json, no install needed — just Node/npx.
   monorepo-lint:
     name: Monorepo lint (sherif)
     runs-on: ubuntu-latest

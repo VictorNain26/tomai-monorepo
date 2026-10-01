@@ -13,7 +13,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `pnpm exec next build && pnpm exec next start --port ${PORT}`,
+    command: `bunx next build && bunx next start --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 300_000,
