@@ -77,23 +77,6 @@ export const metadata: Metadata = {
 const jsonLd = [
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: BRAND_NAME,
-    applicationCategory: "EducationApplication",
-    operatingSystem: "Web",
-    inLanguage: "fr",
-    description: DESCRIPTION,
-    offers: [
-      {
-        "@type": "Offer",
-        price: "0",
-        priceCurrency: "EUR",
-        name: "Gratuit",
-      },
-    ],
-  },
-  {
-    "@context": "https://schema.org",
     "@type": "Organization",
     name: BRAND_NAME,
     url: "https://tomia.fr",

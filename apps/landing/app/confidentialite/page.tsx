@@ -87,9 +87,9 @@ export default function ConfidentialitePage() {
           consulter ou demander son effacement à tout moment.
         </p>
         <p>
-          <strong>Pour toi, élève :</strong> Tom retient ce que tu sais déjà bien faire et
+          <strong>Pour toi, élève :</strong> Tom retiendra ce que tu sais déjà bien faire et
           ce qui est encore difficile, pour mieux t&apos;expliquer. Personne d&apos;autre ne
-          voit ces notes, et tu peux demander à les effacer, toi-même ou avec tes parents.
+          verra ces notes, et tu pourras demander à les effacer, toi-même ou avec tes parents.
         </p>
 
         <h2>5. Qui accède à vos données ?</h2>
