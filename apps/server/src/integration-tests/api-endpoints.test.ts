@@ -72,22 +72,7 @@ mock.module('../config/env', () => ({
   getCorsOrigins: () => ['http://localhost:3001'],
 }));
 
-// Cache service
-mock.module('../services/memory-cache.service', () => ({
-  cacheService: {
-    healthCheck: mock(() => ({ status: 'healthy', latency: 1 })),
-    get: mock(() => null),
-    set: mock(() => true),
-    delete: mock(() => true),
-    invalidateByPattern: mock(() => 0),
-  },
-  memoryCacheService: { get: mock(() => null), set: mock(() => true) },
-}));
-
 // Infrastructure mocks
-mock.module('../middleware/memory-monitor.middleware', () => ({
-  memoryMonitor: { startMonitoring: mock(() => {}) },
-}));
 mock.module('../middleware/rate-limit.middleware', () => ({
   createRateLimitMiddleware: mock(() => () => {}),
   RateLimitPresets: { api: {} },

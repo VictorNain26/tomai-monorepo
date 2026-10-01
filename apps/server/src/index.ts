@@ -21,7 +21,6 @@ const { app, initializeServices } = await import('./app');
 const { logger } = await import('./lib/observability.js');
 const { env } = await import('./config/env.js');
 const { closeConnection } = await import('./db/connection.js');
-const { memoryMonitor } = await import('./middleware/memory-monitor.middleware.js');
 const { stopBackgroundJobs } = await import('./services/server-lifecycle.js');
 const { createGracefulShutdown } = await import('./lib/graceful-shutdown.js');
 
@@ -60,7 +59,6 @@ const shutdown = createGracefulShutdown(
   [
     { name: 'app.stop', run: () => app.stop() },
     { name: 'stopBackgroundJobs', run: stopBackgroundJobs },
-    { name: 'stopMonitoring', run: () => memoryMonitor.stopMonitoring() },
     { name: 'otel.shutdown', run: shutdownOtel },
     { name: 'sentry.close', run: () => Sentry.close(2000) },
     { name: 'db.close', run: closeConnection },

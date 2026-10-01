@@ -2,7 +2,6 @@ import { Elysia } from 'elysia';
 import { db } from '../../db/connection';
 import { sql } from 'drizzle-orm';
 import { env } from '../../config/env';
-import { cacheService } from '../../services/memory-cache.service';
 
 export const apiHealthRoutes = new Elysia({ name: 'api-health-check' })
 
@@ -24,12 +23,6 @@ export const apiHealthRoutes = new Elysia({ name: 'api-health-check' })
       };
       overallStatus = 'unhealthy';
     }
-
-    const cacheHealth = cacheService.healthCheck();
-    checks.cache = {
-      status: cacheHealth.status,
-      latency: cacheHealth.latency,
-    };
 
     const body = {
       status: overallStatus,

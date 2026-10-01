@@ -139,10 +139,6 @@ mock.module('../db/schema', () => ({
   account: { userId: 'userId', providerId: 'providerId', password: 'password' },
 }));
 
-mock.module('../db/pool-limiter', () => ({
-  withPoolLimit: mock(async (fn: () => Promise<unknown>) => fn()),
-}));
-
 mock.module('drizzle-orm', () => ({
   sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ type: 'sql', strings, values }),
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
