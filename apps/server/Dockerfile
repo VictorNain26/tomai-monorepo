@@ -1,25 +1,19 @@
 # ============================================================
 # TomAI Backend - Dockerfile (2026)
 # Multi-stage: Development + Production + Koyeb
-# Runtime: Bun 1.4 | Package Manager: pnpm 12
+# Runtime and package manager: Bun 1.4
 # Security: non-root, SHA-pinned base, healthchecks
 # ============================================================
 
 # Stage 1: BASE
-FROM oven/bun:1.4-slim AS base
+FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61 AS base
 
 WORKDIR /app
 
-# Node.js 24 LTS (lifecycle scripts of allowBuilds packages) + pnpm + system deps
-# SYNC: pnpm version must match packageManager in root package.json (pnpm@12.5.1)
-# pnpm 12 is installed through npm: https://pnpm.io/installation (npm route needs Node >= 22.13)
+# curl for the HEALTHCHECK
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
-    gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && npm install -g pnpm@12.5.1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -27,18 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN groupadd --gid 1001 tomai && \
     useradd --uid 1001 --gid tomai --shell /bin/bash --create-home tomai
 
-# Stage 2: DEPS (production only)
-FROM base AS deps
-
-# Monorepo workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/server/package.json ./apps/server/
-
-# Production deps only
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --ignore-scripts --prod
-
-# Stage 3: BUILD
+# Stage 2: BUILD
 FROM base AS build
 
 # Build args for deployment tracing
@@ -47,12 +30,12 @@ ARG BUILD_DATE=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 ENV BUILD_DATE=${BUILD_DATE}
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json bun.lock bunfig.toml ./
 COPY apps/server/package.json ./apps/server/
 
 # Full install (dev + prod) for build
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --ignore-scripts
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile --ignore-scripts --filter tomai-server
 
 # Sources
 COPY apps/server/src/ ./apps/server/src/
@@ -69,16 +52,16 @@ RUN bun run typecheck:strict && \
     bun run build && \
     test -f dist/index.js -a -f dist/migrate.js || (echo "ERREUR: dist/index.js ou dist/migrate.js manquant" && exit 1)
 
-# Stage 4: DEVELOPMENT
+# Stage 3: DEVELOPMENT
 FROM base AS development
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json bun.lock bunfig.toml ./
 COPY apps/server/package.json ./apps/server/
 
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile --filter tomai-server
 
 COPY --chown=tomai:tomai apps/server/src/ ./apps/server/src/
 COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
@@ -96,7 +79,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 
 CMD ["bun", "--watch", "src/index.ts"]
 
-# Stage 5: PRODUCTION
+# Stage 4: PRODUCTION
 FROM base AS production
 
 WORKDIR /app
@@ -108,10 +91,10 @@ ARG BUILD_DATE=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 ENV BUILD_DATE=${BUILD_DATE}
 
-# node_modules vient du stage `build` (= même résolution que pour le bundling)
-# au lieu du stage `deps` (--prod), pour éliminer le drift entre l'install qui
-# a vu le code compiler et celui qui sert le runtime. Coût: ~30 MB de devDeps
-# en plus, bénéfice: dev=prod, plus de "Cannot find module" silencieux.
+# node_modules vient du stage `build` (= même résolution que pour le bundling),
+# pour éliminer le drift entre l'install qui a vu le code compiler et celui qui
+# sert le runtime. Coût: ~30 MB de devDeps en plus, bénéfice: dev=prod, plus de
+# "Cannot find module" silencieux.
 COPY --from=build --chown=tomai:tomai /app/node_modules ./node_modules
 COPY --from=build --chown=tomai:tomai /app/package.json ./
 COPY --from=build --chown=tomai:tomai /app/apps/server/package.json ./apps/server/

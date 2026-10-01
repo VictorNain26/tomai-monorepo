@@ -48,4 +48,4 @@ run("docker", ["exec", "tomai-postgres-dev", "psql", "-U", "tomai_dev", "-d", "t
 console.log("[setup] migrations Drizzle…");
 run("bun", ["run", "db:migrate"], { cwd: "apps/server" });
 
-console.log("\n[setup] terminé. Lance `pnpm dev`.");
+console.log("\n[setup] terminé. Lance `bun run dev`.");

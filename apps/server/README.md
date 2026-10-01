@@ -9,11 +9,11 @@ Backend Bun + Hono du tuteur IA pour collégiens (produit :
 # 1. Copier les variables d'environnement
 cp .env.example .env
 
-# 2. Remplir BETTER_AUTH_SECRET (openssl rand -base64 32) ; `pnpm run setup`
+# 2. Remplir BETTER_AUTH_SECRET (openssl rand -base64 32) ; `bun run setup`
 #    à la racine fait 1 et 2, plus postgres et les migrations
 
 # 3. Démarrer depuis la racine du monorepo (PostgreSQL Docker + backend :3000 sur l'host)
-pnpm dev
+bun run dev
 
 # 4. Verifier
 curl http://localhost:3000/health
@@ -39,22 +39,22 @@ curl http://localhost:3000/health
 
 ```bash
 # Dev (depuis la racine du monorepo)
-pnpm dev                          # PostgreSQL Docker + backend avec hot-reload
+bun run dev                             # PostgreSQL Docker + backend avec hot-reload
 docker compose --profile backend up -d  # Backend conteneurise (image iso-prod, opt-in)
 
 # Validation
-bun run typecheck                 # TypeScript strict
-bun run lint                      # ESLint zero warnings
+bun run typecheck                       # TypeScript strict
+bun run lint                            # ESLint zero warnings
 
 # Database
-bun run db:push                   # Dev: sync schema → DB
-bun run db:generate               # Prod: generer migration SQL
-bun run db:migrate                # Prod: appliquer migrations
-bun run db:check                  # Verifier sync schema ↔ DB
-bun run db:studio                 # Drizzle Studio UI
+bun run db:push                         # Dev: sync schema → DB
+bun run db:generate                     # Prod: generer migration SQL
+bun run db:migrate                      # Prod: appliquer migrations
+bun run db:check                        # Verifier sync schema ↔ DB
+bun run db:studio                       # Drizzle Studio UI
 
 # Outils Docker (optionnel)
-docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
+docker compose --profile tools up -d    # Adminer (8080) + Drizzle Studio (4983)
 ```
 
 ## Docker Services
@@ -73,9 +73,9 @@ Requises pour booter : `DATABASE_URL` et `BETTER_AUTH_SECRET` (en production, 
 tant que sa variable manque (Google OAuth, Mistral, Scaleway). Liste complète,
 défauts et contraintes : `src/config/env.ts` ; gabarit commenté : `.env.example`.
 
-### Dev seed (`pnpm seed`)
+### Dev seed (`bun run seed`)
 
-Les variables ci-dessous peuplent la DB avec des comptes de test locaux (`pnpm seed`) et sont **refusées en production**. Présentes par défaut dans `.env.example` :
+Les variables ci-dessous peuplent la DB avec des comptes de test locaux (`bun run seed`) et sont **refusées en production**. Présentes par défaut dans `.env.example` :
 
 | Variable | Valeur (défaut) | Usage |
 |----------|-----------------|-------|
@@ -115,7 +115,7 @@ src/
 
 ## Docker Build (Production)
 
-Multi-stage : base (Bun + Node + pnpm) → deps → build (typecheck + lint + bundle) → production.
+Multi-stage : base (Bun) → build (install filtré sur le serveur, typecheck, lint, bundle) → production.
 
 ```bash
 # Entrypoint : migrations auto avant demarrage

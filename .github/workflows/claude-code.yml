@@ -34,13 +34,11 @@ jobs:
           model: claude-sonnet-4-6
           max_turns: 25
           allowed_tools: |
-            Bash(pnpm typecheck)
-            Bash(pnpm lint)
-            Bash(pnpm test)
-            Bash(pnpm build)
-            Bash(bun test)
             Bash(bun run typecheck)
             Bash(bun run lint)
+            Bash(bun run test)
+            Bash(bun run build)
+            Bash(bun test)
             Bash(bun run db:generate)
             Bash(bun run db:check)
             Bash(git status)

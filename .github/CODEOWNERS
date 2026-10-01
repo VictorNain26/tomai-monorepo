@@ -16,5 +16,5 @@
 
 # Monorepo config
 turbo.json @VictorNain26
-pnpm-lock.yaml @VictorNain26
+bun.lock @VictorNain26
 tsconfig.base.json @VictorNain26
