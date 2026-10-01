@@ -49,8 +49,8 @@ export class ParentService {
     }
   }
 
-  async getParentDashboardMetrics(parentId: string): Promise<ParentDashboardMetrics[]> {
-    return this.dashboard.getParentDashboardMetrics(parentId, (id) => this.getParentChildren(id));
+  async getParentDashboardMetrics(parentId: string, children: ChildInfo[]): Promise<ParentDashboardMetrics[]> {
+    return this.dashboard.getParentDashboardMetrics(parentId, children);
   }
 
   async createChild(parentId: string, childData: {

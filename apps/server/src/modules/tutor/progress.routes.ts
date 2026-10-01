@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { requireUser, type AppEnv } from '../../platform/http/context.js';
 import { progressRepository } from '../../db/repositories';
-import { studySessionsRepository } from './study-sessions.repository.js';
+import { getStudyStats } from './study-stats.js';
 import { logger } from '../../platform/observability/logger';
 
 export const progressRoutes = new Hono<AppEnv>()
@@ -10,7 +10,7 @@ export const progressRoutes = new Hono<AppEnv>()
     const user = c.var.user;
     try {
       const [sessionStats, progressSummary] = await Promise.all([
-        studySessionsRepository.getSessionStats(user.id),
+        getStudyStats(user.id),
         progressRepository.getProgressSummary(user.id),
       ]);
       return c.json({

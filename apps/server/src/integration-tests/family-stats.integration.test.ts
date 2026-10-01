@@ -47,9 +47,9 @@ describe.skipIf(!dbReachable)('family children and study stats from postgres', (
     const { studySessions } = await import('../db/schema');
     const { getStudyStats } = await import('../modules/tutor/index');
 
-    const day1 = new Date('2026-09-28T16:00:00Z');
-    const day1Later = new Date('2026-09-28T18:00:00Z');
-    const day2 = new Date('2026-09-30T17:00:00Z');
+    const day1 = new Date('2026-09-28T10:00:00Z');
+    const day1Later = new Date('2026-09-28T11:00:00Z');
+    const day2 = new Date('2026-09-30T10:00:00Z');
     await db.insert(studySessions).values([
       { userId: activeId, subject: 'mathematiques', startedAt: day1, durationMinutes: 20 },
       { userId: activeId, subject: 'mathematiques', startedAt: day1Later, durationMinutes: 10 },

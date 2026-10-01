@@ -24,8 +24,7 @@ export async function createStudentAccount(input: StudentAccountInput): Promise<
     name: `${input.firstName} ${input.lastName}`.trim(),
   };
   const result = await auth.api.signUpEmail({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    body: { ...typedBody, username: input.username } as typeof typedBody & Record<string, any>,
+    body: { ...typedBody, username: input.username } as typeof typedBody & Record<string, unknown>,
   });
 
   try {

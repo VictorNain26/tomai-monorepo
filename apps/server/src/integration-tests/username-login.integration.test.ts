@@ -78,7 +78,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (!dbReachable) return;
-  // Best-effort cleanup: deleting the parent only drops the parent_child link, so the child goes too
+  // Best-effort cleanup. Deleting the parent cascades only to the parent_child link, not to the child account.
   const { db } = await import('../db/connection');
   const { user } = await import('../db/schema');
   const { inArray } = await import('drizzle-orm');

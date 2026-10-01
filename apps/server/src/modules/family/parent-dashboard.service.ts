@@ -5,10 +5,9 @@ import type { ChildInfo, ParentDashboardMetrics } from './parent-types';
 export class ParentDashboardService {
   async getParentDashboardMetrics(
     parentId: string,
-    getChildren: (parentId: string) => Promise<ChildInfo[]>
+    children: ChildInfo[],
   ): Promise<ParentDashboardMetrics[]> {
     try {
-      const children = await getChildren(parentId);
       if (children.length === 0) {
         return [];
       }

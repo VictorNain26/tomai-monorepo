@@ -12,10 +12,8 @@ export const parentRoutes = new Hono<AppEnv>()
   .get('/parent/dashboard', requireParent, async (c) => {
     const user = c.var.user;
     try {
-      const [children, metrics] = await Promise.all([
-        parentService.getParentChildren(user.id),
-        parentService.getParentDashboardMetrics(user.id)
-      ]);
+      const children = await parentService.getParentChildren(user.id);
+      const metrics = await parentService.getParentDashboardMetrics(user.id, children);
 
       return c.json({
         success: true,

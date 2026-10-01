@@ -25,7 +25,7 @@ mock.module('../modules/tutor/study-sessions.repository', () => ({
   },
 }));
 mock.module('../db/repositories', () => ({
-  progressRepository: { getProgressSummary: mock(async () => ({ totalConcepts: 0, subjectProgress: [] })) },
+  progressRepository: { getProgressSummary: mock(async () => ({ totalConcepts: 7, subjectProgress: [] })) },
 }));
 
 const { progressRoutes } = await import('../modules/tutor/progress.routes');
@@ -40,7 +40,7 @@ describe('GET /api/progress/dashboard', () => {
     expect(await res.json()).toEqual({
       success: true,
       student: { id: 'student-1', firstName: 'Léa', level: 'sixieme' },
-      stats: { totalSessions: 4, totalStudyTime: 90, conceptsLearned: 0, averageFrustration: 1.5 },
+      stats: { totalSessions: 4, totalStudyTime: 90, conceptsLearned: 7, averageFrustration: 1.5 },
     });
   });
 });

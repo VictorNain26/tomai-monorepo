@@ -137,7 +137,7 @@ describe('Parent Service', () => {
 
   describe('getParentDashboardMetrics', () => {
     it('should return metrics for children', async () => {
-      const metrics = await parentService.getParentDashboardMetrics('parent-001');
+      const metrics = await parentService.getParentDashboardMetrics('parent-001', await parentService.getParentChildren('parent-001'));
       expect(metrics.length).toBe(1);
       expect(metrics[0]).toMatchObject({
         totalSessions: 10,
@@ -152,7 +152,7 @@ describe('Parent Service', () => {
 
     it('should return empty when no children', async () => {
       childrenResult = [];
-      const metrics = await parentService.getParentDashboardMetrics('parent-no-kids');
+      const metrics = await parentService.getParentDashboardMetrics('parent-no-kids', []);
       expect(metrics.length).toBe(0);
     });
   });
@@ -309,14 +309,14 @@ describe('Parent Service', () => {
     it('should compute correct age from dateOfBirth in metrics', async () => {
       // Child born 2010-03-15, fixture BASE_DATE=2025-06-15
       // Today is ~2026-03-02 → age should be 15 (birthday not yet passed in 2026) or 16
-      const metrics = await parentService.getParentDashboardMetrics('parent-001');
+      const metrics = await parentService.getParentDashboardMetrics('parent-001', await parentService.getParentChildren('parent-001'));
       expect(metrics[0]?.age).toBeGreaterThanOrEqual(15);
       expect(metrics[0]?.age).toBeLessThanOrEqual(16);
     });
 
     it('should return 0 when dateOfBirth is missing', async () => {
       childrenResult = [makeUser({ id: 'child-001', dateOfBirth: null })];
-      const metrics = await parentService.getParentDashboardMetrics('parent-001');
+      const metrics = await parentService.getParentDashboardMetrics('parent-001', await parentService.getParentChildren('parent-001'));
       expect(metrics[0]?.age).toBe(0);
     });
   });

@@ -31,7 +31,7 @@ export const user = pgTable('user', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 
   // ===== BETTER AUTH USERNAME PLUGIN FIELDS =====
-  username: varchar('username', { length: 50 }).unique(), // Identifiant unique élèves (géré par parent.service)
+  username: varchar('username', { length: 50 }).unique(), // Identifiant unique élèves (créé par createStudentAccount)
   displayUsername: varchar('display_username', { length: 50 }).unique(), // Affichage normalisé du username
 
   // ===== TOMAI ADDITIONAL FIELDS (alignés avec auth.ts) =====
