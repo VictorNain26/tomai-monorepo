@@ -23,7 +23,7 @@ export const studentApiRoutes = new Hono<AppEnv>()
       logger.error('Student memory retrieval failed', {
         operation: 'api:student:memory:get',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const,
       });
       throw new AppError('INTERNAL_ERROR', 'Memory retrieval failed');
@@ -46,7 +46,7 @@ export const studentApiRoutes = new Hono<AppEnv>()
       logger.error('Student memory edit failed', {
         operation: 'api:student:memory:patch',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const,
       });
       throw new AppError('INTERNAL_ERROR', 'Memory edit failed');

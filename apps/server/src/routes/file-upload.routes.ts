@@ -117,7 +117,7 @@ export const fileUploadRoutes = new Hono<AppEnv>()
 
     } catch (error) {
       logger.error('Presign URL generation failed', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'file:presign',
         severity: 'high' as const,
       });
@@ -198,7 +198,7 @@ export const fileUploadRoutes = new Hono<AppEnv>()
           }
         } catch (err) {
           logger.warn('Audio transcription failed (non-blocking)', {
-            _error: err instanceof Error ? err.message : String(err),
+            err: err,
             operation: 'file:transcription',
             fileId,
           });
@@ -222,7 +222,7 @@ export const fileUploadRoutes = new Hono<AppEnv>()
 
     } catch (error) {
       logger.error('Upload confirmation failed', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'file:confirm',
         fileId,
         severity: 'high' as const,
@@ -263,7 +263,7 @@ export const fileUploadRoutes = new Hono<AppEnv>()
 
     } catch (error) {
       logger.error('Download URL generation failed', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'file:download',
         fileId,
         severity: 'medium' as const,
@@ -306,7 +306,7 @@ export const fileUploadRoutes = new Hono<AppEnv>()
 
     } catch (error) {
       logger.error('File deletion failed', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'file:delete',
         fileId,
         severity: 'medium' as const,

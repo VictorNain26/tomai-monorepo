@@ -90,7 +90,7 @@ class FSRSService {
     logger.info('Card reviewed', {
       cardId,
       rating,
-      level,
+      schoolLevel: level,
       previousState,
       newState: newCard.state,
       nextDue: newCard.due.toISOString(),

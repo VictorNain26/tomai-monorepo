@@ -62,7 +62,7 @@ async function checkDeckQuotaReal(userId: string): Promise<DeckQuotaResult> {
   } catch (error) {
     logger.error('checkDeckQuota failed, falling back to allowed', {
       operation: 'quota:deck:check:error',
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       severity: 'medium' as const,
       userId,
     });
@@ -124,7 +124,7 @@ export async function incrementDeckUsage(userId: string): Promise<DeckUsageResul
 
   } catch (error) {
     logger.error('Error incrementing deck usage', {
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       severity: 'medium' as const,
       userId,
     });

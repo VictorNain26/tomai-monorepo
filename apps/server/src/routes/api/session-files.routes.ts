@@ -38,7 +38,7 @@ export const sessionFilesApiRoutes = new Hono<AppEnv>()
       logger.error('Files listing failed', {
         operation: 'api:files:list',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const
       });
       return c.json({ error: 'Failed to list files' }, 500);
@@ -71,7 +71,7 @@ export const sessionFilesApiRoutes = new Hono<AppEnv>()
       logger.error('Session files listing failed', {
         operation: 'api:chat:session:files:list',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const
       });
       return c.json({ error: 'Failed to list session files' }, 500);
@@ -107,7 +107,7 @@ export const sessionFilesApiRoutes = new Hono<AppEnv>()
       logger.error('Session file attach failed', {
         operation: 'api:chat:session:files:attach',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const
       });
       return c.json({ error: 'Failed to attach file' }, 500);
@@ -131,7 +131,7 @@ export const sessionFilesApiRoutes = new Hono<AppEnv>()
       logger.error('Session file detach failed', {
         operation: 'api:chat:session:files:detach',
         userId: user.id,
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         severity: 'medium' as const
       });
       return c.json({ error: 'Failed to detach file' }, 500);

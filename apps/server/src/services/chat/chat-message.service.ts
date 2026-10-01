@@ -41,7 +41,7 @@ export class ChatMessageService {
 
       return sessionMessages;
     } catch (_error) {
-      logger.error('Error getting session history', { operation: 'chat:history:get', _error: _error instanceof Error ? _error.message : String(_error), sessionId, severity: 'medium' as const });
+      logger.error('Error getting session history', { operation: 'chat:history:get', err: _error, sessionId, severity: 'medium' as const });
       throw new Error('Failed to get session history', { cause: _error });
     }
   }
@@ -95,7 +95,7 @@ export class ChatMessageService {
         const session = await studySessionsRepository.findById(sessionId);
         if (!session) {
           logger.error('Session not found', {
-            _error: `Session ${sessionId} not found`,
+            reason: `Session ${sessionId} not found`,
             operation: 'saveMessage',
             sessionId,
             severity: 'high' as const
@@ -131,7 +131,7 @@ export class ChatMessageService {
 
       return { messageId: message.id, realSessionId: sessionId };
     } catch (_error) {
-      logger.error('Error saving message', { operation: 'chat:message:save', _error: _error instanceof Error ? _error.message : String(_error), sessionId, role, severity: 'high' as const });
+      logger.error('Error saving message', { operation: 'chat:message:save', err: _error, sessionId, role, severity: 'high' as const });
       throw new Error('Failed to save message', { cause: _error });
     }
   }
@@ -174,7 +174,7 @@ export class ChatMessageService {
             : null
       };
     } catch (_error) {
-      logger.error('Error getting message by ID', { operation: 'chat:message:get', _error: _error instanceof Error ? _error.message : String(_error), messageId, userId, severity: 'medium' as const });
+      logger.error('Error getting message by ID', { operation: 'chat:message:get', err: _error, messageId, userId, severity: 'medium' as const });
       throw new Error('Failed to get message', { cause: _error });
     }
   }

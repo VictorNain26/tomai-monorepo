@@ -85,7 +85,7 @@ export async function extractImageWithMistralVision(
     };
   } catch (error) {
     logger.error('Image extraction (Mistral Vision) failed', {
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       operation: 'image-extraction',
       severity: 'medium' as const,
     });

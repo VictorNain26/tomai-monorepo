@@ -277,7 +277,7 @@ export async function deleteFile(storageKey: string): Promise<boolean> {
     return true;
   } catch (error) {
     logger.error('Failed to delete file from storage', {
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       operation: 'scaleway:delete',
       storageKey,
       severity: 'medium' as const,
@@ -326,7 +326,7 @@ export async function deleteFiles(
     } catch (error) {
       // Whole chunk failed (network/auth) — none confirmed deleted.
       logger.error('Failed to batch-delete files from storage', {
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         operation: 'scaleway:delete-batch',
         chunkSize: chunk.length,
         severity: 'medium' as const,
@@ -372,7 +372,7 @@ async function getFileContent(storageKey: string): Promise<{
     };
   } catch (error) {
     logger.error('Failed to get file content', {
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       operation: 'scaleway:get-content',
       storageKey,
       severity: 'medium' as const,

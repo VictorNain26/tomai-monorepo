@@ -63,7 +63,7 @@ export async function deleteSessionCascade(sessionId: string, userId?: string): 
   } catch (_error) {
     logger.error('Error deleting session', {
       operation: 'chat:session:delete',
-      _error: _error instanceof Error ? _error.message : String(_error),
+      err: _error,
       sessionId,
       severity: 'medium' as const,
     });

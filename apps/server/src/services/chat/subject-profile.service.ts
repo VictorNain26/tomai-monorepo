@@ -30,7 +30,7 @@ class SubjectProfileService {
     } catch (err) {
       logger.warn('Subject profile aggregation failed', {
         operation: 'subject-profile:aggregate',
-        _error: err instanceof Error ? err.message : String(err),
+        err: err,
       });
     }
   }

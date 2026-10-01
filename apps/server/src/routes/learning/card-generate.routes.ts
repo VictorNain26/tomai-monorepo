@@ -73,7 +73,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
           userId: user.id,
           subject, domaine, topic: topic ?? null,
           mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
-          level,
+          schoolLevel: level,
         });
 
         const levelConfig = getLevelConfig(level);
@@ -83,7 +83,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
 
         logger.info('Card count from level config', {
           operation: 'learning:generate:cardcount',
-          level, cardsPerSession: levelConfig.cardsPerSession,
+          schoolLevel: level, cardsPerSession: levelConfig.cardsPerSession,
           cardCount,
           mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
         });
@@ -97,7 +97,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
           logger.error('AI card generation failed', {
             operation: 'learning:generate:failed',
             userId: user.id,
-            _error: generationResult.error,
+            reason: generationResult.error,
             _actualError: generationResult._debug?.actualError,
             code: generationResult.code,
             severity: 'medium' as const,
@@ -153,7 +153,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
           operation: 'learning:generate:error',
           userId: user.id, subject, domaine,
           topic: topic ?? null,
-          _error: error instanceof Error ? error.message : String(error),
+          err: error,
           severity: 'high' as const,
         });
         return c.json({ error: 'Échec de la génération du deck' }, 500);

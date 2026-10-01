@@ -148,7 +148,7 @@ class SummarizationService {
       });
     } catch (err) {
       logger.error('Summarization failed', {
-        _error: err instanceof Error ? err.message : String(err),
+        err: err,
         sessionId,
         operation: 'summarization:error',
         severity: 'medium' as const,

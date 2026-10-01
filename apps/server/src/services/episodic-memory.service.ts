@@ -164,7 +164,7 @@ class EpisodicMemoryService {
 
       logger.error('Episodic extraction failed', {
         operation: 'episodic:extract:error',
-        _error: errorMessage,
+        err: err,
         sessionId,
         userId,
         durationMs: Date.now() - startTime,
@@ -215,7 +215,7 @@ class EpisodicMemoryService {
         : ('medium' as const);
       logger.error('Episodic retrieval failed', {
         operation: 'episodic:retrieve:error',
-        _error: errorMessage,
+        err: err,
         userId,
         severity,
       });

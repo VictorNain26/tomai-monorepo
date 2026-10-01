@@ -72,7 +72,7 @@ class AudioTranscriptionService {
       if (!sttResult.success || !sttResult.transcription) {
         logger.error('Voxtral STT transcription failed', {
           operation: 'audio:transcription',
-          _error: sttResult.error ?? 'No transcription result',
+          reason: sttResult.error ?? 'No transcription result',
           severity: 'high' as const,
         });
 
@@ -99,7 +99,7 @@ class AudioTranscriptionService {
     } catch (error) {
       logger.error('Audio transcription error', {
         operation: 'audio:transcription',
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'high' as const,
       });
 

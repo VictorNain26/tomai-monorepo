@@ -68,7 +68,7 @@ class TextToSpeechService {
     } catch (error) {
       logger.error('TTS synthesis error', {
         operation: 'tts:synthesis',
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'high' as const,
       });
       return {

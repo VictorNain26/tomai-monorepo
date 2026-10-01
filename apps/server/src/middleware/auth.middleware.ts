@@ -21,7 +21,7 @@ export const requireAuth = async (headers: Headers): Promise<
   } catch (error) {
     logger.error('Authentication middleware error', {
       operation: 'auth:middleware:error',
-      _error: error instanceof Error ? error.message : String(error),
+      err: error,
       severity: 'high' as const,
     });
 

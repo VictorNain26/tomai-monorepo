@@ -42,7 +42,7 @@ export const fsrsRoutes = new Hono<AuthEnv>()
       logger.error('Failed to fetch due summary', {
         operation: 'learning:due-summary:error',
         userId: user.id,
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'medium' as const,
       });
       return c.json({ error: 'Failed to fetch due summary' }, 500);
@@ -102,7 +102,7 @@ export const fsrsRoutes = new Hono<AuthEnv>()
           operation: 'learning:review:error',
           userId: user.id,
           cardId,
-          _error: error instanceof Error ? error.message : String(error),
+          err: error,
           severity: 'medium' as const,
         });
         return c.json({ error: 'Échec de l\'enregistrement de la révision' }, 500);
@@ -173,7 +173,7 @@ export const fsrsRoutes = new Hono<AuthEnv>()
           operation: 'learning:due:error',
           userId: user.id,
           deckId,
-          _error: errorMessage,
+          err: error,
           severity: 'medium' as const,
         });
         return c.json({ error: 'Échec de la récupération des cartes' }, 500);
@@ -215,7 +215,7 @@ export const fsrsRoutes = new Hono<AuthEnv>()
         operation: 'learning:stats:error',
         userId: user.id,
         deckId,
-        _error: errorMessage,
+        err: error,
         severity: 'medium' as const,
       });
       return c.json({ error: 'Échec de la récupération des statistiques' }, 500);

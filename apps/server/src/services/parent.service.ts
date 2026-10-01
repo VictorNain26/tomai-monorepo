@@ -52,7 +52,7 @@ export class ParentService {
       return result;
     } catch (_error) {
       logger.error('Failed to get parent children', {
-        _error: _error instanceof Error ? _error.message : String(_error),
+        err: _error,
         parentId,
         operation: 'parent:getChildren',
         severity: 'high' as const
@@ -204,7 +204,7 @@ export class ParentService {
         createdAt: updatedChild.createdAt?.toISOString() ?? new Date().toISOString(),
       };
     } catch (_error) {
-      logger.error('Error updating child', { operation: 'parent:child:update', _error: _error instanceof Error ? _error.message : String(_error), parentId, childId, severity: 'medium' as const });
+      logger.error('Error updating child', { operation: 'parent:child:update', err: _error, parentId, childId, severity: 'medium' as const });
       throw _error instanceof Error ? _error : new Error('Failed to update child');
     }
   }
@@ -228,7 +228,7 @@ export class ParentService {
 
       const checkUser = await usersRepository.findById(childId);
       if (checkUser) {
-        logger.error('CRITICAL: Child still exists after deletion', { operation: 'parent:child:delete:verify', _error: 'Child persists after delete query', childId, parentId, severity: 'critical' as const });
+        logger.error('CRITICAL: Child still exists after deletion', { operation: 'parent:child:delete:verify', reason: 'Child persists after delete query', childId, parentId, severity: 'critical' as const });
         throw new Error('Deletion failed: User still exists in database');
       }
 
@@ -241,7 +241,7 @@ export class ParentService {
       if (filesFailedKeys.length > 0) {
         logger.error('S3 purge failed for some child files', {
           operation: 'parent:delete-child-s3-purge',
-          _error: 'deleteFiles reported failures (S3 errors already logged by storage service)',
+          reason: 'deleteFiles reported failures (S3 errors already logged by storage service)',
           failedCount: filesFailedKeys.length,
           childId,
           severity: 'high' as const,
@@ -255,7 +255,7 @@ export class ParentService {
         filesFailed: filesFailedKeys.length,
       });
     } catch (_error) {
-      logger.error('Error deleting child', { operation: 'parent:child:delete', _error: _error instanceof Error ? _error.message : String(_error), parentId, childId, severity: 'high' as const });
+      logger.error('Error deleting child', { operation: 'parent:child:delete', err: _error, parentId, childId, severity: 'high' as const });
       throw new Error('Failed to delete child', { cause: _error });
     }
   }
@@ -268,7 +268,7 @@ export class ParentService {
         operation: 'parent:isParentOf:error',
         parentId,
         studentId,
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         severity: 'medium' as const,
       });
       return false;

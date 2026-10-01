@@ -85,7 +85,7 @@ class VoxtralTTSService {
     } catch (error) {
       logger.error('Voxtral TTS synthesis error', {
         operation: 'voxtral:tts',
-        _error: error instanceof Error ? error.message : String(error),
+        err: error,
         durationMs: Date.now() - startTime,
         severity: 'high' as const,
       });

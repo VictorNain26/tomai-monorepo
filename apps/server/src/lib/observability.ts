@@ -1,5 +1,9 @@
-// TomAI Backend - Production Observability & Monitoring 2025
-// Comprehensive monitoring for performance and business metrics
+// Structured logger on pino, behind the app's own call shape:
+// logger.info(message, context) instead of pino's (context, message).
+
+import pino from 'pino';
+import pretty from 'pino-pretty';
+import { LOG_LEVELS } from './log-levels.js';
 
 interface LogContext {
   userId?: string;
@@ -7,75 +11,58 @@ interface LogContext {
   requestId?: string;
   operation?: string;
   metadata?: Record<string, unknown>;
-  notice?: string | undefined;
-  environment?: string;
-  // SSE/Chat specific fields
-  clientId?: string;
-  connectionId?: string;
-  totalConnections?: number;
-  messageType?: string;
-  messageId?: string;
-  eventType?: string;
-  // Additional fields used in the application
-  subject?: string;
-  userAgent?: string;
-  messagePreview?: string;
-  inactiveSince?: string;
-  event?: string;
   [key: string]: unknown;
 }
 
 interface ErrorContext extends LogContext {
-  _error: Error | string;
-  stack?: string;
+  /** An Error, serialised by serializeError: type, message, stack, code, cause. */
+  err?: unknown;
   severity: 'low' | 'medium' | 'high' | 'critical';
 }
 
+type Level = (typeof LOG_LEVELS)[number];
+
+// `bun build --target bun` freezes `process.env.*` at build time, so the
+// runtime values are read through Bun.env (env.ts validates LOG_LEVEL).
+const isProduction = Bun.env['NODE_ENV'] === 'production';
+const requestedLevel = Bun.env['LOG_LEVEL'];
+const level: Level = LOG_LEVELS.find((l) => l === requestedLevel) ?? 'info';
+
 /**
- * Structured Logger - Production-ready logging with context
+ * Allow-list serializer for `err`. pino's default copies every enumerable
+ * property, and AI SDK errors carry the whole request body (a minor's
+ * conversation, profile, base64 images): only identity and stack are kept.
  */
-class StructuredLogger {
-  // `bun build --target bun` freezes `process.env.NODE_ENV` at build time,
-  // which flipped this to `false` in the bundled dist/index.js even though
-  // NODE_ENV=production at runtime. Read via Bun.env to get the runtime value.
-  private readonly isProduction = Bun.env['NODE_ENV'] === 'production';
-  
-  private formatMessage(level: string, message: string, context?: LogContext): string {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      level,
-      message,
-      ...context,
-    };
-    
-    if (this.isProduction) {
-      return JSON.stringify(logEntry);
-    }
-    
-    // Development: Pretty format
-    const contextStr = context ? ` | ${JSON.stringify(context)}` : '';
-    return `[${timestamp}] ${level.toUpperCase()}: ${message}${contextStr}`;
-  }
-
-  info(message: string, context?: LogContext): void {
-    console.log(this.formatMessage('info', message, context));
-  }
-
-  warn(message: string, context?: LogContext): void {
-    console.warn(this.formatMessage('warn', message, context));
-  }
-
-  error(message: string, context?: ErrorContext): void {
-    console.error(this.formatMessage('error', message, context));
-  }
-
-  debug(message: string, context?: LogContext): void {
-    if (!this.isProduction) {
-      console.debug(this.formatMessage('debug', message, context));
-    }
-  }
+function serializeError(value: unknown): unknown {
+  if (!(value instanceof Error)) return value;
+  const { code, statusCode } = value as { code?: unknown; statusCode?: unknown };
+  return {
+    type: value.name,
+    message: value.message,
+    stack: value.stack,
+    ...(typeof code === 'string' || typeof code === 'number' ? { code } : {}),
+    ...(typeof statusCode === 'number' ? { statusCode } : {}),
+    ...(value.cause === undefined ? {} : { cause: serializeError(value.cause) }),
+  };
 }
 
-// Global instances
-export const logger = new StructuredLogger();
+// pino-pretty as an in-process stream (sync), not a worker-thread transport.
+const base = pino(
+  { level, serializers: { err: serializeError } },
+  isProduction ? undefined : pretty({ sync: true, colorize: true, ignore: 'pid,hostname' }),
+);
+
+export const logger = {
+  debug(message: string, context?: LogContext): void {
+    base.debug(context ?? {}, message);
+  },
+  info(message: string, context?: LogContext): void {
+    base.info(context ?? {}, message);
+  },
+  warn(message: string, context?: LogContext): void {
+    base.warn(context ?? {}, message);
+  },
+  error(message: string, context?: ErrorContext): void {
+    base.error(context ?? {}, message);
+  },
+};
