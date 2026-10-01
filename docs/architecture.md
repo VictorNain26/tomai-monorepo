@@ -34,13 +34,13 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 | Module | Responsabilité | Code actuel |
 |---|---|---|
 | `auth` | Comptes parent (email, Google) et élève (username) ; le moteur de session (better-auth, gardes) est dans `platform/` | `routes/api/parent.routes.ts` (création d'enfant), `db/repositories/users.repository.ts` |
-| `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations | `services/parent/`, `parent.service.ts`, `routes/api/parent.routes.ts` |
-| `tutor` | Agent IA : session de chat, outils, mémoire, résumé, garde-fous | `services/chat/`, `lib/ai/` (routage du raisonnement), `episodic-memory.service.ts`, `cognitive-profile.service.ts` et sa table (`db/schema/cognitive-profile.schema.ts`) |
+| `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations | `services/parent/`, `parent.service.ts`, `progress.service.ts`, `routes/api/parent.routes.ts`, `db/schema/progress.schema.ts` |
+| `tutor` | Agent IA : session de chat, classeur de séance, outils, mémoire, profils, résumé, garde-fous, purge RGPD de ses tables | `modules/tutor/` |
 | `learning` | Decks, cartes, révisions FSRS, génération de cartes | `modules/learning/` |
-| `documents` | Upload, classeur de séance, extraction, analyse, stockage S3, fichiers prêts pour un tour de chat | `modules/documents/` |
-| `billing` | Formules Gratuit et Complet, quotas, abonnement web | `services/quota/`, `subscription.service.ts`, `token-quota.service.ts` |
+| `documents` | Upload, liste des fichiers, extraction, analyse, stockage S3, fichiers prêts pour un tour de chat | `modules/documents/` |
+| `billing` | Formules Gratuit et Complet, quotas, abonnement web | `services/quota/`, `subscription.service.ts`, `token-quota.service.ts`, `cost-tracking.service.ts`, `db/schema/cost-tracking.schema.ts` |
 | `voice` | Transcription et synthèse vocale (Voxtral) | `modules/voice/` |
-| `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `platform/` (config, migrateur, auth, http, observabilité, IA, cycle de vie), `retention-purge.service.ts` |
+| `platform` | Config, DB, observabilité, erreurs | `platform/` (config, migrateur, auth, http, observabilité, IA, cycle de vie) |
 
 Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par module, lot 0) :
 
@@ -53,8 +53,9 @@ Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par modu
   schéma qui réunit les tables de tous les modules (les requêtes relationnelles de Drizzle
   en ont besoin). Seule exception à la règle de l'index : ce schéma importe directement le
   fichier `*.schema.ts` de chaque module, car passer par `index.ts` chargerait routes et
-  clients externes dans `drizzle-kit`. `src/index.ts`, de même, démarre et arrête les jobs des
-  modules.
+  clients externes dans `drizzle-kit`. Pour la même raison, le `*.schema.ts` d'un module importe
+  directement celui dont il référence une table par clé étrangère. `src/index.ts`, de même,
+  démarre et arrête les jobs des modules.
 - `apps/server/src/modules/<module>/` : routes Hono du module (montées par `app.ts` sur
   son préfixe), services, dépôts, tables Drizzle et schémas Zod, avec un `index.ts` pour
   ce que les autres modules ont le droit d'appeler.

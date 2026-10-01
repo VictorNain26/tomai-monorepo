@@ -108,12 +108,12 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
   éviter la frustration), Sweller 2019 (exemples résolus pour le novice).
 - **Diagnostic de l'erreur avant toute aide** (Wang et al., NAACL 2024).
 - Suppression du « Chain-of-Thought obligatoire » (bloc maths de `SUBJECT_SPECIFICS`,
-  `config/prompts/adaptation/by-subject.ts`) et de la règle contradictoire de
+  `modules/tutor/prompts/adaptation/by-subject.ts`) et de la règle contradictoire de
   `IntentClassifierService.buildReinforcement` (« révéler une étape intermédiaire » après
   deux ou trois échanges).
 - **Périmètre V1 : collège (6e → 3e)**, comme `SUBJECTS_BY_LEVEL`
   (`services/education.service.ts`). Le prompt cesse d'annoncer « CP → Terminale »
-  (`config/prompts/core/identity.ts`, `config/prompts/core/safety.ts`).
+  (`modules/tutor/prompts/core/identity.ts`, `modules/tutor/prompts/core/safety.ts`).
 - **Une seule taxonomie** `config/subjects.ts` : familles pour le classifieur,
   slugs fins pour les outils ; `histoire-geo` fusionné, `italien` ajouté. Elle
   remplace `STUDENT_SUBJECTS`, `SUBJECT_SLUGS`, `COLLEGE_SUBJECTS`,
@@ -132,7 +132,7 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 | Modération de sortie | Même modèle sur la réponse ; blocage et réponse de repli | Après génération, avant persistance |
 | Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles) ; réponse de soutien, numéros d'aide vérifiés sur service-public.fr, alerte au parent. C'est la seule alerte que reçoit le parent | Même point d'entrée |
 | Fuite de réponse | Palier d'aide imposé par le serveur (§4) ; contrôle de fuite du lot 1 réutilisé en production si son coût le permet | Assembleur de tour |
-| Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur (`sendReasoning: false` de `toUIMessageStream`, `routes/chat-message.routes.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, lecture vocale, fiches, titre de séance, messages d'erreur | Sortie du flux, outils, TTS |
+| Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur (`sendReasoning: false` de `toUIMessageStream`, `modules/tutor/chat-message.routes.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, lecture vocale, fiches, titre de séance, messages d'erreur | Sortie du flux, outils, TTS |
 | Confirmation avant création de cartes | `needsApproval` de l'AI SDK sur `generate_flashcards`, pas la seule description de l'outil | `chat-tools.ts` |
 | Injection | Texte élève et contenu de documents délimités comme données ; aucun outil sensible déclenchable par du contenu importé | Assembleur, outils |
 
@@ -170,7 +170,7 @@ Ordre du prompt, du plus stable au plus variable :
 4. Résumé des tours anciens + tours récents bruts.
 5. Message de l'élève, **un seul message `user` par tour** : la consigne de tour
    rejoint ce message au lieu d'en créer d'autres (aujourd'hui jusqu'à six `user`
-   consécutifs, `assembleChatMessages` de `services/chat/chat-message-assembler.ts`).
+   consécutifs, `assembleChatMessages` de `modules/tutor/chat-message-assembler.ts`).
 
 `promptCacheKey` = identifiant de session (recommandation Mistral), en place depuis
 la PR C. Le taux `cacheRead` est suivi dans Langfuse.
