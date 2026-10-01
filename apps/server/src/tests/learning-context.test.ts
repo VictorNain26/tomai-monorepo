@@ -14,7 +14,7 @@ mock.module('../modules/learning/index', () => ({
   },
 }));
 
-const { getLearningContext } = await import('../services/chat/mistral-helpers');
+const { getLearningContext } = await import('../modules/tutor/mistral-helpers');
 
 describe('getLearningContext', () => {
   it('adds nothing when no card is due and no subject is weak', async () => {

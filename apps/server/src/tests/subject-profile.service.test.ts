@@ -2,7 +2,7 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
 
 let store: Record<string, unknown> = {};
-mock.module('../db/repositories/student-subject-profile.repository', () => ({
+mock.module('../modules/tutor/student-subject-profile.repository', () => ({
   studentSubjectProfileRepository: {
     upsertAggregate: mock(async (input: Record<string, unknown>) => { store = input; return store; }),
     findByUser: mock(async () => [
@@ -13,7 +13,7 @@ mock.module('../db/repositories/student-subject-profile.repository', () => ({
   },
 }));
 
-const { subjectProfileService } = await import('../services/chat/subject-profile.service');
+const { subjectProfileService } = await import('../modules/tutor/subject-profile.service');
 
 beforeEach(() => { store = {}; });
 

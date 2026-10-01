@@ -18,10 +18,8 @@
       "@/*": ["./src/*"],
       "@/routes/*": ["./src/routes/*"],
       "@/services/*": ["./src/services/*"],
-      "@/middleware/*": ["./src/middleware/*"],
       "@/types/*": ["./src/types/*"],
-      "@/config/*": ["./src/config/*"],
-      "@/utils/*": ["./src/utils/*"]
+      "@/config/*": ["./src/config/*"]
     }
   }
 }

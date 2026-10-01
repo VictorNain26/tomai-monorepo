@@ -22,7 +22,7 @@ process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] = `http://localhost:${collector.port}
 process.env['OTEL_EXPORTER_OTLP_HEADERS'] = 'Authorization=Basic%20cGs6c2s=';
 
 const { setupOtel, shutdownOtel } = await import('../platform/observability/otel');
-const { streamChat } = await import('../services/chat/ai-chat.service');
+const { streamChat } = await import('../modules/tutor/ai-chat.service');
 
 afterAll(() => {
   void collector.stop(true);

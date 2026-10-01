@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'bun:test';
 
 // mergeDedup is a pure function — no DB, no mocks needed.
-import { mergeDedup } from '../db/repositories/student-subject-profile.repository.js';
+import { mergeDedup } from '../modules/tutor/student-subject-profile.repository.js';
 
 describe('mergeDedup', () => {
   it('appends new entries to existing ones', () => {

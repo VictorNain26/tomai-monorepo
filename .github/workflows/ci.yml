@@ -178,9 +178,9 @@ jobs:
         id: check
         run: |
           if [ -n "$GITHUB_BASE_REF" ]; then
-            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/server/src/db/' 'apps/server/drizzle.config.ts')
+            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts')
           else
-            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'apps/server/src/db/' 'apps/server/drizzle.config.ts')
+            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts')
           fi
           if [ -n "$DIFF" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"

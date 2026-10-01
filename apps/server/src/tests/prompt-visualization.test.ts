@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test';
-import { generateVisualizationPolicy } from '../config/prompts/core/visualization.js';
-import { buildSystemPrompt } from '../config/prompts/system-prompt.js';
-import { generateSubjectBlock } from '../config/prompts/adaptation/by-subject.js';
-import { stripPromptTags } from '../services/chat/mistral-helpers.js';
+import { generateVisualizationPolicy } from '../modules/tutor/prompts/core/visualization.js';
+import { buildSystemPrompt } from '../modules/tutor/prompts/system-prompt.js';
+import { generateSubjectBlock } from '../modules/tutor/prompts/adaptation/by-subject.js';
+import { stripPromptTags } from '../modules/tutor/mistral-helpers.js';
 
 describe('generateVisualizationPolicy', () => {
   const block = generateVisualizationPolicy();

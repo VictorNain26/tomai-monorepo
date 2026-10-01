@@ -1,6 +1,6 @@
 import './_helpers/mistral-env';
 import { describe, it, expect, afterEach } from 'bun:test';
-import { mistralEmbeddingsService } from '../services/mistral-embeddings.service';
+import { mistralEmbeddingsService } from '../modules/tutor/mistral-embeddings.service';
 
 const originalFetch = globalThis.fetch;
 

@@ -1,10 +1,10 @@
 /**
- * Tests unitaires - Token Budget Service (services/chat/token-budget.service.ts)
+ * Tests unitaires - Token Budget Service (modules/tutor/token-budget.service.ts)
  * 0 mocks — fonctions pures
  */
 
 import { describe, it, expect } from 'bun:test';
-import { estimateTokens, truncateToTokenBudget, calculateBudget } from '../services/chat/token-budget.service';
+import { estimateTokens, truncateToTokenBudget, calculateBudget } from '../modules/tutor/token-budget.service';
 
 describe('Token Budget Service', () => {
   describe('estimateTokens', () => {

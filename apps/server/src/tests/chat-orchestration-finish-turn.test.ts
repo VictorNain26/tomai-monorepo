@@ -1,5 +1,5 @@
 /**
- * Tests — ChatOrchestrationService.finishTurn (services/chat/chat-orchestration.service.ts)
+ * Tests — ChatOrchestrationService.finishTurn (modules/tutor/chat-orchestration.service.ts)
  *
  * Mirrors the legacy SSE pipeline's `postProcess`, which only ever ran on a
  * `done` chunk (never on a stream that errored before producing content):
@@ -9,8 +9,8 @@
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
-import type { TomChatMessage } from '../services/chat/chat-ui-message';
-import type { ClassifiedIntent } from '../services/chat/intent-classifier.service';
+import type { TomChatMessage } from '../modules/tutor/chat-ui-message';
+import type { ClassifiedIntent } from '../modules/tutor/intent-classifier.service';
 
 // ============================================
 // MOCKS (must be before any import of the real module under test)
@@ -19,7 +19,7 @@ import type { ClassifiedIntent } from '../services/chat/intent-classifier.servic
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-mock.module('../services/chat/chat-session.service', () => ({
+mock.module('../modules/tutor/chat-session.service', () => ({
   chatSessionService: {
     getSession: mock(async () => null),
     getOrCreateActiveSession: mock(async () => 'session-001'),
@@ -36,11 +36,11 @@ const saveMessage = mock(
     _options?: unknown,
   ) => ({ messageId: 'msg-1', realSessionId: 'session-001' }),
 );
-mock.module('../services/chat/chat-message.service', () => ({
+mock.module('../modules/tutor/chat-message.service', () => ({
   chatMessageService: { saveMessage, getSessionHistory: mock(async () => []) },
 }));
 
-mock.module('../db/repositories/index', () => ({
+mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: { updateSubject: mock(async () => {}) },
 }));
 
@@ -52,30 +52,30 @@ mock.module('../modules/documents/index', () => ({
   },
 }));
 
-const actualMistralHelpers = await import('../services/chat/mistral-helpers');
-mock.module('../services/chat/mistral-helpers', () => ({
+const actualMistralHelpers = await import('../modules/tutor/mistral-helpers');
+mock.module('../modules/tutor/mistral-helpers', () => ({
   ...actualMistralHelpers,
   getLearningContext: mock(async () => null),
 }));
 
 const summarizeIfNeeded = mock(async () => {});
-mock.module('../services/chat/summarization.service', () => ({
+mock.module('../modules/tutor/summarization.service', () => ({
   summarizationService: { summarizeIfNeeded },
 }));
 
 const generateTitleIfNeeded = mock(async () => {});
-mock.module('../services/chat/auto-title.service', () => ({
+mock.module('../modules/tutor/auto-title.service', () => ({
   autoTitleService: { generateTitleIfNeeded },
 }));
 
-mock.module('../services/chat/intent-classifier.service', () => ({
+mock.module('../modules/tutor/intent-classifier.service', () => ({
   intentClassifierService: {
     classify: mock(async () => ({ intent: 'unknown', confidence: 'low', subject: 'general' })),
     buildReinforcement: mock(() => null),
   },
 }));
 
-mock.module('../services/cognitive-profile.service', () => ({
+mock.module('../modules/tutor/cognitive-profile.service', () => ({
   cognitiveProfileService: { getProfileSummary: mock(async () => null) },
 }));
 
@@ -84,14 +84,14 @@ mock.module('../services/cost-tracking.service', () => ({
   costTrackingService: { record },
 }));
 
-mock.module('../services/episodic-memory.service', () => ({
+mock.module('../modules/tutor/episodic-memory.service', () => ({
   episodicMemoryService: {
     retrieveRelevant: mock(async () => []),
     formatEpisodesForPrompt: mock(() => null),
   },
 }));
 
-mock.module('../services/chat/subject-profile.service', () => ({
+mock.module('../modules/tutor/subject-profile.service', () => ({
   subjectProfileService: { formatSubjectMemoryForPrompt: mock(async () => null) },
 }));
 
@@ -101,7 +101,7 @@ mock.module('../services/token-quota.service', () => ({
 }));
 
 // Import the real module under test AFTER all mocks are registered.
-const { chatOrchestrationService } = await import('../services/chat/chat-orchestration.service');
+const { chatOrchestrationService } = await import('../modules/tutor/chat-orchestration.service');
 
 describe('ChatOrchestrationService.finishTurn', () => {
   beforeEach(() => {

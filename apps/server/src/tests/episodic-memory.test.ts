@@ -8,29 +8,29 @@ mock.module('../platform/observability/logger', () => ({
   logger: { ...createMockLogger(), error: mock((message: string) => { loggedErrors.push(message); }) },
 }));
 
-mock.module('../db/repositories/study-sessions.repository', () => ({
+mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: { findById: mock(async () => makeStudySession({ userId: 'user-001' })) },
 }));
 
-mock.module('../db/repositories/messages.repository', () => ({
+mock.module('../modules/tutor/messages.repository', () => ({
   messagesRepository: {
     findBySessionId: mock(async () => Array.from({ length: 6 }, (_, i) => makeMessage({ id: `msg-${i}` }))),
   },
 }));
 
 const inserted: Array<Record<string, unknown>> = [];
-mock.module('../db/repositories/episodic-memory.repository', () => ({
+mock.module('../modules/tutor/episodic-memory.repository', () => ({
   episodicMemoryRepository: {
     insertEpisode: mock(async (data: Record<string, unknown>) => { inserted.push(data); }),
     findRelevantEpisodes: mock(async () => []),
   },
 }));
 
-mock.module('../db/repositories/student-subject-profile.repository', () => ({
+mock.module('../modules/tutor/student-subject-profile.repository', () => ({
   studentSubjectProfileRepository: { upsertAggregate: mock(async () => {}) },
 }));
 
-const { episodicMemoryService } = await import('../services/episodic-memory.service');
+const { episodicMemoryService } = await import('../modules/tutor/episodic-memory.service');
 
 const originalFetch = globalThis.fetch;
 let chatCalls = 0;

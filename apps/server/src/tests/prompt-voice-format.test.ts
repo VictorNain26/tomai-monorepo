@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import { isSpeakable } from '../modules/voice/speech-normalize.js';
-import { generateResponseFormatPolicy } from '../config/prompts/core/response-format.js';
-import { buildSystemPrompt } from '../config/prompts/system-prompt.js';
-import { stripPromptTags } from '../services/chat/mistral-helpers.js';
+import { generateResponseFormatPolicy } from '../modules/tutor/prompts/core/response-format.js';
+import { buildSystemPrompt } from '../modules/tutor/prompts/system-prompt.js';
+import { stripPromptTags } from '../modules/tutor/mistral-helpers.js';
 
 describe('isSpeakable', () => {
   it('plain prose is speakable', () => {

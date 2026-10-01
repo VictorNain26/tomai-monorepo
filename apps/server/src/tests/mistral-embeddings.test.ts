@@ -11,7 +11,7 @@ mock.module('../platform/config/env', () => ({
   },
 }));
 
-const { mistralEmbeddingsService } = await import('../services/mistral-embeddings.service');
+const { mistralEmbeddingsService } = await import('../modules/tutor/mistral-embeddings.service');
 
 afterEach(() => mock.restore());
 

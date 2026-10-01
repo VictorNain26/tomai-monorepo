@@ -1,0 +1,350 @@
+import { usersRepository } from '../../db/repositories';
+import { studySessionsRepository, type CreateStudySessionInput } from './study-sessions.repository.js';
+import type { SchoolLevel } from '../../db/schema';
+import { logger } from '../../platform/observability/logger';
+import { deleteSessionCascade } from './session-cleanup';
+import { episodicMemoryService } from './episodic-memory.service.js';
+import type { SessionDetails, UserSession, ConversationListItem } from './chat-types';
+
+export class ChatSessionService {
+  async getOrCreateActiveSession(userId: string): Promise<string> {
+    try {
+      const existingSession = await studySessionsRepository.findActiveByUser(userId);
+
+      if (existingSession) {
+        logger.info('Resuming existing active session', {
+          sessionId: existingSession.id,
+          userId,
+          operation: 'getOrCreateActiveSession:resume'
+        });
+        return existingSession.id;
+      }
+
+      return await this.createSession(userId, 'général');
+    } catch (error) {
+      logger.error('Failed to get or create active session', {
+        err: error,
+        userId,
+        operation: 'getOrCreateActiveSession',
+        severity: 'high' as const
+      });
+      throw error;
+    }
+  }
+
+  async createSession(userId: string, subject: string, topic?: string): Promise<string> {
+    try {
+      const input: CreateStudySessionInput = {
+        userId,
+        subject,
+        ...(topic && { topic })
+      };
+
+      const session = await studySessionsRepository.create(input);
+
+      logger.info('Session created successfully', {
+        sessionId: session.id,
+        userId,
+        subject,
+        operation: 'createSession'
+      });
+
+      return session.id;
+
+    } catch (_error) {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+
+      const pgError = _error as {
+        code?: string;
+        detail?: string;
+        hint?: string;
+        constraint?: string;
+        table?: string;
+        column?: string;
+      };
+
+      logger.error('Failed to create session', {
+        operation: 'createSession',
+        err: error,
+        userId,
+        subject,
+        topic,
+        pgCode: pgError.code,
+        pgDetail: pgError.detail,
+        pgHint: pgError.hint,
+        pgConstraint: pgError.constraint,
+        pgTable: pgError.table,
+        pgColumn: pgError.column,
+        severity: 'high' as const
+      });
+
+      throw error;
+    }
+  }
+
+  async updateSessionWithFiles(sessionId: string, fileData: {
+    fileName: string;
+    analysis: string;
+    extractedText?: string;
+    fileType: string;
+    size: number;
+    uploadedAt: string;
+  }): Promise<void> {
+    try {
+      const currentSession = await studySessionsRepository.findById(sessionId);
+      if (!currentSession) {
+        throw new Error(`Session not found: ${sessionId}`);
+      }
+
+      const currentMetadata = (currentSession.sessionMetadata as Record<string, unknown>) ?? {};
+
+      if (!Array.isArray(currentMetadata.attachedFiles)) {
+        currentMetadata.attachedFiles = [];
+      }
+
+      (currentMetadata.attachedFiles as Array<unknown>).push({
+        fileName: fileData.fileName,
+        analysis: fileData.analysis,
+        extractedText: fileData.extractedText,
+        fileType: fileData.fileType,
+        size: fileData.size,
+        uploadedAt: fileData.uploadedAt,
+        analyzedAt: new Date().toISOString()
+      });
+
+      await studySessionsRepository.update(sessionId, {
+        sessionMetadata: currentMetadata
+      });
+
+      logger.info('Session updated with file analysis', {
+        sessionId,
+        fileName: fileData.fileName,
+        operation: 'updateSessionWithFiles'
+      });
+    } catch (_error) {
+      logger.error('Failed to update session with files', {
+        err: _error,
+        sessionId,
+        fileName: fileData.fileName,
+        operation: 'updateSessionWithFiles',
+        severity: 'medium' as const
+      });
+      throw _error;
+    }
+  }
+
+  async getSessionFiles(sessionId: string): Promise<Array<{
+    fileName: string;
+    analysis: string;
+    extractedText?: string;
+    fileType: string;
+    analyzedAt: string;
+  }>> {
+    try {
+      const session = await studySessionsRepository.findById(sessionId);
+      if (!session?.sessionMetadata) {
+        return [];
+      }
+
+      const metadata = session.sessionMetadata as Record<string, unknown>;
+      return Array.isArray(metadata.attachedFiles) ? metadata.attachedFiles : [];
+    } catch (_error) {
+      logger.error('Failed to get session files', {
+        err: _error,
+        sessionId,
+        operation: 'getSessionFiles',
+        severity: 'medium' as const
+      });
+      return [];
+    }
+  }
+
+  async getSession(sessionId: string): Promise<SessionDetails | null> {
+    try {
+      const session = await studySessionsRepository.findById(sessionId);
+      if (!session) {
+        return null;
+      }
+
+      return {
+        id: session.id,
+        userId: session.userId,
+        subject: session.subject,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        durationMinutes: session.durationMinutes,
+        frustrationAvg: session.frustrationAvg ? parseFloat(session.frustrationAvg) : null,
+        questionLevelsAvg: session.questionLevelsAvg ? parseFloat(session.questionLevelsAvg) : null,
+        conceptsCovered: Array.isArray(session.conceptsCovered) ? session.conceptsCovered.join(', ') : session.conceptsCovered
+      };
+    } catch (_error) {
+      logger.error('Error getting session', { operation: 'chat:session:get', err: _error, sessionId, severity: 'medium' as const });
+      throw new Error('Failed to get session', { cause: _error });
+    }
+  }
+
+  /**
+   * Fetch a session only if it belongs to `userId`. Returns null when the
+   * session is missing or owned by someone else — collapsing the
+   * "not found" and "forbidden" cases so callers can't leak existence (IDOR).
+   */
+  async getSessionForUser(sessionId: string, userId: string): Promise<SessionDetails | null> {
+    const session = await this.getSession(sessionId);
+    return session && session.userId === userId ? session : null;
+  }
+
+  async getSessionWithSummary(sessionId: string): Promise<{
+    conversationSummary: string | null;
+    summaryUpToMessageId: string | null;
+    subject: string | null;
+  } | null> {
+    try {
+      const session = await studySessionsRepository.findById(sessionId);
+      if (!session) return null;
+
+      return {
+        conversationSummary: session.conversationSummary ?? null,
+        summaryUpToMessageId: session.summaryUpToMessageId ?? null,
+        subject: session.subject ?? null,
+      };
+    } catch (_error) {
+      logger.error('Error getting session summary', {
+        operation: 'chat:session:summary',
+        err: _error,
+        sessionId,
+        severity: 'medium' as const
+      });
+      return null;
+    }
+  }
+
+  async getUserSessions(userId: string, limit?: number): Promise<UserSession[]> {
+    try {
+      const sessions = await studySessionsRepository.findByUserIdWithStats(userId);
+
+      const limitedSessions = limit ? sessions.slice(0, limit) : sessions;
+
+      const result = limitedSessions.map(session => ({
+        id: session.id,
+        subject: session.subject,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        messagesCount: session.messageCount,
+        lastActivity: session.endedAt ?? session.startedAt,
+        frustrationAvg: parseFloat(session.frustrationAvg ?? '0')
+      }));
+
+      return result;
+
+    } catch (_error) {
+      logger.error('Error getting user sessions', { operation: 'chat:sessions:list', err: _error, userId, severity: 'medium' as const });
+      throw new Error('Failed to get user sessions', { cause: _error });
+    }
+  }
+
+  /**
+   * List sessions for conversation list UI.
+   * Returns sessions with last message preview, ordered by recent activity.
+   */
+  async listConversations(userId: string, options: { limit?: number; offset?: number } = {}): Promise<ConversationListItem[]> {
+    try {
+      const sessions = await studySessionsRepository.findByUserIdWithLastMessage(userId, options);
+
+      return sessions.map(session => ({
+        id: session.id,
+        title: session.topic ?? null,
+        subject: session.subject,
+        status: session.status,
+        messageCount: session.messageCount,
+        lastMessagePreview: session.lastMessageContent
+          ? session.lastMessageContent.slice(0, 120) + (session.lastMessageContent.length > 120 ? '...' : '')
+          : null,
+        lastMessageRole: session.lastMessageRole as 'user' | 'assistant' | null,
+        lastActivityAt: session.lastMessageAt ?? session.startedAt,
+        startedAt: session.startedAt,
+      }));
+    } catch (_error) {
+      logger.error('Error listing conversations', {
+        operation: 'chat:conversations:list',
+        err: _error,
+        userId,
+        severity: 'medium' as const,
+      });
+      throw new Error('Failed to list conversations', { cause: _error });
+    }
+  }
+
+  async deleteSession(sessionId: string, userId?: string): Promise<void> {
+    return deleteSessionCascade(sessionId, userId);
+  }
+
+  async resetSession(sessionId: string, userId: string): Promise<string> {
+    try {
+      const session = await studySessionsRepository.findById(sessionId);
+      if (!session || session.userId !== userId) {
+        throw new Error('Session not found or access denied');
+      }
+
+      await studySessionsRepository.update(sessionId, {
+        status: 'completed',
+        endedAt: new Date(),
+      });
+
+      // Fire-and-forget episodic extraction on the session we just archived.
+      // A session reached here only if the student chose to wrap it up — that
+      // is a meaningful pedagogical boundary worth persisting into long-term
+      // memory. GDPR note: deletion cascade removes the episode alongside
+      // the parent session (see session_episodes.session_id_fkey).
+      episodicMemoryService.extractAndStore(sessionId, userId).catch(err => {
+        logger.warn('Episodic extraction (reset) failed in background', {
+          operation: 'chat:session:reset:episodic-bg',
+          err: err,
+          sessionId,
+        });
+      });
+
+      const newSessionId = await this.createSession(userId, session.subject);
+
+      logger.info('Session reset: archived old, created new', {
+        operation: 'chat:session:reset',
+        oldSessionId: sessionId,
+        newSessionId,
+        subject: session.subject,
+      });
+
+      return newSessionId;
+    } catch (_error) {
+      logger.error('Error resetting session', {
+        operation: 'chat:session:reset',
+        err: _error,
+        sessionId,
+        severity: 'medium' as const
+      });
+      throw new Error('Failed to reset session', { cause: _error });
+    }
+  }
+
+  async getUserById(userId: string): Promise<{ id: string; schoolLevel: SchoolLevel; firstName?: string } | null> {
+    try {
+      const user = await usersRepository.findById(userId);
+      if (!user) {
+        return null;
+      }
+
+      if (!user.schoolLevel) {
+        throw new Error(`Utilisateur ${userId} n'a pas de niveau scolaire défini - inscription incomplète`);
+      }
+
+      return {
+        id: user.id,
+        schoolLevel: user.schoolLevel as SchoolLevel,
+        ...(user.firstName && { firstName: user.firstName })
+      };
+    } catch (_error) {
+      logger.error('Error getting user by ID', { operation: 'chat:user:get', err: _error, userId, severity: 'medium' as const });
+      throw new Error('Failed to get user', { cause: _error });
+    }
+  }
+}
+
+export const chatSessionService = new ChatSessionService();

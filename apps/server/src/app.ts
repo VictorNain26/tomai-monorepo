@@ -13,8 +13,8 @@ import type { AppEnv } from './platform/http/context.js';
 import { sentryMiddleware } from './platform/observability/sentry.js';
 
 import { apiRoutes } from './routes/api/index.js';
-import { chatMessageRoutes } from './routes/chat-message.routes.js';
-import { uploadRoutes, sessionFilesRoutes } from './modules/documents/index.js';
+import { chatMessageRoutes, chatSessionRoutes, sessionFilesRoutes } from './modules/tutor/index.js';
+import { uploadRoutes, filesRoutes } from './modules/documents/index.js';
 import { statusRoutes } from './routes/subscription/index.js';
 import { voiceRoutes } from './modules/voice/index.js';
 import { learningRoutes } from './modules/learning/index.js';
@@ -152,6 +152,8 @@ const app = base
   .route('/', apiRoutes)
   .route('/api/chat', chatMessageRoutes)
   .route('/api/upload', uploadRoutes)
+  .route('/api', filesRoutes)
+  .route('/api', chatSessionRoutes)
   .route('/api', sessionFilesRoutes)
   .route('/api/subscriptions', statusRoutes)
   .route('/api/tts', voiceRoutes)
@@ -166,6 +168,6 @@ export { app };
 export type AppType = typeof app;
 
 // UI message wire types for chat clients (AI SDK UIMessage) - type-only
-export type { TomChatMessage, TomDataParts, DeckCreatedData } from './services/chat/chat-ui-message.js';
+export type { TomChatMessage, TomDataParts, DeckCreatedData } from './modules/tutor/index.js';
 
 export { initializeServices } from './platform/lifecycle/server-lifecycle.js';

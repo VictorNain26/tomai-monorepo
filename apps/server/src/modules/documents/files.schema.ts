@@ -1,7 +1,7 @@
 import { pgTable, uuid, varchar, timestamp, integer, jsonb, pgEnum, index, foreignKey, unique } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { user } from '../../db/schema/auth.schema';
-import { studySessions } from '../../db/schema/learning.schema';
+import { studySessions } from '../tutor/session.schema';
 
 // =============================================
 // ENUMS

@@ -7,7 +7,7 @@
  * - `generateText` — completion non-streaming simple (vision, analyse doc, résumé, titre…)
  * - `generateStructured` — sortie structurée Zod en JSON Schema, strict par défaut (intent classifier, épisodes…) ; les cartes passent `strict: false`
  *
- * Both go through `mistralProvider` (`lib/ai/provider.ts`, EU endpoint).
+ * Both go through `mistralProvider` (`platform/ai/provider.ts`, EU endpoint).
  * Every call runs with `reasoningEffort: 'none'`: reasoning is reserved to the
  * chat turn (`ai-chat.service.ts`).
  */

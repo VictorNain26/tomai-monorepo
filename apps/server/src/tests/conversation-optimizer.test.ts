@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { optimizeConversationHistory } from "../utils/conversation/conversation-optimizer";
+import { optimizeConversationHistory } from "../modules/tutor/conversation-optimizer";
 
 const mkMsgs = (n: number) =>
   Array.from({ length: n }, (_, i) => ({

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { assembleChatMessages } from '../services/chat/chat-message-assembler.js';
+import { assembleChatMessages } from '../modules/tutor/chat-message-assembler.js';
 
 describe('assembleChatMessages', () => {
   it('injects the summary as a user block right after system when conversationSummary is provided', () => {

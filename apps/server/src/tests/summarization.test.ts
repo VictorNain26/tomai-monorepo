@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Summarization Service (services/chat/summarization.service.ts)
+ * Tests unitaires - Summarization Service (modules/tutor/summarization.service.ts)
  * Mock: DB repos + Gemini + logger
  */
 
@@ -47,7 +47,7 @@ let sessionResult: StudySessionData | null = null;
 let sessionUpdateCalled = false;
 let sessionUpdateArgs: Record<string, unknown> = {};
 
-mock.module('../db/repositories/study-sessions.repository', () => ({
+mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: {
     findById: mock(async () => sessionResult),
     update: mock(async (_id: string, data: Record<string, unknown>) => {
@@ -60,7 +60,7 @@ mock.module('../db/repositories/study-sessions.repository', () => ({
 // Messages repository mock
 let messagesResult: MessageData[] = [];
 
-mock.module('../db/repositories/messages.repository', () => ({
+mock.module('../modules/tutor/messages.repository', () => ({
   messagesRepository: {
     findBySessionId: mock(async () => messagesResult),
     countBySessionId: mock(async () => messagesResult.length),
@@ -97,7 +97,7 @@ mock.module('../platform/config/env', () => ({
 }));
 
 // Import after mocks
-const { summarizationService } = await import('../services/chat/summarization.service');
+const { summarizationService } = await import('../modules/tutor/summarization.service');
 
 function makeMessages(count: number) {
   return Array.from({ length: count }, (_, i) => ({

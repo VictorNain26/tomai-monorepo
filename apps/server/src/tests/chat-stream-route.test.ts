@@ -1,5 +1,5 @@
 /**
- * Tests — Chat stream route (routes/chat-message.routes.ts)
+ * Tests — Chat stream route (modules/tutor/chat-message.routes.ts)
  *
  * Covers the guards that stay plain JSON before the UI Message Stream
  * starts (auth, quota, concurrency) and the post-stream contract:
@@ -85,7 +85,7 @@ const prepareTurn = mock(async (_req: unknown) => ({
 const persistUserTurn = mock(async (_params: unknown) => {});
 const finishTurn = mock(async (_params: unknown) => {});
 
-mock.module('../services/chat/chat-orchestration.service', () => ({
+mock.module('../modules/tutor/chat-orchestration.service', () => ({
   chatOrchestrationService: { prepareTurn, persistUserTurn, finishTurn },
   ChatOrchestrationError,
 }));
@@ -97,7 +97,7 @@ const chatTools: ToolSet = {
     execute: async () => 'ok',
   }),
 };
-mock.module('../services/chat/chat-tools', () => ({
+mock.module('../modules/tutor/chat-tools', () => ({
   buildChatTools: mock(() => chatTools),
 }));
 
@@ -164,12 +164,12 @@ function realStreamChat(params: unknown): StreamChatResult {
 
 let streamChatImpl: (params: unknown) => StreamChatResult = realStreamChat;
 
-mock.module('../services/chat/ai-chat.service', () => ({
+mock.module('../modules/tutor/ai-chat.service', () => ({
   streamChat: (params: unknown) => streamChatImpl(params),
 }));
 
 // Import real route AFTER all mocks are registered
-const { chatMessageRoutes } = await import('../routes/chat-message.routes');
+const { chatMessageRoutes } = await import('../modules/tutor/chat-message.routes');
 const { handleError } = await import('../platform/http/error-handler');
 
 // ============================================

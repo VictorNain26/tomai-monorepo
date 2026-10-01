@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { assembleChatMessages } from '../services/chat/chat-message-assembler.js';
+import { assembleChatMessages } from '../modules/tutor/chat-message-assembler.js';
 
 describe('subject memory block placement', () => {
   it('keeps <subject_memory> in a user message, never in the system prompt', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { wrapUserMessage } from '../services/chat/mistral-helpers';
+import { wrapUserMessage } from '../modules/tutor/mistral-helpers';
 
 describe('wrapUserMessage', () => {
   it('wraps content inside <student_message>', () => {

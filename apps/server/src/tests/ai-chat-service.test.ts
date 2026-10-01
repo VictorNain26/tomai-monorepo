@@ -1,5 +1,5 @@
 /**
- * Tests unitaires — AiChatService (services/chat/ai-chat.service.ts)
+ * Tests unitaires — AiChatService (modules/tutor/ai-chat.service.ts)
  *
  * Verifies the streamText wiring against a `MockLanguageModelV4` (the
  * interface version @ai-sdk/mistral@4.0.48 implements — confirmed in
@@ -14,7 +14,7 @@ import { describe, it, expect, afterEach } from 'bun:test';
 import { z } from 'zod';
 import { APICallError, tool, type ToolSet, simulateReadableStream, toUIMessageStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
-import { streamChat, type ChatStreamParams } from '../services/chat/ai-chat.service.js';
+import { streamChat, type ChatStreamParams } from '../modules/tutor/ai-chat.service.js';
 import { env } from '../platform/config/env.js';
 
 const baseParams: Omit<ChatStreamParams, 'model' | 'tools'> = {

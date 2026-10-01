@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Cognitive Profile Service (services/cognitive-profile.service.ts)
+ * Tests unitaires - Cognitive Profile Service (modules/tutor/cognitive-profile.service.ts)
  * Mock: DB + logger
  */
 
@@ -63,7 +63,7 @@ mock.module('../db/connection', () => ({
   },
 }));
 
-mock.module('../db/schema', () => ({
+mock.module('../modules/tutor/cognitive-profile.schema', () => ({
   studentCognitiveProfiles: { userId: 'userId' },
 }));
 
@@ -72,7 +72,7 @@ mock.module('drizzle-orm', () => ({
 }));
 
 // Import after mocks
-const { cognitiveProfileService } = await import('../services/cognitive-profile.service');
+const { cognitiveProfileService } = await import('../modules/tutor/cognitive-profile.service');
 
 beforeEach(() => {
   queryFindFirstResult = undefined;

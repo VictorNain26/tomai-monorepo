@@ -17,11 +17,11 @@ bloquant levé).
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
   - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349),
-    module `documents` (#350), module `learning` (#351) ;
-    restent, dans l'ordre, `tutor`, `auth` et `family`, `billing`
+    module `documents` (#350), module `learning` (#351), module `tutor` (#352) ;
+    restent, dans l'ordre, `auth` et `family`, `billing`
     (rangement cible : `architecture.md`, « Monolithe modulaire ») ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** refonte du module `tutor`, sur une branche courte dont le plan
+- **Prochaine action :** refonte des modules `auth` et `family`, sur une branche courte dont le plan
   s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
@@ -38,12 +38,18 @@ contraire.
 
 - `eslint-disable` antérieurs dans `apps/server/src` (repositories learning,
   `parent.service.ts`, `education-levels.ts`, `seed-dev.ts`,
-  `routes/chat-message.routes.ts` (`no-control-regex` dans `sanitizePrompt`)), à remplacer
+  `modules/tutor/chat-message.routes.ts` (`no-control-regex` dans `sanitizePrompt`)), à remplacer
   par une forme de code qui ne déclenche pas la règle.
   Configuration visée (relevée dans l'ancien plan d'E2) : config
   partagée `strictTypeChecked` et `stylisticTypeChecked`, `noInlineConfig`,
   `reportUnusedDisableDirectives: 'error'`, `only-warn` retiré) : c'est la quatrième PR
   du lot 0 dans la roadmap.
+
+### Lot 0 — modules `auth` et `family`
+
+- `services/progress.service.ts` et `services/parent/parent-dashboard.service.ts` interrogent
+  directement `study_sessions` et `messages`, tables du tuteur : les faire passer par
+  `modules/tutor/index.ts` (#352).
 
 ### Lot 1 — harnais d'évaluation
 
@@ -66,11 +72,11 @@ contraire.
 - **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
   - la synthèse vocale (`/api/tts`, `modules/voice/voice.routes.ts`) n'a aucun quota, seulement le
     rate limit global : c'est le seul poste non borné ;
-  - l'outil `generate_flashcards` du chat (`services/chat/chat-tools.ts`) n'a ni contrôle
+  - l'outil `generate_flashcards` du chat (`modules/tutor/chat-tools.ts`) n'a ni contrôle
     de plan ni quota de cartes, alors que la route `/api/learning/generate` réserve les
     fiches au Complet ;
   - le résumé de conversation se relance à chaque tour après le 10e
-    (`services/chat/summarization.service.ts` : le seuil de 10 nouveaux messages se compte
+    (`modules/tutor/summarization.service.ts` : le seuil de 10 nouveaux messages se compte
     depuis le dernier message résumé, alors que 10 messages restent toujours hors du
     résumé) ;
   - le quota compte `usage.totalTokens` (`ChatOrchestrationService.finishTurn`) : les tokens
@@ -111,7 +117,7 @@ contraire.
 - **Facturation** : colonnes `revenuecat_customer_id` et `revenuecat_subscription_id` de
   `family_billing`, enum `billing_status` et commentaires RevenueCat de
   `db/schema/billing.schema.ts`, restes du mobile, refaits avec le paiement web.
-- `config/app-guide/app-guide-data.ts` (outil `get_app_help`) décrit l'application mobile
+- `modules/tutor/app-guide/app-guide-data.ts` (outil `get_app_help`) décrit l'application mobile
   et l'abonnement : à réécrire avec la navigation web.
 - **Hébergement** : délai de grâce SIGTERM au moins égal à un tour de chat (`app.stop()`
   attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
@@ -211,4 +217,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   module `documents`, premier module qui porte ses tables ; une suppression de fichier
   garde la ligne quand le stockage échoue, au lieu de laisser un objet d'élève orphelin
   (#350). Module `learning` ; le tuteur lit les signaux de révision par le service du
-  module au lieu d'interroger ses tables (#351).
+  module au lieu d'interroger ses tables (#351). Module `tutor` : le classeur de séance
+  passe de `documents` au tuteur, la purge RGPD quitte `platform`, et le contrôle de
+  migrations de la CI couvre enfin les schémas des modules (#352).

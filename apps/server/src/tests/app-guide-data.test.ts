@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { getAppHelpContent } from '../config/app-guide/app-guide-data';
+import { getAppHelpContent } from '../modules/tutor/app-guide/app-guide-data';
 
 const TOPICS = [
   'overview',

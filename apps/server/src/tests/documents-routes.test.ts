@@ -18,23 +18,16 @@ mock.module('../db/connection', () => ({ db: {} }));
 mock.module('../modules/voice/index', () => ({ audioTranscriptionService: {} }));
 
 const FILE_ID = '0199a3c4-7b1e-7d2a-9f00-0000000000f1';
-const SESSION_ID = '0199a3c4-7b1e-7d2a-9f00-0000000000a1';
-
 let fileOwner = 'student-1';
-let sessionOwner = 'student-1';
+let listedFiles: Array<Record<string, unknown>> = [];
 const hardDelete = mock(async (_id: string) => true);
-const attach = mock(async (_sessionId: string, _fileId: string) => {});
+const findByUserId = mock(async (_userId: string) => listedFiles);
 mock.module('../modules/documents/files.repository', () => ({
   filesRepository: {
     findById: mock(async (id: string) => ({ id, userId: fileOwner, storageKey: 'uploads/k' })),
     hardDelete,
+    findByUserId,
   },
-}));
-mock.module('../modules/documents/session-files.repository', () => ({
-  sessionFilesRepository: { attach, countBySession: mock(async () => 0) },
-}));
-mock.module('../db/repositories/study-sessions.repository', () => ({
-  studySessionsRepository: { findById: mock(async (id: string) => ({ id, userId: sessionOwner })) },
 }));
 
 let storageDeleted = true;
@@ -43,20 +36,20 @@ mock.module('../modules/documents/storage', () => ({
 }));
 
 const { uploadRoutes } = await import('../modules/documents/upload.routes');
-const { sessionFilesRoutes } = await import('../modules/documents/session-files.routes');
+const { filesRoutes } = await import('../modules/documents/files.routes');
 const { handleError } = await import('../platform/http/error-handler');
 
 const app = new Hono<AppEnv>()
   .route('/api/upload', uploadRoutes)
-  .route('/api', sessionFilesRoutes)
+  .route('/api', filesRoutes)
   .onError(handleError);
 
 beforeEach(() => {
   fileOwner = 'student-1';
-  sessionOwner = 'student-1';
+  listedFiles = [];
   storageDeleted = true;
   hardDelete.mockClear();
-  attach.mockClear();
+  findByUserId.mockClear();
 });
 
 describe('DELETE /api/upload/file/:fileId', () => {
@@ -77,26 +70,32 @@ describe('DELETE /api/upload/file/:fileId', () => {
   });
 });
 
-describe('POST /api/chat/session/:id/files', () => {
-  const attachRequest = () => app.request(`/api/chat/session/${SESSION_ID}/files`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fileId: FILE_ID }),
-  });
+describe('GET /api/files', () => {
+  it("lists the student's files with the type and subject found by the analysis", async () => {
+    const createdAt = new Date('2026-10-01T08:00:00Z');
+    listedFiles = [
+      { id: FILE_ID, fileName: 'ex.pdf', mimeType: 'application/pdf', sizeBytes: 12, educationalContext: { documentType: 'exercice', subject: 'mathematiques' }, createdAt },
+      { id: 'f2', fileName: 'photo.png', mimeType: 'image/png', sizeBytes: 34, educationalContext: null, createdAt },
+    ];
 
-  it('attaches a file the student owns to a session the student owns', async () => {
-    const res = await attachRequest();
+    const res = await app.request('/api/files');
 
     expect(res.status).toBe(200);
-    expect(attach).toHaveBeenCalledWith(SESSION_ID, FILE_ID);
+    expect(findByUserId).toHaveBeenCalledWith('student-1');
+    expect(await res.json()).toEqual({
+      success: true,
+      files: [
+        { id: FILE_ID, fileName: 'ex.pdf', mimeType: 'application/pdf', sizeBytes: 12, documentType: 'exercice', subject: 'mathematiques', createdAt: '2026-10-01T08:00:00.000Z' },
+        { id: 'f2', fileName: 'photo.png', mimeType: 'image/png', sizeBytes: 34, documentType: null, subject: null, createdAt: '2026-10-01T08:00:00.000Z' },
+      ],
+    });
   });
 
-  it("refuses another student's session", async () => {
-    sessionOwner = 'student-2';
+  it('answers 500 when the files cannot be read', async () => {
+    findByUserId.mockImplementationOnce(async () => {
+      throw new Error('db down');
+    });
 
-    const res = await attachRequest();
-
-    expect(res.status).toBe(403);
-    expect(attach).not.toHaveBeenCalled();
+    expect((await app.request('/api/files')).status).toBe(500);
   });
 });
