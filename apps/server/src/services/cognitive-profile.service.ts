@@ -13,7 +13,7 @@ import {
   type CognitiveObservation,
 } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { logger } from '../lib/observability.js';
+import { logger } from '../platform/observability/logger.js';
 
 const MAX_OBSERVATIONS = 50;
 

@@ -23,14 +23,14 @@
  */
 
 import { z } from 'zod';
-import { generateStructured } from '../lib/ai/mistral-client.js';
+import { generateStructured } from '../platform/ai/mistral-client.js';
 import { studySessionsRepository } from '../db/repositories/study-sessions.repository.js';
 import { messagesRepository } from '../db/repositories/messages.repository.js';
 import { episodicMemoryRepository } from '../db/repositories/episodic-memory.repository.js';
 import { mistralEmbeddingsService } from './mistral-embeddings.service.js';
 import { subjectProfileService } from './chat/subject-profile.service.js';
-import { logger } from '../lib/observability.js';
-import { env } from '../config/env.js';
+import { logger } from '../platform/observability/logger.js';
+import { env } from '../platform/config/env.js';
 
 const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-05-18';
 

@@ -5,8 +5,8 @@
  */
 
 import { Hono } from 'hono';
-import { validate, type AuthEnv } from '../../lib/http.js';
-import { logger } from '../../lib/observability';
+import { validate, type AuthEnv } from '../../platform/http/context.js';
+import { logger } from '../../platform/observability/logger';
 import { learningService, CardNotFoundError } from '../../services/learning/learning.service';
 import { fsrsService } from '../../services/fsrs.service';
 import { getLevelConfig } from '../../config/learning-config';

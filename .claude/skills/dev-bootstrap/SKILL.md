@@ -18,7 +18,7 @@ cette skill sert quand il échoue, ou pour comprendre ce qu'il fait.
 
 ## Le piège : `db:migrate`, jamais `db:push`, sur une base neuve
 
-Au boot, `server-lifecycle.ts` vérifie la table de suivi
+Au boot, `platform/lifecycle/server-lifecycle.ts` vérifie la table de suivi
 `drizzle.__drizzle_migrations`. **`db:push` ne la crée pas** — il synchronise le
 schéma directement. Sur une base vierge, un `db:push` donne donc un schéma correct
 et un serveur qui refuse quand même de démarrer, ce qui est le symptôme le plus
@@ -38,7 +38,7 @@ le schéma en local.
 
 ## `.env` minimal qui suffit à booter
 
-Auth et DB sont les seules variables requises (`apps/server/src/config/env.ts`) ;
+Auth et DB sont les seules variables requises (`apps/server/src/platform/config/env.ts`) ;
 tout le reste est incrémental — une feature (IA, stockage, Google OAuth) échoue à
 l'usage tant que sa variable manque, mais le serveur démarre.
 

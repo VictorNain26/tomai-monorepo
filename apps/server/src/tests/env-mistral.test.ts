@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { tmpdir } from 'node:os';
 
-const ENV_MODULE = new URL('../config/env.ts', import.meta.url).pathname;
+const ENV_MODULE = new URL('../platform/config/env.ts', import.meta.url).pathname;
 
 function bootEnv(extra: Record<string, string>) {
   return Bun.spawnSync(['bun', '--no-env-file', '-e', `await import(${JSON.stringify(ENV_MODULE)})`], {

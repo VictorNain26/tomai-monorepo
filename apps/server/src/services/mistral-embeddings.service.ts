@@ -5,9 +5,9 @@
  * Utilisé par la mémoire épisodique (recherche vectorielle pgvector).
  */
 
-import { logger } from '../lib/observability.js';
-import { getMistralSdk } from '../lib/ai/mistral-sdk.js';
-import { env } from '../config/env.js';
+import { logger } from '../platform/observability/logger.js';
+import { getMistralSdk } from '../platform/ai/mistral-sdk.js';
+import { env } from '../platform/config/env.js';
 
 // Configuration
 const EMBEDDING_MODEL = env.MISTRAL_EMBED_MODEL;

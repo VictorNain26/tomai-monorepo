@@ -12,7 +12,7 @@ import { cognitiveProfileService } from '../cognitive-profile.service.js';
 import { makeToolError, type ToolResult } from './tool-errors.js';
 import { getLevelConfig } from '../../config/learning-config.js';
 import { getAppHelpContent } from '../../config/app-guide/index.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 import type { EducationLevelType } from '../../types/index.js';
 
 interface ToolExecutionContext {

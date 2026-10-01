@@ -10,9 +10,9 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { requireUser, validate, type AppEnv } from '../lib/http.js';
+import { requireUser, validate, type AppEnv } from '../platform/http/context.js';
 import { textToSpeechService, type TTSOptions } from '../services/text-to-speech.service.js';
-import { logger } from '../lib/observability.js';
+import { logger } from '../platform/observability/logger.js';
 import type { EducationLevelType } from '../types/education.types.js';
 
 // ============================================

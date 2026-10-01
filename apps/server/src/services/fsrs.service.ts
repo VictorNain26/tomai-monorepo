@@ -13,7 +13,7 @@ import { learningDecksRepository } from '../db/repositories/learning-decks.repos
 import type { FSRSData } from '../db/schema.js';
 import { getLevelConfig } from '../config/learning-config.js';
 import type { EducationLevelType } from '../types/index.js';
-import { logger } from '../lib/observability.js';
+import { logger } from '../platform/observability/logger.js';
 
 import type { ReviewResult, CardForReview, DeckReviewStats, GetDueCardsOptions } from './fsrs-types.js';
 

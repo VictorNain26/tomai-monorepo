@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { AppEnv } from '../../lib/http.js';
+import type { AppEnv } from '../../platform/http/context.js';
 import { apiHealthRoutes } from './health.routes';
 import { chatSessionApiRoutes } from './chat-session.routes';
 import { parentApiRoutes } from './parent.routes';

@@ -1,4 +1,4 @@
-import type { MistralMessage, MistralContentPart } from '../../lib/ai/mistral-client.js';
+import type { MistralMessage, MistralContentPart } from '../../platform/ai/mistral-client.js';
 import { stripPromptTags } from './mistral-helpers.js';
 
 export interface ChatMessageParts {

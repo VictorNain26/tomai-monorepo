@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { requireUser, type AppEnv } from '../../lib/http.js';
+import { requireUser, type AppEnv } from '../../platform/http/context.js';
 import { deckRoutes } from './deck.routes';
 import { deckDiscoveryRoutes } from './deck-discovery.routes';
 import { cardRoutes } from './card.routes';

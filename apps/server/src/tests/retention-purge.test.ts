@@ -12,7 +12,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 mock.module('drizzle-orm', () => ({
   lt: (...args: unknown[]) => ({ type: 'lt', args }),

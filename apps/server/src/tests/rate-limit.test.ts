@@ -3,16 +3,16 @@ import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { createMockLogger } from './_helpers/mock-logger';
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // isProduction() is read when a key is generated
 let mockIsProduction = true;
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   isProduction: () => mockIsProduction,
   isDevelopment: () => !mockIsProduction,
 }));
 
-const { createRateLimitMiddleware, defaultKeyGenerator, RateLimitPresets } = await import('../middleware/rate-limit.middleware');
+const { createRateLimitMiddleware, defaultKeyGenerator, RateLimitPresets } = await import('../platform/http/rate-limit');
 
 function appWith(middleware: MiddlewareHandler) {
   return new Hono().use(middleware).get('/t', (c) => c.text('ok'));

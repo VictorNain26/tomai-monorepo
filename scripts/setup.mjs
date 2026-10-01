@@ -40,7 +40,7 @@ if (existsSync(serverEnvPath)) {
   }
 }
 
-// 3. Postgres up + migrations (apps/server/src/db/migrate.ts crée l'extension vector)
+// 3. Postgres up + migrations (apps/server/src/platform/db/migrate.ts crée l'extension vector)
 console.log("[setup] postgres…");
 run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "60", "postgres"]);
 console.log("[setup] migrations Drizzle…");

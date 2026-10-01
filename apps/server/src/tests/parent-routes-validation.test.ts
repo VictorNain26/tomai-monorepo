@@ -1,11 +1,11 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
-import type { AppEnv } from '../lib/http';
+import type { AppEnv } from '../platform/http/context';
 import { createMockLogger } from './_helpers/mock-logger';
 
-mock.module('../lib/observability', () => ({ logger: createMockLogger() }));
+mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 
 const parentUser = { id: 'parent-1', role: 'parent' };
-mock.module('../middleware/auth.middleware', () => ({
+mock.module('../platform/auth/session', () => ({
   requireAuth: () => Promise.resolve({ success: true, user: parentUser, session: { id: 's1' } }),
   requireParentRole: () => Promise.resolve({ success: true, user: parentUser, session: { id: 's1' } }),
 }));
@@ -19,7 +19,7 @@ const updateChild = mock((_parentId: string, childId: string, data: Record<strin
 mock.module('../services/parent.service', () => ({ parentService: { createChild, updateChild } }));
 
 const { Hono } = await import('hono');
-const { handleError } = await import('../middleware/error-handler.middleware');
+const { handleError } = await import('../platform/http/error-handler');
 const { parentApiRoutes } = await import('../routes/api/parent.routes');
 
 const app = new Hono<AppEnv>().route('/', parentApiRoutes).onError(handleError);

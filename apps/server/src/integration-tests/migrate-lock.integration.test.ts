@@ -62,7 +62,7 @@ describe.skipIf(!dbReachable)('runMigrations — concurrent boot exclusivity', (
     Bun.env['DATABASE_URL_EXTERNAL'] = testUrl.toString();
 
     try {
-      const { runMigrations } = await import('../db/migrate');
+      const { runMigrations } = await import('../platform/db/migrate');
       await Promise.all([runMigrations(), runMigrations()]);
     } finally {
       if (previousUrl === undefined) {

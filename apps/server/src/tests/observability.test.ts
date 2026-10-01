@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { tmpdir } from 'node:os';
 
-const MODULE = new URL('../lib/observability.ts', import.meta.url).pathname;
+const MODULE = new URL('../platform/observability/logger.ts', import.meta.url).pathname;
 
 /** Runs `script` with `logger` in scope in a fresh production process and returns the JSON lines it printed. */
 function logLines(script: string, env: Record<string, string> = {}): Record<string, unknown>[] {

@@ -7,7 +7,7 @@ import { eq, desc, count, sum, sql, and, gte } from 'drizzle-orm';
 import { studySessionsRepository, progressRepository } from '../db/repositories';
 import { db } from '../db/connection';
 import { studySessions, messages, costTracking } from '../db/schema';
-import { logger } from '../lib/observability';
+import { logger } from '../platform/observability/logger';
 
 interface StudentStats {
   totalSessions: number;

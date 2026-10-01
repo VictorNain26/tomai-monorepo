@@ -1,22 +1,22 @@
 /**
- * Auth guards (lib/http.ts): inject the typed user/session, answer 401, 403
+ * Auth guards (platform/http/context.ts): inject the typed user/session, answer 401, 403
  * or 503 through the global error envelope.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { Hono } from 'hono';
 import type { AuthenticatedUser } from '../types/index.js';
-import type { AppEnv } from '../lib/http';
+import type { AppEnv } from '../platform/http/context';
 import { createMockLogger } from './_helpers/mock-logger';
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Auth mock state
 let authSessionResult: { user: Record<string, unknown>; session: Record<string, unknown> } | null = null;
 let authShouldThrow: Error | null = null;
 
-mock.module('../lib/auth', () => ({
+mock.module('../platform/auth/auth', () => ({
   auth: {
     api: {
       getSession: mock(async () => {
@@ -28,8 +28,8 @@ mock.module('../lib/auth', () => ({
 }));
 
 // Import after all mocks
-const { requireUser, requireParent } = await import('../lib/http.js');
-const { handleError } = await import('../middleware/error-handler.middleware.js');
+const { requireUser, requireParent } = await import('../platform/http/context.js');
+const { handleError } = await import('../platform/http/error-handler.js');
 
 // Helper fixtures
 function makeUser(overrides?: Partial<AuthenticatedUser>): AuthenticatedUser {

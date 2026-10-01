@@ -5,9 +5,9 @@
 
 import type { Context, Env, MiddlewareHandler } from 'hono';
 import { getConnInfo } from 'hono/bun';
-import type { AuthEnv } from '../lib/http.js';
+import type { AuthEnv } from './context.js';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
-import { logger } from '../lib/observability';
+import { logger } from '../observability/logger';
 import { isProduction, isDevelopment } from '../config/env';
 
 interface RateLimitConfig<E extends Env> {

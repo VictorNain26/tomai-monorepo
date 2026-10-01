@@ -33,17 +33,29 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 
 | Module | Responsabilité | Code actuel |
 |---|---|---|
-| `auth` | Comptes parent (email, Google) et élève (username), sessions | `lib/auth.ts`, `lib/http.ts` |
+| `auth` | Comptes parent (email, Google) et élève (username) ; le moteur de session (better-auth, gardes) est dans `platform/` | `routes/api/parent.routes.ts` (création d'enfant), `db/repositories/users.repository.ts` |
 | `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations | `services/parent/`, `parent.service.ts`, `routes/api/parent.routes.ts` |
-| `tutor` | Agent IA : session de chat, outils, mémoire, résumé, garde-fous | `services/chat/`, `lib/ai/`, `episodic-memory.service.ts`, `cognitive-profile.service.ts` |
+| `tutor` | Agent IA : session de chat, outils, mémoire, résumé, garde-fous | `services/chat/`, `lib/ai/` (routage du raisonnement, schémas de cartes), `episodic-memory.service.ts`, `cognitive-profile.service.ts` |
 | `learning` | Decks, cartes, révisions FSRS | `services/learning/`, `fsrs.service.ts`, `routes/learning/` |
 | `documents` | Upload, extraction, analyse, stockage S3 | `services/document/`, `services/storage/`, `routes/file-upload.routes.ts` |
 | `billing` | Formules Gratuit et Complet, quotas, abonnement web | `services/quota/`, `subscription.service.ts`, `token-quota.service.ts` |
 | `voice` | Transcription et synthèse vocale (Voxtral) | `voxtral-*.service.ts`, `audio-transcription.service.ts`, `text-to-speech.service.ts` |
-| `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `config/`, `db/`, `lib/otel/`, `lib/errors.ts`, `retention-purge.service.ts` |
+| `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `platform/` (config, migrateur, auth, http, observabilité, IA, cycle de vie), `retention-purge.service.ts` |
 
-Le découpage physique en modules se fait au fil des lots, sur le code qu'on
-touche, pas en un big-bang.
+Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par module, lot 0) :
+
+- `apps/server/src/platform/` : ce que tous les modules utilisent sans règle métier, et qui
+  n'importe aucun module — `config/`, `db/` (migrateur), `auth/` (instance better-auth,
+  lecture de session), `http/` (contexte Hono, gardes, validation, erreurs, rate limit),
+  `observability/` (logger, OpenTelemetry, Sentry), `ai/` (client Mistral), `lifecycle/`
+  (vérification au démarrage).
+- `apps/server/src/db/` : point de composition des données — le client Drizzle et le
+  schéma qui réunit les tables de tous les modules (les requêtes relationnelles de Drizzle
+  en ont besoin). `index.ts`, de même, démarre et arrête les jobs des modules.
+- `apps/server/src/modules/<module>/` : routes Hono du module (montées par `app.ts` sur
+  son préfixe), services, dépôts, tables Drizzle et schémas Zod, avec un `index.ts` pour
+  ce que les autres modules ont le droit d'appeler.
+- Les tests restent dans `src/tests/` et `src/integration-tests/`.
 
 ## Client web
 

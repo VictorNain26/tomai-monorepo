@@ -3,7 +3,7 @@ import { db } from '../../db/connection.js';
 import { files } from '../../db/schema.js';
 import { filesRepository } from '../../db/repositories/index.js';
 import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 import type { DocumentAnalysisResult } from '../document/index.js';
 import type { MultimodalFile } from './file-context-types.js';
 

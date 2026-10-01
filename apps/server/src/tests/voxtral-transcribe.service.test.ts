@@ -11,9 +11,9 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: {
     MISTRAL_API_KEY: 'test-mistral-key',
     MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',

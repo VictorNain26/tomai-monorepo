@@ -16,10 +16,10 @@ async function checkDbReachable(): Promise<boolean> {
 const dbReachable = await checkDbReachable();
 
 describe.skipIf(!dbReachable)('seedDev — deterministic, login-proven accounts', () => {
-  let auth: Awaited<typeof import('../lib/auth')>['auth'];
+  let auth: Awaited<typeof import('../platform/auth/auth')>['auth'];
 
   beforeAll(async () => {
-    auth = (await import('../lib/auth')).auth;
+    auth = (await import('../platform/auth/auth')).auth;
   });
 
   afterAll(async () => {

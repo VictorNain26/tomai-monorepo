@@ -18,9 +18,9 @@ import { createMockLogger } from './_helpers/mock-logger';
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: {
     BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
     BETTER_AUTH_URL: 'http://localhost:3000',
@@ -62,7 +62,7 @@ let auth: Record<string, unknown>;
 let apiMethods: string[];
 
 beforeAll(async () => {
-  const mod = await import('../lib/auth');
+  const mod = await import('../platform/auth/auth');
   auth = mod.auth as Record<string, unknown>;
   apiMethods = Object.keys(auth.api as Record<string, unknown>);
 });

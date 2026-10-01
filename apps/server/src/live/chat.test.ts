@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { generateText } from '../lib/ai/mistral-client';
+import { generateText } from '../platform/ai/mistral-client';
 import { HAS_MISTRAL } from './_creds';
 
 // Live contre l'endpoint UE Mistral (api.eu.mistral.ai). LOCAL-ONLY (`bun run test:live`),

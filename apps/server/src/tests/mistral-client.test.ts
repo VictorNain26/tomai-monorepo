@@ -2,7 +2,7 @@ import './_helpers/mistral-env';
 import { describe, it, expect, afterEach } from 'bun:test';
 import { NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';
-import { generateText, generateStructured, type MistralMessage } from '../lib/ai/mistral-client';
+import { generateText, generateStructured, type MistralMessage } from '../platform/ai/mistral-client';
 
 const originalFetch = globalThis.fetch;
 

@@ -5,8 +5,8 @@ import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 // Sans clé, @ai-sdk/mistral jette LoadAPIKeyError avant le fetch faké ;
 // env.ts lit process.env au chargement, d'où l'import dynamique.
 process.env['MISTRAL_API_KEY'] ??= 'test-api-key';
-const { mistralProvider } = await import('../lib/ai/provider.js');
-const { env } = await import('../config/env.js');
+const { mistralProvider } = await import('../platform/ai/provider.js');
+const { env } = await import('../platform/config/env.js');
 
 function fakeMistralResponse() {
   return new Response(

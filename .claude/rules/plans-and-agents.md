@@ -19,5 +19,5 @@ paths:
   écarts et arbitrages sont consignés en tête du plan.
 - Un point reporté dans `docs/suivi.md` nomme une PR ou un lot existant. Quand
   le plan de cette PR s'écrit, le point y devient une tâche ou est explicitement renvoyé.
-- Un fait vit à un seul endroit : la doc renvoie au code (`apps/server/src/config/env.ts`
+- Un fait vit à un seul endroit : la doc renvoie au code (`apps/server/src/platform/config/env.ts`
   pour les variables, la route `/health` pour ses statuts) au lieu de le recopier.

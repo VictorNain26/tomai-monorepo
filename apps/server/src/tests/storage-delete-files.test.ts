@@ -8,9 +8,9 @@ import { describe, it, expect, mock, beforeEach } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: {
     SCALEWAY_ACCESS_KEY: 'test-key',
     SCALEWAY_SECRET_KEY: 'test-secret',

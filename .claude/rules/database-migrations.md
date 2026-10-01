@@ -2,6 +2,7 @@
 description: Migrations Drizzle — chargé uniquement sur le schéma DB et les migrations
 paths:
   - "apps/server/src/db/**"
+  - "apps/server/src/platform/db/**"
   - "apps/server/drizzle/**"
   - "apps/server/drizzle.config*.ts"
   - "**/schema.ts"
@@ -49,6 +50,6 @@ bun run db:studio   # Interface visuelle
 
 ## Concurrence au deploy
 
-`src/db/migrate.ts` pose un advisory lock autour de `migrate()` : `drizzle-orm` n'en pose
+`src/platform/db/migrate.ts` pose un advisory lock autour de `migrate()` : `drizzle-orm` n'en pose
 aucun et plusieurs instances migrent en parallèle au boot. Ne pas le retirer ; la
 course est reproduite par `src/integration-tests/migrate-lock.integration.test.ts`.

@@ -7,14 +7,14 @@
 import { describe, it, expect, mock } from 'bun:test';
 import { Hono } from 'hono';
 import { createMockLogger } from './_helpers/mock-logger';
-import type { AppEnv } from '../lib/http';
+import type { AppEnv } from '../platform/http/context';
 
-mock.module('../lib/observability', () => ({ logger: createMockLogger() }));
-mock.module('../middleware/auth.middleware', () => {
+mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
+mock.module('../platform/auth/session', () => {
   const unauthorized = () => Promise.resolve({ success: false as const, _error: 'Unauthorized', status: 401 as const });
   return { requireAuth: unauthorized, requireParentRole: unauthorized };
 });
-mock.module('../config/env', () => ({
+mock.module('../platform/config/env', () => ({
   env: {},
   isProduction: () => false,
   isDevelopment: () => true,
@@ -42,7 +42,7 @@ mock.module('../db/repositories/index', () => ({ filesRepository: {} }));
 
 const { learningRoutes } = await import('../routes/learning/index');
 const { fileUploadRoutes } = await import('../routes/file-upload.routes');
-const { handleError } = await import('../middleware/error-handler.middleware');
+const { handleError } = await import('../platform/http/error-handler');
 
 const app = new Hono<AppEnv>()
   .route('/api/learning', learningRoutes)

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { tmpdir } from 'node:os';
 
-const ENV_MODULE = new URL('../config/env.ts', import.meta.url).pathname;
+const ENV_MODULE = new URL('../platform/config/env.ts', import.meta.url).pathname;
 
 function corsOrigins(extra: Record<string, string>): string[] {
   const result = Bun.spawnSync(

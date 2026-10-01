@@ -31,7 +31,7 @@ interface UserData {
 // ============================================
 
 const mockLogger = createMockLogger();
-mock.module('../lib/observability', () => ({ logger: mockLogger }));
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // Users repository mock
 let childrenResult: UserData[] = [];
@@ -97,7 +97,7 @@ mock.module('../db/repositories', () => ({
 }));
 
 // Auth mock
-mock.module('../lib/auth', () => ({
+mock.module('../platform/auth/auth', () => ({
   auth: {
     api: {
       signUpEmail: mock(async () => ({

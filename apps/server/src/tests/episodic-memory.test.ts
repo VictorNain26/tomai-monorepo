@@ -4,7 +4,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 import { makeStudySession, makeMessage } from './_helpers/fixtures';
 
 const loggedErrors: string[] = [];
-mock.module('../lib/observability', () => ({
+mock.module('../platform/observability/logger', () => ({
   logger: { ...createMockLogger(), error: mock((message: string) => { loggedErrors.push(message); }) },
 }));
 

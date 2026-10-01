@@ -8,9 +8,9 @@
  * @see https://docs.mistral.ai/capabilities/audio/text_to_speech
  */
 
-import { logger } from '../lib/observability.js';
-import { env } from '../config/env.js';
-import { getMistralSdk } from '../lib/ai/mistral-sdk.js';
+import { logger } from '../platform/observability/logger.js';
+import { env } from '../platform/config/env.js';
+import { getMistralSdk } from '../platform/ai/mistral-sdk.js';
 import { MistralError } from '@mistralai/mistralai/models/errors';
 import type { EducationLevelType } from '../types/education.types.js';
 

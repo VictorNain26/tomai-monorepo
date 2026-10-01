@@ -29,7 +29,7 @@ import { costTrackingService } from '../cost-tracking.service.js';
 import { episodicMemoryService } from '../episodic-memory.service.js';
 import { subjectProfileService } from './subject-profile.service.js';
 import { tokenQuotaService } from '../token-quota.service.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js';
 import type { LanguageModelUsage } from 'ai';
 import type { EducationLevelType } from '../../types/index.js';

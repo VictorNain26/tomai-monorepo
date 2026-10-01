@@ -2,7 +2,7 @@
  * TomAI Server - Point d'entrée
  *
  * Migrations are automatically applied at startup via Drizzle ORM.
- * @see src/db/migrate.ts for runtime migration implementation
+ * @see src/platform/db/migrate.ts for runtime migration implementation
  * @see https://orm.drizzle.team/docs/drizzle-kit-migrate
  *
  * OpenTelemetry is initialised here before any service-tier module is
@@ -11,25 +11,28 @@
  * that ordering under ESM hoisting.
  */
 
-import { setupOtel, shutdownOtel } from './lib/otel/otel.js';
+import { setupOtel, shutdownOtel } from './platform/observability/otel.js';
 setupOtel();
 
-import { Sentry } from './lib/sentry.js';
+import { Sentry } from './platform/observability/sentry.js';
 
 const { app, initializeServices } = await import('./app');
-const { logger } = await import('./lib/observability.js');
-const { env } = await import('./config/env.js');
+const { logger } = await import('./platform/observability/logger.js');
+const { env } = await import('./platform/config/env.js');
 const { closeConnection } = await import('./db/connection.js');
-const { stopBackgroundJobs } = await import('./services/server-lifecycle.js');
-const { createGracefulShutdown } = await import('./lib/graceful-shutdown.js');
+const { startRetentionPurgeScheduler } = await import('./services/retention-purge.service.js');
+const { createGracefulShutdown } = await import('./platform/lifecycle/graceful-shutdown.js');
 
 const PORT = env.PORT;
 let server: ReturnType<typeof Bun.serve> | undefined;
+let stopRetentionPurge: (() => void) | undefined;
 
 async function startServer() {
   try {
     // Initialiser les services (DB connection, AI, etc.)
     await initializeServices();
+    // Background jobs are registered here, at the composition root, not in platform.
+    stopRetentionPurge = startRetentionPurgeScheduler();
 
     // idleTimeout 30 s: Bun's default (10 s) would cut a chat stream while the model thinks.
     server = Bun.serve({
@@ -61,7 +64,7 @@ const shutdown = createGracefulShutdown(
   [
     // Lets in-flight requests, chat streams included, finish.
     { name: 'server.stop', run: () => server?.stop() },
-    { name: 'stopBackgroundJobs', run: stopBackgroundJobs },
+    { name: 'retentionPurge.stop', run: () => stopRetentionPurge?.() },
     { name: 'otel.shutdown', run: shutdownOtel },
     { name: 'sentry.close', run: () => Sentry.close(2000) },
     { name: 'db.close', run: closeConnection },

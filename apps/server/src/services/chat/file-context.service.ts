@@ -2,7 +2,7 @@ import { filesRepository, sessionFilesRepository } from '../../db/repositories/i
 import type { File as FileRecord } from '../../db/repositories/files.repository.js';
 import { scalewayStorageService } from '../storage/scaleway-storage.service.js';
 import { documentAnalysisService, type DocumentAnalysisResult } from '../document/index.js';
-import { logger } from '../../lib/observability.js';
+import { logger } from '../../platform/observability/logger.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileInfo, AttachedFileForPrompt, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
 import { prepareMultimodalFiles, updateFileAnalysis } from './file-multimodal.service.js';

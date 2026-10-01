@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { requireUser, validate, type AppEnv } from '../../lib/http.js';
+import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
 import { chatSessionService } from '../../services/chat/chat-session.service';
-import { logger } from '../../lib/observability';
+import { logger } from '../../platform/observability/logger';
 
 const sessionParams = z.object({ id: z.uuid() });
 const sessionFileParams = z.object({ id: z.uuid(), fileId: z.uuid() });

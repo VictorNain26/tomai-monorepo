@@ -36,7 +36,7 @@ if (!dbReachable) {
 // Test state
 // ============================================================
 
-let auth: Awaited<typeof import('../lib/auth')>['auth'];
+let auth: Awaited<typeof import('../platform/auth/auth')>['auth'];
 let parentService: InstanceType<typeof import('../services/parent.service')['ParentService']>;
 let createdParentId: string;
 let childUsername: string;
@@ -45,7 +45,7 @@ const childPassword = 'child-password-123!';
 beforeAll(async () => {
   if (!dbReachable) return;
 
-  const authMod = await import('../lib/auth');
+  const authMod = await import('../platform/auth/auth');
   auth = authMod.auth;
 
   const { ParentService } = await import('../services/parent.service');

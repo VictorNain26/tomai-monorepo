@@ -7,8 +7,8 @@
  */
 
 import { eq } from 'drizzle-orm';
-import { isProduction } from '../config/env';
-import { auth } from '../lib/auth';
+import { isProduction } from '../platform/config/env';
+import { auth } from '../platform/auth/auth';
 import { db } from '../db/connection';
 import { learningDecks } from '../db/schema/learning-tools.schema';
 import { usersRepository } from '../db/repositories';

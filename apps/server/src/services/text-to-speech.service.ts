@@ -7,7 +7,7 @@
  * répond 500 et le frontend peut afficher un message clair.
  */
 
-import { logger } from '../lib/observability.js';
+import { logger } from '../platform/observability/logger.js';
 import { normalizeForSpeech } from '../lib/text/speech-normalize.js';
 import type { EducationLevelType } from '../types/education.types.js';
 import { getVoxtralTTSService, isVoxtralTTSConfigured } from './voxtral-tts.service.js';

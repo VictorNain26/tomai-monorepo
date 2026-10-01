@@ -5,8 +5,8 @@
  */
 
 import { userSubscriptionsRepository } from '../../db/repositories/user-subscriptions.repository.js';
-import { logger } from '../../lib/observability.js';
-import { env } from '../../config/env.js';
+import { logger } from '../../platform/observability/logger.js';
+import { env } from '../../platform/config/env.js';
 import {
   QUOTA_CONFIG,
   needsDailyReset,
