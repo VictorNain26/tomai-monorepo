@@ -16,12 +16,10 @@ bloquant levé).
   remplacer par Bun tout ce qu'il remplace proprement et une refonte complète du serveur.
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
-  - **outillage Bun, scripts** : `bun install` a remplacé pnpm (#344) ; restent les scripts
-    sous Bun et la liste « Lot 0 — outillage » ;
   - **logger** (détail dans « Reporté ») ;
   - **refonte du serveur**, une PR par module ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** scripts sous Bun, sur une branche courte dont le plan s'écrit
+- **Prochaine action :** logger, sur une branche courte dont le plan s'écrit
   d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
@@ -42,34 +40,6 @@ contraire.
   signature d'appel, puis codemod du motif
   `_error: x instanceof Error ? x.message : String(x)` (123 sites dans 52 fichiers le
   2026-10-01), qui perd la stack.
-
-### Lot 0 — outillage
-
-`bun install` a remplacé pnpm (#344). Reste, pour la PR « scripts sous Bun » : passer
-`scripts/*.mjs` et `node --test` sous Bun, et les constats ci-dessous, vérifiés sur `main`
-le 2026-09-22 et le 2026-09-23.
-
-- **Déclarations mortes** : `ignoreBinaries` et entrées `scripts/**` de l'espace
-  `apps/server` du `knip.json` racine ; montage `./apps/server/scripts` du service
-  `backend` de `docker-compose.yml` (dossier supprimé).
-- **Scripts** (racine) : `scripts/dev.mjs` enchaîne trois attentes, une seule suffit
-  (`docker compose up --wait`) ; `CREATE EXTENSION vector` est refait par `scripts/setup.mjs`
-  et par `ci.yml` alors que `apps/server/src/db/migrate.ts` la crée sous verrou, et le check
-  d'extension de `scripts/doctor-checks.mjs` renvoie à `bun run setup` au lieu du
-  migrateur ; `parseEnvFile` du doctor garde le commentaire en ligne dans la valeur,
-  `util.parseEnv` de Node le remplace.
-- **CI** : boucle `pg_isready` redondante (le runner attend déjà le service `healthy`) ;
-  `bun run test:scripts` ne tourne nulle part ; `TURBO_TOKEN` et `TURBO_TEAM` absents des
-  secrets et « Remote caching disabled » dans les logs (vérifié le 2026-09-23) : retirer ces
-  variables de `ci.yml` et garder la seule couche `actions/cache`.
-- **Landing** : option typée `appleWebApp` de la Metadata API à la place du bloc `other` de
-  `apps/landing/app/layout.tsx` (changement technique, compatible avec le gel).
-- **Lockfile** : `react@19.2.3` et un second `next` étaient résolus sous le serveur comme
-  pairs optionnels de better-auth (constat pnpm du 2026-09-23) ; à revérifier dans
-  `bun.lock`.
-- **Doc que cette PR rend fausse**, à corriger dans la même PR :
-  `.claude/skills/dev-bootstrap/SKILL.md` (`CREATE EXTENSION` à la main avant
-  `db:migrate`).
 
 ### Lot 0 — lint strict
 
@@ -205,6 +175,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Étape | Pour | Statut |
 |---|---|---|
 | Après le merge de #344 : `rm -rf node_modules && bun install` à la racine du clone local (les `node_modules` actuels viennent de pnpm) | Outillage | à faire |
+| Base de dev locale : `bun run setup` (applique les migrations 0028 et 0029, qui suppriment les tables de la liste d'attente et de Pronote ; le doctor signale 28/30) | Outillage | à faire |
 | Mener 8 à 10 entretiens de parents, dont des familles modestes (guide dans `etudes/2026-10-01/parents.md`) | Questions ouvertes de la vision, lot 4 | à faire |
 | Demander le Zero Data Retention au support Mistral, puis vérifier Admin › API › Privacy | Porte avant ouverture | à faire |
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
@@ -236,3 +207,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Serveur passé d'Elysia à Hono, sur Bun, après comparaison chiffrée ; Python écarté pour
   le serveur (#343).
   `bun install` remplace pnpm, lockfile migré à versions identiques (#344).
+  Scripts et tests de scripts sous Bun, attentes et `CREATE EXTENSION` en double retirés,
+  CI allégée, liste « outillage » soldée (#346). `appleWebApp` de la landing abandonné :
+  il émet `mobile-web-app-capable` au lieu de `apple-mobile-web-app-capable`.

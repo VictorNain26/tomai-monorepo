@@ -28,10 +28,8 @@ Séquence manuelle si `bun run setup` a échoué en route (commandes `docker` de
 racine, `bun run` depuis `apps/server`) :
 
 ```bash
-docker compose up -d postgres
-docker exec tomai-postgres-dev psql -U tomai_dev -d tomai_dev \
-  -c "CREATE EXTENSION IF NOT EXISTS vector;"
-bun run db:migrate    # crée __drizzle_migrations ET applique le SQL
+docker compose up -d --wait postgres
+bun run db:migrate    # crée l'extension vector, __drizzle_migrations, puis applique le SQL
 bun run dev
 ```
 

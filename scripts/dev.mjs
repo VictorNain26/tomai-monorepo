@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Orchestration dev : infra Docker (détaché) -> attente des services critiques
 // healthy -> apps host (Turbo). Le backend tourne sur l'host (turbo),
 // pas en conteneur : pas de clash :3000.
@@ -13,10 +13,7 @@ function run(cmd, args) {
   }
 }
 
-console.log("[dev] démarrage de l'infra (postgres)…");
-run("docker", ["compose", "up", "-d"]);
-
-console.log("[dev] attente postgres (healthy)…");
+console.log("[dev] démarrage de postgres, attente healthy…");
 run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "120", "postgres"]);
 
 console.log("[dev] vérification infra (fail-fast) avant de lancer les apps…");

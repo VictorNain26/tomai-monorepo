@@ -31,8 +31,8 @@ fixée d'avance.
    Mergée.
 4. `refactor/server-hono` (#343) : Elysia remplacé par Hono, sur Bun. Mergée.
 5. Outillage Bun, en deux PR : `build/bun-package-manager` (#344, `bun install` à la place
-   de pnpm, CI, Docker, Vercel), mergée ; puis les scripts sous Bun et le reste de la liste
-   « Lot 0 — outillage » de `suivi.md`.
+   de pnpm, CI, Docker, Vercel) et `build/bun-scripts` (#346, scripts et tests de scripts
+   sous Bun, liste « outillage » soldée). Mergées.
 6. Logger : pino et codemod du motif `_error` (liste « Lot 0 — logger »).
 7. Refonte du serveur, une PR par module de `architecture.md` (`auth` et parent, `chat`,
    `learning`, `documents`, `billing`, `voice`, `platform`) : un dossier par module, un

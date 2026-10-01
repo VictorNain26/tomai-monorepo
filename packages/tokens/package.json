@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test"
+    "test": "bun test"
   },
   "exports": {
     "./theme.css": "./theme.css"
