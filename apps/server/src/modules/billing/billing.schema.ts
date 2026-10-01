@@ -112,22 +112,22 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'user_subscriptions_user_id_fkey'
   }).onDelete('cascade'),
 
-  planIdFk: foreignKey({
+  foreignKey({
     columns: [table.planId],
     foreignColumns: [subscriptionPlans.id],
     name: 'user_subscriptions_plan_id_fkey'
   }).onDelete('restrict'),
 
-  statusIdx: index('idx_user_subscriptions_status').on(table.status),
-  lastResetIdx: index('idx_user_subscriptions_last_reset').on(table.lastResetAt),
-}));
+  index('idx_user_subscriptions_status').on(table.status),
+  index('idx_user_subscriptions_last_reset').on(table.lastResetAt),
+]);
 
 /**
  * Table family_billing - Facturation centralisée par parent (RevenueCat)
@@ -163,16 +163,16 @@ export const familyBilling = pgTable('family_billing', {
   // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  parentIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.parentId],
     foreignColumns: [user.id],
     name: 'family_billing_parent_id_fkey'
   }).onDelete('cascade'),
 
-  revenuecatCustomerIdx: index('idx_family_billing_revenuecat_customer').on(table.revenuecatCustomerId),
-  billingStatusIdx: index('idx_family_billing_status').on(table.billingStatus),
-}));
+  index('idx_family_billing_revenuecat_customer').on(table.revenuecatCustomerId),
+  index('idx_family_billing_status').on(table.billingStatus),
+]);
 
 // =============================================
 // RELATIONS

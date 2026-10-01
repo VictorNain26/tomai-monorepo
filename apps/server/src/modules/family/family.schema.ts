@@ -10,21 +10,21 @@ export const parentChild = pgTable('parent_child', {
   parentUserId: varchar('parent_user_id', { length: 255 }).notNull(),
   childUserId: varchar('child_user_id', { length: 255 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  pairUnique: unique('parent_child_pair_unique').on(table.parentUserId, table.childUserId),
-  parentIdx: index('idx_parent_child_parent').on(table.parentUserId),
-  childIdx: index('idx_parent_child_child').on(table.childUserId),
-  parentFk: foreignKey({
+}, (table) => [
+  unique('parent_child_pair_unique').on(table.parentUserId, table.childUserId),
+  index('idx_parent_child_parent').on(table.parentUserId),
+  index('idx_parent_child_child').on(table.childUserId),
+  foreignKey({
     columns: [table.parentUserId],
     foreignColumns: [user.id],
     name: 'parent_child_parent_user_id_fkey',
   }).onDelete('cascade'),
-  childFk: foreignKey({
+  foreignKey({
     columns: [table.childUserId],
     foreignColumns: [user.id],
     name: 'parent_child_child_user_id_fkey',
   }).onDelete('cascade'),
-}));
+]);
 
 export type ParentChild = typeof parentChild.$inferSelect;
 export type NewParentChild = typeof parentChild.$inferInsert;

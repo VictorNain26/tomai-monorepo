@@ -24,15 +24,15 @@ export const studentCognitiveProfiles = pgTable('student_cognitive_profiles', {
   lastUpdatedByAgent: timestamp('last_updated_by_agent', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'student_cognitive_profiles_user_id_fkey'
   }).onDelete('cascade'),
 
-  userIdIdx: index('idx_student_cognitive_profiles_user_id').on(table.userId),
-}));
+  index('idx_student_cognitive_profiles_user_id').on(table.userId),
+]);
 
 // =============================================
 // RELATIONS

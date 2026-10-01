@@ -32,19 +32,19 @@ export const progress = pgTable('progress', {
   // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'progress_user_id_fkey'
   }).onDelete('cascade'),
 
-  userSubjectConceptUnique: unique('progress_user_id_subject_concept_key').on(table.userId, table.subject, table.concept),
+  unique('progress_user_id_subject_concept_key').on(table.userId, table.subject, table.concept),
 
-  userIdIdx: index('idx_progress_user_id').on(table.userId),
-  subjectIdx: index('idx_progress_subject').on(table.subject),
-  masteryLevelIdx: index('idx_progress_mastery_level').on(table.masteryLevel),
-}));
+  index('idx_progress_user_id').on(table.userId),
+  index('idx_progress_subject').on(table.subject),
+  index('idx_progress_mastery_level').on(table.masteryLevel),
+]);
 
 export const progressRelations = relations(progress, ({ one }) => ({
   user: one(user, {

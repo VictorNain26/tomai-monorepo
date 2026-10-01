@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const imageUrlField = z.string().url().optional()
+const imageUrlField = z.url().optional()
   .describe('URL d\'image/schéma pour double codage visuel (optionnel)');
 
 const hintsField = z.array(z.string().min(1)).max(3).optional()
@@ -13,7 +13,7 @@ const commonMistakesField = z.array(z.object({
   .describe('Erreurs fréquentes à éviter avec explication (max 3)');
 
 const coerceIndex = z.preprocess(
-  (val) => (Array.isArray(val) && val.length === 1 ? val[0] : val),
+  (val) => (Array.isArray(val) && val.length === 1 ? (val as unknown[])[0] : val),
   z.number().int().min(0)
 );
 
@@ -24,7 +24,7 @@ export const MatchingContentSchema = z.object({
   pairs: z.array(z.object({
     left: z.string().min(1).describe('Élément gauche (mot, événement, date)'),
     right: z.string().min(1).describe('Élément droit (traduction, description)'),
-    imageUrl: z.string().url().optional().describe('Image pour vocabulaire illustré')
+    imageUrl: z.url().optional().describe('Image pour vocabulaire illustré')
   })).min(3).max(6).describe('Paires à associer (3-6 paires)')
 });
 
@@ -65,7 +65,7 @@ export const TimelineContentSchema = z.object({
     event: z.string().min(1).describe('Nom de l\'événement'),
     date: z.string().optional().describe('Date (révélée après réponse)'),
     hint: z.string().optional().describe('Indice optionnel'),
-    imageUrl: z.string().url().optional().describe('Image historique associée')
+    imageUrl: z.url().optional().describe('Image historique associée')
   })).min(3).max(6).describe('Événements à ordonner (3-6)'),
   correctOrder: z.array(z.number().int().min(0)).min(3).max(6)
     .describe('Indices dans l\'ordre chronologique correct'),

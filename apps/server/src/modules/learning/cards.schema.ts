@@ -21,7 +21,7 @@ import {
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
-const imageUrlField = z.string().url().optional()
+const imageUrlField = z.url().optional()
   .describe('URL d\'image/schéma pour double codage visuel (optionnel)');
 
 const hintsField = z.array(z.string().min(1)).max(3).optional()
@@ -34,7 +34,7 @@ const commonMistakesField = z.array(z.object({
   .describe('Erreurs fréquentes à éviter avec explication (max 3)');
 
 const coerceIndex = z.preprocess(
-  (val) => (Array.isArray(val) && val.length === 1 ? val[0] : val),
+  (val) => (Array.isArray(val) && val.length === 1 ? (val as unknown[])[0] : val),
   z.number().int().min(0)
 );
 
