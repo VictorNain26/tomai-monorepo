@@ -11,17 +11,17 @@ bloquant levé).
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-01.
+- **Dernière mise à jour :** 2026-10-02.
 - **Lot en cours :** 0 — Assainissement, élargi le 2026-10-01 : Victor a demandé de
   remplacer par Bun tout ce qu'il remplace proprement et une refonte complète du serveur.
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
   - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349),
     module `documents` (#350), module `learning` (#351), module `tutor` (#352),
-    modules `auth` et `family` (#353) ; reste `billing`
-    (rangement cible : `architecture.md`, « Monolithe modulaire ») ;
+    modules `auth` et `family` (#353), module `billing` (#354) : tous les modules de
+    `architecture.md` (« Monolithe modulaire ») sont rangés ;
   - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** refonte du module `billing`, sur une branche courte dont le plan
+- **Prochaine action :** lint strict, sur une branche courte dont le plan
   s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
@@ -87,7 +87,7 @@ contraire.
   Revoir ce schéma pour repasser en strict, et unifier au passage les trois définitions des
   types de cartes (enum `card_type`, `modules/learning/card-generation.types.ts`, schémas Zod
   de `cards.schema.ts`).
-- **Quota** : `needsMonthlyReset` (`services/quota/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
+- **Quota** : `needsMonthlyReset` (`modules/billing/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
   jour et de la semaine passent par date-fns. Une seule méthode.
 - `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
 
@@ -109,7 +109,10 @@ contraire.
   mobile) n'est plus lue ni écrite : la supprimer par migration (#353).
 - **Facturation** : colonnes `revenuecat_customer_id` et `revenuecat_subscription_id` de
   `family_billing`, enum `billing_status` et commentaires RevenueCat de
-  `db/schema/billing.schema.ts`, restes du mobile, refaits avec le paiement web.
+  `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web. Ses
+  routes qui ont besoin des enfants ou du lien parent-enfant vont dans `family`, comme
+  `/api/subscriptions` : `billing` reste un module feuille, sinon `billing`, `family` et
+  `tutor` s'importent en boucle (#354).
 - `modules/tutor/app-guide/app-guide-data.ts` (outil `get_app_help`) décrit l'application mobile
   et l'abonnement : à réécrire avec la navigation web.
 - **Hébergement** : délai de grâce SIGTERM au moins égal à un tour de chat (`app.stop()`
@@ -215,4 +218,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   migrations de la CI couvre enfin les schémas des modules (#352). Modules `auth` et
   `family` : les comptes élèves passent par `auth`, le tableau de bord parent lit les
   statistiques du tuteur, et le code qui exposait au parent le texte des séances est
-  supprimé avec le reste du code mort (#353).
+  supprimé avec le reste du code mort (#353). Module `billing` : module feuille, les routes
+  de statut et d'usage d'abonnement passent dans `family`, et `/api/subscriptions/usage` ne
+  révèle plus quels comptes existent (#354).
