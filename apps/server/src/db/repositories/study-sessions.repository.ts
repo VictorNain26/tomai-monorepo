@@ -5,7 +5,7 @@
 
 import { eq, desc, count, sql } from 'drizzle-orm';
 import { getTableColumns } from 'drizzle-orm';
-import { db } from '../../platform/db/connection';
+import { db } from '../connection';
 import { studySessions, messages, type StudySession } from '../schema';
 
 /**

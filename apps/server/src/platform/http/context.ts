@@ -3,7 +3,7 @@ import { createMiddleware } from 'hono/factory';
 import type { ValidationTargets } from 'hono';
 import type { RequestIdVariables } from 'hono/request-id';
 import type { ZodType } from 'zod';
-import { requireAuth, requireParentRole } from '../../middleware/auth.middleware.js';
+import { requireAuth, requireParentRole } from '../auth/session.js';
 import { AppError } from './errors.js';
 import type { AuthenticatedUser } from '../../types/index.js';
 

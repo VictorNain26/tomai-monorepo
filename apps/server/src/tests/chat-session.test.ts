@@ -102,7 +102,7 @@ mock.module('../db/repositories', () => ({
   },
 }));
 
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: {
     delete: mock(() => ({
       where: mock(async () => ({ count: 1 })),

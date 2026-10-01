@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 
 async function checkDbReachable(): Promise<boolean> {
   try {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     await db.execute(sql`SELECT 1`);
     return true;
   } catch {
@@ -18,7 +18,7 @@ describe.skipIf(!dbReachable)('requireAuth — a deleted account loses access im
   let cookie = '';
 
   beforeAll(async () => {
-    const { auth } = await import('../lib/auth');
+    const { auth } = await import('../platform/auth/auth');
     const { headers } = await auth.api.signUpEmail({
       body: { email, password: 'revocation-password-123!', name: 'Revocation' },
       returnHeaders: true,
@@ -27,21 +27,21 @@ describe.skipIf(!dbReachable)('requireAuth — a deleted account loses access im
   });
 
   afterAll(async () => {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
     await db.delete(user).where(eq(user.email, email)).catch(() => null);
   });
 
   it('authenticates the fresh session', async () => {
-    const { requireAuth } = await import('../middleware/auth.middleware');
+    const { requireAuth } = await import('../platform/auth/session');
     const result = await requireAuth(new Headers({ cookie }));
     expect(result.success).toBe(true);
   });
 
   it('rejects the same cookies once the user row is deleted', async () => {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
-    const { requireAuth } = await import('../middleware/auth.middleware');
+    const { requireAuth } = await import('../platform/auth/session');
     await db.delete(user).where(eq(user.email, email));
 
     const result = await requireAuth(new Headers({ cookie }));

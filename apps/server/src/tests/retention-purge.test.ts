@@ -36,7 +36,7 @@ const mockDb = {
   }),
 };
 
-mock.module('../platform/db/connection', () => ({ db: mockDb }));
+mock.module('../db/connection', () => ({ db: mockDb }));
 mock.module('../db/schema/learning.schema', () => ({
   sessionEpisodes: { ttlUntil: 'ttl_until' },
   studentSubjectProfiles: { ttlUntil: 'ttl_until' },

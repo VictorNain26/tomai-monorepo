@@ -1,6 +1,6 @@
 /**
  * Mock Logger - Shared test helper
- * Matches the signature of lib/observability logger
+ * Matches the signature of platform/observability/logger
  */
 
 import { mock } from 'bun:test';

@@ -1,5 +1,5 @@
 import { eq, and, desc, sql } from 'drizzle-orm';
-import { db } from '../../platform/db/connection';
+import { db } from '../connection';
 import { progress, type Progress, type NewProgress } from '../schema';
 
 class ProgressRepository {

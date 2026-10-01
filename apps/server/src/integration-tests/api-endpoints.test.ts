@@ -19,7 +19,7 @@ mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 // DB mock — mutable for health check tests
 let dbHealthy = true;
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: {
     execute: mock(async () => {
       if (!dbHealthy) throw new Error('Connection refused');
@@ -43,7 +43,7 @@ mock.module('drizzle-orm', () => ({
 }));
 
 // Better Auth handler, mounted on /api/auth/* only
-mock.module('../lib/auth', () => ({
+mock.module('../platform/auth/auth', () => ({
   auth: {
     handler: (req: Request) => {
       const url = new URL(req.url);
@@ -90,7 +90,7 @@ mock.module('../services/retention-purge.service', () => ({
 
 // Auth middleware — mutable user for auth tests
 let authUser: Record<string, unknown> | null = null;
-mock.module('../middleware/auth.middleware', () => ({
+mock.module('../platform/auth/session', () => ({
   requireAuth: mock(async () => {
     if (!authUser) {
       return {

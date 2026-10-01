@@ -34,7 +34,7 @@ const mockUpdateWhere = mock(() => {
 const mockUpdateSet = mock(() => ({ where: mockUpdateWhere }));
 const mockDbUpdate = mock(() => ({ set: mockUpdateSet }));
 
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: {
     select: mock(() => ({
       from: mock(() => ({

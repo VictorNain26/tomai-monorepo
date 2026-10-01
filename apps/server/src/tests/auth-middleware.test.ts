@@ -1,5 +1,5 @@
 /**
- * Tests unitaires - Auth Middleware (middleware/auth.middleware.ts)
+ * Tests unitaires - Auth Middleware (platform/auth/session.ts)
  * Mock: Better Auth + logger
  */
 
@@ -18,7 +18,7 @@ mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 let authSessionResult: { user: Record<string, unknown>; session: Record<string, unknown> } | null = null;
 let authShouldThrow: Error | null = null;
 
-mock.module('../lib/auth', () => ({
+mock.module('../platform/auth/auth', () => ({
   auth: {
     api: {
       getSession: mock(async () => {
@@ -33,7 +33,7 @@ mock.module('../lib/auth', () => ({
 const {
   requireAuth,
   requireParentRole,
-} = await import('../middleware/auth.middleware');
+} = await import('../platform/auth/session');
 
 beforeEach(() => {
   const student = makeUser();
@@ -77,7 +77,7 @@ describe('Auth Middleware', () => {
     it('asks better-auth for the session with the request headers only', async () => {
       const headers = new Headers({ cookie: 'better-auth.session_token=abc' });
       await requireAuth(headers);
-      const { auth } = await import('../lib/auth');
+      const { auth } = await import('../platform/auth/auth');
       expect(auth.api.getSession).toHaveBeenCalledWith({ headers });
     });
   });

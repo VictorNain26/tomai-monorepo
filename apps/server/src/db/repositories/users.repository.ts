@@ -1,5 +1,5 @@
 import { eq, and, sql } from 'drizzle-orm';
-import { db } from '../../platform/db/connection';
+import { db } from '../connection';
 import { user, parentChild } from '../schema';
 
 // Types inférés du schéma

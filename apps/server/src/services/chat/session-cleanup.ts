@@ -8,7 +8,7 @@
 
 import { eq } from 'drizzle-orm';
 import { studySessionsRepository, messagesRepository, filesRepository } from '../../db/repositories';
-import { db } from '../../platform/db/connection';
+import { db } from '../../db/connection';
 import { messages } from '../../db/schema';
 import { logger } from '../../platform/observability/logger';
 import { deleteFile as deleteScalewayFile } from '../storage/scaleway-storage.service.js';

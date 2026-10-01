@@ -5,7 +5,7 @@
 
 import { eq, desc, count, sum, sql, and, gte } from 'drizzle-orm';
 import { studySessionsRepository, progressRepository } from '../db/repositories';
-import { db } from '../platform/db/connection';
+import { db } from '../db/connection';
 import { studySessions, messages, costTracking } from '../db/schema';
 import { logger } from '../platform/observability/logger';
 

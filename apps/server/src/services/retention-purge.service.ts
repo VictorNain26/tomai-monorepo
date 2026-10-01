@@ -1,5 +1,5 @@
 import { lt } from 'drizzle-orm';
-import { db } from '../platform/db/connection.js';
+import { db } from '../db/connection.js';
 import { sessionEpisodes, studentSubjectProfiles } from '../db/schema/learning.schema.js';
 import { logger } from '../platform/observability/logger.js';
 

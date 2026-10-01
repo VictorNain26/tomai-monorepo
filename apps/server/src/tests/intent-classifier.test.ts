@@ -1,6 +1,6 @@
 /**
  * Tests unitaires - Intent Classifier Service
- * Mock: Mistral client (lib/ai/mistral-client) + logger + app config
+ * Mock: Mistral client (platform/ai/mistral-client) + logger + app config
  *
  * Le mock de `generateStructured` valide la réponse avec le schéma Zod passé
  * par le service, comme le vrai client : une valeur hors schéma rejette.

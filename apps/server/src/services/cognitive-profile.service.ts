@@ -6,7 +6,7 @@
  * et utilisé pour personnaliser les réponses pédagogiques.
  */
 
-import { db } from '../platform/db/connection.js';
+import { db } from '../db/connection.js';
 import {
   studentCognitiveProfiles,
   type StudentCognitiveProfile,

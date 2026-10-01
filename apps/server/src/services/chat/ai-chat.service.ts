@@ -23,7 +23,7 @@ import {
 } from 'ai';
 import { mistralProvider } from '../../platform/ai/provider.js';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
-import { routeReasoningEffort } from '../../platform/ai/mistral-reasoning.js';
+import { routeReasoningEffort } from '../../lib/ai/mistral-reasoning.js';
 import { logger } from '../../platform/observability/logger.js';
 import { buildSystemPrompt } from '../../config/prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';

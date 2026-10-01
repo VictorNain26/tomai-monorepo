@@ -13,7 +13,7 @@ import { QUOTA_CONFIG } from '../services/quota/quota-config.js';
 
 async function checkDbReachable(): Promise<boolean> {
   try {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     await db.execute(sql`SELECT 1`);
     return true;
   } catch {

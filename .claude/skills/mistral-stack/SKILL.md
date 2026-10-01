@@ -12,7 +12,7 @@ variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/agent.md` §
 
 | Rôle | Modèle | Réglage |
 |---|---|---|
-| Chat élève, texte et image | `mistral-small-2603` (Small 4) | `reasoningEffort` routé par `platform/ai/mistral-reasoning.ts`, `promptCacheKey` = ID de session |
+| Chat élève, texte et image | `mistral-small-2603` (Small 4) | `reasoningEffort` routé par `lib/ai/mistral-reasoning.ts`, `promptCacheKey` = ID de session |
 | Vision, analyse de document, résumés, cartes, titres, classification d'intention | `mistral-small-2603` | `reasoningEffort: 'none'` (imposé par `platform/ai/mistral-client.ts`) |
 | Embeddings mémoire épisodique | `MISTRAL_EMBED_MODEL` (1024D) | — |
 | STT / TTS | `voxtral-mini-2602` / `voxtral-mini-tts-2603` | Timeout explicite, voix preset `fr_marie_neutral` (champ `language` refusé par l'API) |

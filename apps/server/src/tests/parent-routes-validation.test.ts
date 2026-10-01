@@ -5,7 +5,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 
 const parentUser = { id: 'parent-1', role: 'parent' };
-mock.module('../middleware/auth.middleware', () => ({
+mock.module('../platform/auth/session', () => ({
   requireAuth: () => Promise.resolve({ success: true, user: parentUser, session: { id: 's1' } }),
   requireParentRole: () => Promise.resolve({ success: true, user: parentUser, session: { id: 's1' } }),
 }));

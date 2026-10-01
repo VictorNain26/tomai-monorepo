@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { db } from '../../platform/db/connection';
+import { db } from '../../db/connection';
 import { sql } from 'drizzle-orm';
 import { env } from '../../platform/config/env';
 import type { AppEnv } from '../../platform/http/context.js';

@@ -34,7 +34,7 @@ const mockUpdate = mock((table: unknown) => {
   return { set: mockSet };
 });
 
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: {
     update: mockUpdate,
   },

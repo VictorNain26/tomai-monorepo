@@ -1,6 +1,6 @@
 import { sql, eq, desc } from 'drizzle-orm';
 import { studySessionsRepository, messagesRepository, progressRepository } from '../../db/repositories';
-import { db } from '../../platform/db/connection';
+import { db } from '../../db/connection';
 import { studySessions } from '../../db/schema';
 import { logger } from '../../platform/observability/logger';
 import type { ChildInfo, ParentDashboardMetrics, StudentProgress, SessionSummary, SessionMessage } from './parent-types';

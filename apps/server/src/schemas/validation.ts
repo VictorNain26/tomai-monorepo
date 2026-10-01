@@ -1,6 +1,6 @@
 /**
  * Schémas de validation Zod - TomAI
- * Corps des routes enfant, validés par `validate('json', ...)` (lib/http.ts)
+ * Corps des routes enfant, validés par `validate('json', ...)` (platform/http/context.ts)
  */
 
 import { z } from 'zod';

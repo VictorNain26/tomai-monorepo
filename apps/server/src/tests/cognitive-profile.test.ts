@@ -36,7 +36,7 @@ let dbUpdateCalled = false;
 let dbInsertCalled = false;
 let dbShouldThrow = false;
 
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: {
     query: {
       studentCognitiveProfiles: {

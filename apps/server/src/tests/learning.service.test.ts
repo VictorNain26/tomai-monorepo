@@ -27,7 +27,7 @@ const mockTransaction = mock(async (fn: (tx: unknown) => Promise<unknown>) => {
   }
 });
 
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: { transaction: mockTransaction },
 }));
 

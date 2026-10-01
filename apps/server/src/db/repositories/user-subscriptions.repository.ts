@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import { db } from '../../platform/db/connection';
+import { db } from '../connection';
 import {
   userSubscriptions,
   subscriptionPlans,

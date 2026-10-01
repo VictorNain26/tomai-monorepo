@@ -56,7 +56,7 @@ mock.module('../services/fsrs.service', () => ({
 }));
 
 // DB (unused on this path)
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: { transaction: mock(async (fn: (tx: unknown) => Promise<unknown>) => fn({})) },
 }));
 

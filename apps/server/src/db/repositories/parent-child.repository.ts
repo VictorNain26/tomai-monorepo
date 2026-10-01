@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { db } from '../../platform/db/connection';
+import { db } from '../connection';
 import { parentChild } from '../schema';
 
 class ParentChildRepository {

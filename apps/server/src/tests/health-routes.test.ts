@@ -30,7 +30,7 @@ mock.module('../platform/config/env', () => ({
 
 const dbExecute = mock(() => Promise.resolve([{ '?column?': 1 }]));
 
-mock.module('../platform/db/connection', () => ({ db: { execute: dbExecute } }));
+mock.module('../db/connection', () => ({ db: { execute: dbExecute } }));
 mock.module('drizzle-orm', () => ({
   sql: (strings: TemplateStringsArray) => strings,
 }));

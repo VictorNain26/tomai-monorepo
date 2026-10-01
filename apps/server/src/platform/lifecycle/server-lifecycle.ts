@@ -1,11 +1,7 @@
 import { env } from '../config/env.js';
 import { logger } from '../observability/logger.js';
-import { db } from '../db/connection.js';
+import { db } from '../../db/connection.js';
 import { sql } from 'drizzle-orm';
-import { startRetentionPurgeScheduler } from '../../services/retention-purge.service.js';
-
-let stopRetentionPurge: (() => void) | null = null;
-
 export async function initializeServices(): Promise<void> {
   try {
     logger.info('Initializing TomAI services...', {
@@ -33,16 +29,11 @@ export async function initializeServices(): Promise<void> {
       count: Number(migrations[0]?.count ?? 0)
     });
 
-    stopRetentionPurge = startRetentionPurgeScheduler();
-
     logger.info('All services initialized successfully', {
       operation: 'services:init:success',
       services: {
         database: 'ready',
-        cache: 'memory-lru',
         ai_stack: 'mistral',
-        memory_monitor: 'active',
-        retention_purge: 'active',
       },
       environment: env.NODE_ENV
     });
@@ -54,12 +45,5 @@ export async function initializeServices(): Promise<void> {
       severity: 'critical' as const
     });
     throw _error;
-  }
-}
-
-export function stopBackgroundJobs(): void {
-  if (stopRetentionPurge) {
-    stopRetentionPurge();
-    stopRetentionPurge = null;
   }
 }

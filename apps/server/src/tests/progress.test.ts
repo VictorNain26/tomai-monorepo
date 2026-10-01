@@ -33,7 +33,7 @@ mock.module('../db/repositories', () => ({
 let dbSelectResults: unknown[][] = [];
 let dbSelectIdx = 0;
 
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: {
     selectDistinct: mock(() => ({
       from: mock(() => ({

@@ -1,5 +1,5 @@
 /**
- * Auth guards (lib/http.ts): inject the typed user/session, answer 401, 403
+ * Auth guards (platform/http/context.ts): inject the typed user/session, answer 401, 403
  * or 503 through the global error envelope.
  */
 
@@ -16,7 +16,7 @@ mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 let authSessionResult: { user: Record<string, unknown>; session: Record<string, unknown> } | null = null;
 let authShouldThrow: Error | null = null;
 
-mock.module('../lib/auth', () => ({
+mock.module('../platform/auth/auth', () => ({
   auth: {
     api: {
       getSession: mock(async () => {

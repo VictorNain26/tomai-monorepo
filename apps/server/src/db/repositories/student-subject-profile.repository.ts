@@ -1,5 +1,5 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
-import { db } from '../../platform/db/connection';
+import { db } from '../connection';
 import { studentSubjectProfiles, type StudentSubjectProfile } from '../schema';
 
 const MAX_CONCEPTS = 100;

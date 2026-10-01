@@ -7,7 +7,7 @@ import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
 import { secureHeaders } from 'hono/secure-headers';
 
-import { auth } from './lib/auth.js';
+import { auth } from './platform/auth/auth.js';
 import { env, isDevelopment, getCorsOrigins } from './platform/config/env.js';
 import type { AppEnv } from './platform/http/context.js';
 import { sentryMiddleware } from './platform/observability/sentry.js';

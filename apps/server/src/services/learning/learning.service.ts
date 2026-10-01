@@ -12,7 +12,7 @@
  * (non-transactional — the subtle bug this extraction fixes).
  */
 
-import { db } from '../../platform/db/connection.js';
+import { db } from '../../db/connection.js';
 import {
   learningDecksRepository,
   type ListDecksOptions,

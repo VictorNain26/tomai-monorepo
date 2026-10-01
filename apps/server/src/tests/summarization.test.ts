@@ -67,7 +67,7 @@ mock.module('../db/repositories/messages.repository', () => ({
   },
 }));
 
-// Mistral client mock — service migré vers lib/ai/mistral-client.
+// Mistral client mock — service migré vers platform/ai/mistral-client.
 // generateText retourne directement le contenu string.
 let mistralResponse: string | Error = 'Mocked summary text';
 let generateTextCalls = 0;

@@ -5,10 +5,10 @@
 
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
-import * as schema from '../../db/schema';
-import { logger } from '../observability/logger';
-import { resolveDatabaseUrl } from '../config/database-url.js';
-import { env } from '../config/env.js';
+import * as schema from './schema';
+import { logger } from '../platform/observability/logger';
+import { resolveDatabaseUrl } from '../platform/config/database-url.js';
+import { env } from '../platform/config/env.js';
 
 // ============================================================================
 // LAZY INITIALIZATION (2026 Best Practice for Testability)

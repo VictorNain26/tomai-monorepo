@@ -61,7 +61,7 @@ const mockTxInsert = mock(() => ({
   })),
 }));
 
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: {
     transaction: mock(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
       return fn({

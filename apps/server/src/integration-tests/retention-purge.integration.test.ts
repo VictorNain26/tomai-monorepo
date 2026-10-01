@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 
 async function checkDbReachable(): Promise<boolean> {
   try {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     await db.execute(sql`SELECT 1`);
     return true;
   } catch {
@@ -17,13 +17,13 @@ describe.skipIf(!dbReachable)('purgeExpiredData — counts from a real postgres-
   const userId = `retention_${Date.now()}`;
 
   afterAll(async () => {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
     await db.delete(user).where(eq(user.id, userId)).catch(() => null);
   });
 
   it('reports the expired subject profiles it deleted', async () => {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     const { user, studentSubjectProfiles } = await import('../db/schema');
     const { purgeExpiredData } = await import('../services/retention-purge.service');
 

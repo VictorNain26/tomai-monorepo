@@ -35,7 +35,7 @@ const resolveUser = () =>
       ? { success: true as const, user: currentUser, session: { id: 'sess-001' } }
       : { success: false as const, _error: 'Unauthorized', status: 401 as const },
   );
-mock.module('../middleware/auth.middleware', () => ({
+mock.module('../platform/auth/session', () => ({
   requireAuth: resolveUser,
   requireParentRole: resolveUser,
 }));

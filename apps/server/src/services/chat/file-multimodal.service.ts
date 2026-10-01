@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import { db } from '../../platform/db/connection.js';
+import { db } from '../../db/connection.js';
 import { files } from '../../db/schema.js';
 import { filesRepository } from '../../db/repositories/index.js';
 import { scalewayStorageService } from '../storage/scaleway-storage.service.js';

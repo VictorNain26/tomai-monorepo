@@ -7,7 +7,7 @@ import postgres from 'postgres';
 // DB reachability guard — mirrors seed-dev.integration.test.ts
 async function checkDbReachable(): Promise<boolean> {
   try {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     await db.execute(sql`SELECT 1`);
     return true;
   } catch {

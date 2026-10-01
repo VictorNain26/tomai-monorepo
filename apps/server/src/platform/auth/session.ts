@@ -1,6 +1,6 @@
-import { auth } from '../lib/auth';
-import { logger } from '../platform/observability/logger';
-import type { AuthenticatedUser } from '../types/index.js';
+import { auth } from './auth';
+import { logger } from '../observability/logger';
+import type { AuthenticatedUser } from '../../types/index.js';
 
 export const requireAuth = async (headers: Headers): Promise<
   | { readonly success: true; readonly user: AuthenticatedUser; readonly session: Record<string, unknown> }

@@ -18,7 +18,7 @@ import { sql } from 'drizzle-orm';
 
 async function checkDbReachable(): Promise<boolean> {
   try {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     await db.execute(sql`select 1`);
     return true;
   } catch {
@@ -36,7 +36,7 @@ if (!dbReachable) {
 // Test state
 // ============================================================
 
-let auth: Awaited<typeof import('../lib/auth')>['auth'];
+let auth: Awaited<typeof import('../platform/auth/auth')>['auth'];
 let parentService: InstanceType<typeof import('../services/parent.service')['ParentService']>;
 let createdParentId: string;
 let childUsername: string;
@@ -45,7 +45,7 @@ const childPassword = 'child-password-123!';
 beforeAll(async () => {
   if (!dbReachable) return;
 
-  const authMod = await import('../lib/auth');
+  const authMod = await import('../platform/auth/auth');
   auth = authMod.auth;
 
   const { ParentService } = await import('../services/parent.service');
@@ -78,7 +78,7 @@ afterAll(async () => {
   if (!dbReachable) return;
   // Best-effort cleanup — cascade delete handles child via parent_child FK
   if (createdParentId) {
-    const { db } = await import('../platform/db/connection');
+    const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
     const { eq } = await import('drizzle-orm');
     await db.delete(user).where(eq(user.id, createdParentId)).catch(() => null);

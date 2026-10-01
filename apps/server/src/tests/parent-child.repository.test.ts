@@ -90,7 +90,7 @@ const mockDb = {
   select: mockSelect,
 };
 
-mock.module('../platform/db/connection', () => ({ db: mockDb }));
+mock.module('../db/connection', () => ({ db: mockDb }));
 
 // Import after mocks
 const { parentChildRepository } = await import('../db/repositories/parent-child.repository');

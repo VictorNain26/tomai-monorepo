@@ -50,7 +50,7 @@ mock.module('../platform/config/env', () => ({
   getCorsOrigins: () => ['http://localhost:3000', 'http://localhost:3001'],
 }));
 
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: {},
 }));
 
@@ -62,7 +62,7 @@ let auth: Record<string, unknown>;
 let apiMethods: string[];
 
 beforeAll(async () => {
-  const mod = await import('../lib/auth');
+  const mod = await import('../platform/auth/auth');
   auth = mod.auth as Record<string, unknown>;
   apiMethods = Object.keys(auth.api as Record<string, unknown>);
 });

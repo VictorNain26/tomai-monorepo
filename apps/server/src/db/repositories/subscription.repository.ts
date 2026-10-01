@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
-import { db } from '../../platform/db/connection';
+import { db } from '../connection';
 import { familyBilling, userSubscriptions, subscriptionPlans } from '../schema';
 
 type FamilyBilling = typeof familyBilling.$inferSelect;

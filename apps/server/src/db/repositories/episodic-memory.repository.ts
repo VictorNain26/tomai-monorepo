@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
-import { db } from '../../platform/db/connection';
+import { db } from '../connection';
 import { sessionEpisodes, type NewSessionEpisode } from '../schema';
 
 type EpisodeRow = {

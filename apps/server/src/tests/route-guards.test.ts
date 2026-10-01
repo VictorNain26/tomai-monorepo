@@ -10,7 +10,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 import type { AppEnv } from '../platform/http/context';
 
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
-mock.module('../middleware/auth.middleware', () => {
+mock.module('../platform/auth/session', () => {
   const unauthorized = () => Promise.resolve({ success: false as const, _error: 'Unauthorized', status: 401 as const });
   return { requireAuth: unauthorized, requireParentRole: unauthorized };
 });
@@ -20,7 +20,7 @@ mock.module('../platform/config/env', () => ({
   isDevelopment: () => true,
   getCorsOrigins: () => [],
 }));
-mock.module('../platform/db/connection', () => ({ db: {} }));
+mock.module('../db/connection', () => ({ db: {} }));
 mock.module('../services/education.service', () => ({ educationService: {} }));
 mock.module('../services/token-quota.service', () => ({
   checkQuota: async () => ({ plan: 'premium' }),

@@ -97,7 +97,7 @@ mock.module('../db/repositories', () => ({
 }));
 
 // Auth mock
-mock.module('../lib/auth', () => ({
+mock.module('../platform/auth/auth', () => ({
   auth: {
     api: {
       signUpEmail: mock(async () => ({
@@ -108,7 +108,7 @@ mock.module('../lib/auth', () => ({
 }));
 
 // DB mock for pool limiter and direct queries
-mock.module('../platform/db/connection', () => ({
+mock.module('../db/connection', () => ({
   db: {
     selectDistinct: mock(() => ({
       from: mock(() => ({

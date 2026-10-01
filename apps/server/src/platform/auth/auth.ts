@@ -10,10 +10,10 @@
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
 import { openAPI, username } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "../platform/db/connection";
-import { user, session, account, verification } from "../db/schema";
-import { env, isProduction, isDevelopment, getCorsOrigins } from "../platform/config/env";
-import { logger } from "../platform/observability/logger";
+import { db } from "../../db/connection";
+import { user, session, account, verification } from "../../db/schema";
+import { env, isProduction, isDevelopment, getCorsOrigins } from "../config/env";
+import { logger } from "../observability/logger";
 
 // Validation des services requis pour l'authentification
 if (!env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET.length < 32) {

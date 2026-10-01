@@ -13,7 +13,7 @@ mock.module('../db/repositories/users.repository', () => ({
     update: async (id: string, data: Record<string, unknown>) => ({ id, ...data }),
   },
 }));
-mock.module('../lib/auth', () => ({
+mock.module('../platform/auth/auth', () => ({
   auth: { api: { signUpEmail: async () => ({ user: { id: 'c1' } }) } },
 }));
 

@@ -4,7 +4,7 @@
  */
 
 import { eq, and, sql, desc, inArray } from 'drizzle-orm';
-import { db } from '../../platform/db/connection.js';
+import { db } from '../connection.js';
 import { files, type FileStatus } from '../schema.js';
 
 // Types inférés du schéma
