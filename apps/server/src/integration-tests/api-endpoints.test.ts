@@ -257,7 +257,7 @@ describe('API Endpoints', () => {
       const data = await res.json();
       expect(data.status).toBe('healthy');
       expect(data.checks.database.status).toBe('healthy');
-      expect(data.checks.cache.status).toBe('healthy');
+      expect(data.checks.cache).toBeUndefined();
     });
 
     it('should return unhealthy 503 when database down', async () => {
