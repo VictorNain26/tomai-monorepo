@@ -28,7 +28,7 @@ if (infra.exitCode !== 0) {
 }
 
 console.log("[dev] lancement des apps (server, landing)…");
-const turbo = spawn("bunx", ["turbo", "run", "dev"], {
+const turbo = spawn("bunx", ["--no-install", "turbo", "run", "dev"], {
   stdio: "inherit",
 });
 turbo.on("exit", (code) => process.exit(code ?? 0));

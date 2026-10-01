@@ -51,9 +51,9 @@ jobs:
       - name: Run ${{ matrix.task }}
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            bunx turbo run ${{ matrix.task }}
+            bunx --no-install turbo run ${{ matrix.task }}
           else
-            bunx turbo run ${{ matrix.task }} --affected
+            bunx --no-install turbo run ${{ matrix.task }} --affected
           fi
 
   # =============================================
@@ -107,9 +107,9 @@ jobs:
       - name: Run tests
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            bunx turbo run test
+            bunx --no-install turbo run test
           else
-            bunx turbo run test --affected
+            bunx --no-install turbo run test --affected
           fi
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
@@ -151,9 +151,9 @@ jobs:
       - name: Run build
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            bunx turbo run build
+            bunx --no-install turbo run build
           else
-            bunx turbo run build --affected
+            bunx --no-install turbo run build --affected
           fi
 
   # =============================================
@@ -213,7 +213,7 @@ jobs:
         with:
           turbo-cache-key: knip
       - name: Run knip
-        run: bunx knip
+        run: bunx --no-install knip
 
   # =============================================
   # Job 6: Monorepo lint (sherif)

@@ -18,8 +18,7 @@
       "Read(**/*.pem)"
     ],
     "ask": [
-      "Bash(bun run db:push*)",
-      "Bash(bun db:push*)",
+      "Bash(*db:push*)",
       "Bash(drizzle-kit push*)",
       "Bash(* drizzle-kit push*)",
 

@@ -12,21 +12,21 @@ pre-commit:
     - name: lint-server
       root: "apps/server/"
       glob: "**/*.ts"
-      run: bunx eslint --max-warnings 0 --no-warn-ignored {staged_files}
+      run: bunx --no-install eslint --max-warnings 0 --no-warn-ignored {staged_files}
 
     - name: lint-landing
       root: "apps/landing/"
       glob: "**/*.{ts,tsx}"
-      run: bunx eslint --max-warnings 0 {staged_files}
+      run: bunx --no-install eslint --max-warnings 0 {staged_files}
 
     - name: typecheck
-      run: bunx turbo run typecheck --affected --output-logs=errors-only
+      run: bunx --no-install turbo run typecheck --affected --output-logs=errors-only
 
 pre-push:
   parallel: true
   jobs:
     - name: test
-      run: bunx turbo run test --affected --output-logs=errors-only
+      run: bunx --no-install turbo run test --affected --output-logs=errors-only
 
     - name: build
-      run: bunx turbo run build --affected --output-logs=errors-only
+      run: bunx --no-install turbo run build --affected --output-logs=errors-only

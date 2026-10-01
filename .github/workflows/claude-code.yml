@@ -39,8 +39,6 @@ jobs:
             Bash(bun run test)
             Bash(bun run build)
             Bash(bun test)
-            Bash(bun run typecheck)
-            Bash(bun run lint)
             Bash(bun run db:generate)
             Bash(bun run db:check)
             Bash(git status)

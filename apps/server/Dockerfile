@@ -6,7 +6,7 @@
 # ============================================================
 
 # Stage 1: BASE
-FROM oven/bun:1.4-slim AS base
+FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61 AS base
 
 WORKDIR /app
 
@@ -32,13 +32,6 @@ ENV BUILD_DATE=${BUILD_DATE}
 
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/server/package.json ./apps/server/
-# Every workspace manifest: the frozen lockfile must match the whole workspace,
-# even though only the server is installed (--filter).
-COPY apps/landing/package.json ./apps/landing/
-COPY packages/api/package.json ./packages/api/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
-COPY packages/tokens/package.json ./packages/tokens/
-COPY packages/ui/package.json ./packages/ui/
 
 # Full install (dev + prod) for build
 RUN --mount=type=cache,target=/root/.bun/install/cache \
@@ -66,13 +59,6 @@ WORKDIR /app
 
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/server/package.json ./apps/server/
-# Every workspace manifest: the frozen lockfile must match the whole workspace,
-# even though only the server is installed (--filter).
-COPY apps/landing/package.json ./apps/landing/
-COPY packages/api/package.json ./packages/api/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
-COPY packages/tokens/package.json ./packages/tokens/
-COPY packages/ui/package.json ./packages/ui/
 
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --filter tomai-server

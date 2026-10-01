@@ -104,7 +104,7 @@ test('check migrations: FAIL si migrations en retard', async () => {
   const ctx = { ...ctxWith({ exec }), journalEntries: 5 };                      // 5 attendues
   const checks = buildChecks(ctx, { full: true });
   await assert.rejects(byName(checks, 'migrations').run(), /migration/i);
-  await assert.rejects(byName(checks, 'migrations').run(), /bun run setup/, "le message doit pointer vers le script `setup` du package.json, pas la commande intégrée pnpm");
+  await assert.rejects(byName(checks, 'migrations').run(), /bun run setup/, "le message doit pointer vers le script `setup` du package.json (`bun run setup`)");
 });
 
 test('check migrations: PASS si vector présent et migrations à jour', async () => {
