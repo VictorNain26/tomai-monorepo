@@ -27,7 +27,9 @@ fixée d'avance.
 1. `fix/landing-honest-claims` (#338) : textes de la landing en ligne. Mergée.
 2. `chore/remove-pronote-waitlist` (#341) : Pronote et la liste d'attente retirés du code
    (schéma et migration, dépendances, variables, tests, contexte de l'agent). Mergée.
-3. E2 — infra serveur et outillage : la liste « Lot 0 — E2 » de `suivi.md`.
+3. E2 — infra serveur et outillage, en trois PR (listes « Lot 0 — E2 » de `suivi.md`) :
+   `refactor/server-cleanup` (#342, code mort, validation, rate limit), puis le logger,
+   puis l'outillage (scripts, CI, lockfile).
 4. Lint strict : chaque `eslint-disable` remplacé par une forme de code qui ne déclenche
    pas la règle, puis `noInlineConfig`.
 
