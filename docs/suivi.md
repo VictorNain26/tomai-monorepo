@@ -17,13 +17,13 @@ bloquant levé).
   Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
   avec son plan écrit au démarrage contre `main` à jour :
   - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349),
-    module `documents` (`refactor/server-documents`) ;
+    module `documents` (#350) ;
     restent, dans l'ordre, `learning`, `tutor`, `auth` et `family`, `billing`
     (rangement cible : `architecture.md`, « Monolithe modulaire ») ;
   - **lint strict** (détail dans « Reporté »).
 - **Prochaine action :** refonte du module `learning`, sur une branche courte dont le plan
   s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
-- **PR ouvertes :** `refactor/server-documents` (module `documents`).
+- **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -208,4 +208,4 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Refonte du serveur commencée : socle sous `src/platform/` (#348), module `voice` (#349),
   module `documents`, premier module qui porte ses tables ; une suppression de fichier
   garde la ligne quand le stockage échoue, au lieu de laisser un objet d'élève orphelin
-  (`refactor/server-documents`).
+  (#350).
