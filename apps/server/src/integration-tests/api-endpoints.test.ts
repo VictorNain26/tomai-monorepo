@@ -188,13 +188,6 @@ mock.module('../services/progress.service', () => ({
   },
 }));
 
-mock.module('../schemas/validation', () => ({
-  validateSchema: mock((_s: unknown, data: unknown) => ({ data })),
-  isValidationError: mock(() => false),
-  createChildSchema: {},
-  updateChildSchema: {},
-}));
-
 // Mock non-essential route modules as empty Elysia plugins
 mock.module('../routes/chat-message.routes', () => ({ chatMessageRoutes: new Elysia() }));
 mock.module('../routes/file-upload.routes', () => ({ fileUploadRoutes: new Elysia() }));

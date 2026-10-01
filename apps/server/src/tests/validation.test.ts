@@ -1,375 +1,85 @@
-/**
- * Tests unitaires - Validation Zod TomAI
- * Tests complets des schémas de validation
- */
-
 import { describe, it, expect } from 'bun:test';
-import { z } from 'zod';
-import {
-  validateSchema,
-  registerSchema,
-  loginSchema,
-  chatSessionSchema,
-  chatMessageSchema,
-  streamChatQuerySchema,
-  createChildSchema,
-  emailSchema,
-  passwordSchema,
-  usernameSchema,
-  schoolLevelSchema,
-  type ValidationResult,
-  type ValidationSuccess,
-  type ValidationError,
-} from '../schemas/validation';
+import { createChildSchema, updateChildSchema } from '../schemas/validation';
 
-// Assertion helpers narrowing the discriminated union so `.data` / `._error`
-// are type-safe after the check (tests are now typechecked, see tsconfig).
-function expectSuccess<T>(r: ValidationResult<T>): asserts r is ValidationSuccess<T> {
-  if (!r.success) throw new Error(`Expected success, got error: ${r._error}`);
-}
-function expectFailure<T>(r: ValidationResult<T>): asserts r is ValidationError {
-  if (r.success) throw new Error('Expected failure, got success');
+const validChild = {
+  firstName: 'Lucas',
+  lastName: 'Martin',
+  username: 'lucas_ce2',
+  password: 'ChildPass123',
+  schoolLevel: 'ce2' as const,
+  dateOfBirth: '2015-03-15',
+};
+
+function issues(result: { success: boolean; error?: { issues: { message: string }[] } }): string {
+  return result.error?.issues.map((i) => i.message).join('; ') ?? '';
 }
 
-describe('Validation Schemas - Unit Tests', () => {
-  
-  // ============================================
-  // SCHÉMAS DE BASE
-  // ============================================
-  
-  describe('emailSchema', () => {
-    it('should validate valid emails', () => {
-      const result = validateSchema(emailSchema, 'parent@tomai.fr');
-      expectSuccess(result);
-      expect(result.data).toBe('parent@tomai.fr');
-    });
-    
-    it('should normalize email to lowercase', () => {
-      const result = validateSchema(emailSchema, 'PARENT@TOMAI.FR');
-      expectSuccess(result);
-      expect(result.data).toBe('parent@tomai.fr');
-    });
-    
-    it('should reject invalid email formats', () => {
-      const result = validateSchema(emailSchema, 'invalid-email');
-      expectFailure(result);
-      expect(result._error).toContain('Format email invalide');
-    });
-    
-    it('should reject emails too long', () => {
-      const longEmail = 'a'.repeat(250) + '@example.com';
-      const result = validateSchema(emailSchema, longEmail);
-      expectFailure(result);
-      expect(result._error).toContain('Email trop long');
-    });
+describe('createChildSchema', () => {
+  it('accepts a complete child', () => {
+    const result = createChildSchema.safeParse(validChild);
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual(validChild);
   });
 
-  describe('passwordSchema', () => {
-    it('should validate strong passwords', () => {
-      const result = validateSchema(passwordSchema, 'Password123');
-      expectSuccess(result);
-      expect(result.data).toBe('Password123');
-    });
-    
-    it('should reject weak passwords', () => {
-      const result = validateSchema(passwordSchema, 'weak');
-      expectFailure(result);
-      expect(result._error).toContain('Mot de passe minimum 8 caractères');
-    });
-    
-    it('should require uppercase, lowercase, and number', () => {
-      const result = validateSchema(passwordSchema, 'alllowercase123');
-      expectFailure(result);
-      expect(result._error).toContain('minuscule, majuscule, chiffre');
-    });
+  it('normalizes the username to lowercase', () => {
+    const result = createChildSchema.safeParse({ ...validChild, username: 'LUCAS_CE2' });
+    expect(result.data?.username).toBe('lucas_ce2');
   });
 
-  describe('usernameSchema', () => {
-    it('should validate valid usernames', () => {
-      const result = validateSchema(usernameSchema, 'eleve_cp');
-      expectSuccess(result);
-      expect(result.data).toBe('eleve_cp');
-    });
-    
-    it('should normalize to lowercase', () => {
-      const result = validateSchema(usernameSchema, 'ELEVE_CP');
-      expectSuccess(result);
-      expect(result.data).toBe('eleve_cp');
-    });
-    
-    it('should reject invalid characters', () => {
-      const result = validateSchema(usernameSchema, 'élève@cp');
-      expectFailure(result);
-      expect(result._error).toContain('lettres, chiffres, points, underscores');
-    });
+  it('rejects a username with other characters', () => {
+    const result = createChildSchema.safeParse({ ...validChild, username: 'élève@cp' });
+    expect(issues(result)).toContain('lettres, chiffres, points, underscores');
   });
 
-  describe('schoolLevelSchema', () => {
-    it('should validate all French education levels', () => {
-      const levels: readonly z.infer<typeof schoolLevelSchema>[] = ['cp', 'ce1', 'ce2', 'cm1', 'cm2', 'sixieme', 'cinquieme', 'quatrieme', 'troisieme', 'seconde', 'premiere', 'terminale'];
-
-      levels.forEach(level => {
-        const result = validateSchema(schoolLevelSchema, level);
-        expectSuccess(result);
-        expect(result.data).toBe(level);
-      });
-    });
-    
-    it('should reject invalid school levels', () => {
-      const result = validateSchema(schoolLevelSchema, 'CM3');
-      expectFailure(result);
-      expect(result._error).toContain('Niveau scolaire invalide');
-    });
+  it('rejects a short password', () => {
+    const result = createChildSchema.safeParse({ ...validChild, password: 'Ab1' });
+    expect(issues(result)).toContain('Mot de passe minimum 8 caractères');
   });
 
-  // ============================================
-  // SCHÉMAS ENDPOINT AUTHENTICATION
-  // ============================================
-  
-  describe('registerSchema', () => {
-    it('should validate complete parent registration', () => {
-      const validData = {
-        email: 'parent@example.com',
-        password: 'SecurePass123',
-        firstName: 'Marie',
-        lastName: 'Dupont'
-      };
-      
-      const result = validateSchema(registerSchema, validData);
-      expectSuccess(result);
-      expect(result.data.email).toBe('parent@example.com');
-      expect(result.data.firstName).toBe('Marie');
-    });
-    
-    it('should validate minimal parent registration', () => {
-      const validData = {
-        email: 'parent@example.com',
-        password: 'SecurePass123'
-      };
-      
-      const result = validateSchema(registerSchema, validData);
-      expectSuccess(result);
-      expect(result.data.firstName).toBeUndefined();
-    });
-    
-    it('should reject missing email', () => {
-      const invalidData = {
-        password: 'SecurePass123'
-      };
-      
-      const result = validateSchema(registerSchema, invalidData);
-      expectFailure(result);
-      expect(result._error).toContain('email');
-    });
+  it('requires lowercase, uppercase and a digit in the password', () => {
+    const result = createChildSchema.safeParse({ ...validChild, password: 'alllowercase123' });
+    expect(issues(result)).toContain('minuscule, majuscule, chiffre');
   });
 
-  describe('loginSchema', () => {
-    it('should validate parent login with email', () => {
-      const validData = {
-        email: 'parent@example.com',
-        password: 'SecurePass123'
-      };
-      
-      const result = validateSchema(loginSchema, validData);
-      expectSuccess(result);
-      expect(result.data.email).toBe('parent@example.com');
-    });
-    
-    it('should validate student login with username', () => {
-      const validData = {
-        username: 'eleve_cp',
-        password: 'SecurePass123'
-      };
-      
-      const result = validateSchema(loginSchema, validData);
-      expectSuccess(result);
-      expect(result.data.username).toBe('eleve_cp');
-    });
-    
-    it('should reject login without email or username', () => {
-      const invalidData = {
-        password: 'SecurePass123'
-      };
-      
-      const result = validateSchema(loginSchema, invalidData);
-      expectFailure(result);
-      expect(result._error).toContain('Email ou username requis');
-    });
+  it('accepts every French school level', () => {
+    for (const schoolLevel of ['cp', 'ce1', 'ce2', 'cm1', 'cm2', 'sixieme', 'cinquieme', 'quatrieme', 'troisieme', 'seconde', 'premiere', 'terminale']) {
+      expect(createChildSchema.safeParse({ ...validChild, schoolLevel }).success).toBe(true);
+    }
   });
 
-  // ============================================
-  // SCHÉMAS CHAT & MESSAGING
-  // ============================================
-  
-  describe('chatSessionSchema', () => {
-    it('should validate chat session creation', () => {
-      const validData = {
-        subject: 'Mathématiques'
-      };
-      
-      const result = validateSchema(chatSessionSchema, validData);
-      expectSuccess(result);
-      expect(result.data.subject).toBe('Mathématiques');
-    });
-    
-    it('should reject empty subject', () => {
-      const invalidData = {
-        subject: ''
-      };
-      
-      const result = validateSchema(chatSessionSchema, invalidData);
-      expectFailure(result);
-      expect(result._error).toContain('Matière requise');
-    });
+  it('rejects an unknown school level', () => {
+    const result = createChildSchema.safeParse({ ...validChild, schoolLevel: 'CM3' });
+    expect(issues(result)).toContain('Niveau scolaire invalide');
   });
 
-  describe('chatMessageSchema', () => {
-    it('should validate complete chat message', () => {
-      const validData = {
-        content: 'Comment résoudre 2x + 3 = 7 ?',
-        subject: 'Mathématiques',
-        sessionId: 'session-123'
-      };
-      
-      const result = validateSchema(chatMessageSchema, validData);
-      expectSuccess(result);
-      expect(result.data.content).toBe('Comment résoudre 2x + 3 = 7 ?');
-      expect(result.data.sessionId).toBe('session-123');
-    });
-    
-    it('should validate message without sessionId', () => {
-      const validData = {
-        content: 'Question de français',
-        subject: 'Français'
-      };
-      
-      const result = validateSchema(chatMessageSchema, validData);
-      expectSuccess(result);
-      expect(result.data.sessionId).toBeUndefined();
-    });
-    
-    it('should reject message too long', () => {
-      const invalidData = {
-        content: 'x'.repeat(2001),
-        subject: 'Test'
-      };
-      
-      const result = validateSchema(chatMessageSchema, invalidData);
-      expectFailure(result);
-      expect(result._error).toContain('Message maximum 2000 caractères');
-    });
+  it('rejects a child younger than 5 or older than 19', () => {
+    for (const dateOfBirth of ['2022-01-01', '2000-01-01']) {
+      const result = createChildSchema.safeParse({ ...validChild, dateOfBirth });
+      expect(issues(result)).toContain('Âge doit être entre 5 et 19 ans');
+    }
   });
 
-  describe('streamChatQuerySchema', () => {
-    it('should validate streaming parameters', () => {
-      const validData = {
-        message: 'Question en streaming',
-        subject: 'Sciences',
-        sessionId: 'stream-session-456'
-      };
-      
-      const result = validateSchema(streamChatQuerySchema, validData);
-      expectSuccess(result);
-      expect(result.data.message).toBe('Question en streaming');
-    });
-    
-    it('should validate without sessionId', () => {
-      const validData = {
-        message: 'Question en streaming',
-        subject: 'Sciences'
-      };
-      
-      const result = validateSchema(streamChatQuerySchema, validData);
-      expectSuccess(result);
-      expect(result.data.sessionId).toBeUndefined();
-    });
+  it('rejects a date that is not YYYY-MM-DD', () => {
+    const result = createChildSchema.safeParse({ ...validChild, dateOfBirth: '15/03/2015' });
+    expect(issues(result)).toContain('Format date invalide');
   });
 
-  // ============================================
-  // SCHÉMAS PARENT/CHILDREN MANAGEMENT
-  // ============================================
-  
-  describe('createChildSchema', () => {
-    it('should validate complete child creation', () => {
-      const validData = {
-        firstName: 'Lucas',
-        lastName: 'Martin',
-        username: 'lucas_ce2',
-        password: 'ChildPass123',
-        schoolLevel: 'ce2',
-        dateOfBirth: '2015-03-15'
-      };
-      
-      const result = validateSchema(createChildSchema, validData);
-      expectSuccess(result);
-      expect(result.data.firstName).toBe('Lucas');
-      expect(result.data.schoolLevel).toBe('ce2');
-      expect(result.data.dateOfBirth).toBe('2015-03-15');
-    });
-    
-    it('should reject child too young', () => {
-      const invalidData = {
-        firstName: 'Enfant',
-        lastName: 'TropJeune',
-        username: 'enfant_jeune',
-        password: 'ChildPass123',
-        schoolLevel: 'cp',
-        dateOfBirth: '2022-01-01' // Trop jeune (2-3 ans)
-      };
-      
-      const result = validateSchema(createChildSchema, invalidData);
-      expectFailure(result);
-      expect(result._error).toContain('Âge doit être entre 5 et 19 ans');
-    });
-    
-    it('should reject child too old', () => {
-      const invalidData = {
-        firstName: 'Enfant',
-        lastName: 'TropVieux',
-        username: 'enfant_vieux',
-        password: 'ChildPass123',
-        schoolLevel: 'terminale',
-        dateOfBirth: '2000-01-01' // Trop vieux
-      };
-      
-      const result = validateSchema(createChildSchema, invalidData);
-      expectFailure(result);
-      expect(result._error).toContain('Âge doit être entre 5 et 19 ans');
-    });
+  it('requires the date of birth', () => {
+    expect(createChildSchema.safeParse({ ...validChild, dateOfBirth: undefined }).success).toBe(false);
+  });
+});
+
+describe('updateChildSchema', () => {
+  it('accepts a single field', () => {
+    expect(updateChildSchema.safeParse({ firstName: 'Léa' }).success).toBe(true);
   });
 
-  // ============================================
-  // HELPER VALIDATESCHEMA
-  // ============================================
-  
-  describe('validateSchema helper', () => {
-    it('should return typed success result', () => {
-      const result = validateSchema(emailSchema, 'test@example.com');
-      
-      if (result.success) {
-        // TypeScript devrait inférer que result.data est un string
-        expect(typeof result.data).toBe('string');
-        expect(result.data).toBe('test@example.com');
-      }
-    });
-    
-    it('should return detailed _error messages', () => {
-      const result = validateSchema(registerSchema, {
-        email: 'invalid-email',
-        password: 'weak'
-      });
-      
-      expectFailure(result);
-      expect(result._error).toContain('email');
-      expect(result._error).toContain('password');
-    });
-    
-    it('should handle unexpected errors gracefully', () => {
-      // Passer null pour déclencher une erreur non-Zod
-      const result = validateSchema(emailSchema, null);
-      
-      expectFailure(result);
-      expect(typeof result._error).toBe('string');
-    });
+  it('rejects an empty update', () => {
+    const result = updateChildSchema.safeParse({});
+    expect(issues(result)).toContain('Au moins un champ doit être fourni');
+  });
+
+  it('applies the same password rule as creation', () => {
+    expect(updateChildSchema.safeParse({ password: 'weak' }).success).toBe(false);
   });
 });
