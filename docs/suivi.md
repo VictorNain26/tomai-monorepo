@@ -84,12 +84,22 @@ les scripts `scripts/*.mjs` et `node --test` passent sous Bun, la CI sur `setup-
 
 ### Lot 1 — harnais d'évaluation
 
+- **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
+  « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
+  bon niveau sans notion hors programme, jamais la réponse. Corpus : sujets du brevet
+  2018-2026, parties produites par le ministère seulement (les documents de tiers sont
+  exclus de la réutilisation, CRPA L. 321-2 c) ; items propres pour la 6e, la 5e et la 4e.
 - En cas d'erreur, le span OpenTelemetry d'un appel IA porte le message d'erreur de
   Mistral, c'est-à-dire le corps de sa réponse : vérifier qu'il ne contient pas de contenu
   d'élève avant de brancher le premier exporteur (Langfuse).
 
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
+- **Référentiel des programmes** (même étude, a) : une version par rentrée, extraite des
+  annexes PDF du BO (aucune donnée structurée officielle à jour), une entrée par objectif
+  d'apprentissage avec NOR, n° et date du BO, empreinte du PDF et rentrée d'application,
+  relue par un humain, injectée par notion à chaque tour. En 2026-2027 coexistent les
+  programmes de 2025 (6e), de 2026 (5e, français et mathématiques) et de 2020 (4e, 3e).
 - **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
   - la synthèse vocale (`/api/tts`, `routes/tts.routes.ts`) n'a aucun quota, seulement le
     rate limit global : c'est le seul poste non borné ;
@@ -118,6 +128,12 @@ les scripts `scripts/*.mjs` et `node --test` passent sous Bun, la CI sur `setup-
 
 ### Lot 3 — client web
 
+- **Conformité** (même étude, c) : mention « vous parlez à une IA » dès la première
+  interaction (AI Act, art. 50, applicable depuis le 2 août 2026) ; consentement conjoint
+  élève et parent sous 15 ans (loi Informatique et Libertés, art. 45) ; AIPD ; résumé
+  parent proportionné et connu de l'enfant ; aucun lien avec un établissement (GAR,
+  tableau enseignant, notes transmises) sans réévaluer le classement « haut risque »
+  (annexe III, point 3, applicable le 2 décembre 2027).
 - **Erreurs de validation** : le 400 `VALIDATION_ERROR` du gestionnaire global
   (`middleware/error-handler.middleware.ts`) renvoie toujours le même message générique,
   sans dire quel champ est faux. Les formulaires d'enfant en auront besoin : exposer les
@@ -138,6 +154,9 @@ les scripts `scripts/*.mjs` et `node --test` passent sous Bun, la CI sur `setup-
 
 ### Lot 4 — marque et lancement
 
+- **À ne jamais écrire sur la landing** (même étude, c) : « conforme au cadre d'usage de
+  l'IA du ministère », « agréé » ou « recommandé par l'Éducation nationale », « aligné sur
+  les programmes » sans la métrique publiée, « fait les devoirs ».
 - CSP de la landing.
 - Tests e2e de la landing qui gardent l'identité rejetée (`signs.spec.ts`, graisse des
   titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`) : à revoir avec la nouvelle
