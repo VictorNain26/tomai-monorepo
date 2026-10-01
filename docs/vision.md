@@ -125,9 +125,8 @@ forums de parents : la communauté la rejette.
 ## Marque
 
 Nom ouvert ; candidat « De sa main », qui dit la promesse, à vérifier (marques, domaines)
-au lot 4. L'identité visuelle se refait au lot 4, une fois la promesse prouvée ; la
-direction explorée jusqu'au 2026-10-01 reste sur la branche locale `feat/landing-redesign`
-comme matière, sans valeur de décision.
+au lot 4. L'identité visuelle se refait au lot 4, une fois la promesse prouvée . Les directions
+explorées jusqu'au 2026-10-01 sont abandonnées.
 
 ## Critères de succès de la V1
 

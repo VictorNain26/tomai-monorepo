@@ -10,9 +10,8 @@ paths:
   `docs/plans/<branche>.md` (`/` de la branche remplacé par `-`). Il vit le temps de la
   PR : son dernier commit le supprime, ce qui reste à faire passe dans `docs/suivi.md`, et
   la PR comme `git log` gardent l'historique. `docs/roadmap.md` ne porte que l'objectif
-  des lots, l'ordre des PR et les contraintes globales. Raison : les plans du lot 0,
-  écrits d'avance, ont dérivé à chaque PR mergée (10 écarts sur E1, deux tâches E2
-  cassées).
+  des lots, l'ordre des PR et les contraintes globales. Raison : un plan écrit d'avance
+  dérive à chaque PR mergée entre-temps.
 - Désigner le code par chemin et symbole, jamais par numéro de ligne. Le code complet ne
   s'écrit que pour les fichiers et tests nouveaux ; la modification d'un fichier existant
   se décrit par comportement attendu, interface et test.

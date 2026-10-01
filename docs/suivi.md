@@ -26,25 +26,9 @@ bloquant levé).
   liste d'attente, lecture des identifiants Pronote dans `ParentService.getParentChildren`
   (`pronoteChildResourcesRepository`) et champs `hasPronote`/`pronoteCredentialId` de
   `ChildInfo`, `lib/encryption.ts`, tests Pronote porteurs d'`eslint-disable`.
-- **PR ouvertes :**
-  - #338 (`fix/landing-honest-claims`) : correctifs d'honnêteté de la landing en ligne
-    (FAQ, comparaison à ChatGPT, alertes parent limitées à la détresse, mentions de
-    Pronote retirées). En attente du merge de Victor ; elle clôt le volet « textes de la
-    landing » du lot 0.
-  - #328 (`chore/prompt-audit`, 2026-09-29) : audit des fichiers d'instructions, touche
-    `.claude/rules/plans-and-agents.md` et `.claude/skills/dev-bootstrap/SKILL.md`. À
-    rebaser sur `main` après le merge de la refonte documentaire, ou à fermer.
-- **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté y entrent.
+- **PR ouvertes :** aucune.
+- **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
-- **Branches qui portent de la matière** (sans valeur de décision) :
-  - `feat/landing-redesign` : direction visuelle explorée jusqu'au 2026-10-01, non validée.
-    Matière pour le lot 4, à reprendre ou supprimer à son démarrage.
-  - `refactor/replace-custom-infra` (locale et sur `origin`) : plan d'E2 réécrit le
-    2026-09-23 contre `main` @ `6d4d8b6`
-    (`git show refactor/replace-custom-infra:docs/superpowers/plans/2026-09-23-lot-0-e2-infra.md`), avec pré-vol et
-    arbitrages. Matière pour le plan d'E2, à revérifier contre `main` à jour.
-  - `backup/landing-redesign-before-split` (locale) : sauvegarde d'un découpage de commits de
-    `feat/landing-redesign`, au contenu identique ; à supprimer.
 
 ## Reporté
 
@@ -135,7 +119,7 @@ Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
   `parent.service.ts`, `education-levels.ts`, `seed-dev.ts`,
   `routes/chat-message.routes.ts` (`no-control-regex` dans `sanitizePrompt`) ; ceux des tests Pronote
   partent avec Pronote), à remplacer par une forme de code qui ne déclenche pas la règle.
-  Le plan d'E2 de `refactor/replace-custom-infra` les renvoie à une PR « E3 — lint strict » (config
+  Configuration visée (relevée dans l'ancien plan d'E2) : config
   partagée `strictTypeChecked` et `stylisticTypeChecked`, `noInlineConfig`,
   `reportUnusedDisableDirectives: 'error'`, `only-warn` retiré) : c'est la quatrième PR
   du lot 0 dans la roadmap.
@@ -229,7 +213,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
 | Étape | Pour | Statut |
 |---|---|---|
-| Merger #338 | Lot 0 | à faire |
 | Mener 8 à 10 entretiens de parents, dont des familles modestes (guide dans `etudes/2026-10-01/parents.md`) | Questions ouvertes de la vision, lot 4 | à faire |
 | Demander le Zero Data Retention au support Mistral, puis vérifier Admin › API › Privacy | Porte avant ouverture | à faire |
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
@@ -250,3 +233,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   dépendances (#330, #334).
 - **2026-10-01** : études, vision produit validée et nouvelle roadmap. Pronote sort de la
   V1, l'identité visuelle est rejetée et se refait au lot 4, la landing en ligne est gelée.
+  Landing présentée « en préparation », sans affirmation fausse (#338) ; doc refondue sous
+  `docs/` (#339) ; fichiers d'instructions allégés (#328).
