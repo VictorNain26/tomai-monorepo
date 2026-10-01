@@ -42,7 +42,7 @@ import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from './file-context-types.js';
 
 /** Bump whenever content under config/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_VERSION = '2026-10-01-no-pronote';
+const PROMPT_VERSION = '2026-10-01';
 
 export interface AttachedFile {
   /** Inline base64 payload for multimodal user messages (Mistral vision). */

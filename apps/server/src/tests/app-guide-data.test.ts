@@ -21,13 +21,12 @@ const MOBILE_ONLY = [
   /appareil photo/i,
   /galerie/i,
   /badge/i,
-  /pronote/i,
 ];
 
 describe('app guide content served by get_app_help', () => {
   for (const topic of TOPICS) {
     for (const role of ROLES) {
-      it(`${topic}/${role} describes no mobile-only UI, store payment or Pronote`, () => {
+      it(`${topic}/${role} describes no mobile-only UI or store payment`, () => {
         const content = getAppHelpContent(topic, role);
         expect(content).not.toBeNull();
         for (const pattern of MOBILE_ONLY) {
