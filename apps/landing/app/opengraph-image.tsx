@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { BRAND_NAME } from "@/lib/brand";
 
-export const alt = `${BRAND_NAME} - L'IA qui aide votre enfant à comprendre ses devoirs`;
+export const alt = `${BRAND_NAME} – Une aide aux devoirs pour le collège, en préparation`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -35,13 +35,14 @@ export default function Image() {
         <div style={{ display: "flex", flexDirection: "column", width: 640 }}>
           <div style={{ display: "flex", fontSize: 44, color: PRIMARY }}>{BRAND_NAME}</div>
           <div style={{ display: "flex", flexWrap: "wrap", marginTop: 40, fontSize: 64, lineHeight: 1.1 }}>
-            Il trouve la réponse. Et&nbsp;
+            <span>Le soir, l&apos;exercice&nbsp;</span>
+            <span>restera&nbsp;</span>
             <span style={{ backgroundImage: `linear-gradient(to top, ${HIGHLIGHT} 50%, transparent 50%)` }}>
-              il la comprend
+              le sien
             </span>
             .
           </div>
-          <div style={{ display: "flex", marginTop: 40, fontSize: 30, color: MUTED }}>Collège, de la 6e à la 3e</div>
+          <div style={{ display: "flex", marginTop: 40, fontSize: 30, color: MUTED }}>En préparation, pour le collège (6e à 3e)</div>
         </div>
         <img src={tom} width={560} height={560} alt="" />
       </div>

@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/layout/page-layout";
 import { FaqList } from "@/components/sections/faq-list";
 import { BRAND_NAME } from "@/lib/brand";
 
-const DESCRIPTION = `Retrouvez les réponses aux questions les plus fréquentes sur ${BRAND_NAME} : méthode socratique, niveaux et matières, suivi parental et tarifs.`;
+const DESCRIPTION = `Retrouvez les réponses aux questions les plus fréquentes sur ${BRAND_NAME}, en préparation\u00a0: réponses aux exercices, niveau, suivi parental, données et tarifs.`;
 
 export const metadata: Metadata = {
   title: "Questions fréquentes",
