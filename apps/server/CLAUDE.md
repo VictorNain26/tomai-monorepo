@@ -1,6 +1,6 @@
 # Server Tom
 
-Backend Bun + Elysia du tuteur IA. Produit :
+Backend Bun + Hono du tuteur IA. Produit :
 `docs/vision.md` ; conception de l'agent :
 `docs/agent.md`. Stack et versions : `README.md` racine.
 Premier démarrage ou stack locale cassée : skill `/dev-bootstrap`. Choix de modèle IA et
@@ -20,10 +20,10 @@ bun run build
 
 Le backend tourne sur l'**host**, pas en conteneur — pas de collision sur `:3000`.
 
-## Frontière de types (App / Eden Treaty)
+## Frontière de types (AppType / client typé)
 
-Le type `App` (`typeof app`) est l'arbre de routes que consomment les clients via
-Eden. Il est **entremêlé au runtime Bun** (DB, services) : un client qui
+Le type `AppType` (`typeof app`) est l'arbre de routes que consomment les clients via
+`hc<AppType>` (`hono/client`, dans `@repo/api`). Il est **entremêlé au runtime Bun** (DB, services) : un client qui
 typecheckerait `src/app.ts` directement hériterait des globals `Bun` et tomberait
 sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 
@@ -37,21 +37,20 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 - Sur un clone neuf, `@repo/api/src/client.ts` est rouge dans l'IDE tant que le
   `.d.ts` n'existe pas. `pnpm turbo typecheck` le régénère.
 - Émettre le `.d.ts` exige un contrat public **nommable** : tout type qui fuit
-  dans `App` doit être exporté (cf. `StreamGenerationParams`) ou neutralisé.
+  dans `AppType` doit être exporté (cf. `StreamGenerationParams`) ou neutralisé.
 
 ## Patterns
 
 - **Pas de logique métier dans un route handler** → déléguer au service.
 - **Pas d'accès DB depuis une route** → passer par le repository.
-- **Validation HTTP** : TypeBox (`t`, natif Elysia) par défaut sur chaque route. Quand
-  la règle a besoin de transformations ou de raffinements (trim, minuscules, borne
-  d'âge), un schéma Zod sert directement de `body` : Elysia l'accepte en Standard Schema
-  et en infère aussi les types Eden (corps des routes enfant de `parent.routes.ts`,
-  `src/schemas/validation.ts`). Jamais les deux sur une même route. Zod sert aussi hors
-  route : variables d'environnement, sorties structurées de l'IA, arguments des outils
-  du chat.
-- **Auth** : macro `authMacro` + `.guard({ auth: true })`, qui injecte
-  `{ user, session }` typés. Jamais de vérification manuelle.
+- **Routes** : handler écrit juste après le chemin, routes chaînées pour que le
+  client typé les infère, pas de contrôleur
+  ([best practices Hono](https://hono.dev/docs/guides/best-practices)).
+- **Validation HTTP** : Zod partout, via `validate(target, schema)` (`lib/http.ts`),
+  qui envoie l'échec dans l'enveloppe `VALIDATION_ERROR`.
+- **Auth** : `requireUser` ou `requireParent` (`lib/http.ts`) posés sur la route, qui
+  remplissent `c.var.user` et `c.var.session`. Jamais de `use()` d'auth dans un
+  sous-routeur monté sur un préfixe partagé : il s'appliquerait à tout ce préfixe.
 - **Transactions** : `db.transaction(...)` dès qu'une opération touche plusieurs
   tables.
 - **Uploads** : URL présignée, le client écrit dans S3 sans passer par le backend.

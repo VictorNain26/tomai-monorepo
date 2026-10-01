@@ -18,7 +18,7 @@ directement la cible.
 | Client V1 | **Web uniquement, Next.js, pensé d'abord pour le téléphone** | Un seul client à livrer ; le collégien travaille le soir, probablement sur téléphone, à vérifier (vision, « Pour qui ») |
 | Application native | **Hors V1** ; `apps/mobile` supprimé au lot 0 (l'historique git le garde) | Code mort à maintenir sinon |
 | Topologie | **Un dépôt, backend en monolithe modulaire** | `ai-service` et `curriculum` séparés ont pourri puis été supprimés ; un service séparé ne se justifie que par une contrainte réelle |
-| Serveur | Bun + Elysia conservés | Contrat Eden Treaty typé de bout en bout vers le client |
+| Serveur | Bun + Hono (Elysia remplacé le 2026-10-01) | Client typé de bout en bout (`hono/client`) ; adoption et maintenance bien plus larges qu'Elysia, qui reposait sur un seul mainteneur ; tourne sur Bun, Node et l'edge |
 | LLM | **Mistral**, stack 100 % UE | Souveraineté, données de mineurs (RGPD) |
 | Modèle de chat | **Mistral Small 4** (`mistral-small-2603`), multimodal | Voir `agent.md` |
 | Référentiel de conception IA | Guides de certification Claude (Architect Foundations, Architect Professional, Developer Foundations), pratiques indépendantes du fournisseur | Pratiques reconnues, auditables |
@@ -33,7 +33,7 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 
 | Module | Responsabilité | Code actuel |
 |---|---|---|
-| `auth` | Comptes parent (email, Google) et élève (username), sessions | `lib/auth.ts`, `lib/auth-macro.ts` |
+| `auth` | Comptes parent (email, Google) et élève (username), sessions | `lib/auth.ts`, `lib/http.ts` |
 | `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations | `services/parent/`, `parent.service.ts`, `routes/api/parent.routes.ts` |
 | `tutor` | Agent IA : session de chat, outils, mémoire, résumé, garde-fous | `services/chat/`, `lib/ai/`, `episodic-memory.service.ts`, `cognitive-profile.service.ts` |
 | `learning` | Decks, cartes, révisions FSRS | `services/learning/`, `fsrs.service.ts`, `routes/learning/` |
@@ -47,7 +47,7 @@ touche, pas en un big-bang.
 
 ## Client web
 
-- `apps/web` en Next.js (App Router), consommateur du contrat Eden via `@repo/api`.
+- `apps/web` en Next.js (App Router), consommateur du client typé via `@repo/api`.
 - **Pensé d'abord pour le téléphone** : chaque parcours se conçoit et se prouve à largeur
   de téléphone, le bureau s'en déduit.
 - Primitives `@repo/ui` (shadcn) et tokens `@repo/tokens`.
@@ -60,7 +60,7 @@ Elles sont tranchées au démarrage du lot qui en dépend, doc-first, pas avant�
 
 | Décision | Lot | Ce qui doit être vérifié |
 |---|---|---|
-| Next.js séparé qui appelle Elysia, ou Elysia monté dans une route Next | 3 | Doc Elysia (intégration Next.js), impact sur cookies et streaming |
+| Next.js séparé qui appelle le serveur Hono, ou Hono monté dans une route Next | 3 | Doc Hono (adaptateur Vercel/Next.js), impact sur cookies et streaming |
 | Hébergement web et serveur (UE) | 3 | Région UE, streaming SSE long, coût |
 | Fournisseur de paiement web | 3 | Conformité UE, abonnement familial multi-enfants, facturation sans piège réalisable telle que la vision la définit |
 | Sort de `apps/landing` : conservée ou absorbée par `apps/web` | 4 | SEO, un seul déploiement |

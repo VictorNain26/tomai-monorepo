@@ -1,6 +1,6 @@
 # TomAI Server
 
-Backend Bun + Elysia.js du tuteur IA pour collégiens (produit :
+Backend Bun + Hono du tuteur IA pour collégiens (produit :
 `docs/vision.md`).
 
 ## Quick Start
@@ -19,20 +19,12 @@ pnpm dev
 curl http://localhost:3000/health
 ```
 
-## API Documentation
-
-Documentation interactive auto-générée disponible en dev :
-
-**http://localhost:3000/swagger**
-
-> Swagger est desactive en production.
-
 ## Stack
 
 | Composant | Technologie |
 |-----------|-------------|
 | Runtime | Bun 1.4 |
-| Framework | Elysia.js 1.4 |
+| Framework | Hono 4 |
 | Database | PostgreSQL 18 + pgvector |
 | ORM | Drizzle ORM 0.45 |
 | Auth | Better Auth 1.7 + Google OAuth |
@@ -69,7 +61,7 @@ docker compose --profile tools up -d  # Adminer (8080) + Drizzle Studio (4983)
 
 | Service | Port | Description |
 |---------|------|-------------|
-| backend | 3000 | API Elysia.js conteneurisee (profile: backend) |
+| backend | 3000 | API conteneurisee (profile: backend) |
 | postgres | 5432 | PostgreSQL 18 + pgvector |
 | drizzle-studio | 4983 | UI Database (profile: tools) |
 | adminer | 8080 | Client SQL (profile: tools) |
@@ -97,7 +89,7 @@ Les variables ci-dessous peuplent la DB avec des comptes de test locaux (`pnpm s
 ```
 src/
 ├── index.ts                    # Point d'entree, graceful shutdown
-├── app.ts                      # Factory Elysia, routes, Swagger
+├── app.ts                      # App Hono : middlewares, routes, AppType
 ├── config/                     # Configuration IA, education, prompts
 ├── db/
 │   ├── schema.ts               # Source of truth (Drizzle)
