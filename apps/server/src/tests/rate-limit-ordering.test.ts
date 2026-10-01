@@ -28,7 +28,7 @@ function keyCapture() {
   let key: string | undefined;
   return {
     hook: (ctx: Context) => {
-      key = RateLimitPresets.pronote.keyGenerator?.(ctx);
+      key = RateLimitPresets.ai.keyGenerator?.(ctx);
     },
     get: () => key,
   };
@@ -41,11 +41,11 @@ describe('rate-limit hook ordering vs auth resolve', () => {
       .use(authMacro)
       .guard({ auth: true })
       .onBeforeHandle(cap.hook)
-      .get('/api/pronote/x', () => 'ok');
+      .get('/api/chat/x', () => 'ok');
 
-    const res = await app.handle(new Request('http://localhost/api/pronote/x'));
+    const res = await app.handle(new Request('http://localhost/api/chat/x'));
     expect(res.status).toBe(200);
-    expect(cap.get()).toBe('pronote:user:U1');
+    expect(cap.get()).toBe('ai:user:U1');
   });
 
   it('REGRESSION: falls back to IP when the rate-limit runs BEFORE the guard', async () => {
@@ -54,10 +54,10 @@ describe('rate-limit hook ordering vs auth resolve', () => {
       .use(authMacro)
       .onBeforeHandle(cap.hook)
       .guard({ auth: true })
-      .get('/api/pronote/x', () => 'ok');
+      .get('/api/chat/x', () => 'ok');
 
     const res = await app.handle(
-      new Request('http://localhost/api/pronote/x', { headers: { 'x-real-ip': '4.4.4.4' } })
+      new Request('http://localhost/api/chat/x', { headers: { 'x-real-ip': '4.4.4.4' } })
     );
     expect(res.status).toBe(200);
     expect(cap.get()?.startsWith('ip:')).toBe(true);

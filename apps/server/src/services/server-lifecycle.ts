@@ -3,7 +3,6 @@ import { logger } from '../lib/observability.js';
 import { memoryMonitor } from '../middleware/memory-monitor.middleware.js';
 import { db } from '../db/connection.js';
 import { sql } from 'drizzle-orm';
-import { validateEncryptionSetup } from '../lib/encryption.js';
 import { startRetentionPurgeScheduler } from './retention-purge.service.js';
 
 let stopRetentionPurge: (() => void) | null = null;
@@ -19,28 +18,6 @@ export async function initializeServices(): Promise<void> {
       operation: 'services:init:cache',
       provider: 'memory-lru'
     });
-
-    const hasPronoteKey = !!env.PRONOTE_ENCRYPTION_KEY;
-    if (hasPronoteKey) {
-      const encryptionValid = await validateEncryptionSetup();
-      if (!encryptionValid) {
-        logger.error('Pronote encryption validation failed', {
-          operation: 'services:init:encryption:failed',
-          _error: 'Encryption key validation failed - encrypt/decrypt cycle test failed',
-          severity: 'critical' as const,
-          impact: 'Pronote integration will not work'
-        });
-        throw new Error('PRONOTE_ENCRYPTION_KEY validation failed - check key format');
-      }
-      logger.info('Pronote encryption validated', {
-        operation: 'services:init:encryption',
-        status: 'ready'
-      });
-    } else {
-      logger.info('Pronote encryption not configured (optional feature)', {
-        operation: 'services:init:encryption:skipped'
-      });
-    }
 
     const dbStart = Date.now();
     await db.execute(sql`SELECT 1 as health_check`);

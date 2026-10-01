@@ -18,7 +18,6 @@ mock.module('../db/connection', () => ({
   db: { execute: mock(() => Promise.resolve([{ count: 0 }])) },
 }));
 mock.module('drizzle-orm', () => ({ sql: (s: unknown) => s }));
-mock.module('../lib/encryption', () => ({ validateEncryptionSetup: mock(() => Promise.resolve(true)) }));
 mock.module('../middleware/memory-monitor.middleware', () => ({
   memoryMonitor: { startMonitoring: mock(() => {}), stopMonitoring: mock(() => {}) },
 }));
