@@ -1,4 +1,5 @@
 import type { MistralMessage, MistralContentPart } from '../../lib/ai/mistral-client.js';
+import { stripPromptTags } from './mistral-helpers.js';
 
 export interface ChatMessageParts {
   systemPrompt: string;
@@ -28,7 +29,7 @@ export function assembleChatMessages(parts: ChatMessageParts): MistralMessage[] 
       ? [
           {
             role: 'user' as const,
-            content: `<conversation_summary>\n${parts.conversationSummary}\n</conversation_summary>`,
+            content: `<conversation_summary>\n${stripPromptTags(parts.conversationSummary)}\n</conversation_summary>`,
           },
         ]
       : []),

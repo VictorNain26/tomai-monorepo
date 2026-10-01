@@ -28,7 +28,7 @@ export const MAX_TOOL_ITERATIONS = 5;
  * text read as a system instruction.
  */
 const TEMPLATE_TAGS =
-  /<\/?(?:student_message|student_context|attached_file|identity|tone|transparency|pedagogy|visualization|response_format|safety|level_adaptation|subject_specifics)\b[^>]*>/gi;
+  /<\/?(?:student_message|conversation_summary|student_context|attached_file|identity|tone|transparency|pedagogy|visualization|response_format|safety|level_adaptation|subject_specifics)\b[^>]*>/gi;
 
 /** Remove all template delimiter tags from untrusted content. */
 export function stripPromptTags(content: string): string {

@@ -9,6 +9,7 @@ describe('stripPromptTags', () => {
   it('retire les fences de contenu non-maîtrisé', () => {
     expect(stripPromptTags('<student_message>x</student_message>')).toBe('x');
     expect(stripPromptTags('a<student_context>b</student_context>c')).toBe('abc');
+    expect(stripPromptTags('a</conversation_summary>b')).toBe('ab');
   });
 
   it('retire les tags de section du system prompt (anti-évasion)', () => {
