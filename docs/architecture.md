@@ -42,8 +42,16 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 | `voice` | Transcription et synthèse vocale (Voxtral) | `voxtral-*.service.ts`, `audio-transcription.service.ts`, `text-to-speech.service.ts` |
 | `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `platform/` (config, db, http, observabilité, IA, cycle de vie), `retention-purge.service.ts` |
 
-Le découpage physique en modules se fait au fil des lots, sur le code qu'on
-touche, pas en un big-bang.
+Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par module, lot 0) :
+
+- `apps/server/src/platform/` : ce que tous les modules utilisent sans règle métier —
+  `config/`, `db/` (connexion, migrateur), `http/` (contexte Hono, gardes, validation,
+  erreurs, rate limit), `observability/` (logger, OpenTelemetry, Sentry), `ai/` (client
+  Mistral), `lifecycle/` (démarrage, arrêt).
+- `apps/server/src/modules/<module>/` : routes Hono du module (montées par `app.ts` sur
+  son préfixe), services, dépôts, tables Drizzle et schémas Zod, avec un `index.ts` pour
+  ce que les autres modules ont le droit d'appeler.
+- Les tests restent dans `src/tests/` et `src/integration-tests/`.
 
 ## Client web
 
