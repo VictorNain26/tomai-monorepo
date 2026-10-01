@@ -20,7 +20,6 @@ export interface IAppUser {
   image?: string;
   role: 'parent' | 'student' | 'admin';
   schoolLevel?: string;
-  parentId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
