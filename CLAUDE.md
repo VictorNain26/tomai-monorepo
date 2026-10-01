@@ -1,11 +1,11 @@
 # Monorepo Tom
 
 Tuteur IA des devoirs pour collégiens, avec un résumé pour le parent. Pour qui, promesse
-et périmètre : `docs/superpowers/specs/2026-10-01-vision-produit.md`, qui prime sur tout
+et périmètre : `docs/vision.md`, qui prime sur tout
 autre document ; règle qui gouverne le reste : on n'affirme que ce qu'on peut prouver.
 Stack, structure et démarrage : `README.md` — pas de duplication ici.
 
-**Travaux en cours : `docs/superpowers/suivi.md`** — avancement, bloquants, prochaine
+**Travaux en cours : `docs/suivi.md`** — avancement, bloquants, prochaine
 action. Le lire avant de reprendre, le mettre à jour dans la PR qui fait avancer.
 
 Lors d'une compaction, préserver : PR en cours, branche, plan en cours, dernière tâche

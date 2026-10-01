@@ -126,7 +126,7 @@ Le mainteneur ajoute que la publication de l'API relevait selon lui de « la mis
 
 **L'agent IA ne lit pas Pronote côté serveur.** Le chat n'accepte qu'un `pronoteContext` **envoyé par le client** (« Ephemeral Pronote context from device », `chat-message.routes.ts:250-269`), encadré par une balise `<pronote_data>` anti-injection (`config/prompts/core/safety.ts`). Ce contexte était envoyé par l'app mobile, qui a été supprimée. Aucun code serveur n'appelle `pronoteDataService` depuis le chat. **En pratique, l'agent ne voit aujourd'hui aucune donnée Pronote.**
 
-**Le client web n'existe pas**, et le décodage du QR code dans le navigateur reste à faire. C'est une décision ouverte du lot 3 ([P1], `docs/superpowers/specs/2026-09-22-cible-v1.md`).
+**Le client web n'existe pas**, et le décodage du QR code dans le navigateur reste à faire. C'est une décision ouverte du lot 3 ([P1], `docs/architecture.md`).
 
 **Tests.**
 
@@ -319,4 +319,4 @@ La donnée Pronote elle-même n'est plus rare. Ce qui ne se retrouve nulle part 
 - [26] (R) https://www.cnil.fr/fr/reglement-europeen-protection-donnees/chapitre3#Article20
 - [27] (T) « L'IA en éducation, cadre d'usage », juin 2025, copie de l'académie d'Amiens : https://pedagogie.ac-amiens.fr/lettres-histoire-geographie/wp-content/uploads/sites/10/2025/06/l-ia-en-ducation-cadre-d-usage-227697.pdf
 - [28] (T/R) GAR : https://gar.education.fr/fournisseurs-de-ressources/adherer/ ; https://gar.education.fr/fournisseurs-de-ressources/faq-fournisseurs-de-ressources/ ; Contrat GAR v2026 : https://gar.education.fr/wp-content/uploads/2026/06/Contrat-GAR_v2026.pdf ; Référentiel administratif et juridique (2026-06-12) : https://gar.education.fr/wp-content/uploads/2026/06/GAR-ReferentielAdminJuridique_FR_20260612.pdf
-- [P1] Dépôt : `docs/superpowers/specs/2026-09-22-cible-v1.md`, `docs/superpowers/suivi.md`, `apps/server/src/services/pronote/*`, `apps/server/src/routes/pronote-*.ts`, `apps/server/src/routes/chat-message.routes.ts`, `apps/server/src/live/pronote.test.ts`
+- [P1] Dépôt : `docs/architecture.md`, `docs/suivi.md`, `apps/server/src/services/pronote/*`, `apps/server/src/routes/pronote-*.ts`, `apps/server/src/routes/chat-message.routes.ts`, `apps/server/src/live/pronote.test.ts`

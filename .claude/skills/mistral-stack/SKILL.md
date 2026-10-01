@@ -6,7 +6,7 @@ description: Choisir le modèle Mistral et l'appeler correctement — chat, rais
 # Stack IA — casting et réglages
 
 Contrainte non négociable : **stack 100 % Mistral, inférence en UE** (`api.eu.mistral.ai`,
-variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/superpowers/specs/2026-09-22-agent-ia.md` §2-3.
+variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/agent.md` §2-3.
 
 ## Casting
 
@@ -50,10 +50,10 @@ modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
 `cost-tracking.service.ts` tarifie par ID daté ; un modèle absent de la table
 produit une ligne `unknownModel` à 0, à corriger dans la table.
 
-Coûts mesurés : `docs/superpowers/etudes/2026-10-01-couts.md`. Aujourd'hui, seul le tour
+Coûts mesurés : `docs/etudes/2026-10-01/couts.md`. Aujourd'hui, seul le tour
 de chat est tracé et compté au quota, en tokens bruts : défauts listés dans
-`docs/superpowers/suivi.md` (« Reporté », lot 2), cible dans
-`docs/superpowers/specs/2026-09-22-agent-ia.md` § 14. Tout nouvel appel IA passe par
+`docs/suivi.md` (« Reporté », lot 2), cible dans
+`docs/agent.md` § 14. Tout nouvel appel IA passe par
 `cost_tracking`.
 
 ## Sources

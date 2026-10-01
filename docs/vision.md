@@ -2,8 +2,8 @@
 
 Statut : validée par Victor le 2026-10-01. Source de vérité du produit : pour qui, quelle
 promesse, quelles preuves, quel prix, ce qu'on n'est pas. Les specs techniques
-(`2026-09-22-cible-v1.md`, `2026-09-22-agent-ia.md`) et la roadmap en découlent. Les
-faits viennent des études du 2026-10-01 (`docs/superpowers/etudes/`), qui portent les
+(`architecture.md`, `agent.md`) et la roadmap en découlent. Les
+faits viennent des études du 2026-10-01 (`docs/etudes/`), qui portent les
 sources ; ce document les cite sans les recopier.
 
 Règle qui gouverne tout le reste : **on n'affirme que ce qu'on peut prouver**. Chaque
@@ -19,12 +19,12 @@ concurrent est mesurée ; ce qui n'est pas construit ne se promet pas.
 - **Le parent qui choisit et paie** : parent d'un collégien (6e à 3e) qui ne sait plus, ou
   ne peut plus, aider le soir. Le sentiment d'être dépassé touche toutes les catégories
   sociales ; le besoin s'exprime en disputes et en soirées mangées par les devoirs plus
-  qu'en notes (`etudes/2026-10-01-parents.md`, enseignement 1 ; sondage commandé par un
+  qu'en notes (`etudes/2026-10-01/parents.md`, enseignement 1 ; sondage commandé par un
   acteur intéressé, à citer comme tel).
 - **Y compris les familles qui ne peuvent pas payer un professeur** : un cours particulier
-  coûte de 19 à 49 € de l'heure avant crédit d'impôt (`etudes/2026-10-01-marche.md`), et
+  coûte de 19 à 49 € de l'heure avant crédit d'impôt (`etudes/2026-10-01/marche.md`), et
   près de la moitié des parents disent y avoir renoncé pour des raisons financières
-  (`etudes/2026-10-01-parents.md`, enseignement 2). Ces familles sont plus souvent sans
+  (`etudes/2026-10-01/parents.md`, enseignement 2). Ces familles sont plus souvent sans
   ordinateur et parlent plus souvent une autre langue à la maison (même étude,
   enseignement 5).
 - **L'élève qui l'utilise** : collégien, le soir, souvent sur téléphone.
@@ -41,13 +41,13 @@ concurrent est mesurée ; ce qui n'est pas construit ne se promet pas.
 
 On ne dit pas qu'il fait progresser : un tuteur à garde-fous évite le dommage d'une IA qui
 donne la réponse, sans gain mesuré à ce jour (Bastani et al., PNAS 2025, dans
-`etudes/2026-10-01-parents.md`). On ne dit pas « le seul ». On ne promet rien de ce qui
+`etudes/2026-10-01/parents.md`). On ne dit pas « le seul ». On ne promet rien de ce qui
 n'est pas livré.
 
 ## Où est la place, honnêtement
 
 Tests du 2026-10-01 sur 10 exercices de collège, trois scénarios (aide normale, demande
-directe, pression), une passe par conversation (`etudes/2026-10-01-tests-tuteurs/`) :
+directe, pression), une passe par conversation (`etudes/2026-10-01/tests-tuteurs/`) :
 
 | | Réponse donnée | Qualité d'aide (sur 8) | Ce qu'on a vu |
 |---|---|---|---|
@@ -60,7 +60,7 @@ Ce que ça veut dire :
   Galac6 le fait gratuitement et plutôt bien. Face à ChatGPT, c'est une vraie différence ;
   face à eux, non.
 - **La place est dans l'exécution prouvée**, sur quatre points que personne ne réunit
-  aujourd'hui (`etudes/2026-10-01-concurrence.md`) :
+  aujourd'hui (`etudes/2026-10-01/concurrence.md`) :
   1. ne jamais céder, ni montrer la solution par accident, mesuré et publié ;
   2. une aide au niveau du meilleur diagnostic observé, mesurée et publiée ;
   3. un gratuit vraiment utilisable chaque soir, avec l'IA et les données en Europe ;
@@ -77,14 +77,14 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
 
 - **Gratuit, utilisable chaque soir** : le quota se fixe en échanges réels, à partir du coût
   mesuré (un compte gratuit à son plafond coûte de l'ordre de 0,18 € par mois,
-  `etudes/2026-10-01-couts.md`). Le quota actuel (1 à 2 échanges par soirée, parce qu'il
+  `etudes/2026-10-01/couts.md`). Le quota actuel (1 à 2 échanges par soirée, parce qu'il
   compte au prix plein les tokens en cache) est un défaut, pas une offre.
 - **Complet à 7,99 € TTC par mois** : plancher défendable du modèle de coûts (marge
   positive dans le pire cas mesuré). Plus d'échanges et les fiches de révision. À
   confirmer par les entretiens parents. Repères : Dinobot 5,99 et 9,99 €, Le Prof IA
   4,90 €, une heure d'Acadomia 24,40 € après crédit d'impôt.
 - **Facturation sans piège**, parce que c'est le premier reproche des parents dans les avis
-  (`etudes/2026-10-01-parents.md`) : mensuelle, sans engagement, résiliable en un clic,
+  (`etudes/2026-10-01/parents.md`) : mensuelle, sans engagement, résiliable en un clic,
   prévenue avant chaque prélèvement.
 
 ## Périmètre V1
@@ -94,7 +94,7 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
 - **Dehors** :
   - **Pronote** : l'accès actuel passe par une bibliothèque non officielle, archivée et
     cassée par la version 2026 de Pronote, en se faisant passer pour l'application
-    officielle (`etudes/2026-10-01-pronote.md`). Il ne revient que par une convention avec
+    officielle (`etudes/2026-10-01/pronote.md`). Il ne revient que par une convention avec
     Index Éducation (démarche de Victor, qui suppose une entreprise immatriculée), sur un
     produit qui marche déjà sans lui.
   - **Enseignants et établissements** : horizon, pas la V1 (référencement GAR, achat par
@@ -111,7 +111,7 @@ forums de parents : la communauté la rejette.
 ## Questions ouvertes
 
 À trancher par 8 à 10 entretiens de parents, dont des familles modestes (guide dans
-`etudes/2026-10-01-parents.md`) :
+`etudes/2026-10-01/parents.md`) :
 - le moment critique est-il un blocage sur une notion, en maths à partir de la 4e ?
 - « il ne donne pas la réponse » fait-il acheter le parent mais fuir l'enfant ?
 - quel prix est acceptable, et le refus tient-il à la peur d'un abonnement piège ?

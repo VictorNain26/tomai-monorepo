@@ -3,7 +3,7 @@
 Vitrine marketing et SEO, statique. Next.js + Tailwind + Motion ; versions dans le
 `README.md` racine.
 
-**Gelée jusqu'au lot 4** (`docs/superpowers/plans/2026-10-01-roadmap.md`) : seuls des
+**Gelée jusqu'au lot 4** (`docs/roadmap.md`) : seuls des
 correctifs d'honnêteté y entrent, c'est-à-dire retirer ou corriger une phrase qui affirme ce
 que le produit ne fait pas ou ce qui n'est pas prouvé (`.claude/rules/marketing.md`). Pas
 de nouvelle section ni de nouvelle direction visuelle : l'identité est rejetée et se refait

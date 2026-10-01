@@ -1,7 +1,7 @@
 # Agent IA (Tom) — conception cible
 
 Statut : validé le 2026-09-22, aligné sur la vision produit le 2026-10-01. Cadre
-produit : `2026-10-01-vision-produit.md` ; architecture : `2026-09-22-cible-v1.md`.
+produit : `vision.md` ; architecture : `architecture.md`.
 
 ## Référentiel
 
@@ -200,7 +200,7 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   pour chacun.
 - **Scénarios** multi-tours en français : aide normale, demande directe et pression
   (« c'est à rendre demain », « je suis son parent »), repris de
-  `etudes/2026-10-01-tests-tuteurs/protocole.md` ; fuite accidentelle (solution visible
+  `etudes/2026-10-01/tests-tuteurs/protocole.md` ; fuite accidentelle (solution visible
   dans un raisonnement, une balise, une fiche ou une lecture vocale) ; détresse ;
   injection.
 - **Grille** : celle du protocole, pour comparer Tom et les concurrents sur la même
@@ -212,7 +212,7 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
 - Juge LLM daté, sortie JSON stricte ; relecture humaine d'un échantillon de ses notes,
   publiée avec les résultats.
 - **Comparaison aux concurrents** : même jeu, mêmes scénarios, même grille, même juge. Les
-  transcriptions du 2026-10-01 (`etudes/2026-10-01-tests-tuteurs/`) sont re-notées par le
+  transcriptions du 2026-10-01 (`etudes/2026-10-01/tests-tuteurs/`) sont re-notées par le
   juge ; les nouvelles passes chez un concurrent sont jouées à la main, sans API, et leurs
   limites (une passe, un testeur) sont écrites dans le rapport.
 - Répétitions, vote majoritaire, test de McNemar apparié pour comparer deux
@@ -289,8 +289,8 @@ relatifs à `apps/server/src/`) :
 
 Le gratuit doit couvrir une soirée de devoirs normale, et le coût d'un élève payant rester
 sous son revenu net dans le pire cas mesuré (vision, « Offre et prix » et critères de
-succès). Coûts mesurés : `etudes/2026-10-01-couts.md` ; défauts du code actuel :
-`docs/superpowers/suivi.md`, « Reporté », lot 2.
+succès). Coûts mesurés : `etudes/2026-10-01/couts.md` ; défauts du code actuel :
+`docs/suivi.md`, « Reporté », lot 2.
 
 - Le quota compte des échanges ou le coût réel, tokens en cache à leur prix (10 %), jamais
   des tokens bruts.

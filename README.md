@@ -69,12 +69,12 @@ et merge commit — jamais de squash.
 `README.md` (ici) décrit la stack et le démarrage ; `CLAUDE.md` porte les
 instructions destinées aux agents.
 
-Produit et avancement, dans `docs/superpowers/` :
-[vision produit](./docs/superpowers/specs/2026-10-01-vision-produit.md) (pour qui,
-promesse, prix, périmètre) · [roadmap](./docs/superpowers/plans/2026-10-01-roadmap.md) ·
-[suivi](./docs/superpowers/suivi.md) (où on en est) · specs techniques
-[cible V1](./docs/superpowers/specs/2026-09-22-cible-v1.md) et
-[agent IA](./docs/superpowers/specs/2026-09-22-agent-ia.md).
+Produit et avancement, dans `docs/` :
+[vision produit](./docs/vision.md) (pour qui,
+promesse, prix, périmètre) · [roadmap](./docs/roadmap.md) ·
+[suivi](./docs/suivi.md) (où on en est) · specs techniques
+[cible V1](./docs/architecture.md) et
+[agent IA](./docs/agent.md).
 
 Pronote est hors V1 : son code, encore présent côté serveur, est retiré au lot 0.
 

@@ -4,16 +4,16 @@ Source de vérité de l'avancement. **À lire en premier en reprenant le travail
 mettre à jour dans la PR qui le fait avancer (PR ouverte ou mergée, étape manuelle faite,
 bloquant levé).
 
-- Vision : `specs/2026-10-01-vision-produit.md` (pour qui, promesse, preuves, prix).
-- Roadmap : `plans/2026-10-01-roadmap.md`.
-- Specs techniques : `specs/2026-09-22-cible-v1.md`, `specs/2026-09-22-agent-ia.md`.
+- Vision : `vision.md` (pour qui, promesse, preuves, prix).
+- Roadmap : `roadmap.md`.
+- Specs techniques : `architecture.md`, `agent.md`.
 - Études du 2026-10-01 : `etudes/`. Ce sont des instantanés datés, jamais mis à jour.
 
 ## Où on en est
 
 - **Dernière mise à jour :** 2026-10-01.
 - **Lot en cours :** 0 — Assainissement, dernière ligne droite. Restent trois PR, dans
-  cet ordre (`plans/2026-10-01-roadmap.md`, « Découpage en PR »), dont le plan s'écrit au
+  cet ordre (`roadmap.md`, « Découpage en PR »), dont le plan s'écrit au
   démarrage, contre `main` à jour :
   - **nettoyage de la vision** : Pronote et la liste d'attente retirés du code (détail dans
     « Reporté ») ;
@@ -37,7 +37,7 @@ bloquant levé).
   - `feat/landing-redesign` : direction visuelle explorée jusqu'au 2026-10-01, non validée.
     Matière pour le lot 4, à reprendre ou supprimer à son démarrage.
   - `refactor/replace-custom-infra` : plan d'E2 réécrit le 2026-09-23 contre `main` @
-    `6d4d8b6` (`plans/2026-09-23-lot-0-e2-infra.md` sur cette branche), avec pré-vol et
+    `6d4d8b6` (fichier `2026-09-23-lot-0-e2-infra.md` sur cette branche), avec pré-vol et
     arbitrages. Matière pour le plan d'E2, à revérifier contre `main` à jour.
 
 ## Reporté
@@ -59,7 +59,7 @@ contraire.
   production, et `apps/server/.env.example`), `hasPronote` et `pronoteCredentialId` de
   `ChildInfo`, le preset `pronote` du rate limit, les tests unitaires, d'intégration et live
   (`live/pronote.test.ts` échoue en `PageUnavailableError` sur le compte de test depuis
-  avant la PR C). Côté agent : la liste de `specs/2026-09-22-agent-ia.md`, § 13.
+  avant la PR C). Côté agent : la liste de `agent.md`, § 13.
 - **Liste d'attente** : route `/api/waitlist` (`routes/waitlist.routes.ts`), table
   `waitlist_entries` (`db/schema/billing.schema.ts`) avec sa migration de suppression,
   `db/repositories/waitlist.repository.ts` et leurs tests. La landing ne l'appelle plus
@@ -137,7 +137,7 @@ Constats vérifiés sur `main` le 2026-09-22 et le 2026-09-23.
 
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
-- **Défauts de coût** relevés par `etudes/2026-10-01-couts.md` sur le code du 2026-10-01 :
+- **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
   - la synthèse vocale (`/api/tts`, `routes/tts.routes.ts`) n'a aucun quota, seulement le
     rate limit global : c'est le seul poste non borné ;
   - l'outil `generate_flashcards` du chat (`services/chat/chat-tools.ts`) n'a ni contrôle
@@ -214,7 +214,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Étape | Pour | Statut |
 |---|---|---|
 | Merger #338 | Lot 0 | à faire |
-| Mener 8 à 10 entretiens de parents, dont des familles modestes (guide dans `etudes/2026-10-01-parents.md`) | Questions ouvertes de la vision, lot 4 | à faire |
+| Mener 8 à 10 entretiens de parents, dont des familles modestes (guide dans `etudes/2026-10-01/parents.md`) | Questions ouvertes de la vision, lot 4 | à faire |
 | Demander le Zero Data Retention au support Mistral, puis vérifier Admin › API › Privacy | Porte avant ouverture | à faire |
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |

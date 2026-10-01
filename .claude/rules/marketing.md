@@ -10,7 +10,7 @@ Cadre edtech FR (familles, élèves mineurs, RGPD strict). Doc-first : chaque 
 
 ## Règle qui prime : on n'affirme que ce qu'on peut prouver
 
-Source : `docs/superpowers/specs/2026-10-01-vision-produit.md`, qui fixe aussi la promesse, la cible et le prix.
+Source : `docs/vision.md`, qui fixe aussi la promesse, la cible et le prix.
 
 - **Chaque chiffre public a une source primaire datée** ; chaque différence revendiquée face à un concurrent est **mesurée** (harnais du lot 1, protocole publié) ; ce qui n'est pas construit ne se promet pas.
 - **Pas de promesse de progrès scolaire ni de meilleures notes** : rien ne la mesure aujourd'hui. Pas de « le seul ».

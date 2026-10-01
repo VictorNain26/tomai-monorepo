@@ -3,7 +3,7 @@
 Établi le 2026-10-01 à partir du code serveur de `main` (serveur
 inchangé depuis la PR C #313), de la base locale et des pages officielles lues ce jour.
 Aucun appel à l'API Mistral n'a été fait. Les calculs sont reproductibles :
-`couts_model.py`, `infra.py`, `tables.py` et `floor.py`, dans `2026-10-01-couts-modele/`.
+`couts_model.py`, `infra.py`, `tables.py` et `floor.py`, dans `couts-modele/`.
 
 Montants en euros. Les coûts Mistral sont HT ; les prix de vente sont TTC. « c » désigne
 le centime d'euro.
@@ -48,7 +48,7 @@ Tous passent par `api.eu.mistral.ai` (`config/env.ts:90`).
 | Résumé parent | — | — | — | — | — |
 
 **Le résumé parent n'existe pas encore.** `parent-dashboard.service.ts` agrège la base
-sans appel IA ; le résumé parent est prévu au lot 3 (`plans/2026-10-01-roadmap.md`). Il est
+sans appel IA ; le résumé parent est prévu au lot 3 (`docs/roadmap.md`). Il est
 chiffré plus bas comme une hypothèse.
 
 ### Quotas

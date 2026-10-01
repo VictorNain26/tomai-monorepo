@@ -1,8 +1,8 @@
 # Server Tom
 
 Backend Bun + Elysia du tuteur IA. Produit :
-`docs/superpowers/specs/2026-10-01-vision-produit.md` ; conception de l'agent :
-`docs/superpowers/specs/2026-09-22-agent-ia.md`. Stack et versions : `README.md` racine.
+`docs/vision.md` ; conception de l'agent :
+`docs/agent.md`. Stack et versions : `README.md` racine.
 Premier démarrage ou stack locale cassée : skill `/dev-bootstrap`. Choix de modèle IA et
 coût des tokens : skill `/mistral-stack`.
 
@@ -59,7 +59,7 @@ sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
 - **Fail-fast au boot** : `src/config/env.ts` valide l'environnement au chargement
   et refuse de démarrer sur une variable requise absente ou invalide.
 - **Pronote** : hors V1, tout son code (routes, services, `pawnote`, `lib/encryption.ts`,
-  tables) est retiré au lot 0 (`docs/superpowers/suivi.md`, « Reporté ») ; n'y ajouter
+  tables) est retiré au lot 0 (`docs/suivi.md`, « Reporté ») ; n'y ajouter
   aucune fonctionnalité d'ici là.
 - **CORS** : whitelist en prod, `credentials: true`. **Headers** : HSTS,
   `X-Frame-Options: DENY`, nosniff, Permissions-Policy restrictive.

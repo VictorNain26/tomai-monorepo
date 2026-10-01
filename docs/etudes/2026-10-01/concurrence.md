@@ -3,9 +3,9 @@
 Analyse du 2026-10-01. Toutes les pages ont été consultées ce jour-là, sauf mention contraire.
 
 **Correctifs postérieurs (même jour), qui priment sur le texte ci-dessous :**
-- le « 95 % des parents refusent une IA qui donne les réponses » (Kantar) ne se cite pas : `2026-10-01-marche.md` le classe comme une reformulation trompeuse (question sur le rôle principal souhaité, 5 % choisissent « donner la réponse ») ;
-- « personne ne revendique la lecture des devoirs Pronote » est faux : Otto Lycée lit les devoirs Pronote avec une IA, et Eliott est partenaire officiel de Pronote ; Dinobot s'en tient à une connexion unique (voir `2026-10-01-pronote.md`) ;
-- Pronote n'est plus un différenciateur de la V1 (`specs/2026-10-01-vision-produit.md`).
+- le « 95 % des parents refusent une IA qui donne les réponses » (Kantar) ne se cite pas : `marche.md` le classe comme une reformulation trompeuse (question sur le rôle principal souhaité, 5 % choisissent « donner la réponse ») ;
+- « personne ne revendique la lecture des devoirs Pronote » est faux : Otto Lycée lit les devoirs Pronote avec une IA, et Eliott est partenaire officiel de Pronote ; Dinobot s'en tient à une connexion unique (voir `pronote.md`) ;
+- Pronote n'est plus un différenciateur de la V1 (`docs/vision.md`).
 
 **Cible.** Les parents de collégiens (6e à 3e), y compris ceux qui ne peuvent pas payer un professeur particulier.
 
@@ -355,9 +355,9 @@ Sont listées ici les affirmations fausses, invérifiables ou prématurées. Cer
 **Méthode** : (L) lecture littérale dans le navigateur ; (R) résumé WebFetch ; (A) relevé d'un agent de recherche, le même jour. Consultation le 2026-10-01 sauf indication contraire.
 
 **Produit (dépôt)**
-- [P1] `docs/superpowers/specs/2026-09-22-cible-v1.md`
-- [P2] `docs/superpowers/specs/2026-09-22-agent-ia.md`
-- [P3] `docs/superpowers/suivi.md` (bloquants, journal C.9) ; table `cost_tracking` de la base locale (2 lignes du 2026-09-22)
+- [P1] `docs/architecture.md`
+- [P2] `docs/agent.md`
+- [P3] `docs/suivi.md` (bloquants, journal C.9) ; table `cost_tracking` de la base locale (2 lignes du 2026-09-22)
 - [P4] `apps/server/src/services/quota/quota-config.ts` ; spec landing du 2026-09-24, supprimée depuis (Tarifs)
 - [P5] `apps/server/src/services/quota/quota-functions.ts` (`checkQuotaReal`) ; `services/chat/chat-orchestration.service.ts:298`
 - [P6] `apps/landing/components/sections/faq-data.ts`, `hero.tsx`, `trust.tsx`

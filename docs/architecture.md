@@ -4,7 +4,7 @@ Statut : validé le 2026-09-22, aligné sur la vision produit le 2026-10-01.
 
 ## Produit
 
-Pour qui, promesse, preuves, prix et périmètre : `2026-10-01-vision-produit.md`, qui
+Pour qui, promesse, preuves, prix et périmètre : `vision.md`, qui
 prime sur ce document. Ici, seulement l'architecture qui en découle.
 
 Le nom du produit est ouvert (vision, « Marque ») ; Tom est le nom de l'IA. L'app n'est
@@ -20,7 +20,7 @@ directement la cible.
 | Topologie | **Un dépôt, backend en monolithe modulaire** | `ai-service` et `curriculum` séparés ont pourri puis été supprimés ; un service séparé ne se justifie que par une contrainte réelle |
 | Serveur | Bun + Elysia conservés | Contrat Eden Treaty typé de bout en bout vers le client |
 | LLM | **Mistral**, stack 100 % UE | Souveraineté, données de mineurs (RGPD) |
-| Modèle de chat | **Mistral Small 4** (`mistral-small-2603`), multimodal | Voir `2026-09-22-agent-ia.md` |
+| Modèle de chat | **Mistral Small 4** (`mistral-small-2603`), multimodal | Voir `agent.md` |
 | Référentiel de conception IA | Guides de certification Claude (Architect Foundations, Architect Professional, Developer Foundations), pratiques indépendantes du fournisseur | Pratiques reconnues, auditables |
 | Pronote | **Hors V1** : module, `pawnote`, tables et routes retirés au lot 0 | Accès non officiel, cassé par la version 2026 de Pronote ; il ne revient que par une convention avec Index Éducation (vision, « Périmètre V1 ») |
 | Paiement | Web, **à facturation sans piège** (vision, « Offre et prix ») | Premier reproche des parents dans les avis |
@@ -43,8 +43,8 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 | `platform` | Config, DB, observabilité, erreurs, rétention RGPD | `config/`, `db/`, `lib/otel/`, `lib/errors.ts`, `retention-purge.service.ts` |
 
 Ce qui disparaît au lot 0, faute de place dans la V1 : tout le code Pronote (dont le
-contexte Pronote de l'agent, `2026-09-22-agent-ia.md` § 13) et la route de la liste
-d'attente avec sa table. Liste détaillée : `docs/superpowers/suivi.md`, « Reporté ».
+contexte Pronote de l'agent, `agent.md` § 13) et la route de la liste
+d'attente avec sa table. Liste détaillée : `docs/suivi.md`, « Reporté ».
 
 Le découpage physique en modules se fait au fil des lots, sur le code qu'on
 touche, pas en un big-bang.
@@ -72,4 +72,4 @@ Elles sont tranchées au démarrage du lot qui en dépend, doc-first, pas avant�
 
 ## Ordre des lots
 
-Voir `docs/superpowers/plans/2026-10-01-roadmap.md`.
+Voir `docs/roadmap.md`.

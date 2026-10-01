@@ -1,7 +1,7 @@
 # TomAI Server
 
 Backend Bun + Elysia.js du tuteur IA pour collégiens (produit :
-`docs/superpowers/specs/2026-10-01-vision-produit.md`).
+`docs/vision.md`).
 
 ## Quick Start
 

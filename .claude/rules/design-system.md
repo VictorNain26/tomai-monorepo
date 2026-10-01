@@ -9,7 +9,7 @@ paths:
 # Design system — règles d'application
 
 L'identité visuelle actuelle (palette, polices, signes d'école de la landing) est rejetée :
-elle se refait au lot 4 (`docs/superpowers/plans/2026-10-01-roadmap.md`). D'ici là, aucune
+elle se refait au lot 4 (`docs/roadmap.md`). D'ici là, aucune
 nouvelle direction visuelle ; le client web du lot 3 se construit sur les tokens actuels, que
 le lot 4 remplacera sans toucher aux composants. Les règles ci-dessous sont techniques et
 survivent au changement d'identité.
