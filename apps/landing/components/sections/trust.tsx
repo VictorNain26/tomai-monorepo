@@ -3,8 +3,7 @@ import { HandNote } from "../annotations/hand-note";
 import { Highlight } from "../annotations/highlight";
 
 const COMMITMENTS = [
-  "Données hébergées dans l'Union européenne, traitées selon le RGPD.",
-  "Une IA européenne : les modèles de Mistral AI, appelés depuis l'Europe.",
+  "Une IA européenne : les modèles de Mistral AI, appelés sur leur infrastructure européenne.",
   "Aucune publicité, aucune revente de données.",
   "Consultation, correction et suppression des données sur simple demande.",
 ];

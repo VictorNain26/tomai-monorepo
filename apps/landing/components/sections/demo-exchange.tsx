@@ -26,7 +26,7 @@ const STAGGER_SECONDS = 0.15;
 export function DemoExchange({ className }: { className?: string }) {
   return (
     <figure className={cn("rounded-2xl bg-secondary p-5 sm:p-6", className)}>
-      <figcaption className="text-sm font-bold text-muted-foreground">Exemple de séance</figcaption>
+      <figcaption className="text-sm font-bold text-muted-foreground">Exemple fictif de séance</figcaption>
       <ol className="mt-4 space-y-3">
         {MESSAGES.map(({ from, text }, index) => (
           <li key={index} className={cn("flex gap-2", from === "eleve" && "justify-end")}>
