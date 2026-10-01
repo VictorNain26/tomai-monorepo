@@ -72,7 +72,7 @@ class EducationService {
 
   /** Matières d'un niveau. Tableau vide si le niveau n'est pas couvert. */
   getSubjectsForLevel(level: EducationLevelType): readonly string[] {
-    return SUBJECTS_BY_LEVEL[level] ?? [];
+    return SUBJECTS_BY_LEVEL[level];
   }
 }
 

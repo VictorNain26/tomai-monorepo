@@ -47,7 +47,7 @@ class FSRSService {
       learning_steps: 0,
       reps: data.reps ?? 0,
       lapses: data.lapses ?? 0,
-      state: (data.state ?? State.New) as State,
+      state: (data.state ?? State.New),
       last_review: data.lastReview ? new Date(data.lastReview) : undefined,
     };
   }
@@ -284,7 +284,7 @@ class FSRSService {
         due: recordLog[Rating.Easy].card.due,
         interval: recordLog[Rating.Easy].card.scheduled_days,
       },
-    } as Record<Grade, { due: Date; interval: number }>;
+    };
   }
 
   async resetDeck(deckId: string, userId: string): Promise<number> {

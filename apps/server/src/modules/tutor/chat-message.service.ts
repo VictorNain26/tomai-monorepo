@@ -67,12 +67,12 @@ export class ChatMessageService {
       // Full list of files when the message has >1 attachment. The primary
       // (first) file stays in attachedFile for backward compatibility with
       // existing readers; the rest is persisted here in the JSONB metadata.
-      attachedFiles?: Array<{
+      attachedFiles?: {
         fileName: string;
         fileId?: string;
         mimeType?: string;
         fileSizeBytes?: number;
-      }>;
+      }[];
       /**
        * Pre-generation intent classification for this assistant turn. Not
        * rendered to the client — retained for evals, cohort analysis, and
@@ -146,7 +146,7 @@ export class ChatMessageService {
       }
 
       const session = await studySessionsRepository.findById(message.sessionId);
-      if (!session || session.userId !== userId) {
+      if (session?.userId !== userId) {
         logger.warn('Unauthorized access attempt to message', {
           operation: 'message:access:unauthorized',
           messageId,

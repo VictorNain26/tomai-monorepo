@@ -19,7 +19,7 @@ mock.module('../modules/voice/index', () => ({ audioTranscriptionService: {} }))
 
 const FILE_ID = '0199a3c4-7b1e-7d2a-9f00-0000000000f1';
 let fileOwner = 'student-1';
-let listedFiles: Array<Record<string, unknown>> = [];
+let listedFiles: Record<string, unknown>[] = [];
 const hardDelete = mock(async (_id: string) => true);
 const findByUserId = mock(async (_userId: string) => listedFiles);
 mock.module('../modules/documents/files.repository', () => ({

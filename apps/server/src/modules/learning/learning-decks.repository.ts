@@ -12,14 +12,13 @@ import {
   type LearningDeck,
   type NewLearningDeck,
 } from './decks.schema.js';
-import type { PgTransaction } from 'drizzle-orm/pg-core';
 
 /**
  * Drizzle database or transaction — accepted by every write method so the
  * service can reuse repository inserts inside `db.transaction(async (tx) => ...)`.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DbOrTx = typeof db | PgTransaction<any, any, any>;
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type DbOrTx = typeof db | Transaction;
 
 export interface ListDecksOptions {
   limit?: number;

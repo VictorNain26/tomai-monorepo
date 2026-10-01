@@ -26,10 +26,10 @@ export class ParentService {
         username: child.username ?? '',
         schoolLevel: child.schoolLevel ?? '',
         dateOfBirth: child.dateOfBirth ?? undefined,
-        isActive: child.isActive ?? true,
+        isActive: child.isActive,
         parentId: parentId,
         role: 'student' as const,
-        createdAt: child.createdAt?.toISOString() ?? new Date().toISOString(),
+        createdAt: child.createdAt.toISOString(),
       }));
 
       logger.debug('Processed children data', {
@@ -98,7 +98,7 @@ export class ParentService {
     dateOfBirth?: string;
     schoolLevel?: string;
     password?: string;
-  }, _requestHeaders?: Headers): Promise<ChildInfo> {
+  }): Promise<ChildInfo> {
     try {
       const children = await this.getParentChildren(parentId);
       const child = children.find(c => c.id === childId);
@@ -139,10 +139,10 @@ export class ParentService {
         username: updatedChild.username ?? '',
         schoolLevel: updatedChild.schoolLevel ?? '',
         dateOfBirth: updatedChild.dateOfBirth ?? undefined,
-        isActive: updatedChild.isActive ?? true,
+        isActive: updatedChild.isActive,
         parentId: parentId,
         role: 'student' as const,
-        createdAt: updatedChild.createdAt?.toISOString() ?? new Date().toISOString(),
+        createdAt: updatedChild.createdAt.toISOString(),
       };
     } catch (_error) {
       logger.error('Error updating child', { operation: 'parent:child:update', err: _error, parentId, childId, severity: 'medium' as const });

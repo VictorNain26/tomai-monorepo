@@ -57,7 +57,7 @@ export const studentSubjectProfileRepository = {
           difficulties: mergeDedup([], input.addedDifficulties, MAX_DIFFICULTIES),
           sessionsCount: 1,
           lastOutcome: input.outcome ?? null,
-          ttlUntil: ttlUntil as unknown as Date,
+          ttlUntil: ttlUntil,
         })
         .returning();
       if (!created) throw new Error('Failed to create student subject profile');
@@ -72,7 +72,7 @@ export const studentSubjectProfileRepository = {
         sessionsCount: existing.sessionsCount + 1,
         lastOutcome: input.outcome ?? existing.lastOutcome,
         updatedAt: sql`NOW()`,
-        ttlUntil: ttlUntil as unknown as Date,
+        ttlUntil: ttlUntil,
       })
       .where(eq(studentSubjectProfiles.id, existing.id))
       .returning();

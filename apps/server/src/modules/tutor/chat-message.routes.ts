@@ -17,7 +17,7 @@ import { createRateLimitMiddleware, RateLimitPresets } from '../../platform/http
 import { chatOrchestrationService, ChatOrchestrationError } from './chat-orchestration.service.js';
 import { streamChat } from './ai-chat.service.js';
 import { buildChatTools } from './chat-tools.js';
-import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js';
+import { extractTextFromParts, sanitizePrompt, type TomChatMessage } from './chat-ui-message.js';
 import { checkQuota } from '../billing/index.js';
 import { AppError, toErrorResponse } from '../../platform/http/errors.js';
 import { logger } from '../../platform/observability/logger.js';
@@ -28,12 +28,6 @@ import { educationLevelSchema, isEducationLevel } from '../../lib/education-leve
 const activeStreams = new Map<string, number>();
 const MAX_CONCURRENT_STREAMS = 2;
 
-/** Strip null bytes and control characters from user input */
-function sanitizePrompt(text: string): string {
-  // eslint-disable-next-line no-control-regex
-  return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-}
-
 const streamBody = z.object({
   // Last UIMessage sent by the client (AI SDK UI Message format); the server rebuilds full history from DB.
   message: z.looseObject({}),
@@ -42,8 +36,6 @@ const streamBody = z.object({
   subject: z.string().min(2).max(50).optional(),
   schoolLevel: educationLevelSchema.optional(),
   firstName: z.string().min(1).max(50).optional(),
-  /** @deprecated use fileIds */
-  fileId: z.string().min(20).max(100).optional(),
   fileIds: z.array(z.string().min(20).max(100)).max(5).optional(),
   // Input channel declared by the user gesture (mic vs keyboard); never inferred by the model. Defaults to text.
   inputMode: z.enum(['text', 'voice']).optional(),
@@ -58,9 +50,9 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     const user = c.var.user;
     const requestId = c.var.requestId;
     const body = c.req.valid('json');
-    const { message, sessionId, subject, schoolLevel, firstName, fileId, fileIds: fileIdsBody, inputMode } = body;
+    const { message, sessionId, subject, schoolLevel, firstName, fileIds: fileIdsBody, inputMode } = body;
 
-    const fileIds = fileIdsBody ?? (fileId ? [fileId] : []);
+    const fileIds = fileIdsBody ?? [];
     const safeContent = sanitizePrompt(extractTextFromParts((message as { parts?: unknown } | null)?.parts));
 
     // 1. Quota check
@@ -150,7 +142,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           sessionId: turnCtx.sessionId,
           schoolLevel: resolvedSchoolLevel,
           userRole,
-          emitDeckCreated: d => writer.write({ type: 'data-deck-created', data: d }),
+          emitDeckCreated: d => { writer.write({ type: 'data-deck-created', data: d }); },
         });
 
         capturedResult = streamChat({

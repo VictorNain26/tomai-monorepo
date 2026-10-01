@@ -20,7 +20,7 @@ export class ParentDashboardService {
             return {
               studentId: child.id,
               studentName: `${child.firstName} ${child.lastName}`,
-              schoolLevel: child.schoolLevel ?? 'Not defined',
+              schoolLevel: child.schoolLevel,
               age: child.dateOfBirth ? this.calculateAge(new Date(child.dateOfBirth)) : 0,
               totalSessions: stats.totalSessions,
               studyDays: stats.studyDays,

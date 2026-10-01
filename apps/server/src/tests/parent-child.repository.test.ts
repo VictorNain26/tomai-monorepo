@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 // MOCKS — must precede repository import
 // ============================================
 
-type Row = { id: string; parentUserId: string; childUserId: string };
+interface Row { id: string; parentUserId: string; childUserId: string }
 
 let rows: Row[] = [];
 let idCounter = 0;
@@ -57,7 +57,7 @@ function filterRows(): Row[] {
 
 const mockSelectLimit = mock(async (_n: number) => {
   const matched = filterRows();
-  return matched.length > 0 ? [{ id: matched[0].id }] : [];
+  return matched.slice(0, 1).map((row) => ({ id: row.id }));
 });
 
 const mockSelectWhere = mock(async (_condition: unknown) => {
@@ -67,7 +67,7 @@ const mockSelectWhere = mock(async (_condition: unknown) => {
 const mockSelectFrom = mock((_table: unknown) => ({
   where: (_condition: unknown) => ({
     // Pour getChildIds / getParentIds (await direct)
-    then: (resolve: (v: Array<Record<string, string>>) => unknown, reject: (e: unknown) => unknown) =>
+    then: (resolve: (v: Record<string, string>[]) => unknown, reject: (e: unknown) => unknown) =>
       mockSelectWhere(null).then(resolve, reject),
     // Pour isLinked (.limit(1))
     limit: mockSelectLimit,
@@ -131,8 +131,8 @@ describe('ParentChildRepository', () => {
   it('link insère la paire (rows.length === 1)', async () => {
     await parentChildRepository.link('p1', 'c1');
     expect(rows.length).toBe(1);
-    expect(rows[0].parentUserId).toBe('p1');
-    expect(rows[0].childUserId).toBe('c1');
+    expect(rows[0]?.parentUserId).toBe('p1');
+    expect(rows[0]?.childUserId).toBe('c1');
   });
 
   it('link idempotent : deux appels identiques → rows.length === 1', async () => {

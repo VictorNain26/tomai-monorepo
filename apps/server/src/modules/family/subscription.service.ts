@@ -1,15 +1,15 @@
 import { subscriptionRepository } from '../billing/index.js';
 import { listChildren } from './children.js';
 
-type ChildWithStatus = {
+interface ChildWithStatus {
   id: string;
   name: string | null;
   username: string | null;
   plan: string;
   status: string;
-};
+}
 
-type FamilyStatusResult = {
+interface FamilyStatusResult {
   plan: string;
   status: string;
   billing: {
@@ -21,7 +21,7 @@ type FamilyStatusResult = {
     currentPeriodEnd: string | null;
   } | null;
   children: ChildWithStatus[];
-};
+}
 
 class SubscriptionService {
   async getFamilyStatus(parentId: string): Promise<FamilyStatusResult> {

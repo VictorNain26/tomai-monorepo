@@ -3,5 +3,5 @@
 import { env } from '../../platform/config/env.js';
 
 if (!env.MISTRAL_API_KEY) {
-  (env as Record<string, unknown>)['MISTRAL_API_KEY'] = 'test-key';
+  (env as Record<string, unknown>).MISTRAL_API_KEY = 'test-key';
 }

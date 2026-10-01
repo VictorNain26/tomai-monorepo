@@ -71,6 +71,6 @@ export const updateChildSchema = z.object({
   schoolLevel: schoolLevelSchema.optional(),
   dateOfBirth: dateOfBirthSchema.optional(),
 }).refine(
-  (data) => Object.values(data).some(value => value !== undefined),
+  (data) => Object.keys(data).length > 0,
   { message: 'Au moins un champ doit être fourni pour la mise à jour' }
 );

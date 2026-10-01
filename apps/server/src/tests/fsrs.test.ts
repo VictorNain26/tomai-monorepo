@@ -121,7 +121,7 @@ describe('FSRS Service', () => {
       const data = fsrsService.initializeCardFsrsData();
       expect(typeof data.due).toBe('string');
       // Should be parseable as a date
-      expect(new Date(data.due as string).getTime()).toBeGreaterThan(0);
+      expect(new Date(data.due ?? '').getTime()).toBeGreaterThan(0);
     });
   });
 

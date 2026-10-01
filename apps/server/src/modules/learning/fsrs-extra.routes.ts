@@ -98,7 +98,7 @@ export const fsrsExtraRoutes = new Hono<AuthEnv>()
     }
   })
 
-  .get('/config', async (c) => {
+  .get('/config', (c) => {
     const user = c.var.user;
     const level = getUserLevel(user.id, user.schoolLevel);
     const config = getLevelConfig(level);

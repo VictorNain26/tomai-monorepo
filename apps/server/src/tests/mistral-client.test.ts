@@ -12,7 +12,7 @@ afterEach(() => {
 
 function mockFetchJson(capture: { url?: string; body?: Record<string, unknown> }, responseBody: unknown) {
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
-    capture.url = String(url);
+    capture.url = url instanceof Request ? url.url : url.toString();
     capture.body = init?.body ? (JSON.parse(init.body as string) as Record<string, unknown>) : undefined;
     return new Response(JSON.stringify(responseBody), {
       status: 200,
@@ -57,8 +57,8 @@ describe('generateText', () => {
       promptCacheKey: 'test-cache-v1',
     });
 
-    expect(capture.body?.['prompt_cache_key']).toBe('test-cache-v1');
-    expect(capture.body?.['max_tokens']).toBe(256);
+    expect(capture.body?.prompt_cache_key).toBe('test-cache-v1');
+    expect(capture.body?.max_tokens).toBe(256);
   });
 
   it('sends multimodal user content (text + image_url) on the wire body', async () => {
@@ -76,10 +76,10 @@ describe('generateText', () => {
     ];
     await generateText({ functionId: 'test', messages });
 
-    const sentMessages = capture.body?.['messages'] as Array<{ content: unknown }>;
-    const userContent = sentMessages[0]?.content as Array<Record<string, unknown>>;
-    expect(userContent.some((part) => part['type'] === 'text')).toBe(true);
-    expect(userContent.some((part) => part['type'] === 'image_url')).toBe(true);
+    const sentMessages = capture.body?.messages as { content: unknown }[];
+    const userContent = sentMessages[0]?.content as Record<string, unknown>[];
+    expect(userContent.some((part) => part.type === 'text')).toBe(true);
+    expect(userContent.some((part) => part.type === 'image_url')).toBe(true);
   });
 
   it('calls the dated model on the EU endpoint with reasoning off', async () => {
@@ -89,8 +89,8 @@ describe('generateText', () => {
     await generateText({ functionId: 'test', messages: [{ role: 'user', content: 'Salut' }] });
 
     expect(capture.url).toBe('https://api.eu.mistral.ai/v1/chat/completions');
-    expect(capture.body?.['model']).toBe('mistral-small-2603');
-    expect(capture.body?.['reasoning_effort']).toBe('none');
+    expect(capture.body?.model).toBe('mistral-small-2603');
+    expect(capture.body?.reasoning_effort).toBe('none');
   });
 });
 
@@ -104,11 +104,11 @@ describe('generateStructured', () => {
     const result = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
 
     expect(result).toEqual({ object: { intent: 'explain-concept' }, usage: { inputTokens: 10, outputTokens: 5 } });
-    const responseFormat = capture.body?.['response_format'] as Record<string, unknown>;
-    expect(responseFormat['type']).toBe('json_schema');
-    const wire = responseFormat['json_schema'] as Record<string, unknown>;
-    expect(wire['strict']).toBe(true);
-    expect(wire['name']).toBe('intent');
+    const responseFormat = capture.body?.response_format as Record<string, unknown>;
+    expect(responseFormat.type).toBe('json_schema');
+    const wire = responseFormat.json_schema as Record<string, unknown>;
+    expect(wire.strict).toBe(true);
+    expect(wire.name).toBe('intent');
   });
 
   it('turns strict json_schema off when asked', async () => {
@@ -117,12 +117,12 @@ describe('generateStructured', () => {
 
     await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', strict: false });
 
-    const responseFormat = capture.body?.['response_format'] as Record<string, unknown>;
-    expect((responseFormat['json_schema'] as Record<string, unknown>)['strict']).toBe(false);
+    const responseFormat = capture.body?.response_format as Record<string, unknown>;
+    expect((responseFormat.json_schema as Record<string, unknown>).strict).toBe(false);
   });
 
   it('retries once with the validation error, then succeeds', async () => {
-    const bodies: Array<Record<string, unknown>> = [];
+    const bodies: Record<string, unknown>[] = [];
     const replies = [JSON.stringify({ intent: 'nope' }), JSON.stringify({ intent: 'chit-chat' })];
     globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
       bodies.push(JSON.parse(init?.body as string) as Record<string, unknown>);
@@ -135,7 +135,7 @@ describe('generateStructured', () => {
 
     expect(result.object).toEqual({ intent: 'chit-chat' });
     expect(result.usage).toEqual({ inputTokens: 20, outputTokens: 10 });
-    const retryMessages = bodies[1]?.['messages'] as Array<{ role: string; content: unknown }>;
+    const retryMessages = bodies[1]?.messages as { role: string; content: unknown }[];
     expect(JSON.stringify(retryMessages.at(-1)?.content)).toContain('schéma');
   });
 
@@ -186,7 +186,7 @@ describe('generateStructured', () => {
 
     await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', promptCacheKey: 'intent-v1' });
 
-    expect(capture.body?.['prompt_cache_key']).toBe('intent-v1');
+    expect(capture.body?.prompt_cache_key).toBe('intent-v1');
   });
 
   it('keeps reasoning off for structured outputs', async () => {
@@ -195,6 +195,6 @@ describe('generateStructured', () => {
 
     await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
 
-    expect(capture.body?.['reasoning_effort']).toBe('none');
+    expect(capture.body?.reasoning_effort).toBe('none');
   });
 });

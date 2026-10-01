@@ -54,7 +54,7 @@ const { deleteFiles } = await import('../modules/documents/storage');
 beforeEach(() => {
   sentInputs.length = 0;
   sendImpl = () => Promise.resolve({ Deleted: [], Errors: [] });
-  mockLogger.error.mockClear?.();
+  mockLogger.error.mockClear();
 });
 
 describe('deleteFiles (batch S3 DeleteObjects)', () => {

@@ -15,12 +15,12 @@ class ProgressRepository {
     totalConcepts: number;
     masteredConcepts: number; // mastery level >= 4
     averageMastery: number;
-    subjectProgress: Array<{
+    subjectProgress: {
       subject: string;
       conceptCount: number;
       averageMastery: number;
       totalPracticeTime: number;
-    }>;
+    }[];
   }> {
     const userProgress = await this.findByUserId(userId);
 
@@ -33,17 +33,16 @@ class ProgressRepository {
     // Group by subject
     const subjectMap = new Map<string, Progress[]>();
     userProgress.forEach(p => {
-      if (!subjectMap.has(p.subject)) {
-        subjectMap.set(p.subject, []);
-      }
-      subjectMap.get(p.subject)!.push(p);
+      const concepts = subjectMap.get(p.subject) ?? [];
+      concepts.push(p);
+      subjectMap.set(p.subject, concepts);
     });
 
     const subjectProgress = Array.from(subjectMap.entries()).map(([subject, concepts]) => ({
       subject,
       conceptCount: concepts.length,
       averageMastery: concepts.reduce((sum, p) => sum + p.masteryLevel, 0) / concepts.length,
-      totalPracticeTime: concepts.reduce((sum, p) => sum + (p.totalPracticeTime ?? 0), 0),
+      totalPracticeTime: concepts.reduce((sum, p) => sum + p.totalPracticeTime, 0),
     }));
 
     return {

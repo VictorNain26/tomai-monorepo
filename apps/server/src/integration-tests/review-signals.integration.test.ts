@@ -34,15 +34,16 @@ describe.skipIf(!dbReachable)('learningService.getReviewSignals — due cards an
     const { user, learningDecks, learningCards } = await import('../db/schema');
 
     await db.insert(user).values([studentId, otherId, emptyId, noLapseId].map((id) => ({ id, email: `${id}@internal.tomai` })));
-    const decks = await db.insert(learningDecks).values(
-      [
+    const deckSpecs: [string, string][] = [
         [studentId, 'francais'],
         [studentId, 'mathematiques'],
         [studentId, 'histoire'],
         [studentId, 'svt'],
         [otherId, 'mathematiques'],
         [noLapseId, 'anglais'],
-      ].map(([userId, subject]) => ({ userId: userId as string, subject: subject as string, title: 'Deck', source: 'prompt' as const })),
+    ];
+    const decks = await db.insert(learningDecks).values(
+      deckSpecs.map(([userId, subject]) => ({ userId, subject, title: 'Deck', source: 'prompt' as const })),
     ).returning({ id: learningDecks.id });
     const [francais, maths, histoire, svt, otherDeck, anglais] = decks.map((d) => d.id) as [string, string, string, string, string, string];
 

@@ -4,7 +4,7 @@
  */
 
 import type { Context, Env, MiddlewareHandler } from 'hono';
-import { getConnInfo } from 'hono/bun';
+import { getConnInfo } from '@hono/bun';
 import type { AuthEnv } from './context.js';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import { logger } from '../observability/logger';

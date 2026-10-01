@@ -33,9 +33,9 @@ mock.module('../db/connection', () => ({
 
 // --- Deck repository mocks -------------------------------------------------
 const mockDeckInsert = mock(async () => ({ id: 'deck-1', userId: 'user-1', cardCount: 0 }));
-const mockDeckFindById = mock(async () => null as unknown);
+const mockDeckFindById = mock(async (): Promise<unknown> => null);
 const mockDeckListByUser = mock(async () => [] as unknown[]);
-const mockDeckUpdateById = mock(async () => ({ id: 'deck-1', title: 'updated' } as unknown));
+const mockDeckUpdateById = mock(async (): Promise<unknown> => ({ id: 'deck-1', title: 'updated' }));
 const mockDeckDeleteById = mock(async () => {});
 
 mock.module('../modules/learning/learning-decks.repository', () => ({
@@ -247,7 +247,7 @@ describe('LearningService', () => {
       mockDeckFindById.mockImplementationOnce(async () => ({
         id: 'deck-1',
         userId: 'other-user',
-      } as unknown));
+      }));
 
       expect(
         learningService.getDeckWithCardsOrThrow('user-1', 'deck-1'),
@@ -270,7 +270,7 @@ describe('LearningService', () => {
       mockDeckFindById.mockImplementationOnce(async () => ({
         id: 'deck-1',
         userId: 'other-user',
-      } as unknown));
+      }));
 
       expect(
         learningService.updateDeckOrThrow('user-1', 'deck-1', { title: 'new' }),
@@ -323,7 +323,7 @@ describe('LearningService', () => {
       mockDeckFindById.mockImplementationOnce(async () => ({
         id: 'deck-1',
         userId: 'other-user',
-      } as unknown));
+      }));
 
       expect(
         learningService.deleteDeckOrThrow('user-1', 'deck-1'),
@@ -335,7 +335,7 @@ describe('LearningService', () => {
       mockDeckFindById.mockImplementationOnce(async () => ({
         id: 'deck-1',
         userId: 'user-1',
-      } as unknown));
+      }));
 
       await learningService.deleteDeckOrThrow('user-1', 'deck-1');
 
@@ -360,7 +360,7 @@ describe('LearningService', () => {
         id: 'deck-1',
         userId: 'other-user',
         cardCount: 0,
-      } as unknown));
+      }));
 
       expect(
         learningService.addCardsToDeckOrThrow('user-1', 'deck-1', {
@@ -573,7 +573,7 @@ describe('LearningService', () => {
       mockCardFindByIdWithOwner.mockImplementationOnce(async () => null);
 
       expect(
-        learningService.reviewCardOrThrow('user-1', 'card-1', 3 as never, 'sixieme'),
+        learningService.reviewCardOrThrow('user-1', 'card-1', 3, 'sixieme'),
       ).rejects.toBeInstanceOf(CardNotFoundError);
       expect(mockFsrsReviewCard).not.toHaveBeenCalled();
     });
@@ -584,7 +584,7 @@ describe('LearningService', () => {
         deckUserId: 'user-1',
       }));
 
-      await learningService.reviewCardOrThrow('user-1', 'card-1', 3 as never, 'sixieme');
+      await learningService.reviewCardOrThrow('user-1', 'card-1', 3, 'sixieme');
 
       expect(mockFsrsReviewCard).toHaveBeenCalledTimes(1);
       expect((mockFsrsReviewCard.mock.calls[0] as unknown[])[0]).toBe('card-1');

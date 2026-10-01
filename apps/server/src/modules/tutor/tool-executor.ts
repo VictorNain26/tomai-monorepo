@@ -6,7 +6,7 @@
  * permettre à l'agent de décider du retry. Jamais de throw.
  */
 
-import { generateCards, learningService, getLevelConfig, type CardGenerationResult } from '../learning/index.js';
+import { generateCards, learningService, getLevelConfig } from '../learning/index.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { makeToolError, type ToolResult } from './tool-errors.js';
 import { getAppHelpContent } from './app-guide/index.js';
@@ -127,14 +127,14 @@ async function executeGenerateFlashcards(
     cardCount,
   });
 
-  if ('success' in result && result.success === false) {
+  if ('success' in result) {
     return makeToolError(
       'business',
       `Erreur lors de la génération des cartes: ${result.error}`,
     );
   }
 
-  const successResult = result as CardGenerationResult;
+  const successResult = result;
 
   // Persist deck + cards via the shared LearningService transaction
   // (same code path as POST /api/learning/generate).
@@ -209,7 +209,7 @@ async function executeGetProfile(context: ToolExecutionContext): Promise<object>
     strengths: profile.strengths,
     weaknesses: profile.weaknesses,
     preferredStyle: profile.preferredStyle,
-    observations: ((profile.observations as Array<{ observation: string }>) ?? [])
+    observations: ((profile.observations as { observation: string }[] | null) ?? [])
       .slice(-5)
       .map((o) => o.observation),
     lastUpdated: profile.lastUpdatedByAgent?.toISOString() ?? null,

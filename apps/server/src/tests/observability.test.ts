@@ -9,7 +9,7 @@ function logLines(script: string, env: Record<string, string> = {}): Record<stri
     ['bun', '--no-env-file', '-e', `const { logger } = await import(${JSON.stringify(MODULE)}); ${script}`],
     {
       cwd: tmpdir(),
-      env: { PATH: process.env['PATH'] ?? '', NODE_ENV: 'production', ...env },
+      env: { PATH: process.env.PATH ?? '', NODE_ENV: 'production', ...env },
       stderr: 'pipe',
     },
   );
@@ -29,7 +29,7 @@ describe('logger', () => {
 
   it('serialises an Error with its stack', () => {
     const [line] = logLines(`logger.error('boom', { err: new Error('kaput'), severity: 'high' });`);
-    const err = line?.['err'] as { type: string; message: string; stack: string };
+    const err = line?.err as { type: string; message: string; stack: string };
     expect(err.type).toBe('Error');
     expect(err.message).toBe('kaput');
     expect(err.stack).toContain('kaput');
@@ -44,21 +44,21 @@ describe('logger', () => {
       });
       logger.error('ai', { err: e, severity: 'high' });
     `);
-    const err = line?.['err'] as Record<string, unknown>;
+    const err = line?.err as Record<string, unknown>;
     expect(JSON.stringify(line)).not.toContain('secret pupil text');
     expect(err).toMatchObject({ type: 'Error', message: 'call failed', statusCode: 503 });
-    expect(err['cause']).toMatchObject({ message: 'upstream', code: 'ECONNRESET' });
+    expect(err.cause).toMatchObject({ message: 'upstream', code: 'ECONNRESET' });
   });
 
   it('does not throw on a BigInt or a circular reference', () => {
     const lines = logLines(
       `const a = {}; a.self = a; logger.info('big', { n: 10n }); logger.info('circular', { a });`,
     );
-    expect(lines.map((l) => l['msg'])).toEqual(['big', 'circular']);
+    expect(lines.map((l) => l.msg)).toEqual(['big', 'circular']);
   });
 
   it('applies LOG_LEVEL', () => {
     const lines = logLines(`logger.info('hidden'); logger.warn('shown');`, { LOG_LEVEL: 'warn' });
-    expect(lines.map((l) => l['msg'])).toEqual(['shown']);
+    expect(lines.map((l) => l.msg)).toEqual(['shown']);
   });
 });

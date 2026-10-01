@@ -4,11 +4,11 @@ import { familyBilling, userSubscriptions, subscriptionPlans } from '../../db/sc
 
 type FamilyBilling = typeof familyBilling.$inferSelect;
 
-type ChildSubscriptionRow = {
+interface ChildSubscriptionRow {
   userId: string;
   status: string | null;
   planName: string | null;
-};
+}
 
 class SubscriptionRepository {
   async findFamilyBilling(parentId: string): Promise<FamilyBilling | undefined> {

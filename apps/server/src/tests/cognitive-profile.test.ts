@@ -17,7 +17,7 @@ interface CognitiveProfileData {
   strengths: string[];
   weaknesses: string[];
   preferredStyle: string | null;
-  observations: Array<{ date: string; observation: string; subject?: string }>;
+  observations: { date: string; observation: string; subject?: string }[];
   lastUpdatedByAgent: Date | null;
   createdAt: Date;
   updatedAt: Date;

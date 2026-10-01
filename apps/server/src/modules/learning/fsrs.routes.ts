@@ -12,7 +12,6 @@ import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { logger } from '../../platform/observability/logger';
 import { learningService, CardNotFoundError } from './learning.service.js';
 import { fsrsService } from './fsrs.service.js';
-import type { Rating } from './fsrs.service.js';
 import { getLevelConfig } from './learning-config.js';
 import { getUserLevel, idParam } from './routes.helpers.js';
 
@@ -69,7 +68,7 @@ export const fsrsRoutes = new Hono<AuthEnv>()
       const level = getUserLevel(user.id, user.schoolLevel);
 
       try {
-        const result = await learningService.reviewCardOrThrow(user.id, cardId, rating as Rating, level);
+        const result = await learningService.reviewCardOrThrow(user.id, cardId, rating, level);
 
         logger.info('Card reviewed via API', {
           operation: 'learning:review',

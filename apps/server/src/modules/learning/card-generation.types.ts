@@ -137,10 +137,10 @@ interface VraiFauxContent {
  */
 interface MatchingContent {
   instruction: string;
-  pairs: Array<{
+  pairs: {
     left: string;    // Mot, événement, date...
     right: string;   // Traduction, description, époque...
-  }>;
+  }[];
   // Note: Les paires seront mélangées côté frontend
 }
 
@@ -184,11 +184,11 @@ interface CalculationContent {
  */
 interface TimelineContent {
   instruction: string;
-  events: Array<{
+  events: {
     event: string;           // Nom de l'événement
     date?: string;           // Date (révélée après réponse)
     hint?: string;           // Indice optionnel
-  }>;
+  }[];
   correctOrder: number[];    // Indices dans l'ordre correct
 }
 

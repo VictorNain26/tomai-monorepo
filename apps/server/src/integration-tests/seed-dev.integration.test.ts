@@ -39,12 +39,12 @@ describe.skipIf(!dbReachable)('seedDev — deterministic, login-proven accounts'
     const parentLogin = await auth.api.signInEmail({
       body: { email: 'dev.parent@tomai.local', password: 'DevParent123!' },
     });
-    expect(parentLogin?.user?.id).toBe(parentId);
+    expect(parentLogin.user.id).toBe(parentId);
 
     const childLogin = await auth.api.signInUsername({
       body: { username: 'dev.eleve', password: 'DevEleve123!' },
     });
-    expect(childLogin?.user?.username).toBe('dev.eleve');
+    expect(childLogin.user.username).toBe('dev.eleve');
 
     const { db } = await import('../db/connection');
     const schema = await import('../db/schema');

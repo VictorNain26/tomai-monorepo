@@ -71,7 +71,7 @@ class EpisodicMemoryService {
 
     try {
       const session = await studySessionsRepository.findById(sessionId);
-      if (!session || session.userId !== userId) {
+      if (session?.userId !== userId) {
         logger.warn('Episodic extraction skipped — session not found or not owned', {
           operation: 'episodic:extract:not-found',
           sessionId,
@@ -140,7 +140,7 @@ class EpisodicMemoryService {
       void subjectProfileService.aggregateFromEpisode({
         userId,
         subject: session.subject,
-        conceptsCovered: parsed.conceptsCovered ?? [],
+        conceptsCovered: parsed.conceptsCovered,
         outcome: parsed.outcome,
       });
 
@@ -178,14 +178,14 @@ class EpisodicMemoryService {
    * closest to the current query (new session opener, or first student
    * message). Returns an empty array on error or when none exist.
    */
-  async retrieveRelevant(userId: string, queryText: string, limit = 3): Promise<Array<{
+  async retrieveRelevant(userId: string, queryText: string, limit = 3): Promise<{
     sessionId: string;
     subject: string;
     summaryText: string;
     conceptsCovered: string[];
     createdAt: Date;
     similarity: number;
-  }>> {
+  }[]> {
     const trimmed = queryText.trim();
     if (trimmed.length < 10) return [];
 
@@ -206,7 +206,7 @@ class EpisodicMemoryService {
           summaryText: r.summaryText,
           conceptsCovered: Array.isArray(r.conceptsCovered) ? (r.conceptsCovered as string[]) : [],
           createdAt: r.createdAt,
-          similarity: Number(r.similarity),
+          similarity: r.similarity,
         }));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);

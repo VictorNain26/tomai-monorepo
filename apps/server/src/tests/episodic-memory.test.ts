@@ -18,7 +18,7 @@ mock.module('../modules/tutor/messages.repository', () => ({
   },
 }));
 
-const inserted: Array<Record<string, unknown>> = [];
+const inserted: Record<string, unknown>[] = [];
 mock.module('../modules/tutor/episodic-memory.repository', () => ({
   episodicMemoryRepository: {
     insertEpisode: mock(async (data: Record<string, unknown>) => { inserted.push(data); }),
@@ -76,7 +76,7 @@ describe('episodicMemoryService.extractAndStore', () => {
       outcome: 'completed',
       messageCount: 6,
     });
-    expect((inserted[0]?.['summaryEmbedding'] as number[]).length).toBe(1024);
+    expect((inserted[0]?.summaryEmbedding as number[]).length).toBe(1024);
   });
 
   it('logs and stores nothing when the extraction violates the schema twice', async () => {

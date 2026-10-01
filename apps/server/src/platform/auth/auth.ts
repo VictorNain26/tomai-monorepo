@@ -53,7 +53,7 @@ function getCookieDomain(): string | undefined {
       // URL invalide — fallback à undefined (localhost)
       logger.warn('Failed to extract cookie domain from URL', {
         operation: 'auth:cookie_domain:invalid_url',
-        url: url ?? '(empty)',
+        url,
         err: error,
       });
     }
@@ -138,9 +138,10 @@ export const auth = betterAuth({
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       prompt: "select_account",
+      // Google omits given_name and family_name for some accounts, whatever its types say.
       mapProfileToUser: (profile) => ({
-        firstName: profile.given_name ?? null,
-        lastName: profile.family_name ?? null,
+        firstName: (profile.given_name as string | undefined) ?? null,
+        lastName: (profile.family_name as string | undefined) ?? null,
       }),
     },
   } : {},

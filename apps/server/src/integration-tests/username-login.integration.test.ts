@@ -91,7 +91,7 @@ afterAll(async () => {
 
 describe.skipIf(!dbReachable)('username plugin — autonomous child login', () => {
   it('should expose signInUsername API method', async () => {
-    const apiMethods = Object.keys(auth.api as Record<string, unknown>);
+    const apiMethods = Object.keys(auth.api);
     expect(apiMethods).toContain('signInUsername');
   });
 
@@ -104,7 +104,7 @@ describe.skipIf(!dbReachable)('username plugin — autonomous child login', () =
     });
 
     expect(signedIn).toBeTruthy();
-    expect(signedIn?.user?.username).toBe(childUsername);
+    expect(signedIn.user.username).toBe(childUsername);
   });
 
   it('should reject sign-in with correct username but wrong password', async () => {
@@ -129,7 +129,7 @@ describe.skipIf(!dbReachable)('username plugin — autonomous child login', () =
     await setPassword(createdChildId, newPassword);
 
     const signedIn = await auth.api.signInUsername({ body: { username: childUsername, password: newPassword } });
-    expect(signedIn?.user?.username).toBe(childUsername);
+    expect(signedIn.user.username).toBe(childUsername);
     const oldPassword = await auth.api.signInUsername({ body: { username: childUsername, password: childPassword } })
       .then(() => undefined, (error: unknown) => error);
     expect(oldPassword).toBeInstanceOf(Error);

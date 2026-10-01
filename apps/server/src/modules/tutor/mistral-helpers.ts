@@ -76,10 +76,10 @@ export function wrapStudentContext(
  * the document body read as outside-the-block input). Returns '' when empty.
  */
 export function wrapAttachedFiles(
-  files: Array<{ fileName: string; analysis: string; documentType?: string; subject?: string }>,
+  files: { fileName: string; analysis: string; documentType?: string; subject?: string }[],
 ): string {
   const blocks = files
-    .filter((f) => f.analysis?.trim())
+    .filter((f) => f.analysis.trim())
     .map((f) => {
       const type = f.documentType && f.subject ? `${f.documentType} - ${f.subject}` : 'document';
       const safeName = stripPromptTags(f.fileName).replace(/"/g, '');

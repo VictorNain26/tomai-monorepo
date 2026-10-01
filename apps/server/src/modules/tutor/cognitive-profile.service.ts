@@ -93,7 +93,7 @@ export const cognitiveProfileService = {
       const existing = await this.getProfile(userId);
 
       if (existing) {
-        const currentObservations = (existing.observations as CognitiveObservation[]) ?? [];
+        const currentObservations = (existing.observations as CognitiveObservation[] | null) ?? [];
 
         // Append new observation if provided
         let newObservations = currentObservations;

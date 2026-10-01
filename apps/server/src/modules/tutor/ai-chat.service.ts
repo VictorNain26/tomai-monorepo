@@ -94,12 +94,12 @@ export interface StreamGenerationParams {
    * in a spoken style. Defaults to 'text'.
    */
   inputMode?: 'text' | 'voice';
-  conversationHistory: Array<{
+  conversationHistory: {
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
     attachedFile?: HistoricalFileRef | null;
-  }>;
+  }[];
 }
 
 export interface ChatStreamParams extends StreamGenerationParams {
@@ -130,14 +130,14 @@ function buildHistoryMessages(
   history: StreamGenerationParams['conversationHistory'],
   conversationSummary?: string | null,
 ): MistralMessage[] {
-  if (!history || history.length === 0) return [];
+  if (history.length === 0) return [];
 
   const optimized = optimizeConversationHistory(history, { conversationSummary });
 
   return optimized
     .filter(
       (msg): msg is typeof msg & { role: 'assistant' | 'user'; content: string } =>
-        msg.role !== 'system' && msg.content !== null && msg.content !== undefined,
+        msg.role !== 'system',
     )
     .map((msg): MistralMessage => {
       if (msg.role === 'assistant') {
@@ -186,7 +186,7 @@ function toUserPart(part: MistralContentPart): TextPart | FilePart {
  */
 function toModelPrompt(messages: MistralMessage[]): { system: string; messages: ModelMessage[] } {
   const [first, ...rest] = messages;
-  if (!first || first.role !== 'system') {
+  if (first?.role !== 'system') {
     throw new Error('Expected the first assembled message to carry the system prompt');
   }
   return {
@@ -200,7 +200,7 @@ function toModelMessage(message: MistralMessage): ModelMessage {
     return { role: 'assistant', content: requireStringContent(message.content, 'assistant') };
   }
   if (message.role === 'user') {
-    const content = message.content as string | MistralContentPart[];
+    const content = message.content;
     return {
       role: 'user',
       content: typeof content === 'string' ? content : content.map(toUserPart),
@@ -215,7 +215,7 @@ function toModelMessage(message: MistralMessage): ModelMessage {
  * Streams the assistant's response for one chat turn, running the agentic
  * tool loop internally (`stopWhen: isStepCount(MAX_TOOL_ITERATIONS)`).
  */
-export function streamChat(params: ChatStreamParams): ReturnType<typeof streamText> {
+export function streamChat(params: ChatStreamParams) {
   const systemPrompt = buildSystemPromptForChat({
     level: params.schoolLevel,
     subject: params.subject,

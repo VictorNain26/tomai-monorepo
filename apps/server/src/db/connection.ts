@@ -62,7 +62,7 @@ function initializeConnection(): void {
       undefined: null,
     },
     onnotice: environment === 'production'
-      ? () => {}
+      ? () => undefined
       : (notice) => {
           if (notice.message) {
             logger.debug('PostgreSQL notice', {

@@ -58,7 +58,7 @@ export const sessionFilesRoutes = new Hono<AppEnv>()
       }
 
       const file = await filesRepository.findById(fileId);
-      if (!file || file.userId !== user.id) {
+      if (file?.userId !== user.id) {
         return c.json({ error: 'File not found or access denied' }, 403);
       }
 

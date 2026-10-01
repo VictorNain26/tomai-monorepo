@@ -29,7 +29,7 @@ export function scrubRequestData(event: ErrorEvent): ErrorEvent {
 }
 
 export function sentryMiddleware<E extends Env>(app: Hono<E>): MiddlewareHandler {
-  const dsn = process.env['SENTRY_DSN'];
+  const dsn = process.env.SENTRY_DSN;
   if (!dsn) {
     return async (_c, next) => {
       await next();
@@ -38,8 +38,8 @@ export function sentryMiddleware<E extends Env>(app: Hono<E>): MiddlewareHandler
 
   return Sentry.sentry(app, {
     dsn,
-    environment: process.env['NODE_ENV'] ?? 'development',
-    release: process.env['GIT_COMMIT_SHA'] ?? 'unknown',
+    environment: process.env.NODE_ENV ?? 'development',
+    release: process.env.GIT_COMMIT_SHA ?? 'unknown',
     tracesSampleRate: 0.1,
     beforeSend: scrubRequestData,
     // The default filter reads `error.status`; AppError carries `statusCode`.

@@ -80,7 +80,7 @@ export const parentRoutes = new Hono<AppEnv>()
     const params = c.req.valid('param');
     const body = c.req.valid('json');
     try {
-      const child = await parentService.updateChild(user.id, params.id, body, c.req.raw.headers);
+      const child = await parentService.updateChild(user.id, params.id, body);
       return c.json({ success: true, child });
     } catch (_error) {
       logger.error('Child update failed', {

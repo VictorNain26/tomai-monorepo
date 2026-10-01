@@ -7,14 +7,14 @@ import { requireAuth, requireParentRole } from '../auth/session.js';
 import { AppError } from './errors.js';
 import type { AuthenticatedUser } from '../../types/index.js';
 
-export type AppEnv = { Variables: RequestIdVariables };
+export interface AppEnv { Variables: RequestIdVariables }
 
-export type AuthEnv = {
+export interface AuthEnv {
   Variables: RequestIdVariables & {
     user: AuthenticatedUser;
     session: Record<string, unknown>;
   };
-};
+}
 
 type AuthResult = Awaited<ReturnType<typeof requireParentRole>>;
 

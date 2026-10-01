@@ -30,11 +30,11 @@ import { logger } from '../../platform/observability/logger.js';
  */
 const SCALEWAY_CONFIG = {
   // Régions disponibles: fr-par (Paris), nl-ams (Amsterdam), pl-waw (Warsaw)
-  region: env.SCALEWAY_REGION ?? 'fr-par',
+  region: env.SCALEWAY_REGION,
   bucket: env.SCALEWAY_BUCKET ?? '',
 
   // Endpoint S3 Scaleway
-  getEndpoint: () => `https://s3.${env.SCALEWAY_REGION ?? 'fr-par'}.scw.cloud`,
+  getEndpoint: () => `https://s3.${env.SCALEWAY_REGION}.scw.cloud`,
 
   // Presigned URL expiration (secondes)
   presignedUploadExpiry: 3600, // 1 heure pour upload

@@ -12,7 +12,7 @@ export function buildSystemPrompt(
   schoolLevel: EducationLevelType,
   userQuestion?: string
 ): string {
-  const levelText = LEVEL_NAMES[schoolLevel] ?? schoolLevel;
+  const levelText = LEVEL_NAMES[schoolLevel];
 
   let prompt = `Tu es Tom, tuteur pédagogique expert pour élèves français de ${levelText}.
 

@@ -18,8 +18,8 @@ async function checkDbReachable(): Promise<boolean> {
 const dbReachable = await checkDbReachable();
 
 const baseDatabaseUrl =
-  Bun.env['DATABASE_URL_EXTERNAL'] ??
-  Bun.env['DATABASE_URL'] ??
+  Bun.env.DATABASE_URL_EXTERNAL ??
+  Bun.env.DATABASE_URL ??
   'postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev';
 const testDbName = `tomai_migrate_lock_test_${Date.now()}`;
 
@@ -56,24 +56,24 @@ describe.skipIf(!dbReachable)('runMigrations — concurrent boot exclusivity', (
     // of racing on concurrent DDL (duplicate migration rows / conflicting CREATE).
     // resolveDatabaseUrl() prefers DATABASE_URL_EXTERNAL outside Docker, so
     // both must point at the fresh test database for this override to take.
-    const previousUrl = Bun.env['DATABASE_URL'];
-    const previousExternalUrl = Bun.env['DATABASE_URL_EXTERNAL'];
-    Bun.env['DATABASE_URL'] = testUrl.toString();
-    Bun.env['DATABASE_URL_EXTERNAL'] = testUrl.toString();
+    const previousUrl = Bun.env.DATABASE_URL;
+    const previousExternalUrl = Bun.env.DATABASE_URL_EXTERNAL;
+    Bun.env.DATABASE_URL = testUrl.toString();
+    Bun.env.DATABASE_URL_EXTERNAL = testUrl.toString();
 
     try {
       const { runMigrations } = await import('../platform/db/migrate');
       await Promise.all([runMigrations(), runMigrations()]);
     } finally {
       if (previousUrl === undefined) {
-        delete Bun.env['DATABASE_URL'];
+        delete Bun.env.DATABASE_URL;
       } else {
-        Bun.env['DATABASE_URL'] = previousUrl;
+        Bun.env.DATABASE_URL = previousUrl;
       }
       if (previousExternalUrl === undefined) {
-        delete Bun.env['DATABASE_URL_EXTERNAL'];
+        delete Bun.env.DATABASE_URL_EXTERNAL;
       } else {
-        Bun.env['DATABASE_URL_EXTERNAL'] = previousExternalUrl;
+        Bun.env.DATABASE_URL_EXTERNAL = previousExternalUrl;
       }
     }
 

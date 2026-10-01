@@ -1,9 +1,10 @@
 import { describe, it, expect } from "bun:test";
 import { optimizeConversationHistory } from "../modules/tutor/conversation-optimizer";
+import type { IAIMessage } from "../modules/tutor/conversation-optimizer.types";
 
-const mkMsgs = (n: number) =>
+const mkMsgs = (n: number): IAIMessage[] =>
   Array.from({ length: n }, (_, i) => ({
-    role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
+    role: i % 2 === 0 ? "user" : "assistant",
     content: `m${i}`,
     timestamp: new Date().toISOString(),
   }));
@@ -19,6 +20,6 @@ describe("optimizeConversationHistory", () => {
     const out = optimizeConversationHistory(msgs, { conversationSummary: "résumé" });
     expect(out.some((m) => m.role === "system")).toBe(false);
     expect(out.length).toBeLessThanOrEqual(10);
-    expect(out[out.length - 1].content).toBe("m13");
+    expect(out.at(-1)?.content).toBe("m13");
   });
 });

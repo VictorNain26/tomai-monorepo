@@ -182,7 +182,7 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'Premier échange', subject: 'mathematiques', strength: 'curiosite',
       }, baseContext);
-      const updates = ((updateProfileSpy.mock.calls[0] as unknown[]) || [])[1] as { strengths?: string[] };
+      const updates = (updateProfileSpy.mock.calls[0] as unknown[] | undefined)?.[1] as undefined | { strengths?: string[] };
       expect(updates?.strengths).toEqual(['curiosite']);
     });
 
@@ -191,7 +191,7 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'Préfère les diagrammes', subject: 'mathematiques', preferredStyle: 'visual',
       }, baseContext);
-      const updates = ((updateProfileSpy.mock.calls[0] as unknown[]) || [])[1] as { preferredStyle?: string };
+      const updates = (updateProfileSpy.mock.calls[0] as unknown[] | undefined)?.[1] as undefined | { preferredStyle?: string };
       expect(updates?.preferredStyle).toBe('visual');
     });
 
@@ -200,7 +200,7 @@ describe('executeUpdateProfile()', () => {
       await executeTool('update_student_profile', {
         observation: 'x'.repeat(500), subject: 'mathematiques',
       }, baseContext);
-      const updates = ((updateProfileSpy.mock.calls[0] as unknown[]) || [])[1] as { observation?: string };
+      const updates = (updateProfileSpy.mock.calls[0] as unknown[] | undefined)?.[1] as undefined | { observation?: string };
       expect(updates?.observation?.length).toBeLessThanOrEqual(250);
     });
   });

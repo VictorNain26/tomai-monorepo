@@ -235,5 +235,5 @@ export async function generateCards(
 export function isGenerationError(
   result: CardGenerationResult | CardGenerationError
 ): result is CardGenerationError {
-  return 'success' in result && result.success === false;
+  return 'success' in result && !result.success;
 }

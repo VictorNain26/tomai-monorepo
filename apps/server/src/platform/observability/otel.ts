@@ -39,7 +39,7 @@ let started = false;
 function buildProcessors(): SpanProcessor[] {
   const processors: SpanProcessor[] = [];
   // Pre-boot context: env singleton not yet initialized. Reads Bun.env directly.
-  const endpoint = process.env['OTEL_EXPORTER_OTLP_ENDPOINT'];
+  const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
 
   if (endpoint) {
     // Production / staging — push to OTLP HTTP endpoint (Langfuse self-hosted,
@@ -49,7 +49,7 @@ function buildProcessors(): SpanProcessor[] {
 
   // Always emit to console in dev so we get traces without infra setup. The
   // simple processor is fine here — volume is low and visibility immediate.
-  if (process.env['NODE_ENV'] !== 'production' && !endpoint) {
+  if (process.env.NODE_ENV !== 'production' && !endpoint) {
     processors.push(new SimpleSpanProcessor(new ConsoleSpanExporter()));
   }
 
@@ -62,7 +62,7 @@ function buildProcessors(): SpanProcessor[] {
  */
 export function setupOtel(): void {
   if (started) return;
-  if (process.env['OTEL_DISABLED'] === '1') {
+  if (process.env.OTEL_DISABLED === '1') {
     started = true;
     return;
   }
@@ -75,10 +75,10 @@ export function setupOtel(): void {
 
   sdk = new NodeSDK({
     resource: resourceFromAttributes({
-      [ATTR_SERVICE_NAME]: process.env['OTEL_SERVICE_NAME'] ?? 'tomai-server',
-      [ATTR_SERVICE_VERSION]: process.env['APP_VERSION'] ?? 'dev',
+      [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME ?? 'tomai-server',
+      [ATTR_SERVICE_VERSION]: process.env.APP_VERSION ?? 'dev',
       [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]:
-        process.env['OTEL_DEPLOYMENT_ENVIRONMENT'] ?? process.env['NODE_ENV'] ?? 'development',
+        process.env.OTEL_DEPLOYMENT_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development',
     }),
     spanProcessors: processors,
   });

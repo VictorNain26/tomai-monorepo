@@ -22,7 +22,7 @@ class SubjectProfileService {
       await studentSubjectProfileRepository.upsertAggregate({
         userId: input.userId,
         subject: input.subject,
-        addedConcepts: input.conceptsCovered ?? [],
+        addedConcepts: input.conceptsCovered,
         addedDifficulties: [],
         outcome: input.outcome,
         ttlDays: SUBJECT_PROFILE_TTL_DAYS,

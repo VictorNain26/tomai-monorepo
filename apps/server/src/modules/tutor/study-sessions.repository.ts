@@ -109,7 +109,7 @@ class StudySessionsRepository {
     return session;
   }
 
-  async findByUserIdWithStats(userId: string): Promise<Array<StudySession & { messageCount: number }>> {
+  async findByUserIdWithStats(userId: string): Promise<(StudySession & { messageCount: number })[]> {
     return await db
       .select({
         ...getTableColumns(studySessions),
@@ -130,12 +130,12 @@ class StudySessionsRepository {
   async findByUserIdWithLastMessage(
     userId: string,
     options: { limit?: number; offset?: number } = {}
-  ): Promise<Array<StudySession & {
+  ): Promise<(StudySession & {
     messageCount: number;
     lastMessageContent: string | null;
     lastMessageRole: string | null;
     lastMessageAt: Date | null;
-  }>> {
+  })[]> {
     const { limit = 20, offset = 0 } = options;
 
     return await db
@@ -220,10 +220,10 @@ class StudySessionsRepository {
       .where(eq(studySessions.userId, userId))
       .groupBy(studySessions.subject);
 
-    const subjectBreakdown = perSubject.reduce((acc, row) => {
+    const subjectBreakdown = perSubject.reduce<Record<string, number>>((acc, row) => {
       acc[row.subject] = row.count;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
     return {
       totalSessions: aggregate?.totalSessions ?? 0,

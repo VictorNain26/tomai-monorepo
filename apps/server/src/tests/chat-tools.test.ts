@@ -110,7 +110,7 @@ describe('buildChatTools', () => {
       const emitDeckCreated = mock(() => {});
       const tools = buildChatTools({ ...baseContext, emitDeckCreated });
       const tool = tools.generate_flashcards;
-      if (!tool.execute) throw new Error('generate_flashcards must have an execute function');
+      if (!tool?.execute) throw new Error('generate_flashcards must have an execute function');
 
       await tool.execute(
         { topic: 'Fractions', subject: 'mathematiques' },
@@ -131,7 +131,7 @@ describe('buildChatTools', () => {
       const emitDeckCreated = mock(() => {});
       const tools = buildChatTools({ ...baseContext, emitDeckCreated });
       const tool = tools.generate_flashcards;
-      if (!tool.execute) throw new Error('generate_flashcards must have an execute function');
+      if (!tool?.execute) throw new Error('generate_flashcards must have an execute function');
 
       await tool.execute(
         { topic: 'Fractions', subject: 'mathematiques' },

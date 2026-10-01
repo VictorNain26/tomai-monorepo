@@ -168,7 +168,7 @@ export function getRecommendedCardTypes(subject: string): CardType[] {
 }
 
 export function getEducationCycle(level: EducationLevelType): EducationCycle {
-  return LEVEL_TO_CYCLE[level] ?? 'cycle4';
+  return LEVEL_TO_CYCLE[level];
 }
 
 export function getCycleAdaptationInstructions(cycle: EducationCycle): string {

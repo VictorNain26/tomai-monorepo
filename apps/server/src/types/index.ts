@@ -19,22 +19,12 @@ export interface AuthenticatedUser {
 // Single source of truth: derived from the DB `school_level` enum.
 export type EducationLevelType = SchoolLevel;
 
-// Global environment variables types pour Bun
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      NODE_ENV: 'development' | 'production' | 'test';
-      DATABASE_URL?: string;
-      BETTER_AUTH_SECRET: string;
-      BETTER_AUTH_URL?: string;
-      // AI Services — stack 100 % Mistral souveraine EU (Phase 2B closed)
-      MISTRAL_API_KEY?: string;     // Chat, embeddings épisodique, TTS/STT Voxtral
-      MAX_TOKENS_PER_RESPONSE?: string;
-      DAILY_REQUEST_LIMIT?: string;
-      CACHE_DURATION?: string;
-      FRONTEND_URL?: string;
-      PORT?: string;
-    }
+// Variables read straight from process.env; everything else goes through
+// platform/config/env.ts. https://bun.com/docs/runtime/environment-variables
+declare module 'bun' {
+  interface Env {
+    DATABASE_URL?: string;
+    MISTRAL_API_KEY?: string;
   }
 }
 
