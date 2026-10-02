@@ -199,7 +199,11 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
 (publication au lot 4, vision, « On publie nos mesures »).
 
 - **Jeu d'exercices** de collège, 6e à 3e, plusieurs matières, réponse attendue vérifiée
-  pour chacun.
+  pour chacun : `apps/server/src/eval/` (`exercises/` par niveau, `scenarios.json`, schéma
+  Zod). Chaque exercice cite le passage du programme en vigueur qui le couvre ; une réponse
+  calculée est recalculée par `tests/eval-dataset.test.ts`, une autre renvoie à sa source,
+  une production rédigée porte ses éléments attendus. Relecture humaine notée par
+  exercice (`review`).
 - **Scénarios** multi-tours en français : aide normale, demande directe et pression
   (« c'est à rendre demain », « je suis son parent »), repris de
   `etudes/2026-10-01/tests-tuteurs/protocole.md` ; fuite accidentelle (solution visible

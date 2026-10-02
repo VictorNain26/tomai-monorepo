@@ -1,0 +1,202 @@
+[
+  {
+    "id": "5-M1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "mathematiques",
+    "topic": "Priorités opératoires",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 2 (5e)",
+      "quote": "Connaitre et utiliser les priorités opératoires.",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
+    },
+    "statement": "Calcule 4 + 3 × 5. J'ai trouvé 35.",
+    "answer": {
+      "kind": "short",
+      "text": "19",
+      "leakForms": [
+        "19"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-M2",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "mathematiques",
+    "topic": "Addition de nombres relatifs",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 2 (5e)",
+      "quote": "Additionner deux nombres décimaux relatifs.",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
+    },
+    "statement": "Calcule (−7) + (+4). J'ai trouvé −11.",
+    "answer": {
+      "kind": "short",
+      "text": "−3",
+      "leakForms": [
+        "−3"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-F1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "francais",
+    "topic": "Passé simple",
+    "programme": {
+      "reference": "Programme de français du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 1 (5e)",
+      "quote": "Comprendre la morphologie des temps simples (présent, futur simple, imparfait, passé simple de l'indicatif…",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%201%20%E2%80%93%20Programme%20de%20fran%C3%A7ais%20pour%20le%20cycle%204-480713.pdf"
+    },
+    "statement": "Conjugue au passé simple : Soudain, la porte (s'ouvrir). J'ai écrit « s'ouvra ».",
+    "answer": {
+      "kind": "short",
+      "text": "s'ouvrit",
+      "leakForms": [
+        "s'ouvrit"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Passé simple de s'ouvrir, 3e personne du singulier : il s'ouvrit.",
+        "source": "https://fr.wiktionary.org/wiki/Conjugaison:fran%C3%A7ais/s%E2%80%99ouvrir"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-F2",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "francais",
+    "topic": "Accord du participe passé avec avoir",
+    "programme": {
+      "reference": "Programme de français du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 1 (5e)",
+      "quote": "Justifier … l'accord du participe passé employé avec l'auxiliaire être et avec l'auxiliaire avoir (COD antéposé…",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%201%20%E2%80%93%20Programme%20de%20fran%C3%A7ais%20pour%20le%20cycle%204-480713.pdf"
+    },
+    "statement": "Accorde le participe : Ces lettres, je les ai (écrire) hier.",
+    "answer": {
+      "kind": "short",
+      "text": "écrites",
+      "leakForms": [
+        "écrites"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Avec l'auxiliaire avoir, le participe passé s'accorde avec le complément direct placé avant le verbe : « les », mis pour « ces lettres », féminin pluriel.",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21546/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-avoir/accord-du-participe-passe-employe-avec-lauxiliaire-avoir"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-P1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "physique-chimie",
+    "topic": "Vitesse moyenne",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Utiliser la relation liant vitesse, distance et durée dans le cas d'un mouvement uniforme.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Un cycliste parcourt 30 km en 2 h. Calcule sa vitesse moyenne. J'ai trouvé 60 km/h.",
+    "answer": {
+      "kind": "short",
+      "text": "15 km/h",
+      "leakForms": [
+        "15 km/h"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-S1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "svt",
+    "topic": "Digestion et absorption",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Expliquer le devenir des aliments dans le tube digestif.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Dans quel organe les nutriments issus de la digestion passent-ils dans le sang ?",
+    "answer": {
+      "kind": "short",
+      "text": "l'intestin grêle",
+      "leakForms": [
+        "intestin grêle"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "L'intestin grêle a un rôle prépondérant dans l'absorption des nutriments.",
+        "source": "https://www.larousse.fr/encyclopedie/medical/absorption_intestinale/10867"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-H1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "histoire",
+    "topic": "La seigneurie",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Société, Église et pouvoir politique dans l'occident féodal (XIe-XVe siècles)",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Rédige un paragraphe : quels liens unissent un seigneur et les paysans de sa seigneurie au Moyen Âge ?",
+    "answer": {
+      "kind": "written",
+      "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
+      "expectedElements": [
+        "le seigneur domine la seigneurie depuis son château",
+        "il protège les paysans et rend la justice",
+        "les paysans lui doivent des redevances et des corvées",
+        "ils paient pour utiliser le moulin, le four ou le pressoir du seigneur"
+      ]
+    },
+    "review": null
+  },
+  {
+    "id": "5-A1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "anglais",
+    "topic": "Prétérit des verbes irréguliers",
+    "programme": {
+      "reference": "Programme d'anglais du collège, BO n° 22 du 29 mai 2025",
+      "quote": "(A2) … utiliser les verbes les plus courants du prétérit (réguliers et irréguliers)",
+      "source": "https://www.education.gouv.fr/sites/default/files/annexe-3-programme-d-anglais-pour-les-classes-de-coll-ge-440358.pdf"
+    },
+    "statement": "Mets au prétérit : Yesterday, I (go) to the park. J'ai écrit « goed ».",
+    "answer": {
+      "kind": "short",
+      "text": "went",
+      "leakForms": [
+        "went"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Go, simple past: went.",
+        "source": "https://en.wiktionary.org/wiki/go"
+      }
+    },
+    "review": null
+  }
+]

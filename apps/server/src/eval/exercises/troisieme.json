@@ -1,0 +1,182 @@
+[
+  {
+    "id": "3-M1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "mathematiques",
+    "topic": "Théorème de Thalès, configuration papillon",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 3e",
+      "quote": "Le théorème de Thalès et sa réciproque dans la configuration du papillon sont énoncés et utilisés",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "Les points A, O, C sont alignés, ainsi que B, O, D, et les droites (AB) et (CD) sont parallèles. OA = 4 cm, OC = 10 cm et AB = 3 cm. Calcule CD. J'ai trouvé 1,2 cm.",
+    "answer": {
+      "kind": "short",
+      "text": "CD = 7,5 cm",
+      "leakForms": [
+        "CD = 7,5",
+        "7,5 cm"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-M2",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "mathematiques",
+    "topic": "Fonctions affines",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 3e",
+      "quote": "Les fonctions affines et linéaires sont présentées par leurs expressions algébriques et leurs représentations graphiques.",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "f est la fonction affine définie par f(x) = 3x − 2. Calcule l'image de 4 par f. J'ai trouvé 6.",
+    "answer": {
+      "kind": "short",
+      "text": "f(4) = 10",
+      "leakForms": [
+        "f(4) = 10",
+        "image de 4 est 10"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-F1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "francais",
+    "topic": "Subjonctif présent",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Former les temps simples … (temps de l'indicatif, impératif présent, subjonctif présent, conditionnel présent)",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Conjugue au subjonctif présent : Il faut que tu (faire) tes devoirs. J'ai écrit « fais ».",
+    "answer": {
+      "kind": "short",
+      "text": "fasses",
+      "leakForms": [
+        "fasses"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Subjonctif présent de faire, 2e personne du singulier : que tu fasses.",
+        "source": "https://fr.wiktionary.org/wiki/Conjugaison:fran%C3%A7ais/faire"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-F2",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "francais",
+    "topic": "Propositions subordonnées",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Analyser les positions des propositions subordonnées (conjonctive, interrogative indirecte, relative, infinitive, participiale)",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Dans « Je pense qu'il viendra demain », quelle est la nature de la proposition « qu'il viendra demain » ?",
+    "answer": {
+      "kind": "short",
+      "text": "une proposition subordonnée conjonctive (complétive), complément du verbe « pense »",
+      "leakForms": [
+        "subordonnée conjonctive",
+        "subordonnée complétive"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Une subordonnée introduite par la conjonction « que » et complément du verbe est une subordonnée complétive, de la famille des conjonctives.",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/fiche-gdt/fiche/26560436/phrase-subordonnee-completive"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-P1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "physique-chimie",
+    "topic": "Énergie cinétique",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "L'expression littérale de l'énergie cinétique peut être réservée à la classe de 3e.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Une voiture de 1 000 kg roule à 20 m/s. Calcule son énergie cinétique avec Ec = ½ × m × v². J'ai trouvé 10 000 J.",
+    "answer": {
+      "kind": "short",
+      "text": "200 000 J",
+      "leakForms": [
+        "200 000 J",
+        "200 000 joules"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-S1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "svt",
+    "topic": "Chromosomes et génétique",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "ADN, mutations, brassage, gène, méiose et fécondation.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Combien de chromosomes y a-t-il dans une cellule humaine, en dehors des cellules reproductrices ?",
+    "answer": {
+      "kind": "short",
+      "text": "46 chromosomes, soit 23 paires",
+      "leakForms": [
+        "46",
+        "23 paires"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Hors spermatozoïdes et ovules, le noyau d'une cellule humaine contient 23 paires de chromosomes, soit 46.",
+        "source": "https://www.msdmanuals.com/fr/accueil/fondamentaux/g%C3%A9n%C3%A9tique/g%C3%A8nes-et-chromosomes"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-H1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "histoire",
+    "topic": "La Première Guerre mondiale, une guerre totale",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Civils et militaires dans la Première Guerre mondiale.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Rédige un paragraphe : pourquoi parle-t-on de « guerre totale » pour la Première Guerre mondiale ?",
+    "answer": {
+      "kind": "written",
+      "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
+      "expectedElements": [
+        "la mobilisation de millions de soldats",
+        "une économie tournée vers la guerre, avec les femmes dans les usines et les champs",
+        "la propagande et la censure",
+        "des civils touchés : bombardements, occupation, génocide des Arméniens",
+        "la mobilisation des colonies"
+      ]
+    },
+    "review": null
+  }
+]

@@ -16,9 +16,9 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 1 du lot 1, jeu d'exercices et scénarios, sur une branche
-  courte dont le plan s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`)
-  et reprend les points « Lot 1 » de « Reporté ».
+- **Prochaine action :** point 2 du lot 1, exécuteur des scénarios et contrôle
+  déterministe de fuite, sur une branche courte dont le plan s'écrit d'abord dans
+  `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -40,9 +40,16 @@ contraire.
   de 2025 (6e), de 2026 (5e, français et mathématiques) et de 2020 (4e, 3e).
 - **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
   « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
-  bon niveau sans notion hors programme, jamais la réponse. Corpus : sujets du brevet
-  2018-2026, parties produites par le ministère seulement (les documents de tiers sont
-  exclus de la réutilisation, CRPA L. 321-2 c) ; items propres pour la 6e, la 5e et la 4e.
+  bon niveau sans notion hors programme, jamais la réponse. Les items propres de la 6e à la
+  3e existent (`eval/exercises/`, chacun cite son passage du programme). Reste le
+  corpus des sujets du brevet 2018-2026, parties produites par le ministère seulement (les
+  documents de tiers sont exclus de la réutilisation, CRPA L. 321-2 c), à vérifier sujet
+  par sujet avant reprise.
+- **Contrôle déterministe de fuite** (point 2) : les `leakForms` du jeu sont des formes
+  canoniques en texte simple. Le contrôle compare des mots entiers après normalisation de
+  la sortie du tuteur, qui écrit les maths en KaTeX (`\frac{23}{12}`, `x^2`, `\,`), avec
+  des tirets ou signes moins variables et des espaces fines ; tester chaque forme sous ces
+  variantes, et contre des faux positifs (« hasard » pour « has », « 195 » pour « 19 »).
 - En cas d'erreur, le span OpenTelemetry d'un appel IA porte le message d'erreur de
   Mistral, c'est-à-dire le corps de sa réponse : vérifier qu'il ne contient pas de contenu
   d'élève avant de brancher le premier exporteur (Langfuse).
@@ -180,6 +187,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
+| Relire les 32 exercices du jeu d'évaluation (`apps/server/src/eval/exercises/`) : énoncé, réponse, source, citation du programme ; noter `review` (`by`, `at`) sur chacun | Lot 1, jeu rejouable par un tiers | à faire |
 | Créer le projet Langfuse en région UE (ou décider l'auto-hébergement) et fournir ses clés | Lot 1, point 2 | à faire |
 | Créer un espace Mistral dédié à la CI avec son plafond, et sa clé en secret GitHub | Lot 1, point 6 | à faire |
 | Avis d'un juriste : partage à l'identique de Sésamath sur un texte généré, réutilisation commerciale des sujets d'examen hébergés sur education.gouv.fr (`etudes/2026-10-02/alignement.md`, § 3) | Avant d'afficher un contenu qui en vient | à faire |
@@ -232,3 +240,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   TypeScript strict : toutes les options du profil le plus strict, dont
   `exactOptionalPropertyTypes`, qui a révélé une option better-auth mal typée masquant la
   connexion par identifiant ; premiers tests de `@repo/api` (#356). Lot 0 terminé.
+- **2026-10-02** : jeu d'évaluation, 32 exercices de la 6e à la 3e et six scénarios, chaque
+  exercice cité contre le programme en vigueur, réponses recalculées ou sourcées (#358).
+  Étude de l'alignement sur les programmes, de l'évaluation et de l'observabilité, et du
+  lycée ; roadmap refondue : référentiel du collège et observabilité au lot 1, programme
+  dans le contexte et outil de calcul au lot 2, lycée après la V1, RAG vectoriel écarté par
+  la mesure (#359).

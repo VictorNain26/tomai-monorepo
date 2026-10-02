@@ -11,13 +11,7 @@ import { tool, type ToolSet, type InferUITools } from 'ai';
 import { executeTool, isDeckCreatedResult } from './tool-executor.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { DeckCreatedData } from './chat-ui-message.js';
-
-/** Slugs de matières acceptés par les outils. Source unique. */
-export const SUBJECT_SLUGS = [
-  'mathematiques', 'francais', 'anglais', 'espagnol', 'allemand',
-  'histoire', 'geographie', 'physique-chimie', 'svt', 'technologie',
-  'ses', 'philosophie', 'nsi',
-] as const;
+import { SUBJECT_SLUGS } from '../../lib/subjects.js';
 
 export interface ChatToolContext {
   userId: string;

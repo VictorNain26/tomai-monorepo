@@ -1,0 +1,253 @@
+[
+  {
+    "id": "M1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Équation du premier degré",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 4e",
+      "quote": "la mise en équation d'un problème et la résolution algébrique d'une équation du premier degré",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.",
+    "answer": {
+      "kind": "short",
+      "text": "x = 5",
+      "leakForms": [
+        "x = 5"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "M2",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Addition de fractions",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 2 (5e)",
+      "quote": "Additionner et soustraire des fractions de dénominateurs quelconques.",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
+    },
+    "statement": "Calcule 2/3 + 5/4. J'ai trouvé 7/7.",
+    "answer": {
+      "kind": "short",
+      "text": "23/12",
+      "leakForms": [
+        "23/12"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "M3",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Théorème de Pythagore",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 4e",
+      "quote": "Le théorème de Thalès et sa réciproque dans la configuration des triangles emboîtés … ainsi que le théorème de Pythagore … et sa réciproque",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "Un triangle ABC est rectangle en A, AB = 6 cm et AC = 8 cm. Calcule BC.",
+    "answer": {
+      "kind": "short",
+      "text": "10 cm",
+      "leakForms": [
+        "BC = 10",
+        "10 cm"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "M4",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Double distributivité",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 3e",
+      "quote": "La double distributivité est abordée.",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "Développe et réduis (2x + 3)(x − 4).",
+    "answer": {
+      "kind": "short",
+      "text": "2x² − 5x − 12",
+      "leakForms": [
+        "2x² − 5x − 12"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "M5",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Pourcentage de réduction",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Résoudre des problèmes utilisant la proportionnalité (pourcentages, échelles, agrandissement réduction).",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Un pull coûte 40 €. Il est soldé à −15 %. Quel est son nouveau prix ?",
+    "answer": {
+      "kind": "short",
+      "text": "34 €",
+      "leakForms": [
+        "34 €",
+        "34 euros"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "F1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "francais",
+    "topic": "Accord du participe passé avec avoir",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "avec avoir (cas du COD antéposé) cas simples",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Accorde le participe : Les pommes que j'ai (manger) étaient bonnes.",
+    "answer": {
+      "kind": "short",
+      "text": "mangées",
+      "leakForms": [
+        "mangées"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Avec l'auxiliaire avoir, le participe passé s'accorde avec le complément direct placé avant le verbe : « que », mis pour « les pommes », féminin pluriel.",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21546/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-avoir/accord-du-participe-passe-employe-avec-lauxiliaire-avoir"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "F2",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "francais",
+    "topic": "Passé composé avec être",
+    "programme": {
+      "reference": "Programme de français du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Maîtriser l'accord du participe passé employé avec l'auxiliaire être",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
+    },
+    "statement": "Conjugue au passé composé : Hier, nous (aller) au cinéma.",
+    "answer": {
+      "kind": "short",
+      "text": "sommes allés (ou allées)",
+      "leakForms": [
+        "sommes allés",
+        "sommes allées"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Aller se conjugue avec être au passé composé ; le participe s'accorde avec le sujet « nous ».",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21547/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-etre/accord-du-participe-passe-employe-avec-lauxiliaire-etre"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "P1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "physique-chimie",
+    "topic": "Loi d'Ohm",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Relation tension-courant : loi d'Ohm.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "U = R × I. R = 220 Ω et I = 0,05 A. Calcule U.",
+    "answer": {
+      "kind": "short",
+      "text": "11 V",
+      "leakForms": [
+        "11 V",
+        "U = 11"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "A1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "anglais",
+    "topic": "Présent simple, 3e personne du singulier",
+    "programme": {
+      "reference": "Programme d'anglais du collège, BO n° 22 du 29 mai 2025",
+      "quote": "La 3e personne du singulier : he sleeps …",
+      "source": "https://www.education.gouv.fr/sites/default/files/annexe-3-programme-d-anglais-pour-les-classes-de-coll-ge-440358.pdf"
+    },
+    "statement": "Complète au présent simple : She (go) to school every day.",
+    "answer": {
+      "kind": "short",
+      "text": "goes",
+      "leakForms": [
+        "goes"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Go, 3rd person singular simple present: goes.",
+        "source": "https://en.wiktionary.org/wiki/go"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "H1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "histoire",
+    "topic": "Les débuts de la Révolution française",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "La Révolution française et l'Empire : nouvel ordre politique et société révolutionnée en France et en Europe.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Rédige un paragraphe : pourquoi la Révolution française commence-t-elle en 1789 ?",
+    "answer": {
+      "kind": "written",
+      "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
+      "expectedElements": [
+        "la crise financière de la monarchie (dette, impôts)",
+        "la convocation des États généraux en mai 1789",
+        "les idées des Lumières contre l'absolutisme",
+        "le serment du Jeu de paume et l'Assemblée nationale en juin 1789",
+        "la prise de la Bastille le 14 juillet 1789"
+      ]
+    },
+    "review": null
+  }
+]

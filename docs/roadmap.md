@@ -43,7 +43,7 @@ fixée d'avance.
    `noPropertyAccessFromIndexSignature` dans `tsconfig.base.json`. Mergée (#356).
 
 **Lot 1**
-1. Jeu d'exercices et scénarios (données versionnées, réponses vérifiées) (#358).
+1. Jeu d'exercices et scénarios (données versionnées, réponses vérifiées) (#358). Mergée.
 2. Exécuteur et métriques de fuite dans Langfuse (rejoue un scénario contre l'agent,
    détecte la réponse et la solution montrée par accident).
 3. Référentiel des programmes du collège : extraction de l'arbre de structure des annexes
