@@ -45,7 +45,8 @@
     "db:check": "bun --bun drizzle-kit check",
     "db:pull": "bun --bun drizzle-kit pull --config=drizzle.config.ts",
     "db:health": "bun -e \"import('./src/platform/db/connection.js').then(m => m.healthCheck()).then(console.log)\"",
-    "seed": "bun run src/scripts/seed-dev.ts"
+    "seed": "bun run src/scripts/seed-dev.ts",
+    "eval": "NODE_ENV=test QUOTA_ENFORCEMENT_ENABLED=false LOG_LEVEL=warn bun src/eval/run.ts"
   },
   "dependencies": {
     "@ai-sdk/mistral": "^4.0.48",
@@ -55,6 +56,8 @@
     "@date-fns/tz": "^1.5.0",
     "@hono/bun": "^1.0.0",
     "@hono/zod-validator": "^0.9.1",
+    "@langfuse/client": "^5.11.1",
+    "@langfuse/otel": "^5.11.1",
     "@mistralai/mistralai": "^2.7.0",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",

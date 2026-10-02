@@ -59,16 +59,16 @@ function buildProcessors(): SpanProcessor[] {
 
 /**
  * Initialise the global tracer provider. Idempotent — safe to call from
- * multiple entry points (boot path, worker, test setup).
+ * multiple entry points (boot path, worker, test setup). `bun run eval` passes
+ * its own processors to send its spans to Langfuse.
  */
-export function setupOtel(): void {
+export function setupOtel(processors: SpanProcessor[] = buildProcessors()): void {
   if (started) return;
   if (process.env.OTEL_DISABLED === '1') {
     started = true;
     return;
   }
 
-  const processors = buildProcessors();
   if (processors.length === 0) {
     started = true;
     return;
