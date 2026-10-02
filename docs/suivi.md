@@ -41,10 +41,12 @@ contraire.
 - **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
   « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
   bon niveau sans notion hors programme, jamais la réponse. Les items propres de la 6e à la
-  3e existent (`eval/exercises/`, chacun cite son passage du programme). Reste le
-  corpus des sujets du brevet 2018-2026, parties produites par le ministère seulement (les
-  documents de tiers sont exclus de la réutilisation, CRPA L. 321-2 c), à vérifier sujet
-  par sujet avant reprise.
+  3e existent (`eval/exercises/`, chacun cite son passage du programme). Reste à
+  ajouter des exercices inspirés des sujets du brevet 2018-2026, écrits pour le jeu.
+- **Règle de réutilisation** (Victor, 2026-10-02) : Sésamath, sujets d'examen, ressources
+  Éduscol et toute autre source se consultent pour s'en inspirer, jamais copiées ; aucun
+  texte de tiers n'entre dans le jeu, le référentiel ou le prompt, en dehors des citations
+  des programmes officiels.
 - **Contrôle déterministe de fuite** (point 2) : les `leakForms` du jeu sont des formes
   canoniques en texte simple. Le contrôle compare des mots entiers après normalisation de
   la sortie du tuteur, qui écrit les maths en KaTeX (`\frac{23}{12}`, `x^2`, `\,`), avec
@@ -187,10 +189,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
-| Relire les 32 exercices du jeu d'évaluation (`apps/server/src/eval/exercises/`) : énoncé, réponse, source, citation du programme ; noter `review` (`by`, `at`) sur chacun | Lot 1, jeu rejouable par un tiers | à faire |
+| Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |
 | Créer le projet Langfuse en région UE (ou décider l'auto-hébergement) et fournir ses clés | Lot 1, point 2 | à faire |
 | Créer un espace Mistral dédié à la CI avec son plafond, et sa clé en secret GitHub | Lot 1, point 6 | à faire |
-| Avis d'un juriste : partage à l'identique de Sésamath sur un texte généré, réutilisation commerciale des sujets d'examen hébergés sur education.gouv.fr (`etudes/2026-10-02/alignement.md`, § 3) | Avant d'afficher un contenu qui en vient | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
 
 ## Historique

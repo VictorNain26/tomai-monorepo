@@ -22,7 +22,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "3-M2",
@@ -47,7 +50,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "3-F1",
@@ -73,7 +79,10 @@
         "source": "https://fr.wiktionary.org/wiki/Conjugaison:fran%C3%A7ais/faire"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "3-F2",
@@ -100,7 +109,10 @@
         "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/fiche-gdt/fiche/26560436/phrase-subordonnee-completive"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "3-P1",
@@ -125,7 +137,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "3-S1",
@@ -152,7 +167,10 @@
         "source": "https://www.msdmanuals.com/fr/accueil/fondamentaux/g%C3%A9n%C3%A9tique/g%C3%A8nes-et-chromosomes"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "3-H1",
@@ -177,6 +195,9 @@
         "la mobilisation des colonies"
       ]
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   }
 ]

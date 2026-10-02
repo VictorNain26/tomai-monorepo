@@ -23,7 +23,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "6-M2",
@@ -48,7 +51,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "6-F1",
@@ -74,7 +80,10 @@
         "source": "https://bescherelle.ca/donneur-accord/"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "6-F2",
@@ -100,7 +109,10 @@
         "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21547/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-etre/accord-du-participe-passe-employe-avec-lauxiliaire-etre"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "6-S1",
@@ -126,7 +138,10 @@
         "source": "https://www.larousse.fr/encyclopedie/divers/fusion/187677"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "6-H1",
@@ -151,7 +166,10 @@
         "un empereur qui gouverne l'empire"
       ]
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "6-A1",
@@ -177,6 +195,9 @@
         "source": "https://en.wiktionary.org/wiki/have"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   }
 ]

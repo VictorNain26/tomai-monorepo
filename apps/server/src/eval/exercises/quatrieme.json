@@ -21,7 +21,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "M2",
@@ -45,7 +48,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "M3",
@@ -70,7 +76,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "M4",
@@ -94,7 +103,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "M5",
@@ -119,7 +131,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "F1",
@@ -145,7 +160,10 @@
         "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21546/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-avoir/accord-du-participe-passe-employe-avec-lauxiliaire-avoir"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "F2",
@@ -172,7 +190,10 @@
         "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21547/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-etre/accord-du-participe-passe-employe-avec-lauxiliaire-etre"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "P1",
@@ -197,7 +218,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "A1",
@@ -223,7 +247,10 @@
         "source": "https://en.wiktionary.org/wiki/go"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "H1",
@@ -248,6 +275,9 @@
         "la prise de la Bastille le 14 juillet 1789"
       ]
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   }
 ]
