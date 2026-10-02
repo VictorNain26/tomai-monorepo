@@ -138,10 +138,13 @@ contraire.
 
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
-- **Bun 1.4.2** a planté deux fois sur onze passages de la suite unitaire, sous charge
-  (« Segmentation fault at address 0x20 », « bug in Bun, not your code ») ; les relances sont
-  propres. Si le plantage atteint la CI ou se reproduit hors charge, ouvrir un ticket chez
-  oven-sh/bun avec le lien `bun.report` du crash et monter de version.
+- **Bun 1.4.2** plante par intermittence sous `bun test --isolate` (« Segmentation fault »,
+  « bug in Bun, not your code ») : deux fois sur onze passages en local, puis en CI le
+  2026-10-02 (run 37003790891 de #360, trace dans `JSFinalizationRegistry::takeDeadHoldingsValue`).
+  Bug déjà suivi chez Bun : oven-sh/bun#44161, ouvert, même trace, aucun correctif ; la
+  1.4.2 est la dernière version. En attendant : relancer le job en échec après avoir vérifié
+  dans le log que toutes les assertions passent et que la sortie est ce plantage. Monter
+  de version dès qu'une release le corrige.
 - **Sentry v11** : `apps/landing/next.config.*` importe `withSentryConfig` depuis
   `@sentry/nextjs`, déprécié (avertissement de `next typegen`) ; passer à
   `@sentry/nextjs/config` avant de monter en v11.
