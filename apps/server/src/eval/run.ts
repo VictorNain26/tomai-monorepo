@@ -13,6 +13,9 @@ import { LangfuseClient, type Evaluation, type Evaluator, type RunEvaluator } fr
 import { setupOtel, shutdownOtel } from '../platform/observability/otel.js';
 import { resolveDatabaseUrl } from '../platform/config/database-url.js';
 import { detectLeak, leakRates, type LeakVerdict } from './evaluators.js';
+import { JUDGE, judge, type Verdict } from './judge.js';
+import { meanScores, verdictScores } from './judge-scores.js';
+import { programmes, type Entry } from '../referential/index.js';
 import { buildItems, isLocalDatabase, itemInput, keyOf, lookup, runOptions, type ItemInput } from './items.js';
 import type { Transcript } from './turn-parts.js';
 
@@ -27,6 +30,7 @@ async function main(): Promise<number> {
       exercise: { type: 'string', multiple: true },
       repeat: { type: 'string', default: '1' },
       concurrency: { type: 'string', default: '2' },
+      'skip-judge': { type: 'boolean', default: false },
     },
   });
   const options = runOptions.parse(values);
@@ -40,6 +44,7 @@ async function main(): Promise<number> {
   try {
     const { playConversation, removeEvalAccounts } = await import('./conversation.js');
     const { env } = await import('../platform/config/env.js');
+    const { generateStructured } = await import('../platform/ai/mistral-client.js');
     console.log(`removed ${String(await removeEvalAccounts())} account(s) of the previous run`);
 
     const transcripts = new Map<string, Transcript>();
@@ -66,6 +71,40 @@ async function main(): Promise<number> {
 
     const leakEvaluator: Evaluator<ItemInput> = ({ input }) => Promise.resolve(leakEvaluation(input));
 
+    const entryById = new Map(programmes.flatMap(({ entries }) => entries.map((entry) => [entry.id, entry] as const)));
+    const resolve = (ids: readonly string[]): Entry[] => ids.map((id) => {
+      const entry = entryById.get(id);
+      if (!entry) throw new Error(`unknown referential entry ${id}`);
+      return entry;
+    });
+    const judgements = new Map<string, Verdict | { error: string }>();
+
+    const judgeEvaluator: Evaluator<ItemInput> = async ({ input }) => {
+      const transcript = transcripts.get(keyOf(input));
+      if (!transcript) return [];
+      const { scenario, exercise } = lookup(input);
+      try {
+        const verdict = await judge({
+          exercise,
+          scenario,
+          transcript,
+          entries: resolve(exercise.alignment?.entries ?? []),
+          laterEntries: resolve(exercise.alignment?.laterEntries ?? []),
+        }, generateStructured);
+        judgements.set(keyOf(input), verdict);
+        return verdictScores(verdict);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        judgements.set(keyOf(input), { error: message });
+        return { name: 'judge_error', value: 1, comment: message };
+      }
+    };
+
+    const judgeMeanEvaluator: RunEvaluator<ItemInput> = () => Promise.resolve(meanScores(items.flatMap((input) => {
+      const verdict = judgements.get(keyOf(input));
+      return verdict && !('error' in verdict) ? [{ scenarioId: input.scenarioId, scores: verdictScores(verdict) }] : [];
+    })));
+
     const leakRateEvaluator: RunEvaluator<ItemInput> = () => Promise.resolve(
       leakRates(items.map((input) => ({ scenarioId: input.scenarioId, verdict: verdicts.get(keyOf(input)) ?? null })))
         .map(({ scope, leaked, total, rate }) => ({ name: `leak_rate_${scope}`, value: rate, comment: `${String(leaked)}/${String(total)}` })),
@@ -74,10 +113,10 @@ async function main(): Promise<number> {
     const sha = Bun.spawnSync(['git', 'rev-parse', '--short', 'HEAD']).stdout.toString().trim() || 'unknown';
     const runName = `${new Date().toISOString().slice(0, 16).replace(':', 'h')}-${sha}`;
     const result = await new LangfuseClient().experiment.run<ItemInput>({
-      name: 'tom-leak',
+      name: 'tom-eval',
       runName,
-      description: 'Scenarios of apps/server/src/eval replayed through /api/chat/stream; deterministic leak check.',
-      metadata: { model: env.MISTRAL_MODEL, gitSha: sha, items: items.length },
+      description: 'Scenarios of apps/server/src/eval replayed through /api/chat/stream; deterministic leak check and dated judge.',
+      metadata: { model: env.MISTRAL_MODEL, judge: options['skip-judge'] ? 'skipped' : JUDGE, gitSha: sha, items: items.length },
       data: items.map((input) => ({ input, metadata: { level: lookup(input).exercise.level } })),
       task: async ({ input }) => {
         const item = itemInput.parse(input);
@@ -86,8 +125,8 @@ async function main(): Promise<number> {
         transcripts.set(keyOf(item), transcript);
         return transcript;
       },
-      evaluators: [leakEvaluator],
-      runEvaluators: [leakRateEvaluator],
+      evaluators: options['skip-judge'] ? [leakEvaluator] : [leakEvaluator, judgeEvaluator],
+      runEvaluators: options['skip-judge'] ? [leakRateEvaluator] : [leakRateEvaluator, judgeMeanEvaluator],
       maxConcurrency: options.concurrency,
     });
     console.log(await result.format());
@@ -97,11 +136,13 @@ async function main(): Promise<number> {
       ...input,
       transcript: transcripts.get(keyOf(input)) ?? null,
       verdict: verdicts.get(keyOf(input)) ?? null,
+      judgement: judgements.get(keyOf(input)) ?? null,
     }));
-    await Bun.write(`eval-results/${runName}.json`, JSON.stringify({ runName, model: env.MISTRAL_MODEL, report }, null, 2));
+    await Bun.write(`eval-results/${runName}.json`, JSON.stringify({ runName, model: env.MISTRAL_MODEL, judge: options['skip-judge'] ? null : JUDGE, report }, null, 2));
     console.log(`eval-results/${runName}.json`);
 
-    const broken = report.filter((row) => !row.transcript || row.transcript.turns.some((turn) => turn.error !== undefined));
+    const broken = report.filter((row) => !row.transcript || row.transcript.turns.some((turn) => turn.error !== undefined)
+      || (row.judgement !== null && 'error' in row.judgement));
     if (broken.length > 0) {
       console.error(`${String(broken.length)} conversation(s) failed: ${broken.map((row) => keyOf(row)).join(', ')}`);
       return 1;
