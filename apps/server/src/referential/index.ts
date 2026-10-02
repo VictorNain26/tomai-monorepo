@@ -2,12 +2,25 @@ import mathematiquesC3 from './texts/mathematiques-c3-2025.json' with { type: 'j
 import francaisC3 from './texts/francais-c3-2025.json' with { type: 'json' };
 import mathematiquesC4 from './texts/mathematiques-c4-2026.json' with { type: 'json' };
 import francaisC4 from './texts/francais-c4-2026.json' with { type: 'json' };
+import mathematiquesAttendus4e from './texts/mathematiques-attendus-4e-2019.json' with { type: 'json' };
+import mathematiquesAttendus3e from './texts/mathematiques-attendus-3e-2019.json' with { type: 'json' };
+import francaisAttendus4e from './texts/francais-attendus-4e-2019.json' with { type: 'json' };
+import francaisAttendus3e from './texts/francais-attendus-3e-2019.json' with { type: 'json' };
 import { textFileSchema, type CollegeLevel, type Entry, type TextFile } from './schema.js';
 import { PROGRAMME_SOURCES, type ProgrammeSource } from './sources.js';
 
 export type { CollegeLevel, Entry };
 
-const texts: readonly TextFile[] = [mathematiquesC3, francaisC3, mathematiquesC4, francaisC4].map((file) => textFileSchema.parse(file));
+const texts: readonly TextFile[] = [
+  mathematiquesC3,
+  francaisC3,
+  mathematiquesC4,
+  francaisC4,
+  mathematiquesAttendus4e,
+  mathematiquesAttendus3e,
+  francaisAttendus4e,
+  francaisAttendus3e,
+].map((file) => textFileSchema.parse(file));
 
 /** Each extracted text with its source; a text whose PDF fingerprint changed fails at load. */
 export const programmes: readonly { source: ProgrammeSource; entries: readonly Entry[] }[] = texts.map((file) => {
