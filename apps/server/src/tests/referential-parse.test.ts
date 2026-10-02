@@ -99,7 +99,7 @@ describe('parseBlocks', () => {
   });
 
   it('reads automatisms written as paragraphs and leaves teacher notes out, listed', () => {
-    const { entries, notes } = parseBlocks([
+    const { entries, leftOut } = parseBlocks([
       block('H1', 'Nombres'),
       block('H1', 'Sixième'),
       block('H2', 'Les fractions'),
@@ -109,7 +109,7 @@ describe('parseBlocks', () => {
       block('P', 'Les tables de multiplication sont réactivées.'),
     ], source);
     expect(entries.map((e) => e.text)).toEqual(['L’élève sait calculer 2/3 de 12 œufs.', 'Par exemple, il sait que 1/2 = 0,5.']);
-    expect(notes.map((n) => n.text)).toEqual(['Les tables de multiplication sont réactivées.']);
+    expect(leftOut.map(({ block: b, reason }) => ({ text: b.text, reason }))).toEqual([{ text: 'Les tables de multiplication sont réactivées.', reason: 'teacher note' }]);
   });
 
   it('joins items to their lead-in, a table to its entry with the sentence after it', () => {
@@ -161,24 +161,72 @@ describe('parseBlocks', () => {
     ]);
   });
 
-  it('reads the expectations of a one-class text, with themes at the first heading level used', () => {
-    const { entries } = parseBlocks([
-      block('H1', 'Comparer, estimer, mesurer des grandeurs'),
-      block('H3', 'Longueurs'),
-      block('H2', 'Ce que sait faire l’élève'),
+  it('reads a one-class text: domain from the banner, end-of-cycle expectation from H1, theme from H2', () => {
+    const { entries, declaredLevels } = parseBlocks([
+      block('BANNER', 'Attendus de fin d’annéede 4e'),
+      block('BANNER', 'Nombres et calculs'),
+      block('H1', 'Utiliser les nombres pour comparer, calculer et résoudre des problèmes'),
+      block('H2', 'Pratiquer le calcul exact'),
+      block('H3', 'Ce que sait faire l’élève'),
       block('LI', '\uF0A7 Il calcule le périmètre d’un polygone,'),
       block('LI', 'il utilise les unités.'),
-      block('H2', 'Exemples de réussite'),
-      block('LI', 'o Calcule le périmètre de ce triangle.'),
-      block('H3', 'Durées'),
+      block('H3', 'Exemples de réussite'),
+      block('LI', 'o Calcule 5 + 3 × 4.'),
+      block('H1', 'Comprendre et utiliser les notions de divisibilité'),
+      block('H3', 'Ce que sait faire l’élève'),
+      block('LI', '\uF0A7 Il calcule le quotient et le reste.'),
+      block('BANNER', 'grandeurs et mesures'),
+      block('H1', 'Calculer avec des grandeurs mesurables'),
       block('H2', 'Ce que sait faire l’élève'),
-      block('LI', 'Il convertit des durées.'),
-    ], { ...source, level: 'troisieme' });
-    expect(entries.map(({ level, domain, subtheme, kind, text }) => ({ level, domain, subtheme, kind, text }))).toEqual([
-      { level: 'troisieme', domain: 'Comparer, estimer, mesurer des grandeurs', subtheme: 'Longueurs', kind: 'expectation', text: 'Il calcule le périmètre d’un polygone, il utilise les unités.' },
-      { level: 'troisieme', domain: 'Comparer, estimer, mesurer des grandeurs', subtheme: 'Durées', kind: 'expectation', text: 'Il convertit des durées.' },
+      block('LI', '\uF0A7 Il convertit des durées.'),
+    ], { ...source, level: 'quatrieme' });
+    expect(declaredLevels).toEqual(['quatrieme']);
+    expect(entries.map(({ level, domain, cycleExpectation, subtheme, kind, text }) => ({ level, domain, cycleExpectation, subtheme, kind, text }))).toEqual([
+      { level: 'quatrieme', domain: 'Nombres et calculs', cycleExpectation: 'Utiliser les nombres pour comparer, calculer et résoudre des problèmes', subtheme: 'Pratiquer le calcul exact', kind: 'expectation', text: 'Il calcule le périmètre d’un polygone, il utilise les unités.' },
+      { level: 'quatrieme', domain: 'Nombres et calculs', cycleExpectation: 'Comprendre et utiliser les notions de divisibilité', subtheme: null, kind: 'expectation', text: 'Il calcule le quotient et le reste.' },
+      { level: 'quatrieme', domain: 'Grandeurs et mesures', cycleExpectation: 'Calculer avec des grandeurs mesurables', subtheme: null, kind: 'expectation', text: 'Il convertit des durées.' },
     ]);
     expect(entries[0]?.id).toMatch(/\.e-[0-9a-f]{8}$/);
+  });
+
+  it('keeps the programming levels the class expects, groups items by level and leaves the others out', () => {
+    const { entries, leftOut } = parseBlocks([
+      block('BANNER', 'Algorithmique et programmation'),
+      block('P', 'Les niveaux 1 et 2 sont attendus en fin de 4e ; il est possible que certains élèves aillent au-delà.'),
+      block('H1', 'Écrire, mettre au point, exécuter un programme'),
+      block('H3', 'Ce que sait faire l’élève'),
+      block('P', 'Niveau 1'),
+      block('LI', 'Il réalise des activités débranchées.'),
+      block('P', 'Niveau 3'),
+      block('LI', 'Il écrit plusieurs scripts en parallèle.'),
+    ], { ...source, level: 'quatrieme' });
+    expect(entries.map(({ subsubtheme, text }) => ({ subsubtheme, text }))).toEqual([{ subsubtheme: 'Niveau 1', text: 'Il réalise des activités débranchées.' }]);
+    expect(leftOut.map(({ block: b, reason }) => ({ text: b.text, reason }))).toEqual([{ text: 'Il écrit plusieurs scripts en parallèle.', reason: 'Niveau 3, beyond the class' }]);
+  });
+
+  it('does not glue a top-level private-use bullet to a lead-in, only a dash or a lowercase item', () => {
+    expect(parseBlocks([
+      block('BANNER', 'Espace et géométrie'),
+      block('H1', 'Représenter l’espace'),
+      block('H3', 'Ce que sait faire l’élève'),
+      block('LI', '\uF0A7 Il identifie des translations dans le pavage suivant :'),
+      block('LI', '\uF0A7 Il construit un patron.'),
+    ], { ...source, level: 'quatrieme' }).entries.map((e) => e.text)).toEqual([
+      'Il identifie des translations dans le pavage suivant :',
+      'Il construit un patron.',
+    ]);
+  });
+
+  it('closes a list on any H2 of a text for several classes', () => {
+    expect(texts([
+      block('H1', 'Nombres'),
+      block('H1', 'Cinquième'),
+      block('H2', 'Opérations'),
+      block('H3', 'Automatismes'),
+      block('LI', 'Multiplier par 10.'),
+      block('H2', 'Attendus de fin de cycle'),
+      block('LI', 'Not an automatism.'),
+    ])).toEqual(['Multiplier par 10.']);
   });
 
   it('reports list blocks that no class or domain holds', () => {

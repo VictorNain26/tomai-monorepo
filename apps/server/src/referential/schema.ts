@@ -12,6 +12,8 @@ const entrySchema = z.strictObject({
   level: collegeLevelSchema,
   subject: z.enum(SUBJECT_SLUGS),
   domain: text,
+  /** In a text for one class: the end-of-cycle expectation the entry belongs to. */
+  cycleExpectation: text.nullable(),
   subtheme: text.nullable(),
   subsubtheme: text.nullable(),
   kind: z.enum(['objective', 'automatism', 'expectation']),

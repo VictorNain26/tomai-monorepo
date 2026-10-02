@@ -59,6 +59,26 @@ describe('pageBlocks', () => {
   });
 });
 
+describe('pageBlocks banners', () => {
+  it('reads the alternative text of a paragraph without text, and of a table before its cells', () => {
+    const bannerTree: StructNode = {
+      role: 'Root',
+      children: [{
+        role: 'Part',
+        children: [
+          { role: 'P', children: [{ role: 'Span', alt: 'Attendus de ', children: [] }, { role: 'Span', alt: 'fin de 4', children: [] }, { role: 'Span', alt: 'e', children: [] }] },
+          { role: 'Table', children: [{ role: 'TR', children: [{ role: 'TD', children: [{ role: 'P', children: [{ role: 'Span', alt: 'Nombres et calculs', children: [] }] }, { type: 'content', id: 'c4' }] }] }] },
+        ],
+      }],
+    };
+    expect(pageBlocks(bannerTree, runsById(items), 1).map(({ role, text }) => ({ role, text }))).toEqual([
+      { role: 'BANNER', text: 'Attendus de fin de 4e' },
+      { role: 'BANNER', text: 'Nombres et calculs' },
+      { role: 'TABLE', text: 'Alexis' },
+    ]);
+  });
+});
+
 describe('canonical and plainText', () => {
   it('compare everything but spacing, rebuilt slashes, superscripts, bullets and dashes', () => {
     expect(canonical('1/2 ; 2³ = 8 • − lire')).toBe('12;23=8lire');

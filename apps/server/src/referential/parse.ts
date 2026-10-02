@@ -12,9 +12,12 @@ export interface PositionedText {
   eol: boolean;
 }
 
-/** A block of the structure tree in reading order: heading, paragraph, list item or table. */
+/**
+ * A block of the structure tree in reading order: heading, paragraph, list item, table, or
+ * banner (the alternative text of a decorative heading image).
+ */
 export interface Block {
-  role: 'H1' | 'H2' | 'H3' | 'H4' | 'P' | 'LI' | 'TABLE';
+  role: 'H1' | 'H2' | 'H3' | 'H4' | 'P' | 'LI' | 'TABLE' | 'BANNER';
   text: string;
   page: number;
   formula: boolean;
@@ -29,7 +32,25 @@ const LEVELS: Record<string, CollegeLevel> = {
 /** A stacked fraction term: a number (digit groups allowed), a letter, or dots to fill. */
 const FRACTION_TERM = /^(?:\d{1,3}(?: \d{3})+|\d+|\p{L}|\.{3}|…)$/u;
 const SENTENCE_END = /[.!?:;»)]$/;
-const LIST_MARKER = /^[\p{Co}—–−•-]\s*/u;
+/** Bullets left at the start of a wording, private-use glyphs included. */
+const BULLET = /^[\p{Co}—–−•-]\s*/u;
+/** Dashes and bullets that mark a sub-item; private-use glyphs mark top-level items. */
+const SUB_ITEM = /^[—–−•-]\s*/u;
+const KIND_PREFIX: Record<Entry['kind'], string> = { objective: 'o', automatism: 'a', expectation: 'e' };
+/** Domains of the 2020 cycle 4 programme, as the banners of the 2019 expectations name them. */
+const BANNER_DOMAINS = [
+  'Nombres et calculs',
+  'Organisation et gestion de données, fonctions',
+  'Grandeurs et mesures',
+  'Espace et géométrie',
+  'Algorithmique et programmation',
+  'Langage oral',
+  'Lecture et compréhension de l’écrit et de l’image',
+  'Écriture',
+  'Étude de la langue',
+];
+const CLASS_BANNER = /^attendus de fin ?d.année ?de ([3-6])e$/i;
+const BANNER_LEVELS: Record<string, CollegeLevel> = { '6': 'sixieme', '5': 'cinquieme', '4': 'quatrieme', '3': 'troisieme' };
 /** Rubric labels: they title a part of a section, not a theme. */
 const RUBRIC = /^(?:connaissances et capacités attendues|attendus de fin)/i;
 const CLOSING_RUBRIC = /^(?:prolongements possibles|mises en perspective)/i;
@@ -146,41 +167,57 @@ function levelOf(heading: string): CollegeLevel | 'other' | null {
  * introduced a figure, which is not read).
  */
 function completes(previous: string, block: string): boolean {
-  return /[:;,]$/.test(previous) && (/^\p{Ll}/u.test(block) || LIST_MARKER.test(block));
+  return /[:;,]$/.test(previous) && (/^\p{Ll}/u.test(block) || SUB_ITEM.test(block));
 }
 
 export interface ParseResult {
   entries: Entry[];
-  /** Blocks inside an objectives or automatisms list that no class or domain could hold. */
+  /** Blocks inside a list of objectives, automatisms or expectations that no class or domain could hold. */
   dropped: Block[];
-  /** Teacher notes among the automatisms, left out and listed for review. */
-  notes: Block[];
+  /** Blocks left out on purpose, listed for review: teacher notes, items beyond the class. */
+  leftOut: { block: Block; reason: string }[];
+  /** Classes named by the « Attendus de fin d'année de … » banners of the text. */
+  declaredLevels: CollegeLevel[];
 }
 
 /**
  * Reads the objectives, automatisms and end-of-year expectations of a text from its
- * blocks. H1 carries either the domain or the class (a text for one class, `source.level`,
- * has only domains); classes outside collège (CM1, CM2) are left out. A paragraph
- * « Objectifs d'apprentissage » opens a list of objectives, a heading « Automatismes » a
- * list of automatisms, a heading « Ce que sait faire l'élève » a list of expectations;
- * « Exemples de réussite » and any other heading close them. Items under a lead-in ending with
- * « : » join it. An id is the path of the entry plus a fingerprint of its wording, so it
- * survives reordering and extractor fixes.
+ * blocks. In a text for several classes, H1 carries the domain or the class; classes
+ * outside collège (CM1, CM2) are left out. In a text for one class (`source.level`), a
+ * banner carries the domain and H1 the end-of-cycle expectation. A paragraph « Objectifs
+ * d'apprentissage » opens a list of objectives, a heading « Automatismes » a list of
+ * automatisms, a heading « Ce que sait faire l'élève » a list of expectations;
+ * « Exemples de réussite » and any other heading close them. Items under a lead-in join
+ * it. Programming items of a level the text does not expect for the class are left out.
  */
 export function parseBlocks(blocks: readonly Block[], source: Pick<ProgrammeSource, 'id' | 'subject' | 'level'>): ParseResult {
   const entries: Entry[] = [];
   const dropped: Block[] = [];
-  const notes: Block[] = [];
+  const leftOut: ParseResult['leftOut'] = [];
+  const declaredLevels: CollegeLevel[] = [];
   let domain = '';
   let level: CollegeLevel | 'other' | null = source.level ?? null;
+  let cycleExpectation: string | null = null;
   let subtheme: string | null = null;
   let subsubtheme: string | null = null;
-  let themeRole: Block['role'] | null = null;
   let mode: Entry['kind'] | 'none' = 'none';
   let open: Entry | null = null;
   let afterTable = false;
+  let expectedLevels: Set<string> | null = null;
+  let beyondTheClass = false;
 
   for (const block of mergePageBreaks(blocks)) {
+    if (block.role === 'BANNER') {
+      const declared = CLASS_BANNER.exec(block.text)?.[1];
+      if (declared) declaredLevels.push(BANNER_LEVELS[declared] ?? 'sixieme');
+      const named = BANNER_DOMAINS.find((d) => d.toLowerCase() === block.text.toLowerCase());
+      if (named && source.level) {
+        domain = named;
+        open = null;
+        expectedLevels = null;
+      }
+      continue;
+    }
     if (block.role === 'TABLE') {
       // A table inside an entry is part of it, with the sentence that follows it; any other
       // table (quantitative guidance, outside the lists) is not an objective.
@@ -195,32 +232,33 @@ export function parseBlocks(blocks: readonly Block[], source: Pick<ProgrammeSour
       afterTable = false;
       if (/^ce que sait faire l.élève/i.test(block.text)) {
         mode = 'expectation';
-      } else if (/^automatismes/i.test(block.text)) {
-        mode = 'automatism';
-      } else if (/^exemples de réussite/i.test(block.text) || CLOSING_RUBRIC.test(block.text)) {
+        beyondTheClass = false;
+      } else if (/^exemples de réussite/i.test(block.text)) {
         mode = 'none';
       } else if (block.role === 'H1') {
-        const found = source.level ? null : levelOf(block.text);
-        if (found) {
-          level = found;
-        } else if (!/^perspective annuelle/i.test(block.text)) {
-          domain = block.text;
-          if (!source.level) level = null;
+        if (source.level) {
+          cycleExpectation = block.text;
+        } else {
+          const found = levelOf(block.text);
+          if (found) level = found;
+          else if (!/^perspective annuelle/i.test(block.text)) {
+            domain = block.text;
+            level = null;
+          }
         }
         subtheme = null;
         subsubtheme = null;
-        themeRole = null;
+        mode = 'none';
+      } else if (block.role === 'H2') {
+        subtheme = block.text;
+        subsubtheme = null;
+        mode = 'none';
+      } else if (/^automatismes/i.test(block.text)) {
+        mode = 'automatism';
+      } else if (CLOSING_RUBRIC.test(block.text)) {
         mode = 'none';
       } else if (!RUBRIC.test(block.text)) {
-        // The first theme heading under an H1 sets the level of themes: H2 in most texts,
-        // H3 in some end-of-year expectations.
-        if (themeRole === null || block.role === themeRole) {
-          subtheme = block.text;
-          subsubtheme = null;
-          themeRole = block.role;
-        } else {
-          subsubtheme = block.text;
-        }
+        subsubtheme = block.text;
         mode = 'none';
       }
       continue;
@@ -230,15 +268,31 @@ export function parseBlocks(blocks: readonly Block[], source: Pick<ProgrammeSour
       mode = 'objective';
       continue;
     }
+    const expected = /^les niveaux ([\d, et]+) sont attendus en fin de/i.exec(block.text)?.[1];
+    if (expected) {
+      expectedLevels = new Set(expected.match(/\d/g));
+      continue;
+    }
+    const programmingLevel = mode === 'expectation' ? /^niveau (\d)$/i.exec(block.text)?.[1] : undefined;
+    if (programmingLevel) {
+      open = null;
+      subsubtheme = `Niveau ${programmingLevel}`;
+      beyondTheClass = expectedLevels !== null && !expectedLevels.has(programmingLevel);
+      continue;
+    }
     if (mode === 'none' || level === 'other') continue;
     if (level === null || !domain) {
       dropped.push(block);
       continue;
     }
 
-    const wording = block.text.replace(LIST_MARKER, '');
+    const wording = block.text.replace(BULLET, '');
+    if (beyondTheClass) {
+      leftOut.push({ block, reason: `${subsubtheme ?? ''}, beyond the class` });
+      continue;
+    }
     if (mode === 'automatism' && block.role === 'P' && !afterTable && !(open && completes(open.text, block.text)) && !ABOUT_STUDENT.test(block.text)) {
-      notes.push(block);
+      leftOut.push({ block, reason: 'teacher note' });
       continue;
     }
     if (open && (afterTable || completes(open.text, block.text))) {
@@ -247,12 +301,20 @@ export function parseBlocks(blocks: readonly Block[], source: Pick<ProgrammeSour
       open.formula ||= block.formula;
       continue;
     }
-    const path = [source.id, level, slug(domain), ...(subtheme ? [slug(subtheme)] : []), ...(subsubtheme ? [slug(subsubtheme)] : [])].join('.');
+    const path = [
+      source.id,
+      level,
+      slug(domain),
+      ...(cycleExpectation ? [slug(cycleExpectation)] : []),
+      ...(subtheme ? [slug(subtheme)] : []),
+      ...(subsubtheme ? [slug(subsubtheme)] : []),
+    ].join('.');
     open = {
       id: path,
       level,
       subject: source.subject,
       domain,
+      cycleExpectation,
       subtheme,
       subsubtheme,
       kind: mode,
@@ -265,10 +327,10 @@ export function parseBlocks(blocks: readonly Block[], source: Pick<ProgrammeSour
 
   const seen = new Map<string, number>();
   for (const entry of entries) {
-    const base = `${entry.id}.${entry.kind[0] ?? ''}-${createHash('sha1').update(entry.text).digest('hex').slice(0, 8)}`;
+    const base = `${entry.id}.${KIND_PREFIX[entry.kind]}-${createHash('sha1').update(entry.text).digest('hex').slice(0, 8)}`;
     const count = (seen.get(base) ?? 0) + 1;
     seen.set(base, count);
     entry.id = count === 1 ? base : `${base}-${String(count)}`;
   }
-  return { entries, dropped, notes };
+  return { entries, dropped, leftOut, declaredLevels };
 }
