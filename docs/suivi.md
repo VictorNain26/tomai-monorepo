@@ -140,6 +140,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   (« Segmentation fault at address 0x20 », « bug in Bun, not your code ») ; les relances sont
   propres. Si le plantage atteint la CI ou se reproduit hors charge, ouvrir un ticket chez
   oven-sh/bun avec le lien `bun.report` du crash et monter de version.
+- **Sentry v11** : `apps/landing/next.config.*` importe `withSentryConfig` depuis
+  `@sentry/nextjs`, déprécié (avertissement de `next typegen`) ; passer à
+  `@sentry/nextjs/config` avant de monter en v11.
 - **`@hono/bun`** (#355) échoue au critère d'adoption : paquet du monorepo Hono publié le
   2026-09-28, 704 téléchargements par semaine. Gardé car c'est la voie de migration avant
   Hono v5 ; revérifier son adoption avant la v5.
