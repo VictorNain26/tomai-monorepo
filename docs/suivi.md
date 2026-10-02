@@ -160,7 +160,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Bloquant | Effet | Qui | Comment lever |
 |---|---|---|---|
 | Zero Data Retention non demandé | Mistral peut conserver textes et audio d'élèves selon sa rétention par défaut ; bloque tout utilisateur réel, pas le merge | Victor | Étape manuelle ci-dessous |
-| Entretiens parents non faits | Prérequis du lot 4 : prix, appareil du soir et canaux restent des hypothèses | Victor | Étape manuelle ci-dessous |
 
 ## Étapes manuelles (Victor)
 
@@ -168,7 +167,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 |---|---|---|
 | Après le merge de #344 : `rm -rf node_modules && bun install` à la racine du clone local (les `node_modules` actuels viennent de pnpm) | Outillage | à faire |
 | Base de dev locale : `bun run setup` (applique les migrations 0028 et 0029, qui suppriment les tables de la liste d'attente et de Pronote ; le doctor signale 28/30) | Outillage | à faire |
-| Mener 8 à 10 entretiens de parents, dont des familles modestes (guide dans `etudes/2026-10-01/parents.md`) | Questions ouvertes de la vision, lot 4 | à faire |
+| Entretiens de parents : remplacés par la recherche documentaire (`etudes/2026-10-01/parents.md`), décision de Victor le 2026-10-02 ; prix, appareil du soir et canaux restent des hypothèses (`vision.md`, « Questions ouvertes ») | Questions ouvertes de la vision | fait |
 | Demander le Zero Data Retention au support Mistral, puis vérifier Admin › API › Privacy | Porte avant ouverture | à faire |
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |

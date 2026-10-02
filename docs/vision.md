@@ -29,7 +29,7 @@ concurrent est mesurée ; ce qui n'est pas construit ne se promet pas.
   ordinateur et parlent plus souvent une autre langue à la maison (même étude,
   enseignement 5).
 - **L'élève qui l'utilise** : collégien, le soir ; souvent sur téléphone, hypothèse H6 de
-  `etudes/2026-10-01/parents.md` à vérifier par les entretiens. Le téléphone d'abord se
+  `etudes/2026-10-01/parents.md`, non vérifiée. Le téléphone d'abord se
   défend déjà : l'ordinateur manque plus souvent dans les familles modestes (même étude,
   enseignement 5).
 
@@ -84,8 +84,8 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
   `etudes/2026-10-01/couts.md`). Le quota actuel (1 à 2 échanges par soirée, parce qu'il
   compte au prix plein les tokens en cache) est un défaut, pas une offre.
 - **Complet à 7,99 € TTC par mois** : plancher défendable du modèle de coûts (marge
-  positive dans le pire cas mesuré). Plus d'échanges et les fiches de révision. À
-  confirmer par les entretiens parents. Repères : Dinobot 5,99 et 9,99 €, Le Prof IA
+  positive dans le pire cas mesuré). Plus d'échanges et les fiches de révision. Prix non
+  vérifié auprès de parents. Repères : Dinobot 5,99 et 9,99 €, Le Prof IA
   4,90 €, une heure d'Acadomia 24,40 € après crédit d'impôt.
 - **Facturation sans piège**, parce que c'est le premier reproche des parents dans les avis
   (`etudes/2026-10-01/parents.md`) : mensuelle, sans engagement, résiliable en un clic,
@@ -107,15 +107,16 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
 
 ## Distribution
 
-Non résolue, et c'est le premier risque. Hypothèses à vérifier par les entretiens :
+Non résolue, et c'est le premier risque. Hypothèses non vérifiées :
 recommandation par le collège ou une association (confiance des familles modestes),
 recherche Google sur les devoirs, bouche-à-oreille. Jamais de promotion déguisée sur les
 forums de parents : la communauté la rejette.
 
 ## Questions ouvertes
 
-À trancher par 8 à 10 entretiens de parents, dont des familles modestes (guide dans
-`etudes/2026-10-01/parents.md`) :
+Hypothèses tirées de la recherche documentaire (`etudes/2026-10-01/parents.md`). Victor a
+choisi le 2026-10-02 de ne pas mener d'entretiens : elles restent des hypothèses tant
+qu'aucune donnée d'usage réelle ne les tranche :
 - le moment critique est-il un blocage sur une notion, en maths à partir de la 4e ?
 - « il ne donne pas la réponse » fait-il acheter le parent mais fuir l'enfant ?
 - quel prix est acceptable, et le refus tient-il à la peur d'un abonnement piège ?
