@@ -10,6 +10,12 @@
       "quote": "Connaitre et utiliser les priorités opératoires.",
       "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
     },
+    "alignment": {
+      "entries": [
+        "mathematiques-c4-2026.cinquieme.nombres-et-calculs.operations.o-843e74fe"
+      ],
+      "laterEntries": []
+    },
     "statement": "Calcule 4 + 3 × 5. J'ai trouvé 35.",
     "answer": {
       "kind": "short",
@@ -37,6 +43,14 @@
       "quote": "Additionner deux nombres décimaux relatifs.",
       "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
     },
+    "alignment": {
+      "entries": [
+        "mathematiques-c4-2026.cinquieme.nombres-et-calculs.nombres-relatifs.o-68fd063f"
+      ],
+      "laterEntries": [
+        "mathematiques-c4-2026.quatrieme.nombres-et-calculs.operations-sur-les-nombres-relatifs.o-6fc8ab62"
+      ]
+    },
     "statement": "Calcule (−7) + (+4). J'ai trouvé −11.",
     "answer": {
       "kind": "short",
@@ -63,6 +77,12 @@
       "reference": "Programme de français du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 1 (5e)",
       "quote": "Comprendre la morphologie des temps simples (présent, futur simple, imparfait, passé simple de l'indicatif…",
       "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%201%20%E2%80%93%20Programme%20de%20fran%C3%A7ais%20pour%20le%20cycle%204-480713.pdf"
+    },
+    "alignment": {
+      "entries": [
+        "francais-c4-2026.cinquieme.grammaire-et-orthographe-grammaticale.approfondir-sa-maitrise-des-formes-conjuguees-du-verbe-et-leur-emploi.maitriser-la-composition-des-formes-verbales-pour-identifier-un-temps-et-le-conjuguer.o-9f05c952"
+      ],
+      "laterEntries": []
     },
     "statement": "Conjugue au passé simple : Soudain, la porte (s'ouvrir). J'ai écrit « s'ouvra ».",
     "answer": {
@@ -93,6 +113,12 @@
       "quote": "Justifier … l'accord du participe passé employé avec l'auxiliaire être et avec l'auxiliaire avoir (COD antéposé…",
       "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%201%20%E2%80%93%20Programme%20de%20fran%C3%A7ais%20pour%20le%20cycle%204-480713.pdf"
     },
+    "alignment": {
+      "entries": [
+        "francais-c4-2026.cinquieme.grammaire-et-orthographe-grammaticale.savoir-accorder-les-mots-dans-la-phrase-et-expliquer-ses-choix.o-727c7517"
+      ],
+      "laterEntries": []
+    },
     "statement": "Accorde le participe : Ces lettres, je les ai (écrire) hier.",
     "answer": {
       "kind": "short",
@@ -122,6 +148,7 @@
       "quote": "Utiliser la relation liant vitesse, distance et durée dans le cas d'un mouvement uniforme.",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": null,
     "statement": "Un cycliste parcourt 30 km en 2 h. Calcule sa vitesse moyenne. J'ai trouvé 60 km/h.",
     "answer": {
       "kind": "short",
@@ -149,6 +176,7 @@
       "quote": "Expliquer le devenir des aliments dans le tube digestif.",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": null,
     "statement": "Dans quel organe les nutriments issus de la digestion passent-ils dans le sang ?",
     "answer": {
       "kind": "short",
@@ -178,6 +206,7 @@
       "quote": "Société, Église et pouvoir politique dans l'occident féodal (XIe-XVe siècles)",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": null,
     "statement": "Rédige un paragraphe : quels liens unissent un seigneur et les paysans de sa seigneurie au Moyen Âge ?",
     "answer": {
       "kind": "written",
@@ -205,6 +234,7 @@
       "quote": "(A2) … utiliser les verbes les plus courants du prétérit (réguliers et irréguliers)",
       "source": "https://www.education.gouv.fr/sites/default/files/annexe-3-programme-d-anglais-pour-les-classes-de-coll-ge-440358.pdf"
     },
+    "alignment": null,
     "statement": "Mets au prétérit : Yesterday, I (go) to the park. J'ai écrit « goed ».",
     "answer": {
       "kind": "short",

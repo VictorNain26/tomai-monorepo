@@ -36,6 +36,12 @@ const exerciseSchema = z.strictObject({
   topic: text,
   /** Programme in force in 2026-2027 that covers the exercise, quoted verbatim. */
   programme: z.strictObject({ reference: text, quote: text, source: z.url() }),
+  /**
+   * Entries of `apps/server/src/referential/` the exercise works, and entries of later
+   * classes whose notions the help must not rely on. Null while the subject has no
+   * referential. An entry of a later class in `entries` marks an exercise beyond its class.
+   */
+  alignment: z.strictObject({ entries: z.array(text).min(1), laterEntries: z.array(text) }).nullable(),
   statement: text,
   answer: z.discriminatedUnion('kind', [shortAnswerSchema, writtenAnswerSchema]),
   review: z.strictObject({ by: text, at: z.iso.date() }).nullable(),

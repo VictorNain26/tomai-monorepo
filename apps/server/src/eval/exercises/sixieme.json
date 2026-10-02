@@ -10,6 +10,14 @@
       "quote": "Résoudre un problème de proportionnalité en choisissant une procédure adaptée : propriété de linéarité … retour à l'unité",
       "source": "https://www.education.gouv.fr/sites/default/files/programme-de-math-matiques-pour-le-cycle-3-439827.pdf"
     },
+    "alignment": {
+      "entries": [
+        "mathematiques-c3-2025.sixieme.la-proportionnalite.o-321dfc65"
+      ],
+      "laterEntries": [
+        "mathematiques-attendus-4e-2019.quatrieme.organisation-et-gestion-de-donnees-fonctions.resoudre-des-problemes-de-proportionnalite.e-cdae28f9"
+      ]
+    },
     "statement": "3 cahiers coûtent 4,50 €. Combien coûtent 6 cahiers ? J'ai trouvé 7,50 €.",
     "answer": {
       "kind": "short",
@@ -39,6 +47,13 @@
       "quote": "Calculer l'aire d'un carré ou d'un rectangle",
       "source": "https://www.education.gouv.fr/sites/default/files/programme-de-math-matiques-pour-le-cycle-3-439827.pdf"
     },
+    "alignment": {
+      "entries": [
+        "mathematiques-c3-2025.sixieme.grandeurs-et-mesures.les-aires.o-43225031",
+        "mathematiques-c3-2025.sixieme.grandeurs-et-mesures.les-aires.o-bda32a43"
+      ],
+      "laterEntries": []
+    },
     "statement": "Un rectangle mesure 7 cm de long et 4 cm de large. Calcule son aire. J'ai trouvé 22 cm².",
     "answer": {
       "kind": "short",
@@ -66,6 +81,12 @@
       "reference": "Programme de français du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
       "quote": "Identifier le groupe sujet et raisonner sur l'accord sujet/verbe",
       "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
+    },
+    "alignment": {
+      "entries": [
+        "francais-c3-2025.sixieme.grammaire-et-orthographe-grammaticale.acquerir-l-orthographe-grammaticale.accorder-le-sujet-et-le-verbe.o-c5f0562c"
+      ],
+      "laterEntries": []
     },
     "statement": "Corrige la phrase : Les enfants du voisin joue dans le jardin.",
     "answer": {
@@ -96,6 +117,12 @@
       "quote": "Maîtriser l'accord du participe passé employé avec l'auxiliaire être",
       "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
     },
+    "alignment": {
+      "entries": [
+        "francais-c3-2025.sixieme.grammaire-et-orthographe-grammaticale.acquerir-l-orthographe-grammaticale.approfondir-sa-maitrise-de-la-conjugaison.o-22bef0fd"
+      ],
+      "laterEntries": []
+    },
     "statement": "Conjugue au passé composé : Hier, elles (partir) en vacances.",
     "answer": {
       "kind": "short",
@@ -125,6 +152,7 @@
       "quote": "Mesurer des températures de changement d'état",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-3-2023-100806.pdf"
     },
+    "alignment": null,
     "statement": "Je chauffe de la glace pilée et je mesure sa température pendant qu'elle fond. Que fait la température tant qu'il reste de la glace ? J'ai écrit qu'elle monte tout le temps.",
     "answer": {
       "kind": "short",
@@ -154,6 +182,7 @@
       "quote": "Thème 3 - L'empire romain dans le monde antique",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-3-2023-100806.pdf"
     },
+    "alignment": null,
     "statement": "Rédige quelques phrases : comment Rome a-t-elle construit puis tenu un empire autour de la Méditerranée ?",
     "answer": {
       "kind": "written",
@@ -182,6 +211,7 @@
       "quote": "La 3e personne du singulier : he sleeps …",
       "source": "https://www.education.gouv.fr/sites/default/files/annexe-3-programme-d-anglais-pour-les-classes-de-coll-ge-440358.pdf"
     },
+    "alignment": null,
     "statement": "Complète au présent simple : My sister (have) a cat.",
     "answer": {
       "kind": "short",
