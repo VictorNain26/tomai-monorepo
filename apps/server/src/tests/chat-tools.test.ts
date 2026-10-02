@@ -11,6 +11,7 @@
 import { describe, it, expect, mock } from 'bun:test';
 import { asSchema, type ToolSet } from 'ai';
 import type { TomMetadata } from '../modules/tutor/chat-ui-message';
+import { SUBJECT_SLUGS } from '../lib/subjects';
 
 // ============================================
 // MOCKS — tool-executor.ts is the single delegation point
@@ -25,7 +26,7 @@ mock.module('../modules/tutor/tool-executor', () => ({
     typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'deck_created',
 }));
 
-const { buildChatTools, SUBJECT_SLUGS } = await import('../modules/tutor/chat-tools');
+const { buildChatTools } = await import('../modules/tutor/chat-tools');
 
 const baseContext = {
   userId: 'user-001',

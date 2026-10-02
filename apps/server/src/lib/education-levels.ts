@@ -1,9 +1,12 @@
 import { z } from 'zod';
 import type { EducationLevelType } from '../types/index.js';
-import { schoolLevelEnum } from '../modules/auth/auth.schema.js';
 
-/** The 12 French school levels (CP → terminale), read from the DB `school_level` enum. */
-export const EDUCATION_LEVELS = schoolLevelEnum.enumValues;
+/** The 12 French school levels (CP → terminale); the DB `school_level` enum is built from it. */
+export const EDUCATION_LEVELS = [
+  'cp', 'ce1', 'ce2', 'cm1', 'cm2',
+  'sixieme', 'cinquieme', 'quatrieme', 'troisieme',
+  'seconde', 'premiere', 'terminale',
+] as const;
 
 const LEVEL_SET: ReadonlySet<string> = new Set(EDUCATION_LEVELS);
 

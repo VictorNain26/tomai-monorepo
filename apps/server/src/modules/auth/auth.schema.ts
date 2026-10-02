@@ -1,14 +1,11 @@
 import { pgTable, varchar, text, timestamp, boolean, integer, jsonb, pgEnum, index, foreignKey, uuid } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
+import { EDUCATION_LEVELS } from '../../lib/education-levels.js';
 
 // =============================================
 // ENUMS
 // =============================================
-export const schoolLevelEnum = pgEnum('school_level', [
-  'cp', 'ce1', 'ce2', 'cm1', 'cm2',                    // Primaire
-  'sixieme', 'cinquieme', 'quatrieme', 'troisieme',    // Collège
-  'seconde', 'premiere', 'terminale'                    // Lycée
-]);
+export const schoolLevelEnum = pgEnum('school_level', EDUCATION_LEVELS);
 
 export const userRoleEnum = pgEnum('user_role', ['student', 'parent', 'admin']);
 
