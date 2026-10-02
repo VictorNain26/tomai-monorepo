@@ -10,6 +10,12 @@
       "quote": "la mise en équation d'un problème et la résolution algébrique d'une équation du premier degré",
       "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
     },
+    "alignment": {
+      "entries": [
+        "mathematiques-attendus-4e-2019.quatrieme.nombres-et-calculs.utiliser-le-calcul-litteral.e-d7f9100a"
+      ],
+      "laterEntries": []
+    },
     "statement": "Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.",
     "answer": {
       "kind": "short",
@@ -37,6 +43,12 @@
       "quote": "Additionner et soustraire des fractions de dénominateurs quelconques.",
       "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
     },
+    "alignment": {
+      "entries": [
+        "mathematiques-attendus-4e-2019.quatrieme.nombres-et-calculs.utiliser-les-nombres-pour-comparer-calculer-et-resoudre-des-problemes.pratiquer-le-calcul-exact-ou-approche-mental-a-la-main-ou-instrumente.e-89f5f51b"
+      ],
+      "laterEntries": []
+    },
     "statement": "Calcule 2/3 + 5/4. J'ai trouvé 7/7.",
     "answer": {
       "kind": "short",
@@ -63,6 +75,15 @@
       "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 4e",
       "quote": "Le théorème de Thalès et sa réciproque dans la configuration des triangles emboîtés … ainsi que le théorème de Pythagore … et sa réciproque",
       "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "alignment": {
+      "entries": [
+        "mathematiques-attendus-4e-2019.quatrieme.espace-et-geometrie.utiliser-les-notions-de-geometrie-plane-pour-demontrer.e-46f76c35",
+        "mathematiques-attendus-4e-2019.quatrieme.nombres-et-calculs.utiliser-les-nombres-pour-comparer-calculer-et-resoudre-des-problemes.pratiquer-le-calcul-exact-ou-approche-mental-a-la-main-ou-instrumente.e-a1163081"
+      ],
+      "laterEntries": [
+        "mathematiques-attendus-3e-2019.troisieme.espace-et-geometrie.utiliser-les-notions-de-geometrie-plane-pour-demontrer.e-9ebe237b"
+      ]
     },
     "statement": "Un triangle ABC est rectangle en A, AB = 6 cm et AC = 8 cm. Calcule BC.",
     "answer": {
@@ -92,6 +113,13 @@
       "quote": "La double distributivité est abordée.",
       "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
     },
+    "alignment": {
+      "entries": [
+        "mathematiques-attendus-4e-2019.quatrieme.nombres-et-calculs.utiliser-le-calcul-litteral.e-7ccc0b19",
+        "mathematiques-attendus-3e-2019.troisieme.nombres-et-calculs.utiliser-le-calcul-litteral.e-72302ee8"
+      ],
+      "laterEntries": []
+    },
     "statement": "Développe et réduis (2x + 3)(x − 4).",
     "answer": {
       "kind": "short",
@@ -118,6 +146,14 @@
       "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
       "quote": "Résoudre des problèmes utilisant la proportionnalité (pourcentages, échelles, agrandissement réduction).",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "alignment": {
+      "entries": [
+        "mathematiques-attendus-4e-2019.quatrieme.organisation-et-gestion-de-donnees-fonctions.resoudre-des-problemes-de-proportionnalite.e-cdae28f9"
+      ],
+      "laterEntries": [
+        "mathematiques-attendus-3e-2019.troisieme.organisation-et-gestion-de-donnees-fonctions.resoudre-des-problemes-de-proportionnalite.e-724f2129"
+      ]
     },
     "statement": "Un pull coûte 40 €. Il est soldé à −15 %. Quel est son nouveau prix ?",
     "answer": {
@@ -147,6 +183,13 @@
       "quote": "avec avoir (cas du COD antéposé) cas simples",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": {
+      "entries": [
+        "francais-attendus-4e-2019.quatrieme.etude-de-la-langue.consolider-l-orthographe-lexicale-et-grammaticale.e-72f09afa",
+        "francais-attendus-3e-2019.troisieme.etude-de-la-langue.consolider-l-orthographe-lexicale-et-grammaticale.e-65c38de0"
+      ],
+      "laterEntries": []
+    },
     "statement": "Accorde le participe : Les pommes que j'ai (manger) étaient bonnes.",
     "answer": {
       "kind": "short",
@@ -175,6 +218,12 @@
       "reference": "Programme de français du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
       "quote": "Maîtriser l'accord du participe passé employé avec l'auxiliaire être",
       "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
+    },
+    "alignment": {
+      "entries": [
+        "francais-attendus-4e-2019.quatrieme.etude-de-la-langue.consolider-l-orthographe-lexicale-et-grammaticale.e-75fea95e"
+      ],
+      "laterEntries": []
     },
     "statement": "Conjugue au passé composé : Hier, nous (aller) au cinéma.",
     "answer": {
@@ -206,6 +255,7 @@
       "quote": "Relation tension-courant : loi d'Ohm.",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": null,
     "statement": "U = R × I. R = 220 Ω et I = 0,05 A. Calcule U.",
     "answer": {
       "kind": "short",
@@ -234,6 +284,7 @@
       "quote": "La 3e personne du singulier : he sleeps …",
       "source": "https://www.education.gouv.fr/sites/default/files/annexe-3-programme-d-anglais-pour-les-classes-de-coll-ge-440358.pdf"
     },
+    "alignment": null,
     "statement": "Complète au présent simple : She (go) to school every day.",
     "answer": {
       "kind": "short",
@@ -263,6 +314,7 @@
       "quote": "La Révolution française et l'Empire : nouvel ordre politique et société révolutionnée en France et en Europe.",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": null,
     "statement": "Rédige un paragraphe : pourquoi la Révolution française commence-t-elle en 1789 ?",
     "answer": {
       "kind": "written",

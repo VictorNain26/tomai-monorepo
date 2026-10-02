@@ -10,6 +10,12 @@
       "quote": "Le théorème de Thalès et sa réciproque dans la configuration du papillon sont énoncés et utilisés",
       "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
     },
+    "alignment": {
+      "entries": [
+        "mathematiques-attendus-3e-2019.troisieme.espace-et-geometrie.utiliser-les-notions-de-geometrie-plane-pour-demontrer.e-84c03e9a"
+      ],
+      "laterEntries": []
+    },
     "statement": "Les points A, O, C sont alignés, ainsi que B, O, D, et les droites (AB) et (CD) sont parallèles. OA = 4 cm, OC = 10 cm et AB = 3 cm. Calcule CD. J'ai trouvé 1,2 cm.",
     "answer": {
       "kind": "short",
@@ -37,6 +43,12 @@
       "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 3e",
       "quote": "Les fonctions affines et linéaires sont présentées par leurs expressions algébriques et leurs représentations graphiques.",
       "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "alignment": {
+      "entries": [
+        "mathematiques-attendus-3e-2019.troisieme.organisation-et-gestion-de-donnees-fonctions.comprendre-et-utiliser-la-notion-de-fonction.e-ea0a74b9"
+      ],
+      "laterEntries": []
     },
     "statement": "f est la fonction affine définie par f(x) = 3x − 2. Calcule l'image de 4 par f. J'ai trouvé 6.",
     "answer": {
@@ -66,6 +78,12 @@
       "quote": "Former les temps simples … (temps de l'indicatif, impératif présent, subjonctif présent, conditionnel présent)",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": {
+      "entries": [
+        "francais-attendus-3e-2019.troisieme.etude-de-la-langue.consolider-l-orthographe-lexicale-et-grammaticale.e-02a1a4ad"
+      ],
+      "laterEntries": []
+    },
     "statement": "Conjugue au subjonctif présent : Il faut que tu (faire) tes devoirs. J'ai écrit « fais ».",
     "answer": {
       "kind": "short",
@@ -94,6 +112,12 @@
       "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
       "quote": "Analyser les positions des propositions subordonnées (conjonctive, interrogative indirecte, relative, infinitive, participiale)",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "alignment": {
+      "entries": [
+        "francais-attendus-3e-2019.troisieme.etude-de-la-langue.analyser-le-fonctionnement-de-la-phrase-simple-et-de-la-phrase-complexe.e-bafec004"
+      ],
+      "laterEntries": []
     },
     "statement": "Dans « Je pense qu'il viendra demain », quelle est la nature de la proposition « qu'il viendra demain » ?",
     "answer": {
@@ -125,6 +149,7 @@
       "quote": "L'expression littérale de l'énergie cinétique peut être réservée à la classe de 3e.",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": null,
     "statement": "Une voiture de 1 000 kg roule à 20 m/s. Calcule son énergie cinétique avec Ec = ½ × m × v². J'ai trouvé 10 000 J.",
     "answer": {
       "kind": "short",
@@ -153,6 +178,7 @@
       "quote": "ADN, mutations, brassage, gène, méiose et fécondation.",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": null,
     "statement": "Combien de chromosomes y a-t-il dans une cellule humaine, en dehors des cellules reproductrices ?",
     "answer": {
       "kind": "short",
@@ -183,6 +209,7 @@
       "quote": "Civils et militaires dans la Première Guerre mondiale.",
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
+    "alignment": null,
     "statement": "Rédige un paragraphe : pourquoi parle-t-on de « guerre totale » pour la Première Guerre mondiale ?",
     "answer": {
       "kind": "written",

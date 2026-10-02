@@ -16,10 +16,9 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 3 du lot 1, suite : repères annuels de progression du
-  cycle 4 (annexes 25 et 26 de 2019) et rattachement des exercices du jeu à leur entrée du
-  référentiel, sur une branche courte dont le plan s'écrit d'abord dans `docs/plans/`
-  (`.claude/rules/plans-and-agents.md`).
+- **Prochaine action :** point 4 du lot 1, juge daté (qualité d'aide, alignement au
+  programme à partir de `alignment` du jeu, niveau de langue), sur une branche courte dont
+  le plan s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -43,8 +42,14 @@ contraire.
   second degré » rattache ces annexes aux mauvaises classes (ordre inversé de la 6e à la
   3e, repères décalés d'un cycle) ; l'extraction vérifie la classe sur le texte alternatif
   de l'en-tête de chaque PDF et lit le domaine sur ses bandeaux. En programmation, seuls
-  les niveaux attendus en fin de classe sont gardés (1 et 2 en 4e). Restent, une PR chacun : repères annuels du cycle 4 et
-  rattachement des exercices ; sciences, histoire-géographie, anglais.
+  les niveaux attendus en fin de classe sont gardés (1 et 2 en 4e). Les 19 exercices de mathématiques et de français sont
+  rattachés à leurs entrées et aux notions des classes suivantes à ne pas mobiliser, prises
+  dans le programme en vigueur pour chaque classe en 2026-2027. Deux exercices de 4e du
+  protocole relèvent d'attendus de 3e : M4 (double distributivité) et F1 (accord avec un
+  COD pronom relatif). Les
+  repères annuels de 2019 ne sont pas extraits : les attendus des classes suivantes donnent
+  déjà ce qui n'est « pas encore vu ». Reste : sciences, histoire-géographie, anglais, et
+  le rattachement de leurs exercices.
 - **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
   « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
   bon niveau sans notion hors programme, jamais la réponse. Les items propres de la 6e à la
