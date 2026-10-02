@@ -15,7 +15,7 @@ Le plan d'une PR s'écrit à son démarrage, contre `main` à jour
 | 1 — Harnais d'évaluation | Jeu d'exercices de collège (6e à 3e, plusieurs matières) avec réponses vérifiées ; scénarios aide normale, demande directe, pression et fuite accidentelle (solution visible dans un raisonnement) ; métriques de fuite et de qualité d'aide (grille de `etudes/2026-10-01/tests-tuteurs/protocole.md`) ; juge daté avec relecture humaine d'un échantillon ; comparaison appariée (McNemar) ; baseline de Tom tel qu'il est ; transcriptions des concurrents re-notées par le même juge sur le même jeu ; règle Small 4 seul ou escalade vers Medium tranchée par la mesure ; format de rapport publiable | Lot 0 | `bun run eval` produit le rapport ; baseline de Tom et notes des concurrents commitées ; protocole et jeu d'exercices rejouables par un tiers |
 | 2 — Agent qui ne cède pas | Échelle d'indices tenue par le serveur ; aucune solution montrée par accident ; détresse et modération ; outils revus ; quotas et coûts justes (le quota compte en échanges ou en coût réel, cache compris au bon prix ; TTS sous quota ; fiches réservées au Complet ; résumé de conversation incrémental ; chaque appel IA tracé en coût) ; quota gratuit fixé sur le coût mesuré | Lot 1 | Au harnais : zéro fuite en pression, score d'aide au moins égal au meilleur concurrent noté par le même juge sur le même jeu, 100 % des scénarios de détresse traités ; chaque changement comparé à la baseline sans régression |
 | 3 — Client web | `apps/web`, pensé d'abord pour le téléphone : parcours élève (chat texte, photo, voix ; révisions), parcours parent (résumé de la semaine et alerte de détresse, **jamais les conversations**), comptes et double consentement sous 15 ans, mention IA, paiement Gratuit / Complet à facturation sans piège, hébergement UE ; décisions ouvertes de la cible tranchées | Lot 2 pour le chat ; le reste peut démarrer après le lot 0 | Parcours prouvés de bout en bout en préproduction, sur téléphone |
-| 4 — Marque et lancement | Nom vérifié et choisi ; identité visuelle ; landing qui ne dit que ce qui est prouvé et publie les mesures du lot 1 ; bouton « Commencer gratuitement » ; pages légales alignées sur l'hébergement réel | Lots 2 et 3 ; entretiens parents faits | Chaque phrase de la landing renvoie à une source ou à une mesure publiée |
+| 4 — Marque et lancement | Nom vérifié et choisi ; identité visuelle ; landing qui ne dit que ce qui est prouvé et publie les mesures du lot 1 ; bouton « Commencer gratuitement » ; pages légales alignées sur l'hébergement réel | Lots 2 et 3 | Chaque phrase de la landing renvoie à une source ou à une mesure publiée |
 
 ## Découpage en PR
 
@@ -70,9 +70,6 @@ fixée d'avance.
 
 ## En parallèle, côté Victor
 
-- **Entretiens parents** (8 à 10, dont des familles modestes), dès maintenant : guide dans
-  `etudes/2026-10-01/parents.md`. Ils tranchent le prix, l'appareil du soir et les canaux
-  avant le lot 4.
 - **Zero Data Retention** à demander à Mistral avant tout utilisateur réel.
 
 ## Porte avant ouverture au public
