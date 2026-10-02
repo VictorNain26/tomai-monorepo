@@ -31,7 +31,17 @@ export const config = [
       "turbo/no-undeclared-env-vars": "error",
       // A number renders the same way everywhere; the rule stays on to catch
       // objects, arrays and nullish values interpolated by mistake.
-      "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
+      "@typescript-eslint/restrict-template-expressions": [
+        "error",
+        {
+          allowAny: false,
+          allowBoolean: false,
+          allowNever: false,
+          allowNullish: false,
+          allowNumber: true,
+          allowRegExp: false,
+        },
+      ],
       // A leading underscore marks a parameter kept for its position or type.
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     },

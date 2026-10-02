@@ -20,17 +20,15 @@ export const nodeConfig = [
     // The bun:test DSL is built on these patterns: mock factories mirror async
     // signatures without awaiting or do nothing at all, mock.module/describe
     // return thenables called for their side effects, and asymmetric matchers
-    // plus Response.json() are typed any. Tests also assign process.env to
-    // configure the code under test, which is not a task input for turbo.
+    // (expect.any, expect.objectContaining) are typed any. Tests also assign
+    // process.env to configure the code under test, which is not a task input.
     files: ["**/*.test.ts", "**/_helpers/**/*.ts"],
     rules: {
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/no-floating-promises": "off",
       "@typescript-eslint/no-empty-function": ["error", { allow: ["arrowFunctions"] }],
       "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
       "turbo/no-undeclared-env-vars": "off",
     },
   },
