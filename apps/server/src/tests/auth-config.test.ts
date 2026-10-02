@@ -64,7 +64,7 @@ let apiMethods: string[];
 beforeAll(async () => {
   const mod = await import('../platform/auth/auth');
   auth = mod.auth;
-  apiMethods = Object.keys(auth.api as Record<string, unknown>);
+  apiMethods = Object.keys(auth['api'] as Record<string, unknown>);
 });
 
 // ============================================
@@ -117,14 +117,14 @@ describe('Better Auth Configuration', () => {
 
   describe('Auth handler', () => {
     it('should expose a request handler for mounting on Hono', () => {
-      expect(auth.handler).toBeDefined();
-      expect(typeof auth.handler).toBe('function');
+      expect(auth['handler']).toBeDefined();
+      expect(typeof auth['handler']).toBe('function');
     });
   });
 
   describe('Web-only client surface', () => {
     it('trusts only the HTTP CORS origins', () => {
-      const options = auth.options as { trustedOrigins: string[] };
+      const options = auth['options'] as { trustedOrigins: string[] };
       expect(options.trustedOrigins).toEqual(['http://localhost:3000', 'http://localhost:3001']);
     });
 

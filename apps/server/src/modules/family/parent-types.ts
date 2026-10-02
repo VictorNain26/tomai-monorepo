@@ -4,7 +4,7 @@ export interface ChildInfo {
   lastName: string;
   username: string;
   schoolLevel: string;
-  dateOfBirth?: string;
+  dateOfBirth?: string | undefined;
   isActive: boolean;
   parentId: string;
   role: 'student';

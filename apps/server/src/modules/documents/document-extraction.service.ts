@@ -26,7 +26,7 @@ export interface ExtractionResult {
     extractionMethod: 'unpdf' | 'mammoth' | 'text' | 'mistral-vision';
     extractionTimeMs: number;
   };
-  error?: string;
+  error?: string | undefined;
 }
 
 /**

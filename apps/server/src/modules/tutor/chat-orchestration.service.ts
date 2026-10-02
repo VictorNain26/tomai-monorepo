@@ -38,8 +38,8 @@ const MAX_ENRICHED_CONTENT_CHARS = 50_000;
 
 interface PrepareTurnRequest {
   userId: string;
-  sessionId?: string;
-  requestedSubject?: string;
+  sessionId?: string | undefined;
+  requestedSubject?: string | undefined;
   content: string;
   fileIds: string[];
   schoolLevel: EducationLevelType;
@@ -48,7 +48,7 @@ interface PrepareTurnRequest {
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface ChatTurnContext {
   sessionId: string;
-  subject?: string;
+  subject?: string | undefined;
   conversationSummary: string | null;
   conversationHistory: {
     role: 'user' | 'assistant';
@@ -65,16 +65,16 @@ export interface ChatTurnContext {
   /** Bounded document analyses (OCR), ready for `streamChat`'s `attachedFiles` param. */
   attachedFiles: AttachedFileForPrompt[];
   attachedFileInfo: AttachedFileInfo | null;
-  attachedFileInfos?: AttachedFileInfo[];
+  attachedFileInfos?: AttachedFileInfo[] | undefined;
 }
 
 interface PersistUserTurnParams {
   sessionId: string;
   content: string;
-  inputMode?: 'text' | 'voice';
+  inputMode?: 'text' | 'voice' | undefined;
   fileIds: string[];
   attachedFileInfo: AttachedFileInfo | null;
-  attachedFileInfos?: AttachedFileInfo[];
+  attachedFileInfos?: AttachedFileInfo[] | undefined;
 }
 
 interface FinishTurnParams {
@@ -86,7 +86,7 @@ interface FinishTurnParams {
   usage: LanguageModelUsage | undefined;
   startTime: number;
   attachedFileInfo: AttachedFileInfo | null;
-  attachedFileInfos?: AttachedFileInfo[];
+  attachedFileInfos?: AttachedFileInfo[] | undefined;
   classifiedIntent: ClassifiedIntent;
 }
 

@@ -22,9 +22,9 @@ interface VoxtralTTSResult {
 }
 
 interface VoxtralTTSOptions {
-  voiceId?: string;
-  schoolLevel?: EducationLevelType;
-  outputFormat?: 'mp3' | 'wav' | 'pcm' | 'flac' | 'opus';
+  voiceId?: string | undefined;
+  schoolLevel?: EducationLevelType | undefined;
+  outputFormat?: 'mp3' | 'wav' | 'pcm' | 'flac' | 'opus' | undefined;
 }
 
 // fr_marie_neutral est la voix française neutre parmi les 30 presets exposés

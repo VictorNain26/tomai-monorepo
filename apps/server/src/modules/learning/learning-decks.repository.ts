@@ -109,7 +109,8 @@ class LearningDecksRepository {
    */
   async updateById(
     deckId: string,
-    patch: Partial<NewLearningDeck>,
+    // Drizzle ignores undefined values in .set(): an undefined field is left unchanged.
+    patch: { [K in keyof NewLearningDeck]?: NewLearningDeck[K] | undefined },
     executor: DbOrTx = db,
   ): Promise<LearningDeck | null> {
     const [updated] = await executor

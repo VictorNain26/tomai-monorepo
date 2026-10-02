@@ -50,8 +50,8 @@ describe('VoxtralTTSService', () => {
 
     const result = await getVoxtralTTSService().synthesize('Bonjour', { voiceId: 'fr_marie_neutral' });
 
-    expect(body.voice_id).toBe('fr_marie_neutral');
-    expect(body.voice).toBeUndefined();
+    expect(body['voice_id']).toBe('fr_marie_neutral');
+    expect(body['voice']).toBeUndefined();
     expect(result).toEqual({ success: true, audioData: 'QUJD', mimeType: 'audio/mpeg' });
   });
 
@@ -67,7 +67,7 @@ describe('VoxtralTTSService', () => {
 
     await getVoxtralTTSService().synthesize('Bonjour');
 
-    expect(body.voice_id).toBe('fr_marie_neutral');
+    expect(body['voice_id']).toBe('fr_marie_neutral');
     expect('language' in body).toBe(false);
   });
 

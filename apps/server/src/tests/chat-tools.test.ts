@@ -73,25 +73,25 @@ describe('buildChatTools', () => {
 
     it('generate_flashcards.subject is the SUBJECT_SLUGS enum', async () => {
       const props = await propertiesOf('generate_flashcards');
-      expect(props.subject?.enum).toEqual([...SUBJECT_SLUGS]);
+      expect(props['subject']?.['enum']).toEqual([...SUBJECT_SLUGS]);
     });
 
     it('generate_flashcards.cardCount is bounded to 3..10', async () => {
       const props = await propertiesOf('generate_flashcards');
-      expect(props.cardCount?.minimum).toBe(3);
-      expect(props.cardCount?.maximum).toBe(10);
+      expect(props['cardCount']?.['minimum']).toBe(3);
+      expect(props['cardCount']?.['maximum']).toBe(10);
     });
 
     it('update_student_profile.subject is free text (no enum)', async () => {
       const props = await propertiesOf('update_student_profile');
-      expect(props.subject?.enum).toBeUndefined();
+      expect(props['subject']?.['enum']).toBeUndefined();
     });
 
     it('update_student_profile bounds observation, strength and weakness', async () => {
       const props = await propertiesOf('update_student_profile');
-      expect(props.observation?.maxLength).toBe(250);
-      expect(props.strength?.maxLength).toBe(100);
-      expect(props.weakness?.maxLength).toBe(100);
+      expect(props['observation']?.['maxLength']).toBe(250);
+      expect(props['strength']?.['maxLength']).toBe(100);
+      expect(props['weakness']?.['maxLength']).toBe(100);
     });
   });
 
@@ -109,7 +109,7 @@ describe('buildChatTools', () => {
       };
       const emitDeckCreated = mock(() => {});
       const tools = buildChatTools({ ...baseContext, emitDeckCreated });
-      const tool = tools.generate_flashcards;
+      const tool = tools['generate_flashcards'];
       if (!tool?.execute) throw new Error('generate_flashcards must have an execute function');
 
       await tool.execute(
@@ -130,7 +130,7 @@ describe('buildChatTools', () => {
       executeToolResult = { isError: true, errorCategory: 'business', message: 'failed' };
       const emitDeckCreated = mock(() => {});
       const tools = buildChatTools({ ...baseContext, emitDeckCreated });
-      const tool = tools.generate_flashcards;
+      const tool = tools['generate_flashcards'];
       if (!tool?.execute) throw new Error('generate_flashcards must have an execute function');
 
       await tool.execute(

@@ -3,8 +3,8 @@ import { describe, it, expect, afterEach, beforeEach, mock } from 'bun:test';
 
 interface ExtractionResult {
   success: boolean;
-  text?: string;
-  error?: string;
+  text?: string | undefined;
+  error?: string | undefined;
   metadata: { wordCount: number; extractionMethod: string };
 }
 

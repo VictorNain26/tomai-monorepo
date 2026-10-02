@@ -64,9 +64,9 @@ function initializeConnection(): void {
     onnotice: environment === 'production'
       ? () => undefined
       : (notice) => {
-          if (notice.message) {
+          if (notice['message']) {
             logger.debug('PostgreSQL notice', {
-              notice: notice.message,
+              notice: notice['message'],
               operation: 'db:notice'
             });
           }

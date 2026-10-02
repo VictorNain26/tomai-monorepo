@@ -4,12 +4,12 @@ import { stripPromptTags } from './mistral-helpers.js';
 export interface ChatMessageParts {
   systemPrompt: string;
   /** Résumé DÉJÀ tronqué au budget (ou null/undefined si aucun). */
-  conversationSummary?: string | null;
+  conversationSummary?: string | null | undefined;
   historyMessages: MistralMessage[];
-  studentContextBlock?: string | null;
-  attachedFilesBlock?: string | null;
-  intentReinforcement?: string | null;
-  inputMode?: string;
+  studentContextBlock?: string | null | undefined;
+  attachedFilesBlock?: string | null | undefined;
+  intentReinforcement?: string | null | undefined;
+  inputMode?: string | undefined;
   userContent: string | MistralContentPart[];
 }
 

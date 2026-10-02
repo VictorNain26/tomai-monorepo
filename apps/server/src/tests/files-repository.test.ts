@@ -111,7 +111,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
     const setArg = setArgOrThrow();
 
     // educationalContext is a drizzle SQL template, not a plain value.
-    const ctx = setArg.educationalContext;
+    const ctx = setArg['educationalContext'];
     expect(ctx).toBeDefined();
 
     // The SQL template should render into a string containing the `||`
@@ -127,7 +127,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
     await filesRepository.mergeEducationalContext('file-1', patch);
 
     const setArg = setArgOrThrow();
-    const ctx = setArg.educationalContext;
+    const ctx = setArg['educationalContext'];
 
     // The JSON-stringified patch is passed as a parameter into the sql tag,
     // so it shows up in the serialized template.
@@ -139,8 +139,8 @@ describe('FilesRepository.mergeEducationalContext', () => {
   it('should include a NOW() updatedAt bump alongside the merge', async () => {
     await filesRepository.mergeEducationalContext('file-1', { key: 'v' });
     const setArg = setArgOrThrow();
-    expect(setArg.updatedAt).toBeDefined();
-    expect(serializeSql(setArg.updatedAt)).toContain('NOW');
+    expect(setArg['updatedAt']).toBeDefined();
+    expect(serializeSql(setArg['updatedAt'])).toContain('NOW');
   });
 
   it('should pass through the id to the WHERE clause', async () => {
@@ -155,7 +155,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
       filesRepository.mergeEducationalContext('file-1', {}),
     ).resolves.toBe(true);
     const setArg = setArgOrThrow();
-    const rendered = serializeSql(setArg.educationalContext);
+    const rendered = serializeSql(setArg['educationalContext']);
     expect(rendered).toContain('{}');
   });
 
@@ -174,10 +174,10 @@ describe('FilesRepository.mergeEducationalContext', () => {
     // class has a `queryChunks` array).
     await filesRepository.mergeEducationalContext('file-1', { key: 'v' });
     const setArg = setArgOrThrow();
-    const ctx = setArg.educationalContext;
+    const ctx = setArg['educationalContext'];
 
     // Plain object would have the key 'key' directly; a drizzle SQL template won't.
-    expect((ctx as Record<string, unknown>).key).toBeUndefined();
+    expect((ctx as Record<string, unknown>)['key']).toBeUndefined();
     // Positive assertion: should have the shape of a drizzle sql() result
     // (a SQL object with queryChunks OR at least not a raw patch).
     expect(typeof ctx === 'object' && ctx !== null).toBe(true);

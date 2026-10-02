@@ -26,7 +26,7 @@ export async function initializeServices(): Promise<void> {
 
     logger.info('Database migrations verified', {
       operation: 'services:init:migrations',
-      count: Number(migrations[0]?.count ?? 0)
+      count: Number(migrations[0]?.['count'] ?? 0)
     });
 
     logger.info('All services initialized successfully', {

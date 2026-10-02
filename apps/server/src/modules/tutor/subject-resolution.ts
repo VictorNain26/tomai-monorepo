@@ -12,9 +12,9 @@ function isReal(detected?: StudentSubject): detected is Exclude<StudentSubject, 
  * (≠ 'general'), sinon la matière déjà posée sur la session, sinon le hint client.
  */
 export function resolveEffectiveSubject(opts: {
-  detected?: StudentSubject;
-  sessionSubject?: string | null;
-  requested?: string;
+  detected?: StudentSubject | undefined;
+  sessionSubject?: string | null | undefined;
+  requested?: string | undefined;
 }): string | undefined {
   if (isReal(opts.detected)) return opts.detected;
   if (opts.sessionSubject && opts.sessionSubject !== DEFAULT_SESSION_SUBJECT) return opts.sessionSubject;

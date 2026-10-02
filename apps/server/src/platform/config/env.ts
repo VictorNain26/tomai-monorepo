@@ -15,7 +15,7 @@ import { resolveDatabaseUrl } from './database-url.js';
  * Détecte si on est dans un container Docker
  */
 function isRunningInDocker(): boolean {
-  if (Bun.env.DOCKER_CONTAINER === 'true') {
+  if (Bun.env['DOCKER_CONTAINER'] === 'true') {
     return true;
   }
   return existsSync('/.dockerenv');

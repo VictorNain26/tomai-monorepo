@@ -15,7 +15,7 @@ import { existsSync } from 'node:fs';
  * Detects if running in Docker container
  */
 function isRunningInDocker(): boolean {
-  if (Bun.env.DOCKER_CONTAINER === 'true') {
+  if (Bun.env['DOCKER_CONTAINER'] === 'true') {
     return true;
   }
 
@@ -41,6 +41,6 @@ export function resolveDatabaseUrl(): string {
   }
 
   // Local development: prefer external URL if available
-  const externalUrl = Bun.env.DATABASE_URL_EXTERNAL;
+  const externalUrl = Bun.env['DATABASE_URL_EXTERNAL'];
   return externalUrl ?? databaseUrl;
 }

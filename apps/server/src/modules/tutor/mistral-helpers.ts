@@ -76,7 +76,7 @@ export function wrapStudentContext(
  * the document body read as outside-the-block input). Returns '' when empty.
  */
 export function wrapAttachedFiles(
-  files: { fileName: string; analysis: string; documentType?: string; subject?: string }[],
+  files: { fileName: string; analysis: string; documentType?: string | undefined; subject?: string | undefined }[],
 ): string {
   const blocks = files
     .filter((f) => f.analysis.trim())

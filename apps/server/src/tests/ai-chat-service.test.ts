@@ -157,7 +157,7 @@ describe('streamChat', () => {
 
   it('retries a retryable provider error MISTRAL_RETRY_ATTEMPTS times, like the other Mistral calls', async () => {
     const configured = env.MISTRAL_RETRY_ATTEMPTS;
-    (env as Record<string, unknown>).MISTRAL_RETRY_ATTEMPTS = 0;
+    (env as Record<string, unknown>)['MISTRAL_RETRY_ATTEMPTS'] = 0;
     try {
       const model = new MockLanguageModelV4({
         doStream: async () => {
@@ -169,7 +169,7 @@ describe('streamChat', () => {
 
       expect(model.doStreamCalls).toHaveLength(1);
     } finally {
-      (env as Record<string, unknown>).MISTRAL_RETRY_ATTEMPTS = configured;
+      (env as Record<string, unknown>)['MISTRAL_RETRY_ATTEMPTS'] = configured;
     }
   });
 });
@@ -182,7 +182,7 @@ describe('streamChat — Mistral wire request', () => {
 
   function mockMistralStream(capture: { url?: string; body?: Record<string, unknown> }) {
     const chunk = (delta: Record<string, unknown>, extra: Record<string, unknown> = {}) =>
-      `data: ${JSON.stringify({ id: 'c1', object: 'chat.completion.chunk', created: 0, model: 'mistral-small-2603', choices: [{ index: 0, delta, finish_reason: extra.finish_reason ?? null }], ...extra })}\n\n`;
+      `data: ${JSON.stringify({ id: 'c1', object: 'chat.completion.chunk', created: 0, model: 'mistral-small-2603', choices: [{ index: 0, delta, finish_reason: extra['finish_reason'] ?? null }], ...extra })}\n\n`;
     const sse =
       chunk({ role: 'assistant', content: 'ok' }) +
       chunk({ content: '' }, {
@@ -210,9 +210,9 @@ describe('streamChat — Mistral wire request', () => {
     await result.text;
 
     expect(capture.url).toBe('https://api.eu.mistral.ai/v1/chat/completions');
-    expect(capture.body?.model).toBe('mistral-small-2603');
-    expect(capture.body?.prompt_cache_key).toBe('session-001');
-    expect(capture.body?.reasoning_effort).toBe('high');
+    expect(capture.body?.['model']).toBe('mistral-small-2603');
+    expect(capture.body?.['prompt_cache_key']).toBe('session-001');
+    expect(capture.body?.['reasoning_effort']).toBe('high');
   });
 
   it("sends reasoning_effort 'none' outside the STEM hard-intent route", async () => {
@@ -221,7 +221,7 @@ describe('streamChat — Mistral wire request', () => {
 
     await streamChat({ ...baseParams, subject: 'francais', tools: noopTools }).text;
 
-    expect(capture.body?.reasoning_effort).toBe('none');
+    expect(capture.body?.['reasoning_effort']).toBe('none');
   });
 
   it('surfaces cached prompt tokens from the streamed usage', async () => {

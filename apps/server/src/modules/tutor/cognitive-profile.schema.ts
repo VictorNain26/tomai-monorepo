@@ -55,5 +55,5 @@ export type NewStudentCognitiveProfile = typeof studentCognitiveProfiles.$inferI
 export interface CognitiveObservation {
   date: string;
   observation: string;
-  subject?: string;
+  subject?: string | undefined;
 }

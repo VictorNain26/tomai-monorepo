@@ -93,11 +93,11 @@ export class ParentService {
   }
 
   async updateChild(parentId: string, childId: string, updateData: {
-    firstName?: string;
-    lastName?: string;
-    dateOfBirth?: string;
-    schoolLevel?: string;
-    password?: string;
+    firstName?: string | undefined;
+    lastName?: string | undefined;
+    dateOfBirth?: string | undefined;
+    schoolLevel?: string | undefined;
+    password?: string | undefined;
   }): Promise<ChildInfo> {
     try {
       const children = await this.getParentChildren(parentId);

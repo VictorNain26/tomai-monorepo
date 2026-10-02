@@ -167,11 +167,11 @@ export type CardContent = FlashcardContent | QCMContent | VraiFauxContent;
 
 // FSRS Data structure (hidden from user)
 export interface FSRSData {
-  difficulty?: number;
-  stability?: number;
-  due?: string; // ISO date
-  reps?: number;
-  lapses?: number;
-  state?: number; // 0=new, 1=learning, 2=review, 3=relearning
-  lastReview?: string; // ISO date
+  difficulty?: number | undefined;
+  stability?: number | undefined;
+  due?: string | undefined; // ISO date
+  reps?: number | undefined;
+  lapses?: number | undefined;
+  state?: number | undefined; // 0=new, 1=learning, 2=review, 3=relearning
+  lastReview?: string | undefined; // ISO date
 }

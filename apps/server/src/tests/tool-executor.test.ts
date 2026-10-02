@@ -114,9 +114,9 @@ describe('Tool Executor', () => {
   describe('unknown tool', () => {
     it('should return error for unknown tool name', async () => {
       const result = await executeTool('get_student_homework', {}, baseContext) as Record<string, unknown>;
-      expect(result.isError).toBe(true);
-      expect(result.message).toContain('Outil inconnu');
-      expect(result.errorCategory).toBe('validation');
+      expect(result['isError']).toBe(true);
+      expect(result['message']).toContain('Outil inconnu');
+      expect(result['errorCategory']).toBe('validation');
     });
   });
 
@@ -125,51 +125,51 @@ describe('Tool Executor', () => {
       const result = await executeTool('generate_flashcards', {
         topic: 'Fractions', subject: 'mathematiques', cardCount: 5,
       }, baseContext) as Record<string, unknown>;
-      expect(result.generated).toBe(true);
-      expect(result.deckId).toBeDefined();
+      expect(result['generated']).toBe(true);
+      expect(result['deckId']).toBeDefined();
     });
 
     it('should generate without a topic context', async () => {
       const result = await executeTool('generate_flashcards', {
         topic: 'Fractions', subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.generated).toBe(true);
+      expect(result['generated']).toBe(true);
     });
   });
 
   describe('get_student_profile', () => {
     it('should return profile when exists', async () => {
       const result = await executeTool('get_student_profile', {}, baseContext) as Record<string, unknown>;
-      expect(result.exists).toBe(true);
-      expect(result.strengths).toEqual(['calcul']);
+      expect(result['exists']).toBe(true);
+      expect(result['strengths']).toEqual(['calcul']);
     });
 
     it('should return exists=false when no profile', async () => {
       profileResult = null;
       const result = await executeTool('get_student_profile', {}, baseContext) as Record<string, unknown>;
-      expect(result.exists).toBe(false);
+      expect(result['exists']).toBe(false);
     });
   });
 
   describe('get_app_help', () => {
     it('should return guide for valid topic', async () => {
       const result = await executeTool('get_app_help', { topic: 'overview' }, baseContext) as Record<string, unknown>;
-      expect(result.found).toBe(true);
-      expect(result.guide).toBeDefined();
+      expect(result['found']).toBe(true);
+      expect(result['guide']).toBeDefined();
     });
 
     it('should return not found for invalid topic', async () => {
       const result = await executeTool('get_app_help', { topic: 'nonexistent' }, baseContext) as Record<string, unknown>;
-      expect(result.found).toBe(false);
+      expect(result['found']).toBe(false);
     });
   });
 
   describe('Unknown tool', () => {
     it('should return error message for unknown tool', async () => {
       const result = await executeTool('unknown_tool', {}, baseContext) as Record<string, unknown>;
-      expect(result.isError).toBe(true);
-      expect(result.message).toContain('Outil inconnu');
-      expect(result.errorCategory).toBe('validation');
+      expect(result['isError']).toBe(true);
+      expect(result['message']).toContain('Outil inconnu');
+      expect(result['errorCategory']).toBe('validation');
     });
   });
 
@@ -179,8 +179,8 @@ describe('Tool Executor', () => {
       const result = await executeTool('generate_flashcards', {
         topic: 'Fractions', subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.isError).toBe(true);
-      expect(result.errorCategory).toBe('business');
+      expect(result['isError']).toBe(true);
+      expect(result['errorCategory']).toBe('business');
     });
   });
 });

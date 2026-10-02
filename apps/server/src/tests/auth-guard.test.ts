@@ -49,7 +49,7 @@ function makeParentUser(overrides?: Partial<AuthenticatedUser>): AuthenticatedUs
     email: 'parent@example.com',
     name: 'Parent User',
     role: 'parent',
-    schoolLevel: undefined,
+    schoolLevel: null,
     ...overrides,
   });
 }
@@ -67,7 +67,7 @@ describe('auth guards', () => {
   describe('requireUser', () => {
     const app = new Hono<AppEnv>()
       .get('/public', (c) => c.json({ message: 'public' }))
-      .get('/protected', requireUser, (c) => c.json({ userId: c.var.user.id, sessionId: c.var.session.id }))
+      .get('/protected', requireUser, (c) => c.json({ userId: c.var.user.id, sessionId: c.var.session['id'] }))
       .onError(handleError);
 
     it('injects user and session on a valid session', async () => {

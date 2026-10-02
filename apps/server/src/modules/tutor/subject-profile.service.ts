@@ -15,7 +15,7 @@ class SubjectProfileService {
     userId: string;
     subject: string;
     conceptsCovered: string[];
-    outcome?: string;
+    outcome?: string | undefined;
   }): Promise<void> {
     if (!isRealSubject(input.subject)) return;
     try {
@@ -47,7 +47,7 @@ class SubjectProfileService {
     }));
   }
 
-  async editMemory(userId: string, subject: string, patch: { masteryNotes?: string | null; difficulties?: string[] }) {
+  async editMemory(userId: string, subject: string, patch: { masteryNotes?: string | null | undefined; difficulties?: string[] | undefined }) {
     return studentSubjectProfileRepository.updateNotes(userId, subject, patch);
   }
 

@@ -44,24 +44,24 @@ interface CreateDeckWithCardsInput {
 }
 
 interface UpdateDeckInput {
-  title?: string;
-  description?: string;
-  subject?: string;
+  title?: string | undefined;
+  description?: string | undefined;
+  subject?: string | undefined;
 }
 
 interface AddCardsInput {
   cards: {
     cardType: CardType;
     content: unknown;
-    position?: number;
+    position?: number | undefined;
   }[];
-  startPosition?: number;
+  startPosition?: number | undefined;
 }
 
 interface UpdateCardInput {
-  cardType?: CardType;
+  cardType?: CardType | undefined;
   content?: unknown;
-  position?: number;
+  position?: number | undefined;
 }
 
 class LearningService {

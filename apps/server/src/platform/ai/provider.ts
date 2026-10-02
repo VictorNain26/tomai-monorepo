@@ -5,8 +5,8 @@ type FetchLike = (url: RequestInfo | URL, init?: RequestInit) => Promise<Respons
 
 export function mistralProvider(fetch?: FetchLike): MistralProvider {
   return createMistral({
-    apiKey: env.MISTRAL_API_KEY,
     baseURL: `${env.MISTRAL_SERVER_URL}/v1`,
-    fetch: fetch as typeof globalThis.fetch | undefined,
+    ...(env.MISTRAL_API_KEY !== undefined && { apiKey: env.MISTRAL_API_KEY }),
+    ...(fetch && { fetch: fetch as typeof globalThis.fetch }),
   });
 }

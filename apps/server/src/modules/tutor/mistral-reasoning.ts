@@ -42,9 +42,9 @@ const HARD_INTENTS = new Set([
 
 interface ReasoningRouteParams {
   schoolLevel: EducationLevelType;
-  subject?: string;
+  subject?: string | undefined;
   /** Output of intent-classifier. Optional; missing → "none". */
-  intent?: string;
+  intent?: string | undefined;
 }
 
 /**

@@ -56,5 +56,5 @@ export interface DocumentAnalysisResult {
 export interface DocumentAnalysisOptions {
   schoolLevel: import('../../types/education.types.js').EducationLevelType;
   userId: string;
-  userQuestion?: string;
+  userQuestion?: string | undefined;
 }

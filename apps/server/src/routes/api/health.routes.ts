@@ -13,12 +13,12 @@ export const apiHealthRoutes = new Hono<AppEnv>()
     try {
       const start = Date.now();
       await db.execute(sql`SELECT 1`);
-      checks.database = {
+      checks['database'] = {
         status: 'healthy',
         latency: Date.now() - start
       };
     } catch (error) {
-      checks.database = {
+      checks['database'] = {
         status: 'unhealthy',
         error: error instanceof Error ? error.message : 'Database connection failed'
       };

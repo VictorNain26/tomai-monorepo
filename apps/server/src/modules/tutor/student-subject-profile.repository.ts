@@ -41,7 +41,7 @@ export const studentSubjectProfileRepository = {
     subject: string;
     addedConcepts: string[];
     addedDifficulties: string[];
-    outcome?: string;
+    outcome?: string | undefined;
     ttlDays: number;
   }): Promise<StudentSubjectProfile> {
     const existing = await this.findByUserAndSubject(input.userId, input.subject);
@@ -83,7 +83,7 @@ export const studentSubjectProfileRepository = {
   async updateNotes(
     userId: string,
     subject: string,
-    patch: { masteryNotes?: string | null; difficulties?: string[] },
+    patch: { masteryNotes?: string | null | undefined; difficulties?: string[] | undefined },
   ): Promise<StudentSubjectProfile | undefined> {
     const [updated] = await db
       .update(studentSubjectProfiles)

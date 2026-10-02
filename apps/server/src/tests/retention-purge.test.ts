@@ -91,7 +91,7 @@ describe('Retention Purge Service', () => {
 
       expect(mockLogger.info).toHaveBeenCalledTimes(1);
       const [, meta] = mockLogger.info.mock.calls[0] as unknown as [string, Record<string, unknown>];
-      expect(meta.operation).toBe('retention-purge:run');
+      expect(meta['operation']).toBe('retention-purge:run');
     });
   });
 

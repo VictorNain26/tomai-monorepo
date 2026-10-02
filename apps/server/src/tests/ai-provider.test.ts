@@ -38,7 +38,7 @@ describe('mistralProvider', () => {
 
   it('sends prompt_cache_key from providerOptions', async () => {
     const { body } = await captureRequest({ promptCacheKey: 'session-42' });
-    expect(body?.prompt_cache_key).toBe('session-42');
+    expect(body?.['prompt_cache_key']).toBe('session-42');
   });
 
   it('omits prompt_cache_key without a key', async () => {
@@ -47,7 +47,7 @@ describe('mistralProvider', () => {
   });
 
   it('sends reasoning_effort for mistral-small-2603', async () => {
-    expect((await captureRequest({ reasoningEffort: 'high' })).body?.reasoning_effort).toBe('high');
-    expect((await captureRequest({ reasoningEffort: 'none' })).body?.reasoning_effort).toBe('none');
+    expect((await captureRequest({ reasoningEffort: 'high' })).body?.['reasoning_effort']).toBe('high');
+    expect((await captureRequest({ reasoningEffort: 'none' })).body?.['reasoning_effort']).toBe('none');
   });
 });

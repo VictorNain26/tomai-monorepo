@@ -46,10 +46,8 @@
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-
-    /* Not enabled yet, tracked in docs/suivi.md: */
-    /* exactOptionalPropertyTypes               */
-    /* noPropertyAccessFromIndexSignature       */
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
 
     /* Interop */
     "skipLibCheck": true,
