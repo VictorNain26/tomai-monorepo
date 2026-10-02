@@ -35,9 +35,16 @@ describe('programmeFor', () => {
     expect(programmeFor('sixieme', 'francais', 2026)?.source.id).toBe('francais-c3-2025');
   });
 
-  it('gives nothing in 4e for 2026-2027, when the 2026 text does not apply yet, and gives it from 2027', () => {
-    expect(programmeFor('quatrieme', 'mathematiques', 2026)).toBeNull();
+  it('gives the 2019 end-of-year expectations in 4e and 3e until the 2026 text applies', () => {
+    expect(programmeFor('quatrieme', 'mathematiques', 2026)?.source.id).toBe('mathematiques-attendus-4e-2019');
+    expect(programmeFor('troisieme', 'francais', 2026)?.source.id).toBe('francais-attendus-3e-2019');
     expect(programmeFor('quatrieme', 'mathematiques', 2027)?.source.id).toBe('mathematiques-c4-2026');
+    expect(programmeFor('troisieme', 'mathematiques', 2027)?.source.id).toBe('mathematiques-attendus-3e-2019');
+    expect(programmeFor('troisieme', 'mathematiques', 2028)?.source.id).toBe('mathematiques-c4-2026');
+  });
+
+  it('gives nothing before a text applies', () => {
+    expect(programmeFor('sixieme', 'mathematiques', 2024)).toBeNull();
   });
 
   it('gives nothing for a subject without an extracted text', () => {

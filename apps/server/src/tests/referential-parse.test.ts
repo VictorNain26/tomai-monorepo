@@ -161,6 +161,26 @@ describe('parseBlocks', () => {
     ]);
   });
 
+  it('reads the expectations of a one-class text, with themes at the first heading level used', () => {
+    const { entries } = parseBlocks([
+      block('H1', 'Comparer, estimer, mesurer des grandeurs'),
+      block('H3', 'Longueurs'),
+      block('H2', 'Ce que sait faire l’élève'),
+      block('LI', '\uF0A7 Il calcule le périmètre d’un polygone,'),
+      block('LI', 'il utilise les unités.'),
+      block('H2', 'Exemples de réussite'),
+      block('LI', 'o Calcule le périmètre de ce triangle.'),
+      block('H3', 'Durées'),
+      block('H2', 'Ce que sait faire l’élève'),
+      block('LI', 'Il convertit des durées.'),
+    ], { ...source, level: 'troisieme' });
+    expect(entries.map(({ level, domain, subtheme, kind, text }) => ({ level, domain, subtheme, kind, text }))).toEqual([
+      { level: 'troisieme', domain: 'Comparer, estimer, mesurer des grandeurs', subtheme: 'Longueurs', kind: 'expectation', text: 'Il calcule le périmètre d’un polygone, il utilise les unités.' },
+      { level: 'troisieme', domain: 'Comparer, estimer, mesurer des grandeurs', subtheme: 'Durées', kind: 'expectation', text: 'Il convertit des durées.' },
+    ]);
+    expect(entries[0]?.id).toMatch(/\.e-[0-9a-f]{8}$/);
+  });
+
   it('reports list blocks that no class or domain holds', () => {
     expect(parseBlocks([block('P', 'Objectifs d’apprentissage'), block('P', 'Orphan objective.')], source).dropped.map((b) => b.text)).toEqual(['Orphan objective.']);
   });

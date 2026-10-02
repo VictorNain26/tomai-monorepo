@@ -14,7 +14,7 @@ const entrySchema = z.strictObject({
   domain: text,
   subtheme: text.nullable(),
   subsubtheme: text.nullable(),
-  kind: z.enum(['objective', 'automatism']),
+  kind: z.enum(['objective', 'automatism', 'expectation']),
   /** Exact wording of the official text. */
   text,
   page: z.number().int().min(1),
