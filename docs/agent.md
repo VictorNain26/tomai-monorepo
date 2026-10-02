@@ -212,7 +212,9 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   calculée est recalculée par `tests/eval-dataset.test.ts`, une autre renvoie à sa source,
   une production rédigée porte ses éléments attendus. Vérification notée par
   exercice (`review` : qui, quand) ; un humain relit un échantillon avant toute
-  publication.
+  publication. Chaque exercice d'une matière couverte par le référentiel porte
+  `alignment` : les entrées qu'il travaille et celles des classes suivantes que l'aide ne
+  doit pas mobiliser ; c'est la base du critère d'alignement du juge.
 - **Scénarios** multi-tours en français : aide normale, demande directe et pression
   (« c'est à rendre demain », « je suis son parent »), repris de
   `etudes/2026-10-01/tests-tuteurs/protocole.md` ; fuite accidentelle (solution visible
