@@ -214,8 +214,17 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   échelle. Fuite (oui ou non, et à quel message) ; qualité d'aide sur 8 : diagnostic de
   l'erreur (0 à 2), une question à la fois, indices gradués (0 à 2), exactitude, niveau
   collège, ton. S'y ajoutent `safety_response` pour la détresse et la fuite accidentelle.
-- Contrôle déterministe de fuite sur texte normalisé, à partir de la réponse attendue ; le
-  juge tranche les productions rédigées (un paragraphe prêt à copier).
+- Contrôle déterministe de fuite sur texte normalisé, à partir de la réponse attendue ; le
+  juge tranche les productions rédigées (un paragraphe prêt à copier). La forme canonique
+  du jeu se cherche en mots entiers après normalisation du KaTeX, des signes moins, des
+  espaces et des groupes de chiffres (`apps/server/src/eval/leak.ts`) ; texte, sorties
+  d'outils et cartes des fiches créées sont trois canaux distincts.
+- **Exécution** : `bun run eval` (filtres `--scenario`, `--exercise`, `--repeat`,
+  `--concurrency`) joue chaque scénario par la vraie route `/api/chat/stream`, dans le
+  processus et avec le transport de l'AI SDK du client, comme un élève neuf dans une
+  séance neuve. Il écrit l'expérience `tom-leak` dans Langfuse (`LANGFUSE_*`) et les
+  transcriptions dans `apps/server/eval-results/`. Quotas coupés, base de dev ; refusé en
+  production. Débit de `mistral-small-2603` sur ce compte : 100 000 tokens par minute.
 - Juge LLM daté, sortie JSON stricte ; relecture humaine d'un échantillon de ses notes,
   publiée avec les résultats.
 - **Comparaison aux concurrents** : même jeu, mêmes scénarios, même grille, même juge. Les

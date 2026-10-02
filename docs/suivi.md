@@ -16,9 +16,9 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 2 du lot 1, exécuteur des scénarios et contrôle
-  déterministe de fuite, sur une branche courte dont le plan s'écrit d'abord dans
-  `docs/plans/` (`.claude/rules/plans-and-agents.md`).
+- **Prochaine action :** point 3 du lot 1, référentiel des programmes du collège
+  (mathématiques et français d'abord), sur une branche courte dont le plan s'écrit d'abord
+  dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -47,15 +47,6 @@ contraire.
   Éduscol et toute autre source se consultent pour s'en inspirer, jamais copiées ; aucun
   texte de tiers n'entre dans le jeu, le référentiel ou le prompt, en dehors des citations
   des programmes officiels.
-- **Contrôle déterministe de fuite** (point 2) : les `leakForms` du jeu sont des formes
-  canoniques en texte simple. Le contrôle compare des mots entiers après normalisation de
-  la sortie du tuteur, qui écrit les maths en KaTeX (`\frac{23}{12}`, `x^2`, `\,`), avec
-  des tirets ou signes moins variables et des espaces fines ; tester chaque forme sous ces
-  variantes, et contre des faux positifs (« hasard » pour « has », « 195 » pour « 19 »).
-- **Débit Mistral** (point 2) : `mistral-small-2603` est limité à 100 000 tokens par minute
-  et 1,67 requête par seconde sur ce compte (Admin › API › Limites, 2026-10-02). L'exécuteur
-  borne sa concurrence en conséquence ; une passe complète du jeu prend au moins une
-  vingtaine de minutes.
 - En cas d'erreur, le span OpenTelemetry d'un appel IA porte le message d'erreur de
   Mistral, c'est-à-dire le corps de sa réponse : vérifier qu'il ne contient pas de contenu
   d'élève avant de brancher le premier exporteur (Langfuse).
@@ -92,7 +83,12 @@ contraire.
   Revoir ce schéma pour repasser en strict, et unifier au passage les trois définitions des
   types de cartes (enum `card_type`, `modules/learning/card-generation.types.ts`, schémas Zod
   de `cards.schema.ts`).
-- **Quota** : `needsMonthlyReset` (`modules/billing/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
+- **Forfaits absents** : aucune migration ni aucun seed n'insère de ligne dans
+  `subscription_plans`. Sur une base neuve, `ensureUserSubscription`
+  (`modules/billing/quota.ts`) lève « Free plan not found in database » à chaque fin de
+  tour : la consommation n'est jamais comptée au quota (constaté par `bun run eval` le
+  2026-10-02). Les insérer par migration avec la correction du quota.
+- **Quota** : `needsMonthlyReset` (`modules/billing/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
   jour et de la semaine passent par date-fns. Une seule méthode.
 - `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
 
