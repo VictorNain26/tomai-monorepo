@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray, like, sql } from 'drizzle-orm';
 import { db } from '../../db/connection';
 import { user } from './auth.schema.js';
 
@@ -76,6 +76,17 @@ class UsersRepository {
       .returning();
 
     return result.length > 0;
+  }
+
+  /** Hard-deletes every user whose username starts with `prefix`, taken literally. */
+  async deleteByUsernamePrefix(prefix: string): Promise<number> {
+    const escaped = prefix.replace(/[\\%_]/g, '\\$&');
+    const result = await db
+      .delete(user)
+      .where(like(user.username, `${escaped}%`))
+      .returning({ id: user.id });
+
+    return result.length;
   }
 }
 
