@@ -46,6 +46,7 @@
     "db:pull": "bun --bun drizzle-kit pull --config=drizzle.config.ts",
     "db:health": "bun -e \"import('./src/platform/db/connection.js').then(m => m.healthCheck()).then(console.log)\"",
     "seed": "bun run src/scripts/seed-dev.ts",
+    "referential:extract": "bun src/referential/extract.ts",
     "eval": "NODE_ENV=test QUOTA_ENFORCEMENT_ENABLED=false LOG_LEVEL=warn bun src/eval/run.ts"
   },
   "dependencies": {
