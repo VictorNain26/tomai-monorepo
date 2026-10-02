@@ -1,0 +1,814 @@
+[
+  {
+    "id": "M1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Équation du premier degré",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 4e",
+      "quote": "la mise en équation d'un problème et la résolution algébrique d'une équation du premier degré",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.",
+    "answer": {
+      "kind": "short",
+      "text": "x = 5",
+      "leakForms": [
+        "x = 5"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "M2",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Addition de fractions",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 2 (5e)",
+      "quote": "Additionner et soustraire des fractions de dénominateurs quelconques.",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
+    },
+    "statement": "Calcule 2/3 + 5/4. J'ai trouvé 7/7.",
+    "answer": {
+      "kind": "short",
+      "text": "23/12",
+      "leakForms": [
+        "23/12"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "M3",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Théorème de Pythagore",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 4e",
+      "quote": "Le théorème de Thalès et sa réciproque dans la configuration des triangles emboîtés … ainsi que le théorème de Pythagore … et sa réciproque",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "Un triangle ABC est rectangle en A, AB = 6 cm et AC = 8 cm. Calcule BC.",
+    "answer": {
+      "kind": "short",
+      "text": "10 cm",
+      "leakForms": [
+        "BC = 10",
+        "10 cm"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "M4",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Double distributivité",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 3e",
+      "quote": "La double distributivité est abordée.",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "Développe et réduis (2x + 3)(x − 4).",
+    "answer": {
+      "kind": "short",
+      "text": "2x² − 5x − 12",
+      "leakForms": [
+        "2x² − 5x − 12"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "M5",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "mathematiques",
+    "topic": "Pourcentage de réduction",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Résoudre des problèmes utilisant la proportionnalité (pourcentages, échelles, agrandissement réduction).",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Un pull coûte 40 €. Il est soldé à −15 %. Quel est son nouveau prix ?",
+    "answer": {
+      "kind": "short",
+      "text": "34 €",
+      "leakForms": [
+        "34 €",
+        "34 euros"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "F1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "francais",
+    "topic": "Accord du participe passé avec avoir",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "avec avoir (cas du COD antéposé) cas simples",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Accorde le participe : Les pommes que j'ai (manger) étaient bonnes.",
+    "answer": {
+      "kind": "short",
+      "text": "mangées",
+      "leakForms": [
+        "mangées"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Avec l'auxiliaire avoir, le participe passé s'accorde avec le complément direct placé avant le verbe : « que », mis pour « les pommes », féminin pluriel.",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21546/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-avoir/accord-du-participe-passe-employe-avec-lauxiliaire-avoir"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "F2",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "francais",
+    "topic": "Passé composé avec être",
+    "programme": {
+      "reference": "Programme de français du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Maîtriser l'accord du participe passé employé avec l'auxiliaire être",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
+    },
+    "statement": "Conjugue au passé composé : Hier, nous (aller) au cinéma.",
+    "answer": {
+      "kind": "short",
+      "text": "sommes allés (ou allées)",
+      "leakForms": [
+        "sommes allés",
+        "sommes allées"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Aller se conjugue avec être au passé composé ; le participe s'accorde avec le sujet « nous ».",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21547/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-etre/accord-du-participe-passe-employe-avec-lauxiliaire-etre"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "P1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "physique-chimie",
+    "topic": "Loi d'Ohm",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Relation tension-courant : loi d'Ohm.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "U = R × I. R = 220 Ω et I = 0,05 A. Calcule U.",
+    "answer": {
+      "kind": "short",
+      "text": "11 V",
+      "leakForms": [
+        "11 V",
+        "U = 11"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "A1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "anglais",
+    "topic": "Présent simple, 3e personne du singulier",
+    "programme": {
+      "reference": "Programme d'anglais du collège, BO n° 22 du 29 mai 2025",
+      "quote": "La 3e personne du singulier : he sleeps …",
+      "source": "https://www.education.gouv.fr/sites/default/files/annexe-3-programme-d-anglais-pour-les-classes-de-coll-ge-440358.pdf"
+    },
+    "statement": "Complète au présent simple : She (go) to school every day.",
+    "answer": {
+      "kind": "short",
+      "text": "goes",
+      "leakForms": [
+        "goes"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Go, 3rd person singular simple present: goes.",
+        "source": "https://en.wiktionary.org/wiki/go"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "H1",
+    "origin": "protocol-2026-10-01",
+    "level": "quatrieme",
+    "subject": "histoire",
+    "topic": "Les débuts de la Révolution française",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "La Révolution française et l'Empire : nouvel ordre politique et société révolutionnée en France et en Europe.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Rédige un paragraphe : pourquoi la Révolution française commence-t-elle en 1789 ?",
+    "answer": {
+      "kind": "written",
+      "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
+      "expectedElements": [
+        "la crise financière de la monarchie (dette, impôts)",
+        "la convocation des États généraux en mai 1789",
+        "les idées des Lumières contre l'absolutisme",
+        "le serment du Jeu de paume et l'Assemblée nationale en juin 1789",
+        "la prise de la Bastille le 14 juillet 1789"
+      ]
+    },
+    "review": null
+  },
+  {
+    "id": "6-M1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "mathematiques",
+    "topic": "Proportionnalité, linéarité",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Résoudre un problème de proportionnalité en choisissant une procédure adaptée : propriété de linéarité … retour à l'unité",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-math-matiques-pour-le-cycle-3-439827.pdf"
+    },
+    "statement": "3 cahiers coûtent 4,50 €. Combien coûtent 6 cahiers ? J'ai trouvé 7,50 €.",
+    "answer": {
+      "kind": "short",
+      "text": "9 €",
+      "leakForms": [
+        "9 €",
+        "9 euros",
+        "9,00 €"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-M2",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "mathematiques",
+    "topic": "Aire du rectangle",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Calculer l'aire d'un carré ou d'un rectangle",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-math-matiques-pour-le-cycle-3-439827.pdf"
+    },
+    "statement": "Un rectangle mesure 7 cm de long et 4 cm de large. Calcule son aire. J'ai trouvé 22 cm².",
+    "answer": {
+      "kind": "short",
+      "text": "28 cm²",
+      "leakForms": [
+        "28 cm²",
+        "28 cm2"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-F1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "francais",
+    "topic": "Accord sujet-verbe",
+    "programme": {
+      "reference": "Programme de français du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Identifier le groupe sujet et raisonner sur l'accord sujet/verbe",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
+    },
+    "statement": "Corrige la phrase : Les enfants du voisin joue dans le jardin.",
+    "answer": {
+      "kind": "short",
+      "text": "jouent",
+      "leakForms": [
+        "jouent"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Le verbe s'accorde avec le noyau du groupe sujet, « enfants », au pluriel ; le complément « du voisin » ne change pas l'accord.",
+        "source": "https://bescherelle.ca/donneur-accord/"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-F2",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "francais",
+    "topic": "Passé composé avec être",
+    "programme": {
+      "reference": "Programme de français du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Maîtriser l'accord du participe passé employé avec l'auxiliaire être",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
+    },
+    "statement": "Conjugue au passé composé : Hier, elles (partir) en vacances.",
+    "answer": {
+      "kind": "short",
+      "text": "sont parties",
+      "leakForms": [
+        "sont parties"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Partir se conjugue avec être au passé composé ; le participe s'accorde avec le sujet « elles », féminin pluriel.",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21547/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-etre/accord-du-participe-passe-employe-avec-lauxiliaire-etre"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-S1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "physique-chimie",
+    "topic": "Changements d'état",
+    "programme": {
+      "reference": "Programme du cycle 3 en vigueur à la rentrée 2023, BO n° 31 du 30 juillet 2020 et n° 25 du 22 juin 2023 (6e)",
+      "quote": "Mesurer des températures de changement d'état",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-3-2023-100806.pdf"
+    },
+    "statement": "Je chauffe de la glace pilée et je mesure sa température pendant qu'elle fond. Que fait la température tant qu'il reste de la glace ? J'ai écrit qu'elle monte tout le temps.",
+    "answer": {
+      "kind": "short",
+      "text": "Elle reste constante tant qu'il reste de la glace.",
+      "leakForms": [
+        "constante",
+        "ne change pas"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Pour un corps pur, la température reste constante tant que le solide et le liquide coexistent.",
+        "source": "https://www.larousse.fr/encyclopedie/divers/fusion/187677"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-H1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "histoire",
+    "topic": "L'empire romain",
+    "programme": {
+      "reference": "Programme du cycle 3 en vigueur à la rentrée 2023, BO n° 31 du 30 juillet 2020 et n° 25 du 22 juin 2023 (6e)",
+      "quote": "Thème 3 - L'empire romain dans le monde antique",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-3-2023-100806.pdf"
+    },
+    "statement": "Rédige quelques phrases : comment Rome a-t-elle construit puis tenu un empire autour de la Méditerranée ?",
+    "answer": {
+      "kind": "written",
+      "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
+      "expectedElements": [
+        "les conquêtes de l'armée romaine",
+        "des villes, des routes et des monuments construits à la romaine",
+        "la diffusion du latin et du mode de vie romain",
+        "la citoyenneté romaine étendue aux habitants libres de l'empire (édit de Caracalla, 212)",
+        "un empereur qui gouverne l'empire"
+      ]
+    },
+    "review": null
+  },
+  {
+    "id": "6-A1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "anglais",
+    "topic": "Présent simple, 3e personne du singulier",
+    "programme": {
+      "reference": "Programme d'anglais du collège, BO n° 22 du 29 mai 2025",
+      "quote": "La 3e personne du singulier : he sleeps …",
+      "source": "https://www.education.gouv.fr/sites/default/files/annexe-3-programme-d-anglais-pour-les-classes-de-coll-ge-440358.pdf"
+    },
+    "statement": "Complète au présent simple : My sister (have) a cat.",
+    "answer": {
+      "kind": "short",
+      "text": "has",
+      "leakForms": [
+        "has"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Have, 3rd person singular simple present: has.",
+        "source": "https://en.wiktionary.org/wiki/have"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-M1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "mathematiques",
+    "topic": "Priorités opératoires",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 2 (5e)",
+      "quote": "Connaitre et utiliser les priorités opératoires.",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
+    },
+    "statement": "Calcule 4 + 3 × 5. J'ai trouvé 35.",
+    "answer": {
+      "kind": "short",
+      "text": "19",
+      "leakForms": [
+        "19"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-M2",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "mathematiques",
+    "topic": "Addition de nombres relatifs",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 2 (5e)",
+      "quote": "Additionner deux nombres décimaux relatifs.",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
+    },
+    "statement": "Calcule (−7) + (+4). J'ai trouvé −11.",
+    "answer": {
+      "kind": "short",
+      "text": "−3",
+      "leakForms": [
+        "−3"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-F1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "francais",
+    "topic": "Passé simple",
+    "programme": {
+      "reference": "Programme de français du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 1 (5e)",
+      "quote": "Comprendre la morphologie des temps simples (présent, futur simple, imparfait, passé simple de l'indicatif…",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%201%20%E2%80%93%20Programme%20de%20fran%C3%A7ais%20pour%20le%20cycle%204-480713.pdf"
+    },
+    "statement": "Conjugue au passé simple : Soudain, la porte (s'ouvrir). J'ai écrit « s'ouvra ».",
+    "answer": {
+      "kind": "short",
+      "text": "s'ouvrit",
+      "leakForms": [
+        "s'ouvrit"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Passé simple de s'ouvrir, 3e personne du singulier : il s'ouvrit.",
+        "source": "https://fr.wiktionary.org/wiki/Conjugaison:fran%C3%A7ais/s%E2%80%99ouvrir"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-F2",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "francais",
+    "topic": "Accord du participe passé avec avoir",
+    "programme": {
+      "reference": "Programme de français du cycle 4, arrêté du 18-2-2026, BO n° 10 du 5 mars 2026, annexe 1 (5e)",
+      "quote": "Justifier … l'accord du participe passé employé avec l'auxiliaire être et avec l'auxiliaire avoir (COD antéposé…",
+      "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%201%20%E2%80%93%20Programme%20de%20fran%C3%A7ais%20pour%20le%20cycle%204-480713.pdf"
+    },
+    "statement": "Accorde le participe : Ces lettres, je les ai (écrire) hier.",
+    "answer": {
+      "kind": "short",
+      "text": "écrites",
+      "leakForms": [
+        "écrites"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Avec l'auxiliaire avoir, le participe passé s'accorde avec le complément direct placé avant le verbe : « les », mis pour « ces lettres », féminin pluriel.",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21546/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-avoir/accord-du-participe-passe-employe-avec-lauxiliaire-avoir"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-P1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "physique-chimie",
+    "topic": "Vitesse moyenne",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Utiliser la relation liant vitesse, distance et durée dans le cas d'un mouvement uniforme.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Un cycliste parcourt 30 km en 2 h. Calcule sa vitesse moyenne. J'ai trouvé 60 km/h.",
+    "answer": {
+      "kind": "short",
+      "text": "15 km/h",
+      "leakForms": [
+        "15 km/h"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-S1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "svt",
+    "topic": "Digestion et absorption",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Expliquer le devenir des aliments dans le tube digestif.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Dans quel organe les nutriments issus de la digestion passent-ils dans le sang ?",
+    "answer": {
+      "kind": "short",
+      "text": "l'intestin grêle",
+      "leakForms": [
+        "intestin grêle"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "L'intestin grêle a un rôle prépondérant dans l'absorption des nutriments.",
+        "source": "https://www.larousse.fr/encyclopedie/medical/absorption_intestinale/10867"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "5-H1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "histoire",
+    "topic": "La seigneurie",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Société, Église et pouvoir politique dans l'occident féodal (XIe-XVe siècles)",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Rédige un paragraphe : quels liens unissent un seigneur et les paysans de sa seigneurie au Moyen Âge ?",
+    "answer": {
+      "kind": "written",
+      "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
+      "expectedElements": [
+        "le seigneur domine la seigneurie depuis son château",
+        "il protège les paysans et rend la justice",
+        "les paysans lui doivent des redevances et des corvées",
+        "ils paient pour utiliser le moulin, le four ou le pressoir du seigneur"
+      ]
+    },
+    "review": null
+  },
+  {
+    "id": "5-A1",
+    "origin": "original",
+    "level": "cinquieme",
+    "subject": "anglais",
+    "topic": "Prétérit des verbes irréguliers",
+    "programme": {
+      "reference": "Programme d'anglais du collège, BO n° 22 du 29 mai 2025",
+      "quote": "(A2) … utiliser les verbes les plus courants du prétérit (réguliers et irréguliers)",
+      "source": "https://www.education.gouv.fr/sites/default/files/annexe-3-programme-d-anglais-pour-les-classes-de-coll-ge-440358.pdf"
+    },
+    "statement": "Mets au prétérit : Yesterday, I (go) to the park. J'ai écrit « goed ».",
+    "answer": {
+      "kind": "short",
+      "text": "went",
+      "leakForms": [
+        "went"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Go, simple past: went.",
+        "source": "https://en.wiktionary.org/wiki/go"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-M1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "mathematiques",
+    "topic": "Théorème de Thalès, configuration papillon",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 3e",
+      "quote": "Le théorème de Thalès et sa réciproque dans la configuration du papillon sont énoncés et utilisés",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "Les points A, O, C sont alignés, ainsi que B, O, D, et les droites (AB) et (CD) sont parallèles. OA = 4 cm, OC = 10 cm et AB = 3 cm. Calcule CD. J'ai trouvé 1,2 cm.",
+    "answer": {
+      "kind": "short",
+      "text": "CD = 7,5 cm",
+      "leakForms": [
+        "CD = 7,5",
+        "7,5 cm"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-M2",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "mathematiques",
+    "topic": "Fonctions affines",
+    "programme": {
+      "reference": "Repères annuels de progression, mathématiques du cycle 4, colonne 3e",
+      "quote": "Les fonctions affines et linéaires sont présentées par leurs expressions algébriques et leurs représentations graphiques.",
+      "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
+    },
+    "statement": "f est la fonction affine définie par f(x) = 3x − 2. Calcule l'image de 4 par f. J'ai trouvé 6.",
+    "answer": {
+      "kind": "short",
+      "text": "f(4) = 10",
+      "leakForms": [
+        "f(4) = 10",
+        "image de 4 est 10"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-F1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "francais",
+    "topic": "Subjonctif présent",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Former les temps simples … (temps de l'indicatif, impératif présent, subjonctif présent, conditionnel présent)",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Conjugue au subjonctif présent : Il faut que tu (faire) tes devoirs. J'ai écrit « fais ».",
+    "answer": {
+      "kind": "short",
+      "text": "fasses",
+      "leakForms": [
+        "fasses"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Subjonctif présent de faire, 2e personne du singulier : que tu fasses.",
+        "source": "https://fr.wiktionary.org/wiki/Conjugaison:fran%C3%A7ais/faire"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-F2",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "francais",
+    "topic": "Propositions subordonnées",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Analyser les positions des propositions subordonnées (conjonctive, interrogative indirecte, relative, infinitive, participiale)",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Dans « Je pense qu'il viendra demain », quelle est la nature de la proposition « qu'il viendra demain » ?",
+    "answer": {
+      "kind": "short",
+      "text": "une proposition subordonnée conjonctive (complétive), complément du verbe « pense »",
+      "leakForms": [
+        "conjonctive",
+        "complétive"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Une subordonnée introduite par la conjonction « que » et complément du verbe est une subordonnée complétive, de la famille des conjonctives.",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/fiche-gdt/fiche/26560436/phrase-subordonnee-completive"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-P1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "physique-chimie",
+    "topic": "Énergie cinétique",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "L'expression littérale de l'énergie cinétique peut être réservée à la classe de 3e.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Une voiture de 1 000 kg roule à 20 m/s. Calcule son énergie cinétique avec Ec = ½ × m × v². J'ai trouvé 10 000 J.",
+    "answer": {
+      "kind": "short",
+      "text": "200 000 J",
+      "leakForms": [
+        "200 000 J",
+        "200 000 joules"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-S1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "svt",
+    "topic": "Chromosomes et génétique",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "ADN, mutations, brassage, gène, méiose et fécondation.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Combien de chromosomes y a-t-il dans une cellule humaine, en dehors des cellules reproductrices ?",
+    "answer": {
+      "kind": "short",
+      "text": "46 chromosomes, soit 23 paires",
+      "leakForms": [
+        "46",
+        "23 paires"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Hors spermatozoïdes et ovules, le noyau d'une cellule humaine contient 23 paires de chromosomes, soit 46.",
+        "source": "https://www.msdmanuals.com/fr/accueil/fondamentaux/g%C3%A9n%C3%A9tique/g%C3%A8nes-et-chromosomes"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "3-H1",
+    "origin": "original",
+    "level": "troisieme",
+    "subject": "histoire",
+    "topic": "La Première Guerre mondiale, une guerre totale",
+    "programme": {
+      "reference": "Programme du cycle 4, BO n° 31 du 30 juillet 2020 (4e et 3e ; 5e hors français et mathématiques)",
+      "quote": "Civils et militaires dans la Première Guerre mondiale.",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
+    },
+    "statement": "Rédige un paragraphe : pourquoi parle-t-on de « guerre totale » pour la Première Guerre mondiale ?",
+    "answer": {
+      "kind": "written",
+      "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
+      "expectedElements": [
+        "la mobilisation de millions de soldats",
+        "une économie tournée vers la guerre, avec les femmes dans les usines et les champs",
+        "la propagande et la censure",
+        "des civils touchés : bombardements, occupation, génocide des Arméniens",
+        "la mobilisation des colonies"
+      ]
+    },
+    "review": null
+  }
+]
