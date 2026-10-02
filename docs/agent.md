@@ -166,7 +166,12 @@ Ordre du prompt, du plus stable au plus variable :
    pédagogie, sécurité, format. Aucune donnée d'élève.
 2. Définitions d'outils.
 3. Référentiel du programme pour le niveau et la matière de la séance, constant pendant la
-   séance, donc relu depuis le cache (`etudes/2026-10-02/alignement.md`, § 4 ; lot 2).
+   séance, donc relu depuis le cache (`etudes/2026-10-02/alignement.md`, § 4 ; lot 2). Il
+   vient de `apps/server/src/referential/` (`programmeFor(niveau, matière, rentrée)`) :
+   objectifs et automatismes au libellé exact, extraits des annexes PDF balisées du BO par
+   l'arbre de structure de pdf.js, fractions et exposants reconstruits depuis la position
+   des chiffres, chaque libellé relu dans le texte brut de sa page, empreinte du PDF
+   épinglée.
 4. Bloc de faits de l'élève (niveau, matière, difficultés, palier en cours),
    délimité comme données.
 5. Résumé des tours anciens + tours récents bruts.

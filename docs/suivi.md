@@ -16,9 +16,9 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 3 du lot 1, référentiel des programmes du collège
-  (mathématiques et français d'abord), sur une branche courte dont le plan s'écrit d'abord
-  dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
+- **Prochaine action :** point 3 du lot 1, suite : mathématiques et français de 4e et de 3e
+  en 2026-2027 (programme de 2020 et repères annuels de 2019), sur une branche courte dont
+  le plan s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -32,12 +32,12 @@ contraire.
 
 ### Lot 1 — harnais d'évaluation et observabilité
 
-- **Référentiel des programmes du collège** (point 3, `etudes/2026-10-02/alignement.md`,
-  § 5) : une version par texte officiel, extraite de l'arbre de structure des annexes PDF
-  balisées par pdf.js (via `unpdf`), une entrée par objectif avec NOR, BO, SHA-256 du PDF
-  et page, clé par niveau puis enseignement, relue par un humain. Les formules disparaissent
-  de la couche texte : les compléter à la relecture. En 2026-2027 coexistent les programmes
-  de 2025 (6e), de 2026 (5e, français et mathématiques) et de 2020 (4e, 3e).
+- **Référentiel des programmes du collège** (point 3) : chaîne en place dans
+  `apps/server/src/referential/` (`bun run referential:extract`) avec les programmes de
+  mathématiques et de français de 2025 (6e) et de 2026 (5e, puis 4e en 2027 et 3e en 2028).
+  Restent, une PR chacun : la 4e et la 3e en 2026-2027 (programme de 2020, écrit par cycle,
+  et repères annuels de 2019) ; sciences, histoire-géographie, anglais ; le rattachement
+  des exercices du jeu à leur objectif et à leurs notions interdites.
 - **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
   « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
   bon niveau sans notion hors programme, jamais la réponse. Les items propres de la 6e à la
