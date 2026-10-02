@@ -32,6 +32,7 @@ ENV BUILD_DATE=${BUILD_DATE}
 
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/server/package.json ./apps/server/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
 
 # Full install (dev + prod) for build
 RUN --mount=type=cache,target=/root/.bun/install/cache \
@@ -40,7 +41,12 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 # Sources
 COPY apps/server/src/ ./apps/server/src/
 COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./apps/server/
-COPY tsconfig.base.json ./
+COPY packages/eslint-config/*.js ./packages/eslint-config/
+COPY tsconfig.base.json turbo.json ./
+
+# bun build inlines process.env.NODE_ENV, bundled dependencies included: set it
+# after the install, which still needs the dev dependencies.
+ENV NODE_ENV=production
 
 WORKDIR /app/apps/server
 
@@ -48,7 +54,7 @@ WORKDIR /app/apps/server
 # Both are bundled with --packages external; their externals must resolve against
 # the same node_modules that production stage gets (= this stage's, see below).
 RUN bun run typecheck:strict && \
-    bun run lint:ci && \
+    bun run lint && \
     bun run build && \
     test -f dist/index.js -a -f dist/migrate.js || (echo "ERREUR: dist/index.js ou dist/migrate.js manquant" && exit 1)
 
@@ -59,6 +65,7 @@ WORKDIR /app
 
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/server/package.json ./apps/server/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
 
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --filter tomai-server
