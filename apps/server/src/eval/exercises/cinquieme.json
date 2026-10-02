@@ -21,7 +21,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "5-M2",
@@ -45,7 +48,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "5-F1",
@@ -71,7 +77,10 @@
         "source": "https://fr.wiktionary.org/wiki/Conjugaison:fran%C3%A7ais/s%E2%80%99ouvrir"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "5-F2",
@@ -97,7 +106,10 @@
         "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21546/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-avoir/accord-du-participe-passe-employe-avec-lauxiliaire-avoir"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "5-P1",
@@ -121,7 +133,10 @@
         "method": "computation"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "5-S1",
@@ -147,7 +162,10 @@
         "source": "https://www.larousse.fr/encyclopedie/medical/absorption_intestinale/10867"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "5-H1",
@@ -171,7 +189,10 @@
         "ils paient pour utiliser le moulin, le four ou le pressoir du seigneur"
       ]
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   },
   {
     "id": "5-A1",
@@ -197,6 +218,9 @@
         "source": "https://en.wiktionary.org/wiki/go"
       }
     },
-    "review": null
+    "review": {
+      "by": "Claude (vérification outillée)",
+      "at": "2026-10-02"
+    }
   }
 ]
