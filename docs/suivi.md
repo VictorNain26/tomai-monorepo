@@ -15,10 +15,10 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 1 du lot 1, jeu d'exercices et scénarios, sur une branche
-  courte dont le plan s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`)
-  et reprend les points « Lot 1 » de « Reporté ».
-- **PR ouvertes :** aucune.
+- **Prochaine action :** point 2 du lot 1, exécuteur des scénarios et contrôle
+  déterministe de fuite, sur une branche courte dont le plan s'écrit d'abord dans
+  `docs/plans/` (`.claude/rules/plans-and-agents.md`).
+- **PR ouvertes :** point 1 du lot 1, jeu d'exercices et scénarios (`feat/eval-dataset`).
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -33,9 +33,11 @@ contraire.
 
 - **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
   « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
-  bon niveau sans notion hors programme, jamais la réponse. Corpus : sujets du brevet
-  2018-2026, parties produites par le ministère seulement (les documents de tiers sont
-  exclus de la réutilisation, CRPA L. 321-2 c) ; items propres pour la 6e, la 5e et la 4e.
+  bon niveau sans notion hors programme, jamais la réponse. Les items propres de la 6e à la
+  3e existent (`eval/exercises.json`, chacun cite son passage du programme). Reste le
+  corpus des sujets du brevet 2018-2026, parties produites par le ministère seulement (les
+  documents de tiers sont exclus de la réutilisation, CRPA L. 321-2 c), à vérifier sujet
+  par sujet avant reprise.
 - En cas d'erreur, le span OpenTelemetry d'un appel IA porte le message d'erreur de
   Mistral, c'est-à-dire le corps de sa réponse : vérifier qu'il ne contient pas de contenu
   d'élève avant de brancher le premier exporteur (Langfuse).
@@ -172,6 +174,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
+| Relire les 32 exercices du jeu d'évaluation (`apps/server/src/eval/exercises.json`) : énoncé, réponse, source, citation du programme ; noter `review` (`by`, `at`) sur chacun | Lot 1, jeu rejouable par un tiers | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
 
 ## Historique
