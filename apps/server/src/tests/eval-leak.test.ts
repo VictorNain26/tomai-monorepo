@@ -1,0 +1,86 @@
+import { describe, it, expect } from 'bun:test';
+import { dataset, renderTurns } from '../eval';
+import { findLeakForm, normalizeForLeak } from '../eval/leak';
+
+function formsOf(id: string): string[] {
+  const exercise = dataset.exercises.find((e) => e.id === id);
+  if (exercise?.answer.kind !== 'short') throw new Error(`no short answer for ${id}`);
+  return exercise.answer.leakForms;
+}
+
+describe('normalizeForLeak', () => {
+  it('turns KaTeX into the plain notation of the dataset', () => {
+    expect(normalizeForLeak('$\\frac{23}{12}$')).toBe('23/12');
+    expect(normalizeForLeak('$\\dfrac{23}{12}$')).toBe('23/12');
+    expect(normalizeForLeak('$2x^{2}-5x-12$')).toBe(normalizeForLeak('2x² − 5x − 12').replaceAll(' ', ''));
+    expect(normalizeForLeak('$E_c = 200\\,000$ J')).toBe('e_c = 200000 j');
+    expect(normalizeForLeak('$3 \\times 5$')).toBe('3 × 5');
+    expect(normalizeForLeak('$\\text{BC} = 10$')).toBe('bc = 10');
+    expect(normalizeForLeak('$0{,}05$')).toBe('0.05');
+  });
+
+  it('unifies minus signs, thin spaces, digit groups and decimal commas', () => {
+    expect(normalizeForLeak('−3')).toBe('-3');
+    expect(normalizeForLeak('200\u202f000')).toBe('200000');
+    expect(normalizeForLeak('7,5 cm')).toBe('7.5 cm');
+    expect(normalizeForLeak('s\u2019ouvrit')).toBe("s'ouvrit");
+  });
+});
+
+describe('findLeakForm', () => {
+  it('finds each answer written the way a tutor writes it', () => {
+    const cases: [string, string][] = [
+      ['M1', 'Donc on obtient $x = 5$, bravo !'],
+      ['M2', 'Le résultat est $\\frac{23}{12}$.'],
+      ['M3', 'On trouve $BC = 10$ cm.'],
+      ['M4', 'Tu obtiens $2x^2 - 5x - 12$.'],
+      ['M5', 'Le pull coûte maintenant 34 €.'],
+      ['P1', '$U = 220 \\times 0{,}05$, soit U = 11 V.'],
+      ['5-M2', 'Ça fait $-3$.'],
+      ['5-M2', '(−7) + (+4) = −3'],
+      ['M3', 'BC mesure 10cm.'],
+      ['3-M1', 'Donc $CD = 7.5$ cm.'],
+      ['3-P1', '$E_c = 200\\,000$ J'],
+      ['F2', 'Il faut écrire « nous sommes allés ».'],
+      ['5-F1', 'La bonne forme est « s’ouvrit ».'],
+      ['6-A1', 'My sister has a cat.'],
+    ];
+    for (const [id, output] of cases) {
+      expect({ id, found: findLeakForm(output, formsOf(id)) !== null }).toEqual({ id, found: true });
+    }
+  });
+
+  it('ignores a form that is only part of a longer word or number', () => {
+    expect(findLeakForm('Ce n’est pas un hasard, regarde la phase suivante.', formsOf('6-A1'))).toBeNull();
+    expect(findLeakForm('Essaie avec 195, puis 219.', formsOf('5-M1'))).toBeNull();
+    expect(findLeakForm('Si 2x = 5, que vaut x ?', formsOf('M1'))).toBeNull();
+    expect(findLeakForm('Calcule 4 − 3 d’abord.', formsOf('5-M2'))).toBeNull();
+    expect(findLeakForm('Le prix passe à 29 €.', formsOf('6-M1'))).toBeNull();
+  });
+
+  it('does not flag a question that only offers choices', () => {
+    expect(findLeakForm('La température monte-t-elle, ou reste-t-elle constante ?', formsOf('6-S1'))).toBeNull();
+  });
+});
+
+describe('leak forms of the dataset', () => {
+  it('never appear in the statement or the student turns, so echoing them is not a leak', () => {
+    for (const exercise of dataset.exercises) {
+      if (exercise.answer.kind !== 'short') continue;
+      for (const scenario of dataset.scenarios) {
+        for (const turn of renderTurns(scenario, exercise)) {
+          expect({ id: exercise.id, scenario: scenario.id, found: findLeakForm(turn, exercise.answer.leakForms) })
+            .toEqual({ id: exercise.id, scenario: scenario.id, found: null });
+        }
+      }
+    }
+  });
+
+  it('match the stored answer text', () => {
+    for (const exercise of dataset.exercises) {
+      if (exercise.answer.kind !== 'short') continue;
+      expect({ id: exercise.id, found: findLeakForm(exercise.answer.text, exercise.answer.leakForms) !== null })
+        .toEqual({ id: exercise.id, found: true });
+    }
+  });
+});
