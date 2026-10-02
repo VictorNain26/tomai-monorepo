@@ -16,9 +16,10 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 3 du lot 1, suite : mathématiques et français de 4e et de 3e
-  en 2026-2027 (programme de 2020 et repères annuels de 2019), sur une branche courte dont
-  le plan s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
+- **Prochaine action :** point 3 du lot 1, suite : repères annuels de progression du
+  cycle 4 (annexes 25 et 26 de 2019) et rattachement des exercices du jeu à leur entrée du
+  référentiel, sur une branche courte dont le plan s'écrit d'abord dans `docs/plans/`
+  (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -35,10 +36,13 @@ contraire.
 - **Référentiel des programmes du collège** (point 3) : chaîne en place dans
   `apps/server/src/referential/` (`bun run referential:extract`) avec les programmes de
   mathématiques et de français de 2025 (6e) et de 2026 (5e, puis 4e en 2027 et 3e en 2028),
-  798 entrées.
-  Restent, une PR chacun : la 4e et la 3e en 2026-2027 (programme de 2020, écrit par cycle,
-  et repères annuels de 2019) ; sciences, histoire-géographie, anglais ; le rattachement
-  des exercices du jeu à leur objectif et à leurs notions interdites.
+  798 entrées ; 1 063 avec les attendus de 2019.
+  La 4e et la 3e de 2026-2027 lisent les attendus de fin d'année de 2019 (annexes 15 à 18
+  de la note de service n° 2019-072) : le programme de 2020, écrit par cycle et balisé en
+  façade seulement, n'est pas extrait. Le jeu de données « Compléments aux programmes du
+  second degré » rattache ces annexes aux mauvaises classes ; la classe se lit sur
+  l'en-tête rendu du PDF. Restent, une PR chacun : repères annuels du cycle 4 et
+  rattachement des exercices ; sciences, histoire-géographie, anglais.
 - **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
   « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
   bon niveau sans notion hors programme, jamais la réponse. Les items propres de la 6e à la
