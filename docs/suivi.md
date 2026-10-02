@@ -34,7 +34,8 @@ contraire.
 
 - **Référentiel des programmes du collège** (point 3) : chaîne en place dans
   `apps/server/src/referential/` (`bun run referential:extract`) avec les programmes de
-  mathématiques et de français de 2025 (6e) et de 2026 (5e, puis 4e en 2027 et 3e en 2028).
+  mathématiques et de français de 2025 (6e) et de 2026 (5e, puis 4e en 2027 et 3e en 2028),
+  798 entrées.
   Restent, une PR chacun : la 4e et la 3e en 2026-2027 (programme de 2020, écrit par cycle,
   et repères annuels de 2019) ; sciences, histoire-géographie, anglais ; le rattachement
   des exercices du jeu à leur objectif et à leurs notions interdites.

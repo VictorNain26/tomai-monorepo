@@ -169,9 +169,12 @@ Ordre du prompt, du plus stable au plus variable :
    séance, donc relu depuis le cache (`etudes/2026-10-02/alignement.md`, § 4 ; lot 2). Il
    vient de `apps/server/src/referential/` (`programmeFor(niveau, matière, rentrée)`) :
    objectifs et automatismes au libellé exact, extraits des annexes PDF balisées du BO par
-   l'arbre de structure de pdf.js, fractions et exposants reconstruits depuis la position
-   des chiffres, chaque libellé relu dans le texte brut de sa page, empreinte du PDF
-   épinglée.
+   l'arbre de structure de pdf.js, empreinte du PDF épinglée. Fractions et exposants sont
+   reconstruits depuis la position et la taille des chiffres, puis vérifiés à l'œil sur la
+   page rendue. L'extraction échoue si un bloc d'une liste d'objectifs n'a ni classe ni
+   domaine, ou si un libellé ne se retrouve pas, lettres, chiffres et symboles dans
+   l'ordre, dans le texte brut de sa page ; les notes pour l'enseignant écartées des
+   automatismes sont listées.
 4. Bloc de faits de l'élève (niveau, matière, difficultés, palier en cours),
    délimité comme données.
 5. Résumé des tours anciens + tours récents bruts.
