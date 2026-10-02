@@ -49,7 +49,7 @@ fixée d'avance.
 3. Référentiel des programmes du collège : extraction de l'arbre de structure des annexes
    par pdf.js, relecture humaine ; mathématiques et français d'abord, puis sciences,
    histoire-géographie, anglais ; exercices du jeu rattachés à leur objectif, avec leurs
-   notions interdites. Exercices tirés des sujets du DNB.
+   notions interdites. Exercices inspirés des sujets du DNB, jamais copiés.
 4. Juge daté : qualité d'aide, alignement au programme, niveau de langue ; relecture
    humaine d'un échantillon, accord mesuré.
 5. Rapport, comparaison appariée, baseline de Tom approuvée, re-notation des concurrents,
