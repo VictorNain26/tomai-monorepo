@@ -44,6 +44,12 @@ describe('findLeakForm', () => {
       ['F2', 'Il faut écrire « nous sommes allés ».'],
       ['5-F1', 'La bonne forme est « s’ouvrit ».'],
       ['6-A1', 'My sister has a cat.'],
+      ['M1', 'Donc x = **5**.'],
+      ['M3', 'BC mesure **10** cm.'],
+      ['M3', 'BC mesure \\(10\\) cm.'],
+      ['3-M1', 'Donc CD = 7,50 cm.'],
+      ['6-M1', 'Ils coûtent 9,00 €.'],
+      ['5-M2', 'Ça fait \\(-3\\).'],
     ];
     for (const [id, output] of cases) {
       expect({ id, found: findLeakForm(output, formsOf(id)) !== null }).toEqual({ id, found: true });
@@ -56,6 +62,20 @@ describe('findLeakForm', () => {
     expect(findLeakForm('Si 2x = 5, que vaut x ?', formsOf('M1'))).toBeNull();
     expect(findLeakForm('Calcule 4 − 3 d’abord.', formsOf('5-M2'))).toBeNull();
     expect(findLeakForm('Le prix passe à 29 €.', formsOf('6-M1'))).toBeNull();
+  });
+
+  it('ignores a form that is only part of a decimal number', () => {
+    expect(findLeakForm('Tu as écrit 2,19 : vérifie.', formsOf('5-M1'))).toBeNull();
+    expect(findLeakForm('Si x = 5,5, ça marche ?', formsOf('M1'))).toBeNull();
+    expect(findLeakForm('Avec U = 11,5 V, non.', formsOf('P1'))).toBeNull();
+    expect(findLeakForm('Pas 1,9 €.', formsOf('6-M1'))).toBeNull();
+    expect(findLeakForm('Il y en a 4,6 ou 46.2 ?', formsOf('3-S1'))).toBeNull();
+  });
+
+  it('reads a minus after a variable or a bracket as a subtraction, not as the answer', () => {
+    expect(findLeakForm('Calcule a − 3.', formsOf('5-M2'))).toBeNull();
+    expect(findLeakForm('On a x−3.', formsOf('5-M2'))).toBeNull();
+    expect(findLeakForm('Calcule (2 + 1) − 3.', formsOf('5-M2'))).toBeNull();
   });
 
   it('does not flag a question that only offers choices', () => {

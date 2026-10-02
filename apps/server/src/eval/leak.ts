@@ -14,6 +14,8 @@ export function normalizeForLeak(text: string): string {
     .replace(/\^\{\s*(\d+)\s*\}|\^(\d)/g, (_match, braced: string | undefined, bare: string | undefined) => braced ?? bare ?? '')
     .replace(/\\(?:times|cdot)/g, '×')
     .replace(/\\(?:left|right)/g, '')
+    .replace(/\\[()[\]]/g, ' ')
+    .replace(/\*\*|__|`/g, '')
     .replace(/\\(?:[,;:!]|quad|qquad)/g, ' ')
     .replace(/\{,\}/g, ',')
     .replace(/\$+/g, ' ')
@@ -23,14 +25,16 @@ export function normalizeForLeak(text: string): string {
     .replace(/[\u00a0\u2007\u2009\u202f]/g, ' ')
     .replace(/(\d) (?=\d{3}(?!\d))/g, '$1')
     .replace(/(\d),(?=\d)/g, '$1.')
+    .replace(/(\d)\.(\d*?)0+(?!\d)/g, (_match, unit: string, decimals: string) => (decimals ? `${unit}.${decimals}` : unit))
     .replace(/\s+/g, ' ')
     .trim();
 }
 
 /**
- * Spaces are optional around operators and between tokens; a form must stand as whole
- * words. A leading minus is a sign only when no number or closing bracket precedes it,
- * so « 4 − 3 » does not reveal « −3 ».
+ * Spaces are optional around operators and between tokens. A form stands as whole words and
+ * as a whole number: « 2,19 » does not reveal « 19 ». A leading minus is a sign only when
+ * neither a number, a closing bracket nor a lone letter (a variable) precedes it, so
+ * « 4 − 3 » and « a − 3 » do not reveal « −3 ».
  */
 function toPattern(form: string): RegExp {
   const chars = Array.from(normalizeForLeak(form));
@@ -42,8 +46,10 @@ function toPattern(form: string): RegExp {
     })
     .join('');
   const [first = '', last = ''] = [chars[0], chars.at(-1)];
-  const before = first === '-' ? '(?<![\\p{N})]\\s*)' : WORD_CHAR.test(first) ? '(?<![\\p{L}\\p{N}])' : '';
-  const after = WORD_CHAR.test(last) ? '(?![\\p{L}\\p{N}])' : '';
+  const before = first === '-'
+    ? '(?<![\\p{N})\\]]\\s*)(?<!(?:^|[^\\p{L}])\\p{L}\\s*)'
+    : WORD_CHAR.test(first) ? '(?<![\\p{L}\\p{N}]|\\p{N}\\.)' : '';
+  const after = WORD_CHAR.test(last) ? '(?![\\p{L}\\p{N}]|\\.\\p{N})' : '';
   return new RegExp(`${before}${body}${after}`, 'u');
 }
 

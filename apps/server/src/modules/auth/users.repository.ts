@@ -80,6 +80,7 @@ class UsersRepository {
 
   /** Hard-deletes every user whose username starts with `prefix`, taken literally. */
   async deleteByUsernamePrefix(prefix: string): Promise<number> {
+    if (prefix === '') throw new Error('deleteByUsernamePrefix needs a non-empty prefix');
     const escaped = prefix.replace(/[\\%_]/g, '\\$&');
     const result = await db
       .delete(user)

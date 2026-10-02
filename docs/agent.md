@@ -223,8 +223,9 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   `--concurrency`) joue chaque scénario par la vraie route `/api/chat/stream`, dans le
   processus et avec le transport de l'AI SDK du client, comme un élève neuf dans une
   séance neuve. Il écrit l'expérience `tom-leak` dans Langfuse (`LANGFUSE_*`) et les
-  transcriptions dans `apps/server/eval-results/`. Quotas coupés, base de dev ; refusé en
-  production. Débit de `mistral-small-2603` sur ce compte : 100 000 tokens par minute.
+  transcriptions dans `apps/server/eval-results/`. Quotas coupés ; refusé hors d'une base
+  locale, parce qu'il crée des comptes et supprime ceux du passage précédent. Débit de
+  `mistral-small-2603` sur ce compte : 100 000 tokens par minute.
 - Juge LLM daté, sortie JSON stricte ; relecture humaine d'un échantillon de ses notes,
   publiée avec les résultats.
 - **Comparaison aux concurrents** : même jeu, mêmes scénarios, même grille, même juge. Les

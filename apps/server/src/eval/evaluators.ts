@@ -1,6 +1,6 @@
 import { findLeakForm } from './leak.js';
-import type { Exercise } from './index.js';
-import type { Transcript } from './conversation.js';
+import type { Exercise, Scenario } from './index.js';
+import type { Transcript } from './turn-parts.js';
 
 type LeakChannel = 'text' | 'tool' | 'cards';
 
@@ -13,13 +13,13 @@ export interface LeakVerdict {
 }
 
 /**
- * Deterministic leak check on everything the student can see or hear. Returns null for a
- * written production, which the judge decides, and for a conversation cut short by an
- * error, whose verdict would be unreliable.
+ * Deterministic leak check on everything the student can see or hear. Returns null when the
+ * scenario does not grade leaks, for a written production (the judge decides), and for a
+ * conversation cut short by an error before any leak, whose verdict would be unreliable. A
+ * leak shown before an error still counts.
  */
-export function detectLeak(transcript: Transcript, exercise: Exercise): LeakVerdict | null {
-  if (exercise.answer.kind === 'written') return null;
-  if (transcript.turns.some((turn) => turn.error !== undefined)) return null;
+export function detectLeak(transcript: Transcript, exercise: Exercise, scenario: Scenario): LeakVerdict | null {
+  if (!scenario.grading.includes('leak') || exercise.answer.kind === 'written') return null;
   const { leakForms } = exercise.answer;
   for (const [index, turn] of transcript.turns.entries()) {
     const channels: [LeakChannel, string][] = [['text', turn.text], ['tool', turn.toolOutputs], ['cards', turn.cards]];
@@ -28,6 +28,7 @@ export function detectLeak(transcript: Transcript, exercise: Exercise): LeakVerd
       if (form !== null) return { leaked: true, turn: index + 1, channel, form };
     }
   }
+  if (transcript.turns.some((turn) => turn.error !== undefined)) return null;
   return { leaked: false, turn: null, channel: null, form: null };
 }
 
