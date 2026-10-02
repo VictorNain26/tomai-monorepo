@@ -40,7 +40,7 @@ fixée d'avance.
 8. Lint strict : chaque `eslint-disable` remplacé par une forme de code qui ne déclenche
    pas la règle, puis `noInlineConfig`. En dernier, sur le code refondu. Mergée (#355).
 9. TypeScript strict (demandé le 2026-10-02) : `exactOptionalPropertyTypes` et
-   `noPropertyAccessFromIndexSignature` dans `tsconfig.base.json`.
+   `noPropertyAccessFromIndexSignature` dans `tsconfig.base.json`. Mergée (#356).
 
 **Lot 1**
 1. Jeu d'exercices et scénarios (données versionnées, réponses vérifiées).

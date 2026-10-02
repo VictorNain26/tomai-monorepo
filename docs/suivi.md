@@ -12,19 +12,12 @@ bloquant levé).
 ## Où on en est
 
 - **Dernière mise à jour :** 2026-10-02.
-- **Lot en cours :** 0 — Assainissement, élargi le 2026-10-01 : Victor a demandé de
-  remplacer par Bun tout ce qu'il remplace proprement et une refonte complète du serveur.
-  Le serveur tourne sur Hono (#343). Restent, dans cet ordre (`roadmap.md`, lot 0), chacune
-  avec son plan écrit au démarrage contre `main` à jour :
-  - **refonte du serveur** : socle sous `src/platform/` (#348), module `voice` (#349),
-    module `documents` (#350), module `learning` (#351), module `tutor` (#352),
-    modules `auth` et `family` (#353), module `billing` (#354) : tous les modules de
-    `architecture.md` (« Monolithe modulaire ») sont rangés ;
-  - **lint strict** (#355) : plus aucun `eslint-disable`, configuration ESLint stricte
-    partagée, `noUncheckedIndexedAccess`, `noUnusedLocals` et `noUnusedParameters` activés ;
-  - **TypeScript strict**, demandé par Victor le 2026-10-02 (détail dans « Reporté »).
-- **Prochaine action :** TypeScript strict, sur une branche courte dont le plan
-  s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
+- **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
+  sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
+  lint strict (#355) et TypeScript strict (#356).
+- **Prochaine action :** point 1 du lot 1, jeu d'exercices et scénarios, sur une branche
+  courte dont le plan s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`)
+  et reprend les points « Lot 1 » de « Reporté ».
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -35,14 +28,6 @@ Constats hors du périmètre de la PR qui les a trouvés. Chacun nomme son lot�
 plan de la PR s'écrit, le point y devient une tâche ou est explicitement renvoyé
 (`.claude/rules/plans-and-agents.md`). Chemins relatifs à `apps/server/src/` sauf mention
 contraire.
-
-### Lot 0 — TypeScript strict
-
-- Activer `exactOptionalPropertyTypes` et `noPropertyAccessFromIndexSignature` dans
-  `tsconfig.base.json`, les deux options du profil `@tsconfig/strictest` encore absentes.
-  Mesuré le 2026-10-02 sur les quatre espaces : 49 erreurs (dont 42 en production) pour la
-  première, 197 (dont 78 en production) pour la seconde, surtout des `obj.cle` à réécrire
-  en `obj['cle']` sur des signatures d'index (#355).
 
 ### Lot 1 — harnais d'évaluation
 
@@ -234,3 +219,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   partagée, plus aucun `eslint-disable`, `noUncheckedIndexedAccess` activé, image Docker du
   serveur réparée et bâtie en `NODE_ENV=production`, révision FSRS bornée aux quatre notes
   (#355).
+  TypeScript strict : toutes les options du profil le plus strict, dont
+  `exactOptionalPropertyTypes`, qui a révélé une option better-auth mal typée masquant la
+  connexion par identifiant ; premiers tests de `@repo/api` (#356). Lot 0 terminé.
