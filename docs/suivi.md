@@ -257,3 +257,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   détecte la réponse dans le texte, les sorties d'outils et les fiches, et écrit une
   expérience Langfuse ; premiers passages réduits, trois fuites réelles ; forfaits absents
   de `subscription_plans` relevés pour le lot 2 (#362).
+  Référentiel des programmes : extraction des annexes balisées du BO par l'arbre de
+  structure de pdf.js, fractions et exposants reconstruits et vérifiés à l'œil ; 798
+  entrées de mathématiques et de français, 6e de 2025, 5e à 3e de 2026 (#363).
