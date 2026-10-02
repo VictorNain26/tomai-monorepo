@@ -20,8 +20,8 @@ interface TTSResult {
 }
 
 export interface TTSOptions {
-  language?: 'fr';
-  schoolLevel?: EducationLevelType;
+  language?: 'fr' | undefined;
+  schoolLevel?: EducationLevelType | undefined;
 }
 
 class TextToSpeechService {

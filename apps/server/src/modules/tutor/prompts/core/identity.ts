@@ -12,7 +12,7 @@
 interface IdentityParams {
   studentName: string;
   levelText: string;
-  subject?: string;
+  subject?: string | undefined;
 }
 
 /**

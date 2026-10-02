@@ -44,10 +44,10 @@ const mockApplyTokenIncrement = mock(
     return Promise.resolve({
       windowTokensUsed: params.shouldResetWindow
         ? params.tokensUsed
-        : ((row.windowTokensUsed as number | undefined) ?? 0) + params.tokensUsed,
+        : ((row['windowTokensUsed'] as number | undefined) ?? 0) + params.tokensUsed,
       tokensUsedToday: params.shouldResetDaily
         ? params.tokensUsed
-        : ((row.tokensUsedToday as number | undefined) ?? 0) + params.tokensUsed,
+        : ((row['tokensUsedToday'] as number | undefined) ?? 0) + params.tokensUsed,
     });
   },
 );
@@ -58,10 +58,10 @@ const mockApplyDeckIncrement = mock(
     return Promise.resolve({
       decksGeneratedToday: params.shouldResetDaily
         ? 1
-        : ((row.decksGeneratedToday as number | undefined) ?? 0) + 1,
+        : ((row['decksGeneratedToday'] as number | undefined) ?? 0) + 1,
       decksGeneratedThisMonth: params.shouldResetMonthly
         ? 1
-        : ((row.decksGeneratedThisMonth as number | undefined) ?? 0) + 1,
+        : ((row['decksGeneratedThisMonth'] as number | undefined) ?? 0) + 1,
     });
   },
 );

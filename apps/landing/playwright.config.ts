@@ -5,7 +5,7 @@ const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./tests",
-  forbidOnly: !!process.env.CI,
+  forbidOnly: !!process.env['CI'],
   reporter: "list",
   use: {
     baseURL,

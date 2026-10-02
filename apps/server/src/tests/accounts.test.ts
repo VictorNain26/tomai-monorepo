@@ -40,7 +40,7 @@ describe('createStudentAccount', () => {
 
     const body = signUpEmail.mock.calls[0]?.[0].body;
     expect(body).toMatchObject({ username: 'lea', password: 'temp-pass-123', name: 'Léa Martin' });
-    expect(String(body?.email)).toEndWith('@internal.tomai');
+    expect(String(body?.['email'])).toEndWith('@internal.tomai');
     expect(update).toHaveBeenCalledWith('student-1', expect.objectContaining({ role: 'student', username: 'lea', schoolLevel: 'sixieme' }));
   });
 

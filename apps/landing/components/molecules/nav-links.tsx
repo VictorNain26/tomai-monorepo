@@ -32,7 +32,7 @@ export function NavLinks({
             "min-h-11 items-center text-sm font-bold text-foreground hover:text-primary transition-colors duration-base",
             orientation === "vertical" ? "flex" : "inline-flex px-2"
           )}
-          onClick={onLinkClick}
+          {...(onLinkClick && { onClick: onLinkClick })}
         >
           {link.label}
         </Link>

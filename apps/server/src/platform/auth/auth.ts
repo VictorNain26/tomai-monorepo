@@ -95,7 +95,7 @@ export const auth = betterAuth({
     // Cookies partagés entre sous-domaines (tomia.fr <-> api.tomia.fr)
     crossSubDomainCookies: isProduction() ? {
       enabled: true,
-      domain: cookieDomain // ".tomia.fr"
+      ...(cookieDomain !== undefined && { domain: cookieDomain }), // ".tomia.fr"
     } : undefined,
 
     defaultCookieAttributes: {

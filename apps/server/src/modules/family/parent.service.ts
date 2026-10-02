@@ -25,7 +25,7 @@ export class ParentService {
         lastName: child.lastName ?? '',
         username: child.username ?? '',
         schoolLevel: child.schoolLevel ?? '',
-        dateOfBirth: child.dateOfBirth ?? undefined,
+        ...(child.dateOfBirth !== null && { dateOfBirth: child.dateOfBirth }),
         isActive: child.isActive,
         parentId: parentId,
         role: 'student' as const,
@@ -93,11 +93,11 @@ export class ParentService {
   }
 
   async updateChild(parentId: string, childId: string, updateData: {
-    firstName?: string;
-    lastName?: string;
-    dateOfBirth?: string;
-    schoolLevel?: string;
-    password?: string;
+    firstName?: string | undefined;
+    lastName?: string | undefined;
+    dateOfBirth?: string | undefined;
+    schoolLevel?: string | undefined;
+    password?: string | undefined;
   }): Promise<ChildInfo> {
     try {
       const children = await this.getParentChildren(parentId);
@@ -138,7 +138,7 @@ export class ParentService {
         lastName: updatedChild.lastName ?? '',
         username: updatedChild.username ?? '',
         schoolLevel: updatedChild.schoolLevel ?? '',
-        dateOfBirth: updatedChild.dateOfBirth ?? undefined,
+        ...(updatedChild.dateOfBirth !== null && { dateOfBirth: updatedChild.dateOfBirth }),
         isActive: updatedChild.isActive,
         parentId: parentId,
         role: 'student' as const,

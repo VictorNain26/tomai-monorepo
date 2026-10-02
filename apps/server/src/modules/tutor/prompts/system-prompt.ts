@@ -16,8 +16,8 @@ import type { EducationLevelType } from '../../../types/index.js';
 interface SystemPromptParams {
   level: EducationLevelType;
   levelText: string;
-  subject?: string;
-  firstName?: string;
+  subject?: string | undefined;
+  firstName?: string | undefined;
 }
 
 /**

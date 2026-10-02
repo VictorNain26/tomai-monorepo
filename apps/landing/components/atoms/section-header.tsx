@@ -4,7 +4,7 @@ interface SectionHeaderProps {
   as?: "h1" | "h2";
   eyebrow?: string;
   title: React.ReactNode;
-  description?: string;
+  description?: string | undefined;
   align?: "center" | "left";
   className?: string;
 }

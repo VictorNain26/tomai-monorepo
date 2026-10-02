@@ -109,7 +109,7 @@ mock.module('../platform/auth/session', () => ({
         status: 401
       };
     }
-    if (authUser.role !== 'parent') {
+    if (authUser['role'] !== 'parent') {
       return {
         success: false as const,
         _error: 'Parent role required',

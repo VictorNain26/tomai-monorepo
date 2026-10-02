@@ -6,7 +6,7 @@ import { logger } from '../../platform/observability/logger';
 import type { MessageDetails } from './chat-types';
 
 export class ChatMessageService {
-  async getSessionHistory(sessionId: string, options?: { limit?: number; afterMessageId?: string }): Promise<DbMessage[]> {
+  async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<DbMessage[]> {
     try {
       let sessionMessages = await messagesRepository.findBySessionId(sessionId);
 
@@ -108,13 +108,13 @@ export class ChatMessageService {
 
       const messageMetadata: Record<string, unknown> = {};
       if (metadata.attachedFiles && metadata.attachedFiles.length > 1) {
-        messageMetadata.attachedFiles = metadata.attachedFiles;
+        messageMetadata['attachedFiles'] = metadata.attachedFiles;
       }
       if (metadata.classifiedIntent) {
-        messageMetadata.classifiedIntent = metadata.classifiedIntent;
+        messageMetadata['classifiedIntent'] = metadata.classifiedIntent;
       }
       if (metadata.inputMode) {
-        messageMetadata.inputMode = metadata.inputMode;
+        messageMetadata['inputMode'] = metadata.inputMode;
       }
 
       const message = await messagesRepository.create({

@@ -9,10 +9,10 @@ export interface AttachedFileInfo {
 
 export interface FileAnalysisResult {
   analysis: string;
-  extractedText?: string;
+  extractedText?: string | undefined;
   fileName: string;
-  documentType?: string;
-  subject?: string;
+  documentType?: string | undefined;
+  subject?: string | undefined;
 }
 
 /**
@@ -23,8 +23,8 @@ export interface FileAnalysisResult {
 export interface AttachedFileForPrompt {
   fileName: string;
   analysis: string;
-  documentType?: string;
-  subject?: string;
+  documentType?: string | undefined;
+  subject?: string | undefined;
 }
 
 export interface FileAnalysisOptions {

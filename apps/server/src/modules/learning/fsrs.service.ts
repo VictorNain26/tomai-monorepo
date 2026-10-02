@@ -48,7 +48,7 @@ class FSRSService {
       reps: data.reps ?? 0,
       lapses: data.lapses ?? 0,
       state: (data.state ?? State.New),
-      last_review: data.lastReview ? new Date(data.lastReview) : undefined,
+      ...(data.lastReview && { last_review: new Date(data.lastReview) }),
     };
   }
 

@@ -45,8 +45,8 @@ mock.module('../db/connection', () => ({
           // where().orderBy()       (getDueCards cards query)
           const data = nextSelectResult();
           const p = Promise.resolve(data);
-          (p as unknown as Record<string, unknown>).limit = mock(() => p);
-          (p as unknown as Record<string, unknown>).orderBy = mock(() => p);
+          (p as unknown as Record<string, unknown>)['limit'] = mock(() => p);
+          (p as unknown as Record<string, unknown>)['orderBy'] = mock(() => p);
           return p;
         }),
       })),

@@ -46,7 +46,7 @@ const PROMPT_VERSION = '2026-10-01';
 
 export interface AttachedFile {
   /** Inline base64 payload for multimodal user messages (Mistral vision). */
-  base64?: string;
+  base64?: string | undefined;
   mimeType: string;
   contentType: 'image' | 'document';
 }
@@ -65,35 +65,35 @@ interface ClassifiedIntent {
 export interface StreamGenerationParams {
   userId: string;
   content: string;
-  subject?: string;
+  subject?: string | undefined;
   schoolLevel: EducationLevelType;
-  firstName?: string;
+  firstName?: string | undefined;
   sessionId: string;
-  cognitiveProfileSummary?: string | null;
-  learningContext?: string | null;
-  conversationSummary?: string | null;
+  cognitiveProfileSummary?: string | null | undefined;
+  learningContext?: string | null | undefined;
+  conversationSummary?: string | null | undefined;
   userRole: 'student' | 'parent';
-  files?: AttachedFile[];
+  files?: AttachedFile[] | undefined;
   /**
    * Attached-document analyses (OCR of the student's files). Injected as a
    * SEPARATE `<attached_file>` fenced block, never concatenated into the
    * student message — otherwise stripPromptTags would remove the fence.
    */
-  attachedFiles?: AttachedFileForPrompt[];
+  attachedFiles?: AttachedFileForPrompt[] | undefined;
   /**
    * Turn-specific reinforcement block injected by the intent classifier.
    * When non-null, prepended to the system prompt to force a stricter
    * socratic stance (e.g. on "solve this for me" requests).
    */
-  intentReinforcement?: string | null;
+  intentReinforcement?: string | null | undefined;
   /** Classified intent for reasoning effort routing. */
-  classifiedIntent?: ClassifiedIntent;
+  classifiedIntent?: ClassifiedIntent | undefined;
   /**
    * Input channel declared by the user's gesture (mic vs keyboard), never
    * inferred by the model. When 'voice', a turn note is injected so Tom answers
    * in a spoken style. Defaults to 'text'.
    */
-  inputMode?: 'text' | 'voice';
+  inputMode?: 'text' | 'voice' | undefined;
   conversationHistory: {
     role: 'user' | 'assistant';
     content: string;
@@ -109,13 +109,13 @@ export interface ChatStreamParams extends StreamGenerationParams {
    * from `ai/test`) instead of the real Mistral provider. Never set in
    * production call sites.
    */
-  model?: LanguageModel;
+  model?: LanguageModel | undefined;
 }
 
 function buildSystemPromptForChat(params: {
   level: StreamGenerationParams['schoolLevel'];
-  subject?: string;
-  firstName?: string;
+  subject?: string | undefined;
+  firstName?: string | undefined;
 }): string {
   const levelText = getLevelText(params.level);
   return buildSystemPrompt({

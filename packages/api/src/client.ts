@@ -66,28 +66,28 @@ function buildApiError(status: number, errorValue: unknown): ApiError {
     const ev = errorValue as Record<string, unknown>;
 
     // New format: { error: { code, message }, requestId? }
-    if (ev.error && typeof ev.error === 'object') {
-      const errObj = ev.error as Record<string, unknown>;
-      message = (errObj.message as string | undefined) ?? message;
-      code = (errObj.code as string | undefined) ?? code;
+    if (ev['error'] && typeof ev['error'] === 'object') {
+      const errObj = ev['error'] as Record<string, unknown>;
+      message = (errObj['message'] as string | undefined) ?? message;
+      code = (errObj['code'] as string | undefined) ?? code;
     } else {
       // Legacy format fallback: { message, _error, error, code }
       message =
-        (ev.message as string | undefined) ??
-        (ev._error as string | undefined) ??
+        (ev['message'] as string | undefined) ??
+        (ev['_error'] as string | undefined) ??
         message;
-      code = ev.code as string | undefined;
+      code = ev['code'] as string | undefined;
     }
 
-    suggestions = ev.suggestions as string[] | undefined;
+    suggestions = ev['suggestions'] as string[] | undefined;
   } else if (typeof errorValue === 'string') {
     message = errorValue;
   }
 
   const err = new Error(message) as ApiError;
   err.status = status;
-  err.code = code;
-  err.suggestions = suggestions;
+  if (code !== undefined) err.code = code;
+  if (suggestions !== undefined) err.suggestions = suggestions;
   return err;
 }
 

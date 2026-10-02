@@ -19,31 +19,31 @@ export function validateCardContent(
 ): { valid: true } | { valid: false; error: string } {
   switch (cardType) {
     case 'flashcard':
-      if (!content.front || !content.back) {
+      if (!content['front'] || !content['back']) {
         return { valid: false, error: 'Flashcard requires front and back' };
       }
-      if (typeof content.front !== 'string' || typeof content.back !== 'string') {
+      if (typeof content['front'] !== 'string' || typeof content['back'] !== 'string') {
         return { valid: false, error: 'front and back must be strings' };
       }
       break;
 
     case 'qcm':
-      if (!content.question || !content.options || content.correctIndex === undefined) {
+      if (!content['question'] || !content['options'] || content['correctIndex'] === undefined) {
         return { valid: false, error: 'QCM requires question, options, and correctIndex' };
       }
-      if (!Array.isArray(content.options) || content.options.length < 2) {
+      if (!Array.isArray(content['options']) || content['options'].length < 2) {
         return { valid: false, error: 'QCM requires at least 2 options' };
       }
-      if (typeof content.correctIndex !== 'number' || content.correctIndex < 0 || content.correctIndex >= content.options.length) {
+      if (typeof content['correctIndex'] !== 'number' || content['correctIndex'] < 0 || content['correctIndex'] >= content['options'].length) {
         return { valid: false, error: 'correctIndex must be a valid option index' };
       }
       break;
 
     case 'vrai_faux':
-      if (!content.statement || content.isTrue === undefined) {
+      if (!content['statement'] || content['isTrue'] === undefined) {
         return { valid: false, error: 'Vrai/Faux requires statement and isTrue' };
       }
-      if (typeof content.statement !== 'string' || typeof content.isTrue !== 'boolean') {
+      if (typeof content['statement'] !== 'string' || typeof content['isTrue'] !== 'boolean') {
         return { valid: false, error: 'statement must be string, isTrue must be boolean' };
       }
       break;

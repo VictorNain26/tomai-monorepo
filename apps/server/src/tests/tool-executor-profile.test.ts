@@ -92,8 +92,8 @@ describe('executeUpdateProfile()', () => {
         observation: '',
         subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.isError).toBe(true);
-      expect(result.message).toContain("Observation ou matière manquante");
+      expect(result['isError']).toBe(true);
+      expect(result['message']).toContain("Observation ou matière manquante");
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
 
@@ -102,7 +102,7 @@ describe('executeUpdateProfile()', () => {
         observation: '   ',
         subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
-      expect(result.isError).toBe(true);
+      expect(result['isError']).toBe(true);
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
 
@@ -111,7 +111,7 @@ describe('executeUpdateProfile()', () => {
         observation: 'Bonne progression',
         subject: '',
       }, baseContext) as Record<string, unknown>;
-      expect(result.isError).toBe(true);
+      expect(result['isError']).toBe(true);
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
 
@@ -119,7 +119,7 @@ describe('executeUpdateProfile()', () => {
       const result = await executeTool('update_student_profile', {
         observation: 'Bonne progression',
       }, baseContext) as Record<string, unknown>;
-      expect(result.isError).toBe(true);
+      expect(result['isError']).toBe(true);
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
   });
@@ -130,7 +130,7 @@ describe('executeUpdateProfile()', () => {
       const result = await executeTool('update_student_profile', {
         observation: 'Brille en géométrie', subject: 'mathematiques', strength: 'geometrie',
       }, baseContext) as Record<string, unknown>;
-      expect(result.updated).toBe(true);
+      expect(result['updated']).toBe(true);
       expect(updateProfileSpy).toHaveBeenCalledTimes(1);
       const updates = (updateProfileSpy.mock.calls[0] as unknown[])[1] as { strengths?: string[] };
       expect(updates.strengths).toEqual(['calcul mental', 'logique', 'geometrie']);

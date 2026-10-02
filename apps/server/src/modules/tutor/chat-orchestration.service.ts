@@ -38,8 +38,8 @@ const MAX_ENRICHED_CONTENT_CHARS = 50_000;
 
 interface PrepareTurnRequest {
   userId: string;
-  sessionId?: string;
-  requestedSubject?: string;
+  sessionId?: string | undefined;
+  requestedSubject?: string | undefined;
   content: string;
   fileIds: string[];
   schoolLevel: EducationLevelType;
@@ -71,10 +71,10 @@ export interface ChatTurnContext {
 interface PersistUserTurnParams {
   sessionId: string;
   content: string;
-  inputMode?: 'text' | 'voice';
+  inputMode?: 'text' | 'voice' | undefined;
   fileIds: string[];
   attachedFileInfo: AttachedFileInfo | null;
-  attachedFileInfos?: AttachedFileInfo[];
+  attachedFileInfos?: AttachedFileInfo[] | undefined;
 }
 
 interface FinishTurnParams {
@@ -86,7 +86,7 @@ interface FinishTurnParams {
   usage: LanguageModelUsage | undefined;
   startTime: number;
   attachedFileInfo: AttachedFileInfo | null;
-  attachedFileInfos?: AttachedFileInfo[];
+  attachedFileInfos?: AttachedFileInfo[] | undefined;
   classifiedIntent: ClassifiedIntent;
 }
 
@@ -226,7 +226,7 @@ class ChatOrchestrationService {
 
     return {
       sessionId,
-      subject: effectiveSubject,
+      ...(effectiveSubject !== undefined && { subject: effectiveSubject }),
       conversationSummary: sessionSummary?.conversationSummary ?? null,
       conversationHistory,
       cognitiveProfileSummary,
@@ -240,7 +240,7 @@ class ChatOrchestrationService {
       })),
       attachedFiles: boundedAttachedFiles,
       attachedFileInfo,
-      attachedFileInfos: hasMultipleFiles ? attachedFileInfos : undefined,
+      ...(hasMultipleFiles && { attachedFileInfos }),
     };
   }
 

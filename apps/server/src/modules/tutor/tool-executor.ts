@@ -111,13 +111,13 @@ async function executeGenerateFlashcards(
   args: Record<string, unknown>,
   context: ToolExecutionContext
 ): Promise<object> {
-  const topic = typeof args.topic === 'string' ? args.topic : '';
-  const subject = typeof args.subject === 'string' ? args.subject : '';
+  const topic = typeof args['topic'] === 'string' ? args['topic'] : '';
+  const subject = typeof args['subject'] === 'string' ? args['subject'] : '';
 
   // Adapt card count to school level (half of cardsPerSession, capped at 10 for chat)
   const levelConfig = getLevelConfig(context.schoolLevel);
   const maxChatCards = Math.min(Math.floor(levelConfig.cardsPerSession / 2), 10);
-  const requestedCount = typeof args.cardCount === 'number' ? args.cardCount : 5;
+  const requestedCount = typeof args['cardCount'] === 'number' ? args['cardCount'] : 5;
   const cardCount = Math.min(Math.max(requestedCount, 3), maxChatCards);
 
   const result = await generateCards({
@@ -176,7 +176,7 @@ function executeGetAppHelp(
   args: Record<string, unknown>,
   context: ToolExecutionContext
 ): object {
-  const topic = typeof args.topic === 'string' ? args.topic : '';
+  const topic = typeof args['topic'] === 'string' ? args['topic'] : '';
   const content = getAppHelpContent(topic, context.userRole);
 
   if (!content) {
@@ -220,8 +220,8 @@ async function executeUpdateProfile(
   args: Record<string, unknown>,
   context: ToolExecutionContext,
 ): Promise<object> {
-  const observation = typeof args.observation === 'string' ? args.observation.trim().slice(0, 250) : '';
-  const subject = typeof args.subject === 'string' ? args.subject.trim() : '';
+  const observation = typeof args['observation'] === 'string' ? args['observation'].trim().slice(0, 250) : '';
+  const subject = typeof args['subject'] === 'string' ? args['subject'].trim() : '';
 
   // Observation + subject required: reject empty calls so the agent doesn't
   // silently burn a tool slot without writing anything.
@@ -232,9 +232,9 @@ async function executeUpdateProfile(
     );
   }
 
-  const strengthRaw = typeof args.strength === 'string' ? args.strength.trim().slice(0, 100) : undefined;
-  const weaknessRaw = typeof args.weakness === 'string' ? args.weakness.trim().slice(0, 100) : undefined;
-  const preferredStyle = typeof args.preferredStyle === 'string' ? args.preferredStyle : undefined;
+  const strengthRaw = typeof args['strength'] === 'string' ? args['strength'].trim().slice(0, 100) : undefined;
+  const weaknessRaw = typeof args['weakness'] === 'string' ? args['weakness'].trim().slice(0, 100) : undefined;
+  const preferredStyle = typeof args['preferredStyle'] === 'string' ? args['preferredStyle'] : undefined;
 
   // Merge new strength/weakness into the existing lists (dedupe, keep most
   // recent 10 of each). Without the merge step, a single call would overwrite

@@ -251,7 +251,7 @@ export type MessageRole = typeof messageRoleEnum.enumValues[number];
 // Type pour fichier attaché aux messages
 export interface AttachedFile {
   fileName: string;
-  fileId?: string;
-  mimeType?: string;
-  fileSizeBytes?: number;
+  fileId?: string | undefined;
+  mimeType?: string | undefined;
+  fileSizeBytes?: number | undefined;
 }

@@ -11,6 +11,6 @@ export type { IAIMessage };
  * Contexte d'optimisation — résumé conversationnel pour le SummaryBuffer pattern
  */
 export interface OptimizationContext {
-  conversationSummary?: string | null;
-  summaryUpToMessageId?: string | null;
+  conversationSummary?: string | null | undefined;
+  summaryUpToMessageId?: string | null | undefined;
 }

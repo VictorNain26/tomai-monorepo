@@ -138,8 +138,8 @@ describe('Summarization Service', () => {
       messagesResult = makeMessages(25);
       await summarizationService.summarizeIfNeeded('session-001');
       expect(sessionUpdateCalled).toBe(true);
-      expect(sessionUpdateArgs.conversationSummary).toBe('Mocked summary text');
-      expect(sessionUpdateArgs.summaryUpToMessageId).toBeDefined();
+      expect(sessionUpdateArgs['conversationSummary']).toBe('Mocked summary text');
+      expect(sessionUpdateArgs['summaryUpToMessageId']).toBeDefined();
     });
 
     it('should generate incremental summary when 10+ new messages', async () => {
@@ -170,7 +170,7 @@ describe('Summarization Service', () => {
       messagesResult = makeMessages(25);
       await summarizationService.summarizeIfNeeded('session-001');
       expect(sessionUpdateCalled).toBe(true);
-      const summary = sessionUpdateArgs.conversationSummary as string;
+      const summary = sessionUpdateArgs['conversationSummary'] as string;
       expect(summary.length).toBeLessThanOrEqual(6000);
     });
 
@@ -207,7 +207,7 @@ describe('Summarization Service', () => {
       messagesResult = messages;
       await summarizationService.summarizeIfNeeded('session-001');
       // The summaryUpToMessageId should be message at index length-10-1 = 14
-      expect(sessionUpdateArgs.summaryUpToMessageId).toBe(messages[14]?.id);
+      expect(sessionUpdateArgs['summaryUpToMessageId']).toBe(messages[14]?.id);
     });
   });
 });

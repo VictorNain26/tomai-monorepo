@@ -76,7 +76,7 @@ describe('episodicMemoryService.extractAndStore', () => {
       outcome: 'completed',
       messageCount: 6,
     });
-    expect((inserted[0]?.summaryEmbedding as number[]).length).toBe(1024);
+    expect((inserted[0]?.['summaryEmbedding'] as number[]).length).toBe(1024);
   });
 
   it('logs and stores nothing when the extraction violates the schema twice', async () => {
