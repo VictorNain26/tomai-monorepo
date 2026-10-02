@@ -49,7 +49,8 @@ function buildProcessors(): SpanProcessor[] {
 
   // Always emit to console in dev so we get traces without infra setup. The
   // simple processor is fine here — volume is low and visibility immediate.
-  if (process.env.NODE_ENV !== 'production' && !endpoint) {
+  // Bun.env: `bun build` inlines process.env.NODE_ENV at build time.
+  if (Bun.env.NODE_ENV !== 'production' && !endpoint) {
     processors.push(new SimpleSpanProcessor(new ConsoleSpanExporter()));
   }
 
@@ -78,7 +79,7 @@ export function setupOtel(): void {
       [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME ?? 'tomai-server',
       [ATTR_SERVICE_VERSION]: process.env.APP_VERSION ?? 'dev',
       [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]:
-        process.env.OTEL_DEPLOYMENT_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development',
+        process.env.OTEL_DEPLOYMENT_ENVIRONMENT ?? Bun.env.NODE_ENV ?? 'development',
     }),
     spanProcessors: processors,
   });

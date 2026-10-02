@@ -40,3 +40,14 @@ describe('app guide content served by get_app_help', () => {
     expect(getAppHelpContent('subscription', role)).toContain("pas encore disponible en ligne");
   });
 });
+
+describe('getAppHelpContent with a topic chosen by the model', () => {
+  it('returns null for an unknown topic', () => {
+    expect(getAppHelpContent('payments', 'student')).toBeNull();
+  });
+
+  it('returns null for a key inherited from the object prototype', () => {
+    expect(getAppHelpContent('constructor', 'student')).toBeNull();
+    expect(getAppHelpContent('toString', 'parent')).toBeNull();
+  });
+});

@@ -16,7 +16,7 @@ import type { CardType } from './decks.schema.js';
 export function validateCardContent(
   cardType: CardType,
   content: Record<string, unknown>,
-): { valid: boolean; error?: string } {
+): { valid: true } | { valid: false; error: string } {
   switch (cardType) {
     case 'flashcard':
       if (!content.front || !content.back) {

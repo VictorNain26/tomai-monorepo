@@ -308,4 +308,4 @@ class FSRSService {
 }
 
 export const fsrsService = new FSRSService();
-export { Rating,  };
+export { Rating };

@@ -283,7 +283,7 @@ class LearningService {
         patch.content as Record<string, unknown>,
       );
       if (!validation.valid) {
-        throw new CardValidationError(validation.error ?? 'Invalid card content');
+        throw new CardValidationError(validation.error);
       }
     }
 

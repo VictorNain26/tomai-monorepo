@@ -25,7 +25,7 @@ test.describe("without JavaScript", () => {
         }
       }
       for (const path of document.querySelectorAll("main svg path")) {
-        if (getComputedStyle(path).strokeDasharray !== "none") found.push(`undrawn path ${path.getAttribute("d")}`);
+        if (getComputedStyle(path).strokeDasharray !== "none") found.push(`undrawn path ${path.getAttribute("d") ?? ""}`);
       }
       return found;
     });

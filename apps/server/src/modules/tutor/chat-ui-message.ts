@@ -56,12 +56,7 @@ export function extractTextFromParts(parts: unknown): string {
     .join('');
 }
 
-// C0 controls and DEL, minus tab (0x09), line feed (0x0A) and carriage return (0x0D).
-function isStrippedControl(char: string): boolean {
-  const code = char.charCodeAt(0);
-  return code <= 0x08 || code === 0x0b || code === 0x0c || (code >= 0x0e && code <= 0x1f) || code === 0x7f;
-}
-
+// C0 controls and DEL (Cc), minus tab, line feed, carriage return and the C1 range.
 export function sanitizePrompt(text: string): string {
-  return Array.from(text).filter((char) => !isStrippedControl(char)).join('');
+  return text.replace(/[^\P{Cc}\t\n\r\u0080-\u009f]/gu, '');
 }

@@ -62,10 +62,9 @@ describe('streamChat', () => {
     await result.text;
 
     const firstCall = model.doStreamCalls[0];
-    expect(firstCall?.prompt[0]).toEqual({
-      role: 'system',
-      content: expect.any(String),
-    });
+    const systemMessage = firstCall?.prompt[0];
+    expect(systemMessage?.role).toBe('system');
+    expect(typeof systemMessage?.content).toBe('string');
   });
 
   it('stops the agentic loop after 5 steps via stopWhen: isStepCount(5)', async () => {

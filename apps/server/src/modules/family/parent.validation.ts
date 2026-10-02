@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { EDUCATION_LEVELS } from '../../lib/education-levels.js';
 
 // Schémas de base réutilisables
 const passwordSchema = z.string()
@@ -25,12 +26,7 @@ const nameSchema = z.string()
   .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, 'Nom: lettres, espaces, apostrophes, tirets uniquement')
   .trim();
 
-// Niveaux scolaires français - COHÉRENT avec DB enum
-const schoolLevelSchema = z.enum([
-  'cp', 'ce1', 'ce2', 'cm1', 'cm2',                    // Primaire
-  'sixieme', 'cinquieme', 'quatrieme', 'troisieme',    // Collège
-  'seconde', 'premiere', 'terminale'                    // Lycée
-], {
+const schoolLevelSchema = z.enum(EDUCATION_LEVELS, {
   error: 'Niveau scolaire invalide'
 });
 
@@ -71,6 +67,7 @@ export const updateChildSchema = z.object({
   schoolLevel: schoolLevelSchema.optional(),
   dateOfBirth: dateOfBirthSchema.optional(),
 }).refine(
-  (data) => Object.keys(data).length > 0,
+  // A key may be present with an undefined value: count only the values.
+  (data) => Object.values(data).some((value: unknown) => value !== undefined),
   { message: 'Au moins un champ doit être fourni pour la mise à jour' }
 );

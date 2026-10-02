@@ -152,7 +152,7 @@ function buildUserContent(content: string, files?: AttachedFile[]): string | Mis
   if (!files || files.length === 0) return wrapped;
 
   const imageParts = files
-    .filter((f) => f.contentType === 'image' && f.base64)
+    .filter((f): f is AttachedFile & { base64: string } => f.contentType === 'image' && f.base64 !== undefined && f.base64 !== '')
     .map((f) => ({
       type: 'image_url' as const,
       imageUrl: { url: `data:${f.mimeType};base64,${f.base64}` },

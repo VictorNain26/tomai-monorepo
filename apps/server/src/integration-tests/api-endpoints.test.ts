@@ -229,6 +229,21 @@ mock.module('../platform/ai/mistral-client', () => ({
   generateText: mock(async () => 'OK'),
 }));
 
+interface ApiBody {
+  status?: string;
+  timestamp?: string;
+  success?: boolean;
+  sessionId?: string;
+  requestId?: string;
+  messages?: { role: string }[];
+  checks?: { database?: { status: string }; cache?: unknown };
+  error?: string | { code: string };
+}
+
+async function readBody(res: Response): Promise<ApiBody> {
+  return (await res.json()) as ApiBody;
+}
+
 // Import real app after all mocks
 const { app } = await import('../app');
 
@@ -246,7 +261,7 @@ describe('API Endpoints', () => {
     it('should return operational status', async () => {
       const res = await app.fetch(new Request('http://localhost/'));
       expect(res.status).toBe(200);
-      const data = await res.json();
+      const data = await readBody(res);
       expect(data.status).toBe('operational');
     });
   });
@@ -255,24 +270,24 @@ describe('API Endpoints', () => {
     it('should return healthy when all services OK (root path — canonical, not /api/health)', async () => {
       const res = await app.fetch(new Request('http://localhost/health'));
       expect(res.status).toBe(200);
-      const data = await res.json();
+      const data = await readBody(res);
       expect(data.status).toBe('healthy');
-      expect(data.checks.database.status).toBe('healthy');
-      expect(data.checks.cache).toBeUndefined();
+      expect(data.checks?.database?.status).toBe('healthy');
+      expect(data.checks?.cache).toBeUndefined();
     });
 
     it('should return unhealthy 503 when database down', async () => {
       dbHealthy = false;
       const res = await app.fetch(new Request('http://localhost/health'));
       expect(res.status).toBe(503);
-      const data = await res.json();
+      const data = await readBody(res);
       expect(data.status).toBe('unhealthy');
-      expect(data.checks.database.status).toBe('unhealthy');
+      expect(data.checks?.database?.status).toBe('unhealthy');
     });
 
     it('should include version and environment info', async () => {
       const res = await app.fetch(new Request('http://localhost/health'));
-      const data = await res.json();
+      const data = await readBody(res);
       expect(data).toHaveProperty('status');
       expect(data).toHaveProperty('environment');
       expect(data.timestamp).toBeDefined();
@@ -301,7 +316,7 @@ describe('API Endpoints', () => {
         headers: { 'Content-Type': 'application/json' },
       }));
       expect(res.status).toBe(200);
-      const data = await res.json();
+      const data = await readBody(res);
       expect(data.success).toBe(true);
       expect(data.sessionId).toBe('session-001');
     });
@@ -317,10 +332,10 @@ describe('API Endpoints', () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
       const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
       expect(res.status).toBe(200);
-      const data = await res.json();
+      const data = await readBody(res);
       expect(data.success).toBe(true);
-      expect(data.messages.length).toBe(1);
-      expect(data.messages[0].role).toBe('user');
+      expect(data.messages?.length).toBe(1);
+      expect(data.messages?.[0]?.role).toBe('user');
     });
 
     it('should return 403 when session belongs to another user (IDOR regression)', async () => {
@@ -328,7 +343,7 @@ describe('API Endpoints', () => {
       // chatService.getSession mock returns session owned by 'user-001'
       const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}/history`));
       expect(res.status).toBe(403);
-      const data = await res.json();
+      const data = await readBody(res);
       expect(data.error).toBe('Session not found or access denied');
     });
 
@@ -336,8 +351,8 @@ describe('API Endpoints', () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
       const res = await app.fetch(new Request('http://localhost/api/chat/session/not-a-uuid/history'));
       expect(res.status).toBe(400);
-      const data = await res.json();
-      expect(data.error.code).toBe('VALIDATION_ERROR');
+      const data = await readBody(res);
+      expect(data.error).toMatchObject({ code: 'VALIDATION_ERROR' });
     });
   });
 
@@ -351,7 +366,7 @@ describe('API Endpoints', () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
       const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}`, { method: 'DELETE' }));
       expect(res.status).toBe(200);
-      const data = await res.json();
+      const data = await readBody(res);
       expect(data.success).toBe(true);
     });
   });
@@ -363,7 +378,7 @@ describe('API Endpoints', () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
       }));
       expect(res.status).toBe(200);
-      const data = await res.json();
+      const data = await readBody(res);
       expect(data.success).toBe(true);
       expect(data.sessionId).toBe('session-new');
     });
@@ -377,8 +392,8 @@ describe('API Endpoints', () => {
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{bad' },
       ));
       expect(res.status).toBe(400);
-      const data = await res.json();
-      expect(data.error.code).toBe('VALIDATION_ERROR');
+      const data = await readBody(res);
+      expect(data.error).toMatchObject({ code: 'VALIDATION_ERROR' });
       expect(data.requestId).toBeTruthy();
     });
   });

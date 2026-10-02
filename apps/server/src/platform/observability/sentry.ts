@@ -38,7 +38,8 @@ export function sentryMiddleware<E extends Env>(app: Hono<E>): MiddlewareHandler
 
   return Sentry.sentry(app, {
     dsn,
-    environment: process.env.NODE_ENV ?? 'development',
+    // Bun.env: `bun build` inlines process.env.NODE_ENV at build time.
+    environment: Bun.env.NODE_ENV ?? 'development',
     release: process.env.GIT_COMMIT_SHA ?? 'unknown',
     tracesSampleRate: 0.1,
     beforeSend: scrubRequestData,

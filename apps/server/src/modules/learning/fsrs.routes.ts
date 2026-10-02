@@ -11,14 +11,14 @@ import { z } from 'zod';
 import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { logger } from '../../platform/observability/logger';
 import { learningService, CardNotFoundError } from './learning.service.js';
-import { fsrsService } from './fsrs.service.js';
+import { fsrsService, Rating } from './fsrs.service.js';
 import { getLevelConfig } from './learning-config.js';
 import { getUserLevel, idParam } from './routes.helpers.js';
 
 
 const reviewBody = z.object({
   cardId: z.uuid(),
-  rating: z.number().min(1).max(4),
+  rating: z.union([z.literal(Rating.Again), z.literal(Rating.Hard), z.literal(Rating.Good), z.literal(Rating.Easy)]),
 });
 
 const dueQuery = z.object({
