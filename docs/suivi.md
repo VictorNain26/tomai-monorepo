@@ -153,10 +153,12 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Hono v5 ; revérifier son adoption avant la v5.
 
 - Le graphe de dépendances GitHub listait encore `apps/curriculum/uv.lock` et
-  `apps/ai-service/uv.lock` (supprimés en `8f5011f`) et y rattachait des alertes ; les 70
-  alertes ont été classées `inaccurate` le 2026-09-22. Si une alerte réapparaît sur ces
-  chemins, ouvrir un ticket au support GitHub. Dependabot ne sert qu'à détecter ; Renovate
-  ouvre toutes les PR.
+  `apps/ai-service/uv.lock` (supprimés en `8f5011f`) et y rattachait des alertes ; les 70
+  alertes ont été classées `inaccurate` le 2026-09-22. **Reproduit** : 8 nouvelles alertes
+  ouvertes entre le 2026-09-24 et le 2026-10-01 sur ces deux chemins (litellm,
+  sentence-transformers, urllib3, hpack), constaté le 2026-10-02. Action de Victor : les
+  classer `inaccurate` et ouvrir un ticket au support GitHub. Dependabot ne sert qu'à
+  détecter ; Renovate ouvre toutes les PR.
 - Plafonds de version à lever à la main (Renovate ne les proposera pas) : TypeScript
   `<6.1.0` tant que `typescript-eslint` exige `typescript <6.1.0` ; `@types/node` `<25.0.0`
   tant que le runtime est Node 24 (Vercel ne propose que 24.x, 22.x et 20.x ; Node 26 LTS le
@@ -250,3 +252,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   lycée ; roadmap refondue : référentiel du collège et observabilité au lot 1, programme
   dans le contexte et outil de calcul au lot 2, lycée après la V1, RAG vectoriel écarté par
   la mesure (#359).
+  Exécuteur de l'évaluation : `bun run eval` joue les scénarios par la vraie route de chat,
+  détecte la réponse dans le texte, les sorties d'outils et les fiches, et écrit une
+  expérience Langfuse ; premiers passages réduits, trois fuites réelles ; forfaits absents
+  de `subscription_plans` relevés pour le lot 2 (#362).
