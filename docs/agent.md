@@ -165,10 +165,12 @@ Ordre du prompt, du plus stable au plus variable :
 1. Système statique versionné : identité (dont la divulgation « je suis une IA »),
    pédagogie, sécurité, format. Aucune donnée d'élève.
 2. Définitions d'outils.
-3. Bloc de faits de l'élève (niveau, matière, difficultés, palier en cours),
+3. Référentiel du programme pour le niveau et la matière de la séance, constant pendant la
+   séance, donc relu depuis le cache (`etudes/2026-10-02/alignement.md`, § 4 ; lot 2).
+4. Bloc de faits de l'élève (niveau, matière, difficultés, palier en cours),
    délimité comme données.
-4. Résumé des tours anciens + tours récents bruts.
-5. Message de l'élève, **un seul message `user` par tour** : la consigne de tour
+5. Résumé des tours anciens + tours récents bruts.
+6. Message de l'élève, **un seul message `user` par tour** : la consigne de tour
    rejoint ce message au lieu d'en créer d'autres (aujourd'hui jusqu'à six `user`
    consécutifs, `assembleChatMessages` de `modules/tutor/chat-message-assembler.ts`).
 
@@ -219,8 +221,12 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   configurations de Tom ; bruit de mesure documenté avant toute conclusion.
 - Datasets, runs et traces dans **Langfuse** (auto-hébergé ou région UE), relié à
   l'AI SDK par `@ai-sdk/otel`. En production, entrées et sorties ne sont jamais
-  enregistrées (`recordInputs: false`, `recordOutputs: false`) ; le harnais ne les active
+  enregistrées (`recordInputs: false`, `recordOutputs: false`) ; le harnais ne les active
   que sur ses données de test.
+- **Non-régression** : baseline approuvée commitée (verdict par cas, versions du jeu et
+  du juge) ; les PR qui touchent l'agent lancent le harnais en CI et échouent sous la
+  baseline. Un cas vu en production devient un scénario synthétique du jeu, jamais un
+  texte d'élève (`etudes/2026-10-02/alignement.md`, § 8).
 - Métriques de production suivies en continu : taux de fuite, latence, coût par
   tour, `cacheRead`, taux de blocage de la modération.
 - Mocks de l'AI SDK (`ai/test`) pour les tests unitaires ; appels réels réservés

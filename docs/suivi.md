@@ -7,7 +7,8 @@ bloquant levé).
 - Vision : `vision.md` (pour qui, promesse, preuves, prix).
 - Roadmap : `roadmap.md`.
 - Specs techniques : `architecture.md`, `agent.md`.
-- Études du 2026-10-01 : `etudes/`. Ce sont des instantanés datés, jamais mis à jour.
+- Études du 2026-10-01 et du 2026-10-02 (alignement sur les programmes, évaluation et
+  observabilité, lycée) : `etudes/`. Ce sont des instantanés datés, jamais mis à jour.
 
 ## Où on en est
 
@@ -29,8 +30,14 @@ plan de la PR s'écrit, le point y devient une tâche ou est explicitement renvo
 (`.claude/rules/plans-and-agents.md`). Chemins relatifs à `apps/server/src/` sauf mention
 contraire.
 
-### Lot 1 — harnais d'évaluation
+### Lot 1 — harnais d'évaluation et observabilité
 
+- **Référentiel des programmes du collège** (point 3, `etudes/2026-10-02/alignement.md`,
+  § 5) : une version par texte officiel, extraite de l'arbre de structure des annexes PDF
+  balisées par pdf.js (via `unpdf`), une entrée par objectif avec NOR, BO, SHA-256 du PDF
+  et page, clé par niveau puis enseignement, relue par un humain. Les formules disparaissent
+  de la couche texte : les compléter à la relecture. En 2026-2027 coexistent les programmes
+  de 2025 (6e), de 2026 (5e, français et mathématiques) et de 2020 (4e, 3e).
 - **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
   « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
   bon niveau sans notion hors programme, jamais la réponse. Corpus : sujets du brevet
@@ -42,11 +49,12 @@ contraire.
 
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
-- **Référentiel des programmes** (même étude, a) : une version par rentrée, extraite des
-  annexes PDF du BO (aucune donnée structurée officielle à jour), une entrée par objectif
-  d'apprentissage avec NOR, n° et date du BO, empreinte du PDF et rentrée d'application,
-  relue par un humain, injectée par notion à chaque tour. En 2026-2027 coexistent les
-  programmes de 2025 (6e), de 2026 (5e, français et mathématiques) et de 2020 (4e, 3e).
+- **Programme dans le contexte** (`etudes/2026-10-02/alignement.md`, § 4) : référentiel
+  du niveau et de la matière de la séance injecté en bloc, constant pendant la séance ;
+  `modules/tutor/prompts/adaptation/by-level.ts` réécrit par niveau à partir du
+  référentiel, consignes chiffrées sans source retirées. Après la correction du quota.
+- **Outil de calcul** (même étude, § 6) : mathjs ou Compute Engine, après lecture de leur
+  documentation sur la résolution d'équations et l'équivalence.
 - **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
   - la synthèse vocale (`/api/tts`, `modules/voice/voice.routes.ts`) n'a aucun quota, seulement le
     rate limit global : c'est le seul poste non borné ;
@@ -172,6 +180,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
+| Créer le projet Langfuse en région UE (ou décider l'auto-hébergement) et fournir ses clés | Lot 1, point 2 | à faire |
+| Créer un espace Mistral dédié à la CI avec son plafond, et sa clé en secret GitHub | Lot 1, point 6 | à faire |
+| Avis d'un juriste : partage à l'identique de Sésamath sur un texte généré, réutilisation commerciale des sujets d'examen hébergés sur education.gouv.fr (`etudes/2026-10-02/alignement.md`, § 3) | Avant d'afficher un contenu qui en vient | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
 
 ## Historique
