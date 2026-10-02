@@ -52,6 +52,10 @@ contraire.
   la sortie du tuteur, qui écrit les maths en KaTeX (`\frac{23}{12}`, `x^2`, `\,`), avec
   des tirets ou signes moins variables et des espaces fines ; tester chaque forme sous ces
   variantes, et contre des faux positifs (« hasard » pour « has », « 195 » pour « 19 »).
+- **Débit Mistral** (point 2) : `mistral-small-2603` est limité à 100 000 tokens par minute
+  et 1,67 requête par seconde sur ce compte (Admin › API › Limites, 2026-10-02). L'exécuteur
+  borne sa concurrence en conséquence ; une passe complète du jeu prend au moins une
+  vingtaine de minutes.
 - En cas d'erreur, le span OpenTelemetry d'un appel IA porte le message d'erreur de
   Mistral, c'est-à-dire le corps de sa réponse : vérifier qu'il ne contient pas de contenu
   d'élève avant de brancher le premier exporteur (Langfuse).
@@ -138,10 +142,13 @@ contraire.
 
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
-- **Bun 1.4.2** a planté deux fois sur onze passages de la suite unitaire, sous charge
-  (« Segmentation fault at address 0x20 », « bug in Bun, not your code ») ; les relances sont
-  propres. Si le plantage atteint la CI ou se reproduit hors charge, ouvrir un ticket chez
-  oven-sh/bun avec le lien `bun.report` du crash et monter de version.
+- **Bun 1.4.2** plante par intermittence sous `bun test --isolate` (« Segmentation fault »,
+  « bug in Bun, not your code ») : deux fois sur onze passages en local, puis en CI le
+  2026-10-02 (run 37003790891 de #360, trace dans `JSFinalizationRegistry::takeDeadHoldingsValue`).
+  Bug déjà suivi chez Bun : oven-sh/bun#44161, ouvert, même trace, aucun correctif ; la
+  1.4.2 est la dernière version. En attendant : relancer le job en échec après avoir vérifié
+  dans le log que toutes les assertions passent et que la sortie est ce plantage. Monter
+  de version dès qu'une release le corrige.
 - **Sentry v11** : `apps/landing/next.config.*` importe `withSentryConfig` depuis
   `@sentry/nextjs`, déprécié (avertissement de `next typegen`) ; passer à
   `@sentry/nextjs/config` avant de monter en v11.
@@ -185,13 +192,13 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Après le merge de #344 : `rm -rf node_modules && bun install` à la racine du clone local (les `node_modules` actuels viennent de pnpm) | Outillage | à faire |
 | Base de dev locale : `bun run setup` (applique les migrations 0028 et 0029, qui suppriment les tables de la liste d'attente et de Pronote ; le doctor signale 28/30) | Outillage | à faire |
 | Entretiens de parents : remplacés par la recherche documentaire (`etudes/2026-10-01/parents.md`), décision de Victor le 2026-10-02 ; prix, appareil du soir et canaux restent des hypothèses (`vision.md`, « Questions ouvertes ») | Questions ouvertes de la vision | fait |
-| Demander le Zero Data Retention au support Mistral, puis vérifier Admin › API › Privacy | Porte avant ouverture | à faire |
-| Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
+| Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD) ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
+| Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` : absente du projet, constaté le 2026-10-02 | Lot 0, liste d'attente | fait |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
 | Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |
-| Créer le projet Langfuse en région UE (ou décider l'auto-hébergement) et fournir ses clés | Lot 1, point 2 | à faire |
-| Créer un espace Mistral dédié à la CI avec son plafond, et sa clé en secret GitHub | Lot 1, point 6 | à faire |
+| Projet Langfuse « tomai » en région UE (`https://cloud.langfuse.com`, offre Hobby) et ses clés dans `apps/server/.env`, vérifiées par l'API (HTTP 200) le 2026-10-02 | Lot 1, point 2 | fait |
+| Espace Mistral « ci » et sa clé `github-actions`, en secret GitHub `MISTRAL_API_KEY_CI` (2026-10-02). Sans paiement à l'usage, la dépense reste bornée par les 8,50 € inclus ; la valeur du secret se vérifie au premier passage en CI | Lot 1, point 6 | fait |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
 
 ## Historique
