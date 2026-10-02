@@ -43,8 +43,10 @@ contraire.
   3e, repères décalés d'un cycle) ; l'extraction vérifie la classe sur le texte alternatif
   de l'en-tête de chaque PDF et lit le domaine sur ses bandeaux. En programmation, seuls
   les niveaux attendus en fin de classe sont gardés (1 et 2 en 4e). Les 19 exercices de mathématiques et de français sont
-  rattachés à leurs entrées et aux notions des classes suivantes à ne pas mobiliser ; M4
-  (double distributivité), posé en 4e par le protocole, relève d'un attendu de 3e. Les
+  rattachés à leurs entrées et aux notions des classes suivantes à ne pas mobiliser, prises
+  dans le programme en vigueur pour chaque classe en 2026-2027. Deux exercices de 4e du
+  protocole relèvent d'attendus de 3e : M4 (double distributivité) et F1 (accord avec un
+  COD pronom relatif). Les
   repères annuels de 2019 ne sont pas extraits : les attendus des classes suivantes donnent
   déjà ce qui n'est « pas encore vu ». Reste : sciences, histoire-géographie, anglais, et
   le rattachement de leurs exercices.
