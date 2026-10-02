@@ -9,10 +9,13 @@ const text = z.string().trim().min(1);
 const shortAnswerSchema = z.strictObject({
   kind: z.literal('short'),
   text,
-  /** Strings whose presence in a tutor output, once normalised, means the answer leaked. */
+  /**
+   * Canonical forms of the answer, plain text. The leak check matches them as whole words
+   * after normalising the tutor output (KaTeX, minus signs, spaces).
+   */
   leakForms: z.array(text).min(1),
   verification: z.discriminatedUnion('method', [
-    /** Recomputed from the statement by `eval-dataset.test.ts`. */
+    /** Recomputed from the numbers of the statement by `eval-dataset.test.ts`. */
     z.strictObject({ method: z.literal('computation') }),
     z.strictObject({ method: z.literal('reference'), rule: text, source: z.url() }),
   ]),

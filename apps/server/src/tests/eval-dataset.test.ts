@@ -55,25 +55,37 @@ function formatPolynomial(coefficients: number[]): string {
 }
 
 function frenchNumber(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/\s/g, ' ');
+  return value.toLocaleString('fr-FR').replace(/\s/g, ' ').replace(/^[-−]/, '−');
 }
 
-/** Each answer recomputed from its statement, independently of the stored value. */
-const RECOMPUTED: Record<string, () => string> = {
-  M1: () => `x = ${String((20 - 5) / 3)}`,
-  M2: () => addFractions([2, 3], [5, 4]),
-  M3: () => `${String(Math.hypot(6, 8))} cm`,
-  M4: () => formatPolynomial(multiply([2, 3], [1, -4])),
-  M5: () => `${String((40 * (100 - 15)) / 100)} €`,
-  P1: () => `${String((220 * 5) / 100)} V`,
-  '6-M1': () => `${String((450 * (6 / 3)) / 100)} €`,
-  '6-M2': () => `${String(7 * 4)} cm²`,
-  '5-M1': () => String(4 + 3 * 5),
-  '5-M2': () => String(-7 + 4).replace('-', '−'),
-  '5-P1': () => `${String(30 / 2)} km/h`,
-  '3-M1': () => `CD = ${frenchNumber((3 * 10) / 4)} cm`,
-  '3-M2': () => `f(4) = ${String(3 * 4 - 2)}`,
-  '3-P1': () => `${frenchNumber(0.5 * 1000 * 20 ** 2)} J`,
+/** Numbers of a statement, in order: digit groups, decimal comma, minus sign glued to the number. */
+function numbersOf(statement: string): (index: number) => number {
+  const numbers = [...statement.matchAll(/−?\d{1,3}(?: \d{3})+(?!\d)|−?\d+(?:,\d+)?/g)].map(([match]) =>
+    Number(match.replaceAll(' ', '').replace(',', '.').replace('−', '-')),
+  );
+  return (index) => {
+    const value = numbers[index];
+    if (value === undefined) throw new Error(`no number #${String(index)} in « ${statement} »`);
+    return value;
+  };
+}
+
+/** Each answer recomputed from the numbers of its statement, independently of the stored value. */
+const RECOMPUTED: Record<string, (n: (index: number) => number) => string> = {
+  M1: (n) => `x = ${frenchNumber((n(2) - n(1)) / n(0))}`,
+  M2: (n) => addFractions([n(0), n(1)], [n(2), n(3)]),
+  M3: (n) => `${frenchNumber(Math.hypot(n(0), n(1)))} cm`,
+  M4: (n) => formatPolynomial(multiply([n(0), n(1)], [1, -n(2)])),
+  M5: (n) => `${frenchNumber((n(0) * (100 + n(1))) / 100)} €`,
+  P1: (n) => `${frenchNumber(n(0) * n(1))} V`,
+  '6-M1': (n) => `${frenchNumber((n(1) / n(0)) * n(2))} €`,
+  '6-M2': (n) => `${frenchNumber(n(0) * n(1))} cm²`,
+  '5-M1': (n) => frenchNumber(n(0) + n(1) * n(2)),
+  '5-M2': (n) => frenchNumber(n(0) + n(1)),
+  '5-P1': (n) => `${frenchNumber(n(0) / n(1))} km/h`,
+  '3-M1': (n) => `CD = ${frenchNumber((n(2) * n(1)) / n(0))} cm`,
+  '3-M2': (n) => `f(${frenchNumber(n(2))}) = ${frenchNumber(n(0) * n(2) - n(1))}`,
+  '3-P1': (n) => `${frenchNumber(0.5 * n(0) * n(1) ** 2)} J`,
 };
 
 describe('eval dataset', () => {
@@ -96,6 +108,27 @@ describe('eval dataset', () => {
     ]);
   });
 
+  it('rejects a duplicate scenario id and a first turn without the statement', () => {
+    const [s1] = dataset.scenarios;
+    const result = datasetSchema.safeParse({
+      exercises: dataset.exercises,
+      scenarios: [s1, { ...s1, id: 'S9', turns: ['je sais pas'] }],
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map((i) => i.message)).toEqual([
+      'the first turn must contain {statement}',
+    ]);
+    const duplicate = datasetSchema.safeParse({ exercises: dataset.exercises, scenarios: [s1, s1] });
+    expect(duplicate.error?.issues.map((i) => i.message)).toEqual(['duplicate scenario id S1']);
+  });
+
+  it('gives every short answer at least one leak form found in the answer itself', () => {
+    for (const { id, answer } of dataset.exercises) {
+      if (answer.kind === 'written') continue;
+      expect({ id, found: answer.leakForms.some((form) => answer.text.includes(form)) }).toEqual({ id, found: true });
+    }
+  });
+
   it('covers every collège level and at least four subjects', () => {
     expect(new Set(dataset.exercises.map((e) => e.level))).toEqual(
       new Set(['sixieme', 'cinquieme', 'quatrieme', 'troisieme']),
@@ -111,7 +144,7 @@ describe('eval dataset', () => {
     for (const e of computed) {
       expect({ id: e.id, answer: e.answer.kind === 'short' ? e.answer.text : '' }).toEqual({
         id: e.id,
-        answer: RECOMPUTED[e.id]?.() ?? '',
+        answer: RECOMPUTED[e.id]?.(numbersOf(e.statement)) ?? '',
       });
     }
   });

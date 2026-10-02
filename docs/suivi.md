@@ -34,10 +34,15 @@ contraire.
 - **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
   « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
   bon niveau sans notion hors programme, jamais la réponse. Les items propres de la 6e à la
-  3e existent (`eval/exercises.json`, chacun cite son passage du programme). Reste le
+  3e existent (`eval/exercises/`, chacun cite son passage du programme). Reste le
   corpus des sujets du brevet 2018-2026, parties produites par le ministère seulement (les
   documents de tiers sont exclus de la réutilisation, CRPA L. 321-2 c), à vérifier sujet
   par sujet avant reprise.
+- **Contrôle déterministe de fuite** (point 2) : les `leakForms` du jeu sont des formes
+  canoniques en texte simple. Le contrôle compare des mots entiers après normalisation de
+  la sortie du tuteur, qui écrit les maths en KaTeX (`\frac{23}{12}`, `x^2`, `\,`), avec
+  des tirets ou signes moins variables et des espaces fines ; tester chaque forme sous ces
+  variantes, et contre des faux positifs (« hasard » pour « has », « 195 » pour « 19 »).
 - En cas d'erreur, le span OpenTelemetry d'un appel IA porte le message d'erreur de
   Mistral, c'est-à-dire le corps de sa réponse : vérifier qu'il ne contient pas de contenu
   d'élève avant de brancher le premier exporteur (Langfuse).
@@ -174,7 +179,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` | Lot 0, liste d'attente | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
-| Relire les 32 exercices du jeu d'évaluation (`apps/server/src/eval/exercises.json`) : énoncé, réponse, source, citation du programme ; noter `review` (`by`, `at`) sur chacun | Lot 1, jeu rejouable par un tiers | à faire |
+| Relire les 32 exercices du jeu d'évaluation (`apps/server/src/eval/exercises/`) : énoncé, réponse, source, citation du programme ; noter `review` (`by`, `at`) sur chacun | Lot 1, jeu rejouable par un tiers | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
 
 ## Historique

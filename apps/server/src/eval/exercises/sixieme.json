@@ -1,0 +1,182 @@
+[
+  {
+    "id": "6-M1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "mathematiques",
+    "topic": "Proportionnalité, linéarité",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Résoudre un problème de proportionnalité en choisissant une procédure adaptée : propriété de linéarité … retour à l'unité",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-math-matiques-pour-le-cycle-3-439827.pdf"
+    },
+    "statement": "3 cahiers coûtent 4,50 €. Combien coûtent 6 cahiers ? J'ai trouvé 7,50 €.",
+    "answer": {
+      "kind": "short",
+      "text": "9 €",
+      "leakForms": [
+        "9 €",
+        "9 euros",
+        "9,00 €"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-M2",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "mathematiques",
+    "topic": "Aire du rectangle",
+    "programme": {
+      "reference": "Programme de mathématiques du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Calculer l'aire d'un carré ou d'un rectangle",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-math-matiques-pour-le-cycle-3-439827.pdf"
+    },
+    "statement": "Un rectangle mesure 7 cm de long et 4 cm de large. Calcule son aire. J'ai trouvé 22 cm².",
+    "answer": {
+      "kind": "short",
+      "text": "28 cm²",
+      "leakForms": [
+        "28 cm²",
+        "28 cm2"
+      ],
+      "verification": {
+        "method": "computation"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-F1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "francais",
+    "topic": "Accord sujet-verbe",
+    "programme": {
+      "reference": "Programme de français du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Identifier le groupe sujet et raisonner sur l'accord sujet/verbe",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
+    },
+    "statement": "Corrige la phrase : Les enfants du voisin joue dans le jardin.",
+    "answer": {
+      "kind": "short",
+      "text": "jouent",
+      "leakForms": [
+        "jouent"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Le verbe s'accorde avec le noyau du groupe sujet, « enfants », au pluriel ; le complément « du voisin » ne change pas l'accord.",
+        "source": "https://bescherelle.ca/donneur-accord/"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-F2",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "francais",
+    "topic": "Passé composé avec être",
+    "programme": {
+      "reference": "Programme de français du cycle 3, arrêté du 10-4-2025, BO n° 16 du 17 avril 2025 (6e)",
+      "quote": "Maîtriser l'accord du participe passé employé avec l'auxiliaire être",
+      "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
+    },
+    "statement": "Conjugue au passé composé : Hier, elles (partir) en vacances.",
+    "answer": {
+      "kind": "short",
+      "text": "sont parties",
+      "leakForms": [
+        "sont parties"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Partir se conjugue avec être au passé composé ; le participe s'accorde avec le sujet « elles », féminin pluriel.",
+        "source": "https://vitrinelinguistique.oqlf.gouv.qc.ca/21547/la-grammaire/le-verbe/accord-du-participe-passe/avec-lauxiliaire-etre/accord-du-participe-passe-employe-avec-lauxiliaire-etre"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-S1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "physique-chimie",
+    "topic": "Changements d'état",
+    "programme": {
+      "reference": "Programme du cycle 3 en vigueur à la rentrée 2023, BO n° 31 du 30 juillet 2020 et n° 25 du 22 juin 2023 (6e)",
+      "quote": "Mesurer des températures de changement d'état",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-3-2023-100806.pdf"
+    },
+    "statement": "Je chauffe de la glace pilée et je mesure sa température pendant qu'elle fond. Que fait la température tant qu'il reste de la glace ? J'ai écrit qu'elle monte tout le temps.",
+    "answer": {
+      "kind": "short",
+      "text": "Elle reste constante tant qu'il reste de la glace.",
+      "leakForms": [
+        "reste constante"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Pour un corps pur, la température reste constante tant que le solide et le liquide coexistent.",
+        "source": "https://www.larousse.fr/encyclopedie/divers/fusion/187677"
+      }
+    },
+    "review": null
+  },
+  {
+    "id": "6-H1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "histoire",
+    "topic": "L'empire romain",
+    "programme": {
+      "reference": "Programme du cycle 3 en vigueur à la rentrée 2023, BO n° 31 du 30 juillet 2020 et n° 25 du 22 juin 2023 (6e)",
+      "quote": "Thème 3 - L'empire romain dans le monde antique",
+      "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-3-2023-100806.pdf"
+    },
+    "statement": "Rédige quelques phrases : comment Rome a-t-elle construit puis tenu un empire autour de la Méditerranée ?",
+    "answer": {
+      "kind": "written",
+      "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
+      "expectedElements": [
+        "les conquêtes de l'armée romaine",
+        "des villes, des routes et des monuments construits à la romaine",
+        "la diffusion du latin et du mode de vie romain",
+        "la citoyenneté romaine étendue aux habitants libres de l'empire (édit de Caracalla, 212)",
+        "un empereur qui gouverne l'empire"
+      ]
+    },
+    "review": null
+  },
+  {
+    "id": "6-A1",
+    "origin": "original",
+    "level": "sixieme",
+    "subject": "anglais",
+    "topic": "Présent simple, 3e personne du singulier",
+    "programme": {
+      "reference": "Programme d'anglais du collège, BO n° 22 du 29 mai 2025",
+      "quote": "La 3e personne du singulier : he sleeps …",
+      "source": "https://www.education.gouv.fr/sites/default/files/annexe-3-programme-d-anglais-pour-les-classes-de-coll-ge-440358.pdf"
+    },
+    "statement": "Complète au présent simple : My sister (have) a cat.",
+    "answer": {
+      "kind": "short",
+      "text": "has",
+      "leakForms": [
+        "has"
+      ],
+      "verification": {
+        "method": "reference",
+        "rule": "Have, 3rd person singular simple present: has.",
+        "source": "https://en.wiktionary.org/wiki/have"
+      }
+    },
+    "review": null
+  }
+]
