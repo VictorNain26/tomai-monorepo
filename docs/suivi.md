@@ -20,8 +20,10 @@ bloquant levé).
     module `documents` (#350), module `learning` (#351), module `tutor` (#352),
     modules `auth` et `family` (#353), module `billing` (#354) : tous les modules de
     `architecture.md` (« Monolithe modulaire ») sont rangés ;
-  - **lint strict** (détail dans « Reporté »).
-- **Prochaine action :** lint strict, sur une branche courte dont le plan
+  - **lint strict** (#355) : plus aucun `eslint-disable`, configuration ESLint stricte
+    partagée, `noUncheckedIndexedAccess`, `noUnusedLocals` et `noUnusedParameters` activés ;
+  - **TypeScript strict**, demandé par Victor le 2026-10-02 (détail dans « Reporté »).
+- **Prochaine action :** TypeScript strict, sur une branche courte dont le plan
   s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
@@ -34,16 +36,13 @@ plan de la PR s'écrit, le point y devient une tâche ou est explicitement renvo
 (`.claude/rules/plans-and-agents.md`). Chemins relatifs à `apps/server/src/` sauf mention
 contraire.
 
-### Lot 0 — lint strict
+### Lot 0 — TypeScript strict
 
-- `eslint-disable` antérieurs dans `apps/server/src` (repositories learning,
-  `education-levels.ts`, `seed-dev.ts`,
-  `modules/tutor/chat-message.routes.ts` (`no-control-regex` dans `sanitizePrompt`)), à remplacer
-  par une forme de code qui ne déclenche pas la règle.
-  Configuration visée (relevée dans l'ancien plan d'E2) : config
-  partagée `strictTypeChecked` et `stylisticTypeChecked`, `noInlineConfig`,
-  `reportUnusedDisableDirectives: 'error'`, `only-warn` retiré) : c'est la quatrième PR
-  du lot 0 dans la roadmap.
+- Activer `exactOptionalPropertyTypes` et `noPropertyAccessFromIndexSignature` dans
+  `tsconfig.base.json`, les deux options du profil `@tsconfig/strictest` encore absentes.
+  Mesuré le 2026-10-02 sur les quatre espaces : 49 erreurs (dont 42 en production) pour la
+  première, 197 (dont 78 en production) pour la seconde, surtout des `obj.cle` à réécrire
+  en `obj['cle']` sur des signatures d'index (#355).
 
 ### Lot 1 — harnais d'évaluation
 
@@ -137,6 +136,14 @@ contraire.
 
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
+- **Bun 1.4.2** a planté deux fois sur onze passages de la suite unitaire, sous charge
+  (« Segmentation fault at address 0x20 », « bug in Bun, not your code ») ; les relances sont
+  propres. Si le plantage atteint la CI ou se reproduit hors charge, ouvrir un ticket chez
+  oven-sh/bun avec le lien `bun.report` du crash et monter de version.
+- **`@hono/bun`** (#355) échoue au critère d'adoption : paquet du monorepo Hono publié le
+  2026-09-28, 704 téléchargements par semaine. Gardé car c'est la voie de migration avant
+  Hono v5 ; revérifier son adoption avant la v5.
+
 - Le graphe de dépendances GitHub listait encore `apps/curriculum/uv.lock` et
   `apps/ai-service/uv.lock` (supprimés en `8f5011f`) et y rattachait des alertes ; les 70
   alertes ont été classées `inaccurate` le 2026-09-22. Si une alerte réapparaît sur ces
@@ -220,4 +227,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   statistiques du tuteur, et le code qui exposait au parent le texte des séances est
   supprimé avec le reste du code mort (#353). Module `billing` : module feuille, les routes
   de statut et d'usage d'abonnement passent dans `family`, et `/api/subscriptions/usage` ne
-  révèle plus quels comptes existent (#354).
+  révèle plus quels comptes existent (#354). Lint strict : configuration ESLint typée stricte
+  partagée, plus aucun `eslint-disable`, `noUncheckedIndexedAccess` activé, image Docker du
+  serveur réparée et bâtie en `NODE_ENV=production`, révision FSRS bornée aux quatre notes
+  (#355).
