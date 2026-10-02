@@ -12,7 +12,7 @@ const entrySchema = z.strictObject({
   level: collegeLevelSchema,
   subject: z.enum(SUBJECT_SLUGS),
   domain: text,
-  subtheme: text,
+  subtheme: text.nullable(),
   subsubtheme: text.nullable(),
   kind: z.enum(['objective', 'automatism']),
   /** Exact wording of the official text. */

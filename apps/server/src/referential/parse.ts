@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { CollegeLevel, Entry } from './schema.js';
 import type { ProgrammeSource } from './sources.js';
 
@@ -11,9 +12,9 @@ export interface PositionedText {
   eol: boolean;
 }
 
-/** A block of the structure tree in reading order: heading, paragraph or list item. */
+/** A block of the structure tree in reading order: heading, paragraph, list item or table. */
 export interface Block {
-  role: 'H1' | 'H2' | 'H3' | 'H4' | 'P' | 'LI';
+  role: 'H1' | 'H2' | 'H3' | 'H4' | 'P' | 'LI' | 'TABLE';
   text: string;
   page: number;
   formula: boolean;
@@ -25,13 +26,18 @@ const LEVELS: Record<string, CollegeLevel> = {
   quatrième: 'quatrieme',
   troisième: 'troisieme',
 };
-/** A stacked fraction term: a number, or the dots of a blank to fill. */
-const FRACTION_TERM = /^(?:\d+|\.{3}|…)$/;
+/** A stacked fraction term: a number (digit groups allowed), a letter, or dots to fill. */
+const FRACTION_TERM = /^(?:\d{1,3}(?: \d{3})+|\d+|\p{L}|\.{3}|…)$/u;
 const SENTENCE_END = /[.!?:;»)]$/;
-
+const LIST_MARKER = /^[—–−•-]\s*/u;
+/** Rubric labels: they title a part of a section, not a theme. */
+const RUBRIC = /^(?:connaissances et capacités attendues|attendus de fin)/i;
+const CLOSING_RUBRIC = /^(?:prolongements possibles|mises en perspective)/i;
+/** In cycle 3, automatisms are paragraphs about the student; other paragraphs are teacher notes. */
+const ABOUT_STUDENT = /(?:^|\s)(?:l[’']élève|il|elle)\s/iu;
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
-  '0': '\u2070', '1': '\u00b9', '2': '\u00b2', '3': '\u00b3', '4': '\u2074',
-  '5': '\u2075', '6': '\u2076', '7': '\u2077', '8': '\u2078', '9': '\u2079',
+  '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+  '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
 };
 /** Mathematical italic letters (𝑥) are plain letters; other characters keep their form (²). */
 const MATH_ALPHANUMERIC = /[\u{1D400}-\u{1D7FF}]/gu;
@@ -40,21 +46,46 @@ function centre(item: PositionedText): number {
   return item.x + item.width / 2;
 }
 
+/** A number written in several runs on one line (« 1 », « », « 000 ») becomes one run. */
+function coalesceNumbers(runs: readonly PositionedText[]): PositionedText[] {
+  const out: PositionedText[] = [];
+  for (let i = 0; i < runs.length; i += 1) {
+    const run = runs[i];
+    if (!run) continue;
+    const last = out.at(-1);
+    const space = runs[i + 1];
+    const digits = runs[i + 2];
+    const sameLine = (a: PositionedText, b: PositionedText) => Math.abs(a.y - b.y) < 0.5 && b.x - (a.x + a.width) < 2;
+    const groups = last !== undefined && /^\d[\d ]*$/.test(last.str) && run.str === ' ' && space !== undefined && /^\d{3}$/.test(space.str)
+      && sameLine(last, run) && sameLine(run, space) && digits !== space;
+    if (groups) {
+      out[out.length - 1] = { ...last, str: `${last.str} ${space.str}`, width: space.x + space.width - last.x };
+      i += 1;
+      continue;
+    }
+    out.push(run);
+  }
+  return out;
+}
+
 /**
  * Joins the runs of one block. Word equations are not tagged as formulas: a fraction is two
- * numbers stacked around the line, numerator above, and becomes `a/b`; an exponent is a
- * smaller run raised above the line, and becomes superscript digits.
+ * smaller terms stacked around the line, numerator above, and becomes `a/b`; an exponent is
+ * a smaller run raised above the line, and becomes superscript digits.
  */
-export function joinRuns(runs: readonly PositionedText[]): { text: string; formula: boolean } {
+export function joinRuns(raw: readonly PositionedText[]): { text: string; formula: boolean } {
+  const runs = coalesceNumbers(raw);
   let text = '';
   let formula = false;
   let lineHeight = 0;
   let baseline = 0;
+  const bodyHeight = Math.max(0, ...runs.map((run) => run.height));
+  const small = (run: PositionedText) => run.height > 0 && run.height <= bodyHeight * 0.85;
   for (let i = 0; i < runs.length; i += 1) {
     const run = runs[i];
     if (!run) continue;
     const next = runs[i + 1];
-    const stacked = next !== undefined && FRACTION_TERM.test(run.str) && FRACTION_TERM.test(next.str)
+    const stacked = next !== undefined && FRACTION_TERM.test(run.str) && FRACTION_TERM.test(next.str) && small(run) && small(next)
       && Math.abs(centre(run) - centre(next)) < 3 && run.y - next.y > 3 && run.y - next.y < 15;
     if (stacked) {
       text += `${run.str}/${next.str}`;
@@ -68,7 +99,7 @@ export function joinRuns(runs: readonly PositionedText[]): { text: string; formu
       formula = true;
       continue;
     }
-    if (run.height > 0) {
+    if (run.height > 0 && (lineHeight === 0 || run.height >= lineHeight * 0.85)) {
       lineHeight = run.height;
       baseline = run.y;
     }
@@ -99,9 +130,7 @@ function slug(text: string): string {
     .replace(/\p{M}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 40)
-    .replace(/-$/, '');
+    .replace(/^-|-$/g, '');
 }
 
 function levelOf(heading: string): CollegeLevel | 'other' | null {
@@ -111,72 +140,124 @@ function levelOf(heading: string): CollegeLevel | 'other' | null {
 }
 
 /**
- * Reads the objectives and automatisms of a programme from its blocks. H1 carries either
- * the domain or the class; classes outside collège (CM1, CM2) are dropped. A paragraph
- * « Objectifs d'apprentissage » opens a list of objectives, a heading « Automatismes » a
- * list of automatisms; any other heading closes them.
+ * Whether a block completes the previous entry: an item, lowercase or bulleted, under a
+ * lead-in ending with « : » or after a sibling ending with « ; ». A capitalised sentence
+ * after « : » is the next entry (the lead-in introduced a figure, which is not read).
  */
-export function parseBlocks(blocks: readonly Block[], source: Pick<ProgrammeSource, 'id' | 'subject'>): Entry[] {
+function completes(previous: string, block: string): boolean {
+  return /[:;]$/.test(previous) && (/^\p{Ll}/u.test(block) || LIST_MARKER.test(block));
+}
+
+export interface ParseResult {
+  entries: Entry[];
+  /** Blocks inside an objectives or automatisms list that no class or domain could hold. */
+  dropped: Block[];
+  /** Teacher notes among the automatisms, left out and listed for review. */
+  notes: Block[];
+}
+
+/**
+ * Reads the objectives and automatisms of a programme from its blocks. H1 carries either
+ * the domain or the class; classes outside collège (CM1, CM2) are left out. A paragraph
+ * « Objectifs d'apprentissage » opens a list of objectives, a heading « Automatismes » a
+ * list of automatisms; any other heading closes them. Items under a lead-in ending with
+ * « : » join it. An id is the path of the entry plus a fingerprint of its wording, so it
+ * survives reordering and extractor fixes.
+ */
+export function parseBlocks(blocks: readonly Block[], source: Pick<ProgrammeSource, 'id' | 'subject'>): ParseResult {
   const entries: Entry[] = [];
-  const counters = new Map<string, number>();
+  const dropped: Block[] = [];
+  const notes: Block[] = [];
   let domain = '';
   let level: CollegeLevel | 'other' | null = null;
-  let subtheme = '';
+  let subtheme: string | null = null;
   let subsubtheme: string | null = null;
   let mode: 'none' | 'objective' | 'automatism' = 'none';
+  let open: Entry | null = null;
+  let afterTable = false;
 
   for (const block of mergePageBreaks(blocks)) {
-    if (block.role === 'H1') {
-      const found = levelOf(block.text);
-      if (found) {
-        level = found;
-        subtheme = '';
-        subsubtheme = null;
-      } else if (!/^perspective annuelle/i.test(block.text)) {
-        domain = block.text;
-        level = null;
+    if (block.role === 'TABLE') {
+      // A table inside an entry is part of it, with the sentence that follows it; any other
+      // table (quantitative guidance, outside the lists) is not an objective.
+      if (open && mode !== 'none') {
+        open.text = `${open.text} ${block.text}`;
+        afterTable = true;
       }
-      mode = 'none';
       continue;
     }
-    if (block.role === 'H2') {
-      subtheme = block.text;
-      subsubtheme = null;
-      mode = 'none';
-      continue;
-    }
-    if (block.role === 'H3' || block.role === 'H4') {
-      if (/^automatismes/i.test(block.text)) mode = 'automatism';
-      else if (/^prolongements possibles/i.test(block.text)) mode = 'none';
-      else {
+    if (block.role !== 'P' && block.role !== 'LI') {
+      open = null;
+      afterTable = false;
+      if (block.role === 'H1') {
+        const found = levelOf(block.text);
+        if (found) {
+          level = found;
+          subtheme = null;
+          subsubtheme = null;
+        } else if (!/^perspective annuelle/i.test(block.text)) {
+          domain = block.text;
+          level = null;
+        }
+        mode = 'none';
+      } else if (block.role === 'H2') {
+        subtheme = block.text;
+        subsubtheme = null;
+        mode = 'none';
+      } else if (/^automatismes/i.test(block.text)) {
+        mode = 'automatism';
+      } else if (CLOSING_RUBRIC.test(block.text)) {
+        mode = 'none';
+      } else if (!RUBRIC.test(block.text)) {
         subsubtheme = block.text;
         mode = 'none';
       }
       continue;
     }
     if (/^objectifs d.apprentissage$/i.test(block.text)) {
+      open = null;
       mode = 'objective';
       continue;
     }
-    const kind: Entry['kind'] | null = mode === 'objective' ? 'objective' : mode === 'automatism' && block.role === 'LI' ? 'automatism' : null;
-    if (kind === null || level === null || level === 'other' || !domain || !subtheme) continue;
+    if (mode === 'none' || level === 'other') continue;
+    if (level === null || !domain) {
+      dropped.push(block);
+      continue;
+    }
 
-    const path = [source.id, level, slug(domain), slug(subtheme), ...(subsubtheme ? [slug(subsubtheme)] : [])].join('.');
-    const counterKey = `${path}:${kind}`;
-    const index = (counters.get(counterKey) ?? 0) + 1;
-    counters.set(counterKey, index);
-    entries.push({
-      id: `${path}.${kind === 'objective' ? 'o' : 'a'}${String(index).padStart(2, '0')}`,
+    const wording = block.text.replace(LIST_MARKER, '');
+    if (mode === 'automatism' && block.role === 'P' && !afterTable && !(open && completes(open.text, block.text)) && !ABOUT_STUDENT.test(block.text)) {
+      notes.push(block);
+      continue;
+    }
+    if (open && (afterTable || completes(open.text, block.text))) {
+      afterTable = false;
+      open.text = `${open.text} ${wording}`;
+      open.formula ||= block.formula;
+      continue;
+    }
+    const path = [source.id, level, slug(domain), ...(subtheme ? [slug(subtheme)] : []), ...(subsubtheme ? [slug(subsubtheme)] : [])].join('.');
+    open = {
+      id: path,
       level,
       subject: source.subject,
       domain,
       subtheme,
       subsubtheme,
-      kind,
-      text: block.role === 'LI' ? block.text.replace(/^[—–−•-]\s*/u, '') : block.text,
+      kind: mode,
+      text: wording,
       page: block.page,
       formula: block.formula,
-    });
+    };
+    entries.push(open);
   }
-  return entries;
+
+  const seen = new Map<string, number>();
+  for (const entry of entries) {
+    const base = `${entry.id}.${entry.kind === 'objective' ? 'o' : 'a'}-${createHash('sha1').update(entry.text).digest('hex').slice(0, 8)}`;
+    const count = (seen.get(base) ?? 0) + 1;
+    seen.set(base, count);
+    entry.id = count === 1 ? base : `${base}-${String(count)}`;
+  }
+  return { entries, dropped, notes };
 }
