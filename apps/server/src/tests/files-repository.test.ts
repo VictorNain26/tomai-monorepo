@@ -16,6 +16,10 @@ import { sql } from 'drizzle-orm';
 
 // Capture what .set() receives — that's the payload we want to inspect.
 let capturedSetArg: Record<string, unknown> | null = null;
+function setArgOrThrow(): Record<string, unknown> {
+  if (!capturedSetArg) throw new Error('db.update().set() was not called');
+  return capturedSetArg;
+}
 let capturedWhereArgs: unknown[] = [];
 let updateCalledWith: unknown = null;
 let returnedRows: { id: string }[] = [{ id: 'file-1' }];
@@ -69,10 +73,10 @@ const { filesRepository } = await import('../modules/documents/files.repository'
 function serializeSql(sqlObj: unknown): string {
   if (sqlObj === null || typeof sqlObj !== 'object') return String(sqlObj);
   const chunks = (sqlObj as { queryChunks?: unknown[] }).queryChunks;
-  if (!Array.isArray(chunks)) return String(sqlObj);
+  if (!Array.isArray(chunks)) return JSON.stringify(sqlObj);
   return chunks.map(c => {
     if (c && typeof c === 'object' && 'value' in c) {
-      const v = (c as { value: unknown }).value;
+      const v = (c).value;
       if (Array.isArray(v)) return v.join('');
       return String(v);
     }
@@ -104,7 +108,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
   it('should emit a JSONB merge via `||`, not an overwrite', async () => {
     await filesRepository.mergeEducationalContext('file-42', { ocr: 'text' });
     expect(capturedSetArg).not.toBeNull();
-    const setArg = capturedSetArg as Record<string, unknown>;
+    const setArg = setArgOrThrow();
 
     // educationalContext is a drizzle SQL template, not a plain value.
     const ctx = setArg.educationalContext;
@@ -122,7 +126,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
     const patch = { transcription: 'Hello world', confidence: 0.95 };
     await filesRepository.mergeEducationalContext('file-1', patch);
 
-    const setArg = capturedSetArg as Record<string, unknown>;
+    const setArg = setArgOrThrow();
     const ctx = setArg.educationalContext;
 
     // The JSON-stringified patch is passed as a parameter into the sql tag,
@@ -134,7 +138,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
 
   it('should include a NOW() updatedAt bump alongside the merge', async () => {
     await filesRepository.mergeEducationalContext('file-1', { key: 'v' });
-    const setArg = capturedSetArg as Record<string, unknown>;
+    const setArg = setArgOrThrow();
     expect(setArg.updatedAt).toBeDefined();
     expect(serializeSql(setArg.updatedAt)).toContain('NOW');
   });
@@ -150,7 +154,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
     expect(
       filesRepository.mergeEducationalContext('file-1', {}),
     ).resolves.toBe(true);
-    const setArg = capturedSetArg as Record<string, unknown>;
+    const setArg = setArgOrThrow();
     const rendered = serializeSql(setArg.educationalContext);
     expect(rendered).toContain('{}');
   });
@@ -169,7 +173,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
     // The current implementation must produce something sql-y (drizzle's SQL
     // class has a `queryChunks` array).
     await filesRepository.mergeEducationalContext('file-1', { key: 'v' });
-    const setArg = capturedSetArg as Record<string, unknown>;
+    const setArg = setArgOrThrow();
     const ctx = setArg.educationalContext;
 
     // Plain object would have the key 'key' directly; a drizzle SQL template won't.

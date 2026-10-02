@@ -50,7 +50,7 @@ export function startRetentionPurgeScheduler(): () => void {
     });
   }, TWENTY_FOUR_HOURS_MS);
 
-  interval.unref?.();
+  interval.unref();
 
-  return () => clearInterval(interval);
+  return () => { clearInterval(interval); };
 }

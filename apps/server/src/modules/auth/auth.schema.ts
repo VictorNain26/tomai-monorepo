@@ -60,13 +60,13 @@ export const user = pgTable('user', {
   countryCode: varchar('country_code', { length: 2 }).default('FR'),
   timezone: varchar('timezone', { length: 50 }).default('Europe/Paris'),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
-}, (table) => ({
+}, (table) => [
   // Index pour performance
-  emailIdx: index('idx_user_email').on(table.email),
-  usernameIdx: index('idx_user_username').on(table.username),
-  roleIdx: index('idx_user_role').on(table.role),
-  schoolLevelIdx: index('idx_user_school_level').on(table.schoolLevel),
-}));
+  index('idx_user_email').on(table.email),
+  index('idx_user_username').on(table.username),
+  index('idx_user_role').on(table.role),
+  index('idx_user_school_level').on(table.schoolLevel),
+]);
 
 /**
  * Table session - Better Auth standard + Admin plugin impersonation
@@ -82,24 +82,24 @@ export const session = pgTable('session', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   // Better Auth Admin Plugin: impersonation tracking
   impersonatedBy: varchar('impersonated_by', { length: 255 }),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'session_user_id_fkey'
   }).onDelete('cascade'),
 
-  impersonatedByFk: foreignKey({
+  foreignKey({
     columns: [table.impersonatedBy],
     foreignColumns: [user.id],
     name: 'session_impersonated_by_fkey'
   }).onDelete('cascade'),
 
-  tokenIdx: index('idx_session_token').on(table.token),
-  userIdIdx: index('idx_session_user_id').on(table.userId),
-  expiresAtIdx: index('idx_session_expires_at').on(table.expiresAt),
-  impersonatedByIdx: index('idx_session_impersonated_by').on(table.impersonatedBy),
-}));
+  index('idx_session_token').on(table.token),
+  index('idx_session_user_id').on(table.userId),
+  index('idx_session_expires_at').on(table.expiresAt),
+  index('idx_session_impersonated_by').on(table.impersonatedBy),
+]);
 
 /**
  * Table account - Better Auth OAuth providers
@@ -119,16 +119,16 @@ export const account = pgTable('account', {
   salt: varchar('salt', { length: 255 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'account_user_id_fkey'
   }).onDelete('cascade'),
 
-  userIdIdx: index('idx_account_user_id').on(table.userId),
-  providerAccountIdx: index('idx_account_provider_account').on(table.providerId, table.accountId),
-}));
+  index('idx_account_user_id').on(table.userId),
+  index('idx_account_provider_account').on(table.providerId, table.accountId),
+]);
 
 /**
  * Table verification - Better Auth tokens
@@ -140,9 +140,9 @@ export const verification = pgTable('verification', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  identifierIdx: index('idx_verification_identifier').on(table.identifier),
-}));
+}, (table) => [
+  index('idx_verification_identifier').on(table.identifier),
+]);
 
 /**
  * Table parent_restore_token - Quick Switch tokens (Parent → Child)
@@ -162,23 +162,23 @@ export const parentRestoreToken = pgTable('parent_restore_token', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   usedAt: timestamp('used_at', { withTimezone: true }), // NULL = not used, set on restore
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  tokenIdx: index('idx_parent_restore_token_token').on(table.token),
-  parentIdIdx: index('idx_parent_restore_token_parent_id').on(table.parentId),
-  expiresAtIdx: index('idx_parent_restore_token_expires_at').on(table.expiresAt),
+}, (table) => [
+  index('idx_parent_restore_token_token').on(table.token),
+  index('idx_parent_restore_token_parent_id').on(table.parentId),
+  index('idx_parent_restore_token_expires_at').on(table.expiresAt),
 
-  parentIdFk: foreignKey({
+  foreignKey({
     columns: [table.parentId],
     foreignColumns: [user.id],
     name: 'parent_restore_token_parent_id_fkey'
   }).onDelete('cascade'),
 
-  childIdFk: foreignKey({
+  foreignKey({
     columns: [table.childId],
     foreignColumns: [user.id],
     name: 'parent_restore_token_child_id_fkey'
   }).onDelete('cascade'),
-}));
+]);
 
 // =============================================
 // RELATIONS

@@ -44,8 +44,8 @@ export function TomIllustration({ className }: { className?: string }) {
         muted
         playsInline
         preload="none"
-        onPlaying={() => setClip("salut")}
-        onEnded={() => respiration.current?.play().catch(() => undefined)}
+        onPlaying={() => { setClip("salut"); }}
+        onEnded={() => { respiration.current?.play().catch(() => undefined); }}
         className={cn("absolute inset-0 size-full", clip !== "salut" && "invisible")}
       >
         <Sources name="salut" />
@@ -57,7 +57,7 @@ export function TomIllustration({ className }: { className?: string }) {
         playsInline
         loop
         preload="none"
-        onPlaying={() => setClip("respiration")}
+        onPlaying={() => { setClip("respiration"); }}
         className={cn("absolute inset-0 size-full", clip !== "respiration" && "invisible")}
       >
         <Sources name="respiration" />

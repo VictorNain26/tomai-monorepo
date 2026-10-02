@@ -122,7 +122,8 @@ export function getAppHelpContent(
   topic: string,
   role: 'student' | 'parent'
 ): string | null {
+  // topic comes from the model's tool call: check the key before trusting it.
+  if (!Object.hasOwn(APP_GUIDE, topic)) return null;
   const guide = APP_GUIDE[topic as AppHelpTopic];
-  if (!guide) return null;
   return guide[role];
 }

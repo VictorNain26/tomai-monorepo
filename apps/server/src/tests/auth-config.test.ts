@@ -63,7 +63,7 @@ let apiMethods: string[];
 
 beforeAll(async () => {
   const mod = await import('../platform/auth/auth');
-  auth = mod.auth as Record<string, unknown>;
+  auth = mod.auth;
   apiMethods = Object.keys(auth.api as Record<string, unknown>);
 });
 

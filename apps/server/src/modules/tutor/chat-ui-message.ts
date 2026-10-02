@@ -13,9 +13,7 @@ export interface DeckCreatedData {
 }
 
 /** Data parts Tom can push into the UI message stream. */
-export type TomDataParts = {
-  'deck-created': DeckCreatedData;
-};
+export type TomDataParts = Record<'deck-created', DeckCreatedData>;
 
 /** Per-message metadata surfaced to the client (tools invoked). */
 export interface TomMetadata {
@@ -56,4 +54,9 @@ export function extractTextFromParts(parts: unknown): string {
     )
     .map(part => part.text)
     .join('');
+}
+
+// C0 controls and DEL (Cc), minus tab, line feed, carriage return and the C1 range.
+export function sanitizePrompt(text: string): string {
+  return text.replace(/[^\P{Cc}\t\n\r\u0080-\u009f]/gu, '');
 }

@@ -22,7 +22,7 @@ export async function deleteSessionCascade(sessionId: string, userId?: string): 
   try {
     if (userId) {
       const session = await studySessionsRepository.findById(sessionId);
-      if (!session || session.userId !== userId) {
+      if (session?.userId !== userId) {
         throw new Error('Session not found or access denied');
       }
     }

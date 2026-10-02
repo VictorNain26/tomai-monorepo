@@ -18,7 +18,7 @@ export function MobileMenu({ className }: { className?: string }) {
       <SheetContent className="p-6 pt-16">
         <SheetTitle className="sr-only">Menu</SheetTitle>
         <nav aria-label="Principale" className="flex flex-col gap-4">
-          <NavLinks orientation="vertical" onLinkClick={() => setOpen(false)} />
+          <NavLinks orientation="vertical" onLinkClick={() => { setOpen(false); }} />
         </nav>
       </SheetContent>
     </Sheet>

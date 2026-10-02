@@ -107,7 +107,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
 
         const generatedCards = generationResult.cards;
 
-        const deckTitle = isFullDomaineMode ? domaine : (topic ?? domaine);
+        const deckTitle = isFullDomaineMode ? domaine : topic;
         const deckDescription = isFullDomaineMode
           ? `Révision complète du domaine "${domaine}" - ${generatedCards.length} cartes`
           : `Cartes sur "${topic}" (${domaine})`;

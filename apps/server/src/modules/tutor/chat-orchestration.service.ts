@@ -50,11 +50,11 @@ export interface ChatTurnContext {
   sessionId: string;
   subject?: string;
   conversationSummary: string | null;
-  conversationHistory: Array<{
+  conversationHistory: {
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
-  }>;
+  }[];
   cognitiveProfileSummary: string | null;
   /** Learning context (FSRS due cards) + episodic memory + subject memory, merged into one block. */
   mergedLearningContext: string | null;
@@ -103,7 +103,7 @@ class ChatOrchestrationService {
 
     if (request.sessionId?.trim()) {
       const session = await chatSessionService.getSession(request.sessionId);
-      if (!session || session.userId !== request.userId) {
+      if (session?.userId !== request.userId) {
         throw new ChatOrchestrationError('Session not found or access denied', 403);
       }
       sessionId = request.sessionId;
@@ -170,14 +170,14 @@ class ChatOrchestrationService {
       sessionSubject: sessionSummary?.subject ?? null,
       requested: requestedSubject,
     });
-    if (detectedSubject && shouldPersistDetectedSubject({ detected: detectedSubject, sessionSubject: sessionSummary?.subject ?? null })) {
+    if (shouldPersistDetectedSubject({ detected: detectedSubject, sessionSubject: sessionSummary?.subject ?? null })) {
       void studySessionsRepository
         .updateSubject(sessionId, detectedSubject)
-        .catch(err => logger.warn('Subject persist failed', {
+        .catch((err: unknown) => { logger.warn('Subject persist failed', {
           operation: 'chat-orchestration:subject-persist',
           sessionId,
           err: err,
-        }));
+        }); });
     }
 
     const subjectMemoryBlock = effectiveSubject
@@ -301,7 +301,7 @@ class ChatOrchestrationService {
       responseTimeMs: Date.now() - startTime,
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
       ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
-      ...(classifiedIntent && { classifiedIntent }),
+      classifiedIntent,
     }, { verifySessionExists: false });
 
     if (tokensUsed > 0) {
@@ -314,7 +314,7 @@ class ChatOrchestrationService {
         operation: 'chat',
         tokensInput: usage?.inputTokens ?? 0,
         tokensOutput: usage?.outputTokens ?? 0,
-        cachedTokens: usage?.inputTokenDetails?.cacheReadTokens ?? 0,
+        cachedTokens: usage?.inputTokenDetails.cacheReadTokens ?? 0,
       });
     }
 
@@ -327,7 +327,7 @@ class ChatOrchestrationService {
       operation: 'chat-orchestration:save',
     });
 
-    summarizationService.summarizeIfNeeded(sessionId).catch(err => {
+    summarizationService.summarizeIfNeeded(sessionId).catch((err: unknown) => {
       logger.error('Background summarization failed', {
         err: err,
         sessionId,
@@ -336,7 +336,7 @@ class ChatOrchestrationService {
       });
     });
 
-    autoTitleService.generateTitleIfNeeded(sessionId, userContent, fullContent).catch(err => {
+    autoTitleService.generateTitleIfNeeded(sessionId, userContent, fullContent).catch((err: unknown) => {
       logger.warn('Background auto-title failed', {
         err: err,
         sessionId,

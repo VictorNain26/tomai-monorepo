@@ -4,7 +4,7 @@ import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 
 // Sans clé, @ai-sdk/mistral jette LoadAPIKeyError avant le fetch faké ;
 // env.ts lit process.env au chargement, d'où l'import dynamique.
-process.env['MISTRAL_API_KEY'] ??= 'test-api-key';
+process.env.MISTRAL_API_KEY ??= 'test-api-key';
 const { mistralProvider } = await import('../platform/ai/provider.js');
 const { env } = await import('../platform/config/env.js');
 
@@ -22,7 +22,7 @@ function fakeMistralResponse() {
 async function captureRequest(mistral: MistralLanguageModelChatOptions) {
   const captured: { url?: string; body?: Record<string, unknown> } = {};
   const provider = mistralProvider(async (url, init) => {
-    captured.url = String(url);
+    captured.url = url instanceof Request ? url.url : url.toString();
     captured.body = JSON.parse(init?.body as string) as Record<string, unknown>;
     return fakeMistralResponse();
   });
@@ -38,7 +38,7 @@ describe('mistralProvider', () => {
 
   it('sends prompt_cache_key from providerOptions', async () => {
     const { body } = await captureRequest({ promptCacheKey: 'session-42' });
-    expect(body?.['prompt_cache_key']).toBe('session-42');
+    expect(body?.prompt_cache_key).toBe('session-42');
   });
 
   it('omits prompt_cache_key without a key', async () => {
@@ -47,7 +47,7 @@ describe('mistralProvider', () => {
   });
 
   it('sends reasoning_effort for mistral-small-2603', async () => {
-    expect((await captureRequest({ reasoningEffort: 'high' })).body?.['reasoning_effort']).toBe('high');
-    expect((await captureRequest({ reasoningEffort: 'none' })).body?.['reasoning_effort']).toBe('none');
+    expect((await captureRequest({ reasoningEffort: 'high' })).body?.reasoning_effort).toBe('high');
+    expect((await captureRequest({ reasoningEffort: 'none' })).body?.reasoning_effort).toBe('none');
   });
 });

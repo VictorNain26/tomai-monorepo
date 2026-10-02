@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, mock, spyOn } from 'bun:test';
+import { describe, it, expect, afterEach, mock, spyOn, type Mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
@@ -14,7 +14,7 @@ mock.module('../platform/config/env', () => ({
 const { getVoxtralTTSService } = await import('../modules/voice/voxtral-tts.service');
 
 describe('VoxtralTTSService', () => {
-  let fetchSpy: ReturnType<typeof spyOn> | undefined;
+  let fetchSpy: Mock<typeof fetch> | undefined;
 
   afterEach(() => {
     fetchSpy?.mockRestore();
@@ -50,8 +50,8 @@ describe('VoxtralTTSService', () => {
 
     const result = await getVoxtralTTSService().synthesize('Bonjour', { voiceId: 'fr_marie_neutral' });
 
-    expect(body['voice_id']).toBe('fr_marie_neutral');
-    expect(body['voice']).toBeUndefined();
+    expect(body.voice_id).toBe('fr_marie_neutral');
+    expect(body.voice).toBeUndefined();
     expect(result).toEqual({ success: true, audioData: 'QUJD', mimeType: 'audio/mpeg' });
   });
 
@@ -67,7 +67,7 @@ describe('VoxtralTTSService', () => {
 
     await getVoxtralTTSService().synthesize('Bonjour');
 
-    expect(body['voice_id']).toBe('fr_marie_neutral');
+    expect(body.voice_id).toBe('fr_marie_neutral');
     expect('language' in body).toBe(false);
   });
 
@@ -102,8 +102,7 @@ describe('VoxtralTTSService', () => {
     let captured: AbortSignal | undefined;
     fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {
       captured = input.signal;
-      return new Promise((_, reject) =>
-        input.signal.addEventListener('abort', () => reject(input.signal.reason)),
+      return new Promise((_, reject) => { input.signal.addEventListener('abort', () => { reject(input.signal.reason as Error); }); },
       );
     }) as unknown as typeof fetch);
 

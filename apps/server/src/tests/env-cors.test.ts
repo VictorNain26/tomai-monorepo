@@ -9,7 +9,7 @@ function corsOrigins(extra: Record<string, string>): string[] {
     {
       cwd: tmpdir(),
       env: {
-        PATH: process.env['PATH'] ?? '',
+        PATH: process.env.PATH ?? '',
         DATABASE_URL: 'postgresql://test:test@localhost/test',
         BETTER_AUTH_SECRET: 'x'.repeat(32),
         ...extra,

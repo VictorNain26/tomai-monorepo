@@ -43,14 +43,13 @@
     "noImplicitOverride": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
 
-    /* ========================================= */
-    /* Options NOT enabled (industry standard)  */
-    /* These cause friction with ORMs/libs      */
-    /* ========================================= */
-    /* exactOptionalPropertyTypes: false        */
-    /* noUncheckedIndexedAccess: false          */
-    /* noPropertyAccessFromIndexSignature: false*/
+    /* Not enabled yet, tracked in docs/suivi.md: */
+    /* exactOptionalPropertyTypes               */
+    /* noPropertyAccessFromIndexSignature       */
 
     /* Interop */
     "skipLibCheck": true,

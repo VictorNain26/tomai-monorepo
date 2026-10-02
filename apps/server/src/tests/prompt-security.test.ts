@@ -4,6 +4,18 @@ import {
   wrapUserMessage,
   wrapAttachedFiles,
 } from '../modules/tutor/mistral-helpers.js';
+import { sanitizePrompt } from '../modules/tutor/chat-ui-message.js';
+
+describe('sanitizePrompt', () => {
+  it('retire NUL, les contrôles C0 et DEL', () => {
+    expect(sanitizePrompt('a\u0000b\u0007c\u000Bd\u000Ce\u001Ff\u007Fg')).toBe('abcdefg');
+  });
+
+  it('garde tabulation, sauts de ligne, accents et emojis', () => {
+    const text = 'Énoncé\t1\n\r\nOK 🦦 é';
+    expect(sanitizePrompt(text)).toBe(text);
+  });
+});
 
 describe('stripPromptTags', () => {
   it('retire les fences de contenu non-maîtrisé', () => {

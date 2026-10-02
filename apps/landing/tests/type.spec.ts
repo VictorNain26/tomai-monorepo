@@ -7,7 +7,7 @@ for (const path of PAGES) {
     const light = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>("main :is(h1, h2, h3)")]
         .filter((el) => getComputedStyle(el).fontWeight !== "800")
-        .map((el) => `${el.tagName} ${getComputedStyle(el).fontWeight} ${el.textContent?.trim().slice(0, 30)}`),
+        .map((el) => `${el.tagName} ${getComputedStyle(el).fontWeight} ${el.textContent.trim().slice(0, 30)}`),
     );
     expect(light).toEqual([]);
   });

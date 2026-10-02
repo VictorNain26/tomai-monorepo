@@ -30,7 +30,7 @@ const app = new Hono<AppEnv>()
   .onError(handleError)
   .notFound(handleNotFound);
 
-type Envelope = { error: { code: string; message: string }; requestId: string };
+interface Envelope { error: { code: string; message: string }; requestId: string }
 
 async function call(path: string, init?: RequestInit) {
   const res = await app.request(path, init);

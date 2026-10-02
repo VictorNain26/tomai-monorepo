@@ -3,14 +3,14 @@ import type { SQL } from 'drizzle-orm';
 import { db } from '../../db/connection';
 import { sessionEpisodes, type NewSessionEpisode } from './session.schema.js';
 
-type EpisodeRow = {
+interface EpisodeRow {
   sessionId: string;
   subject: string;
   summaryText: string;
   conceptsCovered: unknown;
   createdAt: Date;
   similarity: number;
-};
+}
 
 class EpisodicMemoryRepository {
   async insertEpisode(data: NewSessionEpisode): Promise<void> {
@@ -22,7 +22,7 @@ class EpisodicMemoryRepository {
     queryEmbeddingVector: string,
     limit: number,
   ): Promise<EpisodeRow[]> {
-    const similarityExpr: SQL<number> = sql<number>`1 - (${sessionEpisodes.summaryEmbedding} <=> ${queryEmbeddingVector}::vector)`;
+    const similarityExpr: SQL<number> = sql<number>`1 - (${sessionEpisodes.summaryEmbedding} <=> ${queryEmbeddingVector}::vector)`.mapWith(Number);
 
     return db
       .select({

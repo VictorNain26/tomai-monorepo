@@ -3,7 +3,7 @@
  * Vérifie l'URL, le multipart model/language, le parsing {text} et les erreurs.
  */
 
-import { describe, it, expect, afterEach, mock, spyOn } from 'bun:test';
+import { describe, it, expect, afterEach, mock, spyOn, type Mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
 // ============================================
@@ -62,7 +62,7 @@ function mockFetchThrow(message: string) {
 // ============================================
 
 describe('VoxtralTranscribeService', () => {
-  let fetchSpy: ReturnType<typeof spyOn> | null = null;
+  let fetchSpy: Mock<typeof fetch> | null = null;
 
   afterEach(() => {
     fetchSpy?.mockRestore();
@@ -212,8 +212,7 @@ describe('VoxtralTranscribeService', () => {
       let captured: AbortSignal | undefined;
       fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {
         captured = input.signal;
-        return new Promise((_, reject) =>
-          input.signal.addEventListener('abort', () => reject(input.signal.reason)),
+        return new Promise((_, reject) => { input.signal.addEventListener('abort', () => { reject(input.signal.reason as Error); }); },
         );
       }) as unknown as typeof fetch);
 

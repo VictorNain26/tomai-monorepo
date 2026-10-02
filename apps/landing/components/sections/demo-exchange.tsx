@@ -4,7 +4,7 @@ import tomTete from "@/assets/tom-tete.png";
 import { FadeIn } from "../atoms/fade-in";
 import { HandNote } from "../annotations/hand-note";
 
-type Message = { from: "eleve" | "tom"; text: React.ReactNode };
+interface Message { from: "eleve" | "tom"; text: React.ReactNode }
 
 const x = <i>x</i>;
 

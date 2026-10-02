@@ -16,11 +16,11 @@ import { parentChildRepository } from '../modules/family/index.js';
 import type { SchoolLevel } from '../db/schema.js';
 
 const SEED = {
-  parentEmail: process.env['SEED_PARENT_EMAIL'] ?? 'dev.parent@tomai.local',
-  parentPassword: process.env['SEED_PARENT_PASSWORD'] ?? 'DevParent123!',
+  parentEmail: process.env.SEED_PARENT_EMAIL ?? 'dev.parent@tomai.local',
+  parentPassword: process.env.SEED_PARENT_PASSWORD ?? 'DevParent123!',
   parentName: 'Dev Parent',
-  childUsername: process.env['SEED_CHILD_USERNAME'] ?? 'dev.eleve',
-  childPassword: process.env['SEED_CHILD_PASSWORD'] ?? 'DevEleve123!',
+  childUsername: process.env.SEED_CHILD_USERNAME ?? 'dev.eleve',
+  childPassword: process.env.SEED_CHILD_PASSWORD ?? 'DevEleve123!',
   childName: 'Dev Eleve',
   childSchoolLevel: 'troisieme',
   demoDeckTitle: 'Deck de démo',
@@ -29,7 +29,7 @@ const SEED = {
 async function canLoginEmail(email: string, password: string): Promise<boolean> {
   try {
     const result = await auth.api.signInEmail({ body: { email, password } });
-    return !!result?.user?.id;
+    return !!result.user.id;
   } catch {
     return false;
   }
@@ -38,7 +38,7 @@ async function canLoginEmail(email: string, password: string): Promise<boolean> 
 async function canLoginUsername(username: string, password: string): Promise<boolean> {
   try {
     const result = await auth.api.signInUsername({ body: { username, password } });
-    return !!result?.user?.username;
+    return !!result.user.username;
   } catch {
     return false;
   }
@@ -73,7 +73,7 @@ export async function seedDev(): Promise<{ parentId: string; childId: string }> 
     (await canLoginEmail(SEED.parentEmail, SEED.parentPassword)) &&
     (await canLoginUsername(SEED.childUsername, SEED.childPassword));
 
-  if (healthy && existingParent && existingChild) {
+  if (healthy) {
     await ensureChildHasDemoDeck(existingChild.id);
     return { parentId: existingParent.id, childId: existingChild.id };
   }
@@ -93,8 +93,7 @@ export async function seedDev(): Promise<{ parentId: string; childId: string }> 
     name: SEED.childName,
   };
   const child = await auth.api.signUpEmail({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    body: { ...childBody, username: SEED.childUsername } as typeof childBody & Record<string, any>,
+    body: { ...childBody, username: SEED.childUsername } as typeof childBody & Record<string, unknown>,
   });
   await usersRepository.update(child.user.id, {
     firstName: 'Dev',

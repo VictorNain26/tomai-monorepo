@@ -13,7 +13,7 @@ mock.module('../platform/config/env', () => ({
 
 const { mistralEmbeddingsService } = await import('../modules/tutor/mistral-embeddings.service');
 
-afterEach(() => mock.restore());
+afterEach(() => { mock.restore(); });
 
 describe('mistralEmbeddingsService timeout', () => {
   it('aborts the underlying HTTP request when the timeout elapses', async () => {
@@ -21,7 +21,7 @@ describe('mistralEmbeddingsService timeout', () => {
     spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {
       captured = input.signal;
       return new Promise((_, reject) => {
-        input.signal.addEventListener('abort', () => reject(input.signal.reason));
+        input.signal.addEventListener('abort', () => { reject(input.signal.reason as Error); });
       });
     }) as unknown as typeof fetch);
 

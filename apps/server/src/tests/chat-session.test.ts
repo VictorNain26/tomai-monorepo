@@ -64,7 +64,7 @@ let createSessionResult: { id: string } = { id: 'new-session-001' };
 let updateSessionResult: Record<string, unknown> = {};
 let findBySessionIdResult: MessageData[] = [];
 let createMessageResult: { id: string } = { id: 'new-msg-001' };
-let findByUserIdWithStatsResult: Array<Record<string, unknown>> = [];
+let findByUserIdWithStatsResult: Record<string, unknown>[] = [];
 let deleteByIdCalled = false;
 let findMessageByIdResult: MessageData | null = null;
 let findUserByIdResult: UserData | null = null;
@@ -407,84 +407,6 @@ describe('ChatSessionService', () => {
     });
   });
 
-  describe('updateSessionWithFiles', () => {
-    it('should append file data to session metadata', async () => {
-      const session = makeStudySession({ id: VALID_UUID });
-      findByIdResult = {
-        ...session,
-        sessionMetadata: {},
-      } as unknown as StudySessionData;
-
-      await sessionService.updateSessionWithFiles(VALID_UUID, {
-        fileName: 'test.pdf',
-        analysis: 'Math document',
-        fileType: 'application/pdf',
-        size: 1024,
-        uploadedAt: '2025-06-15T10:00:00Z',
-      });
-
-      expect(mockLogger.info).toHaveBeenCalled();
-    });
-
-    it('should throw for invalid UUID', async () => {
-      expect(await rejection(
-        sessionService.updateSessionWithFiles('invalid', {
-          fileName: 'test.pdf',
-          analysis: 'test',
-          fileType: 'pdf',
-          size: 100,
-          uploadedAt: '2025-01-01',
-        })
-      )).toBeInstanceOf(Error);
-    });
-
-    it('should throw when session not found', async () => {
-      findByIdResult = null;
-      expect(await rejection(
-        sessionService.updateSessionWithFiles(VALID_UUID, {
-          fileName: 'test.pdf',
-          analysis: 'test',
-          fileType: 'pdf',
-          size: 100,
-          uploadedAt: '2025-01-01',
-        })
-      )).toBeInstanceOf(Error);
-    });
-  });
-
-  describe('getSessionFiles', () => {
-    it('should return files from session metadata', async () => {
-      const session = makeStudySession({ id: VALID_UUID });
-      findByIdResult = {
-        ...session,
-        sessionMetadata: {
-          attachedFiles: [
-            { fileName: 'doc.pdf', analysis: 'Math', fileType: 'pdf', analyzedAt: '2025-06-15' },
-          ],
-        },
-      } as unknown as StudySessionData;
-
-      const files = await sessionService.getSessionFiles(VALID_UUID);
-      expect(files.length).toBe(1);
-      expect(files[0]?.fileName).toBe('doc.pdf');
-    });
-
-    it('should return empty array for invalid UUID', async () => {
-      const files = await sessionService.getSessionFiles('invalid');
-      expect(files).toEqual([]);
-    });
-
-    it('should return empty array when no metadata', async () => {
-      const session = makeStudySession({ id: VALID_UUID });
-      findByIdResult = {
-        ...session,
-        sessionMetadata: null,
-      } as unknown as StudySessionData;
-
-      const files = await sessionService.getSessionFiles(VALID_UUID);
-      expect(files).toEqual([]);
-    });
-  });
 });
 
 // ============================================

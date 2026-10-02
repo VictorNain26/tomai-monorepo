@@ -2,7 +2,7 @@ import { logger } from '../observability/logger.js';
 
 export interface ShutdownStep {
   name: string;
-  run: () => void | Promise<unknown>;
+  run: () => unknown;
 }
 
 export function createGracefulShutdown(

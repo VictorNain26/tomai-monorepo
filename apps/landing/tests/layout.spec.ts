@@ -15,7 +15,10 @@ for (const path of PAGES) {
     const levels = await headingLevels(page);
     expect(levels.filter((level) => level === 1), "h1 count").toHaveLength(1);
     expect(levels[0], "first heading").toBe(1);
-    const skips = levels.flatMap((level, i) => (i > 0 && level > levels[i - 1] + 1 ? [`h${levels[i - 1]} → h${level}`] : []));
+    const skips = levels.flatMap((level, i) => {
+      const previous = levels[i - 1];
+      return previous !== undefined && level > previous + 1 ? [`h${previous} → h${level}`] : [];
+    });
     expect(skips).toEqual([]);
   });
 }
@@ -99,7 +102,7 @@ for (const width of [375, 1024]) {
         [...document.querySelectorAll<HTMLElement>("header a, header button, main a, main button, main input, footer a")]
           .filter((el) => el.getClientRects().length > 0 && !el.closest(".sr-only"))
           .filter((el) => !(el.tagName === "A" && getComputedStyle(el).display === "inline"))
-          .map((el) => ({ text: (el.textContent || el.getAttribute("aria-label") || "").trim().slice(0, 30), box: el.getBoundingClientRect() }))
+          .map((el) => ({ text: (el.textContent === "" ? (el.getAttribute("aria-label") ?? "") : el.textContent).trim().slice(0, 30), box: el.getBoundingClientRect() }))
           .filter(({ box }) => box.width < 44 || box.height < 44)
           .map(({ text, box }) => `${text} ${Math.round(box.width)}×${Math.round(box.height)}`),
       );
@@ -114,7 +117,7 @@ test("/aide at 375px keeps each FAQ question within three lines", async ({ page 
   await settle(page);
   const tall = await page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("[id^=faq-question-] span")]
-      .map((span) => ({ text: span.textContent ?? "", lines: Math.round(span.offsetHeight / parseFloat(getComputedStyle(span).lineHeight)) }))
+      .map((span) => ({ text: span.textContent, lines: Math.round(span.offsetHeight / parseFloat(getComputedStyle(span).lineHeight)) }))
       .filter(({ lines }) => lines > 3),
   );
   expect(tall).toEqual([]);
@@ -126,7 +129,7 @@ for (const path of ["/", "/faq"]) {
     const notUnderlined = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>("main p a")]
         .filter((el) => !getComputedStyle(el).textDecorationLine.includes("underline"))
-        .map((el) => el.textContent?.trim() ?? ""),
+        .map((el) => el.textContent.trim()),
     );
     expect(notUnderlined).toEqual([]);
   });
@@ -143,7 +146,7 @@ test("/ at 375px keeps 8px between a wrapped pricing label and its button edge",
       const text = range.getBoundingClientRect();
       const box = button.getBoundingClientRect();
       const gap = Math.min(text.top - box.top, box.bottom - text.bottom);
-      return gap < 7.5 ? [`${button.textContent?.trim()} ${gap.toFixed(1)}px`] : [];
+      return gap < 7.5 ? [`${button.textContent.trim()} ${gap.toFixed(1)}px`] : [];
     }),
   );
   expect(cramped).toEqual([]);

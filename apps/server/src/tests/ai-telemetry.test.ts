@@ -21,7 +21,7 @@ const STUDENT_DATA_ATTRIBUTES = [
 ];
 
 const originalFetch = globalThis.fetch;
-beforeEach(() => exporter.reset());
+beforeEach(() => { exporter.reset(); });
 afterEach(() => {
   globalThis.fetch = originalFetch;
 });

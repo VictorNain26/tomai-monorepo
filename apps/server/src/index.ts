@@ -102,7 +102,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // Démarrer le serveur
-startServer().catch((error) => {
+startServer().catch((error: unknown) => {
   logger.error('Fatal error', {
     err: error,
     severity: 'critical' as const,

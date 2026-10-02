@@ -20,7 +20,7 @@ import type { MultimodalFile } from './file-context-types.js';
  * turn. Cost is dominated by Mistral inference, not the upstream bandwidth.
  */
 export async function prepareMultimodalFiles(fileIds: string[]): Promise<MultimodalFile[]> {
-  if (!fileIds || fileIds.length === 0) {
+  if (fileIds.length === 0) {
     return [];
   }
 

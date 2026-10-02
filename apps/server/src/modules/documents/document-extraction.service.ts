@@ -68,7 +68,7 @@ class DocumentExtractionService {
 
       // Texte brut
       if (cleanMimeType === 'text/plain') {
-        return await this.extractFromText(buffer, startTime);
+        return this.extractFromText(buffer, startTime);
       }
 
       // Images - Mistral Vision OCR/description
@@ -117,7 +117,7 @@ class DocumentExtractionService {
       const pdf = await getDocumentProxy(new Uint8Array(buffer));
       const { totalPages, text } = await extractText(pdf, { mergePages: true });
 
-      const extractedText = (text as string)?.trim() ?? '';
+      const extractedText = text.trim();
       const wordCount = this.countWords(extractedText);
 
       logger.info('PDF extraction completed', {
@@ -177,7 +177,7 @@ class DocumentExtractionService {
         buffer: Buffer.from(buffer)
       });
 
-      const text = result.value?.trim() ?? '';
+      const text = result.value.trim();
       const wordCount = this.countWords(text);
 
       // Log warnings si présents
@@ -235,10 +235,10 @@ class DocumentExtractionService {
   /**
    * Extraction texte brut
    */
-  private async extractFromText(
+  private extractFromText(
     buffer: ArrayBuffer,
     startTime: number
-  ): Promise<ExtractionResult> {
+  ): ExtractionResult {
     try {
       const text = Buffer.from(buffer).toString('utf8').trim();
       const wordCount = this.countWords(text);

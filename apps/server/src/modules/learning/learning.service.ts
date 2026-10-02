@@ -37,10 +37,10 @@ import { validateCardContent } from './card-validation.js';
 interface CreateDeckWithCardsInput {
   userId: string;
   deck: Omit<NewLearningDeck, 'cardCount' | 'userId'>;
-  cards: Array<{
+  cards: {
     cardType: CardType;
     content: unknown;
-  }>;
+  }[];
 }
 
 interface UpdateDeckInput {
@@ -50,11 +50,11 @@ interface UpdateDeckInput {
 }
 
 interface AddCardsInput {
-  cards: Array<{
+  cards: {
     cardType: CardType;
     content: unknown;
     position?: number;
-  }>;
+  }[];
   startPosition?: number;
 }
 
@@ -283,7 +283,7 @@ class LearningService {
         patch.content as Record<string, unknown>,
       );
       if (!validation.valid) {
-        throw new CardValidationError(validation.error ?? 'Invalid card content');
+        throw new CardValidationError(validation.error);
       }
     }
 

@@ -23,21 +23,21 @@ export const costTracking = pgTable('cost_tracking', {
 
   // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'cost_tracking_user_id_fkey'
   }).onDelete('set null'),
-  sessionIdFk: foreignKey({
+  foreignKey({
     columns: [table.sessionId],
     foreignColumns: [studySessions.id],
     name: 'cost_tracking_session_id_fkey'
   }).onDelete('set null'),
 
-  userIdIdx: index('idx_cost_tracking_user_id').on(table.userId),
-  createdAtIdx: index('idx_cost_tracking_created_at').on(table.createdAt),
-}));
+  index('idx_cost_tracking_user_id').on(table.userId),
+  index('idx_cost_tracking_created_at').on(table.createdAt),
+]);
 
 export const costTrackingRelations = relations(costTracking, ({ one }) => ({
   user: one(user, {

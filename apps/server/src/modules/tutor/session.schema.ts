@@ -68,17 +68,17 @@ export const studySessions = pgTable('study_sessions', {
   // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'study_sessions_user_id_fkey'
   }).onDelete('cascade'),
 
-  userStatusIdx: index('idx_sessions_user_status').on(table.userId, table.status),
-  userSubjectDateIdx: index('idx_sessions_user_subject_date').on(table.userId, table.subject, table.startedAt),
-  activeIdx: index('idx_sessions_active').on(table.startedAt),
-}));
+  index('idx_sessions_user_status').on(table.userId, table.status),
+  index('idx_sessions_user_subject_date').on(table.userId, table.subject, table.startedAt),
+  index('idx_sessions_active').on(table.startedAt),
+]);
 
 /**
  * Table messages - Messages de chat TomAI
@@ -121,16 +121,16 @@ export const messages = pgTable('messages', {
 
   // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  sessionIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.sessionId],
     foreignColumns: [studySessions.id],
     name: 'messages_session_id_fkey'
   }).onDelete('cascade'),
 
-  sessionCreatedIdx: index('idx_messages_session_created').on(table.sessionId, table.createdAt),
-  qualityIdx: index('idx_messages_quality').on(table.messageQualityScore),
-}));
+  index('idx_messages_session_created').on(table.sessionId, table.createdAt),
+  index('idx_messages_quality').on(table.messageQualityScore),
+]);
 
 /**
  * Table session_episodes - Mémoire épisodique long-terme
@@ -166,24 +166,24 @@ export const sessionEpisodes = pgTable('session_episodes', {
   // Audit + purge
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   ttlUntil: timestamp('ttl_until', { withTimezone: true }),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'session_episodes_user_id_fkey'
   }).onDelete('cascade'),
-  sessionIdFk: foreignKey({
+  foreignKey({
     columns: [table.sessionId],
     foreignColumns: [studySessions.id],
     name: 'session_episodes_session_id_fkey'
   }).onDelete('cascade'),
 
-  userIdIdx: index('idx_session_episodes_user_id').on(table.userId),
-  createdAtIdx: index('idx_session_episodes_created_at').on(table.createdAt),
-  ttlIdx: index('idx_session_episodes_ttl').on(table.ttlUntil),
-  embeddingIdx: index('idx_session_episodes_embedding')
+  index('idx_session_episodes_user_id').on(table.userId),
+  index('idx_session_episodes_created_at').on(table.createdAt),
+  index('idx_session_episodes_ttl').on(table.ttlUntil),
+  index('idx_session_episodes_embedding')
     .using('hnsw', table.summaryEmbedding.op('vector_cosine_ops')),
-}));
+]);
 
 // Profil mémoire élève PAR MATIÈRE — agrégat pédagogique durable, distinct de
 // sessionEpisodes (par session, pgvector) et studentCognitiveProfiles (global).
@@ -199,17 +199,17 @@ export const studentSubjectProfiles = pgTable('student_subject_profile', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   ttlUntil: timestamp('ttl_until', { withTimezone: true }).notNull(),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'student_subject_profiles_user_id_fkey'
   }).onDelete('cascade'),
 
-  userSubjectUnique: unique('uq_subject_profile_user_subject').on(table.userId, table.subject),
-  userIdIdx: index('idx_subject_profile_user').on(table.userId),
-  ttlIdx: index('idx_subject_profile_ttl').on(table.ttlUntil),
-}));
+  unique('uq_subject_profile_user_subject').on(table.userId, table.subject),
+  index('idx_subject_profile_user').on(table.userId),
+  index('idx_subject_profile_ttl').on(table.ttlUntil),
+]);
 
 export type StudentSubjectProfile = typeof studentSubjectProfiles.$inferSelect;
 export type NewStudentSubjectProfile = typeof studentSubjectProfiles.$inferInsert;

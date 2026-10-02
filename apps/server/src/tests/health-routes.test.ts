@@ -57,8 +57,8 @@ describe('GET /health', () => {
 
     expect(response.status).toBe(200);
     expect(body.status).toBe('healthy');
-    expect(body.checks.database.status).toBe('healthy');
-    expect(typeof body.checks.database.latency).toBe('number');
+    expect(body.checks.database?.status).toBe('healthy');
+    expect(typeof body.checks.database?.latency).toBe('number');
     expect(Object.keys(body.checks)).toEqual(['database']);
   });
 
@@ -75,7 +75,7 @@ describe('GET /health', () => {
 
     expect(response.status).toBe(503);
     expect(body.status).toBe('unhealthy');
-    expect(body.checks.database.status).toBe('unhealthy');
-    expect(body.checks.database.error).toBeDefined();
+    expect(body.checks.database?.status).toBe('unhealthy');
+    expect(body.checks.database?.error).toBeDefined();
   });
 });

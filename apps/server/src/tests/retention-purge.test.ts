@@ -113,7 +113,7 @@ describe('Retention Purge Service', () => {
       const stop = startRetentionPurgeScheduler();
 
       // Should not throw
-      expect(() => stop()).not.toThrow();
+      expect(() => { stop(); }).not.toThrow();
     });
   });
 });

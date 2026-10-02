@@ -15,10 +15,9 @@ import {
   type NewLearningCard,
   type FSRSData,
 } from './decks.schema.js';
-import type { PgTransaction } from 'drizzle-orm/pg-core';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DbOrTx = typeof db | PgTransaction<any, any, any>;
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type DbOrTx = typeof db | Transaction;
 
 class LearningCardsRepository {
   async findById(cardId: string): Promise<LearningCard | null> {

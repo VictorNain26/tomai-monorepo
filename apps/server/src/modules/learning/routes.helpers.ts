@@ -55,7 +55,7 @@ export function getUserLevel(
       fallbackLevel: 'sixieme',
       severity: 'low' as const,
     });
-    return 'sixieme' as EducationLevelType;
+    return 'sixieme';
   }
   return schoolLevel as EducationLevelType;
 }

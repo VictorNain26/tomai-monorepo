@@ -82,83 +82,6 @@ export class ChatSessionService {
     }
   }
 
-  async updateSessionWithFiles(sessionId: string, fileData: {
-    fileName: string;
-    analysis: string;
-    extractedText?: string;
-    fileType: string;
-    size: number;
-    uploadedAt: string;
-  }): Promise<void> {
-    try {
-      const currentSession = await studySessionsRepository.findById(sessionId);
-      if (!currentSession) {
-        throw new Error(`Session not found: ${sessionId}`);
-      }
-
-      const currentMetadata = (currentSession.sessionMetadata as Record<string, unknown>) ?? {};
-
-      if (!Array.isArray(currentMetadata.attachedFiles)) {
-        currentMetadata.attachedFiles = [];
-      }
-
-      (currentMetadata.attachedFiles as Array<unknown>).push({
-        fileName: fileData.fileName,
-        analysis: fileData.analysis,
-        extractedText: fileData.extractedText,
-        fileType: fileData.fileType,
-        size: fileData.size,
-        uploadedAt: fileData.uploadedAt,
-        analyzedAt: new Date().toISOString()
-      });
-
-      await studySessionsRepository.update(sessionId, {
-        sessionMetadata: currentMetadata
-      });
-
-      logger.info('Session updated with file analysis', {
-        sessionId,
-        fileName: fileData.fileName,
-        operation: 'updateSessionWithFiles'
-      });
-    } catch (_error) {
-      logger.error('Failed to update session with files', {
-        err: _error,
-        sessionId,
-        fileName: fileData.fileName,
-        operation: 'updateSessionWithFiles',
-        severity: 'medium' as const
-      });
-      throw _error;
-    }
-  }
-
-  async getSessionFiles(sessionId: string): Promise<Array<{
-    fileName: string;
-    analysis: string;
-    extractedText?: string;
-    fileType: string;
-    analyzedAt: string;
-  }>> {
-    try {
-      const session = await studySessionsRepository.findById(sessionId);
-      if (!session?.sessionMetadata) {
-        return [];
-      }
-
-      const metadata = session.sessionMetadata as Record<string, unknown>;
-      return Array.isArray(metadata.attachedFiles) ? metadata.attachedFiles : [];
-    } catch (_error) {
-      logger.error('Failed to get session files', {
-        err: _error,
-        sessionId,
-        operation: 'getSessionFiles',
-        severity: 'medium' as const
-      });
-      return [];
-    }
-  }
-
   async getSession(sessionId: string): Promise<SessionDetails | null> {
     try {
       const session = await studySessionsRepository.findById(sessionId);
@@ -190,7 +113,7 @@ export class ChatSessionService {
    */
   async getSessionForUser(sessionId: string, userId: string): Promise<SessionDetails | null> {
     const session = await this.getSession(sessionId);
-    return session && session.userId === userId ? session : null;
+    return session?.userId === userId ? session : null;
   }
 
   async getSessionWithSummary(sessionId: string): Promise<{
@@ -205,7 +128,7 @@ export class ChatSessionService {
       return {
         conversationSummary: session.conversationSummary ?? null,
         summaryUpToMessageId: session.summaryUpToMessageId ?? null,
-        subject: session.subject ?? null,
+        subject: session.subject,
       };
     } catch (_error) {
       logger.error('Error getting session summary', {
@@ -281,7 +204,7 @@ export class ChatSessionService {
   async resetSession(sessionId: string, userId: string): Promise<string> {
     try {
       const session = await studySessionsRepository.findById(sessionId);
-      if (!session || session.userId !== userId) {
+      if (session?.userId !== userId) {
         throw new Error('Session not found or access denied');
       }
 
@@ -295,7 +218,7 @@ export class ChatSessionService {
       // is a meaningful pedagogical boundary worth persisting into long-term
       // memory. GDPR note: deletion cascade removes the episode alongside
       // the parent session (see session_episodes.session_id_fkey).
-      episodicMemoryService.extractAndStore(sessionId, userId).catch(err => {
+      episodicMemoryService.extractAndStore(sessionId, userId).catch((err: unknown) => {
         logger.warn('Episodic extraction (reset) failed in background', {
           operation: 'chat:session:reset:episodic-bg',
           err: err,
@@ -337,7 +260,7 @@ export class ChatSessionService {
 
       return {
         id: user.id,
-        schoolLevel: user.schoolLevel as SchoolLevel,
+        schoolLevel: user.schoolLevel,
         ...(user.firstName && { firstName: user.firstName })
       };
     } catch (_error) {

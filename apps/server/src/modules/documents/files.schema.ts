@@ -56,18 +56,18 @@ export const files = pgTable('files', {
   // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'files_user_id_fkey'
   }).onDelete('cascade'), // Supprimer fichiers si user supprimé
 
-  userIdIdx: index('idx_files_user_id').on(table.userId),
-  statusIdx: index('idx_files_status').on(table.status),
-  storageKeyIdx: index('idx_files_storage_key').on(table.storageKey),
-  createdAtIdx: index('idx_files_created_at').on(table.createdAt),
-}));
+  index('idx_files_user_id').on(table.userId),
+  index('idx_files_status').on(table.status),
+  index('idx_files_storage_key').on(table.storageKey),
+  index('idx_files_created_at').on(table.createdAt),
+]);
 
 /**
  * Table session_files - Fichiers attachés à une session de chat
@@ -80,25 +80,25 @@ export const sessionFiles = pgTable('session_files', {
   sessionId: uuid('session_id').notNull(),
   fileId: uuid('file_id').notNull(),
   attachedAt: timestamp('attached_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  sessionIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.sessionId],
     foreignColumns: [studySessions.id],
     name: 'session_files_session_id_fkey'
   }).onDelete('cascade'),
 
-  fileIdFk: foreignKey({
+  foreignKey({
     columns: [table.fileId],
     foreignColumns: [files.id],
     name: 'session_files_file_id_fkey'
   }).onDelete('cascade'),
 
-  sessionFileUnique: unique('session_files_session_file_unique')
+  unique('session_files_session_file_unique')
     .on(table.sessionId, table.fileId),
 
-  sessionIdx: index('idx_session_files_session').on(table.sessionId),
-  fileIdx: index('idx_session_files_file').on(table.fileId),
-}));
+  index('idx_session_files_session').on(table.sessionId),
+  index('idx_session_files_file').on(table.fileId),
+]);
 
 // =============================================
 // RELATIONS

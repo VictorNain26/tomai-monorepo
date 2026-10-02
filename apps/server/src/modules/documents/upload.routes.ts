@@ -36,7 +36,7 @@ export const uploadRoutes = new Hono<AppEnv>()
     return c.json({
       configured,
       provider: 'scaleway',
-      region: env.SCALEWAY_REGION ?? 'fr-par',
+      region: env.SCALEWAY_REGION,
       maxFileSize: MAX_FILE_SIZE,
     });
   })
@@ -88,7 +88,7 @@ export const uploadRoutes = new Hono<AppEnv>()
         sizeBytes,
         storageKey: presignedResult.storageKey,
         storageBucket: env.SCALEWAY_BUCKET ?? '',
-        storageRegion: env.SCALEWAY_REGION ?? 'fr-par',
+        storageRegion: env.SCALEWAY_REGION,
         educationalContext,
         status: 'pending',
         metadata: {

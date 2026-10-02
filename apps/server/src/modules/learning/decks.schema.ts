@@ -59,16 +59,16 @@ export const learningDecks = pgTable('learning_decks', {
   // Timestamps
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.userId],
     foreignColumns: [user.id],
     name: 'learning_decks_user_id_fkey'
   }).onDelete('cascade'),
 
-  userSubjectIdx: index('idx_learning_decks_user_subject').on(table.userId, table.subject),
-  userCreatedIdx: index('idx_learning_decks_user_created').on(table.userId, table.createdAt),
-}));
+  index('idx_learning_decks_user_subject').on(table.userId, table.subject),
+  index('idx_learning_decks_user_created').on(table.userId, table.createdAt),
+]);
 
 /**
  * Learning Cards - Cartes individuelles de révision
@@ -93,16 +93,16 @@ export const learningCards = pgTable('learning_cards', {
   // Timestamps
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  deckIdFk: foreignKey({
+}, (table) => [
+  foreignKey({
     columns: [table.deckId],
     foreignColumns: [learningDecks.id],
     name: 'learning_cards_deck_id_fkey'
   }).onDelete('cascade'),
 
-  deckPositionIdx: index('idx_learning_cards_deck_position').on(table.deckId, table.position),
-  cardTypeIdx: index('idx_learning_cards_type').on(table.cardType),
-}));
+  index('idx_learning_cards_deck_position').on(table.deckId, table.position),
+  index('idx_learning_cards_type').on(table.cardType),
+]);
 
 // =============================================
 // RELATIONS

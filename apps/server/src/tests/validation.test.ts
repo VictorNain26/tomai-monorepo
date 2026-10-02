@@ -79,6 +79,11 @@ describe('updateChildSchema', () => {
     expect(issues(result)).toContain('Au moins un champ doit être fourni');
   });
 
+  it('rejects an update whose fields are all undefined', () => {
+    const result = updateChildSchema.safeParse({ firstName: undefined });
+    expect(issues(result)).toContain('Au moins un champ doit être fourni');
+  });
+
   it('applies the same password rule as creation', () => {
     expect(updateChildSchema.safeParse({ password: 'weak' }).success).toBe(false);
   });
