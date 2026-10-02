@@ -6,6 +6,7 @@
  */
 
 import { and, desc, eq } from 'drizzle-orm';
+import type { PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import { db } from '../../db/connection.js';
 import {
   learningDecks,
@@ -109,8 +110,7 @@ class LearningDecksRepository {
    */
   async updateById(
     deckId: string,
-    // Drizzle ignores undefined values in .set(): an undefined field is left unchanged.
-    patch: { [K in keyof NewLearningDeck]?: NewLearningDeck[K] | undefined },
+    patch: PgUpdateSetSource<typeof learningDecks>,
     executor: DbOrTx = db,
   ): Promise<LearningDeck | null> {
     const [updated] = await executor

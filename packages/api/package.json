@@ -24,9 +24,11 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
+    "test": "bun test"
   },
   "devDependencies": {
+    "bun-types": "^1.4.2",
     "tomai-server": "workspace:*",
     "typescript": "6.0.3"
   },

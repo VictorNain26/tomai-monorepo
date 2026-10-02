@@ -7,7 +7,7 @@ function bootEnv(extra: Record<string, string>) {
   return Bun.spawnSync(['bun', '--no-env-file', '-e', `await import(${JSON.stringify(ENV_MODULE)})`], {
     cwd: tmpdir(),
     env: {
-      PATH: process.env['PATH'] ?? '',
+      PATH: process.env.PATH ?? '',
       DATABASE_URL: 'postgresql://test:test@localhost/test',
       BETTER_AUTH_SECRET: 'x'.repeat(32),
       ...extra,

@@ -25,7 +25,7 @@ type Level = (typeof LOG_LEVELS)[number];
 // `bun build --target bun` freezes `process.env.*` at build time, so the
 // runtime values are read through Bun.env (env.ts validates LOG_LEVEL).
 const isProduction = Bun.env.NODE_ENV === 'production';
-const requestedLevel = Bun.env['LOG_LEVEL'];
+const requestedLevel = Bun.env.LOG_LEVEL;
 const level: Level = LOG_LEVELS.find((l) => l === requestedLevel) ?? 'info';
 
 /**

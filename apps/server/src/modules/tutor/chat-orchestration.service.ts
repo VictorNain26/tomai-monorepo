@@ -48,7 +48,7 @@ interface PrepareTurnRequest {
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface ChatTurnContext {
   sessionId: string;
-  subject?: string | undefined;
+  subject?: string;
   conversationSummary: string | null;
   conversationHistory: {
     role: 'user' | 'assistant';
@@ -65,7 +65,7 @@ export interface ChatTurnContext {
   /** Bounded document analyses (OCR), ready for `streamChat`'s `attachedFiles` param. */
   attachedFiles: AttachedFileForPrompt[];
   attachedFileInfo: AttachedFileInfo | null;
-  attachedFileInfos?: AttachedFileInfo[] | undefined;
+  attachedFileInfos?: AttachedFileInfo[];
 }
 
 interface PersistUserTurnParams {
@@ -226,7 +226,7 @@ class ChatOrchestrationService {
 
     return {
       sessionId,
-      subject: effectiveSubject,
+      ...(effectiveSubject !== undefined && { subject: effectiveSubject }),
       conversationSummary: sessionSummary?.conversationSummary ?? null,
       conversationHistory,
       cognitiveProfileSummary,
@@ -240,7 +240,7 @@ class ChatOrchestrationService {
       })),
       attachedFiles: boundedAttachedFiles,
       attachedFileInfo,
-      attachedFileInfos: hasMultipleFiles ? attachedFileInfos : undefined,
+      ...(hasMultipleFiles && { attachedFileInfos }),
     };
   }
 

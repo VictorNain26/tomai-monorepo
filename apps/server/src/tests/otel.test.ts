@@ -15,11 +15,11 @@ const collector = Bun.serve({
   },
 });
 
-delete process.env['OTEL_DISABLED'];
-delete process.env['OTEL_EXPORTER_OTLP_TRACES_ENDPOINT'];
-delete process.env['OTEL_EXPORTER_OTLP_TRACES_HEADERS'];
-process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] = `${collector.url.origin}/api/public/otel`;
-process.env['OTEL_EXPORTER_OTLP_HEADERS'] = 'Authorization=Basic%20cGs6c2s=';
+delete process.env.OTEL_DISABLED;
+delete process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT;
+delete process.env.OTEL_EXPORTER_OTLP_TRACES_HEADERS;
+process.env.OTEL_EXPORTER_OTLP_ENDPOINT = `${collector.url.origin}/api/public/otel`;
+process.env.OTEL_EXPORTER_OTLP_HEADERS = 'Authorization=Basic%20cGs6c2s=';
 
 const { setupOtel, shutdownOtel } = await import('../platform/observability/otel');
 const { streamChat } = await import('../modules/tutor/ai-chat.service');

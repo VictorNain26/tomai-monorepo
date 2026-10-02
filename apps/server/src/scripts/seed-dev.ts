@@ -16,11 +16,11 @@ import { parentChildRepository } from '../modules/family/index.js';
 import type { SchoolLevel } from '../db/schema.js';
 
 const SEED = {
-  parentEmail: process.env['SEED_PARENT_EMAIL'] ?? 'dev.parent@tomai.local',
-  parentPassword: process.env['SEED_PARENT_PASSWORD'] ?? 'DevParent123!',
+  parentEmail: process.env.SEED_PARENT_EMAIL ?? 'dev.parent@tomai.local',
+  parentPassword: process.env.SEED_PARENT_PASSWORD ?? 'DevParent123!',
   parentName: 'Dev Parent',
-  childUsername: process.env['SEED_CHILD_USERNAME'] ?? 'dev.eleve',
-  childPassword: process.env['SEED_CHILD_PASSWORD'] ?? 'DevEleve123!',
+  childUsername: process.env.SEED_CHILD_USERNAME ?? 'dev.eleve',
+  childPassword: process.env.SEED_CHILD_PASSWORD ?? 'DevEleve123!',
   childName: 'Dev Eleve',
   childSchoolLevel: 'troisieme',
   demoDeckTitle: 'Deck de démo',

@@ -9,7 +9,7 @@ function logLines(script: string, env: Record<string, string> = {}): Record<stri
     ['bun', '--no-env-file', '-e', `const { logger } = await import(${JSON.stringify(MODULE)}); ${script}`],
     {
       cwd: tmpdir(),
-      env: { PATH: process.env['PATH'] ?? '', NODE_ENV: 'production', ...env },
+      env: { PATH: process.env.PATH ?? '', NODE_ENV: 'production', ...env },
       stderr: 'pipe',
     },
   );

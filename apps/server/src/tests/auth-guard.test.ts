@@ -45,13 +45,13 @@ function makeUser(overrides?: Partial<AuthenticatedUser>): AuthenticatedUser {
 }
 
 function makeParentUser(overrides?: Partial<AuthenticatedUser>): AuthenticatedUser {
-  return makeUser({
+  const parent = makeUser({
     email: 'parent@example.com',
     name: 'Parent User',
     role: 'parent',
-    schoolLevel: null,
-    ...overrides,
   });
+  delete parent.schoolLevel;
+  return { ...parent, ...overrides };
 }
 
 describe('auth guards', () => {
