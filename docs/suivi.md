@@ -36,12 +36,14 @@ contraire.
 - **Référentiel des programmes du collège** (point 3) : chaîne en place dans
   `apps/server/src/referential/` (`bun run referential:extract`) avec les programmes de
   mathématiques et de français de 2025 (6e) et de 2026 (5e, puis 4e en 2027 et 3e en 2028),
-  798 entrées ; 1 063 avec les attendus de 2019.
+  798 entrées ; 1 053 avec les attendus de 2019.
   La 4e et la 3e de 2026-2027 lisent les attendus de fin d'année de 2019 (annexes 15 à 18
   de la note de service n° 2019-072) : le programme de 2020, écrit par cycle et balisé en
   façade seulement, n'est pas extrait. Le jeu de données « Compléments aux programmes du
-  second degré » rattache ces annexes aux mauvaises classes ; la classe se lit sur
-  l'en-tête rendu du PDF. Restent, une PR chacun : repères annuels du cycle 4 et
+  second degré » rattache ces annexes aux mauvaises classes (ordre inversé de la 6e à la
+  3e, repères décalés d'un cycle) ; l'extraction vérifie la classe sur le texte alternatif
+  de l'en-tête de chaque PDF et lit le domaine sur ses bandeaux. En programmation, seuls
+  les niveaux attendus en fin de classe sont gardés (1 et 2 en 4e). Restent, une PR chacun : repères annuels du cycle 4 et
   rattachement des exercices ; sciences, histoire-géographie, anglais.
 - **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
   « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
