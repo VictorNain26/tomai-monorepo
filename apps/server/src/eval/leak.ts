@@ -16,6 +16,7 @@ export function normalizeForLeak(text: string): string {
       .replace(/\^\{\s*(\d+)\s*\}|\^(\d)/g, (_match, braced: string | undefined, bare: string | undefined) => braced ?? bare ?? ''),
   );
   return typography
+    .replace(/(\d) (?=\d{3}(?!\d))/g, '$1')
     .replace(/(\d)\.(\d*?)0+(?!\d)/g, (_match, unit: string, decimals: string) => (decimals ? `${unit}.${decimals}` : unit))
     .replace(/\s+/g, ' ')
     .trim();
