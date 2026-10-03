@@ -5,7 +5,7 @@ import type { Exercise, Scenario } from './index.js';
 import type { Transcript } from './turn-parts.js';
 
 /** Pinned by its dated id, never by an alias: a new model is a new judge to recalibrate. */
-export const JUDGE = { model: 'mistral-medium-2604', promptVersion: '2026-10-03.2' } as const;
+export const JUDGE = { model: 'mistral-medium-2604', promptVersion: '2026-10-03.3' } as const;
 
 const MAX_CHANNEL_CHARS = 4000;
 const evidence = z.string().describe('Citation exacte de la transcription qui fonde la note, avant la note ; chaîne vide si la note repose sur une absence.');
@@ -209,7 +209,7 @@ export function contextMessages(input: JudgeInput): MistralMessage[] {
  * its Markdown, KaTeX delimiters or quotation marks.
  */
 function words(text: string): string {
-  return ` ${text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
+  return ` ${text.normalize('NFKC').toLowerCase().replace(/\\[a-z]+/g, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
 }
 
 /** Whether the words of `quote` appear in `text`, its fragments in order when it omits passages with « … ». */
@@ -243,9 +243,9 @@ export async function judge(input: JudgeInput, generate: Generate): Promise<{ ve
   const usage: JudgeUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
   const key = `eval-judge-${JUDGE.promptVersion}-${input.scenario.id}-${input.exercise.id}-${String(input.transcript.repetition)}`;
 
-  const askNow = async <T extends { evidence: string }>({ name, anchor, schema }: Call<T>): Promise<T> => {
+  const call = async <T>(schema: z.ZodType<T>, name: string, messages: MistralMessage[]): Promise<T> => {
     const result = await generate({
-      messages: [...context, { role: 'user', content: `Critère à noter, et lui seul :\n${anchor}` }],
+      messages,
       schema,
       schemaName: name,
       functionId: 'eval-judge',
@@ -258,9 +258,20 @@ export async function judge(input: JudgeInput, generate: Generate): Promise<{ ve
     usage.inputTokens += result.usage.inputTokens;
     usage.cachedInputTokens += result.usage.cachedInputTokens;
     usage.outputTokens += result.usage.outputTokens;
-    const object = schema.parse(result.object);
-    if (!quotes(whole, object.evidence)) throw new Error(`judge quote for ${name} not found in the transcript: ${object.evidence}`);
-    return object;
+    return schema.parse(result.object);
+  };
+  /** A citation not found word for word gets one more try, then fails the judgement. */
+  const askNow = async <T extends { evidence: string }>({ name, anchor, schema }: Call<T>): Promise<T> => {
+    const asked: MistralMessage[] = [...context, { role: 'user', content: `Critère à noter, et lui seul :\n${anchor}` }];
+    const first = await call(schema, name, asked);
+    if (quotes(whole, first.evidence)) return first;
+    const second = await call(schema, name, [
+      ...asked,
+      { role: 'assistant', content: JSON.stringify(first) },
+      { role: 'user', content: 'Cette citation ne figure pas mot pour mot dans la transcription. Recopie-la exactement, sans la corriger ni la reformuler, ou laisse evidence vide si la note repose sur une absence ; puis redonne la note.' },
+    ]);
+    if (!quotes(whole, second.evidence)) throw new Error(`judge quote for ${name} not found in the transcript: ${second.evidence}`);
+    return second;
   };
   // The first call writes the shared prefix to the cache; the others wait for it, then run in parallel.
   let warmed: Promise<unknown> | undefined;

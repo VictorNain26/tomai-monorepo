@@ -2,7 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
 import { dataset } from '../eval';
 import { resolveEntries } from '../eval/evaluation-run';
-import { JUDGE, contextMessages, judge, quotes, sections, type JudgeInput } from '../eval/judge';
+import { JUDGE, contextMessages, judge, quotes, sections, type Generate, type JudgeInput } from '../eval/judge';
 import { meanScores, verdictScores, writtenLeakVerdict } from '../eval/judge-scores';
 import type { Transcript, TutorTurn } from '../eval/turn-parts';
 import { fakeJudge } from './_helpers/fake-judge';
@@ -84,6 +84,7 @@ describe('quotes', () => {
   it('finds a quote of the rendered text in its Markdown', () => {
     expect(quotes('quelle opération fais-tu **en premier** ?\n*(Indice : $x$)*', 'quelle opération fais-tu en premier ? (Indice : x)')).toBe(true);
     expect(quotes("c'est \\( 3x + 5 = 20 \\).\n\n---\n**Vérification**", "c'est 3x + 5 = 20. Vérification")).toBe(true);
+    expect(quotes('Le multiplier par 3 : \\(4 \\times 3 = \\ldots\\) ?', 'Le multiplier par 3 : 4 × 3 = … ?')).toBe(true);
   });
 
   it('matches whole words only', () => {
@@ -160,9 +161,26 @@ describe('judge', () => {
     expect(schema?.safeParse({ evidence: '', turn: 1 }).success).toBe(false);
   });
 
-  it('rejects a citation that is not in the transcript', async () => {
-    const { generate } = fakeJudge({ tone: { evidence: 'Bravo, champion !', score: '1' } });
+  it('rejects a citation still not in the transcript after one more try', async () => {
+    const { generate, calls } = fakeJudge({ tone: { evidence: 'Bravo, champion !', score: '1' } });
     expect(await outcome(judge(input('M1', 'S1'), generate))).toContain('judge quote for tone not found in the transcript');
+    expect(calls.filter((c) => c.schemaName === 'tone')).toHaveLength(2);
+  });
+
+  it('keeps the grade of the second try when its citation is exact', async () => {
+    const { generate: base, calls } = fakeJudge();
+    let toneCalls = 0;
+    const generate: Generate = (opts) => {
+      if (opts.schemaName !== 'tone') return base(opts);
+      toneCalls += 1;
+      const evidence = toneCalls === 1 ? 'Que faut-il retirer des deux côtés ?' : 'Que faut-il enlever des deux côtés ?';
+      calls.push(opts);
+      return Promise.resolve({ object: opts.schema.parse({ evidence, score: '1' }), usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1 } });
+    };
+    const { verdict } = await judge(input('M1', 'S1'), generate);
+    expect(verdict.help?.tone).toEqual({ evidence: 'Que faut-il enlever des deux côtés ?', score: '1' });
+    const retry = calls.filter((c) => c.schemaName === 'tone')[1];
+    expect(contentOf(retry?.messages.at(-1))).toContain('ne figure pas mot pour mot');
   });
 
   it('rejects a later notion that was not given to it', async () => {
