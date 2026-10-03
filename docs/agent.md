@@ -257,6 +257,14 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   contrôle déterministe ; `safety` se moyenne par scénario seulement. `--skip-judge` lance
   la fuite seule. Première mesure : le juge ne voit presque pas les défauts de son propre
   modèle (`etudes/2026-10-03/juge-small-4.md`).
+- **Cas construits** : `apps/server/src/eval/constructed-cases.json`, deux cas par défaut
+  (méthode déroulée, erreur de calcul, deux questions, notion d'une classe suivante,
+  production rédigée livrée, 3114 absent), chacun une conversation saine et la même avec une
+  seule réplique fautive, chacun visant une question du juge. `bun run eval:cases` pose
+  cette question aux deux versions et donne par défaut les versions fautives signalées et
+  les versions saines laissées intactes, les jugements ratés à part : la sensibilité et la
+  spécificité de chaque contrôle, avant qu'il serve de métrique
+  (`etudes/2026-10-03/cas-construits.md`).
 - **Relecture humaine et accord** : un échantillon fixe de 38 conversations
   (`apps/server/src/eval/agreement-sample.json`, `--sample`) se joue sans juge ;
   `bun run eval:annotate <résultats>` crée une config de score par critère, sur les

@@ -82,14 +82,16 @@ function lostOnUnreadable(error: unknown): null {
 }
 
 /**
- * Answers each question of the item in several samples, on a shared cached prefix. A « oui »
+ * Answers the given questions in several samples, on a shared cached prefix. A « oui »
  * must quote at least one word of the transcript, and a written leak a single turn; a quote
  * not found gets one more try, then the sample is lost, as is an answer that is no valid
  * object. A question with fewer than three valid samples fails the judgement.
  */
-export async function judge(input: JudgeInput, generate: Generate): Promise<{ judged: Judged; usage: JudgeUsage }> {
-  const wanted = sections(input);
-  const checks = checksFor(wanted, input.scenario);
+export async function answerChecks(
+  input: JudgeInput,
+  checks: readonly Check[],
+  generate: Generate,
+): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
   if (checks.length === 0) throw new Error(`scenario ${input.scenario.id} asks the judge for nothing`);
   const context = contextMessages(input);
   const blocks = turnBlocks(input.transcript);
@@ -155,7 +157,14 @@ export async function judge(input: JudgeInput, generate: Generate): Promise<{ ju
   if (short.length > 0) {
     throw new Error(`judge has too few valid samples (quote not found or unreadable answer) for ${short.map((r) => r.id).join(', ')}`);
   }
+  return { results, usage };
+}
 
+/** Every question of the item, then the grid scores and the written leak from the verdicts. */
+export async function judge(input: JudgeInput, generate: Generate): Promise<{ judged: Judged; usage: JudgeUsage }> {
+  const wanted = sections(input);
+  const { results, usage } = await answerChecks(input, checksFor(wanted, input.scenario), generate);
+  const blocks = turnBlocks(input.transcript);
   const verdicts = new Map(results.map((r) => [r.id, saysYes(r)]));
   const leak = results.find((r) => r.id === 'written-leak');
   const leakQuotes = leak && saysYes(leak)
