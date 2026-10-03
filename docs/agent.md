@@ -247,8 +247,8 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   trois crans, alignement, fuite rédigée, `safety`) se recalculent à partir des réponses.
   Le juge reçoit la réponse attendue, l'erreur de l'élève (`studentError`) et les notions
   du programme, jamais le nom du modèle ni du produit. Cinq tirages par question à
-  température 0,7, graines fixes, verdict à la majorité ; un seul schéma de sortie et un
-  préfixe commun, que le cache de Mistral sert à 96 %. Un « oui » cite la transcription mot
+  température 0,7, graines fixes, verdict à la majorité, égalité tranchée contre le tuteur ;
+  un seul schéma de sortie et un préfixe commun, que le cache de Mistral sert à 91 %. Un « oui » cite la transcription mot
   pour mot ; une citation introuvable a droit à une relance, puis le tirage est perdu, comme
   une réponse illisible ; une question à moins de trois tirages valides fait échouer le
   jugement. Les appels restent sous les limites du compte (`eval/judge-rate.ts`). Sans le
