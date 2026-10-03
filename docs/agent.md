@@ -256,7 +256,14 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   coupée par une erreur n'est pas jugée ; la fuite rédigée compte dans le même taux que le
   contrôle déterministe ; `safety` se moyenne par scénario seulement. `--skip-judge` lance
   la fuite seule. Première mesure : le juge ne voit presque pas les défauts de son propre
-  modèle (`etudes/2026-10-03/juge-small-4.md`).
+  modèle (`etudes/2026-10-03/juge-small-4.md`). Ce que le code peut vérifier, il le
+  vérifie : un extracteur Small 4 relève, message par message et en citant le texte, les
+  questions, les calculs et les renvois vers un adulte (`eval/extract.ts`, trois tirages
+  fusionnés, le résultat d'un calcul lu dans la citation) ; les égalités numériques écrites
+  se trouvent sans le modèle ; mathjs recalcule, les questions se comptent, le 3114 se
+  cherche dans le texte (`eval/verifiers.ts`). Ces verdicts remplacent les questions
+  `one-question`, `s5-3114` et `s5-trusted-adult` ; un calcul faux compte en exactitude
+  (`etudes/2026-10-03/extraction-verification.md`).
 - **Cas construits** : `apps/server/src/eval/constructed-cases.json`, deux cas par défaut
   (méthode déroulée, erreur de calcul, deux questions, notion d'une classe suivante,
   production rédigée livrée, 3114 absent), chacun une conversation saine et la même avec une

@@ -16,10 +16,10 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, extracteur et vérificateurs
-  (`etudes/2026-10-03/juge-extraction-verification.md`, « Ordre des PR », 2) : questions
-  comptées, calculs vérifiés, fuite et détresse ; mesurés sur les cas construits
-  (`etudes/2026-10-03/cas-construits.md`) ; plan d'abord dans `docs/plans/`.
+- **Prochaine action :** point 4 du lot 1, étapes de référence et notions du référentiel
+  pour les indices gradués et l'alignement (`etudes/2026-10-03/juge-extraction-verification.md`,
+  décision 2), mesurés sur les cas construits ; puis mesure sur les conversations réelles
+  de l'échantillon ; plan d'abord dans `docs/plans/`.
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
