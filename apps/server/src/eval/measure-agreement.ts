@@ -1,14 +1,15 @@
 /**
- * `bun run eval:agreement <results.json> [--labels <file>]`: judges the conversations
- * graded in the annotation queue, or in a labels file, then measures agreement with the
- * judge per criterion. The judge runs on the saved transcripts, never on a replay: both
- * grade the same text.
+ * `bun run eval:agreement <results.json> [--labels <file>] [--passes <n>]`: judges the
+ * conversations graded in the annotation queue, or in a labels file, then measures agreement
+ * with the judge per criterion; with several passes, also the judge against itself. The
+ * judge runs on the saved transcripts, never on a replay: both grade the same text.
  */
 import { parseArgs } from 'node:util';
 import { LangfuseClient } from '@langfuse/client';
 import { mkdir } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { agreement, fileValues, judgeValues, labelsFile, queueValues } from './annotation.js';
+import { z } from 'zod';
+import { agreement, fileValues, judgeValues, labelsFile, queueValues, type AgreementLine } from './annotation.js';
 import { judgeContext } from './evaluation-run.js';
 import { JUDGE, judge } from './judge.js';
 import { gradable, loadResults } from './results.js';
@@ -40,58 +41,78 @@ async function queueGrades(traceIds: readonly string[]): Promise<Map<string, Map
 
 const format = (value: number | null) => (value === null ? 'n/a' : value.toFixed(3));
 
+function printTable(title: string, lines: readonly AgreementLine[]): void {
+  console.log(`\n${title}\n\n| Criterion | Units | Raw | α | 95 % interval | ≥ ${String(THRESHOLD)} |\n|---|---|---|---|---|---|`);
+  for (const { criterion, units, raw, alpha, interval } of lines) {
+    const range = interval ? `${format(interval[0])} – ${format(interval[1])}` : 'n/a';
+    console.log(`| ${criterion} | ${String(units)} | ${format(raw)} | ${format(alpha)} | ${range} | ${alpha !== null && alpha >= THRESHOLD ? 'yes' : 'no'} |`);
+  }
+}
+
 async function main(): Promise<number> {
-  const { positionals, values } = parseArgs({ allowPositionals: true, options: { labels: { type: 'string' } } });
+  const { positionals, values } = parseArgs({
+    allowPositionals: true,
+    options: { labels: { type: 'string' }, passes: { type: 'string', default: '1' } },
+  });
   const [path] = positionals;
   if (!path) {
-    console.error('usage: bun run eval:agreement <eval-results/….json> [--labels <file>]');
+    console.error('usage: bun run eval:agreement <results.json> [--labels <file>] [--passes <n>]');
     return 1;
   }
+  const passes = z.coerce.number().int().min(1).max(5).parse(values.passes);
   const results = await loadResults(path);
   const { generateStructured } = await import('../platform/ai/mistral-client.js');
   const rows = gradable(results);
   const labels = values.labels ? labelsFile.parse(await Bun.file(values.labels).json()) : null;
   const annotator = labels ? labels.annotator : 'human (Langfuse annotation queue)';
   const human = labels ? fileValues(labels, rows) : await queueGrades(rows.map((row) => row.traceId));
-  const annotated = rows.filter((row) => human.has(row.traceId));
-  console.log(`annotator: ${annotator}`);
-  if (annotated.length === 0) {
-    console.error('no conversation of this run is annotated.');
+  console.log(`annotator: ${annotator}, ${String(human.size)}/${String(rows.length)} conversation(s) annotated`);
+  // Without annotation, several passes still measure the judge against itself.
+  const toJudge = human.size > 0 ? rows.filter((row) => human.has(row.traceId)) : passes > 1 ? rows : [];
+  if (toJudge.length === 0) {
+    console.error('nothing to measure: no conversation of this run is annotated, and a single pass.');
     return 1;
   }
-  console.log(`${String(annotated.length)}/${String(rows.length)} conversation(s) annotated`);
 
   const graded = [];
   const failures: string[] = [];
-  for (let start = 0; start < annotated.length; start += CONCURRENCY) {
-    graded.push(...await Promise.all(annotated.slice(start, start + CONCURRENCY).map(async (row) => {
-      try {
-        const { verdict } = await judge({ ...judgeContext(row), transcript: row.transcript }, generateStructured);
-        return [{ ...row, human: human.get(row.traceId) ?? new Map<string, number>(), judge: judgeValues(verdict), verdict }];
-      } catch (error) {
-        failures.push(`${row.traceId}: ${error instanceof Error ? error.message : String(error)}`);
-        return [];
+  for (let start = 0; start < toJudge.length; start += CONCURRENCY) {
+    graded.push(...await Promise.all(toJudge.slice(start, start + CONCURRENCY).map(async (row) => {
+      const verdicts = [];
+      for (let pass = 1; pass <= passes; pass++) {
+        try {
+          verdicts.push((await judge({ ...judgeContext(row), transcript: row.transcript }, generateStructured)).verdict);
+        } catch (error) {
+          failures.push(`${row.traceId}, pass ${String(pass)}: ${error instanceof Error ? error.message : String(error)}`);
+          return [];
+        }
       }
+      return [{ ...row, human: human.get(row.traceId) ?? null, judge: verdicts.map(judgeValues), verdicts }];
     })).then((batches) => batches.flat()));
   }
 
-  const lines = agreement(graded);
-  console.log(`\n| Criterion | Units | Raw | α | 95 % interval | ≥ ${String(THRESHOLD)} |\n|---|---|---|---|---|---|`);
-  for (const { criterion, units, raw, alpha, interval } of lines) {
-    const range = interval ? `${format(interval[0])} – ${format(interval[1])}` : 'n/a';
-    console.log(`| ${criterion} | ${String(units)} | ${format(raw)} | ${format(alpha)} | ${range} | ${alpha !== null && alpha >= THRESHOLD ? 'yes' : 'no'} |`);
-  }
+  const withHuman = graded.flatMap(({ scenarioId, human: h, judge: [first] }) => (h && first ? [{ scenarioId, coders: [h, first] }] : []));
+  const agreementLines = withHuman.length > 0 ? agreement(withHuman) : null;
+  const stabilityLines = passes > 1 ? agreement(graded.map(({ scenarioId, judge: grades }) => ({ scenarioId, coders: grades }))) : null;
+  if (agreementLines) printTable(`Agreement with ${annotator} (judge pass 1)`, agreementLines);
+  if (stabilityLines) printTable(`Judge reproducibility over ${String(passes)} passes`, stabilityLines);
+
   // A new file in eval-results/ on every run: a committed measure is a dated snapshot.
   await mkdir('eval-results', { recursive: true });
   const out = `eval-results/${basename(path, '.json')}.agreement-${new Date().toISOString().slice(0, 16).replace(':', 'h')}.json`;
   await Bun.write(out, JSON.stringify({
     results: path,
-    annotator,
+    annotator: human.size > 0 ? annotator : null,
     judge: JUDGE,
+    passes,
     threshold: THRESHOLD,
-    lines,
-    conversations: graded.map(({ scenarioId, exerciseId, repetition, traceId, human: h, judge: j, verdict }) => ({
-      scenarioId, exerciseId, repetition, traceId, human: Object.fromEntries(h), judge: Object.fromEntries(j), verdict,
+    agreement: agreementLines,
+    stability: stabilityLines,
+    conversations: graded.map(({ scenarioId, exerciseId, repetition, traceId, human: h, judge: grades, verdicts }) => ({
+      scenarioId, exerciseId, repetition, traceId,
+      human: h ? Object.fromEntries(h) : null,
+      judge: grades.map((g) => Object.fromEntries(g)),
+      verdicts,
     })),
     failures,
   }, null, 2));

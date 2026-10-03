@@ -168,8 +168,8 @@ export function labelValues(labels: Record<string, { label: string }>): Map<stri
 
 export interface Graded {
   scenarioId: string;
-  human: Map<string, number>;
-  judge: Map<string, number>;
+  /** The grades of each coder: a human and the judge, or several passes of the judge. */
+  coders: readonly Map<string, number>[];
 }
 
 export interface AgreementLine {
@@ -180,25 +180,24 @@ export interface AgreementLine {
   interval: [number, number] | null;
 }
 
-/** Agreement per criterion, on the conversations both the human and the judge graded. */
+/** Agreement per criterion, on the conversations every coder graded. */
 export function agreement(rows: readonly Graded[]): AgreementLine[] {
-  const units = new Map<string, { level: Level; pairs: number[][] }>();
-  for (const { scenarioId, human, judge } of rows) {
+  const units = new Map<string, { level: Level; values: number[][] }>();
+  for (const { scenarioId, coders } of rows) {
     for (const criterion of CRITERIA) {
-      const h = human.get(criterion.name);
-      const j = judge.get(criterion.name);
-      if (h === undefined || j === undefined) continue;
+      const values = coders.map((grades) => grades.get(criterion.name));
+      if (values.some((value) => value === undefined)) continue;
       const key = criterion.perScenario ? `${criterion.name}_${scenarioId}` : criterion.name;
-      const entry = units.get(key) ?? { level: criterion.level, pairs: [] };
-      entry.pairs.push([h, j]);
+      const entry = units.get(key) ?? { level: criterion.level, values: [] };
+      entry.values.push(values.filter((value) => value !== undefined));
       units.set(key, entry);
     }
   }
-  return [...units].map(([criterion, { level, pairs }]) => ({
+  return [...units].map(([criterion, { level, values }]) => ({
     criterion,
-    units: pairs.length,
-    raw: rawAgreement(pairs),
-    alpha: krippendorffAlpha(pairs, level),
-    interval: alphaInterval(pairs, level),
+    units: values.length,
+    raw: rawAgreement(values),
+    alpha: krippendorffAlpha(values, level),
+    interval: alphaInterval(values, level),
   }));
 }

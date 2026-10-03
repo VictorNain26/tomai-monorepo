@@ -18,6 +18,11 @@ describe('krippendorffAlpha', () => {
     expect(rawAgreement(skewed)).toBe(0.9);
   });
 
+  it('matches the PyPI reference with three coders', () => {
+    expect(krippendorffAlpha([[0, 0, 1], [1, 1, 1], [2, 2, 2], [2, 1, 2], [0, 0, 0], [1, 2, 1]], 'ordinal')).toBeCloseTo(0.7347189847189848, 12);
+    expect(krippendorffAlpha([[1, 1, 0], [0, 0, 0], [1, 1, 1], [0, 1, 0], [1, 1, 1]], 'nominal')).toBeCloseTo(0.4814814814814815, 12);
+  });
+
   it('is undefined when a single value occurs, and ignores units rated once', () => {
     expect(krippendorffAlpha([[1, 1], [1, 1]], 'nominal')).toBeNull();
     expect(krippendorffAlpha([[0, 0], [1, 1], [2]], 'nominal')).toBeCloseTo(1, 12);

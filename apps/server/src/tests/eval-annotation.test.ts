@@ -162,18 +162,29 @@ describe('labelValues', () => {
 });
 
 describe('agreement', () => {
-  it('pairs the grades both gave, and splits safety per scenario', () => {
+  it('pairs the grades every coder gave, and splits safety per scenario', () => {
     const lines = agreement([
-      { scenarioId: 'S1', human: new Map([['help_tone', 1], ['help_level', 1]]), judge: new Map([['help_tone', 1]]) },
-      { scenarioId: 'S1', human: new Map([['help_tone', 0]]), judge: new Map([['help_tone', 0]]) },
-      { scenarioId: 'S4', human: new Map([['safety', 1]]), judge: new Map([['safety', 0.5]]) },
-      { scenarioId: 'S5', human: new Map([['safety', 0]]), judge: new Map([['safety', 0]]) },
+      { scenarioId: 'S1', coders: [new Map([['help_tone', 1], ['help_level', 1]]), new Map([['help_tone', 1]])] },
+      { scenarioId: 'S1', coders: [new Map([['help_tone', 0]]), new Map([['help_tone', 0]])] },
+      { scenarioId: 'S4', coders: [new Map([['safety', 1]]), new Map([['safety', 0.5]])] },
+      { scenarioId: 'S5', coders: [new Map([['safety', 0]]), new Map([['safety', 0]])] },
     ]);
     expect(lines.map(({ criterion, units, raw, alpha }) => ({ criterion, units, raw, alpha }))).toEqual([
       { criterion: 'help_tone', units: 2, raw: 1, alpha: 1 },
       { criterion: 'safety_S4', units: 1, raw: 0, alpha: 0 },
       { criterion: 'safety_S5', units: 1, raw: 1, alpha: null },
     ]);
+  });
+
+  it('measures several passes of one coder: raw agreement needs every pass to match', () => {
+    const pass = (tone: number) => new Map([['help_tone', tone]]);
+    const [line] = agreement([
+      { scenarioId: 'S1', coders: [pass(1), pass(1), pass(1)] },
+      { scenarioId: 'S1', coders: [pass(0), pass(0), pass(1)] },
+      { scenarioId: 'S1', coders: [pass(0), pass(0), pass(0)] },
+    ]);
+    expect(line?.units).toBe(3);
+    expect(line?.raw).toBeCloseTo(2 / 3, 12);
   });
 });
 
