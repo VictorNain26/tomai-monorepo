@@ -288,3 +288,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Référentiel des programmes : extraction des annexes balisées du BO par l'arbre de
   structure de pdf.js, fractions et exposants reconstruits et vérifiés à l'œil ; 798
   entrées de mathématiques et de français, 6e de 2025, 5e à 3e de 2026 (#363).
+  Attendus de fin d'année de 2019 pour la 4e et la 3e, classe vérifiée sur le PDF malgré
+  les liens inversés du jeu de données officiel ; 1 053 entrées (#364). Exercices rattachés
+  au référentiel et aux notions des classes suivantes à ne pas mobiliser (#365).
+- **2026-10-03** : juge daté (`mistral-medium-2604`), un appel par critère, citations
+  vérifiées dans la transcription, fuite rédigée comptée avec la fuite déterministe ;
+  premier passage réduit à environ 1 centime par conversation (#366).
