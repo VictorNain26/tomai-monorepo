@@ -54,7 +54,7 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 | Résumés, génération de cartes, analyse de document, titres, classification d'intention | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
 | Modération entrée/sortie | `mistral-moderation-2603` | Seuils par catégorie (§5) |
 | STT / TTS | Voxtral via `@mistralai/mistralai` (`audio.*`) | Timeout explicite |
-| Juge d'évaluation | Mistral Medium 3.5, ID daté confirmé par `GET /v1/models` | JSON strict ; contre-vérification ponctuelle par GLM 5.2 (texte seul, hébergé par Mistral, jamais en production) |
+| Juge d'évaluation | Mistral Small 4 `mistral-small-2603` (passage depuis Medium 3.5 avec le juge v2, `etudes/2026-10-03/refonte-harnais.md`) | Contrôles oui/non en JSON strict, tirages multiples |
 
 Small 4 : 256k de contexte, function calling, sorties structurées, raisonnement,
 0,15 $ / 0,60 $ par million de tokens ([fiche](https://docs.mistral.ai/models/mistral-small-4-0-26-03)),
@@ -62,10 +62,10 @@ multimodal texte + image ([annonce](https://mistral.ai/news/mistral-small-4) :
 « Native multimodal: Accepts both text and image inputs » — la page vision de la
 doc, arrêtée à Medium 3.1, ne le mentionne pas encore).
 
-Un seul modèle pour tous les rôles texte : moins de variables à évaluer, un seul
-cache. Les Ministral ne reviennent que si le lot 1 mesure un gain de latence qui
-compte. Le lot 1 mesure aussi l'hypothèse « escalade vers Medium 3.5 sur tour à
-risque » ; la règle de décision est fixée avant les chiffres.
+Un seul modèle pour tous les rôles texte, juge d'évaluation compris : décision de Victor
+du 2026-10-03, aucun autre modèle de texte. Moins de variables à évaluer, un seul cache ;
+le juge note donc son propre modèle, biais que sa conception et la mesure d'accord
+doivent contenir (`etudes/2026-10-03/refonte-harnais.md`).
 
 **Identifiants datés uniquement**, jamais d'alias `-latest` : un alias change de
 modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une version
