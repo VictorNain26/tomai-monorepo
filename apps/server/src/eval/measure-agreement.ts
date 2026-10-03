@@ -1,10 +1,12 @@
 /**
- * `bun run eval:agreement <eval-results/….json>`: judges the conversations a human graded
- * in the annotation queue, then measures judge-human agreement per criterion. The judge
- * runs on the saved transcripts, never on a replay: both grade the same text.
+ * `bun run eval:agreement <eval-results/….json> [--labels <file>]`: judges the conversations
+ * graded in the annotation queue, or in a labels file, then measures agreement with the
+ * judge per criterion. The judge runs on the saved transcripts, never on a replay: both
+ * grade the same text.
  */
+import { parseArgs } from 'node:util';
 import { LangfuseClient } from '@langfuse/client';
-import { agreement, humanValues, judgeValues, type HumanScore } from './annotation.js';
+import { agreement, humanValues, judgeValues, labelValues, labelsFile, type HumanScore } from './annotation.js';
 import { resolveEntries } from './evaluation-run.js';
 import { lookup } from './items.js';
 import { JUDGE, judge } from './judge.js';
@@ -14,7 +16,7 @@ const TRACES_PER_REQUEST = 20;
 const CONCURRENCY = 2;
 const THRESHOLD = 0.8;
 
-async function annotations(traceIds: readonly string[]): Promise<Map<string, HumanScore[]>> {
+async function queueGrades(traceIds: readonly string[]): Promise<Map<string, Map<string, number>>> {
   const { api } = new LangfuseClient();
   const byTrace = new Map<string, HumanScore[]>();
   for (let start = 0; start < traceIds.length; start += TRACES_PER_REQUEST) {
@@ -37,21 +39,28 @@ async function annotations(traceIds: readonly string[]): Promise<Map<string, Hum
       cursor = meta.cursor;
     } while (cursor);
   }
-  return byTrace;
+  return new Map([...byTrace].map(([traceId, scores]) => [traceId, humanValues(scores)]));
 }
 
 const format = (value: number | null) => (value === null ? 'n/a' : value.toFixed(3));
 
-async function main(path: string | undefined): Promise<number> {
+async function main(): Promise<number> {
+  const { positionals, values } = parseArgs({ allowPositionals: true, options: { labels: { type: 'string' } } });
+  const [path] = positionals;
   if (!path) {
-    console.error('usage: bun run eval:agreement <eval-results/….json>');
+    console.error('usage: bun run eval:agreement <eval-results/….json> [--labels <file>]');
     return 1;
   }
   const results = await loadResults(path);
   const { generateStructured } = await import('../platform/ai/mistral-client.js');
   const rows = gradable(results);
-  const human = await annotations(rows.map((row) => row.traceId));
+  const labels = values.labels ? labelsFile.parse(await Bun.file(values.labels).json()) : null;
+  const annotator = labels ? labels.annotator : 'human (Langfuse annotation queue)';
+  const human = labels
+    ? new Map(labels.conversations.map(({ traceId, labels: grades }) => [traceId, labelValues(grades)]))
+    : await queueGrades(rows.map((row) => row.traceId));
   const annotated = rows.filter((row) => human.has(row.traceId));
+  console.log(`annotator: ${annotator}`);
   console.log(`${String(annotated.length)}/${String(rows.length)} conversation(s) annotated`);
 
   const graded = [];
@@ -67,7 +76,7 @@ async function main(path: string | undefined): Promise<number> {
           entries: resolveEntries(exercise.alignment?.entries ?? []),
           laterEntries: resolveEntries(exercise.alignment?.laterEntries ?? []),
         }, generateStructured);
-        return [{ ...row, human: humanValues(human.get(row.traceId) ?? []), judge: judgeValues(verdict), verdict }];
+        return [{ ...row, human: human.get(row.traceId) ?? new Map<string, number>(), judge: judgeValues(verdict), verdict }];
       } catch (error) {
         failures.push(`${row.traceId}: ${error instanceof Error ? error.message : String(error)}`);
         return [];
@@ -84,6 +93,7 @@ async function main(path: string | undefined): Promise<number> {
   const out = path.replace(/\.json$/, '.agreement.json');
   await Bun.write(out, JSON.stringify({
     results: path,
+    annotator,
     judge: JUDGE,
     threshold: THRESHOLD,
     lines,
@@ -100,4 +110,4 @@ async function main(path: string | undefined): Promise<number> {
   return 0;
 }
 
-process.exit(await main(process.argv[2]));
+process.exit(await main());

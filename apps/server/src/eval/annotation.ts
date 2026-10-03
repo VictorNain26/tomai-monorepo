@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { alphaInterval, krippendorffAlpha, rawAgreement, type Level } from './agreement.js';
 import { ANCHORS, sections, type Verdict } from './judge.js';
 import { verdictScores, writtenLeakVerdict } from './judge-scores.js';
@@ -100,10 +101,35 @@ export function humanValues(scores: readonly HumanScore[]): Map<string, number> 
   }
   const values = new Map<string, number>();
   for (const [name, { label }] of latest) {
-    const category = CRITERIA.find((c) => c.name === name)?.categories.find((c) => c.label === label);
-    if (category) values.set(name, category.value);
+    const value = labelValue(name, label);
+    if (value !== undefined) values.set(name, value);
   }
   return values;
+}
+
+function labelValue(name: string, label: string): number | undefined {
+  return CRITERIA.find((c) => c.name === name)?.categories.find((c) => c.label === label)?.value;
+}
+
+/** Grades kept in a file rather than in Langfuse: each one with the quote it rests on. */
+export const labelsFile = z.object({
+  annotator: z.string().min(1),
+  date: z.string(),
+  results: z.string(),
+  conversations: z.array(z.object({
+    key: z.string(),
+    traceId: z.string(),
+    labels: z.record(z.string(), z.object({ label: z.string(), evidence: z.string() })),
+  })),
+});
+
+/** The grades of one conversation of a labels file, failing on a criterion or label the grid lacks. */
+export function labelValues(labels: Record<string, { label: string }>): Map<string, number> {
+  return new Map(Object.entries(labels).map(([name, { label }]) => {
+    const value = labelValue(name, label);
+    if (value === undefined) throw new Error(`unknown grade ${name} = ${label}`);
+    return [name, value];
+  }));
 }
 
 export interface Graded {

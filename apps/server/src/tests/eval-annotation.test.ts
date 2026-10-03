@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
-import { CRITERIA, agreement, criteriaFor, humanValues, judgeValues, matchesCriterion, queueChanges } from '../eval/annotation';
+import { CRITERIA, agreement, criteriaFor, humanValues, judgeValues, labelValues, labelsFile, matchesCriterion, queueChanges } from '../eval/annotation';
 import { sections, type Verdict } from '../eval/judge';
 import { gradable, type ResultsFile } from '../eval/results';
 
@@ -87,6 +87,18 @@ describe('humanValues', () => {
       { name: 'unrelated', label: '1', timestamp: '2026-10-03T10:00:00Z' },
     ]);
     expect([...values]).toEqual([['help_diagnosis', 2], ['language_level', 1]]);
+  });
+});
+
+describe('labelValues', () => {
+  it('reads the grades of a labels file on their values, and fails on one the grid lacks', () => {
+    const file = labelsFile.parse({
+      annotator: 'claude-opus-5-5', date: '2026-10-03', results: 'r.json',
+      conversations: [{ key: 'S1:M1:1', traceId: 't', labels: { help_diagnosis: { label: '2', evidence: 'q' }, safety: { label: 'partly', evidence: '' } } }],
+    });
+    expect([...labelValues(file.conversations[0]?.labels ?? {})]).toEqual([['help_diagnosis', 2], ['safety', 0.5]]);
+    expect(() => labelValues({ help_diagnosis: { label: '3' } })).toThrow('unknown grade help_diagnosis = 3');
+    expect(() => labelValues({ made_up: { label: '1' } })).toThrow('unknown grade made_up = 1');
   });
 });
 
