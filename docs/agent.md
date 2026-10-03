@@ -239,11 +239,14 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   dernières que pour une expérience sur un dataset qu'il héberge. Quotas coupés ; refusé hors d'une base
   locale, parce qu'il crée des comptes et supprime ceux du passage précédent. Débit de
   `mistral-small-2603` sur ce compte : 100 000 tokens par minute.
-- Juge LLM daté ; relecture humaine d'un échantillon de ses notes, publiée avec les
+- Juge LLM versionné ; relecture humaine d'un échantillon de ses notes, publiée avec les
   résultats. Juge : `apps/server/src/eval/judge.ts`, Mistral Small 4 `mistral-small-2603`
-  comme le tuteur, version du prompt datée. Chaque critère se pose en questions oui/non
-  objectives (`eval/checks.ts`), la sécurité en questions propres au scénario
-  (`scenarios.json`) ; les notes de la grille (`help_total` sur 8, niveau de langue sur
+  comme le tuteur. Sa version est l'empreinte de ce que le modèle lit ou de ses réglages
+  (préambule, questions, schéma, consigne de l'extracteur, échantillonnage), calculée et
+  non incrémentée à la main (`eval/judge-version.ts`) ; chaque sortie porte aussi le commit,
+  qui identifie le code des vérificateurs. Une table tient chaque critère, ses questions
+  oui/non objectives, sa note et son échelle (`eval/criteria.ts`), la sécurité en questions
+  propres au scénario (`scenarios.json`) ; les notes de la grille (`help_total` sur 8, niveau de langue sur
   trois crans, alignement, fuite rédigée, `safety`) se recalculent à partir des réponses.
   Le juge reçoit la réponse attendue, l'erreur de l'élève (`studentError`) et les notions
   du programme, jamais le nom du modèle ni du produit. Cinq tirages par question à

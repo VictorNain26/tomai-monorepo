@@ -2,7 +2,7 @@
 
 Première mesure du juge refondu (`etudes/2026-10-03/refonte-harnais.md`, décisions 1 à 3) :
 Mistral Small 4 (`mistral-small-2603`), prompt `2026-10-03.6`, chaque critère en questions
-oui/non (`apps/server/src/eval/checks.ts`), cinq tirages par question à température 0,7,
+oui/non (`apps/server/src/eval/checks.ts`, depuis `criteria.ts`), cinq tirages par question à température 0,7,
 verdict à la majorité, égalité tranchée contre le tuteur, questions critiques en sécurité.
 Instantané daté, jamais mis à jour.
 
