@@ -47,7 +47,9 @@
     "db:health": "bun -e \"import('./src/platform/db/connection.js').then(m => m.healthCheck()).then(console.log)\"",
     "seed": "bun run src/scripts/seed-dev.ts",
     "referential:extract": "bun src/referential/extract.ts",
-    "eval": "NODE_ENV=test QUOTA_ENFORCEMENT_ENABLED=false LOG_LEVEL=warn bun src/eval/run.ts"
+    "eval": "NODE_ENV=test QUOTA_ENFORCEMENT_ENABLED=false LOG_LEVEL=warn bun src/eval/run.ts",
+    "eval:annotate": "bun src/eval/annotate.ts",
+    "eval:agreement": "NODE_ENV=test LOG_LEVEL=warn bun src/eval/measure-agreement.ts"
   },
   "dependencies": {
     "@ai-sdk/mistral": "^4.0.48",

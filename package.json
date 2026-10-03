@@ -26,6 +26,8 @@
     "db:studio": "turbo run db:studio --filter=tomai-server",
     "seed": "bun run --filter tomai-server seed",
     "eval": "bun run --cwd apps/server eval",
+    "eval:annotate": "bun run --cwd apps/server eval:annotate",
+    "eval:agreement": "bun run --cwd apps/server eval:agreement",
     "postinstall": "lefthook install || true"
   },
   "devDependencies": {
