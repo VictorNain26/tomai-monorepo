@@ -1,17 +1,11 @@
 import { mkdir } from 'node:fs/promises';
-import { JUDGE, type JudgeUsage } from './judge-config.js';
-import { JUDGE_VERSION } from './judge-version.js';
+import type { JudgeUsage } from './judge-config.js';
 
 const RESULTS_DIR = 'eval-results';
 
 /** The commit a run comes from, with `-dirty` when the tree holds uncommitted changes. */
 export function commit(): string {
   return Bun.spawnSync(['git', 'describe', '--always', '--dirty', '--exclude=*']).stdout.toString().trim() || 'unknown';
-}
-
-/** The judge as every output records it: settings, fingerprint of its prompts, and commit. */
-export function judgeIdentity() {
-  return { ...JUDGE, version: JUDGE_VERSION, commit: commit() };
 }
 
 /** When a run started, as file names carry it: `2026-10-03T17h28`. */

@@ -17,7 +17,8 @@ import { evaluationRun } from './evaluation-run.js';
 import { throttled } from './judge-rate.js';
 import { briefing, judgeContext, sections, transcriptText } from './judge-context.js';
 import { buildItems, isLocalDatabase, itemInput, keyOf, lookup, runOptions, samplePairs, unknownPairs, type ItemInput } from './items.js';
-import { commit, judgeIdentity, stamp, tokenLine, writeResult } from './output.js';
+import { judgeIdentity } from './judge-version.js';
+import { commit, stamp, tokenLine, writeResult } from './output.js';
 
 async function main(): Promise<number> {
   if (!isLocalDatabase(resolveDatabaseUrl())) {
@@ -62,7 +63,7 @@ async function main(): Promise<number> {
 
     const sha = commit();
     const runName = `${stamp()}-${sha}`;
-    const judge = options['skip-judge'] ? null : judgeIdentity();
+    const judge = options['skip-judge'] ? null : judgeIdentity(sha);
     const result = await new LangfuseClient().experiment.run<ItemInput>({
       name: 'tom-eval',
       runName,

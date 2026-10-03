@@ -12,10 +12,11 @@
  * chat turn (`ai-chat.service.ts`).
  */
 
-import { generateText as aiGenerateText, Output, NoObjectGeneratedError, TypeValidationError, type LanguageModelUsage, type ModelMessage, type TextPart, type FilePart } from 'ai';
+import { generateText as aiGenerateText, Output, NoObjectGeneratedError, TypeValidationError, type ModelMessage, type TextPart, type FilePart } from 'ai';
 import type { z } from 'zod';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { mistralProvider } from './provider.js';
+import { structuredUsage, type StructuredUsage } from './usage.js';
 import { env } from '../config/env.js';
 
 // ── Types domain ────────────────────────────────────────────────────────────
@@ -74,12 +75,6 @@ interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   repairInvalid?: boolean;
 }
 
-interface StructuredUsage {
-  inputTokens: number;
-  /** Part of `inputTokens` read from the prompt cache, billed at 10 %. */
-  cachedInputTokens: number;
-  outputTokens: number;
-}
 
 export interface StructuredResult<T> {
   object: T;
@@ -106,13 +101,6 @@ function toModelMessages(messages: MistralMessage[]): ModelMessage[] {
   });
 }
 
-function toUsage(usage: LanguageModelUsage | undefined): StructuredUsage {
-  return {
-    inputTokens: usage?.inputTokens ?? 0,
-    cachedInputTokens: usage?.inputTokenDetails.cacheReadTokens ?? 0,
-    outputTokens: usage?.outputTokens ?? 0,
-  };
-}
 
 // ── API publique ────────────────────────────────────────────────────────────
 
@@ -150,8 +138,8 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
 /**
  * Génération structurée validée par un schéma Zod (`json_schema` natif Mistral,
  * strict par défaut ; `strict: false` pour les cartes). Une sortie hors schéma
- * est relancée une seule fois avec l'erreur de validation ; l'usage renvoyé
- * cumule les deux appels.
+ * est relancée une seule fois avec l'erreur de validation, sauf `repairInvalid:
+ * false` ; l'usage renvoyé cumule les deux appels.
  */
 export async function generateStructured<T>(opts: GenerateStructuredOptions<T>): Promise<StructuredResult<T>> {
   if (!env.MISTRAL_API_KEY) throw new Error('Mistral non configuré');
@@ -183,7 +171,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
         } satisfies MistralLanguageModelChatOptions,
       },
     });
-    return { object: result.output, usage: toUsage(result.usage) };
+    return { object: result.output, usage: structuredUsage(result.usage) };
   };
 
   const messages = toModelMessages(opts.messages);
@@ -196,7 +184,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       { role: 'assistant', content: error.text ?? '' },
       { role: 'user', content: `Ta réponse ne respecte pas le schéma attendu : ${error.cause.message}. Renvoie un JSON corrigé.` },
     ]);
-    const first = toUsage(error.usage);
+    const first = structuredUsage(error.usage);
     return {
       object: retry.object,
       usage: {

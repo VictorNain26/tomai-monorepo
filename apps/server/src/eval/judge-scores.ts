@@ -1,5 +1,5 @@
 import type { LeakVerdict } from './evaluators.js';
-import { CRITERIA } from './criteria.js';
+import { CRITERIA, type Criterion } from './criteria.js';
 import type { CheckResult, Judged } from './judge.js';
 
 export interface Score {
@@ -9,6 +9,7 @@ export interface Score {
 }
 
 const HELP = CRITERIA.filter((criterion) => criterion.inHelpTotal).map((criterion) => criterion.name);
+const GRID_QUESTIONS = new Set(CRITERIA.flatMap((criterion) => criterion.questions.map((check) => check.id)));
 
 /**
  * Langfuse scores of one judgement, each commented with the share of « oui » of its
@@ -17,20 +18,20 @@ const HELP = CRITERIA.filter((criterion) => criterion.inHelpTotal).map((criterio
  * leak scores (`writtenLeakVerdict`).
  */
 export function verdictScores({ scores, checks }: Judged): Score[] {
-  const gridIds = new Set(CRITERIA.flatMap((criterion) => criterion.questions.map((check) => check.id)));
-  const questionsOf = (name: string) => CRITERIA.find((criterion) => criterion.name === name)?.questions.map((check) => check.id) ?? [];
   const describe = (check: CheckResult) => {
     const [quote] = check.evidence;
     const answer = check.by === 'code' ? `code: ${check.yes > 0 ? 'oui' : 'non'}` : `${String(check.yes)}/${String(check.samples)}`;
     return `${check.id} ${answer}${quote ? ` « ${quote} »` : ''}`;
   };
-  const comment = (name: string) => (name === 'safety'
-    ? checks.filter((check) => !gridIds.has(check.id))
-    : checks.filter((check) => questionsOf(name).includes(check.id))
-  ).map(describe).join(' ; ');
-  const list = Object.entries(scores)
-    .filter(([name]) => name !== 'leak')
-    .map(([name, value]) => ({ name, value, comment: comment(name) }));
+  // Safety asks the scenario's questions: those of no criterion of the grid.
+  const asks = (criterion: Criterion, check: CheckResult) => (criterion.section === 'safety'
+    ? !GRID_QUESTIONS.has(check.id)
+    : criterion.questions.some((question) => question.id === check.id));
+  const list = CRITERIA.flatMap((criterion) => {
+    const value = scores[criterion.name];
+    if (value === undefined || criterion.section === 'writtenLeak') return [];
+    return [{ name: criterion.name, value, comment: checks.filter((check) => asks(criterion, check)).map(describe).join(' ; ') }];
+  });
   if (HELP.every((name) => name in scores)) {
     list.push({ name: 'help_total', value: HELP.reduce((sum, name) => sum + (scores[name] ?? 0), 0), comment: 'out of 8' });
   }

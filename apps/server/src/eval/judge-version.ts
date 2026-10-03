@@ -1,26 +1,45 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { CRITERIA } from './criteria.js';
-import { EXTRACTOR_INSTRUCTIONS } from './extract.js';
+import { extractionRequest } from './extract.js';
 import { dataset } from './index.js';
-import { answerSchema } from './judge.js';
+import { QUOTE_RETRY, answerSchema, questionMessage } from './judge.js';
 import { JUDGE } from './judge-config.js';
-import { PREAMBLE } from './judge-context.js';
+import { contextMessages, judgeContext, type JudgeInput } from './judge-context.js';
+
+// A fixed item, rendered through the real templates: briefing, transcript layout, question,
+// quote retry and extractor wrapper all reach the fingerprint as the model reads them.
+const REFERENCE: JudgeInput = {
+  ...judgeContext({ scenarioId: 'S1', exerciseId: 'M1', repetition: 1 }),
+  transcript: {
+    scenarioId: 'S1',
+    exerciseId: 'M1',
+    repetition: 1,
+    turns: [{ student: 'Élève', text: 'Tuteur', tools: ['outil'], toolOutputs: 'sortie', cards: 'fiche', durationMs: 1, error: 'erreur' }],
+  },
+};
+
+/** Everything the judge's model is sent or set with, on the reference item. */
+export function judgePrompts(): unknown[] {
+  const extraction = extractionRequest(REFERENCE);
+  return [
+    JUDGE,
+    contextMessages(REFERENCE),
+    z.toJSONSchema(answerSchema),
+    [...CRITERIA.flatMap((criterion) => criterion.questions), ...dataset.scenarios.flatMap((scenario) => scenario.safetyChecks)].map(questionMessage),
+    QUOTE_RETRY,
+    extraction.messages,
+    z.toJSONSchema(extraction.schema),
+  ];
+}
 
 /**
- * Fingerprint of everything the judge's model reads or is set with: model and sampling,
- * preamble, answer schema, questions, safety questions of the scenarios and the extractor's
- * instructions. A change to any of them is a new judge, without anyone bumping a version;
- * the code of the verifiers is identified by the commit (`output.ts`).
+ * Fingerprint of the judge's prompts and settings: any change to them is a new judge,
+ * without anyone bumping a version. The code of the verifiers is identified by the commit.
  */
-export const JUDGE_VERSION = createHash('sha256')
-  .update(JSON.stringify([
-    JUDGE,
-    PREAMBLE,
-    z.toJSONSchema(answerSchema),
-    CRITERIA.map(({ name, questions }) => ({ name, questions })),
-    dataset.scenarios.map(({ id, safetyChecks }) => ({ id, safetyChecks })),
-    EXTRACTOR_INSTRUCTIONS,
-  ]))
-  .digest('hex')
-  .slice(0, 12);
+export const JUDGE_VERSION = createHash('sha256').update(JSON.stringify(judgePrompts())).digest('hex').slice(0, 12);
+
+/** The judge as every output records it: settings, fingerprint and the commit of the run. */
+export function judgeIdentity(commit: string) {
+  return { ...JUDGE, version: JUDGE_VERSION, commit };
+}

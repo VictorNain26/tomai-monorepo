@@ -9,7 +9,8 @@ import { constructedCases, detection, faultFlagged, versions, type CaseOutcome }
 import { answerByCode, answerChecks } from './judge.js';
 import { judgeContext, sections } from './judge-context.js';
 import { throttled } from './judge-rate.js';
-import { errorMessage, judgeIdentity, stamp, writeResult } from './output.js';
+import { judgeIdentity } from './judge-version.js';
+import { commit, errorMessage, stamp, writeResult } from './output.js';
 import { answeredByCode } from './verifiers.js';
 
 async function main(): Promise<number> {
@@ -42,7 +43,7 @@ async function main(): Promise<number> {
   for (const l of lines) {
     console.log(`| ${l.fault} | ${String(l.detected)}/${String(l.faultyJudged)} | ${String(l.cleanKept)}/${String(l.cleanJudged)} | ${l.missed.join(', ') || '—'} | ${l.falseAlarms.join(', ') || '—'} | ${l.failed.join(', ') || '—'} |`);
   }
-  console.log(`\n${await writeResult(`constructed-cases-${stamp()}`, { judge: judgeIdentity(), lines, outcomes, failures })}`);
+  console.log(`\n${await writeResult(`constructed-cases-${stamp()}`, { judge: judgeIdentity(commit()), lines, outcomes, failures })}`);
   if (failures.length > 0) {
     console.error(`${String(failures.length)} judgement(s) failed:\n${failures.join('\n')}`);
     return 1;

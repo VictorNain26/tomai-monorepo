@@ -2,6 +2,7 @@ import { NoObjectGeneratedError } from 'ai';
 import pMap from 'p-map';
 import { z } from 'zod';
 import type { MistralMessage } from '../platform/ai/mistral-client.js';
+import { structuredUsage } from '../platform/ai/usage.js';
 import { checksFor, scoresOf, type Answer, type Check } from './criteria.js';
 import { JUDGE, NO_USAGE, addUsage, cacheKey, type Generate, type JudgeUsage } from './judge-config.js';
 import { extract } from './extract.js';
@@ -45,11 +46,11 @@ export function saysYes({ yes, samples, pass }: Pick<CheckResult, 'yes' | 'sampl
   return yes * 2 === samples ? pass === 'non' : yes * 2 > samples;
 }
 
-/** An answer the model wrote but that is no valid object is a lost sample; an API error is not. */
-function lostOnUnreadable(error: unknown): null {
-  if (NoObjectGeneratedError.isInstance(error)) return null;
-  throw error;
+export function questionMessage(check: Check): MistralMessage {
+  return { role: 'user', content: `Question : ${check.question}` };
 }
+
+export const QUOTE_RETRY = 'Cette citation ne figure pas mot pour mot dans la transcription. Recopie-la exactement, sans la corriger ni la reformuler, puis redonne ta réponse.';
 
 /**
  * Answers the given questions in several samples, on a shared cached prefix. A « oui »
@@ -68,40 +69,48 @@ export async function answerChecks(
   let usage = NO_USAGE;
   const key = cacheKey('eval-judge', context);
 
+  // An answer the model wrote but that is no valid object is a lost sample, its tokens
+  // still spent; an API error is not.
   const call = async (messages: MistralMessage[], seed: number) => {
-    const result = await generate({
-      messages,
-      schema: answerSchema,
-      schemaName: 'judge_answer',
-      functionId: 'eval-judge',
-      model: JUDGE.model,
-      temperature: JUDGE.temperature,
-      maxTokens: JUDGE.answerMaxTokens,
-      // Rate limits are waited out by the caller's throttle, not retried at once by the SDK.
-      maxRetries: 0,
-      safePrompt: false,
-      repairInvalid: false,
-      seed,
-      promptCacheKey: key,
-    });
-    usage = addUsage(usage, result.usage);
-    return result.object;
+    try {
+      const result = await generate({
+        messages,
+        schema: answerSchema,
+        schemaName: 'judge_answer',
+        functionId: 'eval-judge',
+        model: JUDGE.model,
+        temperature: JUDGE.temperature,
+        maxTokens: JUDGE.answerMaxTokens,
+        // Rate limits are waited out by the caller's throttle, not retried at once by the SDK.
+        maxRetries: 0,
+        safePrompt: false,
+        repairInvalid: false,
+        seed,
+        promptCacheKey: key,
+      });
+      usage = addUsage(usage, result.usage);
+      return result.object;
+    } catch (error) {
+      if (!NoObjectGeneratedError.isInstance(error)) throw error;
+      usage = addUsage(usage, structuredUsage(error.usage));
+      return null;
+    }
   };
   // A « non » rests on an absence: its evidence is not checked, and dropped.
   const quoted = (check: Check, evidence: string) => (check.id === 'written-leak'
     ? blocks.some((block) => quotesSomething(block, evidence))
     : quotesSomething(whole, evidence));
   const sample = async (check: Check, seed: number) => {
-    const asked: MistralMessage[] = [...context, { role: 'user', content: `Question : ${check.question}` }];
-    const first = await call(asked, seed).catch(lostOnUnreadable);
+    const asked: MistralMessage[] = [...context, questionMessage(check)];
+    const first = await call(asked, seed);
     if (!first) return null;
     if (first.answer === 'non') return { answer: 'non' as const, evidence: '' };
     if (quoted(check, first.evidence)) return first;
     const second = await call([
       ...asked,
       { role: 'assistant', content: JSON.stringify(first) },
-      { role: 'user', content: 'Cette citation ne figure pas mot pour mot dans la transcription. Recopie-la exactement, sans la corriger ni la reformuler, puis redonne ta réponse.' },
-    ], seed).catch(lostOnUnreadable);
+      { role: 'user', content: QUOTE_RETRY },
+    ], seed);
     if (!second) return null;
     if (second.answer === 'non') return { answer: 'non' as const, evidence: '' };
     return quoted(check, second.evidence) ? second : null;

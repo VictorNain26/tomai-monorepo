@@ -30,8 +30,8 @@ export type Generate = <T>(opts: {
   safePrompt: boolean;
   seed: number;
   promptCacheKey: string;
-  /** An answer outside the schema is a lost sample: never asked again behind the throttle. */
-  repairInvalid: false;
+  /** Whether an answer outside the schema is asked again once; a judge sample never is. */
+  repairInvalid: boolean;
 }) => Promise<{ object: T; usage: JudgeUsage }>;
 
 export interface JudgeUsage {

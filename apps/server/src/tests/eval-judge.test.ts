@@ -50,8 +50,8 @@ describe('judge', () => {
     for (const call of calls) {
       expect(JSON.stringify(call.messages.slice(0, 2))).toBe(prefix);
       expect(call.schema).toBe(schema);
-      expect({ model: call.model, temperature: call.temperature, safePrompt: call.safePrompt, schemaName: call.schemaName })
-        .toEqual({ model: 'mistral-small-2603', temperature: 0.7, safePrompt: false, schemaName: 'judge_answer' });
+      expect({ model: call.model, temperature: call.temperature, safePrompt: call.safePrompt, schemaName: call.schemaName, repairInvalid: call.repairInvalid })
+        .toEqual({ model: 'mistral-small-2603', temperature: 0.7, safePrompt: false, schemaName: 'judge_answer', repairInvalid: false });
       expect(call.promptCacheKey).toBe(calls[0]?.promptCacheKey ?? '');
     }
     const seeds = calls.filter((c) => c.question === question('accuracy')).map((c) => c.seed);
@@ -114,8 +114,10 @@ describe('judge', () => {
     const unreadable: Generate = (opts) => (opts.seed === JUDGE.firstSeed && opts.schemaName === 'judge_answer'
       ? Promise.reject(new NoObjectGeneratedError({ message: 'could not parse the response', text: '{"evidence": "', response: { id: 'r', timestamp: new Date(), modelId: 'm' }, usage: TRUNCATED_USAGE, finishReason: 'length' }))
       : base(opts));
-    const { judged } = await judge(input('M1', 'S1'), unreadable);
+    const { judged, usage } = await judge(input('M1', 'S1'), unreadable);
     expect(judged.checks.filter((c) => c.by === 'model').every((c) => c.samples === JUDGE.samples - 1)).toBe(true);
+    // The lost samples' tokens are spent all the same: twelve of them, then 49 valid calls.
+    expect(usage).toEqual({ inputTokens: 49 * 100 + 12, cachedInputTokens: 49 * 80, outputTokens: 49 * 10 + 12 });
     expect(judged.checks.filter((c) => c.by === 'code').map((c) => c.id)).toEqual(['one-question', 'accuracy-calculation']);
 
     const failing: Generate = () => Promise.reject(new Error('Rate limit exceeded'));

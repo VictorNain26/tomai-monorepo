@@ -12,6 +12,7 @@ interface JudgeCall {
   safePrompt: boolean;
   seed: number;
   promptCacheKey: string;
+  repairInvalid: boolean;
 }
 
 export interface FakeAnswer {

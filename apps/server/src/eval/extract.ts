@@ -27,9 +27,10 @@ export interface Extraction {
 /**
  * The questions the tutor asked, message by message, as Small 4 lists them. Every question
  * must quote the tutor's own message; one that does not is left out, never trusted. An answer that is no
- * valid object fails the judgement: one sample, nothing to fall back on.
+ * valid object, even once repaired, fails the judgement: one sample, nothing to fall back on.
  */
-export async function extract(input: JudgeInput, generate: Generate): Promise<{ extraction: Extraction; usage: JudgeUsage }> {
+/** What the extractor sends for a conversation: its messages and the schema of its answer. */
+export function extractionRequest(input: JudgeInput) {
   const turns = turnBlocks(input.transcript).map((_, index) => String(index + 1));
   const schema = z.object({
     messages: z.array(z.object({ turn: z.enum(turns), questions: z.array(z.string()) })),
@@ -38,6 +39,11 @@ export async function extract(input: JudgeInput, generate: Generate): Promise<{ 
     { role: 'system', content: EXTRACTOR_INSTRUCTIONS },
     { role: 'user', content: `<transcription>\n${transcriptText(input.transcript)}\n</transcription>` },
   ];
+  return { messages, schema };
+}
+
+export async function extract(input: JudgeInput, generate: Generate): Promise<{ extraction: Extraction; usage: JudgeUsage }> {
+  const { messages, schema } = extractionRequest(input);
   const { object, usage } = await generate({
     messages,
     schema,
@@ -48,7 +54,9 @@ export async function extract(input: JudgeInput, generate: Generate): Promise<{ 
     maxTokens: JUDGE.extractionMaxTokens,
     maxRetries: 0,
     safePrompt: false,
-    repairInvalid: false,
+    // One extraction serves every question count: an answer outside the schema is asked
+    // again once, a rare call the 20 % margin of the rate budget absorbs (`judge-rate.ts`).
+    repairInvalid: true,
     seed: JUDGE.firstSeed,
     promptCacheKey: cacheKey('eval-extract', messages),
   });

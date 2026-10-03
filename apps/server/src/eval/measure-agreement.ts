@@ -13,7 +13,8 @@ import { judge } from './judge.js';
 import { NO_USAGE, addUsage } from './judge-config.js';
 import { judgeContext } from './judge-context.js';
 import { throttled } from './judge-rate.js';
-import { errorMessage, judgeIdentity, stamp, tokenLine, writeResult } from './output.js';
+import { judgeIdentity } from './judge-version.js';
+import { commit, errorMessage, stamp, tokenLine, writeResult } from './output.js';
 import { gradable, loadResults } from './results.js';
 
 const TRACES_PER_REQUEST = 20;
@@ -108,7 +109,7 @@ async function main(): Promise<number> {
   const out = await writeResult(`${basename(path, '.json')}.agreement-${stamp()}`, {
     results: path,
     annotator: human.size > 0 ? annotator : null,
-    judge: judgeIdentity(),
+    judge: judgeIdentity(commit()),
     passes: passes.data,
     usage,
     threshold: THRESHOLD,

@@ -110,7 +110,7 @@ describe('extract', () => {
     const { extraction } = await extract(input(turns), generate);
     expect(extraction.messages).toEqual([{ turn: 1, questions: ['Que vaut 3 × 5 ?'] }, { turn: 2, questions: [] }]);
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toMatchObject({ schemaName: 'tutor_facts', temperature: 0, seed: JUDGE.firstSeed, model: 'mistral-small-2603' });
+    expect(calls[0]).toMatchObject({ schemaName: 'tutor_facts', temperature: 0, seed: JUDGE.firstSeed, model: 'mistral-small-2603', repairInvalid: true });
   });
 
   it('counts a question listed twice once', async () => {

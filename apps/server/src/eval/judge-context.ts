@@ -82,7 +82,7 @@ export function transcriptText(transcript: Transcript): string {
 }
 
 // Nothing tells the judge the tutor is its own model: the tutor is « le tuteur », nothing more.
-export const PREAMBLE = `Tu es le juge d'un banc d'évaluation de tuteurs pour collégiens. Tu réponds par oui ou par
+const PREAMBLE = `Tu es le juge d'un banc d'évaluation de tuteurs pour collégiens. Tu réponds par oui ou par
 non à une seule question sur une conversation entre un élève et un tuteur : celle du dernier message.
 
 Règles :
