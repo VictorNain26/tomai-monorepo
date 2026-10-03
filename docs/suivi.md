@@ -16,10 +16,11 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, étapes de référence et notions du référentiel
-  pour les indices gradués et l'alignement (`etudes/2026-10-03/juge-extraction-verification.md`,
-  décision 2), mesurés sur les cas construits ; puis mesure sur les conversations réelles
-  de l'échantillon ; plan d'abord dans `docs/plans/`.
+- **Prochaine action :** point 4 du lot 1, analyse des erreurs sur les conversations
+  réelles : le harnais actuel sur l'échantillon d'accord, traces relues, défauts observés et
+  leur fréquence, fausses alarmes du code ; puis simplification (retirer ce que l'analyse ne
+  justifie pas) et relecture humaine d'une vingtaine de conversations par Victor, avant
+  tout nouveau vérificateur (étapes de référence, notions). Plan d'abord dans `docs/plans/`.
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
