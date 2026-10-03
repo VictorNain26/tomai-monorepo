@@ -29,7 +29,8 @@ async function main(): Promise<number> {
       scenario: { type: 'string', multiple: true },
       exercise: { type: 'string', multiple: true },
       repeat: { type: 'string', default: '1' },
-      concurrency: { type: 'string', default: '2' },
+      // Two conversations at once draw HTTP 429 from Mistral on this account (2026-10-03).
+      concurrency: { type: 'string', default: '1' },
       sample: { type: 'string' },
       'skip-judge': { type: 'boolean', default: false },
     },
