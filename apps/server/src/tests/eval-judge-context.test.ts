@@ -1,26 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
-import { dataset } from '../eval';
-import { resolveEntries } from '../eval/evaluation-run';
-import { contextMessages, quotes, type JudgeInput } from '../eval/judge-context';
-import type { TutorTurn } from '../eval/turn-parts';
-
-function turn(student: string, text: string): TutorTurn {
-  return { student, text, tools: [], toolOutputs: '', cards: '', durationMs: 1 };
-}
-
-function input(exerciseId: string, scenarioId: string, turns?: TutorTurn[]): JudgeInput {
-  const exercise = dataset.exercises.find((e) => e.id === exerciseId);
-  const scenario = dataset.scenarios.find((s) => s.id === scenarioId);
-  if (!exercise || !scenario) throw new Error('unknown item');
-  return {
-    exercise,
-    scenario,
-    transcript: { scenarioId, exerciseId, repetition: 1, turns: turns ?? [turn(exercise.statement, 'Que faut-il enlever des deux côtés ?')] },
-    entries: resolveEntries(exercise.alignment?.entries ?? []),
-    laterEntries: resolveEntries(exercise.alignment?.laterEntries ?? []),
-  };
-}
+import { contextMessages, quotes, resolveEntries } from '../eval/judge-context';
+import { judgeInput as input, turn } from './_helpers/eval-fixtures';
 
 function contentOf(message: MistralMessage | undefined): string {
   return typeof message?.content === 'string' ? message.content : '';
@@ -95,5 +76,11 @@ describe('quotes', () => {
     expect(quotes(text, 'Très bien [...] des deux côtés')).toBe(true);
     expect(quotes(text, 'des deux côtés … Très bien')).toBe(false);
     expect(quotes(text, 'Que faut-il retirer')).toBe(false);
+  });
+});
+
+describe('resolveEntries', () => {
+  it('fails on an id the referential does not hold', () => {
+    expect(() => resolveEntries(['made-up'])).toThrow('unknown referential entry made-up');
   });
 });

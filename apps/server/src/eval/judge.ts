@@ -3,60 +3,20 @@ import pMap from 'p-map';
 import { z } from 'zod';
 import type { MistralMessage } from '../platform/ai/mistral-client.js';
 import { checksFor, scoresOf, type Answer, type Check } from './criteria.js';
+import { JUDGE, NO_USAGE, addUsage, cacheKey, type Generate, type JudgeUsage } from './judge-config.js';
 import { extract } from './extract.js';
 import { contextMessages, quotesSomething, sections, turnBlocks, type JudgeInput } from './judge-context.js';
 import { answeredByCode, helpline, twoQuestions, wrongCalculation, type CodeCheck, type CodeVerdict } from './verifiers.js';
-
-/**
- * Pinned by its dated id, never by an alias: a new model, prompt or sampling is a new judge
- * to measure again. Small 4, the tutor's model (`docs/agent.md`); several samples at a
- * temperature above 0 align better with human grades than one deterministic call
- * (`etudes/2026-10-03/refonte-harnais.md`).
- */
-export const JUDGE = {
-  model: 'mistral-small-2603',
-  promptVersion: '2026-10-03.10',
-  samples: 5,
-  temperature: 0.7,
-  firstSeed: 20261003,
-} as const;
 
 // A verdict must rest on most of the samples drawn, not on what is left after losses.
 const MIN_SAMPLES = Math.floor(JUDGE.samples / 2) + 1;
 const CONCURRENCY = 4;
 
 // One schema for every question: the prompt prefix stays the same, so the cache serves it.
-const answerSchema = z.object({
+export const answerSchema = z.object({
   evidence: z.string().describe('Citation exacte de la transcription si la réponse est oui, chaîne vide sinon.'),
   answer: z.enum(['oui', 'non']),
 });
-
-/** The structured call the judge needs; `generateStructured` of the server satisfies it. */
-export type Generate = <T>(opts: {
-  messages: MistralMessage[];
-  schema: z.ZodType<T>;
-  schemaName: string;
-  functionId: string;
-  model: string;
-  temperature: number;
-  maxTokens: number;
-  maxRetries: number;
-  safePrompt: boolean;
-  seed: number;
-  promptCacheKey: string;
-}) => Promise<{ object: T; usage: JudgeUsage }>;
-
-export interface JudgeUsage {
-  inputTokens: number;
-  cachedInputTokens: number;
-  outputTokens: number;
-}
-
-export const NO_USAGE: JudgeUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
-
-export function addUsage(a: JudgeUsage, b: JudgeUsage): JudgeUsage {
-  return { inputTokens: a.inputTokens + b.inputTokens, cachedInputTokens: a.cachedInputTokens + b.cachedInputTokens, outputTokens: a.outputTokens + b.outputTokens };
-}
 
 export interface CheckResult {
   id: string;
@@ -106,7 +66,7 @@ export async function answerChecks(
   const blocks = turnBlocks(input.transcript);
   const whole = blocks.join('\n\n');
   let usage = NO_USAGE;
-  const key = `eval-judge-${JUDGE.promptVersion}-${input.scenario.id}-${input.exercise.id}-${String(input.transcript.repetition)}`;
+  const key = cacheKey('eval-judge', context);
 
   const call = async (messages: MistralMessage[], seed: number) => {
     const result = await generate({
@@ -116,7 +76,7 @@ export async function answerChecks(
       functionId: 'eval-judge',
       model: JUDGE.model,
       temperature: JUDGE.temperature,
-      maxTokens: 1024,
+      maxTokens: JUDGE.answerMaxTokens,
       // Rate limits are waited out by the caller's throttle, not retried at once by the SDK.
       maxRetries: 0,
       safePrompt: false,

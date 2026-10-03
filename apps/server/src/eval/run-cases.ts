@@ -4,13 +4,12 @@
  * for the others), and reports per fault the faulty versions flagged and the clean ones left
  * alone. Low detection is a finding, not a failure; a failed judgement is.
  */
-import { mkdir } from 'node:fs/promises';
 import { checksFor } from './criteria.js';
 import { constructedCases, detection, faultFlagged, versions, type CaseOutcome } from './constructed-cases.js';
-import { judgeContext } from './evaluation-run.js';
-import { JUDGE, answerByCode, answerChecks } from './judge.js';
-import { sections } from './judge-context.js';
+import { answerByCode, answerChecks } from './judge.js';
+import { judgeContext, sections } from './judge-context.js';
 import { throttled } from './judge-rate.js';
+import { errorMessage, judgeIdentity, stamp, writeResult } from './output.js';
 import { answeredByCode } from './verifiers.js';
 
 async function main(): Promise<number> {
@@ -29,7 +28,7 @@ async function main(): Promise<number> {
         const { results: [result] } = await answer({ ...context, transcript }, [check], generate);
         return result ? faultFlagged(result) : null;
       } catch (error) {
-        failures.push(`${c.id} (${label}): ${error instanceof Error ? error.message : String(error)}`);
+        failures.push(`${c.id} (${label}): ${errorMessage(error)}`);
         return null;
       }
     };
@@ -43,10 +42,7 @@ async function main(): Promise<number> {
   for (const l of lines) {
     console.log(`| ${l.fault} | ${String(l.detected)}/${String(l.faultyJudged)} | ${String(l.cleanKept)}/${String(l.cleanJudged)} | ${l.missed.join(', ') || '—'} | ${l.falseAlarms.join(', ') || '—'} | ${l.failed.join(', ') || '—'} |`);
   }
-  await mkdir('eval-results', { recursive: true });
-  const out = `eval-results/constructed-cases-${new Date().toISOString().slice(0, 16).replace(':', 'h')}.json`;
-  await Bun.write(out, JSON.stringify({ judge: JUDGE, lines, outcomes, failures }, null, 2));
-  console.log(`\n${out}`);
+  console.log(`\n${await writeResult(`constructed-cases-${stamp()}`, { judge: judgeIdentity(), lines, outcomes, failures })}`);
   if (failures.length > 0) {
     console.error(`${String(failures.length)} judgement(s) failed:\n${failures.join('\n')}`);
     return 1;

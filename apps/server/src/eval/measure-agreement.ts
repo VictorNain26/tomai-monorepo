@@ -6,13 +6,14 @@
  */
 import { parseArgs } from 'node:util';
 import { LangfuseClient } from '@langfuse/client';
-import { mkdir } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { z } from 'zod';
 import { fileValues, judgeValues, labelsFile, measures, queueValues, toJudge, type AgreementLine } from './annotation.js';
-import { judgeContext } from './evaluation-run.js';
-import { JUDGE, NO_USAGE, addUsage, judge } from './judge.js';
+import { judge } from './judge.js';
+import { NO_USAGE, addUsage } from './judge-config.js';
+import { judgeContext } from './judge-context.js';
 import { throttled } from './judge-rate.js';
+import { errorMessage, judgeIdentity, stamp, tokenLine, writeResult } from './output.js';
 import { gradable, loadResults } from './results.js';
 
 const TRACES_PER_REQUEST = 20;
@@ -91,7 +92,7 @@ async function main(): Promise<number> {
           usage = addUsage(usage, result.usage);
           verdicts.push(result.judged);
         } catch (error) {
-          failures.push(`${row.traceId}, pass ${String(pass)}: ${error instanceof Error ? error.message : String(error)}`);
+          failures.push(`${row.traceId}, pass ${String(pass)}: ${errorMessage(error)}`);
           verdicts.push(null);
         }
       }
@@ -104,12 +105,10 @@ async function main(): Promise<number> {
   if (stabilityLines) printTable(`Judge reproducibility over ${String(passes.data)} passes`, stabilityLines);
 
   // A new file in eval-results/ on every run: a committed measure is a dated snapshot.
-  await mkdir('eval-results', { recursive: true });
-  const out = `eval-results/${basename(path, '.json')}.agreement-${new Date().toISOString().slice(0, 16).replace(':', 'h')}.json`;
-  await Bun.write(out, JSON.stringify({
+  const out = await writeResult(`${basename(path, '.json')}.agreement-${stamp()}`, {
     results: path,
     annotator: human.size > 0 ? annotator : null,
-    judge: JUDGE,
+    judge: judgeIdentity(),
     passes: passes.data,
     usage,
     threshold: THRESHOLD,
@@ -122,8 +121,8 @@ async function main(): Promise<number> {
       verdicts,
     })),
     failures,
-  }, null, 2));
-  console.log(`\n${out}\njudge tokens: ${String(usage.inputTokens)} in (${String(usage.cachedInputTokens)} cached), ${String(usage.outputTokens)} out`);
+  });
+  console.log(`\n${out}\n${tokenLine(usage)}`);
   if (failures.length > 0) {
     console.error(`${String(failures.length)} judgement(s) failed:\n${failures.join('\n')}`);
     return 1;

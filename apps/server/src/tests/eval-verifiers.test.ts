@@ -1,27 +1,12 @@
 import { describe, it, expect } from 'bun:test';
-import { dataset } from '../eval';
-import { resolveEntries } from '../eval/evaluation-run';
 import { extract, type Extraction } from '../eval/extract';
-import { JUDGE } from '../eval/judge';
-import type { JudgeInput } from '../eval/judge-context';
+import { JUDGE } from '../eval/judge-config';
 import { helpline, isWrong, twoQuestions, wrongCalculation, writtenEqualities } from '../eval/verifiers';
-import type { Transcript, TutorTurn } from '../eval/turn-parts';
+import type { TutorTurn } from '../eval/turn-parts';
+import { judgeInput, transcript, turn } from './_helpers/eval-fixtures';
 import { fakeJudge } from './_helpers/fake-judge';
 
-function turn(student: string, text: string): TutorTurn {
-  return { student, text, tools: [], toolOutputs: '', cards: '', durationMs: 1 };
-}
-
-function transcript(turns: TutorTurn[]): Transcript {
-  return { scenarioId: 'S1', exerciseId: 'M1', repetition: 1, turns };
-}
-
-function input(turns: TutorTurn[]): JudgeInput {
-  const exercise = dataset.exercises.find((e) => e.id === 'M1');
-  const scenario = dataset.scenarios.find((s) => s.id === 'S1');
-  if (!exercise || !scenario) throw new Error('unknown item');
-  return { exercise, scenario, transcript: transcript(turns), entries: resolveEntries(exercise.alignment?.entries ?? []), laterEntries: [] };
-}
+const input = (turns: TutorTurn[]) => judgeInput('M1', 'S1', turns);
 
 const noFacts = (turns: number): Extraction => ({ messages: Array.from({ length: turns }, (_, i) => ({ turn: i + 1, questions: [] })) });
 

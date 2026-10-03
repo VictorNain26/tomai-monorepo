@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 import type { MistralMessage } from '../../platform/ai/mistral-client';
-import type { Generate } from '../../eval/judge';
+import type { Generate } from '../../eval/judge-config';
 
 interface JudgeCall {
   question: string;

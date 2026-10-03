@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import { APICallError } from 'ai';
 import { throttled } from '../eval/judge-rate';
-import type { Generate } from '../eval/judge';
+import type { Generate } from '../eval/judge-config';
 
 const opts = (characters: number): Parameters<Generate>[0] => ({
   messages: [{ role: 'user', content: 'x'.repeat(characters) }],

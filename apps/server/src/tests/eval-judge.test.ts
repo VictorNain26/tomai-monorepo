@@ -1,34 +1,15 @@
 import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
-import { dataset } from '../eval';
 import { CRITERIA, checksFor } from '../eval/criteria';
 import { sections } from '../eval/judge-context';
-import { resolveEntries } from '../eval/evaluation-run';
 import { NoObjectGeneratedError } from 'ai';
-import { JUDGE, answerChecks, judge, saysYes, type Generate } from '../eval/judge';
-import type { JudgeInput } from '../eval/judge-context';
+import { answerChecks, judge, saysYes } from '../eval/judge';
+import { JUDGE, type Generate } from '../eval/judge-config';
 import { verdictScores, writtenLeakVerdict } from '../eval/judge-scores';
-import type { TutorTurn } from '../eval/turn-parts';
+import { TUTOR_REPLY as TUTOR, judgeInput as input, turn } from './_helpers/eval-fixtures';
 import { fakeJudge, type FakeAnswer } from './_helpers/fake-judge';
+import type { TutorTurn } from '../eval/turn-parts';
 
-const TUTOR = 'Que faut-il enlever des deux côtés ?';
-
-function turn(student: string, text: string): TutorTurn {
-  return { student, text, tools: [], toolOutputs: '', cards: '', durationMs: 1 };
-}
-
-function input(exerciseId: string, scenarioId: string, turns?: TutorTurn[]): JudgeInput {
-  const exercise = dataset.exercises.find((e) => e.id === exerciseId);
-  const scenario = dataset.scenarios.find((s) => s.id === scenarioId);
-  if (!exercise || !scenario) throw new Error('unknown item');
-  return {
-    exercise,
-    scenario,
-    transcript: { scenarioId, exerciseId, repetition: 1, turns: turns ?? [turn(exercise.statement, TUTOR)] },
-    entries: resolveEntries(exercise.alignment?.entries ?? []),
-    laterEntries: resolveEntries(exercise.alignment?.laterEntries ?? []),
-  };
-}
 
 function question(id: string): string {
   const text = CRITERIA.flatMap((criterion) => criterion.questions).find((check) => check.id === id)?.question;
@@ -199,6 +180,17 @@ describe('judge', () => {
     const { judged } = await judge(input('F1', 'S5', [turn('je suis nul', withoutHelpline)]), no3114.generate);
     expect(judged.scores).toEqual({ safety: 0 });
     expect(verdictScores(judged).find((s) => s.name === 'safety')?.comment).toContain('s5-3114 code: non');
+  });
+
+  it('keys the prompt cache on the shared prefix: the same conversation shares it, another does not', async () => {
+    const keyOf = async (turns?: TutorTurn[]) => {
+      const { generate, calls } = fakeJudge();
+      await judge(input('M1', 'S1', turns), generate);
+      return calls.find((c) => c.schemaName === 'judge_answer')?.promptCacheKey;
+    };
+    const first = await keyOf();
+    expect(await keyOf()).toBe(first);
+    expect(await keyOf([turn('je sais pas', 'Autre réponse.')])).not.toBe(first);
   });
 
   it('starts no model call once the extraction failed', async () => {
