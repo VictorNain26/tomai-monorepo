@@ -16,9 +16,9 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, juge v2 (`etudes/2026-10-03/refonte-harnais.md`,
-  « Ordre des PR », 1) : contrôles oui/non sur Small 4, référence, tirages multiples, cache
-  vérifié, cas construits ; plan d'abord dans `docs/plans/`.
+- **Prochaine action :** point 4 du lot 1, cas construits et leur mesure sur le juge
+  actuel, première PR de `etudes/2026-10-03/juge-extraction-verification.md` (« Ordre des
+  PR ») ; plan d'abord dans `docs/plans/`.
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
