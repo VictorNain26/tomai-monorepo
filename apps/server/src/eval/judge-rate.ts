@@ -22,12 +22,13 @@ function estimatedTokens({ messages, maxTokens }: Parameters<Generate>[0]): numb
   return Math.ceil(characters / 3) + maxTokens;
 }
 
-// Others share the workspace: a rate limit can still answer 429, then the call waits half a
-// window and goes back through the gate, a few times at most.
-const RATE_LIMITED_RETRIES = 3;
+// Others share the workspace, and the API has its outages: a call that fails with an error
+// the SDK marks retryable (429, 5xx…) waits half a window and goes back through the gate, a
+// few times at most.
+const RETRIES = 3;
 
-function rateLimited(error: unknown): boolean {
-  return APICallError.isInstance(error) && error.statusCode === 429;
+function retryable(error: unknown): boolean {
+  return APICallError.isInstance(error) && error.isRetryable;
 }
 
 /** `generate` held under the workspace budget, by requests and by tokens over a sliding window. */
@@ -41,7 +42,7 @@ export function throttled(generate: Generate, budget: RateBudget = SMALL_4_BUDGE
       try {
         return await generate(opts);
       } catch (error) {
-        if (!rateLimited(error) || attempt === RATE_LIMITED_RETRIES) throw error;
+        if (!retryable(error) || attempt === RETRIES) throw error;
         await Bun.sleep(budget.intervalMs / 2);
       }
     }

@@ -42,7 +42,7 @@ describe('throttled', () => {
     expect((starts[2] ?? 0) - (starts[0] ?? 0)).toBeGreaterThanOrEqual(150);
   });
 
-  it('waits out a rate limit and tries again, a few times at most', async () => {
+  it('waits out a rate limit or an outage and tries again, a few times at most', async () => {
     const limit = () => new APICallError({ message: 'Rate limit exceeded', url: 'u', requestBodyValues: {}, statusCode: 429 });
     let calls = 0;
     const flaky: Generate = () => {
@@ -57,6 +57,21 @@ describe('throttled', () => {
     const outcome = await throttled(always, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3)).then(() => 'resolved', (e: unknown) => String(e));
     expect(outcome).toContain('Rate limit exceeded');
     expect(attempts).toBe(4);
+
+    let unavailable = 0;
+    const outage: Generate = () => {
+      unavailable += 1;
+      return unavailable < 2
+        ? Promise.reject(new APICallError({ message: 'Service unavailable', url: 'u', requestBodyValues: {}, statusCode: 503 }))
+        : Promise.resolve({ object: undefined as never, usage: { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 } });
+    };
+    await throttled(outage, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3));
+    expect(unavailable).toBe(2);
+
+    let rejected = 0;
+    const invalid: Generate = () => { rejected += 1; return Promise.reject(new APICallError({ message: 'Bad request', url: 'u', requestBodyValues: {}, statusCode: 400 })); };
+    await throttled(invalid, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3)).catch(() => undefined);
+    expect(rejected).toBe(1);
 
     let other = 0;
     const broken: Generate = () => { other += 1; return Promise.reject(new Error('500')); };
