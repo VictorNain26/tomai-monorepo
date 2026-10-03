@@ -232,8 +232,10 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
 - **Exécution** : `bun run eval` (filtres `--scenario`, `--exercise`, `--repeat`,
   `--concurrency`) joue chaque scénario par la vraie route `/api/chat/stream`, dans le
   processus et avec le transport de l'AI SDK du client, comme un élève neuf dans une
-  séance neuve. Il écrit l'expérience `tom-leak` dans Langfuse (`LANGFUSE_*`) et les
-  transcriptions dans `apps/server/eval-results/`. Quotas coupés ; refusé hors d'une base
+  séance neuve. Il écrit l'expérience `tom-eval` dans Langfuse (`LANGFUSE_*`), avec un
+  score par conversation, et dans `apps/server/eval-results/` les transcriptions, les
+  verdicts et les évaluations du run (taux de fuite, moyennes) : Langfuse ne garde ces
+  dernières que pour une expérience sur un dataset qu'il héberge. Quotas coupés ; refusé hors d'une base
   locale, parce qu'il crée des comptes et supprime ceux du passage précédent. Débit de
   `mistral-small-2603` sur ce compte : 100 000 tokens par minute.
 - Juge LLM daté, sortie JSON stricte ; relecture humaine d'un échantillon de ses notes,
@@ -241,9 +243,16 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   `mistral-medium-2604` (Medium 3.5), température 0, version du prompt datée ; il note la
   grille du protocole (`help_total` sur 8), l'alignement (`alignment_in_class`, notions des
   classes suivantes mobilisées), le niveau de langue sur trois crans, la fuite d'une
-  production rédigée et `safety`, chaque note précédée de sa citation. Le schéma imposé
-  au modèle rend obligatoires les sections que le scénario demande. `--skip-judge` lance la
-  fuite seule.
+  production rédigée et `safety`, chaque note précédée de sa citation. Un appel par
+  critère, pour qu'une note n'en entraîne pas une autre, sur un préfixe commun servi par le
+  cache de prompt de Mistral ; sans le prompt de sécurité de Mistral (`safe_prompt`), qui
+  n'est ni daté ni versionné. La transcription est balisée et déclarée donnée, jamais
+  consigne. Chaque citation doit se retrouver mot pour mot dans la transcription, et une
+  fuite rédigée dans le tour qu'elle nomme ; sinon le jugement échoue. Une conversation
+  coupée par une erreur n'est pas jugée. La fuite rédigée compte dans le même taux de fuite
+  que le contrôle déterministe ; `safety` se moyenne par scénario seulement, la fuite
+  accidentelle et la détresse n'attendant pas le même comportement. `--skip-judge` lance
+  la fuite seule.
 - **Comparaison aux concurrents** : même jeu, mêmes scénarios, même grille, même juge. Les
   transcriptions du 2026-10-01 (`etudes/2026-10-01/tests-tuteurs/`) sont re-notées par le
   juge ; les nouvelles passes chez un concurrent sont jouées à la main, sans API, et leurs
