@@ -1,28 +1,28 @@
 import { NoObjectGeneratedError } from 'ai';
+import pMap from 'p-map';
 import { z } from 'zod';
 import type { MistralMessage } from '../platform/ai/mistral-client.js';
-import { CALCULATION_CHECK, checksFor, scoresOf, type Answer, type Check } from './checks.js';
+import { checksFor, scoresOf, type Answer, type Check } from './checks.js';
 import { extract } from './extract.js';
-import { isCodeCheck, verify } from './verifiers.js';
-import pMap from 'p-map';
 import { contextMessages, quotesSomething, sections, turnBlocks, type JudgeInput } from './judge-context.js';
+import { answeredByCode, verify } from './verifiers.js';
 
 /**
  * Pinned by its dated id, never by an alias: a new model, prompt or sampling is a new judge
- * to measure again. Small 4 like the tutor, by decision of 2026-10-03; several samples at a
+ * to measure again. Small 4, the tutor's model (`docs/agent.md`); several samples at a
  * temperature above 0 align better with human grades than one deterministic call
  * (`etudes/2026-10-03/refonte-harnais.md`).
  */
 export const JUDGE = {
   model: 'mistral-small-2603',
-  promptVersion: '2026-10-03.7',
+  promptVersion: '2026-10-03.8',
   samples: 5,
   temperature: 0.7,
   firstSeed: 20261003,
 } as const;
 
-// A question needs this many valid samples: fewer would let one sample decide.
-const MIN_SAMPLES = 3;
+// A verdict must rest on most of the samples drawn, not on what is left after losses.
+const MIN_SAMPLES = Math.floor(JUDGE.samples / 2) + 1;
 const CONCURRENCY = 4;
 
 // One schema for every question: the prompt prefix stays the same, so the cache serves it.
@@ -52,6 +52,12 @@ export interface JudgeUsage {
   outputTokens: number;
 }
 
+export const NO_USAGE: JudgeUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
+
+export function addUsage(a: JudgeUsage, b: JudgeUsage): JudgeUsage {
+  return { inputTokens: a.inputTokens + b.inputTokens, cachedInputTokens: a.cachedInputTokens + b.cachedInputTokens, outputTokens: a.outputTokens + b.outputTokens };
+}
+
 export interface CheckResult {
   id: string;
   pass: Answer;
@@ -60,7 +66,7 @@ export interface CheckResult {
   yes: number;
   /** Quotes of the samples that answered « oui ». */
   evidence: string[];
-  /** Who answered: the model in samples, or the code from the extraction (one sample). */
+  /** Who answered: the model in samples, or the code once (`samples` 1, `yes` 0 or 1). */
   by: 'model' | 'code';
 }
 
@@ -96,11 +102,10 @@ export async function answerChecks(
   checks: readonly Check[],
   generate: Generate,
 ): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
-  if (checks.length === 0) throw new Error(`scenario ${input.scenario.id} asks the judge for nothing`);
   const context = contextMessages(input);
   const blocks = turnBlocks(input.transcript);
   const whole = blocks.join('\n\n');
-  const usage: JudgeUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
+  let usage = NO_USAGE;
   const key = `eval-judge-${JUDGE.promptVersion}-${input.scenario.id}-${input.exercise.id}-${String(input.transcript.repetition)}`;
 
   const call = async (messages: MistralMessage[], seed: number) => {
@@ -118,10 +123,8 @@ export async function answerChecks(
       seed,
       promptCacheKey: key,
     });
-    usage.inputTokens += result.usage.inputTokens;
-    usage.cachedInputTokens += result.usage.cachedInputTokens;
-    usage.outputTokens += result.usage.outputTokens;
-    return answerSchema.parse(result.object);
+    usage = addUsage(usage, result.usage);
+    return result.object;
   };
   // A « non » rests on an absence: its evidence is not checked, and dropped.
   const quoted = (check: Check, evidence: string) => (check.id === 'written-leak'
@@ -145,12 +148,11 @@ export async function answerChecks(
 
   const seeds = Array.from({ length: JUDGE.samples }, (_, index) => JUDGE.firstSeed + index);
   const tasks = checks.flatMap((check) => seeds.map((seed) => ({ check, seed })));
+  const [first, ...rest] = tasks;
+  if (!first) return { results: [], usage };
   // The first call writes the shared prefix to the cache; the others then read it. After a
   // failure, no new call starts.
-  const [first, ...rest] = tasks;
-  const answers = first
-    ? [await sample(first.check, first.seed), ...await pMap(rest, ({ check, seed }) => sample(check, seed), { concurrency: CONCURRENCY })]
-    : [];
+  const answers = [await sample(first.check, first.seed), ...await pMap(rest, ({ check, seed }) => sample(check, seed), { concurrency: CONCURRENCY })];
 
   const results: CheckResult[] = checks.map((check, index) => {
     const valids = answers.slice(index * seeds.length, (index + 1) * seeds.length).filter((a) => a !== null);
@@ -164,44 +166,41 @@ export async function answerChecks(
   return { results, usage };
 }
 
-/** Every question of the item, then the grid scores and the written leak from the verdicts. */
+/** The questions the code answers, from one extraction and the text. */
+export async function answerByCode(input: JudgeInput, checks: readonly Check[], generate: Generate): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
+  if (checks.length === 0) return { results: [], usage: NO_USAGE };
+  const { extraction, usage } = await extract(input, generate);
+  const verdicts = verify(extraction, input.transcript);
+  return {
+    results: checks.map((check) => {
+      if (!answeredByCode(check.id)) throw new Error(`no verifier answers ${check.id}`);
+      const { answer, evidence } = verdicts[check.id];
+      return { id: check.id, pass: check.pass, samples: 1, yes: answer ? 1 : 0, evidence, by: 'code' };
+    }),
+    usage,
+  };
+}
+
+/**
+ * Every question of the item, the objective ones by the code and the rest by the model, at
+ * the same time; then the grid scores and the written leak from the verdicts.
+ */
 export async function judge(input: JudgeInput, generate: Generate): Promise<{ judged: Judged; usage: JudgeUsage }> {
   const wanted = sections(input);
   const checks = checksFor(wanted, input.scenario);
-  const usage: JudgeUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
-  const add = (more: JudgeUsage) => {
-    usage.inputTokens += more.inputTokens;
-    usage.cachedInputTokens += more.cachedInputTokens;
-    usage.outputTokens += more.outputTokens;
-  };
-
-  // What the code can check, it checks from the extraction; the model answers the rest.
-  const codeResults: CheckResult[] = [];
-  if (wanted.help || checks.some((check) => isCodeCheck(check.id))) {
-    const extracted = await extract(input, generate);
-    add(extracted.usage);
-    const { verdicts, wrongCalculations } = verify(extracted.extraction, input.transcript);
-    const fromCode = (check: Pick<Check, 'id' | 'pass'>, yes: boolean, evidence: string[]): CheckResult => (
-      { id: check.id, pass: check.pass, samples: 1, yes: yes ? 1 : 0, evidence, by: 'code' }
-    );
-    for (const check of checks) {
-      const verdict = isCodeCheck(check.id) ? verdicts.get(check.id) : undefined;
-      if (verdict) codeResults.push(fromCode(check, verdict.yes, verdict.evidence));
-    }
-    if (wanted.help) codeResults.push(fromCode(CALCULATION_CHECK, wrongCalculations.length > 0, wrongCalculations.map((c) => c.quote)));
-  }
-  const modelChecks = checks.filter((check) => !isCodeCheck(check.id));
-  const asked = modelChecks.length > 0 ? await answerChecks(input, modelChecks, generate) : null;
-  if (asked) add(asked.usage);
-  const results = [...(asked?.results ?? []), ...codeResults];
+  if (checks.length === 0) throw new Error(`scenario ${input.scenario.id} asks the judge for nothing`);
+  const [byModel, byCode] = await Promise.all([
+    answerChecks(input, checks.filter((check) => !answeredByCode(check.id)), generate),
+    answerByCode(input, checks.filter((check) => answeredByCode(check.id)), generate),
+  ]);
+  const results = [...byModel.results, ...byCode.results];
 
   const blocks = turnBlocks(input.transcript);
   const verdicts = new Map(results.map((r) => [r.id, saysYes(r)]));
   const leak = results.find((r) => r.id === 'written-leak');
-  const leakQuotes = leak && saysYes(leak)
+  const [firstLeak] = leak && saysYes(leak)
     ? leak.evidence.map((quote) => ({ quote, turn: blocks.findIndex((block) => quotesSomething(block, quote)) + 1 })).sort((x, y) => x.turn - y.turn)
     : [];
-  const [firstLeak] = leakQuotes;
   return {
     judged: {
       checks: results,
@@ -210,6 +209,6 @@ export async function judge(input: JudgeInput, generate: Generate): Promise<{ ju
         ? { leaked: saysYes(leak), turn: firstLeak?.turn ?? null, evidence: firstLeak?.quote ?? '' }
         : null,
     },
-    usage,
+    usage: addUsage(byModel.usage, byCode.usage),
   };
 }

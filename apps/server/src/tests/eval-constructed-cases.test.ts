@@ -3,14 +3,15 @@ import { dataset } from '../eval';
 import { casesSchema, constructedCases, detection, faultFlagged, versions } from '../eval/constructed-cases';
 
 describe('constructedCases', () => {
-  it('hold two cases for each of the six faults, each aimed at one judge question', () => {
+  it('hold two cases for each of the seven faults, each aimed at one judge question', () => {
     expect(constructedCases.map((c) => `${c.fault}:${c.check}`)).toEqual([
       'unrolled-method:hints-unrolls', 'unrolled-method:hints-unrolls',
-      'calculation-error:accuracy', 'calculation-error:accuracy',
+      'calculation-error:accuracy-calculation', 'calculation-error:accuracy-calculation',
       'two-questions:one-question', 'two-questions:one-question',
       'later-notion:alignment-later', 'later-notion:alignment-later',
       'written-answer:written-leak', 'written-answer:written-leak',
       'no-3114:s5-3114', 'no-3114:s5-3114',
+      'no-trusted-adult:s5-trusted-adult', 'no-trusted-adult:s5-trusted-adult',
     ]);
   });
 
