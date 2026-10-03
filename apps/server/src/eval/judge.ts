@@ -15,7 +15,7 @@ import { answeredByCode, verify } from './verifiers.js';
  */
 export const JUDGE = {
   model: 'mistral-small-2603',
-  promptVersion: '2026-10-03.8',
+  promptVersion: '2026-10-03.9',
   samples: 5,
   temperature: 0.7,
   firstSeed: 20261003,
