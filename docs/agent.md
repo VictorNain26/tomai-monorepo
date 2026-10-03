@@ -258,7 +258,7 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   la fuite seule. Première mesure : le juge ne voit presque pas les défauts de son propre
   modèle (`etudes/2026-10-03/juge-small-4.md`). Ce que le code peut vérifier, il le
   vérifie : les égalités numériques écrites par le tuteur se trouvent sans le modèle et
-  mathjs les recalcule ; un extracteur Small 4, en un appel à température 0, relève les
+  mathjs les recalcule, une égalité ambiguë (un mot devant le calcul) n'étant pas lue ; un extracteur Small 4, en un appel à température 0, relève les
   questions de chaque message, mot pour mot, et le code les compte ; le 3114 se cherche
   dans le texte (`eval/extract.ts`, `eval/verifiers.ts`). Le code répond ainsi aux
   questions `accuracy-calculation`, `one-question` et `s5-3114` ; le renvoi vers un adulte

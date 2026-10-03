@@ -1,7 +1,7 @@
 {
   "judge": {
     "model": "mistral-small-2603",
-    "promptVersion": "2026-10-03.9",
+    "promptVersion": "2026-10-03.10",
     "samples": 5,
     "temperature": 0.7,
     "firstSeed": 20261003

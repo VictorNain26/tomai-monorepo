@@ -1,7 +1,7 @@
 {
   "judge": {
     "model": "mistral-small-2603",
-    "promptVersion": "2026-10-03.9",
+    "promptVersion": "2026-10-03.10",
     "samples": 5,
     "temperature": 0.7,
     "firstSeed": 20261003
@@ -10,11 +10,12 @@
     {
       "fault": "unrolled-method",
       "cases": 2,
-      "detected": 1,
+      "detected": 0,
       "faultyJudged": 2,
       "cleanKept": 2,
       "cleanJudged": 2,
       "missed": [
+        "unrolled-M1",
         "unrolled-6-M2"
       ],
       "falseAlarms": [],
@@ -98,7 +99,7 @@
       "fault": "unrolled-method",
       "flagged": {
         "clean": false,
-        "faulty": true
+        "faulty": false
       }
     },
     {
