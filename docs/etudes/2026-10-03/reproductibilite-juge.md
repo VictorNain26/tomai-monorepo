@@ -11,12 +11,12 @@ recalibration : la première mesure d'accord (`accord-juge.md`) avait donné 0,7
   (`random_seed` 20261003). Selon la documentation de Mistral, une graine donne des
   résultats déterministes ([doc](https://docs.mistral.ai/api/endpoint/chat)).
 - Les 38 transcriptions de l'échantillon du 2026-10-03, jugées trois fois chacune
-  (`bun run eval:agreement src/eval/agreement/2026-10-03/results.json --labels
-  src/eval/agreement/2026-10-03/labels.claude.json --passes 3`). Les trois passages sont
+  (`bun run eval:agreement ../../docs/etudes/2026-10-03/donnees/results.json --labels
+  ../../docs/etudes/2026-10-03/donnees/labels.claude.json --passes 3`). Les trois passages sont
   les trois codeurs de l'α de Krippendorff.
 - Deux conversations échouent au premier passage, comme à la mesure précédente
   (citations introuvables) ; la mesure porte sur 36.
-- Données : `apps/server/src/eval/agreement/2026-10-03/results.stability.json`.
+- Données : `donnees/results.stability.json`.
 
 ## Résultats
 

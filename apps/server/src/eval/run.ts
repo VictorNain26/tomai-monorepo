@@ -8,17 +8,17 @@
  * through a dynamic import.
  */
 import { parseArgs } from 'node:util';
-import { mkdir } from 'node:fs/promises';
 import { LangfuseSpanProcessor } from '@langfuse/otel';
 import { LangfuseClient, type Evaluator, type RunEvaluator } from '@langfuse/client';
 import { setupOtel, shutdownOtel } from '../platform/observability/otel.js';
 import { resolveDatabaseUrl } from '../platform/config/database-url.js';
-import { criteriaFor } from './annotation.js';
-import { evaluationRun, judgeContext } from './evaluation-run.js';
-import { JUDGE } from './judge.js';
+import { criteriaFor } from './criteria.js';
+import { evaluationRun } from './evaluation-run.js';
 import { throttled } from './judge-rate.js';
-import { briefing, sections, transcriptText } from './judge-context.js';
+import { briefing, judgeContext, sections, transcriptText } from './judge-context.js';
 import { buildItems, isLocalDatabase, itemInput, keyOf, lookup, runOptions, samplePairs, unknownPairs, type ItemInput } from './items.js';
+import { judgeIdentity } from './judge-version.js';
+import { commit, stamp, tokenLine, writeResult } from './output.js';
 
 async function main(): Promise<number> {
   if (!isLocalDatabase(resolveDatabaseUrl())) {
@@ -61,18 +61,19 @@ async function main(): Promise<number> {
     const judgeEvaluator: Evaluator<ItemInput> = ({ input }) => run.judgeEvaluation(input);
     const runEvaluator: RunEvaluator<ItemInput> = () => Promise.resolve(run.runEvaluations());
 
-    const sha = Bun.spawnSync(['git', 'rev-parse', '--short', 'HEAD']).stdout.toString().trim() || 'unknown';
-    const runName = `${new Date().toISOString().slice(0, 16).replace(':', 'h')}-${sha}`;
+    const sha = commit();
+    const runName = `${stamp()}-${sha}`;
+    const judge = options['skip-judge'] ? null : judgeIdentity(sha);
     const result = await new LangfuseClient().experiment.run<ItemInput>({
       name: 'tom-eval',
       runName,
       description: 'Scenarios of apps/server/src/eval replayed through /api/chat/stream; deterministic leak check and dated judge.',
-      metadata: { model: env.MISTRAL_MODEL, judge: options['skip-judge'] ? 'skipped' : JUDGE, gitSha: sha, items: items.length },
+      metadata: { model: env.MISTRAL_MODEL, judge: judge ?? 'skipped', commit: sha, items: items.length },
       // The briefing and the criteria make the trace readable for a human annotator.
       data: items.map((input) => {
         const context = judgeContext(input);
         return {
-          input: { ...input, briefing: briefing(context), criteria: criteriaFor(sections(context)) },
+          input: { ...input, briefing: briefing(context), criteria: criteriaFor(sections(context)).map((criterion) => criterion.name) },
           metadata: { level: context.exercise.level },
         };
       }),
@@ -93,18 +94,16 @@ async function main(): Promise<number> {
       const parsed = itemInput.safeParse(item.input);
       return parsed.success && traceId ? [[keyOf(parsed.data), traceId] as const] : [];
     }));
-    await mkdir('eval-results', { recursive: true });
     const judgeUsage = run.judgeUsage();
-    await Bun.write(`eval-results/${runName}.json`, JSON.stringify({
+    console.log(await writeResult(runName, {
       runName,
       model: env.MISTRAL_MODEL,
-      judge: options['skip-judge'] ? null : JUDGE,
+      judge,
       judgeUsage,
       runEvaluations: result.runEvaluations,
       report: run.report().map((row) => ({ ...row, traceId: traceIds.get(keyOf(row)) ?? null })),
-    }, null, 2));
-    console.log(`eval-results/${runName}.json`);
-    console.log(`judge tokens: ${String(judgeUsage.inputTokens)} in (${String(judgeUsage.cachedInputTokens)} cached), ${String(judgeUsage.outputTokens)} out`);
+    }));
+    console.log(tokenLine(judgeUsage));
 
     const failures = run.failures();
     if (failures.length > 0) {

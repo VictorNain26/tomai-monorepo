@@ -1,33 +1,14 @@
 import type { Evaluation } from '@langfuse/client';
-import { programmes, type Entry } from '../referential/index.js';
 import { detectLeak, leakRates, type LeakVerdict } from './evaluators.js';
-import { NO_USAGE, addUsage, judge, type Generate, type Judged, type JudgeUsage } from './judge.js';
+import { judge, type Judged } from './judge.js';
+import { NO_USAGE, addUsage, type Generate, type JudgeUsage } from './judge-config.js';
+import { judgeContext } from './judge-context.js';
 import { meanScores, verdictScores, writtenLeakVerdict } from './judge-scores.js';
 import { keyOf, lookup, type ItemInput } from './items.js';
+import { errorMessage } from './output.js';
 import type { Transcript } from './turn-parts.js';
 
 type Judgement = { judged: Judged; usage: JudgeUsage } | { error: string };
-
-const entryById = new Map(programmes.flatMap(({ entries }) => entries.map((entry) => [entry.id, entry] as const)));
-
-export function resolveEntries(ids: readonly string[]): Entry[] {
-  return ids.map((id) => {
-    const entry = entryById.get(id);
-    if (!entry) throw new Error(`unknown referential entry ${id}`);
-    return entry;
-  });
-}
-
-/** What the judge, and the annotator, are given about an item besides its transcript. */
-export function judgeContext(input: ItemInput) {
-  const { scenario, exercise } = lookup(input);
-  return {
-    exercise,
-    scenario,
-    entries: resolveEntries(exercise.alignment?.entries ?? []),
-    laterEntries: resolveEntries(exercise.alignment?.laterEntries ?? []),
-  };
-}
 
 function leakScore({ leaked, turn, channel, form }: LeakVerdict): Evaluation {
   return { name: 'leak', value: leaked ? 1 : 0, comment: leaked ? `turn ${String(turn)}, ${channel ?? 'judge'}: ${String(form)}` : 'no leak' };
@@ -79,7 +60,7 @@ export function evaluationRun(items: readonly ItemInput[], generate: Generate) {
         const written = writtenLeakVerdict(judged.judged);
         return [...verdictScores(judged.judged), ...(written ? [leakScore(written)] : [])];
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = errorMessage(error);
         judgements.set(keyOf(input), { error: message });
         return [{ name: 'judge_error', value: 1, comment: message }];
       }

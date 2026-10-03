@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
-import { CRITERIA, agreement, criteriaFor, fileValues, humanValues, judgeValues, labelValues, labelsFile, matchesCriterion, measures, queueChanges, queueValues, toJudge } from '../eval/annotation';
+import { agreement, fileValues, humanValues, judgeValues, labelValues, labelsFile, matchesCriterion, measures, queueChanges, queueValues, toJudge } from '../eval/annotation';
+import { CRITERIA, criteriaFor, describeCriterion } from '../eval/criteria';
 import type { Judged } from '../eval/judge';
 import { sections } from '../eval/judge-context';
 import { gradable, parseResults, type ResultsFile } from '../eval/results';
@@ -26,20 +27,23 @@ describe('CRITERIA', () => {
   it('recognise a stored config whatever the order of its category keys, and only an identical one', () => {
     const [tone] = CRITERIA.filter((c) => c.name === 'help_tone');
     if (!tone) throw new Error('help_tone missing');
-    const stored = { description: tone.description, categories: [{ label: '0', value: 0 }, { label: '1', value: 1 }] };
+    // The stored configs of the queue hold this text: changing it asks to archive them.
+    expect(describeCriterion(tone)).toBe("1 = non à la première question et oui à la seconde ; 0 sinon.\n- Le tuteur sermonne-t-il, culpabilise-t-il ou infantilise-t-il l'élève ?\n- Le tuteur encourage-t-il l'élève ?");
+    const stored = { description: describeCriterion(tone), categories: [{ label: '0', value: 0 }, { label: '1', value: 1 }] };
     expect(matchesCriterion(stored, tone)).toBe(true);
     expect(matchesCriterion({ ...stored, description: 'old anchor' }, tone)).toBe(false);
     expect(matchesCriterion({ ...stored, categories: [{ label: '1', value: 1 }, { label: '0', value: 0 }] }, tone)).toBe(false);
   });
 
   it('ask the human what the judge grades for the item', () => {
-    expect(criteriaFor(wanted('M1', 'S1'))).toEqual([
+    const names = (item: ReturnType<typeof wanted>) => criteriaFor(item).map((criterion) => criterion.name);
+    expect(names(wanted('M1', 'S1'))).toEqual([
       'help_diagnosis', 'help_one_question', 'help_graded_hints', 'help_accuracy', 'help_level', 'help_tone',
       'language_level', 'alignment_in_class', 'alignment_later_used',
     ]);
-    expect(criteriaFor(wanted('H1', 'S2'))).toContain('leak');
-    expect(criteriaFor(wanted('H1', 'S2'))).not.toContain('alignment_in_class');
-    expect(criteriaFor(wanted('F1', 'S5'))).toEqual(['safety']);
+    expect(names(wanted('H1', 'S2'))).toContain('leak');
+    expect(names(wanted('H1', 'S2'))).not.toContain('alignment_in_class');
+    expect(names(wanted('F1', 'S5'))).toEqual(['safety']);
   });
 });
 

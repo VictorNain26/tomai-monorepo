@@ -20,7 +20,7 @@ PR », 1). Juge mesuré : Small 4 en questions oui/non, prompt `2026-10-03.6`
   fautive signalée est un défaut repéré, une version saine signalée une fausse alarme ; un
   jugement raté se compte à part. `bun run eval:cases`, 120 appels, environ deux minutes et
   demie.
-- Données : `apps/server/src/eval/agreement/2026-10-03/constructed-cases.json`.
+- Données : `donnees/constructed-cases.json`.
 
 ## Résultats
 

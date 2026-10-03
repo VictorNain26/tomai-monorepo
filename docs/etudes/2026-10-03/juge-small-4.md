@@ -18,7 +18,7 @@ Instantané daté, jamais mis à jour.
   porte sur 35.
 - Une première passe du même juge, avant les correctifs de la revue (prompt
   `2026-10-03.5`), donnait le même profil.
-- Données : `apps/server/src/eval/agreement/2026-10-03/results.agreement-small-4.json`.
+- Données : `donnees/results.agreement-small-4.json`.
 
 ## Résultats
 

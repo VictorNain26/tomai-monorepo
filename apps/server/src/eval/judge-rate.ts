@@ -1,6 +1,6 @@
 import { APICallError } from 'ai';
 import pThrottle from 'p-throttle';
-import type { Generate } from './judge.js';
+import type { Generate } from './judge-config.js';
 
 export interface RateBudget {
   requests: number;

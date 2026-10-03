@@ -155,6 +155,22 @@ describe('generateStructured', () => {
     expect(calls).toBe(2);
   });
 
+  it('does not retry when the caller turns the repair off', async () => {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return new Response(JSON.stringify(chatCompletion(JSON.stringify({ intent: 'nope' }))), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const rejection = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent', repairInvalid: false })
+      .catch((error: unknown) => error);
+
+    expect(NoObjectGeneratedError.isInstance(rejection)).toBe(true);
+    expect(calls).toBe(1);
+  });
+
   it('bounds the first call and the retry with one timeout', async () => {
     let calls = 0;
     globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {

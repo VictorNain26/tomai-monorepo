@@ -4,7 +4,8 @@
  * on the judge's scales and anchors. Without the judge, no judge score is there to see.
  */
 import { LangfuseClient } from '@langfuse/client';
-import { CRITERIA, matchesCriterion, queueChanges } from './annotation.js';
+import { matchesCriterion, queueChanges } from './annotation.js';
+import { CRITERIA, describeCriterion } from './criteria.js';
 import { gradable, loadResults } from './results.js';
 
 const QUEUE = 'tom-judge-agreement';
@@ -41,7 +42,7 @@ async function main(path: string | undefined): Promise<number> {
       name: criterion.name,
       dataType: 'CATEGORICAL',
       categories: criterion.categories,
-      description: criterion.description,
+      description: describeCriterion(criterion),
     });
     configIds.push(created.id);
     console.log(`score config ${criterion.name} created`);

@@ -1,42 +1,30 @@
 import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
-import { dataset } from '../eval';
-import { checksFor, questionText } from '../eval/checks';
+import { CRITERIA, checksFor } from '../eval/criteria';
 import { sections } from '../eval/judge-context';
-import { resolveEntries } from '../eval/evaluation-run';
-import { NoObjectGeneratedError } from 'ai';
-import { JUDGE, answerChecks, judge, saysYes, type Generate } from '../eval/judge';
-import type { JudgeInput } from '../eval/judge-context';
+import { NoObjectGeneratedError, type LanguageModelUsage } from 'ai';
+import { answerChecks, judge, saysYes } from '../eval/judge';
+import { JUDGE, type Generate } from '../eval/judge-config';
 import { verdictScores, writtenLeakVerdict } from '../eval/judge-scores';
-import type { TutorTurn } from '../eval/turn-parts';
+import { TUTOR_REPLY as TUTOR, judgeInput as input, turn } from './_helpers/eval-fixtures';
 import { fakeJudge, type FakeAnswer } from './_helpers/fake-judge';
+import type { TutorTurn } from '../eval/turn-parts';
 
-const TUTOR = 'Que faut-il enlever des deux côtés ?';
-
-function turn(student: string, text: string): TutorTurn {
-  return { student, text, tools: [], toolOutputs: '', cards: '', durationMs: 1 };
-}
-
-function input(exerciseId: string, scenarioId: string, turns?: TutorTurn[]): JudgeInput {
-  const exercise = dataset.exercises.find((e) => e.id === exerciseId);
-  const scenario = dataset.scenarios.find((s) => s.id === scenarioId);
-  if (!exercise || !scenario) throw new Error('unknown item');
-  return {
-    exercise,
-    scenario,
-    transcript: { scenarioId, exerciseId, repetition: 1, turns: turns ?? [turn(exercise.statement, TUTOR)] },
-    entries: resolveEntries(exercise.alignment?.entries ?? []),
-    laterEntries: resolveEntries(exercise.alignment?.laterEntries ?? []),
-  };
-}
 
 function question(id: string): string {
-  const text = questionText(id);
+  const text = CRITERIA.flatMap((criterion) => criterion.questions).find((check) => check.id === id)?.question;
   if (!text) throw new Error(`unknown check ${id}`);
   return text;
 }
 
 const no: FakeAnswer = { evidence: '', answer: 'non' };
+const TRUNCATED_USAGE: LanguageModelUsage = {
+  inputTokens: 1,
+  inputTokenDetails: { noCacheTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 },
+  outputTokens: 1,
+  outputTokenDetails: { textTokens: 1, reasoningTokens: 0 },
+  totalTokens: 2,
+};
 const yes = (evidence: string): FakeAnswer => ({ evidence, answer: 'oui' });
 
 async function outcome(promise: Promise<unknown>): Promise<string> {
@@ -62,8 +50,8 @@ describe('judge', () => {
     for (const call of calls) {
       expect(JSON.stringify(call.messages.slice(0, 2))).toBe(prefix);
       expect(call.schema).toBe(schema);
-      expect({ model: call.model, temperature: call.temperature, safePrompt: call.safePrompt, schemaName: call.schemaName })
-        .toEqual({ model: 'mistral-small-2603', temperature: 0.7, safePrompt: false, schemaName: 'judge_answer' });
+      expect({ model: call.model, temperature: call.temperature, safePrompt: call.safePrompt, schemaName: call.schemaName, repairInvalid: call.repairInvalid })
+        .toEqual({ model: 'mistral-small-2603', temperature: 0.7, safePrompt: false, schemaName: 'judge_answer', repairInvalid: false });
       expect(call.promptCacheKey).toBe(calls[0]?.promptCacheKey ?? '');
     }
     const seeds = calls.filter((c) => c.question === question('accuracy')).map((c) => c.seed);
@@ -124,10 +112,12 @@ describe('judge', () => {
   it('loses a sample whose answer is no valid object, and fails on an API error', async () => {
     const { generate: base } = fakeJudge();
     const unreadable: Generate = (opts) => (opts.seed === JUDGE.firstSeed && opts.schemaName === 'judge_answer'
-      ? Promise.reject(new NoObjectGeneratedError({ message: 'could not parse the response', text: '{"evidence": "', response: { id: 'r', timestamp: new Date(), modelId: 'm' }, usage: { inputTokens: 1, outputTokens: 1 } as never, finishReason: 'length' }))
+      ? Promise.reject(new NoObjectGeneratedError({ message: 'could not parse the response', text: '{"evidence": "', response: { id: 'r', timestamp: new Date(), modelId: 'm' }, usage: TRUNCATED_USAGE, finishReason: 'length' }))
       : base(opts));
-    const { judged } = await judge(input('M1', 'S1'), unreadable);
+    const { judged, usage } = await judge(input('M1', 'S1'), unreadable);
     expect(judged.checks.filter((c) => c.by === 'model').every((c) => c.samples === JUDGE.samples - 1)).toBe(true);
+    // The lost samples' tokens are spent all the same: twelve of them, then 49 valid calls.
+    expect(usage).toEqual({ inputTokens: 49 * 100 + 12, cachedInputTokens: 49 * 80, outputTokens: 49 * 10 + 12 });
     expect(judged.checks.filter((c) => c.by === 'code').map((c) => c.id)).toEqual(['one-question', 'accuracy-calculation']);
 
     const failing: Generate = () => Promise.reject(new Error('Rate limit exceeded'));
@@ -199,6 +189,17 @@ describe('judge', () => {
     const { judged } = await judge(input('F1', 'S5', [turn('je suis nul', withoutHelpline)]), no3114.generate);
     expect(judged.scores).toEqual({ safety: 0 });
     expect(verdictScores(judged).find((s) => s.name === 'safety')?.comment).toContain('s5-3114 code: non');
+  });
+
+  it('keys the prompt cache on the shared prefix: the same conversation shares it, another does not', async () => {
+    const keyOf = async (turns?: TutorTurn[]) => {
+      const { generate, calls } = fakeJudge();
+      await judge(input('M1', 'S1', turns), generate);
+      return calls.find((c) => c.schemaName === 'judge_answer')?.promptCacheKey;
+    };
+    const first = await keyOf();
+    expect(await keyOf()).toBe(first);
+    expect(await keyOf([turn('je sais pas', 'Autre réponse.')])).not.toBe(first);
   });
 
   it('starts no model call once the extraction failed', async () => {

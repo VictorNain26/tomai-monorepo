@@ -12,7 +12,7 @@ bloquant levé).
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-02.
+- **Dernière mise à jour :** 2026-10-03.
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
@@ -73,20 +73,17 @@ contraire.
   `accuracy` et `level` sont stables ; non établi sur `diagnosis` et `tone`
   (`etudes/2026-10-03/reproductibilite-juge.md`).
 - **Juge Small 4** (point 4) : mesuré le 2026-10-03 sur l'échantillon d'accord
-  (`etudes/2026-10-03/juge-small-4.md`). Il ne voit presque pas les défauts de son propre
-  modèle (méthode déroulée 2 fois sur 27 contre 9 pour l'annotateur, aucune erreur de
-  fond, aucune double question) : biais d'auto-préférence à mesurer sur des cas construits
-  avant que ses notes servent de métrique. À ce débit (100 000 tokens par minute), juger le
-  jeu complet prend plusieurs heures : l'API Batch de Mistral, hors limite de débit et à
+  (`etudes/2026-10-03/juge-small-4.md`), il ne voit presque pas les défauts de son propre
+  modèle. Sur les cas construits, le code repère désormais le calcul faux et la double
+  question ; restent au modèle, et faibles, la méthode déroulée (0 ou 1 sur 2) et la
+  notion d'une classe suivante (0 sur 2) (`etudes/2026-10-03/extraction-verification.md`).
+  Le prompt ne se retouche plus sur un exemple : il s'ajuste sur l'échantillon annoté, en
+  mesurant l'accord avant et après. Le cache, qui ne servait que 14 % de l'entrée de
+  l'ancien juge, en sert 91 % depuis le préfixe et le schéma communs (#370) ; le coût par
+  conversation du juge actuel (questions et extracteur) reste à mesurer avant le gate en
+  CI (point 6). À ce débit (100 000 tokens par minute), juger le jeu
+  complet prend plusieurs heures : l'API Batch de Mistral, hors limite de débit et à
   moitié prix, est à étudier pour la baseline (point 5).
-- **Calibration du juge** (point 4, suite) : la revue de la PR du juge a réécrit les ancres
-  pour qu'elles ne dépendent ni des réponses de l'élève ni de la longueur (proportions de
-  messages) et séparé les critères en appels distincts. Le prompt ne se retouche plus sur
-  un exemple : il s'ajuste sur l'échantillon annoté, en mesurant l'accord avant et après.
-  Coût mesuré le 2026-10-03 sur 8 conversations (S1, S2, S5, S6 sur M1 et H1) : 41 146
-  tokens en entrée dont 5 644 servis par le cache, 4 025 en sortie, soit environ 1 centime
-  de dollar par conversation et 4 $ pour le jeu complet. Le cache ne sert que 14 % de
-  l'entrée alors que le préfixe est commun : à comprendre avant le gate en CI (point 6).
 - **Évaluations du run dans Langfuse** (point 5) : taux de fuite et moyennes ne restent
   que dans `eval-results/` tant que l'expérience tourne sur des données locales ; un
   dataset hébergé par Langfuse les y enverrait, à décider avec la baseline.
@@ -100,7 +97,7 @@ contraire.
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
 - **Fuites sans pression** (point 1) : sur l'échantillon d'accord joué le 2026-10-03
-  (`apps/server/src/eval/agreement/2026-10-03/results.json`, une conversation par paire), Tom donne la
+  (`etudes/2026-10-03/donnees/results.json`, une conversation par paire), Tom donne la
   réponse dans 3 conversations d'aide normale sur 7 (S1), 2 sur 8 sous pression (S3), 4
   sur 6 en fuite accidentelle (S4) ; 10 sur 29 en tout. Une passe, à confirmer par les
   répétitions du point 5.
@@ -335,3 +332,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   recalculées par mathjs, questions relevées par Small 4 puis comptées, 3114 cherché dans
   le texte ; calcul faux et deux questions repérés là où le modèle ne les voyait pas, sans
   fausse alarme sur les cas construits (#373).
+  Nettoyage du harnais : une table par critère, version du juge calculée sur ce que lit
+  son modèle et commit dans chaque sortie, plus de relance cachée hors limite de débit,
+  données des études sorties de `src/` (#374).

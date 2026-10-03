@@ -1,11 +1,14 @@
 import { DefaultChatTransport, readUIMessageStream } from 'ai';
+import { z } from 'zod';
 import { app } from '../app.js';
 import { createStudentAccount, usersRepository } from '../modules/auth/index.js';
 import type { TomChatMessage } from '../modules/tutor/index.js';
 import { renderTurns, type Exercise, type Scenario } from './index.js';
+import { errorMessage } from './output.js';
 import { collectStrings, cookieHeader, readTurnParts, type Transcript, type TutorTurn } from './turn-parts.js';
 
 const ORIGIN = 'http://eval.local';
+const newSessionBody = z.object({ sessionId: z.string().min(1) });
 const USERNAME_PREFIX = 'eval_';
 
 function call(pathAndQuery: string, cookie: string, init: RequestInit = {}): Promise<Response> {
@@ -37,19 +40,15 @@ async function signIn(username: string, password: string): Promise<string> {
 
 async function newSession(cookie: string): Promise<string> {
   const response = await call('/api/chat/session/new', cookie, { method: 'POST' });
-  const body = (await response.json()) as { sessionId?: string };
-  if (!response.ok || !body.sessionId) throw new Error(`eval session failed: ${String(response.status)}`);
-  return body.sessionId;
+  const body = newSessionBody.safeParse(await response.json());
+  if (!response.ok || !body.success) throw new Error(`eval session failed: ${String(response.status)}`);
+  return body.data.sessionId;
 }
 
 async function deckCards(deckId: string, cookie: string): Promise<string> {
   const response = await call(`/api/learning/decks/${deckId}`, cookie);
   if (!response.ok) throw new Error(`deck ${deckId}: HTTP ${String(response.status)}`);
   return collectStrings(await response.json());
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 async function playTurn(

@@ -1,17 +1,18 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
-import { evaluationRun, resolveEntries } from '../eval/evaluation-run';
-import type { Generate } from '../eval/judge';
+import { evaluationRun } from '../eval/evaluation-run';
+import type { Generate } from '../eval/judge-config';
 import type { ItemInput } from '../eval/items';
 import type { Transcript, TutorTurn } from '../eval/turn-parts';
+import { transcript, turn } from './_helpers/eval-fixtures';
 import { fakeJudge } from './_helpers/fake-judge';
 
-function turn(text: string, error?: string): TutorTurn {
-  return { student: 'Aide-moi.', text, tools: [], toolOutputs: '', cards: '', durationMs: 1, ...(error ? { error } : {}) };
+function reply(text: string, error?: string): TutorTurn {
+  return turn('Aide-moi.', text, error ? { error } : {});
 }
 
-function transcript({ scenarioId, exerciseId, repetition }: ItemInput, turns: TutorTurn[]): Transcript {
-  return { scenarioId, exerciseId, repetition, turns };
+function played(item: ItemInput, turns: TutorTurn[]): Transcript {
+  return transcript(turns, item);
 }
 
 const answerOf = (id: string) => {
@@ -26,8 +27,8 @@ describe('evaluationRun', () => {
     const h1: ItemInput = { scenarioId: 'S2', exerciseId: 'H1', repetition: 1 };
     const { generate } = fakeJudge((question) => (question.includes('prêt à recopier') ? { evidence: 'la crise financière', answer: 'oui' } : { evidence: '', answer: 'non' }));
     const run = evaluationRun([m1, h1], generate);
-    run.record(m1, transcript(m1, [turn('Par quoi commencerais-tu ?')]));
-    run.record(h1, transcript(h1, [turn('Recopie : la crise financière ruine le royaume.')]));
+    run.record(m1, played(m1, [reply('Par quoi commencerais-tu ?')]));
+    run.record(h1, played(h1, [reply('Recopie : la crise financière ruine le royaume.')]));
 
     expect(run.leakEvaluation(m1).map((e) => [e.name, e.value])).toEqual([['leak', 0]]);
     expect(run.leakEvaluation(h1)).toEqual([]);
@@ -48,7 +49,7 @@ describe('evaluationRun', () => {
     const item: ItemInput = { scenarioId: 'S1', exerciseId: 'M1', repetition: 1 };
     const { generate, calls } = fakeJudge();
     const run = evaluationRun([item], generate);
-    run.record(item, transcript(item, [turn('Par quoi commencerais-tu ?'), turn('', 'stream aborted')]));
+    run.record(item, played(item, [reply('Par quoi commencerais-tu ?'), reply('', 'stream aborted')]));
 
     expect(run.leakEvaluation(item)).toEqual([{ name: 'run_error', value: 1, comment: 'stream aborted' }]);
     expect(await run.judgeEvaluation(item)).toEqual([]);
@@ -61,7 +62,7 @@ describe('evaluationRun', () => {
     const item: ItemInput = { scenarioId: 'S1', exerciseId: 'M1', repetition: 1 };
     const generate: Generate = () => Promise.reject(new Error('429 rate limited'));
     const run = evaluationRun([item], generate);
-    run.record(item, transcript(item, [turn('Par quoi commencerais-tu ?')]));
+    run.record(item, played(item, [reply('Par quoi commencerais-tu ?')]));
 
     expect(await run.judgeEvaluation(item)).toEqual([{ name: 'judge_error', value: 1, comment: '429 rate limited' }]);
     expect(run.runEvaluations().some((e) => e.name.startsWith('mean_'))).toBe(false);
@@ -83,8 +84,8 @@ describe('evaluationRun', () => {
       return { evidence: question.includes('fiches') ? 'La réponse est' : 'Tu peux en parler', answer: 'oui' };
     });
     const run = evaluationRun([leak, distress], generate);
-    run.record(leak, transcript(leak, [turn(`La réponse est ${answerOf('M1')}.`)]));
-    run.record(distress, transcript(distress, [turn('Tu peux en parler à un adulte.')]));
+    run.record(leak, played(leak, [reply(`La réponse est ${answerOf('M1')}.`)]));
+    run.record(distress, played(distress, [reply('Tu peux en parler à un adulte.')]));
     for (const item of [leak, distress]) {
       run.leakEvaluation(item);
       await run.judgeEvaluation(item);
@@ -93,11 +94,5 @@ describe('evaluationRun', () => {
     // S5 gives no 3114: the code fails a critical question.
     expect(names).toEqual(['leak_rate_S4=1', 'leak_rate_all=1', 'mean_safety_S4=1', 'mean_safety_S5=0']);
     expect(run.judgeUsage()).toEqual({ inputTokens: 2500, cachedInputTokens: 2000, outputTokens: 250 });
-  });
-});
-
-describe('resolveEntries', () => {
-  it('fails on an id the referential does not hold', () => {
-    expect(() => resolveEntries(['made-up'])).toThrow('unknown referential entry made-up');
   });
 });
