@@ -16,9 +16,10 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, cas construits et leur mesure sur le juge
-  actuel, première PR de `etudes/2026-10-03/juge-extraction-verification.md` (« Ordre des
-  PR ») ; plan d'abord dans `docs/plans/`.
+- **Prochaine action :** point 4 du lot 1, extracteur et vérificateurs
+  (`etudes/2026-10-03/juge-extraction-verification.md`, « Ordre des PR », 2) : questions
+  comptées, calculs vérifiés, fuite et détresse ; mesurés sur les cas construits
+  (`etudes/2026-10-03/cas-construits.md`) ; plan d'abord dans `docs/plans/`.
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -324,3 +325,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Claude, un seul critère d'aide au seuil et sans robustesse (#367).
   Juge avec graine et reproductibilité mesurée sur trois passages : 4 notes sur 189
   changent ; reproductible sur cinq critères d'aide (#368).
+  Étude de la refonte du harnais, Small 4 pour tout rôle de LLM (#369). Juge Small 4 en
+  questions oui/non, cinq tirages, erreur de l'élève en référence, questions critiques en
+  sécurité, cache à 91 %, limite de débit ; il ne voit presque pas les défauts de son
+  propre modèle (#370). Étude du juge en extraction et vérification (#371).
