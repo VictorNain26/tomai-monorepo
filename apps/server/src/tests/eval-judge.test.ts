@@ -129,7 +129,7 @@ describe('judge', () => {
     for (const call of calls) {
       expect(JSON.stringify(call.messages.slice(0, 2))).toBe(context);
       expect(contentOf(call.messages[2])).toContain(call.schemaName);
-      expect({ model: call.model, temperature: call.temperature, safePrompt: call.safePrompt }).toEqual({ model: JUDGE.model, temperature: 0, safePrompt: false });
+      expect({ model: call.model, temperature: call.temperature, safePrompt: call.safePrompt, seed: call.seed }).toEqual({ model: JUDGE.model, temperature: 0, safePrompt: false, seed: JUDGE.seed });
       expect(call.promptCacheKey).toBe(calls[0]?.promptCacheKey ?? '');
     }
     const diagnosis = calls.find((c) => c.schemaName === 'diagnosis');

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
-import { CRITERIA, agreement, criteriaFor, fileValues, humanValues, judgeValues, labelValues, labelsFile, matchesCriterion, queueChanges, queueValues } from '../eval/annotation';
+import { CRITERIA, agreement, criteriaFor, fileValues, humanValues, judgeValues, labelValues, labelsFile, matchesCriterion, measures, queueChanges, queueValues, toJudge } from '../eval/annotation';
 import { sections, type Verdict } from '../eval/judge';
 import { gradable, parseResults, type ResultsFile } from '../eval/results';
 
@@ -109,6 +109,7 @@ describe('queueValues', () => {
       { name: 'help_level', dataType: 'CATEGORICAL', value: '0', timestamp: at, subject: { kind: 'observation', id: 'o' } },
       { name: 'help_level', dataType: 'NUMERIC', value: 0, timestamp: at, subject: { kind: 'trace', id: 'a' } },
       { name: 'help_level', dataType: 'CATEGORICAL', value: '0', timestamp: at },
+      { name: 'unrelated', dataType: 'CATEGORICAL', value: '1', timestamp: at, subject: { kind: 'trace', id: 'c' } },
     ]);
     expect([...values].map(([trace, grades]) => [trace, [...grades]])).toEqual([
       ['a', [['help_tone', 1]]],
@@ -162,18 +163,80 @@ describe('labelValues', () => {
 });
 
 describe('agreement', () => {
-  it('pairs the grades both gave, and splits safety per scenario', () => {
+  it('pairs the grades every coder gave, and splits safety per scenario', () => {
     const lines = agreement([
-      { scenarioId: 'S1', human: new Map([['help_tone', 1], ['help_level', 1]]), judge: new Map([['help_tone', 1]]) },
-      { scenarioId: 'S1', human: new Map([['help_tone', 0]]), judge: new Map([['help_tone', 0]]) },
-      { scenarioId: 'S4', human: new Map([['safety', 1]]), judge: new Map([['safety', 0.5]]) },
-      { scenarioId: 'S5', human: new Map([['safety', 0]]), judge: new Map([['safety', 0]]) },
+      { scenarioId: 'S1', coders: [new Map([['help_tone', 1], ['help_level', 1]]), new Map([['help_tone', 1]])] },
+      { scenarioId: 'S1', coders: [new Map([['help_tone', 0]]), new Map([['help_tone', 0]])] },
+      { scenarioId: 'S4', coders: [new Map([['safety', 1]]), new Map([['safety', 0.5]])] },
+      { scenarioId: 'S5', coders: [new Map([['safety', 0]]), new Map([['safety', 0]])] },
     ]);
     expect(lines.map(({ criterion, units, raw, alpha }) => ({ criterion, units, raw, alpha }))).toEqual([
       { criterion: 'help_tone', units: 2, raw: 1, alpha: 1 },
       { criterion: 'safety_S4', units: 1, raw: 0, alpha: 0 },
       { criterion: 'safety_S5', units: 1, raw: 1, alpha: null },
     ]);
+  });
+
+  it('measures several passes of one coder: raw agreement needs every pass to match', () => {
+    const pass = (tone: number) => new Map([['help_tone', tone]]);
+    const [line] = agreement([
+      { scenarioId: 'S1', coders: [pass(1), pass(1), pass(1)] },
+      { scenarioId: 'S1', coders: [pass(0), pass(0), pass(1)] },
+      { scenarioId: 'S1', coders: [pass(0), pass(0), pass(0)] },
+    ]);
+    expect(line?.units).toBe(3);
+    expect(line?.raw).toBeCloseTo(2 / 3, 12);
+  });
+});
+
+describe('agreement with a missing grade', () => {
+  it('keeps a unit two coders graded, and drops one only a single coder graded', () => {
+    const tone = (value: number) => new Map([['help_tone', value]]);
+    const [line] = agreement([
+      { scenarioId: 'S1', coders: [tone(1), new Map(), tone(1)] },
+      { scenarioId: 'S1', coders: [tone(0), tone(0), tone(0)] },
+      { scenarioId: 'S1', coders: [tone(1), new Map(), new Map()] },
+    ]);
+    expect(line?.units).toBe(2);
+    expect(line?.raw).toBe(1);
+  });
+});
+
+describe('measures', () => {
+  const tone = (value: number) => new Map([['help_tone', value]]);
+
+  it('measures agreement on the first pass and reproducibility on all of them', () => {
+    const { agreement: withHuman, stability } = measures([
+      { scenarioId: 'S1', human: tone(1), passes: [tone(1), tone(0)] },
+      { scenarioId: 'S1', human: null, passes: [tone(0), tone(0)] },
+    ]);
+    expect(withHuman?.map(({ criterion, units, raw }) => ({ criterion, units, raw }))).toEqual([{ criterion: 'help_tone', units: 1, raw: 1 }]);
+    expect(stability?.map(({ criterion, units, raw }) => ({ criterion, units, raw }))).toEqual([{ criterion: 'help_tone', units: 2, raw: 0.5 }]);
+  });
+
+  it('keeps a conversation whose pass failed, on the passes that succeeded', () => {
+    const { agreement: withHuman, stability } = measures([
+      { scenarioId: 'S1', human: tone(1), passes: [null, tone(1), tone(0)] },
+      { scenarioId: 'S1', human: tone(0), passes: [tone(0), null, tone(0)] },
+    ]);
+    expect(withHuman?.[0]?.units).toBe(1);
+    expect(stability?.[0]?.units).toBe(2);
+    expect(stability?.[0]?.raw).toBe(0.5);
+  });
+
+  it('measures no reproducibility on a single pass, and no agreement without annotation', () => {
+    expect(measures([{ scenarioId: 'S1', human: tone(1), passes: [tone(1)] }]).stability).toBeNull();
+    expect(measures([{ scenarioId: 'S1', human: null, passes: [tone(1), tone(1)] }]).agreement).toBeNull();
+  });
+});
+
+describe('toJudge', () => {
+  const rows = [{ traceId: 'a' }, { traceId: 'b' }, { traceId: 'c' }];
+
+  it('judges the annotated conversations on one pass, and the whole run on several', () => {
+    expect(toJudge(rows, new Set(['b']), 1)).toEqual([{ traceId: 'b' }]);
+    expect(toJudge(rows, new Set(['b']), 3)).toEqual(rows);
+    expect(toJudge(rows, new Set(), 1)).toEqual([]);
   });
 });
 

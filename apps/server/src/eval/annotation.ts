@@ -139,7 +139,10 @@ export function queueValues(scores: readonly QueueScore[]): Map<string, Map<stri
     if (dataType !== 'CATEGORICAL' || subject?.kind !== 'trace' || typeof value !== 'string') continue;
     byTrace.set(subject.id, [...(byTrace.get(subject.id) ?? []), { name, label: value, timestamp }]);
   }
-  return new Map([...byTrace].map(([traceId, grades]) => [traceId, humanValues(grades)]));
+  return new Map([...byTrace].flatMap(([traceId, grades]) => {
+    const values = humanValues(grades);
+    return values.size > 0 ? [[traceId, values] as const] : [];
+  }));
 }
 
 /**
@@ -168,8 +171,8 @@ export function labelValues(labels: Record<string, { label: string }>): Map<stri
 
 export interface Graded {
   scenarioId: string;
-  human: Map<string, number>;
-  judge: Map<string, number>;
+  /** The grades of each coder: a human and the judge, or several passes of the judge. */
+  coders: readonly Map<string, number>[];
 }
 
 export interface AgreementLine {
@@ -180,25 +183,59 @@ export interface AgreementLine {
   interval: [number, number] | null;
 }
 
-/** Agreement per criterion, on the conversations both the human and the judge graded. */
+/**
+ * Agreement per criterion. A coder may lack a grade (a failed judgement): the unit counts
+ * once two coders graded it, as Krippendorff's alpha allows missing values.
+ */
 export function agreement(rows: readonly Graded[]): AgreementLine[] {
-  const units = new Map<string, { level: Level; pairs: number[][] }>();
-  for (const { scenarioId, human, judge } of rows) {
+  const units = new Map<string, { level: Level; values: number[][] }>();
+  for (const { scenarioId, coders } of rows) {
     for (const criterion of CRITERIA) {
-      const h = human.get(criterion.name);
-      const j = judge.get(criterion.name);
-      if (h === undefined || j === undefined) continue;
+      const values = coders.flatMap((grades) => {
+        const value = grades.get(criterion.name);
+        return value === undefined ? [] : [value];
+      });
+      if (values.length < 2) continue;
       const key = criterion.perScenario ? `${criterion.name}_${scenarioId}` : criterion.name;
-      const entry = units.get(key) ?? { level: criterion.level, pairs: [] };
-      entry.pairs.push([h, j]);
+      const entry = units.get(key) ?? { level: criterion.level, values: [] };
+      entry.values.push(values);
       units.set(key, entry);
     }
   }
-  return [...units].map(([criterion, { level, pairs }]) => ({
+  return [...units].map(([criterion, { level, values }]) => ({
     criterion,
-    units: pairs.length,
-    raw: rawAgreement(pairs),
-    alpha: krippendorffAlpha(pairs, level),
-    interval: alphaInterval(pairs, level),
+    units: values.length,
+    raw: rawAgreement(values),
+    alpha: krippendorffAlpha(values, level),
+    interval: alphaInterval(values, level),
   }));
+}
+
+export interface Judged {
+  scenarioId: string;
+  /** Human grades, null when the conversation is not annotated. */
+  human: Map<string, number> | null;
+  /** The judge's grades per pass, null for a failed pass. */
+  passes: readonly (Map<string, number> | null)[];
+}
+
+/**
+ * Agreement with the annotation, on the judge's first pass, and the judge's reproducibility
+ * over its passes, on every conversation judged: a failed pass is a missing value, never a
+ * dropped conversation, which would hide the judge's unsteady cases.
+ */
+export function measures(rows: readonly Judged[]): { agreement: AgreementLine[] | null; stability: AgreementLine[] | null } {
+  const annotated = rows.flatMap(({ scenarioId, human, passes: [first] }) => (human && first ? [{ scenarioId, coders: [human, first] }] : []));
+  const repeated = rows.some(({ passes }) => passes.length > 1);
+  return {
+    agreement: annotated.length > 0 ? agreement(annotated) : null,
+    stability: repeated
+      ? agreement(rows.map(({ scenarioId, passes }) => ({ scenarioId, coders: passes.flatMap((grades) => (grades ? [grades] : [])) })))
+      : null,
+  };
+}
+
+/** With several passes every conversation is judged, to measure the judge on the whole run. */
+export function toJudge<T extends { traceId: string }>(rows: readonly T[], annotated: ReadonlySet<string>, passes: number): T[] {
+  return passes > 1 ? [...rows] : rows.filter((row) => annotated.has(row.traceId));
 }
