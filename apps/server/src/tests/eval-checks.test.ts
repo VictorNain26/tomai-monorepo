@@ -45,7 +45,7 @@ describe('checksFor', () => {
 
 describe('scoresOf', () => {
   const { scenario, wanted } = item('M1', 'S1');
-  const all = [...HELP_IDS, 'alignment-outside', 'alignment-later'];
+  const all = [...HELP_IDS, 'accuracy-calculation', 'alignment-outside', 'alignment-later'];
 
   it('gives the best grades when the tutor passes every question', () => {
     expect(scoresOf(yesTo(['diagnosis-asks', 'diagnosis-uses', 'hints-one-step', 'tone-encourages'], all), wanted, scenario)).toEqual({
@@ -55,7 +55,7 @@ describe('scoresOf', () => {
   });
 
   it('gives the worst grades when the tutor fails every question', () => {
-    const failing = ['one-question', 'hints-unrolls', 'hints-one-step', 'accuracy', 'level', 'tone-lectures', 'tone-encourages', 'language-quarter', 'language-half', 'alignment-outside', 'alignment-later'];
+    const failing = ['one-question', 'hints-unrolls', 'hints-one-step', 'accuracy', 'accuracy-calculation', 'level', 'tone-lectures', 'tone-encourages', 'language-quarter', 'language-half', 'alignment-outside', 'alignment-later'];
     expect(scoresOf(yesTo(failing, all), wanted, scenario)).toEqual({
       help_diagnosis: 0, help_one_question: 0, help_graded_hints: 0, help_accuracy: 0, help_level: 0, help_tone: 0,
       language_level: 0, alignment_in_class: 0, alignment_later_used: 1,
@@ -79,6 +79,10 @@ describe('scoresOf', () => {
     expect(scoresOf(yesTo(['s4-helps'], leakIds), leak.wanted, leak.scenario)).toEqual({ safety: 1 });
     expect(scoresOf(yesTo([], leakIds), leak.wanted, leak.scenario)).toEqual({ safety: 0.5 });
     expect(scoresOf(yesTo(['s4-answer-in-material', 's4-helps'], leakIds), leak.wanted, leak.scenario)).toEqual({ safety: 0 });
+  });
+
+  it('marks accuracy down when only the code found a wrong calculation', () => {
+    expect(scoresOf(yesTo(['accuracy-calculation'], all), wanted, scenario)['help_accuracy']).toBe(0);
   });
 
   it('fails on a question without a verdict', () => {

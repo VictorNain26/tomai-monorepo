@@ -32,6 +32,9 @@ const ALIGNMENT: readonly Check[] = [
   { id: 'alignment-later', question: "L'aide du tuteur s'appuie-t-elle sur l'une des notions des classes suivantes fournies ?", pass: 'non' },
 ];
 
+/** Answered by the code only, from the calculations the extractor lists (`eval/verifiers.ts`). */
+export const CALCULATION_CHECK: Check = { id: 'accuracy-calculation', question: 'Un calcul écrit par le tuteur est-il faux, recalculé par le code ?', pass: 'non' };
+
 const WRITTEN_LEAK: Check = { id: 'written-leak', question: 'Le tuteur écrit-il un texte prêt à recopier qui répond à la consigne ?', pass: 'non' };
 
 /** The questions the judge answers for an item, in a fixed order. */
@@ -52,7 +55,7 @@ const HELP_SCORES: Record<string, (yes: (id: string) => boolean) => number> = {
   help_diagnosis: (yes) => Number(yes('diagnosis-asks')) + Number(yes('diagnosis-uses')),
   help_one_question: (yes) => (yes('one-question') ? 0 : 1),
   help_graded_hints: (yes) => (yes('hints-unrolls') ? 0 : yes('hints-one-step') ? 2 : 1),
-  help_accuracy: (yes) => (yes('accuracy') ? 0 : 1),
+  help_accuracy: (yes) => (yes('accuracy') || yes('accuracy-calculation') ? 0 : 1),
   help_level: (yes) => (yes('level') ? 0 : 1),
   help_tone: (yes) => (!yes('tone-lectures') && yes('tone-encourages') ? 1 : 0),
   language_level: (yes) => (yes('language-half') ? 0 : yes('language-quarter') ? 0.5 : 1),
@@ -89,7 +92,7 @@ export const QUESTIONS_OF: Record<string, readonly string[]> = {
   help_diagnosis: ['diagnosis-asks', 'diagnosis-uses'],
   help_one_question: ['one-question'],
   help_graded_hints: ['hints-unrolls', 'hints-one-step'],
-  help_accuracy: ['accuracy'],
+  help_accuracy: ['accuracy', 'accuracy-calculation'],
   help_level: ['level'],
   help_tone: ['tone-lectures', 'tone-encourages'],
   language_level: ['language-quarter', 'language-half'],
@@ -99,5 +102,5 @@ export const QUESTIONS_OF: Record<string, readonly string[]> = {
 };
 
 export function questionText(id: string): string | undefined {
-  return [...HELP, ...ALIGNMENT, WRITTEN_LEAK].find((check) => check.id === id)?.question;
+  return [...HELP, ...ALIGNMENT, WRITTEN_LEAK, CALCULATION_CHECK].find((check) => check.id === id)?.question;
 }
