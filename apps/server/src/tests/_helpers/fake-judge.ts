@@ -23,6 +23,7 @@ interface JudgeCall {
   model: string;
   temperature: number;
   safePrompt: boolean;
+  seed: number;
   promptCacheKey: string;
 }
 

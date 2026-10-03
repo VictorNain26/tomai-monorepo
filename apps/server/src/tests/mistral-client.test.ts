@@ -199,6 +199,16 @@ describe('generateStructured', () => {
     expect(capture.body?.['safe_prompt']).toBe(false);
   });
 
+  it('sends a seed as random_seed only when given', async () => {
+    const capture: { body?: Record<string, unknown> } = {};
+    mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
+    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
+    expect(capture.body?.['random_seed']).toBeUndefined();
+
+    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', seed: 7 });
+    expect(capture.body?.['random_seed']).toBe(7);
+  });
+
   it('reports the input tokens read from the prompt cache', async () => {
     mockFetchJson({}, { ...chatCompletion(JSON.stringify({ intent: 'explain-concept' })), usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, prompt_tokens_details: { cached_tokens: 8 } } });
     const { usage } = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });

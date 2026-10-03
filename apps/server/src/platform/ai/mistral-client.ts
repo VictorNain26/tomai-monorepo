@@ -63,6 +63,8 @@ interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   strict?: boolean;
   /** Mistral's own safety prompt, prepended to the conversation; on unless a caller owns its whole prompt. */
   safePrompt?: boolean;
+  /** Sent as `random_seed`: the same seed gives the same output (https://docs.mistral.ai/api/endpoint/chat). */
+  seed?: number;
 }
 
 interface StructuredUsage {
@@ -160,6 +162,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       allowSystemInMessages: true,
       output: Output.object({ schema: opts.schema, name: opts.schemaName }),
       temperature,
+      ...(opts.seed === undefined ? {} : { seed: opts.seed }),
       maxOutputTokens: maxTokens,
       maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
       abortSignal,

@@ -5,7 +5,8 @@ import type { Exercise, Scenario } from './index.js';
 import type { Transcript } from './turn-parts.js';
 
 /** Pinned by its dated id, never by an alias: a new model is a new judge to recalibrate. */
-export const JUDGE = { model: 'mistral-medium-2604', promptVersion: '2026-10-03.4' } as const;
+// The seed makes Mistral's sampling reproducible; temperature 0 alone did not (2026-10-03).
+export const JUDGE = { model: 'mistral-medium-2604', promptVersion: '2026-10-03.4', seed: 20261003 } as const;
 
 const MAX_CHANNEL_CHARS = 4000;
 const evidence = z.string().describe('Citation exacte de la transcription qui fonde la note, avant la note ; chaîne vide si la note repose sur une absence.');
@@ -100,6 +101,7 @@ export type Generate = <T>(opts: {
   temperature: number;
   maxTokens: number;
   safePrompt: boolean;
+  seed: number;
   promptCacheKey: string;
 }) => Promise<{ object: T; usage: JudgeUsage }>;
 
@@ -263,6 +265,7 @@ export async function judge(input: JudgeInput, generate: Generate): Promise<{ ve
       temperature: 0,
       maxTokens: 1024,
       safePrompt: false,
+      seed: JUDGE.seed,
       promptCacheKey: key,
     });
     usage.inputTokens += result.usage.inputTokens;
