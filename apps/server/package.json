@@ -49,7 +49,8 @@
     "referential:extract": "bun src/referential/extract.ts",
     "eval": "NODE_ENV=test QUOTA_ENFORCEMENT_ENABLED=false LOG_LEVEL=warn bun src/eval/run.ts",
     "eval:annotate": "bun src/eval/annotate.ts",
-    "eval:agreement": "NODE_ENV=test LOG_LEVEL=warn bun src/eval/measure-agreement.ts"
+    "eval:agreement": "NODE_ENV=test LOG_LEVEL=warn bun src/eval/measure-agreement.ts",
+    "eval:cases": "NODE_ENV=test LOG_LEVEL=warn bun src/eval/run-cases.ts"
   },
   "dependencies": {
     "@ai-sdk/mistral": "^4.0.48",

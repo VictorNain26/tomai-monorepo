@@ -28,6 +28,7 @@
     "eval": "bun run --cwd apps/server eval",
     "eval:annotate": "bun run --cwd apps/server eval:annotate",
     "eval:agreement": "bun run --cwd apps/server eval:agreement",
+    "eval:cases": "bun run --cwd apps/server eval:cases",
     "postinstall": "lefthook install || true"
   },
   "devDependencies": {
