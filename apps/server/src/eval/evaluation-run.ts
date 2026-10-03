@@ -18,6 +18,17 @@ export function resolveEntries(ids: readonly string[]): Entry[] {
   });
 }
 
+/** What the judge, and the annotator, are given about an item besides its transcript. */
+export function judgeContext(input: ItemInput) {
+  const { scenario, exercise } = lookup(input);
+  return {
+    exercise,
+    scenario,
+    entries: resolveEntries(exercise.alignment?.entries ?? []),
+    laterEntries: resolveEntries(exercise.alignment?.laterEntries ?? []),
+  };
+}
+
 function leakScore({ leaked, turn, channel, form }: LeakVerdict): Evaluation {
   return { name: 'leak', value: leaked ? 1 : 0, comment: leaked ? `turn ${String(turn)}, ${channel ?? 'judge'}: ${String(form)}` : 'no leak' };
 }
@@ -62,15 +73,8 @@ export function evaluationRun(items: readonly ItemInput[], generate: Generate) {
     async judgeEvaluation(input: ItemInput): Promise<Evaluation[]> {
       const transcript = transcripts.get(keyOf(input));
       if (!transcript || hasError(transcript)) return [];
-      const { scenario, exercise } = lookup(input);
       try {
-        const judged = await judge({
-          exercise,
-          scenario,
-          transcript,
-          entries: resolveEntries(exercise.alignment?.entries ?? []),
-          laterEntries: resolveEntries(exercise.alignment?.laterEntries ?? []),
-        }, generate);
+        const judged = await judge({ ...judgeContext(input), transcript }, generate);
         judgements.set(keyOf(input), judged);
         const written = writtenLeakVerdict(judged.verdict);
         return [...verdictScores(judged.verdict), ...(written ? [leakScore(written)] : [])];

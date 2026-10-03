@@ -13,9 +13,10 @@ import { LangfuseSpanProcessor } from '@langfuse/otel';
 import { LangfuseClient, type Evaluator, type RunEvaluator } from '@langfuse/client';
 import { setupOtel, shutdownOtel } from '../platform/observability/otel.js';
 import { resolveDatabaseUrl } from '../platform/config/database-url.js';
-import { evaluationRun } from './evaluation-run.js';
-import { JUDGE } from './judge.js';
-import { buildItems, isLocalDatabase, itemInput, lookup, runOptions, type ItemInput } from './items.js';
+import { criteriaFor } from './annotation.js';
+import { evaluationRun, judgeContext } from './evaluation-run.js';
+import { JUDGE, briefing, sections, transcriptText } from './judge.js';
+import { buildItems, isLocalDatabase, itemInput, keyOf, lookup, runOptions, samplePairs, unknownPairs, type ItemInput } from './items.js';
 
 async function main(): Promise<number> {
   if (!isLocalDatabase(resolveDatabaseUrl())) {
@@ -27,12 +28,20 @@ async function main(): Promise<number> {
       scenario: { type: 'string', multiple: true },
       exercise: { type: 'string', multiple: true },
       repeat: { type: 'string', default: '1' },
-      concurrency: { type: 'string', default: '2' },
+      // Two conversations at once draw HTTP 429 from Mistral on this account (2026-10-03).
+      concurrency: { type: 'string', default: '1' },
+      sample: { type: 'string' },
       'skip-judge': { type: 'boolean', default: false },
     },
   });
   const options = runOptions.parse(values);
-  const items = buildItems(options);
+  const sample = options.sample ? samplePairs.parse(await Bun.file(options.sample).json()) : undefined;
+  const unknown = sample ? unknownPairs(sample) : [];
+  if (unknown.length > 0) {
+    console.error(`sample pairs not in the dataset: ${unknown.map((p) => `${p.scenarioId}:${p.exerciseId}`).join(', ')}`);
+    return 1;
+  }
+  const items = buildItems(options, sample);
   if (items.length === 0) {
     console.error('no item matches the filters');
     return 1;
@@ -57,13 +66,20 @@ async function main(): Promise<number> {
       runName,
       description: 'Scenarios of apps/server/src/eval replayed through /api/chat/stream; deterministic leak check and dated judge.',
       metadata: { model: env.MISTRAL_MODEL, judge: options['skip-judge'] ? 'skipped' : JUDGE, gitSha: sha, items: items.length },
-      data: items.map((input) => ({ input, metadata: { level: lookup(input).exercise.level } })),
+      // The briefing and the criteria make the trace readable for a human annotator.
+      data: items.map((input) => {
+        const context = judgeContext(input);
+        return {
+          input: { ...input, briefing: briefing(context), criteria: criteriaFor(sections(context)) },
+          metadata: { level: context.exercise.level },
+        };
+      }),
       task: async ({ input }) => {
         const item = itemInput.parse(input);
         const { scenario, exercise } = lookup(item);
         const transcript = await playConversation(scenario, exercise, item.repetition);
         run.record(item, transcript);
-        return transcript;
+        return transcriptText(transcript);
       },
       evaluators: options['skip-judge'] ? [leakEvaluator] : [leakEvaluator, judgeEvaluator],
       runEvaluators: [runEvaluator],
@@ -71,6 +87,10 @@ async function main(): Promise<number> {
     });
     console.log(await result.format());
 
+    const traceIds = new Map(result.itemResults.flatMap(({ item, traceId }) => {
+      const parsed = itemInput.safeParse(item.input);
+      return parsed.success && traceId ? [[keyOf(parsed.data), traceId] as const] : [];
+    }));
     await mkdir('eval-results', { recursive: true });
     const judgeUsage = run.judgeUsage();
     await Bun.write(`eval-results/${runName}.json`, JSON.stringify({
@@ -79,7 +99,7 @@ async function main(): Promise<number> {
       judge: options['skip-judge'] ? null : JUDGE,
       judgeUsage,
       runEvaluations: result.runEvaluations,
-      report: run.report(),
+      report: run.report().map((row) => ({ ...row, traceId: traceIds.get(keyOf(row)) ?? null })),
     }, null, 2));
     console.log(`eval-results/${runName}.json`);
     console.log(`judge tokens: ${String(judgeUsage.inputTokens)} in (${String(judgeUsage.cachedInputTokens)} cached), ${String(judgeUsage.outputTokens)} out`);

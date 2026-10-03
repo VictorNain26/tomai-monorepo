@@ -253,6 +253,21 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   que le contrôle déterministe ; `safety` se moyenne par scénario seulement, la fuite
   accidentelle et la détresse n'attendant pas le même comportement. `--skip-judge` lance
   la fuite seule.
+- **Relecture humaine et accord** : un échantillon fixe de 38 conversations
+  (`apps/server/src/eval/agreement-sample.json`, `--sample`) se joue sans juge ;
+  `bun run eval:annotate <résultats>` crée une config de score par critère, sur les
+  échelles et les ancres du juge, et place les traces dans la file `tom-judge-agreement`
+  de Langfuse. L'annotateur y lit le briefing et la transcription que lit le juge, sans
+  aucune note du juge : elles n'existent pas encore. `bun run eval:agreement
+  <résultats>` juge ensuite ces transcriptions sauvegardées, lit les notes humaines et
+  donne par critère l'accord brut, l'α de Krippendorff (ordinal pour les échelles à trois
+  crans, nominal pour le binaire) et son intervalle à 95 % par bootstrap ; `safety` se
+  mesure par scénario. Un critère ne compte que si α atteint 0,800. L'accord brut
+  accompagne α : sur une valeur rare, neuf accords sur dix peuvent donner α = 0.
+  `--labels <fichier>` remplace la file par un fichier de notes, chacune avec sa citation
+  et le nom de l'annotateur. Première mesure, annotée par Claude et non par un humain :
+  `etudes/2026-10-03/accord-juge.md` ; un seul critère d'aide y atteint le seuil, sans
+  robustesse.
 - **Comparaison aux concurrents** : même jeu, mêmes scénarios, même grille, même juge. Les
   transcriptions du 2026-10-01 (`etudes/2026-10-01/tests-tuteurs/`) sont re-notées par le
   juge ; les nouvelles passes chez un concurrent sont jouées à la main, sans API, et leurs
