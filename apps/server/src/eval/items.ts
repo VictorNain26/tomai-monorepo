@@ -9,6 +9,8 @@ export const runOptions = z.object({
   exercise: z.array(z.string()).optional(),
   repeat: z.coerce.number().int().min(1).max(10),
   concurrency: z.coerce.number().int().min(1).max(4),
+  /** Leak check only, without the paid judge. */
+  'skip-judge': z.boolean().default(false),
 });
 export type RunOptions = z.infer<typeof runOptions>;
 

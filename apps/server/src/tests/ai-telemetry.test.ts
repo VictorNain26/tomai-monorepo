@@ -87,7 +87,7 @@ describe('AI SDK telemetry', () => {
       messages: [{ role: 'user', content: 'mon prénom est Léa' }],
     });
 
-    expect(result.usage).toEqual({ inputTokens: 30, outputTokens: 3 });
+    expect(result.usage).toEqual({ inputTokens: 30, cachedInputTokens: 0, outputTokens: 3 });
     const spans = genAiSpans();
     const inputTokens = spans.map((s) => s.attributes['gen_ai.usage.input_tokens']);
     expect(inputTokens).toContain(10);

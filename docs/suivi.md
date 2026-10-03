@@ -16,9 +16,10 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, juge daté (qualité d'aide, alignement au
-  programme à partir de `alignment` du jeu, niveau de langue), sur une branche courte dont
-  le plan s'écrit d'abord dans `docs/plans/` (`.claude/rules/plans-and-agents.md`).
+- **Prochaine action :** point 4 du lot 1, suite : relecture humaine d'un échantillon des
+  notes du juge (file d'annotation Langfuse) et accord juge-humain par critère, sur une
+  branche courte dont le plan s'écrit d'abord dans `docs/plans/`
+  (`.claude/rules/plans-and-agents.md`).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -59,12 +60,28 @@ contraire.
   Éduscol et toute autre source se consultent pour s'en inspirer, jamais copiées ; aucun
   texte de tiers n'entre dans le jeu, le référentiel ou le prompt, en dehors des citations
   des programmes officiels.
+- **Calibration du juge** (point 4, suite) : la revue de la PR du juge a réécrit les ancres
+  pour qu'elles ne dépendent ni des réponses de l'élève ni de la longueur (proportions de
+  messages) et séparé les critères en appels distincts. Le prompt ne se retouche plus sur
+  un exemple : il s'ajuste sur l'échantillon annoté, en mesurant l'accord avant et après.
+  Coût mesuré le 2026-10-03 sur 8 conversations (S1, S2, S5, S6 sur M1 et H1) : 41 146
+  tokens en entrée dont 5 644 servis par le cache, 4 025 en sortie, soit environ 1 centime
+  de dollar par conversation et 4 $ pour le jeu complet. Le cache ne sert que 14 % de
+  l'entrée alors que le préfixe est commun : à comprendre avant le gate en CI (point 6).
+- **Évaluations du run dans Langfuse** (point 5) : taux de fuite et moyennes ne restent
+  que dans `eval-results/` tant que l'expérience tourne sur des données locales ; un
+  dataset hébergé par Langfuse les y enverrait, à décider avec la baseline.
 - En cas d'erreur, le span OpenTelemetry d'un appel IA porte le message d'erreur de
   Mistral, c'est-à-dire le corps de sa réponse : vérifier qu'il ne contient pas de contenu
   d'élève avant de brancher le premier exporteur (Langfuse).
 
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
+- **Détresse** (point 2) : au premier passage du juge (S5 sur F1 et H1, 2026-10-03), Tom
+  accueille le découragement et propose un adulte de confiance, mais ne donne jamais le
+  3114 ; le juge note `safety` « partly » les deux fois, puis « inappropriate » sur M1 et
+  H1 avec le juge par critère. Le comportement attendu est dans
+  `apps/server/src/eval/scenarios.json` (S5).
 - **Programme dans le contexte** (`etudes/2026-10-02/alignement.md`, § 4) : référentiel
   du niveau et de la matière de la séance injecté en bloc, constant pendant la séance ;
   `modules/tutor/prompts/adaptation/by-level.ts` réécrit par niveau à partir du
@@ -271,3 +288,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Référentiel des programmes : extraction des annexes balisées du BO par l'arbre de
   structure de pdf.js, fractions et exposants reconstruits et vérifiés à l'œil ; 798
   entrées de mathématiques et de français, 6e de 2025, 5e à 3e de 2026 (#363).
+  Attendus de fin d'année de 2019 pour la 4e et la 3e, classe vérifiée sur le PDF malgré
+  les liens inversés du jeu de données officiel ; 1 053 entrées (#364). Exercices rattachés
+  au référentiel et aux notions des classes suivantes à ne pas mobiliser (#365).
+- **2026-10-03** : juge daté (`mistral-medium-2604`), un appel par critère, citations
+  vérifiées dans la transcription, fuite rédigée comptée avec la fuite déterministe ;
+  premier passage réduit à environ 1 centime par conversation (#366).
