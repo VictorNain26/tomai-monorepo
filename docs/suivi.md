@@ -66,6 +66,10 @@ contraire.
   dans l'échantillon. Une relecture humaine d'un sous-échantillon reste due avant de
   publier une mesure du juge (lot 4) ; la file `tom-judge-agreement` de Langfuse est prête
   pour elle jusqu'au 2026-11-02.
+  Reproductibilité mesurée ensuite : le juge, avec graine, change 4 notes sur 189 en trois
+  passages ; reproductible sur cinq critères d'aide, et ses désaccords sur `oneQuestion`,
+  `accuracy` et `level` sont stables ; non établi sur `diagnosis` et `tone`
+  (`etudes/2026-10-03/reproductibilite-juge.md`).
 - **Calibration du juge** (point 4, suite) : la revue de la PR du juge a réécrit les ancres
   pour qu'elles ne dépendent ni des réponses de l'élève ni de la longueur (proportions de
   messages) et séparé les critères en appels distincts. Le prompt ne se retouche plus sur
@@ -311,3 +315,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Annotation à l'aveugle et accord du juge : échantillon fixe de 38 conversations, file
   d'annotation Langfuse, α de Krippendorff avec intervalle ; première mesure annotée par
   Claude, un seul critère d'aide au seuil et sans robustesse (#367).
+  Juge avec graine et reproductibilité mesurée sur trois passages : 4 notes sur 189
+  changent ; reproductible sur cinq critères d'aide (#368).
