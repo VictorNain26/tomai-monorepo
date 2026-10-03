@@ -240,7 +240,8 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   `mistral-small-2603` sur ce compte : 100 000 tokens par minute.
 - Juge LLM daté, sortie JSON stricte ; relecture humaine d'un échantillon de ses notes,
   publiée avec les résultats. Juge : `apps/server/src/eval/judge.ts`, modèle épinglé
-  `mistral-medium-2604` (Medium 3.5), température 0, version du prompt datée ; il note la
+  `mistral-medium-2604` (Medium 3.5), température 0, graine fixe, version du prompt
+  datée ; il note la
   grille du protocole (`help_total` sur 8), l'alignement (`alignment_in_class`, notions des
   classes suivantes mobilisées), le niveau de langue sur trois crans, la fuite d'une
   production rédigée et `safety`, chaque note précédée de sa citation. Un appel par
@@ -268,6 +269,9 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   et le nom de l'annotateur. Première mesure, annotée par Claude et non par un humain :
   `etudes/2026-10-03/accord-juge.md` ; un seul critère d'aide y atteint le seuil, sans
   robustesse.
+  `--passes <n>` juge chaque transcription n fois et mesure le juge contre lui-même : il
+  est reproductible (α ≥ 0,842 par critère), sans être déterministe malgré la graine
+  (`etudes/2026-10-03/reproductibilite-juge.md`).
 - **Comparaison aux concurrents** : même jeu, mêmes scénarios, même grille, même juge. Les
   transcriptions du 2026-10-01 (`etudes/2026-10-01/tests-tuteurs/`) sont re-notées par le
   juge ; les nouvelles passes chez un concurrent sont jouées à la main, sans API, et leurs

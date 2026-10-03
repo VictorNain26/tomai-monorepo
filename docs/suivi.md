@@ -16,9 +16,10 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, suite : recalibration du juge
-  (`etudes/2026-10-03/accord-juge.md`, « Suite »), sur une branche courte dont le plan
-  s'écrit d'abord dans `docs/plans/`.
+- **Prochaine action :** point 4 du lot 1, suite : recalibration du juge — ancres de
+  `oneQuestion` et `diagnosis` réécrites, `language_level` réparée, cas construits pour
+  les critères sans variation, validation sur un nouvel échantillon
+  (`etudes/2026-10-03/accord-juge.md`, « Suite ») ; plan d'abord dans `docs/plans/`.
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -66,6 +67,9 @@ contraire.
   dans l'échantillon. Une relecture humaine d'un sous-échantillon reste due avant de
   publier une mesure du juge (lot 4) ; la file `tom-judge-agreement` de Langfuse est prête
   pour elle jusqu'au 2026-11-02.
+  Reproductibilité mesurée ensuite : le juge, avec graine, change 4 notes sur 189 en trois
+  passages ; ses désaccords avec l'annotation sont stables, pas du bruit
+  (`etudes/2026-10-03/reproductibilite-juge.md`).
 - **Calibration du juge** (point 4, suite) : la revue de la PR du juge a réécrit les ancres
   pour qu'elles ne dépendent ni des réponses de l'élève ni de la longueur (proportions de
   messages) et séparé les critères en appels distincts. Le prompt ne se retouche plus sur
