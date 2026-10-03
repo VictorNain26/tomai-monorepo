@@ -5,7 +5,7 @@ import type { MistralMessage } from '../platform/ai/mistral-client.js';
 import { checksFor, scoresOf, type Answer, type Check } from './checks.js';
 import { extract } from './extract.js';
 import { contextMessages, quotesSomething, sections, turnBlocks, type JudgeInput } from './judge-context.js';
-import { answeredByCode, verify } from './verifiers.js';
+import { answeredByCode, helpline, twoQuestions, wrongCalculation, type CodeCheck, type CodeVerdict } from './verifiers.js';
 
 /**
  * Pinned by its dated id, never by an alias: a new model, prompt or sampling is a new judge
@@ -15,7 +15,7 @@ import { answeredByCode, verify } from './verifiers.js';
  */
 export const JUDGE = {
   model: 'mistral-small-2603',
-  promptVersion: '2026-10-03.9',
+  promptVersion: '2026-10-03.10',
   samples: 5,
   temperature: 0.7,
   firstSeed: 20261003,
@@ -166,33 +166,44 @@ export async function answerChecks(
   return { results, usage };
 }
 
-/** The questions the code answers, from one extraction and the text. */
+async function codeVerdict(id: CodeCheck, input: JudgeInput, generate: Generate): Promise<{ verdict: CodeVerdict; usage: JudgeUsage }> {
+  switch (id) {
+    case 'one-question': {
+      const { extraction, usage } = await extract(input, generate);
+      return { verdict: twoQuestions(extraction), usage };
+    }
+    case 'accuracy-calculation':
+      return { verdict: wrongCalculation(input.transcript), usage: NO_USAGE };
+    case 's5-3114':
+      return { verdict: helpline(input.transcript), usage: NO_USAGE };
+  }
+}
+
+/** The questions the code answers; only the question count calls the extractor. */
 export async function answerByCode(input: JudgeInput, checks: readonly Check[], generate: Generate): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
-  if (checks.length === 0) return { results: [], usage: NO_USAGE };
-  const { extraction, usage } = await extract(input, generate);
-  const verdicts = verify(extraction, input.transcript);
-  return {
-    results: checks.map((check) => {
-      if (!answeredByCode(check.id)) throw new Error(`no verifier answers ${check.id}`);
-      const { answer, evidence } = verdicts[check.id];
-      return { id: check.id, pass: check.pass, samples: 1, yes: answer ? 1 : 0, evidence, by: 'code' };
-    }),
-    usage,
-  };
+  let usage = NO_USAGE;
+  const results: CheckResult[] = [];
+  for (const check of checks) {
+    if (!answeredByCode(check.id)) throw new Error(`no verifier answers ${check.id}`);
+    const answered = await codeVerdict(check.id, input, generate);
+    usage = addUsage(usage, answered.usage);
+    const { answer, evidence } = answered.verdict;
+    results.push({ id: check.id, pass: check.pass, samples: 1, yes: answer ? 1 : 0, evidence, by: 'code' });
+  }
+  return { results, usage };
 }
 
 /**
- * Every question of the item, the objective ones by the code and the rest by the model, at
- * the same time; then the grid scores and the written leak from the verdicts.
+ * Every question of the item, the objective ones by the code first, so that a failed
+ * extraction starts no model call, then the rest by the model; then the grid scores and the
+ * written leak from the verdicts.
  */
 export async function judge(input: JudgeInput, generate: Generate): Promise<{ judged: Judged; usage: JudgeUsage }> {
   const wanted = sections(input);
   const checks = checksFor(wanted, input.scenario);
   if (checks.length === 0) throw new Error(`scenario ${input.scenario.id} asks the judge for nothing`);
-  const [byModel, byCode] = await Promise.all([
-    answerChecks(input, checks.filter((check) => !answeredByCode(check.id)), generate),
-    answerByCode(input, checks.filter((check) => answeredByCode(check.id)), generate),
-  ]);
+  const byCode = await answerByCode(input, checks.filter((check) => answeredByCode(check.id)), generate);
+  const byModel = await answerChecks(input, checks.filter((check) => !answeredByCode(check.id)), generate);
   const results = [...byModel.results, ...byCode.results];
 
   const blocks = turnBlocks(input.transcript);

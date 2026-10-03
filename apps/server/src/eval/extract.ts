@@ -51,12 +51,13 @@ export async function extract(input: JudgeInput, generate: Generate): Promise<{ 
     seed: JUDGE.firstSeed,
     promptCacheKey: `eval-extract-${JUDGE.promptVersion}-${input.scenario.id}-${input.exercise.id}-${String(input.transcript.repetition)}`,
   });
-  // Questions are checked against what the tutor wrote, not the student's lines.
+  // Questions are checked against what the tutor wrote, not the student's lines; a question
+  // listed twice counts once.
   const facts = input.transcript.turns.map(({ text }, index): MessageFacts => {
     const listed = object.messages.filter((m) => Number(m.turn) === index + 1);
     return {
       turn: index + 1,
-      questions: listed.flatMap((m) => m.questions).filter((q) => quotesSomething(text, q)),
+      questions: [...new Set(listed.flatMap((m) => m.questions).filter((q) => quotesSomething(text, q)))],
     };
   });
   return { extraction: { messages: facts }, usage };
