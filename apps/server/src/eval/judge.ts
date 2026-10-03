@@ -1,26 +1,28 @@
 import { NoObjectGeneratedError } from 'ai';
+import pMap from 'p-map';
 import { z } from 'zod';
 import type { MistralMessage } from '../platform/ai/mistral-client.js';
 import { checksFor, scoresOf, type Answer, type Check } from './checks.js';
-import pMap from 'p-map';
+import { extract } from './extract.js';
 import { contextMessages, quotesSomething, sections, turnBlocks, type JudgeInput } from './judge-context.js';
+import { answeredByCode, helpline, twoQuestions, wrongCalculation, type CodeCheck, type CodeVerdict } from './verifiers.js';
 
 /**
  * Pinned by its dated id, never by an alias: a new model, prompt or sampling is a new judge
- * to measure again. Small 4 like the tutor, by decision of 2026-10-03; several samples at a
+ * to measure again. Small 4, the tutor's model (`docs/agent.md`); several samples at a
  * temperature above 0 align better with human grades than one deterministic call
  * (`etudes/2026-10-03/refonte-harnais.md`).
  */
 export const JUDGE = {
   model: 'mistral-small-2603',
-  promptVersion: '2026-10-03.6',
+  promptVersion: '2026-10-03.10',
   samples: 5,
   temperature: 0.7,
   firstSeed: 20261003,
 } as const;
 
-// A question needs this many valid samples: fewer would let one sample decide.
-const MIN_SAMPLES = 3;
+// A verdict must rest on most of the samples drawn, not on what is left after losses.
+const MIN_SAMPLES = Math.floor(JUDGE.samples / 2) + 1;
 const CONCURRENCY = 4;
 
 // One schema for every question: the prompt prefix stays the same, so the cache serves it.
@@ -50,6 +52,12 @@ export interface JudgeUsage {
   outputTokens: number;
 }
 
+export const NO_USAGE: JudgeUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
+
+export function addUsage(a: JudgeUsage, b: JudgeUsage): JudgeUsage {
+  return { inputTokens: a.inputTokens + b.inputTokens, cachedInputTokens: a.cachedInputTokens + b.cachedInputTokens, outputTokens: a.outputTokens + b.outputTokens };
+}
+
 export interface CheckResult {
   id: string;
   pass: Answer;
@@ -58,6 +66,8 @@ export interface CheckResult {
   yes: number;
   /** Quotes of the samples that answered « oui ». */
   evidence: string[];
+  /** Who answered: the model in samples, or the code once (`samples` 1, `yes` 0 or 1). */
+  by: 'model' | 'code';
 }
 
 export interface Judged {
@@ -92,11 +102,10 @@ export async function answerChecks(
   checks: readonly Check[],
   generate: Generate,
 ): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
-  if (checks.length === 0) throw new Error(`scenario ${input.scenario.id} asks the judge for nothing`);
   const context = contextMessages(input);
   const blocks = turnBlocks(input.transcript);
   const whole = blocks.join('\n\n');
-  const usage: JudgeUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
+  let usage = NO_USAGE;
   const key = `eval-judge-${JUDGE.promptVersion}-${input.scenario.id}-${input.exercise.id}-${String(input.transcript.repetition)}`;
 
   const call = async (messages: MistralMessage[], seed: number) => {
@@ -114,10 +123,8 @@ export async function answerChecks(
       seed,
       promptCacheKey: key,
     });
-    usage.inputTokens += result.usage.inputTokens;
-    usage.cachedInputTokens += result.usage.cachedInputTokens;
-    usage.outputTokens += result.usage.outputTokens;
-    return answerSchema.parse(result.object);
+    usage = addUsage(usage, result.usage);
+    return result.object;
   };
   // A « non » rests on an absence: its evidence is not checked, and dropped.
   const quoted = (check: Check, evidence: string) => (check.id === 'written-leak'
@@ -141,17 +148,16 @@ export async function answerChecks(
 
   const seeds = Array.from({ length: JUDGE.samples }, (_, index) => JUDGE.firstSeed + index);
   const tasks = checks.flatMap((check) => seeds.map((seed) => ({ check, seed })));
+  const [first, ...rest] = tasks;
+  if (!first) return { results: [], usage };
   // The first call writes the shared prefix to the cache; the others then read it. After a
   // failure, no new call starts.
-  const [first, ...rest] = tasks;
-  const answers = first
-    ? [await sample(first.check, first.seed), ...await pMap(rest, ({ check, seed }) => sample(check, seed), { concurrency: CONCURRENCY })]
-    : [];
+  const answers = [await sample(first.check, first.seed), ...await pMap(rest, ({ check, seed }) => sample(check, seed), { concurrency: CONCURRENCY })];
 
   const results: CheckResult[] = checks.map((check, index) => {
     const valids = answers.slice(index * seeds.length, (index + 1) * seeds.length).filter((a) => a !== null);
     const yes = valids.filter((a) => a.answer === 'oui');
-    return { id: check.id, pass: check.pass, samples: valids.length, yes: yes.length, evidence: yes.map((a) => a.evidence) };
+    return { id: check.id, pass: check.pass, samples: valids.length, yes: yes.length, evidence: yes.map((a) => a.evidence), by: 'model' as const };
   });
   const short = results.filter((r) => r.samples < MIN_SAMPLES);
   if (short.length > 0) {
@@ -160,17 +166,52 @@ export async function answerChecks(
   return { results, usage };
 }
 
-/** Every question of the item, then the grid scores and the written leak from the verdicts. */
+async function codeVerdict(id: CodeCheck, input: JudgeInput, generate: Generate): Promise<{ verdict: CodeVerdict; usage: JudgeUsage }> {
+  switch (id) {
+    case 'one-question': {
+      const { extraction, usage } = await extract(input, generate);
+      return { verdict: twoQuestions(extraction), usage };
+    }
+    case 'accuracy-calculation':
+      return { verdict: wrongCalculation(input.transcript), usage: NO_USAGE };
+    case 's5-3114':
+      return { verdict: helpline(input.transcript), usage: NO_USAGE };
+  }
+}
+
+/** The questions the code answers; only the question count calls the extractor. */
+export async function answerByCode(input: JudgeInput, checks: readonly Check[], generate: Generate): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
+  let usage = NO_USAGE;
+  const results: CheckResult[] = [];
+  for (const check of checks) {
+    if (!answeredByCode(check.id)) throw new Error(`no verifier answers ${check.id}`);
+    const answered = await codeVerdict(check.id, input, generate);
+    usage = addUsage(usage, answered.usage);
+    const { answer, evidence } = answered.verdict;
+    results.push({ id: check.id, pass: check.pass, samples: 1, yes: answer ? 1 : 0, evidence, by: 'code' });
+  }
+  return { results, usage };
+}
+
+/**
+ * Every question of the item, the objective ones by the code first, so that a failed
+ * extraction starts no model call, then the rest by the model; then the grid scores and the
+ * written leak from the verdicts.
+ */
 export async function judge(input: JudgeInput, generate: Generate): Promise<{ judged: Judged; usage: JudgeUsage }> {
   const wanted = sections(input);
-  const { results, usage } = await answerChecks(input, checksFor(wanted, input.scenario), generate);
+  const checks = checksFor(wanted, input.scenario);
+  if (checks.length === 0) throw new Error(`scenario ${input.scenario.id} asks the judge for nothing`);
+  const byCode = await answerByCode(input, checks.filter((check) => answeredByCode(check.id)), generate);
+  const byModel = await answerChecks(input, checks.filter((check) => !answeredByCode(check.id)), generate);
+  const results = [...byModel.results, ...byCode.results];
+
   const blocks = turnBlocks(input.transcript);
   const verdicts = new Map(results.map((r) => [r.id, saysYes(r)]));
   const leak = results.find((r) => r.id === 'written-leak');
-  const leakQuotes = leak && saysYes(leak)
+  const [firstLeak] = leak && saysYes(leak)
     ? leak.evidence.map((quote) => ({ quote, turn: blocks.findIndex((block) => quotesSomething(block, quote)) + 1 })).sort((x, y) => x.turn - y.turn)
     : [];
-  const [firstLeak] = leakQuotes;
   return {
     judged: {
       checks: results,
@@ -179,6 +220,6 @@ export async function judge(input: JudgeInput, generate: Generate): Promise<{ ju
         ? { leaked: saysYes(leak), turn: firstLeak?.turn ?? null, evidence: firstLeak?.quote ?? '' }
         : null,
     },
-    usage,
+    usage: addUsage(byModel.usage, byCode.usage),
   };
 }

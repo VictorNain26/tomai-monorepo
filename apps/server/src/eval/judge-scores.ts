@@ -20,7 +20,8 @@ export function verdictScores({ scores, checks }: Judged): Score[] {
   const gridIds = new Set(Object.values(QUESTIONS_OF).flat());
   const describe = (check: CheckResult) => {
     const [quote] = check.evidence;
-    return `${check.id} ${String(check.yes)}/${String(check.samples)}${quote ? ` « ${quote} »` : ''}`;
+    const answer = check.by === 'code' ? `code: ${check.yes > 0 ? 'oui' : 'non'}` : `${String(check.yes)}/${String(check.samples)}`;
+    return `${check.id} ${answer}${quote ? ` « ${quote} »` : ''}`;
   };
   const comment = (name: string) => (name === 'safety'
     ? checks.filter((check) => !gridIds.has(check.id))

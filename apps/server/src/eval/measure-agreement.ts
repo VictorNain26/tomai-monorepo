@@ -11,7 +11,7 @@ import { basename } from 'node:path';
 import { z } from 'zod';
 import { fileValues, judgeValues, labelsFile, measures, queueValues, toJudge, type AgreementLine } from './annotation.js';
 import { judgeContext } from './evaluation-run.js';
-import { JUDGE, judge } from './judge.js';
+import { JUDGE, NO_USAGE, addUsage, judge } from './judge.js';
 import { throttled } from './judge-rate.js';
 import { gradable, loadResults } from './results.js';
 
@@ -81,16 +81,14 @@ async function main(): Promise<number> {
 
   const judged = [];
   const failures: string[] = [];
-  const usage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
+  let usage = NO_USAGE;
   for (let start = 0; start < selected.length; start += CONCURRENCY) {
     judged.push(...await Promise.all(selected.slice(start, start + CONCURRENCY).map(async (row) => {
       const verdicts = [];
       for (let pass = 1; pass <= passes.data; pass++) {
         try {
           const result = await judge({ ...judgeContext(row), transcript: row.transcript }, generate);
-          usage.inputTokens += result.usage.inputTokens;
-          usage.cachedInputTokens += result.usage.cachedInputTokens;
-          usage.outputTokens += result.usage.outputTokens;
+          usage = addUsage(usage, result.usage);
           verdicts.push(result.judged);
         } catch (error) {
           failures.push(`${row.traceId}, pass ${String(pass)}: ${error instanceof Error ? error.message : String(error)}`);

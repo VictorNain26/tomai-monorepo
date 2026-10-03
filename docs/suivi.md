@@ -16,10 +16,11 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, extracteur et vérificateurs
-  (`etudes/2026-10-03/juge-extraction-verification.md`, « Ordre des PR », 2) : questions
-  comptées, calculs vérifiés, fuite et détresse ; mesurés sur les cas construits
-  (`etudes/2026-10-03/cas-construits.md`) ; plan d'abord dans `docs/plans/`.
+- **Prochaine action :** point 4 du lot 1, analyse des erreurs sur les conversations
+  réelles : le harnais actuel sur l'échantillon d'accord, traces relues, défauts observés et
+  leur fréquence, fausses alarmes du code ; puis simplification (retirer ce que l'analyse ne
+  justifie pas) et relecture humaine d'une vingtaine de conversations par Victor, avant
+  tout nouveau vérificateur (étapes de référence, notions). Plan d'abord dans `docs/plans/`.
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -329,3 +330,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   questions oui/non, cinq tirages, erreur de l'élève en référence, questions critiques en
   sécurité, cache à 91 %, limite de débit ; il ne voit presque pas les défauts de son
   propre modèle (#370). Étude du juge en extraction et vérification (#371).
+  Cas construits, une conversation saine et sa version fautive par défaut, pour mesurer ce
+  que le juge repère (#372). Le code répond à ce qui se vérifie : égalités écrites
+  recalculées par mathjs, questions relevées par Small 4 puis comptées, 3114 cherché dans
+  le texte ; calcul faux et deux questions repérés là où le modèle ne les voyait pas, sans
+  fausse alarme sur les cas construits (#373).

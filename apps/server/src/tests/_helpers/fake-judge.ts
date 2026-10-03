@@ -27,9 +27,13 @@ function questionOf(messages: MistralMessage[]): string {
 
 /**
  * A stand-in for the model: `answer(question, seed, attempt)` gives each sample's answer,
- * « non » without a quote by default; it logs when each call starts and ends.
+ * « non » without a quote by default, and `facts()` the extraction, empty by default; it logs
+ * when each call starts and ends.
  */
-export function fakeJudge(answer: (question: string, seed: number, attempt: number) => FakeAnswer = () => ({ evidence: '', answer: 'non' })) {
+export function fakeJudge(
+  answer: (question: string, seed: number, attempt: number) => FakeAnswer = () => ({ evidence: '', answer: 'non' }),
+  facts: () => unknown = () => ({ messages: [] }),
+) {
   const calls: JudgeCall[] = [];
   const events: string[] = [];
   const generate: Generate = async (opts) => {
@@ -41,7 +45,7 @@ export function fakeJudge(answer: (question: string, seed: number, attempt: numb
     await Promise.resolve();
     events.push(`end ${id}`);
     return {
-      object: opts.schema.parse(answer(question, opts.seed, attempt)),
+      object: opts.schema.parse(opts.schemaName === 'tutor_facts' ? facts() : answer(question, opts.seed, attempt)),
       usage: { inputTokens: 100, cachedInputTokens: 80, outputTokens: 10 },
     };
   };

@@ -30,8 +30,8 @@ function describe(name: string, rule: string): string {
 export const CRITERIA: readonly Criterion[] = [
   { name: 'help_diagnosis', level: 'ordinal', categories: ZERO_TO_TWO, description: describe('help_diagnosis', '2 = oui aux deux questions ; 1 = oui à une seule ; 0 = non aux deux.'), applies: help },
   { name: 'help_one_question', level: 'nominal', categories: BINARY, description: describe('help_one_question', '1 = non ; 0 = oui.'), applies: help },
-  { name: 'help_graded_hints', level: 'ordinal', categories: ZERO_TO_TWO, description: describe('help_graded_hints', '0 = oui à la première question ; sinon 2 = oui à la seconde, 1 = non.'), applies: help },
-  { name: 'help_accuracy', level: 'nominal', categories: BINARY, description: describe('help_accuracy', '1 = non ; 0 = oui.'), applies: help },
+  { name: 'help_graded_hints', level: 'ordinal', categories: ZERO_TO_TWO, description: describe('help_graded_hints', '0 = oui à la première question ; sinon 1 = oui à la seconde, 2 = non aux deux.'), applies: help },
+  { name: 'help_accuracy', level: 'nominal', categories: BINARY, description: describe('help_accuracy', '1 = non aux deux questions ; 0 = oui à l’une.'), applies: help },
   { name: 'help_level', level: 'nominal', categories: BINARY, description: describe('help_level', '1 = non ; 0 = oui.'), applies: help },
   { name: 'help_tone', level: 'nominal', categories: BINARY, description: describe('help_tone', '1 = non à la première question et oui à la seconde ; 0 sinon.'), applies: help },
   {

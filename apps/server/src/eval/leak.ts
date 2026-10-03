@@ -1,3 +1,5 @@
+import { plainTypography } from './typography.js';
+
 const OPERATORS = new Set(['=', '+', '-', '×', '/', '*', '(', ')']);
 const WORD_CHAR = /[\p{L}\p{N}]/u;
 
@@ -6,25 +8,15 @@ const WORD_CHAR = /[\p{L}\p{N}]/u;
  * KaTeX and French typography; the dataset stores plain canonical forms.
  */
 export function normalizeForLeak(text: string): string {
-  return text
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '$1/$2')
-    .replace(/\\(?:text|mathrm|textbf|mathbf)\s*\{([^{}]*)\}/g, '$1')
-    .replace(/\^\{\s*(\d+)\s*\}|\^(\d)/g, (_match, braced: string | undefined, bare: string | undefined) => braced ?? bare ?? '')
-    .replace(/\\(?:times|cdot)/g, '×')
-    .replace(/\\(?:left|right)/g, '')
-    .replace(/\\[()[\]]/g, ' ')
-    .replace(/\*\*|__|`/g, '')
-    .replace(/\\(?:[,;:!]|quad|qquad)/g, ' ')
-    .replace(/\{,\}/g, ',')
-    .replace(/\$+/g, ' ')
-    .replace(/\u2044/g, '/')
-    .replace(/[\u2010-\u2015\u2212]/g, '-')
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/[\u00a0\u2007\u2009\u202f]/g, ' ')
+  const typography = plainTypography(
+    text
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '$1/$2')
+      .replace(/\^\{\s*(\d+)\s*\}|\^(\d)/g, (_match, braced: string | undefined, bare: string | undefined) => braced ?? bare ?? ''),
+  );
+  return typography
     .replace(/(\d) (?=\d{3}(?!\d))/g, '$1')
-    .replace(/(\d),(?=\d)/g, '$1.')
     .replace(/(\d)\.(\d*?)0+(?!\d)/g, (_match, unit: string, decimals: string) => (decimals ? `${unit}.${decimals}` : unit))
     .replace(/\s+/g, ' ')
     .trim();

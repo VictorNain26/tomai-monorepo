@@ -1,7 +1,7 @@
 import type { Evaluation } from '@langfuse/client';
 import { programmes, type Entry } from '../referential/index.js';
 import { detectLeak, leakRates, type LeakVerdict } from './evaluators.js';
-import { judge, type Generate, type Judged, type JudgeUsage } from './judge.js';
+import { NO_USAGE, addUsage, judge, type Generate, type Judged, type JudgeUsage } from './judge.js';
 import { meanScores, verdictScores, writtenLeakVerdict } from './judge-scores.js';
 import { keyOf, lookup, type ItemInput } from './items.js';
 import type { Transcript } from './turn-parts.js';
@@ -106,14 +106,7 @@ export function evaluationRun(items: readonly ItemInput[], generate: Generate) {
     },
 
     judgeUsage(): JudgeUsage {
-      const total: JudgeUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
-      for (const judgement of judgements.values()) {
-        if (!('usage' in judgement)) continue;
-        total.inputTokens += judgement.usage.inputTokens;
-        total.cachedInputTokens += judgement.usage.cachedInputTokens;
-        total.outputTokens += judgement.usage.outputTokens;
-      }
-      return total;
+      return [...judgements.values()].reduce((total, j) => ('usage' in j ? addUsage(total, j.usage) : total), NO_USAGE);
     },
 
     /** Keys of the conversations that failed: never played, cut by an error, or not judged. */
