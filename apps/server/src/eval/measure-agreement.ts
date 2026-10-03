@@ -9,7 +9,7 @@ import { LangfuseClient } from '@langfuse/client';
 import { mkdir } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { z } from 'zod';
-import { agreement, fileValues, judgeValues, labelsFile, queueValues, type AgreementLine } from './annotation.js';
+import { fileValues, judgeValues, labelsFile, measures, queueValues, toJudge, type AgreementLine } from './annotation.js';
 import { judgeContext } from './evaluation-run.js';
 import { JUDGE, judge } from './judge.js';
 import { gradable, loadResults } from './results.js';
@@ -59,7 +59,11 @@ async function main(): Promise<number> {
     console.error('usage: bun run eval:agreement <results.json> [--labels <file>] [--passes <n>]');
     return 1;
   }
-  const passes = z.coerce.number().int().min(1).max(5).parse(values.passes);
+  const passes = z.coerce.number().int().min(1).max(5).safeParse(values.passes);
+  if (!passes.success) {
+    console.error('--passes takes a whole number from 1 to 5.');
+    return 1;
+  }
   const results = await loadResults(path);
   const { generateStructured } = await import('../platform/ai/mistral-client.js');
   const rows = gradable(results);
@@ -67,35 +71,32 @@ async function main(): Promise<number> {
   const annotator = labels ? labels.annotator : 'human (Langfuse annotation queue)';
   const human = labels ? fileValues(labels, rows) : await queueGrades(rows.map((row) => row.traceId));
   console.log(`annotator: ${annotator}, ${String(human.size)}/${String(rows.length)} conversation(s) annotated`);
-  // Without annotation, several passes still measure the judge against itself.
-  const toJudge = human.size > 0 ? rows.filter((row) => human.has(row.traceId)) : passes > 1 ? rows : [];
-  if (toJudge.length === 0) {
+  const selected = toJudge(rows, new Set(human.keys()), passes.data);
+  if (selected.length === 0) {
     console.error('nothing to measure: no conversation of this run is annotated, and a single pass.');
     return 1;
   }
 
-  const graded = [];
+  const judged = [];
   const failures: string[] = [];
-  for (let start = 0; start < toJudge.length; start += CONCURRENCY) {
-    graded.push(...await Promise.all(toJudge.slice(start, start + CONCURRENCY).map(async (row) => {
+  for (let start = 0; start < selected.length; start += CONCURRENCY) {
+    judged.push(...await Promise.all(selected.slice(start, start + CONCURRENCY).map(async (row) => {
       const verdicts = [];
-      for (let pass = 1; pass <= passes; pass++) {
+      for (let pass = 1; pass <= passes.data; pass++) {
         try {
           verdicts.push((await judge({ ...judgeContext(row), transcript: row.transcript }, generateStructured)).verdict);
         } catch (error) {
           failures.push(`${row.traceId}, pass ${String(pass)}: ${error instanceof Error ? error.message : String(error)}`);
-          return [];
+          verdicts.push(null);
         }
       }
-      return [{ ...row, human: human.get(row.traceId) ?? null, judge: verdicts.map(judgeValues), verdicts }];
-    })).then((batches) => batches.flat()));
+      return { ...row, human: human.get(row.traceId) ?? null, passes: verdicts.map((v) => (v ? judgeValues(v) : null)), verdicts };
+    })));
   }
 
-  const withHuman = graded.flatMap(({ scenarioId, human: h, judge: [first] }) => (h && first ? [{ scenarioId, coders: [h, first] }] : []));
-  const agreementLines = withHuman.length > 0 ? agreement(withHuman) : null;
-  const stabilityLines = passes > 1 ? agreement(graded.map(({ scenarioId, judge: grades }) => ({ scenarioId, coders: grades }))) : null;
+  const { agreement: agreementLines, stability: stabilityLines } = measures(judged);
   if (agreementLines) printTable(`Agreement with ${annotator} (judge pass 1)`, agreementLines);
-  if (stabilityLines) printTable(`Judge reproducibility over ${String(passes)} passes`, stabilityLines);
+  if (stabilityLines) printTable(`Judge reproducibility over ${String(passes.data)} passes`, stabilityLines);
 
   // A new file in eval-results/ on every run: a committed measure is a dated snapshot.
   await mkdir('eval-results', { recursive: true });
@@ -104,14 +105,14 @@ async function main(): Promise<number> {
     results: path,
     annotator: human.size > 0 ? annotator : null,
     judge: JUDGE,
-    passes,
+    passes: passes.data,
     threshold: THRESHOLD,
     agreement: agreementLines,
     stability: stabilityLines,
-    conversations: graded.map(({ scenarioId, exerciseId, repetition, traceId, human: h, judge: grades, verdicts }) => ({
+    conversations: judged.map(({ scenarioId, exerciseId, repetition, traceId, human: h, passes: grades, verdicts }) => ({
       scenarioId, exerciseId, repetition, traceId,
       human: h ? Object.fromEntries(h) : null,
-      judge: grades.map((g) => Object.fromEntries(g)),
+      judge: grades.map((g) => (g ? Object.fromEntries(g) : null)),
       verdicts,
     })),
     failures,
