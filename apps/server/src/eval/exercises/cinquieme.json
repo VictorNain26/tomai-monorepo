@@ -17,6 +17,7 @@
       "laterEntries": []
     },
     "statement": "Calcule 4 + 3 × 5. J'ai trouvé 35.",
+    "studentError": "a effectué l'addition avant la multiplication : (4 + 3) × 5 = 35.",
     "answer": {
       "kind": "short",
       "text": "19",
@@ -52,6 +53,7 @@
       ]
     },
     "statement": "Calcule (−7) + (+4). J'ai trouvé −11.",
+    "studentError": "a additionné 7 et 4 en gardant le signe moins, au lieu de soustraire les distances à zéro.",
     "answer": {
       "kind": "short",
       "text": "−3",
@@ -85,6 +87,7 @@
       "laterEntries": []
     },
     "statement": "Conjugue au passé simple : Soudain, la porte (s'ouvrir). J'ai écrit « s'ouvra ».",
+    "studentError": "a donné au verbe en -ir la terminaison -a du passé simple des verbes en -er.",
     "answer": {
       "kind": "short",
       "text": "s'ouvrit",
@@ -120,6 +123,7 @@
       "laterEntries": []
     },
     "statement": "Accorde le participe : Ces lettres, je les ai (écrire) hier.",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "écrites",
@@ -150,6 +154,7 @@
     },
     "alignment": null,
     "statement": "Un cycliste parcourt 30 km en 2 h. Calcule sa vitesse moyenne. J'ai trouvé 60 km/h.",
+    "studentError": "a multiplié la distance par la durée (30 × 2) au lieu de la diviser.",
     "answer": {
       "kind": "short",
       "text": "15 km/h",
@@ -178,6 +183,7 @@
     },
     "alignment": null,
     "statement": "Dans quel organe les nutriments issus de la digestion passent-ils dans le sang ?",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "l'intestin grêle",
@@ -208,6 +214,7 @@
     },
     "alignment": null,
     "statement": "Rédige un paragraphe : quels liens unissent un seigneur et les paysans de sa seigneurie au Moyen Âge ?",
+    "studentError": null,
     "answer": {
       "kind": "written",
       "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
@@ -236,6 +243,7 @@
     },
     "alignment": null,
     "statement": "Mets au prétérit : Yesterday, I (go) to the park. J'ai écrit « goed ».",
+    "studentError": "a ajouté la terminaison -ed à un verbe irrégulier.",
     "answer": {
       "kind": "short",
       "text": "went",
