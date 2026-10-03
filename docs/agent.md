@@ -264,6 +264,9 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   crans, nominal pour le binaire) et son intervalle à 95 % par bootstrap ; `safety` se
   mesure par scénario. Un critère ne compte que si α atteint 0,800. L'accord brut
   accompagne α : sur une valeur rare, neuf accords sur dix peuvent donner α = 0.
+  `--labels <fichier>` remplace la file par un fichier de notes, chacune avec sa citation
+  et le nom de l'annotateur. Première mesure, annotée par Claude et non par un humain :
+  `etudes/2026-10-03/accord-juge.md` ; aucun critère d'aide n'y atteint le seuil.
 - **Comparaison aux concurrents** : même jeu, mêmes scénarios, même grille, même juge. Les
   transcriptions du 2026-10-01 (`etudes/2026-10-01/tests-tuteurs/`) sont re-notées par le
   juge ; les nouvelles passes chez un concurrent sont jouées à la main, sans API, et leurs

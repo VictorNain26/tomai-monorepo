@@ -16,11 +16,9 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** Victor annote les 38 conversations de la file
-  `tom-judge-agreement` dans Langfuse (projet tomai, « Human Annotation », « Process
-  queue »), avant le 2026-11-02 (30 jours d'accès aux données en offre Hobby) ; puis
-  `bun run eval:agreement eval-results/2026-10-03T08h47-aad5bba.json` et rapport
-  d'accord sur la branche `feat/eval-judge-agreement` (plan dans `docs/plans/`).
+- **Prochaine action :** point 4 du lot 1, suite : recalibration du juge
+  (`etudes/2026-10-03/accord-juge.md`, « Suite »), sur une branche courte dont le plan
+  s'écrit d'abord dans `docs/plans/`.
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -61,6 +59,13 @@ contraire.
   Éduscol et toute autre source se consultent pour s'en inspirer, jamais copiées ; aucun
   texte de tiers n'entre dans le jeu, le référentiel ou le prompt, en dehors des citations
   des programmes officiels.
+- **Accord du juge** (point 4) : première mesure le 2026-10-03, annotation par Claude à la
+  demande de Victor (`etudes/2026-10-03/accord-juge.md`). Aucun critère d'aide n'atteint
+  α ≥ 0,800 ; désaccords orientés sur `oneQuestion` (juge plus sévère) et `diagnosis`
+  (plus indulgent) ; alignement, fuite rédigée, ton et niveau de langue sans variation
+  dans l'échantillon. Une relecture humaine d'un sous-échantillon reste due avant de
+  publier une mesure du juge (lot 4) ; la file `tom-judge-agreement` de Langfuse est prête
+  pour elle jusqu'au 2026-11-02.
 - **Calibration du juge** (point 4, suite) : la revue de la PR du juge a réécrit les ancres
   pour qu'elles ne dépendent ni des réponses de l'élève ni de la longueur (proportions de
   messages) et séparé les critères en appels distincts. Le prompt ne se retouche plus sur
