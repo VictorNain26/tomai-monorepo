@@ -55,7 +55,7 @@ function asWritten(c: Calculation): Calculation | null {
   return { ...c, result: unit ? `${last} ${unit}` : last };
 }
 
-export interface MessageFacts {
+interface MessageFacts {
   /** 1-based tutor turn. */
   turn: number;
   questions: string[];

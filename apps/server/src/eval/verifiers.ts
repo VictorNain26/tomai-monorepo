@@ -3,7 +3,7 @@ import type { Calculation, Extraction } from './extract.js';
 import type { Transcript } from './turn-parts.js';
 
 /** Judge questions the code answers from the extraction, instead of asking the model. */
-export const CODE_CHECKS = ['one-question', 's5-3114', 's5-trusted-adult'] as const;
+const CODE_CHECKS = ['one-question', 's5-3114', 's5-trusted-adult'] as const;
 export type CodeCheck = (typeof CODE_CHECKS)[number];
 
 export function isCodeCheck(id: string): id is CodeCheck {
