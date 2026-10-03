@@ -266,7 +266,8 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   accompagne α : sur une valeur rare, neuf accords sur dix peuvent donner α = 0.
   `--labels <fichier>` remplace la file par un fichier de notes, chacune avec sa citation
   et le nom de l'annotateur. Première mesure, annotée par Claude et non par un humain :
-  `etudes/2026-10-03/accord-juge.md` ; aucun critère d'aide n'y atteint le seuil.
+  `etudes/2026-10-03/accord-juge.md` ; un seul critère d'aide y atteint le seuil, sans
+  robustesse.
 - **Comparaison aux concurrents** : même jeu, mêmes scénarios, même grille, même juge. Les
   transcriptions du 2026-10-01 (`etudes/2026-10-01/tests-tuteurs/`) sont re-notées par le
   juge ; les nouvelles passes chez un concurrent sont jouées à la main, sans API, et leurs

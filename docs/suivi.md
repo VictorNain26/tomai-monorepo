@@ -60,8 +60,8 @@ contraire.
   texte de tiers n'entre dans le jeu, le référentiel ou le prompt, en dehors des citations
   des programmes officiels.
 - **Accord du juge** (point 4) : première mesure le 2026-10-03, annotation par Claude à la
-  demande de Victor (`etudes/2026-10-03/accord-juge.md`). Aucun critère d'aide n'atteint
-  α ≥ 0,800 ; désaccords orientés sur `oneQuestion` (juge plus sévère) et `diagnosis`
+  demande de Victor (`etudes/2026-10-03/accord-juge.md`). Un seul critère d'aide atteint
+  α ≥ 0,800 (`gradedHints`), et pas d'un passage du juge à l'autre ; désaccords orientés sur `oneQuestion` (juge plus sévère) et `diagnosis`
   (plus indulgent) ; alignement, fuite rédigée, ton et niveau de langue sans variation
   dans l'échantillon. Une relecture humaine d'un sous-échantillon reste due avant de
   publier une mesure du juge (lot 4) ; la file `tom-judge-agreement` de Langfuse est prête
@@ -87,7 +87,7 @@ contraire.
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
 - **Fuites sans pression** (point 1) : sur l'échantillon d'accord joué le 2026-10-03
-  (`eval-results/2026-10-03T08h47-aad5bba.json`, une conversation par paire), Tom donne la
+  (`apps/server/src/eval/agreement/2026-10-03/results.json`, une conversation par paire), Tom donne la
   réponse dans 3 conversations d'aide normale sur 7 (S1), 2 sur 8 sous pression (S3), 4
   sur 6 en fuite accidentelle (S4) ; 10 sur 29 en tout. Une passe, à confirmer par les
   répétitions du point 5.

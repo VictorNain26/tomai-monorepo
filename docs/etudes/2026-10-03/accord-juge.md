@@ -1,7 +1,7 @@
 # Accord du juge — 2026-10-03
 
 Première mesure de l'accord du juge daté (`apps/server/src/eval/judge.ts`, modèle
-`mistral-medium-2604`, prompt `2026-10-03.3`) avec une annotation indépendante.
+`mistral-medium-2604`, prompt `2026-10-03.4`) avec une annotation indépendante.
 Instantané daté, jamais mis à jour.
 
 **Ce n'est pas un accord juge-humain.** À la demande de Victor, l'annotation a été faite
@@ -31,7 +31,8 @@ humaine d'un sous-échantillon reste due avant de publier une mesure du juge (`s
   notes de l'annotateur (`labels.claude.json`), verdicts du juge et mesure
   (`results.agreement.json`). Rejouer : `bun run eval:agreement
   src/eval/agreement/2026-10-03/results.json --labels
-  src/eval/agreement/2026-10-03/labels.claude.json` (le juge est rappelé).
+  src/eval/agreement/2026-10-03/labels.claude.json` : le juge est rappelé et la mesure
+  s'écrit dans `apps/server/eval-results/`, sans toucher à ces fichiers.
 
 ## Résultats
 
@@ -39,10 +40,10 @@ humaine d'un sous-échantillon reste due avant de publier une mesure du juge (`s
 |---|---|---|---|---|---|
 | help_diagnosis | 27 | 0,556 | 0,207 | −0,194 à 0,577 | non |
 | help_one_question | 27 | 0,370 | −0,300 | −0,619 à 0,034 | non |
-| help_graded_hints | 27 | 0,852 | 0,796 | 0,517 à 0,988 | non |
+| help_graded_hints | 27 | 0,852 | 0,840 | 0,590 à 0,988 | oui |
 | help_accuracy | 27 | 0,778 | −0,104 | −0,205 à −0,019 | non |
 | help_level | 27 | 0,815 | 0,195 | −0,152 à 0,654 | non |
-| help_tone | 27 | 0,889 | −0,039 | −0,128 à 0,000 | non |
+| help_tone | 27 | 0,926 | −0,019 | −0,082 à 0,000 | non |
 | language_level | 27 | 0,852 | −0,060 | −0,152 à 0,000 | non |
 | alignment_in_class | 16 | 1,000 | non défini | — | non |
 | alignment_later_used | 16 | 1,000 | non défini | — | non |
@@ -52,9 +53,15 @@ humaine d'un sous-échantillon reste due avant de publier une mesure du juge (`s
 
 ## Lecture
 
-- **Aucun critère d'aide n'est mesurable avec le juge actuel.** `help_graded_hints`
-  approche le seuil (0,796) avec un intervalle large ; `safety` en S4 l'atteint sur six
-  conversations seulement.
+- **Un seul critère d'aide atteint le seuil, et pas de façon robuste.**
+  `help_graded_hints` donne α = 0,840, mais un passage précédent du même juge sur les
+  mêmes transcriptions (prompt `2026-10-03.3`, qui ne diffère que par le message de
+  relance d'une citation) donnait 0,796 : le juge ne rend pas les mêmes notes d'un passage
+  à l'autre, même à température 0, et l'intervalle va de 0,590 à 0,988. `safety` en S4
+  atteint le seuil sur six conversations seulement. Aucune conclusion n'est tirée de ces
+  deux critères avant une mesure répétée.
+- **Bruit du juge** : la reproductibilité du juge (mêmes transcriptions, plusieurs
+  passages) n'est pas encore mesurée ; elle borne l'accord qu'il peut atteindre.
 - **Désaccords orientés, pas du bruit** :
   - `help_one_question` : le juge met 0 là où l'annotateur met 1 dans 17 cas sur 27. Ses
     citations montrent qu'il compte deux questions là où le tuteur double la sienne d'une
@@ -65,7 +72,7 @@ humaine d'un sous-échantillon reste due avant de publier une mesure du juge (`s
     phrase ? »), qu'il prend pour une recherche de ce que l'élève sait ou de ce qui le
     bloque.
   - `help_accuracy`, `help_level`, `help_tone`, `language_level` : le juge met 0 dans
-    quelques conversations que l'annotateur juge correctes (3 à 5 par critère) ; en
+    quelques conversations que l'annotateur juge correctes (2 à 5 par critère) ; en
     exactitude, l'inverse arrive aussi deux fois.
 - **Critères sans variation** : alignement, fuite rédigée, ton et niveau de langue ont
   presque toujours la même note des deux côtés. Un accord brut élevé n'y prouve rien : α
@@ -81,7 +88,8 @@ humaine d'un sous-échantillon reste due avant de publier une mesure du juge (`s
 
 ## Suite
 
-Recalibration du juge, PR suivante : ancres de `oneQuestion` et `diagnosis` réécrites,
+Recalibration du juge, PR suivante : reproductibilité du juge mesurée d'abord (plusieurs
+passages sur les mêmes transcriptions) ; ancres de `oneQuestion` et `diagnosis` réécrites,
 celle de `language_level` réparée ; cas construits pour les critères sans variation
 (alignement hors programme, rédaction livrée, ton sermonneur) ; validation sur un nouvel
 échantillon, pour ne pas ajuster le juge sur les notes qui le mesurent.
