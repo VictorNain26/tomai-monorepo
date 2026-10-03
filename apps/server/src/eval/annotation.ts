@@ -97,7 +97,7 @@ export function humanValues(scores: readonly HumanScore[]): Map<string, number> 
   const latest = new Map<string, HumanScore>();
   for (const score of scores) {
     const current = latest.get(score.name);
-    if (!current || score.timestamp > current.timestamp) latest.set(score.name, score);
+    if (!current || Date.parse(score.timestamp) > Date.parse(current.timestamp)) latest.set(score.name, score);
   }
   const values = new Map<string, number>();
   for (const [name, { label }] of latest) {
@@ -122,6 +122,40 @@ export const labelsFile = z.object({
     labels: z.record(z.string(), z.object({ label: z.string(), evidence: z.string() })),
   })),
 });
+
+/** Scores of the annotation queue, as the v3 scores API returns them. */
+interface QueueScore {
+  name: string;
+  dataType: string;
+  value: unknown;
+  timestamp: string;
+  subject?: { kind: string; id: string };
+}
+
+/** Human grades per trace from queue scores: categorical scores on a trace only. */
+export function queueValues(scores: readonly QueueScore[]): Map<string, Map<string, number>> {
+  const byTrace = new Map<string, HumanScore[]>();
+  for (const { name, dataType, value, timestamp, subject } of scores) {
+    if (dataType !== 'CATEGORICAL' || subject?.kind !== 'trace' || typeof value !== 'string') continue;
+    byTrace.set(subject.id, [...(byTrace.get(subject.id) ?? []), { name, label: value, timestamp }]);
+  }
+  return new Map([...byTrace].map(([traceId, grades]) => [traceId, humanValues(grades)]));
+}
+
+/**
+ * Grades of a labels file per trace, checked against the run it annotates: every
+ * conversation must be one of the run's, under the same key.
+ */
+export function fileValues(
+  file: z.infer<typeof labelsFile>,
+  rows: readonly { traceId: string; scenarioId: string; exerciseId: string; repetition: number }[],
+): Map<string, Map<string, number>> {
+  const keys = new Map(rows.map((row) => [row.traceId, `${row.scenarioId}:${row.exerciseId}:${String(row.repetition)}`]));
+  return new Map(file.conversations.map(({ key, traceId, labels }) => {
+    if (keys.get(traceId) !== key) throw new Error(`labels ${key} (${traceId}) are not a conversation of this run`);
+    return [traceId, labelValues(labels)];
+  }));
+}
 
 /** The grades of one conversation of a labels file, failing on a criterion or label the grid lacks. */
 export function labelValues(labels: Record<string, { label: string }>): Map<string, number> {

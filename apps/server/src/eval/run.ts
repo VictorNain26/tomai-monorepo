@@ -13,11 +13,10 @@ import { LangfuseSpanProcessor } from '@langfuse/otel';
 import { LangfuseClient, type Evaluator, type RunEvaluator } from '@langfuse/client';
 import { setupOtel, shutdownOtel } from '../platform/observability/otel.js';
 import { resolveDatabaseUrl } from '../platform/config/database-url.js';
-import { evaluationRun } from './evaluation-run.js';
 import { criteriaFor } from './annotation.js';
-import { resolveEntries } from './evaluation-run.js';
+import { evaluationRun, judgeContext } from './evaluation-run.js';
 import { JUDGE, briefing, sections, transcriptText } from './judge.js';
-import { buildItems, isLocalDatabase, itemInput, keyOf, lookup, runOptions, samplePairs, type ItemInput } from './items.js';
+import { buildItems, isLocalDatabase, itemInput, keyOf, lookup, runOptions, samplePairs, unknownPairs, type ItemInput } from './items.js';
 
 async function main(): Promise<number> {
   if (!isLocalDatabase(resolveDatabaseUrl())) {
@@ -37,6 +36,11 @@ async function main(): Promise<number> {
   });
   const options = runOptions.parse(values);
   const sample = options.sample ? samplePairs.parse(await Bun.file(options.sample).json()) : undefined;
+  const unknown = sample ? unknownPairs(sample) : [];
+  if (unknown.length > 0) {
+    console.error(`sample pairs not in the dataset: ${unknown.map((p) => `${p.scenarioId}:${p.exerciseId}`).join(', ')}`);
+    return 1;
+  }
   const items = buildItems(options, sample);
   if (items.length === 0) {
     console.error('no item matches the filters');
@@ -64,16 +68,10 @@ async function main(): Promise<number> {
       metadata: { model: env.MISTRAL_MODEL, judge: options['skip-judge'] ? 'skipped' : JUDGE, gitSha: sha, items: items.length },
       // The briefing and the criteria make the trace readable for a human annotator.
       data: items.map((input) => {
-        const { scenario, exercise } = lookup(input);
-        const context = {
-          exercise,
-          scenario,
-          entries: resolveEntries(exercise.alignment?.entries ?? []),
-          laterEntries: resolveEntries(exercise.alignment?.laterEntries ?? []),
-        };
+        const context = judgeContext(input);
         return {
           input: { ...input, briefing: briefing(context), criteria: criteriaFor(sections(context)) },
-          metadata: { level: exercise.level },
+          metadata: { level: context.exercise.level },
         };
       }),
       task: async ({ input }) => {

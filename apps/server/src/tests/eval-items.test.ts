@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
-import { buildItems, isLocalDatabase, keyOf, lookup, runOptions, samplePairs } from '../eval/items';
+import { buildItems, isLocalDatabase, keyOf, lookup, runOptions, samplePairs, unknownPairs } from '../eval/items';
 import agreementSample from '../eval/agreement-sample.json';
 
 describe('buildItems', () => {
@@ -26,9 +26,17 @@ describe('buildItems', () => {
     expect(items.map(keyOf)).toEqual(['S1:M2:1', 'S5:F1:1']);
   });
 
+  it('names the pairs of a sample the dataset lacks', () => {
+    expect(unknownPairs([
+      { scenarioId: 'S1', exerciseId: 'M1' }, { scenarioId: 'S1', exerciseId: '6-M9' },
+      { scenarioId: 'S5', exerciseId: 'M3' }, { scenarioId: 'S9', exerciseId: 'M1' },
+    ])).toEqual([{ scenarioId: 'S1', exerciseId: '6-M9' }, { scenarioId: 'S5', exerciseId: 'M3' }, { scenarioId: 'S9', exerciseId: 'M1' }]);
+  });
+
   it('holds an agreement sample whose every pair is in the dataset, once', () => {
     const sample = samplePairs.parse(agreementSample);
     const items = buildItems(runOptions.parse({ repeat: '1', concurrency: '1' }), sample);
+    expect(unknownPairs(sample)).toEqual([]);
     expect(items).toHaveLength(sample.length);
     expect(new Set(items.map((i) => i.scenarioId))).toEqual(new Set(dataset.scenarios.map((s) => s.id)));
   });

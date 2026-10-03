@@ -29,8 +29,12 @@ const resultsFile = z.object({
 });
 export type ResultsFile = z.infer<typeof resultsFile>;
 
+export function parseResults(json: unknown): ResultsFile {
+  return resultsFile.parse(json);
+}
+
 export async function loadResults(path: string): Promise<ResultsFile> {
-  return resultsFile.parse(await Bun.file(path).json());
+  return parseResults(await Bun.file(path).json());
 }
 
 /** Conversations played to the end, with their trace: the only ones worth grading. */

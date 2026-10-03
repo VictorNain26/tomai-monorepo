@@ -42,6 +42,14 @@ export function buildItems(options: RunOptions, sample?: SamplePairs): ItemInput
     );
 }
 
+/** Pairs of a sample that are not a scenario × exercise of the dataset: a typo would play fewer. */
+export function unknownPairs(sample: SamplePairs): SamplePairs {
+  return sample.filter(({ scenarioId, exerciseId }) => {
+    const scenario = dataset.scenarios.find((s) => s.id === scenarioId);
+    return !scenario || !exercisesFor(scenario).some((e) => e.id === exerciseId);
+  });
+}
+
 export function lookup(input: ItemInput): { scenario: Scenario; exercise: Exercise } {
   const scenario = dataset.scenarios.find((s) => s.id === input.scenarioId);
   const exercise = dataset.exercises.find((e) => e.id === input.exerciseId);

@@ -1,14 +1,15 @@
 /**
- * `bun run eval:agreement <eval-results/….json> [--labels <file>]`: judges the conversations
+ * `bun run eval:agreement <results.json> [--labels <file>]`: judges the conversations
  * graded in the annotation queue, or in a labels file, then measures agreement with the
  * judge per criterion. The judge runs on the saved transcripts, never on a replay: both
  * grade the same text.
  */
 import { parseArgs } from 'node:util';
 import { LangfuseClient } from '@langfuse/client';
-import { agreement, humanValues, judgeValues, labelValues, labelsFile, type HumanScore } from './annotation.js';
-import { resolveEntries } from './evaluation-run.js';
-import { lookup } from './items.js';
+import { mkdir } from 'node:fs/promises';
+import { basename } from 'node:path';
+import { agreement, fileValues, judgeValues, labelsFile, queueValues } from './annotation.js';
+import { judgeContext } from './evaluation-run.js';
 import { JUDGE, judge } from './judge.js';
 import { gradable, loadResults } from './results.js';
 
@@ -18,7 +19,7 @@ const THRESHOLD = 0.8;
 
 async function queueGrades(traceIds: readonly string[]): Promise<Map<string, Map<string, number>>> {
   const { api } = new LangfuseClient();
-  const byTrace = new Map<string, HumanScore[]>();
+  const scores = [];
   for (let start = 0; start < traceIds.length; start += TRACES_PER_REQUEST) {
     let cursor: string | undefined;
     do {
@@ -30,16 +31,11 @@ async function queueGrades(traceIds: readonly string[]): Promise<Map<string, Map
         limit: 100,
         ...(cursor ? { cursor } : {}),
       });
-      for (const score of data) {
-        if (score.dataType !== 'CATEGORICAL' || score.subject?.kind !== 'trace') continue;
-        const scores = byTrace.get(score.subject.id) ?? [];
-        scores.push({ name: score.name, label: score.value, timestamp: score.timestamp });
-        byTrace.set(score.subject.id, scores);
-      }
+      scores.push(...data);
       cursor = meta.cursor;
     } while (cursor);
   }
-  return new Map([...byTrace].map(([traceId, scores]) => [traceId, humanValues(scores)]));
+  return queueValues(scores);
 }
 
 const format = (value: number | null) => (value === null ? 'n/a' : value.toFixed(3));
@@ -56,26 +52,21 @@ async function main(): Promise<number> {
   const rows = gradable(results);
   const labels = values.labels ? labelsFile.parse(await Bun.file(values.labels).json()) : null;
   const annotator = labels ? labels.annotator : 'human (Langfuse annotation queue)';
-  const human = labels
-    ? new Map(labels.conversations.map(({ traceId, labels: grades }) => [traceId, labelValues(grades)]))
-    : await queueGrades(rows.map((row) => row.traceId));
+  const human = labels ? fileValues(labels, rows) : await queueGrades(rows.map((row) => row.traceId));
   const annotated = rows.filter((row) => human.has(row.traceId));
   console.log(`annotator: ${annotator}`);
+  if (annotated.length === 0) {
+    console.error('no conversation of this run is annotated.');
+    return 1;
+  }
   console.log(`${String(annotated.length)}/${String(rows.length)} conversation(s) annotated`);
 
   const graded = [];
   const failures: string[] = [];
   for (let start = 0; start < annotated.length; start += CONCURRENCY) {
     graded.push(...await Promise.all(annotated.slice(start, start + CONCURRENCY).map(async (row) => {
-      const { scenario, exercise } = lookup(row);
       try {
-        const { verdict } = await judge({
-          exercise,
-          scenario,
-          transcript: row.transcript,
-          entries: resolveEntries(exercise.alignment?.entries ?? []),
-          laterEntries: resolveEntries(exercise.alignment?.laterEntries ?? []),
-        }, generateStructured);
+        const { verdict } = await judge({ ...judgeContext(row), transcript: row.transcript }, generateStructured);
         return [{ ...row, human: human.get(row.traceId) ?? new Map<string, number>(), judge: judgeValues(verdict), verdict }];
       } catch (error) {
         failures.push(`${row.traceId}: ${error instanceof Error ? error.message : String(error)}`);
@@ -90,7 +81,9 @@ async function main(): Promise<number> {
     const range = interval ? `${format(interval[0])} – ${format(interval[1])}` : 'n/a';
     console.log(`| ${criterion} | ${String(units)} | ${format(raw)} | ${format(alpha)} | ${range} | ${alpha !== null && alpha >= THRESHOLD ? 'yes' : 'no'} |`);
   }
-  const out = path.replace(/\.json$/, '.agreement.json');
+  // A new file in eval-results/ on every run: a committed measure is a dated snapshot.
+  await mkdir('eval-results', { recursive: true });
+  const out = `eval-results/${basename(path, '.json')}.agreement-${new Date().toISOString().slice(0, 16).replace(':', 'h')}.json`;
   await Bun.write(out, JSON.stringify({
     results: path,
     annotator,
