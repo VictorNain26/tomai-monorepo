@@ -50,9 +50,10 @@ fixée d'avance.
    par pdf.js, relecture humaine ; mathématiques et français d'abord, puis sciences,
    histoire-géographie, anglais ; exercices du jeu rattachés à leur objectif, avec leurs
    notions interdites. Exercices inspirés des sujets du DNB, jamais copiés.
-4. Juge daté sur Small 4 : qualité d'aide, alignement au programme, niveau de langue, en
-   contrôles oui/non avec référence et tirages multiples ; cas construits ; relecture
-   humaine d'un échantillon, accord mesuré (`etudes/2026-10-03/refonte-harnais.md`).
+4. Juge daté sur Small 4 : qualité d'aide, alignement au programme, niveau de langue.
+   Small 4 décrit la conversation, le code vérifie ce qui est objectif, le modèle ne juge
+   que ce qui le demande ; cas construits ; relecture humaine d'un échantillon, accord
+   mesuré (`etudes/2026-10-03/juge-extraction-verification.md`).
 5. Jeu d'évaluation en dataset Langfuse hébergé et versionné, un run par répétition ;
    rapport, comparaison appariée, baseline de Tom approuvée, re-notation des concurrents.
 6. Garde-fou en CI sur les PR de l'agent, contre la baseline ; traces de production sans
