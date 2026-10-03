@@ -2,21 +2,8 @@ import type { z } from 'zod';
 import type { MistralMessage } from '../../platform/ai/mistral-client';
 import type { Generate } from '../../eval/judge';
 
-/** A valid answer for every criterion, resting on absences; tests override what they examine. */
-const ANSWERS: Record<string, unknown> = {
-  diagnosis: { evidence: '', score: '2' },
-  oneQuestion: { evidence: '', score: '1' },
-  gradedHints: { evidence: '', score: '1' },
-  accuracy: { evidence: '', score: '1' },
-  level: { evidence: '', score: '1' },
-  tone: { evidence: '', score: '0' },
-  languageLevel: { evidence: '', rating: 'partly' },
-  alignment: { evidence: '', inClass: 'yes', laterNotionsUsed: [] },
-  writtenLeak: { evidence: '', turn: 'none' },
-  safety: { evidence: '', rating: 'partly' },
-};
-
 interface JudgeCall {
+  question: string;
   schemaName: string;
   schema: z.ZodType;
   messages: MistralMessage[];
@@ -27,20 +14,34 @@ interface JudgeCall {
   promptCacheKey: string;
 }
 
+export interface FakeAnswer {
+  evidence: string;
+  answer: 'oui' | 'non';
+}
+
+/** The question a judge call asks: its last « Question : » message. */
+function questionOf(messages: MistralMessage[]): string {
+  const asked = messages.findLast((m) => m.role === 'user' && typeof m.content === 'string' && m.content.startsWith('Question : '));
+  return typeof asked?.content === 'string' ? asked.content.slice('Question : '.length) : '';
+}
+
 /**
- * A stand-in for the model: answers each criterion with `answers[schemaName]`, validated by
- * the schema it was asked to fill, and logs when each call starts and ends.
+ * A stand-in for the model: `answer(question, seed, attempt)` gives each sample's answer,
+ * « non » without a quote by default; it logs when each call starts and ends.
  */
-export function fakeJudge(answers: Record<string, unknown> = {}) {
+export function fakeJudge(answer: (question: string, seed: number, attempt: number) => FakeAnswer = () => ({ evidence: '', answer: 'non' })) {
   const calls: JudgeCall[] = [];
   const events: string[] = [];
   const generate: Generate = async (opts) => {
-    calls.push(opts);
-    events.push(`start ${opts.schemaName}`);
+    const question = questionOf(opts.messages);
+    const attempt = opts.messages.filter((m) => m.role === 'assistant').length + 1;
+    calls.push({ ...opts, question });
+    const id = String(calls.length);
+    events.push(`start ${id}`);
     await Promise.resolve();
-    events.push(`end ${opts.schemaName}`);
+    events.push(`end ${id}`);
     return {
-      object: opts.schema.parse(answers[opts.schemaName] ?? ANSWERS[opts.schemaName]),
+      object: opts.schema.parse(answer(question, opts.seed, attempt)),
       usage: { inputTokens: 100, cachedInputTokens: 80, outputTokens: 10 },
     };
   };

@@ -70,6 +70,13 @@ contraire.
   passages ; reproductible sur cinq critères d'aide, et ses désaccords sur `oneQuestion`,
   `accuracy` et `level` sont stables ; non établi sur `diagnosis` et `tone`
   (`etudes/2026-10-03/reproductibilite-juge.md`).
+- **Juge Small 4** (point 4) : mesuré le 2026-10-03 sur l'échantillon d'accord
+  (`etudes/2026-10-03/juge-small-4.md`). Il ne voit presque pas les défauts de son propre
+  modèle (méthode déroulée 2 fois sur 27 contre 9 pour l'annotateur, aucune erreur de
+  fond, aucune double question) : biais d'auto-préférence à mesurer sur des cas construits
+  avant que ses notes servent de métrique. À ce débit (100 000 tokens par minute), juger le
+  jeu complet prend plusieurs heures : l'API Batch de Mistral, hors limite de débit et à
+  moitié prix, est à étudier pour la baseline (point 5).
 - **Calibration du juge** (point 4, suite) : la revue de la PR du juge a réécrit les ancres
   pour qu'elles ne dépendent ni des réponses de l'élève ni de la longueur (proportions de
   messages) et séparé les critères en appels distincts. Le prompt ne se retouche plus sur

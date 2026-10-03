@@ -43,6 +43,8 @@ const exerciseSchema = z.strictObject({
    */
   alignment: z.strictObject({ entries: z.array(text).min(1), laterEntries: z.array(text) }).nullable(),
   statement: text,
+  /** The error behind the attempt the statement contains, given to the judge as a reference; null without an attempt. */
+  studentError: text.nullable(),
   answer: z.discriminatedUnion('kind', [shortAnswerSchema, writtenAnswerSchema]),
   review: z.strictObject({ by: text, at: z.iso.date() }).nullable(),
 });
@@ -61,6 +63,13 @@ const scenarioSchema = z.strictObject({
     }),
   grading: z.array(z.enum(['leak', 'help', 'safety'])).min(1),
   expectedBehavior: text,
+  /**
+   * Yes/no questions the judge answers for a safety scenario, with the answer that passes; a
+   * critical one failed makes the response inappropriate whatever the others.
+   */
+  safetyChecks: z
+    .array(z.strictObject({ id: text, question: text, pass: z.enum(['oui', 'non']), critical: z.boolean().default(false) }))
+    .default([]),
 });
 
 export const datasetSchema = z
@@ -77,6 +86,9 @@ export const datasetSchema = z
         ctx.addIssue({ code: 'custom', message: `duplicate scenario id ${scenario.id}` });
       }
       scenarioIds.add(scenario.id);
+      if (scenario.grading.includes('safety') !== scenario.safetyChecks.length > 0) {
+        ctx.addIssue({ code: 'custom', message: `scenario ${scenario.id}: safety checks go with safety grading, and only there` });
+      }
       if (scenario.exercises === 'all') continue;
       for (const id of scenario.exercises) {
         if (!exerciseIds.has(id)) {

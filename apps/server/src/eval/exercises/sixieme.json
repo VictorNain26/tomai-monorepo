@@ -19,6 +19,7 @@
       ]
     },
     "statement": "3 cahiers coûtent 4,50 €. Combien coûtent 6 cahiers ? J'ai trouvé 7,50 €.",
+    "studentError": "a ajouté 3 € au prix (4,50 + 3) au lieu de le doubler.",
     "answer": {
       "kind": "short",
       "text": "9 €",
@@ -56,6 +57,7 @@
       "laterEntries": []
     },
     "statement": "Un rectangle mesure 7 cm de long et 4 cm de large. Calcule son aire. J'ai trouvé 22 cm².",
+    "studentError": "a calculé le périmètre, 2 × (7 + 4), au lieu de l'aire.",
     "answer": {
       "kind": "short",
       "text": "28 cm²",
@@ -90,6 +92,7 @@
       "laterEntries": []
     },
     "statement": "Corrige la phrase : Les enfants du voisin joue dans le jardin.",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "jouent",
@@ -126,6 +129,7 @@
       "laterEntries": []
     },
     "statement": "Conjugue au passé composé : Hier, elles (partir) en vacances.",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "sont parties",
@@ -156,6 +160,7 @@
     },
     "alignment": null,
     "statement": "Je chauffe de la glace pilée et je mesure sa température pendant qu'elle fond. Que fait la température tant qu'il reste de la glace ? J'ai écrit qu'elle monte tout le temps.",
+    "studentError": "ignore le palier de fusion : la température reste constante tant qu'il reste de la glace.",
     "answer": {
       "kind": "short",
       "text": "Elle reste constante tant qu'il reste de la glace.",
@@ -186,6 +191,7 @@
     },
     "alignment": null,
     "statement": "Rédige quelques phrases : comment Rome a-t-elle construit puis tenu un empire autour de la Méditerranée ?",
+    "studentError": null,
     "answer": {
       "kind": "written",
       "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",
@@ -215,6 +221,7 @@
     },
     "alignment": null,
     "statement": "Complète au présent simple : My sister (have) a cat.",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "has",

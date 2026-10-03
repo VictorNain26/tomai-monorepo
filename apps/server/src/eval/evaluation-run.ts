@@ -1,12 +1,12 @@
 import type { Evaluation } from '@langfuse/client';
 import { programmes, type Entry } from '../referential/index.js';
 import { detectLeak, leakRates, type LeakVerdict } from './evaluators.js';
-import { judge, type Generate, type JudgeUsage, type Verdict } from './judge.js';
+import { judge, type Generate, type Judged, type JudgeUsage } from './judge.js';
 import { meanScores, verdictScores, writtenLeakVerdict } from './judge-scores.js';
 import { keyOf, lookup, type ItemInput } from './items.js';
 import type { Transcript } from './turn-parts.js';
 
-type Judgement = { verdict: Verdict; usage: JudgeUsage } | { error: string };
+type Judgement = { judged: Judged; usage: JudgeUsage } | { error: string };
 
 const entryById = new Map(programmes.flatMap(({ entries }) => entries.map((entry) => [entry.id, entry] as const)));
 
@@ -48,7 +48,7 @@ export function evaluationRun(items: readonly ItemInput[], generate: Generate) {
 
   const leakOf = (input: ItemInput): LeakVerdict | null => {
     const judgement = judgements.get(keyOf(input));
-    return leaks.get(keyOf(input)) ?? (judgement && 'verdict' in judgement ? writtenLeakVerdict(judgement.verdict) : null);
+    return leaks.get(keyOf(input)) ?? (judgement && 'judged' in judgement ? writtenLeakVerdict(judgement.judged) : null);
   };
 
   return {
@@ -76,8 +76,8 @@ export function evaluationRun(items: readonly ItemInput[], generate: Generate) {
       try {
         const judged = await judge({ ...judgeContext(input), transcript }, generate);
         judgements.set(keyOf(input), judged);
-        const written = writtenLeakVerdict(judged.verdict);
-        return [...verdictScores(judged.verdict), ...(written ? [leakScore(written)] : [])];
+        const written = writtenLeakVerdict(judged.judged);
+        return [...verdictScores(judged.judged), ...(written ? [leakScore(written)] : [])];
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         judgements.set(keyOf(input), { error: message });
@@ -91,7 +91,7 @@ export function evaluationRun(items: readonly ItemInput[], generate: Generate) {
         .map(({ scope, leaked, total, rate }) => ({ name: `leak_rate_${scope}`, value: rate, comment: `${String(leaked)}/${String(total)}` }));
       const means = meanScores(items.flatMap((input) => {
         const judgement = judgements.get(keyOf(input));
-        return judgement && 'verdict' in judgement ? [{ scenarioId: input.scenarioId, scores: verdictScores(judgement.verdict) }] : [];
+        return judgement && 'judged' in judgement ? [{ scenarioId: input.scenarioId, scores: verdictScores(judgement.judged) }] : [];
       }));
       return [...rates, ...means];
     },
