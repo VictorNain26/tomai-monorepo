@@ -12,15 +12,23 @@ bloquant levé).
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-03.
+- **Dernière mise à jour :** 2026-10-04.
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, le juge corrigé selon l'analyse d'erreurs
-  (`etudes/2026-10-03/analyse-erreurs.md`, décision 2) : exactitude vérifiée affirmation
-  par affirmation, diagnostic posé contre l'erreur de l'élève, questions qui ne
-  discriminent pas retirées, trois tirages pour les questions unanimes ; puis nouvelle
-  mesure et baseline de Tom (point 5). Plan d'abord dans `docs/plans/`.
+- **Prochaine action :** point 4 du lot 1, le juge et le harnais corrigés selon
+  l'analyse d'erreurs (`etudes/2026-10-03/analyse-erreurs.md`, décisions 2 et 3) :
+  - exactitude posée dans tous les scénarios et vérifiée affirmation par affirmation ;
+  - diagnostic réécrit contre l'erreur de l'élève ;
+  - questions de détresse et de fiches refaites ;
+  - tours vocaux et fiches confirmées joués en S4 ;
+  - questions qui ne discriminent pas retirées.
+
+  Puis nouvelle mesure et baseline de Tom (point 5). Plan d'abord dans `docs/plans/`.
+  - La relecture des conversations, que Victor a confiée à Claude le 2026-10-03, a été
+    faite par Claude.
+  - Une relecture humaine d'une partie d'entre elles reste due avant toute publication
+    (lot 4).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -72,6 +80,9 @@ contraire.
   passages ; reproductible sur cinq critères d'aide, et ses désaccords sur `oneQuestion`,
   `accuracy` et `level` sont stables ; non établi sur `diagnosis` et `tone`
   (`etudes/2026-10-03/reproductibilite-juge.md`).
+  Avec le juge actuel (Small 4, extraction et code, #375), aucun critère n'atteint
+  α ≥ 0,800, le meilleur étant `help_graded_hints` (0,417). La lecture ouverte contredit
+  cette annotation sur le diagnostic : elle ne sert plus à régler ce critère.
 - **Juge Small 4** (point 4) : mesuré le 2026-10-03 sur l'échantillon d'accord
   (`etudes/2026-10-03/juge-small-4.md`), il ne voit presque pas les défauts de son propre
   modèle. Sur les cas construits, le code repère désormais le calcul faux et la double
@@ -79,9 +90,8 @@ contraire.
   notion d'une classe suivante (0 sur 2) (`etudes/2026-10-03/extraction-verification.md`).
   Le prompt ne se retouche plus sur un exemple : il s'ajuste sur l'échantillon annoté, en
   mesurant l'accord avant et après. Le cache, qui ne servait que 14 % de l'entrée de
-  l'ancien juge, en sert 91 % depuis le préfixe et le schéma communs (#370) ; le coût par
-  conversation du juge actuel (questions et extracteur) reste à mesurer avant le gate en
-  CI (point 6). À ce débit (100 000 tokens par minute), juger le jeu
+  l'ancien juge, en sert 91 % depuis le préfixe et le schéma communs (#370) ; le juge
+  actuel coûte environ 0,2 centime de dollar par conversation (#375). À ce débit (100 000 tokens par minute), juger le jeu
   complet prend plusieurs heures : l'API Batch de Mistral, hors limite de débit et à
   moitié prix, est à étudier pour la baseline (point 5).
 - **Évaluations du run dans Langfuse** (point 5) : taux de fuite et moyennes ne restent
@@ -96,27 +106,29 @@ contraire.
 
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
-- **Défauts de Tom** (points 1 et 2) : analyse d'erreurs sur 38 conversations
+- **Défauts de Tom** (lot 2) : analyse d'erreurs sur 38 conversations
   (`etudes/2026-10-03/analyse-erreurs.md`). 15 ratées :
-  - réponse donnée dans 10, dont 4 sur 6 à la demande d'une explication orale ;
-  - affirmation fausse dans 5 ;
+  - réponse donnée dans 10, dont 4 sur 6 après une explication demandée ;
+  - affirmation fausse dans 5, sur des règles de grammaire et un diagnostic ;
   - détresse sans 3114 et retour à l'exercice dans les 3 ;
   - fiches refusées ou ignorées dans 4 sur 6.
 
-  Corrections décidées, dans l'ordre, chacune comparée à la baseline :
-  - détresse : détecteur et réponse fixe approuvée par Victor ;
-  - solution de référence côté serveur, vérifiée par mathjs ;
-  - diagnostic de l'erreur avant l'aide ;
-  - palier d'aide tenu par le serveur ;
-  - contrôle avant envoi ;
-  - prompt : règle des faits, oral, fiches, portée collège.
+  Corrections rangées sous les points de `roadmap.md`, dans son ordre, chacune comparée à
+  la baseline :
+  - point 1 : palier tenu par le serveur, solution de référence côté serveur, contrôle
+    avant envoi, diagnostic de l'erreur avant l'aide ;
+  - point 2 : détecteur et réponse fixe approuvée par Victor, puis fin de la
+    conversation ;
+  - point 5 : mathjs sur les calculs de la solution ;
+  - point 6 : règle de la réponse jamais donnée, explication demandée au palier d'aide,
+    fiches à la demande, portée collège.
 - **Programme dans le contexte** (`etudes/2026-10-02/alignement.md`, § 4) : référentiel
   du niveau et de la matière de la séance injecté en bloc, constant pendant la séance ;
   `modules/tutor/prompts/adaptation/by-level.ts` réécrit par niveau à partir du
   référentiel, consignes chiffrées sans source retirées. Après la correction du quota.
-- **Outil de calcul** (même étude, § 6) : mathjs, déjà adopté par le harnais (#373), vérifie
-  les calculs de la solution de référence ; la résolution d'équations et l'équivalence
-  restent à lire dans sa documentation.
+- **Outil de calcul** (même étude, § 6) : mathjs, déjà adopté par le harnais (#373), pour
+  vérifier les calculs de la solution de référence ; sa résolution d'équations et
+  l'équivalence restent à lire dans sa documentation avant tout usage.
 - **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
   - la synthèse vocale (`/api/tts`, `modules/voice/voice.routes.ts`) n'a aucun quota, seulement le
     rate limit global : c'est le seul poste non borné ;
@@ -340,7 +352,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Nettoyage du harnais : une table par critère, version du juge calculée sur ce que lit
   son modèle et commit dans chaque sortie, plus de relance cachée hors limite de débit,
   données des études sorties de `src/` (#374).
-  Analyse d'erreurs sur les 38 conversations de l'échantillon : 15 ratées, réponse donnée
-  dans 10, affirmation fausse dans 5, détresse sans 3114 dans les 3 ; le juge rate les
-  affirmations fausses et le retour à l'exercice après la détresse ; corrections du juge
-  puis de Tom décidées, sur sources (#375).
+  Analyse d'erreurs sur les 38 conversations de l'échantillon (#375) :
+  - 15 ratées : réponse donnée dans 10, affirmation fausse dans 5, détresse sans 3114
+    dans les 3 ;
+  - le juge rate les affirmations fausses, dont 3 jamais soumises à `accuracy`, ainsi que
+    le retour à l'exercice après la détresse ;
+  - corrections du juge puis de Tom décidées sur sources, dans l'ordre de la roadmap.
