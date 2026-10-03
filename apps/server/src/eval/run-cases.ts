@@ -1,12 +1,14 @@
 /**
- * `bun run eval:cases`: judges the clean and the faulty version of every constructed case
- * and reports, per fault, how many faulty versions the judge caught and how many clean ones
- * it left alone. Low detection is a finding, not a failure; a failed judgement is.
+ * `bun run eval:cases`: asks the judge question each constructed case aims at, on its clean
+ * and its faulty version, and reports per fault the faulty versions flagged and the clean
+ * ones left alone. Low detection is a finding, not a failure; a failed judgement is.
  */
 import { mkdir } from 'node:fs/promises';
-import { constructedCases, detection, versions, type CaseOutcome } from './constructed-cases.js';
+import { checksFor } from './checks.js';
+import { constructedCases, detection, faultFlagged, versions, type CaseOutcome } from './constructed-cases.js';
 import { judgeContext } from './evaluation-run.js';
-import { JUDGE, judge } from './judge.js';
+import { JUDGE, answerChecks } from './judge.js';
+import { sections } from './judge-context.js';
 import { throttled } from './judge-rate.js';
 
 async function main(): Promise<number> {
@@ -16,25 +18,27 @@ async function main(): Promise<number> {
   const outcomes: CaseOutcome[] = [];
   for (const c of constructedCases) {
     const context = judgeContext({ scenarioId: c.scenarioId, exerciseId: c.exerciseId, repetition: 1 });
+    const check = checksFor(sections(context), context.scenario).find((q) => q.id === c.check);
+    if (!check) throw new Error(`case ${c.id}: question ${c.check} is not asked here`);
     const { clean, faulty } = versions(c);
-    const grade = async (transcript: typeof clean, label: string) => {
+    const flags = async (transcript: typeof clean, label: string) => {
       try {
-        const { judged } = await judge({ ...context, transcript }, generate);
-        return judged.scores[c.criterion] ?? null;
+        const { results: [result] } = await answerChecks({ ...context, transcript }, [check], generate);
+        return result ? faultFlagged(result) : null;
       } catch (error) {
         failures.push(`${c.id} (${label}): ${error instanceof Error ? error.message : String(error)}`);
         return null;
       }
     };
-    const [cleanGrade, faultyGrade] = await Promise.all([grade(clean, 'clean'), grade(faulty, 'faulty')]);
-    outcomes.push({ id: c.id, fault: c.fault, expected: { clean: c.clean, faulty: c.faulty }, got: { clean: cleanGrade, faulty: faultyGrade } });
-    console.log(`${c.id}: clean ${String(cleanGrade)} (expected ${String(c.clean)}), faulty ${String(faultyGrade)} (expected ${String(c.faulty)})`);
+    const [cleanFlag, faultyFlag] = await Promise.all([flags(clean, 'clean'), flags(faulty, 'faulty')]);
+    outcomes.push({ id: c.id, fault: c.fault, flagged: { clean: cleanFlag, faulty: faultyFlag } });
+    console.log(`${c.id} (${c.check}): clean flagged ${String(cleanFlag)}, faulty flagged ${String(faultyFlag)}`);
   }
 
   const lines = detection(outcomes);
-  console.log('\n| Fault | Cases | Faulty caught | Clean left alone | Missed | False alarms |\n|---|---|---|---|---|---|');
-  for (const { fault, cases, detected, cleanKept, missed, falseAlarms } of lines) {
-    console.log(`| ${fault} | ${String(cases)} | ${String(detected)} | ${String(cleanKept)} | ${missed.join(', ') || '—'} | ${falseAlarms.join(', ') || '—'} |`);
+  console.log('\n| Fault | Faulty flagged | Clean left alone | Missed | False alarms | Failed |\n|---|---|---|---|---|---|');
+  for (const l of lines) {
+    console.log(`| ${l.fault} | ${String(l.detected)}/${String(l.faultyJudged)} | ${String(l.cleanKept)}/${String(l.cleanJudged)} | ${l.missed.join(', ') || '—'} | ${l.falseAlarms.join(', ') || '—'} | ${l.failed.join(', ') || '—'} |`);
   }
   await mkdir('eval-results', { recursive: true });
   const out = `eval-results/constructed-cases-${new Date().toISOString().slice(0, 16).replace(':', 'h')}.json`;

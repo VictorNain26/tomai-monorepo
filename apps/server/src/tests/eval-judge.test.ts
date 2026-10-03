@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
 import { dataset } from '../eval';
-import { questionText } from '../eval/checks';
+import { checksFor, questionText } from '../eval/checks';
+import { sections } from '../eval/judge-context';
 import { resolveEntries } from '../eval/evaluation-run';
 import { NoObjectGeneratedError } from 'ai';
-import { JUDGE, judge, saysYes, type Generate } from '../eval/judge';
+import { JUDGE, answerChecks, judge, saysYes, type Generate } from '../eval/judge';
 import type { JudgeInput } from '../eval/judge-context';
 import { verdictScores, writtenLeakVerdict } from '../eval/judge-scores';
 import type { TutorTurn } from '../eval/turn-parts';
@@ -64,6 +65,16 @@ describe('judge', () => {
     const seeds = calls.filter((c) => c.question === question('accuracy')).map((c) => c.seed);
     expect(seeds).toEqual(Array.from({ length: JUDGE.samples }, (_, i) => JUDGE.firstSeed + i));
     expect(contentOf(calls[0]?.messages.at(-1))).toBe(`Question : ${question('diagnosis-asks')}`);
+  });
+
+  it('asks only the questions it is given', async () => {
+    const item = input('M1', 'S1');
+    const [accuracy] = checksFor(sections(item), item.scenario).filter((c) => c.id === 'accuracy');
+    if (!accuracy) throw new Error('no accuracy question');
+    const { generate, calls } = fakeJudge();
+    const { results } = await answerChecks(item, [accuracy], generate);
+    expect(new Set(calls.map((c) => c.question))).toEqual(new Set([question('accuracy')]));
+    expect(results).toEqual([{ id: 'accuracy', pass: 'non', samples: 5, yes: 0, evidence: [] }]);
   });
 
   it('lets the first call warm the cache before the others start', async () => {

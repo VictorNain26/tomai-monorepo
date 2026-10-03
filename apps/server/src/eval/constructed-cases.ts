@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import rawCases from './constructed-cases.json' with { type: 'json' };
-import { CRITERIA } from './annotation.js';
+import { checksFor } from './checks.js';
+import { saysYes, type CheckResult } from './judge.js';
 import { dataset, exercisesFor } from './index.js';
 import { sections } from './judge-context.js';
 import { STATEMENT_PLACEHOLDER } from './schema.js';
@@ -13,10 +14,8 @@ const caseSchema = z.strictObject({
   fault: text,
   scenarioId: text,
   exerciseId: text,
-  /** The score the fault must move, and its value without and with the fault. */
-  criterion: text,
-  clean: z.number(),
-  faulty: z.number(),
+  /** The judge question that must flag the fault (`eval/checks.ts`, or a scenario safety question). */
+  check: text,
   turns: z.array(z.strictObject({ student: text, tutor: text })).min(1),
   /** 1-based turn whose tutor message carries the fault. */
   faultyTurn: z.number().int().min(1),
@@ -25,8 +24,8 @@ const caseSchema = z.strictObject({
 export type ConstructedCase = z.infer<typeof caseSchema>;
 
 /**
- * Cases whose right grade is known by construction: a clean conversation, and the same one
- * where a single tutor message carries one fault.
+ * Cases whose right answer is known by construction: a clean conversation, and the same one
+ * where a single tutor message carries one fault, aimed at one judge question.
  */
 export const casesSchema = z.array(caseSchema).superRefine((cases, ctx) => {
   const ids = new Set<string>();
@@ -36,16 +35,14 @@ export const casesSchema = z.array(caseSchema).superRefine((cases, ctx) => {
     };
     if (ids.has(c.id)) issue('duplicate id');
     ids.add(c.id);
+    if (!c.turns[0]?.student.includes(STATEMENT_PLACEHOLDER)) issue(`the first student turn must contain ${STATEMENT_PLACEHOLDER}`);
     const scenario = dataset.scenarios.find((s) => s.id === c.scenarioId);
     const exercise = scenario && exercisesFor(scenario).find((e) => e.id === c.exerciseId);
     if (!scenario || !exercise) {
       issue(`no exercise ${c.exerciseId} in scenario ${c.scenarioId}`);
       continue;
     }
-    const criterion = CRITERIA.find((x) => x.name === c.criterion);
-    if (!criterion?.applies(sections({ exercise, scenario }))) issue(`criterion ${c.criterion} is not graded here`);
-    const values = criterion?.categories.map((category) => category.value) ?? [];
-    if (!values.includes(c.clean) || !values.includes(c.faulty) || c.clean === c.faulty) issue('clean and faulty grades must be two values of the criterion');
+    if (!checksFor(sections({ exercise, scenario }), scenario).some((check) => check.id === c.check)) issue(`question ${c.check} is not asked here`);
     const turn = c.turns[c.faultyTurn - 1];
     if (!turn) issue('the faulty turn is past the conversation');
     else if (turn.tutor === c.faultyTutor) issue('the faulty message is the clean one');
@@ -73,35 +70,53 @@ export function versions(c: ConstructedCase): { clean: Transcript; faulty: Trans
   return { clean: transcript(false), faulty: transcript(true) };
 }
 
+/** The fault is flagged when the majority answer is the one that fails the tutor. */
+export function faultFlagged(result: Pick<CheckResult, 'yes' | 'samples' | 'pass'>): boolean {
+  return saysYes(result) !== (result.pass === 'oui');
+}
+
 export interface CaseOutcome {
   id: string;
   fault: string;
-  expected: { clean: number; faulty: number };
-  /** The judge's grade of the criterion, null when the judgement failed. */
-  got: { clean: number | null; faulty: number | null };
+  /** Whether the judge flagged the fault in each version; null when the judgement failed. */
+  flagged: { clean: boolean | null; faulty: boolean | null };
 }
 
 export interface Detection {
   fault: string;
   cases: number;
-  /** Faulty versions graded with the faulty value. */
+  /** Faulty versions flagged, over those judged. */
   detected: number;
-  /** Clean versions graded with the clean value. */
+  faultyJudged: number;
+  /** Clean versions not flagged, over those judged. */
   cleanKept: number;
+  cleanJudged: number;
   missed: string[];
   falseAlarms: string[];
+  /** Versions whose judgement failed, apart from both rates. */
+  failed: string[];
 }
 
-/** Per fault, how many faulty versions the judge caught and how many clean ones it left alone. */
+/** Per fault, the faulty versions the judge flagged and the clean ones it left alone. */
 export function detection(outcomes: readonly CaseOutcome[]): Detection[] {
   const byFault = new Map<string, Detection>();
-  for (const { id, fault, expected, got } of outcomes) {
-    const entry = byFault.get(fault) ?? { fault, cases: 0, detected: 0, cleanKept: 0, missed: [], falseAlarms: [] };
+  for (const { id, fault, flagged } of outcomes) {
+    const entry = byFault.get(fault) ?? {
+      fault, cases: 0, detected: 0, faultyJudged: 0, cleanKept: 0, cleanJudged: 0, missed: [], falseAlarms: [], failed: [],
+    };
     entry.cases += 1;
-    if (got.faulty === expected.faulty) entry.detected += 1;
-    else entry.missed.push(id);
-    if (got.clean === expected.clean) entry.cleanKept += 1;
-    else entry.falseAlarms.push(id);
+    if (flagged.faulty === null) entry.failed.push(`${id} (faulty)`);
+    else {
+      entry.faultyJudged += 1;
+      if (flagged.faulty) entry.detected += 1;
+      else entry.missed.push(id);
+    }
+    if (flagged.clean === null) entry.failed.push(`${id} (clean)`);
+    else {
+      entry.cleanJudged += 1;
+      if (flagged.clean) entry.falseAlarms.push(id);
+      else entry.cleanKept += 1;
+    }
     byFault.set(fault, entry);
   }
   return [...byFault.values()];
