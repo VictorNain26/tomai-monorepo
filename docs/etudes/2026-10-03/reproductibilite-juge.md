@@ -42,13 +42,24 @@ Quatre conversations changent de note d'un passage à l'autre : `help_tone` en S
 ## Lecture
 
 - **La graine ne rend pas le juge déterministe**, contrairement à la documentation : sur
-  les sept critères d'aide, 4 notes sur 189 (27 conversations × 7) changent. L'effet de
-  la graine n'est pas isolé, faute de passages sans graine dans les mêmes conditions ;
-  elle reste, sans coût.
-- **Le juge est reproductible** : α d'au moins 0,842 sur chaque critère mesurable, 1,000
-  sur la moitié. Un changement isolé suffit à faire bouger l'accord avec l'annotation
-  d'environ 0,03 : `help_graded_hints` y donne 0,779 au premier passage de cette mesure,
-  après 0,796 et 0,840. Un critère proche du seuil ne se juge que sur plusieurs passages.
-- **Le faible accord avec l'annotation n'est donc pas du bruit** : sur `oneQuestion`,
-  `diagnosis`, `accuracy`, `level`, le juge diverge de l'annotation de façon stable. C'est
-  l'objet de la recalibration (`accord-juge.md`, « Suite »).
+  les sept critères d'aide, 4 notes sur 189 (27 conversations × 7) changent. La cause
+  n'est pas isolée : faute de passages sans graine dans les mêmes conditions, l'effet de
+  la graine reste inconnu, et l'état du cache de prompt n'est pas contrôlé (le premier
+  passage d'une conversation part d'un cache froid, les suivants d'un cache chaud ; trois
+  des quatre changements touchent le deuxième ou le troisième passage).
+- **Reproductibilité établie sur cinq critères seulement** : `oneQuestion`, `accuracy`,
+  `level` et `languageLevel` (α = 1,000, intervalle réduit à 1,000) et `gradedHints`
+  (0,993, borne basse 0,962). Sur `diagnosis` (0,842) et `tone` (0,863), l'estimation
+  passe le seuil mais l'intervalle descend à 0,453 et 0,481 : 27 conversations ne
+  suffisent pas à conclure. Les critères sans variation n'ont pas d'α.
+- **Désaccords stables là où le juge est reproductible** : sur `oneQuestion`, `accuracy`
+  et `level`, le juge rend la même note à chaque passage et diverge de l'annotation ; ce
+  désaccord n'est pas du bruit. Sur `diagnosis`, la mesure ne permet pas de le dire.
+- **Accord avec l'annotation selon les passages** : `help_graded_hints` donne 0,779 au
+  premier passage de cette mesure, avec graine, après 0,796 et 0,840 sans graine. Les
+  réglages diffèrent : ces écarts ne mesurent pas le bruit du juge, ils montrent qu'un
+  critère proche du seuil ne se juge pas sur un seul passage.
+- **Limite du calcul** : cette mesure a été faite avant une correction du script ; une
+  conversation dont un passage échouait sortait de la mesure entière. Les deux
+  conversations concernées échouaient au premier passage et sont absentes des deux
+  tableaux. Le script les garde désormais, sur les passages réussis.

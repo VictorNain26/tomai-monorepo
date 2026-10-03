@@ -269,8 +269,9 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   et le nom de l'annotateur. Première mesure, annotée par Claude et non par un humain :
   `etudes/2026-10-03/accord-juge.md` ; un seul critère d'aide y atteint le seuil, sans
   robustesse.
-  `--passes <n>` juge chaque transcription n fois et mesure le juge contre lui-même : il
-  est reproductible (α ≥ 0,842 par critère), sans être déterministe malgré la graine
+  `--passes <n>` juge chaque transcription n fois et mesure le juge contre lui-même ; un
+  passage qui échoue compte comme une valeur manquante. Reproductibilité établie sur cinq
+  critères d'aide, pas sur `diagnosis` ni `tone`, et pas de déterminisme malgré la graine
   (`etudes/2026-10-03/reproductibilite-juge.md`).
 - **Comparaison aux concurrents** : même jeu, mêmes scénarios, même grille, même juge. Les
   transcriptions du 2026-10-01 (`etudes/2026-10-01/tests-tuteurs/`) sont re-notées par le
