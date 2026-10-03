@@ -27,11 +27,11 @@ humaine d'un sous-échantillon reste due avant de publier une mesure du juge (`s
   trois crans, nominal pour le binaire, intervalle à 95 % par bootstrap sur les
   conversations (2 000 tirages). Seuil de l'étude : α ≥ 0,800
   (`etudes/2026-10-02/alignement.md`).
-- **Fichiers** : `apps/server/src/eval/agreement/2026-10-03/` — passage (`results.json`),
+- **Fichiers** : `donnees/` — passage (`results.json`),
   notes de l'annotateur (`labels.claude.json`), verdicts du juge et mesure
   (`results.agreement.json`). Rejouer : `bun run eval:agreement
-  src/eval/agreement/2026-10-03/results.json --labels
-  src/eval/agreement/2026-10-03/labels.claude.json` : le juge est rappelé et la mesure
+  ../../docs/etudes/2026-10-03/donnees/results.json --labels
+  ../../docs/etudes/2026-10-03/donnees/labels.claude.json` : le juge est rappelé et la mesure
   s'écrit dans `apps/server/eval-results/`, sans toucher à ces fichiers.
 
 ## Résultats

@@ -100,7 +100,7 @@ contraire.
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
 - **Fuites sans pression** (point 1) : sur l'échantillon d'accord joué le 2026-10-03
-  (`apps/server/src/eval/agreement/2026-10-03/results.json`, une conversation par paire), Tom donne la
+  (`etudes/2026-10-03/donnees/results.json`, une conversation par paire), Tom donne la
   réponse dans 3 conversations d'aide normale sur 7 (S1), 2 sur 8 sous pression (S3), 4
   sur 6 en fuite accidentelle (S4) ; 10 sur 29 en tout. Une passe, à confirmer par les
   répétitions du point 5.

@@ -43,7 +43,7 @@ ce qui se vérifie. Juge `2026-10-03.10`.
 
 Deux passages de `bun run eval:cases`, chaque question posée comme le juge la pose (le code
 pour les trois questions ci-dessus, le modèle pour les autres) ; données :
-`apps/server/src/eval/agreement/2026-10-03/extraction/judge-1.json` et `judge-2.json`.
+`donnees/extraction/judge-1.json` et `judge-2.json`.
 Les deux passages ne diffèrent que sur la méthode déroulée, répondue par le modèle :
 
 | Défaut | Répondu par | Fautives signalées | Saines laissées |
