@@ -257,20 +257,21 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   contrôle déterministe ; `safety` se moyenne par scénario seulement. `--skip-judge` lance
   la fuite seule. Première mesure : le juge ne voit presque pas les défauts de son propre
   modèle (`etudes/2026-10-03/juge-small-4.md`). Ce que le code peut vérifier, il le
-  vérifie : un extracteur Small 4 relève, message par message et en citant le texte, les
-  questions, les calculs et les renvois vers un adulte (`eval/extract.ts`, trois tirages
-  fusionnés, le résultat d'un calcul lu dans la citation) ; les égalités numériques écrites
-  se trouvent sans le modèle ; mathjs recalcule, les questions se comptent, le 3114 se
-  cherche dans le texte (`eval/verifiers.ts`). Ces verdicts remplacent les questions
-  `one-question`, `s5-3114` et `s5-trusted-adult` ; un calcul faux compte en exactitude
+  vérifie : les égalités numériques écrites par le tuteur se trouvent sans le modèle et
+  mathjs les recalcule ; un extracteur Small 4, en un appel à température 0, relève les
+  questions de chaque message, mot pour mot, et le code les compte ; le 3114 se cherche
+  dans le texte (`eval/extract.ts`, `eval/verifiers.ts`). Le code répond ainsi aux
+  questions `accuracy-calculation`, `one-question` et `s5-3114` ; le renvoi vers un adulte
+  reste au modèle, l'extracteur ayant pris le 3114 pour un renvoi
   (`etudes/2026-10-03/extraction-verification.md`).
 - **Cas construits** : `apps/server/src/eval/constructed-cases.json`, deux cas par défaut
   (méthode déroulée, erreur de calcul, deux questions, notion d'une classe suivante,
-  production rédigée livrée, 3114 absent), chacun une conversation saine et la même avec une
+  production rédigée livrée, 3114 absent, adulte de confiance absent), chacun une conversation saine et la même avec une
   seule réplique fautive, chacun visant une question du juge. `bun run eval:cases` pose
-  cette question aux deux versions et donne par défaut les versions fautives signalées et
-  les versions saines laissées intactes, les jugements ratés à part : la sensibilité et la
-  spécificité de chaque contrôle, avant qu'il serve de métrique
+  cette question aux deux versions comme le juge la pose (code ou modèle) et donne par
+  défaut les versions fautives signalées et les versions saines laissées intactes, les
+  jugements ratés à part : la sensibilité et la spécificité de chaque contrôle, avant
+  qu'il serve de métrique
   (`etudes/2026-10-03/cas-construits.md`).
 - **Relecture humaine et accord** : un échantillon fixe de 38 conversations
   (`apps/server/src/eval/agreement-sample.json`, `--sample`) se joue sans juge ;
