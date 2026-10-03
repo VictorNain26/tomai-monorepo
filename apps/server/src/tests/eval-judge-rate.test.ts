@@ -6,7 +6,7 @@ import type { Generate } from '../eval/judge-config';
 const opts = (characters: number): Parameters<Generate>[0] => ({
   messages: [{ role: 'user', content: 'x'.repeat(characters) }],
   schema: { parse: (v: unknown) => v } as never,
-  schemaName: 's', functionId: 'f', model: 'm', temperature: 0, maxTokens: 10, maxRetries: 0, safePrompt: false, seed: 1, promptCacheKey: 'k',
+  schemaName: 's', functionId: 'f', model: 'm', temperature: 0, maxTokens: 10, maxRetries: 0, safePrompt: false, seed: 1, promptCacheKey: 'k', repairInvalid: false,
 });
 
 function recorder() {

@@ -67,6 +67,11 @@ interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   seed?: number;
   /** Retries of the AI SDK on a failed call; a caller that throttles its own calls passes 0. */
   maxRetries?: number;
+  /**
+   * Asks once more, with the validation error, when the answer misses the schema. A caller
+   * that counts such an answer as lost, and paces its own calls, turns it off.
+   */
+  repairInvalid?: boolean;
 }
 
 interface StructuredUsage {
@@ -185,7 +190,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
   try {
     return await call(messages);
   } catch (error) {
-    if (!NoObjectGeneratedError.isInstance(error) || !TypeValidationError.isInstance(error.cause)) throw error;
+    if (opts.repairInvalid === false || !NoObjectGeneratedError.isInstance(error) || !TypeValidationError.isInstance(error.cause)) throw error;
     const retry = await call([
       ...messages,
       { role: 'assistant', content: error.text ?? '' },

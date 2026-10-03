@@ -48,6 +48,7 @@ export async function extract(input: JudgeInput, generate: Generate): Promise<{ 
     maxTokens: JUDGE.extractionMaxTokens,
     maxRetries: 0,
     safePrompt: false,
+    repairInvalid: false,
     seed: JUDGE.firstSeed,
     promptCacheKey: cacheKey('eval-extract', messages),
   });
