@@ -5,7 +5,7 @@ import type { Exercise, Scenario } from './index.js';
 import type { Transcript } from './turn-parts.js';
 
 /** Pinned by its dated id, never by an alias: a new model is a new judge to recalibrate. */
-export const JUDGE = { model: 'mistral-medium-2604', promptVersion: '2026-10-03.3' } as const;
+export const JUDGE = { model: 'mistral-medium-2604', promptVersion: '2026-10-03.4' } as const;
 
 const MAX_CHANNEL_CHARS = 4000;
 const evidence = z.string().describe('Citation exacte de la transcription qui fonde la note, avant la note ; chaîne vide si la note repose sur une absence.');
@@ -204,12 +204,22 @@ export function contextMessages(input: JudgeInput): MistralMessage[] {
   return [{ role: 'system', content: PREAMBLE }, { role: 'user', content: user }];
 }
 
+// KaTeX commands as the judge reads them rendered; the others (\frac, \left, \text…) only lay out.
+const LATEX_SYMBOLS: Record<string, string> = {
+  times: '×', cdot: '×', div: '÷', neq: '≠', ne: '≠', leq: '≤', le: '≤', geq: '≥', ge: '≥',
+  approx: '≈', pm: '±', sqrt: '√', pi: 'π', infty: '∞', ldots: '…', cdots: '…', dots: '…',
+};
+// Operators change the meaning of a quote (x = 3 against x ≠ 3): they count, like words.
+const OPERATORS = '=≠<>≤≥×÷±√π∞≈%';
+
 /**
- * The words of a text, letters and digits only: the judge quotes the rendered text, without
- * its Markdown, KaTeX delimiters or quotation marks.
+ * The words and operators of a text: the judge quotes the rendered text, without its
+ * Markdown, KaTeX delimiters or quotation marks.
  */
 function words(text: string): string {
-  return ` ${text.normalize('NFKC').toLowerCase().replace(/\\[a-z]+/g, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
+  const rendered = text.normalize('NFKC').toLowerCase().replace(/\\([a-z]+)/g, (_, name: string) => ` ${LATEX_SYMBOLS[name] ?? ''} `);
+  const tokens = rendered.replace(new RegExp(`([${OPERATORS}])`, 'gu'), ' $1 ').replace(new RegExp(`[^\\p{L}\\p{N}${OPERATORS}]+`, 'gu'), ' ');
+  return ` ${tokens.trim()} `;
 }
 
 /** Whether the words of `quote` appear in `text`, its fragments in order when it omits passages with « … ». */
@@ -268,9 +278,10 @@ export async function judge(input: JudgeInput, generate: Generate): Promise<{ ve
     const second = await call(schema, name, [
       ...asked,
       { role: 'assistant', content: JSON.stringify(first) },
-      { role: 'user', content: 'Cette citation ne figure pas mot pour mot dans la transcription. Recopie-la exactement, sans la corriger ni la reformuler, ou laisse evidence vide si la note repose sur une absence ; puis redonne la note.' },
+      { role: 'user', content: 'Cette citation ne figure pas mot pour mot dans la transcription. Recopie-la exactement, sans la corriger ni la reformuler, puis redonne la note.' },
     ]);
-    if (!quotes(whole, second.evidence)) throw new Error(`judge quote for ${name} not found in the transcript: ${second.evidence}`);
+    // An empty citation would keep a grade the first citation failed to support.
+    if (second.evidence === '' || !quotes(whole, second.evidence)) throw new Error(`judge quote for ${name} not found in the transcript: ${second.evidence}`);
     return second;
   };
   // The first call writes the shared prefix to the cache; the others wait for it, then run in parallel.

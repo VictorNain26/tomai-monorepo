@@ -85,6 +85,13 @@ describe('quotes', () => {
     expect(quotes('quelle opération fais-tu **en premier** ?\n*(Indice : $x$)*', 'quelle opération fais-tu en premier ? (Indice : x)')).toBe(true);
     expect(quotes("c'est \\( 3x + 5 = 20 \\).\n\n---\n**Vérification**", "c'est 3x + 5 = 20. Vérification")).toBe(true);
     expect(quotes('Le multiplier par 3 : \\(4 \\times 3 = \\ldots\\) ?', 'Le multiplier par 3 : 4 × 3 = … ?')).toBe(true);
+    expect(quotes('le périmètre vaut \\(2\\pi r\\)', 'le périmètre vaut 2π r')).toBe(true);
+  });
+
+  it('counts the operators of a quote, rendered or in KaTeX', () => {
+    expect(quotes('donc \\(x \\neq 3\\)', 'donc x = 3')).toBe(false);
+    expect(quotes('donc x ≠ 3', 'donc x = 3')).toBe(false);
+    expect(quotes('donc \\(x \\neq 3\\)', 'donc x ≠ 3')).toBe(true);
   });
 
   it('matches whole words only', () => {
@@ -165,6 +172,18 @@ describe('judge', () => {
     const { generate, calls } = fakeJudge({ tone: { evidence: 'Bravo, champion !', score: '1' } });
     expect(await outcome(judge(input('M1', 'S1'), generate))).toContain('judge quote for tone not found in the transcript');
     expect(calls.filter((c) => c.schemaName === 'tone')).toHaveLength(2);
+  });
+
+  it('does not let the second try drop the citation the first one failed to find', async () => {
+    let toneCalls = 0;
+    const { generate: base } = fakeJudge();
+    const generate: Generate = (opts) => {
+      if (opts.schemaName !== 'tone') return base(opts);
+      toneCalls += 1;
+      const evidence = toneCalls === 1 ? 'Bravo, champion !' : '';
+      return Promise.resolve({ object: opts.schema.parse({ evidence, score: '1' }), usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1 } });
+    };
+    expect(await outcome(judge(input('M1', 'S1'), generate))).toContain('judge quote for tone not found in the transcript');
   });
 
   it('keeps the grade of the second try when its citation is exact', async () => {
