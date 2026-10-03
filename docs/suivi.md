@@ -330,3 +330,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   questions oui/non, cinq tirages, erreur de l'élève en référence, questions critiques en
   sécurité, cache à 91 %, limite de débit ; il ne voit presque pas les défauts de son
   propre modèle (#370). Étude du juge en extraction et vérification (#371).
+  Cas construits, une conversation saine et sa version fautive par défaut, pour mesurer ce
+  que le juge repère (#372). Le code répond à ce qui se vérifie : égalités écrites
+  recalculées par mathjs, questions relevées par Small 4 puis comptées, 3114 cherché dans
+  le texte ; calcul faux et deux questions repérés là où le modèle ne les voyait pas, sans
+  fausse alarme sur les cas construits (#373).
