@@ -1,5 +1,5 @@
 {
-  "results": "../../docs/etudes/2026-10-03/donnees/results.json",
+  "results": "src/eval/agreement/2026-10-03/results.json",
   "annotator": "claude-opus-5-5",
   "judge": {
     "model": "mistral-medium-2604",

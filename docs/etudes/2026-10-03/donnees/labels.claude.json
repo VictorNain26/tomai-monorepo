@@ -1,7 +1,7 @@
 {
   "annotator": "claude-opus-5-5",
   "date": "2026-10-03",
-  "results": "../../docs/etudes/2026-10-03/donnees/results.json",
+  "results": "src/eval/agreement/2026-10-03/results.json",
   "conversations": [
     {
       "key": "S1:6-M1:1",

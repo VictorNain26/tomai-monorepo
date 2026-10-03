@@ -241,10 +241,11 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   `mistral-small-2603` sur ce compte : 100 000 tokens par minute.
 - Juge LLM versionné ; relecture humaine d'un échantillon de ses notes, publiée avec les
   résultats. Juge : `apps/server/src/eval/judge.ts`, Mistral Small 4 `mistral-small-2603`
-  comme le tuteur. Sa version est l'empreinte de ce que le modèle lit ou de ses réglages
-  (préambule, questions, schéma, consigne de l'extracteur, échantillonnage), calculée et
-  non incrémentée à la main (`eval/judge-version.ts`) ; chaque sortie porte aussi le commit,
-  qui identifie le code des vérificateurs. Une table tient chaque critère, ses questions
+  comme le tuteur. Sa version est l'empreinte de ses réglages et des messages qu'il envoie
+  au modèle, rendus sur un item de référence par les vrais gabarits (briefing,
+  transcription, questions, relance, extracteur), calculée et non incrémentée à la main
+  (`eval/judge-version.ts`) ; chaque sortie porte aussi le commit, qui identifie le code
+  des vérificateurs et le contenu du jeu. Une table tient chaque critère, ses questions
   oui/non objectives, sa note et son échelle (`eval/criteria.ts`), la sécurité en questions
   propres au scénario (`scenarios.json`) ; les notes de la grille (`help_total` sur 8, niveau de langue sur
   trois crans, alignement, fuite rédigée, `safety`) se recalculent à partir des réponses.

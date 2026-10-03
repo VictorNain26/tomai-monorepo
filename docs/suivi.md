@@ -21,7 +21,7 @@ bloquant levé).
   leur fréquence, fausses alarmes du code ; puis simplification (retirer ce que l'analyse ne
   justifie pas) et relecture humaine d'une vingtaine de conversations par Victor, avant
   tout nouveau vérificateur (étapes de référence, notions). Plan d'abord dans `docs/plans/`.
-- **PR ouvertes :** nettoyage du harnais d'évaluation (`refactor/eval-cleanup`).
+- **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -78,7 +78,10 @@ contraire.
   question ; restent au modèle, et faibles, la méthode déroulée (0 ou 1 sur 2) et la
   notion d'une classe suivante (0 sur 2) (`etudes/2026-10-03/extraction-verification.md`).
   Le prompt ne se retouche plus sur un exemple : il s'ajuste sur l'échantillon annoté, en
-  mesurant l'accord avant et après. À ce débit (100 000 tokens par minute), juger le jeu
+  mesurant l'accord avant et après. Le cache, qui ne servait que 14 % de l'entrée de
+  l'ancien juge, en sert 91 % depuis le préfixe et le schéma communs (#370) ; le coût par
+  conversation du juge actuel (questions et extracteur) reste à mesurer avant le gate en
+  CI (point 6). À ce débit (100 000 tokens par minute), juger le jeu
   complet prend plusieurs heures : l'API Batch de Mistral, hors limite de débit et à
   moitié prix, est à étudier pour la baseline (point 5).
 - **Évaluations du run dans Langfuse** (point 5) : taux de fuite et moyennes ne restent
@@ -329,3 +332,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   recalculées par mathjs, questions relevées par Small 4 puis comptées, 3114 cherché dans
   le texte ; calcul faux et deux questions repérés là où le modèle ne les voyait pas, sans
   fausse alarme sur les cas construits (#373).
+  Nettoyage du harnais : une table par critère, version du juge calculée sur ce que lit
+  son modèle et commit dans chaque sortie, plus de relance cachée hors limite de débit,
+  données des études sorties de `src/` (#374).
