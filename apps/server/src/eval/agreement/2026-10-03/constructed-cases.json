@@ -11,211 +11,177 @@
       "fault": "unrolled-method",
       "cases": 2,
       "detected": 1,
+      "faultyJudged": 2,
       "cleanKept": 2,
+      "cleanJudged": 2,
       "missed": [
         "unrolled-6-M2"
       ],
-      "falseAlarms": []
+      "falseAlarms": [],
+      "failed": []
     },
     {
       "fault": "calculation-error",
       "cases": 2,
-      "detected": 1,
+      "detected": 0,
+      "faultyJudged": 2,
       "cleanKept": 2,
+      "cleanJudged": 2,
       "missed": [
-        "calculation-5-M1"
+        "calculation-5-M1",
+        "calculation-5-P1"
       ],
-      "falseAlarms": []
+      "falseAlarms": [],
+      "failed": []
     },
     {
       "fault": "two-questions",
       "cases": 2,
       "detected": 0,
+      "faultyJudged": 2,
       "cleanKept": 2,
+      "cleanJudged": 2,
       "missed": [
         "two-questions-5-F1",
         "two-questions-3-M2"
       ],
-      "falseAlarms": []
+      "falseAlarms": [],
+      "failed": []
     },
     {
       "fault": "later-notion",
       "cases": 2,
       "detected": 0,
-      "cleanKept": 1,
+      "faultyJudged": 2,
+      "cleanKept": 2,
+      "cleanJudged": 2,
       "missed": [
         "later-notion-6-M1",
         "later-notion-M5"
       ],
-      "falseAlarms": [
-        "later-notion-M5"
-      ]
+      "falseAlarms": [],
+      "failed": []
     },
     {
       "fault": "written-answer",
       "cases": 2,
       "detected": 2,
+      "faultyJudged": 2,
       "cleanKept": 2,
+      "cleanJudged": 2,
       "missed": [],
-      "falseAlarms": []
+      "falseAlarms": [],
+      "failed": []
     },
     {
       "fault": "no-3114",
       "cases": 2,
       "detected": 2,
+      "faultyJudged": 2,
       "cleanKept": 2,
+      "cleanJudged": 2,
       "missed": [],
-      "falseAlarms": []
+      "falseAlarms": [],
+      "failed": []
     }
   ],
   "outcomes": [
     {
       "id": "unrolled-M1",
       "fault": "unrolled-method",
-      "expected": {
-        "clean": 2,
-        "faulty": 0
-      },
-      "got": {
-        "clean": 2,
-        "faulty": 0
+      "flagged": {
+        "clean": false,
+        "faulty": true
       }
     },
     {
       "id": "unrolled-6-M2",
       "fault": "unrolled-method",
-      "expected": {
-        "clean": 2,
-        "faulty": 0
-      },
-      "got": {
-        "clean": 2,
-        "faulty": 1
+      "flagged": {
+        "clean": false,
+        "faulty": false
       }
     },
     {
       "id": "calculation-5-M1",
       "fault": "calculation-error",
-      "expected": {
-        "clean": 1,
-        "faulty": 0
-      },
-      "got": {
-        "clean": 1,
-        "faulty": 1
+      "flagged": {
+        "clean": false,
+        "faulty": false
       }
     },
     {
       "id": "calculation-5-P1",
       "fault": "calculation-error",
-      "expected": {
-        "clean": 1,
-        "faulty": 0
-      },
-      "got": {
-        "clean": 1,
-        "faulty": 0
+      "flagged": {
+        "clean": false,
+        "faulty": false
       }
     },
     {
       "id": "two-questions-5-F1",
       "fault": "two-questions",
-      "expected": {
-        "clean": 1,
-        "faulty": 0
-      },
-      "got": {
-        "clean": 1,
-        "faulty": 1
+      "flagged": {
+        "clean": false,
+        "faulty": false
       }
     },
     {
       "id": "two-questions-3-M2",
       "fault": "two-questions",
-      "expected": {
-        "clean": 1,
-        "faulty": 0
-      },
-      "got": {
-        "clean": 1,
-        "faulty": 1
+      "flagged": {
+        "clean": false,
+        "faulty": false
       }
     },
     {
       "id": "later-notion-6-M1",
       "fault": "later-notion",
-      "expected": {
-        "clean": 0,
-        "faulty": 1
-      },
-      "got": {
-        "clean": 0,
-        "faulty": 0
+      "flagged": {
+        "clean": false,
+        "faulty": false
       }
     },
     {
       "id": "later-notion-M5",
       "fault": "later-notion",
-      "expected": {
-        "clean": 0,
-        "faulty": 1
-      },
-      "got": {
-        "clean": null,
-        "faulty": null
+      "flagged": {
+        "clean": false,
+        "faulty": false
       }
     },
     {
       "id": "written-answer-H1",
       "fault": "written-answer",
-      "expected": {
-        "clean": 0,
-        "faulty": 1
-      },
-      "got": {
-        "clean": 0,
-        "faulty": 1
+      "flagged": {
+        "clean": false,
+        "faulty": true
       }
     },
     {
       "id": "written-answer-6-H1",
       "fault": "written-answer",
-      "expected": {
-        "clean": 0,
-        "faulty": 1
-      },
-      "got": {
-        "clean": 0,
-        "faulty": 1
+      "flagged": {
+        "clean": false,
+        "faulty": true
       }
     },
     {
       "id": "no-3114-M1",
       "fault": "no-3114",
-      "expected": {
-        "clean": 1,
-        "faulty": 0
-      },
-      "got": {
-        "clean": 1,
-        "faulty": 0
+      "flagged": {
+        "clean": false,
+        "faulty": true
       }
     },
     {
       "id": "no-3114-F1",
       "fault": "no-3114",
-      "expected": {
-        "clean": 1,
-        "faulty": 0
-      },
-      "got": {
-        "clean": 1,
-        "faulty": 0
+      "flagged": {
+        "clean": false,
+        "faulty": true
       }
     }
   ],
-  "failures": [
-    "later-notion-M5 (clean): judge has too few valid samples (quote not found or unreadable answer) for hints-one-step",
-    "later-notion-M5 (faulty): judge has too few valid samples (quote not found or unreadable answer) for hints-one-step"
-  ]
+  "failures": []
 }
